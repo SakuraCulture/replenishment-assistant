@@ -28,6 +28,9 @@ def main():
     if '--work-smoke' in sys.argv:
         from work_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--work-smoke')+1:])
+    if '--intake-smoke' in sys.argv:
+        from intake_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--intake-smoke')+1:])
     return app.exec()
 
 

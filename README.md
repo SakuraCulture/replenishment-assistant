@@ -1,6 +1,6 @@
 # 补货助手
 
-当前源码：Windows 离线桌面版 0.6.1（结构整理）；发行是否验收以对应releases记录为准。模型规则仍为0.3.0-rules，需求归属版本0.5.0，参数/作业格式版本1。Python 3.12 / PySide6 / openpyxl / PyInstaller。
+当前源码：Windows 离线桌面版 0.6.2（并行文件检查候选）；发行是否验收以对应releases记录为准。模型规则仍为0.3.0-rules，需求归属版本0.5.0，参数/作业格式版本1。Python 3.12 / PySide6 / openpyxl / PyInstaller。
 不可变基线：0.3.0，提交7b8da6b，带注释标签v0.3.0-baseline。用`git rev-parse 'v0.3.0-baseline^{}'`核对其指向的提交。
 2026-10-29 起在此源码目录使用本地 Git；`交付_0.3/补货助手` 保留为基线运行包。
 
@@ -23,6 +23,7 @@
 |---|---|---|
 | 启动与公共界面 | `src/app.py`、`src/ui_controls.py`、`src/ui_tasks.py`、`src/ui_results.py`、`src/ui_session.py` | 启动独立；公共控件、任务、结果视图和显式共享状态 |
 | 四步向导及多店状态 | `src/batch_app.py` | 多文件、冲突处理、独立预算、单店失效、部分完成导出 |
+| 独立文件检查 | `src/file_intake.py` | 单文件直接调用，多文件最多2个spawn进程；原序号合并，取消后等待回收 |
 | 多店编排 | `src/batch_service.py` | 内存归集保留原Excel边界语义；按门店进程并发；原计算引擎不变 |
 | 分仓资料与需求归属 | `src/warehouse_catalog.py`、`src/warehouse_ui.py` | 外部分别标记河北/山东资料，保存快照，门店主从仓选择；无库存扣减或需求限量 |
 | 每日作业、配置与方案 | `src/workbench.py`、`src/work_repository.py` | SQLite按天唯一、确认覆盖与并发修订检查；完整快照恢复；门店默认与版本化方案 |
@@ -74,3 +75,5 @@ Git 记录不能代替发行包备份；已忽略的 EXE/ZIP 不会随 Git 恢�
 `verify_backend.py`现仅提示使用新入口；旧实现保存在`versions/0.2`。0.3旧UI smoke保留历史参考，不再作为当前入口。
 `verify_budget.py`（固定真实样本回归）、`verify_batch.py`（多店与并发）、`verify_exe.py`（当前打包程序）均要求明确输入和新输出目录，用`--help`查看。
 每次发行的实际验证以`releases/<版本>/<构建编号>`为准。0.3基线核验不代表新版本业务/UI验收，也不证明可复现构建。
+
+0.6.2检查文件的边界、顺序、取消、测试及性能口径见[并行检查说明](docs/0.6.2并行检查.md)。未自动替换已验收0.6.1，也未合并或推送。

@@ -27,36 +27,16 @@ def intake(paths,products,progress=lambda s:None,cancel=None):
         product_sheet,_=engine.sheet_name(products,'products')
         product_snapshot,_=engine.adapter.read_table(products,product_sheet,['商品编码','基本售价','分类','出库箱规'])
     groups=defaultdict(list);files=[];stores={};headers=[];hashes={products:product_hash} if products else {}
-    for path in paths:
-        engine.checkpoint(cancel);progress('读取补货建议：'+Path(path).name)
-        report={'path':path,'rows':0,'stores':0,'error':''};files.append(report)
-        try:
-            before=engine.adapter.digest(Path(path));sheet,heads=engine.sheet_name(path,'sales')
-            cfg=engine.config();sf=cfg['sales_fields']
-            rows,info=engine.adapter.read_table(Path(path),sheet,[sf[k] for k in ['store_code','sku','daily14','sales7','sales30','stock','inbound','stockout_days']])
-            if before!=engine.adapter.digest(Path(path)):raise ValueError('读取期间文件变化，请保存后重试。')
-            ambiguous=set(sf.values()) & set(info['duplicate_unused_headers'])
-            if ambiguous:raise ValueError('已映射表头重复：'+ '、'.join(sorted(ambiguous)))
-            staged=[];names={}
-            for raw in rows:
-                code,error=engine.adapter.identifier(raw.get(sf['store_code']))
-                if error:raise ValueError(f"第{raw['_row']}行门店编码无效：{error}；请使用文本编码")
-                sku,sku_error=engine.adapter.identifier(raw.get(sf['sku']))
-                raw=copy.deepcopy(raw)
-                raw['基础单位']=raw.get('基础单位',raw.get('库存单位',raw.get('单位类型')))
-                values={k:v for k,v in raw.items() if k!='_row'}
-                # Invalid SKU rows remain distinct and are diagnosed by the original adapter.
-                key=(code,sku if not sku_error else f"待核:{path}:{raw['_row']}")
-                staged.append((key,{'values':values,'path':path,'sheet':sheet,'row':raw['_row']}))
-                names.setdefault(code,str(raw.get(sf['store_name']) or code))
-            if not staged:raise ValueError('文件没有商品记录。')
-            for key,record in staged:groups[key].append(record)
-            stores.update({k:v for k,v in names.items() if k not in stores})
-            for h in sorted(heads|{'基础单位'}):
-                if h not in headers:headers.append(h)
-            hashes[path]=before;report.update(rows=len(staged),stores=len(names))
-        except engine.Cancelled:raise
-        except Exception as exc:report['error']=str(exc)
+    from file_intake import checked_files
+    for checked in checked_files(paths,progress,cancel):
+        report=checked['report'];files.append(report)
+        if report['error']:continue
+        path=report['path'];staged=checked['staged'];names=checked['names']
+        for key,record in staged:groups[key].append(record)
+        stores.update({k:v for k,v in names.items() if k not in stores})
+        for h in checked['headers']:
+            if h not in headers:headers.append(h)
+        hashes[path]=checked['hash']
     if not groups:raise ValueError('没有可读取的补货建议：\n'+'\n'.join(Path(f['path']).name+'：'+f['error'] for f in files))
     duplicates=0;conflicts=[];selected=[]
     for (store,sku),records in groups.items():
