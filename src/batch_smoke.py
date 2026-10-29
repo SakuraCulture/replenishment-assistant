@@ -40,7 +40,7 @@ def start_smoke(app,win,args):
                 else:state['step']=11
             elif step==11 and win.loaded and win.worker is None:
                 assert not win.loaded['blocked'];state['checks'].append('multi-file UI import, duplicate conflict dialog and explicit source choice')
-                assert len(win.loaded['stores'])==2;assert not win.calculate_btn.isEnabled();win.navigate(1)
+                assert len(win.loaded['stores'])==2;assert set(win.selected_codes())==set(win.loaded['stores']),'resolved stores must remain selected despite disabled loading page';assert not win.calculate_btn.isEnabled();win.navigate(1)
                 codes=list(win.store_widgets);state['codes']=codes
                 for s in codes:
                     w=win.store_widgets[s];w['mode'].setCurrentIndex(2);w['amount'].setText('3000' if s==codes[0] else '5000')

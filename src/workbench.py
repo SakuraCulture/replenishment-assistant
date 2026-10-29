@@ -51,6 +51,9 @@ class Workbench(ParameterUi,BatchWindow):
         self.selection_changed()
     def loaded_ok(self,loaded):
         existing={'store_presets':{s:self.preset_for(s) for s in self.store_widgets},'store_ui':{s:self.store_ui(s) for s in self.store_widgets}}
+        previously_blocked=(self.loaded or {}).get('blocked',{})
+        for s,ui in existing['store_ui'].items():
+            if previously_blocked.get(s) and not loaded['blocked'].get(s):ui['selected']=True
         self.store_presets={};super().loaded_ok(loaded)
         pending=getattr(self,'pending_copy',None) or existing
         if pending:
@@ -69,7 +72,7 @@ class Workbench(ParameterUi,BatchWindow):
         w=self.store_widgets[s]
         return {'mode':w['mode'].currentIndex(),'amount':w['amount'].text(),'primary':w['primary'].currentData(),'secondary':w['secondary'].currentData(),'selected':w['check'].isChecked()}
     def set_store_ui(self,s,data):
-        w=self.store_widgets[s];w['mode'].setCurrentIndex(data.get('mode',0));w['amount'].setText(data.get('amount',''));w['amount'].setEnabled(w['mode'].currentIndex()==2);w['check'].setChecked(bool(data.get('selected',True)) and w['check'].isEnabled())
+        w=self.store_widgets[s];w['mode'].setCurrentIndex(data.get('mode',0));w['amount'].setText(data.get('amount',''));w['amount'].setEnabled(w['mode'].currentIndex()==2);w['check'].setChecked(bool(data.get('selected',True)) and not self.loaded['blocked'].get(s))
         for key in ['primary','secondary']:w[key].setCurrentIndex(max(0,w[key].findData(data.get(key))))
     def selection_changed(self,*args):
         super().selection_changed(*args)

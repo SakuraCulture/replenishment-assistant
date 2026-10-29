@@ -33,6 +33,11 @@ def start_smoke(app,win,args):
                 win.sales.add_paths([str(fixture/'sales.xlsx')]);win.start_load();state['step']=1
             elif step==1 and win.worker is None:
                 assert win.loaded
+                # Loading disables the whole page; that must not clear logical selections.
+                win.store_page.setEnabled(False);win.set_store_ui('QA_A',win.store_ui('QA_A'));assert win.store_widgets['QA_A']['check'].isChecked();win.store_page.setEnabled(True)
+                resolved=copy.deepcopy(win.loaded);blocked=copy.deepcopy(resolved);blocked['blocked']['QA_A']=1;win.loaded_ok(blocked);assert not win.store_widgets['QA_A']['check'].isChecked()
+                win.loaded_ok(resolved);assert set(win.selected_codes())==set(resolved['stores'])
+                state['checks'].append('disabled loading page preserves logical selection; resolving blocked store restores eligible selection')
                 for s,w in win.store_widgets.items():
                     w['mode'].setCurrentIndex(1);w['primary'].setCurrentIndex(w['primary'].findData('河北仓'));w['secondary'].setCurrentIndex(w['secondary'].findData('山东仓'))
                 win.navigate(1);state['step']=10
