@@ -43,9 +43,10 @@ def compare(a,b):
             assert ar is not None and br is not None and len(ar)==len(br)
             for ac,bc in zip(ar,br):
                 count+=1
+                assert type(ac) is type(bc), (left.title, 'cell presence/type')
                 for field in ['value','data_type','number_format','font','fill','alignment','border','protection']:
                     if field=='value' and (left.title,getattr(ac,'coordinate','')) in whitelist:continue
-                    av,bv=getattr(ac,field),getattr(bc,field)
+                    av,bv=getattr(ac,field,None),getattr(bc,field,None)
                     if av!=bv or field=='value' and type(av)!=type(bv):diff.append([left.title,getattr(ac,'coordinate',''),field,str(av),str(bv)])
     aa.close();bb.close()
     # Compare all worksheet-level XML outside cell data too: widths, filters,

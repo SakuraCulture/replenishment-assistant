@@ -1,0 +1,17 @@
+{
+  "application_sources_unchanged_after_build": true,
+  "build_commit": "6c644ea6bf86565833b6b602d933786ecec003b9",
+  "fixes": [
+    "EmptyCell has no protection property: compare missing attribute as None and assert identical cell class",
+    "copy StyleProxy targets before strict style equality; wrapper equality is not value equality"
+  ],
+  "executed_runners": {
+    "export_qa_checked.py": "dcf220c38eba207b830c31e2d194876c84329bb3431a98b9ab7c391484d99002",
+    "merchant_contract_checked.py": "5d13abaa9906e835454c5aab379f3ea355c84d5c3ab508928f3c9e6a020665a3"
+  },
+  "portable_committed_tools": {
+    "export_qa.py": "a634e9819016466a705688ea6b6b04167929ecba66e113b17fe852ebb7fe731d",
+    "merchant_contract.py": "0733fe70b507381815ef8796bfd9d62d550519ef70cbc71aec4f4315cd1d1e66"
+  },
+  "only_runner_location_difference": "ROOT parent index changes from qa/export_071 to tools; remaining code identical"
+}

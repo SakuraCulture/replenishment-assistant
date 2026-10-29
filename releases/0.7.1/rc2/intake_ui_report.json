@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "error": null,
+  "version": "0.7.1",
+  "source_commit": "6c644ea6bf86565833b6b602d933786ecec003b9",
+  "checks": [
+    "later file completes first in running application; reports, stores, headers, conflict candidates, records and source rows equal fixed serial baseline; children have no QApplication",
+    "cancel stops new submissions, waits/reaps readers, discards completed payloads, blocks overlapping recheck and stale updates",
+    "retry after cancel succeeds; mixed invalid/valid file reports and normalized rows equal serial baseline",
+    "all-failed check shows unchanged error and keeps prior results invalid",
+    "close during reading cancels/reaps children before closing and retains original unsaved-work confirmation",
+    "fresh window after close can check again; single-file path has no child process"
+  ],
+  "exe_sha256": "5a4eb20f0b57266420236a77d33e5082430fed0c18ba21577f6c041cae44d737",
+  "observed_process_ids": [
+    1440,
+    20844,
+    21628,
+    21648,
+    32320,
+    45632,
+    51472,
+    53956,
+    54484,
+    56888,
+    64160
+  ],
+  "remaining_process_ids": []
+}

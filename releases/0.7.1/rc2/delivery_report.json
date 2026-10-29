@@ -1,0 +1,113 @@
+{
+  "passed": true,
+  "version": "0.7.1",
+  "source_commit": "6c644ea6bf86565833b6b602d933786ecec003b9",
+  "checks": [
+    "single-action sign/export; cancellation and existing destination before sign preserve DB; same result idempotent; changed result V2; stale revision rejected; post-commit export failure disclosed, history retained, retry no new revision",
+    "batch preserves selected store order; one transaction; cancel/no-clobber before signing; same revision reused; partial write failure explicitly identifies completed and missing files; full archive retained",
+    "real Windows spawn 4+1 queue: four active maximum; fifth starts while three slower stores are still running; all five finish without any archive/export call"
+  ],
+  "queue_events": [
+    [
+      "QA_0",
+      "计算中",
+      {
+        "QA_0": "计算中"
+      }
+    ],
+    [
+      "QA_1",
+      "计算中",
+      {
+        "QA_0": "计算中",
+        "QA_1": "计算中"
+      }
+    ],
+    [
+      "QA_2",
+      "计算中",
+      {
+        "QA_0": "计算中",
+        "QA_1": "计算中",
+        "QA_2": "计算中"
+      }
+    ],
+    [
+      "QA_3",
+      "计算中",
+      {
+        "QA_0": "计算中",
+        "QA_1": "计算中",
+        "QA_2": "计算中",
+        "QA_3": "计算中"
+      }
+    ],
+    [
+      "QA_0",
+      "已完成",
+      {
+        "QA_0": "已完成",
+        "QA_1": "计算中",
+        "QA_2": "计算中",
+        "QA_3": "计算中"
+      }
+    ],
+    [
+      "QA_4",
+      "计算中",
+      {
+        "QA_0": "已完成",
+        "QA_1": "计算中",
+        "QA_2": "计算中",
+        "QA_3": "计算中",
+        "QA_4": "计算中"
+      }
+    ],
+    [
+      "QA_4",
+      "已完成",
+      {
+        "QA_0": "已完成",
+        "QA_1": "计算中",
+        "QA_2": "计算中",
+        "QA_3": "计算中",
+        "QA_4": "已完成"
+      }
+    ],
+    [
+      "QA_1",
+      "已完成",
+      {
+        "QA_0": "已完成",
+        "QA_1": "已完成",
+        "QA_2": "计算中",
+        "QA_3": "计算中",
+        "QA_4": "已完成"
+      }
+    ],
+    [
+      "QA_2",
+      "已完成",
+      {
+        "QA_0": "已完成",
+        "QA_1": "已完成",
+        "QA_2": "已完成",
+        "QA_3": "计算中",
+        "QA_4": "已完成"
+      }
+    ],
+    [
+      "QA_3",
+      "已完成",
+      {
+        "QA_0": "已完成",
+        "QA_1": "已完成",
+        "QA_2": "已完成",
+        "QA_3": "已完成",
+        "QA_4": "已完成"
+      }
+    ]
+  ],
+  "peak_active": 4,
+  "fixture_note": "five synthetic stores copied from existing acceptance fixture; QA-only unequal start delays, actual calculation function"
+}

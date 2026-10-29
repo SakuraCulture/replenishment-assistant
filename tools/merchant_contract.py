@@ -8,7 +8,7 @@ if '--worker' in sys.argv:
     result=pickle.loads(zlib.decompress((ROOT/'qa/normal_070/rc3-candidate/real_None_True.pklz').read_bytes()))
     order={'day':'2026-10-30','number':'QA-REAL-EXPORT-CONTRACT','revision':1,'current_revision':1,'store':result['store'],'payload':{'result':result,'new_focus':focus.empty('2026-10'),'item_ids':{d['E']:str(i) for i,d in enumerate(result['rows'])}}}
     start=time.perf_counter();normal_exports.export(order,Path(out)/(mode+'.xlsx'));(Path(out)/(mode+'.seconds')).write_text(str(time.perf_counter()-start));sys.exit(0)
-out=ROOT/'qa/export_071/merchant-contract';out.mkdir(exist_ok=False)
+out=Path(sys.argv[sys.argv.index('--output')+1]).resolve() if '--output' in sys.argv else ROOT/'qa/export_071/merchant-contract';out.mkdir(parents=True,exist_ok=False)
 for mode,source in [('old',ROOT/'qa/export_071/baseline'),('new',ROOT)]:subprocess.run([sys.executable,__file__,'--worker',str(source),str(out),mode],check=True)
 sys.path.insert(0,str(ROOT/'src'));import openpyxl,normal_exports
 result=pickle.loads(zlib.decompress((ROOT/'qa/normal_070/rc3-candidate/real_None_True.pklz').read_bytes()));by={d['E']:d for d in result['rows']}
@@ -23,7 +23,7 @@ for left,right in zip(a,b):
         for i in range(20):
             av='未提供' if i==17 and x[i].value=='未提供（不作为数量拦截）' else x[i].value
             assert av==y[i].value and type(av)==type(y[i].value) and x[i].data_type==y[i].data_type,(left.title,i,x[i].value,y[i].value)
-            for f in ['font','fill','border','alignment','protection']:assert getattr(x[i],f)==getattr(y[i],f)
+            for f in ['font','fill','border','alignment','protection']:assert copy.copy(getattr(x[i],f))==copy.copy(getattr(y[i],f))
             assert y[i].number_format==('0.00' if i==15 else '@' if i==17 else x[i].number_format)
             checked+=1
         assert x[20].value==y[20].value and y[21].value==normal_exports.decision(d) and len(y[21].value)<=6

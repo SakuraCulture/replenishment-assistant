@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "error": null,
+  "version": "0.7.1",
+  "source_commit": "6c644ea6bf86565833b6b602d933786ecec003b9",
+  "checks": [
+    "actual EXE configured four workers, all five stores completed before any archive/export, queue guidance visible",
+    "one-action unarchived delivery: default-cancel leaves DB/files unchanged; accept signs, saves draft, and writes numbered template without separate archive action",
+    "changed same-day order requires explicit cancel/confirm; same number V2 with V1 readable",
+    "actual measured row progress updates bar; cancel during row writing leaves no final file and reclaims workbook XML",
+    "retry after cancellation succeeds; Qt event loop remains active during background sign/export",
+    "visible store picker defaults all five; deselect-all disables Next; choose four; one confirmation and folder selection writes four separate central-only 22-column workbooks; unselected store remains unissued; normal close"
+  ],
+  "event_loop_ticks": 991,
+  "development": false,
+  "exe_sha256": "5a4eb20f0b57266420236a77d33e5082430fed0c18ba21577f6c041cae44d737"
+}
