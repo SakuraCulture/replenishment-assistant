@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "version": "0.6.0",
+  "source_commit": "f1e26fe4bda205841cb29fdf94e55099fa334dde",
+  "rows": 14244,
+  "save_seconds": 1.147,
+  "load_seconds": 0.927,
+  "database_bytes": 5890048,
+  "scope": "current repository round-trip of verified real 14244-row input/result snapshot from rc1/real-snapshot; content exactly equal; no source Excel writes"
+}

@@ -1,0 +1,12 @@
+{
+  "scope": "pre-seal delivery documentation correction only; EXE and runtime unchanged",
+  "changes": [
+    "作为后续版本回归预期",
+    "不能替代当前版本的多店、作业保存与参数方案验收",
+    "必卖清单位于同一应用目录下的settings\\must_sell.json；每日作业、完整方案和门店默认配置保存在settings\\workbench.sqlite3。旧store_budgets.json仅作未迁移门店的回退来源。软件升级不自动覆盖用户设置。跨电脑迁移每日记录及方案时，先关闭所有补货助手窗口，再完整复制settings目录；必卖清单也可单独备份导入。",
+    "本版完整模型参数可在“参数方案”和各店参数按钮中维护；按说明区分仅用于本次、保存为本店默认和保存命名方案。明确标为固定的规则保持只读。"
+  ],
+  "source_doc_sha256": "0fdb8c270567d2a2dfcb46f3e276caecba87047872ce95ada9ad4d5bcebcd7a3",
+  "delivered_doc_sha256": "2229b87220d00964c5af9d80ee19f84a22c22180325251c1ece8f51b5a928ddd",
+  "note": "The corrected delivered text is archived by assemble.py and is copied back into source with the release-evidence commit, separate from runtime source commit."
+}

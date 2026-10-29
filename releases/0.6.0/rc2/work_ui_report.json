@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "error": null,
+  "version": "0.6.0",
+  "source_commit": "f1e26fe4bda205841cb29fdf94e55099fa334dde",
+  "checks": [
+    "disabled loading page preserves logical selection; resolving blocked store restores eligible selection",
+    "actual parameter editor and named full preset save; explicit store defaults; only selected store receives changed probability",
+    "first save; same-day modal defaults to cancel; cancellation preserves original; explicit replace retains one record and flags stale store; saving job never alters store defaults",
+    "saved store parameters survive re-import; fresh window restores daily snapshot; recalculation and export work with source Excel files moved away",
+    "historical date opens read-only; snapshot not changed by current defaults",
+    "closing unsaved work asks; cancel keeps current results and window"
+  ],
+  "exe_sha256": "36e426d490918c505a35dd4ddaa9a1180b040c91971f016bdab7035e7bfc9325"
+}
