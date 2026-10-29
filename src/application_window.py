@@ -149,9 +149,15 @@ class ApplicationWindow(Workbench):
 
     def resume_today(self):
         if self.worker:return
-        record=self.work_repository.get_job(wr.today())
-        if not record:self.show_section(1);self.status.setText('今天暂无保存草稿，请准备数据。');return
-        if self.leave_current():self.restore_job(record);self.show_section(1)
+        if not any(r['day']==wr.today() for r in self.work_repository.list_jobs()):self.show_section(1);self.status.setText('今天暂无保存草稿，请准备数据。');return
+        if not self.leave_current():return
+        from ui_work_io import read_job
+        from runtime_support import Cancelled
+        try:record=read_job(self,self.work_repository.path,wr.today())
+        except Cancelled:self.status.setText('已取消读取作业。');return
+        except Exception as exc:self.failed('作业未打开：'+str(exc));return
+        if record is None:self.failed('今天的记录已不存在，请刷新后重试。');return
+        self.restore_job(record,owned=True);self.show_section(1)
 
     def update_controls(self):
         super().update_controls()
@@ -166,11 +172,12 @@ class ApplicationWindow(Workbench):
     def snapshot(self):
         p=super().snapshot()
         if self.new_focus is not None:p["new_focus"]=copy.deepcopy(self.new_focus)
-        if self.new_bases:p['new_product_bases']=copy.deepcopy(self.new_bases)
+        if self.new_bases:p['new_product_bases']=dict(self.new_bases)
         return p
 
-    def restore_job(self,record):
-        self.new_bases=copy.deepcopy(record['payload'].get('new_product_bases',{}));self.new_focus=copy.deepcopy(record['payload'].get('new_focus'));super().restore_job(record);self.refresh_focus()
+    def restore_job(self,record,owned=False):
+        clone=(lambda value:value) if owned else copy.deepcopy
+        self.new_bases=clone(record['payload'].get('new_product_bases',{}));self.new_focus=clone(record['payload'].get('new_focus'));super().restore_job(record,owned=owned);self.refresh_focus()
 
     def reset_job(self):
         self.new_bases={};super().reset_job()
@@ -205,15 +212,18 @@ class ApplicationWindow(Workbench):
         if base.get('new_products'):
             self.failed('当前草稿缺少新品原计算快照，请重新计算该店后选择。');return
         dialog=NewProductDialog(self,base,current,self.new_focus)
-        if dialog.exec()!=QDialog.DialogCode.Accepted:return
-        selections=dialog.selections()
+        accepted=dialog.exec()==QDialog.DialogCode.Accepted
+        selections=dialog.selections() if accepted else None
+        dialog.deleteLater()
+        if not accepted:return
         self.job(new_products.apply,(base,selections),lambda result:self.preview_new(s,base,current,result))
 
     def preview_new(self,s,base,current,result):
         if self.closing or (self.worker and self.worker.cancel.is_set()):return
         diffs=new_products.changes(current,result);box=QMessageBox(self);box.setObjectName('newBudgetPreview');box.setWindowTitle('预览预算变化 · '+result['store_name']);box.setText(f"调整 {len(diffs)} 款；本店安排 ¥{current['summary']['amount']:,.2f} → ¥{result['summary']['amount']:,.2f}\n最低持有缺口 {current['summary']['holding_gaps']} → {result['summary']['holding_gaps']}\n必卖新品可占用普通动销的预算。取消保持原方案；应用后需重新确认归档。");box.setDetailedText(json.dumps(diffs,ensure_ascii=False,indent=2));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);apply=box.addButton('应用到本店草稿',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.exec()
         if box.clickedButton() is not apply:return
-        if result.get('new_products'):self.new_bases[s]=copy.deepcopy(base)
+        # Published result trees are replaced, never mutated; apply() copies its input.
+        if result.get('new_products'):self.new_bases[s]=base
         else:self.new_bases.pop(s,None)
         self.results[s]=result;self.current_store=s;self.result=result;self.dirty=False;self.set_rows(result['rows'],True);self.refresh_tables();self.touch();self.navigate(4)
         self.status.setText('新品选择与预算已应用到本店草稿；请返回门店汇总选择门店并导出。')
@@ -222,22 +232,26 @@ class ApplicationWindow(Workbench):
         if self.worker or self.readonly or self.input_dirty or self.job_day!=wr.today():return
         codes=[s for s in self.selected_codes() if self.states[s]['state']=='已完成']
         if not codes:self.failed('请先在门店页勾选有效完成门店。');return
-        try:focus.require_for(self.new_focus,self.job_day,[self.results[s] for s in codes])
-        except ValueError as exc:self.failed(str(exc));return
-        payload=copy.deepcopy(self.snapshot());oldjob=self.work_repository.get_job(self.job_day);old={s:self.orders.get(self.job_day,s) for s in codes}
-        box=QMessageBox(self);box.setObjectName('normalConfirm');box.setWindowTitle('确认归档本次补货建议');box.setText('内部签发确认；不代表加盟商确认或已下单。\n同时保存当前完整草稿；只更新下列门店正常单，其他门店历史单保留。')
-        lines=[];details={}
-        for s in codes:
-            r=self.results[s];prev=old[s];same=prev and prev['digest']==normal_orders.fingerprint(r,self.new_focus)
-            lines.append(r['store_name']+' ('+s+')：'+('已归档，无需新修订' if same else f"同号 V{prev['revision']:03d} → V{prev['revision']+1:03d}" if prev else '首次 V001')+f"；¥{r['summary']['amount']:,.2f}，{r['summary']['positive']}款，待核{r['summary']['issues']}，预算缺口{r['summary']['budget_deferred']}")
-            details[s]={'关注清单原版本':(prev['payload'].get('new_focus') or {}).get('revision') if prev else None,'关注清单新版本':(self.new_focus or {}).get('revision'),'new_selection':r.get('new_products',{}),'changes':normal_orders.revision_diff(prev['payload']['result'] if prev else None,r),'before_amount':prev['payload']['result']['summary']['amount'] if prev else None,'after_amount':r['summary']['amount']}
-        if oldjob:details['草稿覆盖']={'原保存时间':oldjob['saved'],'原门店状态':oldjob['summary']['stores'],'新门店状态':wr.summary(payload)['stores']}
-        box.setInformativeText('\n'.join(lines));box.setDetailedText(json.dumps(details,ensure_ascii=False,indent=2));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认并归档',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel);box.exec()
-        if box.clickedButton() is not accept:return
+        from ui_work_io import Session,request
+        from runtime_support import Cancelled
         try:
-            issued=self.orders.confirm(payload,codes,oldjob['revision'] if oldjob else None,{s:r['revision'] if r else None for s,r in old.items()})
-            saved=self.work_repository.get_job(self.job_day);self.saved_time=saved['saved'];self.job_dirty=False;self.refresh_job_label();self.refresh_archive();self.status.setText('已自动归档：'+'；'.join(r['number']+f" V{r['revision']:03d}" for r in issued)+'。可导出加盟商确认单。')
-        except Exception as exc:self.failed('归档失败，原正常单与草稿保留：'+str(exc))
+            with Session(self.work_repository.path) as session:
+                prepared=request(self,session,'prepare_normal',[self.snapshot(),codes])
+                box=QMessageBox(self);box.setObjectName('normalConfirm');box.setWindowTitle('确认归档本次补货建议');box.setText('内部签发确认；不代表加盟商确认或已下单。\n同时保存当前完整草稿；只更新下列门店正常单，其他门店历史单保留。')
+                box.setInformativeText('\n'.join(prepared['lines']));box.setDetailedText(prepared['detail_text']+('\n…差异较多，此处显示前120,000字符。点击“导出完整差异”查看全部内容，未删减任何归档数据。' if prepared['truncated'] else ''))
+                cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认并归档',QMessageBox.ButtonRole.AcceptRole);review=box.addButton('导出完整差异',QMessageBox.ButtonRole.ActionRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
+                while True:
+                    box.exec()
+                    if box.clickedButton() is not review:break
+                    path,_=QFileDialog.getSaveFileName(self,'保存完整签发差异','签发差异.json','JSON (*.json)')
+                    if path:
+                        if not path.lower().endswith('.json'):path+='.json'
+                        request(self,session,'review_export',path)
+                if box.clickedButton() is not accept:return
+                receipt=request(self,session,'confirm_normal',None)
+            self.saved_time=receipt['saved'];self.job_dirty=False;self.refresh_job_label();self.refresh_archive();self.status.setText('已自动归档：'+'；'.join(r['number']+f" V{r['revision']:03d}" for r in receipt['orders'])+'。可导出加盟商确认单。')
+        except Cancelled:self.status.setText('已取消核对，原正常单与草稿保留。')
+        except Exception as exc:self.failed('归档操作未完成，请在历史记录核对状态：'+str(exc))
 
     def export_current(self,codes=None):
         if self.worker or self.input_dirty:return
@@ -247,35 +261,31 @@ class ApplicationWindow(Workbench):
             if dialog.exec()!=QDialog.DialogCode.Accepted:return
             codes=dialog.codes()
         if not codes:return
-        self.job(normal_delivery.prepare_batch,(self.orders,self.snapshot(),codes),self.delivery_prepared)
-
-    def delivery_prepared(self,batch):
-        if self.closing or (self.worker and self.worker.cancel.is_set()):return
-        plans=batch['plans'];changed=[p for p in plans if not p['same']]
-        if changed:
-            box=QMessageBox(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出加盟商单')
-            lines=[]
-            for p in plans:
-                r=batch['payload']['results'][p['store']];old=p['old']
-                action='沿用已归档修订' if p['same'] else f"覆盖当天正常单 V{old['revision']:03d} → V{old['revision']+1:03d}（旧版保留）" if old else '首次签发 V001'
-                lines.append(r['store_name']+' ('+p['store']+')：'+action+f"；¥{r['summary']['amount']:,.2f}")
-            box.setText(f'已选 {len(plans)} 家门店，每店一份中心仓确认单。\n'+'\n'.join(lines)+'\n确认后自动归档并逐店导出；不是实际下单。')
-            detail={'所选门店':[p['store'] for p in plans]}
-            if batch['head']:
-                detail['同日草稿覆盖']={'原保存时间':batch['head']['saved'],'原门店状态':batch['head']['summary'],'本次门店状态':wr.summary(batch['payload'])};box.setInformativeText('同时覆盖当天完整草稿；未选门店正常单不变。展开详情查看草稿覆盖范围。')
-            box.setDetailedText(json.dumps(detail,ensure_ascii=False,indent=2));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel);box.exec()
-            if box.clickedButton() is not accept:return
-        if len(plans)==1:
-            path,_=QFileDialog.getSaveFileName(self,'导出本店加盟商确认单',plans[0]['filename'],'Excel (*.xlsx)')
-            if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
-        else:path=QFileDialog.getExistingDirectory(self,'选择批量确认单导出文件夹')
-        if not path:return
-        from PySide6.QtCore import QTimer
-        def start():
-            if self.closing:return
-            if self.worker:QTimer.singleShot(10,start);return
-            self.job(normal_delivery.execute_batch,(self.orders,batch,path),self.delivery_done)
-        QTimer.singleShot(0,start)
+        from ui_work_io import Session,request
+        from runtime_support import Cancelled
+        try:
+            with Session(self.work_repository.path) as session:
+                prepared=request(self,session,'delivery_prepare',[self.snapshot(),codes]);plans=prepared['plans']
+                if any(not p['same'] for p in plans):
+                    box=QMessageBox(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出加盟商单');lines=[]
+                    for p in plans:
+                        old=p['old'];action='沿用已归档修订' if p['same'] else f"覆盖当天正常单 V{old['revision']:03d} → V{old['revision']+1:03d}（旧版保留）" if old else '首次签发 V001'
+                        lines.append(p['name']+' ('+p['store']+')：'+action+f"；¥{p['amount']:,.2f}")
+                    box.setText(f'已选 {len(plans)} 家门店，每店一份中心仓确认单。\n'+'\n'.join(lines)+'\n确认后自动归档并逐店导出；不是实际下单。')
+                    detail={'所选门店':[p['store'] for p in plans]}
+                    if prepared['head']:
+                        detail['同日草稿覆盖']={'原保存时间':prepared['head']['saved'],'原门店状态':prepared['head']['summary'],'本次门店状态':prepared['summary']};box.setInformativeText('同时覆盖当天完整草稿；未选门店正常单不变。展开详情查看草稿覆盖范围。')
+                    box.setDetailedText(json.dumps(detail,ensure_ascii=False,indent=2));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel);box.exec()
+                    if box.clickedButton() is not accept:return
+                if len(plans)==1:
+                    path,_=QFileDialog.getSaveFileName(self,'导出本店加盟商确认单',plans[0]['filename'],'Excel (*.xlsx)')
+                    if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
+                else:path=QFileDialog.getExistingDirectory(self,'选择批量确认单导出文件夹')
+                if not path:return
+                receipt=request(self,session,'delivery_execute',path)
+            self.delivery_done(receipt)
+        except Cancelled:self.status.setText('已取消导出核对，原正常单与草稿保留。')
+        except Exception as exc:self.failed('导出操作未全部完成：'+str(exc))
 
     def delivery_done(self,receipt):
         if receipt['signed']:

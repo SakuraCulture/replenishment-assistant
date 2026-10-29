@@ -115,14 +115,18 @@ class Workbench(ParameterUi,BatchWindow):
             if box.clickedButton() is cancel:return False
             if box.clickedButton() is new_btn:self.job_day=wr.today();self.touch()
             elif box.clickedButton() is not old_btn:return False
+        from ui_work_io import Session,request
+        from runtime_support import Cancelled
         try:
-            payload=self.snapshot();wr.summary(payload);old=self.work_repository.get_job(self.job_day)
-            digest=hashlib.sha256(wr.dumps(payload).encode()).hexdigest()
-            if old and old['digest']==digest:
-                self.saved_time=old['saved'];self.job_dirty=False;self.refresh_job_label();self.status.setText('已是最新记录，无需覆盖。');return True
-            if old and not self.confirm_overwrite(old,payload):return False
-            saved=self.work_repository.save_job(self.job_day,payload,old['revision'] if old else None)
-        except Exception as exc:self.failed('作业未保存，原记录保留：'+str(exc));return False
+            payload=self.snapshot()
+            with Session(self.work_repository.path) as session:
+                prepared=request(self,session,'prepare_save',payload);old=prepared['old']
+                if prepared['same']:
+                    self.saved_time=old['saved'];self.job_dirty=False;self.refresh_job_label();self.status.setText('已是最新记录，无需覆盖。');return True
+                if old and not self.confirm_overwrite(old,payload):return False
+                saved=request(self,session,'save',None)
+        except Cancelled:self.status.setText('已取消保存，原记录保留。');return False
+        except Exception as exc:self.failed('作业未完成保存，请在作业记录核对状态：'+str(exc));return False
         self.saved_time=saved['saved'];self.job_dirty=False;self.refresh_job_label();self.status.setText('已保存 '+self.job_day+' 的完整作业。');return True
     def leave_current(self):
         if not self.job_dirty:return True
@@ -137,14 +141,16 @@ class Workbench(ParameterUi,BatchWindow):
             self.readonly=False;self.job_day=wr.today();self.saved_time='';self.loaded=None;self.results={};self.states={};self.store_widgets={};self.store_presets={};self.overrides={};self.default_by_store={};self.run_codes=[];self.current_store=None;self.result=None;self.input_dirty=True;self.dirty=True;self.export_log=[];self.pending_copy=None
             self.sales.paths=[];self.sales.refresh();self.catalogs=self.catalog_repository.catalogs();self.profile=self.repository.profile();self.refresh_catalog_labels();self.refresh_profile_label();self.store_table.setRowCount(0);self.file_report.setRowCount(0);self.refresh_tables();self.navigate(0)
         finally:self.initializing=False;self._hydrating=False;self.job_dirty=False;self.update_controls()
-    def restore_job(self,record):
+    def restore_job(self,record,owned=False):
+        # UI reader transfers an exclusively owned tree; external callers retain copy semantics.
+        clone=(lambda value:value) if owned else copy.deepcopy
         p=record['payload']
         if p.get('schema')!=1:raise ValueError('不支持的作业格式')
         self._hydrating=True;self._restoring=True;self.initializing=True
         try:
             self.job_day=record['day'];self.saved_time=record['saved'];self.readonly=self.job_day!=wr.today() or p['model_version']!=MODEL_VERSION
-            self.pending_copy=copy.deepcopy(p.get('pending_copy'))
-            self.loaded=copy.deepcopy(p['loaded']);self.catalogs=copy.deepcopy(p['catalogs']);self.profile=copy.deepcopy(p['profile']);self.store_presets=copy.deepcopy(p['store_presets']);self.overrides=copy.deepcopy(p['overrides']);self.default_by_store=copy.deepcopy(p['default_by_store']);self.states=copy.deepcopy(p['states']);self.results=copy.deepcopy(p['results']);self.input_dirty=p['input_dirty'];self.export_log=copy.deepcopy(p.get('export_log',[]));self.run_codes=[];self.current_store=None;self.result=None;self.dirty=True
+            self.pending_copy=clone(p.get('pending_copy'))
+            self.loaded=clone(p['loaded']);self.catalogs=clone(p['catalogs']);self.profile=clone(p['profile']);self.store_presets=clone(p['store_presets']);self.overrides=clone(p['overrides']);self.default_by_store=clone(p['default_by_store']);self.states=clone(p['states']);self.results=clone(p['results']);self.input_dirty=p['input_dirty'];self.export_log=clone(p.get('export_log',[]));self.run_codes=[];self.current_store=None;self.result=None;self.dirty=True
             if self.loaded:self.loaded['intake']['frozen']=True
             self.sales.paths=list(p['sales']);self.sales.refresh();self.products.path=p['products'];self.products.filename.setText(p['products'] or '尚未选择');self.master_legacy.setChecked(p['legacy']);self.concurrency.setValue(p['concurrency']);self.exception.setChecked(p['exception']);self.refresh_catalog_labels();self.refresh_profile_label()
             if self.loaded:
@@ -168,10 +174,15 @@ class Workbench(ParameterUi,BatchWindow):
             if table.currentRow()>=0:action['value']=value;dialog.accept()
         row=QHBoxLayout();row.addWidget(button('打开 / 继续今日作业',lambda:choose('open'),True));row.addWidget(button('复制配置用于今日',lambda:choose('copy')));row.addWidget(button('关闭',dialog.reject));v.addLayout(row)
         if dialog.exec()!=QDialog.DialogCode.Accepted or not self.leave_current():return
-        record=self.work_repository.get_job(records[table.currentRow()]['day'])
-        if action['value']=='open':self.restore_job(record)
+        from ui_work_io import read_job
+        from runtime_support import Cancelled
+        try:record=read_job(self,self.work_repository.path,records[table.currentRow()]['day'],action['value']!='open')
+        except Cancelled:self.status.setText('已取消读取作业。');return
+        except Exception as exc:self.failed('作业未打开：'+str(exc));return
+        if record is None:self.failed('该作业记录已不存在，请刷新后重试。');return
+        if action['value']=='open':self.restore_job(record,owned=True)
         else:
-            self.reset_job();self.pending_copy={k:copy.deepcopy(record['payload'][k]) for k in ['store_presets','store_ui']};self.status.setText('已复制所选作业门店配置到本次内存；请导入今天数据。未保存为门店默认。');self.touch()
+            self.reset_job();self.pending_copy=record;self.status.setText('已复制所选作业门店配置到本次内存；请导入今天数据。未保存为门店默认。');self.touch()
     def use_current_data(self):
         if self.worker or self.readonly:return
         self.catalogs=self.catalog_repository.catalogs();self.profile=self.repository.profile();self.refresh_catalog_labels();self.refresh_profile_label();self.start_load()
@@ -179,6 +190,9 @@ class Workbench(ParameterUi,BatchWindow):
         if not self.readonly:self.export_log.append({'path':str(path),'time':wr.now()});self.touch()
         super().export_ok(path)
     def closeEvent(self,event):
+        pending=getattr(self,'_large_io_dialog',None)
+        if pending is not None and not pending._completed:
+            self.closing=True;pending.reject();event.ignore();return
         if self.worker:super().closeEvent(event);return
         if self._discard_close or self.leave_current():event.accept()
         else:self.closing=False;event.ignore()

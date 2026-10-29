@@ -21,15 +21,21 @@ def prepare(repository,payload,store,progress=lambda s:None,cancel=None):
 
 def prepare_batch(repository,payload,codes,progress=lambda s:None,cancel=None):
     """Freeze the complete draft once, then plan stores in user-visible order."""
+    checkpoint(cancel)
+    return prepare_owned_batch(repository,copy.deepcopy(payload),codes,progress=progress,cancel=cancel)
+
+
+def prepare_owned_batch(repository,payload,codes,progress=lambda s:None,cancel=None):
+    """Internal process entry: IPC has already transferred an exclusively owned tree."""
     progress('冻结本批次草稿并检查所选门店…');checkpoint(cancel)
-    frozen=copy.deepcopy(payload)
+    frozen=payload
     if not codes or len(codes)!=len(set(codes)):raise ValueError('请选择互不重复的有效门店')
     plans=[];head=job_head(repository.work,frozen['day'])
     for i,store in enumerate(codes,1):
         checkpoint(cancel);progress(f'核对门店 {i}/{len(codes)}：{store}')
         result=frozen['results'][store]
         if frozen.get('input_dirty') or frozen['states'][store]['state']!='已完成':raise ValueError('结果已失效：'+store)
-        old=repository.get(frozen['day'],store);same=bool(old and old['digest']==normal_orders.fingerprint(result,frozen.get('new_focus')))
+        old=repository.get(frozen['day'],store);same=bool(old and old['digest']==normal_orders.fingerprint_owned(result,frozen.get('new_focus')))
         if not same:
             if frozen['day']!=wr.today():raise ValueError('历史只读，请从历史页导出已签发修订')
             focus.require_for(frozen.get('new_focus'),frozen['day'],[result])

@@ -20,13 +20,17 @@ def start_smoke(app,win,args):
     def overwrite(choice,name):
         def click():
             try:
-                box=QApplication.activeModalWidget();assert isinstance(box,QMessageBox) and box.objectName()=='dailyOverwrite';assert box.defaultButton().text()=='取消';assert '原已完成现失效' in box.detailedText();assert box.grab().save(str(out/(name+'.png')))
+                box=QApplication.activeModalWidget()
+                if not (isinstance(box,QMessageBox) and box.objectName()=='dailyOverwrite'):
+                    QTimer.singleShot(50,click);return
+                assert box.defaultButton().text()=='取消';assert '原已完成现失效' in box.detailedText();assert box.grab().save(str(out/(name+'.png')))
                 QTest.mouseClick(next(b for b in box.buttons() if b.text()==choice),Qt.MouseButton.LeftButton)
             except Exception:finish(traceback.format_exc())
         QTimer.singleShot(100,click)
     def tick():
         try:
             if time.monotonic()-state['start']>200:raise TimeoutError(str(state))
+            if QApplication.activeModalWidget() is not None:return
             step=state['step']
             if step==0:
                 for w in wc.WAREHOUSES:win.catalog_imported(wc.import_catalog(fixture/(w+'.xlsx'),w))
