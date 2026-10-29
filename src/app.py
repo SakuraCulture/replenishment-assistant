@@ -23,6 +23,12 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--work-io-smoke' in sys.argv:
+        from work_io_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--work-io-smoke')+1:])
+    if '--workflow-smoke' in sys.argv:
+        from workflow_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--workflow-smoke')+1:])
     if '--history-smoke' in sys.argv:
         from history_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--history-smoke')+1:])
