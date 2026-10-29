@@ -14,7 +14,16 @@ def start_smoke(app,win,args):
     app.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeDialogs,True)
     def snap(name):win.repaint();assert win.grab().save(str(out/(name+'.png')))
     def finish(error=None):
-        timer.stop();meta=diagnostic();r={'passed':error is None,'error':error,'version':meta['version'],'source_commit':meta['source_commit'],'checks':state['checks']};(out/'normal_ui_report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2),encoding='utf-8');app.exit(1 if error else 0)
+        timer.stop();meta=diagnostic();r={'passed':error is None,'error':error,'version':meta['version'],'source_commit':meta['source_commit'],'checks':state['checks']};(out/'normal_ui_report.json').write_text(json.dumps(r,ensure_ascii=False,indent=2),encoding='utf-8')
+        if error:app.exit(1);return
+        # Exercise the same accepted-close path as an operator, not a forced
+        # event-loop exit while modal/worker callbacks are still unwinding.
+        def close():
+            def discard():
+                box=QApplication.activeModalWidget()
+                if isinstance(box,QMessageBox):QTest.mouseClick(next(b for b in box.buttons() if b.text()=='放弃本次变更'),Qt.MouseButton.LeftButton)
+            QTimer.singleShot(150,discard);win.close()
+        QTimer.singleShot(0,close)
     win.failed=lambda message:finish(message);sys.excepthook=lambda t,v,tb:finish(''.join(traceback.format_exception(t,v,tb)))
     def later(fn):
         def guarded():

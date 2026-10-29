@@ -38,7 +38,13 @@ def main():
     if '--intake-smoke' in sys.argv:
         from intake_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--intake-smoke')+1:])
-    return app.exec()
+    code=app.exec()
+    # Dispose the entire widget tree while QApplication is still alive. The new
+    # archive dialogs retain callbacks; interpreter-finalization order is unsafe
+    # for Qt objects in the frozen Windows runtime.
+    import shiboken6
+    if shiboken6.isValid(win):shiboken6.delete(win)
+    return code
 
 
 def __getattr__(name):
