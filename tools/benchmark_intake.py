@@ -25,7 +25,8 @@ def worker(source,q,files,out):
     assert not loaded.get('blocked'),'benchmark fixture has unresolved conflicts; do not calculate blocked stores'
     profile=json.loads((q/'inputs/must.json').read_text(encoding='utf-8'));s=next(iter(loaded['stores']));started=time.perf_counter()
     result=bs.calculate_store(loaded,s,{'warehouses':engine.DEFAULT_WAREHOUSES,'exception':True,'budget':3000},profile);times['calculation']=time.perf_counter()-started
-    js(out,{'times_seconds':times,'rows':len(loaded['normalized']),'summary':result['summary'],'python':sys.version,'openpyxl':openpyxl.__version__})
+    import multiprocessing
+    js(out,{'times_seconds':times,'rows':len(loaded['normalized']),'summary':result['summary'],'python':sys.version,'openpyxl':openpyxl.__version__,'interpreter_pid':os.getpid(),'remaining_workers':[p.pid for p in multiprocessing.active_children()]})
 
 def benchmark(q,out,rounds):
     from windows_process_metrics import sample_tree
@@ -44,7 +45,7 @@ def benchmark(q,out,rounds):
                         peak=max(peak,rss);private=max(private,priv);child_ids.update(i for i in sample if i!=run.pid);samples.append({'time':time.perf_counter(),'rss':rss,'private':priv,'processes':sample})
                     time.sleep(.05)
                 stdout,stderr=run.communicate();assert run.returncode==0,(cmd,stdout.decode(errors='replace'),stderr.decode(errors='replace'))
-                result=json.loads(dest.read_text(encoding='utf-8'));result.update(scenario=scenario,trial=trial,version=version,check_peak_rss_bytes=peak,check_peak_private_bytes=private,whole_run_peak_rss_bytes=all_peak,child_pids=sorted(child_ids),sample_count=len(samples));js(dest,result);js(dest.with_name(dest.stem+'_samples.json'),samples);records.append(result)
+                result=json.loads(dest.read_text(encoding='utf-8'));result.update(scenario=scenario,trial=trial,version=version,check_peak_rss_bytes=peak,check_peak_private_bytes=private,whole_run_peak_rss_bytes=all_peak,child_pids=sorted(child_ids),reader_pids=sorted(child_ids-{result['interpreter_pid']}),sample_count=len(samples));js(dest,result);js(dest.with_name(dest.stem+'_samples.json'),samples);records.append(result)
                 print(scenario,trial,version,round(result['times_seconds']['total'],3),round(peak/1024**2,1),'MiB',flush=True)
     summary={}
     for scenario in scenarios:
@@ -58,7 +59,10 @@ def benchmark(q,out,rounds):
         for field in ['intake','total','rss_mib']:
             a=summary[scenario]['baseline'][field]['median'];b=summary[scenario]['candidate'][field]['median'];summary[scenario][field+'_change_pct']=(b/a-1)*100
     assert all(r['summary']['amount']==2999.87 and r['summary']['positive']==88 and r['rows']==14244 for r in records)
-    assert all(not r['child_pids'] for r in records if r['scenario']=='single')
+    # Windows venv redirector can be the Popen PID and spawn the actual interpreter.
+    # Its memory remains counted; it is not an intake pool worker.
+    assert all(not r['reader_pids'] for r in records if r['scenario']=='single')
+    assert all(not r['remaining_workers'] for r in records)
     assert source_before==source_hashes(ROOT),'runtime source changed during benchmark'
     report={'version':json.loads((ROOT/'src/version.json').read_text(encoding='utf-8'))['version'],'source_commit':commit,'candidate_sources':source_before,'passed':True,'rounds':rounds,'summary':summary,'runs':records,'environment':{'platform':platform.platform(),'processor':platform.processor(),'logical_cpu_count':os.cpu_count(),'PYTHONHASHSEED':'0','python':sys.version},'inputs':{s:[{'file':str(inp/n),'bytes':(inp/n).stat().st_size} for n in names] for s,names in scenarios.items()},'method':'New interpreter per run; AB/BA/AB alternating, one run at a time. 50 ms Win32 process-tree WorkingSetSize (RSS) and PrivateUsage samples during bs.load only, including parent and all descendants; RSS sums count shared pages more than once. Misses peaks between samples. Controller excluded. Intake includes master snapshot, file hashes/checking and ordered cross-file merge/dedup. Prepare is subsequent matching/normalization; total measures load call including pool start, IPC, shutdown. OS cache not cleared; repeated warm/mixed-cache timings, not cold disk benchmarks. No concurrent benchmark work. File partitions/excerpts are synthetic layouts of actual rows; mixed uses a same-writer synthetic re-encoding of the full real rows plus three exactly identical 100-row excerpts.'}
     js(out/'performance_report.json',report)
