@@ -64,8 +64,9 @@ def start_smoke(app,win,args):
                 win.navigate(3);snap('07_单店重算后汇总');path=out/'界面导出.xlsx';win.job(batch_service.export_batch,(win.results,win.states,path),lambda p:state.update(exported=p));state['step']=5
             elif step==5 and win.worker is None:
                 assert Path(state['exported']).is_file();state['checks'].append('UI worker exports combined workbook')
-                from batch_app import BatchWindow
-                restored=BatchWindow();assert restored.repository.budgets()[state['codes'][0]]['amount']==0;assert restored.profile['revision']==win.profile['revision'];restored.close()
+                from workbench import Workbench
+                win.save_store_defaults(state['codes'])
+                restored=Workbench();assert restored.work_repository.stores()[state['codes'][0]]['ui']['amount']=='0';assert restored.profile['revision']==win.profile['revision'];restored.close()
                 state['checks'].append('isolated settings survive fresh window; master path and must-list reusable')
                 win.mark_dirty();assert all(s['state']=='待重算' for s in win.states.values());assert not win.batch_export.isEnabled()
                 state['checks'].append('shared configuration invalidates all results and blocks export')

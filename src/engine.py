@@ -61,10 +61,12 @@ def load_inputs(sales,products,progress=lambda s:None,cancel=None):
     cfg['weight_profiles']['无分类']=copy.deepcopy(cfg['weight_profiles']['快销'])
     progress('正在读取商品资料…');checkpoint(cancel)
     pr,_=adapter.read_table(products,ps,['商品编码','分类','基本售价','出库箱规'])
-    warehouses={};categories=set()
+    warehouses={};categories=set();profile_overrides={}
     for r in pr:
         k,err=adapter.identifier(r.get('商品编码'))
-        if not err:warehouses[k]=str(r.get('仓归属') or '未填写仓归属').strip()
+        if not err:
+            warehouses[k]=str(r.get('仓归属') or '未填写仓归属').strip()
+            profile_overrides[k]=r.get('补货模型分类')
         categories.add(str(r.get('分类')))
     for c in categories:
         if c not in cfg['category_profiles']:cfg['category_profiles'][c]='无分类'
@@ -72,6 +74,7 @@ def load_inputs(sales,products,progress=lambda s:None,cancel=None):
     norm,info=adapter.prepare(sales,products,cfg)
     stores={}
     for d,m in norm:
+        m['profile_override']=profile_overrides.get(d['E'])
         d['_source']=category_of(d,m)
         if m['match']=='商品编码精确匹配':d['AU']=warehouses.get(d['E'],'未填写仓归属')
         elif d['_source']=='地采商品':d['AU']='地采'
@@ -264,6 +267,7 @@ def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,pro
     else:info.append(['门店总预算','未启用，执行口径与0.2一致'])
     if ml:info.extend([['必卖清单',ml['name']],['清单版本',ml['revision']],['清单来源SHA256',ml['source_sha256']],['清单总商品数',ml['total']],['本店命中清单数',ml['matched']],['清单未出现在本店导出',ml['missing']]])
     for p,h in result['sources'].items():info.extend([['输入文件',p],['SHA256',h]])
+    if result.get('effective_settings'):info.append(['本店实际生效完整参数',json.dumps(result['effective_settings'],ensure_ascii=False)])
     if result.get('catalogs'):
         info.extend([['主从仓配置',json.dumps(result['supply_route'],ensure_ascii=False)],['仓资料快照',json.dumps(result['catalogs'],ensure_ascii=False)],['选仓口径','主仓禁用/可用数<=0/无该商品时转从仓；从仓无货仍保留需求归属，不拆单、不限量、不扣减仓库存；未知可用数不当0']])
     sheet('运行概览',['项目','内容'],info,{1:30,2:100})

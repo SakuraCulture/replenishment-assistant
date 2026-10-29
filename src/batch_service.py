@@ -25,7 +25,10 @@ def intake(paths,products,progress=lambda s:None,cancel=None):
     if not paths:raise ValueError('请至少添加一个补货建议文件。')
     if products in paths:raise ValueError('商品资料不能同时作为补货建议。')
     product_hash=engine.adapter.digest(Path(products)) if products else None
-    if products:engine.sheet_name(products,'products')
+    product_snapshot=None
+    if products:
+        product_sheet,_=engine.sheet_name(products,'products')
+        product_snapshot,_=engine.adapter.read_table(products,product_sheet,['商品编码','基本售价','分类','出库箱规'])
     groups=defaultdict(list);files=[];stores={};headers=[];hashes={products:product_hash} if products else {}
     for path in paths:
         engine.checkpoint(cancel);progress('读取补货建议：'+Path(path).name)
@@ -68,12 +71,12 @@ def intake(paths,products,progress=lambda s:None,cancel=None):
         if len(variants)==1:selected.append(variants[0])
         else:conflicts.append({'id':len(conflicts),'store':store,'sku':sku,'variants':variants,'choice':None})
     if products and engine.adapter.digest(Path(products))!=product_hash:raise ValueError('商品资料读取期间发生变化，请重试。')
-    return {'files':files,'stores':stores,'headers':headers,'hashes':hashes,'products':products,'catalogs':catalogs,'selected':selected,'conflicts':conflicts,'duplicates':duplicates}
+    return {'files':files,'stores':stores,'headers':headers,'hashes':hashes,'products':products,'products_snapshot':product_snapshot,'catalogs':catalogs,'selected':selected,'conflicts':conflicts,'duplicates':duplicates}
 
 def prepare(data,progress=lambda s:None,cancel=None):
     """Materialize deduplicated source rows privately, then use the original adapter."""
     for p,h in data['hashes'].items():
-        if engine.adapter.digest(Path(p))!=h:raise ValueError('源文件已变化，请重新检查：'+Path(p).name)
+        if not data.get('frozen') and engine.adapter.digest(Path(p))!=h:raise ValueError('源文件已变化，请重新检查：'+Path(p).name)
     records=list(data['selected']);blocked=defaultdict(int)
     for c in data['conflicts']:
         if c['choice'] is None:blocked[c['store']]+=1
@@ -89,7 +92,15 @@ def prepare(data,progress=lambda s:None,cancel=None):
                 cells.append(cell)
             ws.append(cells)
         book.save(path);book.close()
-        loaded=warehouse_catalog.prepare_warehouses(path,data['catalogs'],tmp,progress,cancel) if data.get('catalogs') else engine.load_inputs(path,data['products'],progress,cancel)
+        products=data['products']
+        if data.get('frozen') and not data.get('catalogs'):
+            raw=data.get('products_snapshot')
+            if not raw:raise ValueError('旧作业没有商品资料快照，请重新选择原资料')
+            products=Path(tmp)/'master.xlsx';book=openpyxl.Workbook(write_only=True);heads=[k for k in raw[0] if k!='_row'];write_sheet(book,'商品资料',heads,([r.get(k) for k in heads] for r in raw));book.save(products);book.close()
+        loaded=warehouse_catalog.prepare_warehouses(path,data['catalogs'],tmp,progress,cancel) if data.get('catalogs') else engine.load_inputs(path,products,progress,cancel)
+        if data.get('frozen') and not data.get('catalogs'):
+            for d,m in loaded['normalized']:
+                if m.get('product_row'):m['product_row']=data['products_snapshot'][m['product_row']-2]['_row']
     for pairs in [loaded['normalized'],*loaded.get('warehouse_rows',{}).values()]:
         for d,m in pairs:
             r=records[m['export_row']-2]
@@ -97,7 +108,7 @@ def prepare(data,progress=lambda s:None,cancel=None):
     loaded.update(hashes=dict(data['hashes']),sales=[f['path'] for f in data['files'] if not f['error']],stores=dict(data['stores']),blocked=dict(blocked),intake=data)
     for wh,c in loaded.get('catalogs',{}).items():loaded['hashes'][wh+'资料快照 '+c['source_path']+' #'+c['revision']]=c['source_sha256']
     for p,h in data['hashes'].items():
-        if engine.adapter.digest(Path(p))!=h:raise ValueError('读取期间源文件变化，请重新检查：'+Path(p).name)
+        if not data.get('frozen') and engine.adapter.digest(Path(p))!=h:raise ValueError('读取期间源文件变化，请重新检查：'+Path(p).name)
     return loaded
 
 def load(paths,products,progress=lambda s:None,cancel=None):
@@ -109,9 +120,13 @@ def load(paths,products,progress=lambda s:None,cancel=None):
 def calculate_store(loaded,store,settings,profile):
     started=time.time()
     if loaded.get('catalogs'):loaded=warehouse_catalog.route_store(loaded,store,settings.get('supply_route'))
+    if settings.get('parameter_config'):
+        import parameter_schema
+        loaded=parameter_schema.apply(loaded,settings['parameter_config'])
     result=engine.run_calculation(loaded,store,settings['warehouses'],settings['exception'],settings['budget'],profile)
     if loaded.get('catalogs'):result.update(catalogs=loaded['catalogs'],supply_route=loaded['supply_route'])
     result['version']=diagnostic();result['task']={'pid':os.getpid(),'started':started,'finished':time.time()}
+    result['effective_settings']=copy.deepcopy(settings)
     result['import_audit']=loaded.get('import_audit',{})
     return result
 
@@ -215,6 +230,7 @@ def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,ca
     info=[['批次状态','全部完成' if len(ready)==len(statuses) else '部分完成'],['导出时间',datetime.now().isoformat(timespec='seconds')],['说明','只有已完成且未过期的门店计入金额；失败、未运行、待重算均留空。'],['计价','商品资料基本售价；地采和缺价未知金额不计为0。']]
     for s,r in ready.items():
         info.extend([[s+' / '+k,str(v)] for k,v in r.get('version',diagnostic()).items()])
+        if r.get('effective_settings'):info.append([s+' / 方案与实际生效配置',json.dumps(r['effective_settings'],ensure_ascii=False)])
         info.extend([[s+' / 参数',json.dumps(r['config'],ensure_ascii=False)],[s+' / 仓参数',json.dumps(r['warehouses'],ensure_ascii=False)],[s+' / 一箱例外',r['enabled']],[s+' / 必卖清单',json.dumps(r['must_list'],ensure_ascii=False)],[s+' / 输入校验',json.dumps(r['sources'],ensure_ascii=False)]])
         if r.get('catalogs'):info.extend([[s+' / 主从仓',json.dumps(r['supply_route'],ensure_ascii=False)],[s+' / 仓资料快照',json.dumps(r['catalogs'],ensure_ascii=False)],[s+' / 选仓口径','可用数>0优先主仓；主仓禁用/无货/无商品则归属从仓，从仓无货不清零需求；不拆单、不限量、不扣减仓库存']])
     write_sheet(book,'版本及参数',['项目','内容'],info)

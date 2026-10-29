@@ -68,8 +68,9 @@ def start_smoke(app,win,args):
                 win.job(batch_service.export_batch,(win.results,win.states,out/'界面分仓导出.xlsx'),lambda p:state.update(exported=p));state['step']=8
             elif step==8 and win.worker is None:
                 assert Path(state['exported']).is_file()
-                from batch_app import BatchWindow
-                restored=BatchWindow();assert len(restored.catalogs)==2;assert restored.catalog_repository.routes()['QA_A']['secondary'] is None;restored.close()
+                from workbench import Workbench
+                win.save_store_defaults(list(win.store_widgets))
+                restored=Workbench();assert len(restored.catalogs)==2;assert restored.work_repository.stores()['QA_A']['ui']['secondary'] is None;restored.close()
                 state['checks'].append('single-store supply change invalidates/recomputes only that store; exported results and persisted catalogs/routes verified')
                 state['old']=win.catalogs['河北仓']['revision'];state['expected_failure']=True
                 win.import_catalog_path(fixture/'duplicate.xlsx','河北仓');state['step']=9

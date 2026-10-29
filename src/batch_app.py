@@ -291,8 +291,9 @@ class BatchWindow(WarehouseUi,MainWindow):
             self.states[s].update(state='排队中',error='');self.results.pop(s,None)
             if s==self.current_store:self.dirty=True;self.result=None
             try:
-                self.repository.save_budget(s,settings['budget'] is not None,settings['budget'] or 0)
-                if settings.get('supply_route'):self.catalog_repository.save_route(s,settings['supply_route'])
+                if not getattr(self,'explicit_defaults',False):
+                    self.repository.save_budget(s,settings['budget'] is not None,settings['budget'] or 0)
+                    if settings.get('supply_route'):self.catalog_repository.save_route(s,settings['supply_route'])
             except Exception as exc:self.states[s]['error']='本次设置未能保存：'+str(exc)
         worker=BatchWorker(self.loaded,jobs,self.profile,self.concurrency.value(),self);self.worker=worker
         worker.changed.connect(self.task_changed);worker.failed.connect(self.batch_failed);worker.finished.connect(self.job_finished)
