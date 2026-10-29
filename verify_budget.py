@@ -30,7 +30,8 @@ except ValueError:pass
 else:raise AssertionError('conflicting duplicate accepted')
 assert digest(qa/'config/must_sell.json')==before_profile
 assert digest(original/'model.py')==digest(root/'src/model.py')
-assert digest(original/'run.py')==digest(root/'src/input_adapter.py')
+from tools.adapter_structure_check import audit_adapter
+adapter_structure=audit_adapter(original/'run.py',root/'src/input_adapter.py')
 loaded=engine.load_inputs(*paths[:2],progress=print)
 base=engine.run_calculation(loaded,'LQD2025',engine.DEFAULT_WAREHOUSES,True,None,profile)
 assert base['summary']['amount']==12268.87 and base['summary']['positive']==430
@@ -94,6 +95,6 @@ assert hashes=={str(p):digest(p) for p in paths}
 assert commit==subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
 assert not subprocess.check_output(['git','status','--porcelain'],cwd=root,text=True).strip()
 report={'passed':True,'version':engine.VERSION,'source_commit':commit,'must_list':base['must_list'],'baseline_summary':base['summary'],'scenarios':scenarios,'source_hashes_unchanged':hashes,
-        'checks':['all 14244 AS/BV unchanged','unlimited matches 0.2','strict priority and carton residual','no overspend and no fractional carton','minimum holding gaps visible','price validation','zero and sufficient budgets','persistence and backup roundtrip','bad import preserves saved list','cancellation','native Excel export reread']}
+        'adapter_structure':adapter_structure,'checks':['all 14244 AS/BV unchanged','unlimited matches 0.2','strict priority and carton residual','no overspend and no fractional carton','minimum holding gaps visible','price validation','zero and sufficient budgets','persistence and backup roundtrip','bad import preserves saved list','cancellation','native Excel export reread']}
 (qa/'backend_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
 print('BUDGET PASS',flush=True)

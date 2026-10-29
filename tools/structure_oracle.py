@@ -22,7 +22,7 @@ WHITELIST={
  'result.version.build_id':'build provenance',
  'result.version.built_at':'build timestamp',
  'loaded.loaded_at':'import wall-clock timestamp',
- 'loaded.sales / loaded.products':'only generated replenishment-* temporary file paths',
+ 'loaded.sales / loaded.products':'only generated replenishment-* temporary file paths or memory:batch.xlsx/master.xlsx/河北仓.xlsx/山东仓.xlsx internal references',
  'Excel: 运行概览/计算时间; 版本及参数/导出时间':'clock cells only',
  'Excel: 软件版本; 构建信息.version/source_commit/build_id/built_at':'packaging metadata only',
  'Excel: 版本及参数/<store> / version, source_commit, build_id, built_at':'packaging metadata only',
@@ -85,6 +85,8 @@ def capture(source,qa,out):
             e.export_xlsx(r,out/'real.xlsx');e.export_xlsx(r,out/'filtered.xlsx',[d for d in r['rows'] if d.get('_audit',{}).get('applied')],'当前筛选：一箱例外')
     put('real_no_exception',bs.calculate_store(real,store,{'warehouses':e.DEFAULT_WAREHOUSES,'exception':False,'budget':None},must))
     put('real_custom',bs.calculate_store(real,store,{'warehouses':e.DEFAULT_WAREHOUSES,'exception':True,'budget':3000,'parameter_config':profiles['custom']},must))
+    real_batch=bs.load([inp/'补货建议导出服务.xlsx'],inp/'混合仓商品资料.xlsx');put('real_batch_loaded',real_batch)
+    put('real_batch_result',bs.calculate_store(real_batch,store,{'warehouses':e.DEFAULT_WAREHOUSES,'exception':True,'budget':None,'parameter_config':profiles['standard']},must))
     catalogs=json.loads((inp/'catalogs.json').read_text(encoding='utf-8'));dual=bs.load([inp/'sales.xlsx'],catalogs);put('dual_loaded',dual)
     settings=lambda primary,secondary,budget=None,config='standard':{'warehouses':e.DEFAULT_WAREHOUSES,'exception':True,'budget':budget,'supply_route':{'primary':primary,'secondary':secondary},'parameter_config':profiles[config]}
     jobs={'QA_A':settings('河北仓','山东仓',60,'custom'),'QA_B':settings('山东仓','河北仓',80)}
@@ -96,6 +98,8 @@ def capture(source,qa,out):
     bs.export_batch(parallel,statuses,out/'batch.xlsx')
     edge=bs.load([inp/'edge.xlsx'],inp/'edge_master.xlsx');put('edge_loaded',edge);put('edge_result',bs.calculate_store(edge,'EDGE',{'warehouses':e.DEFAULT_WAREHOUSES,'exception':True,'budget':None},must))
     conflict=bs.intake([inp/'edge.xlsx',inp/'conflict.xlsx'],inp/'edge_master.xlsx');put('conflicts',conflict);put('conflict_blocked',bs.prepare(conflict));conflict['conflicts'][0]['choice']=1;put('conflict_resolved',bs.prepare(conflict))
+    frozen=copy.deepcopy(edge['intake']);frozen['frozen']=True;legacy=bs.prepare(frozen);put('legacy_frozen_loaded',legacy)
+    put('legacy_frozen_result',bs.calculate_store(legacy,'EDGE',{'warehouses':e.DEFAULT_WAREHOUSES,'exception':True,'budget':None},must))
     errors={}
     for name in ['duplicate_header','numeric_store']:
         try:bs.load([inp/(name+'.xlsx')],inp/'edge_master.xlsx')
@@ -108,6 +112,8 @@ def capture(source,qa,out):
     repo=wr.Repository(out/'settings');preset=repo.save_preset('固定自定义',profiles['custom']);repo.save_stores({'QA_A':{'preset':preset,'ui':{'mode':1,'amount':'','primary':'河北仓','secondary':'山东仓'}}});repo.save_job(payload['day'],payload)
     put('restored_payload',repo.get_job(payload['day'])['payload'])
     put('preview',e.preview(edge,'EDGE'))
+    import parameter_trial
+    put('parameter_trial',parameter_trial.compare(dual,jobs,must,profiles['custom']))
     write_json(out/'capture.json',{'source':str(source),'source_hashes':source_hashes(source),'cases':cases})
     print('Captured',len(cases),'scenarios in',out)
 
@@ -122,7 +128,7 @@ def clean(value,path=()):
             elif is_result and k=='task':v={a:'<dynamic>' if a in {'pid','started','finished'} else b for a,b in v.items()}
             elif is_result and k=='version':v={a:'<build>' if a in {'version','source_commit','build_id','built_at'} else b for a,b in v.items()}
             elif is_loaded and k=='loaded_at':v='<load-time>'
-            elif is_loaded and k in {'sales','products'} and isinstance(v,str) and 'replenishment-' in v:v='<temporary>/'+Path(v).name
+            elif is_loaded and k in {'sales','products'} and isinstance(v,str) and ('replenishment-' in v or v in {'memory:batch.xlsx','memory:master.xlsx','memory:河北仓.xlsx','memory:山东仓.xlsx'}):v='<temporary>/'+(v[7:] if v.startswith('memory:') else Path(v).name)
             if k in {'rows','baseline'} and isinstance(v,list) and v and isinstance(v[0],dict) and 'B' in v[0] and 'E' in v[0]:
                 keys=[(d['B'],d['E']) for d in v];assert len(set(keys))==len(keys),'nonunique business keys';v={key:row for key,row in zip(keys,v)}
             if k=='normalized' or k=='warehouse_rows':
@@ -188,7 +194,11 @@ def compare(qa,baseline,candidate,report):
     frozen=json.loads((qa/'frozen.json').read_text(encoding='utf-8'));preserved={**frozen['original_inputs'],**frozen['frozen_inputs'],**frozen['preserved_files']}
     changed=[p for p,h in preserved.items() if not Path(p).is_file() or sha(p)!=h]
     core={n:{'before':sha(qa/'baseline/src'/n),'after':sha(ROOT/'src'/n)} for n in CORE}
-    report_data={'passed':not changed and all(v['before']==v['after'] for v in core.values()) and not any(r['differences'] for r in results),'baseline_commit':BASE,'candidate_sources':source_hashes(ROOT),'whitelist':WHITELIST,'comparison':'exact type and value; business rows keyed by store and SKU; all nested metadata retained; Excel values/types/order/styles compared','core_hashes':core,'changed_preserved_files':changed,'cases':results,'difference_count':sum(r['differences'] for r in results)}
+    candidate_manifest=json.loads((candidate/'capture.json').read_text(encoding='utf-8'))
+    source_drift=candidate_manifest['source_hashes']!=source_hashes(ROOT)
+    commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    version=json.loads((ROOT/'src/version.json').read_text(encoding='utf-8'))['version']
+    report_data={'source_commit':commit,'version':version,'source_changed_since_capture':source_drift,'passed':not source_drift and not changed and all(v['before']==v['after'] for v in core.values()) and not any(r['differences'] for r in results),'baseline_commit':BASE,'candidate_sources':candidate_manifest['source_hashes'],'whitelist':WHITELIST,'comparison':'exact type and value; business rows keyed by store and SKU; all nested metadata retained; Excel values/types/order/styles compared','core_hashes':core,'changed_preserved_files':changed,'cases':results,'difference_count':sum(r['differences'] for r in results)}
     write_json(report,report_data);print(json.dumps({'passed':report_data['passed'],'differences':report_data['difference_count'],'report':str(report)}));return report_data['passed']
 def main():
     p=argparse.ArgumentParser();p.add_argument('mode',choices=['freeze','capture','compare']);p.add_argument('--qa',type=Path,required=True);p.add_argument('--source',type=Path,default=ROOT);p.add_argument('--out',type=Path);p.add_argument('--baseline',type=Path);a=p.parse_args();qa=a.qa.resolve()

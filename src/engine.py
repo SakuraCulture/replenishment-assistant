@@ -46,11 +46,26 @@ def load_inputs(sales,products,progress=lambda s:None,cancel=None) -> InputBatch
     before={str(p):adapter.digest(p) for p in [sales,products]};checkpoint(cancel)
     progress('正在识别工作表与字段…')
     ss,sh=sheet_name(sales,'sales');ps,ph=sheet_name(products,'products')
+    cfg=_input_config(ss,ps,sh)
+    progress('正在读取商品资料…');checkpoint(cancel)
+    pr,_=adapter.read_table(products,ps,['商品编码','分类','基本售价','出库箱规'])
+    warehouses,profile_overrides=_master_config(cfg,pr)
+    progress('正在按商品编码匹配销量与资料…');checkpoint(cancel)
+    norm,info=adapter.prepare(sales,products,cfg)
+    norm,stores=_decorate_inputs(norm,warehouses,profile_overrides)
+    checkpoint(cancel)
+    if any(adapter.digest(p)!=h for p,h in before.items()):raise ValueError('读取期间源文件发生变化，请保存Excel后重新导入。')
+    return {'normalized':norm,'config':cfg,'info':info,'hashes':before,'sales':str(sales),'products':str(products),'stores':stores,
+            'warehouses':sorted({d['AU'] for d,m in norm if d['_source']=='资料匹配'}),'loaded_at':datetime.now().isoformat(timespec='seconds')}
+
+def _input_config(ss,ps,sh):
     cfg=config();cfg['interface'].update(sales_sheet=ss,product_sheet=ps,blank_outbound_unit='one')
     cfg['sales_fields']['unit_type']='基础单位' if '基础单位' in sh else '库存单位' if '库存单位' in sh else '单位类型'
     cfg['weight_profiles']['无分类']=copy.deepcopy(cfg['weight_profiles']['快销'])
-    progress('正在读取商品资料…');checkpoint(cancel)
-    pr,_=adapter.read_table(products,ps,['商品编码','分类','基本售价','出库箱规'])
+    return cfg
+
+
+def _master_config(cfg,pr):
     warehouses={};categories=set();profile_overrides={}
     for r in pr:
         k,err=adapter.identifier(r.get('商品编码'))
@@ -60,8 +75,10 @@ def load_inputs(sales,products,progress=lambda s:None,cancel=None) -> InputBatch
         categories.add(str(r.get('分类')))
     for c in categories:
         if c not in cfg['category_profiles']:cfg['category_profiles'][c]='无分类'
-    progress('正在按商品编码匹配销量与资料…');checkpoint(cancel)
-    norm,info=adapter.prepare(sales,products,cfg)
+    return warehouses,profile_overrides
+
+
+def _decorate_inputs(norm,warehouses,profile_overrides):
     stores={}
     for d,m in norm:
         m['profile_override']=profile_overrides.get(d['E'])
@@ -71,9 +88,30 @@ def load_inputs(sales,products,progress=lambda s:None,cancel=None) -> InputBatch
         else:d['AU']='待核'
         if d.get('O')=='/':d['O']=1
         stores.setdefault(d['B'],d['A'] or d['B'])
-    checkpoint(cancel)
-    if any(adapter.digest(p)!=h for p,h in before.items()):raise ValueError('读取期间源文件发生变化，请保存Excel后重新导入。')
-    return {'normalized':norm,'config':cfg,'info':info,'hashes':before,'sales':str(sales),'products':str(products),'stores':stores,
+    return norm,stores
+
+
+def load_records(sales_table,product_table,*,sales_ref,product_ref,progress=lambda s:None,cancel=None) -> InputBatch:
+    """Internal tables already read from Excel or explicitly bridge-projected.
+
+    File entry keeps its file validation/hash checks. Batch callers retain original
+    source hash checks and provenance before/after calling this adapter.
+    """
+    from table_records import require_headers
+    sr,sinfo=sales_table;pr,pinfo=product_table
+    checkpoint(cancel);progress('正在识别工作表与字段…')
+    # Same single-sheet recognition performed by load_inputs on generated workbooks.
+    for info,kind in [(sinfo,'sales'),(pinfo,'products')]:
+        required={'商品编码','日销','周销','月销','仓库/门店编码'} if kind=='sales' else {'商品编码','基本售价','分类','出库箱规'}
+        if not required<=set(info['headers']):raise ValueError(('补货建议' if kind=='sales' else '商品资料')+'未找到唯一可用工作表。必需列：'+ '、'.join(sorted(required)))
+    cfg=_input_config(sinfo['sheet'],pinfo['sheet'],set(sinfo['headers']))
+    progress('正在读取商品资料…');checkpoint(cancel)
+    require_headers(pinfo,['商品编码','分类','基本售价','出库箱规'])
+    warehouses,profile_overrides=_master_config(cfg,pr)
+    progress('正在按商品编码匹配销量与资料…');checkpoint(cancel)
+    norm,info=adapter.prepare_records(sr,sinfo,pr,pinfo,cfg)
+    norm,stores=_decorate_inputs(norm,warehouses,profile_overrides);checkpoint(cancel)
+    return {'normalized':norm,'config':cfg,'info':info,'hashes':{},'sales':sales_ref,'products':product_ref,'stores':stores,
             'warehouses':sorted({d['AU'] for d,m in norm if d['_source']=='资料匹配'}),'loaded_at':datetime.now().isoformat(timespec='seconds')}
 
 def preview(loaded,store):

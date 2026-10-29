@@ -19,6 +19,7 @@ from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
 from model import VERSION, Rules, calculate, number, blank, turnover
+from table_records import table_records,require_headers
 
 HERE = Path(__file__).resolve().parent
 
@@ -67,22 +68,7 @@ def read_table(path, sheet, required):
         ws.reset_dimensions()
         it=ws.iter_rows(values_only=True)
         header=next(it,None)
-        if not header:raise ValueError('文件为空')
-        header=[str(x).strip() if x is not None else '' for x in header]
-        positions=defaultdict(list)
-        for i,h in enumerate(header):positions[h].append(i)
-        missing=[h for h in required if h not in positions]
-        repeated=[h for h in required if len(positions.get(h,[]))>1]
-        if missing:raise ValueError('缺少必需表头：'+','.join(missing))
-        if repeated:raise ValueError('必需表头重复：'+','.join(repeated))
-        rows=[]
-        for rn,values in enumerate(it,2):
-            if not any(x is not None and x!='' for x in values):continue
-            # Duplicate unused headers (three 毛利 columns) are not business inputs.
-            row={h:values[idx[0]] if idx[0]<len(values) else None for h,idx in positions.items() if len(idx)==1}
-            row['_row']=rn;rows.append(row)
-        return rows,{'sheet':ws.title,'rows':len(rows),'headers':header,
-                     'duplicate_unused_headers':[h for h,idx in positions.items() if len(idx)>1]}
+        return table_records(header,it,ws.title,required)
     finally:book.close()
 
 
@@ -101,6 +87,14 @@ def prepare(sales_path, products_path, config):
                        [sf[c] for c in ['store_code','sku','daily14','sales7','sales30','stock','inbound','stockout_days']])
     pr,pinfo=read_table(products_path,config['interface']['product_sheet'],
                        [pf[c] for c in ['sku','category','outbound_unit','price','supply_status']])
+    return prepare_records(sr,sinfo,pr,pinfo,config)
+
+
+def prepare_records(sr,sinfo,pr,pinfo,config):
+    """Internal record adapter; one matching implementation for Excel and memory."""
+    sf,pf=config['sales_fields'],config['product_fields']
+    require_headers(sinfo,[sf[c] for c in ['store_code','sku','daily14','sales7','sales30','stock','inbound','stockout_days']])
+    require_headers(pinfo,[pf[c] for c in ['sku','category','outbound_unit','price','supply_status']])
     for mapping,info in [(sf,sinfo),(pf,pinfo)]:
         ambiguous=set(mapping.values()) & set(info['duplicate_unused_headers'])
         if ambiguous:raise ValueError('已映射字段表头重复：'+','.join(sorted(ambiguous)))

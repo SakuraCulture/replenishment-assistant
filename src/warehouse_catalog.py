@@ -85,10 +85,26 @@ def write_catalog(catalog,path):
 
 def prepare_warehouses(sales_path,catalogs,tmp,progress,cancel):
     """Run the existing adapter separately per warehouse, preventing cross-warehouse duplicate keys."""
+    def load(wh,catalog):
+        path=Path(tmp)/(wh+'.xlsx');write_catalog(catalog,path)
+        return engine.load_inputs(sales_path,path,progress,cancel)
+    return _prepare_catalogs(catalogs,load)
+
+
+def prepare_records(sales_table,catalogs,progress=lambda s:None,cancel=None):
+    """No temporary Excel: same per-warehouse adapter and provenance assembly."""
+    from table_records import bridge_table
+    def load(wh,catalog):
+        raw=({**row,'仓归属':wh} for row in catalog['items'].values())
+        table=bridge_table(FIELDS+['仓归属'],raw,'商品资料')
+        return engine.load_records(sales_table,table,sales_ref='memory:batch.xlsx',product_ref='memory:'+wh+'.xlsx',progress=progress,cancel=cancel)
+    return _prepare_catalogs(catalogs,load)
+
+
+def _prepare_catalogs(catalogs,load):
     results={};base=None
     for wh,catalog in catalogs.items():
-        validate(catalog);path=Path(tmp)/(wh+'.xlsx');write_catalog(catalog,path)
-        loaded=engine.load_inputs(sales_path,path,progress,cancel)
+        validate(catalog);loaded=load(wh,catalog)
         for d,m in loaded['normalized']:
             row=catalog['items'].get(d['E'])
             m.update(product_file=catalog['source_path'],product_sheet=catalog['sheet'],product_revision=catalog['revision'])

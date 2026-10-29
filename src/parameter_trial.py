@@ -1,5 +1,6 @@
 import copy,json
 import batch_service,engine
+import result_semantics as semantics
 
 def metrics(result):
     distribution={'箱规商品':{},'无箱规约束':{}}

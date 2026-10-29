@@ -5,10 +5,10 @@ presence; None, zero, empty text and pending text are distinct, never defaulted 
 See docs/字段与数据契约.md for every model letter and precedence rules.
 """
 from __future__ import annotations
-from datetime import date,datetime
+from datetime import date,datetime,time,timedelta
 from typing import Any,NotRequired,TypeAlias,TypedDict
 
-Cell:TypeAlias=str|int|float|bool|None|date|datetime
+Cell:TypeAlias=str|int|float|bool|None|date|datetime|time|timedelta
 RawRecord:TypeAlias=dict[str,Cell]
 ModelRow:TypeAlias=dict[str,Any]  # letters plus named diagnostic/audit/execution fields
 WarehouseCycles:TypeAlias=dict[str,tuple[float,float]|list[float]]

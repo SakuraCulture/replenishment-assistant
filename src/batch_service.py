@@ -1,13 +1,9 @@
 """Batch orchestration around the unchanged single-store business engine."""
 from __future__ import annotations
-import copy,hashlib,json,multiprocessing,os,re,tempfile,time,uuid
+import copy,json,multiprocessing,os,time
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor,wait,FIRST_COMPLETED
-from datetime import datetime
-from decimal import Decimal
 from pathlib import Path
-import openpyxl
-from openpyxl.cell import WriteOnlyCell
 import engine
 import warehouse_catalog
 from version_info import diagnostic
@@ -75,7 +71,7 @@ def intake(paths,products,progress=lambda s:None,cancel=None):
     return {'files':files,'stores':stores,'headers':headers,'hashes':hashes,'products':products,'products_snapshot':product_snapshot,'catalogs':catalogs,'selected':selected,'conflicts':conflicts,'duplicates':duplicates}
 
 def prepare(data,progress=lambda s:None,cancel=None):
-    """Materialize deduplicated source rows privately, then use the original adapter."""
+    """Project deduplicated records through the exact historical XLSX cell boundary."""
     for p,h in data['hashes'].items():
         if not data.get('frozen') and engine.adapter.digest(Path(p))!=h:raise ValueError('源文件已变化，请重新检查：'+Path(p).name)
     records=list(data['selected']);blocked=defaultdict(int)
@@ -83,23 +79,23 @@ def prepare(data,progress=lambda s:None,cancel=None):
         if c['choice'] is None:blocked[c['store']]+=1
         else:records.append(c['variants'][c['choice']])
     if not records:raise ValueError('所有记录均有冲突，请先选择保留记录。')
-    with tempfile.TemporaryDirectory(prefix='replenishment-') as tmp:
-        path=Path(tmp)/'batch.xlsx';book=openpyxl.Workbook(write_only=True);ws=book.create_sheet('补货建议');ws.append(data['headers'])
-        for r in records:
-            engine.checkpoint(cancel);cells=[]
-            for h in data['headers']:
-                value=r['values'].get(h);cell=WriteOnlyCell(ws,value)
-                if isinstance(value,str):cell.data_type='s'
-                cells.append(cell)
-            ws.append(cells)
-        book.save(path);book.close()
+    from table_records import bridge_table
+    sales_table=bridge_table(data['headers'],(r['values'] for r in records),'补货建议',checkpoint=lambda:engine.checkpoint(cancel))
+    if data.get('catalogs'):
+        loaded=warehouse_catalog.prepare_records(sales_table,data['catalogs'],progress,cancel)
+    else:
         products=data['products']
-        if data.get('frozen') and not data.get('catalogs'):
+        if data.get('frozen'):
             raw=data.get('products_snapshot')
             if not raw:raise ValueError('旧作业没有商品资料快照，请重新选择原资料')
-            products=Path(tmp)/'master.xlsx';book=openpyxl.Workbook(write_only=True);heads=[k for k in raw[0] if k!='_row'];write_sheet(book,'商品资料',heads,([r.get(k) for k in heads] for r in raw));book.save(products);book.close()
-        loaded=warehouse_catalog.prepare_warehouses(path,data['catalogs'],tmp,progress,cancel) if data.get('catalogs') else engine.load_inputs(path,products,progress,cancel)
-        if data.get('frozen') and not data.get('catalogs'):
+            heads=[k for k in raw[0] if k!='_row']
+            product_table=bridge_table(heads,raw,'商品资料',header_text=True)
+            products='memory:master.xlsx'
+        else:
+            ps,_=engine.sheet_name(products,'products')
+            product_table=engine.adapter.read_table(products,ps,['商品编码','分类','基本售价','出库箱规'])
+        loaded=engine.load_records(sales_table,product_table,sales_ref='memory:batch.xlsx',product_ref=str(products),progress=progress,cancel=cancel)
+        if data.get('frozen'):
             for d,m in loaded['normalized']:
                 if m.get('product_row'):m['product_row']=data['products_snapshot'][m['product_row']-2]['_row']
     for pairs in [loaded['normalized'],*loaded.get('warehouse_rows',{}).values()]:
