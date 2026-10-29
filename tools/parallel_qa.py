@@ -50,6 +50,7 @@ def freeze(q):
     js(inp/'parameters.json',{'standard':standard,'custom':custom})
     js(inp/'catalogs.json',{w:warehouse_catalog.import_catalog(inp/(w+'.xlsx'),w) for w in warehouse_catalog.WAREHOUSES})
     sales=inp/'补货建议导出服务.xlsx';rows,info=engine.adapter.read_table(sales,engine.sheet_name(sales,'sales')[0],['商品编码']);headers=[k for k in rows[0] if k!='_row']
+    write_fixture(inp/'full_reencoded.xlsx',headers,rows)
     for count in [2,6]:
         for i in range(count):write_fixture(inp/f'part{count}_{i}.xlsx',headers,rows[len(rows)*i//count:len(rows)*(i+1)//count])
     for i in range(3):write_fixture(inp/f'small{i}.xlsx',headers,rows[i*100:(i+1)*100])

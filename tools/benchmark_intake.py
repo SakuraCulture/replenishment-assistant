@@ -22,6 +22,7 @@ def worker(source,q,files,out):
     out.with_suffix('.started').write_text('check',encoding='utf-8')
     started=time.perf_counter();loaded=bs.load(files,q/'inputs/混合仓商品资料.xlsx');times['total']=time.perf_counter()-started
     out.with_suffix('.checked').write_text('done',encoding='utf-8')
+    assert not loaded.get('blocked'),'benchmark fixture has unresolved conflicts; do not calculate blocked stores'
     profile=json.loads((q/'inputs/must.json').read_text(encoding='utf-8'));s=next(iter(loaded['stores']));started=time.perf_counter()
     result=bs.calculate_store(loaded,s,{'warehouses':engine.DEFAULT_WAREHOUSES,'exception':True,'budget':3000},profile);times['calculation']=time.perf_counter()-started
     js(out,{'times_seconds':times,'rows':len(loaded['normalized']),'summary':result['summary'],'python':sys.version,'openpyxl':openpyxl.__version__})
@@ -30,7 +31,7 @@ def benchmark(q,out,rounds):
     from windows_process_metrics import sample_tree
     from structure_oracle import source_hashes
     source_before=source_hashes(ROOT);commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
-    out.mkdir(parents=True,exist_ok=False);inp=q/'inputs';scenarios={'single':['补货建议导出服务.xlsx'],'two':[f'part2_{i}.xlsx' for i in range(2)],'six':[f'part6_{i}.xlsx' for i in range(6)],'mixed':['补货建议导出服务.xlsx',*[f'small{i}.xlsx' for i in range(3)]]}
+    out.mkdir(parents=True,exist_ok=False);inp=q/'inputs';scenarios={'single':['补货建议导出服务.xlsx'],'two':[f'part2_{i}.xlsx' for i in range(2)],'six':[f'part6_{i}.xlsx' for i in range(6)],'mixed':['full_reencoded.xlsx',*[f'small{i}.xlsx' for i in range(3)]]}
     records=[];sources={'baseline':q/'baseline','candidate':ROOT}
     for scenario,names in scenarios.items():
         for trial in range(rounds):
@@ -59,7 +60,7 @@ def benchmark(q,out,rounds):
     assert all(r['summary']['amount']==2999.87 and r['summary']['positive']==88 and r['rows']==14244 for r in records)
     assert all(not r['child_pids'] for r in records if r['scenario']=='single')
     assert source_before==source_hashes(ROOT),'runtime source changed during benchmark'
-    report={'version':json.loads((ROOT/'src/version.json').read_text(encoding='utf-8'))['version'],'source_commit':commit,'candidate_sources':source_before,'passed':True,'rounds':rounds,'summary':summary,'runs':records,'environment':{'platform':platform.platform(),'processor':platform.processor(),'logical_cpu_count':os.cpu_count(),'PYTHONHASHSEED':'0','python':sys.version},'inputs':{s:[{'file':str(inp/n),'bytes':(inp/n).stat().st_size} for n in names] for s,names in scenarios.items()},'method':'New interpreter per run; AB/BA/AB alternating, one run at a time. 50 ms Win32 process-tree WorkingSetSize (RSS) and PrivateUsage samples during bs.load only, including parent and all descendants; RSS sums count shared pages more than once. Misses peaks between samples. Controller excluded. Intake includes master snapshot, file hashes/checking and ordered cross-file merge/dedup. Prepare is subsequent matching/normalization; total measures load call including pool start, IPC, shutdown. OS cache not cleared; repeated warm/mixed-cache timings, not cold disk benchmarks. No concurrent benchmark work. File partitions/excerpts are synthetic layouts of actual rows; mixed small files duplicate actual rows.'}
+    report={'version':json.loads((ROOT/'src/version.json').read_text(encoding='utf-8'))['version'],'source_commit':commit,'candidate_sources':source_before,'passed':True,'rounds':rounds,'summary':summary,'runs':records,'environment':{'platform':platform.platform(),'processor':platform.processor(),'logical_cpu_count':os.cpu_count(),'PYTHONHASHSEED':'0','python':sys.version},'inputs':{s:[{'file':str(inp/n),'bytes':(inp/n).stat().st_size} for n in names] for s,names in scenarios.items()},'method':'New interpreter per run; AB/BA/AB alternating, one run at a time. 50 ms Win32 process-tree WorkingSetSize (RSS) and PrivateUsage samples during bs.load only, including parent and all descendants; RSS sums count shared pages more than once. Misses peaks between samples. Controller excluded. Intake includes master snapshot, file hashes/checking and ordered cross-file merge/dedup. Prepare is subsequent matching/normalization; total measures load call including pool start, IPC, shutdown. OS cache not cleared; repeated warm/mixed-cache timings, not cold disk benchmarks. No concurrent benchmark work. File partitions/excerpts are synthetic layouts of actual rows; mixed uses a same-writer synthetic re-encoding of the full real rows plus three exactly identical 100-row excerpts.'}
     js(out/'performance_report.json',report)
     lines=['# 多文件检查性能实测','',report['method'],'','每格为中位数 [最小, 最大]；秒或MiB。','', '| 场景 | 版本 | 读取检查及归集秒 | 准备匹配秒 | 完整检查秒 | 计算秒 | 采样峰值RSS MiB |','|---|---|---|---|---|---|---|']
     for s in summary:
