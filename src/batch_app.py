@@ -124,7 +124,10 @@ class BatchWindow(MainWindow):
         if self.initializing:return
         self.input_dirty=True;self.mark_dirty();self.import_note.setText('文件列表已变化，请重新检查。上次结果已标记待重算。');self.update_controls()
     def start_load(self):
-        if self.sales.paths and self.products.path:self.job(batch_service.load,(self.sales.paths,self.products.path),self.loaded_ok)
+        if self.worker:return
+        if self.sales.paths and self.products.path:
+            self.input_dirty=True;self.mark_dirty()
+            self.job(batch_service.load,(self.sales.paths,self.products.path),self.loaded_ok)
     def loaded_ok(self,loaded):
         self.loaded=loaded;self.input_dirty=False;self.results={};self.result=None;self.current_store=None;self.overrides={};self.dirty=True;self.run_codes=[]
         self.default_by_store={s:{} for s in loaded['stores']}

@@ -67,6 +67,12 @@ def start_smoke(app,win,args):
                 restored=BatchWindow();assert restored.repository.budgets()[state['codes'][0]]['amount']==0;assert restored.profile['revision']==win.profile['revision'];restored.close()
                 state['checks'].append('isolated settings survive fresh window; master path and must-list reusable')
                 win.mark_dirty();assert all(s['state']=='待重算' for s in win.states.values());assert not win.batch_export.isEnabled()
-                state['checks'].append('shared configuration invalidates all results and blocks export');finish()
+                state['checks'].append('shared configuration invalidates all results and blocks export')
+                # Isolate the immediate UI transition before any load worker succeeds/fails.
+                for item in win.states.values():item['state']='已完成'
+                win.input_dirty=False;win.update_controls();assert win.batch_export.isEnabled()
+                original_job=win.job;win.job=lambda *args:None;win.start_load();win.job=original_job
+                assert win.input_dirty and all(s['state']=='待重算' for s in win.states.values());assert not win.batch_export.isEnabled()
+                state['checks'].append('rechecking existing paths invalidates old results before loading, including failure/cancel cases');finish()
         except Exception:finish(traceback.format_exc())
     timer.timeout.connect(tick);timer.start(200)
