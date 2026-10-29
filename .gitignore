@@ -1,0 +1,24 @@
+# Local environments and generated application bundles
+/.venv/
+/build*/
+/交付*/
+*.spec
+__pycache__/
+*.py[cod]
+# Local trial outputs and user settings; selected release evidence is in releases/
+/qa/
+/settings/
+*.xlsx
+*.xls
+*.csv
+*.jsonl
+*.log
+*.zip
+*.exe
+*.dll
+*.pyd
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

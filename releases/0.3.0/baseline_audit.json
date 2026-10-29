@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-29",
+  "app_version": "0.3.0",
+  "baseline_kind": "received source snapshot, not a reproducible build attestation",
+  "delivery_files_verified": 191,
+  "archive_sha256_verified": true,
+  "packaged_configs_and_icon_match_source": true,
+  "python_syntax_passed": true,
+  "business_ui_tests_rerun": false,
+  "source_sha256": {
+    "assemble.py": "f1f4b8f1c4979e7dfefdd78636fc06fd93d854ba9991b33d710123ab16c6a152",
+    "build.ps1": "ce2273d2805dc7e98918e7b83c6daf9710115e398251d7864a6dc61e79b5ff38",
+    "prepare_delivery.py": "18eebf1e36cf176f656b49af17db03034fd2b63e34ee7255add965e4180b7802",
+    "requirements-build.txt": "269acd7aaa7b643c2fcbc1b4df6b990a8fa37b8f185b92f095c7a711d8fa330f",
+    "src/allocation.py": "5960745f16e4bc4eb5cdaad0a1591e817f5adab940579cf8ed96d264ed3c1bf9",
+    "src/app.ico": "43f1cca8dfed05f941a207266aa5308ebf8633a140aa4448a49acfac7c4ce7ed",
+    "src/app.py": "5c5f0e009c37e83b7e6435fffafb4122a0328d1fba6af432ab97f65ee2df22a8",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "src/engine.py": "634fb70ae9b59aaceee54fbfe1aac274edd19cdee4cbf35e5e2da9871427a911",
+    "src/input_adapter.py": "0b2bafd9321a41a5d9f5f339ed4bf1f7a641324bf5228cf932cedf81e931ae0e",
+    "src/model.py": "7b5b39dc20649ae0d55f462a46a259fe740ba4d9188a651bf0cb003bd5488f71",
+    "src/one_box_exception.py": "848e8ee14eb51b84e64fd78ae49fd60f2f88debf53fb173c906566efab79765d",
+    "src/priority_list.py": "9229f9cdabd66c4eaaa1d31ad90038cb054f833c4b0cb53ccdbb75f594943450",
+    "src/smoke.py": "1b8ebf35cb94eb6e96f96b14b009aceb33df66f61912af4e52421ca7e561a524",
+    "verify_backend.py": "f8595f606bdb85315da720f0738d80e4608a51c7f3dd47293ab797cda3fc912c",
+    "verify_budget.py": "cb0d9c8f8d0d571fc610110cf3cba93da4feeb43ab180af2a16b468e29fa5279",
+    "verify_exe.py": "e58b45e7a2a91a595f553735fd5c59cf828575d7c6792afe47e359f0a405297b"
+  }
+}

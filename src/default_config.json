@@ -1,0 +1,51 @@
+{
+  "interface": {
+    "sales_sheet": "商品补货建议",
+    "product_sheet": "Sheet1",
+    "blank_outbound_unit": "pending"
+  },
+  "sales_fields": {
+    "store_name": "仓库/门店名称", "store_code": "仓库/门店编码",
+    "supplier_code": "供应商编码", "sku": "商品编码", "name": "商品名称",
+    "barcode": "商品条码", "unit_type": "单位类型", "daily14": "日销",
+    "sales7": "周销", "sales30": "月销", "stock": "可用库存", "inbound": "在途库存",
+    "inbound_days": "在途库存天数", "stockout_days": "缺货天数（天）", "tags": "商品标签",
+    "replenishment_status": "补货状态", "updated": "更新时间"
+  },
+  "product_fields": {
+    "sku": "商品编码", "name": "商品名称", "category": "分类",
+    "outbound_unit": "出库箱规", "price": "基本售价", "supply_status": "商品状态",
+    "grade": "商品等级", "profile_override": "补货模型分类"
+  },
+  "weight_profiles": {
+    "快销": {"alpha": 0.4, "w1": 0.6, "w2": 0.2},
+    "日百": {"alpha": 0.2, "w1": 0.4, "w2": 0.3}
+  },
+  "category_profiles": {
+    "快销": "快销", "日百": "日百",
+    "休闲食品": "快销", "饮品": "快销", "乳品": "快销", "酒类": "快销",
+    "速食/罐头": "快销", "粮油调味干货": "快销", "营养冲调": "快销", "营养保健": "快销",
+    "个人洗护": "日百", "服饰鞋包": "日百", "家居日用": "日百", "家庭清洁": "日百",
+    "宠物生活": "日百", "彩妆香水": "日百", "厨具餐具": "日百", "学习/办公用品": "日百",
+    "成人用品": "日百", "母婴用品": "日百", "电脑数码": "日百", "手机通讯": "日百",
+    "运动户外": "日百", "美容护肤": "日百", "家装建材": "日百", "家纺布艺": "日百",
+    "节庆礼品": "日百", "家用电器": "日百", "医疗器械": "日百", "玩具乐器": "日百",
+    "汽车用品": "日百", "花卉园艺": "日百", "手表眼镜": "日百", "数码家电": "日百"
+  },
+  "parameters": {
+    "depth": 8, "lead": 5, "cap_days": 21, "probability": 0.9,
+    "single_sample_multiple": 1.5, "strict_monthly": 3, "exit_monthly": 10,
+    "monthly_extra_money": 6, "weak_extra_money": 30, "historical_reference_days": 13,
+    "extreme_days": 30, "minimum_reference_units": 1, "growth_reference_days": 4,
+    "moq_days": 12, "moq_price": 6
+  },
+  "parameter_labels": {
+    "depth": "备货深度（天）", "lead": "到货时间（天）", "cap_days": "普通库存上限（天，0关闭）",
+    "probability": "库存目标分位概率", "single_sample_multiple": "单段样本预测倍数",
+    "strict_monthly": "严格资金约束月销上界", "exit_monthly": "退出资金约束月销",
+    "monthly_extra_money": "销量侧额外资金（元）", "weak_extra_money": "弱证据额外资金（元）",
+    "historical_reference_days": "单段额度固定参考保护期", "extreme_days": "极端缺货边界（固定30）",
+    "minimum_reference_units": "最低可售参考量", "growth_reference_days": "增长额度有货时间参考",
+    "moq_days": "原资格周转临界天数", "moq_price": "原资格采购价格门槛"
+  }
+}

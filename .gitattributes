@@ -1,0 +1,8 @@
+# Preserve baseline bytes (including original newlines) for SHA256 provenance.
+* -text
+*.py diff
+*.json diff
+*.md diff
+*.txt diff
+*.ps1 diff
+*.ico binary

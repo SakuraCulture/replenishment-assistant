@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "error": null,
+  "checks": [
+    "import preview and local classification",
+    "disabled / stopped / union filters; all excluded execution values zero",
+    "local / exception / search filters and explanation drawer",
+    "toggle off restores exact baseline; stale export disabled",
+    "background filtered export reopened with eight rows",
+    "warehouse parameter change invalidates prior result",
+    "zero budget means zero orders; fresh window restores list and store budget",
+    "budget output sheets and must-list audit reopened",
+    "imported list persists and invalidates previous result"
+  ],
+  "summary": {
+    "rows": 14244,
+    "local": 5161,
+    "issues": 1,
+    "calculable": 9083,
+    "positive": 88,
+    "amount": 2999.87,
+    "calculated_positive": 1046,
+    "calculated_amount": 23833.55,
+    "excluded": 3269,
+    "excluded_positive": 616,
+    "excluded_amount": 11564.68,
+    "unpriced": 0,
+    "candidate_amount": 12268.87,
+    "must_amount": 2999.37,
+    "must_candidate_amount": 6899.18,
+    "budget_deferred": 384,
+    "holding_gaps": 40,
+    "exception": 8,
+    "extra": 378.8
+  }
+}
