@@ -251,7 +251,7 @@ class MainWindow(QMainWindow):
         self.cancel_btn.setVisible(busy);self.progress.setVisible(busy)
     def job(self,fn,args,success):
         if self.worker:return
-        w=Worker(fn,args,self);self.worker=w;self.update_controls();w.status.connect(self.status.setText);w.success.connect(success);w.failed.connect(self.failed);w.cancelled.connect(lambda:self.status.setText('已取消，未生成本次结果。'));w.finished.connect(self.job_finished);w.start()
+        w=Worker(fn,args,self);self.worker=w;self.update_controls();w.status.connect(self.status.setText);w.success.connect(success);w.failed.connect(self.failed);w.cancelled.connect(lambda:self.status.setText('操作已停止。分店导出时已完成文件会保留，请查看目标目录中的部分导出说明。'));w.finished.connect(self.job_finished);w.start()
     def job_finished(self):
         w=self.worker;self.worker=None
         if w:w.deleteLater()
