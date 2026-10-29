@@ -330,6 +330,9 @@ class MainWindow(QMainWindow):
         content=f'<h2>{esc(d.get("D"))}</h2><p>{esc(d.get("E"))} · {d["_source"]}</p>'
         content+='<p><b>'+esc(engine.order_status(d))+'</b> '+esc(engine.exclusion_reason(d))+'</p>'
         content+='<p>优先清单：'+('必卖商品' if d.get('_must_sell') else '普通商品')+'</p>'
+        route=engine.routing(d)
+        if route:
+            content+=group('需求归属',[('主仓',route['primary']),('从仓',route['secondary'] or '无'),('需求归属仓',route['assigned']),('主仓判断',route['primary_state']),('主仓可用数',route['primary_stock']),('从仓判断',route['secondary_state']),('从仓可用数',route['secondary_stock'])])+'<p>'+esc(route['reason'])+'</p><p>此阶段只确定归属，不拆单、不按仓库存限量或预占；从仓无货仍保留需求。禁用和停采按执行规则处理。</p>'
         if not d.get('_preview'):content+=group('本次执行',[('执行补货',engine.order_quantity(d)),('执行金额',engine.order_amount(d))])+group('计算参考（未按状态排除）',[('计算建议',engine.quantity(d)),('计算金额',engine.amount_value(d)),('按计算建议持有天数',engine.coverage(d))])
         if d.get('_budget_active'):
             content+=group('资金分配',[('预算前执行量',d.get('_candidate_qty')),('预算前金额',d.get('_candidate_amount')),('缺口数量',d.get('_budget_gap')),('最低持有缺口','有' if d.get('_holding_gap') else '无')])+'<p>'+esc(d.get('_budget_reason'))+'</p>'
@@ -387,6 +390,9 @@ def main():
     if '--batch-smoke' in sys.argv:
         from batch_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--batch-smoke')+1:])
+    if '--warehouse-smoke' in sys.argv:
+        from warehouse_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--warehouse-smoke')+1:])
     return app.exec()
 
 if __name__=='__main__':

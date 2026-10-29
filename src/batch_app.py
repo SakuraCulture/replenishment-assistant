@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (QWidget,QMainWindow,QVBoxLayout,QHBoxLayout,QLabe
     QLineEdit,QStackedWidget,QMessageBox,QDialog,QProgressBar,QAbstractItemView,QScrollArea,QListWidget,QApplication)
 from app import MainWindow,FileCard,label,button
 import engine,priority_list,batch_service
+import warehouse_catalog
+from warehouse_ui import WarehouseUi
 from version_info import VERSION,MODEL_VERSION,diagnostic
 
 class SalesFiles(QFrame):
@@ -47,13 +49,16 @@ class BatchWorker(QThread):
         try:batch_service.run(self.loaded,self.jobs,self.profile,self.workers,self.changed.emit,self.cancel)
         except Exception as exc:self.failed.emit(str(exc))
 
-class BatchWindow(MainWindow):
+class BatchWindow(WarehouseUi,MainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self.loaded=None;self.result=None;self.worker=None;self.dirty=True;self.initializing=True;self.closing=False;self.last_export=None
         self.results={};self.states={};self.store_widgets={};self.overrides={};self.default_by_store={};self.run_codes=[];self.current_store=None;self.config_warning='';self.profile=None;self.input_dirty=True
         folder=os.environ.get('REPLENISHMENT_DATA_DIR') or str(Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation))/'settings')
         self.repository=priority_list.Repository(folder)
+        self.catalog_repository=warehouse_catalog.Repository(folder);self.catalogs={}
+        try:self.catalogs=self.catalog_repository.catalogs()
+        except Exception as exc:self.config_warning='仓资料未载入：'+str(exc)
         try:self.profile=self.repository.profile()
         except Exception as exc:self.config_warning=str(exc)
         self.setWindowTitle(f'补货助手 {VERSION} · 多店工作台');self.resize(1380,900);self.setMinimumSize(1080,720)
@@ -75,22 +80,24 @@ class BatchWindow(MainWindow):
     def page(self):
         p=QWidget();v=QVBoxLayout(p);v.setContentsMargins(0,0,0,0);v.setSpacing(12);self.pages.addWidget(p);return p,v
     def make_import(self):
-        self.import_page,v=self.page();files=QHBoxLayout();self.sales=SalesFiles();self.products=FileCard('商品资料 · 可跨批次复用','匹配商品、基本售价、出库箱规、仓归属和禁用状态')
-        files.addWidget(self.sales,3);files.addWidget(self.products,2);v.addLayout(files)
-        self.sales.changed.connect(self.file_changed);self.products.changed.connect(self.file_changed)
+        self.import_page,outer=self.page();content=QWidget();v=QVBoxLayout(content);v.setContentsMargins(0,0,0,0)
+        scroll=QScrollArea();scroll.setWidgetResizable(True);scroll.setFrameShape(QFrame.Shape.NoFrame);scroll.setWidget(content);outer.addWidget(scroll,1)
+        files=QHBoxLayout();self.sales=SalesFiles();warehouses=self.make_warehouse_panel()
+        files.addWidget(self.sales,3);files.addWidget(warehouses,3);v.addLayout(files)
+        self.sales.changed.connect(self.file_changed)
         card=QFrame();card.setObjectName('card');cv=QVBoxLayout(card);row=QHBoxLayout();row.addWidget(label('必卖清单','section'));row.addStretch();row.addWidget(button('查看清单',self.show_priority));row.addWidget(button('导入 / 更新',self.choose_priority));row.addWidget(button('备份',self.backup_priority));cv.addLayout(row)
         self.profile_label=label('','muted');cv.addWidget(self.profile_label);self.refresh_profile_label();v.addWidget(card)
-        self.import_note=label('文件准备好后点击检查；商品资料未匹配标记地采，禁用或停采默认不补。','muted');v.addWidget(self.import_note)
+        self.import_note=label('分仓资料分别导入后检查。需求按门店主从仓归属，不拆单、不预占仓库存；禁用或停采仍按执行规则排除。','muted');v.addWidget(self.import_note)
         self.file_report=QTableWidget(0,4);self.file_report.setHorizontalHeaderLabels(['文件','商品行数','门店数','读取结果 / 处理办法']);self.file_report.horizontalHeader().setSectionResizeMode(3,QHeaderView.ResizeMode.Stretch);self.file_report.setColumnWidth(0,300);self.file_report.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);v.addWidget(self.file_report,1)
-        actions=QHBoxLayout();self.load_btn=button('检查文件',self.start_load);actions.addWidget(self.load_btn);self.conflict_btn=button('处理重复冲突',self.resolve_conflicts);actions.addWidget(self.conflict_btn);actions.addStretch();self.next_btn=button('下一步：选择门店',lambda:self.navigate(1),True);actions.addWidget(self.next_btn);v.addLayout(actions)
+        actions=QHBoxLayout();self.load_btn=button('检查文件',self.start_load);actions.addWidget(self.load_btn);self.conflict_btn=button('处理重复冲突',self.resolve_conflicts);actions.addWidget(self.conflict_btn);actions.addStretch();self.next_btn=button('下一步：选择门店',lambda:self.navigate(1),True);actions.addWidget(self.next_btn);outer.addLayout(actions)
     def make_stores(self):
         self.store_page,v=self.page();v.addWidget(label('选择本次门店，分别设置可用资金','section'));v.addWidget(label('限额补货优先保必卖；不限预算按模型建议补货。金额为0表示本次不安排。各店资金不互相挪用。','muted'))
         row=QHBoxLayout();self.store_search=QLineEdit();self.store_search.setPlaceholderText('搜索门店名称或编码');self.store_search.textChanged.connect(self.filter_stores);row.addWidget(self.store_search,1)
         self.only_issues=QCheckBox('只看需处理');self.only_issues.toggled.connect(self.filter_stores);row.addWidget(self.only_issues);row.addWidget(button('全选可计算门店',lambda:self.select_all(True)));row.addWidget(button('取消全选',lambda:self.select_all(False)));v.addLayout(row)
-        row=QHBoxLayout();row.addWidget(button('批量设置每店预算',self.bulk_budget));row.addWidget(button('批量设置仓参数',self.bulk_parameters));row.addStretch();row.addWidget(button('查看完整模型参数',self.show_parameters));v.addLayout(row)
-        self.store_table=QTableWidget(0,7);self.store_table.setHorizontalHeaderLabels(['选择','门店','数据检查','预算方式','本次预算（元）','参数','配置提示']);self.store_table.verticalHeader().hide();self.store_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.store_table.setAlternatingRowColors(True)
-        for i,w in enumerate([60,250,190,140,160,130,200]):self.store_table.setColumnWidth(i,w)
-        self.store_table.horizontalHeader().setSectionResizeMode(6,QHeaderView.ResizeMode.Stretch);v.addWidget(self.store_table,1)
+        row=QHBoxLayout();row.addWidget(button('批量设置主从仓',self.bulk_routes));row.addWidget(button('批量设置每店预算',self.bulk_budget));row.addWidget(button('批量设置仓参数',self.bulk_parameters));row.addStretch();row.addWidget(button('查看完整模型参数',self.show_parameters));v.addLayout(row)
+        self.store_table=QTableWidget(0,9);self.store_table.setHorizontalHeaderLabels(['选择','门店','数据检查','主仓','从仓','预算方式','本次预算（元）','参数','配置提示']);self.store_table.verticalHeader().hide();self.store_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.store_table.setAlternatingRowColors(True)
+        for i,w in enumerate([50,235,165,140,140,140,145,110,190]):self.store_table.setColumnWidth(i,w)
+        self.store_table.horizontalHeader().setSectionResizeMode(8,QHeaderView.ResizeMode.Stretch);v.addWidget(self.store_table,1)
         options=QHBoxLayout();self.exception=QCheckBox('启用已验收的一箱例外');self.exception.setChecked(True);self.exception.toggled.connect(self.mark_dirty);options.addWidget(self.exception);options.addStretch()
         options.addWidget(label('同时计算门店数'));self.concurrency=QSpinBox();self.concurrency.setRange(1,4);self.concurrency.setValue(2);options.addWidget(self.concurrency);v.addLayout(options)
         self.selection_note=label('请先导入数据。','muted');v.addWidget(self.selection_note)
@@ -118,19 +125,20 @@ class BatchWindow(MainWindow):
         try:
             if p.exists():
                 path=json.loads(p.read_text(encoding='utf-8')).get('products','')
-                if Path(path).is_file():self.products.set_path(path);self.status.setText('已带出上次商品资料路径，请添加本次补货建议后检查。')
+                if path and Path(path).is_file():self.products.set_path(path);self.status.setText('旧混合资料路径已保留在兼容模式；分仓使用请分别导入河北仓、山东仓资料。')
         except Exception as exc:self.status.setText('上次资料路径未恢复，请重新选择：'+str(exc))
     def file_changed(self,*args):
         if self.initializing:return
         self.input_dirty=True;self.mark_dirty();self.import_note.setText('文件列表已变化，请重新检查。上次结果已标记待重算。');self.update_controls()
     def start_load(self):
         if self.worker:return
-        if self.sales.paths and self.products.path:
+        products=self.products.path if self.master_legacy.isChecked() else self.catalogs
+        if self.sales.paths and products:
             self.input_dirty=True;self.mark_dirty()
-            self.job(batch_service.load,(self.sales.paths,self.products.path),self.loaded_ok)
+            self.job(batch_service.load,(self.sales.paths,products),self.loaded_ok)
     def loaded_ok(self,loaded):
         self.loaded=loaded;self.input_dirty=False;self.results={};self.result=None;self.current_store=None;self.overrides={};self.dirty=True;self.run_codes=[]
-        self.default_by_store={s:{} for s in loaded['stores']}
+        self.default_by_store={s:{w:engine.DEFAULT_WAREHOUSES[w] for w in loaded.get('catalogs',{})} for s in loaded['stores']}
         for d,m in loaded['normalized']:
             if d['_source']=='资料匹配':self.default_by_store[d['B']][d['AU']]=engine.DEFAULT_WAREHOUSES.get(d['AU'],(-1,-1))
         data=loaded['intake'];self.file_report.setRowCount(len(data['files']))
@@ -139,13 +147,16 @@ class BatchWindow(MainWindow):
         conflicts=sum(c['choice'] is None for c in data['conflicts']);errors=sum(bool(f['error']) for f in data['files'])
         self.import_note.setText(f"识别 {len(loaded['stores'])} 家门店；一致重复已去重 {data['duplicates']} 行；冲突 {conflicts} 组；失败文件 {errors} 个。未处理冲突的门店不能计算，其他门店可继续。")
         self.states={s:{'name':n,'state':'未运行','error':''} for s,n in loaded['stores'].items()};self.populate_stores();self.refresh_tables()
-        try:priority_list.atomic_json(self.repository.folder/'workbench.json',{'products':data['products']})
+        try:
+            if data['products']:priority_list.atomic_json(self.repository.folder/'workbench.json',{'products':data['products']})
         except Exception as exc:self.status.setText('读取完成；资料路径未保存：'+str(exc));return
         self.status.setText('检查完成。处理冲突后，进入门店与预算设置。');self.update_controls()
     def populate_stores(self):
         self.initializing=True;self.store_widgets={};self.store_table.setRowCount(len(self.loaded['stores']))
         try:budgets=self.repository.budgets()
         except Exception as exc:budgets={};self.status.setText('历史预算无效，请重新填写：'+str(exc))
+        try:routes=self.catalog_repository.routes()
+        except Exception as exc:routes={};self.status.setText('主从仓设置未载入，请重新选择：'+str(exc))
         counts=Counter(d['B'] for d,m in self.loaded['normalized']);local=Counter(d['B'] for d,m in self.loaded['normalized'] if d['_source']=='地采商品')
         for i,(s,name) in enumerate(self.loaded['stores'].items()):
             blocked=self.loaded['blocked'].get(s,0);check=QCheckBox();check.setChecked(not blocked);check.setEnabled(not blocked);check.toggled.connect(self.selection_changed);self.store_table.setCellWidget(i,0,check)
@@ -154,10 +165,11 @@ class BatchWindow(MainWindow):
             saved=budgets.get(s)
             if saved:mode.setCurrentIndex(2 if saved['enabled'] else 1);amount.setText(f"{saved['amount']:.2f}")
             amount.setEnabled(mode.currentIndex()==2)
-            self.store_table.setCellWidget(i,3,mode);self.store_table.setCellWidget(i,4,amount)
-            p=button('默认参数',lambda checked=False,code=s:self.edit_parameters([code]));self.store_table.setCellWidget(i,5,p)
-            self.store_table.setItem(i,6,QTableWidgetItem('沿用上次预算' if saved else '请选择预算方式'))
+            self.store_table.setCellWidget(i,5,mode);self.store_table.setCellWidget(i,6,amount)
+            p=button('默认参数',lambda checked=False,code=s:self.edit_parameters([code]));self.store_table.setCellWidget(i,7,p)
+            self.store_table.setItem(i,8,QTableWidgetItem('沿用上次预算' if saved else '请选择预算方式'))
             self.store_widgets[s]={'row':i,'check':check,'mode':mode,'amount':amount,'params':p,'saved':bool(saved)}
+            self.install_route_widgets(s,i,routes)
             mode.currentIndexChanged.connect(lambda value,code=s:self.budget_changed(code));amount.textChanged.connect(lambda value,code=s:self.budget_changed(code))
         self.initializing=False;self.selection_changed()
     def selected_store(self):return self.current_store
@@ -177,7 +189,9 @@ class BatchWindow(MainWindow):
         warehouses=self.overrides.get(s,self.default_settings(s))
         if any(d<0 or l<0 or d+l<=0 for d,l in warehouses.values()):raise ValueError('请填写未知仓的备货和到货天数')
         if budget is not None and not self.profile:raise ValueError('限额补货需要有效必卖清单')
-        return {'warehouses':warehouses,'exception':self.exception.isChecked(),'budget':budget}
+        result={'warehouses':warehouses,'exception':self.exception.isChecked(),'budget':budget}
+        if self.loaded.get('catalogs'):result['supply_route']=self.route_for(s)
+        return result
     def default_settings(self,s):
         return self.default_by_store.get(s,{})
     def budget_changed(self,s):
@@ -195,7 +209,7 @@ class BatchWindow(MainWindow):
             except ValueError as exc:
                 message=str(exc)
                 if s in selected:invalid+=1
-            self.store_table.item(w['row'],6).setText(message)
+            self.store_table.item(w['row'],8).setText(message)
         self.selection_note.setText(f'已选 {len(selected)} 家｜限额 {limited} 家，预算合计 ¥{total:,.2f}｜不限预算 {unlimited} 家｜需补设置 {invalid} 家\n预算合计仅统计限额门店；未选门店不参与本次计算。')
         self.ready=bool(selected) and not invalid and not self.input_dirty
         self.calculate_btn.setText(f'开始计算 {len(selected)} 家门店');self.update_controls()
@@ -276,7 +290,9 @@ class BatchWindow(MainWindow):
         for s,settings in jobs.items():
             self.states[s].update(state='排队中',error='');self.results.pop(s,None)
             if s==self.current_store:self.dirty=True;self.result=None
-            try:self.repository.save_budget(s,settings['budget'] is not None,settings['budget'] or 0)
+            try:
+                self.repository.save_budget(s,settings['budget'] is not None,settings['budget'] or 0)
+                if settings.get('supply_route'):self.catalog_repository.save_route(s,settings['supply_route'])
             except Exception as exc:self.states[s]['error']='本次设置未能保存：'+str(exc)
         worker=BatchWorker(self.loaded,jobs,self.profile,self.concurrency.value(),self);self.worker=worker
         worker.changed.connect(self.task_changed);worker.failed.connect(self.batch_failed);worker.finished.connect(self.job_finished)
@@ -332,7 +348,8 @@ class BatchWindow(MainWindow):
         if not hasattr(self,'cancel_btn'):return
         busy=self.worker is not None;batch=isinstance(self.worker,BatchWorker)
         self.import_page.setEnabled(not busy);self.store_page.setEnabled(not busy)
-        self.load_btn.setEnabled(not busy and bool(self.sales.paths and self.products.path));self.next_btn.setEnabled(not busy and self.loaded is not None and not self.input_dirty)
+        products_ready=bool(self.products.path) if self.master_legacy.isChecked() else bool(self.catalogs)
+        self.load_btn.setEnabled(not busy and bool(self.sales.paths) and products_ready);self.next_btn.setEnabled(not busy and self.loaded is not None and not self.input_dirty)
         self.conflict_btn.setEnabled(not busy and bool(self.loaded and self.loaded['intake']['conflicts']) and not self.input_dirty)
         self.calculate_btn.setEnabled(not busy and getattr(self,'ready',False) and not self.input_dirty)
         self.nav[1].setEnabled(self.loaded is not None and not self.input_dirty and not busy);self.nav[0].setEnabled(not busy)

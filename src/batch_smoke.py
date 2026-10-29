@@ -21,6 +21,7 @@ def start_smoke(app,win,args):
             if time.monotonic()-state['start']>380:raise TimeoutError(str(state))
             step=state['step']
             if step==0:
+                win.master_legacy.setChecked(True)
                 snap('01_准备数据');fixture=Path(sales).parent
                 files=[str(fixture/n) for n in ['part1.xlsx','part2.xlsx','conflict.xlsx']]
                 win.sales.add_paths(files if all(Path(p).exists() for p in files) else [sales]);win.products.set_path(products);QTest.mouseClick(win.load_btn,Qt.MouseButton.LeftButton);state['step']=1

@@ -10,16 +10,23 @@ import openpyxl
 from openpyxl.cell import WriteOnlyCell
 from openpyxl.styles import Font,PatternFill
 import engine
+import warehouse_catalog
 from version_info import diagnostic
 
 def intake(paths,products,progress=lambda s:None,cancel=None):
     paths=list(dict.fromkeys(str(Path(p).resolve()) for p in paths))
-    products=str(Path(products).resolve())
+    catalogs=copy.deepcopy(products) if isinstance(products,dict) else None
+    if catalogs:
+        for wh,catalog in catalogs.items():
+            warehouse_catalog.validate(catalog)
+            if wh!=catalog['warehouse']:raise ValueError('仓资料标签不一致')
+    elif catalogs is not None:raise ValueError('请先导入河北仓或山东仓资料')
+    products=str(Path(products).resolve()) if catalogs is None else None
     if not paths:raise ValueError('请至少添加一个补货建议文件。')
     if products in paths:raise ValueError('商品资料不能同时作为补货建议。')
-    product_hash=engine.adapter.digest(Path(products))
-    engine.sheet_name(products,'products')
-    groups=defaultdict(list);files=[];stores={};headers=[];hashes={products:product_hash}
+    product_hash=engine.adapter.digest(Path(products)) if products else None
+    if products:engine.sheet_name(products,'products')
+    groups=defaultdict(list);files=[];stores={};headers=[];hashes={products:product_hash} if products else {}
     for path in paths:
         engine.checkpoint(cancel);progress('读取补货建议：'+Path(path).name)
         report={'path':path,'rows':0,'stores':0,'error':''};files.append(report)
@@ -60,8 +67,8 @@ def intake(paths,products,progress=lambda s:None,cancel=None):
             seen.add(fingerprint);variants.append(rec)
         if len(variants)==1:selected.append(variants[0])
         else:conflicts.append({'id':len(conflicts),'store':store,'sku':sku,'variants':variants,'choice':None})
-    if engine.adapter.digest(Path(products))!=product_hash:raise ValueError('商品资料读取期间发生变化，请重试。')
-    return {'files':files,'stores':stores,'headers':headers,'hashes':hashes,'products':products,'selected':selected,'conflicts':conflicts,'duplicates':duplicates}
+    if products and engine.adapter.digest(Path(products))!=product_hash:raise ValueError('商品资料读取期间发生变化，请重试。')
+    return {'files':files,'stores':stores,'headers':headers,'hashes':hashes,'products':products,'catalogs':catalogs,'selected':selected,'conflicts':conflicts,'duplicates':duplicates}
 
 def prepare(data,progress=lambda s:None,cancel=None):
     """Materialize deduplicated source rows privately, then use the original adapter."""
@@ -82,11 +89,13 @@ def prepare(data,progress=lambda s:None,cancel=None):
                 cells.append(cell)
             ws.append(cells)
         book.save(path);book.close()
-        loaded=engine.load_inputs(path,data['products'],progress,cancel)
-    for d,m in loaded['normalized']:
-        r=records[m['export_row']-2]
-        m.update(export_row=r['row'],export_file=r['path'],export_sheet=r['sheet'])
+        loaded=warehouse_catalog.prepare_warehouses(path,data['catalogs'],tmp,progress,cancel) if data.get('catalogs') else engine.load_inputs(path,data['products'],progress,cancel)
+    for pairs in [loaded['normalized'],*loaded.get('warehouse_rows',{}).values()]:
+        for d,m in pairs:
+            r=records[m['export_row']-2]
+            m.update(export_row=r['row'],export_file=r['path'],export_sheet=r['sheet'])
     loaded.update(hashes=dict(data['hashes']),sales=[f['path'] for f in data['files'] if not f['error']],stores=dict(data['stores']),blocked=dict(blocked),intake=data)
+    for wh,c in loaded.get('catalogs',{}).items():loaded['hashes'][wh+'资料快照 '+c['source_path']+' #'+c['revision']]=c['source_sha256']
     for p,h in data['hashes'].items():
         if engine.adapter.digest(Path(p))!=h:raise ValueError('读取期间源文件变化，请重新检查：'+Path(p).name)
     return loaded
@@ -94,12 +103,14 @@ def prepare(data,progress=lambda s:None,cancel=None):
 def load(paths,products,progress=lambda s:None,cancel=None):
     data=intake(paths,products,progress,cancel)
     # UI must be able to resolve a dataset consisting entirely of conflicts.
-    if not data['selected'] and data['conflicts']:return {'intake':data,'stores':data['stores'],'normalized':[],'blocked':{s:1 for s in data['stores']},'warehouses':[],'config':engine.config(),'hashes':data['hashes']}
+    if not data['selected'] and data['conflicts']:return {'intake':data,'stores':data['stores'],'normalized':[],'blocked':{s:1 for s in data['stores']},'warehouses':[],'config':engine.config(),'hashes':data['hashes'],'catalogs':{w:warehouse_catalog.metadata(c) for w,c in (data.get('catalogs') or {}).items()}}
     return prepare(data,progress,cancel)
 
 def calculate_store(loaded,store,settings,profile):
     started=time.time()
+    if loaded.get('catalogs'):loaded=warehouse_catalog.route_store(loaded,store,settings.get('supply_route'))
     result=engine.run_calculation(loaded,store,settings['warehouses'],settings['exception'],settings['budget'],profile)
+    if loaded.get('catalogs'):result.update(catalogs=loaded['catalogs'],supply_route=loaded['supply_route'])
     result['version']=diagnostic();result['task']={'pid':os.getpid(),'started':started,'finished':time.time()}
     result['import_audit']=loaded.get('import_audit',{})
     return result
@@ -122,6 +133,7 @@ def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:Non
                 if snapshot.get('blocked',{}).get(store):
                     notify(store,'计算失败',None,'存在重复冲突，请先处理');out[store]=None;continue
                 one={**snapshot,'normalized':[x for x in snapshot['normalized'] if x[0]['B']==store]}
+                if snapshot.get('warehouse_rows'):one['warehouse_rows']={w:[x for x in rows if x[0]['B']==store] for w,rows in snapshot['warehouse_rows'].items()}
                 notify(store,'计算中',None,'')
                 active[pool.submit(calculate_store,one,store,copy.deepcopy(settings),copy.deepcopy(profile))]=store
         fill()
@@ -180,6 +192,13 @@ def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,ca
             r=ready.get(store);s=r['summary'] if r else {};b=r.get('budget',{}) if r else {}
             yield [store,state['name'],state['state'],state.get('error',''),b.get('limit') if b.get('enabled') else '不限预算' if r else None,s.get('candidate_amount'),s.get('amount'),s.get('must_amount'),round(s['amount']-s['must_amount'],2) if r else None,round(s['candidate_amount']-s['amount'],2) if r else None,b.get('remaining'),s.get('holding_gaps'),s.get('local'),s.get('excluded'),s.get('unpriced')]
     write_sheet(book,'门店汇总',['门店编码','门店名称','状态','提示','本次预算','预算前需求金额','本次安排金额','必卖金额','其他金额','未满足需求金额','剩余预算','最低持有缺口款数','地采款数','已排除款数','补货未计价款数'],summary_rows())
+    if any(r.get('supply_route') for r in ready.values()):
+        def warehouse_summary():
+            for store,r in ready.items():
+                for wh in sorted({d.get('AU','') for d in r['rows']}):
+                    s=engine.summarize([d for d in r['rows'] if d.get('AU')==wh])
+                    yield [store,r['store_name'],wh,s['rows'],s['calculated_amount'],s['candidate_amount'],s['amount'],s['positive']]
+        write_sheet(book,'分仓需求汇总',['门店编码','门店名称','需求归属仓','商品数','计算金额','预算前可补金额','执行金额','执行商品数'],warehouse_summary())
     headers=['门店编码','门店名称']+[h for h,f in engine.COLUMNS]+['来源文件','来源工作表','来源行']
     filters={'补货清单':engine.orderable,'全部明细':lambda d:True,'预算未满足':lambda d:d.get('_budget_gap',0)>0,'已排除':engine.exclusion_reason,'地采待核':lambda d:d['_source']=='地采商品' or engine.issue_text(d)}
     for name,predicate in filters.items():
@@ -197,6 +216,7 @@ def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,ca
     for s,r in ready.items():
         info.extend([[s+' / '+k,str(v)] for k,v in r.get('version',diagnostic()).items()])
         info.extend([[s+' / 参数',json.dumps(r['config'],ensure_ascii=False)],[s+' / 仓参数',json.dumps(r['warehouses'],ensure_ascii=False)],[s+' / 一箱例外',r['enabled']],[s+' / 必卖清单',json.dumps(r['must_list'],ensure_ascii=False)],[s+' / 输入校验',json.dumps(r['sources'],ensure_ascii=False)]])
+        if r.get('catalogs'):info.extend([[s+' / 主从仓',json.dumps(r['supply_route'],ensure_ascii=False)],[s+' / 仓资料快照',json.dumps(r['catalogs'],ensure_ascii=False)],[s+' / 选仓口径','可用数>0优先主仓；主仓禁用/无货/无商品则归属从仓，从仓无货不清零需求；不拆单、不限量、不扣减仓库存']])
     write_sheet(book,'版本及参数',['项目','内容'],info)
     tmp=path.with_name('.'+uuid.uuid4().hex+'.xlsx')
     try:book.save(tmp);engine.checkpoint(cancel);os.rename(tmp,path)

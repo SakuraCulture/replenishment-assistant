@@ -114,7 +114,7 @@ def run_calculation(loaded,store,warehouses,enabled,budget=None,profile=None,pro
     checkpoint(cancel);progress('正在核对数量、金额与例外隔离…')
     checks=adapter.business_checks(result,p)
     if checks['failures']:raise RuntimeError('结果核验失败：'+str(checks['failures'][:3]))
-    if not any(numeric(d['AS']) for d in result):raise ValueError('没有可计算商品，请检查商品资料与仓参数。')
+    if not any(numeric(d['AS']) for d in result) and not loaded.get('catalogs'):raise ValueError('没有可计算商品，请检查商品资料与仓参数。')
     report={'rows':result,'baseline':baseline,'store':store,'store_name':loaded['stores'][store],
         'warehouses':warehouses,'enabled':enabled,'config':loaded['config'],'sources':loaded['hashes'],
         'created':datetime.now().isoformat(timespec='seconds'),'checks':checks,'summary':summarize(result)}
@@ -215,6 +215,9 @@ COLUMNS=[('商品名称',lambda d:d.get('D')),('商品编码',lambda d:d.get('E'
  ('预算前金额',lambda d:d.get('_candidate_amount',amount_value(d))),('预算缺口数量',lambda d:d.get('_budget_gap',0)),
  ('最低持有缺口',lambda d:'有销量且无可用/在途，本次资金未覆盖' if d.get('_holding_gap') else ''),('资金分配说明',lambda d:d.get('_budget_reason','未启用总预算'))]
 
+def routing(d):return d.get('_meta',{}).get('routing',{})
+COLUMNS.extend([('主仓',lambda d:routing(d).get('primary')),('从仓',lambda d:routing(d).get('secondary')),('需求归属说明',lambda d:routing(d).get('reason')),('主仓可用数',lambda d:routing(d).get('primary_stock')),('从仓可用数',lambda d:routing(d).get('secondary_stock')),('主仓判断',lambda d:routing(d).get('primary_state')),('从仓判断',lambda d:routing(d).get('secondary_state')),('商品资料来源',lambda d:d.get('_meta',{}).get('product_file')),('仓资料版本',lambda d:d.get('_meta',{}).get('product_revision'))])
+
 IMPORT_HEADERS=['类型','门店编码','商品编码','来源文件','工作表','源行 / 行数','保留选择 / 状态','SHA256']
 def import_audit_rows(result):
     audit=result.get('import_audit',{})
@@ -261,6 +264,8 @@ def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,pro
     else:info.append(['门店总预算','未启用，执行口径与0.2一致'])
     if ml:info.extend([['必卖清单',ml['name']],['清单版本',ml['revision']],['清单来源SHA256',ml['source_sha256']],['清单总商品数',ml['total']],['本店命中清单数',ml['matched']],['清单未出现在本店导出',ml['missing']]])
     for p,h in result['sources'].items():info.extend([['输入文件',p],['SHA256',h]])
+    if result.get('catalogs'):
+        info.extend([['主从仓配置',json.dumps(result['supply_route'],ensure_ascii=False)],['仓资料快照',json.dumps(result['catalogs'],ensure_ascii=False)],['选仓口径','主仓禁用/可用数<=0/无该商品时转从仓；从仓无货仍保留需求归属，不拆单、不限量、不扣减仓库存；未知可用数不当0']])
     sheet('运行概览',['项目','内容'],info,{1:30,2:100})
     if result.get('import_audit'):sheet('导入记录',IMPORT_HEADERS,import_audit_rows(result),{4:70})
     headers=[h for h,f in COLUMNS]+['周销','14天日均','缺货天数','基本售价','原模型建议','原模型金额','例外新增金额','预测日均','BH额度日均','BN增长额度日均','库存额度总量','按计算建议持有天数','备注','导出源行','资料源行']
