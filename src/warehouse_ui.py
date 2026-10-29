@@ -4,6 +4,7 @@ from collections import Counter
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame,QVBoxLayout,QHBoxLayout,QCheckBox,QFileDialog,QDialog,QTableWidget,QTableWidgetItem,QLineEdit,QAbstractItemView,QComboBox,QMessageBox
 from ui_controls import label,button,FileCard
+import result_semantics as semantics
 import engine,warehouse_catalog
 
 class WarehouseUi:
@@ -42,7 +43,7 @@ class WarehouseUi:
         rows=list(catalog['items'].values());fields=['商品编码','商品名称','商品状态','可用数','基本售价','出库箱规','分类']
         table=QTableWidget(len(rows),len(fields));table.setHorizontalHeaderLabels(fields);table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);table.setColumnWidth(0,180);table.setColumnWidth(1,320);v.addWidget(table,1)
         for i,r in enumerate(rows):
-            for j,k in enumerate(fields):table.setItem(i,j,QTableWidgetItem(engine.fmt(r.get(k))))
+            for j,k in enumerate(fields):table.setItem(i,j,QTableWidgetItem(semantics.fmt(r.get(k))))
         search.textChanged.connect(lambda text:[table.setRowHidden(i,text.lower() not in (str(r.get('商品编码',''))+' '+str(r.get('商品名称',''))).lower()) for i,r in enumerate(rows)])
         v.addWidget(button('关闭',dialog.accept));dialog.exec()
     def install_route_widgets(self,store,row,saved):

@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (QWidget,QMainWindow,QVBoxLayout,QHBoxLayout,QLabe
 from ui_controls import FileCard,SalesFiles,label,button
 from ui_tasks import BatchWorker,BackgroundJobs
 from ui_session import SessionWindow
+import result_semantics as semantics
 import engine,priority_list,batch_service
 import warehouse_catalog
 from warehouse_ui import WarehouseUi
@@ -296,7 +297,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
             state=self.states[s];r=self.results.get(s) if state['state']=='已完成' else None
             if r:
                 a=r['summary'];b=r['budget'];gap=round(a['candidate_amount']-a['amount'],2);totals=[totals[0]+a['candidate_amount'],totals[1]+a['amount'],totals[2]+gap];unpriced+=a['unpriced']
-                values=[state['name'],state['state'],engine.fmt(b['limit']) if b['enabled'] else '不限预算',engine.fmt(a['candidate_amount']),engine.fmt(a['amount']),engine.fmt(a['must_amount']),engine.fmt(a['amount']-a['must_amount']),engine.fmt(gap),engine.fmt(b.get('remaining')),str(a['holding_gaps']),f"{a['local']} / {a['excluded']}",state['error'] or f"待核 {a['issues']}；补货未计价 {a['unpriced']}"]
+                values=[state['name'],state['state'],semantics.fmt(b['limit']) if b['enabled'] else '不限预算',semantics.fmt(a['candidate_amount']),semantics.fmt(a['amount']),semantics.fmt(a['must_amount']),semantics.fmt(a['amount']-a['must_amount']),semantics.fmt(gap),semantics.fmt(b.get('remaining')),str(a['holding_gaps']),f"{a['local']} / {a['excluded']}",state['error'] or f"待核 {a['issues']}；补货未计价 {a['unpriced']}"]
             else:values=[state['name'],state['state']]+['—']*9+[state['error']]
             for j,val in enumerate(values):self.overview.setItem(i,j,QTableWidgetItem(val));self.overview.item(i,j).setToolTip(s+'\n'+str(val))
         for widget,value in zip(self.metrics,totals):widget.setText(f'{value:,.2f}' if finished else '—')

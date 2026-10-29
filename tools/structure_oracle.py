@@ -148,22 +148,36 @@ def differences(a,b,path='$',out=None):
     elif a!=b:out.append((path,repr(a)[:200],repr(b)[:200],'value'))
     return out
 def excel_snapshot(path):
-    import openpyxl
-    b=openpyxl.load_workbook(path,data_only=False);result=[]
-    for w in b:
-        cells=[]
-        for row in w:
-            key=row[0].value;values=[]
-            for c in row:
-                value=c.value
-                if c.column==2 and w.title=='运行概览':
-                    if key in {'计算时间','软件版本'}:value='<dynamic>'
-                    if key=='构建信息':value=json.dumps({k:'<build>' if k in {'version','source_commit','build_id','built_at'} else v for k,v in json.loads(value).items()},sort_keys=True)
-                if c.column==2 and w.title=='版本及参数' and (key=='导出时间' or any(str(key).endswith(' / '+k) for k in ['version','source_commit','build_id','built_at'])):value='<dynamic>'
-                values.append((value,c.data_type,c.number_format,str(c.font),str(c.fill),str(c.alignment)))
-            cells.append(values)
-        result.append((w.title,w.max_row,w.max_column,w.freeze_panes,w.auto_filter.ref,w.sheet_view.showGridLines,{k:v.width for k,v in w.column_dimensions.items()},cells))
-    b.close();return result
+    """Compare decoded sheet XML cells/types/styles without million-cell GUI objects.
+
+    The full styles part and all worksheet structure are retained. XML spelling is
+    canonicalized by ElementTree; only the same explicitly named clock/build cells
+    as the original cell comparer are normalized. Cell coordinates locate differences.
+    """
+    import zipfile,xml.etree.ElementTree as ET
+    ns={'s':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+    xml=lambda node:ET.tostring(node,encoding='unicode')
+    def cell_text(c):return ''.join(c.itertext()) if c is not None else None
+    with zipfile.ZipFile(path) as z:
+        book=ET.fromstring(z.read('xl/workbook.xml'));sheets=book.find('s:sheets',ns)
+        result={'styles':xml(ET.fromstring(z.read('xl/styles.xml'))),'sheets':[]}
+        for i,sheet in enumerate(sheets,1):
+            w=ET.fromstring(z.read('xl/worksheets/sheet'+str(i)+'.xml'));data=w.find('s:sheetData',ns);cells={};row_attributes=[]
+            for row in data:
+                row_attributes.append(dict(row.attrib));key=cell_text(next((c for c in row if c.get('r','').startswith('A') and c.get('r','')[1:].isdigit()),None))
+                for c in row:
+                    if c.get('r','').startswith('B') and c.get('r','')[1:].isdigit():
+                        value=cell_text(c);replacement=None
+                        if sheet.get('name')=='运行概览':
+                            if key in {'计算时间','软件版本'}:replacement='<dynamic>'
+                            if key=='构建信息':replacement=json.dumps({k:'<build>' if k in {'version','source_commit','build_id','built_at'} else v for k,v in json.loads(value).items()},sort_keys=True)
+                        if sheet.get('name')=='版本及参数' and (key=='导出时间' or any(str(key).endswith(' / '+k) for k in ['version','source_commit','build_id','built_at'])):replacement='<dynamic>'
+                        if replacement is not None:
+                            for child in list(c):c.remove(child)
+                            ET.SubElement(c,'normalized-dynamic-value').text=replacement
+                    cells[c.get('r')]=xml(c)
+            w.remove(data);result['sheets'].append({'identity':dict(sheet.attrib),'structure':xml(w),'row_attributes':row_attributes,'cells':cells})
+    return result
 def compare(qa,baseline,candidate,report):
     manifest=json.loads((baseline/'capture.json').read_text(encoding='utf-8'));results=[]
     for name in manifest['cases']:

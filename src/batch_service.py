@@ -8,10 +8,10 @@ from decimal import Decimal
 from pathlib import Path
 import openpyxl
 from openpyxl.cell import WriteOnlyCell
-from openpyxl.styles import Font,PatternFill
 import engine
 import warehouse_catalog
 from version_info import diagnostic
+from xlsx_exports import write_sheet,export_batch
 
 def intake(paths,products,progress=lambda s:None,cancel=None):
     paths=list(dict.fromkeys(str(Path(p).resolve()) for p in paths))
@@ -162,25 +162,6 @@ def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:Non
             fill()
         for store,_ in pending:notify(store,'已停止',None,'未启动，可重新计算')
     return out
-
-def write_sheet(book,name,headers,rows):
-    ws=book.create_sheet(name);ws.freeze_panes='C2'
-    from openpyxl.utils import get_column_letter
-    for i in range(len(headers)):ws.column_dimensions[get_column_letter(i+1)].width=24 if i else 22
-    for index,values in enumerate([headers] if rows is None else _with_header(headers,rows)):
-        cells=[]
-        for value in values:
-            c=WriteOnlyCell(ws,value)
-            if isinstance(value,str):c.data_type='s'
-            if index==0:c.font=Font(bold=True,color='FFFFFF');c.fill=PatternFill('solid',fgColor='176C63')
-            elif engine.numeric(value):c.number_format='0.##########'
-            cells.append(c)
-        ws.append(cells)
-    return ws
-
-def _with_header(headers,rows):
-    yield headers
-    yield from rows
 
 def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,cancel=None):
     """Only current successful results count as spend; missing results are blank, never zero."""
