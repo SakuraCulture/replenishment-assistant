@@ -8,7 +8,7 @@ and supplies job()/update_controls(). make_results() explicitly installs the vie
 import sys,os,json,threading,traceback,html,logging
 from pathlib import Path
 from datetime import datetime
-from PySide6.QtCore import Qt,Signal,QThread,QAbstractTableModel,QSortFilterProxyModel,QModelIndex,QTimer,QUrl,QStandardPaths
+from PySide6.QtCore import Qt,Signal,QThread,QAbstractTableModel,QSortFilterProxyModel,QModelIndex,QTimer,QSignalBlocker,QUrl,QStandardPaths
 from PySide6.QtGui import QColor,QFont,QDesktopServices,QIcon,QPalette
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QFrame,
     QFileDialog,QComboBox,QCheckBox,QDoubleSpinBox,QTableWidget,QTableWidgetItem,QHeaderView,QTableView,QLineEdit,
@@ -101,10 +101,11 @@ class ResultsView:
         self.pages.addWidget(page)
 
     def set_rows(self,rows,calculated):
+        blockers=[QSignalBlocker(w) for w in (self.search,self.warehouse_filter,self.category_filter,self.mode)]
         self.model.set_rows(rows);self.detail_panel.hide();self.search.clear()
         self.warehouse_filter.clear();self.warehouse_filter.addItems(['全部仓']+sorted({str(d.get('AU','')) for d in rows}))
         self.category_filter.clear();self.category_filter.addItems(['全部分类']+sorted({str(d.get('_category') or '未分类') for d in rows}))
-        self.mode.setCurrentText('建议补货' if calculated else '全部商品');self.filter_changed()
+        self.mode.setCurrentText('建议补货' if calculated else '全部商品');del blockers;self.filter_changed()
         s=semantics.summarize(rows)
         self.metric_values[0].setText(f"{s['amount']:,.2f}" if calculated else '待计算')
         self.metric_values[1].setText(f"{s['positive']:,}" if calculated else '待计算')

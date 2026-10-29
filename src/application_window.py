@@ -84,7 +84,8 @@ class ApplicationWindow(Workbench):
     def refresh_archive(self):
         self.archive_orders=self.orders.list();self.fill_orders(self.archive_table,self.archive_orders);self.filter_archive()
         self.recent_orders=self.archive_orders[:10];self.fill_orders(self.recent,self.recent_orders)
-        today=[r for r in self.archive_orders if r['day']==wr.today()];ready=[s for s,x in self.states.items() if x['state']=='已完成'];pending=sum(not self.orders.get(self.job_day,s) or self.orders.get(self.job_day,s)['digest']!=normal_orders.fingerprint(self.results[s],self.new_focus) for s in ready)
+        heads={(r['day'],r['store']):r for r in self.orders.headers()}
+        today=[r for r in self.archive_orders if r['day']==wr.today()];ready=[s for s,x in self.states.items() if x['state']=='已完成'];pending=sum(not heads.get((self.job_day,s)) or heads[(self.job_day,s)]['digest']!=normal_orders.fingerprint(self.results[s],self.new_focus) for s in ready)
         self.home_status.setText(f"{wr.today()} · 今日已归档 {len(today)} 店 / ¥{sum(r['summary']['amount'] for r in today):,.2f}\n工作区日期 {self.job_day} · 待确认 {pending} 店 · 未完成/需处理 {len(self.states)-len(ready)} 店 · {'任务运行中' if self.worker else '有未保存草稿' if self.job_dirty else '工作区就绪'}")
 
     def filter_archive(self,*_):
@@ -256,10 +257,12 @@ class ApplicationWindow(Workbench):
                 for j,val in enumerate([d['E'],d.get('D'),new_products.category(d),d.get('AS'),d.get('_candidate_qty'),order_quantity(d),order_amount(d),explanation(d)]):table.setItem(i,j,QTableWidgetItem(fmt(val)))
                 table.setRowHidden(i,search.text().lower() not in (d['E']+' '+str(d.get('D',''))).lower())
             table.resizeColumnsToContents()
-        rev.currentIndexChanged.connect(load);search.textChanged.connect(load)
+        def filter_rows(*_):
+            for i,d in enumerate(selected['order']['payload']['result']['rows']):table.setRowHidden(i,search.text().lower() not in (d['E']+' '+str(d.get('D',''))).lower())
+        rev.currentIndexChanged.connect(load);search.textChanged.connect(filter_rows)
         def audit():
-            x=QDialog(dialog);x.setWindowTitle('完整审计快照（内部）');x.resize(900,650);layout=QVBoxLayout(x);text=QTextBrowser();text.setPlainText(wr.dumps(selected['order']));layout.addWidget(text);x.exec()
-        row=QHBoxLayout();row.addWidget(button('导出此修订确认单',lambda:self.export_order(selected['order'])));row.addWidget(button('完整来源与参数审计',audit));row.addWidget(button('此单操作日志',lambda:self.show_events(selected['order']['oid'])));row.addWidget(button('关闭',dialog.accept));v.addLayout(row);rev.setCurrentIndex(record['revision']-1);load();dialog.exec()
+            x=QDialog(dialog);x.setWindowTitle('完整审计快照（内部）');x.resize(900,650);layout=QVBoxLayout(x);text=QTextBrowser();text.setPlainText(wr.dumps(selected['order']));layout.addWidget(text);x.exec();x.deleteLater()
+        row=QHBoxLayout();row.addWidget(button('导出此修订确认单',lambda:self.export_order(selected['order'])));row.addWidget(button('完整来源与参数审计',audit));row.addWidget(button('此单操作日志',lambda:self.show_events(selected['order']['oid'])));row.addWidget(button('关闭',dialog.accept));v.addLayout(row);rev.blockSignals(True);rev.setCurrentIndex(record['revision']-1);rev.blockSignals(False);load();dialog.exec();dialog.deleteLater()
 
     def show_events(self,oid=None):
         records=self.orders.events(oid);dialog=QDialog(self);dialog.setWindowTitle('归档操作日志明细');dialog.resize(1000,650);v=QVBoxLayout(dialog);search=QLineEdit();search.setPlaceholderText('查询时间、门店、单号、动作或文件名');v.addWidget(search);text=QTextBrowser();v.addWidget(text,1)
@@ -271,4 +274,4 @@ class ApplicationWindow(Workbench):
             try:
                 with open(path,'x',encoding='utf-8') as f:json.dump(filtered(),f,ensure_ascii=False,indent=2)
             except Exception as exc:QMessageBox.warning(dialog,'未导出',str(exc))
-        row=QHBoxLayout();row.addWidget(button('导出当前查询',export));row.addWidget(button('关闭',dialog.accept));v.addLayout(row);search.textChanged.connect(refresh);refresh();dialog.exec()
+        row=QHBoxLayout();row.addWidget(button('导出当前查询',export));row.addWidget(button('关闭',dialog.accept));v.addLayout(row);search.textChanged.connect(refresh);refresh();dialog.exec();dialog.deleteLater()

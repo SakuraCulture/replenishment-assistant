@@ -16,6 +16,13 @@ def fingerprint(result,new_focus=None):
     return hashlib.sha256(wr.dumps(business).encode()).hexdigest()
 
 
+def fingerprint_owned(result,new_focus=None):
+    """Same canonical digest; caller exclusively owns the decoded, unmodified tree."""
+    business={k:v for k,v in result.items() if k not in ('created','task','version')}
+    if new_focus is not None:business={'result':business,'new_focus':focus.validate(new_focus)['revision']}
+    return hashlib.sha256(wr.dumps(business).encode()).hexdigest()
+
+
 def encode(value):return zlib.compress(wr.dumps(value).encode())
 def decode(value):return wr.loads(zlib.decompress(value))
 
@@ -58,13 +65,22 @@ class Repository:
             data=db.execute('SELECT digest,saved,payload FROM normal_revisions WHERE oid=? AND revision=?',(oid,rev)).fetchone()
             if data is None:raise ValueError('归档修订不存在')
             payload=decode(data[2])
-            if fingerprint(payload['result'],payload.get('new_focus'))!=data[0]:raise ValueError('归档快照校验失败')
+            if fingerprint_owned(payload['result'],payload.get('new_focus'))!=data[0]:raise ValueError('归档快照校验失败')
             return {'oid':oid,'number':number,'day':day,'store':store,'revision':rev,'current_revision':current,'digest':data[0],'saved':data[1],'payload':payload}
+
+    def headers(self):
+        with closing(self.work.connect()) as db:
+            rows=db.execute("SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision ORDER BY o.day DESC,o.store").fetchall()
+        return [dict(zip(('day','store','oid','number','revision','digest','saved'),r)) for r in rows]
 
     def list(self):
         with closing(self.work.connect()) as db:
             rows=db.execute("SELECT o.day,o.store,o.number,o.current,r.saved,r.payload FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision ORDER BY o.day DESC,o.store").fetchall()
-        return [{'day':day,'store':store,'number':number,'revision':rev,'saved':saved,'name':decode(p)['result']['store_name'],'summary':decode(p)['result']['summary']} for day,store,number,rev,saved,p in rows]
+        records=[]
+        for day,store,number,rev,saved,p in rows:
+            result=decode(p)['result']
+            records.append({'day':day,'store':store,'number':number,'revision':rev,'saved':saved,'name':result['store_name'],'summary':result['summary']})
+        return records
 
     def events(self,oid=None):
         with closing(self.work.connect()) as db:
