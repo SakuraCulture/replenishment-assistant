@@ -3,7 +3,7 @@ from pathlib import Path
 from collections import Counter
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame,QVBoxLayout,QHBoxLayout,QCheckBox,QFileDialog,QDialog,QTableWidget,QTableWidgetItem,QLineEdit,QAbstractItemView,QComboBox,QMessageBox
-from app import label,button,FileCard
+from ui_controls import label,button,FileCard
 import engine,warehouse_catalog
 
 class WarehouseUi:
