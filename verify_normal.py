@@ -104,18 +104,19 @@ def run(out):
     book=openpyxl.load_workbook(path)
     assert book.sheetnames==normal_exports.SHEETS
     sheet=book['本月新品'];assert sheet.max_row==2;assert sheet['E2'].value=='new_must';assert sheet['D2'].value=='=合成-new_must' and sheet['D2'].data_type=='s';assert sheet['G2'].value=='瓶';assert sheet['Q2'].value==6
-    assert sheet['U2'].value==revised['number'] and sheet['V2'].value=='V002' and sheet['W2'].value==ids['new_must'] and sheet['X2'].value==6
+    assert sheet['U2'].value==revised['number'] and sheet['V2'].value=='必卖首铺' and sheet.max_column==22
     exported=[]
     for name in normal_exports.SHEETS:
         ws=book[name];assert [c.value for c in ws[1][:20]]==normal_exports.HEADERS;assert ws.freeze_panes is None and not ws.auto_filter.ref
         for row in ws.iter_rows(min_row=2,values_only=True):assert row[1]=='QA_A';exported.append(row[4])
         for row in ws:
-            for c in row[:20]:assert c.font.name=='宋体' and c.font.sz==11 and not c.font.bold and c.number_format=='General' and c.fill.patternType is None
-        for col in ['U','V','W','X','Y','Z','AA','AB']:assert ws.column_dimensions[col].hidden
+            for c in row[:20]:assert c.font.name=='宋体' and c.font.sz==11 and not c.font.bold and c.number_format==('0.00' if c.row>1 and c.column==16 else '@' if c.row>1 and c.column==18 else 'General') and c.fill.patternType is None
+        assert ws.max_column==22 and not any(d.hidden for d in ws.column_dimensions.values())
     assert len(exported)==len(set(exported))
-    expected=[d['E'] for d in chosen['rows'] if np.is_new(d) or engine.orderable(d)];assert set(exported)==set(expected)
+    expected=[d['E'] for d in chosen['rows'] if d['_source']=='资料匹配' and (np.is_new(d) or engine.orderable(d))];assert set(exported)==set(expected)
     oldnew={r[4]:r for r in book['往期新品'].iter_rows(min_row=2,values_only=True)}
-    for code in ['new_plain','new_disabled','new_stopped','new_local','new_no_price','missing_n']:assert oldnew[code][16]==0
+    for code in ['new_plain','new_disabled','new_stopped','new_no_price','missing_n']:assert oldnew[code][16]==0
+    assert 'new_local' not in oldnew
     assert oldnew['missing_n'][13] is None and oldnew['new_no_price'][15] is None
     assert normal_exports.filename(revised)==wr.today()+'合成店QA_A（精简版）(2).xlsx'
     book.close();oldhash=hashlib.sha256(path.read_bytes()).hexdigest()
@@ -124,7 +125,7 @@ def run(out):
     else:raise AssertionError('export overwrote an existing file')
     assert hashlib.sha256(path.read_bytes()).hexdigest()==oldhash and repo.get(wr.today(),'QA_A')['revision']==2
     repo.log(revised,'带号导出',{'path':str(path),'sha256':oldhash});assert len(repo.events(revised['oid']))==3
-    checks.append('merchant workbook exact sheet/row identity, inventory unit, all new candidates exported and unarranged zero; first 20 columns/plain font match template; hidden frozen issue/IDs; raw blank N retained, formula-like product name stored as text, no cross-store rows; no-clobber failed export preserves archive; audit log saved')
+    checks.append('merchant workbook exact sheet/row identity, inventory unit, all central-warehouse new candidates exported and unarranged zero; first 20 headers preserved; P numeric price/R status format; U order number/V concise reason; removed audit columns stay in DB (authorized 2026-10-30 change); raw blank N retained, formula-like product name stored as text, no cross-store rows; no-clobber failed export preserves archive; audit log saved')
     # Focus changes are revision-worthy even if quantities are exactly unchanged.
     emptied=copy.deepcopy(changed);emptied['new_focus']=focus.empty(wr.today()[:7]);job=work.get_job(wr.today())
     third=repo.confirm(emptied,['QA_A'],job['revision'],{'QA_A':2})[0];assert third['revision']==3 and third['payload']['result']==revised['payload']['result'];assert repo.get(wr.today(),'QA_A',2)['payload']['new_focus']==focused

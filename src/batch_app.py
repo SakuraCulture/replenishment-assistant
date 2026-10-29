@@ -68,7 +68,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         for i,w in enumerate([50,235,165,140,140,140,145,110,190]):self.store_table.setColumnWidth(i,w)
         self.store_table.horizontalHeader().setSectionResizeMode(8,QHeaderView.ResizeMode.Stretch);v.addWidget(self.store_table,1)
         options=QHBoxLayout();self.exception=QCheckBox('启用已验收的一箱例外');self.exception.setChecked(True);self.exception.toggled.connect(self.mark_dirty);options.addWidget(self.exception);options.addStretch()
-        options.addWidget(label('同时计算门店数'));self.concurrency=QSpinBox();self.concurrency.setRange(1,4);self.concurrency.setValue(2);options.addWidget(self.concurrency);v.addLayout(options)
+        options.addWidget(label('同时计算门店数（有空位自动继续下一店）'));self.concurrency=QSpinBox();self.concurrency.setRange(1,4);self.concurrency.setValue(2);options.addWidget(self.concurrency);v.addLayout(options)
         self.selection_note=label('请先导入数据。','muted');v.addWidget(self.selection_note)
         row=QHBoxLayout();row.addWidget(button('上一步：准备数据',lambda:self.navigate(0)));row.addStretch();self.calculate_btn=button('开始计算',self.start_calculation,True);row.addWidget(self.calculate_btn);v.addLayout(row)
     def make_progress(self):
@@ -286,7 +286,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
     def refresh_tables(self):
         if not hasattr(self,'overview'):return
         counts=Counter(self.states[s]['state'] for s in self.run_codes);task_total=len(self.run_codes)
-        self.run_note.setText(f"本轮完成 {counts['已完成']} / {task_total} 家 · 计算中 {counts['计算中']} · 排队 {counts['排队中']} · 失败 {counts['计算失败']} · 停止 {counts['已停止']}")
+        self.run_note.setText(f"本轮完成 {counts['已完成']} / {task_total} 家 · 计算中 {counts['计算中']} · 排队 {counts['排队中']} · 失败 {counts['计算失败']} · 停止 {counts['已停止']} · 排队门店自动补位，无需归档或导出")
         self.run_progress.setRange(0,max(task_total,1));self.run_progress.setValue(sum(counts[k] for k in ['已完成','计算失败','已停止']))
         keys=list(self.states);finished=sum(s['state']=='已完成' for s in self.states.values());total=len(keys);self.task_table.setRowCount(task_total)
         for i,s in enumerate(self.run_codes):

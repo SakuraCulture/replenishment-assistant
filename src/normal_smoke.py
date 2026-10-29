@@ -98,12 +98,14 @@ def start_smoke(app,win,args):
                 assert win.orders.get(wr.today(),'QA_A',1)['payload']['result']['new_products']['selection']['new_must']==6
                 state['checks'].append('changed candidate leaves archived V001 until explicit overwrite; default-cancel; same number V002; unchanged other store remains V001; old revision readable')
                 def choose_file():
-                    dialog=QApplication.activeModalWidget();assert isinstance(dialog,QFileDialog);dialog.setDirectory(str(out));dialog.findChild(QLineEdit,'fileNameEdit').setText('EXE确认单.xlsx');assert Path(dialog.selectedFiles()[0])==out/'EXE确认单.xlsx';dialog.accept()
-                later(choose_file);win.export_current();state['step']=6
+                    dialog=QApplication.activeModalWidget()
+                    if not isinstance(dialog,QFileDialog):later(choose_file);return
+                    dialog.setDirectory(str(out));dialog.findChild(QLineEdit,'fileNameEdit').setText('EXE确认单.xlsx');assert Path(dialog.selectedFiles()[0])==out/'EXE确认单.xlsx';dialog.accept()
+                later(choose_file);win.export_current([win.current_store]);state['step']=6
             elif step==6 and win.worker is None:
                 assert (out/'EXE确认单.xlsx').is_file();
                 import openpyxl
-                with_book=openpyxl.load_workbook(out/'EXE确认单.xlsx');assert with_book.sheetnames==['往期新品','本月新品','中心仓动销补货清单'];assert with_book['本月新品']['E2'].value=='new_must' and with_book['本月新品']['Q2'].value==6;assert with_book['往期新品'].max_row==9;with_book.close();assert any(e['action']=='带号导出' for e in win.orders.events())
+                with_book=openpyxl.load_workbook(out/'EXE确认单.xlsx');assert with_book.sheetnames==['往期新品','本月新品','中心仓动销补货清单'];assert with_book['本月新品']['E2'].value=='new_must' and with_book['本月新品']['Q2'].value==6;assert with_book['往期新品'].max_row==8;with_book.close();assert any(e['action']=='带号导出' for e in win.orders.events())
                 record=win.work_repository.get_job(wr.today());state['record']=record;win.reset_job();assert not win.new_bases;win.restore_job(record);assert 'QA_A' in win.new_bases and win.results['QA_A']['new_products']['selection']['new_must']==12
                 state['checks'].append('actual file-save dialog and frozen numbered Excel export; queryable event; saved new choices and original base restored after resetting work area')
                 win.show_section(2);win.archive_search.setText('new_must');assert not win.archive_table.isRowHidden(0);snap('03_归档查询');state['step']=60
@@ -148,11 +150,13 @@ def start_smoke(app,win,args):
                 state['checks'].append('real 14244 rows: 9023 blank-stockout new candidates / 3455 eligible; actual selector searches and applies one; original N/AS retained; other 14243 rows exactly unchanged; unlimited amount reconciles')
                 state['step']=100;later(lambda:modal_click('normalConfirm','确认并归档'));win.confirm_normal();assert win.orders.get(wr.today(),win.current_store)
                 def real_file():
-                    dialog=QApplication.activeModalWidget();assert isinstance(dialog,QFileDialog);dialog.setDirectory(str(out));dialog.findChild(QLineEdit,'fileNameEdit').setText('EXE真实新品确认单.xlsx');dialog.accept()
-                later(real_file);win.export_current();state['step']=11
+                    dialog=QApplication.activeModalWidget()
+                    if not isinstance(dialog,QFileDialog):later(real_file);return
+                    dialog.setDirectory(str(out));dialog.findChild(QLineEdit,'fileNameEdit').setText('EXE真实新品确认单.xlsx');dialog.accept()
+                later(real_file);win.export_current([win.current_store]);state['step']=11
             elif step==11 and win.worker is None:
                 assert (out/'EXE真实新品确认单.xlsx').is_file();
                 import openpyxl
-                book=openpyxl.load_workbook(out/'EXE真实新品确认单.xlsx',read_only=True);assert book['本月新品'].max_row==2 and book['本月新品']['E2'].value==state['real_sku'];assert book['往期新品'].max_row==9023;assert book['中心仓动销补货清单'].max_row==431;assert sum(row[16]==0 for row in book['往期新品'].iter_rows(min_row=2,values_only=True))==9022;book.close();snap('07_真实归档结果');state['checks'].append('real-data normal order signed and numbered merchant workbook exported from frozen revision');finish()
+                book=openpyxl.load_workbook(out/'EXE真实新品确认单.xlsx',read_only=True);assert book['本月新品'].max_row==2 and book['本月新品']['E2'].value==state['real_sku'];assert book['往期新品'].max_row==1+sum(new_products.is_new(d) and d['_source']=='资料匹配' and d['E']!=state['real_sku'] for d in win.results[win.current_store]['rows']);assert book['中心仓动销补货清单'].max_row==431;assert sum(row[16]==0 for row in book['往期新品'].iter_rows(min_row=2,values_only=True))==book['往期新品'].max_row-1;book.close();snap('07_真实归档结果');state['checks'].append('real-data normal order signed and numbered merchant workbook exported from frozen revision');finish()
         except Exception:finish(traceback.format_exc())
     timer.timeout.connect(tick);timer.start(250)
