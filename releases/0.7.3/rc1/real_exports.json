@@ -1,0 +1,54 @@
+{
+  "passed": true,
+  "differences": 0,
+  "baseline_commit": "84a0671bd81daa8c2e94a8648c2332b9fc8fa2a9",
+  "expected_delta": "remove existing disabled/stopped rows from working product, priority-match and known excluded conflict detail projections; preserve all remaining values/types/order/styles and raw archive fingerprints",
+  "whitelist": "structure_oracle exact clock/build cells only; merchant comments/custom properties also exact",
+  "checks": [
+    {
+      "store": "CXT20260401",
+      "raw_rows": 13115,
+      "export_rows": 11379,
+      "removed": 1736,
+      "merchant_cells_types_order_styles_comments": 0,
+      "internal_cells_types_order_styles": 0,
+      "raw_signed_result_unchanged": true
+    },
+    {
+      "store": "CXT20260803",
+      "raw_rows": 13298,
+      "export_rows": 11574,
+      "removed": 1724,
+      "merchant_cells_types_order_styles_comments": 0,
+      "internal_cells_types_order_styles": 0,
+      "raw_signed_result_unchanged": true
+    },
+    {
+      "store": "CXTBLD20251127",
+      "raw_rows": 19705,
+      "export_rows": 13483,
+      "removed": 6222,
+      "merchant_cells_types_order_styles_comments": 0,
+      "internal_cells_types_order_styles": 0,
+      "raw_signed_result_unchanged": true
+    },
+    {
+      "store": "SJHXD20260918",
+      "raw_rows": 14996,
+      "export_rows": 12971,
+      "removed": 2025,
+      "merchant_cells_types_order_styles_comments": 0,
+      "internal_cells_types_order_styles": 0,
+      "raw_signed_result_unchanged": true
+    },
+    {
+      "store": "ZYD20251112",
+      "raw_rows": 23579,
+      "export_rows": 19138,
+      "removed": 4441,
+      "merchant_cells_types_order_styles_comments": 0,
+      "internal_cells_types_order_styles": 0,
+      "raw_signed_result_unchanged": true
+    }
+  ]
+}

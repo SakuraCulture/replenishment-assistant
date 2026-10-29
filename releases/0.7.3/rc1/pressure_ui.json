@@ -1,0 +1,1785 @@
+{
+  "passed": true,
+  "error": null,
+  "version": {
+    "app": "补货助手",
+    "version": "0.7.3",
+    "parameter_schema_version": 1,
+    "job_schema_version": 1,
+    "routing_version": "0.5.0",
+    "model_version": "0.3.0-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "source_commit": "2b8a7d5d384c71036d13e4230e0d10d1221b9846",
+    "build_id": "rc1",
+    "built_at": "2026-10-30T04:54:38.8368374+08:00"
+  },
+  "timings": {
+    "check_files": {
+      "seconds": 117.80109180003637,
+      "max_ui_gap_seconds": 0.5846815999830142
+    },
+    "store_settings": {
+      "seconds": 0.054347700031939894,
+      "max_ui_gap_seconds": 0.05401390005135909
+    },
+    "calculation": {
+      "seconds": 64.48744729999453,
+      "max_ui_gap_seconds": 2.9093136999872513
+    },
+    "LYZXC2025/goods": {
+      "seconds": 0.212422400014475,
+      "max_ui_gap_seconds": 0.212129499996081
+    },
+    "LYZXC2025/all": {
+      "seconds": 0.04691360000288114,
+      "max_ui_gap_seconds": 0.0467188999755308
+    },
+    "LYZXC2025/sort": {
+      "seconds": 0.06824890000279993,
+      "max_ui_gap_seconds": 0.06810769997537136
+    },
+    "LYZXC2025/detail": {
+      "seconds": 0.002283699985127896,
+      "max_ui_gap_seconds": 0
+    },
+    "LYZXC2025/new": {
+      "seconds": 1.8656210999470204,
+      "max_ui_gap_seconds": 1.8655843999586068
+    },
+    "ZXC0002/goods": {
+      "seconds": 0.09582770004635677,
+      "max_ui_gap_seconds": 0.09582020004745573
+    },
+    "ZXC0002/all": {
+      "seconds": 0.05135120003251359,
+      "max_ui_gap_seconds": 0.05058520002057776
+    },
+    "ZXC0002/sort": {
+      "seconds": 0.016688300005625933,
+      "max_ui_gap_seconds": 0
+    },
+    "ZXC0002/detail": {
+      "seconds": 0.0120825000340119,
+      "max_ui_gap_seconds": 0.0069899000227451324
+    },
+    "ZXC0002/new": {
+      "seconds": 0.08449710003333166,
+      "max_ui_gap_seconds": 0.0841808000113815
+    },
+    "ZXC1688/goods": {
+      "seconds": 0.014536500035319477,
+      "max_ui_gap_seconds": 0
+    },
+    "ZXC1688/all": {
+      "seconds": 0.004580899956636131,
+      "max_ui_gap_seconds": 0
+    },
+    "ZXC1688/sort": {
+      "seconds": 0.0005969000048935413,
+      "max_ui_gap_seconds": 0
+    },
+    "ZXC1688/detail": {
+      "seconds": 0.0014968999894335866,
+      "max_ui_gap_seconds": 0
+    },
+    "ZXC1688/new": {
+      "seconds": 0.013167599972803146,
+      "max_ui_gap_seconds": 0
+    },
+    "PYD0002/goods": {
+      "seconds": 0.07346420001704246,
+      "max_ui_gap_seconds": 0.07345809997059405
+    },
+    "PYD0002/all": {
+      "seconds": 0.04711360001238063,
+      "max_ui_gap_seconds": 0.04241080000065267
+    },
+    "PYD0002/sort": {
+      "seconds": 0.047778200008906424,
+      "max_ui_gap_seconds": 0.04705009999452159
+    },
+    "PYD0002/detail": {
+      "seconds": 0.0021989999804645777,
+      "max_ui_gap_seconds": 0
+    },
+    "PYD0002/new": {
+      "seconds": 0.041974399995524436,
+      "max_ui_gap_seconds": 0.041824700019788
+    },
+    "LYDXD20251021/goods": {
+      "seconds": 0.10934869997436181,
+      "max_ui_gap_seconds": 0.10934129997622222
+    },
+    "LYDXD20251021/all": {
+      "seconds": 0.06079179997323081,
+      "max_ui_gap_seconds": 0.06030900002224371
+    },
+    "LYDXD20251021/sort": {
+      "seconds": 0.037188999995123595,
+      "max_ui_gap_seconds": 0.031794600014109164
+    },
+    "LYDXD20251021/detail": {
+      "seconds": 0.02617259998805821,
+      "max_ui_gap_seconds": 0.02616639999905601
+    },
+    "LYDXD20251021/new": {
+      "seconds": 0.12871560000348836,
+      "max_ui_gap_seconds": 0.1287095000152476
+    },
+    "YZD20251031/goods": {
+      "seconds": 0.1575301000266336,
+      "max_ui_gap_seconds": 0.1575225000269711
+    },
+    "YZD20251031/all": {
+      "seconds": 0.08435439999448135,
+      "max_ui_gap_seconds": 0.08414389996323735
+    },
+    "YZD20251031/sort": {
+      "seconds": 0.04342420003376901,
+      "max_ui_gap_seconds": 0.038386100030038506
+    },
+    "YZD20251031/detail": {
+      "seconds": 0.053516200045123696,
+      "max_ui_gap_seconds": 0.04998680000426248
+    },
+    "YZD20251031/new": {
+      "seconds": 0.10104720003437251,
+      "max_ui_gap_seconds": 0.1006690000067465
+    },
+    "YSD20251113/goods": {
+      "seconds": 0.14507319999393076,
+      "max_ui_gap_seconds": 0.1450240000267513
+    },
+    "YSD20251113/all": {
+      "seconds": 0.10097810003207996,
+      "max_ui_gap_seconds": 0.10097040003165603
+    },
+    "YSD20251113/sort": {
+      "seconds": 0.02754909999202937,
+      "max_ui_gap_seconds": 0.027534900000318885
+    },
+    "YSD20251113/detail": {
+      "seconds": 0.0350917000323534,
+      "max_ui_gap_seconds": 0.03021570004057139
+    },
+    "YSD20251113/new": {
+      "seconds": 0.11839690001215786,
+      "max_ui_gap_seconds": 0.11838960001477972
+    },
+    "YTSH20260408/goods": {
+      "seconds": 0.11274119996232912,
+      "max_ui_gap_seconds": 0.11273349996190518
+    },
+    "YTSH20260408/all": {
+      "seconds": 0.05883049999829382,
+      "max_ui_gap_seconds": 0.058673900028225034
+    },
+    "YTSH20260408/sort": {
+      "seconds": 0.02091429999563843,
+      "max_ui_gap_seconds": 0
+    },
+    "YTSH20260408/detail": {
+      "seconds": 0.06180619995575398,
+      "max_ui_gap_seconds": 0.05617299996083602
+    },
+    "YTSH20260408/new": {
+      "seconds": 0.09292500000447035,
+      "max_ui_gap_seconds": 0.09276390000013635
+    },
+    "SDLYZXC2025/goods": {
+      "seconds": 0.012553400010801852,
+      "max_ui_gap_seconds": 0
+    },
+    "SDLYZXC2025/all": {
+      "seconds": 0.0016992000164464116,
+      "max_ui_gap_seconds": 0
+    },
+    "SDLYZXC2025/sort": {
+      "seconds": 0.004328599956352264,
+      "max_ui_gap_seconds": 0
+    },
+    "SDLYZXC2025/detail": {
+      "seconds": 0.001909000042360276,
+      "max_ui_gap_seconds": 0
+    },
+    "SDLYZXC2025/new": {
+      "seconds": 0.010170200024731457,
+      "max_ui_gap_seconds": 0
+    },
+    "ZXC2025/goods": {
+      "seconds": 0.0851177999866195,
+      "max_ui_gap_seconds": 0.08464559999993071
+    },
+    "ZXC2025/all": {
+      "seconds": 0.051862799969967455,
+      "max_ui_gap_seconds": 0.05173919996013865
+    },
+    "ZXC2025/sort": {
+      "seconds": 0.02679909998551011,
+      "max_ui_gap_seconds": 0.021602399996481836
+    },
+    "ZXC2025/detail": {
+      "seconds": 0.043115400010719895,
+      "max_ui_gap_seconds": 0.04288939997786656
+    },
+    "ZXC2025/new": {
+      "seconds": 0.09009630000218749,
+      "max_ui_gap_seconds": 0.08984989998862147
+    },
+    "LSD20251550/goods": {
+      "seconds": 0.10984499996993691,
+      "max_ui_gap_seconds": 0.10983699996722862
+    },
+    "LSD20251550/all": {
+      "seconds": 0.07389739999780431,
+      "max_ui_gap_seconds": 0.07346739998320118
+    },
+    "LSD20251550/sort": {
+      "seconds": 0.05638710001949221,
+      "max_ui_gap_seconds": 0.050741099985316396
+    },
+    "LSD20251550/detail": {
+      "seconds": 0.001993000041693449,
+      "max_ui_gap_seconds": 0
+    },
+    "LSD20251550/new": {
+      "seconds": 0.07495849998667836,
+      "max_ui_gap_seconds": 0.07467359997099265
+    },
+    "CXTYT20260716/goods": {
+      "seconds": 0.14369599998462945,
+      "max_ui_gap_seconds": 0.14368839998496696
+    },
+    "CXTYT20260716/all": {
+      "seconds": 0.08702969999285415,
+      "max_ui_gap_seconds": 0.08674080000491813
+    },
+    "CXTYT20260716/sort": {
+      "seconds": 0.0531423999927938,
+      "max_ui_gap_seconds": 0.05312609998509288
+    },
+    "CXTYT20260716/detail": {
+      "seconds": 0.021601399988867342,
+      "max_ui_gap_seconds": 0.021596300008241087
+    },
+    "CXTYT20260716/new": {
+      "seconds": 0.10567670001182705,
+      "max_ui_gap_seconds": 0.10509860003367066
+    },
+    "CXTBLD20251127/goods": {
+      "seconds": 0.12831980001647025,
+      "max_ui_gap_seconds": 0.12831260001985356
+    },
+    "CXTBLD20251127/all": {
+      "seconds": 0.0683335000067018,
+      "max_ui_gap_seconds": 0.06287700001848862
+    },
+    "CXTBLD20251127/sort": {
+      "seconds": 0.04811759997392073,
+      "max_ui_gap_seconds": 0.04261419997783378
+    },
+    "CXTBLD20251127/detail": {
+      "seconds": 0.0025304000009782612,
+      "max_ui_gap_seconds": 0
+    },
+    "CXTBLD20251127/new": {
+      "seconds": 0.08378569997148588,
+      "max_ui_gap_seconds": 0.0837774999672547
+    },
+    "CXT20260803/goods": {
+      "seconds": 0.0957236000103876,
+      "max_ui_gap_seconds": 0.0957168000168167
+    },
+    "CXT20260803/all": {
+      "seconds": 0.05373230000259355,
+      "max_ui_gap_seconds": 0.053379899996798486
+    },
+    "CXT20260803/sort": {
+      "seconds": 0.02172040002187714,
+      "max_ui_gap_seconds": 0
+    },
+    "CXT20260803/detail": {
+      "seconds": 0.05522079998627305,
+      "max_ui_gap_seconds": 0.050016900000628084
+    },
+    "CXT20260803/new": {
+      "seconds": 0.05895580002106726,
+      "max_ui_gap_seconds": 0.058934600034262985
+    },
+    "ZYD20251112/goods": {
+      "seconds": 0.14514060004148632,
+      "max_ui_gap_seconds": 0.14470270002493635
+    },
+    "ZYD20251112/all": {
+      "seconds": 0.09017260000109673,
+      "max_ui_gap_seconds": 0.08992709999438375
+    },
+    "ZYD20251112/sort": {
+      "seconds": 0.03298899997025728,
+      "max_ui_gap_seconds": 0.027907799987588078
+    },
+    "ZYD20251112/detail": {
+      "seconds": 0.05117880000034347,
+      "max_ui_gap_seconds": 0.05095040000742301
+    },
+    "ZYD20251112/new": {
+      "seconds": 0.09540709998691455,
+      "max_ui_gap_seconds": 0.09482609998667613
+    },
+    "CXT20260401/goods": {
+      "seconds": 0.09558089997153729,
+      "max_ui_gap_seconds": 0.09521930001210421
+    },
+    "CXT20260401/all": {
+      "seconds": 0.05552600004011765,
+      "max_ui_gap_seconds": 0.05552009999519214
+    },
+    "CXT20260401/sort": {
+      "seconds": 0.04355810000561178,
+      "max_ui_gap_seconds": 0.038552199956029654
+    },
+    "CXT20260401/detail": {
+      "seconds": 0.0028833000105805695,
+      "max_ui_gap_seconds": 0
+    },
+    "CXT20260401/new": {
+      "seconds": 0.05817079998087138,
+      "max_ui_gap_seconds": 0.05816149996826425
+    },
+    "CXTQDS20260828/goods": {
+      "seconds": 0.0953328000032343,
+      "max_ui_gap_seconds": 0.09532490000128746
+    },
+    "CXTQDS20260828/all": {
+      "seconds": 0.05306770000606775,
+      "max_ui_gap_seconds": 0.052750299975741655
+    },
+    "CXTQDS20260828/sort": {
+      "seconds": 0.03884480003034696,
+      "max_ui_gap_seconds": 0.03272380004636943
+    },
+    "CXTQDS20260828/detail": {
+      "seconds": 0.04569270001957193,
+      "max_ui_gap_seconds": 0.04568229999858886
+    },
+    "CXTQDS20260828/new": {
+      "seconds": 0.08756549999816343,
+      "max_ui_gap_seconds": 0.08689169998979196
+    },
+    "TSD2025_1/goods": {
+      "seconds": 0.11206409998703748,
+      "max_ui_gap_seconds": 0.11199299996951595
+    },
+    "TSD2025_1/all": {
+      "seconds": 0.06379149999702349,
+      "max_ui_gap_seconds": 0.06305009999778122
+    },
+    "TSD2025_1/sort": {
+      "seconds": 0.039070600003469735,
+      "max_ui_gap_seconds": 0.03385659999912605
+    },
+    "TSD2025_1/detail": {
+      "seconds": 0.022713999962434173,
+      "max_ui_gap_seconds": 0.02258249995065853
+    },
+    "TSD2025_1/new": {
+      "seconds": 0.11524109996389598,
+      "max_ui_gap_seconds": 0.11486440000589937
+    },
+    "TSD20251211/goods": {
+      "seconds": 0.05461819999618456,
+      "max_ui_gap_seconds": 0.05461189994821325
+    },
+    "TSD20251211/all": {
+      "seconds": 0.026648700004443526,
+      "max_ui_gap_seconds": 0.026359399955254048
+    },
+    "TSD20251211/sort": {
+      "seconds": 0.03798969998024404,
+      "max_ui_gap_seconds": 0.03411720000440255
+    },
+    "TSD20251211/detail": {
+      "seconds": 0.0022936000023037195,
+      "max_ui_gap_seconds": 0
+    },
+    "TSD20251211/new": {
+      "seconds": 0.05894680001074448,
+      "max_ui_gap_seconds": 0.05846259999088943
+    },
+    "TBBLBL20260429/goods": {
+      "seconds": 0.13929039996583015,
+      "max_ui_gap_seconds": 0.13347889995202422
+    },
+    "TBBLBL20260429/all": {
+      "seconds": 0.08607890002895147,
+      "max_ui_gap_seconds": 0.0859207000466995
+    },
+    "TBBLBL20260429/sort": {
+      "seconds": 0.050001900002826005,
+      "max_ui_gap_seconds": 0.044047500006854534
+    },
+    "TBBLBL20260429/detail": {
+      "seconds": 0.009228000009898096,
+      "max_ui_gap_seconds": 0.009017400036100298
+    },
+    "TBBLBL20260429/new": {
+      "seconds": 0.08592969999881461,
+      "max_ui_gap_seconds": 0.08592230000067502
+    },
+    "TBBLLS20260905/goods": {
+      "seconds": 0.10198320000199601,
+      "max_ui_gap_seconds": 0.10197540000081062
+    },
+    "TBBLLS20260905/all": {
+      "seconds": 0.06510080001316965,
+      "max_ui_gap_seconds": 0.0650891000404954
+    },
+    "TBBLLS20260905/sort": {
+      "seconds": 0.028364299971144646,
+      "max_ui_gap_seconds": 0.028356899973005056
+    },
+    "TBBLLS20260905/detail": {
+      "seconds": 0.029419399972539395,
+      "max_ui_gap_seconds": 0.029413499985821545
+    },
+    "TBBLLS20260905/new": {
+      "seconds": 0.07551349996356294,
+      "max_ui_gap_seconds": 0.07550659996923059
+    },
+    "TBBLYS20260328/goods": {
+      "seconds": 0.18559920002007857,
+      "max_ui_gap_seconds": 0.18088310002349317
+    },
+    "TBBLYS20260328/all": {
+      "seconds": 0.11642619996564463,
+      "max_ui_gap_seconds": 0.11640619998797774
+    },
+    "TBBLYS20260328/sort": {
+      "seconds": 0.04262560000643134,
+      "max_ui_gap_seconds": 0.03756490000523627
+    },
+    "TBBLYS20260328/detail": {
+      "seconds": 0.0442011000122875,
+      "max_ui_gap_seconds": 0.03920470003504306
+    },
+    "TBBLYS20260328/new": {
+      "seconds": 0.12750919995596632,
+      "max_ui_gap_seconds": 0.1274995999992825
+    },
+    "SJHXD20260918/goods": {
+      "seconds": 0.10768999997526407,
+      "max_ui_gap_seconds": 0.10726429999340326
+    },
+    "SJHXD20260918/all": {
+      "seconds": 0.05293930001789704,
+      "max_ui_gap_seconds": 0.052919500041753054
+    },
+    "SJHXD20260918/sort": {
+      "seconds": 0.04829909995896742,
+      "max_ui_gap_seconds": 0.04315759998280555
+    },
+    "SJHXD20260918/detail": {
+      "seconds": 0.004541900008916855,
+      "max_ui_gap_seconds": 0
+    },
+    "SJHXD20260918/new": {
+      "seconds": 0.09471979999216273,
+      "max_ui_gap_seconds": 0.09453529998427257
+    },
+    "JFLC2025_1/goods": {
+      "seconds": 0.11199950001901016,
+      "max_ui_gap_seconds": 0.11199200002010912
+    },
+    "JFLC2025_1/all": {
+      "seconds": 0.07706469995900989,
+      "max_ui_gap_seconds": 0.07161330000963062
+    },
+    "JFLC2025_1/sort": {
+      "seconds": 0.0652422999846749,
+      "max_ui_gap_seconds": 0.060098999994806945
+    },
+    "JFLC2025_1/detail": {
+      "seconds": 0.009876900003291667,
+      "max_ui_gap_seconds": 0.009871600021142513
+    },
+    "JFLC2025_1/new": {
+      "seconds": 0.11367560003418475,
+      "max_ui_gap_seconds": 0.11357149999821559
+    },
+    "LSZ2025_1/goods": {
+      "seconds": 0.06934699998237193,
+      "max_ui_gap_seconds": 0.06920019997050986
+    },
+    "LSZ2025_1/all": {
+      "seconds": 0.03672849998110905,
+      "max_ui_gap_seconds": 0.036523699993267655
+    },
+    "LSZ2025_1/sort": {
+      "seconds": 0.043185300019104034,
+      "max_ui_gap_seconds": 0.042764200014062226
+    },
+    "LSZ2025_1/detail": {
+      "seconds": 0.002546000003349036,
+      "max_ui_gap_seconds": 0
+    },
+    "LSZ2025_1/new": {
+      "seconds": 0.06438880000496283,
+      "max_ui_gap_seconds": 0.0640002999571152
+    }
+  },
+  "gc_pauses": [
+    {
+      "phase": "check_files",
+      "seconds": 0.05755260004661977,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.08843100001104176,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.14307920000283048,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.1760964000131935,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.16407519998028874,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 304
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.15518000000156462,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.17037010000785813,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.1891637000371702,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.21615519997430965,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.2453648999799043,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.35875870002200827,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 152
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.4160375000210479,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.46568899997510016,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "check_files",
+      "seconds": 0.5674446999910288,
+      "generation": 2,
+      "thread": 16624,
+      "collected": 0
+    },
+    {
+      "phase": "calculation",
+      "seconds": 0.7056064000353217,
+      "generation": 2,
+      "thread": 53628,
+      "collected": 33
+    },
+    {
+      "phase": "calculation",
+      "seconds": 0.8316430000122637,
+      "generation": 2,
+      "thread": 53628,
+      "collected": 0
+    },
+    {
+      "phase": "calculation",
+      "seconds": 0.9963974000420421,
+      "generation": 2,
+      "thread": 53628,
+      "collected": 0
+    },
+    {
+      "phase": "calculation",
+      "seconds": 0.060974700027145445,
+      "generation": 1,
+      "thread": 53628,
+      "collected": 0
+    },
+    {
+      "phase": "calculation",
+      "seconds": 1.8466475999448448,
+      "generation": 2,
+      "thread": 60192,
+      "collected": 0
+    },
+    {
+      "phase": "calculation",
+      "seconds": 0.1785120999556966,
+      "generation": 1,
+      "thread": 60192,
+      "collected": 0
+    },
+    {
+      "phase": "calculation",
+      "seconds": 0.0753878999967128,
+      "generation": 1,
+      "thread": 53628,
+      "collected": 0
+    },
+    {
+      "phase": "calculation",
+      "seconds": 0.1295181000023149,
+      "generation": 1,
+      "thread": 53628,
+      "collected": 0
+    },
+    {
+      "phase": "calculation",
+      "seconds": 0.14622550003696233,
+      "generation": 1,
+      "thread": 53628,
+      "collected": 0
+    },
+    {
+      "phase": "calculation",
+      "seconds": 0.11256979999598116,
+      "generation": 1,
+      "thread": 53628,
+      "collected": 0
+    },
+    {
+      "phase": "calculation",
+      "seconds": 0.05462999996962026,
+      "generation": 0,
+      "thread": 60192,
+      "collected": 0
+    },
+    {
+      "phase": "LYZXC2025/goods",
+      "seconds": 0.1299834999954328,
+      "generation": 1,
+      "thread": 16756,
+      "collected": 0
+    },
+    {
+      "phase": "LYZXC2025/new",
+      "seconds": 1.7745290000457317,
+      "generation": 2,
+      "thread": 16756,
+      "collected": 0
+    }
+  ],
+  "events": [
+    {
+      "store": "LYZXC2025",
+      "state": "计算中",
+      "time": 150.43699999997625
+    },
+    {
+      "store": "ZXC0002",
+      "state": "计算中",
+      "time": 150.67199999996228
+    },
+    {
+      "store": "ZXC1688",
+      "state": "计算中",
+      "time": 150.92199999996228
+    },
+    {
+      "store": "PYD0002",
+      "state": "计算中",
+      "time": 151.03099999995902
+    },
+    {
+      "store": "ZXC1688",
+      "state": "已完成",
+      "time": 151.51499999995576
+    },
+    {
+      "store": "LYDXD20251021",
+      "state": "计算中",
+      "time": 151.79699999996228
+    },
+    {
+      "store": "LYZXC2025",
+      "state": "已完成",
+      "time": 153.88999999995576
+    },
+    {
+      "store": "YZD20251031",
+      "state": "计算中",
+      "time": 154.51499999995576
+    },
+    {
+      "store": "PYD0002",
+      "state": "已完成",
+      "time": 157.43699999997625
+    },
+    {
+      "store": "YSD20251113",
+      "state": "计算中",
+      "time": 157.46899999998277
+    },
+    {
+      "store": "ZXC0002",
+      "state": "已完成",
+      "time": 157.46899999998277
+    },
+    {
+      "store": "LYDXD20251021",
+      "state": "已完成",
+      "time": 157.46899999998277
+    },
+    {
+      "store": "YTSH20260408",
+      "state": "计算中",
+      "time": 157.65599999995902
+    },
+    {
+      "store": "SDLYZXC2025",
+      "state": "计算中",
+      "time": 157.78099999995902
+    },
+    {
+      "store": "SDLYZXC2025",
+      "state": "已完成",
+      "time": 157.88999999995576
+    },
+    {
+      "store": "ZXC2025",
+      "state": "计算中",
+      "time": 158.09399999998277
+    },
+    {
+      "store": "YTSH20260408",
+      "state": "已完成",
+      "time": 161.56199999997625
+    },
+    {
+      "store": "LSD20251550",
+      "state": "计算中",
+      "time": 162.35899999999674
+    },
+    {
+      "store": "ZXC2025",
+      "state": "已完成",
+      "time": 162.35899999999674
+    },
+    {
+      "store": "CXTYT20260716",
+      "state": "计算中",
+      "time": 162.35899999999674
+    },
+    {
+      "store": "YSD20251113",
+      "state": "已完成",
+      "time": 163.56199999997625
+    },
+    {
+      "store": "CXTBLD20251127",
+      "state": "计算中",
+      "time": 163.56199999997625
+    },
+    {
+      "store": "YZD20251031",
+      "state": "已完成",
+      "time": 163.56199999997625
+    },
+    {
+      "store": "CXT20260803",
+      "state": "计算中",
+      "time": 163.73399999999674
+    },
+    {
+      "store": "LSD20251550",
+      "state": "已完成",
+      "time": 166.15599999995902
+    },
+    {
+      "store": "ZYD20251112",
+      "state": "计算中",
+      "time": 166.4529999999795
+    },
+    {
+      "store": "CXT20260803",
+      "state": "已完成",
+      "time": 167.29699999996228
+    },
+    {
+      "store": "CXT20260401",
+      "state": "计算中",
+      "time": 167.59399999998277
+    },
+    {
+      "store": "CXTYT20260716",
+      "state": "已完成",
+      "time": 167.93699999997625
+    },
+    {
+      "store": "CXTQDS20260828",
+      "state": "计算中",
+      "time": 168.73399999999674
+    },
+    {
+      "store": "CXTBLD20251127",
+      "state": "已完成",
+      "time": 168.73399999999674
+    },
+    {
+      "store": "TSD2025_1",
+      "state": "计算中",
+      "time": 168.75
+    },
+    {
+      "store": "CXT20260401",
+      "state": "已完成",
+      "time": 171.0779999999795
+    },
+    {
+      "store": "TSD20251211",
+      "state": "计算中",
+      "time": 171.34399999998277
+    },
+    {
+      "store": "ZYD20251112",
+      "state": "已完成",
+      "time": 172.10899999999674
+    },
+    {
+      "store": "TBBLBL20260429",
+      "state": "计算中",
+      "time": 173.23399999999674
+    },
+    {
+      "store": "CXTQDS20260828",
+      "state": "已完成",
+      "time": 173.23399999999674
+    },
+    {
+      "store": "TBBLLS20260905",
+      "state": "计算中",
+      "time": 173.25
+    },
+    {
+      "store": "TSD2025_1",
+      "state": "已完成",
+      "time": 173.25
+    },
+    {
+      "store": "TBBLYS20260328",
+      "state": "计算中",
+      "time": 174.125
+    },
+    {
+      "store": "TSD20251211",
+      "state": "已完成",
+      "time": 174.125
+    },
+    {
+      "store": "SJHXD20260918",
+      "state": "计算中",
+      "time": 174.13999999995576
+    },
+    {
+      "store": "TBBLLS20260905",
+      "state": "已完成",
+      "time": 177.06199999997625
+    },
+    {
+      "store": "JFLC2025_1",
+      "state": "计算中",
+      "time": 177.3279999999795
+    },
+    {
+      "store": "TBBLBL20260429",
+      "state": "已完成",
+      "time": 177.73399999999674
+    },
+    {
+      "store": "LSZ2025_1",
+      "state": "计算中",
+      "time": 178.25
+    },
+    {
+      "store": "SJHXD20260918",
+      "state": "已完成",
+      "time": 178.25
+    },
+    {
+      "store": "TBBLYS20260328",
+      "state": "已完成",
+      "time": 180.60899999999674
+    },
+    {
+      "store": "LSZ2025_1",
+      "state": "已完成",
+      "time": 180.79699999996228
+    },
+    {
+      "store": "JFLC2025_1",
+      "state": "已完成",
+      "time": 181.29699999996228
+    }
+  ],
+  "views": [
+    {
+      "store": "LYZXC2025",
+      "raw": 12136,
+      "visible": 10596,
+      "new": 10592
+    },
+    {
+      "store": "ZXC0002",
+      "raw": 14928,
+      "visible": 13061,
+      "new": 914
+    },
+    {
+      "store": "ZXC1688",
+      "raw": 511,
+      "visible": 406,
+      "new": 78
+    },
+    {
+      "store": "PYD0002",
+      "raw": 10923,
+      "visible": 9165,
+      "new": 1614
+    },
+    {
+      "store": "LYDXD20251021",
+      "raw": 16727,
+      "visible": 14930,
+      "new": 12300
+    },
+    {
+      "store": "YZD20251031",
+      "raw": 25459,
+      "visible": 17803,
+      "new": 10544
+    },
+    {
+      "store": "YSD20251113",
+      "raw": 21982,
+      "visible": 19056,
+      "new": 11310
+    },
+    {
+      "store": "YTSH20260408",
+      "raw": 16831,
+      "visible": 14972,
+      "new": 11232
+    },
+    {
+      "store": "SDLYZXC2025",
+      "raw": 59,
+      "visible": 53,
+      "new": 35
+    },
+    {
+      "store": "ZXC2025",
+      "raw": 14803,
+      "visible": 12941,
+      "new": 12778
+    },
+    {
+      "store": "LSD20251550",
+      "raw": 16081,
+      "visible": 13816,
+      "new": 7666
+    },
+    {
+      "store": "CXTYT20260716",
+      "raw": 22607,
+      "visible": 20782,
+      "new": 15637
+    },
+    {
+      "store": "CXTBLD20251127",
+      "raw": 19705,
+      "visible": 13483,
+      "new": 8755
+    },
+    {
+      "store": "CXT20260803",
+      "raw": 13298,
+      "visible": 11574,
+      "new": 6470
+    },
+    {
+      "store": "ZYD20251112",
+      "raw": 23579,
+      "visible": 19138,
+      "new": 12884
+    },
+    {
+      "store": "CXT20260401",
+      "raw": 13115,
+      "visible": 11379,
+      "new": 5531
+    },
+    {
+      "store": "CXTQDS20260828",
+      "raw": 14532,
+      "visible": 12744,
+      "new": 10928
+    },
+    {
+      "store": "TSD2025_1",
+      "raw": 17722,
+      "visible": 16024,
+      "new": 16024
+    },
+    {
+      "store": "TSD20251211",
+      "raw": 7164,
+      "visible": 6316,
+      "new": 6316
+    },
+    {
+      "store": "TBBLBL20260429",
+      "raw": 20654,
+      "visible": 18902,
+      "new": 10770
+    },
+    {
+      "store": "TBBLLS20260905",
+      "raw": 14662,
+      "visible": 12944,
+      "new": 6981
+    },
+    {
+      "store": "TBBLYS20260328",
+      "raw": 29981,
+      "visible": 28083,
+      "new": 17076
+    },
+    {
+      "store": "SJHXD20260918",
+      "raw": 14996,
+      "visible": 12971,
+      "new": 12971
+    },
+    {
+      "store": "JFLC2025_1",
+      "raw": 18120,
+      "visible": 16511,
+      "new": 16509
+    },
+    {
+      "store": "LSZ2025_1",
+      "raw": 9858,
+      "visible": 9032,
+      "new": 7033
+    }
+  ],
+  "stores": [
+    "LYZXC2025",
+    "ZXC0002",
+    "ZXC1688",
+    "PYD0002",
+    "LYDXD20251021",
+    "YZD20251031",
+    "YSD20251113",
+    "YTSH20260408",
+    "SDLYZXC2025",
+    "ZXC2025",
+    "LSD20251550",
+    "CXTYT20260716",
+    "CXTBLD20251127",
+    "CXT20260803",
+    "ZYD20251112",
+    "CXT20260401",
+    "CXTQDS20260828",
+    "TSD2025_1",
+    "TSD20251211",
+    "TBBLBL20260429",
+    "TBBLLS20260905",
+    "TBBLYS20260328",
+    "SJHXD20260918",
+    "JFLC2025_1",
+    "LSZ2025_1"
+  ],
+  "rows": 390433,
+  "scope": "Actual source rows and frozen warehouse/must-list. Original five stores keep saved parameters/budgets/routes; additional entities use explicit QA standard/no budget/same primary. Empty monthly focus is a QA setting, not a user configuration change.",
+  "core_results": {
+    "ZXC1688": {
+      "rows": 511,
+      "local": 74,
+      "issues": 2,
+      "calculable": 436,
+      "positive": 0,
+      "amount": 0.0,
+      "calculated_positive": 0,
+      "calculated_amount": 0.0,
+      "excluded": 105,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 0.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "LYZXC2025": {
+      "rows": 12136,
+      "local": 3778,
+      "issues": 115,
+      "calculable": 8244,
+      "positive": 0,
+      "amount": 0.0,
+      "calculated_positive": 0,
+      "calculated_amount": 0.0,
+      "excluded": 1540,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 0.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "PYD0002": {
+      "rows": 10923,
+      "local": 3236,
+      "issues": 186,
+      "calculable": 7502,
+      "positive": 458,
+      "amount": 15743.05,
+      "calculated_positive": 943,
+      "calculated_amount": 24052.49,
+      "excluded": 1758,
+      "excluded_positive": 485,
+      "excluded_amount": 8309.44,
+      "unpriced": 0,
+      "candidate_amount": 15743.05,
+      "must_amount": 12035.81,
+      "must_candidate_amount": 12035.81,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 8,
+      "extra": 258.72
+    },
+    "ZXC0002": {
+      "rows": 14928,
+      "local": 7092,
+      "issues": 854,
+      "calculable": 7177,
+      "positive": 1,
+      "amount": 150.0,
+      "calculated_positive": 11,
+      "calculated_amount": 6194.62,
+      "excluded": 1867,
+      "excluded_positive": 10,
+      "excluded_amount": 6044.62,
+      "unpriced": 0,
+      "candidate_amount": 150.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "LYDXD20251021": {
+      "rows": 16727,
+      "local": 7724,
+      "issues": 621,
+      "calculable": 8382,
+      "positive": 414,
+      "amount": 27715.84,
+      "calculated_positive": 453,
+      "calculated_amount": 28607.19,
+      "excluded": 1797,
+      "excluded_positive": 39,
+      "excluded_amount": 891.35,
+      "unpriced": 0,
+      "candidate_amount": 27715.84,
+      "must_amount": 20728.72,
+      "must_candidate_amount": 20728.72,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 26,
+      "extra": 1312.91
+    },
+    "SDLYZXC2025": {
+      "rows": 59,
+      "local": 15,
+      "issues": 0,
+      "calculable": 44,
+      "positive": 0,
+      "amount": 0.0,
+      "calculated_positive": 0,
+      "calculated_amount": 0.0,
+      "excluded": 6,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 0.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "YTSH20260408": {
+      "rows": 16831,
+      "local": 8613,
+      "issues": 304,
+      "calculable": 7915,
+      "positive": 310,
+      "amount": 9016.25,
+      "calculated_positive": 414,
+      "calculated_amount": 14504.52,
+      "excluded": 1859,
+      "excluded_positive": 104,
+      "excluded_amount": 5488.27,
+      "unpriced": 0,
+      "candidate_amount": 9016.25,
+      "must_amount": 6976.5,
+      "must_candidate_amount": 6976.5,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "ZXC2025": {
+      "rows": 14803,
+      "local": 6820,
+      "issues": 822,
+      "calculable": 7323,
+      "positive": 0,
+      "amount": 0.0,
+      "calculated_positive": 0,
+      "calculated_amount": 0.0,
+      "excluded": 1862,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 0.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "YSD20251113": {
+      "rows": 21982,
+      "local": 13269,
+      "issues": 378,
+      "calculable": 8336,
+      "positive": 1979,
+      "amount": 34796.53,
+      "calculated_positive": 2615,
+      "calculated_amount": 45771.1,
+      "excluded": 2926,
+      "excluded_positive": 636,
+      "excluded_amount": 10974.57,
+      "unpriced": 0,
+      "candidate_amount": 34796.53,
+      "must_amount": 19854.59,
+      "must_candidate_amount": 19854.59,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 11,
+      "extra": 744.72
+    },
+    "YZD20251031": {
+      "rows": 25459,
+      "local": 17427,
+      "issues": 321,
+      "calculable": 7712,
+      "positive": 250,
+      "amount": 8536.17,
+      "calculated_positive": 462,
+      "calculated_amount": 12635.37,
+      "excluded": 7656,
+      "excluded_positive": 212,
+      "excluded_amount": 4099.2,
+      "unpriced": 0,
+      "candidate_amount": 8536.17,
+      "must_amount": 6196.48,
+      "must_candidate_amount": 6196.48,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 6,
+      "extra": 231.67
+    },
+    "LSD20251550": {
+      "rows": 16081,
+      "local": 7380,
+      "issues": 357,
+      "calculable": 8345,
+      "positive": 946,
+      "amount": 40017.56,
+      "calculated_positive": 1536,
+      "calculated_amount": 49820.52,
+      "excluded": 2265,
+      "excluded_positive": 590,
+      "excluded_amount": 9802.96,
+      "unpriced": 0,
+      "candidate_amount": 40017.56,
+      "must_amount": 28054.07,
+      "must_candidate_amount": 28054.07,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 18,
+      "extra": 848.87
+    },
+    "CXT20260803": {
+      "rows": 13298,
+      "local": 4417,
+      "issues": 540,
+      "calculable": 8341,
+      "positive": 449,
+      "amount": 14460.05,
+      "calculated_positive": 641,
+      "calculated_amount": 19031.81,
+      "excluded": 1724,
+      "excluded_positive": 192,
+      "excluded_amount": 4571.76,
+      "unpriced": 0,
+      "candidate_amount": 14460.05,
+      "must_amount": 9944.29,
+      "must_candidate_amount": 9944.29,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 8,
+      "extra": 443.03
+    },
+    "CXTYT20260716": {
+      "rows": 22607,
+      "local": 13814,
+      "issues": 361,
+      "calculable": 8432,
+      "positive": 453,
+      "amount": 9173.26,
+      "calculated_positive": 684,
+      "calculated_amount": 13532.87,
+      "excluded": 1825,
+      "excluded_positive": 231,
+      "excluded_amount": 4359.61,
+      "unpriced": 0,
+      "candidate_amount": 9173.26,
+      "must_amount": 5810.96,
+      "must_candidate_amount": 5810.96,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 7,
+      "extra": 252.5
+    },
+    "CXTBLD20251127": {
+      "rows": 19705,
+      "local": 10995,
+      "issues": 370,
+      "calculable": 8340,
+      "positive": 142,
+      "amount": 2759.57,
+      "calculated_positive": 264,
+      "calculated_amount": 4245.0,
+      "excluded": 6222,
+      "excluded_positive": 122,
+      "excluded_amount": 1485.43,
+      "unpriced": 0,
+      "candidate_amount": 2759.57,
+      "must_amount": 1131.61,
+      "must_candidate_amount": 1131.61,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "CXT20260401": {
+      "rows": 13115,
+      "local": 4455,
+      "issues": 292,
+      "calculable": 8369,
+      "positive": 704,
+      "amount": 19440.08,
+      "calculated_positive": 1074,
+      "calculated_amount": 25801.99,
+      "excluded": 1736,
+      "excluded_positive": 370,
+      "excluded_amount": 6361.91,
+      "unpriced": 0,
+      "candidate_amount": 19440.08,
+      "must_amount": 11632.53,
+      "must_candidate_amount": 11632.53,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 13,
+      "extra": 688.96
+    },
+    "ZYD20251112": {
+      "rows": 23579,
+      "local": 14582,
+      "issues": 643,
+      "calculable": 8377,
+      "positive": 1314,
+      "amount": 28399.37,
+      "calculated_positive": 2475,
+      "calculated_amount": 47135.48,
+      "excluded": 4441,
+      "excluded_positive": 1161,
+      "excluded_amount": 18736.11,
+      "unpriced": 0,
+      "candidate_amount": 28399.37,
+      "must_amount": 18562.92,
+      "must_candidate_amount": 18562.92,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 28,
+      "extra": 1423.21
+    },
+    "CXTQDS20260828": {
+      "rows": 14532,
+      "local": 5265,
+      "issues": 756,
+      "calculable": 8515,
+      "positive": 0,
+      "amount": 0.0,
+      "calculated_positive": 0,
+      "calculated_amount": 0.0,
+      "excluded": 1788,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 0.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "TSD2025_1": {
+      "rows": 17722,
+      "local": 9265,
+      "issues": 333,
+      "calculable": 8124,
+      "positive": 0,
+      "amount": 0.0,
+      "calculated_positive": 0,
+      "calculated_amount": 0.0,
+      "excluded": 1698,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 0.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "TSD20251211": {
+      "rows": 7164,
+      "local": 2824,
+      "issues": 61,
+      "calculable": 4279,
+      "positive": 0,
+      "amount": 0.0,
+      "calculated_positive": 0,
+      "calculated_amount": 0.0,
+      "excluded": 848,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 0.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "TBBLLS20260905": {
+      "rows": 14662,
+      "local": 5462,
+      "issues": 752,
+      "calculable": 8448,
+      "positive": 588,
+      "amount": 17370.78,
+      "calculated_positive": 622,
+      "calculated_amount": 17943.61,
+      "excluded": 1718,
+      "excluded_positive": 34,
+      "excluded_amount": 572.83,
+      "unpriced": 0,
+      "candidate_amount": 17370.78,
+      "must_amount": 13086.32,
+      "must_candidate_amount": 13086.32,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 14,
+      "extra": 469.77
+    },
+    "TBBLBL20260429": {
+      "rows": 20654,
+      "local": 11948,
+      "issues": 401,
+      "calculable": 8305,
+      "positive": 1118,
+      "amount": 37040.22,
+      "calculated_positive": 1691,
+      "calculated_amount": 45957.12,
+      "excluded": 1752,
+      "excluded_positive": 573,
+      "excluded_amount": 8916.9,
+      "unpriced": 0,
+      "candidate_amount": 37040.22,
+      "must_amount": 23083.97,
+      "must_candidate_amount": 23083.97,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 19,
+      "extra": 663.53
+    },
+    "SJHXD20260918": {
+      "rows": 14996,
+      "local": 5947,
+      "issues": 334,
+      "calculable": 8715,
+      "positive": 0,
+      "amount": 0.0,
+      "calculated_positive": 0,
+      "calculated_amount": 0.0,
+      "excluded": 2025,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 0.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "TBBLYS20260328": {
+      "rows": 29981,
+      "local": 21001,
+      "issues": 673,
+      "calculable": 8308,
+      "positive": 591,
+      "amount": 20351.86,
+      "calculated_positive": 946,
+      "calculated_amount": 26181.26,
+      "excluded": 1898,
+      "excluded_positive": 355,
+      "excluded_amount": 5829.4,
+      "unpriced": 0,
+      "candidate_amount": 20351.86,
+      "must_amount": 14020.87,
+      "must_candidate_amount": 14020.87,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 6,
+      "extra": 180.1
+    },
+    "LSZ2025_1": {
+      "rows": 9858,
+      "local": 5555,
+      "issues": 54,
+      "calculable": 4249,
+      "positive": 0,
+      "amount": 0.0,
+      "calculated_positive": 0,
+      "calculated_amount": 0.0,
+      "excluded": 826,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 0.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "JFLC2025_1": {
+      "rows": 18120,
+      "local": 9955,
+      "issues": 297,
+      "calculable": 7869,
+      "positive": 0,
+      "amount": 0.0,
+      "calculated_positive": 0,
+      "calculated_amount": 0.0,
+      "excluded": 1609,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 0.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 0,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    }
+  },
+  "exit_code": 0,
+  "remaining_children": [],
+  "peak_tree_mib": {
+    "startup": 159.48046875,
+    "check_files": 3911.2265625,
+    "store_settings": 3364.18359375,
+    "calculation": 8040.17578125,
+    "LYZXC2025/goods": 6657.5703125,
+    "LYZXC2025/all": 6660.5234375,
+    "LYZXC2025/sort": 6662.02734375,
+    "LYZXC2025/new": 6678.51171875,
+    "ZXC0002/goods": 6677.6328125,
+    "": 6710.09765625,
+    "ZXC0002/new": 6680.80859375,
+    "ZXC1688/new": 6684.28515625,
+    "PYD0002/goods": 6680.10546875,
+    "PYD0002/all": 6680.14453125,
+    "PYD0002/sort": 6680.1328125,
+    "PYD0002/new": 6680.72265625,
+    "LYDXD20251021/goods": 6682.67578125,
+    "LYDXD20251021/all": 6683.87890625,
+    "LYDXD20251021/new": 6692.546875,
+    "YZD20251031/goods": 6691.69921875,
+    "YZD20251031/all": 6693.921875,
+    "YZD20251031/sort": 6693.921875,
+    "YZD20251031/detail": 6693.90234375,
+    "YZD20251031/new": 6702.58984375,
+    "YSD20251113/goods": 6695.1171875,
+    "YSD20251113/all": 6695.296875,
+    "YSD20251113/new": 6704.203125,
+    "YTSH20260408/goods": 6695.33203125,
+    "YTSH20260408/all": 6695.33984375,
+    "YTSH20260408/sort": 6695.37890625,
+    "YTSH20260408/detail": 6695.35546875,
+    "YTSH20260408/new": 6703.65234375,
+    "SDLYZXC2025/new": 6699.21875,
+    "ZXC2025/goods": 6695.8046875,
+    "ZXC2025/all": 6695.890625,
+    "ZXC2025/detail": 6695.890625,
+    "ZXC2025/new": 6703.91796875,
+    "LSD20251550/goods": 6696.8046875,
+    "LSD20251550/all": 6696.9453125,
+    "LSD20251550/sort": 6696.9453125,
+    "LSD20251550/new": 6704.69921875,
+    "CXTYT20260716/goods": 6699.6953125,
+    "CXTYT20260716/all": 6700.78515625,
+    "CXTYT20260716/sort": 6700.78515625,
+    "CXTYT20260716/new": 6713.4609375,
+    "CXTBLD20251127/goods": 6705.28515625,
+    "CXTBLD20251127/all": 6705.49609375,
+    "CXTBLD20251127/sort": 6705.49609375,
+    "CXTBLD20251127/new": 6713.55859375,
+    "CXT20260803/goods": 6704.6484375,
+    "CXT20260803/all": 6704.69140625,
+    "CXT20260803/new": 6712.57421875,
+    "ZYD20251112/goods": 6709.01171875,
+    "ZYD20251112/all": 6709.28515625,
+    "ZYD20251112/sort": 6709.28515625,
+    "ZYD20251112/new": 6719.09375,
+    "CXT20260401/goods": 6709.0859375,
+    "CXT20260401/all": 6709.23046875,
+    "CXT20260401/sort": 6709.25390625,
+    "CXT20260401/new": 6717.16796875,
+    "CXTQDS20260828/goods": 6710.58203125,
+    "CXTQDS20260828/all": 6710.6015625,
+    "CXTQDS20260828/detail": 6710.60546875,
+    "CXTQDS20260828/new": 6718.61328125,
+    "TSD2025_1/goods": 6711.91015625,
+    "TSD2025_1/all": 6711.97265625,
+    "TSD2025_1/sort": 6711.97265625,
+    "TSD2025_1/new": 6712.8125,
+    "TSD20251211/goods": 6710.078125,
+    "TSD20251211/new": 6717.66015625,
+    "TBBLBL20260429/goods": 6713.7265625,
+    "TBBLBL20260429/all": 6713.796875,
+    "TBBLBL20260429/sort": 6713.796875,
+    "TBBLBL20260429/new": 6714.26171875,
+    "TBBLLS20260905/goods": 6712.890625,
+    "TBBLLS20260905/all": 6712.890625,
+    "TBBLLS20260905/sort": 6712.9140625,
+    "TBBLLS20260905/new": 6713.36328125,
+    "TBBLYS20260328/goods": 6721.03515625,
+    "TBBLYS20260328/all": 6722.5546875,
+    "TBBLYS20260328/sort": 6722.5546875,
+    "TBBLYS20260328/detail": 6722.5546875,
+    "TBBLYS20260328/new": 6731.96484375,
+    "SJHXD20260918/goods": 6720.625,
+    "SJHXD20260918/all": 6720.64453125,
+    "SJHXD20260918/sort": 6720.64453125,
+    "SJHXD20260918/new": 6728.7421875,
+    "JFLC2025_1/goods": 6722.328125,
+    "JFLC2025_1/all": 6722.36328125,
+    "JFLC2025_1/sort": 6722.36328125,
+    "JFLC2025_1/new": 6730.4453125,
+    "LSZ2025_1/goods": 6720.89453125,
+    "LSZ2025_1/all": 6720.90234375,
+    "LSZ2025_1/sort": 6720.921875,
+    "LSZ2025_1/new": 6728.35546875,
+    "qa_capture": 7766.9453125
+  },
+  "memory_method": "external supervisor, 50ms sum of parent and owned descendant RSS; shared pages double-counted; includes fixed full input/results; final capture is QA evidence overhead",
+  "development": false,
+  "exe_sha256": "4f54cdd600de87f58e548b2eb1d5224c87b74ba9115e195627107f4734b92b61"
+}

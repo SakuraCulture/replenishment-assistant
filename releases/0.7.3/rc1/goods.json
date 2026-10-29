@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "checks": 2330867,
+  "stores": [
+    {
+      "store": "CXT20260401",
+      "rows": 13115,
+      "eligible_rows": 11379
+    },
+    {
+      "store": "CXT20260803",
+      "rows": 13298,
+      "eligible_rows": 11574
+    },
+    {
+      "store": "CXTBLD20251127",
+      "rows": 19705,
+      "eligible_rows": 13483
+    },
+    {
+      "store": "SJHXD20260918",
+      "rows": 14996,
+      "eligible_rows": 12971
+    },
+    {
+      "store": "ZYD20251112",
+      "rows": 23579,
+      "eligible_rows": 19138
+    }
+  ],
+  "whitelist": [],
+  "expected_delta": "baseline visible rows minus existing exclusion_reason; no re-sorting",
+  "differences": 0
+}

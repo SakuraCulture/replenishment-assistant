@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "checks": 512866,
+  "stores": [
+    {
+      "store": "CXT20260401",
+      "rows": 13115,
+      "old_new_candidates": 6266,
+      "working_candidates": 5531,
+      "removed_disabled_stopped": 735
+    },
+    {
+      "store": "CXT20260803",
+      "rows": 13298,
+      "old_new_candidates": 7622,
+      "working_candidates": 6470,
+      "removed_disabled_stopped": 1152
+    },
+    {
+      "store": "CXTBLD20251127",
+      "rows": 19705,
+      "old_new_candidates": 13298,
+      "working_candidates": 8755,
+      "removed_disabled_stopped": 4543
+    },
+    {
+      "store": "SJHXD20260918",
+      "rows": 14996,
+      "old_new_candidates": 14996,
+      "working_candidates": 12971,
+      "removed_disabled_stopped": 2025
+    },
+    {
+      "store": "ZYD20251112",
+      "rows": 23579,
+      "old_new_candidates": 13302,
+      "working_candidates": 12884,
+      "removed_disabled_stopped": 418
+    }
+  ],
+  "whitelist": [],
+  "intentional_delta": "Remove only exclusion_reason rows from working and exported product lists; retain raw calculation/archive.",
+  "differences": 0
+}

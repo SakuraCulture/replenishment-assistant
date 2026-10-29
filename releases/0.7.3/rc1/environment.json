@@ -1,0 +1,18 @@
+{
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "cpu_logical": 24,
+  "cpu_physical": 16,
+  "ram_bytes": 34124718080,
+  "PySide6": "6.12.0",
+  "openpyxl": "3.1.5",
+  "baseline_commit": "84a0671bd81daa8c2e94a8648c2332b9fc8fa2a9",
+  "frozen_parameters": {
+    "qa\\full_workflow_073\\pressure_five.json": "459bffc54b8ed3bcad0c2fba82fade5e33d407513da12f07469dd7e32d5b7290",
+    "qa\\full_workflow_073\\pressure_all.json": "c2a450057a416c0178d8d1476774a8c90cee1ad0c17cfb20206e7a4611083b74",
+    "qa\\full_workflow_073\\inputs\\must.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "qa\\full_workflow_073\\inputs\\parameters.json": "7e8553f5c8d785279033a87bdd90816a81988f46af854675ee47ad1f72b8f756",
+    "qa\\full_workflow_073\\inputs\\catalogs.json": "0e7c29de5dbfae181eb06a4b69af7ccbcb7548340346beef0c13c0b9a85b3408"
+  },
+  "benchmark_policy": "one measured process tree at a time, three alternating pairs, OS file cache not purged; earlier ui_bench_release and pressure_five_source overlapped and are functional/diagnostic evidence only, excluded from final performance table"
+}

@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "checks": [
+    "nested frames preserve key/list order, None/0/blank/text/bool/int/float/date/datetime/tuple exactly",
+    "first save digest equals existing Repository",
+    "unchanged save",
+    "overwrite cancel leaves original digest",
+    "stale revision refuses overwrite and preserves external save",
+    "load/config projection values and types exact",
+    "confirmed overwrite reuses existing transaction"
+  ],
+  "transport": {
+    "frames": 79,
+    "largest_frame": 39131
+  },
+  "differences": 0
+}

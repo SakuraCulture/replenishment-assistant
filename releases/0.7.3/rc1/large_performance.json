@@ -1,0 +1,85 @@
+{
+  "old": {
+    "read": {
+      "seconds": {
+        "median": 10.877463100012392,
+        "min": 10.641459200007375,
+        "max": 10.993194300041068
+      },
+      "max_ui_gap_seconds": {
+        "median": 10.877230699989013,
+        "min": 10.641448600043077,
+        "max": 10.992123100033496
+      }
+    },
+    "restore": {
+      "seconds": {
+        "median": 16.441530799958855,
+        "min": 16.38997990003554,
+        "max": 16.826717299991287
+      },
+      "max_ui_gap_seconds": {
+        "median": 16.44125069997972,
+        "min": 16.389724800013937,
+        "max": 16.826482900010888
+      }
+    },
+    "combined_seconds": {
+      "median": 27.267443000047933,
+      "min": 27.08298999996623,
+      "max": 27.819911600032356
+    },
+    "peak_tree_mib": {
+      "median": 5357.72265625,
+      "min": 5349.8828125,
+      "max": 5358.61328125
+    }
+  },
+  "new": {
+    "read": {
+      "seconds": {
+        "median": 17.546956500038505,
+        "min": 17.442324900010135,
+        "max": 18.50287379999645
+      },
+      "max_ui_gap_seconds": {
+        "median": 0.4329360000556335,
+        "min": 0.4314659000374377,
+        "max": 0.44953159999568015
+      }
+    },
+    "restore": {
+      "seconds": {
+        "median": 0.043819100013934076,
+        "min": 0.04340550000779331,
+        "max": 0.043925899954047054
+      },
+      "max_ui_gap_seconds": {
+        "median": 0.04354600002989173,
+        "min": 0.043365999998059124,
+        "max": 0.043811899959109724
+      }
+    },
+    "combined_seconds": {
+      "median": 17.590362000046298,
+      "min": 17.48614400002407,
+      "max": 18.546799699950498
+    },
+    "peak_tree_mib": {
+      "median": 5412.84375,
+      "min": 5403.703125,
+      "max": 5413.08984375
+    }
+  },
+  "passed": true,
+  "runs": 3,
+  "order": [
+    "old/new",
+    "new/old",
+    "old/new"
+  ],
+  "identical_payload_digests": [
+    "259fdb898581603ea1048cbfdded14fbeda2ecedd8425587cfcddecd604654ad"
+  ],
+  "scope": "5 stores, 84693 result rows, original complete ~970MB canonical daily payload; one run at a time, OS caches not purged; external RSS tree sampling 50ms, shared pages counted per process; validation outside action timings/peaks; UI timer25ms; source Qt offscreen, separate EXE acceptance required"
+}

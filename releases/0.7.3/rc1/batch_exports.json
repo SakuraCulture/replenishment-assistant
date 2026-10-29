@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "differences": 0,
+  "baseline_commit": "84a0671bd81daa8c2e94a8648c2332b9fc8fa2a9",
+  "expected_delta": "remove existing disabled/stopped rows from working product, priority-match and known excluded conflict detail projections; preserve all remaining values/types/order/styles and raw archive fingerprints",
+  "whitelist": "structure_oracle exact clock/build cells only; merchant comments/custom properties also exact",
+  "checks": [
+    {
+      "store": "QA_A",
+      "raw_rows": 11,
+      "export_rows": 9,
+      "removed": 2,
+      "merchant_cells_types_order_styles_comments": 0,
+      "internal_cells_types_order_styles": 0,
+      "raw_signed_result_unchanged": true
+    },
+    {
+      "store": "QA_B",
+      "raw_rows": 11,
+      "export_rows": 9,
+      "removed": 2,
+      "merchant_cells_types_order_styles_comments": 0,
+      "internal_cells_types_order_styles": 0,
+      "raw_signed_result_unchanged": true
+    },
+    {
+      "batch_cells_types_order_styles": 0
+    }
+  ]
+}
