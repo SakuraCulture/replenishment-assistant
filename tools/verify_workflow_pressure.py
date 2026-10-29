@@ -58,7 +58,14 @@ def compare(a):
     old=a.baseline/'capture';new=a.candidate/'capture';cases=[]
     assert {p.name for p in old.glob('*.pklz')}=={p.name for p in new.glob('*.pklz')}
     for path in old.glob('*.pklz'):
-        delta=diff(clean(read(path)),clean(read(new/path.name)));cases.append({'file':path.name,'differences':len(delta),'details':delta[:30]})
+        before=clean(read(path));after=clean(read(new/path.name))
+        # Frozen diagnostics add built_at, absent in source runs. Its presence
+        # and value are the already-declared nonbusiness build leaf, not a
+        # licence to ignore the version object or any model/schema fields.
+        for value in [before,after]:
+            if 'rows' in value and 'summary' in value:
+                value['version']={k:v for k,v in value['version'].items() if k not in ('version','source_commit','build_id','built_at')}
+        delta=diff(before,after);cases.append({'file':path.name,'differences':len(delta),'details':delta[:30]})
     report={'passed':not any(x['differences'] for x in cases),'baseline_commit':'84a0671bd81daa8c2e94a8648c2332b9fc8fa2a9','cases':cases,'comparison':'intake exact ordered per-record pickle signatures and all reports/order; each store full values/types/key/list order via strict recursive comparator; process completion notification order is recorded independently and is not the business row order','whitelist':['result.created','result.task.pid/started/finished','result.version.version/source_commit/build_id/built_at']}
     (a.candidate/'equivalence.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(report,ensure_ascii=False));assert report['passed']
 
