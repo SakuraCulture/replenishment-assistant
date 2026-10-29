@@ -18,7 +18,14 @@ def main():
         logging.error('界面异常',exc_info=(t,v,tb));QMessageBox.critical(None,'操作未完成',f'{v}\n日志位置：{logs}')
     sys.excepthook=unexpected
     from workbench import Workbench
-    win=Workbench();win.show()
+    if any(flag in sys.argv for flag in ['--batch-smoke','--warehouse-smoke','--work-smoke','--intake-smoke']):win=Workbench()
+    else:
+        from application_window import ApplicationWindow
+        win=ApplicationWindow()
+    win.show()
+    if '--normal-smoke' in sys.argv:
+        from normal_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--normal-smoke')+1:])
     if '--batch-smoke' in sys.argv:
         from batch_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--batch-smoke')+1:])

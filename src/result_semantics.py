@@ -24,11 +24,11 @@ def exclusion_reason(d):
 
 
 def order_quantity(d):
-    return 0 if exclusion_reason(d) else d.get('_allocated_qty') if d.get('_budget_active') else quantity(d)
+    return 0 if exclusion_reason(d) else d.get('_allocated_qty') if d.get('_budget_active') else d.get('_execution_qty',quantity(d))
 
 
 def order_amount(d):
-    return 0 if exclusion_reason(d) else d.get('_allocated_amount') if d.get('_budget_active') else amount_value(d)
+    return 0 if exclusion_reason(d) else d.get('_allocated_amount') if d.get('_budget_active') else d.get('_execution_amount',amount_value(d))
 
 
 def orderable(d):
@@ -84,6 +84,7 @@ def coverage(d):
 def explanation(d):
     if exclusion_reason(d):return '默认不补：'+exclusion_reason(d)+'；计算结果仅供参考'
     if issue_text(d):return issue_text(d)
+    if d.get('_new_requested',0)>0:return '新品首铺 · 人工选择 '+fmt(d['_new_requested'])+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))
     if d.get('_budget_gap',0)>0:return ('必卖：' if d.get('_must_sell') else '普通：')+d.get('_budget_reason','')
     if d['_source']=='地采商品':return '商品资料未匹配，按地采单列；保留销量库存，本版不补造价格或数量'
     if d.get('_preview'):return '已匹配，等待计算'

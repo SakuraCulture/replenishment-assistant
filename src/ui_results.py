@@ -48,6 +48,9 @@ class FilterModel(QSortFilterProxyModel):
         if self.warehouse!='全部仓' and d.get('AU')!=self.warehouse:return False
         if self.category!='全部分类' and str(d.get('_category') or '未分类')!=self.category:return False
         if self.search and self.search not in (' '.join(str(d.get(k,'')) for k in ['D','E','F'])).lower():return False
+        if self.mode in ('动销补货','新品候选','新品推荐','缺货恢复及其他'):
+            import new_products
+            return new_products.is_new(d) if self.mode=='新品候选' else new_products.category(d)==self.mode
         if self.mode=='建议补货':return semantics.orderable(d)
         if self.mode=='必卖商品':return bool(d.get('_must_sell'))
         if self.mode=='预算未满足':return d.get('_budget_gap',0)>0
