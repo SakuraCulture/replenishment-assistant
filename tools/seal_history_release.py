@@ -9,7 +9,7 @@ for name,path in paths.items():
     d=json.loads(path.read_text(encoding='utf-8'));assert d['passed'] and d['source_commit']==commit,(name,'failed/stale commit');assert not d.get('development');evidence[name]=d
     if name.endswith('_ui'):assert d['exe_sha256']==sha(dest/'补货助手.exe')
 assert evidence['equivalence']['differences']==0 and evidence['equivalence']['strict_order']
-assert evidence['equivalence']['candidate_sources']=={'src/'+p.name:sha(p) for p in sorted((ROOT/'src').glob('*')) if p.is_file()}
+assert evidence['equivalence']['candidate_sources']=={str(p.relative_to(ROOT)):sha(p) for p in sorted((ROOT/'src').glob('*')) if p.is_file()}
 perf=json.loads((qa/'bench-loop/report.json').read_text());assert perf['rounds']==3
 order_hashes={r['visible_order_sha256'] for r in perf['runs']};assert len(order_hashes)==1
 protected=json.loads((qa/'baseline_manifest.json').read_text());unchanged={k:sha(ROOT/k)==v for k,v in protected['files'].items()};assert all(unchanged.values());assert sha(ROOT/'交付_0.7.1_rc2/补货助手/补货助手.exe')==protected['old_exe'];assert sha(ROOT/'交付_0.7.1_rc2/补货助手_0.7.1_rc2.zip')==protected['old_zip']

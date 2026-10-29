@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "differences": [],
+  "checks": "same frozen real order; worksheets/order/cells/types/styles and XML structures; no row/column sorting",
+  "baseline": "a831049"
+}

@@ -1,0 +1,9 @@
+{
+  "fingerprint": true,
+  "encode": true,
+  "decode": true,
+  "revision_diff": true,
+  "Repository.confirm": true,
+  "Repository.events": true,
+  "Repository.log": true
+}

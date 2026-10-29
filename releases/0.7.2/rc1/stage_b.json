@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "ordered_full_projection_differences": 0,
+  "real_orders": 5,
+  "rows": 84693,
+  "queries": [
+    "{\"day\": \"2026-10-30\", \"store\": \"CXT20260401\", \"number\": \"BH-20261030-CXT20260401-ZC\", \"revision\": 1,",
+    "",
+    "无匹配QA词",
+    "0",
+    "00",
+    "商品",
+    "_",
+    "%",
+    "[",
+    "2026",
+    "CXT20260401",
+    "柴小囤便利超市（白鹭金岸店）",
+    "BH-20261030-CXT20260401-ZC",
+    "001"
+  ],
+  "checks": [
+    "cache missing/cold",
+    "warm full ordered projection",
+    "literal substring query semantics",
+    "damaged row checksum rebuild",
+    "broken cache file rebuild",
+    "cancel",
+    "source-only read"
+  ],
+  "whitelist": []
+}

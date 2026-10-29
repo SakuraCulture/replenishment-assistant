@@ -1,0 +1,43 @@
+{
+  "baseline": "a831049a78e41f33369ce06b28709f3080324087",
+  "differences": 0,
+  "exact_whitelist": [],
+  "orders": [
+    {
+      "store": "CXT20260401",
+      "rows": 13115,
+      "old_seconds": 2.6908809000160545,
+      "new_seconds": 1.4318292000098154,
+      "full_typed_serialization_equal": true
+    },
+    {
+      "store": "CXT20260803",
+      "rows": 13298,
+      "old_seconds": 2.666749300027732,
+      "new_seconds": 1.3599455999792553,
+      "full_typed_serialization_equal": true
+    },
+    {
+      "store": "CXTBLD20251127",
+      "rows": 19705,
+      "old_seconds": 3.653593600029126,
+      "new_seconds": 1.9909952000016347,
+      "full_typed_serialization_equal": true
+    },
+    {
+      "store": "SJHXD20260918",
+      "rows": 14996,
+      "old_seconds": 2.803691000037361,
+      "new_seconds": 1.5566839999519289,
+      "full_typed_serialization_equal": true
+    },
+    {
+      "store": "ZYD20251112",
+      "rows": 23579,
+      "old_seconds": 4.550585200020578,
+      "new_seconds": 2.4184023000416346,
+      "full_typed_serialization_equal": true
+    }
+  ],
+  "legacy_list_equal": true
+}

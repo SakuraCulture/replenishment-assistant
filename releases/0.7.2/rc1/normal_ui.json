@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "error": null,
+  "version": "0.7.2",
+  "source_commit": "edd2fba727f26407ed2fe168de94bdf1b2a013f0",
+  "checks": [
+    "actual independent focus file dialog, sheet/column mapping, preview cancel/confirm, reusable JSON persistence",
+    "real file check, two-store spawn calculation; filtered selection retained; budget preview cancel preserves both stores",
+    "mandatory new item takes shared budget ahead of ordinary sales; other store unchanged; new filter; first confirmation cancel/accept; auto daily save; duplicate confirm idempotent",
+    "changed candidate leaves archived V001 until explicit overwrite; default-cancel; same number V002; unchanged other store remains V001; old revision readable",
+    "actual file-save dialog and frozen numbered Excel export; queryable event; saved new choices and original base restored after resetting work area",
+    "history query/detail independent of work area; parameter changes invalidate only selected store; rerun resets selections and leaves issued order untouched",
+    "home navigation retains unsaved work; close cancel keeps application alive",
+    "real 14244 rows: 9023 blank-stockout new candidates / 3455 eligible; actual selector searches and applies one; original N/AS retained; other 14243 rows exactly unchanged; unlimited amount reconciles",
+    "real-data normal order signed and numbered merchant workbook exported from frozen revision"
+  ],
+  "exe_sha256": "7f77894fb6ad78db688c4f9a0bd1917b8694e6d5f955906ce484a0785245f331"
+}
