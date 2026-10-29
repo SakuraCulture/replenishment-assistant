@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "baseline_commit": "7b8da6b12c21536ba46082dc5c41a592b2316271",
+  "baseline_tag_object": "7d47b34d7e73c3e75f15399cf567eb9cf4064ad8",
+  "delivery_files": 191,
+  "zip_sha256": "b6112e5ea86102a8a8775224c6287254cac16313619aae9b39d5a5875b9b1371",
+  "rules_unchanged": [
+    "model.py",
+    "input_adapter.py",
+    "one_box_exception.py",
+    "allocation.py",
+    "default_config.json",
+    "default_must_sell.json"
+  ],
+  "remotes": "",
+  "scope": "file integrity and tracking only; not business/UI or reproducible build verification"
+}

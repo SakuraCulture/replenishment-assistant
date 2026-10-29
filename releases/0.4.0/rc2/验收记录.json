@@ -1,0 +1,17 @@
+{
+  "version": "0.4.0",
+  "source_commit": "5ef74b5c8a830f709b62de20c5cc7efb3b65eed9",
+  "build_id": "rc2",
+  "verified": [
+    "business budget regression",
+    "single/multi-file grouping and conflicts",
+    "serial vs process concurrency equality",
+    "budget isolation and failures",
+    "packaged EXE interactions and exports"
+  ],
+  "not_verified": [
+    "other computers",
+    "byte-reproducible rebuild"
+  ],
+  "rules": "Original 0.3 rules unchanged; no daily-rate unification or experimental protection period"
+}
