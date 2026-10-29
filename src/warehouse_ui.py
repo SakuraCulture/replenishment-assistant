@@ -3,7 +3,9 @@ from pathlib import Path
 from collections import Counter
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame,QVBoxLayout,QHBoxLayout,QCheckBox,QFileDialog,QDialog,QTableWidget,QTableWidgetItem,QLineEdit,QAbstractItemView,QComboBox,QMessageBox
-from app import label,button,FileCard
+from ui_controls import label,button,FileCard
+import result_semantics as semantics
+from app_defaults import supply_route_choices
 import engine,warehouse_catalog
 
 class WarehouseUi:
@@ -42,7 +44,7 @@ class WarehouseUi:
         rows=list(catalog['items'].values());fields=['商品编码','商品名称','商品状态','可用数','基本售价','出库箱规','分类']
         table=QTableWidget(len(rows),len(fields));table.setHorizontalHeaderLabels(fields);table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);table.setColumnWidth(0,180);table.setColumnWidth(1,320);v.addWidget(table,1)
         for i,r in enumerate(rows):
-            for j,k in enumerate(fields):table.setItem(i,j,QTableWidgetItem(engine.fmt(r.get(k))))
+            for j,k in enumerate(fields):table.setItem(i,j,QTableWidgetItem(semantics.fmt(r.get(k))))
         search.textChanged.connect(lambda text:[table.setRowHidden(i,text.lower() not in (str(r.get('商品编码',''))+' '+str(r.get('商品名称',''))).lower()) for i,r in enumerate(rows)])
         v.addWidget(button('关闭',dialog.accept));dialog.exec()
     def install_route_widgets(self,store,row,saved):
@@ -66,7 +68,7 @@ class WarehouseUi:
         codes=self.selected_codes()
         if not codes or not self.loaded.get('catalogs'):QMessageBox.information(self,'选择门店','请在分仓资料模式下先勾选门店。');return
         dialog=QDialog(self);dialog.setWindowTitle('批量设置门店主从仓');v=QVBoxLayout(dialog);v.addWidget(label(f'设置所选 {len(codes)} 家门店的供货顺序；主从仓不能相同。'))
-        choices=[('仅河北仓',{'primary':'河北仓','secondary':None}),('仅山东仓',{'primary':'山东仓','secondary':None}),('河北主仓 → 山东从仓',{'primary':'河北仓','secondary':'山东仓'}),('山东主仓 → 河北从仓',{'primary':'山东仓','secondary':'河北仓'})]
+        choices=supply_route_choices()
         combo=QComboBox()
         for text,value in choices:combo.addItem(text,value)
         v.addWidget(combo);v.addWidget(button('应用到所选门店',dialog.accept,True));v.addWidget(button('取消',dialog.reject))

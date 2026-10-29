@@ -1,0 +1,21 @@
+{
+  "reason": "Original test constructed export input dictionaries from unordered process completion; baseline and candidate therefore supplied different row-order inputs. The production exporter is unchanged.",
+  "baseline_order": [
+    "QA_B",
+    "QA_A"
+  ],
+  "original_candidate_order": [
+    "QA_A",
+    "QA_B"
+  ],
+  "rendered_candidate_order": [
+    "QA_B",
+    "QA_A"
+  ],
+  "comparison": "Exact cell coordinates, types, values, styles and worksheet structures; no output sorting or extra field exclusions.",
+  "baseline_workbook_sha256": "efc63cf37fe184511b9210eb295e50b283000d13bf1599ad4493503b82aab48b",
+  "original_candidate_workbook_sha256": "0c92174905afacf5d8d1c9a267393fa28b6282dba10f4b308e3eed402cd97691",
+  "controlled_candidate_workbook_sha256": "85e0597a6b94cdaf49c748cdb13ae25d0388a9fa6563b7aa87592b23e9a66039",
+  "preserved_original_report": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\structure_061\\release\\equivalence\\equivalence.json",
+  "tool_sha256": "bcfc4b169b521a77e03c3ed94db3d72344ce9cabddb88ee95429993e992dfb25"
+}

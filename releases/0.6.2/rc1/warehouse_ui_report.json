@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "error": null,
+  "version": "0.6.2",
+  "source_commit": "036c07f098b3a52b705c292286250dc9ee39341a",
+  "checks": [
+    "separate import workers, explicit warehouse labels, missing/identical primary-secondary blocked",
+    "packaged process computation uses per-store priority, zero-stock secondary demand survives; disabled excluded",
+    "single-store supply change invalidates/recomputes only that store; exported results and persisted catalogs/routes verified",
+    "failed catalog import preserves previous snapshot/results; successful update invalidates input/results and blocks stale export"
+  ],
+  "exe_sha256": "005696544087c0e29d74422351aaca98bfbaa1b9953e001802f9c9cee89da15e"
+}

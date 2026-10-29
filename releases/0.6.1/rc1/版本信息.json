@@ -1,0 +1,22 @@
+{
+  "app": "补货助手",
+  "version": "0.6.1",
+  "parameter_schema_version": 1,
+  "job_schema_version": 1,
+  "routing_version": "0.5.0",
+  "model_version": "0.3.0-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "source_commit": "ff8a1e1edbd594735f11cbc9d13d0a2e42103f83",
+  "build_id": "rc1",
+  "built_at": "2026-10-29T20:57:18.8844091+08:00",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "packages": {
+    "PySide6-Essentials": "6.12.0",
+    "shiboken6": "6.12.0",
+    "openpyxl": "3.1.5",
+    "et-xmlfile": "2.0.0",
+    "pillow": "12.3.0",
+    "PyInstaller": "6.22.3"
+  }
+}

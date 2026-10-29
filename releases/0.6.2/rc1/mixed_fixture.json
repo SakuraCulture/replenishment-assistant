@@ -1,0 +1,9 @@
+{
+  "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\parallel_062\\inputs\\补货建议导出服务.xlsx",
+  "source_sha256": "249c019e9ac2477f0954964e0e1f83658813ada66724f734f10c395b2a4e7fed",
+  "generated": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\parallel_062\\inputs\\full_reencoded.xlsx",
+  "generated_sha256": "4ef80d633a57a8c4ccdde16c43ddfeec431528b0a74432a8ee3f91171312d25b",
+  "rows": 14244,
+  "label": "synthetic same-writer full re-encoding of real rows; combines with existing small excerpts so duplicated full raw records are identical; original failed fixture retained",
+  "reason": "original + re-encoded excerpts generated 62 conflicts in unused raw numerical fields in both versions; do not benchmark calculation on blocked stores"
+}

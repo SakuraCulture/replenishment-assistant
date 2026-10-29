@@ -2,7 +2,7 @@
 import copy,json
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QTabWidget,QTableWidget,QTableWidgetItem,QDoubleSpinBox,QComboBox,QCheckBox,QLineEdit,QTextBrowser,QMessageBox,QHeaderView,QInputDialog
-from app import label,button
+from ui_controls import label,button
 import parameter_schema as schema
 
 class NumberInput(QDoubleSpinBox):

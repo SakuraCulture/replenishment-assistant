@@ -1,0 +1,32 @@
+{
+  "real_None": {
+    "rows": 14244,
+    "positive": 430,
+    "amount": 12268.87
+  },
+  "real_0": {
+    "rows": 14244,
+    "positive": 0,
+    "amount": 0.0
+  },
+  "real_3000": {
+    "rows": 14244,
+    "positive": 88,
+    "amount": 2999.87
+  },
+  "real_5000": {
+    "rows": 14244,
+    "positive": 115,
+    "amount": 4999.98
+  },
+  "real_10000": {
+    "rows": 14244,
+    "positive": 390,
+    "amount": 9980.33
+  },
+  "real_no_exception": {
+    "rows": 14244,
+    "positive": 422,
+    "amount": 11890.07
+  }
+}

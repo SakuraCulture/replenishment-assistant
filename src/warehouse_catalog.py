@@ -9,7 +9,8 @@ from openpyxl.cell import WriteOnlyCell
 import engine
 from priority_list import atomic_json
 
-WAREHOUSES=('河北仓','山东仓')
+from app_defaults import WAREHOUSES
+from data_contracts import InputBatch
 REQUIRED=['商品编码','分类','基本售价','出库箱规','商品状态','可用数']
 FIELDS=REQUIRED+['商品名称','商品等级','补货模型分类','实际库存数','采购在途数','订单占有数']
 
@@ -84,10 +85,26 @@ def write_catalog(catalog,path):
 
 def prepare_warehouses(sales_path,catalogs,tmp,progress,cancel):
     """Run the existing adapter separately per warehouse, preventing cross-warehouse duplicate keys."""
+    def load(wh,catalog):
+        path=Path(tmp)/(wh+'.xlsx');write_catalog(catalog,path)
+        return engine.load_inputs(sales_path,path,progress,cancel)
+    return _prepare_catalogs(catalogs,load)
+
+
+def prepare_records(sales_table,catalogs,progress=lambda s:None,cancel=None):
+    """No temporary Excel: same per-warehouse adapter and provenance assembly."""
+    from table_records import bridge_table
+    def load(wh,catalog):
+        raw=({**row,'仓归属':wh} for row in catalog['items'].values())
+        table=bridge_table(FIELDS+['仓归属'],raw,'商品资料')
+        return engine.load_records(sales_table,table,sales_ref='memory:batch.xlsx',product_ref='memory:'+wh+'.xlsx',progress=progress,cancel=cancel)
+    return _prepare_catalogs(catalogs,load)
+
+
+def _prepare_catalogs(catalogs,load):
     results={};base=None
     for wh,catalog in catalogs.items():
-        validate(catalog);path=Path(tmp)/(wh+'.xlsx');write_catalog(catalog,path)
-        loaded=engine.load_inputs(sales_path,path,progress,cancel)
+        validate(catalog);loaded=load(wh,catalog)
         for d,m in loaded['normalized']:
             row=catalog['items'].get(d['E'])
             m.update(product_file=catalog['source_path'],product_sheet=catalog['sheet'],product_revision=catalog['revision'])
@@ -113,7 +130,7 @@ def assessment(pair):
     if not engine.numeric(available):return '可用数待核'
     return '有货' if available>0 else '无货'
 
-def route_store(loaded,store,route):
+def route_store(loaded:InputBatch,store:str,route) -> InputBatch:
     validate_route(route,loaded['catalogs']);primary=route['primary'];secondary=route.get('secondary')
     variants={w:[x for x in rows if x[0]['B']==store] for w,rows in loaded['warehouse_rows'].items()};base=[p for p in loaded['normalized'] if p[0]['B']==store];rows=[]
     for i,original in enumerate(base):

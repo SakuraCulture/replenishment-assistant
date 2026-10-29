@@ -1,0 +1,40 @@
+{
+  "adapter_structure": {
+    "passed": true,
+    "unchanged_functions": [
+      "digest",
+      "numeric",
+      "identifier",
+      "load_config",
+      "execute",
+      "business_checks",
+      "safe_cell",
+      "append_visible",
+      "math_ceil",
+      "sheet_setup",
+      "write_workbook",
+      "run",
+      "main"
+    ],
+    "matching_block": "exact AST equality",
+    "io_changes": "read_table delegates row parsing; prepare delegates to prepare_records; required header checks reused",
+    "separate_required_tests": [
+      "strict 0.6.0 full-result oracle",
+      "physical temporary XLSX vs in-memory cell/table comparison"
+    ]
+  },
+  "passed": true,
+  "baseline_commit": "7b8da6b12c21536ba46082dc5c41a592b2316271",
+  "baseline_tag_object": "7d47b34d7e73c3e75f15399cf567eb9cf4064ad8",
+  "delivery_files": 191,
+  "zip_sha256": "b6112e5ea86102a8a8775224c6287254cac16313619aae9b39d5a5875b9b1371",
+  "rules_unchanged": [
+    "model.py",
+    "one_box_exception.py",
+    "allocation.py",
+    "default_config.json",
+    "default_must_sell.json"
+  ],
+  "remotes": "origin\thttps://github.com/SakuraCulture/replenishment-assistant.git (fetch)\norigin\thttps://github.com/SakuraCulture/replenishment-assistant.git (push)",
+  "scope": "file integrity and tracking only; not business/UI or reproducible build verification"
+}

@@ -1,5 +1,6 @@
 """Guided native desktop workbench; business calculations remain in engine."""
 from __future__ import annotations
+from app_defaults import DEFAULT_WAREHOUSES
 import copy,json,os,threading
 from collections import Counter
 from datetime import datetime
@@ -10,52 +11,20 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (QWidget,QMainWindow,QVBoxLayout,QHBoxLayout,QLabel,QFrame,QPushButton,
     QFileDialog,QComboBox,QCheckBox,QDoubleSpinBox,QSpinBox,QTableWidget,QTableWidgetItem,QHeaderView,
     QLineEdit,QStackedWidget,QMessageBox,QDialog,QProgressBar,QAbstractItemView,QScrollArea,QListWidget,QApplication)
-from app import MainWindow,FileCard,label,button
+from ui_controls import FileCard,SalesFiles,label,button
+from ui_tasks import BatchWorker,BackgroundJobs
+from ui_session import SessionWindow
+import result_semantics as semantics
 import engine,priority_list,batch_service
 import warehouse_catalog
 from warehouse_ui import WarehouseUi
 from version_info import VERSION,MODEL_VERSION,diagnostic
 
-class SalesFiles(QFrame):
-    changed=Signal()
+class BatchWindow(WarehouseUi,SessionWindow):
     def __init__(self):
-        super().__init__();self.paths=[];self.setAcceptDrops(True);self.setObjectName('card')
-        v=QVBoxLayout(self);v.addWidget(label('补货建议 · 支持多文件、多门店','section'))
-        v.addWidget(label('将一个或多个 .xlsx 拖到这里；自动按门店编码归集，不叠加重复库存。','muted'))
-        self.list=QListWidget();self.list.setMinimumHeight(120);self.list.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection);v.addWidget(self.list)
-        row=QHBoxLayout();row.addWidget(button('添加 Excel',self.choose));row.addWidget(button('移除选中文件',self.remove));row.addStretch();v.addLayout(row)
-    def choose(self):
-        files,_=QFileDialog.getOpenFileNames(self,'添加补货建议','','Excel (*.xlsx)');self.add_paths(files)
-    def add_paths(self,files):
-        for p in files:
-            path=str(Path(p).resolve())
-            if path.lower().endswith('.xlsx') and path not in self.paths:self.paths.append(path)
-        self.refresh();self.changed.emit()
-    def refresh(self):
-        self.list.clear()
-        for p in self.paths:self.list.addItem(Path(p).name);self.list.item(self.list.count()-1).setToolTip(p)
-    def remove(self):
-        for i in sorted([self.list.row(x) for x in self.list.selectedItems()],reverse=True):self.paths.pop(i)
-        self.refresh();self.changed.emit()
-    def dragEnterEvent(self,event):
-        if event.mimeData().hasUrls() and all(u.toLocalFile().lower().endswith('.xlsx') for u in event.mimeData().urls()):event.acceptProposedAction()
-    def dropEvent(self,event):self.add_paths([u.toLocalFile() for u in event.mimeData().urls()]);event.acceptProposedAction()
-
-class BatchWorker(QThread):
-    changed=Signal(str,str,object,str);failed=Signal(str)
-    def __init__(self,loaded,jobs,profile,workers,parent):
-        super().__init__(parent);self.loaded=loaded;self.jobs=jobs;self.profile=profile;self.workers=workers;self.cancel=threading.Event()
-    def run(self):
-        try:batch_service.run(self.loaded,self.jobs,self.profile,self.workers,self.changed.emit,self.cancel)
-        except Exception as exc:self.failed.emit(str(exc))
-
-class BatchWindow(WarehouseUi,MainWindow):
-    def __init__(self):
-        QMainWindow.__init__(self)
-        self.loaded=None;self.result=None;self.worker=None;self.dirty=True;self.initializing=True;self.closing=False;self.last_export=None
+        super().__init__(initializing=True)
         self.results={};self.states={};self.store_widgets={};self.overrides={};self.default_by_store={};self.run_codes=[];self.current_store=None;self.config_warning='';self.profile=None;self.input_dirty=True
-        folder=os.environ.get('REPLENISHMENT_DATA_DIR') or str(Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation))/'settings')
-        self.repository=priority_list.Repository(folder)
+        folder=self.repository.folder
         self.catalog_repository=warehouse_catalog.Repository(folder);self.catalogs={}
         try:self.catalogs=self.catalog_repository.catalogs()
         except Exception as exc:self.config_warning='仓资料未载入：'+str(exc)
@@ -68,7 +37,7 @@ class BatchWindow(WarehouseUi,MainWindow):
         for i,text in enumerate(['① 准备数据','② 门店与预算','③ 计算进度','④ 查看与导出']):
             b=button(text,lambda checked=False,n=i:self.navigate(n));self.nav.append(b);nav.addWidget(b)
         v.addLayout(nav);self.pages=QStackedWidget();v.addWidget(self.pages,1)
-        self.make_import();self.make_stores();self.make_progress();self.make_overview();MainWindow.make_results(self)
+        self.make_import();self.make_stores();self.make_progress();self.make_overview();self.make_results()
         detail=self.pages.widget(4).layout();detail.insertWidget(0,button('← 返回门店汇总',lambda:self.navigate(3)))
         self.mode.addItems(['必卖未补足','其他预算暂缓'])
         bottom=QHBoxLayout();self.status=label('先添加补货建议和商品资料，检查后选择本次门店。','muted');bottom.addWidget(self.status,1)
@@ -138,9 +107,9 @@ class BatchWindow(WarehouseUi,MainWindow):
             self.job(batch_service.load,(self.sales.paths,products),self.loaded_ok)
     def loaded_ok(self,loaded):
         self.loaded=loaded;self.input_dirty=False;self.results={};self.result=None;self.current_store=None;self.overrides={};self.dirty=True;self.run_codes=[]
-        self.default_by_store={s:{w:engine.DEFAULT_WAREHOUSES[w] for w in loaded.get('catalogs',{})} for s in loaded['stores']}
+        self.default_by_store={s:{w:DEFAULT_WAREHOUSES[w] for w in loaded.get('catalogs',{})} for s in loaded['stores']}
         for d,m in loaded['normalized']:
-            if d['_source']=='资料匹配':self.default_by_store[d['B']][d['AU']]=engine.DEFAULT_WAREHOUSES.get(d['AU'],(-1,-1))
+            if d['_source']=='资料匹配':self.default_by_store[d['B']][d['AU']]=DEFAULT_WAREHOUSES.get(d['AU'],(-1,-1))
         data=loaded['intake'];self.file_report.setRowCount(len(data['files']))
         for i,f in enumerate(data['files']):
             for j,value in enumerate([Path(f['path']).name,f['rows'],f['stores'],f['error'] or '读取成功']):self.file_report.setItem(i,j,QTableWidgetItem(str(value)))
@@ -311,7 +280,7 @@ class BatchWindow(WarehouseUi,MainWindow):
         if self.worker:
             self.worker.cancel.set();self.status.setText('已停止启动后续任务，正在计算的门店完成后结束。' if isinstance(self.worker,BatchWorker) else '正在取消文件操作…')
     def job_finished(self):
-        batch=isinstance(self.worker,BatchWorker);MainWindow.job_finished(self)
+        batch=isinstance(self.worker,BatchWorker);BackgroundJobs.job_finished(self)
         if batch:self.status.setText('本轮任务结束。可查看结果，或调整设置后只重算需要的门店。')
         self.refresh_tables()
     def refresh_tables(self):
@@ -329,7 +298,7 @@ class BatchWindow(WarehouseUi,MainWindow):
             state=self.states[s];r=self.results.get(s) if state['state']=='已完成' else None
             if r:
                 a=r['summary'];b=r['budget'];gap=round(a['candidate_amount']-a['amount'],2);totals=[totals[0]+a['candidate_amount'],totals[1]+a['amount'],totals[2]+gap];unpriced+=a['unpriced']
-                values=[state['name'],state['state'],engine.fmt(b['limit']) if b['enabled'] else '不限预算',engine.fmt(a['candidate_amount']),engine.fmt(a['amount']),engine.fmt(a['must_amount']),engine.fmt(a['amount']-a['must_amount']),engine.fmt(gap),engine.fmt(b.get('remaining')),str(a['holding_gaps']),f"{a['local']} / {a['excluded']}",state['error'] or f"待核 {a['issues']}；补货未计价 {a['unpriced']}"]
+                values=[state['name'],state['state'],semantics.fmt(b['limit']) if b['enabled'] else '不限预算',semantics.fmt(a['candidate_amount']),semantics.fmt(a['amount']),semantics.fmt(a['must_amount']),semantics.fmt(a['amount']-a['must_amount']),semantics.fmt(gap),semantics.fmt(b.get('remaining')),str(a['holding_gaps']),f"{a['local']} / {a['excluded']}",state['error'] or f"待核 {a['issues']}；补货未计价 {a['unpriced']}"]
             else:values=[state['name'],state['state']]+['—']*9+[state['error']]
             for j,val in enumerate(values):self.overview.setItem(i,j,QTableWidgetItem(val));self.overview.item(i,j).setToolTip(s+'\n'+str(val))
         for widget,value in zip(self.metrics,totals):widget.setText(f'{value:,.2f}' if finished else '—')

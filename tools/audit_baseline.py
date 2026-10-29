@@ -17,9 +17,12 @@ def audit():
     assert not prohibited,prohibited
     required=['src/model.py','src/app.py','src/app.ico','src/default_config.json','src/default_must_sell.json','build.ps1','verify_budget.py','releases/0.3.0/baseline_audit.json']
     assert all(p in tracked for p in required)
-    immutable=['model.py','input_adapter.py','one_box_exception.py','allocation.py','default_config.json','default_must_sell.json']
+    immutable=['model.py','one_box_exception.py','allocation.py','default_config.json','default_must_sell.json']
     for p in immutable:
         old=subprocess.check_output(['git','show','v0.3.0-baseline:src/'+p],cwd=root)
         assert hashlib.sha256(old).hexdigest()==digest(root/'src'/p),p
-    return {'passed':True,'baseline_commit':git('rev-parse','v0.3.0-baseline^{}'),'baseline_tag_object':git('rev-parse','v0.3.0-baseline'),'delivery_files':len(actual),'zip_sha256':release['zip_sha256'],'rules_unchanged':immutable,'remotes':git('remote','-v'),'scope':'file integrity and tracking only; not business/UI or reproducible build verification'}
+    from adapter_structure_check import audit_adapter_source
+    adapter_original=subprocess.check_output(['git','show','e50072cc00c6997aed9fe1113012192210ad7eb3:src/input_adapter.py'],cwd=root).decode('utf-8-sig')
+    adapter_check=audit_adapter_source(adapter_original,(root/'src/input_adapter.py').read_text(encoding='utf-8'))
+    return {'adapter_structure':adapter_check,'passed':True,'baseline_commit':git('rev-parse','v0.3.0-baseline^{}'),'baseline_tag_object':git('rev-parse','v0.3.0-baseline'),'delivery_files':len(actual),'zip_sha256':release['zip_sha256'],'rules_unchanged':immutable,'remotes':git('remote','-v'),'scope':'file integrity and tracking only; not business/UI or reproducible build verification'}
 if __name__=='__main__':print(json.dumps(audit(),ensure_ascii=False,indent=2))

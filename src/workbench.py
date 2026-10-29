@@ -2,7 +2,7 @@
 import copy,hashlib,json
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout,QMessageBox,QDialog,QVBoxLayout,QTableWidget,QTableWidgetItem,QLineEdit,QHeaderView,QPushButton
-from app import label,button
+from ui_controls import label,button
 from batch_app import BatchWindow
 from parameter_ui import ParameterUi
 import engine,parameter_schema as schema,work_repository as wr

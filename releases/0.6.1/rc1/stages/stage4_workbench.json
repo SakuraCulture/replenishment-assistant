@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "development": true,
+  "version": "0.6.0",
+  "source_commit": "cab49e8b216326f3d4c51e9bdedf38c3042be107",
+  "checks": [
+    "standard equals prior engine; changed probability affects quantities; independent AN forecast changes 1.4 to 0.9; per-store weights and mappings applied; other store unchanged",
+    "full immutable preset v1/v2, archive preserves bound v1, store defaults reload; invalid parameter relationships refused",
+    "one row per day; no overwrite without exact observed revision; stale revision rejected; injected transactional write failure preserves old record; active tasks refused; restore/recompute/export without source files",
+    "same-snapshot trial reports changes and coverage without mutating official results",
+    "frozen legacy master and sales snapshots resolve saved conflicts without source files; original source row references retained"
+  ],
+  "fixture_note": "Synthetic stores and warehouse inputs; real baseline regression is separate."
+}

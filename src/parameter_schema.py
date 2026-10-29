@@ -1,6 +1,8 @@
 """Complete editable configurations around the immutable model, with business help."""
+from app_defaults import DEFAULT_WAREHOUSES
 import copy,hashlib,json
 import engine,model
+from data_contracts import ParameterConfig,InputBatch
 
 # key: Chinese name, unit, explanation and adjustment guidance
 HELP={
@@ -24,9 +26,9 @@ WEIGHT_HELP={'alpha':'趋势敏感度：调高通常更响应近期涨跌，调�
  'w2':'此前7天权重：调高更重视中间一周，变化方向取决于该段销量。w3=1-w1-w2自动计算。'}
 FIXED='固定规则：7/14/30天窗口；低月销资格≤5；周转在途折算0.7；趋势中间限幅0.3～2及增长支撑上限2；不是最终AM绝对范围。AF=1.28不参与当前安全库存；AK/CV为诊断量。未增加安全余量天数上限；无分类跟随快销，缺失箱规补1，禁用/停采排除、必卖优先及无货仍保留从仓需求保持不变。'
 
-def standard():
+def standard() -> ParameterConfig:
     c=engine.config()
-    return {'parameters':c['parameters'],'weight_profiles':c['weight_profiles'],'category_profiles':c['category_profiles'],'warehouses':copy.deepcopy(engine.DEFAULT_WAREHOUSES),'exception':True}
+    return {'parameters':c['parameters'],'weight_profiles':c['weight_profiles'],'category_profiles':c['category_profiles'],'warehouses':copy.deepcopy(DEFAULT_WAREHOUSES),'exception':True}
 
 def signature(config):return hashlib.sha256(json.dumps(config,sort_keys=True,ensure_ascii=False,allow_nan=False).encode()).hexdigest()
 
@@ -48,7 +50,7 @@ def validate(config):
     if not isinstance(config['exception'],bool):raise ValueError('一箱例外须为开关值')
     return config
 
-def apply(loaded,config):
+def apply(loaded:InputBatch,config:ParameterConfig) -> InputBatch:
     """Rebind normalized weights per store AFTER routing; no cross-store mutations."""
     validate(config);out={**loaded,'config':copy.deepcopy(loaded['config']),'normalized':copy.deepcopy(loaded['normalized'])}
     for key in ['parameters','weight_profiles','category_profiles']:out['config'][key]=copy.deepcopy(config[key])

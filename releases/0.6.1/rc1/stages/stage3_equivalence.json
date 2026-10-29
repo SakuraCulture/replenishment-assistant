@@ -1,0 +1,209 @@
+{
+  "passed": true,
+  "baseline_commit": "e50072cc00c6997aed9fe1113012192210ad7eb3",
+  "candidate_sources": {
+    "src\\allocation.py": "5960745f16e4bc4eb5cdaad0a1591e817f5adab940579cf8ed96d264ed3c1bf9",
+    "src\\app.ico": "43f1cca8dfed05f941a207266aa5308ebf8633a140aa4448a49acfac7c4ce7ed",
+    "src\\app.py": "d33598e17605474e1ee12b26ab8f4f95f6d636bf2b20d781a6f11eec4285cba0",
+    "src\\app_defaults.py": "fe9b7a4b1e5ec32719f945b07dfeacd1ecfd83318228c0dbd9998a4469b1e795",
+    "src\\batch_app.py": "afe4c8ecfa7164960d9b96e2e8ea8a274c426fa061b1b2be708ba01160a7f690",
+    "src\\batch_service.py": "6e6dc96632c82725711550da7b7e97848d52f8eb15dffe15673abfc523a86fc2",
+    "src\\batch_smoke.py": "b1818e7d5f774fa720254b9ffed9c5c3b39f94907623d439a82db12676e32a78",
+    "src\\data_contracts.py": "2f66206dc39ff5855f4dbb9591daf1b32c075ceef1efb721cb7c695aa82afe28",
+    "src\\default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src\\default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "src\\display_fields.py": "ab56cb79ad94e08b644499f888fc4489d3845dd8bfbaa1d90f11448156385d8c",
+    "src\\engine.py": "f5a3765950fba865fd3dbc1aa853ca36822872b3aa96f94ecebcb499a8fff9e5",
+    "src\\input_adapter.py": "0b2bafd9321a41a5d9f5f339ed4bf1f7a641324bf5228cf932cedf81e931ae0e",
+    "src\\legacy_window.py": "3799e92d932c194f389c9458690d94be0f7f1183e72303004f6439cd94d58245",
+    "src\\model.py": "7b5b39dc20649ae0d55f462a46a259fe740ba4d9188a651bf0cb003bd5488f71",
+    "src\\one_box_exception.py": "848e8ee14eb51b84e64fd78ae49fd60f2f88debf53fb173c906566efab79765d",
+    "src\\parameter_schema.py": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+    "src\\parameter_trial.py": "900b3198ebff1d8d938176583677477a740b1ca3417f044033deea21ce637f45",
+    "src\\parameter_ui.py": "7f220c3a529e5616d2eb2aa85cf394a96a2ffb5a63336089a2afd0357cecb89e",
+    "src\\priority_list.py": "9229f9cdabd66c4eaaa1d31ad90038cb054f833c4b0cb53ccdbb75f594943450",
+    "src\\result_semantics.py": "b4f00cb8e1750abed021562e5696f6f1bc9f9e7b69b49d16d17b96793b3a2055",
+    "src\\runtime_support.py": "d8a9d18fe378274427a81c6dfe38277abdae123692cdb82a8a4c1b52e034afe6",
+    "src\\smoke.py": "1b8ebf35cb94eb6e96f96b14b009aceb33df66f61912af4e52421ca7e561a524",
+    "src\\ui_controls.py": "08ee64be40d5090576baf3e0a83bd49de4f8d90e34412d1ef04a8d6e09159b4a",
+    "src\\ui_results.py": "c6488a31c252936ad42aa42e60ab567b34f47302d0a976a8a454f98bec437e94",
+    "src\\ui_session.py": "0c5cf613a3929658f73d891cf9111aaf67006b6391b9f2c89abf723f03e6a7bf",
+    "src\\ui_tasks.py": "c51c3c0cddca44a3259c8c11bef1aa2c854aadc26bf04050893df8d4c4c3c07b",
+    "src\\version.json": "3971949bda7f93176956ef4293798e4050f35776a8d73cce987b2f548625de46",
+    "src\\version_info.py": "6e9fe25bd61d7059758d5dc4484001ed7a24d6f624f3206a3230f7e1e4680b48",
+    "src\\warehouse_catalog.py": "ed00c6bd654e4d269b45cb5fd9d70438e4c5a3da807bd07aedf1ef315ef96153",
+    "src\\warehouse_smoke.py": "197a93dafbbaf927c9c014210ffdc07285b6e4ca09195b72eb7735830b7a20a9",
+    "src\\warehouse_ui.py": "7933dd5eec56d58d82837e8340d5bf0c905fa4183692600a854b92044e4db411",
+    "src\\work_repository.py": "87f321a563d23174ed5e2a733d9019f5dce959d55f3fb564c28381c40fd9a546",
+    "src\\work_smoke.py": "b50429879445bfafb47842e3508a3420cf8d500132f728685c99e977a99bd0ac",
+    "src\\workbench.py": "c65944eb87613cfb26820a396a8e6ee3f3e20e684edc5f6787f62f23d27e55d2",
+    "src\\xlsx_exports.py": "fd03238e3f48f1813308dd5f37d83b9410c0a841fe5f5aae1b271acdec78ade4"
+  },
+  "whitelist": {
+    "result.created": "calculation wall-clock timestamp",
+    "result.task.pid": "spawn process identifier",
+    "result.task.started": "spawn timing",
+    "result.task.finished": "spawn timing",
+    "result.version.version": "application packaging version, not model/routing/schema version",
+    "result.version.source_commit": "build provenance",
+    "result.version.build_id": "build provenance",
+    "result.version.built_at": "build timestamp",
+    "loaded.loaded_at": "import wall-clock timestamp",
+    "loaded.sales / loaded.products": "only generated replenishment-* temporary file paths",
+    "Excel: 运行概览/计算时间; 版本及参数/导出时间": "clock cells only",
+    "Excel: 软件版本; 构建信息.version/source_commit/build_id/built_at": "packaging metadata only",
+    "Excel: 版本及参数/<store> / version, source_commit, build_id, built_at": "packaging metadata only"
+  },
+  "comparison": "exact type and value; business rows keyed by store and SKU; all nested metadata retained; Excel values/types/order/styles compared",
+  "core_hashes": {
+    "model.py": {
+      "before": "7b5b39dc20649ae0d55f462a46a259fe740ba4d9188a651bf0cb003bd5488f71",
+      "after": "7b5b39dc20649ae0d55f462a46a259fe740ba4d9188a651bf0cb003bd5488f71"
+    },
+    "one_box_exception.py": {
+      "before": "848e8ee14eb51b84e64fd78ae49fd60f2f88debf53fb173c906566efab79765d",
+      "after": "848e8ee14eb51b84e64fd78ae49fd60f2f88debf53fb173c906566efab79765d"
+    },
+    "allocation.py": {
+      "before": "5960745f16e4bc4eb5cdaad0a1591e817f5adab940579cf8ed96d264ed3c1bf9",
+      "after": "5960745f16e4bc4eb5cdaad0a1591e817f5adab940579cf8ed96d264ed3c1bf9"
+    },
+    "default_config.json": {
+      "before": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "after": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "before": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "after": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    }
+  },
+  "changed_preserved_files": [],
+  "cases": [
+    {
+      "case": "real_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_None",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_0",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_3000",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_5000",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_10000",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_no_exception",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_custom",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "dual_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "dual_serial_QA_A",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "dual_serial_QA_B",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "dual_parallel",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "single_route",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "single_catalog",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "edge_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "edge_result",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "conflicts",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "conflict_blocked",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "conflict_resolved",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "errors",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "restored_payload",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "preview",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "Excel batch.xlsx",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "Excel filtered.xlsx",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "Excel real.xlsx",
+      "differences": 0,
+      "details": []
+    }
+  ],
+  "difference_count": 0
+}
