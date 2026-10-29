@@ -95,9 +95,11 @@ class Repository:
             for s in codes:
                 current=db.execute("SELECT current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,s)).fetchone()
                 if (current[0] if current else None)!=expected_orders.get(s):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)
+            work_revision=old[0] if old else None
             if not old or old[1]!=digest:
+                work_revision=uuid.uuid4().hex
                 if old:db.execute('INSERT OR IGNORE INTO normal_work_revisions VALUES(?,?,?)',(old[0],day,old[2]))
-                db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET revision=excluded.revision,digest=excluded.digest,saved=excluded.saved,summary=excluded.summary,payload=excluded.payload',(day,uuid.uuid4().hex,digest,stamp,wr.dumps(info),zlib.compress(raw)))
+                db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET revision=excluded.revision,digest=excluded.digest,saved=excluded.saved,summary=excluded.summary,payload=excluded.payload',(day,work_revision,digest,stamp,wr.dumps(info),zlib.compress(raw)))
             for s in codes:
                 result=payload['results'][s];h=fingerprint(result)
                 current=db.execute("SELECT oid,number,current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,s)).fetchone()
@@ -108,7 +110,9 @@ class Repository:
                 else:
                     oid=str(uuid.uuid4());number='BH-'+day.replace('-','')+'-'+quote(s,safe='')+'-ZC';rev=1
                     db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,s,'normal_model',oid,number,rev))
-                record={'schema':1,'model_version':MODEL_VERSION,'result':result,'preset':payload.get('store_presets',{}).get(s),'item_ids':{d['E']:uuid.uuid5(uuid.UUID(oid),d['E']).hex for d in result['rows']}}
+                record={'schema':1,'model_version':MODEL_VERSION,'work_revision':work_revision,'result':result,'preset':payload.get('store_presets',{}).get(s),'item_ids':{d['E']:uuid.uuid5(uuid.UUID(oid),d['E']).hex for d in result['rows']}}
+                # Keep the issue's complete input/config draft even after later ordinary draft saves.
+                db.execute('INSERT OR IGNORE INTO normal_work_revisions VALUES(?,?,?)',(work_revision,day,zlib.compress(raw)))
                 db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,rev,h,stamp,encode(record)))
                 db.execute('UPDATE normal_orders SET current=? WHERE oid=?',(rev,oid))
                 db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,oid,rev,'确认归档' if rev==1 else '同日覆盖修订',wr.dumps({'number':number,'day':day,'store':s,'summary':result['summary'],'previous_revision':rev-1 or None})))
