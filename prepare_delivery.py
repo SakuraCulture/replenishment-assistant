@@ -8,9 +8,10 @@ version=json.loads((root/'src/version.json').read_text(encoding='utf-8'))
 build=json.loads((dest/'_internal/build_info.json').read_text(encoding='utf-8-sig'))
 assert build['version']==version['version']
 shutil.copy2(root/'使用说明.txt',dest/'使用说明.txt')
-if version['version'] in {'0.7.1','0.7.2'}:
+if version['version'] in {'0.7.1','0.7.2','0.7.3'}:
     (dest/'docs').mkdir(exist_ok=True);shutil.copy2(root/'docs/0.7.1导出优化与批量确认单.md',dest/'docs/0.7.1导出优化与批量确认单.md')
-if version['version']=='0.7.2':shutil.copy2(root/'docs/0.7.2历史明细性能.md',dest/'docs/0.7.2历史明细性能.md')
+if version['version'] in {'0.7.2','0.7.3'}:shutil.copy2(root/'docs/0.7.2历史明细性能.md',dest/'docs/0.7.2历史明细性能.md')
+if version['version']=='0.7.3':shutil.copy2(root/'docs/0.7.3工作链路性能与过滤.md',dest/'docs/0.7.3工作链路性能与过滤.md')
 licenses=dest/'licenses';licenses.mkdir(exist_ok=True)
 if (root/'third_party_licenses').exists():shutil.copytree(root/'third_party_licenses',licenses,dirs_exist_ok=True)
 versions={}

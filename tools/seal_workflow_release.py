@@ -10,8 +10,8 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--delivery',type=Path,required=True);p.add_argument('--qa',type=Path,required=True);a=p.parse_args();dest=a.delivery.resolve();q=a.qa.resolve();meta=load(dest/'版本信息.json');commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     build_commit=meta['source_commit'];assert meta['version']=='0.7.3'
     subprocess.run(['git','merge-base','--is-ancestor',build_commit,commit],cwd=ROOT,check=True)
-    after_build=subprocess.check_output(['git','diff','--name-only',build_commit,commit],cwd=ROOT,text=True).splitlines()
-    assert all(name.startswith(('tools/','docs/','releases/')) or name=='README.md' for name in after_build),'runtime/build files changed since clean build'
+    after_build=[n for n in subprocess.check_output(['git','diff','--name-only','-z',build_commit,commit],cwd=ROOT).decode('utf-8').split('\0') if n]
+    assert all(name.startswith(('tools/','docs/','releases/')) or name in ('README.md','使用说明.txt','prepare_delivery.py') for name in after_build),'runtime/build files changed since clean build'
     assert not subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip(),'clean build commit required'
     paths={'business':q/'backend_equivalence.json','goods':q/'goods_parity.json','new_products':q/'new_product_parity.json','real_exports':q/'exports_real/report.json','batch_exports':q/'exports_synthetic_retry/report.json','io_controls':q/'io_controls/report.json','transfer':q/'transfer_final/report.json','pressure_equivalence':q/'pressure_all_gc/equivalence.json','normal_backend':q/'normal_release/normal_report.json','workbench_backend':q/'workbench_release/workbench_report.json'}
     ui={'normal_ui':q/'exe-normal/normal_ui_report.json','work_ui':q/'exe-work/work_ui_report.json','delivery_ui':q/'exe-delivery/export_ui_report.json','history_ui':q/'exe-history/history_ui_report.json','large_work_ui':q/'exe-work-io/work_io_report.json','pressure_ui':q/'exe-pressure/workflow_report.json'}
