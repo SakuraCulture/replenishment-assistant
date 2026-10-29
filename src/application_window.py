@@ -27,14 +27,14 @@ class ApplicationWindow(Workbench):
         nav.addStretch();v.addLayout(nav);self.sections=QStackedWidget();v.addWidget(self.sections,1);self.setCentralWidget(root)
         home=QWidget();hv=QVBoxLayout(home);hv.setContentsMargins(36,26,36,26);hv.addWidget(label('今天的补货，从这里开始','title'));self.home_status=label('','section');hv.addWidget(self.home_status)
         hr=QHBoxLayout();hr.addWidget(button('开始 / 继续工作',lambda:self.show_section(1),True));hr.addWidget(button('继续已保存的今日草稿',self.resume_today));hr.addWidget(button('查询历史正常单',lambda:self.show_section(2)));hv.addLayout(hr)
-        hv.addWidget(label('保存草稿用于续做；确认归档签发正常单；正式导出供加盟商核对。每天每店仅一张当前正常单。','muted'))
+        hv.addWidget(label('保存草稿用于续做；导出时确认并自动归档，供加盟商核对。每天每店仅一张当前正常单。','muted'))
         self.recent=QTableWidget();self.recent.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.recent.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.recent_orders[i]));hv.addWidget(self.recent,1)
         hv.addWidget(label('确认回传、实际下单、收货表的历史关联将在后续独立接入；当前不会自动发送或下单。','muted'))
         self.sections.addWidget(home);self.sections.addWidget(work)
         archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('历史正常单 · 当前修订去重统计','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
         self.archive_table=QTableWidget();self.archive_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.archive_table.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.archive_orders[i]));av.addWidget(self.archive_table,1)
         row=QHBoxLayout();row.addWidget(button('打开选中单据 / 修订',self.open_selected_archive));row.addWidget(button('操作日志明细 / 导出',self.show_events));row.addWidget(button('刷新',self.refresh_archive));av.addLayout(row);av.addWidget(label('双击查看：签发快照、历史修订、逐商品数量和来源审计。历史页不改今日工作区。','muted'));self.sections.addWidget(archive)
-        actions=QHBoxLayout();self.new_products_btn=button('选择本店新品 / 预览预算',self.choose_new_products);actions.addWidget(self.new_products_btn);self.issue_btn=button('确认所选门店并自动归档',self.confirm_normal,True);actions.addWidget(self.issue_btn);self.merchant_btn=button('选择门店并导出加盟商确认单',self.export_current);actions.addWidget(self.merchant_btn);self.overview_page.layout().addLayout(actions)
+        actions=QHBoxLayout();self.new_products_btn=button('选择本店新品 / 预览预算',self.choose_new_products);actions.addWidget(self.new_products_btn);self.issue_btn=button('仅确认归档（不导出）',self.confirm_normal);actions.addWidget(self.issue_btn);self.merchant_btn=button('选择门店并导出加盟商确认单',self.export_current,True);actions.addWidget(self.merchant_btn);self.overview_page.layout().addLayout(actions)
         self.pages.widget(4).layout().insertWidget(1,button('选择本店新品 / 预览预算',self.choose_new_products))
         self.mode.addItems(['动销补货','新品候选','新品推荐','缺货恢复及其他'])
         self.save_job_btn.setText('保存草稿');self.history_btn.setText('草稿记录');self.batch_export.setText('内部批次明细导出');self.export_all.setText('内部全量明细');self.export_filtered.setText('内部当前筛选')
@@ -164,7 +164,7 @@ class ApplicationWindow(Workbench):
         if result.get('new_products'):self.new_bases[s]=copy.deepcopy(base)
         else:self.new_bases.pop(s,None)
         self.results[s]=result;self.current_store=s;self.result=result;self.dirty=False;self.set_rows(result['rows'],True);self.refresh_tables();self.touch();self.navigate(4)
-        self.status.setText('新品选择与预算已应用到本店草稿；请返回门店汇总确认归档。')
+        self.status.setText('新品选择与预算已应用到本店草稿；请返回门店汇总选择门店并导出。')
 
     def confirm_normal(self):
         if self.worker or self.readonly or self.input_dirty or self.job_day!=wr.today():return
