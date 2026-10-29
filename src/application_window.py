@@ -142,6 +142,8 @@ class ApplicationWindow(Workbench):
         super().closeEvent(event)
         if event.isAccepted():
             self.archive_timer.stop();self.history_reader.shutdown()
+            self.summary_pending=None
+            if self.summary_task:self.summary_task.wait()
             if self.status_hash_task:
                 self.status_hash_task.requestInterruption();self.status_hash_task.wait()
 
@@ -282,7 +284,8 @@ class ApplicationWindow(Workbench):
 
     def export_order(self,order):
         if self.worker:return
-        self.job(self.orders.get,(order['day'],order['store'],order['revision']),self.export_loaded_order)
+        from history_read import read_for_export
+        self.job(read_for_export,(self.orders,order),self.export_loaded_order)
 
     def export_loaded_order(self,order):
         name=normal_exports.filename(order)
@@ -309,13 +312,7 @@ class ApplicationWindow(Workbench):
         if not self.closing:self.refresh_archive()
 
     def show_events(self,oid=None):
-        records=self.orders.events(oid);dialog=QDialog(self);dialog.setWindowTitle('归档操作日志明细');dialog.resize(1000,650);v=QVBoxLayout(dialog);search=QLineEdit();search.setPlaceholderText('查询时间、门店、单号、动作或文件名');v.addWidget(search);text=QTextBrowser();v.addWidget(text,1)
-        def filtered():return [r for r in records if search.text().lower() in wr.dumps(r).lower()]
-        def refresh(*_):text.setPlainText(json.dumps(filtered(),ensure_ascii=False,indent=2))
-        def export():
-            path,_=QFileDialog.getSaveFileName(dialog,'导出当前查询日志','归档日志.json','JSON (*.json)')
-            if not path:return
-            try:
-                with open(path,'x',encoding='utf-8') as f:json.dump(filtered(),f,ensure_ascii=False,indent=2)
-            except Exception as exc:QMessageBox.warning(dialog,'未导出',str(exc))
-        row=QHBoxLayout();row.addWidget(button('导出当前查询',export));row.addWidget(button('关闭',dialog.accept));v.addLayout(row);search.textChanged.connect(refresh);refresh();dialog.exec();dialog.deleteLater()
+        from history_ui import EventsDialog
+        # QPushButton.clicked's bool is not an order id.
+        records=self.orders.events(None if isinstance(oid,bool) else oid)
+        dialog=EventsDialog(self,records);dialog.exec();dialog.deleteLater()

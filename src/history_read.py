@@ -130,3 +130,12 @@ def worker_main(conn,cancel,path,cache):
             gc.collect()
     except (EOFError,BrokenPipeError):pass
     finally:conn.close()
+
+
+def read_for_export(repo,head,progress=None,cancel=None):
+    import engine
+    engine.checkpoint(cancel)
+    if progress:progress('读取并校验历史签发快照…')
+    order=repo.get(head['day'],head['store'],head['revision'])
+    engine.checkpoint(cancel)
+    return order

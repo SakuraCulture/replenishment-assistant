@@ -79,3 +79,24 @@ class AuditDialog(QDialog):
         self.host.history_reader.request({'kind':'audit_export','head':self.head,'path':path},lambda p:self.text.setPlainText('完整快照已保存：'+p),self.failed)
     def dispose(self):self.disposed=True;self.host.history_reader.cancel()
     def done(self,code):self.dispose();super().done(code)
+
+class EventsDialog(QDialog):
+    """Page the rendered text only; exports use the full fixed query snapshot."""
+    def __init__(self,parent,records):
+        super().__init__(parent);self.records=records;self.tokens=[wr.dumps(r).lower() for r in records];self.matches=records;self.page=0;self.setWindowTitle('归档操作日志明细');self.resize(1000,650);v=QVBoxLayout(self)
+        self.search=QLineEdit();self.search.setPlaceholderText('查询时间、门店、单号、动作或文件名');v.addWidget(self.search);self.note=label('','muted');v.addWidget(self.note);self.text=QTextBrowser();v.addWidget(self.text,1)
+        row=QHBoxLayout();row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));row.addWidget(button('导出当前查询',self.export));row.addWidget(button('关闭',self.accept));v.addLayout(row)
+        self.debounce=QTimer(self);self.debounce.setSingleShot(True);self.debounce.setInterval(275);self.debounce.timeout.connect(self.filter);self.search.textChanged.connect(lambda _:self.debounce.start());self.search.returnPressed.connect(self.filter);self.filter()
+    def filter(self):
+        self.debounce.stop();q=self.search.text().lower();self.matches=[r for r,t in zip(self.records,self.tokens) if q in t];self.page=0;self.render()
+    def turn(self,n):self.page+=n;self.render()
+    def render(self):
+        pages=max(1,(len(self.matches)+99)//100);self.page=max(0,min(self.page,pages-1));self.note.setText(f'匹配 {len(self.matches)} 条 · 第 {self.page+1} / {pages} 页；导出包含全部匹配记录')
+        self.text.setPlainText(json.dumps(self.matches[self.page*100:(self.page+1)*100],ensure_ascii=False,indent=2))
+    def export(self):
+        if self.debounce.isActive():self.filter()
+        path,_=QFileDialog.getSaveFileName(self,'导出当前查询日志','归档日志.json','JSON (*.json)')
+        if not path:return
+        try:
+            with open(path,'x',encoding='utf-8') as f:json.dump(self.matches,f,ensure_ascii=False,indent=2)
+        except Exception as exc:QMessageBox.warning(self,'未导出',str(exc))

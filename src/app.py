@@ -23,6 +23,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--history-smoke' in sys.argv:
+        from history_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--history-smoke')+1:])
     if '--delivery-smoke' in sys.argv:
         from delivery_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--delivery-smoke')+1:])

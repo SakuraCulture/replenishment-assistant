@@ -19,7 +19,7 @@ class HistoryReader(QObject):
     def poll(self):
         if self.proc is None:return
         try:
-            while self.conn.poll():
+            while self.conn is not None and self.conn.poll():
                 token,kind,value=self.conn.recv();callbacks=self.callbacks.get(token)
                 if kind=='progress':
                     if callbacks:callbacks[2](value)
@@ -29,7 +29,7 @@ class HistoryReader(QObject):
                     self.callbacks.pop(token,None)
                     (callbacks[0] if kind=='done' else callbacks[1])(value)
                 self.dispatch()
-            if not self.proc.is_alive():raise RuntimeError('历史读取进程异常退出，请重试')
+            if self.proc is not None and not self.proc.is_alive():raise RuntimeError('历史读取进程异常退出，请重试')
         except (EOFError,OSError,RuntimeError) as exc:
             callbacks=list(self.callbacks.values());self.shutdown()
             for cb in callbacks:cb[1](str(exc))

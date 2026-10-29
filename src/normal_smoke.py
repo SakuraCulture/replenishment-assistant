@@ -108,9 +108,13 @@ def start_smoke(app,win,args):
                 with_book=openpyxl.load_workbook(out/'EXE确认单.xlsx');assert with_book.sheetnames==['往期新品','本月新品','中心仓动销补货清单'];assert with_book['本月新品']['E2'].value=='new_must' and with_book['本月新品']['Q2'].value==6;assert with_book['往期新品'].max_row==8;with_book.close();assert any(e['action']=='带号导出' for e in win.orders.events())
                 record=win.work_repository.get_job(wr.today());state['record']=record;win.reset_job();assert not win.new_bases;win.restore_job(record);assert 'QA_A' in win.new_bases and win.results['QA_A']['new_products']['selection']['new_must']==12
                 state['checks'].append('actual file-save dialog and frozen numbered Excel export; queryable event; saved new choices and original base restored after resetting work area')
-                win.show_section(2);win.archive_search.setText('new_must');assert not win.archive_table.isRowHidden(0);snap('03_归档查询');state['step']=60
+                win.show_section(2);win.archive_search.setText('new_must');state['step']=61
+            elif step==61 and not win.archive_timer.isActive() and win.history_reader.active is None:
+                assert win.archive_orders and all(r['store'] in ('QA_A','QA_B') for r in win.archive_orders);snap('03_归档查询');state['step']=60
                 def inspect_archive():
-                    dialog=QApplication.activeModalWidget();assert dialog is not None;assert dialog.grab().save(str(out/'04_修订明细.png'));dialog.accept()
+                    dialog=QApplication.activeModalWidget();assert dialog is not None
+                    if not getattr(dialog,'selected',None):later(inspect_archive);return
+                    assert dialog.grab().save(str(out/'04_修订明细.png'));dialog.accept()
                 later(inspect_archive);win.open_archive(win.archive_orders[0])
                 win.show_section(1);win.store_widgets['QA_A']['amount'].setText('0');assert win.states['QA_A']['state']=='待重算';assert win.orders.get(wr.today(),'QA_A')['revision']==2
                 win.current_store='QA_A';assert not win.orders.get(wr.today(),'QA_A')['payload']['result']['budget']['limit']==0

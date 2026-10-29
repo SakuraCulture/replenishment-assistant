@@ -22,15 +22,22 @@ from version_info import VERSION
 from ui_controls import label,button
 
 class GoodsModel(QAbstractTableModel):
-    def __init__(self):super().__init__();self.rows=[]
-    def set_rows(self,rows):self.beginResetModel();self.rows=rows;self.endResetModel()
+    def __init__(self):super().__init__();self.rows=[];self.values={};self.sort_keys={}
+    def set_rows(self,rows):self.beginResetModel();self.rows=rows;self.values={};self.sort_keys={};self.endResetModel()
     def rowCount(self,parent=QModelIndex()):return 0 if parent.isValid() else len(self.rows)
     def columnCount(self,parent=QModelIndex()):return len(COLUMNS)
     def headerData(self,section,orientation,role=Qt.ItemDataRole.DisplayRole):
         if role==Qt.ItemDataRole.DisplayRole:return COLUMNS[section][0] if orientation==Qt.Orientation.Horizontal else section+1
+    def column_values(self,column):
+        if column not in self.values:self.values[column]=[COLUMNS[column][1](d) for d in self.rows]
+        return self.values[column]
+    def key(self,row,column):
+        if column not in self.sort_keys:self.sort_keys[column]=[(0,v) if semantics.numeric(v) else (1,str(v or '')) for v in self.column_values(column)]
+        return self.sort_keys[column][row]
     def data(self,index,role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():return None
-        d=self.rows[index.row()];v=COLUMNS[index.column()][1](d)
+        d=self.rows[index.row()]
+        if role in (Qt.ItemDataRole.DisplayRole,Qt.ItemDataRole.UserRole,Qt.ItemDataRole.ToolTipRole):v=self.column_values(index.column())[index.row()]
         if role==Qt.ItemDataRole.DisplayRole:return semantics.fmt(v)
         if role==Qt.ItemDataRole.UserRole:return v
         if role==Qt.ItemDataRole.ToolTipRole:return semantics.fmt(v)
@@ -67,8 +74,14 @@ class FilterModel(QSortFilterProxyModel):
         if self.mode=='重点关注':return bool(d.get('BW') or semantics.issue_text(d) or any('停采' in n for n in d['_meta']['notes']))
         return True
     def lessThan(self,left,right):
-        a=self.sourceModel().data(left,Qt.ItemDataRole.UserRole);b=self.sourceModel().data(right,Qt.ItemDataRole.UserRole)
-        return (0,a)<(0,b) if semantics.numeric(a) and semantics.numeric(b) else (0 if semantics.numeric(a) else 1,str(a or ''))<(0 if semantics.numeric(b) else 1,str(b or ''))
+        source=self.sourceModel();return source.key(left.row(),left.column())<source.key(right.row(),right.column())
+
+
+
+class SummaryTask(QThread):
+    result=Signal(object)
+    def __init__(self,rows,parent):super().__init__(parent);self.rows=rows
+    def run(self):self.result.emit(semantics.summarize(self.rows));self.rows=None
 
 
 class ResultsView:
@@ -97,15 +110,19 @@ class ResultsView:
         self.details=QTextBrowser();dv.addWidget(self.details);self.detail_panel.setMinimumWidth(340);splitter.addWidget(self.detail_panel);splitter.setStretchFactor(0,3);splitter.setStretchFactor(1,1);self.detail_panel.hide();v.addWidget(splitter,1)
         self.table.clicked.connect(self.show_detail)
         for x in [self.mode,self.warehouse_filter,self.category_filter]:x.currentTextChanged.connect(self.filter_changed)
-        self.search.textChanged.connect(self.filter_changed)
+        self.filter_timer=QTimer(self.search);self.filter_timer.setSingleShot(True);self.filter_timer.setInterval(275);self.filter_timer.timeout.connect(self.filter_changed)
+        self.search.textChanged.connect(lambda _:self.filter_timer.start());self.search.returnPressed.connect(self.filter_changed)
+        self.filter_generation=0;self.summary_task=None;self.summary_pending=None
+        QApplication.instance().aboutToQuit.connect(self.stop_filtered_summary)
         self.pages.addWidget(page)
 
     def set_rows(self,rows,calculated):
+        self.filter_timer.stop();sort_column=self.proxy.sortColumn();sort_order=self.proxy.sortOrder();self.proxy.sort(-1)
         blockers=[QSignalBlocker(w) for w in (self.search,self.warehouse_filter,self.category_filter,self.mode)]
         self.model.set_rows(rows);self.detail_panel.hide();self.search.clear()
         self.warehouse_filter.clear();self.warehouse_filter.addItems(['全部仓']+sorted({str(d.get('AU','')) for d in rows}))
         self.category_filter.clear();self.category_filter.addItems(['全部分类']+sorted({str(d.get('_category') or '未分类') for d in rows}))
-        self.mode.setCurrentText('建议补货' if calculated else '全部商品');del blockers;self.filter_changed()
+        self.mode.setCurrentText('建议补货' if calculated else '全部商品');del blockers;self._pending_sort=(sort_column,sort_order);self.filter_changed()
         s=semantics.summarize(rows)
         self.metric_values[0].setText(f"{s['amount']:,.2f}" if calculated else '待计算')
         self.metric_values[1].setText(f"{s['positive']:,}" if calculated else '待计算')
@@ -123,8 +140,31 @@ class ResultsView:
     def visible_rows(self):return [self.model.rows[self.proxy.mapToSource(self.proxy.index(i,0)).row()] for i in range(self.proxy.rowCount())]
 
     def filter_changed(self,*a):
+        self.filter_timer.stop();self.filter_generation+=1
         self.proxy.beginFilterChange();self.proxy.mode=self.mode.currentText();self.proxy.warehouse=self.warehouse_filter.currentText() or '全部仓';self.proxy.category=self.category_filter.currentText() or '全部分类';self.proxy.search=self.search.text().strip().lower();self.proxy.endFilterChange(QSortFilterProxyModel.Direction.Rows)
-        s=semantics.summarize(self.visible_rows());self.filtered_caption.setText(f"当前筛选 {s['rows']:,} 行  ·  执行金额 {s['amount']:,.2f} 元  ·  计算金额 {s['calculated_amount']:,.2f} 元  ·  已排除 {s['excluded']:,} 行  ·  数据异常 {s['issues']:,} 行")
+        if hasattr(self,'_pending_sort'):
+            self.proxy.sort(*self._pending_sort);del self._pending_sort
+        rows=self.visible_rows()
+        if len(rows)<500:self.set_filtered_summary(semantics.summarize(rows))
+        else:
+            self.filtered_caption.setText(f'当前筛选 {len(rows):,} 行 · 统计中…');self.summary_pending=(self.filter_generation,rows);self.start_filtered_summary()
+
+    def stop_filtered_summary(self):
+        self.summary_pending=None
+        if self.summary_task:self.summary_task.wait()
+
+    def start_filtered_summary(self):
+        if self.summary_task is not None or self.summary_pending is None:return
+        generation,rows=self.summary_pending;self.summary_pending=None
+        task=SummaryTask(rows,self.table);self.summary_task=task
+        def apply(s):
+            if generation==self.filter_generation:self.set_filtered_summary(s)
+        def finished():
+            self.summary_task=None;task.deleteLater();self.start_filtered_summary()
+        task.result.connect(apply);task.finished.connect(finished);task.start()
+
+    def set_filtered_summary(self,s):
+        self.filtered_caption.setText(f"当前筛选 {s['rows']:,} 行  ·  执行金额 {s['amount']:,.2f} 元  ·  计算金额 {s['calculated_amount']:,.2f} 元  ·  已排除 {s['excluded']:,} 行  ·  数据异常 {s['issues']:,} 行")
 
     def show_detail(self,index):
         d=self.model.rows[self.proxy.mapToSource(index).row()];esc=lambda x:html.escape(semantics.fmt(x))
@@ -153,6 +193,7 @@ class ResultsView:
 
     def export(self,filtered):
         if not self.result or self.dirty:return
+        if filtered and self.filter_timer.isActive():self.filter_changed()
         rows=self.visible_rows() if filtered else self.result['rows']
         if not rows:QMessageBox.information(self,'没有可导出商品','请调整筛选条件。');return
         folder=Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))/'补货助手输出';folder.mkdir(parents=True,exist_ok=True)
