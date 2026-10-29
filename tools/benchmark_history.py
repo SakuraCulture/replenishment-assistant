@@ -74,14 +74,15 @@ def run(kind,iteration):
     QTimer.singleShot(0,safe_exercise);code=app.exec();stop.set();thread.join();sys.exit(code)
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--kind');p.add_argument('--iteration',type=int);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--kind');p.add_argument('--iteration',type=int);p.add_argument('--collect',action='store_true');a=p.parse_args()
     if a.kind:return run(a.kind,a.iteration)
-    for i,kinds in enumerate([['old','new'],['new','old'],['old','new']],start=1):
-        for kind in kinds:subprocess.run([sys.executable,__file__,'--kind',kind,'--iteration',str(i)],check=True)
-    records=[json.loads(p.read_text()) for p in (QA/'bench-loop').glob('*/report.json') if p.parent.name!='new-0'];summary={}
+    if not a.collect:
+        for i,kinds in enumerate([['old','new'],['new','old'],['old','new']],start=1):
+            for kind in kinds:subprocess.run([sys.executable,__file__,'--kind',kind,'--iteration',str(i)],check=True)
+    records=[json.loads(p.read_text()) for p in (QA/'bench-loop').glob('*/report.json') if p.parent.name not in ('new-0','new-1')];summary={}
     for metric in records[0]['seconds']:
         summary[metric]={k:{'median':statistics.median(v),'min':min(v),'max':max(v)} for k in ['old','new'] for v in [[r['seconds'][metric] for r in records if r['kind']==k]]}
     summary['peak_tree_mib']={k:{'median':statistics.median(v),'min':min(v),'max':max(v)} for k in ['old','new'] for v in [[r['sampled_peak_tree_mib'] for r in records if r['kind']==k]]}
-    (QA/'bench-loop/report.json').write_text(json.dumps({'rounds':3,'order':'AB/BA/AB sequential, inside QApplication event loop; earlier harness evidence retained separately','metrics':summary,'runs':records,'limits':'Actual Qt methods offscreen, source build; warm OS file cache not forcibly flushed; cold derived index per run, includes spawn/IPC; peak sum RSS process tree sampled 50ms includes shared pages counted in each process. No full daily restore.'},indent=2))
+    (QA/'bench-loop/report.json').write_text(json.dumps({'rounds':3,'order':'AB/BA/AB sequential plus candidate rerun new-4 replacing new-1 after metadata query-order correction; inside QApplication event loop; earlier harness evidence retained separately','metrics':summary,'runs':records,'limits':'Actual Qt methods offscreen, source build; warm OS file cache not forcibly flushed; cold derived index per run, includes spawn/IPC; peak sum RSS process tree sampled 50ms includes shared pages counted in each process. No full daily restore.'},indent=2))
 if __name__=='__main__':
     import multiprocessing;multiprocessing.freeze_support();main()

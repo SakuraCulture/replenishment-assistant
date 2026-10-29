@@ -140,7 +140,7 @@ class ResultsView:
     def visible_rows(self):return [self.model.rows[self.proxy.mapToSource(self.proxy.index(i,0)).row()] for i in range(self.proxy.rowCount())]
 
     def filter_changed(self,*a):
-        self.filter_timer.stop();self.filter_generation+=1
+        self.filter_timer.stop();self.filter_generation+=1;self.summary_pending=None
         self.proxy.beginFilterChange();self.proxy.mode=self.mode.currentText();self.proxy.warehouse=self.warehouse_filter.currentText() or '全部仓';self.proxy.category=self.category_filter.currentText() or '全部分类';self.proxy.search=self.search.text().strip().lower();self.proxy.endFilterChange(QSortFilterProxyModel.Direction.Rows)
         if hasattr(self,'_pending_sort'):
             self.proxy.sort(*self._pending_sort);del self._pending_sort

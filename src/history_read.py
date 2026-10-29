@@ -60,8 +60,10 @@ class Index:
             row=db.execute('SELECT summary,search,projection,checksum FROM views WHERE k=?',(k,)).fetchone()
         if row is None:return None
         if hashlib.sha256(''.join(row[:3]).encode()).hexdigest()!=row[3]:return None
-        try:return {'record':wr.loads(row[0]),'search':json.loads(row[1]),'projection':json.loads(row[2]) if detail else None}
-        except (ValueError,TypeError):return None
+        try:
+            stored=wr.loads(row[0]);record={k:stored[k] for k in ('day','store','number','revision','saved','name','summary')}
+            return {'record':record,'search':json.loads(row[1]),'projection':json.loads(row[2]) if detail else None}
+        except (ValueError,TypeError,KeyError):return None
     def put(self,k,record,view):
         values=[wr.dumps(record),json.dumps(view['search'],ensure_ascii=False),json.dumps(view,ensure_ascii=False)]
         with closing(self.connect()) as db,db:db.execute('INSERT OR REPLACE INTO views VALUES(?,?,?,?,?)',(k,*values,hashlib.sha256(''.join(values).encode()).hexdigest()))
