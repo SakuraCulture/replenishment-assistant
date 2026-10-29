@@ -1,0 +1,96 @@
+{
+  "passed": true,
+  "version": "0.5.0",
+  "source_commit": "173c0bdbdaab415463af3555d2f386e6b744067c",
+  "checks": [
+    "real single-file import and 14244-row calculation equals original engine",
+    "one multi-store workbook equals multiple mixed-store workbooks; identical rows deduplicated",
+    "cross-file and intra-file conflicts block store; explicit choice restores exact master matching",
+    "two distinct processes overlap; every SKU quantity/amount equals serial computation",
+    "changing one store budget to zero leaves every other store quantity and amount unchanged",
+    "one store failure does not stop another; stop preserves running result and never starts queued store",
+    "combined/per-store exports reconcile; failed amounts blank; exclusions retained; stale and overwrite exports refused"
+  ],
+  "real_data_summary": {
+    "rows": 14244,
+    "local": 5161,
+    "issues": 1,
+    "calculable": 9083,
+    "positive": 430,
+    "amount": 12268.87,
+    "calculated_positive": 1046,
+    "calculated_amount": 23833.55,
+    "excluded": 3269,
+    "excluded_positive": 616,
+    "excluded_amount": 11564.68,
+    "unpriced": 0,
+    "candidate_amount": 12268.87,
+    "must_amount": 6899.18,
+    "must_candidate_amount": 6899.18,
+    "budget_deferred": 0,
+    "holding_gaps": 0,
+    "exception": 8,
+    "extra": 378.8
+  },
+  "concurrency": [
+    {
+      "pid": 63576,
+      "started": 1793269015.9862714,
+      "finished": 1793269017.9141593
+    },
+    {
+      "pid": 36192,
+      "started": 1793269016.0707047,
+      "finished": 1793269018.0121603
+    }
+  ],
+  "budget_results": {
+    "LQD2025": {
+      "rows": 14244,
+      "local": 5161,
+      "issues": 1,
+      "calculable": 9083,
+      "positive": 88,
+      "amount": 2999.87,
+      "calculated_positive": 1046,
+      "calculated_amount": 23833.55,
+      "excluded": 3269,
+      "excluded_positive": 616,
+      "excluded_amount": 11564.68,
+      "unpriced": 0,
+      "candidate_amount": 12268.87,
+      "must_amount": 2999.37,
+      "must_candidate_amount": 6899.18,
+      "budget_deferred": 384,
+      "holding_gaps": 40,
+      "exception": 8,
+      "extra": 378.8
+    },
+    "QA_STORE_B": {
+      "rows": 14244,
+      "local": 5161,
+      "issues": 1,
+      "calculable": 9083,
+      "positive": 115,
+      "amount": 4999.98,
+      "calculated_positive": 1046,
+      "calculated_amount": 23833.55,
+      "excluded": 3269,
+      "excluded_positive": 616,
+      "excluded_amount": 11564.68,
+      "unpriced": 0,
+      "candidate_amount": 12268.87,
+      "must_amount": 4999.98,
+      "must_candidate_amount": 6899.18,
+      "budget_deferred": 343,
+      "holding_gaps": 41,
+      "exception": 8,
+      "extra": 378.8
+    }
+  },
+  "input_hashes_unchanged": {
+    "D:\\企业微信\\WXWork\\1688855943717538\\Cache\\File\\2026-10\\补货建议导出服务.xlsx": "249c019e9ac2477f0954964e0e1f83658813ada66724f734f10c395b2a4e7fed",
+    "D:\\企业微信\\WXWork\\1688855943717538\\Cache\\File\\2026-10\\混合仓商品资料.xlsx": "3c31fd1e3dbc17ea06661b1587c0f1173bb4dfdb1ae51e17abfb2c316c3d763e"
+  },
+  "fixture_note": "QA_STORE_B is a synthetic duplicate of actual store rows, not a second real store observation"
+}

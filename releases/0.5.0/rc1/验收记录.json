@@ -1,0 +1,19 @@
+{
+  "version": "0.5.0",
+  "source_commit": "173c0bdbdaab415463af3555d2f386e6b744067c",
+  "build_id": "rc1",
+  "verified": [
+    "business budget regression",
+    "single/multi-file grouping and conflicts",
+    "serial vs process concurrency equality",
+    "budget isolation and failures",
+    "packaged EXE interactions and exports",
+    "warehouse snapshots, per-store supply routing, zero-stock secondary demand retained, exact assigned-master price/carton/weights"
+  ],
+  "not_verified": [
+    "other computers",
+    "byte-reproducible rebuild",
+    "two actual warehouse feeds; routing scenarios use synthetic fixtures"
+  ],
+  "rules": "Original 0.3 model unchanged; routing precedes calculation, without stock reservation or quantity cap; no daily-rate unification or experimental protection period"
+}
