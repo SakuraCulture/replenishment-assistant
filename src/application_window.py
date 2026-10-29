@@ -1,7 +1,7 @@
 """Home/work/archive shell. Workbench remains a persistent live instance."""
 import copy,hashlib,json
 from pathlib import Path
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt,QTimer
 from PySide6.QtWidgets import QWidget,QVBoxLayout,QHBoxLayout,QStackedWidget,QTableWidget,QTableWidgetItem,QLineEdit,QDialog,QMessageBox,QTextBrowser,QComboBox,QFileDialog,QCheckBox,QInputDialog
 from ui_controls import label,button
 from workbench import Workbench
@@ -18,6 +18,11 @@ class ApplicationWindow(Workbench):
         self.new_bases={};self.new_focus=None
         super().__init__()
         self.orders=normal_orders.Repository(self.work_repository)
+        from history_tasks import HistoryReader
+        self.history_reader=HistoryReader(self.work_repository.path,self.repository.folder/'archive_index.sqlite3',self)
+        self.archive_orders=[];self.recent_orders=[];self.archive_page=0;self.archive_all=[];self.archive_matches=[]
+        self.status_hashes={};self.status_hash_task=None
+        self.archive_timer=QTimer(self);self.archive_timer.setSingleShot(True);self.archive_timer.setInterval(275);self.archive_timer.timeout.connect(self.query_archive)
         self.focus_repository=focus.Repository(self.repository.folder)
         try:self.new_focus=self.focus_repository.load()
         except Exception as exc:self.status.setText("新品关注清单未加载，请重新导入："+str(exc))
@@ -33,6 +38,8 @@ class ApplicationWindow(Workbench):
         self.sections.addWidget(home);self.sections.addWidget(work)
         archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('历史正常单 · 当前修订去重统计','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
         self.archive_table=QTableWidget();self.archive_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.archive_table.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.archive_orders[i]));av.addWidget(self.archive_table,1)
+        self.archive_note=label('','muted');av.addWidget(self.archive_note)
+        paging=QHBoxLayout();paging.addWidget(button('上一页',lambda:self.archive_turn(-1)));paging.addWidget(button('下一页',lambda:self.archive_turn(1)));av.addLayout(paging)
         row=QHBoxLayout();row.addWidget(button('打开选中单据 / 修订',self.open_selected_archive));row.addWidget(button('操作日志明细 / 导出',self.show_events));row.addWidget(button('刷新',self.refresh_archive));av.addLayout(row);av.addWidget(label('双击查看：签发快照、历史修订、逐商品数量和来源审计。历史页不改今日工作区。','muted'));self.sections.addWidget(archive)
         actions=QHBoxLayout();self.new_products_btn=button('选择本店新品 / 预览预算',self.choose_new_products);actions.addWidget(self.new_products_btn);self.issue_btn=button('仅确认归档（不导出）',self.confirm_normal);actions.addWidget(self.issue_btn);self.merchant_btn=button('选择门店并导出加盟商确认单',self.export_current,True);actions.addWidget(self.merchant_btn);self.overview_page.layout().addLayout(actions)
         self.pages.widget(4).layout().insertWidget(1,button('选择本店新品 / 预览预算',self.choose_new_products))
@@ -82,19 +89,61 @@ class ApplicationWindow(Workbench):
         if index in (0,2):self.refresh_archive()
 
     def refresh_archive(self):
-        self.archive_orders=self.orders.list();self.fill_orders(self.archive_table,self.archive_orders);self.filter_archive()
-        self.recent_orders=self.archive_orders[:10];self.fill_orders(self.recent,self.recent_orders)
-        heads={(r['day'],r['store']):r for r in self.orders.headers()}
-        today=[r for r in self.archive_orders if r['day']==wr.today()];ready=[s for s,x in self.states.items() if x['state']=='已完成'];pending=sum(not heads.get((self.job_day,s)) or heads[(self.job_day,s)]['digest']!=normal_orders.fingerprint(self.results[s],self.new_focus) for s in ready)
-        self.home_status.setText(f"{wr.today()} · 今日已归档 {len(today)} 店 / ¥{sum(r['summary']['amount'] for r in today):,.2f}\n工作区日期 {self.job_day} · 待确认 {pending} 店 · 未完成/需处理 {len(self.states)-len(ready)} 店 · {'任务运行中' if self.worker else '有未保存草稿' if self.job_dirty else '工作区就绪'}")
+        self.archive_timer.stop();self.query_archive()
+
+    def query_archive(self):
+        if self.closing:return
+        self.archive_page=0;self.archive_note.setText('正在读取归档摘要 / 商品索引…（可继续使用工作页）')
+        self.home_status.setText('归档摘要加载中；工作区可继续使用。')
+        self.history_reader.request({'kind':'list','search':self.archive_search.text()},self.archive_ready,self.archive_failed,
+            lambda p:self.archive_note.setText(f"正在读取归档 {p['done']} / {p['total']}；尚未完成的查询不代表无结果"))
+
+    def archive_failed(self,message):
+        self.archive_note.setText('归档未加载：'+message+'；可点击刷新重试');self.home_status.setText('归档未加载，请在历史页刷新重试。')
+
+    def archive_ready(self,data):
+        self.archive_all=data['records'];self.archive_matches=data['matches'];self.archive_heads=data['heads']
+        self.recent_orders=self.archive_all[:10];self.fill_orders(self.recent,self.recent_orders);self.render_archive_page();self.refresh_home_status()
+
+    def render_archive_page(self):
+        matching=[r for r,m in zip(self.archive_all,self.archive_matches) if m];pages=max(1,(len(matching)+99)//100);self.archive_page=max(0,min(self.archive_page,pages-1))
+        self.archive_orders=matching[self.archive_page*100:(self.archive_page+1)*100];self.fill_orders(self.archive_table,self.archive_orders)
+        self.archive_note.setText(f'匹配 {len(matching)} 单 · 第 {self.archive_page+1} / {pages} 页（每页100单）')
+
+    def archive_turn(self,offset):
+        self.archive_page+=offset;self.render_archive_page()
 
     def filter_archive(self,*_):
-        text=self.archive_search.text().strip().lower()
-        for i,r in enumerate(getattr(self,'archive_orders',[])):
-            match=text in json.dumps(r,ensure_ascii=False).lower()
-            if text and not match:
-                full=self.orders.get(r['day'],r['store']);match=any(text in (d['E']+' '+str(d.get('D',''))).lower() for d in full['payload']['result']['rows'])
-            self.archive_table.setRowHidden(i,not match)
+        self.archive_note.setText('等待查询…');self.archive_timer.start()
+
+    def refresh_home_status(self):
+        heads={(r['day'],r['store']):r for r in getattr(self,'archive_heads',[])}
+        today=[r for r in self.archive_all if r['day']==wr.today()];ready=[s for s,x in self.states.items() if x['state']=='已完成']
+        missing={s:self.results[s] for s in ready if heads.get((self.job_day,s)) and not self.valid_status_hash(s)}
+        pending=sum(not heads.get((self.job_day,s)) or (self.valid_status_hash(s) and self.status_hashes[s][2]!=heads[(self.job_day,s)]['digest']) for s in ready)
+        self.home_status.setText(f"{wr.today()} · 今日已归档 {len(today)} 店 / ¥{sum(r['summary']['amount'] for r in today):,.2f}\n工作区日期 {self.job_day} · 待确认 {pending} 店"+(f' · 正在核对 {len(missing)} 店签发状态' if missing else '')+f" · 未完成/需处理 {len(self.states)-len(ready)} 店 · {'任务运行中' if self.worker else '有未保存草稿' if self.job_dirty else '工作区就绪'}")
+        self.status_hashes={s:v for s,v in self.status_hashes.items() if s in self.results and v[0] is self.results[s] and v[1] is self.new_focus}
+        if missing and self.status_hash_task is None:
+            from history_tasks import StatusHashes
+            task=StatusHashes(missing,self.new_focus,self);self.status_hash_task=task
+            def ready_hashes(values):
+                for s,h in values.items():
+                    if self.results.get(s) is task.items[s] and self.new_focus is task.focus:self.status_hashes[s]=(task.items[s],task.focus,h)
+            def finished():
+                self.status_hash_task=None;task.deleteLater()
+                if not self.closing:self.refresh_home_status()
+            task.completed.connect(ready_hashes);task.finished.connect(finished);task.start()
+
+    def valid_status_hash(self,s):
+        cached=self.status_hashes.get(s)
+        return bool(cached and cached[0] is self.results.get(s) and cached[1] is self.new_focus)
+
+    def closeEvent(self,event):
+        super().closeEvent(event)
+        if event.isAccepted():
+            self.archive_timer.stop();self.history_reader.shutdown()
+            if self.status_hash_task:
+                self.status_hash_task.requestInterruption();self.status_hash_task.wait()
 
     def resume_today(self):
         if self.worker:return
@@ -233,7 +282,9 @@ class ApplicationWindow(Workbench):
 
     def export_order(self,order):
         if self.worker:return
-        order=self.orders.get(order['day'],order['store'],order['revision'])
+        self.job(self.orders.get,(order['day'],order['store'],order['revision']),self.export_loaded_order)
+
+    def export_loaded_order(self,order):
         name=normal_exports.filename(order)
         path,_=QFileDialog.getSaveFileName(self,'导出本店加盟商确认单',name,'Excel (*.xlsx)')
         if not path:return
@@ -242,27 +293,20 @@ class ApplicationWindow(Workbench):
             try:self.orders.log(order,'带号导出',{'path':path,'sha256':hashlib.sha256(Path(path).read_bytes()).hexdigest()})
             except Exception as exc:self.failed('文件已导出，但导出日志未保存：'+str(exc));return
             self.status.setText('已导出 '+path+'；归档版本不变。')
-        self.job(normal_exports.export,(copy.deepcopy(order),path),done)
+        def start():
+            if self.closing:return
+            if self.worker:QTimer.singleShot(10,start);return
+            self.job(normal_exports.export,(order,path),done)
+        QTimer.singleShot(0,start)
 
     def open_selected_archive(self):
         i=self.archive_table.currentRow()
         if i>=0:self.open_archive(self.archive_orders[i])
 
     def open_archive(self,record):
-        dialog=QDialog(self);dialog.setWindowTitle(record['number']+' · 历史签发快照');dialog.resize(1100,730);v=QVBoxLayout(dialog);rev=QComboBox();rev.addItems([f'V{i:03d}'+(' · 当前' if i==record['revision'] else ' · 历史') for i in range(1,record['revision']+1)]);v.addWidget(rev);note=label('','muted');v.addWidget(note);search=QLineEdit();search.setPlaceholderText('筛选商品名称 / 编码（不影响正式导出范围）');v.addWidget(search);table=QTableWidget();table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);v.addWidget(table,1);selected={}
-        def load(*_):
-            order=self.orders.get(record['day'],record['store'],rev.currentIndex()+1);selected['order']=order;r=order['payload']['result'];note.setText(f"确认 {order['saved']} · 签发 ¥{r['summary']['amount']:,.2f} · {r['summary']['positive']} 款 · 只读；后续确认/下单/收货未接入")
-            rows=r['rows'];table.setColumnCount(8);table.setHorizontalHeaderLabels(['商品编码','商品','推荐类型','原模型建议','候选数','签发数','签发金额','原因']);table.setRowCount(len(rows))
-            for i,d in enumerate(rows):
-                for j,val in enumerate([d['E'],d.get('D'),new_products.category(d),d.get('AS'),d.get('_candidate_qty'),order_quantity(d),order_amount(d),explanation(d)]):table.setItem(i,j,QTableWidgetItem(fmt(val)))
-                table.setRowHidden(i,search.text().lower() not in (d['E']+' '+str(d.get('D',''))).lower())
-            table.resizeColumnsToContents()
-        def filter_rows(*_):
-            for i,d in enumerate(selected['order']['payload']['result']['rows']):table.setRowHidden(i,search.text().lower() not in (d['E']+' '+str(d.get('D',''))).lower())
-        rev.currentIndexChanged.connect(load);search.textChanged.connect(filter_rows)
-        def audit():
-            x=QDialog(dialog);x.setWindowTitle('完整审计快照（内部）');x.resize(900,650);layout=QVBoxLayout(x);text=QTextBrowser();text.setPlainText(wr.dumps(selected['order']));layout.addWidget(text);x.exec();x.deleteLater()
-        row=QHBoxLayout();row.addWidget(button('导出此修订确认单',lambda:self.export_order(selected['order'])));row.addWidget(button('完整来源与参数审计',audit));row.addWidget(button('此单操作日志',lambda:self.show_events(selected['order']['oid'])));row.addWidget(button('关闭',dialog.accept));v.addLayout(row);rev.blockSignals(True);rev.setCurrentIndex(record['revision']-1);rev.blockSignals(False);load();dialog.exec();dialog.deleteLater()
+        from history_ui import ArchiveDialog
+        dialog=ArchiveDialog(self,record);dialog.exec();dialog.dispose();dialog.deleteLater()
+        if not self.closing:self.refresh_archive()
 
     def show_events(self,oid=None):
         records=self.orders.events(oid);dialog=QDialog(self);dialog.setWindowTitle('归档操作日志明细');dialog.resize(1000,650);v=QVBoxLayout(dialog);search=QLineEdit();search.setPlaceholderText('查询时间、门店、单号、动作或文件名');v.addWidget(search);text=QTextBrowser();v.addWidget(text,1)
