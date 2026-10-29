@@ -6,6 +6,7 @@ root=Path(__file__).resolve().parents[1]
 dest=root/'交付_0.3/补货助手'
 qa=root/'qa/v03'
 out=root/'releases/0.3.0'
+if out.exists():raise SystemExit('基线记录已经存在，不允许重新捕获覆盖。请运行tools/audit_baseline.py进行只读核验。')
 def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 expected=json.loads((qa/'delivery_sha256.json').read_text(encoding='utf-8'))
 actual={str(p.relative_to(dest)):digest(p) for p in dest.rglob('*') if p.is_file()}

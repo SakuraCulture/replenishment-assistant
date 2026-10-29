@@ -1,36 +1,35 @@
-import json,zipfile,hashlib,shutil
+"""Seal a distinct verified build; never consume historical QA implicitly."""
+import argparse,hashlib,json,shutil,subprocess,zipfile
 from pathlib import Path
-root=Path(__file__).parent
-dest=root/'交付_0.3'/'补货助手'
-qa=json.loads((root/'qa/v03/backend_report.json').read_text(encoding='utf-8'))
-ui=json.loads((root/'qa/v03/packaged_ui/ui_report.json').read_text(encoding='utf-8'))
-assert qa['passed'] and ui['passed']
-for p,h in qa['source_hashes_unchanged'].items():assert hashlib.sha256(Path(p).read_bytes()).hexdigest()==h
+root=Path(__file__).resolve().parent
+parser=argparse.ArgumentParser()
+parser.add_argument('--delivery',type=Path,required=True)
+parser.add_argument('--budget-report',type=Path,required=True)
+parser.add_argument('--batch-report',type=Path,required=True)
+parser.add_argument('--ui-report',type=Path,required=True)
+args=parser.parse_args();dest=args.delivery.resolve()
+digest=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+meta=json.loads((dest/'版本信息.json').read_text(encoding='utf-8'))
+commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
+assert commit==meta['source_commit'],'Commit differs from packaged source'
+assert not subprocess.check_output(['git','status','--porcelain'],cwd=root,text=True).strip(),'Commit pending source changes first'
+evidence={}
+for name,path in [('budget',args.budget_report),('batch',args.batch_report),('packaged_ui',args.ui_report)]:
+    data=json.loads(path.read_text(encoding='utf-8'))
+    assert data['passed'] and data['version']==meta['version'] and data['source_commit']==commit,(name,'stale or failed evidence')
+    if name=='packaged_ui':assert data['exe_sha256']==digest(dest/meta['entry'])
+    evidence[name]=data
 assert not (dest/'_internal/icuuc.dll').exists()
-toc=(root/'build_0.3/补货助手/Analysis-00.toc').read_text(encoding='utf-8')
-assert 'native\\\\poppler' not in toc and 'native\\\\libheif' not in toc
-notes='''补货助手 MVP 0.3.0 验收记录
-
-1. 原模型核心及一箱例外规则不变；14,244行AS/BV与已验收结果一致。
-2. 禁用/停采排除仍生效；关闭总预算时430款、12,268.87元，执行数量与0.2一致。
-3. 清单从SKU明细准确提取2,142个必卖编码，忽略199个冬季独有编码，重复0；本店命中2,120个，缺22个，全部保留匹配审计。
-4. 总预算测试0/1,000/3,000/5,000/10,000/12,268.87/20,000元，逐行检查不超候选量、按箱规倍数、资金不超预算、原计算不变。
-5. 必卖先于普通；若必卖仍不足，则分给普通的资金加余额不足以再买一个未满足必卖的最小单位。独立测试覆盖整箱余款、价格待核、负数/布尔/非金额预算、零预算和最低持有缺口。
-6. 清单保存、重启读取、备份还原、错误导入不覆盖旧清单、门店预算隔离记忆通过。
-7. 3,000元场景程序导出读回：补货清单金额不超预算、无禁用/停采，预算未满足行数匹配，全店必卖匹配2,142行。
-8. EXE在独立工作目录、去除Python路径后完成真实UI导入、计算、筛选、预算0及3,000元、缺口展示、预算导出、重新创建窗口恢复设置、导入清单使旧结果失效。
-9. Windows界面、1080×720窗口与中文显示已目视检查；未验证其他电脑。
-10. 原模型及三份输入工作簿SHA256不变。清单复用配置为独立JSON，不覆盖原始Excel。
-'''
-(root/'qa/v03/验收记录.txt').write_text(notes,encoding='utf-8-sig')
-shutil.copy2(root/'qa/v03/验收记录.txt',dest/'验收记录.txt')
-files=sorted(p for p in dest.rglob('*') if p.is_file())
-manifest={str(p.relative_to(dest)):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
-(root/'qa/v03/delivery_sha256.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
-archive=root/'交付_0.3'/'补货助手_MVP_0.3.zip'
+out=root/'releases'/meta['version']/meta['build_id'];out.mkdir(parents=True,exist_ok=False)
+notes={'version':meta['version'],'source_commit':commit,'build_id':meta['build_id'],'verified':['business budget regression','single/multi-file grouping and conflicts','serial vs process concurrency equality','budget isolation and failures','packaged EXE interactions and exports'],'not_verified':['other computers','byte-reproducible rebuild'],'rules':'Original 0.3 rules unchanged; no daily-rate unification or experimental protection period'}
+(dest/'验收记录.json').write_text(json.dumps(notes,ensure_ascii=False,indent=2),encoding='utf-8')
+files=sorted(p for p in dest.rglob('*') if p.is_file());manifest={str(p.relative_to(dest)):digest(p) for p in files}
+archive=dest.parent/f"补货助手_{meta['version']}_{meta['build_id']}.zip"
 with zipfile.ZipFile(archive,'x',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
     for p in files:z.write(p,p.relative_to(dest.parent))
 with zipfile.ZipFile(archive) as z:assert z.testzip() is None
-report={'archive':str(archive),'zip_bytes':archive.stat().st_size,'uncompressed_bytes':sum(p.stat().st_size for p in files),'file_count':len(files),'exe_sha256':manifest['补货助手.exe'],'zip_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'source_files_unchanged':True,'packaged_ui_passed':True}
-(root/'qa/v03/release_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
-print(json.dumps(report,ensure_ascii=True,indent=2))
+for name,data in evidence.items():(out/(name+'_report.json')).write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8')
+for name in ['版本信息.json','验收记录.json','使用说明.txt']:shutil.copy2(dest/name,out/name)
+(out/'delivery_sha256.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+report={**meta,'archive':str(archive),'zip_sha256':digest(archive),'exe_sha256':digest(dest/meta['entry']),'file_count':len(files),'zip_bytes':archive.stat().st_size}
+(out/'release_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(report,ensure_ascii=False,indent=2))

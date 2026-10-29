@@ -14,7 +14,7 @@ import input_adapter as adapter
 from one_box_exception import apply_one_box_exception
 import allocation
 
-VERSION='0.3.0'
+from version_info import VERSION,MODEL_VERSION,diagnostic
 DEFAULT_WAREHOUSES={'河北仓':(8.0,4.0),'山东仓':(8.0,5.0)}
 class Cancelled(Exception):pass
 def checkpoint(cancel):
@@ -215,6 +215,14 @@ COLUMNS=[('商品名称',lambda d:d.get('D')),('商品编码',lambda d:d.get('E'
  ('预算前金额',lambda d:d.get('_candidate_amount',amount_value(d))),('预算缺口数量',lambda d:d.get('_budget_gap',0)),
  ('最低持有缺口',lambda d:'有销量且无可用/在途，本次资金未覆盖' if d.get('_holding_gap') else ''),('资金分配说明',lambda d:d.get('_budget_reason','未启用总预算'))]
 
+IMPORT_HEADERS=['类型','门店编码','商品编码','来源文件','工作表','源行 / 行数','保留选择 / 状态','SHA256']
+def import_audit_rows(result):
+    audit=result.get('import_audit',{})
+    yield ['一致重复去重数量','','','','',audit.get('identical_duplicates',0),'','']
+    for f in audit.get('files',[]):yield ['读取文件','','',f['path'],'',f['rows'],f['error'] or '成功',result.get('sources',{}).get(f['path'],'')]
+    for c in audit.get('conflicts',[]):
+        for i,source in enumerate(c['sources']):yield ['重复冲突',c['store'],c['sku'],source['file'],source['sheet'],source['row'],'保留' if c['choice']==i else '未处理' if c['choice'] is None else '未选','']
+
 def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,progress=lambda s:None):
     """Application's native offline exporter. Text identifiers/formula-looking input stay text."""
     path=Path(path).resolve();rows=result['rows'] if rows is None else rows
@@ -240,7 +248,7 @@ def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,pro
         ws.auto_filter.ref=f'A1:{get_column_letter(len(headers))}{count}'
         return ws
     summary=summarize(rows)
-    info=[['软件版本',VERSION],['计算时间',result['created']],['门店',result['store_name']],['导出范围',scope],['一箱例外',result['enabled']],
+    info=[['软件版本',VERSION],['模型版本',MODEL_VERSION],['构建信息',json.dumps(diagnostic(),ensure_ascii=False)],['计算时间',result['created']],['门店',result['store_name']],['导出范围',scope],['一箱例外',result['enabled']],
         ['计价口径','商品资料基本售价；地采缺价不计为0'],['规则口径','原库存额度BH/BN日均；一箱例外仅后置修改最终建议'],
         ['商品数',summary['rows']],['默认补货商品',summary['positive']],['默认补货金额',summary['amount']],['地采商品',summary['local']],['数据异常商品',summary['issues']],
         ['排除规则','商品资料状态=禁用 或 补货建议状态=停采，任一命中即排除；计算保留，执行量和执行金额为0'],
@@ -254,6 +262,7 @@ def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,pro
     if ml:info.extend([['必卖清单',ml['name']],['清单版本',ml['revision']],['清单来源SHA256',ml['source_sha256']],['清单总商品数',ml['total']],['本店命中清单数',ml['matched']],['清单未出现在本店导出',ml['missing']]])
     for p,h in result['sources'].items():info.extend([['输入文件',p],['SHA256',h]])
     sheet('运行概览',['项目','内容'],info,{1:30,2:100})
+    if result.get('import_audit'):sheet('导入记录',IMPORT_HEADERS,import_audit_rows(result),{4:70})
     headers=[h for h,f in COLUMNS]+['周销','14天日均','缺货天数','基本售价','原模型建议','原模型金额','例外新增金额','预测日均','BH额度日均','BN增长额度日均','库存额度总量','按计算建议持有天数','备注','导出源行','资料源行']
     def values(d):
         r=d['AN']*d['AM'] if numeric(d.get('AN')) and numeric(d.get('AM')) else None

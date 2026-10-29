@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBo
     QStackedWidget,QSplitter,QTextBrowser,QMessageBox,QDialog,QProgressBar,QAbstractItemView,QScrollArea)
 import engine
 import priority_list
+from version_info import VERSION
 
 STYLE='''
 QWidget {font-family:"Microsoft YaHei UI";font-size:10pt;color:#22383C;}
@@ -96,6 +97,8 @@ class FilterModel(QSortFilterProxyModel):
         if self.mode=='建议补货':return engine.orderable(d)
         if self.mode=='必卖商品':return bool(d.get('_must_sell'))
         if self.mode=='预算未满足':return d.get('_budget_gap',0)>0
+        if self.mode=='必卖未补足':return bool(d.get('_must_sell')) and d.get('_budget_gap',0)>0
+        if self.mode=='其他预算暂缓':return not d.get('_must_sell') and d.get('_budget_gap',0)>0
         if self.mode=='最低持有缺口':return bool(d.get('_holding_gap'))
         if self.mode=='已排除':return bool(engine.exclusion_reason(d))
         if self.mode=='商品资料禁用':return str(d.get('S') or '').strip()=='禁用'
@@ -117,7 +120,7 @@ class MainWindow(QMainWindow):
         self.repository=priority_list.Repository(config_dir);self.profile=None;self.config_warning=''
         try:self.profile=self.repository.profile()
         except Exception as exc:self.config_warning=f'清单未载入：{exc}。请重新导入。'
-        self.setWindowTitle('补货助手 · MVP 0.3');self.resize(1380,900);self.setMinimumSize(1080,720)
+        self.setWindowTitle('补货助手 · '+VERSION);self.resize(1380,900);self.setMinimumSize(1080,720)
         root=QWidget();self.setCentralWidget(root);layout=QVBoxLayout(root);layout.setContentsMargins(28,20,28,18);layout.setSpacing(15)
         header=QHBoxLayout();titles=QVBoxLayout();titles.addWidget(label('补货助手','title'));subtitle=label('本地计算  ·  原模型 + 一箱例外  ·  原库存额度口径','muted');subtitle.setWordWrap(False);titles.addWidget(subtitle);header.addLayout(titles);header.addStretch()
         self.nav1=button('01  导入与检查',lambda:self.pages.setCurrentIndex(0));self.nav2=button('02  计算结果',lambda:self.pages.setCurrentIndex(1));self.nav2.setEnabled(False)
@@ -375,14 +378,18 @@ def main():
     app.setPalette(palette);app.setStyleSheet(STYLE)
     icon=Path(__file__).parent/'app.ico'
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
-    logs=Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation));logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=logs/'app.log',level=logging.INFO,encoding='utf-8')
+    logs=Path(os.environ.get('REPLENISHMENT_DATA_DIR') or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation));logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=logs/'app.log',level=logging.INFO,encoding='utf-8')
     def unexpected(t,v,tb):
         logging.error('界面异常',exc_info=(t,v,tb));QMessageBox.critical(None,'操作未完成',f'{v}\n日志位置：{logs}')
     sys.excepthook=unexpected
-    win=MainWindow();win.show()
-    if '--smoke' in sys.argv:
-        from smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--smoke')+1:])
+    from batch_app import BatchWindow
+    win=BatchWindow();win.show()
+    if '--batch-smoke' in sys.argv:
+        from batch_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--batch-smoke')+1:])
     return app.exec()
 
-if __name__=='__main__':sys.exit(main())
+if __name__=='__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
+    sys.exit(main())

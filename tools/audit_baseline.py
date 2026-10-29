@@ -11,7 +11,7 @@ def audit():
     assert expected==actual,'0.3 delivery changed'
     release=json.loads((evidence/'release_report.json').read_text(encoding='utf-8'))
     assert digest(Path(release['archive']))==release['zip_sha256']
-    assert git('rev-parse','v0.3.0-baseline')==git('rev-parse','7b8da6b')
+    assert git('rev-parse','v0.3.0-baseline^{}')==git('rev-parse','7b8da6b')
     tracked=git('ls-files','-z').split('\0')
     prohibited=[p for p in tracked if p and (p.split('/')[0] in {'.venv','qa','settings'} or p.endswith(('.xlsx','.xls','.csv','.exe','.zip','.log','.dll','.pyd')))]
     assert not prohibited,prohibited
@@ -21,5 +21,5 @@ def audit():
     for p in immutable:
         old=subprocess.check_output(['git','show','v0.3.0-baseline:src/'+p],cwd=root)
         assert hashlib.sha256(old).hexdigest()==digest(root/'src'/p),p
-    return {'passed':True,'baseline':git('rev-parse','v0.3.0-baseline'),'delivery_files':len(actual),'zip_sha256':release['zip_sha256'],'rules_unchanged':immutable,'remotes':git('remote','-v'),'scope':'file integrity and tracking only; not business/UI or reproducible build verification'}
+    return {'passed':True,'baseline_commit':git('rev-parse','v0.3.0-baseline^{}'),'baseline_tag_object':git('rev-parse','v0.3.0-baseline'),'delivery_files':len(actual),'zip_sha256':release['zip_sha256'],'rules_unchanged':immutable,'remotes':git('remote','-v'),'scope':'file integrity and tracking only; not business/UI or reproducible build verification'}
 if __name__=='__main__':print(json.dumps(audit(),ensure_ascii=False,indent=2))

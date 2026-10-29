@@ -1,15 +1,15 @@
-import subprocess,sys,os,json
+"""Explicit, isolated packaged application smoke test."""
+import argparse,hashlib,json,os,subprocess
 from pathlib import Path
-root=Path(__file__).parent
-qa=root/'qa/v03'/'packaged_ui';qa.mkdir(parents=True,exist_ok=True)
-source=Path(r'D:\企业微信\WXWork\1688855943717538\Cache\File\2026-10')
+parser=argparse.ArgumentParser();parser.add_argument('--exe',type=Path,required=True);parser.add_argument('--sales',type=Path,required=True);parser.add_argument('--products',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
+args=parser.parse_args()
+for p in [args.exe,args.sales,args.products]:assert p.is_file(),p
+qa=args.output.resolve();qa.mkdir(parents=True,exist_ok=False)
 env=os.environ.copy()
 for k in ['PYTHONPATH','PYTHONHOME','QT_QPA_PLATFORM','QT_PLUGIN_PATH']:env.pop(k,None)
-env['PATH']=str(Path(env['WINDIR'])/'System32')+';'+env['WINDIR']
-env['REPLENISHMENT_DATA_DIR']=str(qa/'config')
-exe=root/'交付_0.3'/'补货助手'/'补货助手.exe'
-run=subprocess.run([str(exe),'--smoke',str(source/'补货建议导出服务.xlsx'),str(source/'混合仓商品资料.xlsx'),str(qa)],env=env,cwd=qa,timeout=390)
+env['PATH']=str(Path(env['WINDIR'])/'System32')+';'+env['WINDIR'];env['REPLENISHMENT_DATA_DIR']=str(qa/'settings')
+run=subprocess.run([str(args.exe.resolve()),'--batch-smoke',str(args.sales.resolve()),str(args.products.resolve()),str(qa)],env=env,cwd=qa,timeout=420)
 assert run.returncode==0,run.returncode
-report=json.loads((qa/'ui_report.json').read_text(encoding='utf-8'))
-assert report['passed'],report
-print(json.dumps(report,ensure_ascii=True,indent=2))
+report=json.loads((qa/'ui_report.json').read_text(encoding='utf-8'));assert report['passed'],report
+report['exe_sha256']=hashlib.sha256(args.exe.read_bytes()).hexdigest()
+(qa/'ui_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(report,ensure_ascii=False,indent=2))

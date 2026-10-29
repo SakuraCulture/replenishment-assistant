@@ -1,13 +1,17 @@
-import copy,csv,hashlib,json,sys,threading
+import copy,csv,hashlib,json,sys,threading,argparse,subprocess
 from decimal import Decimal
 from pathlib import Path
 root=Path(__file__).parent;sys.path.insert(0,str(root/'src'))
 import engine,priority_list,allocation,openpyxl
-qa=root/'qa/v03';qa.mkdir(parents=True,exist_ok=True)
-source=Path(r'D:\企业微信\WXWork\1688855943717538\Cache\File\2026-10')
+parser=argparse.ArgumentParser(description='Known 0.3 fixture regression; explicit paths, new output only')
+parser.add_argument('--source-dir',type=Path,required=True);parser.add_argument('--original',type=Path,required=True);parser.add_argument('--reference',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
+args=parser.parse_args();source=args.source_dir;original=args.original;reference=args.reference;qa=args.output
+commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
+assert not subprocess.check_output(['git','status','--porcelain'],cwd=root,text=True).strip(),'Commit source before release verification'
 list_path=source/'必卖清单冬季清单经营分析_0926-1026.xlsx'
-original=Path(r'D:\优团工作文件夹\outputs\python_replenishment_20261022')
 paths=[source/'补货建议导出服务.xlsx',source/'混合仓商品资料.xlsx',list_path,original/'model.py',original/'run.py',original/'config.json']
+for p in paths+[reference]:assert p.is_file(),p
+qa.mkdir(parents=True,exist_ok=False)
 digest=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
 hashes={str(p):digest(p) for p in paths}
 profile=priority_list.import_profile(list_path)
@@ -30,7 +34,6 @@ assert digest(original/'run.py')==digest(root/'src/input_adapter.py')
 loaded=engine.load_inputs(*paths[:2],progress=print)
 base=engine.run_calculation(loaded,'LQD2025',engine.DEFAULT_WAREHOUSES,True,None,profile)
 assert base['summary']['amount']==12268.87 and base['summary']['positive']==430
-reference=Path(r'D:\优团工作文件夹\outputs\luquan_model_comparison_20261029\原模型副本_仅一箱例外\首次验算\trial.jsonl')
 old=[json.loads(s) for s in reference.read_text(encoding='utf-8').splitlines()]
 for a,b in zip(old,base['rows']):
     assert a['E']==b['E'] and a['AS']==b['AS'] and a['BV']==b['BV']
@@ -88,7 +91,9 @@ assert sum(1 for _ in w['预算未满足'].iter_rows())-1==chosen['budget']['def
 assert sum(1 for _ in w['全店必卖匹配'].iter_rows())-1==2142
 w.close()
 assert hashes=={str(p):digest(p) for p in paths}
-report={'passed':True,'version':'0.3.0','must_list':base['must_list'],'baseline_summary':base['summary'],'scenarios':scenarios,'source_hashes_unchanged':hashes,
+assert commit==subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
+assert not subprocess.check_output(['git','status','--porcelain'],cwd=root,text=True).strip()
+report={'passed':True,'version':engine.VERSION,'source_commit':commit,'must_list':base['must_list'],'baseline_summary':base['summary'],'scenarios':scenarios,'source_hashes_unchanged':hashes,
         'checks':['all 14244 AS/BV unchanged','unlimited matches 0.2','strict priority and carton residual','no overspend and no fractional carton','minimum holding gaps visible','price validation','zero and sufficient budgets','persistence and backup roundtrip','bad import preserves saved list','cancellation','native Excel export reread']}
 (qa/'backend_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
 print('BUDGET PASS',flush=True)
