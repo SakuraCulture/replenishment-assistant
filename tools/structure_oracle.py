@@ -94,8 +94,10 @@ def capture(source,qa,out):
     parallel=bs.run(dual,jobs,must,2);put('dual_parallel',parallel)
     put('single_route',bs.calculate_store(dual,'QA_A',settings('河北仓',None),must))
     single=bs.load([inp/'sales.xlsx'],{'河北仓':catalogs['河北仓']});put('single_catalog',bs.calculate_store(single,'QA_A',settings('河北仓',None),must))
-    statuses={s:{'name':r['store_name'],'state':'已完成','error':''} for s,r in parallel.items()};statuses['FAIL']={'name':'失败店','state':'计算失败','error':'预设失败'}
-    bs.export_batch(parallel,statuses,out/'batch.xlsx')
+    # Export input order is part of the fixture, not process completion timing.
+    export_results={s:parallel[s] for s in jobs}
+    statuses={s:{'name':r['store_name'],'state':'已完成','error':''} for s,r in export_results.items()};statuses['FAIL']={'name':'失败店','state':'计算失败','error':'预设失败'}
+    bs.export_batch(export_results,statuses,out/'batch.xlsx')
     edge=bs.load([inp/'edge.xlsx'],inp/'edge_master.xlsx');put('edge_loaded',edge);put('edge_result',bs.calculate_store(edge,'EDGE',{'warehouses':e.DEFAULT_WAREHOUSES,'exception':True,'budget':None},must))
     conflict=bs.intake([inp/'edge.xlsx',inp/'conflict.xlsx'],inp/'edge_master.xlsx');put('conflicts',conflict);put('conflict_blocked',bs.prepare(conflict));conflict['conflicts'][0]['choice']=1;put('conflict_resolved',bs.prepare(conflict))
     frozen=copy.deepcopy(edge['intake']);frozen['frozen']=True;legacy=bs.prepare(frozen);put('legacy_frozen_loaded',legacy)

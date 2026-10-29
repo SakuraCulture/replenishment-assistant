@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "checked_files": 819,
+  "changed_files": [],
+  "baseline_archive_sha256": "4516f869203de261961f1696e237a24777020ca71b9197b78a6ddb2a447a5d27",
+  "scope": "original/frozen input files, old delivery bundles and ZIPs, actual daily user settings files, supplementary historical regression inputs",
+  "original_inputs": {
+    "D:\\企业微信\\WXWork\\1688855943717538\\Cache\\File\\2026-10\\补货建议导出服务.xlsx": "249c019e9ac2477f0954964e0e1f83658813ada66724f734f10c395b2a4e7fed",
+    "D:\\企业微信\\WXWork\\1688855943717538\\Cache\\File\\2026-10\\混合仓商品资料.xlsx": "3c31fd1e3dbc17ea06661b1587c0f1173bb4dfdb1ae51e17abfb2c316c3d763e",
+    "D:\\企业微信\\WXWork\\1688855943717538\\Cache\\File\\2026-10\\商品资料_20261024103312_203178058_1.xlsx": "cd7f14c9083001557bda20af64d5328e023f2615eb90ed60377c0845549e928c"
+  }
+}

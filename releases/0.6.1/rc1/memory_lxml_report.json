@@ -1,0 +1,222 @@
+{
+  "version": "0.6.1",
+  "source_commit": "ff8a1e1edbd594735f11cbc9d13d0a2e42103f83",
+  "development": false,
+  "lxml": true,
+  "openpyxl": "3.1.5",
+  "passed": true,
+  "cases": [
+    {
+      "case": "cell_0",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_1",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_2",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_3",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_4",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_5",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_6",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_7",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_8",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_9",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_10",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_11",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_12",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_13",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_14",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_15",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_16",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_17",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_18",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_19",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_20",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_21",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_22",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_23",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_24",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_25",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_26",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_27",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_28",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_29",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_30",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "cell_31",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "blanks",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "header_spaces",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "duplicate_unused",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "duplicate_required",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "missing",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "header_formula",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "header_forced_text",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "illegal_character",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "timezone",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "formula_cache",
+      "differences": 0,
+      "details": []
+    }
+  ],
+  "difference_count": 0,
+  "comparison": "strict type and value; errors include class and exact message; physical blank row offsets retained"
+}

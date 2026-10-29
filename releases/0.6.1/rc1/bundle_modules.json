@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "source_commit": "ff8a1e1edbd594735f11cbc9d13d0a2e42103f83",
+  "exe_sha256": "6a4f1f5b9cb43bf8986a786633911fbef1946b4d07eab21a1ba473733ea1fdfc",
+  "collected_modules": [
+    "ui_controls",
+    "ui_tasks",
+    "ui_results",
+    "ui_session",
+    "legacy_window",
+    "result_semantics",
+    "display_fields",
+    "xlsx_exports",
+    "runtime_support",
+    "app_defaults",
+    "data_contracts",
+    "table_records",
+    "workbench",
+    "batch_service",
+    "warehouse_catalog"
+  ],
+  "lxml_excluded": true,
+  "resources_sha256": {
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "version.json": "93e4e292ab4e5bb331a65fa3a6b857b1889548b64cf7b3d1c69bfdfdb26fdbf0",
+    "app.ico": "43f1cca8dfed05f941a207266aa5308ebf8633a140aa4448a49acfac7c4ce7ed"
+  }
+}

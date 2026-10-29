@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "checks": [
+    "0.6.0 SQLite copied into private QA folder opens without migration",
+    "full saved job payload exactly equal including all dynamic persisted fields",
+    "old named preset and store binding remain v1",
+    "old snapshot recalculation all fields equals stored 0.6.0 results"
+  ]
+}
