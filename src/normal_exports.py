@@ -25,7 +25,7 @@ def groups(result,profile):
     """New pool has precedence, including anomalous sales rows: no duplicate SKU."""
     focused=focus.members(profile);out={name:[] for name in SHEETS}
     for d in result['rows']:
-        if d.get('_source')!='资料匹配':continue
+        if d.get('_source')!='资料匹配' or not sem.work_eligible(d):continue
         if new_products.is_new(d):out['本月新品' if d['E'] in focused else '往期新品'].append(d)
         elif sem.orderable(d):out['中心仓动销补货清单'].append(d)
     return out

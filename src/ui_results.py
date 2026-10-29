@@ -21,61 +21,7 @@ from version_info import VERSION
 
 from ui_controls import label,button
 
-class GoodsModel(QAbstractTableModel):
-    def __init__(self):super().__init__();self.rows=[];self.values={};self.sort_keys={}
-    def set_rows(self,rows):self.beginResetModel();self.rows=rows;self.values={};self.sort_keys={};self.endResetModel()
-    def rowCount(self,parent=QModelIndex()):return 0 if parent.isValid() else len(self.rows)
-    def columnCount(self,parent=QModelIndex()):return len(COLUMNS)
-    def headerData(self,section,orientation,role=Qt.ItemDataRole.DisplayRole):
-        if role==Qt.ItemDataRole.DisplayRole:return COLUMNS[section][0] if orientation==Qt.Orientation.Horizontal else section+1
-    def column_values(self,column):
-        if column not in self.values:self.values[column]=[COLUMNS[column][1](d) for d in self.rows]
-        return self.values[column]
-    def key(self,row,column):
-        if column not in self.sort_keys:self.sort_keys[column]=[(0,v) if semantics.numeric(v) else (1,str(v or '')) for v in self.column_values(column)]
-        return self.sort_keys[column][row]
-    def data(self,index,role=Qt.ItemDataRole.DisplayRole):
-        if not index.isValid():return None
-        d=self.rows[index.row()]
-        if role in (Qt.ItemDataRole.DisplayRole,Qt.ItemDataRole.UserRole,Qt.ItemDataRole.ToolTipRole):v=self.column_values(index.column())[index.row()]
-        if role==Qt.ItemDataRole.DisplayRole:return semantics.fmt(v)
-        if role==Qt.ItemDataRole.UserRole:return v
-        if role==Qt.ItemDataRole.ToolTipRole:return semantics.fmt(v)
-        if role==Qt.ItemDataRole.TextAlignmentRole and index.column() in range(5,11):return int(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter)
-        if role==Qt.ItemDataRole.ForegroundRole:
-            if semantics.exclusion_reason(d) and index.column() in (9,10,13,15,16):return QColor('#9B6D16')
-            if d.get('_audit',{}).get('applied') and index.column() in (9,11):return QColor('#13796C')
-            if d['_source']=='地采商品' and index.column()==2:return QColor('#9B6D16')
-
-
-class FilterModel(QSortFilterProxyModel):
-    def __init__(self):super().__init__();self.mode='全部商品';self.search='';self.warehouse='全部仓';self.category='全部分类';self.setSortRole(Qt.ItemDataRole.UserRole)
-    def filterAcceptsRow(self,row,parent):
-        d=self.sourceModel().rows[row]
-        if self.warehouse!='全部仓' and d.get('AU')!=self.warehouse:return False
-        if self.category!='全部分类' and str(d.get('_category') or '未分类')!=self.category:return False
-        if self.search and self.search not in (' '.join(str(d.get(k,'')) for k in ['D','E','F'])).lower():return False
-        if self.mode in ('动销补货','新品候选','新品推荐','缺货恢复及其他'):
-            import new_products
-            return new_products.is_new(d) if self.mode=='新品候选' else new_products.category(d)==self.mode
-        if self.mode=='建议补货':return semantics.orderable(d)
-        if self.mode=='必卖商品':return bool(d.get('_must_sell'))
-        if self.mode=='预算未满足':return d.get('_budget_gap',0)>0
-        if self.mode=='必卖未补足':return bool(d.get('_must_sell')) and d.get('_budget_gap',0)>0
-        if self.mode=='其他预算暂缓':return not d.get('_must_sell') and d.get('_budget_gap',0)>0
-        if self.mode=='最低持有缺口':return bool(d.get('_holding_gap'))
-        if self.mode=='已排除':return bool(semantics.exclusion_reason(d))
-        if self.mode=='商品资料禁用':return str(d.get('S') or '').strip()=='禁用'
-        if self.mode=='补货建议停采':return str(d['_meta'].get('export_status') or '').strip()=='停采'
-        if self.mode=='资料匹配':return d['_source']=='资料匹配'
-        if self.mode=='一箱例外':return bool(d.get('_audit',{}).get('applied'))
-        if self.mode=='地采商品':return d['_source']=='地采商品'
-        if self.mode=='待处理':return bool(semantics.issue_text(d))
-        if self.mode=='重点关注':return bool(d.get('BW') or semantics.issue_text(d) or any('停采' in n for n in d['_meta']['notes']))
-        return True
-    def lessThan(self,left,right):
-        source=self.sourceModel();return source.key(left.row(),left.column())<source.key(right.row(),right.column())
-
+from ui_goods_fast import GoodsModel,FilterModel
 
 
 class SummaryTask(QThread):
@@ -123,7 +69,9 @@ class ResultsView:
         self.warehouse_filter.clear();self.warehouse_filter.addItems(['全部仓']+sorted({str(d.get('AU','')) for d in rows}))
         self.category_filter.clear();self.category_filter.addItems(['全部分类']+sorted({str(d.get('_category') or '未分类') for d in rows}))
         self.mode.setCurrentText('建议补货' if calculated else '全部商品');del blockers;self._pending_sort=(sort_column,sort_order);self.filter_changed()
-        s=semantics.summarize(rows)
+        # Published calculation results already carry the exact full-row summary.
+        # A filtered/different list still needs its own summary.
+        s=self.result['summary'] if calculated and self.result and rows is self.result['rows'] else semantics.summarize(rows)
         self.metric_values[0].setText(f"{s['amount']:,.2f}" if calculated else '待计算')
         self.metric_values[1].setText(f"{s['positive']:,}" if calculated else '待计算')
         self.metric_values[2].setText(f"{s['exception']} / +{s['extra']:,.2f}" if calculated else '待计算')
@@ -194,7 +142,7 @@ class ResultsView:
     def export(self,filtered):
         if not self.result or self.dirty:return
         if filtered and self.filter_timer.isActive():self.filter_changed()
-        rows=self.visible_rows() if filtered else self.result['rows']
+        rows=self.visible_rows() if filtered else semantics.working_rows(self.result['rows'])
         if not rows:QMessageBox.information(self,'没有可导出商品','请调整筛选条件。');return
         folder=Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))/'补货助手输出';folder.mkdir(parents=True,exist_ok=True)
         name=f'补货结果_{self.result["store"]}_{datetime.now():%Y%m%d_%H%M%S}.xlsx'

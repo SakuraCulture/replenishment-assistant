@@ -113,9 +113,11 @@ def run(out):
             for c in row[:20]:assert c.font.name=='宋体' and c.font.sz==11 and not c.font.bold and c.number_format==('0.00' if c.row>1 and c.column==16 else '@' if c.row>1 and c.column==18 else 'General') and c.fill.patternType is None
         assert ws.max_column==22 and not any(d.hidden for d in ws.column_dimensions.values())
     assert len(exported)==len(set(exported))
-    expected=[d['E'] for d in chosen['rows'] if d['_source']=='资料匹配' and (np.is_new(d) or engine.orderable(d))];assert set(exported)==set(expected)
+    expected=[d['E'] for d in chosen['rows'] if d['_source']=='资料匹配' and not engine.exclusion_reason(d) and (np.is_new(d) or engine.orderable(d))];assert set(exported)==set(expected)
     oldnew={r[4]:r for r in book['往期新品'].iter_rows(min_row=2,values_only=True)}
-    for code in ['new_plain','new_disabled','new_stopped','new_no_price','missing_n']:assert oldnew[code][16]==0
+    # 0.7.3 explicit user change: disabled/stopped no longer appear in any working export.
+    assert 'new_disabled' not in oldnew and 'new_stopped' not in oldnew
+    for code in ['new_plain','new_no_price','missing_n']:assert oldnew[code][16]==0
     assert 'new_local' not in oldnew
     assert oldnew['missing_n'][13] is None and oldnew['new_no_price'][15] is None
     assert normal_exports.filename(revised)==wr.today()+'合成店QA_A（精简版）(2).xlsx'

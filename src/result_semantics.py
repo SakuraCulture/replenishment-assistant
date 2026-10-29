@@ -23,6 +23,26 @@ def exclusion_reason(d):
     return '；'.join(reasons)
 
 
+def work_eligible(d):
+    """Working/export scope only. Keep raw/model/archive rows for traceability."""
+    return not exclusion_reason(d)
+
+
+def working_rows(rows):
+    return [d for d in rows if work_eligible(d)]
+
+
+def export_projection(result,excluded_keys=()):
+    """Non-mutating projection; never recalculate or reallocate a signed result."""
+    rows=working_rows(result['rows'])
+    blocked={d['E'] for d in result['rows'] if not work_eligible(d)}
+    keys=set(excluded_keys)|{(result['store'],code) for code in blocked}
+    audit=result.get('import_audit')
+    extra={'import_audit':{**audit,'conflicts':[c for c in audit.get('conflicts',[]) if (c['store'],c['sku']) not in keys]}} if audit else {}
+    return {**result,'rows':rows,'summary':summarize(rows),
+            'must_list_audit':[a for a in result.get('must_list_audit',[]) if a['sku'] not in blocked],**extra}
+
+
 def order_quantity(d):
     return 0 if exclusion_reason(d) else d.get('_allocated_qty') if d.get('_budget_active') else d.get('_execution_qty',quantity(d))
 

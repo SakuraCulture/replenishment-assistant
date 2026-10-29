@@ -42,8 +42,8 @@ def start_smoke(app,win,args):
     def select_new(amount=6,accept=True):
         dialog=QApplication.activeModalWidget();assert isinstance(dialog,NewProductDialog)
         i=next(i for i,d in enumerate(dialog.rows) if d['E']=='new_must');check,qty=dialog.widgets[i]
-        dialog.table.editItem(dialog.table.item(i,8));editor=dialog.table.findChild(NumberInput);assert editor is not None;editor.setValue(amount);QTest.keyClick(editor,Qt.Key.Key_Return);QApplication.processEvents();assert qty.value()==amount;check.setChecked(True)
-        dialog.scope.setCurrentText('本月新品');assert not dialog.table.isRowHidden(i);dialog.scope.setCurrentText('往期新品');assert dialog.table.isRowHidden(i);dialog.scope.setCurrentText('可选');dialog.search.setText('new_plain');assert check.isChecked() and dialog.table.isRowHidden(i);assert '筛选外已选 1' in dialog.note.text();dialog.search.clear();assert dialog.grab().save(str(out/'新品选择.png'))
+        dialog.table.edit(dialog.model.index(dialog.model.positions[i],8));editor=dialog.table.findChild(NumberInput);assert editor is not None;editor.setValue(amount);QTest.keyClick(editor,Qt.Key.Key_Return);QApplication.processEvents();assert qty.value()==amount;check.setChecked(True)
+        dialog.scope.setCurrentText('本月新品');assert i in dialog.model.positions;dialog.scope.setCurrentText('往期新品');assert i not in dialog.model.positions;dialog.scope.setCurrentText('可选');dialog.search.setText('new_plain');dialog.refresh();assert check.isChecked() and i not in dialog.model.positions;assert '筛选外已选 1' in dialog.note.text();dialog.search.clear();dialog.refresh();assert dialog.grab().save(str(out/'新品选择.png'))
         later(lambda:modal_click('newBudgetPreview','应用到本店草稿' if accept else '取消'))
         QTest.mouseClick(dialog.preview_btn,Qt.MouseButton.LeftButton)
     def focus_file(accept):
@@ -105,7 +105,7 @@ def start_smoke(app,win,args):
             elif step==6 and win.worker is None:
                 assert (out/'EXE确认单.xlsx').is_file();
                 import openpyxl
-                with_book=openpyxl.load_workbook(out/'EXE确认单.xlsx');assert with_book.sheetnames==['往期新品','本月新品','中心仓动销补货清单'];assert with_book['本月新品']['E2'].value=='new_must' and with_book['本月新品']['Q2'].value==6;assert with_book['往期新品'].max_row==8;with_book.close();assert any(e['action']=='带号导出' for e in win.orders.events())
+                with_book=openpyxl.load_workbook(out/'EXE确认单.xlsx');assert with_book.sheetnames==['往期新品','本月新品','中心仓动销补货清单'];assert with_book['本月新品']['E2'].value=='new_must' and with_book['本月新品']['Q2'].value==6;assert with_book['往期新品'].max_row==6;assert not {'new_disabled','new_stopped'} & {r[4] for r in with_book['往期新品'].iter_rows(min_row=2,values_only=True)};with_book.close();assert any(e['action']=='带号导出' for e in win.orders.events())
                 record=win.work_repository.get_job(wr.today());state['record']=record;win.reset_job();assert not win.new_bases;win.restore_job(record);assert 'QA_A' in win.new_bases and win.results['QA_A']['new_products']['selection']['new_must']==12
                 state['checks'].append('actual file-save dialog and frozen numbered Excel export; queryable event; saved new choices and original base restored after resetting work area')
                 win.show_section(2);win.archive_search.setText('new_must');state['step']=61
@@ -138,7 +138,7 @@ def start_smoke(app,win,args):
                 store=next(iter(win.results));win.current_store=store;result=win.results[store];assert result['summary']['positive']==430 and result['summary']['amount']==12268.87
                 state['real_before']=copy.deepcopy(result);state['step']=90
                 def select_real():
-                    dialog=QApplication.activeModalWidget();assert isinstance(dialog,NewProductDialog);assert len(dialog.rows)==9023
+                    dialog=QApplication.activeModalWidget();assert isinstance(dialog,NewProductDialog);assert sum(new_products.is_new(d) for d in state['real_before']['rows'])==9023;assert dialog.rows==[d for d in state['real_before']['rows'] if new_products.is_new(d) and not new_products.blocked_reason(d).startswith(('商品资料禁用','补货建议停采'))]
                     valid=[i for i,d in enumerate(dialog.rows) if not new_products.blocked_reason(d)];assert len(valid)==3455
                     def allow_bulk():
                         box=QApplication.activeModalWidget();assert isinstance(box,QMessageBox);QTest.mouseClick(box.button(QMessageBox.StandardButton.Ok),Qt.MouseButton.LeftButton)
@@ -151,7 +151,7 @@ def start_smoke(app,win,args):
                 result=win.results[win.current_store];d=next(d for d in result['rows'] if d['E']==state['real_sku']);assert d['AS']==0 and d['N'] is None and d['_execution_qty']==state['real_step'];assert result['summary']['positive']==431;assert result['summary']['amount']==round(12268.87+state['real_step']*state['real_price'],2)
                 old={d['E']:d for d in state['real_before']['rows']}
                 assert all(d==old[d['E']] for d in result['rows'] if d['E']!=state['real_sku'])
-                state['checks'].append('real 14244 rows: 9023 blank-stockout new candidates / 3455 eligible; actual selector searches and applies one; original N/AS retained; other 14243 rows exactly unchanged; unlimited amount reconciles')
+                state['checks'].append('real 14244 rows: 9023 raw blank-stockout new candidates; disabled/stopped removed from selector / 3455 eligible; actual selector searches and applies one; original N/AS retained; other 14243 rows exactly unchanged; unlimited amount reconciles')
                 state['step']=100;later(lambda:modal_click('normalConfirm','确认并归档'));win.confirm_normal();assert win.orders.get(wr.today(),win.current_store)
                 def real_file():
                     dialog=QApplication.activeModalWidget()

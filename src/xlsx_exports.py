@@ -81,10 +81,11 @@ def _with_header(headers,rows):
 
 def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,progress=lambda s:None):
     """Application's native offline exporter. Text identifiers/formula-looking input stay text."""
-    path=Path(path).resolve();rows=result['rows'] if rows is None else rows
+    path=Path(path).resolve();raw_rows=result['rows'] if rows is None else rows;rows=working_rows(raw_rows)
+    result=export_projection(result)
     if str(path) in result['sources'] or path.exists():raise ValueError('保存位置已有文件，请换一个新文件名；不会覆盖源文件或旧结果。')
     if path.suffix.lower()!='.xlsx':raise ValueError('导出文件必须为.xlsx')
-    if not rows:raise ValueError('当前筛选没有商品可导出。')
+    if not raw_rows:raise ValueError('当前筛选没有商品可导出。')
     with stream_book() as book:
         def sheet(name,headers,data,widths=None,row_count=None):
             return write_table(book,name,headers,data,widths=widths,style='single',cancel=cancel,progress=progress,row_count=row_count)
@@ -148,6 +149,8 @@ def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,ca
             (path/'部分导出说明.txt').write_text('导出未全部完成。已生成文件：\n'+'\n'.join(written),encoding='utf-8');raise
         return str(path)
     if path.suffix.lower()!='.xlsx':raise ValueError('汇总文件必须为.xlsx')
+    excluded_keys={(s,d['E']) for s,r in ready.items() for d in r['rows'] if not work_eligible(d)}
+    ready={s:export_projection(r,excluded_keys) for s,r in ready.items()}
     with stream_book() as book:
         def summary_rows():
             for store,state in statuses.items():

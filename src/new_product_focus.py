@@ -73,7 +73,8 @@ class Repository:
 
 def require_for(data,day,results):
     from new_products import is_new
+    from result_semantics import work_eligible
     if data is not None:validate(data)
-    if any(is_new(d) for r in results for d in r['rows']):
+    if any(is_new(d) and work_eligible(d) for r in results for d in r['rows']):
         if data is None:raise ValueError('请先导入新品明细的关注清单，或明确设置“本月无关注新品”；不能猜测新品分组')
         if data['month']!=day[:7]:raise ValueError('新品关注清单月份与业务日期不符，请更新后确认归档')
