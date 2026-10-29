@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "source_commit": "72620bbebad0965e1c5fd5ac59c2256d2853647d",
+  "version": "0.7.0",
+  "checks": [
+    "signed snapshot retains complete work source/config/focus after later draft save",
+    "mocked next day new order V001; previous order intact",
+    "old 0.6.2 ZIP preserved",
+    "PyInstaller collected new focus/UI/order and spawn dependencies"
+  ],
+  "modules": [
+    "application_window",
+    "new_products",
+    "new_product_ui",
+    "new_product_focus",
+    "new_product_focus_ui",
+    "normal_orders",
+    "normal_exports",
+    "normal_smoke",
+    "file_intake",
+    "batch_service",
+    "workbench",
+    "shiboken6"
+  ],
+  "old_zip_sha256": "f0f81c9d95ce298cdb3933c3c28d312be2b6bcd891491517ebef4e6cccd8b9a7",
+  "exe_sha256": "1aac5a48b0472199cb9d5afb68ea19407c2248c71b7ef8a79d76526cdb2beb41"
+}

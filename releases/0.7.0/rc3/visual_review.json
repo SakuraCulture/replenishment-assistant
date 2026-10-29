@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "source_commit": "72620bbebad0965e1c5fd5ac59c2256d2853647d",
+  "exe_sha256": "1aac5a48b0472199cb9d5afb68ea19407c2248c71b7ef8a79d76526cdb2beb41",
+  "reviewed": [
+    "01_首页.png",
+    "06_真实新品候选.png",
+    "导出预览-本月新品.png",
+    "导出预览-往期新品.png",
+    "导出预览-中心仓动销补货清单.png"
+  ],
+  "directory": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\normal_070\\rc3-normal-ui",
+  "findings": "Three merchant sheets visually retain user template default narrow columns; exact style check 0 differences. Home/new selection windows render legibly. New quantities/budget are final allocations; long Excel values clipped by template width, stored identifiers retained."
+}

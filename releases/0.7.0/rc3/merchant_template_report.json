@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "template": "C:\\Users\\lenovo\\Desktop\\2026-10-27优团生活·精品超市（郓城店）（精简版）(1).xlsx",
+  "template_sha256": "1cc7a8e9f99fec764d17286c6b0a028a7ea79416add7178a64e91512f311f7c6",
+  "candidate": "qa\\normal_070\\rc3-normal-ui\\EXE真实新品确认单.xlsx",
+  "candidate_sha256": "25d810ee3f8ed12065af692eac687539796ce5cfa6964d6916f8cc920b875dbe",
+  "scope": "Exact 3-sheet order, 20 visible headers, all exported visible cell font/fill/alignment/border/format/protection, default row/column dimensions, freeze/filter/merge. Values intentionally come from new signed result, never template records/formulas. Hidden audit columns, comments, print identity are declared additions.",
+  "differences": []
+}
