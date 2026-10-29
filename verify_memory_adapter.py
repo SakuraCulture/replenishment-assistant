@@ -1,5 +1,5 @@
 """Compare the old temporary-XLSX boundary to records, using real saved cells."""
-import argparse,json,sys,copy,zipfile,pickle,importlib.util
+import argparse,json,sys,copy,zipfile,pickle,importlib.util,subprocess
 from pathlib import Path
 from datetime import datetime,date,time,timedelta,timezone
 from decimal import Decimal
@@ -60,7 +60,8 @@ def main():
         for n,b in parts.items():z.writestr(n,b)
     rows,info=adapter.read_table(path,None,['id']);assert rows[0]['cached']==2 and rows[0]['empty'] is None
     check('formula_cache',info['headers'],rows,['id'])
-    result={'passed':not any(c['differences'] for c in cases),'cases':cases,'difference_count':sum(c['differences'] for c in cases),'comparison':'strict type and value; errors include class and exact message; physical blank row offsets retained'}
+    from version_info import VERSION
+    result={'version':VERSION,'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),'development':bool(subprocess.check_output(['git','status','--porcelain'],cwd=root,text=True).strip()),'lxml':openpyxl.LXML,'openpyxl':openpyxl.__version__,'passed':not any(c['differences'] for c in cases),'cases':cases,'difference_count':sum(c['differences'] for c in cases),'comparison':'strict type and value; errors include class and exact message; physical blank row offsets retained'}
     write_json(out/'memory_report.json',result);print(json.dumps({'passed':result['passed'],'cases':len(cases),'differences':result['difference_count']}));assert result['passed']
 
 if __name__=='__main__':main()
