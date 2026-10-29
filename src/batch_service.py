@@ -12,6 +12,7 @@ import engine
 import warehouse_catalog
 from version_info import diagnostic
 from xlsx_exports import write_sheet,export_batch
+from data_contracts import InputBatch,StoreSettings,CalculationResult
 
 def intake(paths,products,progress=lambda s:None,cancel=None):
     paths=list(dict.fromkeys(str(Path(p).resolve()) for p in paths))
@@ -117,7 +118,7 @@ def load(paths,products,progress=lambda s:None,cancel=None):
     if not data['selected'] and data['conflicts']:return {'intake':data,'stores':data['stores'],'normalized':[],'blocked':{s:1 for s in data['stores']},'warehouses':[],'config':engine.config(),'hashes':data['hashes'],'catalogs':{w:warehouse_catalog.metadata(c) for w,c in (data.get('catalogs') or {}).items()}}
     return prepare(data,progress,cancel)
 
-def calculate_store(loaded,store,settings,profile):
+def calculate_store(loaded:InputBatch,store:str,settings:StoreSettings,profile) -> CalculationResult:
     started=time.time()
     if loaded.get('catalogs'):loaded=warehouse_catalog.route_store(loaded,store,settings.get('supply_route'))
     if settings.get('parameter_config'):
@@ -162,62 +163,3 @@ def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:Non
             fill()
         for store,_ in pending:notify(store,'已停止',None,'未启动，可重新计算')
     return out
-
-def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,cancel=None):
-    """Only current successful results count as spend; missing results are blank, never zero."""
-    path=Path(path).resolve()
-    if path.exists():raise ValueError('目标已存在，请选择新名称。')
-    ready={s:r for s,r in results.items() if statuses.get(s,{}).get('state')=='已完成'}
-    if not ready:raise ValueError('没有可导出的有效结果，请先计算。')
-    if per_store:
-        path.mkdir();written=[]
-        try:
-            for s,r in ready.items():
-                engine.checkpoint(cancel);progress('导出门店：'+r['store_name'])
-                safe=re.sub(r'[<>:"/\\|?*\x00-\x1f]','_',s)[:80]
-                file=path/(safe+'_'+uuid.uuid4().hex[:6]+'.xlsx')
-                engine.export_xlsx(r,file,cancel=cancel);written.append(str(file))
-            export_batch(ready,statuses,path/'门店汇总及明细.xlsx',cancel=cancel)
-        except Exception:
-            (path/'部分导出说明.txt').write_text('导出未全部完成。已生成文件：\n'+'\n'.join(written),encoding='utf-8');raise
-        return str(path)
-    if path.suffix.lower()!='.xlsx':raise ValueError('汇总文件必须为.xlsx')
-    book=openpyxl.Workbook(write_only=True)
-    def summary_rows():
-        for store,state in statuses.items():
-            r=ready.get(store);s=r['summary'] if r else {};b=r.get('budget',{}) if r else {}
-            yield [store,state['name'],state['state'],state.get('error',''),b.get('limit') if b.get('enabled') else '不限预算' if r else None,s.get('candidate_amount'),s.get('amount'),s.get('must_amount'),round(s['amount']-s['must_amount'],2) if r else None,round(s['candidate_amount']-s['amount'],2) if r else None,b.get('remaining'),s.get('holding_gaps'),s.get('local'),s.get('excluded'),s.get('unpriced')]
-    write_sheet(book,'门店汇总',['门店编码','门店名称','状态','提示','本次预算','预算前需求金额','本次安排金额','必卖金额','其他金额','未满足需求金额','剩余预算','最低持有缺口款数','地采款数','已排除款数','补货未计价款数'],summary_rows())
-    if any(r.get('supply_route') for r in ready.values()):
-        def warehouse_summary():
-            for store,r in ready.items():
-                for wh in sorted({d.get('AU','') for d in r['rows']}):
-                    s=engine.summarize([d for d in r['rows'] if d.get('AU')==wh])
-                    yield [store,r['store_name'],wh,s['rows'],s['calculated_amount'],s['candidate_amount'],s['amount'],s['positive']]
-        write_sheet(book,'分仓需求汇总',['门店编码','门店名称','需求归属仓','商品数','计算金额','预算前可补金额','执行金额','执行商品数'],warehouse_summary())
-    headers=['门店编码','门店名称']+[h for h,f in engine.COLUMNS]+['来源文件','来源工作表','来源行']
-    filters={'补货清单':engine.orderable,'全部明细':lambda d:True,'预算未满足':lambda d:d.get('_budget_gap',0)>0,'已排除':engine.exclusion_reason,'地采待核':lambda d:d['_source']=='地采商品' or engine.issue_text(d)}
-    for name,predicate in filters.items():
-        progress('写入：'+name)
-        def rows():
-            for store,r in ready.items():
-                for d in r['rows']:
-                    engine.checkpoint(cancel)
-                    if predicate(d):yield [store,r['store_name']]+[f(d) for h,f in engine.COLUMNS]+[d['_meta'].get('export_file'),d['_meta'].get('export_sheet'),d['_meta']['export_row']]
-        write_sheet(book,name,headers,rows())
-    write_sheet(book,'必卖匹配',['门店编码','门店名称','商品编码','商品名称','匹配状态'],([s,r['store_name'],a['sku'],a['name'],a['state']] for s,r in ready.items() for a in r['must_list_audit']))
-    audits={json.dumps(r.get('import_audit',{}),ensure_ascii=False,sort_keys=True):r for r in ready.values()}
-    write_sheet(book,'导入记录',engine.IMPORT_HEADERS,(row for r in audits.values() for row in engine.import_audit_rows(r)))
-    info=[['批次状态','全部完成' if len(ready)==len(statuses) else '部分完成'],['导出时间',datetime.now().isoformat(timespec='seconds')],['说明','只有已完成且未过期的门店计入金额；失败、未运行、待重算均留空。'],['计价','商品资料基本售价；地采和缺价未知金额不计为0。']]
-    for s,r in ready.items():
-        info.extend([[s+' / '+k,str(v)] for k,v in r.get('version',diagnostic()).items()])
-        if r.get('effective_settings'):info.append([s+' / 方案与实际生效配置',json.dumps(r['effective_settings'],ensure_ascii=False)])
-        info.extend([[s+' / 参数',json.dumps(r['config'],ensure_ascii=False)],[s+' / 仓参数',json.dumps(r['warehouses'],ensure_ascii=False)],[s+' / 一箱例外',r['enabled']],[s+' / 必卖清单',json.dumps(r['must_list'],ensure_ascii=False)],[s+' / 输入校验',json.dumps(r['sources'],ensure_ascii=False)]])
-        if r.get('catalogs'):info.extend([[s+' / 主从仓',json.dumps(r['supply_route'],ensure_ascii=False)],[s+' / 仓资料快照',json.dumps(r['catalogs'],ensure_ascii=False)],[s+' / 选仓口径','可用数>0优先主仓；主仓禁用/无货/无商品则归属从仓，从仓无货不清零需求；不拆单、不限量、不扣减仓库存']])
-    write_sheet(book,'版本及参数',['项目','内容'],info)
-    tmp=path.with_name('.'+uuid.uuid4().hex+'.xlsx')
-    try:book.save(tmp);engine.checkpoint(cancel);os.rename(tmp,path)
-    finally:
-        book.close()
-        if tmp.exists():tmp.unlink()
-    return str(path)

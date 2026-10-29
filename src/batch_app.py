@@ -1,5 +1,6 @@
 """Guided native desktop workbench; business calculations remain in engine."""
 from __future__ import annotations
+from app_defaults import DEFAULT_WAREHOUSES
 import copy,json,os,threading
 from collections import Counter
 from datetime import datetime
@@ -106,9 +107,9 @@ class BatchWindow(WarehouseUi,SessionWindow):
             self.job(batch_service.load,(self.sales.paths,products),self.loaded_ok)
     def loaded_ok(self,loaded):
         self.loaded=loaded;self.input_dirty=False;self.results={};self.result=None;self.current_store=None;self.overrides={};self.dirty=True;self.run_codes=[]
-        self.default_by_store={s:{w:engine.DEFAULT_WAREHOUSES[w] for w in loaded.get('catalogs',{})} for s in loaded['stores']}
+        self.default_by_store={s:{w:DEFAULT_WAREHOUSES[w] for w in loaded.get('catalogs',{})} for s in loaded['stores']}
         for d,m in loaded['normalized']:
-            if d['_source']=='资料匹配':self.default_by_store[d['B']][d['AU']]=engine.DEFAULT_WAREHOUSES.get(d['AU'],(-1,-1))
+            if d['_source']=='资料匹配':self.default_by_store[d['B']][d['AU']]=DEFAULT_WAREHOUSES.get(d['AU'],(-1,-1))
         data=loaded['intake'];self.file_report.setRowCount(len(data['files']))
         for i,f in enumerate(data['files']):
             for j,value in enumerate([Path(f['path']).name,f['rows'],f['stores'],f['error'] or '读取成功']):self.file_report.setItem(i,j,QTableWidgetItem(str(value)))

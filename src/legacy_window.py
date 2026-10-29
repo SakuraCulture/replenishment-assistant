@@ -1,5 +1,6 @@
 """Compatibility single-store window; active workbench does not inherit this class."""
 from __future__ import annotations
+from app_defaults import DEFAULT_WAREHOUSES
 import sys,os,json,threading,traceback,html,logging
 from pathlib import Path
 from datetime import datetime
@@ -107,7 +108,7 @@ class MainWindow(SessionWindow):
         self.warehouses.setRowCount(len(loaded['warehouses']))
         for i,wh in enumerate(loaded['warehouses']):
             item=QTableWidgetItem(wh);item.setFlags(item.flags()&~Qt.ItemFlag.ItemIsEditable);self.warehouses.setItem(i,0,item)
-            for col,value in enumerate(engine.DEFAULT_WAREHOUSES.get(wh,(-1,-1)),1):
+            for col,value in enumerate(DEFAULT_WAREHOUSES.get(wh,(-1,-1)),1):
                 spin=QDoubleSpinBox();spin.setRange(-1,365);spin.setDecimals(1);spin.setSpecialValueText('未设置');spin.setValue(value);spin.valueChanged.connect(self.mark_dirty);self.warehouses.setCellWidget(i,col,spin)
         self.initializing=False;self.nav2.setEnabled(True)
         self.restore_budget()

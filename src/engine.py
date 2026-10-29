@@ -15,8 +15,9 @@ from runtime_support import Cancelled,checkpoint
 from result_semantics import numeric,fmt,issue_text,exclusion_reason,order_quantity,order_amount,orderable,order_status,summarize,quantity,amount_value,coverage,explanation,routing
 from display_fields import COLUMNS,IMPORT_HEADERS,import_audit_rows
 from xlsx_exports import export_xlsx
-DEFAULT_WAREHOUSES={'河北仓':(8.0,4.0),'山东仓':(8.0,5.0)}
-def config():return json.loads((Path(__file__).parent/'default_config.json').read_text(encoding='utf-8-sig'))
+from app_defaults import DEFAULT_WAREHOUSES,load_default_config
+from data_contracts import InputBatch,CalculationResult,WarehouseCycles
+def config():return load_default_config()
 def category_of(d,m):
     if m['match']=='商品编码精确匹配':return '资料匹配'
     if m['match']=='资料未匹配' and not any('编码' in b or '重复' in b for b in m['blocking'] if b!='待补商品资料'):return '地采商品'
@@ -37,7 +38,7 @@ def sheet_name(path,kind):
         return candidates[0]
     finally:book.close()
 
-def load_inputs(sales,products,progress=lambda s:None,cancel=None):
+def load_inputs(sales,products,progress=lambda s:None,cancel=None) -> InputBatch:
     sales,products=Path(sales).resolve(),Path(products).resolve()
     if sales==products:raise ValueError('补货建议和商品资料必须选择两份不同的文件。')
     for p in [sales,products]:
@@ -83,7 +84,7 @@ def preview(loaded,store):
         rows.append(x)
     return rows
 
-def run_calculation(loaded,store,warehouses,enabled,budget=None,profile=None,progress=lambda s:None,cancel=None):
+def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabled:bool,budget=None,profile=None,progress=lambda s:None,cancel=None) -> CalculationResult:
     rows=[copy.deepcopy(x) for x in loaded['normalized'] if x[0]['B']==store]
     if not rows:raise ValueError('所选门店没有商品。')
     p=model.Rules(**loaded['config']['parameters']);result=[];baseline=[]
@@ -136,4 +137,3 @@ def apply_budget(result,budget=None,profile=None,progress=lambda s:None,cancel=N
     result['must_list_audit']=audit
     result['summary']=summarize(result['rows'])
     return result
-

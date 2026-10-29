@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame,QVBoxLayout,QHBoxLayout,QCheckBox,QFileDialog,QDialog,QTableWidget,QTableWidgetItem,QLineEdit,QAbstractItemView,QComboBox,QMessageBox
 from ui_controls import label,button,FileCard
 import result_semantics as semantics
+from app_defaults import supply_route_choices
 import engine,warehouse_catalog
 
 class WarehouseUi:
@@ -67,7 +68,7 @@ class WarehouseUi:
         codes=self.selected_codes()
         if not codes or not self.loaded.get('catalogs'):QMessageBox.information(self,'选择门店','请在分仓资料模式下先勾选门店。');return
         dialog=QDialog(self);dialog.setWindowTitle('批量设置门店主从仓');v=QVBoxLayout(dialog);v.addWidget(label(f'设置所选 {len(codes)} 家门店的供货顺序；主从仓不能相同。'))
-        choices=[('仅河北仓',{'primary':'河北仓','secondary':None}),('仅山东仓',{'primary':'山东仓','secondary':None}),('河北主仓 → 山东从仓',{'primary':'河北仓','secondary':'山东仓'}),('山东主仓 → 河北从仓',{'primary':'山东仓','secondary':'河北仓'})]
+        choices=supply_route_choices()
         combo=QComboBox()
         for text,value in choices:combo.addItem(text,value)
         v.addWidget(combo);v.addWidget(button('应用到所选门店',dialog.accept,True));v.addWidget(button('取消',dialog.reject))
