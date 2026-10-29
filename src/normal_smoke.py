@@ -6,11 +6,15 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication,QMessageBox,QFileDialog,QLineEdit
 import warehouse_catalog as wc,work_repository as wr,normal_orders
 from new_product_ui import NewProductDialog
+from new_product_focus_ui import FocusMapping
+import new_product_focus as focus
+from parameter_ui import NumberInput
 from version_info import diagnostic
+import new_products,priority_list
 
 
 def start_smoke(app,win,args):
-    fixture,out=[Path(p).resolve() for p in args[:2]];out.mkdir(parents=True,exist_ok=True);state={'step':0,'start':time.monotonic(),'checks':[]};timer=QTimer(win)
+    fixture,out=[Path(p).resolve() for p in args[:2]];out.mkdir(parents=True,exist_ok=True);state={'step':-3,'start':time.monotonic(),'checks':[]};timer=QTimer(win)
     app.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeDialogs,True)
     def snap(name):win.repaint();assert win.grab().save(str(out/(name+'.png')))
     def finish(error=None):
@@ -30,20 +34,38 @@ def start_smoke(app,win,args):
             try:fn()
             except Exception:finish(traceback.format_exc())
         QTimer.singleShot(150,guarded)
-    def modal_click(name,text):
-        box=QApplication.activeModalWidget();assert isinstance(box,QMessageBox) and box.objectName()==name;assert box.defaultButton().text()=='取消';assert box.grab().save(str(out/(name+'_'+text+'.png')));QTest.mouseClick(next(b for b in box.buttons() if b.text()==text),Qt.MouseButton.LeftButton)
+    def modal_click(name,text,attempt=0):
+        box=QApplication.activeModalWidget()
+        if not (isinstance(box,QMessageBox) and box.objectName()==name) and attempt<300:
+            later(lambda:modal_click(name,text,attempt+1));return
+        assert isinstance(box,QMessageBox) and box.objectName()==name;assert box.defaultButton().text()=='取消';assert box.grab().save(str(out/(name+'_'+text+'.png')));QTest.mouseClick(next(b for b in box.buttons() if b.text()==text),Qt.MouseButton.LeftButton)
     def select_new(amount=6,accept=True):
         dialog=QApplication.activeModalWidget();assert isinstance(dialog,NewProductDialog)
-        i=next(i for i,d in enumerate(dialog.rows) if d['E']=='new_must');check,qty=dialog.widgets[i];qty.setValue(amount);check.setChecked(True)
-        dialog.search.setText('new_plain');assert check.isChecked() and dialog.table.isRowHidden(i);assert '筛选外已选 1' in dialog.note.text();dialog.search.clear();assert dialog.grab().save(str(out/'新品选择.png'))
+        i=next(i for i,d in enumerate(dialog.rows) if d['E']=='new_must');check,qty=dialog.widgets[i]
+        dialog.table.editItem(dialog.table.item(i,8));editor=dialog.table.findChild(NumberInput);assert editor is not None;editor.setValue(amount);QTest.keyClick(editor,Qt.Key.Key_Return);QApplication.processEvents();assert qty.value()==amount;check.setChecked(True)
+        dialog.scope.setCurrentText('本月新品');assert not dialog.table.isRowHidden(i);dialog.scope.setCurrentText('往期新品');assert dialog.table.isRowHidden(i);dialog.scope.setCurrentText('可选');dialog.search.setText('new_plain');assert check.isChecked() and dialog.table.isRowHidden(i);assert '筛选外已选 1' in dialog.note.text();dialog.search.clear();assert dialog.grab().save(str(out/'新品选择.png'))
         later(lambda:modal_click('newBudgetPreview','应用到本店草稿' if accept else '取消'))
         QTest.mouseClick(dialog.preview_btn,Qt.MouseButton.LeftButton)
+    def focus_file(accept):
+        dialog=QApplication.activeModalWidget();assert isinstance(dialog,QFileDialog);dialog.setDirectory(str(fixture));dialog.findChild(QLineEdit,'fileNameEdit').setText('新品明细.xlsx');dialog.accept()
+        def mapping(attempt=0):
+            dialog=QApplication.activeModalWidget()
+            if not isinstance(dialog,FocusMapping) and attempt<200:later(lambda:mapping(attempt+1));return
+            assert isinstance(dialog,FocusMapping);assert dialog.sku.currentText()=='商品编码' and dialog.focus.currentText()=='关注';assert dialog.grab().save(str(out/'00_新品明细映射.png'))
+            later(lambda:modal_click('focusConfirm','使用并保存清单' if accept else '取消'));dialog.accept()
+        later(mapping)
     def tick():
         try:
             if time.monotonic()-state['start']>240:raise TimeoutError(str(state))
             if QApplication.activeModalWidget() is not None:return
             step=state['step']
-            if step==0:
+            if step==-3:
+                win.show_section(1);state['step']=-2;later(lambda:focus_file(False));win.import_focus()
+            elif step==-2 and win.worker is None:
+                assert win.new_focus is None;state['step']=-1;later(lambda:focus_file(True));win.import_focus()
+            elif step==-1 and win.worker is None:
+                assert 'new_must' in focus.members(win.new_focus);assert win.focus_repository.load()==win.new_focus;state['checks'].append('actual independent focus file dialog, sheet/column mapping, preview cancel/confirm, reusable JSON persistence');win.show_section(0);state['step']=0
+            elif step==0:
                 assert win.sections.currentIndex()==0;snap('01_首页');QTest.mouseClick(win.top_nav[1],Qt.MouseButton.LeftButton);assert win.sections.currentIndex()==1
                 for w in wc.WAREHOUSES:win.catalog_imported(wc.import_catalog(fixture/(w+'.xlsx'),w))
                 win.profile=json.loads((fixture/'must.json').read_text(encoding='utf-8'));win.repository.save(win.profile);win.refresh_profile_label();win.sales.add_paths([str(fixture/'sales.xlsx')]);win.start_load();state['step']=1
@@ -79,7 +101,9 @@ def start_smoke(app,win,args):
                     dialog=QApplication.activeModalWidget();assert isinstance(dialog,QFileDialog);dialog.setDirectory(str(out));dialog.findChild(QLineEdit,'fileNameEdit').setText('EXE确认单.xlsx');assert Path(dialog.selectedFiles()[0])==out/'EXE确认单.xlsx';dialog.accept()
                 later(choose_file);win.export_current();state['step']=6
             elif step==6 and win.worker is None:
-                assert (out/'EXE确认单.xlsx').is_file();assert any(e['action']=='带号导出' for e in win.orders.events())
+                assert (out/'EXE确认单.xlsx').is_file();
+                import openpyxl
+                with_book=openpyxl.load_workbook(out/'EXE确认单.xlsx');assert with_book.sheetnames==['往期新品','本月新品','中心仓动销补货清单'];assert with_book['本月新品']['E2'].value=='new_must' and with_book['本月新品']['Q2'].value==6;assert with_book['往期新品'].max_row==9;with_book.close();assert any(e['action']=='带号导出' for e in win.orders.events())
                 record=win.work_repository.get_job(wr.today());state['record']=record;win.reset_job();assert not win.new_bases;win.restore_job(record);assert 'QA_A' in win.new_bases and win.results['QA_A']['new_products']['selection']['new_must']==12
                 state['checks'].append('actual file-save dialog and frozen numbered Excel export; queryable event; saved new choices and original base restored after resetting work area')
                 win.show_section(2);win.archive_search.setText('new_must');assert not win.archive_table.isRowHidden(0);snap('03_归档查询');state['step']=60
@@ -97,6 +121,38 @@ def start_smoke(app,win,args):
                 win.show_section(0);snap('05_首页归档状态');state['step']=70
                 def cancel_close():
                     box=QApplication.activeModalWidget();assert isinstance(box,QMessageBox);assert box.defaultButton().text()=='取消';QTest.mouseClick(next(b for b in box.buttons() if b.text()=='取消'),Qt.MouseButton.LeftButton)
-                later(cancel_close);win.close();assert win.isVisible();state['checks'].append('home navigation retains unsaved work; close cancel keeps application alive');finish()
+                later(cancel_close);win.close();assert win.isVisible();state['checks'].append('home navigation retains unsaved work; close cancel keeps application alive')
+                if len(args)<3:finish();return
+                real=Path(args[2]);win.reset_job();win.show_section(1);win.master_legacy.setChecked(True);win.products.path=str(real/'混合仓商品资料.xlsx');win.products.filename.setText(win.products.path);win.sales.add_paths([str(real/'补货建议导出服务.xlsx')]);win.profile=priority_list.validate_profile(json.loads((Path(__file__).parent/'default_must_sell.json').read_text(encoding='utf-8')));win.refresh_profile_label();win.start_load();state['step']=8
+            elif step==8 and win.worker is None:
+                assert len(win.loaded['normalized'])==14244
+                for s,w in win.store_widgets.items():w['mode'].setCurrentIndex(1)
+                win.start_calculation();state['step']=9
+            elif step==9 and win.worker is None:
+                store=next(iter(win.results));win.current_store=store;result=win.results[store];assert result['summary']['positive']==430 and result['summary']['amount']==12268.87
+                state['real_before']=copy.deepcopy(result);state['step']=90
+                def select_real():
+                    dialog=QApplication.activeModalWidget();assert isinstance(dialog,NewProductDialog);assert len(dialog.rows)==9023
+                    valid=[i for i,d in enumerate(dialog.rows) if not new_products.blocked_reason(d)];assert len(valid)==3455
+                    def allow_bulk():
+                        box=QApplication.activeModalWidget();assert isinstance(box,QMessageBox);QTest.mouseClick(box.button(QMessageBox.StandardButton.Ok),Qt.MouseButton.LeftButton)
+                    later(allow_bulk);dialog.bulk(True);assert len(dialog.selections())==3455
+                    later(allow_bulk);dialog.clear_all();assert not dialog.selections()
+                    i=valid[0];d=dialog.rows[i];assert d['N'] is None;state['real_sku']=d['E'];state['real_step']=d['BD'];state['real_price']=d['V'];dialog.widgets[i][0].setChecked(True);dialog.search.setText(d['E']);assert dialog.grab().save(str(out/'06_真实新品候选.png'))
+                    later(lambda:modal_click('newBudgetPreview','应用到本店草稿'));QTest.mouseClick(dialog.preview_btn,Qt.MouseButton.LeftButton)
+                later(select_real);win.choose_new_products();state['step']=10
+            elif step==10 and win.worker is None:
+                result=win.results[win.current_store];d=next(d for d in result['rows'] if d['E']==state['real_sku']);assert d['AS']==0 and d['N'] is None and d['_execution_qty']==state['real_step'];assert result['summary']['positive']==431;assert result['summary']['amount']==round(12268.87+state['real_step']*state['real_price'],2)
+                old={d['E']:d for d in state['real_before']['rows']}
+                assert all(d==old[d['E']] for d in result['rows'] if d['E']!=state['real_sku'])
+                state['checks'].append('real 14244 rows: 9023 blank-stockout new candidates / 3455 eligible; actual selector searches and applies one; original N/AS retained; other 14243 rows exactly unchanged; unlimited amount reconciles')
+                state['step']=100;later(lambda:modal_click('normalConfirm','确认并归档'));win.confirm_normal();assert win.orders.get(wr.today(),win.current_store)
+                def real_file():
+                    dialog=QApplication.activeModalWidget();assert isinstance(dialog,QFileDialog);dialog.setDirectory(str(out));dialog.findChild(QLineEdit,'fileNameEdit').setText('EXE真实新品确认单.xlsx');dialog.accept()
+                later(real_file);win.export_current();state['step']=11
+            elif step==11 and win.worker is None:
+                assert (out/'EXE真实新品确认单.xlsx').is_file();
+                import openpyxl
+                book=openpyxl.load_workbook(out/'EXE真实新品确认单.xlsx',read_only=True);assert book['本月新品'].max_row==2 and book['本月新品']['E2'].value==state['real_sku'];assert book['往期新品'].max_row==9023;assert book['中心仓动销补货清单'].max_row==431;assert sum(row[16]==0 for row in book['往期新品'].iter_rows(min_row=2,values_only=True))==9022;book.close();snap('07_真实归档结果');state['checks'].append('real-data normal order signed and numbered merchant workbook exported from frozen revision');finish()
         except Exception:finish(traceback.format_exc())
     timer.timeout.connect(tick);timer.start(250)

@@ -27,7 +27,8 @@
 |---|---|---|
 | 启动与公共界面 | `src/app.py`、`src/ui_controls.py`、`src/ui_tasks.py`、`src/ui_results.py`、`src/ui_session.py` | 启动独立；公共控件、任务、结果视图和显式共享状态 |
 | 首页与正常单 | `src/application_window.py`、`src/normal_orders.py`、`src/normal_exports.py` | 持续工作区、事务确认归档、修订审计、逐店带号导出 |
-| 新品首铺 | `src/new_products.py`、`src/new_product_ui.py` | 四零判定、显式选品、共享原预算、预览应用 |
+| 新品首铺 | `src/new_products.py`、`src/new_product_ui.py` | 三项零值+缺货0或空白判定、显式选品、共享原预算、预览应用 |
+| 新品关注与模板 | `src/new_product_focus.py`、`src/new_product_focus_ui.py`、`src/normal_exports.py` | 独立导入关注、按月复用、快照冻结、模板三表全量新品候选 |
 | 四步向导及多店状态 | `src/batch_app.py` | 多文件、冲突处理、独立预算、单店失效、部分完成导出 |
 | 独立文件检查 | `src/file_intake.py` | 单文件直接调用，多文件最多2个spawn进程；原序号合并，取消后等待回收 |
 | 多店编排 | `src/batch_service.py` | 内存归集保留原Excel边界语义；按门店进程并发；原计算引擎不变 |

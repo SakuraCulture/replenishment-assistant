@@ -1,66 +1,70 @@
-"""Merchant-facing, per-store frozen issue export. No automatic external transmission."""
-import os,tempfile
+"""Merchant template: three visible sheets, twenty visible columns, frozen provenance."""
+import os,re,tempfile
 from pathlib import Path
 from openpyxl import Workbook
-from openpyxl.styles import Font,PatternFill,Alignment
-from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.styles import Font,Color
+from openpyxl.comments import Comment
+from openpyxl.packaging.custom import StringProperty
+from openpyxl.utils import get_column_letter
 import result_semantics as sem
 import new_products
+import new_product_focus as focus
+
+HEADERS=['仓库/门店名称','仓库/门店编码','供应商编码','商品名称','商品编码','商品条码','基础单位','日销','周销','月销','可用库存','在途库存','在途库存天数','缺货天数（天）','箱规','中心仓价格','补货数量','黑名单状态','所属仓','商品等级']
+AUDIT_HEADERS=['补货单号','修订','明细ID','签发建议数','新品识别依据','分组依据','关注清单版本','安排说明']
+SHEETS=['往期新品','本月新品','中心仓动销补货清单']
+TEMPLATE_SHA256='1cc7a8e9f99fec764d17286c6b0a028a7ea79416add7178a64e91512f311f7c6'
 
 
-def table(book,title,headers,rows):
-    ws=book.create_sheet(title);ws.append(headers)
-    for row in rows:
-        ws.append(row)
-        for cell in ws[ws.max_row]:
-            if isinstance(cell.value,str):cell.data_type='s'
-    for c in ws[1]:c.font=Font(color='FFFFFF',bold=True);c.fill=PatternFill('solid',fgColor='176B60')
-    ws.freeze_panes='A2';ws.auto_filter.ref=ws.dimensions
-    for col in ws.columns:
-        ws.column_dimensions[col[0].column_letter].width=min(42,max(14,max(len(str(c.value or '')) for c in col)+2))
-    return ws
+def filename(order):
+    name=re.sub(r'[<>:"/\\|?*\x00-\x1f]','_',order['payload']['result']['store_name']).rstrip(' .')[:100] or order['store']
+    return order['day']+name+'（精简版）('+str(order['revision'])+').xlsx'
+
+
+def groups(result,profile):
+    """New pool has precedence, including anomalous sales rows: no duplicate SKU."""
+    focused=focus.members(profile);out={name:[] for name in SHEETS}
+    for d in result['rows']:
+        if new_products.is_new(d):out['本月新品' if d['E'] in focused else '往期新品'].append(d)
+        elif sem.orderable(d):out['中心仓动销补货清单'].append(d)
+    return out
 
 
 def export(order,path,cancel=None,progress=lambda s:None):
     from engine import checkpoint
     path=Path(path)
     if path.exists():raise FileExistsError('文件已存在，请选择新文件名；不会覆盖已发出的单据')
-    checkpoint(cancel);result=order['payload']['result'];wb=Workbook();wb.remove(wb.active)
-    rev=f"V{order['revision']:03d}";historical=order['revision']!=order['current_revision']
-    table(wb,'概览',['项目','内容'],[
-        ['补货单号',order['number']],['修订',rev],['业务日期',order['day']],['门店编码',order['store']],['门店名称',result['store_name']],
-        ['版本状态','历史修订，非当前正常单' if historical else '当前签发修订'],['内部确认时间',order['saved']],
-        ['签发建议款数',result['summary']['positive']],['签发建议金额（基本售价估算）',result['summary']['amount']],
-        ['预算',result.get('budget',{}).get('limit','不限预算')],['待核行数',result['summary']['issues']],['预算暂缓/未补足',result['summary']['budget_deferred']],
-        ['说明','此单为内部签发建议，尚非加盟商确认数或实际采购订单。只包含本店签发数量大于0的商品。']])
-    headers=['补货单号','修订','明细ID','门店编码','商品编码','商品名称','推荐类型','必卖','归属仓','库存单位','最小出库单位','基本售价','签发建议数','估算金额','月销','可用库存','在途库存','原缺货天数','加盟商确认数','确认说明']
-    groups={'动销补货':[],'新品推荐':[],'缺货恢复':[]}
-    for d in result['rows']:
-        checkpoint(cancel)
-        if not sem.orderable(d):continue
-        kind=new_products.category(d);sheet=kind if kind in groups else '缺货恢复'
-        groups[sheet].append([order['number'],rev,order['payload']['item_ids'][d['E']],order['store'],d['E'],d.get('D',''),kind,'是' if d.get('_must_sell') else '否',d.get('AU'),d.get('G'),d.get('BD'),d.get('V'),sem.order_quantity(d),sem.order_amount(d),d.get('J'),d.get('K'),d.get('L'),d.get('N'),None,None])
-    for name,rows in groups.items():
-        ws=table(wb,name,headers,rows)
-        for row in ws.iter_rows(min_row=2):
-            for c in row[18:]:c.fill=PatternFill('solid',fgColor='FFF2CC')
-            for c in [row[11],row[13]]:c.number_format='0.00'
-        if rows:
-            rule=DataValidation(type='decimal',operator='greaterThanOrEqual',formula1=0,allow_blank=True);rule.errorTitle='确认数量无效';rule.error='请填写非负数量；取消请填0，保持请填写签发建议数。';rule.showErrorMessage=True;ws.add_data_validation(rule);rule.add(f'S2:S{len(rows)+1}')
-    table(wb,'填写说明',['事项','说明'],[
-        ['识别','请保留单号、修订、明细ID和商品编码；一店一单，三个商品页互不重复。'],
-        ['动销补货','有日/周/月销量证据的经营补货。新品推荐由运营主动选择；缺货恢复单独查看。'],
-        ['确认数','黄色列填写最终确认数量：保持也填写建议数，取消填写0。空白代表尚未确认，不能当0。'],
-        ['数量单位','全部为库存单位。箱规品数量须满足最小出库单位倍数；Excel提示不代替后续核验。'],
-        ['金额','按基本售价估算，不等同采购结算金额；本单没有自动下单功能。'],
-        ['回传','请回传原工作簿；历史确认、实际下单和收货资料的导入关联为后续独立功能。'],
-        ['旧修订','如收到同号新修订，核对修订号后处理；旧文件仍对应原修订，不自动合并。']])
-    progress('正在生成带号确认单…');path.parent.mkdir(parents=True,exist_ok=True)
+    checkpoint(cancel);result=order['payload']['result'];profile=order['payload'].get('new_focus');focus.require_for(profile,order['day'],[result]);wb=Workbook();wb.remove(wb.active)
+    rev=f"V{order['revision']:03d}";historical=order['revision']!=order['current_revision'];font=Font(name='宋体',sz=11,charset=134,scheme='minor',color=Color(theme=1))
+    wb.properties.title=order['number']+' '+rev;wb.properties.subject='内部签发建议，非实际采购订单';wb.properties.description='关注清单随修订冻结；Q列可供门店调整，X列保留签发建议；数量为库存单位，价格为基本售价。'
+    for key,value in [('补货单号',order['number']),('修订',rev),('模板SHA256',TEMPLATE_SHA256),('版本状态','历史修订' if historical else '当前修订')]:wb.custom_doc_props.append(StringProperty(name=key,value=value))
+    for name,rows in groups(result,profile).items():
+        ws=wb.create_sheet(name);ws.sheet_format.defaultColWidth=9;ws.sheet_format.defaultRowHeight=13.5;ws.append(HEADERS+AUDIT_HEADERS)
+        ws.oddHeader.center.text=order['number']+' '+rev+(' 历史修订' if historical else '')
+        ws['A1'].comment=Comment(order['number']+' '+rev+'；业务日期 '+order['day']+'；'+('历史修订' if historical else '当前修订'),'补货助手')
+        ws['Q1'].comment=Comment('签发执行数量（库存单位）；未选择或预算未安排的新品为0。门店可修改本列，原签发建议及单号保存在隐藏列。箱规品请填写箱规倍数。','补货助手')
+        ws['P1'].comment=Comment('取商品资料基本售价；缺价保持空白或待核，不补造0。','补货助手')
+        for rn,d in enumerate(rows,2):
+            checkpoint(cancel);qty=sem.order_quantity(d) if sem.orderable(d) else 0
+            reason=sem.exclusion_reason(d);status=d.get('AT')
+            visible=[d.get(k) for k in 'A B C D E F G H I J K L M N'.split()]+[d.get('BD'),d.get('V'),qty,status,d.get('AU'),d.get('AV')]
+            basis=('缺货天数空白按0；原值保留' if d.get('N') in (None,'') else '缺货天数为0') if new_products.is_new(d) else ''
+            explanation=sem.explanation(d)
+            audit=[order['number'],rev,order['payload']['item_ids'][d['E']],qty,basis,'本店新品且关注' if name=='本月新品' else '本店新品且未关注' if name=='往期新品' else '原模型自动建议并获执行安排',(profile or {}).get('revision'),explanation]
+            ws.append(visible+audit)
+            if reason or qty==0:ws.cell(rn,17).comment=Comment(explanation,'补货助手')
+        for row in ws:
+            for cell in row:
+                cell.font=font
+                if isinstance(cell.value,str):cell.data_type='s'
+        # Match the supplied plain template: General format, no filters/freezes,
+        # fills/borders or width overrides. Audit columns alone are hidden.
+        for i in range(21,29):ws.column_dimensions[get_column_letter(i)].hidden=True
+        ws.print_options.horizontalCentered=False
+    progress('正在生成模板格式的带号清单…');path.parent.mkdir(parents=True,exist_ok=True)
     fd,temp=tempfile.mkstemp(prefix='.normal-',suffix='.xlsx',dir=path.parent);os.close(fd)
     try:
-        wb.save(temp);checkpoint(cancel)
-        # Windows rename is no-clobber; unlike replace it refuses an existing target.
-        os.rename(temp,path)
+        wb.save(temp);checkpoint(cancel);os.rename(temp,path)
     finally:
         wb.close()
         if os.path.exists(temp):os.unlink(temp)

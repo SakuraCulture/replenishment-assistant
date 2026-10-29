@@ -4,13 +4,15 @@ from contextlib import closing
 from datetime import date
 from urllib.parse import quote
 import work_repository as wr
+import new_product_focus as focus
 from version_info import MODEL_VERSION
 
 
-def fingerprint(result):
+def fingerprint(result,new_focus=None):
     business=copy.deepcopy(result)
     # Exact root-only nonbusiness whitelist. Original snapshot retains these fields.
     for key in ('created','task','version'):business.pop(key,None)
+    if new_focus is not None:business={'result':business,'new_focus':focus.validate(new_focus)['revision']}
     return hashlib.sha256(wr.dumps(business).encode()).hexdigest()
 
 
@@ -56,7 +58,7 @@ class Repository:
             data=db.execute('SELECT digest,saved,payload FROM normal_revisions WHERE oid=? AND revision=?',(oid,rev)).fetchone()
             if data is None:raise ValueError('归档修订不存在')
             payload=decode(data[2])
-            if fingerprint(payload['result'])!=data[0]:raise ValueError('归档快照校验失败')
+            if fingerprint(payload['result'],payload.get('new_focus'))!=data[0]:raise ValueError('归档快照校验失败')
             return {'oid':oid,'number':number,'day':day,'store':store,'revision':rev,'current_revision':current,'digest':data[0],'saved':data[1],'payload':payload}
 
     def list(self):
@@ -86,6 +88,7 @@ class Repository:
             if summarize(r['rows'])!=r['summary']:raise ValueError('门店汇总与明细不一致，请重新计算：'+s)
             if r.get('store')!=s or any(d.get('B')!=s for d in r['rows']):raise ValueError('门店结果混入其他门店')
             if len({d['E'] for d in r['rows']})!=len(r['rows']):raise ValueError('门店商品编码不唯一')
+        focus.require_for(payload.get('new_focus'),day,[payload['results'][s] for s in codes])
         raw=wr.dumps(payload).encode();digest=hashlib.sha256(raw).hexdigest();stamp=wr.now()
         with closing(self.work.connect()) as db,db:
             db.execute('BEGIN IMMEDIATE')
@@ -101,7 +104,7 @@ class Repository:
                 if old:db.execute('INSERT OR IGNORE INTO normal_work_revisions VALUES(?,?,?)',(old[0],day,old[2]))
                 db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET revision=excluded.revision,digest=excluded.digest,saved=excluded.saved,summary=excluded.summary,payload=excluded.payload',(day,work_revision,digest,stamp,wr.dumps(info),zlib.compress(raw)))
             for s in codes:
-                result=payload['results'][s];h=fingerprint(result)
+                result=payload['results'][s];h=fingerprint(result,payload.get('new_focus'))
                 current=db.execute("SELECT oid,number,current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,s)).fetchone()
                 if current:
                     oid,number,prev=current
@@ -110,7 +113,7 @@ class Repository:
                 else:
                     oid=str(uuid.uuid4());number='BH-'+day.replace('-','')+'-'+quote(s,safe='')+'-ZC';rev=1
                     db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,s,'normal_model',oid,number,rev))
-                record={'schema':1,'model_version':MODEL_VERSION,'work_revision':work_revision,'result':result,'preset':payload.get('store_presets',{}).get(s),'item_ids':{d['E']:uuid.uuid5(uuid.UUID(oid),d['E']).hex for d in result['rows']}}
+                record={'schema':1,'model_version':MODEL_VERSION,'work_revision':work_revision,'result':result,'preset':payload.get('store_presets',{}).get(s),'new_focus':copy.deepcopy(payload.get('new_focus')),'item_ids':{d['E']:uuid.uuid5(uuid.UUID(oid),d['E']).hex for d in result['rows']}}
                 # Keep the issue's complete input/config draft even after later ordinary draft saves.
                 db.execute('INSERT OR IGNORE INTO normal_work_revisions VALUES(?,?,?)',(work_revision,day,zlib.compress(raw)))
                 db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,rev,h,stamp,encode(record)))

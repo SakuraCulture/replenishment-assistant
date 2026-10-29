@@ -6,7 +6,9 @@ import result_semantics as sem
 
 
 def is_new(row):
-    return all(not isinstance(row.get(k), bool) and sem.numeric(row.get(k)) and row[k] == 0 for k in ('J', 'K', 'L', 'N'))
+    # User-confirmed 2026-10-30: blank original stockout days mean zero for
+    # first-fill recognition. Preserve the raw N and all model intermediates.
+    return all(sem.numeric(row.get(k)) and row[k] == 0 for k in ('J', 'K', 'L')) and (row.get('N') is None or row.get('N')=='' or sem.numeric(row.get('N')) and row['N']==0)
 
 
 def blocked_reason(row):
@@ -45,12 +47,13 @@ def apply(base, selections, cancel=None, progress=lambda s:None):
         if isinstance(q,bool) or not sem.numeric(q) or q<=0:raise ValueError('首铺数量必须为正数：'+sku)
         if Decimal(str(q)) % Decimal(str(d['BD'])) != 0:raise ValueError('首铺数量须为最小出库单位倍数：'+sku)
         d['_new_requested']=q;d['_candidate_qty']=q
+        d['_new_stockout_basis']='原缺货天数为空，按用户确认口径视为0识别新品' if d.get('N') in (None,'') else '原缺货天数为0'
         d['_candidate_amount']=float(Decimal(str(q))*Decimal(str(d['V'])))
         # Unlimited execution is explicit; AS/BV retain the model's zero suggestion.
         d['_execution_qty']=q;d['_execution_amount']=d['_candidate_amount']
     if result.get('budget',{}).get('enabled'):
         result['budget']=allocation.apply(result['rows'],base['budget']['limit'],lambda:checkpoint(cancel))
-    result['new_products']={'selection':copy.deepcopy(selections),'rule':'J/K/L/N valid numeric zero; explicit selection','priority':allocation.POLICY}
+    result['new_products']={'selection':copy.deepcopy(selections),'rule':'J/K/L numeric zero; N numeric zero or blank treated as zero; raw N retained; explicit selection','priority':allocation.POLICY}
     result['summary']=sem.summarize(result['rows'])
     return result
 

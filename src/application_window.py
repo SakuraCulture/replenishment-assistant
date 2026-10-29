@@ -6,16 +6,20 @@ from PySide6.QtWidgets import QWidget,QVBoxLayout,QHBoxLayout,QStackedWidget,QTa
 from ui_controls import label,button
 from workbench import Workbench
 import work_repository as wr
-import normal_orders,normal_exports,new_products
+import normal_orders,normal_exports,new_products,new_product_focus as focus
+from new_product_focus_ui import FocusMapping,confirm_focus
 from new_product_ui import NewProductDialog
 from result_semantics import fmt,order_quantity,order_amount,explanation
 
 
 class ApplicationWindow(Workbench):
     def __init__(self):
-        self.new_bases={}
+        self.new_bases={};self.new_focus=None
         super().__init__()
         self.orders=normal_orders.Repository(self.work_repository)
+        self.focus_repository=focus.Repository(self.repository.folder)
+        try:self.new_focus=self.focus_repository.load()
+        except Exception as exc:self.status.setText("新品关注清单未加载，请重新导入："+str(exc))
         work=self.takeCentralWidget();root=QWidget();v=QVBoxLayout(root);v.setContentsMargins(8,6,8,6);nav=QHBoxLayout();self.top_nav=[]
         for i,title in enumerate(['首页','工作页','历史归档 / 日志']):
             b=button(title,lambda checked=False,n=i:self.show_section(n));self.top_nav.append(b);nav.addWidget(b)
@@ -33,7 +37,37 @@ class ApplicationWindow(Workbench):
         self.pages.widget(4).layout().insertWidget(1,button('选择本店新品 / 预览预算',self.choose_new_products))
         self.mode.addItems(['动销补货','新品候选','新品推荐','缺货恢复及其他'])
         self.save_job_btn.setText('保存草稿');self.history_btn.setText('草稿记录');self.batch_export.setText('内部批次明细导出');self.export_all.setText('内部全量明细');self.export_filtered.setText('内部当前筛选')
-        self.update_controls();self.show_section(0)
+        focusrow=QHBoxLayout();self.focus_label=label("","muted");focusrow.addWidget(self.focus_label,1);self.focus_import_btn=button("导入新品明细 / 关注字段",self.import_focus);focusrow.addWidget(self.focus_import_btn);self.focus_empty_btn=button("本月无关注新品",self.empty_focus);focusrow.addWidget(self.focus_empty_btn);self.import_page.layout().addLayout(focusrow)
+        self.refresh_focus();self.update_controls();self.show_section(0)
+
+    def refresh_focus(self):
+        if not hasattr(self,'focus_label'):return
+        p=self.new_focus
+        self.focus_label.setText(f"新品关注：{p['month']} · {p['name']} · {len(focus.members(p))} 个关注商品"+(' · 月份不符，签发前请更新' if p['month']!=self.job_day[:7] else '') if p else '新品关注：未设置；签发前请导入新品明细，或明确本月无关注新品')
+
+    def import_focus(self):
+        if self.worker or self.readonly:return
+        path,_=QFileDialog.getOpenFileName(self,'选择独立新品明细','','Excel (*.xlsx)')
+        if path:self.job(focus.inspect,(path,),self.map_focus)
+
+    def map_focus(self,info):
+        if self.closing or (self.worker and self.worker.cancel.is_set()):return
+        dialog=FocusMapping(self,info,self.job_day[:7])
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return
+        # Worker success callbacks run before cleanup; queue the next independent job.
+        from PySide6.QtCore import QTimer
+        args=(info,dialog.sheet.currentText(),dialog.sku.currentText(),dialog.focus.currentText(),dialog.month.text().strip())
+        QTimer.singleShot(0,lambda:self.job(focus.import_list,args,self.apply_focus))
+
+    def empty_focus(self):
+        if not self.worker and not self.readonly:self.apply_focus(focus.empty(self.job_day[:7]))
+
+    def apply_focus(self,data):
+        if self.closing or (self.worker and self.worker.cancel.is_set()):return
+        if not confirm_focus(self,data,self.new_focus):return
+        try:self.focus_repository.save(data)
+        except Exception as exc:self.failed('关注清单未保存，原清单保留：'+str(exc));return
+        self.new_focus=copy.deepcopy(data);self.refresh_focus();self.touch();self.status.setText('新品关注清单已保存；数量不变，本月/往期分组需随正常单重新确认归档。')
 
     @staticmethod
     def fill_orders(table,records):
@@ -49,7 +83,7 @@ class ApplicationWindow(Workbench):
     def refresh_archive(self):
         self.archive_orders=self.orders.list();self.fill_orders(self.archive_table,self.archive_orders);self.filter_archive()
         self.recent_orders=self.archive_orders[:10];self.fill_orders(self.recent,self.recent_orders)
-        today=[r for r in self.archive_orders if r['day']==wr.today()];ready=[s for s,x in self.states.items() if x['state']=='已完成'];pending=sum(not self.orders.get(self.job_day,s) or self.orders.get(self.job_day,s)['digest']!=normal_orders.fingerprint(self.results[s]) for s in ready)
+        today=[r for r in self.archive_orders if r['day']==wr.today()];ready=[s for s,x in self.states.items() if x['state']=='已完成'];pending=sum(not self.orders.get(self.job_day,s) or self.orders.get(self.job_day,s)['digest']!=normal_orders.fingerprint(self.results[s],self.new_focus) for s in ready)
         self.home_status.setText(f"{wr.today()} · 今日已归档 {len(today)} 店 / ¥{sum(r['summary']['amount'] for r in today):,.2f}\n工作区日期 {self.job_day} · 待确认 {pending} 店 · 未完成/需处理 {len(self.states)-len(ready)} 店 · {'任务运行中' if self.worker else '有未保存草稿' if self.job_dirty else '工作区就绪'}")
 
     def filter_archive(self,*_):
@@ -70,19 +104,26 @@ class ApplicationWindow(Workbench):
         super().update_controls()
         if not hasattr(self,'issue_btn'):return
         ready=not self.worker and not self.readonly and not self.input_dirty
+        if hasattr(self,'focus_import_btn'):
+            self.focus_import_btn.setEnabled(not self.worker and not self.readonly);self.focus_empty_btn.setEnabled(not self.worker and not self.readonly)
         self.issue_btn.setEnabled(ready and self.job_day==wr.today() and any(x['state']=='已完成' for x in self.states.values()))
         self.new_products_btn.setEnabled(ready and any(x['state']=='已完成' for x in self.states.values()))
         self.merchant_btn.setEnabled(not self.worker and not self.input_dirty and any(x['state']=='已完成' for x in self.states.values()))
 
     def snapshot(self):
         p=super().snapshot()
+        if self.new_focus is not None:p["new_focus"]=copy.deepcopy(self.new_focus)
         if self.new_bases:p['new_product_bases']=copy.deepcopy(self.new_bases)
         return p
 
     def restore_job(self,record):
-        self.new_bases=copy.deepcopy(record['payload'].get('new_product_bases',{}));super().restore_job(record)
+        self.new_bases=copy.deepcopy(record['payload'].get('new_product_bases',{}));self.new_focus=copy.deepcopy(record['payload'].get('new_focus'));super().restore_job(record);self.refresh_focus()
 
-    def reset_job(self):self.new_bases={};super().reset_job()
+    def reset_job(self):
+        self.new_bases={};super().reset_job()
+        try:self.new_focus=self.focus_repository.load()
+        except Exception as exc:self.new_focus=None;self.status.setText("新品关注清单未加载："+str(exc))
+        self.refresh_focus()
     def loaded_ok(self,loaded):self.new_bases={};super().loaded_ok(loaded)
     def task_changed(self,store,state,result,error):
         if result:self.new_bases.pop(store,None)
@@ -110,7 +151,7 @@ class ApplicationWindow(Workbench):
         current=self.results[s];base=self.new_bases.get(s,current)
         if base.get('new_products'):
             self.failed('当前草稿缺少新品原计算快照，请重新计算该店后选择。');return
-        dialog=NewProductDialog(self,base,current)
+        dialog=NewProductDialog(self,base,current,self.new_focus)
         if dialog.exec()!=QDialog.DialogCode.Accepted:return
         selections=dialog.selections()
         self.job(new_products.apply,(base,selections),lambda result:self.preview_new(s,base,current,result))
@@ -128,13 +169,15 @@ class ApplicationWindow(Workbench):
         if self.worker or self.readonly or self.input_dirty or self.job_day!=wr.today():return
         codes=[s for s in self.selected_codes() if self.states[s]['state']=='已完成']
         if not codes:self.failed('请先在门店页勾选有效完成门店。');return
+        try:focus.require_for(self.new_focus,self.job_day,[self.results[s] for s in codes])
+        except ValueError as exc:self.failed(str(exc));return
         payload=copy.deepcopy(self.snapshot());oldjob=self.work_repository.get_job(self.job_day);old={s:self.orders.get(self.job_day,s) for s in codes}
         box=QMessageBox(self);box.setObjectName('normalConfirm');box.setWindowTitle('确认归档本次补货建议');box.setText('内部签发确认；不代表加盟商确认或已下单。\n同时保存当前完整草稿；只更新下列门店正常单，其他门店历史单保留。')
         lines=[];details={}
         for s in codes:
-            r=self.results[s];prev=old[s];same=prev and prev['digest']==normal_orders.fingerprint(r)
+            r=self.results[s];prev=old[s];same=prev and prev['digest']==normal_orders.fingerprint(r,self.new_focus)
             lines.append(r['store_name']+' ('+s+')：'+('已归档，无需新修订' if same else f"同号 V{prev['revision']:03d} → V{prev['revision']+1:03d}" if prev else '首次 V001')+f"；¥{r['summary']['amount']:,.2f}，{r['summary']['positive']}款，待核{r['summary']['issues']}，预算缺口{r['summary']['budget_deferred']}")
-            details[s]={'new_selection':r.get('new_products',{}),'changes':normal_orders.revision_diff(prev['payload']['result'] if prev else None,r),'before_amount':prev['payload']['result']['summary']['amount'] if prev else None,'after_amount':r['summary']['amount']}
+            details[s]={'关注清单原版本':(prev['payload'].get('new_focus') or {}).get('revision') if prev else None,'关注清单新版本':(self.new_focus or {}).get('revision'),'new_selection':r.get('new_products',{}),'changes':normal_orders.revision_diff(prev['payload']['result'] if prev else None,r),'before_amount':prev['payload']['result']['summary']['amount'] if prev else None,'after_amount':r['summary']['amount']}
         if oldjob:details['草稿覆盖']={'原保存时间':oldjob['saved'],'原门店状态':oldjob['summary']['stores'],'新门店状态':wr.summary(payload)['stores']}
         box.setInformativeText('\n'.join(lines));box.setDetailedText(json.dumps(details,ensure_ascii=False,indent=2));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认并归档',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel);box.exec()
         if box.clickedButton() is not accept:return
@@ -148,13 +191,13 @@ class ApplicationWindow(Workbench):
         s=self.pick_store()
         if not s:return
         order=self.orders.get(self.job_day,s)
-        if not order or order['digest']!=normal_orders.fingerprint(self.results[s]):self.failed('当前方案尚未确认归档，或与签发版本不同；请先确认归档。旧版本可从历史页单独导出。');return
+        if not order or order['digest']!=normal_orders.fingerprint(self.results[s],self.new_focus):self.failed('当前方案尚未确认归档，或与签发版本不同；请先确认归档。旧版本可从历史页单独导出。');return
         self.export_order(order)
 
     def export_order(self,order):
         if self.worker:return
         order=self.orders.get(order['day'],order['store'],order['revision'])
-        name=order['number']+f"_V{order['revision']:03d}"+('_历史修订' if order['revision']!=order['current_revision'] else '')+'.xlsx'
+        name=normal_exports.filename(order)
         path,_=QFileDialog.getSaveFileName(self,'导出本店加盟商确认单',name,'Excel (*.xlsx)')
         if not path:return
         if not path.lower().endswith('.xlsx'):path+='.xlsx'
