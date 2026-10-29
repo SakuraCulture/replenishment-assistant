@@ -1,0 +1,27 @@
+{
+  "app": "补货助手",
+  "version": "0.6.2",
+  "parameter_schema_version": 1,
+  "job_schema_version": 1,
+  "routing_version": "0.5.0",
+  "model_version": "0.3.0-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "source_commit": "036c07f098b3a52b705c292286250dc9ee39341a",
+  "build_id": "rc1",
+  "built_at": "2026-10-29T22:26:30.3947379+08:00",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "packages": {
+    "PySide6-Essentials": "6.12.0",
+    "shiboken6": "6.12.0",
+    "openpyxl": "3.1.5",
+    "et-xmlfile": "2.0.0",
+    "pillow": "12.3.0",
+    "PyInstaller": "6.22.3"
+  },
+  "archive": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.6.2_rc1\\补货助手_0.6.2_rc1.zip",
+  "zip_sha256": "f0f81c9d95ce298cdb3933c3c28d312be2b6bcd891491517ebef4e6cccd8b9a7",
+  "exe_sha256": "005696544087c0e29d74422351aaca98bfbaa1b9953e001802f9c9cee89da15e",
+  "file_count": 199,
+  "zip_bytes": 47077456
+}

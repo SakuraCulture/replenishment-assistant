@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "modules": [
+    "file_intake",
+    "intake_probe",
+    "intake_smoke",
+    "workbench",
+    "batch_service",
+    "engine",
+    "model",
+    "one_box_exception",
+    "allocation",
+    "ui_tasks"
+  ],
+  "resources": {
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "version.json": "6cc9db06d67287d430cf726cf2f8286db04d8b81d935b9f029ce82ab94a6db37",
+    "app.ico": "43f1cca8dfed05f941a207266aa5308ebf8633a140aa4448a49acfac7c4ce7ed"
+  },
+  "lxml_included": false,
+  "exe_sha256": "005696544087c0e29d74422351aaca98bfbaa1b9953e001802f9c9cee89da15e",
+  "build": {
+    "app": "补货助手",
+    "version": "0.6.2",
+    "parameter_schema_version": 1,
+    "job_schema_version": 1,
+    "routing_version": "0.5.0",
+    "model_version": "0.3.0-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "source_commit": "036c07f098b3a52b705c292286250dc9ee39341a",
+    "build_id": "rc1",
+    "built_at": "2026-10-29T22:26:30.3947379+08:00",
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "packages": {
+      "PySide6-Essentials": "6.12.0",
+      "shiboken6": "6.12.0",
+      "openpyxl": "3.1.5",
+      "et-xmlfile": "2.0.0",
+      "pillow": "12.3.0",
+      "PyInstaller": "6.22.3"
+    }
+  }
+}

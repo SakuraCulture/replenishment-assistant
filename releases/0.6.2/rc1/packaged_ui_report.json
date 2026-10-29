@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "error": null,
+  "version": "0.6.2",
+  "source_commit": "036c07f098b3a52b705c292286250dc9ee39341a",
+  "checks": [
+    "multi-file UI import, duplicate conflict dialog and explicit source choice",
+    "application process workers calculate two stores successfully",
+    "changing one budget invalidates only that store; zero budget and recompute preserve other store",
+    "UI worker exports combined workbook",
+    "isolated settings survive fresh window; master path and must-list reusable",
+    "shared configuration invalidates all results and blocks export",
+    "rechecking existing paths invalidates old results before loading, including failure/cancel cases"
+  ],
+  "exe_sha256": "005696544087c0e29d74422351aaca98bfbaa1b9953e001802f9c9cee89da15e"
+}

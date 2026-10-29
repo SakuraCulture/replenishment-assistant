@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "source_commit": "036c07f098b3a52b705c292286250dc9ee39341a",
+  "protected_file_count": 1804,
+  "changed_files": [],
+  "core_and_boundary": {
+    "passed": true,
+    "unchanged_files": {
+      "engine.py": "e7403a846f583cbabc9387ecf448390ca5af766f76814a4fc69bf2b9a94909cf",
+      "input_adapter.py": "7629bab19d4ca5d79efbd736f838db2a5964569856330dabe904e07ae1df592b",
+      "model.py": "7b5b39dc20649ae0d55f462a46a259fe740ba4d9188a651bf0cb003bd5488f71",
+      "one_box_exception.py": "848e8ee14eb51b84e64fd78ae49fd60f2f88debf53fb173c906566efab79765d",
+      "allocation.py": "5960745f16e4bc4eb5cdaad0a1591e817f5adab940579cf8ed96d264ed3c1bf9",
+      "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "warehouse_catalog.py": "924d07500ffe108914fd46eb578cb16b4680e5932895883c71026d55291e6322",
+      "parameter_schema.py": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+      "result_semantics.py": "b4f00cb8e1750abed021562e5696f6f1bc9f9e7b69b49d16d17b96793b3a2055",
+      "display_fields.py": "ab56cb79ad94e08b644499f888fc4489d3845dd8bfbaa1d90f11448156385d8c",
+      "xlsx_exports.py": "fd03238e3f48f1813308dd5f37d83b9410c0a841fe5f5aae1b271acdec78ade4",
+      "work_repository.py": "87f321a563d23174ed5e2a733d9019f5dce959d55f3fb564c28381c40fd9a546"
+    },
+    "unchanged_batch_functions": [
+      "prepare",
+      "load",
+      "calculate_store",
+      "run"
+    ],
+    "single_file_validation": "exact AST statement equality"
+  },
+  "baseline_archive_sha256": "72636286d1d62fe57a810f34b4fbbaeadf1f3006f6f39e6c1415a4b95e0bfcd6"
+}

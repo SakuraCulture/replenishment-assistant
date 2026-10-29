@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "checks": [
+    "reverse passed; no live children",
+    "cancel passed; no live children",
+    "crash passed; no live children",
+    "retry after cancel/crash succeeds",
+    "actual file bytes change after read detected on private copy",
+    "physical read-time file mutation: full mixed-error intake exactly equals independent frozen serial version"
+  ],
+  "version": "0.6.2",
+  "source_commit": "036c07f098b3a52b705c292286250dc9ee39341a"
+}

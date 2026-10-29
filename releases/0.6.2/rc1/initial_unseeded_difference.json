@@ -1,0 +1,285 @@
+{
+  "passed": false,
+  "baseline_commit": "ebaf8d059667968d11ee994c20837b4313f32337",
+  "source_commit": "ebaf8d059667968d11ee994c20837b4313f32337",
+  "candidate_sources": {
+    "src\\allocation.py": "5960745f16e4bc4eb5cdaad0a1591e817f5adab940579cf8ed96d264ed3c1bf9",
+    "src\\app.ico": "43f1cca8dfed05f941a207266aa5308ebf8633a140aa4448a49acfac7c4ce7ed",
+    "src\\app.py": "243b9a1f4e883691de43b53fbd6efcc11aaa1ea8817bd85d1dc7951da641306c",
+    "src\\app_defaults.py": "fe9b7a4b1e5ec32719f945b07dfeacd1ecfd83318228c0dbd9998a4469b1e795",
+    "src\\batch_app.py": "afe4c8ecfa7164960d9b96e2e8ea8a274c426fa061b1b2be708ba01160a7f690",
+    "src\\batch_service.py": "ef3b9239d22e99471e7c3a86c0f7901920ca0fb51a315d8dbcbe2407d435b4d4",
+    "src\\batch_smoke.py": "b1818e7d5f774fa720254b9ffed9c5c3b39f94907623d439a82db12676e32a78",
+    "src\\data_contracts.py": "b7eaa270b7037f9ccabfdbaf3d888f30a97e41f0e7b4e019272cc1acd6f54db3",
+    "src\\default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src\\default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "src\\display_fields.py": "ab56cb79ad94e08b644499f888fc4489d3845dd8bfbaa1d90f11448156385d8c",
+    "src\\engine.py": "e7403a846f583cbabc9387ecf448390ca5af766f76814a4fc69bf2b9a94909cf",
+    "src\\file_intake.py": "07fb606a863edf02103b46a7fee90fc7aec7251ad053721739d1a3840fd266f3",
+    "src\\input_adapter.py": "7629bab19d4ca5d79efbd736f838db2a5964569856330dabe904e07ae1df592b",
+    "src\\intake_probe.py": "4ffa104f73af01b0da44642c9ca3c6f89c5f39568cfee9186c3c8923ac54505c",
+    "src\\intake_smoke.py": "0a528b3df5195a545543ca3027a04ea8ae535d0835202bfbc49af5cf24db1489",
+    "src\\legacy_window.py": "3799e92d932c194f389c9458690d94be0f7f1183e72303004f6439cd94d58245",
+    "src\\model.py": "7b5b39dc20649ae0d55f462a46a259fe740ba4d9188a651bf0cb003bd5488f71",
+    "src\\one_box_exception.py": "848e8ee14eb51b84e64fd78ae49fd60f2f88debf53fb173c906566efab79765d",
+    "src\\parameter_schema.py": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+    "src\\parameter_trial.py": "1f7489a4fa5d000d3ae2448ed2efd764e93755f0b69cc4ae33af625d4c43eba4",
+    "src\\parameter_ui.py": "7f220c3a529e5616d2eb2aa85cf394a96a2ffb5a63336089a2afd0357cecb89e",
+    "src\\priority_list.py": "9229f9cdabd66c4eaaa1d31ad90038cb054f833c4b0cb53ccdbb75f594943450",
+    "src\\result_semantics.py": "b4f00cb8e1750abed021562e5696f6f1bc9f9e7b69b49d16d17b96793b3a2055",
+    "src\\runtime_support.py": "d8a9d18fe378274427a81c6dfe38277abdae123692cdb82a8a4c1b52e034afe6",
+    "src\\smoke.py": "1b8ebf35cb94eb6e96f96b14b009aceb33df66f61912af4e52421ca7e561a524",
+    "src\\table_records.py": "267489aca45843d6d282c1987e377a0a289d08005429fc2812718063cc44f84c",
+    "src\\ui_controls.py": "08ee64be40d5090576baf3e0a83bd49de4f8d90e34412d1ef04a8d6e09159b4a",
+    "src\\ui_results.py": "c6488a31c252936ad42aa42e60ab567b34f47302d0a976a8a454f98bec437e94",
+    "src\\ui_session.py": "0c5cf613a3929658f73d891cf9111aaf67006b6391b9f2c89abf723f03e6a7bf",
+    "src\\ui_tasks.py": "637261033afdb146f7ef6674a5a28fef354ba8b21e6e50e20bfb0de525f4d2c2",
+    "src\\version.json": "93e4e292ab4e5bb331a65fa3a6b857b1889548b64cf7b3d1c69bfdfdb26fdbf0",
+    "src\\version_info.py": "6e9fe25bd61d7059758d5dc4484001ed7a24d6f624f3206a3230f7e1e4680b48",
+    "src\\warehouse_catalog.py": "924d07500ffe108914fd46eb578cb16b4680e5932895883c71026d55291e6322",
+    "src\\warehouse_smoke.py": "197a93dafbbaf927c9c014210ffdc07285b6e4ca09195b72eb7735830b7a20a9",
+    "src\\warehouse_ui.py": "7933dd5eec56d58d82837e8340d5bf0c905fa4183692600a854b92044e4db411",
+    "src\\work_repository.py": "87f321a563d23174ed5e2a733d9019f5dce959d55f3fb564c28381c40fd9a546",
+    "src\\work_smoke.py": "b50429879445bfafb47842e3508a3420cf8d500132f728685c99e977a99bd0ac",
+    "src\\workbench.py": "c65944eb87613cfb26820a396a8e6ee3f3e20e684edc5f6787f62f23d27e55d2",
+    "src\\xlsx_exports.py": "fd03238e3f48f1813308dd5f37d83b9410c0a841fe5f5aae1b271acdec78ade4"
+  },
+  "whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "strict_order": true,
+  "differences": 2,
+  "cases": [
+    {
+      "case": "single_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "single_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "single_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "nonoverlap_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "nonoverlap_loaded",
+      "differences": 1,
+      "details": [
+        [
+          "$.config.category_profiles",
+          "dictionary key order",
+          "['快销', '日百', '休闲食品', '饮品', '乳品', '酒类', '速食/罐头', '粮油调味干货', '营养冲调', '营养保健', '个人洗护', '服饰鞋包', '家居日用', '家庭清洁', '宠物生活', '彩妆香水', '厨具餐具', '学习/办公用品', '成人用品', '母婴用品', '电脑数码', '手机通讯', '运动户外', '美容护肤', '家装建材', '家纺布艺', '节庆礼品', '家用电器', '医疗器械', '玩具乐器', '汽车用品', '花卉园艺', '手表眼镜', '数码家电', '分类', '蔬菜/豆制品', 'None', '门店耗材',",
+          "['快销', '日百', '休闲食品', '饮品', '乳品', '酒类', '速食/罐头', '粮油调味干货', '营养冲调', '营养保健', '个人洗护', '服饰鞋包', '家居日用', '家庭清洁', '宠物生活', '彩妆香水', '厨具餐具', '学习/办公用品', '成人用品', '母婴用品', '电脑数码', '手机通讯', '运动户外', '美容护肤', '家装建材', '家纺布艺', '节庆礼品', '家用电器', '医疗器械', '玩具乐器', '汽车用品', '花卉园艺', '手表眼镜', '数码家电', '门店耗材', '蔬菜/豆制品', '卫生纸品', 'None"
+        ]
+      ]
+    },
+    {
+      "case": "nonoverlap_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "overlap_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "overlap_blocked",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "overlap_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "overlap_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "reversed_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "reversed_blocked",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "reversed_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "reversed_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "path_dedup_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "path_dedup_blocked",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "path_dedup_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "path_dedup_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "mixed_error_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "mixed_error_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "mixed_error_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "all_error",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "warehouse_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "warehouse_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "warehouse_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_loaded",
+      "differences": 1,
+      "details": [
+        [
+          "$.config.category_profiles",
+          "dictionary key order",
+          "['快销', '日百', '休闲食品', '饮品', '乳品', '酒类', '速食/罐头', '粮油调味干货', '营养冲调', '营养保健', '个人洗护', '服饰鞋包', '家居日用', '家庭清洁', '宠物生活', '彩妆香水', '厨具餐具', '学习/办公用品', '成人用品', '母婴用品', '电脑数码', '手机通讯', '运动户外', '美容护肤', '家装建材', '家纺布艺', '节庆礼品', '家用电器', '医疗器械', '玩具乐器', '汽车用品', '花卉园艺', '手表眼镜', '数码家电', '分类', '蔬菜/豆制品', 'None', '门店耗材',",
+          "['快销', '日百', '休闲食品', '饮品', '乳品', '酒类', '速食/罐头', '粮油调味干货', '营养冲调', '营养保健', '个人洗护', '服饰鞋包', '家居日用', '家庭清洁', '宠物生活', '彩妆香水', '厨具餐具', '学习/办公用品', '成人用品', '母婴用品', '电脑数码', '手机通讯', '运动户外', '美容护肤', '家装建材', '家纺布艺', '节庆礼品', '家用电器', '医疗器械', '玩具乐器', '汽车用品', '花卉园艺', '手表眼镜', '数码家电', '门店耗材', '蔬菜/豆制品', '卫生纸品', 'None"
+        ]
+      ]
+    },
+    {
+      "case": "real_None_True",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_0_True",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_3000_True",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_5000_True",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_10000_True",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_None_False",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_custom",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "filtered.xlsx",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "overlap.xlsx",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real.xlsx",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "reversed.xlsx",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "warehouse.xlsx",
+      "differences": 0,
+      "details": []
+    }
+  ],
+  "changed_protected": [],
+  "core": {
+    "model.py": {
+      "before": "7b5b39dc20649ae0d55f462a46a259fe740ba4d9188a651bf0cb003bd5488f71",
+      "after": "7b5b39dc20649ae0d55f462a46a259fe740ba4d9188a651bf0cb003bd5488f71"
+    },
+    "one_box_exception.py": {
+      "before": "848e8ee14eb51b84e64fd78ae49fd60f2f88debf53fb173c906566efab79765d",
+      "after": "848e8ee14eb51b84e64fd78ae49fd60f2f88debf53fb173c906566efab79765d"
+    },
+    "allocation.py": {
+      "before": "5960745f16e4bc4eb5cdaad0a1591e817f5adab940579cf8ed96d264ed3c1bf9",
+      "after": "5960745f16e4bc4eb5cdaad0a1591e817f5adab940579cf8ed96d264ed3c1bf9"
+    },
+    "default_config.json": {
+      "before": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "after": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "before": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "after": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    }
+  }
+}
