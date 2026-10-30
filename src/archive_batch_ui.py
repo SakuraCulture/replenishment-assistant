@@ -18,7 +18,9 @@ class Preview(QDialog):
         rows=[]
         for item in plan['items']:
             h=item['head'];rows.append([h['day'],h.get('name',h['store']),h['warehouse'],h['number'],f'V{h["revision"]:03d}',item.get('count','—'),item['error'] or '可导出'])
-        table,model=grid(self,['业务日期','门店','仓库','补货单号','修订','明细行 / 原文件数','核对状态'],rows);table.setColumnWidth(3,280);table.setColumnWidth(6,360);v.addWidget(table,1)
+        table,model=grid(self,['业务日期','门店','仓库','补货单号','修订','明细行 / 原文件数','核对状态'],rows)
+        for i,width in enumerate([100,135,70,240,60,90,270]):table.setColumnWidth(i,width)
+        v.addWidget(table,1)
         self.summary=label('');v.addWidget(self.summary)
         self.partial=QCheckBox('已核对缺失/失败项，仅导出可用部分（完成页保留缺口）');self.partial.setVisible(any(i['error'] for i in plan['items']));v.addWidget(self.partial)
         text='直接复制留存原Excel，保留全部工作表、样式和公式；与当前商品是否匹配无关。' if plan['kind']=='original' else '不重算、不跨单合计商品。山东河北分开；历史未留存字段留空，全店共享预算不能按行累加。'

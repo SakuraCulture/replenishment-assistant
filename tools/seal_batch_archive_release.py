@@ -1,7 +1,7 @@
 """Seal local 0.12.0 candidate only after fresh regression and actual EXE checks."""
 import hashlib,json,shutil,subprocess,zipfile
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1];Q=ROOT/'qa/batch_archive_012';DIST=ROOT/'交付_0.12.0_rc1';APP=DIST/'补货助手';REL=ROOT/'releases/0.12.0/rc1'
+ROOT=Path(__file__).resolve().parents[1];Q=ROOT/'qa/batch_archive_012';DIST=ROOT/'交付_0.12.0_rc2';APP=DIST/'补货助手';REL=ROOT/'releases/0.12.0/rc2'
 def sha(p):
     h=hashlib.sha256()
     with Path(p).open('rb') as f:
@@ -13,7 +13,7 @@ def main():
     head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip();build=load(APP/'_internal/build_info.json')
     if build['source_commit']!=head:raise ValueError('Seal at exact build commit before evidence commit')
     if subprocess.check_output(['git','diff','HEAD','--','src','prepare_delivery.py'],cwd=ROOT):raise ValueError('Runtime changed after build')
-    reports={'equivalence.json':Q/'equivalence.json','real_exports.json':Q/'real-exports/report.json','exe.json':Q/'exe/report.json'}
+    reports={'equivalence.json':Q/'equivalence.json','real_exports.json':Q/'real-exports/report.json','exe.json':Q/'exe-rc2/report.json'}
     for name,p in reports.items():
         if not load(p)['passed']:raise ValueError('Failed validation '+name)
     exe=load(reports['exe.json'])
@@ -29,9 +29,9 @@ def main():
     REL.mkdir(parents=True,exist_ok=True)
     for name,p in reports.items():shutil.copy2(p,REL/name)
     for name in ['baseline.json','units.txt','optimized-tests.txt','portable310.txt','doctor.txt']:shutil.copy2(Q/name,REL/name)
-    for name in ['batch-archive-toolbar.png','batch-preview-calculation.png','batch-preview-signed.png','batch-preview-original.png','batch-result.png','archive-restored.png']:shutil.copy2(Q/'exe'/name,REL/name)
+    for name in ['batch-archive-toolbar.png','batch-preview-calculation.png','batch-preview-signed.png','batch-preview-original.png','batch-result.png','archive-restored.png']:shutil.copy2(Q/'exe-rc2'/name,REL/name)
     files={p.relative_to(APP).as_posix():sha(p) for p in APP.rglob('*') if p.is_file()};save(REL/'files.json',files)
-    archive=DIST/'补货助手_0.12.0_rc1.zip'
+    archive=DIST/'补货助手_0.12.0_rc2.zip'
     if archive.exists():raise ValueError('ZIP already exists')
     with zipfile.ZipFile(archive,'x',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         for name in files:z.write(APP/name,'补货助手/'+name)
