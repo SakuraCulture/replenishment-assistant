@@ -18,7 +18,7 @@ GUIDE='''第一次做补货
 def install(win,home_layout):
     def guide():
         d=QDialog(win);d.setWindowTitle('首次使用 / 快捷键');d.resize(850,650);v=QVBoxLayout(d);text=QTextBrowser();text.setPlainText(GUIDE);v.addWidget(text);v.addWidget(button('进入准备数据',lambda:(d.accept(),win.show_section(1),win.navigate(0))));v.addWidget(button('关闭',d.accept));d.exec()
-    home_layout.insertWidget(2,button('第一次使用 / 操作指南（F1）',guide))
+    home_layout.insertWidget(2,button('使用指南（F1）',guide))
     actions=[('Ctrl+1',lambda:win.show_section(0)),('Ctrl+2',lambda:win.show_section(1)),('Ctrl+3',lambda:win.show_section(2)),('Ctrl+S',win.save_job_btn.click),('Ctrl+Return',win.calculate_btn.click),('F1',guide)]
     win._navigation_shortcuts=[]
     for key,action in actions:

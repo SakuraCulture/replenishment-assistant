@@ -13,7 +13,7 @@ def exercise(win,out,checks,shot,wait,phase):
     if phase=='reopen':
         win.archive_trash.setCurrentIndex(1);win.refresh_archive();wait(lambda:win.history_reader.active is None)
         if len(win.archive_orders)!=1:raise AssertionError('trash not persisted across restart')
-        win.archive_table.selectRow(0);old=QMessageBox.question;QMessageBox.question=lambda *a,**k:QMessageBox.StandardButton.Yes
+        win.check_archive([win.archive_orders[0]]);win.archive_table.selectRow(0);old=QMessageBox.question;QMessageBox.question=lambda *a,**k:QMessageBox.StandardButton.Yes
         try:win.change_archive_visibility();wait(lambda:win.history_reader.active is None)
         finally:QMessageBox.question=old
         if win.archive_orders:raise AssertionError('restore failed')
@@ -45,6 +45,7 @@ def exercise(win,out,checks,shot,wait,phase):
     data=events(win.work_repository.path,h['oid'],'河北仓');events_dialog=EventsDialog(win,data['records'],data['rows']);events_dialog.show();events_dialog.table.selectRow(0)
     single(win,h,out,'signed');events_dialog.reject();events_dialog.deleteLater()
     checks.append('per-warehouse detail/forms remain readable; independent calculation/signed export previews used')
+    win.clear_archive_selection();win.check_archive([h]);win.archive_table.selectRow(1)
     old=QMessageBox.question;QMessageBox.question=lambda *a,**k:QMessageBox.StandardButton.Cancel
     try:win.change_archive_visibility()
     finally:QMessageBox.question=old

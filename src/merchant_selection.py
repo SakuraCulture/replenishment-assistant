@@ -24,7 +24,7 @@ class MerchantSelection(QDialog):
         for title,value in [('全选有效仓',True),('取消全选',False)]:
             button=QPushButton(title);button.clicked.connect(lambda _,v=value:self.select_all(v));row.addWidget(button)
         self.note=QLabel();row.addWidget(self.note);layout.addLayout(row)
-        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);self.ok=buttons.button(QDialogButtonBox.StandardButton.Ok);self.ok.setText('下一步：核对并导出');buttons.button(QDialogButtonBox.StandardButton.Cancel).setText('取消');buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons);self.table.itemChanged.connect(self.update_count);self.update_count()
+        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);self.ok=buttons.button(QDialogButtonBox.StandardButton.Ok);self.ok.setText('下一步：核对签发与输出范围');self.ok.setAutoDefault(False);self.ok.setDefault(False);buttons.button(QDialogButtonBox.StandardButton.Cancel).setDefault(True);buttons.button(QDialogButtonBox.StandardButton.Cancel).setText('取消');buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons);self.table.itemChanged.connect(self.update_count);self.update_count()
     def warehouses(self):
         values={}
         for s,w,c,valid in self.items:

@@ -47,7 +47,7 @@ class ParameterDialog(QDialog):
                 table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
                 for w in table.findChildren(QDoubleSpinBox)+table.findChildren(QComboBox):w.setEnabled(False)
     def is_edited(self):
-        try:return self.value()!=self.config
+        try:return self.value()!=self.editor_baseline
         except ValueError:return True
     def reject(self):
         from interaction_ui import confirm
@@ -83,7 +83,7 @@ class ParameterDialog(QDialog):
             self.warehouses.setItem(i,0,QTableWidgetItem(wh))
             for j,value in enumerate(values,1):self.warehouses.setCellWidget(i,j,self.spin(max(value,0),365))
         self.exception.setChecked(config['exception']);self.note.setText(f"来源：{self.preset['name']} v{self.preset['version']}。分类映射空白行不保存。")
-        self.param_table.setCurrentCell(0,0)
+        self.param_table.setCurrentCell(0,0);self.editor_baseline=copy.deepcopy(self.value())
     def weight_changed(self):
         for i in range(self.weight_table.rowCount()):
             if self.weight_table.cellWidget(i,2) and self.weight_table.cellWidget(i,3) and self.weight_table.item(i,4):self.weight_table.item(i,4).setText(f"{1-self.weight_table.cellWidget(i,2).value()-self.weight_table.cellWidget(i,3).value():.8g}")
@@ -120,15 +120,15 @@ class ParameterDialog(QDialog):
         except Exception as exc:QMessageBox.warning(self,'未保存',str(exc));return
         self.fill(c);self.note.setText(f"已保存 {self.preset['name']} v{self.preset['version']}；未自动应用到其他门店。")
     def finish(self,action):
-        try:self.config=self.value()
+        try:edited=self.value()
         except ValueError as exc:QMessageBox.warning(self,'参数需调整',str(exc));return
         if self.store_configs:
             from interaction_rules import configuration_changes
             from interaction_ui import review_rows
-            rows=configuration_changes(self.store_configs,self.config)
+            rows=configuration_changes(self.store_configs,edited)
             target='应用并保存为门店默认' if action=='default' else '仅应用到本次门店'
             if not review_rows(self,'逐店核对完整参数变化',['门店','参数','原值','新值'],rows,f'{len(self.store_configs)} 家门店；共 {len(rows)} 项变化。预算和主从仓不变。'+('同时保存门店默认；每日草稿需另存。' if action=='default' else '不保存门店默认；每日草稿需另存。'),target):return
-        self.action=action;self.accept()
+        self.config=edited;self.action=action;self.accept()
     def try_trial(self,callback):
         try:c=self.value();callback(c,self)
         except ValueError as exc:QMessageBox.warning(self,'无法试算',str(exc))

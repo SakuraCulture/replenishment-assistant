@@ -85,7 +85,7 @@ class ArchiveBatchActions:
         for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发建议','signed')]:
             b=button(title,lambda checked=False,k=kind:self.export_archive_batch(k));row.addWidget(b);self.archive_export_buttons.append(b)
         layout.addLayout(row)
-        extras=QHBoxLayout();self.reference_btn=button('导出商品资料核对表（加工）',lambda:self.export_archive_batch('reference'));extras.addWidget(self.reference_btn);extras.addStretch();self.trash_btn=button('移入回收站',lambda:self.change_archive_visibility(True));self.restore_btn=button('恢复归档',lambda:self.change_archive_visibility(False));extras.addWidget(self.trash_btn);extras.addWidget(self.restore_btn);layout.addLayout(extras)
+        extras=QHBoxLayout();self.reference_btn=button('导出商品资料核对表（加工）',lambda:self.export_archive_batch('reference'));extras.addWidget(self.reference_btn);extras.addStretch();self.trash_btn=button('移入回收站',lambda:self.change_archive_visibility(True));self.restore_btn=button('恢复归档',lambda:self.change_archive_visibility(False));self.restore_btn.hide();extras.addWidget(self.trash_btn);extras.addWidget(self.restore_btn);layout.addLayout(extras)
         self.archive_selection_note=label('已选 0 张仓单','muted');layout.addWidget(self.archive_selection_note)
         row=QHBoxLayout()
         for title,action in [('勾选本页',lambda:self.check_archive(self.archive_orders)),('勾选全部查询结果',lambda:self.check_archive([h for h,m in zip(self.archive_all,self.archive_matches) if m])),('清空全部勾选',self.clear_archive_selection),('已选明细',self.show_archive_selection)]:row.addWidget(button(title,action))

@@ -327,7 +327,9 @@ class BatchWindow(WarehouseUi,SessionWindow):
         s=self.overview_codes[row]
         if s not in self.results:
             self.status.setText(self.states[s]['error'] or '该店尚无结果，请先计算。');return
-        self.current_store=s;self.result=self.results[s];self.dirty=self.states[s]['state']!='已完成';self.set_rows(self.result['rows'],True)
+        self.current_store=s
+        if hasattr(self,'detail_new_btn'):self.detail_new_btn.setText('为 '+self.states[s]['name']+' 安排新品')
+        self.result=self.results[s];self.dirty=self.states[s]['state']!='已完成';self.set_rows(self.result['rows'],True)
         if self.dirty:self.result_caption.setText(self.result['store_name']+' · 上次结果已过期，请重算')
         modes={5:'必卖商品',7:'预算未满足',9:'最低持有缺口',10:'地采商品'}
         if column==11 and any(semantics.inbound_risk(d) for d in self.result['rows']):modes[11]='在途衔接风险'

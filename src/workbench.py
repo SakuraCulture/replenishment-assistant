@@ -128,12 +128,12 @@ class Workbench(ParameterUi,BatchWindow):
         except Cancelled:self.status.setText('已取消保存，原记录保留。');return False
         except Exception as exc:self.failed('作业未完成保存，请在作业记录核对状态：'+str(exc));return False
         self.saved_time=saved['saved'];self.job_dirty=False;self.refresh_job_label();self.status.setText('已保存 '+self.job_day+' 的完整作业。');return True
-    def leave_current(self):
+    def leave_current(self,next_action='继续当前操作'):
         if not self.job_dirty:return True
-        box=QMessageBox(self);box.setWindowTitle('有未保存的作业变更');box.setText('保存门店默认不等于保存作业。是否保存当前作业后继续？');save=box.addButton('保存后继续',QMessageBox.ButtonRole.AcceptRole);discard=box.addButton('放弃本次变更',QMessageBox.ButtonRole.DestructiveRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);box.setDefaultButton(cancel);box.exec()
+        box=QMessageBox(self);box.setWindowTitle('有未保存的作业变更');box.setText('保存门店默认不等于保存作业。是否保存当前作业后继续？');save=box.addButton('保存草稿后'+next_action,QMessageBox.ButtonRole.AcceptRole);discard=box.addButton('放弃本次变更',QMessageBox.ButtonRole.DestructiveRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);box.setDefaultButton(cancel);box.exec()
         return self.save_current() if box.clickedButton() is save else box.clickedButton() is discard
     def new_job(self):
-        if self.worker or not self.leave_current():return
+        if self.worker or not self.leave_current('新建今日草稿'):return
         self.reset_job()
     def reset_job(self):
         self._hydrating=True;self.initializing=True
@@ -202,5 +202,5 @@ class Workbench(ParameterUi,BatchWindow):
         if pending is not None and not pending._completed:
             self.closing=True;pending.reject();event.ignore();return
         if self.worker:super().closeEvent(event);return
-        if self._discard_close or self.leave_current():event.accept()
+        if self._discard_close or self.leave_current('关闭'):event.accept()
         else:self.closing=False;event.ignore()

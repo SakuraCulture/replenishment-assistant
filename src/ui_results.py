@@ -98,6 +98,7 @@ class ResultsView:
         if hasattr(self,'_pending_sort'):
             self.proxy.sort(*self._pending_sort);del self._pending_sort
         rows=self.visible_rows()
+        if hasattr(self,'sections'):self.export_filtered.setText(f'导出筛选内部明细（{len(rows)}行）');self.export_all.setToolTip('当前门店完整内部报告；不采用页面的仓、分类或商品筛选')
         if len(rows)<500:self.set_filtered_summary(semantics.summarize(rows))
         else:
             self.filtered_caption.setText(f'当前筛选 {len(rows):,} 行 · 统计中…');self.summary_pending=(self.filter_generation,rows);self.start_filtered_summary()

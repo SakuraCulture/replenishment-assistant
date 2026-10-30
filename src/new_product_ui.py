@@ -106,7 +106,7 @@ class NewProductDialog(QDialog):
         self.table=QTableView();self.table.setModel(self.model);self.table.setEditTriggers(QTableView.EditTrigger.DoubleClicked|QTableView.EditTrigger.EditKeyPressed);self.table.setItemDelegateForColumn(8,QuantityEditor(self));v.addWidget(self.table,1)
         for j,width in enumerate([45,160,130,42,65,72,65,66,95,80,260]):self.table.setColumnWidth(j,width)
         self.note=label('','muted');v.addWidget(self.note)
-        row=QHBoxLayout();row.addWidget(button('选中当前筛选可选商品',lambda:self.bulk(True)));row.addWidget(button('清空当前筛选选择',lambda:self.bulk(False)));row.addWidget(button('清空全店选择',self.clear_all));row.addStretch();self.preview_btn=button('预览预算变化',self.accept,True);row.addWidget(self.preview_btn);row.addWidget(button('取消',self.reject));v.addLayout(row)
+        row=QHBoxLayout();row.addWidget(button('选中当前筛选可选商品',lambda:self.bulk(True)));row.addWidget(button('清空当前筛选选择',lambda:self.bulk(False)));row.addStretch();self.clear_btn=button('清空全店选择',self.clear_all);self.clear_btn.setStyleSheet('color:#A52A2A;');row.addWidget(self.clear_btn);self.undo_selection=None;self.undo_btn=button('撤销上次批量选择',self.undo_bulk);self.undo_btn.setEnabled(False);row.addWidget(self.undo_btn);self.preview_btn=button('预览预算变化',self.accept,True);row.addWidget(self.preview_btn);row.addWidget(button('取消',self.reject));v.addLayout(row)
         self.filter_timer=QTimer(self);self.filter_timer.setSingleShot(True);self.filter_timer.setInterval(275);self.filter_timer.timeout.connect(self.refresh)
         self.search.textChanged.connect(lambda _:self.filter_timer.start());self.search.returnPressed.connect(self.refresh)
         for w in [self.scope,self.warehouse,self.category]:w.currentTextChanged.connect(self.refresh)
@@ -122,6 +122,7 @@ class NewProductDialog(QDialog):
             if visible:indices.append(i)
             if chosen:count+=1;hidden+=not visible;total+=self.model.cost(i) or 0
         self.model.filter(indices)
+        self.clear_btn.setText(f'清空全店选择（{count}款）')
         self.note.setText(f'全店已选 {count} 款 · 首铺候选 ¥{total:,.2f} · 筛选外已选 {hidden} 款。新品与动销共同分配总预算；必卖新品优先于普通动销。')
 
     def bulk(self,on):
@@ -131,11 +132,17 @@ class NewProductDialog(QDialog):
         self.change_selection(indices,on)
 
     def change_selection(self,indices,on):
+        self.undo_selection=list(self.model.selected);self.undo_btn.setEnabled(True)
         self.model.batching=True
         try:
             for i in indices:self.widgets[i][0].setChecked(on)
         finally:self.model.batching=False
         self.refresh()
+        if self.model.rowCount():self.model.dataChanged.emit(self.model.index(0,0),self.model.index(self.model.rowCount()-1,0))
+
+    def undo_bulk(self):
+        if self.undo_selection is None:return
+        self.model.selected[:]=self.undo_selection;self.undo_selection=None;self.undo_btn.setEnabled(False);self.refresh()
         if self.model.rowCount():self.model.dataChanged.emit(self.model.index(0,0),self.model.index(self.model.rowCount()-1,0))
 
     def clear_all(self):

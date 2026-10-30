@@ -47,7 +47,7 @@ class FileCard(QFrame):
         self.filename=label('拖入 .xlsx 文件，或点击下方选择','muted');self.filename.setMinimumHeight(46);v.addWidget(self.filename)
         self.pick=button('选择 Excel 文件',self.choose);v.addWidget(self.pick,0,Qt.AlignmentFlag.AlignLeft)
         from import_ui import download
-        v.addWidget(button('下载最低标准模板',lambda:download(self,'legacy' if '资料' in title else 'sales')))
+        v.addWidget(button('下载商品资料模板' if '资料' in title else '下载补货模板',lambda:download(self,'legacy' if '资料' in title else 'sales')))
     def choose(self):
         p,_=QFileDialog.getOpenFileName(self,'选择Excel文件',str(Path(self.path).parent) if self.path else '', 'Excel 工作簿 (*.xlsx)')
         if p:self.set_path(p)
@@ -63,11 +63,11 @@ class SalesFiles(QFrame):
     def __init__(self):
         super().__init__();self.paths=[];self.setAcceptDrops(True);self.setObjectName('card')
         v=QVBoxLayout(self);v.addWidget(label('补货建议 · 支持多文件、多门店','section'))
-        v.addWidget(label('将一个或多个 .xlsx 拖到这里；自动按门店编码归集，不叠加重复库存。','muted'))
+        v.addWidget(label('将一个或多个 .xlsx 拖到这里；自动按门店编码归集，不叠加重复库存。移出列表不会删除磁盘原文件。','muted'))
         self.list=QListWidget();self.list.setMinimumHeight(120);self.list.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection);v.addWidget(self.list)
-        row=QHBoxLayout();row.addWidget(button('添加 Excel',self.choose));
+        row=QHBoxLayout();row.addWidget(button('添加补货文件',self.choose));
         from import_ui import download
-        row.addWidget(button('下载最低标准模板',lambda:download(self,'sales')));row.addWidget(button('移除选中文件',self.remove));row.addStretch();v.addLayout(row)
+        row.addWidget(button('下载补货模板',lambda:download(self,'sales')));row.addWidget(button('移出本次文件列表',self.remove));row.addStretch();v.addLayout(row)
     def choose(self):
         files,_=QFileDialog.getOpenFileNames(self,'添加补货建议','','Excel (*.xlsx)');self.add_paths(files)
     def add_paths(self,files):

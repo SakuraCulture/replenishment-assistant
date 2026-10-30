@@ -35,7 +35,7 @@ def exercise(win,out,checks,shot,wait):
         shot(win,'batch-archive-toolbar.png')
         for kind,mode,expected in [('signed',0,4),('signed',1,2),('calculation',1,2),('original',1,2),('reference',1,2)]:
             state.update(kind=kind,mode=mode,preview=False);before=set(folder.iterdir())
-            win.export_archive_batch('original' if kind=='reference' else kind)
+            win.export_archive_batch(kind)
             if errors:raise AssertionError(errors)
             added=list(set(folder.iterdir())-before)
             if len(added)!=1 or not state['preview']:raise AssertionError('export task/preview missing '+kind)

@@ -14,7 +14,7 @@ def download(parent,kind):
 class ImportDialog(QDialog):
     def __init__(self,parent,kind,title=None,multiple=False):
         super().__init__(parent);self.kind=kind;self.multiple=multiple;self.paths=[];self.extensions=('.xlsx','.csv','.json') if kind=='priority' else ('.xlsx',);self.setWindowTitle(title or '导入'+import_templates.TEMPLATES[kind][0]);self.setAcceptDrops(True);self.resize(650,330)
-        v=QVBoxLayout(self);v.addWidget(label('拖入文件，或点击选择。读取校验后再进入后续核对；原文件不修改。','section'));self.list=QListWidget();v.addWidget(self.list);row=QHBoxLayout();row.addWidget(button('选择文件',self.choose));row.addWidget(button('下载最低标准模板',lambda:download(self,kind)));v.addLayout(row);row=QHBoxLayout();self.go=button('读取并校验',self.accept,True);self.go.setEnabled(False);row.addWidget(self.go);row.addWidget(button('取消',self.reject));v.addLayout(row)
+        v=QVBoxLayout(self);v.addWidget(label('拖入文件，或点击选择。读取校验后再进入后续核对；原文件不修改。','section'));self.list=QListWidget();v.addWidget(self.list);row=QHBoxLayout();row.addWidget(button('选择文件',self.choose));row.addWidget(button('下载'+import_templates.TEMPLATES[kind][0]+'模板',lambda:download(self,kind)));v.addLayout(row);row=QHBoxLayout();self.go=button('读取并校验',self.accept,True);self.go.setEnabled(False);row.addWidget(self.go);row.addWidget(button('取消',self.reject));v.addLayout(row)
     def set_paths(self,paths):
         if not paths or (not self.multiple and len(paths)!=1) or any(Path(p).suffix.lower() not in self.extensions for p in paths):return
         self.paths=list(dict.fromkeys(str(Path(p).resolve()) for p in paths));self.list.clear();self.list.addItems(self.paths);self.go.setEnabled(True)
