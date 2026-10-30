@@ -51,6 +51,7 @@ class ArchiveDialog(QDialog):
     def ready(self,view):
         if self.disposed:return
         self.selected=view['head'];s=view['summary'];self.note.setText(f"确认 {self.selected['saved']} · 签发 ¥{s['amount']:,.2f} · {s['positive']} 款 · {self.selected.get('warehouse','')} · {'回收站（可查看，恢复后导出）' if self.selected.get('deleted') else '原签发只读；回传独立保存'}")
+        self.selected['name']=self.record.get('name',self.record['store'])
         self.model.replace(view);self.filter();self.export_btn.setEnabled(not self.selected.get('deleted'));self.archive_export_btn.setEnabled(not self.selected.get('deleted'));self.audit_btn.setEnabled(True)
         if self.model.rowCount():self.table.selectRow(0)
         self.audit_btn.setText('查看参数 / 所选商品依据（可双击商品）')

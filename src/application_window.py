@@ -118,7 +118,7 @@ class ApplicationWindow(Workbench):
         if self.closing:return
         self.archive_page=0;self.archive_note.setText('正在读取归档摘要 / 商品索引…（可继续使用工作页）')
         self.home_status.setText('归档摘要加载中；工作区可继续使用。')
-        self.history_reader.request({'kind':'list','search':self.archive_search.text(),'day':self.archive_day.currentData() or '', 'store':self.archive_store.currentData() or '', 'warehouse':self.archive_warehouse.currentText() if self.archive_warehouse.currentIndex() else '', 'trash':bool(self.archive_trash.currentIndex())},self.archive_ready,self.archive_failed,
+        self.history_reader.request({'kind':'list','search':self.archive_search.text(),'day':self.archive_day.currentData() or '', 'store':self.archive_store.currentData() or '', 'warehouse':self.archive_warehouse.currentText() if self.archive_warehouse.currentIndex() else '', 'trash':self.sections.currentIndex()==2 and bool(self.archive_trash.currentIndex())},self.archive_ready,self.archive_failed,
             lambda p:self.archive_note.setText(f"正在读取归档 {p['done']} / {p['total']}；尚未完成的查询不代表无结果"))
 
     def archive_failed(self,message):

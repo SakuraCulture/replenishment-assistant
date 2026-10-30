@@ -70,3 +70,6 @@ def exercise(win,out,checks,shot,wait,phase):
     shot(trash,'archive-recycle-readonly.png');trash.reject();trash.deleteLater()
     if wr.dumps(win.orders.get(h['day'],h['store'])['payload'])!=before:raise AssertionError('signed payload changed')
     checks.append('delete defaults to cancel; confirmed one-warehouse recycle, immutable signed data, export disabled until restored')
+    win.show_section(0);wait(lambda:win.history_reader.active is None)
+    if len(win.archive_all)!=3 or any(r.get('deleted') for r in win.archive_all):raise AssertionError('home inherited recycle-bin filter')
+    checks.append('home always counts active warehouse orders even after recycle-bin browsing')
