@@ -43,9 +43,11 @@ def serve(connection,path,cancel):
                     with closing(ro.connect()) as db:row=db.execute('SELECT revision,digest,saved,summary FROM jobs WHERE day=?',(payload['day'],)).fetchone()
                     old={'revision':row[0],'digest':row[1],'saved':row[2],'summary':wr.loads(row[3])} if row else None
                     same=bool(old and old['digest']==digest)
-                    if old and not same:
-                        with stage('读取原作业以核对覆盖差异',progress):old=compact_previous(ro.get_job(payload['day']))
+                    # The immutable encoded snapshot is sufficient from here.
+                    # Drop this decoded tree before loading a second large job.
                     payload=None;arguments=None
+                    if old and not same:
+                        with stage('读取原作业以核对覆盖差异',progress):old=compact_previous(ro.get_job(save_day))
                     result={'old':old,'same':same}
                 elif op=='save':
                     if encoded_job is None:raise ValueError('缺少已核对的作业快照')
