@@ -185,6 +185,12 @@ def calculate(inputs: dict, rules: Rules | None = None) -> dict:
     h, i, j, k, l, n, o, v = [d[c] for c in "H I J K L N O V".split()]
     nvalid = blank(n) or number(n)
     n0 = max(n or 0, 0) if nvalid else None
+    # A stockout lasting beyond the full sales window cannot coexist with monthly
+    # sales. Discard only that input for forecasting; retain raw N for auditing.
+    discarded_stockout = number(n) and n > 30 and number(j) and j > 0
+    if discarded_stockout:
+        n0 = 0
+        d["缺货天数处理"] = "原缺货天数>30且月销>0，缺货天数无效；有效值按0，销量沿用原预测公式"
     s14 = xround(h * 14) if number(h) else None
     d["14天累计销量（重组）"] = s14
     d["AE"] = xround(1-d["AC"]-d["AD"], 10) if number(d["AC"]) and number(d["AD"]) else PENDING
@@ -375,6 +381,8 @@ def focus(d: dict, p: Rules) -> str:
     q, br, bq, step, v, j, n = [d[c] for c in "AS BR BQ BD V J N".split()]
     noncentral = d["S"]=="/" and v=="/"
     out = []
+    if d.get("缺货天数处理"):
+        out.append(d["缺货天数处理"])
     if j==0 and number(n) and 0<n<p.extreme_days and number(bq) and bq>0:
         out.append("零月销缺货恢复")
     if text(q):
