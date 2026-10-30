@@ -1,0 +1,195 @@
+{
+  "passed": true,
+  "checks": [
+    "encoding and retry",
+    "backup and retry",
+    "before_begin and retry",
+    "after_lock and retry",
+    "before_commit and retry",
+    "after_boundary and retry",
+    "waiting write lock cancels and leaves all business tables empty",
+    "same 12 yuan preview shows moving 5→0, new_must 0→6, new_anomaly 1→0"
+  ],
+  "side_effects": [
+    {
+      "case": "encoding",
+      "backups": [
+        "workbench.before-chunks-3cd31914b920bf06f8ad36983b5e544c.sqlite3",
+        "workbench.before-normal-orders.436bab39d50f4150aef3e2a3a058a645.sqlite3"
+      ],
+      "business_before_retry": {
+        "jobs": 0,
+        "normal_orders": 0,
+        "normal_revisions": 0,
+        "normal_work_revisions": 0,
+        "normal_events": 0
+      }
+    },
+    {
+      "case": "backup",
+      "backups": [
+        "workbench.before-chunks-29c9c53dcfdff27275183976820b8db2.sqlite3",
+        "workbench.before-chunks-b0cc03461498737edee7805178c6a0c8.sqlite3",
+        "workbench.before-normal-orders.4ac152631c244b18acf2fa2ee9dbd51b.sqlite3"
+      ],
+      "business_before_retry": {
+        "jobs": 0,
+        "normal_orders": 0,
+        "normal_revisions": 0,
+        "normal_work_revisions": 0,
+        "normal_events": 0
+      }
+    },
+    {
+      "case": "before_begin",
+      "backups": [
+        "workbench.before-chunks-b2a213604ea5b4a87406a839d623ace2.sqlite3",
+        "workbench.before-normal-orders.0ae2dcc9541e4150b486128094ba7722.sqlite3"
+      ],
+      "business_before_retry": {
+        "jobs": 0,
+        "normal_orders": 0,
+        "normal_revisions": 0,
+        "normal_work_revisions": 0,
+        "normal_events": 0
+      }
+    },
+    {
+      "case": "after_lock",
+      "backups": [
+        "workbench.before-chunks-a27b8886e9f0964bc220a678ba7b5d6c.sqlite3",
+        "workbench.before-normal-orders.5a130e73bdcc48d481f28bfb44a67c10.sqlite3"
+      ],
+      "business_before_retry": {
+        "jobs": 0,
+        "normal_orders": 0,
+        "normal_revisions": 0,
+        "normal_work_revisions": 0,
+        "normal_events": 0
+      }
+    },
+    {
+      "case": "before_commit",
+      "backups": [
+        "workbench.before-chunks-0179a0ae10ad99f74c0bbdece84d12fb.sqlite3",
+        "workbench.before-normal-orders.97143e98bf2744a5a11bbb103d06710c.sqlite3"
+      ],
+      "business_before_retry": {
+        "jobs": 0,
+        "normal_orders": 0,
+        "normal_revisions": 0,
+        "normal_work_revisions": 0,
+        "normal_events": 0
+      }
+    },
+    {
+      "case": "after_boundary",
+      "backups": [
+        "workbench.before-chunks-bcb1ca4110967b1c5d3327a781ae5d1a.sqlite3",
+        "workbench.before-normal-orders.ee2da08ca15249b5ad23ef14b9386dd8.sqlite3"
+      ],
+      "business_before_retry": {
+        "jobs": 1,
+        "normal_orders": 2,
+        "normal_revisions": 2,
+        "normal_work_revisions": 1,
+        "normal_events": 2
+      }
+    }
+  ],
+  "cancellation_boundary": "last checkpoint immediately before CommitProgress(True) and db.commit; later cancel retains commit",
+  "reason_cases": [
+    {
+      "case": "ordinary 78 above floor 6",
+      "reason": "动销补货",
+      "AR": 78,
+      "BQ": 6,
+      "AS": 78
+    },
+    {
+      "case": "equal no uplift 1",
+      "reason": "动销补货",
+      "AR": 1,
+      "BQ": 1,
+      "AS": 1
+    },
+    {
+      "case": "floor uplift 1",
+      "reason": "最低持有",
+      "AR": 0,
+      "BQ": 1,
+      "AS": 1
+    },
+    {
+      "case": "zero sales restore 1",
+      "reason": "零销恢复",
+      "AR": 0,
+      "BQ": 1,
+      "AS": 1
+    },
+    {
+      "case": "equal no uplift 6",
+      "reason": "动销补货",
+      "AR": 6,
+      "BQ": 6,
+      "AS": 6
+    },
+    {
+      "case": "floor uplift 6",
+      "reason": "最低持有",
+      "AR": 0,
+      "BQ": 6,
+      "AS": 6
+    },
+    {
+      "case": "zero sales restore 6",
+      "reason": "零销恢复",
+      "AR": 0,
+      "BQ": 6,
+      "AS": 6
+    },
+    {
+      "case": "extreme",
+      "reason": "极端缺货恢复",
+      "AR": 78,
+      "BQ": 6,
+      "AS": 78
+    },
+    {
+      "case": "one box",
+      "reason": "一箱恢复",
+      "AR": 78,
+      "BQ": 6,
+      "AS": 78
+    },
+    {
+      "case": "new",
+      "reason": "新品首铺",
+      "AR": 78,
+      "BQ": 6,
+      "AS": 78
+    },
+    {
+      "case": "budget partial",
+      "reason": "预算限量",
+      "AR": 78,
+      "BQ": 6,
+      "AS": 78
+    },
+    {
+      "case": "budget deferred",
+      "reason": "预算暂缓",
+      "AR": 78,
+      "BQ": 6,
+      "AS": 78
+    },
+    {
+      "case": "legacy incomplete",
+      "reason": "补货建议",
+      "AR": 78,
+      "BQ": 6,
+      "AS": 78
+    }
+  ],
+  "allowed_persisted_calculation_field_changes": []
+}

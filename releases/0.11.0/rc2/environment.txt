@@ -1,0 +1,3 @@
+Environment: PASS
+Python: D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\.venv\Scripts\python.exe
+Locked packages: 12

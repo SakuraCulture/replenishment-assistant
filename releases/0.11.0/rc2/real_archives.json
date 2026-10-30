@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "real_None_True",
+      "warehouse": "河北仓",
+      "rows": 4452,
+      "verified_input_intermediate_audit_cells": 472346,
+      "signed_rows": 1419,
+      "seconds": 13.090012400003616,
+      "differences": 0,
+      "sha256": "7f23a0fe0ca89ee241f9da8d1ff7891bbde9dedb14a4a1ac0d670c6b33ba9c14"
+    },
+    {
+      "case": "real_None_True",
+      "warehouse": "山东仓",
+      "rows": 4631,
+      "verified_input_intermediate_audit_cells": 491140,
+      "signed_rows": 2470,
+      "seconds": 17.08081900002435,
+      "differences": 0,
+      "sha256": "a5230ccf79831c660924e7c02dcd5368eec2efd75f88d2479543984e90334539"
+    },
+    {
+      "case": "real_3000_True",
+      "warehouse": "河北仓",
+      "rows": 4452,
+      "verified_input_intermediate_audit_cells": 499353,
+      "signed_rows": 1196,
+      "seconds": 13.786523100046907,
+      "differences": 0,
+      "sha256": "c1f830212ce8bda97cca09f0a6dbea15251b8deb6e4d16b9c7060f0054e6812b"
+    },
+    {
+      "case": "real_3000_True",
+      "warehouse": "山东仓",
+      "rows": 4631,
+      "verified_input_intermediate_audit_cells": 519067,
+      "signed_rows": 2351,
+      "seconds": 16.79733309999574,
+      "differences": 0,
+      "sha256": "6ac5c43a41c3ddaf1fb720769281fef11c8f3bd2cf275e590632abb196e174ec"
+    }
+  ],
+  "scope": "all existing row leaves incl empty structures, types, exact row order, derived execution and signed group rows; archived source absent explicitly",
+  "numeric_excel_encoding": "openpyxl safe_string, not widened float tolerance",
+  "snapshot_changes": 0
+}

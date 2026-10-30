@@ -20,17 +20,20 @@ def main():
     core=['model.py','allocation.py','one_box_exception.py','default_config.json','default_must_sell.json','engine.py','input_adapter.py','batch_service.py','warehouse_catalog.py','new_products.py','result_semantics.py','parameter_schema.py','normal_exports.py','storage_chunks.py','work_repository.py']
     hashes={n:{'baseline':sha(Q/'baseline/src'/n),'candidate':sha(ROOT/'src'/n)} for n in core}
     if any(h['baseline']!=h['candidate'] for h in hashes.values()):raise ValueError('Business module changed')
-    REL.mkdir(parents=True,exist_ok=False)
+    if (REL/'release_report.json').exists():raise ValueError('Release already sealed; do not overwrite')
+    REL.mkdir(parents=True,exist_ok=True)
     for name,p in reports.items():shutil.copy2(p,REL/name)
     for name in ['baseline.json','units.txt','portable_tests.txt','portable_optimized.txt','py310_tests.txt','py310_optimized.txt','environment.txt']:shutil.copy2(Q/name,REL/name)
     for name in ['archive-warehouse-list.png','archive-calculation-form.png','archive-recycle-readonly.png','archive-restored.png']:shutil.copy2(Q/'exe_rc2'/name,REL/name)
-    artifacts={str(p.relative_to(APP)):sha(p) for p in APP.rglob('*') if p.is_file()}
+    artifacts={p.relative_to(APP).as_posix():sha(p) for p in APP.rglob('*') if p.is_file()}
     (REL/'files.json').write_text(json.dumps(artifacts,ensure_ascii=False,indent=2),encoding='utf-8')
     archive=DIST/'补货助手_0.11.0_rc2.zip'
-    with zipfile.ZipFile(archive,'x',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
-        for rel in artifacts:z.write(APP/rel,'补货助手/'+rel)
+    if not archive.exists():
+        with zipfile.ZipFile(archive,'x',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+            for rel in artifacts:z.write(APP/rel,'补货助手/'+rel)
     with zipfile.ZipFile(archive) as z:
         if z.testzip() is not None:raise ValueError('ZIP CRC failed')
+        if set(z.namelist())!={'补货助手/'+rel for rel in artifacts}:raise ValueError('ZIP file set differs')
         if any(hashlib.sha256(z.read('补货助手/'+rel)).hexdigest()!=h for rel,h in artifacts.items()):raise ValueError('ZIP content hash differs')
     result={'passed':True,'baseline_commit':'dd76b57cc00a038b0fb3d15973e68fd1c712c137','build_commit':head,'version':'0.11.0','model_version':'0.3.3-rules','exe_sha256':sha(APP/'补货助手.exe'),'zip_sha256':sha(archive),'file_count':len(artifacts),'protected_count':len(protected),'protected_changes':changes,'unchanged_business_files':hashes,'allowed_changes':['warehouse history projection and child identity','three-sheet archive export only','archive_visibility table and recycle/restore audit events','reject signing/merchant export/replies to recycled child until restore','Python type contracts and Qt-free test imports'],'business_snapshot_rewrite':False,'exe_tests':{'runs':len(exe['runs']),'synthetic_ui':True,'real_business_regression_separate':True}}
     (REL/'release_report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
