@@ -40,13 +40,13 @@ class ParameterDialog(QDialog):
     def spin(self,value,maximum=1000000000):
         w=NumberInput();w.setDecimals(8);w.setRange(0,maximum);w.setSingleStep(.1);w.setValue(value);return w
     def refresh_effective(self):
-        from parameter_view import comparison
+        from parameter_view import comparison,display_path
         try:rows=comparison(schema.standard(),self.preset.get('base_config',self.preset['config']),self.initial_config,self.value())
         except ValueError as exc:self.note.setText('当前参数无效，不能应用：'+str(exc));self.effective.setRowCount(0);return
         self.effective.setRowCount(len(rows))
         for i,row in enumerate(rows):
             for j,value in enumerate(row):
-                item=QTableWidgetItem(str(value));item.setToolTip(str(value));self.effective.setItem(i,j,item)
+                item=QTableWidgetItem(display_path(value) if j==0 else str(value));item.setToolTip(str(value));item.setData(Qt.ItemDataRole.UserRole,value);self.effective.setItem(i,j,item)
         self.note.setText('按当前值比较覆盖层，不推断历史操作人。各仓周期优先；分类权重在主从仓归属后重新应用。未点击应用不会修改门店。')
     def fill(self,config):
         self.config=copy.deepcopy(config);base=self.preset.get('base_config',self.preset['config']);self.param_table.setRowCount(len(schema.HELP))

@@ -1,12 +1,12 @@
 """Seal a separate 0.9.2 delivery only with current, actual EXE and frozen evidence."""
 import hashlib,json,shutil,subprocess,zipfile
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1];Q=ROOT/'qa/verified_092';DIST=ROOT/'交付_0.9.2_rc1';APP=DIST/'补货助手';REL=ROOT/'releases/0.9.2/rc1'
+ROOT=Path(__file__).resolve().parents[1];Q=ROOT/'qa/verified_092';DIST=ROOT/'交付_0.9.2_rc2';APP=DIST/'补货助手';REL=ROOT/'releases/0.9.2/rc2'
 sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
 load=lambda p:json.loads(Path(p).read_text(encoding='utf-8-sig'))
 head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip();info=load(APP/'_internal/build_info.json')
 if info['source_commit']!=head or subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip():raise ValueError('seal requires clean build commit')
-paths={'core':'real_core.json','equivalence':'overrun_equivalence.json','technical_stage':'equivalence_pre_overrun.json','performance':'performance.json','batch':'batch/batch_report.json','cancellation':'fixes_final/report.json','business':'business_final/report.json','races':'races_final/report.json','intake':'intake_controls/controls.json','exe_business':'exe_business/business_ui_report.json','exe_history':'exe_inbound/inbound_ui_report.json'}
+paths={'core':'real_core.json','equivalence':'overrun_equivalence.json','technical_stage':'equivalence_pre_overrun.json','performance':'performance.json','batch':'batch/batch_report.json','cancellation':'fixes_final/report.json','business':'business_final/report.json','races':'races_final/report.json','intake':'intake_controls/controls.json','exe_business':'exe_business_rc2/business_ui_report.json','exe_history':'exe_inbound_rc2/inbound_ui_report.json'}
 reports={k:load(Q/v) for k,v in paths.items()}
 for k,r in reports.items():
     if not r['passed']:raise ValueError('failed '+k)
@@ -26,7 +26,7 @@ for key,path in paths.items():shutil.copy2(Q/path,REL/(key+'.json'))
 for name in ('units_final092.log','units_optimized092.log','units_clean092.log','clean_pip_check.log','wheel_manifest.json','generated_step_probe.json'):
     shutil.copy2(Q/name,REL/(name+'.txt' if name.endswith('.log') else name))
 performance=reports['performance']['summary'];table='\n'.join(f"|{r['mode']}|{r['variant']}|{r['median_seconds']:.3f}|{r['min_seconds']:.3f}–{r['max_seconds']:.3f}|{r['peak_mib']:.1f}|" for r in performance)
-text=f'''# 0.9.2 rc1 验收交付
+text=f'''# 0.9.2 rc2 验收交付
 
 构建提交 `{head}`，基线 `7dfc00b545b6dac1dd586212fff940e5346e0710`，分支 fix/verified-issues-0.9.2。应用0.9.2/模型0.3.3-rules。保留0.9.1及日常资料，未合并或替换。已推送的是0.9.1分支和标签；0.9.2本地交付。
 
@@ -63,7 +63,7 @@ EXE SHA256 `{eh}`。构建源码与后续发行证据提交分开记录；旧签
 '''
 (REL/'交付报告.md').write_text(text,encoding='utf-8');(APP/'验收与限制.md').write_text(text,encoding='utf-8')
 files={str(p.relative_to(APP)):sha(p) for p in APP.rglob('*') if p.is_file()};(REL/'files.json').write_text(json.dumps(files,ensure_ascii=False,indent=2),encoding='utf-8')
-archive=DIST/'补货助手_0.9.2_rc1.zip'
+archive=DIST/'补货助手_0.9.2_rc2.zip'
 with zipfile.ZipFile(archive,'x',zipfile.ZIP_DEFLATED) as z:
     for p in sorted(APP.rglob('*')):
         if p.is_file():z.write(p,p.relative_to(DIST))

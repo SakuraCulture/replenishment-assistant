@@ -19,7 +19,8 @@ def verify(win,out):
     # HELP order, not arbitrary config ordering.
     import parameter_schema
     i=list(parameter_schema.HELP).index('cap_days');pd.param_table.cellWidget(i,1).setValue(19);pd.tabs.setCurrentWidget(pd.effective)
-    row=next(i for i in range(pd.effective.rowCount()) if pd.effective.item(i,0).text()=='parameters / cap_days')
+    row=next(i for i in range(pd.effective.rowCount()) if pd.effective.item(i,0).data(Qt.ItemDataRole.UserRole)=='parameters / cap_days')
+    assert pd.effective.item(row,0).text()=='模型超参 / 普通库存额度天数'
     assert [pd.effective.item(row,j).text() for j in (1,2,3,4)]==['21','21','20','19.0'];assert pd.effective.item(row,5).text()=='本次编辑'
     assert pd.grab().save(str(out/'08-effective-parameters.png'));pd.reject();pd.deleteLater();checks.append('actual parameter effective comparison, cancel does not apply')
     d=QDialog(win);d.setWindowTitle('QA 批量冲突');v=QVBoxLayout(d);table=QTableWidget(3,3);v.addWidget(table);cs=[{'store':'s','sku':str(i),'variants':[{'path':'A'},{'path':'B'}]} for i in range(3)];combos=[]
