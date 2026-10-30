@@ -42,19 +42,19 @@ def main():
     changed = git('diff', '--name-only', build, head).splitlines()
     assert all(p.startswith(('tools/', 'docs/', 'releases/')) or p in ('README.md', '使用说明.txt') for p in changed), changed
     files = {
-        'equivalence': 'equivalence_final/report.json', 'fixes': 'fixes_complete/report.json',
-        'business': 'business_complete/report.json', 'races': 'races1/report.json',
+        'equivalence': 'equivalence_rc2/report.json', 'fixes': 'fixes_complete/report.json',
+        'business': 'business_rc2/report.json', 'form_quantities': 'form-quantities-final/report.json', 'races': 'races1/report.json',
         'controls': 'io_final/report.json', 'selected_controls': 'selected_final/report.json',
         'normal': 'normal/normal_report.json', 'chunks': 'chunks/report.json',
         'projections': 'projections/report.json', 'structure': 'structure.json',
         'real_exports': 'real_exports2/report.json', 'legacy_exports': 'legacy_exports/report.json',
-        'performance': 'performance_final/report.json',
+        'performance': 'performance_rc2/report.json',
     }
     ui = {
-        'business_ui': 'exe-business/business_ui_report.json', 'fixes_ui': 'exe-fixes/fixes_ui_report.json',
-        'normal_ui': 'exe-normal/normal_ui_report.json', 'delivery_ui': 'exe-delivery/export_ui_report.json',
-        'history_ui': 'exe-history/history_ui_report.json', 'work_io_ui': 'exe-work-io/work_io_report.json',
-        'storage_ui': 'exe-storage/storage_ui_report.json',
+        'business_ui': 'exe-business-rc2/business_ui_report.json', 'fixes_ui': 'exe-fixes-rc2/fixes_ui_report.json',
+        'normal_ui': 'exe-normal-rc2/normal_ui_report.json', 'delivery_ui': 'exe-delivery-rc2/export_ui_report.json',
+        'history_ui': 'exe-history-rc2/history_ui_report.json', 'work_io_ui': 'exe-work-io-rc2/work_io_report.json',
+        'storage_ui': 'exe-storage-rc2/storage_ui_report.json',
     }
     evidence = {}
     exe_hash = sha(dest / '补货助手.exe')
@@ -75,7 +75,7 @@ def main():
     assert evidence['performance']['runs'] == 3
     for kind in ('old', 'new'):
         for i in range(3):
-            run = load(qa / f'performance_final/{kind}-{i}/result.json')
+            run = load(qa / f'performance_rc2/{kind}-{i}/result.json')
             assert run['passed']
             if kind == 'new':
                 assert run['source_hashes'] == actual, 'source drift after performance measurement'
@@ -96,10 +96,10 @@ def main():
     for kind in ('old', 'new'):
         for i in range(3):
             for filename in ('result.json', 'progress.json'):
-                shutil.copy2(qa / f'performance_final/{kind}-{i}/{filename}', report_dir / f'performance-{kind}-{i}-{filename}')
+                shutil.copy2(qa / f'performance_rc2/{kind}-{i}/{filename}', report_dir / f'performance-{kind}-{i}-{filename}')
     screenshots = report_dir / 'screenshots'
     screenshots.mkdir()
-    for path in (qa / 'exe-business').glob('*.png'):
+    for path in (qa / 'exe-business-rc2').glob('*.png'):
         shutil.copy2(path, screenshots / path.name)
     save(report_dir / 'preservation.json', {'passed': True, 'checked_files': len(protected), 'hashes': protected, 'differences': drift})
     save(report_dir / 'source_audit.json', {'passed': True, 'baseline': BASELINE, 'build_commit': build,

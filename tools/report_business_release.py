@@ -13,15 +13,15 @@ def main():
     qa = args.qa.resolve()
     def read(rel):
         return json.loads((qa / rel).read_text(encoding='utf-8-sig'))
-    perf = read('performance_final/report.json')
-    eq = read('equivalence_final/report.json')
+    perf = read('performance_rc2/report.json')
+    eq = read('equivalence_rc2/report.json')
     real = read('real_exports2/report.json')
     legacy = read('legacy_exports/report.json')
     race = read('races1/report.json')
-    history = read('exe-history/history_ui_report.json')
-    work = read('exe-work-io/work_io_report.json')
-    business = read('exe-business/business_ui_report.json')
-    fixes = read('exe-fixes/fixes_ui_report.json')
+    history = read('exe-history-rc2/history_ui_report.json')
+    work = read('exe-work-io-rc2/work_io_report.json')
+    business = read('exe-business-rc2/business_ui_report.json')
+    fixes = read('exe-fixes-rc2/fixes_ui_report.json')
     meta = json.loads((args.delivery / '版本信息.json').read_text(encoding='utf-8-sig'))
     output = qa / '交付报告.md'
     assert not output.exists(), output
@@ -40,7 +40,7 @@ def main():
     for key, values in perf['summary'].items():
         raw.append(f"|{labels[key]}|" + ' / '.join(f'{x:.3f}' for x in values['old']['seconds']) + '|' + ' / '.join(f'{x:.3f}' for x in values['new']['seconds']) + '|')
     whitelist = json.dumps(eq['whitelist'], ensure_ascii=False, indent=2)
-    text = f"""# 补货助手 0.9.0 rc1 试用交付与验收
+    text = f"""# 补货助手 0.9.0 rc2 试用交付与验收
 
 本次已完成三步功能开发及0.8.0三个遗留问题修复。固定基线为`e45b9d08cddbced1bf8566281987431534bbf5b7`，本地分支`fix/business-history-0.9.0`，构建提交`{meta['source_commit']}`。模型仍为`{meta['model_version']}`，仓归属0.5.0，参数/作业逻辑schema 1、物理存储格式2不变。没有合并、推送或替换旧包。
 
@@ -121,6 +121,10 @@ def main():
 
 实际EXE业务表单测试最大Qt计时器间隔{business['max_tick_gap_seconds']:.3f}秒，取消/提交测试{fixes['max_ui_gap_seconds']:.3f}秒；五店历史首次索引{history['initial_list_seconds']:.3f}秒、明细重复打开范围{min(history['detail_times']):.3f}～{max(history['detail_times']):.3f}秒、历史测试最大间隔{history['max_tick_gap_seconds']:.3f}秒。完整作业所有阶段中的最大间隔为{max(v['max_ui_gap_seconds'] for v in work['timings'].values()):.3f}秒，完整数据接收仍会有短暂停顿；进程树采样峰值最高{max(work['peak_tree_mib'].values()):.1f}MiB，不能宣称内存成本已解决。各阶段响应和耗时原始值见`work_io_ui.json`，UI响应不等于操作已经完成。
 
+## 试用前发现并修正的展示问题
+
+rc1最终复核发现普通动销行可能把新品专用的_execution_qty/_execution_amount直接当作最终执行事实，导致空白或预算前数量展示。rc2改为复用现有统一执行口径order_quantity/order_amount，未改任何原快照或模型字段。27个逐商品/合成表单对照及实际EXE普通动销5个/10元展示通过；预算限量新品按分配后2个/4元展示，见`form_quantities.json`和`business_ui.json`。rc1保留为未交付候选，不作为本次试用包。新测试初稿把缺失原AS的执行态也期待为None；核对e45b9d0后确认原口径一直是“待核”，测试据此区分原值未提供与执行态待核，未修改业务实现。
+
 ## 兼容与未纳入事项
 
 - 旧归档未保存的原Excel明确显示“历史原文件未留存”；已有字段快照继续可读，不编造全量历史原表。从旧配置沿用、尚未在新版重新导入的商品资料也可能没有原文件附件；如需后续单据查看原表全部列，请在新版分别重新导入两个仓的资料。新导入原文件只留存一次，库会随新原文件增加；本版不自动清理历史附件。
@@ -140,9 +144,9 @@ def main():
 .venv\\Scripts\\python.exe tools/verify_090_races.py --fixture qa/business_090/normal/payload.json --real-result qa/recheck090/equivalence/new/real_None_True.pklz --output qa/recheck090/races
 .venv\\Scripts\\python.exe tools/verify_090_real_exports.py --baseline qa/business_090/baseline --snapshot qa/business_090/performance1/old-0/settings/workbench.sqlite3 --output qa/recheck090/real-exports
 .venv\\Scripts\\python.exe tools/benchmark_090.py --baseline qa/business_090/baseline --snapshot qa/storage_080/real_current/settings/workbench.sqlite3 --output qa/recheck090/performance --runs 3
-.venv\\Scripts\\python.exe tools/verify_business_exe.py --exe 交付_0.9.0_rc1/补货助手/补货助手.exe --fixture qa/business_090/normal/payload.json --output qa/recheck090/exe-business
-.venv\\Scripts\\python.exe tools/verify_business_exe.py --exe 交付_0.9.0_rc1/补货助手/补货助手.exe --fixture qa/business_090/normal/payload.json --real-result qa/recheck090/equivalence/new/real_None_True.pklz --output qa/recheck090/exe-fixes
-.venv\\Scripts\\python.exe tools/verify_work_io_exe.py --exe 交付_0.9.0_rc1/补货助手/补货助手.exe --snapshot qa/storage_080/real_current/settings/workbench.sqlite3 --output qa/recheck090/exe-work-io
+.venv\\Scripts\\python.exe tools/verify_business_exe.py --exe 交付_0.9.0_rc2/补货助手/补货助手.exe --fixture qa/business_090/normal/payload.json --output qa/recheck090/exe-business
+.venv\\Scripts\\python.exe tools/verify_business_exe.py --exe 交付_0.9.0_rc2/补货助手/补货助手.exe --fixture qa/business_090/normal/payload.json --real-result qa/recheck090/equivalence/new/real_None_True.pklz --output qa/recheck090/exe-fixes
+.venv\\Scripts\\python.exe tools/verify_work_io_exe.py --exe 交付_0.9.0_rc2/补货助手/补货助手.exe --snapshot qa/storage_080/real_current/settings/workbench.sqlite3 --output qa/recheck090/exe-work-io
 ```
 
 本地冻结输入和完整QA目录为`{qa}`；业务输入没有上传Git。发行目录只纳入报告、哈希、截图及可复跑脚本引用。新机器复跑须先取得同一哈希的授权业务输入，不能把合成样本当真实数据替代。

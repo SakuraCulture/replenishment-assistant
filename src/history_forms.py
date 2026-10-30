@@ -43,6 +43,9 @@ def form(repo,order,scope,sku,cancel=None):
         if scope=='商品完整计算依据':data=d
         else:
             data={k:d.get(k) for k in 'A B D E G H I J K L N BA BD V AU AS _base_qty _candidate_qty _execution_qty _execution_amount _budget_gap'.split()}
+            # Execution is budget/status-aware; _execution_* alone is only a
+            # pre-budget first-fill override, absent on ordinary moving goods.
+            data['_execution_qty']=sem.order_quantity(d);data['_execution_amount']=sem.order_amount(d)
             data.update(核心理由=normal_exports.decision(d),当时资料与来源=d.get('_meta'),一箱例外=d.get('_audit'))
     elif scope=='当时商品资料快照':
         parts=work_parts(repo,order,[('catalogs',),('loaded','intake','products_snapshot')]);catalogs=parts.get(('catalogs',),{});data={}
