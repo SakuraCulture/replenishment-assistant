@@ -47,9 +47,12 @@ def main():
                         row=next(it,sentinel)
                         if row is sentinel:raise AssertionError('missing row')
                         if [c.value for c in row[:6]]!=identity:raise AssertionError('wrong order identity')
-                        for k,c in zip(keys,row[6:]):
+                        if len(row)>len(headers):raise AssertionError('extra columns')
+                        for column,k in enumerate(keys,6):
+                            c=row[column] if column<len(row) else None
                             expected=trip(old_row[positions[k]]) if k in positions else (None,'n','General')
-                            if trip(c)!=expected:raise AssertionError((kind,mode,head['number'],k,trip(c),expected))
+                            actual=trip(c) if c is not None else (None,'n','General')
+                            if actual!=expected:raise AssertionError((kind,mode,head['number'],k,actual,expected))
                             count+=1
                         row_count+=1
                     old.close()

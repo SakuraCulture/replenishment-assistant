@@ -13,7 +13,7 @@ def main():
     head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip();build=load(APP/'_internal/build_info.json')
     if build['source_commit']!=head:raise ValueError('Seal at exact build commit before evidence commit')
     if subprocess.check_output(['git','diff','HEAD','--','src','prepare_delivery.py'],cwd=ROOT):raise ValueError('Runtime changed after build')
-    reports={'equivalence.json':Q/'equivalence.json','real_exports.json':Q/'real-exports/report.json','exe.json':Q/'exe-rc2/report.json'}
+    reports={'equivalence.json':Q/'equivalence.json','real_exports.json':Q/'real-exports/report.json','xml_equivalence.json':Q/'real-exports/xml_equivalence.json','exe.json':Q/'exe-rc2/report.json'}
     for name,p in reports.items():
         if not load(p)['passed']:raise ValueError('Failed validation '+name)
     exe=load(reports['exe.json'])

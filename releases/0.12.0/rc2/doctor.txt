@@ -1,0 +1,5 @@
+Environment: PASS
+Python: D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\.venv\Scripts\python.exe
+Locked packages: 12
+Report: D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\qa\dev\runs\20261030-222238-d73b5000\environment.json
+本轮记录：D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\dev\runs\20261030-222238-d73b5000

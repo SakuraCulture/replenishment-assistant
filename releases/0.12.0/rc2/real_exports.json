@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "baseline": "qa\\batch_archive_012\\baseline",
+  "scenarios": [
+    {
+      "kind": "calculation",
+      "mode": "separate",
+      "files": 4,
+      "rows": 18166,
+      "strict_cells": 5695757,
+      "prepare_seconds": 5.891680400003679,
+      "prepare_and_export_seconds": 64.12017130001914,
+      "differences": 0
+    },
+    {
+      "kind": "calculation",
+      "mode": "combined",
+      "files": 2,
+      "rows": 18166,
+      "strict_cells": 5659324,
+      "prepare_seconds": 6.404989600006957,
+      "prepare_and_export_seconds": 65.19136910000816,
+      "differences": 0
+    },
+    {
+      "kind": "signed",
+      "mode": "separate",
+      "files": 4,
+      "rows": 7436,
+      "strict_cells": 171028,
+      "prepare_seconds": 5.814246199966874,
+      "prepare_and_export_seconds": 13.81569799996214,
+      "differences": 0
+    },
+    {
+      "kind": "signed",
+      "mode": "combined",
+      "files": 2,
+      "rows": 7436,
+      "strict_cells": 171028,
+      "prepare_seconds": 5.8959388000075705,
+      "prepare_and_export_seconds": 13.745020399976056,
+      "differences": 0
+    }
+  ],
+  "baseline_four_three_sheet_exports_seconds": 55.45607780001592,
+  "snapshot_db_unchanged": true,
+  "allowed_changes": [
+    "one content type per workbook",
+    "separate or same-warehouse concatenation",
+    "six order identity columns",
+    "union of historical columns with blank absent values",
+    "autofilter and freeze panes"
+  ],
+  "business_value_type_number_format_order_differences": 0,
+  "timing_note": "single-run QA timings, not a controlled speedup benchmark; legacy exports three content types at once"
+}
