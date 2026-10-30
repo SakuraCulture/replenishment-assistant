@@ -1,0 +1,87 @@
+"""Generate the Chinese release report from measured evidence, never estimates."""
+import argparse,json
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+def read(p):return json.loads(p.read_text(encoding='utf-8-sig'))
+def main():
+    p=argparse.ArgumentParser();p.add_argument('--qa',type=Path,required=True);p.add_argument('--delivery',type=Path,required=True);a=p.parse_args();q=a.qa.resolve();meta=read(a.delivery/'版本信息.json');perf=read(q/'performance_release/report.json');exe=read(q/'exe-work-io/work_io_report.json');books=read(q/'workbooks.json')
+    assert perf['passed'] and exe['passed'] and books['passed']
+    names={'save':'首次保存完整作业','save_unchanged':'无变化再次保存','overwrite_cancel':'核对覆盖后取消','confirm':'首次归档','confirm_unchanged':'无变化再次归档','export_signed':'已归档五店确认单导出'}
+    rows=[];memory=[]
+    for key,title in names.items():
+        old,new=perf['summary'][key]['old'],perf['summary'][key]['new'];change=(old['median']-new['median'])/old['median']*100
+        rows.append(f"| {title} | {old['median']:.2f}（{old['min']:.2f}–{old['max']:.2f}） | {new['median']:.2f}（{new['min']:.2f}–{new['max']:.2f}） | {'减少' if change>=0 else '增加'} {abs(change):.1f}% |")
+        memory.append(f"| {title} | {old['peak_rss_mib_median']:.0f} | {new['peak_rss_mib_median']:.0f} |")
+    exe_names={'read':'读取完整作业','copy_config':'复制配置','save':'保存作业','overwrite_cancel':'覆盖核对后取消','confirm_normal':'正常单确认归档','merchant_export':'五店确认单导出','reload_saved':'重新读取','cancel_read':'取消读取','close_read':'关闭时取消'}
+    exelines=[f"| {title} | {exe['timings'][key]['seconds']:.2f} | {exe['timings'][key]['max_ui_gap_seconds']:.3f} |" for key,title in exe_names.items()]
+    report='''# 补货助手 0.7.4 rc1：保存、归档、导出第一阶段
+
+独立试用包；旧 0.7.3 包、原 Excel 和日常用户资料保留。仅完成减少重复处理及明确进度，不迁移存储、不改变计算规则，不合并或推送。
+
+## 实际改动
+
+- 保存准备只编码一次；确认后复用该会话内不可变 JSON 字节。读取旧作业核对之前释放当前解码对象，降低两份大树同时驻留的风险。
+- 归档业务指纹不再整树深拷贝；完整草稿未变时复用已有压缩快照。门店编码/压缩提前准备，短事务内重新核对全部修订并原子提交；界面所需单号/修订直接返回，不重复读回全部归档。
+- 逐商品差异核对先用原规范 JSON 比较整行；未变行跳过重复逐字段编码，变化行保留原完整差异和字段顺序，不用会混淆 0/False/0.0 的普通相等判断。
+- 已归档且未变的导出只传所选门店结果，复用本次已校验的归档；执行前再检查修订身份。需要新签发时先补齐完整草稿，不能用精简探测数据签发。
+- 进度显示当前阶段、可计量的比例、已用时和最近进展。编码、事务提交、Excel 最终压缩等不能准确计量时显示活动条，百分比不是预计剩余时间。进程存活不伪装成业务有进展，异常退出明确报错。
+- 加盟商默认文件名为“日期+门店名+（精简版）.xlsx”，没有 (1)/(2) 修订后缀。已有同名文件仍拒绝覆盖，修订继续保留在归档和工作簿元信息中。
+
+## 三轮正式性能对照
+
+固定基线 d3d0165；同一电脑、Python/依赖、原五店完整作业 84,693 行。原门店参数和计算结果冻结，关注清单使用双方同一份明确的 QA 空清单（保存时间也固定）。每组旧/新、新/旧、旧/新，逐个运行，未与打包或其他重测试同时执行。计时包含 spawn、传输、核对、提交、写出和会话退出；读取测试输入与事后独立验证不混入操作时间。
+
+以下为秒，中位数（最小–最大）。文件缓存未清空。默认不使用诊断函数包装；候选轻量阶段日志的开销包含在计时内。数据不能代表其他电脑或冷启动上限。
+
+| 操作 | 0.7.3 | 0.7.4 | 耗时变化 |
+|---|---:|---:|---:|
+'''+ '\n'.join(rows)+'''
+
+无变化保存仍需完整传输和编码核对；覆盖核对仍需读取旧快照。这些等待未被存储结构优化消除，波动或退化按上表保留。
+
+## 内存
+
+下表为各阶段进程树采样峰值的三次中位数，单位 MiB。外部每 50ms 汇总主进程及其子进程 RSS，共享页重复计入，不等于实际新增物理内存。Python 分配器和 GC 会造成波动，不能据某次峰值宣称所有场景内存下降。
+
+| 操作 | 0.7.3 | 0.7.4 |
+|---|---:|---:|
+'''+ '\n'.join(memory)+'''
+
+## 实际 EXE 验收
+
+实际冻结 EXE 使用独立数据库副本运行原五店完整链路；以下为一次 EXE 流程观测，不冒充三轮 EXE 对比。Qt 每 25ms 记录响应间隔。
+
+| 操作 | 完成耗时（秒） | 最长响应间隔（秒） |
+|---|---:|---:|
+'''+ '\n'.join(exelines)+f'''
+
+本次完整 EXE 流程进程树最大采样 RSS 为 {max(exe['peak_tree_mib'].values()):.0f} MiB。截图和逐阶段进度在 QA 目录。
+
+另外运行实际 EXE 正常单/新品预算、五店批量导出与 4 槽自动补位、历史查询/明细/导出验收。覆盖默认取消、归档确认、已有文件保护、单店/多店选择、导出取消及重试、读取取消及关闭回收。未发现遗留测试子进程。
+
+## 一致性与兼容
+
+- 两个独立解释器运行基线/候选，固定相同时钟和 UUID，对完整作业、归档修订、事件及 SQL 行（含压缩 BLOB）严格比较；不放宽数值容差、不删除字段，0 差异。额外比较空值/空串/0/False/0.0、缺字段、新字段、日期及嵌套字段的修订差异。
+- 六次五店完整流程的规范作业摘要、各店完整业务指纹、表结构、单号/修订及文件名一致。该实测基于冻结的已计算作业；本轮没有把旧的 25 文件计算报告冒充新验收。
+- 五店确认单共 {sum(x['cells'] for x in books['checks']):,} 个单元格，比较所有 XLSX 内部文件的内容与顺序；列/行/表顺序、类型、样式、批注及自定义属性 0 差异。仅忽略 docProps/core.xml 的 created/modified 文档时间与 ZIP 容器时间/压缩元数据。
+- 计算核心、预算、一箱例外、默认配置、输入与仓路由源码哈希未变；另运行新品/预算合成回归。只调整 I/O 编排及差异比较效率。
+- 旧 SQLite 表结构、JSON 编解码、日期标记、zlib 格式和业务指纹保持。作业/参数格式 1，模型 0.3.0-rules，需求归属 0.5.0；不需要历史迁移。
+- 取消不发布准备数据；同日覆盖仍默认取消；提交前修订冲突会拒绝；事务注入失败完整回滚；导出取消保留已成功归档修订及已完成文件，明确列出未完成项。
+
+## 诊断与限制
+
+最早诊断两端临时创建关注清单的 saved_at 不同，导致完整草稿摘要不同；已证明除此字段外全字节一致。正式测试固定同一测试输入时间后重新运行，未增加比较忽略项。首轮另发现覆盖核对内存增大，修正对象释放顺序后重新完成三轮；这些旧诊断不混入正式中位数。
+
+阶段日志和诊断包装记录表明旧版重复编码、带深拷贝的指纹和重复归档读取有明显成本；诊断函数时间存在嵌套，不能相加冒充总耗时。新的 XLSX 压缩和完整 JSON 编码仍需实际时间，进度条不代表已经完成。
+
+未做分块数据库、历史迁移、并行导出、压缩算法替换、字段删减或业务规则调整。完整快照仍消耗较多内存；没有验证任意规模、其他电脑或字节可复现构建。加盟商回传/实际下单/收货历史关联不在本次范围。
+
+## 版本与使用
+
+- 构建提交：`{meta['source_commit']}`；版本 0.7.4，构建 {meta['build_id']}。
+- EXE SHA256：`{exe['exe_sha256']}`。ZIP 校验值及全部文件清单见 release_report.json / files_sha256.json。
+- 完整解压新 ZIP，保留 `_internal`，双击“补货助手.exe”。不要单独复制 EXE；旧包保留，不同时在两个版本编辑同一日作业。
+- 实现和复跑命令见 docs/0.7.4作业IO第一阶段.md；独立 QA 目录 qa/io_stage1_074，正式性能目录 performance_release。发行证据在 releases/0.7.4/{meta['build_id']}。
+'''
+    target=q/'交付报告.md';assert not target.exists();target.write_text(report,encoding='utf-8',newline='\n');print(str(target))
+if __name__=='__main__':main()
