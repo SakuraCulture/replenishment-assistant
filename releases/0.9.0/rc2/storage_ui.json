@@ -1,0 +1,76 @@
+{
+  "passed": true,
+  "error": null,
+  "checks": [
+    "old-model daily result remains readonly; current-model daily result remains editable",
+    "actual home maintenance action creates legacy-compatible exact snapshot in independent path",
+    "actual UI upgrade-copy roundtrip retains full values, IDs and snapshot digest",
+    "cooperative cancellation waits for worker cleanup and publishes no file",
+    "existing destination refused without overwriting",
+    "all maintenance actions preserve current live job revision and complete payload",
+    "native CLI upgrade and legacy roundtrip exact, no UI recursion, source unchanged"
+  ],
+  "screenshots": [
+    "storage-legacy.png",
+    "storage-upgrade.png",
+    "storage-upgrade-cancel.png"
+  ],
+  "version": {
+    "app": "补货助手",
+    "version": "0.9.0",
+    "parameter_schema_version": 1,
+    "job_schema_version": 1,
+    "routing_version": "0.5.0",
+    "model_version": "0.3.1-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "ee3489f30679b0f03dae1361600fb49482ad6eac",
+    "build_id": "rc2",
+    "built_at": "2026-10-30T14:01:08.8508334+08:00"
+  },
+  "cli_roundtrip": [
+    {
+      "passed": true,
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_090\\exe-storage-rc2\\cli-upgrade.sqlite3",
+      "mode": "upgrade",
+      "records": {
+        "jobs": 1,
+        "normal_revisions": 0,
+        "normal_work_revisions": 0
+      },
+      "checks": [
+        {
+          "table": "jobs",
+          "rowid": 1,
+          "sha256": "3149b75ff99db27326efdc72bb461be489947dbfb89fa6455092fbc85e261ef6"
+        }
+      ],
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_090\\exe-storage-rc2\\legacy.sqlite3",
+      "source_modified": false
+    },
+    {
+      "passed": true,
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_090\\exe-storage-rc2\\cli-legacy.sqlite3",
+      "mode": "legacy",
+      "records": {
+        "jobs": 1,
+        "normal_revisions": 0,
+        "normal_work_revisions": 0
+      },
+      "checks": [
+        {
+          "table": "jobs",
+          "rowid": 1,
+          "sha256": "3149b75ff99db27326efdc72bb461be489947dbfb89fa6455092fbc85e261ef6"
+        }
+      ],
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_090\\exe-storage-rc2\\cli-upgrade.sqlite3",
+      "source_modified": false
+    }
+  ],
+  "exit_code": 0,
+  "remaining_children": [],
+  "development": false,
+  "exe_sha256": "57a3ea272a2e60656586cb73d0de9e26e0935ed1b3de5b8a0a260227b7898f20"
+}

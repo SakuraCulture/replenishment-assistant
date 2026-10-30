@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "checks": [
+    "prepare + full review export + cancel: no draft/order written; independent full revision_diff matches",
+    "child confirmation saves exact complete values/types and returns small heads",
+    "independent writer between prepare/commit rejected; original signed order retained",
+    "child database failure after daily write rolls complete transaction back",
+    "cancel during actual row writing preserves committed revision, no partial final XLSX; explicit partial completion receipt",
+    "retry exports same signed revision without new revision; no old cancellation contaminates next session"
+  ],
+  "remaining_children": []
+}

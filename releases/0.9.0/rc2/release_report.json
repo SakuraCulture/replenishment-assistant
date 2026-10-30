@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "version": "0.9.0",
+  "build_id": "rc2",
+  "baseline_commit": "e45b9d08cddbced1bf8566281987431534bbf5b7",
+  "source_commit": "ee3489f30679b0f03dae1361600fb49482ad6eac",
+  "evidence_tools_commit": "a51b52be4278e844f45edd15befb7640162baa28",
+  "branch": "fix/business-history-0.9.0",
+  "model_version": "0.3.1-rules",
+  "exe_sha256": "57a3ea272a2e60656586cb73d0de9e26e0935ed1b3de5b8a0a260227b7898f20",
+  "business_differences": 0,
+  "real_reason_changes": 1138,
+  "legacy_reason_changes": 1138,
+  "old_package_and_inputs_preserved": true,
+  "no_remote_push_or_merge": true,
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.9.0_rc2\\补货助手",
+  "evidence": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.9.0\\rc2",
+  "limits": [
+    "old missing source files are explicitly unavailable, never reconstructed from current master",
+    "pre-commit cancellation can retain safety backups or physical storage metadata",
+    "return quantities are recorded facts, not automatically rounded or reallocated",
+    "blank returns preserve previous quantity; notes-only changes do not create a quantity revision",
+    "actual ordering and receipt imports are future scope",
+    "performance is specific to frozen five-store sample and this Windows machine; no claim of major speedup"
+  ],
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.9.0_rc2\\补货助手_0.9.0_rc2.zip",
+  "zip_sha256": "19ee74d6320d4653f9655fad1df7f4dd2a9f62797552b4377a9d39fb7f0887f6",
+  "delivered_files": 206
+}
