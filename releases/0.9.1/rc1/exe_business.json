@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "error": null,
+  "checks": [
+    "actual background catalog imports retain original bytes, isolated two-store signed fixture",
+    "native drag-enter/drop accepted for sales and all six typed import dialogs",
+    "download minimum workbook template action for all six import kinds",
+    "ordinary moving SKU form displays actual budget execution 5 and amount 10, not absent first-fill fields",
+    "actual historical forms and lazy raw catalog fields, full form Excel export, close pending read and retry",
+    "actual return drag/import preview cancel and confirm; repeat idempotent; original signed 6 and returned5 shown independently",
+    "log row resolves exact original signed revision, not latest replacement",
+    "queryable business log grid exports matching records as Excel; no JSON business view"
+  ],
+  "screenshots": [
+    "01-signed-detail.png",
+    "02-business-form.png",
+    "03-original-catalog.png",
+    "07-moving-execution.png",
+    "04-return-preview.png",
+    "05-return-comparison.png",
+    "06-event-form.png"
+  ],
+  "ui_ticks": 85,
+  "max_tick_gap_seconds": 0.5098873000242747,
+  "version": {
+    "app": "补货助手",
+    "version": "0.9.1",
+    "parameter_schema_version": 1,
+    "job_schema_version": 1,
+    "routing_version": "0.5.0",
+    "model_version": "0.3.2-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "571f387b973290e864c17e6080cd6f9d5c66cd56",
+    "build_id": "rc1",
+    "built_at": "2026-10-30T15:48:59.1144859+08:00"
+  },
+  "exit_code": 0,
+  "remaining_children": [],
+  "development": false,
+  "exe_sha256": "62c22e379725b4f110c829e3798349bbc3398a2d281d7002ef10c2f534bc30e7",
+  "peak_tree_mib": 318.84375,
+  "sample_ms": 50
+}

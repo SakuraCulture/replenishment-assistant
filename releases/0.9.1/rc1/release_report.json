@@ -1,0 +1,124 @@
+{
+  "passed": true,
+  "source_commit": "571f387b973290e864c17e6080cd6f9d5c66cd56",
+  "baseline_commit": "364929c69ed16d933d5dffaff7c2424323730af0",
+  "version": "0.9.1",
+  "model_version": "0.3.2-rules",
+  "build_id": "rc1",
+  "exe_sha256": "62c22e379725b4f110c829e3798349bbc3398a2d281d7002ef10c2f534bc30e7",
+  "protected_drift": [],
+  "protected_files": 218,
+  "frozen_inputs": {
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen.json": "0925302108fa561a0b6ee2f5025869cfa3e3d8e86f0fd20197d22eab9192bfef",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\result.json": "7845015847e6ed58c493319a9fbe10a8327fa55c06c2c2ca72aa80cc15f4b514",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen\\00.pklz": "1f938fc697ce57e4d0da4be9d429cf91073f42f495fa2df1c214ba9f7d607cbe",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen\\01.pklz": "cf54baf477e12016af174053d0e02da21c92f758e7a1fab59dd8a8f509793b0b",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen\\02.pklz": "ba38f7945b47f32862535d90066bd63341aa88cec1d610e61625e32366afe79c",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen\\03.pklz": "925ecaa5a4b14813bf68d0761ebe3e0703b274c4c859705298c75a5e66a38f50",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen\\04.pklz": "bcbcaff2c2ba43b5757d98d1a8e68610b66f1f36463632836bc61e6cff9acfc5",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen\\05.pklz": "8b5cc2f906aa5b10852cdf0498f99863dbea312909389066d11b73b22d0dda20",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen\\06.pklz": "cb2d1f8388433b88acad7707b2a17e5e02b30bb278799d7a2d91ab6b9699b926",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen\\07.pklz": "bb4eeefb9c90bae4bd5d0e5bd48bcdaa69364120e25670296ba69485146c62ce",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen\\08.pklz": "cc2aedb608e3222634fdbc8599e2a695c62e83880814d5ece9e136d6cae9329b",
+    "D:\\优团工作文件夹\\outputs\\inbound_floor_trial_20261030\\frozen\\09.pklz": "20089b6a0be77e67e4dfb2025d2b514425155542980797eb56b7ecd0d4342144"
+  },
+  "core_hashes": {
+    "model.py": "c52c51f11a4966fc97d49a4e61d0110f0abc8dddbcc3a85842f00345f1ebef09",
+    "one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "result_semantics.py": "833b71453b87cc9a082d377ccf8a3526b2bd0662395e49d2e36c086e55a95dd5",
+    "input_adapter.py": "1c2c90ad1975b1008c24b14790f9826e89a217f31c062f690cda5ede38c1bf66",
+    "allocation.py": "5960745f16e4bc4eb5cdaad0a1591e817f5adab940579cf8ed96d264ed3c1bf9",
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+  },
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.9.1_rc1\\补货助手",
+  "actual_exe_reports": {
+    "exe_history": {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "real archive date + store + two-keyword product query returns exact one order",
+        "selected SKU inherited without manual entry; old signed 24 and inbound24 remain readable, never recomputed",
+        "parent refresh cannot cancel child form; parameters load and retain exact historical values",
+        "historical catalog snapshot nonempty; absent original file explicitly distinguished from saved fields",
+        "explicit full-form export ignores field display filter as labelled; every cell compared to displayed full form",
+        "product name selection, rapid tab switch, unknown SKU disables export, retry, close while reading and owned process cleanup",
+        "actual engine cap integration, three Hongmen warning rows, zero quantities; filter and detail do not refill",
+        "clear query restores full archive list"
+      ],
+      "times": {
+        "initial_history": 20.51422230002936,
+        "sales_form": 3.2179070999845862
+      },
+      "ui_ticks": 1682,
+      "max_tick_gap_seconds": 1.3965901999617927,
+      "version": {
+        "app": "补货助手",
+        "version": "0.9.1",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.2-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "571f387b973290e864c17e6080cd6f9d5c66cd56",
+        "build_id": "rc1",
+        "built_at": "2026-10-30T15:48:59.1144859+08:00"
+      },
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": false,
+      "exe_sha256": "62c22e379725b4f110c829e3798349bbc3398a2d281d7002ef10c2f534bc30e7",
+      "peak_tree_mib": 1228.00390625
+    },
+    "exe_business": {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "actual background catalog imports retain original bytes, isolated two-store signed fixture",
+        "native drag-enter/drop accepted for sales and all six typed import dialogs",
+        "download minimum workbook template action for all six import kinds",
+        "ordinary moving SKU form displays actual budget execution 5 and amount 10, not absent first-fill fields",
+        "actual historical forms and lazy raw catalog fields, full form Excel export, close pending read and retry",
+        "actual return drag/import preview cancel and confirm; repeat idempotent; original signed 6 and returned5 shown independently",
+        "log row resolves exact original signed revision, not latest replacement",
+        "queryable business log grid exports matching records as Excel; no JSON business view"
+      ],
+      "screenshots": [
+        "01-signed-detail.png",
+        "02-business-form.png",
+        "03-original-catalog.png",
+        "07-moving-execution.png",
+        "04-return-preview.png",
+        "05-return-comparison.png",
+        "06-event-form.png"
+      ],
+      "ui_ticks": 85,
+      "max_tick_gap_seconds": 0.5098873000242747,
+      "version": {
+        "app": "补货助手",
+        "version": "0.9.1",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.2-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "571f387b973290e864c17e6080cd6f9d5c66cd56",
+        "build_id": "rc1",
+        "built_at": "2026-10-30T15:48:59.1144859+08:00"
+      },
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": false,
+      "exe_sha256": "62c22e379725b4f110c829e3798349bbc3398a2d281d7002ef10c2f534bc30e7",
+      "peak_tree_mib": 318.84375,
+      "sample_ms": 50
+    }
+  },
+  "zip_path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.9.1_rc1\\补货助手_0.9.1_rc1.zip",
+  "zip_sha256": "a17266d48623af5e34de511fa112326c2994da704b4e41c7584a64a4a13bf837",
+  "delivery_files": 207
+}

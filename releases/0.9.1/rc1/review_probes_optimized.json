@@ -1,0 +1,121 @@
+{
+  "cases": [
+    {
+      "case": "rounding",
+      "quantity": 1.0,
+      "result": {
+        "enabled": true,
+        "limit": 100.0,
+        "spent": 1.0,
+        "remaining": 99.0,
+        "spent_exact": "1",
+        "must_spent": 0.0,
+        "other_spent": 1.0,
+        "deferred": 0,
+        "holding_gaps": 0,
+        "unpriced": 0,
+        "policy": "必卖优先；同组先断货有销量，再按预测持有天数从短到长逐个最小出库单位分配；同天数低单次成本优先"
+      }
+    },
+    {
+      "case": "rounding",
+      "quantity": 1.000001,
+      "error": "ValueError: 预算前建议不符合最小出库单位，不能安全分配：dust"
+    },
+    {
+      "case": "rounding",
+      "quantity": 0.999999,
+      "error": "ValueError: 预算前建议不符合最小出库单位，不能安全分配：dust"
+    },
+    {
+      "case": "checksum",
+      "optimized": true,
+      "rejected": true,
+      "error": "作业快照校验失败"
+    },
+    {
+      "case": "zero_division_fractional_sales",
+      "input": {
+        "E": "ratio-zero",
+        "H": 1.0,
+        "I": 14.0,
+        "J": 14.000000000001,
+        "K": 0.0,
+        "L": 0.0,
+        "N": 0,
+        "O": 1.0,
+        "V": 1.0,
+        "S": "启用",
+        "AB": 0.2,
+        "AC": 0.4,
+        "AD": 0.3
+      },
+      "error": "ZeroDivisionError: float division by zero"
+    },
+    {
+      "case": "same_zero_division_through_adapter",
+      "quantity": "计算异常",
+      "state": "计算异常",
+      "blocking": [
+        "计算异常：float division by zero"
+      ]
+    }
+  ],
+  "dependencies": {
+    "PySide6-Essentials": {
+      "pinned": "6.12.0",
+      "installed": "6.12.0"
+    },
+    "shiboken6": {
+      "pinned": "6.12.0",
+      "installed": "6.12.0"
+    },
+    "openpyxl": {
+      "pinned": "3.1.5",
+      "installed": "3.1.5"
+    },
+    "et-xmlfile": {
+      "pinned": "2.0.0",
+      "installed": "2.0.0"
+    },
+    "pillow": {
+      "pinned": "12.3.0",
+      "installed": "12.3.0"
+    },
+    "PyInstaller": {
+      "pinned": "6.22.3",
+      "installed": "6.22.3"
+    },
+    "pyinstaller-hooks-contrib": {
+      "pinned": "2026.9",
+      "installed": "2026.9"
+    },
+    "altgraph": {
+      "pinned": "0.17.5",
+      "installed": "0.17.5"
+    },
+    "packaging": {
+      "pinned": "26.3",
+      "installed": "26.3"
+    },
+    "pefile": {
+      "pinned": "2024.8.26",
+      "installed": "2024.8.26"
+    },
+    "pywin32-ctypes": {
+      "pinned": "0.2.3",
+      "installed": "0.2.3"
+    },
+    "setuptools": {
+      "pinned": "84.1.0",
+      "installed": "84.1.0"
+    }
+  },
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "core_portable_tests": "python -m unittest discover -s tests -v",
+  "notes": [
+    "assert-free checksum verified also with python -O",
+    "existing ratio edge isolated by adapter as calculation error, not healthy zero",
+    "noninteger candidate fails store; no business failure-policy change in this release"
+  ]
+}
