@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "version": "0.7.4",
+  "baseline_commit": "d3d0165cbc872e952b759bc6f2dbdff05437aff5",
+  "source_commit": "bcaa10f81e3cf14bd412e055ee044278a1df7b39",
+  "evidence_commit": "bcaa10f81e3cf14bd412e055ee044278a1df7b39",
+  "build_id": "rc1",
+  "exe_sha256": "be1beb042fdf4110c1a8a1c591bac06d7b97610eacefd0d5c8b29b2042177e1d",
+  "storage_format_unchanged": true,
+  "business_differences": 0,
+  "old_package_and_inputs_preserved": true,
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.7.4_rc1\\补货助手",
+  "no_remote_push_or_merge": true,
+  "limits": [
+    "full JSON snapshot encoding/transfer remains; no storage migration",
+    "first-stage progress is measured where countable, otherwise indeterminate with elapsed and last progress",
+    "no universal instant completion or cross-machine performance claim"
+  ],
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.7.4_rc1\\补货助手_0.7.4_rc1.zip",
+  "zip_sha256": "723da23d9baf657f0f080e9180074d4e7cf38ba545628163531ee3f7c90a2a18"
+}

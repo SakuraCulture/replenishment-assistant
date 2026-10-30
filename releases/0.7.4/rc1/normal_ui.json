@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "error": null,
+  "version": "0.7.4",
+  "source_commit": "bcaa10f81e3cf14bd412e055ee044278a1df7b39",
+  "checks": [
+    "actual independent focus file dialog, sheet/column mapping, preview cancel/confirm, reusable JSON persistence",
+    "real file check, two-store spawn calculation; filtered selection retained; budget preview cancel preserves both stores",
+    "mandatory new item takes shared budget ahead of ordinary sales; other store unchanged; new filter; first confirmation cancel/accept; auto daily save; duplicate confirm idempotent",
+    "changed candidate leaves archived V001 until explicit overwrite; default-cancel; same number V002; unchanged other store remains V001; old revision readable",
+    "actual file-save dialog and frozen numbered Excel export; queryable event; saved new choices and original base restored after resetting work area",
+    "history query/detail independent of work area; parameter changes invalidate only selected store; rerun resets selections and leaves issued order untouched",
+    "home navigation retains unsaved work; close cancel keeps application alive"
+  ],
+  "exe_sha256": "be1beb042fdf4110c1a8a1c591bac06d7b97610eacefd0d5c8b29b2042177e1d"
+}

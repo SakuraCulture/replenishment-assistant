@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "differences": [],
+  "baseline": "d3d0165",
+  "scenarios": [
+    "save",
+    "unchanged_save",
+    "first_sign",
+    "unchanged_sign",
+    "partial_revision",
+    "revision_race"
+  ],
+  "scope": "complete daily payload, all archived revisions SQL including compressed BLOB bytes, events, headers, IDs, schema-compatible records; merchant workbook values/types/row/column/sheet order/styles/comments/custom properties",
+  "whitelist": [],
+  "determinism": "UUID generator and wall-clock frozen identically; same frozen calculation payload; no value tolerances or removed fields"
+}
