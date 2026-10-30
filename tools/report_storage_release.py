@@ -10,6 +10,7 @@ def main():
     a=argparse.ArgumentParser();a.add_argument('--qa',type=Path,required=True);a.add_argument('--delivery',type=Path,required=True);args=a.parse_args();q=args.qa.resolve();delivery=args.delivery.resolve()
     meta=read(delivery/'版本信息.json');perf=read(q/'performance_release/report.json');ui=read(q/'exe-work-io/work_io_report.json');books=read(q/'workbooks.json');real=read(q/'real_current/report.json')
     assert all(x['passed'] for x in [perf,ui,books,real]) and perf['runs']==3
+    assert sum(x['rows'] for x in real['stores'])==84693 and len(real['target_differences'])==13
     names={'save':'首次保存','load':'完整恢复','copy_config':'复制门店配置','save_unchanged':'无变化再次保存','overwrite_cancel':'覆盖核对后取消','confirm':'首次确认归档','confirm_unchanged':'无变化再次归档','export_signed':'已归档五店导出'}
     lines=[];memory=[]
     for phase,title in names.items():
@@ -50,7 +51,9 @@ SQLite业务表和逻辑schema1保持；新增不可变内容块表和存储元�
 |---|---:|---:|---:|
 {chr(10).join(lines)}
 
-三次独立目标数据库大小：旧{perf['database_bytes']['old']}字节，新{perf['database_bytes']['new']}字节。此规模只包含测试作业/修订，不代表长期历史增长上限。
+三次独立目标数据库大小：旧{perf['database_bytes']['old']}字节，新{perf['database_bytes']['new']}字节。此规模只包含测试作业/修订，不代表长期历史增长上限。旧库升级副本可能暂时更大：本次完整升级副本245,411,840字节，回退副本174,788,608字节；升级保留了SQLite空闲页，后续可复用，当前未对分块副本做VACUUM，也未清理历史块。不能把新建库的缩小比例当成现有库立即缩小的保证。
+
+完整恢复中位数增加约9%，没有宣称该项提速；分块查询、逐块及整体校验仍有成本。保存改善约5%，仍需全量编码/传输；本轮没有做到所有操作秒级。覆盖核对第三次波动到22.94秒，完整原始数值保留，不剔除慢轮次。
 
 ## 内存
 
@@ -64,7 +67,7 @@ SQLite业务表和逻辑schema1保持；新增不可变内容块表和存储元�
 
 - 独立旧/新解释器、相同时钟/UUID和同一冻结结果：保存、重复保存、首次/重复签发、单店修订、并发修订冲突六场景。所有业务SQL行、ID/事件/修订、完整解码数据和Excel值/类型/样式/顺序0差异；无业务字段白名单。仅排除两个新增物理表，并把三类payload物理编码解码后比较。
 - 六次真实五店流程：整份规范作业摘要、每店完整业务指纹、原表结构、单号/修订及文件名一致。该测试固定原模型身份以隔离存储变化；当前模型另以真实重算和定向规则对照验证。
-- {len(books['checks'])}份工作簿对照、{sum(r['cells'] for r in books['checks']):,}个单元格：所有OOXML内容和条目顺序一致，仅排除core.xml的created/modified与ZIP容器元数据。批注、价格/状态格式、字段/表顺序都比较。
+- {len(books['checks'])}份工作簿对照、{sum(r['cells'] for r in books['checks']):,}个单元格：包含25份新旧源码输出对照和5份实际EXE输出对照。所有OOXML业务内容和条目顺序一致，仅排除core.xml的created/modified与ZIP容器元数据；EXE对照将XML命名空间前缀/拼写规范化，保留全部节点文本、属性及顺序，源码对照仍比较原始XML字节。批注、价格/状态格式、字段/表顺序都比较。
 - 真实旧库→分块副本→旧格式副本，全原业务SQL行和完整payload摘要相同，源库哈希不变。另验证日期、长编码、空/0/False/0.0、空字串、块损坏拒绝、失败回滚、既有目标拒绝、取消不发布和当前库不变。
 - 首次备份、修订冲突、准备取消、提交后取消导出、重试、死进程和64位进度均通过。模型/归档/导出不依赖当前用户目录测试。
 
