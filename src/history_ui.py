@@ -34,11 +34,16 @@ class ArchiveDialog(QDialog):
         self.model=ArchiveModel(self);self.table=QTableView();self.table.setModel(self.model);self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);v.addWidget(self.table,1)
         for i,width in enumerate([150,260,115,100,100,100,110,340]):self.table.setColumnWidth(i,width)
         self.table.doubleClicked.connect(lambda _:self.audit())
-        row=QHBoxLayout();self.export_btn=button('导出此修订确认单',self.export);self.audit_btn=button('当时参数 / 销量库存 / 商品资料',self.audit);self.archive_export_btn=button('导出归档三张表',self.export_archive);row.addWidget(self.archive_export_btn);row.addWidget(self.export_btn);row.addWidget(self.audit_btn);row.addWidget(button('门店确认 / 导入回传',self.feedback));row.addWidget(button('此单操作日志',self.events));row.addWidget(button('关闭',self.reject));v.addLayout(row)
+        exports=QHBoxLayout();self.archive_export_buttons=[]
+        for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发建议','signed')]:
+            b=button(title,lambda checked=False,k=kind:self.export_archive(k));exports.addWidget(b);self.archive_export_buttons.append(b)
+        self.archive_export_btn=self.archive_export_buttons[0];v.insertLayout(1,exports)
+        row=QHBoxLayout();self.export_btn=button('导出此修订确认单',self.export);self.audit_btn=button('当时参数 / 销量库存 / 商品资料',self.audit);row.addWidget(self.export_btn);row.addWidget(self.audit_btn);row.addWidget(button('门店确认 / 导入回传',self.feedback));row.addWidget(button('此单操作日志',self.events));row.addWidget(button('关闭',self.reject));v.addLayout(row)
         self.debounce=QTimer(self);self.debounce.setSingleShot(True);self.debounce.setInterval(275);self.debounce.timeout.connect(self.filter);self.search.textChanged.connect(lambda _:self.debounce.start());self.search.returnPressed.connect(self.filter);self.rev.currentIndexChanged.connect(self.load);self.load()
     def load(self):
         if self.disposed:return
         self.selected=None;self.archive_export_btn.setEnabled(False);self.export_btn.setEnabled(False);self.audit_btn.setEnabled(False);self.model.replace({'rows':[],'search':[]});self.note.setText('正在读取并校验归档…（可关闭取消）')
+        for b in self.archive_export_buttons:b.setEnabled(False)
         # Header read is tiny and binds the requested historical revision.
         try:
             repo=repository(self.host.work_repository.path)
@@ -53,6 +58,7 @@ class ArchiveDialog(QDialog):
         self.selected=view['head'];s=view['summary'];self.note.setText(f"确认 {self.selected['saved']} · 签发 ¥{s['amount']:,.2f} · {s['positive']} 款 · {self.selected.get('warehouse','')} · {'回收站（可查看，恢复后导出）' if self.selected.get('deleted') else '原签发只读；回传独立保存'}")
         self.selected['name']=self.record.get('name',self.record['store'])
         self.model.replace(view);self.filter();self.export_btn.setEnabled(not self.selected.get('deleted'));self.archive_export_btn.setEnabled(not self.selected.get('deleted'));self.audit_btn.setEnabled(True)
+        for b in self.archive_export_buttons:b.setEnabled(not self.selected.get('deleted'))
         if self.model.rowCount():self.table.selectRow(0)
         self.audit_btn.setText('查看参数 / 所选商品依据（可双击商品）')
         self.export_btn.setToolTip('导出此门店、此修订的完整中心仓确认单；不受商品搜索过滤影响。')
@@ -61,8 +67,8 @@ class ArchiveDialog(QDialog):
     def filter(self):self.debounce.stop();self.model.filter(self.search.text())
     def export(self):
         if self.selected:self.host.export_order(self.selected)
-    def export_archive(self):
-        if self.selected:self.host.export_archive(self.selected)
+    def export_archive(self,kind='calculation'):
+        if self.selected:self.host.export_archive(self.selected,kind)
     def events(self):
         if self.selected:self.host.show_events(self.selected['oid'],self.selected.get('warehouse'))
     def feedback(self):
@@ -120,9 +126,15 @@ class AuditDialog(QDialog):
     def ready(self,value,key=None):
         if self.disposed:return
         self.loaded_key=key or (self.scope.currentText(),self.sku.text().strip());self.bar.setRange(0,1);self.bar.setValue(1);self.model.replace(value);self.filter_fields();self.export_btn.setEnabled(bool(value))
+        original=self.scope.currentText()=='当时商品资料快照'
+        self.export_btn.setEnabled(bool(value) and not self.head.get('deleted'))
+        self.export_btn.setText('下载商品资料原表' if original else '导出此核对表单（非原表）')
+        if original:self.export_hint.setText('当前显示的是资料核对说明；下载将读取当时留存的原Excel，未留存时明确提示。')
     def failed(self,message):
         if not self.disposed:self.loaded_key=None;self.export_btn.setEnabled(False);self.bar.setRange(0,1);self.bar.setValue(0);self.note.setText('未能显示：'+message+'。可点击查看 / 重试。')
     def export(self):
+        if self.scope.currentText()=='当时商品资料快照':
+            self.host.export_archive(self.head,'original');return
         key=(self.scope.currentText(),self.sku.text().strip())
         if self.loaded_key!=key:self.load();return
         scope,sku=key;name=self.head['number']+f'-V{self.head["revision"]:03d}-'+scope+('' if scope in ('单据概况','当时参数') else '-'+sku)+'.xlsx'
@@ -140,6 +152,7 @@ class AuditDialog(QDialog):
         from business_ui import grid
         table,model=grid(d,['资料类型','原路径','SHA256','留存状态'],rows);v.addWidget(table,1);note=label('未留存的历史原文件无法下载；不会读取同路径下今天的新文件。');v.addWidget(note)
         def save():
+            if self.head.get('deleted'):note.setText('此仓单在回收站，请先恢复再下载');return
             i=table.currentIndex().row()
             if i<0:return
             item=model.rows[model.indices[i]]
@@ -162,7 +175,9 @@ class EventsDialog(QDialog):
         for day in dict.fromkeys(r[0][:10] for r in self.rows):self.day.addItem(day,day)
         for action in dict.fromkeys(r[4] for r in self.rows):self.action.addItem(action,action)
         filters.addWidget(self.day);filters.addWidget(self.action);filters.addWidget(label('本页导出操作过程；商品清单请打开对应签发单。','muted'),1);v.addLayout(filters)
-        self.table,self.model=grid(self,['时间','补货单号','门店','签发修订','操作','明细'],self.rows);self.table.setColumnWidth(5,540);v.addWidget(self.table,1);self.search.textChanged.connect(self.filter);row=QHBoxLayout();row.addWidget(button('导出所选记录对应仓单（三张表）',self.export));row.addWidget(button('关闭',self.accept));v.addLayout(row);self.filter()
+        self.table,self.model=grid(self,['时间','补货单号','门店','签发修订','操作','明细'],self.rows);self.table.setColumnWidth(5,540);v.addWidget(self.table,1);self.search.textChanged.connect(self.filter);row=QHBoxLayout()
+        for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发建议','signed')]:row.addWidget(button(title,lambda checked=False,k=kind:self.export(k)))
+        row.addWidget(button('关闭',self.accept));v.addLayout(row);self.filter()
         self.table.doubleClicked.connect(self.open_order)
         self.day.currentIndexChanged.connect(self.filter);self.action.currentIndexChanged.connect(self.filter);self.search.setClearButtonEnabled(True)
         self.search_shortcut=QShortcut(QKeySequence('Ctrl+F'),self);self.search_shortcut.activated.connect(self.search.setFocus)
@@ -173,11 +188,11 @@ class EventsDialog(QDialog):
         if not row:return
         head=dict(zip(('day','store','number','revision'),row));head['warehouse']=record.get('warehouse');head['number']=record.get('child_number',head['number']);d=ArchiveDialog(host,head);d.rev.setCurrentIndex(record['revision']-1);d.exec();d.deleteLater()
     def filter(self,*_):
-        self.model.filter(self.search.text());self.model.beginResetModel();self.model.indices=[i for i in self.model.indices if (not self.day.currentData() or self.rows[i][0].startswith(self.day.currentData())) and (not self.action.currentData() or self.rows[i][4]==self.action.currentData())];self.model.endResetModel();self.matches=[self.records[i] for i in self.model.indices];self.note.setText(f'匹配 {len(self.matches)} / {len(self.records)} 条；双击回溯当时签发修订，导出针对所选记录绑定的仓单修订，固定三张表。')
-    def export(self):
+        self.model.filter(self.search.text());self.model.beginResetModel();self.model.indices=[i for i in self.model.indices if (not self.day.currentData() or self.rows[i][0].startswith(self.day.currentData())) and (not self.action.currentData() or self.rows[i][4]==self.action.currentData())];self.model.endResetModel();self.matches=[self.records[i] for i in self.model.indices];self.note.setText(f'匹配 {len(self.matches)} / {len(self.records)} 条；双击回溯当时签发修订，导出针对所选记录绑定的仓单修订，请选择上方独立导出入口。')
+    def export(self,kind='calculation'):
         i=self.table.currentIndex().row()
         if i<0:
-            QMessageBox.information(self,'请选择记录','点选一条操作记录，导出其对应仓与签发修订的三张表。');return
+            QMessageBox.information(self,'请选择记录','点选一条操作记录，导出其对应仓与签发修订的数据。');return
         record=self.records[self.model.indices[i]];host=self.parentWidget()
         if not record.get('warehouse'):return
         with closing(host.work_repository.connect()) as db:
@@ -187,4 +202,4 @@ class EventsDialog(QDialog):
         if not row:return
         head=dict(zip(('day','store','parent_number','current_revision','digest','saved'),row))
         head.update(oid=record['oid'],revision=record['revision'],warehouse=record['warehouse'],number=number(head['parent_number'],record['warehouse']),deleted=state['deleted'],visibility_token=state['token'])
-        host.export_archive(head)
+        host.export_archive(head,kind)

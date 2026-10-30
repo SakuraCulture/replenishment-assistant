@@ -31,14 +31,10 @@ def exercise(win,out,checks,shot,wait,phase):
         audit.scope.setCurrentText(scope);wait(lambda:audit.loaded_key is not None)
         if not audit.model.rows:raise AssertionError('empty business form '+scope)
     shot(audit,'archive-calculation-form.png');audit.reject();audit.deleteLater()
-    target=out/'archive-three.xlsx';old=QFileDialog.getSaveFileName;QFileDialog.getSaveFileName=lambda *a,**k:(str(target),'')
-    try:dialog.export_archive()
-    finally:QFileDialog.getSaveFileName=old
-    b=openpyxl.load_workbook(target)
-    if b.sheetnames!=['完整计算建议表','制单时商品资料原表','模型建议签发表']:raise AssertionError(b.sheetnames)
-    if b.worksheets[1].max_row<2:raise AssertionError('raw source absent')
-    b.close()
-    merchant=out/'archive-history-hb.xlsx';QFileDialog.getSaveFileName=lambda *a,**k:(str(merchant),'')
+    from archive_batch_smoke import exercise as batch_checks, single
+    batch_checks(win,out,checks,shot,wait)
+    single(win,dialog.selected,out,'calculation')
+    merchant=out/'archive-history-hb.xlsx';old=QFileDialog.getSaveFileName;QFileDialog.getSaveFileName=lambda *a,**k:(str(merchant),'')
     try:dialog.export();wait(lambda:merchant.exists() and win.worker is None)
     finally:QFileDialog.getSaveFileName=old
     book=openpyxl.load_workbook(merchant)
@@ -47,13 +43,8 @@ def exercise(win,out,checks,shot,wait,phase):
     from history_ui import EventsDialog
     from history_forms import events
     data=events(win.work_repository.path,h['oid'],'河北仓');events_dialog=EventsDialog(win,data['records'],data['rows']);events_dialog.show();events_dialog.table.selectRow(0)
-    event_export=out/'event-three.xlsx';QFileDialog.getSaveFileName=lambda *a,**k:(str(event_export),'')
-    try:events_dialog.export()
-    finally:QFileDialog.getSaveFileName=old
-    book=openpyxl.load_workbook(event_export)
-    if book.sheetnames!=['完整计算建议表','制单时商品资料原表','模型建议签发表']:raise AssertionError('event export mismatch')
-    book.close();events_dialog.reject();events_dialog.deleteLater()
-    checks.append('actual per-warehouse detail/four forms/merchant scope; archive and operation record both export the exact three sheets')
+    single(win,h,out,'signed');events_dialog.reject();events_dialog.deleteLater()
+    checks.append('per-warehouse detail/forms remain readable; independent calculation/signed export previews used')
     old=QMessageBox.question;QMessageBox.question=lambda *a,**k:QMessageBox.StandardButton.Cancel
     try:win.change_archive_visibility()
     finally:QMessageBox.question=old

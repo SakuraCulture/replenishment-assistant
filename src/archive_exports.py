@@ -75,6 +75,17 @@ def filename(head,name):
     return head['day']+name+f'（归档·{head["warehouse"]}·V{head["revision"]:03d}）.xlsx'
 
 
+def signed_rows(order,wh):
+    grouped=ne.groups(order['payload']['result'],order['payload'].get('new_focus'))
+    result=[]
+    for group,items in grouped.items():
+        for d in items:
+            if ao.warehouse(d)!=wh:continue
+            status=d.get('AT');status='未提供' if status=='未提供（不作为数量拦截）' else status
+            result.append([group]+[d.get(k) for k in 'A B C D E F G H I J K L M N'.split()]+[d.get('BD'),d.get('V'),sem.order_quantity(d) if sem.orderable(d) else 0,status,d.get('AU'),d.get('AV'),ao.number(order['number'],wh),ne.decision(d)])
+    return result
+
+
 def export(path,head,target,progress=lambda _:None,cancel=None):
     from history_read import repository
     repo=repository(path);wh=head['warehouse'];checkpoint(cancel)
@@ -86,13 +97,7 @@ def export(path,head,target,progress=lambda _:None,cancel=None):
     if wh not in ao.scopes(order['payload']['result']['rows']):raise ValueError('此修订没有该仓数据')
     headers,rows,count=calculation(order,wh)
     progress('读取制单时商品资料原表…');raw_headers,raw_rows=original(repo,order,wh,cancel)
-    grouped=ne.groups(order['payload']['result'],order['payload'].get('new_focus'))
-    signed=[]
-    for group,items in grouped.items():
-        for d in items:
-            if ao.warehouse(d)!=wh:continue
-            status=d.get('AT');status='未提供' if status=='未提供（不作为数量拦截）' else status
-            signed.append([group]+[d.get(k) for k in 'A B C D E F G H I J K L M N'.split()]+[d.get('BD'),d.get('V'),sem.order_quantity(d) if sem.orderable(d) else 0,status,d.get('AU'),d.get('AV'),ao.number(order['number'],wh),ne.decision(d)])
+    signed=signed_rows(order,wh)
     target.parent.mkdir(parents=True,exist_ok=True);fd,tmp=tempfile.mkstemp(prefix='.archive-',suffix='.xlsx',dir=target.parent);os.close(fd)
     try:
         with stream_book() as book:

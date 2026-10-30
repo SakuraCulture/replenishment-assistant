@@ -11,7 +11,7 @@ import work_repository as wr
 from result_semantics import fmt,order_quantity,order_amount,explanation
 import new_products
 
-SCHEMA=2
+SCHEMA=3
 import archive_orders as ao
 
 def repository(path):
@@ -82,6 +82,13 @@ def cached(path,cache,head,detail=False,cancel=None):
     before=identity(path);order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
     if order is None or order['digest']!=head['digest'] or before!=identity(path):raise ValueError('归档来源已变化，请刷新')
     view=project(order);record=summary_record(head,order['payload']['result'])
+    import history_forms,storage_chunks
+    repo=repository(path)
+    with closing(repo.work.connect()) as db:
+        raw=db.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
+        work_revision=storage_chunks.load(raw[0],db,paths=[('work_revision',)]).get(('work_revision',))
+    catalogs=history_forms.work_parts(repo,{'payload':{'work_revision':work_revision}},[('catalogs',)]).get(('catalogs',),{})
+    for child in record['children']:child['source_sha256']=catalogs.get(child['warehouse'],{}).get('source_sha256')
     if cancel is not None and cancel.is_set():raise InterruptedError('已取消')
     idx.put(k,record,view)
     return {'record':record,'search':view['search'],'projection':view if detail else None}
@@ -90,8 +97,15 @@ def cached(path,cache,head,detail=False,cancel=None):
 def execute(path,cache,request,cancel,progress):
     repo=repository(path);kind=request['kind']
     if kind=='list':
+        from datetime import date
+        start,end=request.get('from',''),request.get('to','')
+        for value in (start,end):
+            if value and date.fromisoformat(value).isoformat()!=value:raise ValueError('日期请填写YYYY-MM-DD')
+        if start and end and start>end:raise ValueError('起始日期不能晚于结束日期')
         heads=repo.headers();records=[];matches=[];needle=request.get('search','').strip().lower()
-        with closing(repo.work.connect()) as db:visibility=ao.states(db)
+        with closing(repo.work.connect()) as db:
+            visibility=ao.states(db)
+            retained={r[0] for r in db.execute('SELECT sha FROM source_files')} if db.execute("SELECT 1 FROM sqlite_master WHERE name='source_files'").fetchone() else set()
         for i,h in enumerate(heads):
             if cancel.is_set():raise InterruptedError('已取消')
             item=cached(path,cache,h,cancel=cancel)
@@ -99,10 +113,11 @@ def execute(path,cache,request,cancel,progress):
                 wh=child['warehouse'];state=visibility.get((h['oid'],wh),{'deleted':False,'token':0,'at':None})
                 r={k:v for k,v in item['record'].items() if k!='children'}
                 r.update(warehouse=wh,parent_number=h['number'],number=ao.number(h['number'],wh),summary=child['summary'],deleted=state['deleted'],visibility_token=state['token'],visibility_at=state['at'])
+                r['source_status']='已留存（导出前校验）' if child.get('source_sha256') in retained else '未留存'
                 if state['deleted']!=bool(request.get('trash')):continue
                 records.append(r);text=json.dumps(r,ensure_ascii=False).lower();terms=needle.split()
                 match=all(t in text for t in terms) or any(all(t in text or t in sku for t in terms) for sku in child['search'])
-                matches.append(match and (not request.get('day') or r['day']==request['day']) and (not request.get('store') or r['store']==request['store']) and (not request.get('warehouse') or wh==request['warehouse']))
+                matches.append(match and (not start or r['day']>=start) and (not end or r['day']<=end) and (not request.get('day') or r['day']==request['day']) and (not request.get('store') or r['store']==request['store']) and (not request.get('warehouse') or wh==request['warehouse']))
             progress({'done':i+1,'total':len(heads)})
         with closing(repo.work.connect()) as db:after=ao.states(db)
         if heads!=repo.headers() or visibility!=after:raise ValueError('归档列表已更新，请刷新')
@@ -126,6 +141,9 @@ def execute(path,cache,request,cancel,progress):
     if head.get('warehouse'):order={**order,'warehouse':head['warehouse']}
     if kind in ('form','form_export','attachments','source_export'):
         import history_forms,business_excel,source_archive
+        if kind in ('form_export','source_export'):
+            with closing(repo.work.connect()) as db:ao.require_active(db,head['oid'],head.get('warehouse'))
+        if kind=='form_export' and request.get('scope')=='当时商品资料快照':raise ValueError('资料说明不是原表，请使用“下载商品资料原表”')
         if kind=='attachments':return history_forms.attachments(repo,order)
         if kind=='source_export':
             if not any(r[2]==request['sha'] for r in history_forms.attachments(repo,order)):raise ValueError('原文件不属于此签发快照')
