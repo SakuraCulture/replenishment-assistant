@@ -36,14 +36,16 @@ class ApplicationWindow(Workbench):
         self.recent=QTableWidget();self.recent.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.recent.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.recent_orders[i]));hv.addWidget(self.recent,1)
         hv.addWidget(label('门店确认回传可在历史页导入，独立于原签发建议；实际下单、收货表关联暂未接入。','muted'))
         self.sections.addWidget(home);self.sections.addWidget(work)
-        archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('历史正常单 · 当前修订去重统计','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
+        archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('历史归档 · 每店每仓独立单据','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
         filters=QHBoxLayout();self.archive_day=QComboBox();self.archive_day.addItem('全部日期','');self.archive_store=QComboBox();self.archive_store.addItem('全部门店','');filters.addWidget(label('业务日期'));filters.addWidget(self.archive_day);filters.addWidget(label('门店'));filters.addWidget(self.archive_store,1);filters.addWidget(button('清空条件',self.clear_archive_filters));av.addLayout(filters)
+        self.archive_warehouse=QComboBox();self.archive_warehouse.addItem('全部仓','');self.archive_warehouse.addItems(['河北仓','山东仓','旧版未标仓']);filters.addWidget(self.archive_warehouse);self.archive_warehouse.currentIndexChanged.connect(self.filter_archive)
+        self.archive_trash=QComboBox();self.archive_trash.addItems(['正常归档','回收站']);filters.addWidget(self.archive_trash);self.archive_trash.currentIndexChanged.connect(self.filter_archive)
         self.archive_day.currentIndexChanged.connect(self.filter_archive);self.archive_store.currentIndexChanged.connect(self.filter_archive)
         self.archive_search.setPlaceholderText('关键词可组合：门店 商品名 / 编码 / 单号（空格分开，回车立即查）');self.archive_search.setClearButtonEnabled(True);self.archive_search.returnPressed.connect(self.refresh_archive)
         self.archive_table=QTableWidget();self.archive_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.archive_table.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.archive_orders[i]));av.addWidget(self.archive_table,1)
         self.archive_note=label('','muted');av.addWidget(self.archive_note)
         paging=QHBoxLayout();paging.addWidget(button('上一页',lambda:self.archive_turn(-1)));paging.addWidget(button('下一页',lambda:self.archive_turn(1)));av.addLayout(paging)
-        row=QHBoxLayout();row.addWidget(button('打开选中单据 / 修订',self.open_selected_archive));row.addWidget(button('批量导入加盟商回传',self.import_merchant_returns));row.addWidget(button('操作日志明细 / 导出',self.show_events));row.addWidget(button('刷新',self.refresh_archive));av.addLayout(row);av.addWidget(label('双击查看：签发快照、历史修订、逐商品数量和来源审计。历史页不改今日工作区。','muted'));self.sections.addWidget(archive)
+        row=QHBoxLayout();row.addWidget(button('打开选中单据 / 修订',self.open_selected_archive));row.addWidget(button('导出选中仓单（三张表）',self.export_selected_archive));row.addWidget(button('移入回收站 / 恢复',self.change_archive_visibility));row.addWidget(button('批量导入加盟商回传',self.import_merchant_returns));row.addWidget(button('操作记录 / 回溯单据',self.show_events));row.addWidget(button('刷新',self.refresh_archive));av.addLayout(row);av.addWidget(label('双击查看：签发快照、历史修订、逐商品数量和来源审计。历史页不改今日工作区。','muted'));self.sections.addWidget(archive)
         actions=QHBoxLayout();self.new_products_btn=button('选择本店新品 / 预览预算',self.choose_new_products);actions.addWidget(self.new_products_btn);self.issue_btn=button('仅确认归档（不导出）',self.confirm_normal);actions.addWidget(self.issue_btn);self.merchant_btn=button('选择门店并导出加盟商确认单',self.export_current,True);actions.addWidget(self.merchant_btn);self.overview_page.layout().addLayout(actions)
         self.pages.widget(4).layout().insertWidget(1,button('选择本店新品 / 预览预算',self.choose_new_products))
         self.mode.addItems(['动销补货','新品候选','新品推荐','缺货恢复及其他','在途衔接风险'])
@@ -100,9 +102,9 @@ class ApplicationWindow(Workbench):
 
     @staticmethod
     def fill_orders(table,records):
-        table.setColumnCount(6);table.setHorizontalHeaderLabels(['业务日期','门店','补货单号','修订','签发金额','确认时间']);table.setRowCount(len(records))
+        table.setColumnCount(7);table.setHorizontalHeaderLabels(['业务日期','门店','仓','补货单号','修订','签发金额','确认时间']);table.setRowCount(len(records))
         for i,r in enumerate(records):
-            for j,val in enumerate([r['day'],r['name']+' ('+r['store']+')',r['number'],f"V{r['revision']:03d}",fmt(r['summary']['amount']),r['saved']]):table.setItem(i,j,QTableWidgetItem(str(val)))
+            for j,val in enumerate([r['day'],r['name']+' ('+r['store']+')',r.get('warehouse','未分仓'),r['number'],f"V{r['revision']:03d}",fmt(r['summary']['amount']),r['saved']]):table.setItem(i,j,QTableWidgetItem(str(val)))
         table.resizeColumnsToContents();table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
 
     def show_section(self,index):
@@ -116,7 +118,7 @@ class ApplicationWindow(Workbench):
         if self.closing:return
         self.archive_page=0;self.archive_note.setText('正在读取归档摘要 / 商品索引…（可继续使用工作页）')
         self.home_status.setText('归档摘要加载中；工作区可继续使用。')
-        self.history_reader.request({'kind':'list','search':self.archive_search.text(),'day':self.archive_day.currentData() or '', 'store':self.archive_store.currentData() or ''},self.archive_ready,self.archive_failed,
+        self.history_reader.request({'kind':'list','search':self.archive_search.text(),'day':self.archive_day.currentData() or '', 'store':self.archive_store.currentData() or '', 'warehouse':self.archive_warehouse.currentText() if self.archive_warehouse.currentIndex() else '', 'trash':bool(self.archive_trash.currentIndex())},self.archive_ready,self.archive_failed,
             lambda p:self.archive_note.setText(f"正在读取归档 {p['done']} / {p['total']}；尚未完成的查询不代表无结果"))
 
     def archive_failed(self,message):
@@ -128,10 +130,10 @@ class ApplicationWindow(Workbench):
             selected=combo.currentData();blocker=QSignalBlocker(combo);combo.clear()
             for text,value in choices:combo.addItem(text,value)
             combo.setCurrentIndex(max(0,combo.findData(selected)));del blocker
-        self.recent_orders=self.archive_all[:10];self.fill_orders(self.recent,self.recent_orders);self.render_archive_page();self.refresh_home_status()
+        self.recent_orders=[r for r in self.archive_all if not r.get('deleted')][:10];self.fill_orders(self.recent,self.recent_orders);self.render_archive_page();self.refresh_home_status()
 
     def clear_archive_filters(self):
-        self.archive_day.setCurrentIndex(0);self.archive_store.setCurrentIndex(0);self.archive_search.clear();self.refresh_archive()
+        self.archive_day.setCurrentIndex(0);self.archive_store.setCurrentIndex(0);self.archive_warehouse.setCurrentIndex(0);self.archive_search.clear();self.refresh_archive()
 
     def render_archive_page(self):
         matching=[r for r,m in zip(self.archive_all,self.archive_matches) if m];pages=max(1,(len(matching)+99)//100);self.archive_page=max(0,min(self.archive_page,pages-1))
@@ -146,10 +148,10 @@ class ApplicationWindow(Workbench):
 
     def refresh_home_status(self):
         heads={(r['day'],r['store']):r for r in getattr(self,'archive_heads',[])}
-        today=[r for r in self.archive_all if r['day']==wr.today()];ready=[s for s,x in self.states.items() if x['state']=='已完成']
+        today=[r for r in self.archive_all if r['day']==wr.today() and not r.get('deleted')];ready=[s for s,x in self.states.items() if x['state']=='已完成']
         missing={s:self.results[s] for s in ready if heads.get((self.job_day,s)) and not self.valid_status_hash(s)}
         pending=sum(not heads.get((self.job_day,s)) or (self.valid_status_hash(s) and self.status_hashes[s][2]!=heads[(self.job_day,s)]['digest']) for s in ready)
-        self.home_status.setText(f"{wr.today()} · 今日已归档 {len(today)} 店 / ¥{sum(r['summary']['amount'] for r in today):,.2f}\n工作区日期 {self.job_day} · 待确认 {pending} 店"+(f' · 正在核对 {len(missing)} 店签发状态' if missing else '')+f" · 未完成/需处理 {len(self.states)-len(ready)} 店 · {'任务运行中' if self.worker else '有未保存草稿' if self.job_dirty else '工作区就绪'}")
+        self.home_status.setText(f"{wr.today()} · 今日已归档 {len({r['store'] for r in today})} 店 / {len(today)} 仓单 / ¥{sum(r['summary']['amount'] for r in today):,.2f}\n工作区日期 {self.job_day} · 待确认 {pending} 店"+(f' · 正在核对 {len(missing)} 店签发状态' if missing else '')+f" · 未完成/需处理 {len(self.states)-len(ready)} 店 · {'任务运行中' if self.worker else '有未保存草稿' if self.job_dirty else '工作区就绪'}")
         self.status_hashes={s:v for s,v in self.status_hashes.items() if s in self.results and v[0] is self.results[s] and v[1] is self.new_focus}
         if missing and self.status_hash_task is None:
             from history_tasks import StatusHashes
@@ -337,14 +339,17 @@ class ApplicationWindow(Workbench):
     def export_order(self,order):
         if self.worker:return
         from history_read import read_for_export
-        self.job(read_for_export,(self.orders,order),self.export_loaded_order)
+        self.job(read_for_export,(self.orders,order),lambda loaded:self.export_loaded_order({**loaded,'selected_warehouse':order.get('warehouse')}))
 
     def export_loaded_order(self,order):
         from merchant_selection import MerchantSelection
         from normal_delivery import export_signed
-        dialog=MerchantSelection(self,order)
-        if dialog.exec()!=QDialog.DialogCode.Accepted:return
-        warehouses=dialog.warehouses().get(order['store'],[])
+        if order.get('selected_warehouse'):
+            warehouses=[order['selected_warehouse']]
+        else:
+            dialog=MerchantSelection(self,order)
+            if dialog.exec()!=QDialog.DialogCode.Accepted:return
+            warehouses=dialog.warehouses().get(order['store'],[])
         if not warehouses:return
         if len(warehouses)==1:
             path,_=QFileDialog.getSaveFileName(self,'导出本仓加盟商确认单',normal_exports.filename(order,warehouses[0]),'Excel (*.xlsx)')
@@ -357,6 +362,36 @@ class ApplicationWindow(Workbench):
             if self.worker:QTimer.singleShot(10,start);return
             self.job(export_signed,(self.orders,order,path,warehouses),done)
         QTimer.singleShot(0,start)
+
+    def export_archive(self,head):
+        from archive_exports import export,filename
+        from business_ui import run
+        from runtime_support import Cancelled
+        if head.get('deleted'):
+            QMessageBox.information(self,'请先恢复','此仓单在回收站，恢复后可导出。');return
+        path,_=QFileDialog.getSaveFileName(self,'导出所选仓与修订：计算表、当时商品资料、签发表',filename(head,head.get('name',head['store'])),'Excel (*.xlsx)')
+        if not path:return
+        try:
+            result=run(self,export,(self.work_repository.path,head,path),'导出归档三张表')
+            self.status.setText('归档三表已保存：'+result)
+        except Cancelled:self.status.setText('归档导出已取消，原快照不变')
+        except Exception as exc:QMessageBox.warning(self,'未导出',str(exc))
+
+    def export_selected_archive(self):
+        i=self.archive_table.currentRow()
+        if i>=0:self.export_archive(self.archive_orders[i])
+        else:QMessageBox.information(self,'请选择仓单','先点选一条仓单，再导出。')
+
+    def change_archive_visibility(self):
+        from archive_orders import change
+        from business_ui import run
+        i=self.archive_table.currentRow()
+        if i<0:return
+        head=self.archive_orders[i];deleted=not head.get('deleted',False);action='移入回收站' if deleted else '恢复归档'
+        message=head['number']+' · '+head['warehouse']+'\n'+('该仓全部修订将从正常列表隐藏，可在回收站恢复；另一仓、计算、回传和原文件保留。' if deleted else '恢复该仓全部修订，原数量、金额与回传记录不变。')
+        if QMessageBox.question(self,action,message,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)!=QMessageBox.StandardButton.Yes:return
+        try:run(self,change,(self.work_repository.path,head,deleted),action,False);self.refresh_archive()
+        except Exception as exc:QMessageBox.warning(self,'未完成',str(exc))
 
     def open_selected_archive(self):
         i=self.archive_table.currentRow()
@@ -371,13 +406,13 @@ class ApplicationWindow(Workbench):
         from feedback_ui import import_returns
         import_returns(self,self)
 
-    def show_events(self,oid=None):
+    def show_events(self,oid=None,warehouse=None):
         from history_ui import EventsDialog
         from business_ui import run
         from history_forms import events
         from runtime_support import Cancelled
         # QPushButton.clicked's bool is not an order id.
-        try:data=run(self,events,(self.work_repository.path,None if isinstance(oid,bool) else oid),'查询归档日志')
+        try:data=run(self,events,(self.work_repository.path,None if isinstance(oid,bool) else oid,warehouse),'查询归档日志')
         except Cancelled:return
         except Exception as exc:self.failed(str(exc));return
         dialog=EventsDialog(self,data['records'],data['rows']);dialog.exec();dialog.deleteLater()

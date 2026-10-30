@@ -81,6 +81,8 @@ def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=Non
         by_store={o['store']:o for o in orders}
         for i,((plan,file),path) in enumerate(zip(files,paths),1):
             checkpoint(cancel);order=by_store[plan['store']];warehouse=file['warehouse']
+            from archive_orders import require_active
+            with closing(repository.work.connect()) as db:require_active(db,order['oid'],warehouse)
             with stage(f'写出确认单 {i}/{len(files)} · {warehouse}',progress):normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'文件 {i}/{len(files)} · {order["payload"]["result"]["store_name"]} · {warehouse}'),warehouse=warehouse)
             completed.append(str(path))
             from warehouse_orders import child_number
@@ -115,6 +117,8 @@ def export_signed(repository,order,destination,warehouses,progress=lambda s:None
     try:
         for i,(wh,path) in enumerate(zip(selected,paths),1):
             checkpoint(cancel)
+            from archive_orders import require_active
+            with closing(repository.work.connect()) as db:require_active(db,order['oid'],wh)
             normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'文件 {i}/{len(paths)} · {wh}'),warehouse=wh)
             done.append(str(path));repository.log(order,'带号导出',{'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'warehouse':wh,'child_number':child_number(order['number'],wh)})
     except Exception as exc:

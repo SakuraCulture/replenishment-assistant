@@ -11,7 +11,8 @@ import work_repository as wr
 from result_semantics import fmt,order_quantity,order_amount,explanation
 import new_products
 
-SCHEMA=1
+SCHEMA=2
+import archive_orders as ao
 
 def repository(path):
     path=Path(path).resolve()
@@ -30,13 +31,19 @@ def key(path,head):
 
 
 def summary_record(head,result):
-    return {**{k:head[k] for k in ('day','store','number','revision','saved')},'name':result['store_name'],'summary':result['summary']}
+    from result_semantics import summarize
+    children=[]
+    for wh in ao.scopes(result['rows']):
+        rows=[d for d in result['rows'] if ao.warehouse(d)==wh]
+        children.append({'warehouse':wh,'summary':summarize(rows),'search':[(d['E']+' '+str(d.get('D',''))).lower() for d in rows]})
+    return {**head,'name':result['store_name'],'summary':result['summary'],'children':children}
 
 
 def project(order):
     rows=order['payload']['result']['rows']
     return {'head':{k:v for k,v in order.items() if k!='payload'},
         'summary':order['payload']['result']['summary'],
+        'warehouses':[ao.warehouse(d) for d in rows],
         'rows':[[fmt(v) for v in (d['E'],d.get('D'),new_products.category(d),d.get('AS'),d.get('_candidate_qty'),order_quantity(d),order_amount(d),explanation(d))] for d in rows],
         'search':[(d['E']+' '+str(d.get('D',''))).lower() for d in rows]}
 
@@ -61,7 +68,7 @@ class Index:
         if row is None:return None
         if hashlib.sha256(''.join(row[:3]).encode()).hexdigest()!=row[3]:return None
         try:
-            stored=wr.loads(row[0]);record={k:stored[k] for k in ('day','store','number','revision','saved','name','summary')}
+            stored=wr.loads(row[0]);record=stored
             return {'record':record,'search':json.loads(row[1]),'projection':json.loads(row[2]) if detail else None}
         except (ValueError,TypeError,KeyError):return None
     def put(self,k,record,view):
@@ -84,31 +91,46 @@ def execute(path,cache,request,cancel,progress):
     repo=repository(path);kind=request['kind']
     if kind=='list':
         heads=repo.headers();records=[];matches=[];needle=request.get('search','').strip().lower()
+        with closing(repo.work.connect()) as db:visibility=ao.states(db)
         for i,h in enumerate(heads):
             if cancel.is_set():raise InterruptedError('已取消')
-            item=cached(path,cache,h,cancel=cancel);r=item['record'];records.append(r)
-            text=json.dumps(r,ensure_ascii=False).lower();terms=needle.split()
-            # Store/order terms may combine with SKU terms; product terms must
-            # match one product, not unrelated products in the same order.
-            match=all(t in text for t in terms) or any(all(t in text or t in sku for t in terms) for sku in item['search'])
-            matches.append(match and (not request.get('day') or r['day']==request['day']) and (not request.get('store') or r['store']==request['store']))
+            item=cached(path,cache,h,cancel=cancel)
+            for child in item['record']['children']:
+                wh=child['warehouse'];state=visibility.get((h['oid'],wh),{'deleted':False,'token':0,'at':None})
+                r={k:v for k,v in item['record'].items() if k!='children'}
+                r.update(warehouse=wh,parent_number=h['number'],number=ao.number(h['number'],wh),summary=child['summary'],deleted=state['deleted'],visibility_token=state['token'],visibility_at=state['at'])
+                if state['deleted']!=bool(request.get('trash')):continue
+                records.append(r);text=json.dumps(r,ensure_ascii=False).lower();terms=needle.split()
+                match=all(t in text for t in terms) or any(all(t in text or t in sku for t in terms) for sku in child['search'])
+                matches.append(match and (not request.get('day') or r['day']==request['day']) and (not request.get('store') or r['store']==request['store']) and (not request.get('warehouse') or wh==request['warehouse']))
             progress({'done':i+1,'total':len(heads)})
-        if heads!=repo.headers():raise ValueError('归档列表已更新，请刷新')
+        with closing(repo.work.connect()) as db:after=ao.states(db)
+        if heads!=repo.headers() or visibility!=after:raise ValueError('归档列表已更新，请刷新')
         return {'records':records,'matches':matches,'heads':heads}
     head=request['head']
     if kind=='detail':
         view=cached(path,cache,head,True,cancel)['projection']
-        view['head']['current_revision']=head.get('current_revision',head['revision'])
+        wh=head.get('warehouse')
+        if wh:
+            indices=[i for i,w in enumerate(view['warehouses']) if w==wh]
+            view['rows']=[view['rows'][i] for i in indices];view['search']=[view['search'][i] for i in indices]
+            meta=cached(path,cache,head,cancel=cancel)['record']
+            view['summary']=next((c['summary'] for c in meta['children'] if c['warehouse']==wh),{'amount':0,'positive':0})
+            view['head'].update(warehouse=wh,parent_number=view['head']['number'],number=ao.number(view['head']['number'],wh))
+        with closing(repo.work.connect()) as db:state=ao.states(db).get((head['oid'],wh),{'deleted':False,'token':0})
+        view['head'].update(deleted=state['deleted'],visibility_token=state['token'],current_revision=head.get('current_revision',head['revision']))
         return view
     # Audit and formal export always retrieve and validate the source, not cache.
     order=repo.get(head['day'],head['store'],head['revision'])
     if order is None or order['digest']!=head['digest']:raise ValueError('归档来源已变化，请刷新')
+    if head.get('warehouse'):order={**order,'warehouse':head['warehouse']}
     if kind in ('form','form_export','attachments','source_export'):
         import history_forms,business_excel,source_archive
         if kind=='attachments':return history_forms.attachments(repo,order)
         if kind=='source_export':
             if not any(r[2]==request['sha'] for r in history_forms.attachments(repo,order)):raise ValueError('原文件不属于此签发快照')
             with closing(repo.work.connect()) as db:return source_archive.export(db,request['sha'],request['path'],cancel)
+        if head.get('warehouse'):order={**order,'warehouse':head['warehouse']}
         rows=history_forms.form(repo,order,request['scope'],request.get('sku',''),cancel)
         if kind=='form_export':return business_excel.write(request['path'],[(request['scope'],['核对项目','当时值','类型'],rows)],cancel)
         return rows

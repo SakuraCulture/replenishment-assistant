@@ -176,6 +176,8 @@ class Repository:
             if old!=planned_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')
             # Compare all expected revisions before any mutation.
             for s in codes:
+                from archive_orders import require_active
+                if planned[s]:require_active(db,planned[s][0])
                 current=db.execute("SELECT current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,s)).fetchone()
                 if (current[0] if current else None)!=expected_orders.get(s):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)
                 if (current[0] if current else None)!=(planned[s][2] if planned[s] else None):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)

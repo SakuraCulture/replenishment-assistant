@@ -53,7 +53,9 @@ def start_smoke(app,win,args):
                 job=win.work_repository.get_job(wr.today());win.restore_job(job)
                 original=wr.loads((out/'historical-settings.json').read_bytes())
                 for s in original:assert win.config_for(s)==original[s]
-                checks.append('restoring saved daily snapshot uses original parameters, not subsequently saved defaults');shot(win,'restart-restore.png');finish();return
+                checks.append('restoring saved daily snapshot uses original parameters, not subsequently saved defaults');shot(win,'restart-restore.png')
+                from archive_smoke import exercise as archive_checks
+                archive_checks(win,out,checks,shot,wait,phase);finish();return
             for wh in wc.WAREHOUSES:
                 win.import_catalog_path(str(root/(wh+'.xlsx')),wh);wait(lambda:win.worker is None);assert wh in win.catalogs
             win.sales.paths=[str(root/'sales.xlsx')];win.sales.refresh();win.start_load();wait(lambda:win.worker is None);assert list(win.store_widgets)==['QA_A','QA_B'];checks.append('packaged background imports/check-file spawn path completed for two stores and two warehouse catalogs')
@@ -90,6 +92,8 @@ def start_smoke(app,win,args):
                 config=win.config_for(s);config['warehouses']['山东仓'][0]+=1;win.apply_parameters([s],config,win.preset_for(s),True)
             (out/'saved-settings.json').write_text(wr.dumps(win.work_repository.stores()),encoding='utf-8')
             c=win.config_for('QA_A');c['warehouses']['河北仓'][0]+=3;win.apply_parameters(['QA_A'],c,win.preset_for('QA_A'),False);assert '仅本次' in win.store_widgets['QA_A']['params'].text();assert win.work_repository.stores()['QA_A']['preset']['config']!=win.config_for('QA_A');checks.append('temporary edits are visibly temporary and do not overwrite defaults; reopen tests new defaults vs historical snapshot')
-            QFileDialog.getExistingDirectory=original_dir;QFileDialog.getSaveFileName=original_save;finish()
+            QFileDialog.getExistingDirectory=original_dir;QFileDialog.getSaveFileName=original_save
+            from archive_smoke import exercise as archive_checks
+            archive_checks(win,out,checks,shot,wait,phase);finish()
         except Exception:finish(traceback.format_exc())
     QTimer.singleShot(100,exercise)
