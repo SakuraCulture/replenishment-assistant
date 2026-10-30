@@ -136,6 +136,8 @@ def main():
             ts=[r['timings'][phase] for r in results[kind]];ms=[r['peak_tree_mib'].get(phase,0) for r in results[kind]]
             summary[phase][kind]={'median':statistics.median(ts),'min':min(ts),'max':max(ts),'peak_rss_mib_median':statistics.median(ms)}
     report={'passed':True,'runs':a.runs,'database_bytes':{k:[v['database_bytes'] for v in values] for k,values in results.items()},'summary':summary,'identity':['full canonical daily digest','per-store business fingerprint','original schema (added storage tables excluded)','filenames','revision and number'],'memory':'external 50ms sum main+child RSS; shared pages counted per process; validation separate','cache':'OS file cache not purged; alternating old/new then new/old, sequential execution','profile':'inclusive nested function timings are not additive; full session times include spawn, transfer, review, commit and file write'}
+    import platform,importlib.metadata,psutil
+    report['environment']={'python':sys.version,'executable':sys.executable,'platform':platform.platform(),'logical_cpus':psutil.cpu_count(),'physical_cpus':psutil.cpu_count(logical=False),'physical_memory_mib':psutil.virtual_memory().total/2**20,'packages':{name:importlib.metadata.version(name) for name in ['PySide6-Essentials','openpyxl','PyInstaller']},'snapshot_sha256':hashlib.sha256(a.snapshot.read_bytes()).hexdigest()}
     (out/'report.json').write_text(json.dumps(report,indent=2),encoding='utf-8');print(json.dumps(report),flush=True)
 
 if __name__=='__main__':

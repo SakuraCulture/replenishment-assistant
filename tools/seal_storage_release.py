@@ -10,10 +10,10 @@ def main():
     assert meta['version']=='0.8.0';head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     assert not subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()
     subprocess.run(['git','merge-base','--is-ancestor',meta['source_commit'],head],cwd=ROOT,check=True)
-    changes=subprocess.check_output(['git','diff','--name-only',meta['source_commit'],head],cwd=ROOT,text=True).splitlines()
+    changes=[n for n in subprocess.check_output(['git','diff','--name-only','-z',meta['source_commit'],head],cwd=ROOT).decode('utf-8').split('\0') if n]
     assert all(x.startswith(('docs/','tools/','releases/')) or x in ('README.md','使用说明.txt') for x in changes)
     files={'equivalence':qa/'equivalence_release/report.json','controls':qa/'controls_release/report.json','selected_controls':qa/'selected_controls_release/report.json','normal':qa/'normal_final/normal_report.json','performance':qa/'performance_release/report.json','workbooks':qa/'workbooks.json','preservation':qa/'protected_after.json'}
-    files.update(chunks=qa/'chunks_fullparse/report.json',projections=qa/'projections_final/report.json',maintenance=qa/'maintenance_final/report.json',rule_fix=qa/'stockout_fix.json',real_recalculation=qa/'real_current/report.json',real_conversion=qa/'real_conversion/report.json')
+    files.update(source_audit=qa/'source_audit.json',chunks=qa/'chunks_fullparse/report.json',projections=qa/'projections_final/report.json',maintenance=qa/'maintenance_final/report.json',rule_fix=qa/'stockout_fix.json',real_recalculation=qa/'real_current/report.json',real_conversion=qa/'real_conversion/report.json')
     ui={'storage_ui':qa/'exe-storage/storage_ui_report.json','normal_ui':qa/'exe-normal/normal_ui_report.json','delivery_ui':qa/'exe-delivery/export_ui_report.json','history_ui':qa/'exe-history/history_ui_report.json','work_io_ui':qa/'exe-work-io/work_io_report.json'}
     evidence={}
     for name,path in {**files,**ui}.items():
