@@ -35,7 +35,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         hr=QHBoxLayout();hr.addWidget(button('进入工作页',lambda:self.show_section(1),True));hr.addWidget(button('继续已保存的今日草稿',self.resume_today));hr.addWidget(button('查询历史正常单',lambda:self.show_section(2)));hr.addWidget(button('数据维护',self.storage_copy));hv.addLayout(hr)
         hv.addWidget(label('保存草稿用于续做；导出时确认并自动归档，供加盟商核对。每天每店仅一张当前正常单。','muted'))
         self.recent=QTableWidget();self.recent.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.recent.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.recent_orders[i]));hv.addWidget(self.recent,1)
-        hv.addWidget(label('门店确认回传可在历史页导入，独立于原签发建议；实际下单、收货表关联暂未接入。','muted'))
+        self.recent.hide();hv.removeWidget(self.recent)
+        from followup_ui import FollowupWidget
+        self.followup=FollowupWidget(self);hv.addWidget(self.followup,1)
         self.sections.addWidget(home);self.sections.addWidget(work)
         archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('历史归档 · 每店每仓独立单据','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
         filters=QHBoxLayout();self.archive_day=QComboBox();self.archive_day.addItem('全部日期','');self.archive_store=QComboBox();self.archive_store.addItem('全部门店','');filters.addWidget(label('业务日期'));filters.addWidget(self.archive_day);filters.addWidget(label('门店'));filters.addWidget(self.archive_store,1);filters.addWidget(button('清空条件',self.clear_archive_filters));av.addLayout(filters)
@@ -116,6 +118,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
     def show_section(self,index):
         self.sections.setCurrentIndex(index)
         if index in (0,2):self.refresh_archive()
+        if index==0 and hasattr(self,'followup'):self.followup.query()
 
     def refresh_archive(self):
         self.archive_timer.stop();self.query_archive()
@@ -189,6 +192,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         super().closeEvent(event)
         if event.isAccepted():
             self.archive_timer.stop();self.history_reader.shutdown()
+            self.followup.shutdown()
             self.summary_pending=None
             if self.summary_task:self.summary_task.wait()
             if self.status_hash_task:

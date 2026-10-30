@@ -96,6 +96,9 @@ def cached(path,cache,head,detail=False,cancel=None):
 
 def execute(path,cache,request,cancel,progress):
     repo=repository(path);kind=request['kind']
+    if kind=='followup':
+        import followup
+        return followup.read(path,cache,request,cancel,progress)
     if kind=='list':
         from datetime import date
         start,end=request.get('from',''),request.get('to','')
