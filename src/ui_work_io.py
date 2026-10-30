@@ -22,7 +22,10 @@ class Session:
                 if not self.process.is_alive():raise RuntimeError('作业处理进程退出；请在作业记录核对保存状态后重试')
                 continue
             kind,data=self.connection.recv()
-            if kind=='progress':progress(data)
+            if kind=='commit':
+                from runtime_support import CommitProgress
+                progress(CommitProgress(data))
+            elif kind=='progress':progress(data)
             elif kind=='rows':
                 from export_progress import RowProgress
                 progress(RowProgress(*data))
@@ -48,12 +51,13 @@ class Session:
 
 
 class Request(QThread):
-    progress=Signal(str);rows=Signal(object,object)
+    progress=Signal(str);rows=Signal(object,object);commit=Signal(bool)
     def __init__(self,session,operation,value,parent):super().__init__(parent);self.session=session;self.operation=operation;self.value=value;self.result=None;self.error=None
     def run(self):
         try:
             last=[None,0.0]
             def progress(message):
+                if hasattr(message,'active'):self.commit.emit(message.active)
                 if hasattr(message,'current') and hasattr(message,'total'):
                     key=(str(message).split('：',1)[0],message.total);now=time.monotonic()
                     if key==last[0] and now-last[1]<.1 and message.current not in (0,message.total):return
@@ -69,13 +73,16 @@ class Request(QThread):
 class Progress(QDialog):
     def __init__(self,parent,session,operation,value):
         super().__init__(parent);self.session=session;self.operation=operation;self._completed=False;self.setWindowTitle({'prepare_save':'核对保存','save':'保存作业','prepare_normal':'核对归档','confirm_normal':'确认归档','delivery_prepare':'核对导出','delivery_execute':'导出确认单','review_export':'保存完整差异','copy_config':'复制配置','storage_copy':'创建兼容存储副本'}.get(operation,'读取作业'));self.setMinimumWidth(510)
-        self.started=time.monotonic();self.last_progress=self.started;self.cancelling=False
+        self.started=time.monotonic();self.last_progress=self.started;self.cancelling=False;self.committing=False;self.cancel_after_commit=False
         self.setWindowTitle({'delivery_probe':'核对导出','delivery_expand':'准备完整签发草稿'}.get(operation,self.windowTitle()))
         v=QVBoxLayout(self);self.note=label('正在准备，请稍候…','muted');v.addWidget(self.note);self.bar=QProgressBar();self.bar.setRange(0,0);v.addWidget(self.bar)
         self.health=label('','muted');v.addWidget(self.health)
-        self.cancel_btn=button('取消',self.reject);self.cancel_btn.setEnabled(operation not in ('save','confirm_normal','review_export'));v.addWidget(self.cancel_btn)
-        self.task=Request(session,operation,value,self);self.task.progress.connect(self.update_stage);self.task.rows.connect(self.update_count);self.task.finished.connect(self.completed)
+        self.cancel_btn=button('取消',self.reject);self.cancel_btn.setEnabled(operation not in ('save','review_export'));v.addWidget(self.cancel_btn)
+        self.task=Request(session,operation,value,self);self.task.commit.connect(self.commit_state);self.task.progress.connect(self.update_stage);self.task.rows.connect(self.update_count);self.task.finished.connect(self.completed)
         self.clock=QTimer(self);self.clock.setInterval(500);self.clock.timeout.connect(self.update_health);self.clock.start();self.update_health()
+    def commit_state(self,active):
+        self.committing=active;self.cancel_btn.setEnabled(not active and not self.cancelling)
+        if not active and self.cancel_after_commit:self.reject()
     def update_stage(self,text):
         self.last_progress=time.monotonic()
         if not self.cancelling:self.note.setText(text)
@@ -90,8 +97,9 @@ class Progress(QDialog):
         self.health.setText(f'已用时 {elapsed//60:02d}:{elapsed%60:02d} · 最近进展 {quiet} 秒前 · {status}')
     def reject(self):
         if self._completed:super().reject();return
-        if self.operation in ('save','confirm_normal','review_export'):self.note.setText('正在完成本次提交，结束后可关闭；不会中途终止写入。');return
-        self.cancelling=True;self.session.cancel.set();self.cancel_btn.setEnabled(False);self.note.setText('正在停止导出；已完成归档和文件会保留，当前事务结束后返回…' if self.operation=='delivery_execute' else '正在取消准备，原记录不会改变…')
+        if self.committing:self.cancel_after_commit=True;self.note.setText('最终提交已开始，完成后停止后续操作。');return
+        if self.operation in ('save','review_export'):self.note.setText('正在完成本次提交，结束后可关闭；不会中途终止写入。');return
+        self.cancelling=True;self.session.cancel.set();self.cancel_btn.setEnabled(False);self.note.setText('正在取消；最终提交前会回滚，已提交归档及已完成文件会保留…' if self.operation=='delivery_execute' else '正在取消准备，原记录不会改变…')
     def closeEvent(self,event):
         if self._completed:event.accept()
         else:self.reject();event.ignore()

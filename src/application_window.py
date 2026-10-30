@@ -258,9 +258,9 @@ class ApplicationWindow(Workbench):
                 while True:
                     box.exec()
                     if box.clickedButton() is not review:break
-                    path,_=QFileDialog.getSaveFileName(self,'保存完整签发差异','签发差异.json','JSON (*.json)')
+                    path,_=QFileDialog.getSaveFileName(self,'保存完整签发差异','签发差异.xlsx','Excel (*.xlsx)')
                     if path:
-                        if not path.lower().endswith('.json'):path+='.json'
+                        if not path.lower().endswith('.xlsx'):path+='.xlsx'
                         request(self,session,'review_export',path)
                 if box.clickedButton() is not accept:return
                 receipt=request(self,session,'confirm_normal',None)
@@ -295,7 +295,12 @@ class ApplicationWindow(Workbench):
                     detail={'所选门店':[p['store'] for p in plans]}
                     if prepared['head']:
                         detail['同日草稿覆盖']={'原保存时间':prepared['head']['saved'],'原门店状态':prepared['head']['summary'],'本次门店状态':prepared['summary']};box.setInformativeText('同时覆盖当天完整草稿；未选门店正常单不变。展开详情查看草稿覆盖范围。')
-                    box.setDetailedText(json.dumps(detail,ensure_ascii=False,indent=2));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel);box.exec()
+                    box.setDetailedText(prepared['detail_text']);box.setInformativeText('按所选门店顺序列出商品、参数和来源变化。'+('明细已截断，请导出完整差异Excel。' if prepared['truncated'] else '展开详情核对；可导出完整差异Excel。'));save_diff=box.addButton('导出完整差异Excel',QMessageBox.ButtonRole.ActionRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
+                    while True:
+                        box.exec()
+                        if box.clickedButton() is not save_diff:break
+                        diff_path,_=QFileDialog.getSaveFileName(self,'保存完整签发差异','签发差异.xlsx','Excel (*.xlsx)')
+                        if diff_path:request(self,session,'review_export',diff_path if diff_path.lower().endswith('.xlsx') else diff_path+'.xlsx')
                     if box.clickedButton() is not accept:return
                 if len(plans)==1:
                     path,_=QFileDialog.getSaveFileName(self,'导出本店加盟商确认单',plans[0]['filename'],'Excel (*.xlsx)')

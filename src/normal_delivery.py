@@ -61,7 +61,7 @@ def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=Non
     signed=any(not p['same'] for p in plans);completed=[];orders=[]
     if signed:
         progress('后台归档所选门店与完整来源（一次事务）…')
-        orders=repository.confirm(payload,[p['store'] for p in plans],batch['head']['revision'] if batch['head'] else None,{p['store']:p['old']['revision'] if p['old'] else None for p in plans},progress=progress)
+        orders=repository.confirm(payload,[p['store'] for p in plans],batch['head']['revision'] if batch['head'] else None,{p['store']:p['old']['revision'] if p['old'] else None for p in plans},progress=progress,cancel=cancel)
     else:
         # The prepare step already decoded and validated these immutable revisions.
         # Recheck current revision identities together; reuse exactly those snapshots.

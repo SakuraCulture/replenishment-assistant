@@ -1,5 +1,6 @@
 """One current normal order per day/store, immutable revisions and atomic draft save."""
-import copy,hashlib,json,sqlite3,uuid,zlib
+import copy,hashlib,json,sqlite3,uuid,zlib,time
+from runtime_support import checkpoint,CommitProgress
 from contextlib import closing
 from datetime import date
 from urllib.parse import quote
@@ -108,13 +109,18 @@ class Repository:
         with closing(self.work.connect()) as db,db:
             db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(wr.now(),order['oid'],order['revision'],action,wr.dumps(detail)))
 
-    def confirm(self,payload,codes,expected_job,expected_orders,*,progress=lambda _:None,headers_only=False):
+    def confirm(self,payload,codes,expected_job,expected_orders,*,progress=lambda _:None,headers_only=False,cancel=None):
+        notify=progress
+        def progress(message):
+            checkpoint(cancel);notify(message);checkpoint(cancel)
+        checkpoint(cancel)
         day=payload['day'];date.fromisoformat(day)
         if day!=wr.today():raise ValueError('只能确认当前业务日期；历史只读，跨天请新建今日作业')
         if payload.get('schema')!=1 or payload.get('model_version')!=MODEL_VERSION:raise ValueError('作业或模型版本不兼容，请重新计算')
         info=wr.summary(payload)
         if not codes or len(codes)!=len(set(codes)):raise ValueError('请选择互不重复的门店')
         for s in codes:
+            checkpoint(cancel)
             if payload['states'].get(s,{}).get('state')!='已完成' or payload.get('input_dirty'):raise ValueError('门店结果失效或未完成：'+s)
             r=payload['results'][s]
             from result_semantics import summarize
@@ -154,8 +160,17 @@ class Repository:
                 prepared.append((s,oid,number,rev,h,encoded,result['summary']))
             progress(RowProgress(f'准备正常单：{index} / {len(codes)} 家',index,len(codes)))
         if changed_job or prepared:chunks.backup_before_write(self.work.path,progress)
-        with stage('提交归档与草稿（提交期间不可取消）',progress),closing(self.work.connect()) as db,db:
-            db.execute('BEGIN IMMEDIATE')
+        checkpoint(cancel)
+        with closing(self.work.connect()) as db,db:
+            progress('等待归档写锁（可取消）…')
+            db.execute('PRAGMA busy_timeout=100');deadline=time.monotonic()+10
+            while True:
+                checkpoint(cancel)
+                try:db.execute('BEGIN IMMEDIATE');break
+                except sqlite3.OperationalError as exc:
+                    if 'locked' not in str(exc).lower() or time.monotonic()>=deadline:raise
+            progress('已取得写锁，校验修订并准备事务内容（可取消）…')
+            checkpoint(cancel)
             old=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
             if (old[0] if old else None)!=expected_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')
             if old!=planned_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')
@@ -164,17 +179,25 @@ class Repository:
                 current=db.execute("SELECT current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,s)).fetchone()
                 if (current[0] if current else None)!=expected_orders.get(s):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)
                 if (current[0] if current else None)!=(planned[s][2] if planned[s] else None):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)
-            if changed_job or prepared:compressed=chunks.put(db,work_pack)
+            if changed_job or prepared:compressed=chunks.put(db,work_pack,cancel=cancel)
             if changed_job:
                 if old:db.execute('INSERT OR IGNORE INTO normal_work_revisions SELECT revision,day,payload FROM jobs WHERE day=?',(day,))
                 db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET revision=excluded.revision,digest=excluded.digest,saved=excluded.saved,summary=excluded.summary,payload=excluded.payload',(day,work_revision,digest,stamp,wr.dumps(info),compressed))
             for s,oid,number,rev,h,encoded,summary in prepared:
+                checkpoint(cancel)
                 if not planned[s]:
                     db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,s,'normal_model',oid,number,rev))
                 # Keep the issue's complete input/config draft even after later ordinary draft saves.
                 db.execute('INSERT OR IGNORE INTO normal_work_revisions SELECT revision,day,payload FROM jobs WHERE day=?',(day,))
-                db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,rev,h,stamp,chunks.put(db,encoded)))
+                db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,rev,h,stamp,chunks.put(db,encoded,cancel=cancel)))
                 db.execute('UPDATE normal_orders SET current=? WHERE oid=?',(rev,oid))
                 db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,oid,rev,'确认归档' if rev==1 else '同日覆盖修订',wr.dumps({'number':number,'day':day,'store':s,'summary':summary,'previous_revision':rev-1 or None})))
+            progress('事务内容准备完成，检查最终取消请求…')
+            checkpoint(cancel)
+            # Linearization boundary: after this check, commit must finish or fail.
+            # Never interrupt SQLite COMMIT or kill its process.
+            notify(CommitProgress(True))
+            db.commit()
+        notify(CommitProgress(False))
         if headers_only:return heads
-        with stage('读取并验证签发快照',progress):return [self.get(day,h['store'],h['revision'],progress=progress) for h in heads]
+        with stage('读取并验证签发快照',notify):return [self.get(day,h['store'],h['revision'],progress=notify) for h in heads]

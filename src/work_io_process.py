@@ -24,11 +24,12 @@ def compact_previous(record):
 
 
 def serve(connection,path,cancel):
-    payload=None;encoded_job=None;save_day=None;old=None;batch=None;review_text=None;expected_job=None;expected_orders=None;codes=None;ro=reader(path);work=wr.Repository.__new__(wr.Repository);work.path=Path(path)
+    payload=None;encoded_job=None;save_day=None;old=None;batch=None;review_text=None;review_records=None;expected_job=None;expected_orders=None;codes=None;ro=reader(path);work=wr.Repository.__new__(wr.Repository);work.path=Path(path)
     def progress(text):
         # RowProgress is a str subclass with a multi-argument constructor; carry
         # its explicit fields instead of relying on pickle's str reconstruction.
-        if hasattr(text,'current') and hasattr(text,'total'):connection.send(('rows',(str(text),text.current,text.total)))
+        if hasattr(text,'active'):connection.send(('commit',text.active))
+        elif hasattr(text,'current') and hasattr(text,'total'):connection.send(('rows',(str(text),text.current,text.total)))
         else:connection.send(('progress',str(text)))
     try:
         while True:
@@ -61,29 +62,38 @@ def serve(connection,path,cancel):
                     repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
                     progress('正在核对正常单与完整差异…')
                     focus.require_for(payload.get('new_focus'),payload['day'],[payload['results'][code] for code in codes])
-                    head=normal_delivery.job_head(ro,payload['day']);expected_job=head['revision'] if head else None;expected_orders={};details={};lines=[]
+                    head=normal_delivery.job_head(ro,payload['day']);expected_job=head['revision'] if head else None;expected_orders={};details={};lines=[];review_records=[]
                     for code in codes:
                         progress(f'核对正常单 {codes.index(code)+1}/{len(codes)} · {code}')
                         checkpoint(cancel);r=payload['results'][code];previous_head=repository.head(payload['day'],code)
                         same=bool(previous_head and previous_head['digest']==normal_orders.fingerprint_owned(r,payload.get('new_focus')))
                         previous=repository.get(payload['day'],code,previous_head['revision'],view='review' if same else None,progress=progress) if previous_head else None
                         expected_orders[code]=previous['revision'] if previous else None
+                        if not same:
+                            import order_review
+                            review_records.append(order_review.build(previous,r,payload.get('new_focus')))
                         action='已归档，无需新修订' if same else f"同号 V{previous['revision']:03d} → V{previous['revision']+1:03d}" if previous else '首次 V001'
                         lines.append(r['store_name']+' ('+code+')：'+action+f"；¥{r['summary']['amount']:,.2f}，{r['summary']['positive']}款，待核{r['summary']['issues']}，预算缺口{r['summary']['budget_deferred']}")
                         details[code]={'关注清单原版本':(previous['payload'].get('new_focus') or {}).get('revision') if previous else None,'关注清单新版本':(payload.get('new_focus') or {}).get('revision'),'new_selection':r.get('new_products',{}),'changes':({'added':[],'removed':[],'changed':[],'old_settings':previous['payload']['result'].get('effective_settings'),'new_settings':r.get('effective_settings'),'old_sources':previous['payload']['result'].get('sources'),'new_sources':r.get('sources')} if same else normal_orders.revision_diff(previous['payload']['result'] if previous else None,r)),'before_amount':previous['payload']['result']['summary']['amount'] if previous else None,'after_amount':r['summary']['amount']}
                     if head:details['草稿覆盖']={'原保存时间':head['saved'],'原门店状态':head['summary']['stores'],'新门店状态':wr.summary(payload)['stores']}
                     review_text=json.dumps(details,ensure_ascii=False,indent=2)
-                    result={'lines':lines,'detail_text':review_text[:120000],'truncated':len(review_text)>120000}
+                    import order_review
+                    result={'lines':lines,**order_review.preview(review_records)}
                 elif op=='confirm_normal':
                     import normal_orders,normal_delivery
                     if payload is None or expected_orders is None:raise ValueError('缺少已核对的正常单')
                     progress('正在归档正常单与完整草稿；提交结束后才可关闭…')
                     repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=work
-                    issued=repository.confirm(payload,codes,expected_job,expected_orders,progress=progress,headers_only=True)
+                    issued=repository.confirm(payload,codes,expected_job,expected_orders,progress=progress,headers_only=True,cancel=cancel)
                     result={'orders':[{k:v for k,v in r.items() if k!='payload'} for r in issued],'saved':normal_delivery.job_head(work,payload['day'])['saved']}
                 elif op=='review_export':
                     if review_text is None:raise ValueError('尚未生成完整差异')
                     destination=Path(arguments)
+                    if destination.suffix.lower()=='.xlsx':
+                        import business_excel,order_review
+                        if review_records is None:raise ValueError('尚未生成差异表')
+                        result=business_excel.write(destination,[('签发差异',order_review.HEADERS,order_review.rows(review_records))],cancel,progress)
+                        connection.send(('success',None));send_tree(connection,result,None);continue
                     if destination.suffix.lower()!='.json' or destination.exists():raise ValueError('请使用一个尚不存在的JSON文件名')
                     fd,tmp=tempfile.mkstemp(prefix='.review-',dir=destination.parent)
                     try:
@@ -97,7 +107,10 @@ def serve(connection,path,cancel):
                     batch=None;supplied,codes=arguments;repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
                     with stage('核对导出修订',progress):batch=normal_delivery.prepare_owned_batch(repository,supplied,codes,progress=progress,cancel=cancel)
                     batch['complete']=op=='delivery_prepare'
-                    result={'head':batch['head'],'summary':supplied.get('_draft_summary',wr.summary(batch['payload'])), 'plans':[]}
+                    import order_review
+                    review_records=[order_review.build(p['old'],batch['payload']['results'][p['store']],supplied.get('new_focus')) for p in batch['plans'] if not p['same']]
+                    review_text=wr.dumps(review_records)
+                    result={'head':batch['head'],'summary':supplied.get('_draft_summary',wr.summary(batch['payload'])), 'plans':[],**order_review.preview(review_records)}
                     for plan in batch['plans']:
                         r=batch['payload']['results'][plan['store']]
                         result['plans'].append({**{k:v for k,v in plan.items() if k!='old'},'old':{k:v for k,v in plan['old'].items() if k!='payload'} if plan['old'] else None,'name':r['store_name'],'amount':r['summary']['amount']})

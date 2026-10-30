@@ -103,9 +103,11 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None):
     progress(RowProgress(f'快照编码完成：{count:,} 块，新增 {len(blocks):,} 块',count,total))
     return Prepared(tree,h.hexdigest(),size,blocks,binding)
 
-def put(db,p):
+def put(db,p,*,cancel=None):
+    from runtime_support import checkpoint
     schema(db)
     for h,(size,data) in p.chunks.items():
+        checkpoint(cancel)
         db.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',(h,size,data))
     # A partial prepare cannot publish references to absent blocks.
     def refs(n):
@@ -116,6 +118,7 @@ def put(db,p):
             for child in n[1]:yield from refs(child)
         else:raise ValueError('未知快照节点')
     for h,size in set(refs(p.tree)):
+        checkpoint(cancel)
         row=db.execute('SELECT size FROM snapshot_chunks WHERE hash=?',(h,)).fetchone()
         if not row or row[0]!=size:raise ValueError('快照内容块缺失或长度不符：'+h)
     return p.blob()

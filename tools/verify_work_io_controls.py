@@ -36,8 +36,11 @@ def main():
     cancelled=out/'cancelled';cancelled.mkdir()
     with Session(work.path) as session:
         session.call('delivery_prepare',[changed,codes],lambda _:None)
+        committed=False
         def progress(value):
-            if hasattr(value,'current') and value.current>0:session.cancel.set()
+            nonlocal committed
+            if hasattr(value,'active') and not value.active:committed=True
+            if committed and hasattr(value,'current') and value.current>0:session.cancel.set()
         try:session.call('delivery_execute',str(cancelled),progress)
         except RuntimeError as exc:assert '已归档' in str(exc) and '未生成' in str(exc)
         else:raise AssertionError('export cancellation ignored')

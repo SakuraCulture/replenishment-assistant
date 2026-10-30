@@ -42,8 +42,18 @@ def decision(d):
         if d.get('_new_requested',0)>0:return '必卖首铺' if d.get('_must_sell') else '新品首铺'
         return '新品未选'
     if d.get('_audit',{}).get('applied'):return '一箱恢复'
-    if d.get('AW')=='极端缺货自动拉回':return '缺货恢复'
-    if sem.numeric(d.get('BQ')) and d['BQ']>0 and d.get('K',0)<=0:return '最低持有'
+    if d.get('AW')=='极端缺货自动拉回':return '极端缺货恢复'
+    # Counterfactual quantity without the holding floor, from persisted model
+    # intermediates. Do not re-run prediction or infer from AS == BQ alone.
+    keys=('AR','BI','BP','BQ','BR','BU','AS')
+    if all(sem.numeric(d.get(k)) for k in keys):
+        ordinary=d['AR'] if d['BI']==1 else 0
+        without_floor=max(0,min(ordinary,d['BU']))
+        raised=d['AS']>without_floor and (d['BQ']>without_floor or d['BP']>ordinary)
+        if raised:
+            if d.get('J')==0 and sem.numeric(d.get('N')) and d['N']>0:return '零销恢复'
+            return '最低持有' if d['BQ']>without_floor else '断货保底'
+    elif sem.numeric(d.get('BQ')) and d['BQ']>0:return '补货建议'
     return '必卖补货' if d.get('_must_sell') else '动销补货'
 
 
