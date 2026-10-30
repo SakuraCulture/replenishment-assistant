@@ -41,7 +41,7 @@ def start_smoke(app,win,args):
                 assert box.defaultButton().text()=='取消';text='取消' if action=='reject' else '覆盖当天记录' if box.objectName()=='dailyOverwrite' else '确认并归档';next(b for b in box.buttons() if b.text()==text).click()
         timer.timeout.connect(act);timer.start();return timer
     def finish(error=None):
-        pulse.stop();monitor.stop();report={'passed':error is None,'error':error,'version':diagnostic(),'checks':state['checks'],'timings':state['times'],'progress':state['progress'],'storage':'original daily SQLite schema and JSON/zlib; private copied database only'}
+        pulse.stop();monitor.stop();report={'passed':error is None,'error':error,'version':diagnostic(),'checks':state['checks'],'timings':state['times'],'progress':state['progress'],'storage':'dual-format SQLite; immutable chunks and legacy zlib JSON; private copied database only'}
         (out/'work_io_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');win.job_dirty=False;win._discard_close=True;win.close();app.exit(0 if error is None else 1)
     win.failed=lambda msg:(_ for _ in ()).throw(RuntimeError(msg));sys.excepthook=lambda t,v,tb:finish(''.join(traceback.format_exception(t,v,tb)))
     def exercise():
@@ -53,15 +53,18 @@ def start_smoke(app,win,args):
             except Cancelled:pass
             finally:timer.stop();timer.deleteLater()
             assert not win.results and normal_delivery.job_head(win.work_repository,day)==original;state['checks'].append('cancel real full read leaves current workspace and original daily header unchanged; owned process reclaimed')
-            record=timed('read',lambda:read_job(win,path,day));assert record['digest']==original['digest'];timed('restore',lambda:win.restore_job(record,owned=True));del record
+            record=timed('read',lambda:read_job(win,path,day));assert record['digest']==original['digest']
+            from version_info import MODEL_VERSION
+            assert record['payload']['model_version']==MODEL_VERSION, 'use a genuinely recalculated current-model QA snapshot'
+            timed('restore',lambda:win.restore_job(record,owned=True));del record
             assert len(win.results)==5 and sum(len(r['rows']) for r in win.results.values())==84693;state['checks'].append('retry reads validated full five-store snapshot, owned restore preserves 84693 result rows and frozen configuration')
-            config=timed('copy_config',lambda:read_job(win,path,day,True));assert config['store_presets']==win.store_presets;del config;state['checks'].append('copy configuration reads full source validation but returns only exact saved configuration')
+            config=timed('copy_config',lambda:read_job(win,path,day,True));assert config['store_presets']==win.store_presets;del config;state['checks'].append('copy configuration validates selected fields and returns exact saved configuration')
             # Test-only current-day copy. Production readonly historical behavior
             # is verified separately by work_smoke; original historical row remains.
             win.job_day=wr.today();win.readonly=False;win.new_focus=focus.empty(wr.today()[:7]);win.refresh_focus();win.export_log.append({'qa':'isolated full save'});win.touch();timer=action_timer('accept')
             try:assert timed('save',win.save_current)
             finally:timer.stop();timer.deleteLater()
-            saved=normal_delivery.job_head(win.work_repository,wr.today());assert saved and not win.job_dirty;state['checks'].append('actual full save with default-cancel same-day confirmation when needed; existing repository transaction and schema retained')
+            saved=normal_delivery.job_head(win.work_repository,wr.today());assert saved and not win.job_dirty;state['checks'].append('actual full save with default-cancel same-day confirmation when needed; existing CAS transaction and business tables retained; chunks stored atomically')
             # The prepare/cancel path must not overwrite the newly saved job.
             win.export_log.append({'qa':'cancelled modification'});win.touch();timer=action_timer('reject')
             try:assert not timed('overwrite_cancel',win.save_current)

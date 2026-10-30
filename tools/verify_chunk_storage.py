@@ -4,9 +4,12 @@ from pathlib import Path
 from datetime import date,datetime
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
 import work_repository as wr,storage_chunks as ch
-out=ROOT/'qa/storage_080/stage2';out.mkdir(exist_ok=False)
+import argparse
+a=argparse.ArgumentParser();a.add_argument('--output',type=Path,required=True);args=a.parse_args()
+out=args.output;out.mkdir(parents=True,exist_ok=False)
 def payload():return {'schema':1,'day':'2026-10-30','model_version':'0.3.0-rules','states':{},'results':{},'input_dirty':True,'store_presets':{'x':{'p':1}},'store_ui':{},'loaded':{'hashes':{'a':'h'},'rows':[{'code':'0000'+str(i),'none':None,'bool':False,'zero':0,'float':0.0,'blank':'','date':date(2026,10,30),'time':datetime(2026,10,30,11,2),'unicode':'试算\r\n=x','list':[i,None]} for i in range(1200)]},'catalogs':{'HB':{'revision':'a','rows':list(range(800))}},'profile':{'revision':'b'}}
-p=payload();db=sqlite3.connect(':memory:');prep=ch.prepare(p);expected=wr.dumps(p).encode();assert prep.digest==hashlib.sha256(expected).hexdigest() and prep.size==len(expected)
+p=payload();p['large_map']={str(i):{'value':i,'date':date(2026,10,30)} for i in range(900)};p['numeric_keys']={1:'one',2:'two'};p['date_marker']={'__type__':'date','value':'2026-10-30'}
+db=sqlite3.connect(':memory:');prep=ch.prepare(p);expected=wr.dumps(p).encode();assert prep.digest==hashlib.sha256(expected).hexdigest() and prep.size==len(expected)
 with db:blob=ch.put(db,prep)
 assert wr.dumps(ch.load(blob,db,expected=prep.digest))==wr.dumps(p)
 legacy=zlib.compress(expected);assert wr.dumps(ch.load(legacy,db,expected=prep.digest))==wr.dumps(p)

@@ -3,8 +3,10 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path[:0]=[str(ROOT/'src'),str(ROOT/'tools')]
 import work_repository as wr,normal_orders as no,normal_exports as ne,storage_chunks as ch
 from structure_oracle import excel_snapshot
-out=ROOT/'qa/storage_080/projections';out.mkdir(exist_ok=False)
-p=wr.loads((ROOT/'qa/storage_080/normal_stage3/payload.json').read_text(encoding='utf-8'));p['day']=wr.today()
+import argparse
+a=argparse.ArgumentParser();a.add_argument('--output',type=Path,required=True);a.add_argument('--fixture',type=Path,required=True);args=a.parse_args()
+out=args.output;out.mkdir(parents=True,exist_ok=False)
+p=wr.loads(args.fixture.read_text(encoding='utf-8'));p['day']=wr.today()
 work=wr.Repository(out/'settings');repo=no.Repository(work);s=next(iter(p['results']));result=copy.deepcopy(p['results'][s]);result['baseline']=[{'synthetic_padding':i,'text':'不进入导出但必须保留完整归档'*50} for i in range(4096)]
 record={'schema':1,'result':result,'new_focus':p['new_focus'],'work_revision':'fixture','item_ids':{d['E']:str(i) for i,d in enumerate(result['rows'])}}
 h=no.fingerprint_owned(result,p['new_focus']);pack=ch.prepare(record,binding=h);oid=str(uuid.uuid4())

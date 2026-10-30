@@ -17,7 +17,7 @@ class Session:
         progress('传输本次操作所需数据…')
         send_tree(self.connection,value,None if self.writing else self.cancel,lambda n:progress(f'正在传输数据：已发送 {n:,} 个数据块（总量未预扫描）'))
         while True:
-            if not self.writing and self.cancel.is_set():raise Cancelled('已取消')
+            if not self.writing and operation!='storage_copy' and self.cancel.is_set():raise Cancelled('已取消')
             if not self.connection.poll(.05):
                 if not self.process.is_alive():raise RuntimeError('作业处理进程退出；请在作业记录核对保存状态后重试')
                 continue
@@ -31,7 +31,7 @@ class Session:
                 if data[0]=='Cancelled':raise Cancelled(data[1])
                 raise RuntimeError(data[1])
             elif kind=='success':
-                result=receive_tree(self.connection,None if self.writing else self.cancel,lambda n:progress(f'正在接收数据：已接收 {n:,} 个数据块（总量未预扫描）'),alive=self.process.is_alive)[0];self.writing=False;return result
+                result=receive_tree(self.connection,None if self.writing or operation=='storage_copy' else self.cancel,lambda n:progress(f'正在接收数据：已接收 {n:,} 个数据块（总量未预扫描）'),alive=self.process.is_alive)[0];self.writing=False;return result
             else:raise RuntimeError('作业处理进程返回未知消息')
     def close(self):
         # All write calls finish before their modal dialog closes. Termination is
@@ -68,7 +68,7 @@ class Request(QThread):
 
 class Progress(QDialog):
     def __init__(self,parent,session,operation,value):
-        super().__init__(parent);self.session=session;self.operation=operation;self._completed=False;self.setWindowTitle({'prepare_save':'核对保存','save':'保存作业','prepare_normal':'核对归档','confirm_normal':'确认归档','delivery_prepare':'核对导出','delivery_execute':'导出确认单','review_export':'保存完整差异','copy_config':'复制配置'}.get(operation,'读取作业'));self.setMinimumWidth(510)
+        super().__init__(parent);self.session=session;self.operation=operation;self._completed=False;self.setWindowTitle({'prepare_save':'核对保存','save':'保存作业','prepare_normal':'核对归档','confirm_normal':'确认归档','delivery_prepare':'核对导出','delivery_execute':'导出确认单','review_export':'保存完整差异','copy_config':'复制配置','storage_copy':'创建兼容存储副本'}.get(operation,'读取作业'));self.setMinimumWidth(510)
         self.started=time.monotonic();self.last_progress=self.started;self.cancelling=False
         self.setWindowTitle({'delivery_probe':'核对导出','delivery_expand':'准备完整签发草稿'}.get(operation,self.windowTitle()))
         v=QVBoxLayout(self);self.note=label('正在准备，请稍候…','muted');v.addWidget(self.note);self.bar=QProgressBar();self.bar.setRange(0,0);v.addWidget(self.bar)

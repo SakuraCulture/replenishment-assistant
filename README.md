@@ -1,3 +1,5 @@
+当前开发候选为 **0.8.0**（模型 **0.3.1-rules**、仓归属0.5.0、作业/参数逻辑schema仍1、物理存储格式2）。固定0.7.4基线 `39f4944`，分支 `perf/chunked-storage-0.8.0`。后续三阶段范围、兼容与复跑入口见 [0.8.0分块存储与兼容](docs/0.8.0分块存储与兼容.md)；实际交付及验收以 `releases/0.8.0/rc1` 为准。保留0.7.4包，不自动推送或合并。此次唯一规则修正是N>30且J>0时仅废弃冲突N的计算影响，原N审计保留，日/周/月预测公式、零销量缺货恢复不变。
+
 # 补货助手
 
 当前源码：Windows 离线桌面版 0.7.4（保存、归档、导出减少重复处理及真实阶段进度）；验证与构建状态见 releases/0.7.4 对应记录。模型规则仍为0.3.0-rules，需求归属版本0.5.0，参数/作业格式版本1。Python 3.12 / PySide6 / openpyxl / PyInstaller。
@@ -43,6 +45,7 @@
 | 独立文件检查 | `src/file_intake.py` | 单文件直接调用，多文件最多2个spawn进程；原序号合并，取消后等待回收 |
 | 多店编排 | `src/batch_service.py` | 内存归集保留原Excel边界语义；按门店进程并发；原计算引擎不变 |
 | 分仓资料与需求归属 | `src/warehouse_catalog.py`、`src/warehouse_ui.py` | 外部分别标记河北/山东资料，保存快照，门店主从仓选择；无库存扣减或需求限量 |
+| 分块存储与副本转换 | `src/storage_chunks.py`、`src/storage_maintenance.py` | 同库不可变内容块、旧格式读取、投影校验；只向新路径转换副本 |
 | 每日作业、配置与方案 | `src/workbench.py`、`src/work_repository.py` | SQLite按天唯一、确认覆盖与并发修订检查；完整快照恢复；门店默认与版本化方案 |
 | 参数说明、编辑与试算 | `src/parameter_schema.py`、`src/parameter_ui.py`、`src/parameter_trial.py` | 完整参数校验、实际逐店权重重绑定、同快照对比；原核心不改 |
 | 版本信息 | `src/version.json`、`src/version_info.py` | 应用/模型版本统一来源；构建时注入提交与构建编号 |

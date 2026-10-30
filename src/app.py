@@ -23,6 +23,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--storage-smoke' in sys.argv:
+        from storage_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--storage-smoke')+1:])
     if '--work-io-smoke' in sys.argv:
         from work_io_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--work-io-smoke')+1:])
@@ -69,4 +72,7 @@ def __getattr__(name):
 if __name__=="__main__":
     import multiprocessing
     multiprocessing.freeze_support()
+    if '--storage-copy' in sys.argv:
+        from storage_maintenance import cli
+        sys.exit(cli(sys.argv[sys.argv.index('--storage-copy')+1:]))
     sys.exit(main())

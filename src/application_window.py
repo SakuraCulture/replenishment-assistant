@@ -31,7 +31,7 @@ class ApplicationWindow(Workbench):
             b=button(title,lambda checked=False,n=i:self.show_section(n));self.top_nav.append(b);nav.addWidget(b)
         nav.addStretch();v.addLayout(nav);self.sections=QStackedWidget();v.addWidget(self.sections,1);self.setCentralWidget(root)
         home=QWidget();hv=QVBoxLayout(home);hv.setContentsMargins(36,26,36,26);hv.addWidget(label('今天的补货，从这里开始','title'));self.home_status=label('','section');hv.addWidget(self.home_status)
-        hr=QHBoxLayout();hr.addWidget(button('开始 / 继续工作',lambda:self.show_section(1),True));hr.addWidget(button('继续已保存的今日草稿',self.resume_today));hr.addWidget(button('查询历史正常单',lambda:self.show_section(2)));hv.addLayout(hr)
+        hr=QHBoxLayout();hr.addWidget(button('开始 / 继续工作',lambda:self.show_section(1),True));hr.addWidget(button('继续已保存的今日草稿',self.resume_today));hr.addWidget(button('查询历史正常单',lambda:self.show_section(2)));hr.addWidget(button('存储维护 / 旧版兼容副本',self.storage_copy));hv.addLayout(hr)
         hv.addWidget(label('保存草稿用于续做；导出时确认并自动归档，供加盟商核对。每天每店仅一张当前正常单。','muted'))
         self.recent=QTableWidget();self.recent.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.recent.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.recent_orders[i]));hv.addWidget(self.recent,1)
         hv.addWidget(label('确认回传、实际下单、收货表的历史关联将在后续独立接入；当前不会自动发送或下单。','muted'))
@@ -47,6 +47,21 @@ class ApplicationWindow(Workbench):
         self.save_job_btn.setText('保存草稿');self.history_btn.setText('草稿记录');self.batch_export.setText('内部批次明细导出');self.export_all.setText('内部全量明细');self.export_filtered.setText('内部当前筛选')
         focusrow=QHBoxLayout();self.focus_label=label("","muted");focusrow.addWidget(self.focus_label,1);self.focus_import_btn=button("导入新品明细 / 关注字段",self.import_focus);focusrow.addWidget(self.focus_import_btn);self.focus_empty_btn=button("本月无关注新品",self.empty_focus);focusrow.addWidget(self.focus_empty_btn);self.import_page.layout().addLayout(focusrow)
         self.refresh_focus();self.update_controls();self.show_section(0)
+
+    def storage_copy(self):
+        if self.worker or getattr(self,'_large_io_dialog',None):return
+        choice,ok=QInputDialog.getItem(self,'存储维护 · 只生成副本','原数据库保持不变。旧版EXE不能直接读分块记录；可生成旧格式副本用于回退。', ['生成旧格式兼容副本','生成完整分块副本（校验并转换历史）'],0,False)
+        if not ok:return
+        path,_=QFileDialog.getSaveFileName(self,'保存为新的数据库副本','','SQLite (*.sqlite3)')
+        if not path:return
+        if Path(path).exists():self.failed('目标文件已存在，请使用新文件名；不会覆盖任何数据库。');return
+        from ui_work_io import Session,request
+        from runtime_support import Cancelled
+        try:
+            with Session(self.work_repository.path) as session:receipt=request(self,session,'storage_copy',{'mode':'legacy' if choice.startswith('生成旧格式') else 'upgrade','destination':path})
+        except Cancelled:self.status.setText('已取消创建副本，原数据库未改变。');return
+        except Exception as exc:self.failed('副本未生成：'+str(exc));return
+        QMessageBox.information(self,'副本已生成','已校验并保存：'+receipt['path']+'\n原数据库未改变。回退时请先关闭所有补货助手版本，保留当前库，再将兼容副本复制到目标版本的独立资料目录。新模型结果在旧版中应只读，继续工作请重新计算。')
 
     def refresh_focus(self):
         if not hasattr(self,'focus_label'):return

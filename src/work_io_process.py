@@ -36,7 +36,7 @@ def serve(connection,path,cancel):
             if command is None:return
             try:
                 op=command;arguments,_=receive_tree(connection,cancel)
-                checkpoint(cancel);writing=op in ('save','confirm_normal','delivery_execute','review_export')
+                checkpoint(cancel);writing=op in ('save','confirm_normal','delivery_execute','review_export','storage_copy')
                 if op=='prepare_save':
                     encoded_job=None;payload=arguments;progress('正在校验完整作业并核对同日记录…')
                     save_day=payload['day'];encoded_job=wr.prepare_job(save_day,payload,progress,known=ro.known_chunks());digest=encoded_job[2]
@@ -113,6 +113,9 @@ def serve(connection,path,cancel):
                     if not batch.get('complete') and any(not p['same'] for p in batch['plans']):raise ValueError('完整签发草稿尚未准备，不能归档')
                     repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=work
                     result=normal_delivery.execute_batch(repository,batch,arguments,progress=progress,cancel=cancel)
+                elif op=='storage_copy':
+                    from storage_maintenance import convert
+                    result=convert(path,arguments['destination'],arguments['mode'],progress,cancel)
                 elif op in ('load','copy_config'):
                     with stage('读取并校验作业快照',progress):result=ro.get_job(arguments,paths=[('store_presets',),('store_ui',)] if op=='copy_config' else None,progress=progress)
                     if op=='copy_config' and result:result={k:result['payload'][(k,)] for k in ('store_presets','store_ui')}

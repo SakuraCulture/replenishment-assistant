@@ -7,6 +7,7 @@ Legacy zlib JSON remains readable. No deletion/GC of historical blocks is done.
 import hashlib,json,zlib,sqlite3,uuid,os
 from dataclasses import dataclass
 from pathlib import Path
+from io import BytesIO
 from contextlib import closing
 from io_stages import stage
 from export_progress import RowProgress
@@ -36,8 +37,8 @@ def backup_before_write(path,progress=lambda _:None):
     with closing(sqlite3.connect(path)) as src:
         present=src.execute("SELECT 1 FROM sqlite_master WHERE name='snapshot_storage_meta'").fetchone()
         if present and src.execute("SELECT 1 FROM snapshot_storage_meta WHERE key='initial_backup'").fetchone():return
-        dest=path.with_name(path.stem+'.before-chunks-'+uuid.uuid4().hex+'.sqlite3')
-        with stage('备份升级前的完整数据库（保留旧格式）',progress),closing(sqlite3.connect(dest)) as target:
+        dest=path.with_name(path.stem+'.before-chunks-'+os.urandom(16).hex()+'.sqlite3')
+        with stage('备份首次分块写入前的完整数据库',progress),closing(sqlite3.connect(dest)) as target:
             src.backup(target,pages=1024,progress=lambda status,left,total:progress(RowProgress('备份升级前数据库',total-left,total)))
             if target.execute('PRAGMA quick_check').fetchone()[0]!='ok':raise ValueError('升级前备份完整性检查失败')
         with src:
@@ -59,6 +60,11 @@ class Prepared:
 def prepare(value,existing=(),progress=lambda _:None,binding=None):
     """Encode once in bounded row blocks; never materialize a whole JSON string."""
     seen=set(existing);blocks={};h=hashlib.sha256();size=0;count=0
+    def count_blocks(v,depth=0):
+        if isinstance(v,dict) and len(v)>BLOCK_ROWS:return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS
+        if isinstance(v,dict) and depth<5:return sum(count_blocks(x,depth+1) for x in v.values())
+        return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS if isinstance(v,(list,tuple)) and len(v)>BLOCK_ROWS else 1
+    total=count_blocks(value)
     def feed(raw):
         nonlocal size
         h.update(raw);size+=len(raw)
@@ -69,15 +75,22 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None):
         if digest not in seen:
             blocks[digest]=(len(raw),zlib.compress(raw));seen.add(digest)
         count+=1
-        if count%32==0:progress(f'编码内容块：已处理 {count:,} 块 / {size/1048576:.1f} MiB；复用 {count-len(blocks):,} 块')
+        if count%32==0:progress(RowProgress(f'编码内容块：{count:,}/{total:,}；复用 {count-len(blocks):,} 块',count,total))
         return ['ref',digest,len(raw)]
     def walk(v,depth=0):
+        if isinstance(v,dict) and len(v)>BLOCK_ROWS:
+            feed(b'{');parts=[];keys=sorted(v)
+            for start in range(0,len(keys),BLOCK_ROWS):
+                if start:feed(b', ')
+                parts.append(block({k:v[k] for k in keys[start:start+BLOCK_ROWS]},True))
+            feed(b'}');return ['map',parts]
         if isinstance(v,dict) and depth<5:
             feed(b'{');items=[]
             for i,k in enumerate(sorted(v)):
-                if not isinstance(k,str):raise ValueError('快照对象键必须为字符串')
+                if not isinstance(k,(str,int,float,bool)) and k is not None:raise TypeError('无效JSON对象键')
+                key=k if isinstance(k,str) else json.dumps(k,ensure_ascii=False,allow_nan=False)
                 if i:feed(b', ')
-                feed(codec().dumps(k).encode()+b': ');items.append([k,walk(v[k],depth+1)])
+                feed(codec().dumps(key).encode()+b': ');items.append([key,walk(v[k],depth+1)])
             feed(b'}');return ['dict',items]
         if isinstance(v,(list,tuple)) and len(v)>BLOCK_ROWS:
             feed(b'[');parts=[]
@@ -87,7 +100,7 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None):
             feed(b']');return ['array',parts]
         return block(v)
     with stage('按内容块编码及校验完整快照',progress):tree=walk(value)
-    progress(f'快照编码完成：{count:,} 块，新增 {len(blocks):,} 块')
+    progress(RowProgress(f'快照编码完成：{count:,} 块，新增 {len(blocks):,} 块',count,total))
     return Prepared(tree,h.hexdigest(),size,blocks,binding)
 
 def put(db,p):
@@ -99,7 +112,7 @@ def put(db,p):
         if n[0]=='ref':yield n[1],n[2]
         elif n[0]=='dict':
             for _,child in n[1]:yield from refs(child)
-        elif n[0]=='array':
+        elif n[0] in ('array','map'):
             for child in n[1]:yield from refs(child)
         else:raise ValueError('未知快照节点')
     for h,size in set(refs(p.tree)):
@@ -116,14 +129,14 @@ def manifest(blob):
     return value
 
 class Reader:
-    def __init__(self,db,progress=lambda _:None):self.db=db;self.progress=progress;self.reads=0
+    def __init__(self,db,progress=lambda _:None):self.db=db;self.progress=progress;self.reads=0;self.total=0
     def raw(self,node):
         row=self.db.execute('SELECT size,data FROM snapshot_chunks WHERE hash=?',(node[1],)).fetchone()
         if not row:raise ValueError('快照内容块缺失：'+node[1])
         raw=zlib.decompress(row[1])
         if len(raw)!=row[0] or len(raw)!=node[2] or hashlib.sha256(raw).hexdigest()!=node[1]:raise ValueError('快照内容块校验失败：'+node[1])
         self.reads+=1
-        if self.reads%32==0:self.progress(f'读取并校验内容块：{self.reads:,} 块')
+        if self.reads%32==0:self.progress(RowProgress(f'读取并校验内容块：{self.reads:,} 块',self.reads,self.total) if self.total else f'按需读取并校验内容块：{self.reads:,} 块')
         return raw
     def read(self,node,feed=lambda _:None):
         kind=node[0]
@@ -134,13 +147,37 @@ class Reader:
             for i,(k,child) in enumerate(node[1]):
                 if i:feed(b', ')
                 feed(codec().dumps(k).encode()+b': ');result[k]=self.read(child,feed)
-            feed(b'}');return result
+            feed(b'}');return codec().decode_object(result)
+        if kind=='map':
+            feed(b'{');result={}
+            for i,child in enumerate(node[1]):
+                if i:feed(b', ')
+                raw=self.raw(child);feed(raw[1:-1]);result.update(codec().loads(raw))
+            feed(b'}');return codec().decode_object(result)
         if kind=='array':
             feed(b'[');result=[]
             for i,child in enumerate(node[1]):
                 if i:feed(b', ')
                 raw=self.raw(child);feed(raw[1:-1]);result.extend(codec().loads(raw))
             feed(b']');return result
+        raise ValueError('未知快照节点')
+    def emit(self,node,feed):
+        # Full restore parses one JSON document, like the legacy codec. This
+        # retains the decoder's shared dictionary-key strings across all blocks.
+        kind=node[0]
+        if kind=='ref':feed(self.raw(node));return
+        if kind=='dict':
+            feed(b'{')
+            for i,(key,child) in enumerate(node[1]):
+                if i:feed(b', ')
+                feed(codec().dumps(key).encode()+b': ');self.emit(child,feed)
+            feed(b'}');return
+        if kind in ('array','map'):
+            feed(b'[' if kind=='array' else b'{')
+            for i,child in enumerate(node[1]):
+                if i:feed(b', ')
+                feed(self.raw(child)[1:-1])
+            feed(b']' if kind=='array' else b'}');return
         raise ValueError('未知快照节点')
     def select(self,node,path):
         if not path:return self.read(node)
@@ -181,10 +218,12 @@ def load(blob,db=None,expected=None,paths=None,binding=None,progress=lambda _:No
             try:values[tuple(path)]=reader.select(m['tree'],path)
             except KeyError:continue
         return values
-    h=hashlib.sha256();size=0
-    def feed(raw):
-        nonlocal size
-        h.update(raw);size+=len(raw)
-    value=reader.read(m['tree'],feed)
-    if h.hexdigest()!=m['digest'] or size!=m['size']:raise ValueError('完整快照校验失败')
-    return value
+    def count_refs(node):
+        return 1 if node[0]=='ref' else sum(count_refs(v) for _,v in node[1]) if node[0]=='dict' else sum(count_refs(v) for v in node[1])
+    reader.total=count_refs(m['tree'])
+    h=hashlib.sha256();buffer=BytesIO()
+    def feed(raw):h.update(raw);buffer.write(raw)
+    reader.emit(m['tree'],feed)
+    if h.hexdigest()!=m['digest'] or buffer.tell()!=m['size']:raise ValueError('完整快照校验失败')
+    progress('完整快照校验完成，解析数据…')
+    return codec().loads(buffer.getvalue())
