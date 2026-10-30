@@ -1,5 +1,5 @@
 """Modal progress keeps the UI event loop alive while an owned process handles large work I/O."""
-import multiprocessing
+import multiprocessing,time
 from PySide6.QtCore import QThread,Signal,QTimer
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QProgressBar
 from ui_controls import label,button
@@ -14,7 +14,8 @@ class Session:
         self.process=self.context.Process(target=serve,args=(child,str(path),self.cancel));self.process.start();child.close();self.writing=False
     def call(self,operation,value,progress):
         self.writing=operation in ('save','confirm_normal','delivery_execute','review_export');self.connection.send(operation)
-        send_tree(self.connection,value,None if self.writing else self.cancel,lambda n:progress('正在准备完整作业快照…'))
+        progress('传输本次操作所需数据…')
+        send_tree(self.connection,value,None if self.writing else self.cancel,lambda n:progress(f'正在传输数据：已发送 {n:,} 个数据块（总量未预扫描）'))
         while True:
             if not self.writing and self.cancel.is_set():raise Cancelled('已取消')
             if not self.connection.poll(.05):
@@ -30,7 +31,7 @@ class Session:
                 if data[0]=='Cancelled':raise Cancelled(data[1])
                 raise RuntimeError(data[1])
             elif kind=='success':
-                result=receive_tree(self.connection,None if self.writing else self.cancel,lambda n:progress('正在加载完整作业快照…'))[0];self.writing=False;return result
+                result=receive_tree(self.connection,None if self.writing else self.cancel,lambda n:progress(f'正在接收数据：已接收 {n:,} 个数据块（总量未预扫描）'),alive=self.process.is_alive)[0];self.writing=False;return result
             else:raise RuntimeError('作业处理进程返回未知消息')
     def close(self):
         # All write calls finish before their modal dialog closes. Termination is
@@ -47,11 +48,17 @@ class Session:
 
 
 class Request(QThread):
-    progress=Signal(str);rows=Signal(int,int)
+    progress=Signal(str);rows=Signal(object,object)
     def __init__(self,session,operation,value,parent):super().__init__(parent);self.session=session;self.operation=operation;self.value=value;self.result=None;self.error=None
     def run(self):
         try:
+            last=[None,0.0]
             def progress(message):
+                if hasattr(message,'current') and hasattr(message,'total'):
+                    key=(str(message).split('：',1)[0],message.total);now=time.monotonic()
+                    if key==last[0] and now-last[1]<.1 and message.current not in (0,message.total):return
+                    last[:]=[key,now]
+                else:last[0]=None
                 self.progress.emit(str(message))
                 self.rows.emit(message.current,message.total) if hasattr(message,'current') and hasattr(message,'total') else self.rows.emit(0,0)
             self.result=self.session.call(self.operation,self.value,progress)
@@ -62,17 +69,36 @@ class Request(QThread):
 class Progress(QDialog):
     def __init__(self,parent,session,operation,value):
         super().__init__(parent);self.session=session;self.operation=operation;self._completed=False;self.setWindowTitle({'prepare_save':'核对保存','save':'保存作业','prepare_normal':'核对归档','confirm_normal':'确认归档','delivery_prepare':'核对导出','delivery_execute':'导出确认单','review_export':'保存完整差异','copy_config':'复制配置'}.get(operation,'读取作业'));self.setMinimumWidth(510)
-        v=QVBoxLayout(self);self.note=label('正在准备，请稍候…','muted');v.addWidget(self.note);bar=QProgressBar();bar.setRange(0,0);v.addWidget(bar)
+        self.started=time.monotonic();self.last_progress=self.started;self.cancelling=False
+        self.setWindowTitle({'delivery_probe':'核对导出','delivery_expand':'准备完整签发草稿'}.get(operation,self.windowTitle()))
+        v=QVBoxLayout(self);self.note=label('正在准备，请稍候…','muted');v.addWidget(self.note);self.bar=QProgressBar();self.bar.setRange(0,0);v.addWidget(self.bar)
+        self.health=label('','muted');v.addWidget(self.health)
         self.cancel_btn=button('取消',self.reject);self.cancel_btn.setEnabled(operation not in ('save','confirm_normal','review_export'));v.addWidget(self.cancel_btn)
-        self.task=Request(session,operation,value,self);self.task.progress.connect(self.note.setText);self.task.rows.connect(lambda n,total:(bar.setRange(0,max(total,1) if total or n else 0),bar.setValue(n)));self.task.finished.connect(self.completed)
+        self.task=Request(session,operation,value,self);self.task.progress.connect(self.update_stage);self.task.rows.connect(self.update_count);self.task.finished.connect(self.completed)
+        self.clock=QTimer(self);self.clock.setInterval(500);self.clock.timeout.connect(self.update_health);self.clock.start();self.update_health()
+    def update_stage(self,text):
+        self.last_progress=time.monotonic()
+        if not self.cancelling:self.note.setText(text)
+    def update_count(self,n,total):
+        if total:
+            self.bar.setRange(0,1000);self.bar.setValue(min(1000,int(n*1000/total)));self.bar.setFormat('当前阶段 %p%')
+        else:self.bar.setRange(0,0)
+    def update_health(self):
+        now=time.monotonic();elapsed=int(now-self.started);quiet=int(now-self.last_progress)
+        alive=self.session.process.is_alive()
+        status=('进程仍存活，当前阶段暂无新进展' if quiet>=10 else '处理中') if alive else '处理进程已退出，正在核对结果'
+        self.health.setText(f'已用时 {elapsed//60:02d}:{elapsed%60:02d} · 最近进展 {quiet} 秒前 · {status}')
     def reject(self):
         if self._completed:super().reject();return
         if self.operation in ('save','confirm_normal','review_export'):self.note.setText('正在完成本次提交，结束后可关闭；不会中途终止写入。');return
-        self.session.cancel.set();self.cancel_btn.setEnabled(False);self.note.setText('正在停止导出；已完成归档和文件会保留，当前事务结束后返回…' if self.operation=='delivery_execute' else '正在取消读取，原记录不会改变…')
+        self.cancelling=True;self.session.cancel.set();self.cancel_btn.setEnabled(False);self.note.setText('正在停止导出；已完成归档和文件会保留，当前事务结束后返回…' if self.operation=='delivery_execute' else '正在取消准备，原记录不会改变…')
     def closeEvent(self,event):
         if self._completed:event.accept()
         else:self.reject();event.ignore()
-    def completed(self):self._completed=True;self.accept()
+    def completed(self):
+        self._completed=True;self.clock.stop()
+        if self.task.error is None:self.bar.setRange(0,1000);self.bar.setValue(1000);self.note.setText('操作完成')
+        self.accept()
 
 
 def request(parent,session,operation,value):

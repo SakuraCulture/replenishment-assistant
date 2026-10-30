@@ -11,12 +11,21 @@ from version_info import diagnostic
 
 
 def start_smoke(app,win,args):
-    out=Path(args[0]).resolve();state={'phase':None,'last':time.perf_counter(),'gaps':{},'times':{},'checks':[]};pulse=QTimer(win)
+    out=Path(args[0]).resolve();state={'phase':None,'last':time.perf_counter(),'gaps':{},'times':{},'checks':[],'progress':{}};pulse=QTimer(win)
     def beat():
         now=time.perf_counter()
         if state['phase']:state['gaps'][state['phase']]=max(state['gaps'].get(state['phase'],0),now-state['last'])
         state['last']=now
     pulse.timeout.connect(beat);pulse.start(25)
+    monitor=QTimer(win);monitor.setInterval(250)
+    def progress_sample():
+        box=QApplication.activeModalWidget();phase=state['phase']
+        if phase and isinstance(box,Progress):
+            text=box.note.text();entries=state['progress'].setdefault(phase,[])
+            if not entries or entries[-1]['text']!=text:
+                entries.append({'text':text,'health':box.health.text(),'minimum':box.bar.minimum(),'maximum':box.bar.maximum(),'value':box.bar.value(),'cancel_enabled':box.cancel_btn.isEnabled()})
+                if len(entries)==1:box.grab().save(str(out/(phase+'-progress.png')))
+    monitor.timeout.connect(progress_sample);monitor.start()
     def timed(name,fn):
         app.processEvents();state['phase']=name;state['last']=time.perf_counter();start=state['last'];(out/'phase.txt').write_text(name,encoding='ascii')
         try:return fn()
@@ -32,7 +41,7 @@ def start_smoke(app,win,args):
                 assert box.defaultButton().text()=='取消';text='取消' if action=='reject' else '覆盖当天记录' if box.objectName()=='dailyOverwrite' else '确认并归档';next(b for b in box.buttons() if b.text()==text).click()
         timer.timeout.connect(act);timer.start();return timer
     def finish(error=None):
-        pulse.stop();report={'passed':error is None,'error':error,'version':diagnostic(),'checks':state['checks'],'timings':state['times'],'storage':'original daily SQLite schema and JSON/zlib; private copied database only'}
+        pulse.stop();monitor.stop();report={'passed':error is None,'error':error,'version':diagnostic(),'checks':state['checks'],'timings':state['times'],'progress':state['progress'],'storage':'original daily SQLite schema and JSON/zlib; private copied database only'}
         (out/'work_io_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');win.job_dirty=False;win._discard_close=True;win.close();app.exit(0 if error is None else 1)
     win.failed=lambda msg:(_ for _ in ()).throw(RuntimeError(msg));sys.excepthook=lambda t,v,tb:finish(''.join(traceback.format_exception(t,v,tb)))
     def exercise():

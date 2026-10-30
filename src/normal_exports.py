@@ -9,6 +9,7 @@ import result_semantics as sem
 import new_products
 import new_product_focus as focus
 import export_progress as ep
+from io_stages import stage
 
 HEADERS=['仓库/门店名称','仓库/门店编码','供应商编码','商品名称','商品编码','商品条码','基础单位','日销','周销','月销','可用库存','在途库存','在途库存天数','缺货天数（天）','箱规','中心仓价格','补货数量','黑名单状态','所属仓','商品等级']
 AUDIT_HEADERS=['补货单号','决策理由']
@@ -85,7 +86,8 @@ def export(order,path,cancel=None,progress=lambda s:None):
     progress('数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…');path.parent.mkdir(parents=True,exist_ok=True)
     fd,temp=tempfile.mkstemp(prefix='.normal-',suffix='.xlsx',dir=path.parent);os.close(fd)
     try:
-        wb.save(temp);checkpoint(cancel);os.rename(temp,path)
+        with stage('压缩保存 Excel（完成后响应取消）',progress):wb.save(temp)
+        checkpoint(cancel);os.rename(temp,path)
     finally:
         wb.close()
         if os.path.exists(temp):os.unlink(temp)

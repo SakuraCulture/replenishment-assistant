@@ -62,7 +62,7 @@ def send_tree(connection,value,cancel=None,progress=lambda count:None,*,consume=
     frame(('end',{'frames':frames,'largest_frame':largest}));return {'frames':frames,'largest_frame':largest}
 
 
-def receive_tree(connection,cancel=None,progress=lambda count:None):
+def receive_tree(connection,cancel=None,progress=lambda count:None,*,alive=None):
     references={};root=None;seen_root=False;frames=0
     def resolve(v):
         if type(v) is Reference:
@@ -74,7 +74,9 @@ def receive_tree(connection,cancel=None,progress=lambda count:None):
         return v
     while True:
         checkpoint(cancel)
-        while not connection.poll(.05):checkpoint(cancel)
+        while not connection.poll(.05):
+            checkpoint(cancel)
+            if alive is not None and not alive():raise RuntimeError('数据传输进程已退出，请重试')
         message=pickle.loads(connection.recv_bytes());frames+=1
         if message[0]=='root':
             if seen_root:raise ValueError('快照传输重复起点')

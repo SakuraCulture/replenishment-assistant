@@ -5,6 +5,7 @@ from contextlib import closing
 import work_repository as wr
 import normal_orders,normal_exports,new_product_focus as focus
 from runtime_support import checkpoint
+from io_stages import stage
 
 
 def job_head(work,day):
@@ -58,15 +59,19 @@ def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=Non
     signed=any(not p['same'] for p in plans);completed=[];orders=[]
     if signed:
         progress('后台归档所选门店与完整来源（一次事务）…')
-        orders=repository.confirm(payload,[p['store'] for p in plans],batch['head']['revision'] if batch['head'] else None,{p['store']:p['old']['revision'] if p['old'] else None for p in plans})
+        orders=repository.confirm(payload,[p['store'] for p in plans],batch['head']['revision'] if batch['head'] else None,{p['store']:p['old']['revision'] if p['old'] else None for p in plans},progress=progress)
     else:
+        # The prepare step already decoded and validated these immutable revisions.
+        # Recheck current revision identities together; reuse exactly those snapshots.
+        heads={h['store']:h for h in repository.headers() if h['day']==payload['day']}
         for p in plans:
-            order=repository.get(payload['day'],p['store'])
-            if not order or order['revision']!=p['old']['revision'] or order['digest']!=p['old']['digest']:raise wr.Conflict('正常单已更新，请重新核对：'+p['store'])
+            head=heads.get(p['store']);order=p['old']
+            if not head or any(head[k]!=order[k] for k in ('oid','revision','digest','saved')):raise wr.Conflict('正常单已更新，请重新核对：'+p['store'])
             orders.append(order)
     try:
         for i,(order,path) in enumerate(zip(orders,paths),1):
-            checkpoint(cancel);normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'门店 {i}/{len(orders)} · {order["payload"]["result"]["store_name"]}'))
+            checkpoint(cancel)
+            with stage(f'写出确认单 {i}/{len(orders)}',progress):normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'门店 {i}/{len(orders)} · {order["payload"]["result"]["store_name"]}'))
             completed.append(str(path))
             repository.log(order,'带号导出',{'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
     except Exception as exc:

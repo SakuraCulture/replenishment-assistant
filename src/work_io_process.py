@@ -5,6 +5,7 @@ from contextlib import closing
 import work_repository as wr
 from work_transfer import send_tree,receive_tree
 from runtime_support import checkpoint
+from io_stages import stage
 
 
 def reader(path):
@@ -23,7 +24,7 @@ def compact_previous(record):
 
 
 def serve(connection,path,cancel):
-    payload=None;old=None;batch=None;review_text=None;expected_job=None;expected_orders=None;codes=None;ro=reader(path);work=wr.Repository.__new__(wr.Repository);work.path=Path(path)
+    payload=None;encoded_job=None;save_day=None;old=None;batch=None;review_text=None;expected_job=None;expected_orders=None;codes=None;ro=reader(path);work=wr.Repository.__new__(wr.Repository);work.path=Path(path)
     def progress(text):
         # RowProgress is a str subclass with a multi-argument constructor; carry
         # its explicit fields instead of relying on pickle's str reconstruction.
@@ -37,27 +38,30 @@ def serve(connection,path,cancel):
                 op=command;arguments,_=receive_tree(connection,cancel)
                 checkpoint(cancel);writing=op in ('save','confirm_normal','delivery_execute','review_export')
                 if op=='prepare_save':
-                    payload=arguments;progress('正在校验完整作业并核对同日记录…')
-                    wr.summary(payload);digest=hashlib.sha256(wr.dumps(payload).encode()).hexdigest()
+                    encoded_job=None;payload=arguments;progress('正在校验完整作业并核对同日记录…')
+                    save_day=payload['day'];encoded_job=wr.prepare_job(save_day,payload,progress);digest=encoded_job[2]
                     with closing(ro.connect()) as db:row=db.execute('SELECT revision,digest,saved,summary FROM jobs WHERE day=?',(payload['day'],)).fetchone()
                     old={'revision':row[0],'digest':row[1],'saved':row[2],'summary':wr.loads(row[3])} if row else None
                     same=bool(old and old['digest']==digest)
-                    if old and not same:old=compact_previous(ro.get_job(payload['day']))
+                    if old and not same:
+                        with stage('读取原作业以核对覆盖差异',progress):old=compact_previous(ro.get_job(payload['day']))
+                    payload=None;arguments=None
                     result={'old':old,'same':same}
                 elif op=='save':
-                    if payload is None:raise ValueError('缺少已核对的作业快照')
+                    if encoded_job is None:raise ValueError('缺少已核对的作业快照')
                     # No termination/cancellation once this operation is sent. CAS and
                     # rollback remain inside the existing repository transaction.
                     progress('正在保存完整作业；本次提交结束后才可关闭…')
-                    result=work.save_job(payload['day'],payload,old['revision'] if old else None)
+                    result=work._save_prepared(save_day,encoded_job,old['revision'] if old else None,progress);encoded_job=None
                 elif op=='prepare_normal':
                     import normal_orders,normal_delivery,new_product_focus as focus
-                    payload,codes=arguments
+                    expected_orders=None;payload,codes=arguments
                     repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
                     progress('正在核对正常单与完整差异…')
                     focus.require_for(payload.get('new_focus'),payload['day'],[payload['results'][code] for code in codes])
                     head=normal_delivery.job_head(ro,payload['day']);expected_job=head['revision'] if head else None;expected_orders={};details={};lines=[]
                     for code in codes:
+                        progress(f'核对正常单 {codes.index(code)+1}/{len(codes)} · {code}')
                         checkpoint(cancel);r=payload['results'][code];previous=repository.get(payload['day'],code);expected_orders[code]=previous['revision'] if previous else None
                         same=previous and previous['digest']==normal_orders.fingerprint_owned(r,payload.get('new_focus'))
                         action='已归档，无需新修订' if same else f"同号 V{previous['revision']:03d} → V{previous['revision']+1:03d}" if previous else '首次 V001'
@@ -71,7 +75,7 @@ def serve(connection,path,cancel):
                     if payload is None or expected_orders is None:raise ValueError('缺少已核对的正常单')
                     progress('正在归档正常单与完整草稿；提交结束后才可关闭…')
                     repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=work
-                    issued=repository.confirm(payload,codes,expected_job,expected_orders)
+                    issued=repository.confirm(payload,codes,expected_job,expected_orders,progress=progress,headers_only=True)
                     result={'orders':[{k:v for k,v in r.items() if k!='payload'} for r in issued],'saved':normal_delivery.job_head(work,payload['day'])['saved']}
                 elif op=='review_export':
                     if review_text is None:raise ValueError('尚未生成完整差异')
@@ -84,21 +88,29 @@ def serve(connection,path,cancel):
                     finally:
                         if os.path.exists(tmp):os.unlink(tmp)
                     result=str(destination)
-                elif op=='delivery_prepare':
+                elif op in ('delivery_prepare','delivery_probe'):
                     import normal_orders,normal_delivery
-                    supplied,codes=arguments;repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
-                    batch=normal_delivery.prepare_owned_batch(repository,supplied,codes,progress=progress,cancel=cancel)
-                    result={'head':batch['head'],'summary':wr.summary(batch['payload']), 'plans':[]}
+                    batch=None;supplied,codes=arguments;repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
+                    with stage('核对导出修订',progress):batch=normal_delivery.prepare_owned_batch(repository,supplied,codes,progress=progress,cancel=cancel)
+                    batch['complete']=op=='delivery_prepare'
+                    result={'head':batch['head'],'summary':supplied.get('_draft_summary',wr.summary(batch['payload'])), 'plans':[]}
                     for plan in batch['plans']:
                         r=batch['payload']['results'][plan['store']]
                         result['plans'].append({**{k:v for k,v in plan.items() if k!='old'},'old':{k:v for k,v in plan['old'].items() if k!='payload'} if plan['old'] else None,'name':r['store_name'],'amount':r['summary']['amount']})
+                elif op=='delivery_expand':
+                    if batch is None:raise ValueError('缺少已核对的导出批次')
+                    tail,order=arguments
+                    values={**tail['results'],**batch['payload']['results']}
+                    tail['results']={s:values[s] for s in order}
+                    wr.summary(tail);batch['payload']=tail;batch['complete']=True;result=True
                 elif op=='delivery_execute':
                     import normal_orders,normal_delivery
                     if batch is None:raise ValueError('缺少已核对的导出批次')
+                    if not batch.get('complete') and any(not p['same'] for p in batch['plans']):raise ValueError('完整签发草稿尚未准备，不能归档')
                     repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=work
                     result=normal_delivery.execute_batch(repository,batch,arguments,progress=progress,cancel=cancel)
                 elif op in ('load','copy_config'):
-                    progress('正在读取并校验作业快照…');result=ro.get_job(arguments)
+                    with stage('读取并校验作业快照',progress):result=ro.get_job(arguments)
                     if op=='copy_config' and result:result={k:result['payload'][k] for k in ('store_presets','store_ui')}
                 else:raise ValueError('未知作业操作')
                 if not writing:checkpoint(cancel)

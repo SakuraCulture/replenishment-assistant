@@ -265,8 +265,13 @@ class ApplicationWindow(Workbench):
         from runtime_support import Cancelled
         try:
             with Session(self.work_repository.path) as session:
-                prepared=request(self,session,'delivery_prepare',[self.snapshot(),codes]);plans=prepared['plans']
+                full=self.snapshot()
+                slim={k:full[k] for k in ('day','input_dirty','new_focus')}
+                slim.update(states={s:full['states'][s] for s in codes},results={s:full['results'][s] for s in codes},model_version=full['model_version'],_draft_summary=wr.summary(full))
+                prepared=request(self,session,'delivery_probe',[slim,codes]);plans=prepared['plans']
                 if any(not p['same'] for p in plans):
+                    tail={**full,'results':{s:r for s,r in full['results'].items() if s not in codes}}
+                    request(self,session,'delivery_expand',[tail,list(full['results'])])
                     box=QMessageBox(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出加盟商单');lines=[]
                     for p in plans:
                         old=p['old'];action='沿用已归档修订' if p['same'] else f"覆盖当天正常单 V{old['revision']:03d} → V{old['revision']+1:03d}（旧版保留）" if old else '首次签发 V001'

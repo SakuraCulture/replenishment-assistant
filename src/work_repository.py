@@ -5,6 +5,7 @@ from datetime import datetime,date,timedelta,timezone
 from pathlib import Path
 import parameter_schema as schema
 from version_info import MODEL_VERSION
+from io_stages import stage,digest as digest_bytes,compress as compress_bytes
 
 def now():return datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds')
 def today():return now()[:10]
@@ -63,10 +64,12 @@ class Repository:
         raw=zlib.decompress(row[4]);assert hashlib.sha256(raw).hexdigest()==row[1],'作业快照校验失败'
         return {'day':day,'revision':row[0],'digest':row[1],'saved':row[2],'summary':loads(row[3]),'payload':loads(raw)}
     def save_job(self,day,payload,expected_revision=None):
-        if date.fromisoformat(day).isoformat()!=day:raise ValueError('日期须为YYYY-MM-DD')
-        if payload.get('schema')!=1 or payload.get('day')!=day:raise ValueError('作业快照与日期不一致')
-        info=summary(payload);raw=dumps(payload).encode();digest=hashlib.sha256(raw).hexdigest();blob=zlib.compress(raw);stamp=now()
-        with closing(self.connect()) as db,db:
+        return self._save_prepared(day,prepare_job(day,payload),expected_revision)
+
+    def _save_prepared(self,day,prepared,expected_revision=None,progress=lambda _:None):
+        # Internal session-only immutable encoded snapshot; never reused across calls.
+        info,raw,digest=prepared;blob=compress_bytes(raw,progress);stamp=now()
+        with stage('提交每日作业（提交期间不可取消）',progress),closing(self.connect()) as db,db:
             db.execute('BEGIN IMMEDIATE');old=db.execute('SELECT revision,digest,saved FROM jobs WHERE day=?',(day,)).fetchone()
             if old and expected_revision!=old[0]:raise Conflict('该日期已有记录或已被另一窗口更新，请重新查看差异并确认覆盖')
             if not old and expected_revision is not None:raise Conflict('原记录已发生变化，请重新保存')
@@ -74,3 +77,11 @@ class Repository:
             revision=uuid.uuid4().hex
             db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET revision=excluded.revision,digest=excluded.digest,saved=excluded.saved,summary=excluded.summary,payload=excluded.payload',(day,revision,digest,stamp,dumps(info),blob))
         return {'revision':revision,'saved':stamp,'digest':digest}
+
+
+def prepare_job(day,payload,progress=lambda _:None):
+        if date.fromisoformat(day).isoformat()!=day:raise ValueError('日期须为YYYY-MM-DD')
+        if payload.get('schema')!=1 or payload.get('day')!=day:raise ValueError('作业快照与日期不一致')
+        info=summary(payload)
+        with stage('编码完整作业',progress):raw=dumps(payload).encode()
+        return info,raw,digest_bytes(raw,progress)
