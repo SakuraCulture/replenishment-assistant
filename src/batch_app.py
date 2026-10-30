@@ -294,11 +294,15 @@ class BatchWindow(WarehouseUi,SessionWindow):
             for j,val in enumerate([state['name'],state['state'],f"¥{r['summary']['amount']:,.2f}" if r else '—',state['error']]):self.task_table.setItem(i,j,QTableWidgetItem(val))
         self.overview_codes=sorted(keys,key=lambda s:(0 if self.states[s]['state'] in {'计算失败','待重算'} else 1 if self.results.get(s,{}).get('summary',{}).get('holding_gaps',0) else 2,s));self.overview.setRowCount(len(keys))
         totals=[0,0,0];unpriced=0
+        self._risk_counts={s:v for s,v in getattr(self,'_risk_counts',{}).items() if self.results.get(s) is v[0]}
         for i,s in enumerate(self.overview_codes):
             state=self.states[s];r=self.results.get(s) if state['state']=='已完成' else None
             if r:
                 a=r['summary'];b=r['budget'];gap=round(a['candidate_amount']-a['amount'],2);totals=[totals[0]+a['candidate_amount'],totals[1]+a['amount'],totals[2]+gap];unpriced+=a['unpriced']
                 values=[state['name'],state['state'],semantics.fmt(b['limit']) if b['enabled'] else '不限预算',semantics.fmt(a['candidate_amount']),semantics.fmt(a['amount']),semantics.fmt(a['must_amount']),semantics.fmt(a['amount']-a['must_amount']),semantics.fmt(gap),semantics.fmt(b.get('remaining')),str(a['holding_gaps']),f"{a['local']} / {a['excluded']}",state['error'] or f"待核 {a['issues']}；补货未计价 {a['unpriced']}"]
+                cache=self.__dict__.setdefault('_risk_counts',{})
+                if s not in cache or cache[s][0] is not r:cache[s]=(r,sum(bool(semantics.inbound_risk(d)) for d in r['rows']))
+                if cache[s][1]:values[-1]+=f'；在途衔接风险 {cache[s][1]} 条（点击提示查看）'
             else:values=[state['name'],state['state']]+['—']*9+[state['error']]
             for j,val in enumerate(values):self.overview.setItem(i,j,QTableWidgetItem(val));self.overview.item(i,j).setToolTip(s+'\n'+str(val))
         for widget,value in zip(self.metrics,totals):widget.setText(f'{value:,.2f}' if finished else '—')
@@ -310,6 +314,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.current_store=s;self.result=self.results[s];self.dirty=self.states[s]['state']!='已完成';self.set_rows(self.result['rows'],True)
         if self.dirty:self.result_caption.setText(self.result['store_name']+' · 上次结果已过期，请重算')
         modes={5:'必卖商品',7:'预算未满足',9:'最低持有缺口',10:'地采商品'}
+        if column==11 and any(semantics.inbound_risk(d) for d in self.result['rows']):modes[11]='在途衔接风险'
         self.mode.setCurrentText(modes.get(column,'建议补货'));self.pages.setCurrentIndex(4);self.update_controls()
     def navigate(self,index):
         self.pages.setCurrentIndex(index)

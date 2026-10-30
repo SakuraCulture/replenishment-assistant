@@ -198,7 +198,10 @@ def business_checks(results,rules):
         if q<0:failures.append([rn,'负补货量',q])
         if number(step) and (abs(q/step-round(q/step))>1e-8):failures.append([rn,'未满足出库倍数',q,step])
         if number(d.get('BQ')) and q<d['BQ']:failures.append([rn,'最低恢复量未兑现',q,d['BQ']])
+        inbound_capped=bool(d.get('_inbound_cap') and number(d.get('L')) and d['L']>0)
+        if inbound_capped and number(d.get('BK')) and q>d['BK']:failures.append([rn,'已有在途追加突破库存额度',q,d['BK']])
         if (all(number(d.get(c)) for c in ['H','I','J','K','L']) and number(step)
+            and not inbound_capped
             and d['K']<=0 and max(d['L'],0)<min(rules.minimum_reference_units,step)
             and (max(d['H'],d['I'],d['J'])>0 or d['J']==0 and number(d['N']) and d['N']>0)):
             checks['应最低恢复行数']+=1

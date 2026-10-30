@@ -177,6 +177,7 @@ def calculate(inputs: dict, rules: Rules | None = None) -> dict:
     """
     p = rules or Rules()
     d = dict(inputs)
+    d.pop('_inbound_cap',None)  # Recalculation must not retain a prior cap decision.
     for c in "H I J K L N O P S V AB AC AD".split():
         d.setdefault(c, None)
     d.setdefault("AG", p.depth); d.setdefault("AH", p.lead)
@@ -316,6 +317,17 @@ def calculate(inputs: dict, rules: Rules | None = None) -> dict:
         sales_floor = k<=0 and max(h,i,j)>0 and (l<=0 or aq>0)
         zero_restore = j==0 and number(n) and 0<n<p.extreme_days and k<=0 and max(l,0)<min(p.minimum_reference_units,step)
         d["BP"] = max(ordinary,step) if sales_floor or zero_restore else ordinary
+        # Positive inbound already represents a holding. A later floor must
+        # not undo the original inventory-cap/carton decision. Keep the L<=0
+        # minimum holding and the separate extreme-restoration branch intact.
+        if l>0 and p.cap_days>0 and d["BP"]>d["BK"]:
+            # BP>BK can only be the one-step floor (AR<=BK). In the old chain
+            # it survives only above the monthly exit or as strict BQ holding;
+            # otherwise BR already discards it. This audit avoids warning on
+            # an intermediate-only change without replaying the whole model.
+            prior=step if j>=p.exit_monthly or max(l,0)<min(p.minimum_reference_units,step) else 0
+            d['_inbound_cap']={'floor_before':d['BP'],'allowed':d['BK'],'cap_days':p.cap_days,'previous_suggestion':prior}
+            d['BP']=d['BK']
     if text(d["BP"]):
         d["BQ"] = d["BP"]
     elif aw == "极端缺货自动拉回":

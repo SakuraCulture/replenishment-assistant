@@ -87,7 +87,11 @@ def execute(path,cache,request,cancel,progress):
         for i,h in enumerate(heads):
             if cancel.is_set():raise InterruptedError('已取消')
             item=cached(path,cache,h,cancel=cancel);r=item['record'];records.append(r)
-            matches.append(needle in json.dumps(r,ensure_ascii=False).lower() or any(needle in s for s in item['search']))
+            text=json.dumps(r,ensure_ascii=False).lower();terms=needle.split()
+            # Store/order terms may combine with SKU terms; product terms must
+            # match one product, not unrelated products in the same order.
+            match=all(t in text for t in terms) or any(all(t in text or t in sku for t in terms) for sku in item['search'])
+            matches.append(match and (not request.get('day') or r['day']==request['day']) and (not request.get('store') or r['store']==request['store']))
             progress({'done':i+1,'total':len(heads)})
         if heads!=repo.headers():raise ValueError('归档列表已更新，请刷新')
         return {'records':records,'matches':matches,'heads':heads}

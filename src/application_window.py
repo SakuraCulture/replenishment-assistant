@@ -1,7 +1,7 @@
 """Home/work/archive shell. Workbench remains a persistent live instance."""
 import copy,hashlib,json
 from pathlib import Path
-from PySide6.QtCore import Qt,QTimer
+from PySide6.QtCore import Qt,QTimer,QSignalBlocker
 from PySide6.QtWidgets import QWidget,QVBoxLayout,QHBoxLayout,QStackedWidget,QTableWidget,QTableWidgetItem,QLineEdit,QDialog,QMessageBox,QTextBrowser,QComboBox,QFileDialog,QCheckBox,QInputDialog
 from ui_controls import label,button
 from workbench import Workbench
@@ -37,13 +37,16 @@ class ApplicationWindow(Workbench):
         hv.addWidget(label('门店确认回传可在历史页导入，独立于原签发建议；实际下单、收货表关联暂未接入。','muted'))
         self.sections.addWidget(home);self.sections.addWidget(work)
         archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('历史正常单 · 当前修订去重统计','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
+        filters=QHBoxLayout();self.archive_day=QComboBox();self.archive_day.addItem('全部日期','');self.archive_store=QComboBox();self.archive_store.addItem('全部门店','');filters.addWidget(label('业务日期'));filters.addWidget(self.archive_day);filters.addWidget(label('门店'));filters.addWidget(self.archive_store,1);filters.addWidget(button('清空条件',self.clear_archive_filters));av.addLayout(filters)
+        self.archive_day.currentIndexChanged.connect(self.filter_archive);self.archive_store.currentIndexChanged.connect(self.filter_archive)
+        self.archive_search.setPlaceholderText('关键词可组合：门店 商品名 / 编码 / 单号（空格分开，回车立即查）');self.archive_search.setClearButtonEnabled(True);self.archive_search.returnPressed.connect(self.refresh_archive)
         self.archive_table=QTableWidget();self.archive_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.archive_table.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.archive_orders[i]));av.addWidget(self.archive_table,1)
         self.archive_note=label('','muted');av.addWidget(self.archive_note)
         paging=QHBoxLayout();paging.addWidget(button('上一页',lambda:self.archive_turn(-1)));paging.addWidget(button('下一页',lambda:self.archive_turn(1)));av.addLayout(paging)
         row=QHBoxLayout();row.addWidget(button('打开选中单据 / 修订',self.open_selected_archive));row.addWidget(button('批量导入加盟商回传',self.import_merchant_returns));row.addWidget(button('操作日志明细 / 导出',self.show_events));row.addWidget(button('刷新',self.refresh_archive));av.addLayout(row);av.addWidget(label('双击查看：签发快照、历史修订、逐商品数量和来源审计。历史页不改今日工作区。','muted'));self.sections.addWidget(archive)
         actions=QHBoxLayout();self.new_products_btn=button('选择本店新品 / 预览预算',self.choose_new_products);actions.addWidget(self.new_products_btn);self.issue_btn=button('仅确认归档（不导出）',self.confirm_normal);actions.addWidget(self.issue_btn);self.merchant_btn=button('选择门店并导出加盟商确认单',self.export_current,True);actions.addWidget(self.merchant_btn);self.overview_page.layout().addLayout(actions)
         self.pages.widget(4).layout().insertWidget(1,button('选择本店新品 / 预览预算',self.choose_new_products))
-        self.mode.addItems(['动销补货','新品候选','新品推荐','缺货恢复及其他'])
+        self.mode.addItems(['动销补货','新品候选','新品推荐','缺货恢复及其他','在途衔接风险'])
         self.save_job_btn.setText('保存草稿');self.history_btn.setText('草稿记录');self.batch_export.setText('内部批次明细导出');self.export_all.setText('内部全量明细');self.export_filtered.setText('内部当前筛选')
         focusrow=QHBoxLayout();self.focus_label=label("","muted");focusrow.addWidget(self.focus_label,1);self.focus_import_btn=button("导入新品明细 / 关注字段",self.import_focus);focusrow.addWidget(self.focus_import_btn);self.focus_empty_btn=button("本月无关注新品",self.empty_focus);focusrow.addWidget(self.focus_empty_btn);self.import_page.layout().addLayout(focusrow)
         self.refresh_focus();self.update_controls();self.show_section(0)
@@ -111,7 +114,7 @@ class ApplicationWindow(Workbench):
         if self.closing:return
         self.archive_page=0;self.archive_note.setText('正在读取归档摘要 / 商品索引…（可继续使用工作页）')
         self.home_status.setText('归档摘要加载中；工作区可继续使用。')
-        self.history_reader.request({'kind':'list','search':self.archive_search.text()},self.archive_ready,self.archive_failed,
+        self.history_reader.request({'kind':'list','search':self.archive_search.text(),'day':self.archive_day.currentData() or '', 'store':self.archive_store.currentData() or ''},self.archive_ready,self.archive_failed,
             lambda p:self.archive_note.setText(f"正在读取归档 {p['done']} / {p['total']}；尚未完成的查询不代表无结果"))
 
     def archive_failed(self,message):
@@ -119,12 +122,19 @@ class ApplicationWindow(Workbench):
 
     def archive_ready(self,data):
         self.archive_all=data['records'];self.archive_matches=data['matches'];self.archive_heads=data['heads']
+        for combo,choices in [(self.archive_day,[('全部日期','')]+[(day,day) for day in dict.fromkeys(r['day'] for r in self.archive_all)]),(self.archive_store,[('全部门店','')]+list(dict.fromkeys((r['name']+' ('+r['store']+')',r['store']) for r in self.archive_all)))]:
+            selected=combo.currentData();blocker=QSignalBlocker(combo);combo.clear()
+            for text,value in choices:combo.addItem(text,value)
+            combo.setCurrentIndex(max(0,combo.findData(selected)));del blocker
         self.recent_orders=self.archive_all[:10];self.fill_orders(self.recent,self.recent_orders);self.render_archive_page();self.refresh_home_status()
+
+    def clear_archive_filters(self):
+        self.archive_day.setCurrentIndex(0);self.archive_store.setCurrentIndex(0);self.archive_search.clear();self.refresh_archive()
 
     def render_archive_page(self):
         matching=[r for r,m in zip(self.archive_all,self.archive_matches) if m];pages=max(1,(len(matching)+99)//100);self.archive_page=max(0,min(self.archive_page,pages-1))
         self.archive_orders=matching[self.archive_page*100:(self.archive_page+1)*100];self.fill_orders(self.archive_table,self.archive_orders)
-        self.archive_note.setText(f'匹配 {len(matching)} 单 · 第 {self.archive_page+1} / {pages} 页（每页100单）')
+        self.archive_note.setText(f'匹配 {len(matching)} / {len(self.archive_all)} 单 · 第 {self.archive_page+1} / {pages} 页（每页100单）'+(' · 无匹配，可清空条件重查' if not matching else ' · 双击单据，再点选商品查看当时依据'))
 
     def archive_turn(self,offset):
         self.archive_page+=offset;self.render_archive_page()

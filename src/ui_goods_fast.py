@@ -66,6 +66,7 @@ class FilterModel(QSortFilterProxyModel):
         if self.search and self.search not in (' '.join(str(d.get(k,'')) for k in ['D','E','F'])).lower():return False
         if self.mode in ('动销补货','新品候选','新品推荐','缺货恢复及其他'):return new_products.is_new(d) if self.mode=='新品候选' else new_products.category(d)==self.mode
         if self.mode=='建议补货':return sem.orderable(d)
+        if self.mode=='在途衔接风险':return bool(sem.inbound_risk(d))
         if self.mode=='必卖商品':return bool(d.get('_must_sell'))
         if self.mode=='预算未满足':return d.get('_budget_gap',0)>0
         if self.mode=='必卖未补足':return bool(d.get('_must_sell')) and d.get('_budget_gap',0)>0

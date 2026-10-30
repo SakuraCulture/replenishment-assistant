@@ -47,6 +47,9 @@ def form(repo,order,scope,sku,cancel=None):
             # pre-budget first-fill override, absent on ordinary moving goods.
             data['_execution_qty']=sem.order_quantity(d);data['_execution_amount']=sem.order_amount(d)
             data.update(核心理由=normal_exports.decision(d),当时资料与来源=d.get('_meta'),一箱例外=d.get('_audit'))
+            if d.get('_inbound_cap'):data['在途保底限制']=d['_inbound_cap']
+            risk=sem.inbound_risk(d)
+            if risk:data['需人工复核']=risk['text']
     elif scope=='当时商品资料快照':
         parts=work_parts(repo,order,[('catalogs',),('loaded','intake','products_snapshot')]);catalogs=parts.get(('catalogs',),{});data={}
         for wh,c in catalogs.items():

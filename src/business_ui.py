@@ -11,7 +11,8 @@ class GridModel(QAbstractTableModel):
     def replace(self,rows):
         self.beginResetModel();self.rows=list(rows);self.tokens=[' '.join(str(v) for v in r).lower() for r in self.rows];self.indices=list(range(len(self.rows)));self.endResetModel()
     def filter(self,text):
-        self.beginResetModel();self.indices=[i for i,t in enumerate(self.tokens) if text.lower() in t];self.endResetModel()
+        terms=text.lower().split()
+        self.beginResetModel();self.indices=[i for i,t in enumerate(self.tokens) if all(term in t for term in terms)];self.endResetModel()
     def rowCount(self,parent=QModelIndex()):return 0 if parent.isValid() else len(self.indices)
     def columnCount(self,parent=QModelIndex()):return 0 if parent.isValid() else len(self.headers)
     def data(self,index,role=Qt.ItemDataRole.DisplayRole):

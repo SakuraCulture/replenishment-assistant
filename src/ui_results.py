@@ -78,6 +78,9 @@ class ResultsView:
         self.metric_values[3].setText(f"{s['local']:,} / {s['excluded']:,}")
         name=self.loaded['stores'].get(self.selected_store(),'') if self.loaded else ''
         self.result_caption.setText(f'{name} · '+('计算完成' if calculated else '导入预览 · 尚未计算')+ (f" · {s['unpriced']}款补货未计价" if s['unpriced'] else ''))
+        if calculated:
+            risk_count=sum(bool(semantics.inbound_risk(d)) for d in rows)
+            if risk_count:self.result_caption.setText(self.result_caption.text()+f' · 在途衔接风险 {risk_count} 条（筛选查看，不自动补回）')
         b=self.result.get('budget',{}) if calculated and self.result else {}
         if b.get('enabled'):
             self.budget_caption.setText(f"预算 {b['limit']:,.2f} 元 · 已用 {b['spent']:,.2f} · 剩余 {b['remaining']:,.2f} · 必卖 {b['must_spent']:,.2f} / 普通 {b['other_spent']:,.2f} · 未满足 {b['deferred']} 款 · 最低持有缺口 {b['holding_gaps']} 款")
@@ -120,6 +123,9 @@ class ResultsView:
         content=f'<h2>{esc(d.get("D"))}</h2><p>{esc(d.get("E"))} · {d["_source"]}</p>'
         content+='<p><b>'+esc(semantics.order_status(d))+'</b> '+esc(semantics.exclusion_reason(d))+'</p>'
         content+='<p>优先清单：'+('必卖商品' if d.get('_must_sell') else '普通商品')+'</p>'
+        risk=semantics.inbound_risk(d)
+        if risk:content+='<h3>需人工复核</h3><p>'+esc(risk['text'])+'</p>'
+        elif d.get('_inbound_cap'):content+='<p>已有在途：追加保底已受库存额度限制，不重新补回。原库存额度口径保持不变。</p>'
         route=semantics.routing(d)
         if route:
             content+=group('需求归属',[('主仓',route['primary']),('从仓',route['secondary'] or '无'),('需求归属仓',route['assigned']),('主仓判断',route['primary_state']),('主仓可用数',route['primary_stock']),('从仓判断',route['secondary_state']),('从仓可用数',route['secondary_stock'])])+'<p>'+esc(route['reason'])+'</p><p>此阶段只确定归属，不拆单、不按仓库存限量或预占；从仓无货仍保留需求。禁用和停采按执行规则处理。</p>'

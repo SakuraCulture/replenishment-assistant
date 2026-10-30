@@ -47,13 +47,13 @@ def start_smoke(app,win,args):
             win.show_section(2);wait(lambda:win.history_reader.active is None);d=ArchiveDialog(win,next(r for r in win.archive_orders if r['store']=='QA_A'));d.show();wait(lambda:d.selected is not None);shot(d,'01-signed-detail.png')
             audit=AuditDialog(d,win,d.selected);audit.show();wait(lambda:audit.model.rowCount()>0);audit.sku.setText('new_must')
             for scope in ['当时参数','商品建议与销量库存','当时商品资料快照','商品完整计算依据']:
-                audit.scope.setCurrentText(scope);wait(lambda:win.history_reader.active is None);assert audit.model.rowCount()>0
+                audit.scope.setCurrentText(scope);wait(lambda:audit.reader.active is None and audit.reader.pending is None);assert audit.model.rowCount()>0
                 if scope=='商品建议与销量库存':assert any('原计算建议量' in r[0] for r in audit.model.rows);shot(audit,'02-business-form.png')
                 if scope=='当时商品资料快照':assert any('原表全部列' in r[0] for r in audit.model.rows);shot(audit,'03-original-catalog.png')
             path=out/'form.xlsx';QFileDialog.getSaveFileName=lambda *a,**k:(str(path),'');audit.export();wait(lambda:path.exists());QFileDialog.getSaveFileName=save
             audit.load();audit.reject();audit.deleteLater();win.refresh_archive();wait(lambda:win.history_reader.active is None);assert len(win.archive_orders)==2
             moving=win.orders.get(wr.today(),'QA_B');audit=AuditDialog(d,win,moving);audit.show();wait(lambda:audit.model.rowCount()>0)
-            audit.sku.setText('moving');audit.scope.setCurrentText('商品建议与销量库存');wait(lambda:win.history_reader.active is None)
+            audit.sku.setText('moving');audit.scope.setCurrentText('商品建议与销量库存');wait(lambda:audit.reader.active is None and audit.reader.pending is None)
             values={r[0]:r[1] for r in audit.model.rows};assert float(values['签发执行量'])==5 and float(values['签发金额'])==10,values
             shot(audit,'07-moving-execution.png');audit.reject();audit.deleteLater()
             checks.append('ordinary moving SKU form displays actual budget execution 5 and amount 10, not absent first-fill fields')

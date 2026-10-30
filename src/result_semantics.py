@@ -28,6 +28,24 @@ def work_eligible(d):
     return not exclusion_reason(d)
 
 
+def inbound_risk(d):
+    """Warning only. 3.5 days is a review scenario, never a model override.
+
+    Historical snapshots without the new cap audit stay uninterpreted. Existing
+    inbound has no ETA; quantity coverage cannot establish shelf availability.
+    """
+    cap=d.get('_inbound_cap',{});wrapper=d.get('_audit',{}).get('inbound_cap_blocked',False)
+    if not (cap.get('previous_suggestion',0)>0 or wrapper) or not work_eligible(d) or d.get('_source')!='资料匹配':return None
+    if not all(numeric(d.get(k)) for k in ('K','L','AN','AM','AH')):return None
+    rate=d['AN']*d['AM']
+    if rate<=0 or d['L']<=0:return None
+    days=(max(d['K'],0)+max(d['L'],0))/rate
+    gap=d['AH']+3.5-days
+    if gap<=0:return None
+    return {'current_days':days,'lead_days':d['AH'],'review_days':3.5,'gap_days':gap,
+            'text':f'在途衔接风险：现有总量约{days:.2f}天；若3.5天后再下单，到货需{d["AH"]:g}天，覆盖缺口约{gap:.2f}天。请核对在途实际到店时间或提前复核；不自动追加。'}
+
+
 def working_rows(rows):
     return [d for d in rows if work_eligible(d)]
 

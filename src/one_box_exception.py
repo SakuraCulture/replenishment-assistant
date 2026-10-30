@@ -31,6 +31,8 @@ def assess(result, metadata):
         return reject('原结果或输入包含待核值')
     if d['AS'] != 0:
         return reject('原模型已有补货建议，不额外加箱')
+    if d.get('_inbound_cap'):
+        return reject('已有在途：追加保底受库存额度限制，不自动补回一箱')
     if d['BD'] <= 1:
         return reject('非箱规商品，不属于本次例外范围')
     if d['V'] <= 0 or min(d['H'],d['I'],d['J'],d['K'],d['L']) < 0:
@@ -50,6 +52,11 @@ def assess(result, metadata):
         blocked = '资金约束'
     else:
         return reject('原零补货并非由库存额度或资金约束造成')
+    if blocked=='库存额度' and d['L']>0:
+        # Also protect positive shelf stock + inbound: that row need not have
+        # entered BP's zero-shelf floor, but the wrapper must respect its cap.
+        audit.update(inbound_cap_blocked=True,blocked_by=blocked)
+        return reject('已有在途：库存额度拦截，不自动补回一箱')
     audit.update(eligible=True, reason='符合一箱例外', blocked_by=blocked)
     return audit
 
