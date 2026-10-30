@@ -1,0 +1,86 @@
+test_cancel_before_and_during_then_retry (test_archive_batch.BatchTests.test_cancel_before_and_during_then_retry) ... ok
+test_capacity_no_truncation_and_duplicate_revision_rejected (test_archive_batch.BatchTests.test_capacity_no_truncation_and_duplicate_revision_rejected) ... ok
+test_combined_fails_atomic_per_warehouse_other_warehouse_completes (test_archive_batch.BatchTests.test_combined_fails_atomic_per_warehouse_other_warehouse_completes) ... ok
+test_date_range_and_source_status_and_legacy_form_guard (test_archive_batch.BatchTests.test_date_range_and_source_status_and_legacy_form_guard) ... ok
+test_missing_corrupt_source_and_explicit_partial (test_archive_batch.BatchTests.test_missing_corrupt_source_and_explicit_partial) ... ok
+test_original_byte_identity_and_dedup_associations (test_archive_batch.BatchTests.test_original_byte_identity_and_dedup_associations) ... ok
+test_partial_completion_and_no_overwrite (test_archive_batch.BatchTests.test_partial_completion_and_no_overwrite) ... ok
+test_preview_bound_revision_current_update_does_not_replace (test_archive_batch.BatchTests.test_preview_bound_revision_current_update_does_not_replace) ... ok
+test_reference_is_labelled_derived_and_retains_duplicate_columns (test_archive_batch.BatchTests.test_reference_is_labelled_derived_and_retains_duplicate_columns) ... ok
+test_reverse_selection_preserved (test_archive_batch.BatchTests.test_reverse_selection_preserved) ... ok
+test_separate_and_combined_values_types_order_and_baseline (test_archive_batch.BatchTests.test_separate_and_combined_values_types_order_and_baseline) ... ok
+test_chunk_storage_identical_view (test_archive_orders.ArchiveTests.test_chunk_storage_identical_view) ... ok
+test_delete_restore_preserves_payload_sources_and_other_warehouse (test_archive_orders.ArchiveTests.test_delete_restore_preserves_payload_sources_and_other_warehouse) ... ok
+test_deleted_confirm_and_feedback_commit_reject_without_mutation (test_archive_orders.ArchiveTests.test_deleted_confirm_and_feedback_commit_reject_without_mutation) ... ok
+test_deleted_export_blocked_and_event_per_warehouse (test_archive_orders.ArchiveTests.test_deleted_export_blocked_and_event_per_warehouse) ... ok
+test_empty_fields_and_formula_text_are_not_dropped (test_archive_orders.ArchiveTests.test_empty_fields_and_formula_text_are_not_dropped) ... ok
+test_exception_isolation_survives_python_optimization (test_archive_orders.ArchiveTests.test_exception_isolation_survives_python_optimization) ... ok
+test_missing_source_explicit_and_cancel_no_file (test_archive_orders.ArchiveTests.test_missing_source_explicit_and_cancel_no_file) ... ok
+test_partition_order_amount_search_and_detail (test_archive_orders.ArchiveTests.test_partition_order_amount_search_and_detail) ... ok
+test_source_hash_tamper_and_no_partial_export (test_archive_orders.ArchiveTests.test_source_hash_tamper_and_no_partial_export) ... ok
+test_stale_revision_and_cancel_roll_back (test_archive_orders.ArchiveTests.test_stale_revision_and_cancel_roll_back) ... ok
+test_three_sheets_raw_source_and_signed_rows (test_archive_orders.ArchiveTests.test_three_sheets_raw_source_and_signed_rows) ... ok
+test_above_five_percent_rejected (test_budget_overrun.OverrunTests.test_above_five_percent_rejected) ... ok
+test_exact_five_percent_one_only_and_stable_order (test_budget_overrun.OverrunTests.test_exact_five_percent_one_only_and_stable_order) ... ok
+test_no_candidate_increase_or_free_budget (test_budget_overrun.OverrunTests.test_no_candidate_increase_or_free_budget) ... ok
+test_pending_price_does_not_get_extra (test_budget_overrun.OverrunTests.test_pending_price_does_not_get_extra) ... ok
+test_positive_remaining_can_finish_a_unit (test_budget_overrun.OverrunTests.test_positive_remaining_can_finish_a_unit) ... ok
+test_reallocation_clears_audit (test_budget_overrun.OverrunTests.test_reallocation_clears_audit) ... ok
+test_whole_carton_not_one_piece (test_budget_overrun.OverrunTests.test_whole_carton_not_one_piece) ... ok
+test_zero_never_buys (test_budget_overrun.OverrunTests.test_zero_never_buys) ... ok
+test_atomic_recycle_restore_same_snapshots (test_interaction_rules.BatchVisibilityTests.test_atomic_recycle_restore_same_snapshots) ... ok
+test_cancel_duplicate_empty_rejected (test_interaction_rules.BatchVisibilityTests.test_cancel_duplicate_empty_rejected) ... ok
+test_second_conflict_rolls_back_first_and_events (test_interaction_rules.BatchVisibilityTests.test_second_conflict_rolls_back_first_and_events) ... ok
+test_legacy_unmarked_reply_remains_compatible (test_interaction_rules.ScopeTests.test_legacy_unmarked_reply_remains_compatible) ... ok
+test_parameter_diff_order_and_missing (test_interaction_rules.ScopeTests.test_parameter_diff_order_and_missing) ... ok
+test_return_exact_order_warehouse_revision (test_interaction_rules.ScopeTests.test_return_exact_order_warehouse_revision) ... ok
+test_apply_review_cancel_does_not_accept (test_interaction_ui.UiContracts.test_apply_review_cancel_does_not_accept) ... ok
+test_commit_cancel_waits_then_only_stops_remaining (test_interaction_ui.UiContracts.test_commit_cancel_waits_then_only_stops_remaining) ... ok
+test_load_dirty_form_requires_confirmation (test_interaction_ui.UiContracts.test_load_dirty_form_requires_confirmation) ... ok
+test_no_implicit_enter_on_mutations (test_interaction_ui.UiContracts.test_no_implicit_enter_on_mutations) ... ok
+test_readonly_tabs_navigable_fields_locked (test_interaction_ui.UiContracts.test_readonly_tabs_navigable_fields_locked) ... ok
+test_retire_confirmation_and_builtin_guard (test_interaction_ui.UiContracts.test_retire_confirmation_and_builtin_guard) ... ok
+test_save_cannot_reenable_cancel_after_commit (test_interaction_ui.UiContracts.test_save_cannot_reenable_cancel_after_commit) ... ok
+test_select_visible_vs_all (test_interaction_ui.UiContracts.test_select_visible_vs_all) ... ok
+test_store_editor_cannot_persist_presets (test_interaction_ui.UiContracts.test_store_editor_cannot_persist_presets) ... ok
+test_unedited_form_does_not_ask_to_discard (test_interaction_ui.UiContracts.test_unedited_form_does_not_ask_to_discard) ... ok
+test_bulk_proposal_never_guesses_duplicate_source (test_review_fixes.ReviewTests.test_bulk_proposal_never_guesses_duplicate_source) ... ok
+test_effective_values_show_overrides_without_mutation (test_review_fixes.ReviewTests.test_effective_values_show_overrides_without_mutation) ... ok
+test_generated_fractional_step_budget (test_review_fixes.ReviewTests.test_generated_fractional_step_budget) ... ok
+test_normalization_does_not_survive_reallocation (test_review_fixes.ReviewTests.test_normalization_does_not_survive_reallocation) ... ok
+test_real_mismatch_not_silently_normalized (test_review_fixes.ReviewTests.test_real_mismatch_not_silently_normalized) ... ok
+test_single_archive_read_equals_legacy (test_review_fixes.ReviewTests.test_single_archive_read_equals_legacy) ... ok
+test_source_map_detects_reorder_and_wrong_identity (test_review_fixes.ReviewTests.test_source_map_detects_reorder_and_wrong_identity) ... ok
+test_z_zero_has_explicit_reason_not_invented_forecast (test_review_fixes.ReviewTests.test_z_zero_has_explicit_reason_not_invented_forecast) ... ERROR:root:��� 5cdfd10ca236 �׶�=��Ʒ���� �ŵ�=T ��Ʒ=SKU �ļ�= ��=2
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\input_adapter.py", line 183, in execute_one
+    try:d=calculate(inp,rules)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\model.py", line 260, in calculate
+    raise ValueError('����֧���޷�ȷ����ǰ7���վ�ZΪ0��������������ֵ��0����˶�����/����/�������ȣ����Զ�����Ԥ��')
+ValueError: ����֧���޷�ȷ����ǰ7���վ�ZΪ0��������������ֵ��0����˶�����/����/�������ȣ����Զ�����Ԥ��
+ok
+test_priority_exact_budget_and_stable_tie (test_rules.BudgetTests.test_priority_exact_budget_and_stable_tie) ... ok
+test_zero_budget_and_invalid_step_fail_closed (test_rules.BudgetTests.test_zero_budget_and_invalid_step_fail_closed) ... ok
+test_legacy_checksum_runtime_not_assert (test_rules.IntegrityTests.test_legacy_checksum_runtime_not_assert) ... ok
+test_both_zero_holding_and_cartons (test_rules.ModelTests.test_both_zero_holding_and_cartons) ... ok
+test_box_wrapper_does_not_readd (test_rules.ModelTests.test_box_wrapper_does_not_readd) ... ok
+test_disabled_cap_and_recompute_clear_audit (test_rules.ModelTests.test_disabled_cap_and_recompute_clear_audit) ... ok
+test_fractional_multiples_generated_by_model (test_rules.ModelTests.test_fractional_multiples_generated_by_model) ... ok
+test_missing_data_not_zero (test_rules.ModelTests.test_missing_data_not_zero) ... ok
+test_screenshot (test_rules.ModelTests.test_screenshot) ... ok
+test_small_inbound_cap_agrees_with_post_validation (test_rules.ModelTests.test_small_inbound_cap_agrees_with_post_validation) ... ok
+test_stockout_conflict_only_discards_N (test_rules.ModelTests.test_stockout_conflict_only_discards_N) ... ok
+test_zero_and_extreme_restore (test_rules.ModelTests.test_zero_and_extreme_restore) ... ok
+test_defaults_effective_config_and_budget_optin (test_warehouse_orders.WarehouseTests.test_defaults_effective_config_and_budget_optin) ... ok
+test_filename_and_child_number (test_warehouse_orders.WarehouseTests.test_filename_and_child_number) ... ok
+test_invalid_route_not_saved (test_warehouse_orders.WarehouseTests.test_invalid_route_not_saved) ... ok
+test_no_empty_warehouse_file (test_warehouse_orders.WarehouseTests.test_no_empty_warehouse_file) ... ok
+test_partition_preserves_order_excludes_local_disabled_and_zero_new (test_warehouse_orders.WarehouseTests.test_partition_preserves_order_excludes_local_disabled_and_zero_new) ... ok
+test_unknown_blocks_entire_store (test_warehouse_orders.WarehouseTests.test_unknown_blocks_entire_store) ... ok
+test_warehouse_feedback_status (test_warehouse_orders.WarehouseTests.test_warehouse_feedback_status) ... ok
+
+----------------------------------------------------------------------
+Ran 73 tests in 5.417s
+
+OK
