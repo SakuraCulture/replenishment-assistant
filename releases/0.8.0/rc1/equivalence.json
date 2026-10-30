@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "differences": [],
+  "baseline": "39f4944",
+  "scenarios": [
+    "save",
+    "unchanged_save",
+    "first_sign",
+    "unchanged_sign",
+    "partial_revision",
+    "revision_race"
+  ],
+  "scope": "complete decoded daily/archive/work-revision payloads, all other original SQL columns, events, headers, IDs; merchant workbook values/types/row/column/sheet order/styles/comments/custom properties",
+  "physical_storage_exclusions": [
+    "snapshot_chunks table",
+    "snapshot_storage_meta table (backup path/format metadata)",
+    "three payload columns decoded with each version codec before comparison"
+  ],
+  "business_field_whitelist": [],
+  "determinism": "UUID generator and wall-clock frozen identically; same frozen calculation payload; no value tolerances or removed fields"
+}

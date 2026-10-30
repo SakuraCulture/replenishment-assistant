@@ -36,14 +36,15 @@ def main():
             run=load(qa/f'performance_release/{kind}-{i}/result.json');assert run['passed'] and not run['remaining_children']
             if kind=='new':assert run['source_hashes']==actual,'source changed after performance measurement'
     out=ROOT/'releases/0.8.0'/meta['build_id'];out.mkdir(parents=True,exist_ok=False)
-    for name,path in {**files,**ui}.items():shutil.copy2(path,out/(name+'.json'))
+    for name,path in {**files,**ui}.items():
+        (out/(name+'.json')).write_text(path.read_text(encoding='utf-8-sig'),encoding='utf-8',newline='\n')
     shutil.copy2(qa/'交付报告.md',out/'交付报告.md');shutil.copy2(qa/'交付报告.md',dest/'性能与验收报告.md')
     receipt={'passed':True,'version':'0.8.0','baseline_commit':'39f49442c66bec6885873f75858514406a43cf45','source_commit':meta['source_commit'],'evidence_commit':head,'build_id':meta['build_id'],'exe_sha256':sha(dest/'补货助手.exe'),'storage_format_version':2,'storage_business_differences':0,'model_rule_version':'0.3.1-rules','authorized_rule_change':'only N>30 and J>0 discards contradictory stockout days; original N and sales formula retained','old_package_and_inputs_preserved':True,'delivery':str(dest),'no_remote_push_or_merge':True,'limits':['full restore still reads/transfers full snapshot; encoding traverses all values','projection verifies only accessed blocks; full reads and copy conversion verify full values','old EXE requires a legacy copy; old/new model jobs readonly across model versions','no chunk GC or automatic all-history conversion','timings specific to five-store fixture and this Windows computer']}
-    (dest/'验收记录.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),encoding='utf-8')
-    manifest={f.relative_to(dest).as_posix():sha(f) for f in dest.rglob('*') if f.is_file()};(out/'files_sha256.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+    (dest/'验收记录.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),encoding='utf-8',newline='\n')
+    manifest={f.relative_to(dest).as_posix():sha(f) for f in dest.rglob('*') if f.is_file()};(out/'files_sha256.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8',newline='\n')
     archive=dest.parent/f"补货助手_0.8.0_{meta['build_id']}.zip"
     with zipfile.ZipFile(archive,'x',zipfile.ZIP_DEFLATED) as z:
         for rel in manifest:z.write(dest/rel,dest.name+'/'+rel)
     with zipfile.ZipFile(archive) as z:assert z.testzip() is None
-    receipt.update(zip=str(archive),zip_sha256=sha(archive));(out/'release_report.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(receipt,ensure_ascii=False))
+    receipt.update(zip=str(archive),zip_sha256=sha(archive));(out/'release_report.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),encoding='utf-8',newline='\n');print(json.dumps(receipt,ensure_ascii=False))
 if __name__=='__main__':main()

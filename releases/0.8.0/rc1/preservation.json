@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "files": 232,
+  "differences": [],
+  "scope": "original Excel inputs, daily user database, frozen legacy snapshot, old 0.7.4 delivery and ZIP"
+}

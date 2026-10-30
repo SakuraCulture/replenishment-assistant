@@ -1,0 +1,118 @@
+{
+  "passed": true,
+  "source_sha256": "548a5096ed25cb6bc2357a312e5df5ead8db163bf0dd84772d332990ccb48e7c",
+  "differences": 0,
+  "tables": {
+    "jobs": 1,
+    "normal_events": 12,
+    "normal_orders": 5,
+    "normal_revisions": 5,
+    "normal_work_revisions": 1,
+    "presets": 0,
+    "stores": 5
+  },
+  "scope": "every original SQL row in rowid order; full decoded payload canonical hash; IDs/revisions/events/config exact",
+  "exclusions": [
+    "snapshot_chunks",
+    "snapshot_storage_meta"
+  ],
+  "receipts": [
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_080\\real_conversion\\chunks.sqlite3",
+      "mode": "upgrade",
+      "records": {
+        "jobs": 1,
+        "normal_revisions": 5,
+        "normal_work_revisions": 1
+      },
+      "checks": [
+        {
+          "table": "jobs",
+          "rowid": 1,
+          "sha256": "259fdb898581603ea1048cbfdded14fbeda2ecedd8425587cfcddecd604654ad"
+        },
+        {
+          "table": "normal_revisions",
+          "rowid": 1,
+          "sha256": "a23089394f230674b2aeec8b7cc603b231c4b829f4b22b60faa4a9fa06bb4c3b"
+        },
+        {
+          "table": "normal_revisions",
+          "rowid": 2,
+          "sha256": "7ee4b11a9a6a91fa4f390a01eb5ecbe4216efb5db6f12b1460da2393b62220ae"
+        },
+        {
+          "table": "normal_revisions",
+          "rowid": 3,
+          "sha256": "13951b96b859e4b2b60b40dee86dff0ab7a199dd4a14feb4873004f1718468ab"
+        },
+        {
+          "table": "normal_revisions",
+          "rowid": 4,
+          "sha256": "63093d185d69865cea7cdbecffe56b8ff7a20c1b5269d43a302e402667defe36"
+        },
+        {
+          "table": "normal_revisions",
+          "rowid": 5,
+          "sha256": "5cf2349b09390dc34b46b0b36125c87f396bd6599f69e2b6b8b7b5bf36318c74"
+        },
+        {
+          "table": "normal_work_revisions",
+          "rowid": 1,
+          "sha256": "259fdb898581603ea1048cbfdded14fbeda2ecedd8425587cfcddecd604654ad"
+        }
+      ],
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\archive_072\\snapshot.sqlite3",
+      "source_modified": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_080\\real_conversion\\legacy.sqlite3",
+      "mode": "legacy",
+      "records": {
+        "jobs": 1,
+        "normal_revisions": 5,
+        "normal_work_revisions": 1
+      },
+      "checks": [
+        {
+          "table": "jobs",
+          "rowid": 1,
+          "sha256": "259fdb898581603ea1048cbfdded14fbeda2ecedd8425587cfcddecd604654ad"
+        },
+        {
+          "table": "normal_revisions",
+          "rowid": 1,
+          "sha256": "a23089394f230674b2aeec8b7cc603b231c4b829f4b22b60faa4a9fa06bb4c3b"
+        },
+        {
+          "table": "normal_revisions",
+          "rowid": 2,
+          "sha256": "7ee4b11a9a6a91fa4f390a01eb5ecbe4216efb5db6f12b1460da2393b62220ae"
+        },
+        {
+          "table": "normal_revisions",
+          "rowid": 3,
+          "sha256": "13951b96b859e4b2b60b40dee86dff0ab7a199dd4a14feb4873004f1718468ab"
+        },
+        {
+          "table": "normal_revisions",
+          "rowid": 4,
+          "sha256": "63093d185d69865cea7cdbecffe56b8ff7a20c1b5269d43a302e402667defe36"
+        },
+        {
+          "table": "normal_revisions",
+          "rowid": 5,
+          "sha256": "5cf2349b09390dc34b46b0b36125c87f396bd6599f69e2b6b8b7b5bf36318c74"
+        },
+        {
+          "table": "normal_work_revisions",
+          "rowid": 1,
+          "sha256": "259fdb898581603ea1048cbfdded14fbeda2ecedd8425587cfcddecd604654ad"
+        }
+      ],
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_080\\real_conversion\\chunks.sqlite3",
+      "source_modified": false
+    }
+  ],
+  "source_unchanged": true
+}
