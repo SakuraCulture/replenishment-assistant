@@ -8,11 +8,11 @@ version=json.loads((root/'src/version.json').read_text(encoding='utf-8'))
 build=json.loads((dest/'_internal/build_info.json').read_text(encoding='utf-8-sig'))
 assert build['version']==version['version']
 shutil.copy2(root/'使用说明.txt',dest/'使用说明.txt')
-if version['version'] in {'0.9.1','0.9.2','0.10.0','0.11.0','0.12.0'}:
+if version['version'] in {'0.9.1','0.9.2','0.10.0','0.11.0','0.12.0','0.13.0'}:
     (dest/'docs').mkdir(exist_ok=True)
     for name in ['0.7.1导出优化与批量确认单.md','0.7.2历史明细性能.md','0.7.3工作链路性能与过滤.md','0.7.4作业IO第一阶段.md','0.8.0分块存储与兼容.md','0.9.0业务日志与回传.md','0.9.1在途保底与历史查询.md','0.9.1代码疑问核查.md']:
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
-if version['version'] in {'0.9.2','0.10.0','0.11.0','0.12.0'}:
+if version['version'] in {'0.9.2','0.10.0','0.11.0','0.12.0','0.13.0'}:
     shutil.copy2(root/'docs/0.9.2已确认问题修复.md',dest/'docs/0.9.2已确认问题修复.md')
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
 if version['version'] in {'0.7.1','0.7.2','0.7.3','0.7.4','0.8.0','0.9.0'}:
@@ -22,9 +22,12 @@ if version['version'] in {'0.7.3','0.7.4','0.8.0','0.9.0'}:shutil.copy2(root/'do
 if version['version'] in {'0.7.4','0.8.0','0.9.0'}:shutil.copy2(root/'docs/0.7.4作业IO第一阶段.md',dest/'docs/0.7.4作业IO第一阶段.md')
 if version['version'] in {'0.8.0','0.9.0'}:shutil.copy2(root/'docs/0.8.0分块存储与兼容.md',dest/'docs/0.8.0分块存储与兼容.md')
 if version['version']=='0.9.0':shutil.copy2(root/'docs/0.9.0业务日志与回传.md',dest/'docs/0.9.0业务日志与回传.md')
-if version['version'] in {'0.10.0','0.11.0','0.12.0'}:shutil.copy2(root/'docs/0.10.0分仓确认单与门店默认.md',dest/'docs/0.10.0分仓确认单与门店默认.md')
-if version['version'] in {'0.11.0','0.12.0'}:shutil.copy2(root/'docs/0.11.0分仓归档与回收站.md',dest/'docs/0.11.0分仓归档与回收站.md')
-if version['version']=='0.12.0':shutil.copy2(root/'docs/0.12.0历史批量独立导出.md',dest/'docs/0.12.0历史批量独立导出.md')
+if version['version'] in {'0.10.0','0.11.0','0.12.0','0.13.0'}:shutil.copy2(root/'docs/0.10.0分仓确认单与门店默认.md',dest/'docs/0.10.0分仓确认单与门店默认.md')
+if version['version'] in {'0.11.0','0.12.0','0.13.0'}:shutil.copy2(root/'docs/0.11.0分仓归档与回收站.md',dest/'docs/0.11.0分仓归档与回收站.md')
+if version['version'] in {'0.12.0','0.13.0'}:shutil.copy2(root/'docs/0.12.0历史批量独立导出.md',dest/'docs/0.12.0历史批量独立导出.md')
+if version['version']=='0.13.0':
+    shutil.copy2(root/'docs/0.13.0交互整改与33项清单.md',dest/'docs/0.13.0交互整改与33项清单.md')
+    (dest/'使用说明.txt').write_bytes((root/'docs/0.13.0交互整改与33项清单.md').read_bytes())
 licenses=dest/'licenses';licenses.mkdir(exist_ok=True)
 if (root/'third_party_licenses').exists():shutil.copytree(root/'third_party_licenses',licenses,dirs_exist_ok=True)
 versions={}

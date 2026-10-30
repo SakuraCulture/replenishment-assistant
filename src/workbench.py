@@ -171,10 +171,10 @@ class Workbench(ParameterUi,BatchWindow):
         if records:table.selectRow(0)
         action={'value':'open'}
         def choose(value):
-            if table.currentRow()>=0:action['value']=value;dialog.accept()
-        row=QHBoxLayout();open_btn=button('查看历史草稿（只读）',lambda:choose('open'),True);row.addWidget(open_btn);row.addWidget(button('用此配置新建今日草稿',lambda:choose('copy')))
+            if table.currentRow()>=0 and not table.isRowHidden(table.currentRow()):action['value']=value;dialog.accept()
+        row=QHBoxLayout();open_btn=button('查看历史草稿（只读）',lambda:choose('open'),True);row.addWidget(open_btn);copy_btn=button('用此配置新建今日草稿',lambda:choose('copy'));row.addWidget(copy_btn)
         def update_open(*_):
-            i=table.currentRow();open_btn.setEnabled(i>=0 and not table.isRowHidden(i));open_btn.setText('打开今日草稿（兼容时可续做）' if i>=0 and records[i]['day']==wr.today() else '查看历史草稿（只读）')
+            i=table.currentRow();valid=i>=0 and not table.isRowHidden(i);open_btn.setEnabled(valid);copy_btn.setEnabled(valid);editable=valid and records[i]['day']==wr.today() and records[i]['summary'].get('model_version')==MODEL_VERSION;open_btn.setText('继续今日草稿' if editable else '查看历史草稿（只读）');open_btn.setToolTip('当日同模型，可继续编辑' if editable else '历史日期或模型版本不同，仅查看当时快照')
         table.itemSelectionChanged.connect(update_open);search.textChanged.connect(update_open);update_open();row.addWidget(button('关闭',dialog.reject));v.addLayout(row)
         if dialog.exec()!=QDialog.DialogCode.Accepted or not self.leave_current():return
         from ui_work_io import read_job

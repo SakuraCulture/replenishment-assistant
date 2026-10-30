@@ -55,3 +55,18 @@ class UiContracts(unittest.TestCase):
     def test_select_visible_vs_all(self):
         table=QTableWidget(2,1);a,b=QCheckBox(),QCheckBox();table.setRowHidden(1,True);host=SimpleNamespace(store_table=table,store_widgets={'a':{'row':0,'check':a},'b':{'row':1,'check':b}})
         BatchWindow.select_all(host,True,True);self.assertTrue(a.isChecked());self.assertFalse(b.isChecked());BatchWindow.select_all(host,True);self.assertTrue(b.isChecked());BatchWindow.select_all(host,False);self.assertFalse(a.isChecked());self.assertFalse(b.isChecked())
+    def test_unedited_form_does_not_ask_to_discard(self):
+        d=self.dialog(scope='方案库')
+        with patch('interaction_ui.confirm') as ask:d.reject();ask.assert_not_called()
+    def test_commit_cancel_waits_then_only_stops_remaining(self):
+        import threading
+        from PySide6.QtWidgets import QLabel
+        from ui_work_io import Progress
+        h=SimpleNamespace(committed=False,committing=False,cancelling=False,cancel_after_commit=False,operation='delivery_execute',cancel_btn=QPushButton(),note=QLabel(),_completed=False,exporting=False,session=SimpleNamespace(cancel=threading.Event()))
+        h.reject=lambda:Progress.reject(h)
+        Progress.commit_state(h,True);self.assertFalse(h.cancel_btn.isEnabled());h.reject();self.assertFalse(h.session.cancel.is_set())
+        Progress.commit_state(h,False);self.assertTrue(h.session.cancel.is_set());self.assertTrue(h.committed);self.assertIn('修订',h.note.text());self.assertFalse(h.cancel_btn.isEnabled())
+    def test_save_cannot_reenable_cancel_after_commit(self):
+        from ui_work_io import Progress
+        h=SimpleNamespace(committed=False,committing=True,cancelling=False,cancel_after_commit=False,operation='save',cancel_btn=QPushButton())
+        Progress.commit_state(h,False);self.assertFalse(h.cancel_btn.isEnabled());self.assertIn('暂不能取消',h.cancel_btn.text())

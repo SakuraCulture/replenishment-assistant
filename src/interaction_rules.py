@@ -3,9 +3,11 @@
 
 def validate_return_scope(plan,head):
     if head is None:return
+    from app_defaults import WAREHOUSES
+    from archive_orders import LEGACY
     for p in plan['plans']:
         h=p['head']
-        if h['oid']!=head['oid'] or h['revision']!=head['revision'] or any(item.get('warehouse')!=head['warehouse'] for item in p['payload']['incoming'].values()):
+        if h['oid']!=head['oid'] or h['revision']!=head['revision'] or any((item.get('warehouse') if item.get('warehouse') in WAREHOUSES else LEGACY)!=head['warehouse'] for item in p['payload']['incoming'].values()):
             raise ValueError('文件包含其它单据、仓库或修订。请到历史页“批量导入加盟商回传”；本入口仅接受当前仓单。')
 
 

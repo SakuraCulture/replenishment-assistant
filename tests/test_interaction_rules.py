@@ -21,6 +21,12 @@ class ScopeTests(unittest.TestCase):
     def test_parameter_diff_order_and_missing(self):
         rows=configuration_changes({'B':{'a':0,'b':None},'A':{'a':2,'c':''}},{'a':1,'b':None})
         self.assertEqual([r[0] for r in rows],['B','A','A','A']);self.assertEqual(rows[2][2:],['','未设置']);self.assertEqual(rows[3][2:],['未设置',None])
+    def test_legacy_unmarked_reply_remains_compatible(self):
+        head={'oid':'old','revision':1,'warehouse':'旧版未标仓'}
+        p={'plans':[{'head':dict(head),'payload':{'incoming':{'001':{'warehouse':None}}}}]}
+        validate_return_scope(p,head)
+        p['plans'][0]['payload']['incoming']['001']['warehouse']='河北仓'
+        with self.assertRaises(ValueError):validate_return_scope(p,head)
 
 
 class BatchVisibilityTests(unittest.TestCase):

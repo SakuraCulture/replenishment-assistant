@@ -81,7 +81,7 @@ class Progress(QDialog):
         self.task=Request(session,operation,value,self);self.task.commit.connect(self.commit_state);self.task.progress.connect(self.update_stage);self.task.rows.connect(self.update_count);self.task.finished.connect(self.completed)
         self.clock=QTimer(self);self.clock.setInterval(500);self.clock.timeout.connect(self.update_health);self.clock.start();self.update_health()
     def commit_state(self,active):
-        self.committed=self.committed or (self.committing and not active);self.committing=active;self.cancel_btn.setEnabled(not active and not self.cancelling and self.operation not in ('save','review_export'));self.cancel_btn.setText('正在提交，暂不能取消' if active else '停止剩余导出' if self.operation=='delivery_execute' and self.committed else '取消准备')
+        self.committed=self.committed or (self.committing and not active);self.committing=active;self.cancel_btn.setEnabled(not active and not self.cancelling and self.operation not in ('save','review_export'));self.cancel_btn.setText('正在提交，暂不能取消' if active or self.operation in ('save','review_export') else '停止剩余导出' if self.operation=='delivery_execute' and self.committed else '取消准备')
         if not active and self.cancel_after_commit:self.reject()
     def update_stage(self,text):
         self.last_progress=time.monotonic()
