@@ -10,9 +10,9 @@ import engine,warehouse_catalog
 
 class WarehouseUi:
     def make_warehouse_panel(self):
-        panel=QFrame();panel.setObjectName('card');v=QVBoxLayout(panel);v.addWidget(label('分仓商品资料 · 分别维护','section'));self.catalog_labels={}
+        panel=QFrame();panel.setObjectName('card');v=QVBoxLayout(panel);v.addWidget(label('分仓商品资料 · 分别维护','section'));self.catalog_labels={};self.catalog_buttons={}
         for wh in warehouse_catalog.WAREHOUSES:
-            row=QHBoxLayout();row.addWidget(label(wh,'section'));row.addStretch();row.addWidget(button('导入 / 更新',lambda checked=False,w=wh:self.choose_catalog(w)));row.addWidget(button('查看',lambda checked=False,w=wh:self.show_catalog(w)));v.addLayout(row)
+            row=QHBoxLayout();row.addWidget(label(wh,'section'));row.addStretch();pick=button('导入'+wh+'资料',lambda checked=False,w=wh:self.choose_catalog(w));self.catalog_buttons[wh]=pick;row.addWidget(pick);row.addWidget(button('查看'+wh+'资料',lambda checked=False,w=wh:self.show_catalog(w)));v.addLayout(row)
             text=label('尚未导入','muted');self.catalog_labels[wh]=text;v.addWidget(text)
         v.addWidget(label('仓库由导入入口指定，不从表内猜测。保存后跨批次复用；可用数是导入时的库存快照，更新库存需重新导入。','muted'))
         self.master_legacy=QCheckBox('兼容0.4混合资料（不启用主从仓）');v.addWidget(self.master_legacy)
@@ -22,6 +22,7 @@ class WarehouseUi:
     def refresh_catalog_labels(self):
         for wh,text in self.catalog_labels.items():
             c=self.catalogs.get(wh)
+            self.catalog_buttons[wh].setText(('更新' if c else '导入')+wh+'资料')
             if not c:text.setText('尚未导入；表内不需要仓库标识');continue
             text.setText(f"{len(c['items']):,}款 · 版本 {c['revision']}\n{Path(c['source_path']).name} · 导入 {c['imported_at']}")
     def choose_catalog(self,warehouse):
@@ -30,6 +31,10 @@ class WarehouseUi:
         if path:self.import_catalog_path(path,warehouse)
     def import_catalog_path(self,path,warehouse):self.job(warehouse_catalog.import_catalog,(path,warehouse),self.catalog_imported)
     def catalog_imported(self,catalog):
+        from interaction_ui import confirm
+        old=self.catalogs.get(catalog['warehouse'])
+        message=catalog['warehouse']+f"：{len(old['items']) if old else 0} → {len(catalog['items'])} 款\n原版本：{old['revision'] if old else '未导入'}\n新版本：{catalog['revision']}\n将完整更新并保存，跨批次复用；本次须重新检查，历史快照不变。"
+        if not confirm(self,'确认更新并保存仓资料',message):return
         try:self.catalog_repository.save(catalog)
         except Exception as exc:self.failed('仓资料保存失败，原资料保留：'+str(exc));return
         self.catalogs[catalog['warehouse']]=catalog;self.refresh_catalog_labels()

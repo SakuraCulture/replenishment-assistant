@@ -25,7 +25,7 @@ class Preview(QDialog):
         self.partial=QCheckBox('已核对缺失/失败项，仅导出可用部分（完成页保留缺口）');self.partial.setVisible(any(i['error'] for i in plan['items']));v.addWidget(self.partial)
         text='直接复制留存原Excel，保留全部工作表、样式和公式；与当前商品是否匹配无关。' if plan['kind']=='original' else '不重算、不跨单合计商品。山东河北分开；历史未留存字段留空，全店共享预算不能按行累加。'
         if plan['kind']=='reference':text+=' 这是订单相关商品的加工核对表，不是完整原Excel；公式作为原文字展示。'
-        v.addWidget(label(text,'muted'));row=QHBoxLayout();row.addWidget(button('取消',self.reject));self.start=button('选择目录并开始导出',self.accept,True);row.addWidget(self.start);v.addLayout(row)
+        v.addWidget(label(text,'muted'));row=QHBoxLayout();row.addWidget(button('取消',self.reject));self.start=button('下一步：选择导出位置',self.accept,True);row.addWidget(self.start);v.addLayout(row)
         self.mode.currentIndexChanged.connect(self.update_plan);self.partial.toggled.connect(self.update_plan);self.update_plan()
     def update_plan(self,*_):
         self.plan['mode']='combined' if self.mode.currentIndex() else 'separate';units=batch.groups(self.plan)
@@ -47,7 +47,7 @@ def show_result(parent,path,plan,result):
     retry=result['failed']+result['cancelled']
     def again():
         d.accept();export(parent,path,[i['head'] for i in retry],plan['kind'],plan['mode'])
-    if retry:row.addWidget(button('仅重试失败 / 未执行项（原修订）',again))
+    if retry:row.addWidget(button('重试未完成项（原修订）',again))
     row.addWidget(button('关闭',d.accept));v.addLayout(row);d.exec()
 
 def export(parent,path,heads,kind,mode=None):
@@ -84,15 +84,19 @@ class ArchiveBatchActions:
         self.archive_checked={};row=QHBoxLayout();self.archive_export_buttons=[]
         for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发建议','signed')]:
             b=button(title,lambda checked=False,k=kind:self.export_archive_batch(k));row.addWidget(b);self.archive_export_buttons.append(b)
-        layout.addLayout(row);self.archive_selection_note=label('已选 0 张仓单','muted');layout.addWidget(self.archive_selection_note)
+        layout.addLayout(row)
+        extras=QHBoxLayout();self.reference_btn=button('导出商品资料核对表（加工）',lambda:self.export_archive_batch('reference'));extras.addWidget(self.reference_btn);extras.addStretch();self.trash_btn=button('移入回收站',lambda:self.change_archive_visibility(True));self.restore_btn=button('恢复归档',lambda:self.change_archive_visibility(False));extras.addWidget(self.trash_btn);extras.addWidget(self.restore_btn);layout.addLayout(extras)
+        self.archive_selection_note=label('已选 0 张仓单','muted');layout.addWidget(self.archive_selection_note)
         row=QHBoxLayout()
-        for title,action in [('勾选本页',lambda:self.check_archive(self.archive_orders)),('勾选全部查询结果',lambda:self.check_archive([h for h,m in zip(self.archive_all,self.archive_matches) if m])),('取消勾选',self.clear_archive_selection),('已选明细',self.show_archive_selection)]:row.addWidget(button(title,action))
+        for title,action in [('勾选本页',lambda:self.check_archive(self.archive_orders)),('勾选全部查询结果',lambda:self.check_archive([h for h,m in zip(self.archive_all,self.archive_matches) if m])),('清空全部勾选',self.clear_archive_selection),('已选明细',self.show_archive_selection)]:row.addWidget(button(title,action))
         layout.addLayout(row)
     def decorate_archive_selection(self):
         table=self.archive_table;block=QSignalBlocker(table);table.insertColumn(0);table.setHorizontalHeaderItem(0,QTableWidgetItem('勾选'));table.insertColumn(table.columnCount());table.setHorizontalHeaderItem(table.columnCount()-1,QTableWidgetItem('原文件状态'))
         for i,h in enumerate(self.archive_orders):
             cell=QTableWidgetItem();cell.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);cell.setCheckState(Qt.CheckState.Checked if batch.key(h) in self.archive_checked else Qt.CheckState.Unchecked);table.setItem(i,0,cell)
             table.setItem(i,table.columnCount()-1,QTableWidgetItem(h.get('source_status','导出前核验')))
+        col=table.columnCount();table.insertColumn(col);table.setHorizontalHeaderItem(col,QTableWidgetItem('查看'))
+        for i,h in enumerate(self.archive_orders):table.setCellWidget(i,col,button('查看单据',lambda checked=False,head=dict(h):self.open_archive(head)))
         del block;table.resizeColumnsToContents();self.selection_status()
     def archive_check_changed(self,item):
         if item.column()!=0 or item.row()>=len(self.archive_orders):return
@@ -102,7 +106,12 @@ class ArchiveBatchActions:
         self.selection_status()
     def selection_status(self):
         hs=list(self.archive_checked.values());self.archive_selection_note.setText(f'已选 {len(hs)} 张仓单 · {len({h["store"] for h in hs})} 家店 · {len({h["day"] for h in hs})} 个业务日期；导出前核对确切修订与文件数')
-        for b in self.archive_export_buttons:b.setEnabled(bool(hs) and not self.archive_trash.currentIndex() and not getattr(self,'archive_query_pending',False))
+        pending=getattr(self,'archive_query_pending',False);trash=bool(self.archive_trash.currentIndex())
+        for b in [*self.archive_export_buttons,self.reference_btn]:b.setEnabled(bool(hs) and not trash and not pending)
+        self.trash_btn.setVisible(not trash);self.restore_btn.setVisible(trash)
+        for b,text in [(self.trash_btn,'移入回收站'),(self.restore_btn,'恢复归档')]:
+            b.setText(f'{text}（{len(hs)}张）');b.setEnabled(bool(hs) and not pending)
+        self.trash_btn.setStyleSheet('color:#A52A2A;')
     def check_archive(self,heads):
         if getattr(self,'archive_query_pending',False):return
         for h in heads:self.archive_checked[batch.key(h)]=dict(h)
@@ -114,5 +123,5 @@ class ArchiveBatchActions:
         table,model=grid(d,['日期','门店','仓库','单号','修订'],[[h['day'],h['store'],h['warehouse'],h['number'],h['revision']] for h in self.archive_checked.values()]);v.addWidget(table);v.addWidget(button('关闭',d.accept));d.exec()
     def export_archive_batch(self,kind,heads=None):
         heads=list(self.archive_checked.values()) if heads is None else heads
-        if kind=='original':original(self,self.work_repository.path,heads)
+        if kind=='original':export(self,self.work_repository.path,heads,'original')
         else:export(self,self.work_repository.path,heads,kind)

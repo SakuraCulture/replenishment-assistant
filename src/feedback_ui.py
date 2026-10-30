@@ -8,7 +8,7 @@ import business_excel
 
 HEADERS=['商品编码','商品名称','推荐分组','原签发建议','门店确认数量','与签发差额','确认状态','所属仓']
 
-def import_returns(parent,host):
+def import_returns(parent,host,head=None):
     from import_ui import choose
     paths=choose(parent,'feedback','导入加盟商回传（可多文件）',True)
     if not paths:return
@@ -29,6 +29,7 @@ def import_returns(parent,host):
             if d.exec()!=QDialog.DialogCode.Accepted:return
             bindings={n:c.currentData() for n,c in combos.items()}
         plan=run(parent,feedback.prepare,(path,scanned,bindings),'核对回传差异')
+        validate_return_scope(plan,head)
         d=QDialog(parent);d.setWindowTitle('确认保存门店回传 · 不改原签发建议');d.resize(1150,720);v=QVBoxLayout(d);rows=[];summary=[]
         for p in plan['plans']:
             h=p['head'];summary.append(f"{h['number']} V{h['revision']:03d}：{len(p['differences'])}款变化；{p['payload']['status']}；尚待确认{len(p['payload']['pending'])}款"+('；同一内容，无新增回传版本' if not p['changed'] else '')+('；绑定历史修订，不应用到当前单' if h['revision']!=h['current_revision'] else ''))
@@ -44,9 +45,12 @@ def import_returns(parent,host):
     except Cancelled:return
     except Exception as exc:QMessageBox.warning(parent,'回传未保存',str(exc))
 
+from interaction_rules import validate_return_scope
+
+
 class FeedbackDialog(QDialog):
     def __init__(self,parent,host,head):
-        super().__init__(parent);self.host=host;self.head=head;self.setWindowTitle(head['number']+f" V{head['revision']:03d} · 门店回传");self.resize(1150,700);v=QVBoxLayout(self);self.note=label('');v.addWidget(self.note);self.version=QComboBox();v.addWidget(self.version);self.table,self.model=grid(self,HEADERS);v.addWidget(self.table,1);row=QHBoxLayout();row.addWidget(button('导入回传Excel',self.import_files));row.addWidget(button('下载最低标准模板',self.template));row.addWidget(button('回传来源 / 下载原文件',self.sources));row.addWidget(button('导出当前对照',self.export));row.addWidget(button('关闭',self.accept));v.addLayout(row);self.version.currentIndexChanged.connect(self.show_version);self.refresh()
+        super().__init__(parent);self.host=host;self.head=head;self.setWindowTitle(head['number']+f" V{head['revision']:03d} · 门店回传");self.resize(1150,700);v=QVBoxLayout(self);self.note=label('');v.addWidget(self.note);self.version=QComboBox();v.addWidget(self.version);self.table,self.model=grid(self,HEADERS);v.addWidget(self.table,1);row=QHBoxLayout();row.addWidget(button('导入本仓单回传' if head.get('warehouse') else '批量导入加盟商回传',self.import_files));row.addWidget(button('下载门店回传模板',self.template));row.addWidget(button('查看回传附件',self.sources));row.addWidget(button('导出本仓单回传对照',self.export));row.addWidget(button('关闭',self.accept));v.addLayout(row);self.version.currentIndexChanged.connect(self.show_version);self.refresh()
     def refresh(self):
         self.data=run(self,feedback.view,(self.host.work_repository.path,self.head),'读取门店确认记录');self.version.blockSignals(True);self.version.clear()
         for ver,saved,p in self.data['history']:self.version.addItem(f'回传第{ver}版 · {saved}',p)
@@ -61,9 +65,9 @@ class FeedbackDialog(QDialog):
         for wh in dict.fromkeys(r[7] for r in rows):
             group=[r for r in rows if r[7]==wh];pending=sum(r[3]>0 and r[4] is None for r in group);received=sum(r[4] is not None for r in group)
             status.append(str(wh)+'：'+('尚无回传' if not received else '部分确认' if pending else '已确认')+f'（待确认{pending}款）')
-        self.note.setText('；'.join(status)+' · 原签发建议不变，回传数量为库存单位。')
+        self.note.setText(self.head['number']+f" · 签发 V{self.head['revision']:03d} · {self.version.currentText()}\n"+'；'.join(status)+' · 原签发建议不变，回传数量为库存单位。')
     def import_files(self):
-        if import_returns(self,self.host):self.refresh()
+        if import_returns(self,self.host,self.head if self.head.get('warehouse') else None):self.refresh()
     def template(self):
         from import_ui import download
         download(self,'feedback')

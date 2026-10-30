@@ -9,13 +9,15 @@ class NumberInput(QDoubleSpinBox):
     def textFromValue(self,value):return f'{value:.8f}'.rstrip('0').rstrip('.') or '0'
 
 class ParameterDialog(QDialog):
-    def __init__(self,parent,config,preset,trial=None,scope=''):
+    def __init__(self,parent,config,preset,trial=None,scope='',readonly=False,store_configs=None):
         super().__init__(parent);self.setWindowTitle('完整参数 · '+scope);self.resize(1050,760);self.config=copy.deepcopy(config);self.preset=copy.deepcopy(preset);self.action=None;self.repository=parent.work_repository
-        self.initial_config=copy.deepcopy(config)
-        v=QVBoxLayout(self);v.addWidget(label(scope+'。应用整个表单；各店预算和主从仓保留。修改先仅保留在此窗口。多店编辑以第一家显示，应用会统一这些参数。','muted'))
+        self.initial_config=copy.deepcopy(config);self.readonly=readonly;self.managing=not scope.startswith('所选') and not readonly;self.store_configs=store_configs or {}
+        v=QVBoxLayout(self);v.addWidget(label(scope+(' · 只读，不应用或保存。' if readonly else ' · 方案保存/停用立即生效，不应用到门店。' if self.managing else ' · 未应用的编辑仅在此窗口；应用整个表单，预算和主从仓保留。多店以第一家显示，应用前逐店核对差异。'),'muted'))
+        if len(self.store_configs)>1 and any(c!=config for c in self.store_configs.values()):v.addWidget(label('注意：所选门店参数不完全相同；应用将统一完整参数，请核对每店差异。','section'))
         row=QHBoxLayout();self.choices=QComboBox();self.presets=self.repository.presets()
         for p in self.presets:self.choices.addItem(f"{p['name']} v{p['version']}"+(' · 内置已验收基线' if p['builtin'] else ' · 自定义，效果需试算'),p)
-        row.addWidget(self.choices,1);row.addWidget(button('载入此方案',self.load_selected));row.addWidget(button('归档所选版本',self.archive_selected));v.addLayout(row)
+        row.addWidget(self.choices,1);self.load_btn=button('用此方案填充表单',self.load_selected);row.addWidget(self.load_btn);self.retire_btn=button('停用此方案版本',self.archive_selected);row.addWidget(self.retire_btn);self.retire_btn.setVisible(self.managing);self.load_btn.setVisible(not readonly);self.choices.setVisible(not readonly);v.addLayout(row)
+        self.choices.currentIndexChanged.connect(lambda:self.retire_btn.setEnabled(bool(self.choices.currentData()) and self.choices.currentData()['id']!='standard'));self.retire_btn.setEnabled(bool(self.choices.currentData()) and self.choices.currentData()['id']!='standard')
         self.tabs=QTabWidget();v.addWidget(self.tabs,1)
         self.param_table=QTableWidget(0,4);self.param_table.setHorizontalHeaderLabels(['参数','当前值','单位','方案默认值']);self.param_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.param_table.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.param_table,'模型超参')
         self.weight_table=QTableWidget(0,5);self.weight_table.setHorizontalHeaderLabels(['分类方案','趋势α','最近7天w1','此前7天w2','此前16天w3（自动）']);self.tabs.addTab(self.weight_table,'预测权重')
@@ -31,12 +33,26 @@ class ParameterDialog(QDialog):
         self.warehouses.currentCellChanged.connect(lambda *_:self.help.setPlainText('各仓周期优先于通用depth/lead；按门店实际补货与到货周期维护。修改只在点击应用后生效。'))
         self.exception=QCheckBox('启用一箱例外（仍受禁用/停采与门店总预算约束）');v.addWidget(self.exception)
         self.note=label('','muted');v.addWidget(self.note)
-        row=QHBoxLayout();row.addWidget(button('复制另存方案',lambda:self.save_preset(False)));row.addWidget(button('保存方案新版本',lambda:self.save_preset(True)))
-        if trial:row.addWidget(button('与当前配置试算',lambda:self.try_trial(trial)))
-        row.addStretch();v.addLayout(row)
-        row=QHBoxLayout();row.addWidget(button('取消',self.reject));row.addStretch();row.addWidget(button('仅用于本次',lambda:self.finish('temporary')));row.addWidget(button('保存为门店默认并应用',lambda:self.finish('default'),True));v.addLayout(row)
-        if not scope.startswith('所选'):row.itemAt(row.count()-1).widget().setVisible(False);row.itemAt(row.count()-2).widget().setVisible(False)
-        self.fill(config)
+        if self.managing:
+            row=QHBoxLayout();row.addWidget(button('复制另存方案',lambda:self.save_preset(False)));row.addWidget(button('保存方案新版本',lambda:self.save_preset(True)));v.addLayout(row)
+        if trial:v.addWidget(button('与本次所选门店配置试算',lambda:self.try_trial(trial)))
+        row=QHBoxLayout();cancel=button('关闭' if self.managing or readonly else '放弃未应用编辑',self.reject);cancel.setDefault(True);row.addWidget(cancel);row.addStretch()
+        if not self.managing and not readonly:
+            row.addWidget(button('应用到本次门店',lambda:self.finish('temporary')))
+            row.addWidget(button('应用并保存为门店默认',lambda:self.finish('default'),True))
+        v.addLayout(row);self.fill(config)
+        if readonly:
+            self.exception.setEnabled(False)
+            for table in (self.param_table,self.weight_table,self.mapping,self.warehouses):
+                table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+                for w in table.findChildren(QDoubleSpinBox)+table.findChildren(QComboBox):w.setEnabled(False)
+    def is_edited(self):
+        try:return self.value()!=self.config
+        except ValueError:return True
+    def reject(self):
+        from interaction_ui import confirm
+        if not self.readonly and self.is_edited() and not confirm(self,'放弃未应用编辑','只丢弃当前未应用的表单编辑。已单独保存的方案版本仍保留。'):return
+        super().reject()
     def spin(self,value,maximum=1000000000):
         w=NumberInput();w.setDecimals(8);w.setRange(0,maximum);w.setSingleStep(.1);w.setValue(value);return w
     def refresh_effective(self):
@@ -82,13 +98,19 @@ class ParameterDialog(QDialog):
                 c['category_profiles'][name]=self.mapping.cellWidget(i,1).currentText()
         c['warehouses']={self.warehouses.item(i,0).text():[self.warehouses.cellWidget(i,j).value() for j in [1,2]] for i in range(self.warehouses.rowCount())};c['exception']=self.exception.isChecked();return schema.validate(c)
     def load_selected(self):
-        self.preset=copy.deepcopy(self.choices.currentData());self.fill(self.preset['config'])
+        from interaction_ui import confirm
+        if self.is_edited() and not confirm(self,'替换当前表单编辑','将用所选方案替换未应用的编辑；不会立即应用到门店。'):return
+        if self.choices.currentData():self.preset=copy.deepcopy(self.choices.currentData());self.fill(self.preset['config'])
     def archive_selected(self):
         p=self.choices.currentData()
+        if not self.managing or not p or p['id']=='standard':return
+        from interaction_ui import confirm
+        if not confirm(self,'停用参数方案',f"停用 {p['name']} v{p['version']}？\n仅从可选方案中停用，已绑定门店和历史快照保留。此处不提供自动恢复。"):return
         try:self.repository.archive_preset(p['id'],p['version'])
         except Exception as exc:QMessageBox.warning(self,'未归档',str(exc));return
         self.choices.removeItem(self.choices.currentIndex());self.note.setText('已从方案选择列表归档；已绑定的门店和历史快照仍保留该版本。')
     def save_preset(self,update):
+        if not self.managing:return
         try:c=self.value()
         except ValueError as exc:QMessageBox.warning(self,'参数未保存',str(exc));return
         if update and self.preset['id']=='standard':QMessageBox.information(self,'标准只读','请使用“复制另存方案”。');return
@@ -100,6 +122,12 @@ class ParameterDialog(QDialog):
     def finish(self,action):
         try:self.config=self.value()
         except ValueError as exc:QMessageBox.warning(self,'参数需调整',str(exc));return
+        if self.store_configs:
+            from interaction_rules import configuration_changes
+            from interaction_ui import review_rows
+            rows=configuration_changes(self.store_configs,self.config)
+            target='应用并保存为门店默认' if action=='default' else '仅应用到本次门店'
+            if not review_rows(self,'逐店核对完整参数变化',['门店','参数','原值','新值'],rows,f'{len(self.store_configs)} 家门店；共 {len(rows)} 项变化。预算和主从仓不变。'+('同时保存门店默认；每日草稿需另存。' if action=='default' else '不保存门店默认；每日草稿需另存。'),target):return
         self.action=action;self.accept()
     def try_trial(self,callback):
         try:c=self.value();callback(c,self)
@@ -120,7 +148,7 @@ class ParameterUi:
         dialog.exec()
     def edit_parameters(self,codes):
         if not codes or self.readonly:return
-        preset=self.preset_for(codes[0]);dialog=ParameterDialog(self,self.config_for(codes[0]),preset,trial=lambda c,d:self.trial_parameters(codes,c,d),scope=f'所选 {len(codes)} 家门店')
+        preset=self.preset_for(codes[0]);dialog=ParameterDialog(self,self.config_for(codes[0]),preset,trial=lambda c,d:self.trial_parameters(codes,c,d),scope=f'所选 {len(codes)} 家门店',store_configs={s:self.config_for(s) for s in codes})
         if dialog.exec()!=QDialog.DialogCode.Accepted:return
         self.apply_parameters(codes,dialog.config,dialog.preset,dialog.action=='default')
     def apply_parameters(self,codes,config,preset,persist=False):
@@ -130,19 +158,23 @@ class ParameterUi:
         self.invalidate(codes);self.selection_changed()
         if persist:self.save_store_defaults(codes)
     def refresh_parameter_label(self,s):
-        p=self.preset_for(s);changed=json.loads(json.dumps(p['config']))!=json.loads(json.dumps(p.get('base_config',p['config'])));self.store_widgets[s]['params'].setText(f"{p['name']} v{p['version']}"+(' · 本店调整' if changed else ''));self.store_widgets[s]['params'].setToolTip('完整生效配置（本店调整包含在内）：\n'+json.dumps(p['config'],ensure_ascii=False,indent=2))
+        p=self.preset_for(s);changed=json.loads(json.dumps(p['config']))!=json.loads(json.dumps(p.get('base_config',p['config'])))
         import store_defaults
         saved=getattr(self,'saved_store_defaults',{}).get(s)
-        state='历史快照' if self.readonly or getattr(self,'_restoring',False) else '已保存默认' if store_defaults.matches(saved,p,self.config_for(s),self.store_ui(s)) else '仅本次 / 默认未保存'
-        self.store_widgets[s]['params'].setText(self.store_widgets[s]['params'].text()+' · '+state)
-        self.store_widgets[s]['params'].setToolTip(self.store_widgets[s]['params'].toolTip()+'\n'+state+(' · '+saved.get('saved','') if saved else ''))
+        state='历史快照' if self.readonly or getattr(self,'_restoring',False) else '已保存默认' if store_defaults.matches(saved,p,self.config_for(s),self.store_ui(s)) else '仅本次 · 默认未保存'
+        text=f"{p['name']} v{p['version']}"+(' · 本店调整' if changed else '')+' · '+state
+        w=self.store_widgets[s];w['params'].setText('编辑参数');w['params'].setToolTip('编辑此店完整参数；不自动保存每日草稿')
+        if 'param_status' in w:w['param_status'].setText(text);w['param_status'].setToolTip(text)
+    def view_parameters(self,store):
+        if store not in self.store_widgets:return
+        d=ParameterDialog(self,self.config_for(store),self.preset_for(store),scope='本店实际生效参数 · '+store,readonly=True);d.exec()
     def save_default_dialog(self):
         codes=self.selected_codes()
         if not codes:return
         d=QDialog(self);d.setObjectName('storeDefaultsConfirm');d.setWindowTitle('保存门店主从仓与完整参数');v=QVBoxLayout(d)
         v.addWidget(label(f'将保存所选 {len(codes)} 家门店的主从仓、各仓周期、完整参数方案及本店调整。下次导入相同门店编码时自动带入；不修改历史单。'))
         budget=QCheckBox('同时将本次预算保存为门店默认预算（不勾选则保留原默认预算）');v.addWidget(budget)
-        row=QHBoxLayout();row.addWidget(button('取消',d.reject));row.addWidget(button('保存为门店默认',d.accept,True));v.addLayout(row)
+        row=QHBoxLayout();row.addWidget(button('取消',d.reject));row.addWidget(button(f'保存为 {len(codes)} 店默认',d.accept,True));v.addLayout(row)
         if d.exec()==QDialog.DialogCode.Accepted:self.save_store_defaults(codes,include_budget=budget.isChecked())
     def save_store_defaults(self,codes=None,*,include_budget=False):
         codes=self.selected_codes() if codes is None or isinstance(codes,bool) else codes

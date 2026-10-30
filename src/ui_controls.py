@@ -33,7 +33,7 @@ def label(text,name=None):
 
 
 def button(text,fn,primary=False):
-    x=QPushButton(text);x.clicked.connect(fn)
+    x=QPushButton(text);x.setAutoDefault(False);x.clicked.connect(fn)
     if primary:x.setObjectName('primary')
     return x
 
