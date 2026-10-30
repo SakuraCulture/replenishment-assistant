@@ -18,7 +18,7 @@ TEMPLATE_SHA256='1cc7a8e9f99fec764d17286c6b0a028a7ea79416add7178a64e91512f311f7c
 
 def filename(order):
     name=re.sub(r'[<>:"/\\|?*\x00-\x1f]','_',order['payload']['result']['store_name']).rstrip(' .')[:100] or order['store']
-    return order['day']+name+'（精简版）('+str(order['revision'])+').xlsx'
+    return order['day']+name+'（精简版）.xlsx'
 
 
 def groups(result,profile):

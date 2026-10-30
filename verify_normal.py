@@ -120,7 +120,7 @@ def run(out):
     for code in ['new_plain','new_no_price','missing_n']:assert oldnew[code][16]==0
     assert 'new_local' not in oldnew
     assert oldnew['missing_n'][13] is None and oldnew['new_no_price'][15] is None
-    assert normal_exports.filename(revised)==wr.today()+'合成店QA_A（精简版）(2).xlsx'
+    assert normal_exports.filename(revised)==wr.today()+'合成店QA_A（精简版）.xlsx'
     book.close();oldhash=hashlib.sha256(path.read_bytes()).hexdigest()
     try:normal_exports.export(revised,path)
     except FileExistsError:pass
