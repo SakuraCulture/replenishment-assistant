@@ -14,6 +14,10 @@ class Worker(QThread):
                 self.row_progress.emit(message.current,message.total) if isinstance(message,RowProgress) else self.row_progress.emit(0,0)
                 self.status.emit(str(message))
             result=self.fn(*self.args,progress=report,cancel=self.cancel)
+            owner=self.parent()
+            if hasattr(owner,'work_repository'):
+                from source_archive import retained_import
+                retained_import(self.fn,self.args,result,owner.work_repository.path,report,self.cancel)
             if self.fn is batch_service.load:engine.checkpoint(self.cancel)
             self.success.emit(result)
         except engine.Cancelled:self.cancelled.emit()

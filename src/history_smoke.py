@@ -44,8 +44,9 @@ def start_smoke(app,win,args):
             elif step==7 and win.history_reader.active is None and len(win.archive_orders)==5:
                 state['checks'].append('owned read worker crash detected; refresh restarts and succeeds')
                 records=win.orders.events();dialog=EventsDialog(win,records);dialog.show();dialog.search.setText('');dialog.filter();assert dialog.matches==records
-                original=QFileDialog.getSaveFileName;QFileDialog.getSaveFileName=lambda *a,**k:(str(out/'events.json'),'');dialog.export();QFileDialog.getSaveFileName=original
-                assert json.loads((out/'events.json').read_text(encoding='utf-8'))==records;dialog.accept();dialog.deleteLater();state['checks'].append('log query export exact full records and order');state['step']=8
+                original=QFileDialog.getSaveFileName;QFileDialog.getSaveFileName=lambda *a,**k:(str(out/'events.xlsx'),'');dialog.export();QFileDialog.getSaveFileName=original
+                import openpyxl
+                book=openpyxl.load_workbook(out/'events.xlsx',read_only=True);assert list(book.active.values)[1:]==[tuple(v if v!='' else None for v in row) for row in dialog.rows];book.close();dialog.accept();dialog.deleteLater();state['checks'].append('log query export exact full records and order');state['step']=8
                 # Formal source get still validates hash before numbered export.
                 header=win.orders.headers()[0];win.export_order(header)
                 def choose():

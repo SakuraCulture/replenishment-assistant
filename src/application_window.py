@@ -34,13 +34,13 @@ class ApplicationWindow(Workbench):
         hr=QHBoxLayout();hr.addWidget(button('开始 / 继续工作',lambda:self.show_section(1),True));hr.addWidget(button('继续已保存的今日草稿',self.resume_today));hr.addWidget(button('查询历史正常单',lambda:self.show_section(2)));hr.addWidget(button('存储维护 / 旧版兼容副本',self.storage_copy));hv.addLayout(hr)
         hv.addWidget(label('保存草稿用于续做；导出时确认并自动归档，供加盟商核对。每天每店仅一张当前正常单。','muted'))
         self.recent=QTableWidget();self.recent.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.recent.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.recent_orders[i]));hv.addWidget(self.recent,1)
-        hv.addWidget(label('确认回传、实际下单、收货表的历史关联将在后续独立接入；当前不会自动发送或下单。','muted'))
+        hv.addWidget(label('门店确认回传可在历史页导入，独立于原签发建议；实际下单、收货表关联暂未接入。','muted'))
         self.sections.addWidget(home);self.sections.addWidget(work)
         archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('历史正常单 · 当前修订去重统计','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
         self.archive_table=QTableWidget();self.archive_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.archive_table.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.archive_orders[i]));av.addWidget(self.archive_table,1)
         self.archive_note=label('','muted');av.addWidget(self.archive_note)
         paging=QHBoxLayout();paging.addWidget(button('上一页',lambda:self.archive_turn(-1)));paging.addWidget(button('下一页',lambda:self.archive_turn(1)));av.addLayout(paging)
-        row=QHBoxLayout();row.addWidget(button('打开选中单据 / 修订',self.open_selected_archive));row.addWidget(button('操作日志明细 / 导出',self.show_events));row.addWidget(button('刷新',self.refresh_archive));av.addLayout(row);av.addWidget(label('双击查看：签发快照、历史修订、逐商品数量和来源审计。历史页不改今日工作区。','muted'));self.sections.addWidget(archive)
+        row=QHBoxLayout();row.addWidget(button('打开选中单据 / 修订',self.open_selected_archive));row.addWidget(button('批量导入加盟商回传',self.import_merchant_returns));row.addWidget(button('操作日志明细 / 导出',self.show_events));row.addWidget(button('刷新',self.refresh_archive));av.addLayout(row);av.addWidget(label('双击查看：签发快照、历史修订、逐商品数量和来源审计。历史页不改今日工作区。','muted'));self.sections.addWidget(archive)
         actions=QHBoxLayout();self.new_products_btn=button('选择本店新品 / 预览预算',self.choose_new_products);actions.addWidget(self.new_products_btn);self.issue_btn=button('仅确认归档（不导出）',self.confirm_normal);actions.addWidget(self.issue_btn);self.merchant_btn=button('选择门店并导出加盟商确认单',self.export_current,True);actions.addWidget(self.merchant_btn);self.overview_page.layout().addLayout(actions)
         self.pages.widget(4).layout().insertWidget(1,button('选择本店新品 / 预览预算',self.choose_new_products))
         self.mode.addItems(['动销补货','新品候选','新品推荐','缺货恢复及其他'])
@@ -70,7 +70,8 @@ class ApplicationWindow(Workbench):
 
     def import_focus(self):
         if self.worker or self.readonly:return
-        path,_=QFileDialog.getOpenFileName(self,'选择独立新品明细','','Excel (*.xlsx)')
+        from import_ui import choose
+        paths=choose(self,'focus','选择独立新品明细');path=paths[0] if paths else None
         if path:self.job(focus.inspect,(path,),self.map_focus)
 
     def map_focus(self,info):
@@ -253,7 +254,7 @@ class ApplicationWindow(Workbench):
             with Session(self.work_repository.path) as session:
                 prepared=request(self,session,'prepare_normal',[self.snapshot(),codes])
                 box=QMessageBox(self);box.setObjectName('normalConfirm');box.setWindowTitle('确认归档本次补货建议');box.setText('内部签发确认；不代表加盟商确认或已下单。\n同时保存当前完整草稿；只更新下列门店正常单，其他门店历史单保留。')
-                box.setInformativeText('\n'.join(prepared['lines']));box.setDetailedText(prepared['detail_text']+('\n…差异较多，此处显示前120,000字符。点击“导出完整差异”查看全部内容，未删减任何归档数据。' if prepared['truncated'] else ''))
+                box.setInformativeText('\n'.join(prepared['lines']));box.setDetailedText(prepared['detail_text']+('\n…差异较多，此处显示前200条。点击“导出完整差异”查看全部内容，未删减任何归档数据。' if prepared['truncated'] else ''))
                 cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认并归档',QMessageBox.ButtonRole.AcceptRole);review=box.addButton('导出完整差异',QMessageBox.ButtonRole.ActionRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
                 while True:
                     box.exec()
@@ -295,7 +296,9 @@ class ApplicationWindow(Workbench):
                     detail={'所选门店':[p['store'] for p in plans]}
                     if prepared['head']:
                         detail['同日草稿覆盖']={'原保存时间':prepared['head']['saved'],'原门店状态':prepared['head']['summary'],'本次门店状态':prepared['summary']};box.setInformativeText('同时覆盖当天完整草稿；未选门店正常单不变。展开详情查看草稿覆盖范围。')
-                    box.setDetailedText(prepared['detail_text']);box.setInformativeText('按所选门店顺序列出商品、参数和来源变化。'+('明细已截断，请导出完整差异Excel。' if prepared['truncated'] else '展开详情核对；可导出完整差异Excel。'));save_diff=box.addButton('导出完整差异Excel',QMessageBox.ButtonRole.ActionRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
+                    from history_forms import fields
+                    draft_text='\n'.join(k+'：'+v for k,v,t in fields(detail))
+                    box.setDetailedText(prepared['detail_text']+'\n\n草稿覆盖范围：\n'+draft_text);box.setInformativeText('确认时同时保存完整草稿；未选门店正常单不变。按所选门店顺序列出商品、参数和来源变化。'+('明细已截断，请导出完整差异Excel。' if prepared['truncated'] else '展开详情核对；可导出完整差异Excel。'));save_diff=box.addButton('导出完整差异Excel',QMessageBox.ButtonRole.ActionRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
                     while True:
                         box.exec()
                         if box.clickedButton() is not save_diff:break
@@ -346,8 +349,17 @@ class ApplicationWindow(Workbench):
         dialog=ArchiveDialog(self,record);dialog.exec();dialog.dispose();dialog.deleteLater()
         if not self.closing:self.refresh_archive()
 
+    def import_merchant_returns(self):
+        from feedback_ui import import_returns
+        import_returns(self,self)
+
     def show_events(self,oid=None):
         from history_ui import EventsDialog
+        from business_ui import run
+        from history_forms import events
+        from runtime_support import Cancelled
         # QPushButton.clicked's bool is not an order id.
-        records=self.orders.events(None if isinstance(oid,bool) else oid)
-        dialog=EventsDialog(self,records);dialog.exec();dialog.deleteLater()
+        try:data=run(self,events,(self.work_repository.path,None if isinstance(oid,bool) else oid),'查询归档日志')
+        except Cancelled:return
+        except Exception as exc:self.failed(str(exc));return
+        dialog=EventsDialog(self,data['records'],data['rows']);dialog.exec();dialog.deleteLater()

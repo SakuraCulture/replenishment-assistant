@@ -44,14 +44,17 @@ def rows(reviews):
                 if a.get(field)!=b.get(field):yield [store,kind,'',field,'变更',a.get(field,'未提供'),b.get(field,'未提供')]
         for change in r['changes']['changed']:
             for field,v in change['fields'].items():
-                yield [store,'商品字段',change['sku'],change['name'],field,scalar(v['before']),scalar(v['after'])]
+                yield [store,'商品字段',change['sku'],change['name'],field,scalar(v['before']) if v['before_present'] else '原记录无此字段',scalar(v['after']) if v['after_present'] else '新记录无此字段']
 
 HEADERS=['门店','核对内容','商品编码','商品名称 / 参数','变化项','原值','新值']
 
 def preview(reviews,limit=200):
-    items=list(rows(reviews));lines=[]
+    items=[];total=0;lines=[]
+    for row in rows(reviews):
+        total+=1
+        if len(items)<limit:items.append(row)
     for r in reviews:
         lines.append(f"{r['name']}：V{r['old_revision'] or 0:03d} → V{r['new_revision']:03d}；金额 {scalar(r['before_amount'])} → {scalar(r['after_amount'])}；执行变化 {len(r['goods'])} 款")
     lines.extend(' | '.join(scalar(v) for v in row) for row in items[:limit])
-    if len(items)>limit:lines.append(f'【已截断：共{len(items)}条，仅显示前{limit}条；请导出完整差异Excel】')
-    return {'detail_text':'\n'.join(lines),'truncated':len(items)>limit,'rows':items[:limit],'total':len(items)}
+    if total>limit:lines.append(f'【已截断：共{total}条，仅显示前{limit}条；请导出完整差异Excel】')
+    return {'detail_text':'\n'.join(lines),'truncated':total>limit,'rows':items,'total':total}

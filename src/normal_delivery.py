@@ -86,5 +86,6 @@ def execute(repository,plan,path,progress=lambda s:None,cancel=None):
     """Single-store compatibility delegates to the same transaction/export path."""
     batch={'plans':[plan],'payload':plan['payload'],'head':plan['head']}
     receipt=execute_batch(repository,batch,path,progress=progress,cancel=cancel)
-    order=repository.get(plan['payload']['day'],plan['store'])
+    revision=(plan['old']['revision'] if plan['old'] else 0)+(not plan['same'])
+    order=repository.get(plan['payload']['day'],plan['store'],revision)
     return {**receipt,'path':receipt['paths'][0],'number':order['number'],'revision':order['revision']}

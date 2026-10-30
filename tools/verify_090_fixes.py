@@ -12,7 +12,7 @@ def main():
     p=wr.loads(args.fixture.read_bytes());p['day']=wr.today();codes=list(p['results']);checks=[];sideeffects=[]
     def counts(work):
         with work.connect() as db:return {t:db.execute('SELECT count(*) FROM '+t).fetchone()[0] for t in ['jobs','normal_orders','normal_revisions','normal_work_revisions','normal_events']}
-    for label,trigger in [('encoding','编码内容块'),('before_begin','等待归档写锁'),('after_lock','已取得写锁'),('before_commit','事务内容准备完成'),('after_boundary',None)]:
+    for label,trigger in [('encoding','编码内容块'),('backup','备份升级前数据库'),('before_begin','等待归档写锁'),('after_lock','已取得写锁'),('before_commit','事务内容准备完成'),('after_boundary',None)]:
         work=wr.Repository(out/label);repo=no.Repository(work);cancel=threading.Event();fired=[]
         def progress(msg):
             if (trigger and str(msg).startswith(trigger)) or label=='after_boundary' and isinstance(msg,CommitProgress) and msg.active:

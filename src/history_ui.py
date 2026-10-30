@@ -1,7 +1,7 @@
 """Read-only archive views. Lightweight projections, no full snapshot in Qt."""
 import json
 from PySide6.QtCore import Qt,QAbstractTableModel,QModelIndex,QTimer
-from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QLineEdit,QTableView,QFileDialog,QTextBrowser,QMessageBox,QAbstractItemView
+from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QLineEdit,QTableView,QFileDialog,QTextBrowser,QMessageBox,QAbstractItemView,QProgressBar
 from ui_controls import label,button
 import work_repository as wr
 from history_read import repository
@@ -29,7 +29,7 @@ class ArchiveDialog(QDialog):
         self.note=label('读取中…','muted');v.addWidget(self.note);self.search=QLineEdit();self.search.setPlaceholderText('筛选商品名称 / 编码（不影响正式导出范围）');v.addWidget(self.search)
         self.model=ArchiveModel(self);self.table=QTableView();self.table.setModel(self.model);self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);v.addWidget(self.table,1)
         for i,width in enumerate([150,260,115,100,100,100,110,340]):self.table.setColumnWidth(i,width)
-        row=QHBoxLayout();self.export_btn=button('导出此修订确认单',self.export);self.audit_btn=button('完整来源与参数审计',self.audit);row.addWidget(self.export_btn);row.addWidget(self.audit_btn);row.addWidget(button('此单操作日志',self.events));row.addWidget(button('关闭',self.reject));v.addLayout(row)
+        row=QHBoxLayout();self.export_btn=button('导出此修订确认单',self.export);self.audit_btn=button('当时参数 / 销量库存 / 商品资料',self.audit);row.addWidget(self.export_btn);row.addWidget(self.audit_btn);row.addWidget(button('门店确认 / 导入回传',self.feedback));row.addWidget(button('此单操作日志',self.events));row.addWidget(button('关闭',self.reject));v.addLayout(row)
         self.debounce=QTimer(self);self.debounce.setSingleShot(True);self.debounce.setInterval(275);self.debounce.timeout.connect(self.filter);self.search.textChanged.connect(lambda _:self.debounce.start());self.search.returnPressed.connect(self.filter);self.rev.currentIndexChanged.connect(self.load);self.load()
     def load(self):
         self.selected=None;self.export_btn.setEnabled(False);self.audit_btn.setEnabled(False);self.model.replace({'rows':[],'search':[]});self.note.setText('正在读取并校验归档…（可关闭取消）')
@@ -44,7 +44,7 @@ class ArchiveDialog(QDialog):
         except Exception as exc:self.failed(str(exc))
     def ready(self,view):
         if self.disposed:return
-        self.selected=view['head'];s=view['summary'];self.note.setText(f"确认 {self.selected['saved']} · 签发 ¥{s['amount']:,.2f} · {s['positive']} 款 · 只读；后续确认/下单/收货未接入")
+        self.selected=view['head'];s=view['summary'];self.note.setText(f"确认 {self.selected['saved']} · 签发 ¥{s['amount']:,.2f} · {s['positive']} 款 · 原签发只读；门店确认回传独立保存")
         self.model.replace(view);self.filter();self.export_btn.setEnabled(True);self.audit_btn.setEnabled(True)
     def failed(self,message):
         if not self.disposed:self.note.setText('读取失败：'+message+'；重新选择修订可重试')
@@ -53,6 +53,11 @@ class ArchiveDialog(QDialog):
         if self.selected:self.host.export_order(self.selected)
     def events(self):
         if self.selected:self.host.show_events(self.selected['oid'])
+    def feedback(self):
+        if not self.selected:return
+        from feedback_ui import FeedbackDialog
+        try:FeedbackDialog(self,self.host,self.selected).exec()
+        except Exception as exc:QMessageBox.warning(self,'未打开回传',str(exc))
     def audit(self):
         if not self.selected:return
         dialog=AuditDialog(self,self.host,self.selected);dialog.exec();dialog.dispose();dialog.deleteLater()
@@ -63,40 +68,62 @@ class ArchiveDialog(QDialog):
 
 class AuditDialog(QDialog):
     def __init__(self,parent,host,head):
-        super().__init__(parent);self.host=host;self.head=head;self.disposed=False;self.setWindowTitle('完整审计快照（内部）');self.resize(900,650);v=QVBoxLayout(self)
-        v.addWidget(label('按需查看；完整快照可保存为JSON，原字段、值及类型编码保持不变。','muted'));row=QHBoxLayout();self.scope=QComboBox();self.scope.addItems(['概要','商品','参数与来源']);row.addWidget(self.scope);self.sku=QLineEdit();self.sku.setPlaceholderText('商品编码（精确匹配）');row.addWidget(self.sku);row.addWidget(button('查看',self.load));v.addLayout(row);self.text=QTextBrowser();v.addWidget(self.text,1)
-        row=QHBoxLayout();row.addWidget(button('保存完整审计JSON',self.export));row.addWidget(button('关闭',self.reject));v.addLayout(row);self.load()
+        super().__init__(parent);self.host=host;self.head=head;self.disposed=False;self.setWindowTitle('当时的补货依据 · 只读业务表单');self.resize(1150,760);v=QVBoxLayout(self)
+        v.addWidget(label('所有数值取自这次签发快照；空值、0和空文本分别展示，不使用当前参数补填。','muted'))
+        row=QHBoxLayout();self.scope=QComboBox();self.scope.addItems(['单据概况','当时参数','商品建议与销量库存','当时商品资料快照','商品完整计算依据']);row.addWidget(self.scope);self.sku=QLineEdit();self.sku.setPlaceholderText('商品编码（精确匹配）');row.addWidget(self.sku);row.addWidget(button('查看',self.load));v.addLayout(row)
+        from business_ui import grid
+        self.note=label('');v.addWidget(self.note);self.bar=QProgressBar();self.bar.setRange(0,0);v.addWidget(self.bar);self.search=QLineEdit();self.search.setPlaceholderText('在当前表单内查询字段或数值');v.addWidget(self.search);self.table,self.model=grid(self,['核对项目','当时值','类型']);self.table.setColumnWidth(0,430);self.table.setColumnWidth(1,520);v.addWidget(self.table,1);self.search.textChanged.connect(self.model.filter)
+        row=QHBoxLayout();row.addWidget(button('导出当前完整表单Excel',self.export));row.addWidget(button('查看 / 下载当时原文件',self.sources));row.addWidget(button('关闭',self.reject));v.addLayout(row);self.scope.currentIndexChanged.connect(self.load);self.sku.returnPressed.connect(self.load);self.load()
     def load(self):
-        self.text.setPlainText('读取中…');self.host.history_reader.request({'kind':'audit','head':self.head,'field':self.scope.currentText(),'sku':self.sku.text()},self.ready,self.failed)
+        self.bar.setRange(0,0);self.note.setText('正在读取当时快照…（可关闭取消）');self.model.replace([]);self.host.history_reader.request({'kind':'form','head':self.head,'scope':self.scope.currentText(),'sku':self.sku.text()},self.ready,self.failed)
     def ready(self,value):
         if self.disposed:return
-        text=wr.dumps(value);self.text.setPlainText(text if len(text)<=200000 else text[:200000]+'\n【仅预览前20万字符；保存完整审计JSON可获取全部内容】')
+        self.bar.setRange(0,1);self.bar.setValue(1);self.model.replace(value);self.model.filter(self.search.text());self.note.setText(f'已读取 {len(value)} 项；原签发建议只读')
     def failed(self,message):
-        if not self.disposed:self.text.setPlainText('读取失败：'+message)
+        if not self.disposed:self.bar.setRange(0,1);self.bar.setValue(0);self.note.setText('读取失败：'+message)
     def export(self):
-        path,_=QFileDialog.getSaveFileName(self,'保存完整审计快照',self.head['number']+'.json','JSON (*.json)')
-        if not path:return
-        self.host.history_reader.request({'kind':'audit_export','head':self.head,'path':path},lambda p:self.text.setPlainText('完整快照已保存：'+p),self.failed)
+        path,_=QFileDialog.getSaveFileName(self,'导出当时业务表单',self.head['number']+'-'+self.scope.currentText()+'.xlsx','Excel (*.xlsx)')
+        if path:self.host.history_reader.request({'kind':'form_export','head':self.head,'scope':self.scope.currentText(),'sku':self.sku.text(),'path':path},lambda p:self.note.setText('已保存：'+p),self.failed)
+    def sources(self):
+        self.host.history_reader.request({'kind':'attachments','head':self.head},self.show_sources,self.failed)
+    def show_sources(self,rows):
+        if self.disposed:return
+        d=QDialog(self);d.setWindowTitle('当时的原文件');d.resize(1050,560);v=QVBoxLayout(d)
+        from business_ui import grid
+        table,model=grid(d,['资料类型','原路径','SHA256','留存状态'],rows);v.addWidget(table,1);note=label('未留存的历史原文件无法下载；不会读取同路径下今天的新文件。');v.addWidget(note)
+        def save():
+            i=table.currentIndex().row()
+            if i<0:return
+            item=model.rows[model.indices[i]]
+            if item[3]!='已留存':note.setText('历史原文件未留存');return
+            from pathlib import Path
+            path,_=QFileDialog.getSaveFileName(d,'保存原文件副本',Path(item[1]).name,'原文件 (*)')
+            if path:self.host.history_reader.request({'kind':'source_export','head':self.head,'sha':item[2],'path':path},lambda p:note.setText('已保存：'+p),note.setText)
+        v.addWidget(button('下载选中的原文件',save));v.addWidget(button('关闭',d.accept));d.exec();self.host.history_reader.cancel()
     def dispose(self):self.disposed=True;self.host.history_reader.cancel()
     def done(self,code):self.dispose();super().done(code)
 
 class EventsDialog(QDialog):
-    """Page the rendered text only; exports use the full fixed query snapshot."""
-    def __init__(self,parent,records):
-        super().__init__(parent);self.records=records;self.tokens=[wr.dumps(r).lower() for r in records];self.matches=records;self.page=0;self.setWindowTitle('归档操作日志明细');self.resize(1000,650);v=QVBoxLayout(self)
-        self.search=QLineEdit();self.search.setPlaceholderText('查询时间、门店、单号、动作或文件名');v.addWidget(self.search);self.note=label('','muted');v.addWidget(self.note);self.text=QTextBrowser();v.addWidget(self.text,1)
-        row=QHBoxLayout();row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));row.addWidget(button('导出当前查询',self.export));row.addWidget(button('关闭',self.accept));v.addLayout(row)
-        self.debounce=QTimer(self);self.debounce.setSingleShot(True);self.debounce.setInterval(275);self.debounce.timeout.connect(self.filter);self.search.textChanged.connect(lambda _:self.debounce.start());self.search.returnPressed.connect(self.filter);self.filter()
-    def filter(self):
-        self.debounce.stop();q=self.search.text().lower();self.matches=[r for r,t in zip(self.records,self.tokens) if q in t];self.page=0;self.render()
-    def turn(self,n):self.page+=n;self.render()
-    def render(self):
-        pages=max(1,(len(self.matches)+99)//100);self.page=max(0,min(self.page,pages-1));self.note.setText(f'匹配 {len(self.matches)} 条 · 第 {self.page+1} / {pages} 页；导出包含全部匹配记录')
-        self.text.setPlainText(json.dumps(self.matches[self.page*100:(self.page+1)*100],ensure_ascii=False,indent=2))
+    """Virtual read-only form table; full query export in a background worker."""
+    def __init__(self,parent,records,rows=None):
+        super().__init__(parent);self.records=records;self.setWindowTitle('归档操作日志明细');self.resize(1180,680);v=QVBoxLayout(self);self.search=QLineEdit();self.search.setPlaceholderText('查询时间、门店、单号、动作或文件名');v.addWidget(self.search);self.note=label('');v.addWidget(self.note)
+        from business_ui import grid
+        from history_forms import event_rows
+        self.rows=rows if rows is not None else event_rows(records,{h['oid']:h for h in parent.orders.headers()} if hasattr(parent,'orders') else {})
+        self.table,self.model=grid(self,['时间','补货单号','门店','签发修订','操作','明细'],self.rows);self.table.setColumnWidth(5,540);v.addWidget(self.table,1);self.search.textChanged.connect(self.filter);row=QHBoxLayout();row.addWidget(button('导出当前查询Excel',self.export));row.addWidget(button('关闭',self.accept));v.addLayout(row);self.filter()
+        self.table.doubleClicked.connect(self.open_order)
+    def open_order(self,index):
+        record=self.records[self.model.indices[index.row()]];host=self.parentWidget()
+        if not hasattr(host,'work_repository'):return
+        with host.work_repository.connect() as db:row=db.execute('SELECT day,store,number,current FROM normal_orders WHERE oid=?',(record['oid'],)).fetchone()
+        if not row:return
+        d=ArchiveDialog(host,dict(zip(('day','store','number','revision'),row)));d.rev.setCurrentIndex(record['revision']-1);d.exec();d.deleteLater()
+    def filter(self,*_):
+        self.model.filter(self.search.text());self.matches=[self.records[i] for i in self.model.indices];self.note.setText(f'匹配 {len(self.matches)} 条；双击回溯当时签发修订，导出包含全部匹配记录。')
     def export(self):
-        if self.debounce.isActive():self.filter()
-        path,_=QFileDialog.getSaveFileName(self,'导出当前查询日志','归档日志.json','JSON (*.json)')
+        path,_=QFileDialog.getSaveFileName(self,'导出当前查询日志','归档日志.xlsx','Excel (*.xlsx)')
         if not path:return
-        try:
-            with open(path,'x',encoding='utf-8') as f:json.dump(self.matches,f,ensure_ascii=False,indent=2)
+        from business_ui import run
+        import business_excel
+        try:run(self,business_excel.write,(path,[('操作日志',self.model.headers,[self.rows[i] for i in self.model.indices])]),'导出日志')
         except Exception as exc:QMessageBox.warning(self,'未导出',str(exc))

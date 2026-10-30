@@ -23,6 +23,12 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--fixes-smoke' in sys.argv:
+        from fixes_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--fixes-smoke')+1:])
+    if '--business-smoke' in sys.argv:
+        from business_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--business-smoke')+1:])
     if '--storage-smoke' in sys.argv:
         from storage_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--storage-smoke')+1:])

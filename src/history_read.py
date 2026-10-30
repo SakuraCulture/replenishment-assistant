@@ -99,6 +99,15 @@ def execute(path,cache,request,cancel,progress):
     # Audit and formal export always retrieve and validate the source, not cache.
     order=repo.get(head['day'],head['store'],head['revision'])
     if order is None or order['digest']!=head['digest']:raise ValueError('归档来源已变化，请刷新')
+    if kind in ('form','form_export','attachments','source_export'):
+        import history_forms,business_excel,source_archive
+        if kind=='attachments':return history_forms.attachments(repo,order)
+        if kind=='source_export':
+            if not any(r[2]==request['sha'] for r in history_forms.attachments(repo,order)):raise ValueError('原文件不属于此签发快照')
+            with closing(repo.work.connect()) as db:return source_archive.export(db,request['sha'],request['path'],cancel)
+        rows=history_forms.form(repo,order,request['scope'],request.get('sku',''),cancel)
+        if kind=='form_export':return business_excel.write(request['path'],[(request['scope'],['核对项目','当时值','类型'],rows)],cancel)
+        return rows
     if kind=='audit':
         field=request.get('field','概要')
         if field=='概要':return {k:v for k,v in order.items() if k!='payload'}|{'payload_fields':list(order['payload']),'result_fields':list(order['payload']['result']),'rows':len(order['payload']['result']['rows'])}

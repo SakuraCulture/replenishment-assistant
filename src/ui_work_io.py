@@ -99,7 +99,7 @@ class Progress(QDialog):
         if self._completed:super().reject();return
         if self.committing:self.cancel_after_commit=True;self.note.setText('最终提交已开始，完成后停止后续操作。');return
         if self.operation in ('save','review_export'):self.note.setText('正在完成本次提交，结束后可关闭；不会中途终止写入。');return
-        self.cancelling=True;self.session.cancel.set();self.cancel_btn.setEnabled(False);self.note.setText('正在取消；最终提交前会回滚，已提交归档及已完成文件会保留…' if self.operation=='delivery_execute' else '正在取消准备，原记录不会改变…')
+        self.cancelling=True;self.session.cancel.set();self.cancel_btn.setEnabled(False);self.note.setText('正在取消；最终提交前会回滚，已提交归档及已完成文件会保留…' if self.operation in ('delivery_execute','confirm_normal') else '正在取消准备，原记录不会改变…')
     def closeEvent(self,event):
         if self._completed:event.accept()
         else:self.reject();event.ignore()

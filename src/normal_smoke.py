@@ -47,7 +47,8 @@ def start_smoke(app,win,args):
         later(lambda:modal_click('newBudgetPreview','应用到本店草稿' if accept else '取消'))
         QTest.mouseClick(dialog.preview_btn,Qt.MouseButton.LeftButton)
     def focus_file(accept):
-        dialog=QApplication.activeModalWidget();assert isinstance(dialog,QFileDialog);dialog.setDirectory(str(fixture));dialog.findChild(QLineEdit,'fileNameEdit').setText('新品明细.xlsx');dialog.accept()
+        from import_ui import ImportDialog
+        dialog=QApplication.activeModalWidget();assert isinstance(dialog,ImportDialog);dialog.set_paths([str(fixture/'新品明细.xlsx')]);dialog.accept()
         def mapping(attempt=0):
             dialog=QApplication.activeModalWidget()
             if not isinstance(dialog,FocusMapping) and attempt<200:later(lambda:mapping(attempt+1));return
