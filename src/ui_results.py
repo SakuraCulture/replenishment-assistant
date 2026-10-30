@@ -8,7 +8,7 @@ and supplies job()/update_controls(). make_results() explicitly installs the vie
 import sys,os,json,threading,traceback,html,logging
 from pathlib import Path
 from datetime import datetime
-from PySide6.QtCore import Qt,Signal,QThread,QAbstractTableModel,QSortFilterProxyModel,QModelIndex,QTimer,QUrl,QStandardPaths
+from PySide6.QtCore import Qt,Signal,QThread,QAbstractTableModel,QSortFilterProxyModel,QModelIndex,QTimer,QSignalBlocker,QUrl,QStandardPaths
 from PySide6.QtGui import QColor,QFont,QDesktopServices,QIcon,QPalette
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QFrame,
     QFileDialog,QComboBox,QCheckBox,QDoubleSpinBox,QTableWidget,QTableWidgetItem,QHeaderView,QTableView,QLineEdit,
@@ -21,51 +21,13 @@ from version_info import VERSION
 
 from ui_controls import label,button
 
-class GoodsModel(QAbstractTableModel):
-    def __init__(self):super().__init__();self.rows=[]
-    def set_rows(self,rows):self.beginResetModel();self.rows=rows;self.endResetModel()
-    def rowCount(self,parent=QModelIndex()):return 0 if parent.isValid() else len(self.rows)
-    def columnCount(self,parent=QModelIndex()):return len(COLUMNS)
-    def headerData(self,section,orientation,role=Qt.ItemDataRole.DisplayRole):
-        if role==Qt.ItemDataRole.DisplayRole:return COLUMNS[section][0] if orientation==Qt.Orientation.Horizontal else section+1
-    def data(self,index,role=Qt.ItemDataRole.DisplayRole):
-        if not index.isValid():return None
-        d=self.rows[index.row()];v=COLUMNS[index.column()][1](d)
-        if role==Qt.ItemDataRole.DisplayRole:return semantics.fmt(v)
-        if role==Qt.ItemDataRole.UserRole:return v
-        if role==Qt.ItemDataRole.ToolTipRole:return semantics.fmt(v)
-        if role==Qt.ItemDataRole.TextAlignmentRole and index.column() in range(5,11):return int(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter)
-        if role==Qt.ItemDataRole.ForegroundRole:
-            if semantics.exclusion_reason(d) and index.column() in (9,10,13,15,16):return QColor('#9B6D16')
-            if d.get('_audit',{}).get('applied') and index.column() in (9,11):return QColor('#13796C')
-            if d['_source']=='地采商品' and index.column()==2:return QColor('#9B6D16')
+from ui_goods_fast import GoodsModel,FilterModel
 
 
-class FilterModel(QSortFilterProxyModel):
-    def __init__(self):super().__init__();self.mode='全部商品';self.search='';self.warehouse='全部仓';self.category='全部分类';self.setSortRole(Qt.ItemDataRole.UserRole)
-    def filterAcceptsRow(self,row,parent):
-        d=self.sourceModel().rows[row]
-        if self.warehouse!='全部仓' and d.get('AU')!=self.warehouse:return False
-        if self.category!='全部分类' and str(d.get('_category') or '未分类')!=self.category:return False
-        if self.search and self.search not in (' '.join(str(d.get(k,'')) for k in ['D','E','F'])).lower():return False
-        if self.mode=='建议补货':return semantics.orderable(d)
-        if self.mode=='必卖商品':return bool(d.get('_must_sell'))
-        if self.mode=='预算未满足':return d.get('_budget_gap',0)>0
-        if self.mode=='必卖未补足':return bool(d.get('_must_sell')) and d.get('_budget_gap',0)>0
-        if self.mode=='其他预算暂缓':return not d.get('_must_sell') and d.get('_budget_gap',0)>0
-        if self.mode=='最低持有缺口':return bool(d.get('_holding_gap'))
-        if self.mode=='已排除':return bool(semantics.exclusion_reason(d))
-        if self.mode=='商品资料禁用':return str(d.get('S') or '').strip()=='禁用'
-        if self.mode=='补货建议停采':return str(d['_meta'].get('export_status') or '').strip()=='停采'
-        if self.mode=='资料匹配':return d['_source']=='资料匹配'
-        if self.mode=='一箱例外':return bool(d.get('_audit',{}).get('applied'))
-        if self.mode=='地采商品':return d['_source']=='地采商品'
-        if self.mode=='待处理':return bool(semantics.issue_text(d))
-        if self.mode=='重点关注':return bool(d.get('BW') or semantics.issue_text(d) or any('停采' in n for n in d['_meta']['notes']))
-        return True
-    def lessThan(self,left,right):
-        a=self.sourceModel().data(left,Qt.ItemDataRole.UserRole);b=self.sourceModel().data(right,Qt.ItemDataRole.UserRole)
-        return (0,a)<(0,b) if semantics.numeric(a) and semantics.numeric(b) else (0 if semantics.numeric(a) else 1,str(a or ''))<(0 if semantics.numeric(b) else 1,str(b or ''))
+class SummaryTask(QThread):
+    result=Signal(object)
+    def __init__(self,rows,parent):super().__init__(parent);self.rows=rows
+    def run(self):self.result.emit(semantics.summarize(self.rows));self.rows=None
 
 
 class ResultsView:
@@ -94,24 +56,36 @@ class ResultsView:
         self.details=QTextBrowser();dv.addWidget(self.details);self.detail_panel.setMinimumWidth(340);splitter.addWidget(self.detail_panel);splitter.setStretchFactor(0,3);splitter.setStretchFactor(1,1);self.detail_panel.hide();v.addWidget(splitter,1)
         self.table.clicked.connect(self.show_detail)
         for x in [self.mode,self.warehouse_filter,self.category_filter]:x.currentTextChanged.connect(self.filter_changed)
-        self.search.textChanged.connect(self.filter_changed)
+        self.filter_timer=QTimer(self.search);self.filter_timer.setSingleShot(True);self.filter_timer.setInterval(275);self.filter_timer.timeout.connect(self.filter_changed)
+        self.search.textChanged.connect(lambda _:self.filter_timer.start());self.search.returnPressed.connect(self.filter_changed)
+        self.filter_generation=0;self.summary_task=None;self.summary_pending=None
+        QApplication.instance().aboutToQuit.connect(self.stop_filtered_summary)
         self.pages.addWidget(page)
 
     def set_rows(self,rows,calculated):
+        self.filter_timer.stop();sort_column=self.proxy.sortColumn();sort_order=self.proxy.sortOrder();self.proxy.sort(-1)
+        blockers=[QSignalBlocker(w) for w in (self.search,self.warehouse_filter,self.category_filter,self.mode)]
         self.model.set_rows(rows);self.detail_panel.hide();self.search.clear()
         self.warehouse_filter.clear();self.warehouse_filter.addItems(['全部仓']+sorted({str(d.get('AU','')) for d in rows}))
         self.category_filter.clear();self.category_filter.addItems(['全部分类']+sorted({str(d.get('_category') or '未分类') for d in rows}))
-        self.mode.setCurrentText('建议补货' if calculated else '全部商品');self.filter_changed()
-        s=semantics.summarize(rows)
+        self.mode.setCurrentText('建议补货' if calculated else '全部商品');del blockers;self._pending_sort=(sort_column,sort_order);self.filter_changed()
+        # Published calculation results already carry the exact full-row summary.
+        # A filtered/different list still needs its own summary.
+        s=self.result['summary'] if calculated and self.result and rows is self.result['rows'] else semantics.summarize(rows)
         self.metric_values[0].setText(f"{s['amount']:,.2f}" if calculated else '待计算')
         self.metric_values[1].setText(f"{s['positive']:,}" if calculated else '待计算')
         self.metric_values[2].setText(f"{s['exception']} / +{s['extra']:,.2f}" if calculated else '待计算')
         self.metric_values[3].setText(f"{s['local']:,} / {s['excluded']:,}")
         name=self.loaded['stores'].get(self.selected_store(),'') if self.loaded else ''
         self.result_caption.setText(f'{name} · '+('计算完成' if calculated else '导入预览 · 尚未计算')+ (f" · {s['unpriced']}款补货未计价" if s['unpriced'] else ''))
+        if calculated:
+            risk_count=sum(bool(semantics.inbound_risk(d)) for d in rows)
+            if risk_count:self.result_caption.setText(self.result_caption.text()+f' · 在途衔接风险 {risk_count} 条（筛选查看，不自动补回）')
         b=self.result.get('budget',{}) if calculated and self.result else {}
         if b.get('enabled'):
             self.budget_caption.setText(f"预算 {b['limit']:,.2f} 元 · 已用 {b['spent']:,.2f} · 剩余 {b['remaining']:,.2f} · 必卖 {b['must_spent']:,.2f} / 普通 {b['other_spent']:,.2f} · 未满足 {b['deferred']} 款 · 最低持有缺口 {b['holding_gaps']} 款")
+            over=b.get('overrun',{})
+            if over.get('amount',0)>0:self.budget_caption.setText(self.budget_caption.text()+f"\n有限超支 {over['amount']:.2f} 元；商品 {over['sku']} 追加 {over['quantity']:g} 个库存单位；本店金额上限 {over['ceiling']:.2f} 元。")
         else:self.budget_caption.setText('总预算未启用；保持原执行建议。' if calculated else '预算分配在原计算和禁用/停采排除之后执行。')
         if calculated and self.result.get('must_list'):
             ml=self.result['must_list'];self.budget_caption.setText(self.budget_caption.text()+f"\n必卖清单 {ml['total']} 款，本店命中 {ml['matched']} 款，{ml['missing']} 款未出现在本店导出；不自动新增补货。")
@@ -119,8 +93,31 @@ class ResultsView:
     def visible_rows(self):return [self.model.rows[self.proxy.mapToSource(self.proxy.index(i,0)).row()] for i in range(self.proxy.rowCount())]
 
     def filter_changed(self,*a):
+        self.filter_timer.stop();self.filter_generation+=1;self.summary_pending=None
         self.proxy.beginFilterChange();self.proxy.mode=self.mode.currentText();self.proxy.warehouse=self.warehouse_filter.currentText() or '全部仓';self.proxy.category=self.category_filter.currentText() or '全部分类';self.proxy.search=self.search.text().strip().lower();self.proxy.endFilterChange(QSortFilterProxyModel.Direction.Rows)
-        s=semantics.summarize(self.visible_rows());self.filtered_caption.setText(f"当前筛选 {s['rows']:,} 行  ·  执行金额 {s['amount']:,.2f} 元  ·  计算金额 {s['calculated_amount']:,.2f} 元  ·  已排除 {s['excluded']:,} 行  ·  数据异常 {s['issues']:,} 行")
+        if hasattr(self,'_pending_sort'):
+            self.proxy.sort(*self._pending_sort);del self._pending_sort
+        rows=self.visible_rows()
+        if len(rows)<500:self.set_filtered_summary(semantics.summarize(rows))
+        else:
+            self.filtered_caption.setText(f'当前筛选 {len(rows):,} 行 · 统计中…');self.summary_pending=(self.filter_generation,rows);self.start_filtered_summary()
+
+    def stop_filtered_summary(self):
+        self.summary_pending=None
+        if self.summary_task:self.summary_task.wait()
+
+    def start_filtered_summary(self):
+        if self.summary_task is not None or self.summary_pending is None:return
+        generation,rows=self.summary_pending;self.summary_pending=None
+        task=SummaryTask(rows,self.table);self.summary_task=task
+        def apply(s):
+            if generation==self.filter_generation:self.set_filtered_summary(s)
+        def finished():
+            self.summary_task=None;task.deleteLater();self.start_filtered_summary()
+        task.result.connect(apply);task.finished.connect(finished);task.start()
+
+    def set_filtered_summary(self,s):
+        self.filtered_caption.setText(f"当前筛选 {s['rows']:,} 行  ·  执行金额 {s['amount']:,.2f} 元  ·  计算金额 {s['calculated_amount']:,.2f} 元  ·  已排除 {s['excluded']:,} 行  ·  数据异常 {s['issues']:,} 行")
 
     def show_detail(self,index):
         d=self.model.rows[self.proxy.mapToSource(index).row()];esc=lambda x:html.escape(semantics.fmt(x))
@@ -128,6 +125,9 @@ class ResultsView:
         content=f'<h2>{esc(d.get("D"))}</h2><p>{esc(d.get("E"))} · {d["_source"]}</p>'
         content+='<p><b>'+esc(semantics.order_status(d))+'</b> '+esc(semantics.exclusion_reason(d))+'</p>'
         content+='<p>优先清单：'+('必卖商品' if d.get('_must_sell') else '普通商品')+'</p>'
+        risk=semantics.inbound_risk(d)
+        if risk:content+='<h3>需人工复核</h3><p>'+esc(risk['text'])+'</p>'
+        elif d.get('_inbound_cap'):content+='<p>已有在途：追加保底已受库存额度限制，不重新补回。原库存额度口径保持不变。</p>'
         route=semantics.routing(d)
         if route:
             content+=group('需求归属',[('主仓',route['primary']),('从仓',route['secondary'] or '无'),('需求归属仓',route['assigned']),('主仓判断',route['primary_state']),('主仓可用数',route['primary_stock']),('从仓判断',route['secondary_state']),('从仓可用数',route['secondary_stock'])])+'<p>'+esc(route['reason'])+'</p><p>此阶段只确定归属，不拆单、不按仓库存限量或预占；从仓无货仍保留需求。禁用和停采按执行规则处理。</p>'
@@ -149,7 +149,8 @@ class ResultsView:
 
     def export(self,filtered):
         if not self.result or self.dirty:return
-        rows=self.visible_rows() if filtered else self.result['rows']
+        if filtered and self.filter_timer.isActive():self.filter_changed()
+        rows=self.visible_rows() if filtered else semantics.working_rows(self.result['rows'])
         if not rows:QMessageBox.information(self,'没有可导出商品','请调整筛选条件。');return
         folder=Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))/'补货助手输出';folder.mkdir(parents=True,exist_ok=True)
         name=f'补货结果_{self.result["store"]}_{datetime.now():%Y%m%d_%H%M%S}.xlsx'

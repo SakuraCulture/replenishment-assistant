@@ -1,0 +1,103 @@
+{
+  "passed": true,
+  "version": "0.7.3",
+  "source_commit": "2b8a7d5d384c71036d13e4230e0d10d1221b9846",
+  "checks": [
+    "user-confirmed 2026-10-30: blank N recognized as zero with raw value/audit retained; J/K/L missing/empty/bool and N bool/negative/pending not zero; disabled/stopped/local/unpriced/sales-anomaly blocked; blank carton=1; secondary routing preserved",
+    "empty selection exact field/type/order identity; mandatory new stock receives budget ahead of ordinary moving goods; minimum holding gap explicit; unlimited and zero budgets; AS/BV/intermediates invariant; invalid selection rejected",
+    "first issue saves draft atomically; same result idempotent; same-day stable number with immutable V001/V002 and stable item IDs; other store unchanged; compare-and-swap rejects stale revision",
+    "database failure after draft update rolls entire transaction back; stale/dirty/historical results rejected; schema1 old repository remains readable; SQLite consistent pre-extension backup created",
+    "merchant workbook exact sheet/row identity, inventory unit, all central-warehouse new candidates exported and unarranged zero; first 20 headers preserved; P numeric price/R status format; U order number/V concise reason; removed audit columns stay in DB (authorized 2026-10-30 change); raw blank N retained, formula-like product name stored as text, no cross-store rows; no-clobber failed export preserves archive; audit log saved",
+    "explicit focus import/reuse; exact long and leading-zero codes; duplicate same status traced, conflict/unknown rejected; source hash change rejected; stale/missing month blocked; focus-only revision preserves quantities and old grouping; outside SKU never added"
+  ],
+  "fixture_note": "22 synthetic store-product rows, two synthetic warehouse feeds; not real observed demand",
+  "budget_example": {
+    "before": {
+      "rows": 11,
+      "local": 1,
+      "issues": 0,
+      "calculable": 10,
+      "positive": 2,
+      "amount": 12.0,
+      "calculated_positive": 3,
+      "calculated_amount": 64.0,
+      "excluded": 2,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 64.0,
+      "must_amount": 0.0,
+      "must_candidate_amount": 0.0,
+      "budget_deferred": 2,
+      "holding_gaps": 0,
+      "exception": 0,
+      "extra": 0
+    },
+    "after": {
+      "rows": 11,
+      "local": 1,
+      "issues": 0,
+      "calculable": 10,
+      "positive": 1,
+      "amount": 12.0,
+      "calculated_positive": 3,
+      "calculated_amount": 64.0,
+      "excluded": 2,
+      "excluded_positive": 0,
+      "excluded_amount": 0.0,
+      "unpriced": 0,
+      "candidate_amount": 76.0,
+      "must_amount": 12.0,
+      "must_candidate_amount": 12.0,
+      "budget_deferred": 3,
+      "holding_gaps": 2,
+      "exception": 0,
+      "extra": 0
+    },
+    "changes": [
+      {
+        "sku": "moving",
+        "name": "=合成-moving",
+        "type": "动销补货",
+        "before_candidate": 30,
+        "after_candidate": 30,
+        "before_qty": 5.0,
+        "after_qty": 0.0,
+        "before_amount": 10.0,
+        "after_amount": 0.0,
+        "holding_gap": true
+      },
+      {
+        "sku": "new_must",
+        "name": "=合成-new_must",
+        "type": "新品推荐",
+        "before_candidate": 0,
+        "after_candidate": 6,
+        "before_qty": 0,
+        "after_qty": 6.0,
+        "before_amount": 0,
+        "after_amount": 12.0,
+        "holding_gap": false
+      },
+      {
+        "sku": "new_anomaly",
+        "name": "=合成-new_anomaly",
+        "type": "动销补货",
+        "before_candidate": 1,
+        "after_candidate": 1,
+        "before_qty": 1.0,
+        "after_qty": 0.0,
+        "before_amount": 2.0,
+        "after_amount": 0.0,
+        "holding_gap": true
+      }
+    ]
+  },
+  "protected_algorithm_files": [
+    "model.py",
+    "one_box_exception.py",
+    "allocation.py",
+    "default_config.json",
+    "default_must_sell.json"
+  ]
+}

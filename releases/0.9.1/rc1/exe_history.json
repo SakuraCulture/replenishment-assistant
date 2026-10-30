@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "error": null,
+  "checks": [
+    "real archive date + store + two-keyword product query returns exact one order",
+    "selected SKU inherited without manual entry; old signed 24 and inbound24 remain readable, never recomputed",
+    "parent refresh cannot cancel child form; parameters load and retain exact historical values",
+    "historical catalog snapshot nonempty; absent original file explicitly distinguished from saved fields",
+    "explicit full-form export ignores field display filter as labelled; every cell compared to displayed full form",
+    "product name selection, rapid tab switch, unknown SKU disables export, retry, close while reading and owned process cleanup",
+    "actual engine cap integration, three Hongmen warning rows, zero quantities; filter and detail do not refill",
+    "clear query restores full archive list"
+  ],
+  "times": {
+    "initial_history": 20.51422230002936,
+    "sales_form": 3.2179070999845862
+  },
+  "ui_ticks": 1682,
+  "max_tick_gap_seconds": 1.3965901999617927,
+  "version": {
+    "app": "补货助手",
+    "version": "0.9.1",
+    "parameter_schema_version": 1,
+    "job_schema_version": 1,
+    "routing_version": "0.5.0",
+    "model_version": "0.3.2-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "571f387b973290e864c17e6080cd6f9d5c66cd56",
+    "build_id": "rc1",
+    "built_at": "2026-10-30T15:48:59.1144859+08:00"
+  },
+  "exit_code": 0,
+  "remaining_children": [],
+  "development": false,
+  "exe_sha256": "62c22e379725b4f110c829e3798349bbc3398a2d281d7002ef10c2f534bc30e7",
+  "peak_tree_mib": 1228.00390625
+}

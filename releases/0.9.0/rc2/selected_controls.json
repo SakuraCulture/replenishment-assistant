@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "checks": [
+    "probe carries selected results only; incomplete draft cannot issue; expansion preserves full draft/order and unselected store, filenames lack revision suffix",
+    "already-signed export requires no full draft expansion and creates no revision",
+    "concurrent revision after selected-only probe fails before any export",
+    "Qt progress handles byte counts above 32-bit, real 50% stage, elapsed/status text, no write interruption and success-only final 100%",
+    "dead transfer producer fails explicitly instead of waiting indefinitely or reporting success"
+  ],
+  "remaining_children": []
+}

@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "version": "0.10.0",
+  "model_version": "0.3.3-rules",
+  "branch": "feature/warehouse-confirmations-0.10.0",
+  "source_commit": "083db31a3e13ea0267785dd65a6e82efaa0c4aa7",
+  "exe_sha256": "9171cce4fe0c3efd34a92df3ab96c37feeeec7041c22eaa9bd7a8782067a8438",
+  "zip_sha256": "7e6c588c5088f9a2437488558d7472ce2a711023c641d318e0134073d40b9c29",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.10.0_rc1\\补货助手_0.10.0_rc1.zip",
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.10.0_rc1\\补货助手",
+  "files": 211,
+  "protected_files": 720,
+  "protected_changes": []
+}

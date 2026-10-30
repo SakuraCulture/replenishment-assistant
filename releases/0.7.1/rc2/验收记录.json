@@ -1,0 +1,37 @@
+{
+  "version": "0.7.1",
+  "source_commit": "6c644ea6bf86565833b6b602d933786ecec003b9",
+  "build_id": "rc2",
+  "verified": [
+    "business budget regression",
+    "single/multi-file grouping and conflicts",
+    "serial vs process concurrency equality",
+    "budget isolation and failures",
+    "packaged EXE interactions and exports",
+    "warehouse snapshots, per-store supply routing, zero-stock secondary demand retained, exact assigned-master price/carton/weights",
+    "daily atomic saves with explicit overwrite confirmation and stale revision rejection",
+    "complete parameter presets and store defaults with actual per-store weight rebinding",
+    "snapshot restore without original Excel and packaged workbench interactions",
+    "fixed prior-release baseline exact ordered full-field/Excel equivalence without new selection",
+    "normal-order unique identity, CAS revisions, complete rollback, stable row IDs, frozen numbered merchant exports",
+    "new-product eligibility and explicit shared-budget allocation including unlimited/zero budgets",
+    "actual EXE home/work/history, preview cancel/apply, confirmation cancel/overwrite, restore and export",
+    "two-process intake EXE regression",
+    "fixed 0.7.0 internal workbook ordered values/types/styles equivalence and alternating export performance",
+    "shared immutable styles, measured row progress, safe cancellation/retry",
+    "four-slot calculation queue starts fifth before slower stores finish",
+    "merchant store picker with all/subset selection, one background batch signing transaction, sequential per-store export",
+    "authorized merchant-only changes: central-warehouse rows, 22 columns, concise decision reason, P price/R status display; archive remains complete",
+    "unchanged model/exception/allocation/default bytes"
+  ],
+  "not_verified": [
+    "other computers",
+    "byte-reproducible rebuild",
+    "two actual warehouse feeds; routing scenarios use synthetic fixtures",
+    "external historical confirmation/order/receipt import and linking are deferred",
+    "merchant return-file processing is not implemented",
+    "performance of the user exact five-store batch; five-store timing is labelled synthetic",
+    "parallel export and reduced internal summary deliberately not implemented"
+  ],
+  "rules": "Original 0.3 model unchanged; routing precedes calculation, without stock reservation or quantity cap; no daily-rate unification or experimental protection period"
+}

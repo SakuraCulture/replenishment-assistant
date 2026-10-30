@@ -1,0 +1,221 @@
+{
+  "passed": true,
+  "unexpected_differences": 0,
+  "cases": [
+    {
+      "case": "single_intake",
+      "differences": []
+    },
+    {
+      "case": "single_loaded",
+      "differences": []
+    },
+    {
+      "case": "single_results",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_intake",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_loaded",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_results",
+      "differences": []
+    },
+    {
+      "case": "overlap_intake",
+      "differences": []
+    },
+    {
+      "case": "overlap_blocked",
+      "differences": []
+    },
+    {
+      "case": "overlap_loaded",
+      "differences": []
+    },
+    {
+      "case": "overlap_results",
+      "differences": []
+    },
+    {
+      "case": "reversed_intake",
+      "differences": []
+    },
+    {
+      "case": "reversed_blocked",
+      "differences": []
+    },
+    {
+      "case": "reversed_loaded",
+      "differences": []
+    },
+    {
+      "case": "reversed_results",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_intake",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_blocked",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_loaded",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_results",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_intake",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_loaded",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_results",
+      "differences": []
+    },
+    {
+      "case": "all_error",
+      "differences": []
+    },
+    {
+      "case": "warehouse_intake",
+      "differences": []
+    },
+    {
+      "case": "warehouse_loaded",
+      "differences": []
+    },
+    {
+      "case": "warehouse_results",
+      "differences": []
+    },
+    {
+      "case": "real_loaded",
+      "differences": []
+    },
+    {
+      "case": "real_None_True",
+      "differences": []
+    },
+    {
+      "case": "real_0_True",
+      "differences": []
+    },
+    {
+      "case": "real_3000_True",
+      "differences": []
+    },
+    {
+      "case": "real_5000_True",
+      "differences": []
+    },
+    {
+      "case": "real_10000_True",
+      "differences": []
+    },
+    {
+      "case": "real_None_False",
+      "differences": []
+    },
+    {
+      "case": "real_custom",
+      "differences": []
+    },
+    {
+      "case": "filtered.xlsx",
+      "differences": []
+    },
+    {
+      "case": "overlap.xlsx",
+      "differences": []
+    },
+    {
+      "case": "real.xlsx",
+      "differences": []
+    },
+    {
+      "case": "reversed.xlsx",
+      "differences": []
+    },
+    {
+      "case": "warehouse.xlsx",
+      "differences": []
+    }
+  ],
+  "allowed_budget_changes": [
+    {
+      "store": "LQD2025",
+      "budget": 3000.0,
+      "sku": "1907328795170725897",
+      "name": "口味王和成天下槟榔干金石之交40g/袋50元版非食品电商销售正品授权【介意勿拍】",
+      "must": true,
+      "old_qty": 9.0,
+      "new_qty": 10.0,
+      "extra_amount": 41.0,
+      "old_spent": 2999.87,
+      "new_spent": 3040.87,
+      "overspend": 40.87
+    },
+    {
+      "store": "LQD2025",
+      "budget": 5000.0,
+      "sku": "1794930719526281293",
+      "name": "达利园 法式软面包香橙味  200g/份",
+      "must": true,
+      "old_qty": 5.0,
+      "new_qty": 6.0,
+      "extra_amount": 5.39,
+      "old_spent": 4999.98,
+      "new_spent": 5005.37,
+      "overspend": 5.37
+    },
+    {
+      "store": "LQD2025",
+      "budget": 10000.0,
+      "sku": "1702569802042175573",
+      "name": "【大瓶】美年达Mirinda 青苹果味汽水碳酸饮料(新老包装随机) 2l/瓶",
+      "must": false,
+      "old_qty": 0.0,
+      "new_qty": 6.0,
+      "extra_amount": 33.0,
+      "old_spent": 9980.33,
+      "new_spent": 10013.33,
+      "overspend": 13.33
+    },
+    {
+      "store": "LQD2025",
+      "budget": 3000.0,
+      "sku": "1691764147970441250",
+      "name": "苏菲 超熟睡290mm柔棉感纤巧夜用卫生巾 10片/包",
+      "must": true,
+      "old_qty": 6.0,
+      "new_qty": 12.0,
+      "extra_amount": 40.5,
+      "old_spent": 3000.0,
+      "new_spent": 3040.5,
+      "overspend": 40.5
+    }
+  ],
+  "whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "allowed_fields": "target row execution qty/amount/exact/gap/reason/holding and _budget_overrun; derived budget and summary; exact model version0.3.2->0.3.3; no input/intermediate/candidate changes; all remaining order/types exact",
+  "oracle": "fixed old results + independently ranked one last unit, strict105% ceiling; no candidate growth; exports rendered from oracle results through otherwise unchanged internal export module"
+}

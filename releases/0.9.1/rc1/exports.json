@@ -1,0 +1,59 @@
+{
+  "passed": true,
+  "stores": [
+    {
+      "store": "CXTYX20260915",
+      "removed": 4,
+      "remaining_cell_values_types_styles_order_differences": 0
+    },
+    {
+      "store": "GCD2025",
+      "removed": 11,
+      "remaining_cell_values_types_styles_order_differences": 0
+    },
+    {
+      "store": "LTD20251622",
+      "removed": 0,
+      "remaining_cell_values_types_styles_order_differences": 0
+    },
+    {
+      "store": "TB2026214",
+      "removed": 11,
+      "remaining_cell_values_types_styles_order_differences": 0
+    },
+    {
+      "store": "TBBLAC20260922",
+      "removed": 1,
+      "remaining_cell_values_types_styles_order_differences": 0
+    },
+    {
+      "store": "TBBLBD20260730",
+      "removed": 6,
+      "remaining_cell_values_types_styles_order_differences": 0
+    },
+    {
+      "store": "TBBLDBJSJZ20260817",
+      "removed": 0,
+      "remaining_cell_values_types_styles_order_differences": 0
+    },
+    {
+      "store": "TBBLDHM20260815",
+      "removed": 9,
+      "remaining_cell_values_types_styles_order_differences": 0
+    },
+    {
+      "store": "TBBLTT20260612",
+      "removed": 1,
+      "remaining_cell_values_types_styles_order_differences": 0
+    },
+    {
+      "store": "TBBLYJ20260927",
+      "removed": 21,
+      "remaining_cell_values_types_styles_order_differences": 0
+    }
+  ],
+  "workbooks": 20,
+  "removed_rows": 64,
+  "remaining_differences": 0,
+  "scope": "QA counterfactual files only, no new signed orders or user exports"
+}

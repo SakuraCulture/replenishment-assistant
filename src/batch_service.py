@@ -61,6 +61,8 @@ def prepare(data,progress=lambda s:None,cancel=None):
     if not records:raise ValueError('所有记录均有冲突，请先选择保留记录。')
     from table_records import bridge_table
     sales_table=bridge_table(data['headers'],(r['values'] for r in records),'补货建议',checkpoint=lambda:engine.checkpoint(cancel))
+    from source_binding import bindings,restore
+    origins=bindings(sales_table,records,data['headers'])
     if data.get('catalogs'):
         loaded=warehouse_catalog.prepare_records(sales_table,data['catalogs'],progress,cancel)
     else:
@@ -70,6 +72,8 @@ def prepare(data,progress=lambda s:None,cancel=None):
             if not raw:raise ValueError('旧作业没有商品资料快照，请重新选择原资料')
             heads=[k for k in raw[0] if k!='_row']
             product_table=bridge_table(heads,raw,'商品资料',header_text=True)
+            from source_binding import master_bindings,restore_master
+            master_origins=master_bindings(product_table,raw)
             products='memory:master.xlsx'
         else:
             ps,_=engine.sheet_name(products,'products')
@@ -77,10 +81,12 @@ def prepare(data,progress=lambda s:None,cancel=None):
         loaded=engine.load_records(sales_table,product_table,sales_ref='memory:batch.xlsx',product_ref=str(products),progress=progress,cancel=cancel)
         if data.get('frozen'):
             for d,m in loaded['normalized']:
-                if m.get('product_row'):m['product_row']=data['products_snapshot'][m['product_row']-2]['_row']
+                if m.get('product_row'):m['product_row']=restore_master(master_origins,d['E'],m['product_row'])
+    # Bind provenance before conversion, rather than interpreting a bridge row as
+    # a list offset after conversion. Validate identity on every returned row.
     for pairs in [loaded['normalized'],*loaded.get('warehouse_rows',{}).values()]:
         for d,m in pairs:
-            r=records[m['export_row']-2]
+            r=restore(origins,d,m)
             m.update(export_row=r['row'],export_file=r['path'],export_sheet=r['sheet'])
     loaded.update(hashes=dict(data['hashes']),sales=[f['path'] for f in data['files'] if not f['error']],stores=dict(data['stores']),blocked=dict(blocked),intake=data)
     for wh,c in loaded.get('catalogs',{}).items():loaded['hashes'][wh+'资料快照 '+c['source_path']+' #'+c['revision']]=c['source_sha256']
@@ -110,7 +116,10 @@ def calculate_store(loaded:InputBatch,store:str,settings:StoreSettings,profile) 
 def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:None,cancel=None):
     """Submit only available slots: stop never starts queued stores; running stores finish."""
     if not 1<=max_workers<=4:raise ValueError('并发门店数必须为1至4。')
-    snapshot=copy.deepcopy(loaded);data=snapshot.pop('intake',None)
+    # Only the computation contract crosses spawn. Raw intake/catalog originals
+    # remain in the workbench for archiving; copying them here is redundant.
+    keys=('normalized','config','stores','hashes','catalogs','warehouse_rows','blocked','import_audit','supply_route')
+    snapshot=copy.deepcopy({k:loaded[k] for k in keys if k in loaded});data=loaded.get('intake')
     if data:snapshot['import_audit']={'files':data['files'],'identical_duplicates':data['duplicates'],'conflicts':[{'store':c['store'],'sku':c['sku'],'choice':c['choice'],'sources':[{'file':v['path'],'sheet':v['sheet'],'row':v['row']} for v in c['variants']]} for c in data['conflicts']]}
     pending=iter(jobs.items());active={};out={};stopped=False
     with ProcessPoolExecutor(max_workers=max_workers,mp_context=multiprocessing.get_context('spawn')) as pool:
@@ -135,7 +144,9 @@ def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:Non
                 store=active.pop(future)
                 try:
                     result=future.result();out[store]=result;notify(store,'已完成',result,'')
-                except Exception as exc:out[store]=None;notify(store,'计算失败',None,str(exc))
+                except Exception as exc:
+                    from diagnostics import failure
+                    out[store]=None;notify(store,'计算失败',None,failure(exc,stage='门店计算',store=store))
             fill()
         for store,_ in pending:notify(store,'已停止',None,'未启动，可重新计算')
     return out

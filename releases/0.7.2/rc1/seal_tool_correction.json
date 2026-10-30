@@ -1,0 +1,5 @@
+{
+  "reason": "Windows source_hashes uses src\\filename while initial sealer constructed src/filename; all file hashes had matched. Compare canonical relative native paths, no field or hash excluded.",
+  "runtime_source_changed": false,
+  "sealed_build": "edd2fba727f26407ed2fe168de94bdf1b2a013f0"
+}

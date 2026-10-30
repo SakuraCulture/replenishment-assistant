@@ -4,7 +4,9 @@ from contextlib import closing
 from datetime import datetime,date,timedelta,timezone
 from pathlib import Path
 import parameter_schema as schema
+import storage_chunks as chunks
 from version_info import MODEL_VERSION
+from io_stages import stage,digest as digest_bytes,compress as compress_bytes
 
 def now():return datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds')
 def today():return now()[:10]
@@ -57,20 +59,42 @@ class Repository:
             for key,val in values.items():db.execute('INSERT INTO stores VALUES(?,?) ON CONFLICT(code) DO UPDATE SET data=excluded.data',(key,dumps(val)))
     def list_jobs(self):
         with closing(self.connect()) as db:return [{'day':d,'revision':r,'digest':h,'saved':t,'summary':loads(s)} for d,r,h,t,s in db.execute('SELECT day,revision,digest,saved,summary FROM jobs ORDER BY day DESC')]
-    def get_job(self,day):
-        with closing(self.connect()) as db:row=db.execute('SELECT revision,digest,saved,summary,payload FROM jobs WHERE day=?',(day,)).fetchone()
-        if not row:return None
-        raw=zlib.decompress(row[4]);assert hashlib.sha256(raw).hexdigest()==row[1],'作业快照校验失败'
-        return {'day':day,'revision':row[0],'digest':row[1],'saved':row[2],'summary':loads(row[3]),'payload':loads(raw)}
+    def get_job(self,day,*,paths=None,progress=lambda _:None):
+        with closing(self.connect()) as db:
+            row=db.execute('SELECT revision,digest,saved,summary,payload FROM jobs WHERE day=?',(day,)).fetchone()
+            if not row:return None
+            payload=chunks.load(row[4],db,expected=row[1],paths=paths,progress=progress)
+        return {'day':day,'revision':row[0],'digest':row[1],'saved':row[2],'summary':loads(row[3]),'payload':payload}
+    def known_chunks(self):
+        with closing(self.connect()) as db:return chunks.known(db)
+    def review_job(self,day,progress=lambda _:None):
+        paths=[('store_presets',),('store_ui',),('loaded','hashes'),('catalogs','*','revision'),('profile','revision')]
+        record=self.get_job(day,paths=paths,progress=progress)
+        if record is None:return None
+        parts=record['payload'];record['payload']={'store_presets':parts.get(('store_presets',),{}),'store_ui':parts.get(('store_ui',),{}),'loaded':{'hashes':parts.get(('loaded','hashes'),{})},'catalogs':{k:{'revision':v} for k,v in parts.get(('catalogs','*','revision'),{}).items()},'profile':{'revision':parts.get(('profile','revision'))}}
+        return record
+
     def save_job(self,day,payload,expected_revision=None):
-        if date.fromisoformat(day).isoformat()!=day:raise ValueError('日期须为YYYY-MM-DD')
-        if payload.get('schema')!=1 or payload.get('day')!=day:raise ValueError('作业快照与日期不一致')
-        info=summary(payload);raw=dumps(payload).encode();digest=hashlib.sha256(raw).hexdigest();blob=zlib.compress(raw);stamp=now()
-        with closing(self.connect()) as db,db:
+        return self._save_prepared(day,prepare_job(day,payload,known=self.known_chunks()),expected_revision)
+
+    def _save_prepared(self,day,prepared,expected_revision=None,progress=lambda _:None):
+        # Internal session-only immutable encoded snapshot; never reused across calls.
+        info,raw,digest=prepared;stamp=now()
+        chunks.backup_before_write(self.path,progress)
+        with stage('提交每日作业（提交期间不可取消）',progress),closing(self.connect()) as db,db:
             db.execute('BEGIN IMMEDIATE');old=db.execute('SELECT revision,digest,saved FROM jobs WHERE day=?',(day,)).fetchone()
             if old and expected_revision!=old[0]:raise Conflict('该日期已有记录或已被另一窗口更新，请重新查看差异并确认覆盖')
             if not old and expected_revision is not None:raise Conflict('原记录已发生变化，请重新保存')
             if old and digest==old[1]:return {'revision':old[0],'saved':old[2],'digest':digest}
+            blob=chunks.put(db,raw) if isinstance(raw,chunks.Prepared) else compress_bytes(raw,progress)
             revision=uuid.uuid4().hex
             db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET revision=excluded.revision,digest=excluded.digest,saved=excluded.saved,summary=excluded.summary,payload=excluded.payload',(day,revision,digest,stamp,dumps(info),blob))
         return {'revision':revision,'saved':stamp,'digest':digest}
+
+
+def prepare_job(day,payload,progress=lambda _:None,*,known=()):
+        if date.fromisoformat(day).isoformat()!=day:raise ValueError('日期须为YYYY-MM-DD')
+        if payload.get('schema')!=1 or payload.get('day')!=day:raise ValueError('作业快照与日期不一致')
+        info=summary(payload)
+        prepared=chunks.prepare(payload,known,progress)
+        return info,prepared,prepared.digest

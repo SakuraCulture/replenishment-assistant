@@ -1,0 +1,17 @@
+test_priority_exact_budget_and_stable_tie (test_rules.BudgetTests.test_priority_exact_budget_and_stable_tie) ... ok
+test_zero_budget_and_invalid_step_fail_closed (test_rules.BudgetTests.test_zero_budget_and_invalid_step_fail_closed) ... ok
+test_legacy_checksum_runtime_not_assert (test_rules.IntegrityTests.test_legacy_checksum_runtime_not_assert) ... ok
+test_both_zero_holding_and_cartons (test_rules.ModelTests.test_both_zero_holding_and_cartons) ... ok
+test_box_wrapper_does_not_readd (test_rules.ModelTests.test_box_wrapper_does_not_readd) ... ok
+test_disabled_cap_and_recompute_clear_audit (test_rules.ModelTests.test_disabled_cap_and_recompute_clear_audit) ... ok
+test_fractional_multiples_generated_by_model (test_rules.ModelTests.test_fractional_multiples_generated_by_model) ... ok
+test_missing_data_not_zero (test_rules.ModelTests.test_missing_data_not_zero) ... ok
+test_screenshot (test_rules.ModelTests.test_screenshot) ... ok
+test_small_inbound_cap_agrees_with_post_validation (test_rules.ModelTests.test_small_inbound_cap_agrees_with_post_validation) ... ok
+test_stockout_conflict_only_discards_N (test_rules.ModelTests.test_stockout_conflict_only_discards_N) ... ok
+test_zero_and_extreme_restore (test_rules.ModelTests.test_zero_and_extreme_restore) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.007s
+
+OK

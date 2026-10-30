@@ -11,9 +11,9 @@ def check_file(index,path):
     """Top-level spawn target. Only original sequence number and resolved path cross in."""
     report={'path':path,'rows':0,'stores':0,'error':''}
     try:
-        before=engine.adapter.digest(Path(path));sheet,heads=engine.sheet_name(path,'sales')
+        before=engine.adapter.digest(Path(path))
         cfg=engine.config();sf=cfg['sales_fields']
-        rows,info=engine.adapter.read_table(Path(path),sheet,[sf[k] for k in ['store_code','sku','daily14','sales7','sales30','stock','inbound','stockout_days']])
+        sheet,heads,rows,info=engine.read_identified(path,'sales',[sf[k] for k in ['store_code','sku','daily14','sales7','sales30','stock','inbound','stockout_days']])
         if before!=engine.adapter.digest(Path(path)):raise ValueError('读取期间文件变化，请保存后重试。')
         ambiguous=set(sf.values()) & set(info['duplicate_unused_headers'])
         if ambiguous:raise ValueError('已映射表头重复：'+ '、'.join(sorted(ambiguous)))

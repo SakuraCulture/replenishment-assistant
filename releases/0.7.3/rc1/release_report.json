@@ -1,0 +1,86 @@
+{
+  "version": "0.7.3",
+  "source_commit": "2b8a7d5d384c71036d13e4230e0d10d1221b9846",
+  "build_id": "rc1",
+  "baseline_commit": "84a0671bd81daa8c2e94a8648c2332b9fc8fa2a9",
+  "passed": true,
+  "unchanged_business_sources": {
+    "model.py": {
+      "sha256": "7b5b39dc20649ae0d55f462a46a259fe740ba4d9188a651bf0cb003bd5488f71",
+      "unchanged": true
+    },
+    "one_box_exception.py": {
+      "sha256": "848e8ee14eb51b84e64fd78ae49fd60f2f88debf53fb173c906566efab79765d",
+      "unchanged": true
+    },
+    "allocation.py": {
+      "sha256": "5960745f16e4bc4eb5cdaad0a1591e817f5adab940579cf8ed96d264ed3c1bf9",
+      "unchanged": true
+    },
+    "default_config.json": {
+      "sha256": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "unchanged": true
+    },
+    "default_must_sell.json": {
+      "sha256": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "unchanged": true
+    },
+    "work_repository.py": {
+      "sha256": "87f321a563d23174ed5e2a733d9019f5dce959d55f3fb564c28381c40fd9a546",
+      "unchanged": true
+    },
+    "normal_orders.py": {
+      "sha256": "0a2f3cd1c5dfe2d1954099643ab971eb64b8b528dc9e2819ae67bf70e3afbfc2",
+      "unchanged": true
+    },
+    "new_products.py": {
+      "sha256": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232",
+      "unchanged": true
+    },
+    "engine.py": {
+      "sha256": "e7403a846f583cbabc9387ecf448390ca5af766f76814a4fc69bf2b9a94909cf",
+      "unchanged": true
+    },
+    "batch_service.py": {
+      "sha256": "ef3b9239d22e99471e7c3a86c0f7901920ca0fb51a315d8dbcbe2407d435b4d4",
+      "unchanged": true
+    },
+    "warehouse_catalog.py": {
+      "sha256": "924d07500ffe108914fd46eb578cb16b4680e5932895883c71026d55291e6322",
+      "unchanged": true
+    },
+    "input_adapter.py": {
+      "sha256": "7629bab19d4ca5d79efbd736f838db2a5964569856330dabe904e07ae1df592b",
+      "unchanged": true
+    },
+    "table_records.py": {
+      "sha256": "267489aca45843d6d282c1987e377a0a289d08005429fc2812718063cc44f84c",
+      "unchanged": true
+    },
+    "parameter_schema.py": {
+      "sha256": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+      "unchanged": true
+    }
+  },
+  "old_package_and_original_inputs_unchanged": true,
+  "daily_user_db_unchanged": true,
+  "exe_sha256": "4f54cdd600de87f58e548b2eb1d5224c87b74ba9115e195627107f4734b92b61",
+  "business_delta": "Only authorized work/product-Excel exclusion of disabled/stopped rows; full raw archive and calculation rows retained",
+  "limits": [
+    "Daily storage format unchanged; full snapshot save/sign/read still takes time and memory, now separated from UI thread",
+    "Same-machine source benchmark and actual EXE acceptance; no clean-machine or byte-reproducible-build claim",
+    "25-file stress and exact per-store outputs measured; additional entities use explicitly labelled QA standard parameters",
+    "History external confirmation/order/receipt linking remains outside this work",
+    "No remote push, merge or replacement of existing delivery"
+  ],
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.7.3_rc1\\补货助手",
+  "evidence_commit": "e84296e44fa0f5f8f8185fa9dcb97a2058700e8f",
+  "post_build_nonruntime_changes": [
+    "prepare_delivery.py",
+    "tools/seal_workflow_release.py",
+    "tools/verify_workflow_pressure.py",
+    "使用说明.txt"
+  ],
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.7.3_rc1\\补货助手_0.7.3_rc1.zip",
+  "zip_sha256": "cf6c101eb572355d020c003824949c8113dfeec5fb6806a07c60fb6b74bc8728"
+}

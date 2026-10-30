@@ -1,0 +1,109 @@
+{
+  "passed": true,
+  "baseline_sha256": "7b5b39dc20649ae0d55f462a46a259fe740ba4d9188a651bf0cb003bd5488f71",
+  "candidate_sha256": "14193428c8a07469ac4734abac401761c219ae788aa0f838af1a1ed64eef917b",
+  "counts": {
+    "rows": 84693,
+    "target": 13,
+    "outside_target_differences": 0,
+    "target_quantity_changes": 0
+  },
+  "changes": [
+    {
+      "store": "CXT20260401",
+      "sku": "5003377622719",
+      "raw_N": 30.42,
+      "old": 1,
+      "new": 1
+    },
+    {
+      "store": "CXT20260401",
+      "sku": "5002478014942",
+      "raw_N": 31.17,
+      "old": 20.0,
+      "new": 20.0
+    },
+    {
+      "store": "CXT20260803",
+      "sku": "1792845559024226363",
+      "raw_N": 31.35,
+      "old": 1,
+      "new": 1
+    },
+    {
+      "store": "ZYD20251112",
+      "sku": "1904894517107216404",
+      "raw_N": 30.28,
+      "old": 1,
+      "new": 1
+    },
+    {
+      "store": "ZYD20251112",
+      "sku": "5006182172264",
+      "raw_N": 30.05,
+      "old": 1,
+      "new": 1
+    },
+    {
+      "store": "ZYD20251112",
+      "sku": "@583496240",
+      "raw_N": 30.3,
+      "old": "待复核",
+      "new": "待复核"
+    },
+    {
+      "store": "ZYD20251112",
+      "sku": "1904777214914973767",
+      "raw_N": 30.28,
+      "old": 1,
+      "new": 1
+    },
+    {
+      "store": "ZYD20251112",
+      "sku": "1984532278906601482",
+      "raw_N": 30.03,
+      "old": 2.0,
+      "new": 2.0
+    },
+    {
+      "store": "ZYD20251112",
+      "sku": "@583498911",
+      "raw_N": 30.88,
+      "old": "待复核",
+      "new": "待复核"
+    },
+    {
+      "store": "ZYD20251112",
+      "sku": "1904832723378511892",
+      "raw_N": 30.27,
+      "old": 2.0,
+      "new": 2.0
+    },
+    {
+      "store": "ZYD20251112",
+      "sku": "1893197092260884531",
+      "raw_N": 30.25,
+      "old": 1,
+      "new": 1
+    },
+    {
+      "store": "ZYD20251112",
+      "sku": "5000733139669",
+      "raw_N": 30.18,
+      "old": 35.0,
+      "new": 35.0
+    },
+    {
+      "store": "ZYD20251112",
+      "sku": "1968133531087622217",
+      "raw_N": 31.32,
+      "old": 1,
+      "new": 1
+    }
+  ],
+  "synthetic": {
+    "old": 28,
+    "new": 42
+  },
+  "zero_sales_restore_unchanged": true
+}

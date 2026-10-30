@@ -1,0 +1,89 @@
+{
+  "passed": true,
+  "error": null,
+  "version": {
+    "app": "补货助手",
+    "version": "0.7.3",
+    "parameter_schema_version": 1,
+    "job_schema_version": 1,
+    "routing_version": "0.5.0",
+    "model_version": "0.3.0-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "source_commit": "2b8a7d5d384c71036d13e4230e0d10d1221b9846",
+    "build_id": "rc1",
+    "built_at": "2026-10-30T04:54:38.8368374+08:00"
+  },
+  "checks": [
+    "cancel real full read leaves current workspace and original daily header unchanged; owned process reclaimed",
+    "retry reads validated full five-store snapshot, owned restore preserves 84693 result rows and frozen configuration",
+    "copy configuration reads full source validation but returns only exact saved configuration",
+    "actual full save with default-cancel same-day confirmation when needed; existing repository transaction and schema retained",
+    "full same-day overwrite cancellation preserves exact revision/digest/header",
+    "actual normal confirmation commits five orders and the full draft; no dialog-thread JSON compression",
+    "five already-signed central-warehouse merchant files exported with source validation and real row progress; folder is deterministic QA destination",
+    "saved/restored result trees equal in all fields; complete daily digest matches repository header",
+    "window close during real full read cancels and reclaims worker"
+  ],
+  "timings": {
+    "cancel_read": {
+      "seconds": 0.33911410003202036,
+      "max_ui_gap_seconds": 0.09974070003954694
+    },
+    "read": {
+      "seconds": 21.467569200030994,
+      "max_ui_gap_seconds": 0.483222900016699
+    },
+    "restore": {
+      "seconds": 0.07399819995043799,
+      "max_ui_gap_seconds": 0.07388619997072965
+    },
+    "copy_config": {
+      "seconds": 15.41785579995485,
+      "max_ui_gap_seconds": 0.07367719995090738
+    },
+    "save": {
+      "seconds": 42.92591160000302,
+      "max_ui_gap_seconds": 0.22056639997754246
+    },
+    "overwrite_cancel": {
+      "seconds": 27.501190099981613,
+      "max_ui_gap_seconds": 0.08555519999936223
+    },
+    "confirm_normal": {
+      "seconds": 72.20195310004056,
+      "max_ui_gap_seconds": 0.13355359999695793
+    },
+    "merchant_export": {
+      "seconds": 51.19298589997925,
+      "max_ui_gap_seconds": 0.0892259000102058
+    },
+    "reload_saved": {
+      "seconds": 19.549272300035227,
+      "max_ui_gap_seconds": 1.2632601999794133
+    },
+    "close_read": {
+      "seconds": 0.27702010003849864,
+      "max_ui_gap_seconds": 0.03645350004080683
+    }
+  },
+  "storage": "original daily SQLite schema and JSON/zlib; private copied database only",
+  "exit_code": 0,
+  "remaining_children": [],
+  "peak_tree_mib": {
+    "startup": 826.1328125,
+    "cancel_read": 191.19921875,
+    "read": 3600.82421875,
+    "restore": 3176.12890625,
+    "copy_config": 6203.25,
+    "save": 9774.39453125,
+    "overwrite_cancel": 8384.56640625,
+    "confirm_normal": 6630.6015625,
+    "merchant_export": 7359.7109375,
+    "reload_saved": 5746.46875,
+    "close_read": 5703.828125
+  },
+  "memory_method": "50ms external sum of main and owned child RSS; shared pages counted in each process",
+  "development": false,
+  "exe_sha256": "4f54cdd600de87f58e548b2eb1d5224c87b74ba9115e195627107f4734b92b61"
+}

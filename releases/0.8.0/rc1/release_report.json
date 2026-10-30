@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "version": "0.8.0",
+  "baseline_commit": "39f49442c66bec6885873f75858514406a43cf45",
+  "source_commit": "d8b35b6202cca2672851c7e13e1fe915bae304f4",
+  "evidence_commit": "93370c8153a6d64f7ae15e152cc26562cf4c21de",
+  "build_id": "rc1",
+  "exe_sha256": "ae74f2ea04acd985e5cdfffe812c3b57336cd60aad1c66796256ebb9d04bb96c",
+  "storage_format_version": 2,
+  "storage_business_differences": 0,
+  "model_rule_version": "0.3.1-rules",
+  "authorized_rule_change": "only N>30 and J>0 discards contradictory stockout days; original N and sales formula retained",
+  "old_package_and_inputs_preserved": true,
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.8.0_rc1\\补货助手",
+  "no_remote_push_or_merge": true,
+  "limits": [
+    "full restore still reads/transfers full snapshot; encoding traverses all values",
+    "projection verifies only accessed blocks; full reads and copy conversion verify full values",
+    "old EXE requires a legacy copy; old/new model jobs readonly across model versions",
+    "no chunk GC or automatic all-history conversion",
+    "timings specific to five-store fixture and this Windows computer"
+  ],
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.8.0_rc1\\补货助手_0.8.0_rc1.zip",
+  "zip_sha256": "339e1328280c9bf7394f1f00e1476edbcafb9c52c67a3aecd2663672d5c3506a"
+}

@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "exact": {
+    "model.py": {
+      "capture": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "current": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584"
+    },
+    "allocation.py": {
+      "capture": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "current": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "quantity_contract.py": {
+      "capture": "930bd6fd709ba4684479dcea37bfc1e57663c4b3ce0241f879f96754eac0d334",
+      "current": "930bd6fd709ba4684479dcea37bfc1e57663c4b3ce0241f879f96754eac0d334"
+    },
+    "engine.py": {
+      "capture": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028",
+      "current": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028"
+    },
+    "input_adapter.py": {
+      "capture": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+      "current": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700"
+    },
+    "batch_service.py": {
+      "capture": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12",
+      "current": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12"
+    },
+    "file_intake.py": {
+      "capture": "a6ea67c6d27bc8d48251eb670cdfea10d4ac1570d930a2e3c9538583afbb6fc4",
+      "current": "a6ea67c6d27bc8d48251eb670cdfea10d4ac1570d930a2e3c9538583afbb6fc4"
+    },
+    "source_binding.py": {
+      "capture": "68c976fe4323c36a719b59736fc9ec19db1ae5c0c3af8d7bfc8cc85d8fa408df",
+      "current": "68c976fe4323c36a719b59736fc9ec19db1ae5c0c3af8d7bfc8cc85d8fa408df"
+    },
+    "one_box_exception.py": {
+      "capture": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "current": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "parameter_schema.py": {
+      "capture": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+      "current": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85"
+    },
+    "warehouse_catalog.py": {
+      "capture": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b",
+      "current": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b"
+    },
+    "normal_exports.py": {
+      "capture": "c0816baf8592bc1700adefe8ebf12cea27e02bf71397a52e8c25c924acd95d4c",
+      "current": "c0816baf8592bc1700adefe8ebf12cea27e02bf71397a52e8c25c924acd95d4c"
+    },
+    "xlsx_exports.py": {
+      "capture": "ce07a425e57039fe2e5b509db4f5416377d490dfa9d6d258654ba2bdf7986b45",
+      "current": "ce07a425e57039fe2e5b509db4f5416377d490dfa9d6d258654ba2bdf7986b45"
+    },
+    "default_config.json": {
+      "capture": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "current": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "capture": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "current": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    }
+  },
+  "note": "final rc2 change is Chinese labels/QA selector/sealing path only; all computation/export backends equal final capture"
+}

@@ -177,6 +177,7 @@ def calculate(inputs: dict, rules: Rules | None = None) -> dict:
     """
     p = rules or Rules()
     d = dict(inputs)
+    d.pop('_inbound_cap',None)  # Recalculation must not retain a prior cap decision.
     for c in "H I J K L N O P S V AB AC AD".split():
         d.setdefault(c, None)
     d.setdefault("AG", p.depth); d.setdefault("AH", p.lead)
@@ -185,6 +186,12 @@ def calculate(inputs: dict, rules: Rules | None = None) -> dict:
     h, i, j, k, l, n, o, v = [d[c] for c in "H I J K L N O V".split()]
     nvalid = blank(n) or number(n)
     n0 = max(n or 0, 0) if nvalid else None
+    # A stockout lasting beyond the full sales window cannot coexist with monthly
+    # sales. Discard only that input for forecasting; retain raw N for auditing.
+    discarded_stockout = number(n) and n > 30 and number(j) and j > 0
+    if discarded_stockout:
+        n0 = 0
+        d["缺货天数处理"] = "原缺货天数>30且月销>0，缺货天数无效；有效值按0，销量沿用原预测公式"
     s14 = xround(h * 14) if number(h) else None
     d["14天累计销量（重组）"] = s14
     d["AE"] = xround(1-d["AC"]-d["AD"], 10) if number(d["AC"]) and number(d["AD"]) else PENDING
@@ -249,6 +256,8 @@ def calculate(inputs: dict, rules: Rules | None = None) -> dict:
             d["AM"] = 1
         else:
             trend = min(max(xround(exp(d["AB"]*(log(max(w,1e-10))-log(max(d["Y"],1e-10)))),4),.3),2)
+            if d['BL'] in {'持续上升','平稳后上升'} and z==0:
+                raise ValueError('趋势支撑无法确定：前7天日均Z为0，但早期销量差值非0；请核对日销/周销/月销精度，不自动回退预测')
             supported = w*min(2,xround((w/z)**d["AB"],4)) if d["BL"] in {"持续上升","平稳后上升"} else w
             d["AM"] = 1+ax/7*(max(0,min(trend,supported/d["AN"]))-1)
         d["AO"] = d["AN"]*(d["AG"]+d["AH"])
@@ -310,6 +319,17 @@ def calculate(inputs: dict, rules: Rules | None = None) -> dict:
         sales_floor = k<=0 and max(h,i,j)>0 and (l<=0 or aq>0)
         zero_restore = j==0 and number(n) and 0<n<p.extreme_days and k<=0 and max(l,0)<min(p.minimum_reference_units,step)
         d["BP"] = max(ordinary,step) if sales_floor or zero_restore else ordinary
+        # Positive inbound already represents a holding. A later floor must
+        # not undo the original inventory-cap/carton decision. Keep the L<=0
+        # minimum holding and the separate extreme-restoration branch intact.
+        if l>0 and p.cap_days>0 and d["BP"]>d["BK"]:
+            # BP>BK can only be the one-step floor (AR<=BK). In the old chain
+            # it survives only above the monthly exit or as strict BQ holding;
+            # otherwise BR already discards it. This audit avoids warning on
+            # an intermediate-only change without replaying the whole model.
+            prior=step if j>=p.exit_monthly or max(l,0)<min(p.minimum_reference_units,step) else 0
+            d['_inbound_cap']={'floor_before':d['BP'],'allowed':d['BK'],'cap_days':p.cap_days,'previous_suggestion':prior}
+            d['BP']=d['BK']
     if text(d["BP"]):
         d["BQ"] = d["BP"]
     elif aw == "极端缺货自动拉回":
@@ -375,6 +395,8 @@ def focus(d: dict, p: Rules) -> str:
     q, br, bq, step, v, j, n = [d[c] for c in "AS BR BQ BD V J N".split()]
     noncentral = d["S"]=="/" and v=="/"
     out = []
+    if d.get("缺货天数处理"):
+        out.append(d["缺货天数处理"])
     if j==0 and number(n) and 0<n<p.extreme_days and number(bq) and bq>0:
         out.append("零月销缺货恢复")
     if text(q):

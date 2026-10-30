@@ -31,7 +31,8 @@ class SessionWindow(BackgroundJobs,ResultsView,QMainWindow):
         else:self.profile_label.setText(self.config_warning or '尚无有效必卖清单，请导入。')
 
     def choose_priority(self):
-        path,_=QFileDialog.getOpenFileName(self,'导入必卖清单（完整替换现有清单）','','清单文件 (*.xlsx *.csv *.json)')
+        from import_ui import choose
+        paths=choose(self,'priority','导入必卖清单（完整替换现有清单）');path=paths[0] if paths else None
         if path:self.job(priority_list.import_profile,(path,),self.priority_imported)
 
     def backup_priority(self):

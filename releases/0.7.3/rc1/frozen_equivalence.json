@@ -1,0 +1,142 @@
+{
+  "passed": true,
+  "baseline_commit": "84a0671bd81daa8c2e94a8648c2332b9fc8fa2a9",
+  "cases": [
+    {
+      "file": "CXT20260401.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "CXT20260803.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "CXTBLD20251127.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "CXTQDS20260828.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "CXTYT20260716.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "intake.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "JFLC2025_1.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "LSD20251550.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "LSZ2025_1.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "LYDXD20251021.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "LYZXC2025.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "PYD0002.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "SDLYZXC2025.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "SJHXD20260918.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "TBBLBL20260429.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "TBBLLS20260905.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "TBBLYS20260328.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "TSD20251211.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "TSD2025_1.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "YSD20251113.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "YTSH20260408.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "YZD20251031.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "ZXC0002.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "ZXC1688.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "ZXC2025.pklz",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "file": "ZYD20251112.pklz",
+      "differences": 0,
+      "details": []
+    }
+  ],
+  "comparison": "intake exact ordered per-record pickle signatures and all reports/order; each store full values/types/key/list order via strict recursive comparator; process completion notification order is recorded independently and is not the business row order",
+  "whitelist": [
+    "result.created",
+    "result.task.pid/started/finished",
+    "result.version.version/source_commit/build_id/built_at"
+  ]
+}

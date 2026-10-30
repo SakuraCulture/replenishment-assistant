@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "file": "2026-10-30柴小囤便利超市（宝来店）（精简版）.xlsx",
+      "parts": 21,
+      "cells": 67848
+    },
+    {
+      "file": "2026-10-30柴小囤便利超市（河东店）（精简版）.xlsx",
+      "parts": 21,
+      "cells": 46420
+    },
+    {
+      "file": "2026-10-30柴小囤便利超市（琅琊古城店）（精简版）.xlsx",
+      "parts": 21,
+      "cells": 54846
+    },
+    {
+      "file": "2026-10-30柴小囤便利超市（白鹭金岸店）（精简版）.xlsx",
+      "parts": 21,
+      "cells": 49148
+    },
+    {
+      "file": "2026-10-30盛吉惠携多超市(平邑店)（精简版）.xlsx",
+      "parts": 21,
+      "cells": 147246
+    }
+  ],
+  "differences": [],
+  "scope": "all XLSX ZIP part names/order and XML/binary content; styles, values, types, worksheet/row/column order, comments, workbook properties and filenames",
+  "whitelist": [
+    "docProps/core.xml:dcterms:created text",
+    "docProps/core.xml:dcterms:modified text"
+  ],
+  "zip_metadata": "container timestamps/compression metadata not compared; every decompressed part compared"
+}

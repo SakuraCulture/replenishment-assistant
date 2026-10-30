@@ -1,0 +1,7 @@
+{
+  "user_database": "C:\\Users\\lenovo\\AppData\\Local\\YoutuanTools\\补货助手\\settings\\workbench.sqlite3",
+  "sha256": "cd7f8ae873abaafa09b0c165dd89068d1b10dc67db1cedeffb726c05a702b4d0",
+  "matches_prior_verified_hash": true,
+  "snapshot_sha256": "548a5096ed25cb6bc2357a312e5df5ead8db163bf0dd84772d332990ccb48e7c",
+  "qa_environment": "All task launchers use isolated REPLENISHMENT_DATA_DIR; source snapshot reader mode=ro; no user settings migrations"
+}

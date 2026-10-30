@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
 
 
-def verify():
+def verify(baseline="e50072cc00c6997aed9fe1113012192210ad7eb3"):
     import app,engine,batch_service,xlsx_exports,result_semantics,runtime_support
     from batch_app import BatchWindow
     from workbench import Workbench
@@ -27,10 +27,13 @@ def verify():
     assert not reverse,reverse
     core={}
     for name in ['model.py','one_box_exception.py','allocation.py','default_config.json','default_must_sell.json']:
-        old=subprocess.check_output(['git','show','e50072cc00c6997aed9fe1113012192210ad7eb3:src/'+name],cwd=ROOT)
+        old=subprocess.check_output(['git','show',baseline+':src/'+name],cwd=ROOT)
         new=(ROOT/'src'/name).read_bytes();assert old==new,name
         core[name]=hashlib.sha256(new).hexdigest()
     return {'passed':True,'core_sha256':core,'checks':['active windows do not inherit legacy MainWindow','no UI reverse imports of app','result/export compatibility aliases have identical object identity','single cancellation exception identity','core rule and default bytes unchanged']}
 
 
-if __name__=='__main__':print(json.dumps(verify(),ensure_ascii=False,indent=2))
+if __name__=='__main__':
+    import argparse
+    p=argparse.ArgumentParser();p.add_argument('--baseline',default='e50072cc00c6997aed9fe1113012192210ad7eb3');a=p.parse_args()
+    print(json.dumps(verify(a.baseline),ensure_ascii=False,indent=2))

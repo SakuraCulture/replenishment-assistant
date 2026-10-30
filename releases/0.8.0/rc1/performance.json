@@ -1,0 +1,154 @@
+{
+  "passed": true,
+  "runs": 3,
+  "database_bytes": {
+    "old": [
+      174764032,
+      174764032,
+      174764032
+    ],
+    "new": [
+      73555968,
+      73551872,
+      73560064
+    ]
+  },
+  "summary": {
+    "save": {
+      "old": {
+        "median": 23.910870100022294,
+        "min": 23.271547999989707,
+        "max": 24.86968960001832,
+        "peak_rss_mib_median": 7586.625
+      },
+      "new": {
+        "median": 22.672677399998065,
+        "min": 22.359881700016558,
+        "max": 23.182230599981267,
+        "peak_rss_mib_median": 6490.3125
+      }
+    },
+    "load": {
+      "old": {
+        "median": 22.405747000011615,
+        "min": 20.849370799958706,
+        "max": 23.723107199999504,
+        "peak_rss_mib_median": 5547.20703125
+      },
+      "new": {
+        "median": 24.43201249995036,
+        "min": 23.996750699996483,
+        "max": 25.916667499986943,
+        "peak_rss_mib_median": 5507.44921875
+      }
+    },
+    "copy_config": {
+      "old": {
+        "median": 13.760307499964256,
+        "min": 12.61434069997631,
+        "max": 14.115453200007323,
+        "peak_rss_mib_median": 10744.45703125
+      },
+      "new": {
+        "median": 0.9403441000031307,
+        "min": 0.9236291999695823,
+        "max": 0.9635351999895647,
+        "peak_rss_mib_median": 5484.66796875
+      }
+    },
+    "save_unchanged": {
+      "old": {
+        "median": 15.659022799984086,
+        "min": 15.179011299973354,
+        "max": 15.723561300022993,
+        "peak_rss_mib_median": 11734.81640625
+      },
+      "new": {
+        "median": 14.732151800009888,
+        "min": 14.238839500001632,
+        "max": 15.002141600009054,
+        "peak_rss_mib_median": 9474.73046875
+      }
+    },
+    "overwrite_cancel": {
+      "old": {
+        "median": 29.24096299998928,
+        "min": 28.763652299996465,
+        "max": 30.85779719997663,
+        "peak_rss_mib_median": 12980.55078125
+      },
+      "new": {
+        "median": 16.003101900045294,
+        "min": 14.352798699983396,
+        "max": 22.936923999979626,
+        "peak_rss_mib_median": 9459.20703125
+      }
+    },
+    "confirm": {
+      "old": {
+        "median": 27.00492520001717,
+        "min": 26.448987300042063,
+        "max": 29.43702229997143,
+        "peak_rss_mib_median": 11751.1875
+      },
+      "new": {
+        "median": 22.87023700005375,
+        "min": 22.28373930003727,
+        "max": 25.50821579998592,
+        "peak_rss_mib_median": 9748.48828125
+      }
+    },
+    "confirm_unchanged": {
+      "old": {
+        "median": 35.246006199973635,
+        "min": 34.105678499967325,
+        "max": 36.19292030000361,
+        "peak_rss_mib_median": 12118.0
+      },
+      "new": {
+        "median": 22.182404400024097,
+        "min": 22.02453819999937,
+        "max": 23.197769100021105,
+        "peak_rss_mib_median": 9729.97265625
+      }
+    },
+    "export_signed": {
+      "old": {
+        "median": 24.467809800000396,
+        "min": 24.311996999953408,
+        "max": 25.689644600031897,
+        "peak_rss_mib_median": 9661.60546875
+      },
+      "new": {
+        "median": 19.330425499996636,
+        "min": 18.61569890001556,
+        "max": 19.45880040002521,
+        "peak_rss_mib_median": 8864.5546875
+      }
+    }
+  },
+  "identity": [
+    "full canonical daily digest",
+    "per-store business fingerprint",
+    "original schema (added storage tables excluded)",
+    "filenames",
+    "revision and number"
+  ],
+  "memory": "external 50ms sum main+child RSS; shared pages counted per process; validation separate",
+  "cache": "OS file cache not purged; alternating old/new then new/old, sequential execution",
+  "profile": "inclusive nested function timings are not additive; full session times include spawn, transfer, review, commit and file write",
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "executable": "D:\\\u4f18\u56e2\u5de5\u4f5c\u6587\u4ef6\u5939\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "logical_cpus": 24,
+    "physical_cpus": 16,
+    "physical_memory_mib": 32543.8671875,
+    "packages": {
+      "PySide6-Essentials": "6.12.0",
+      "openpyxl": "3.1.5",
+      "PyInstaller": "6.22.3"
+    },
+    "snapshot_sha256": "548a5096ed25cb6bc2357a312e5df5ead8db163bf0dd84772d332990ccb48e7c"
+  }
+}

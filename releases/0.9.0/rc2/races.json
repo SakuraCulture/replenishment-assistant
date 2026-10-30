@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "race": {
+    "readback_revisions": [
+      1
+    ],
+    "exported_revision": "V001",
+    "export_log_revision": 1,
+    "current_revision": 2,
+    "quantities": {
+      "new_plain": 0,
+      "new_blank_box": 0,
+      "new_no_price": 0,
+      "new_anomaly": 0,
+      "missing_n": 0,
+      "new_must": 6
+    }
+  },
+  "real_rows": 14244,
+  "timed_cancellation": [
+    {
+      "event": "cancel requested",
+      "seconds": 0.11257739999564365,
+      "cancel": true
+    },
+    {
+      "event": "cancelled safely",
+      "seconds": 0.11383180000120774,
+      "cancel": true
+    }
+  ],
+  "cancelled_business_tables_empty": true,
+  "side_effects": [
+    "workbench.before-normal-orders.2ddee6fc0b8e4d469264d3ee15555080.sqlite3"
+  ],
+  "note": "backups/storage metadata may remain; no claim database byte identity after cancellation"
+}

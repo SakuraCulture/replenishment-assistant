@@ -1,0 +1,303 @@
+{
+  "passed": true,
+  "unexpected_differences": 0,
+  "cases": [
+    {
+      "case": "single_intake",
+      "differences": []
+    },
+    {
+      "case": "single_loaded",
+      "differences": []
+    },
+    {
+      "case": "single_results",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_intake",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_loaded",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_results",
+      "differences": []
+    },
+    {
+      "case": "overlap_intake",
+      "differences": []
+    },
+    {
+      "case": "overlap_blocked",
+      "differences": []
+    },
+    {
+      "case": "overlap_loaded",
+      "differences": []
+    },
+    {
+      "case": "overlap_results",
+      "differences": []
+    },
+    {
+      "case": "reversed_intake",
+      "differences": []
+    },
+    {
+      "case": "reversed_blocked",
+      "differences": []
+    },
+    {
+      "case": "reversed_loaded",
+      "differences": []
+    },
+    {
+      "case": "reversed_results",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_intake",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_blocked",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_loaded",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_results",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_intake",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_loaded",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_results",
+      "differences": []
+    },
+    {
+      "case": "all_error",
+      "differences": []
+    },
+    {
+      "case": "warehouse_intake",
+      "differences": []
+    },
+    {
+      "case": "warehouse_loaded",
+      "differences": []
+    },
+    {
+      "case": "warehouse_results",
+      "differences": []
+    },
+    {
+      "case": "real_loaded",
+      "differences": []
+    },
+    {
+      "case": "real_None_True",
+      "differences": [],
+      "rows": 14244,
+      "amount": 12268.87,
+      "positive": 430
+    },
+    {
+      "case": "real_0_True",
+      "differences": [],
+      "rows": 14244,
+      "amount": 0.0,
+      "positive": 0
+    },
+    {
+      "case": "real_3000_True",
+      "differences": [],
+      "rows": 14244,
+      "amount": 2999.87,
+      "positive": 88
+    },
+    {
+      "case": "real_5000_True",
+      "differences": [],
+      "rows": 14244,
+      "amount": 4999.98,
+      "positive": 115
+    },
+    {
+      "case": "real_10000_True",
+      "differences": [],
+      "rows": 14244,
+      "amount": 9980.33,
+      "positive": 390
+    },
+    {
+      "case": "real_None_False",
+      "differences": [],
+      "rows": 14244,
+      "amount": 11890.07,
+      "positive": 422
+    },
+    {
+      "case": "real_custom",
+      "differences": [],
+      "rows": 14244,
+      "amount": 3000.0,
+      "positive": 92
+    },
+    {
+      "case": "filtered.xlsx",
+      "differences": []
+    },
+    {
+      "case": "overlap.xlsx",
+      "differences": []
+    },
+    {
+      "case": "real.xlsx",
+      "differences": []
+    },
+    {
+      "case": "reversed.xlsx",
+      "differences": []
+    },
+    {
+      "case": "warehouse.xlsx",
+      "differences": []
+    }
+  ],
+  "allowed_version_paths": [
+    "single_results.EDGE.version.model_version",
+    "nonoverlap_results.LQD2025.version.model_version",
+    "overlap_results.EDGE.version.model_version",
+    "overlap_results.OTHER.version.model_version",
+    "reversed_results.EDGE.version.model_version",
+    "reversed_results.OTHER.version.model_version",
+    "path_dedup_results.EDGE.version.model_version",
+    "mixed_error_results.EDGE.version.model_version",
+    "warehouse_results.QA_A.version.model_version",
+    "warehouse_results.QA_B.version.model_version",
+    "warehouse_results.EDGE.version.model_version",
+    "warehouse_results.OTHER.version.model_version",
+    "real_None_True.version.model_version",
+    "real_0_True.version.model_version",
+    "real_3000_True.version.model_version",
+    "real_5000_True.version.model_version",
+    "real_10000_True.version.model_version",
+    "real_None_False.version.model_version",
+    "real_custom.version.model_version"
+  ],
+  "clock_build_whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "hashseed": 0,
+  "strict_order_and_types": true,
+  "preserved_cores": {
+    "allocation.py": true,
+    "default_config.json": true,
+    "default_must_sell.json": true,
+    "normal_exports.py": true,
+    "new_products.py": true,
+    "warehouse_catalog.py": true
+  },
+  "allowed_excel_model_version_cells": [
+    {
+      "file": "filtered.xlsx",
+      "sheet": "运行概览",
+      "cell": "B3",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "filtered.xlsx",
+      "sheet": "运行概览",
+      "cell": "B4",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "overlap.xlsx",
+      "sheet": "版本及参数",
+      "cell": "B11",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "overlap.xlsx",
+      "sheet": "版本及参数",
+      "cell": "B28",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "real.xlsx",
+      "sheet": "运行概览",
+      "cell": "B3",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "real.xlsx",
+      "sheet": "运行概览",
+      "cell": "B4",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "reversed.xlsx",
+      "sheet": "版本及参数",
+      "cell": "B11",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "reversed.xlsx",
+      "sheet": "版本及参数",
+      "cell": "B28",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "warehouse.xlsx",
+      "sheet": "版本及参数",
+      "cell": "B11",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "warehouse.xlsx",
+      "sheet": "版本及参数",
+      "cell": "B31",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "warehouse.xlsx",
+      "sheet": "版本及参数",
+      "cell": "B51",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    },
+    {
+      "file": "warehouse.xlsx",
+      "sheet": "版本及参数",
+      "cell": "B71",
+      "before": "0.3.1-rules",
+      "after": "0.3.2-rules"
+    }
+  ]
+}

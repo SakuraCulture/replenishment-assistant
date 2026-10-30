@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "days": 30,
+  "revisions": 60,
+  "checks": [
+    "cancel after five atomic cache publications",
+    "resume full ordered list",
+    "historical current revision binding",
+    "full audit JSON byte identity",
+    "audit overwrite refused",
+    "source corruption rejected by formal export despite derived cache",
+    "display streaming digest exact including date encoding"
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "passed": true,
+  "runs": 3,
+  "summary": {
+    "save": {
+      "old": {
+        "median": 27.6903508999967,
+        "min": 27.62023770000087,
+        "max": 27.85302069998579,
+        "peak_rss_mib_median": 8739.93359375
+      },
+      "new": {
+        "median": 21.572949299996253,
+        "min": 20.878522099985275,
+        "max": 22.44213879999006,
+        "peak_rss_mib_median": 8276.828125
+      }
+    },
+    "save_unchanged": {
+      "old": {
+        "median": 13.70073860004777,
+        "min": 13.533703599998262,
+        "max": 13.829445899988059,
+        "peak_rss_mib_median": 8689.59375
+      },
+      "new": {
+        "median": 13.958884400024544,
+        "min": 13.563153600029182,
+        "max": 18.515954300004523,
+        "peak_rss_mib_median": 8647.8359375
+      }
+    },
+    "overwrite_cancel": {
+      "old": {
+        "median": 24.800196899974253,
+        "min": 24.639166400011163,
+        "max": 25.100390499981586,
+        "peak_rss_mib_median": 11687.58203125
+      },
+      "new": {
+        "median": 25.09664270002395,
+        "min": 25.015383400022984,
+        "max": 25.215915799955837,
+        "peak_rss_mib_median": 10357.640625
+      }
+    },
+    "confirm": {
+      "old": {
+        "median": 47.29162899998482,
+        "min": 46.99189430003753,
+        "max": 48.94183199998224,
+        "peak_rss_mib_median": 9260.46484375
+      },
+      "new": {
+        "median": 24.61833739996655,
+        "min": 24.536765499971807,
+        "max": 24.630854599992745,
+        "peak_rss_mib_median": 8693.3359375
+      }
+    },
+    "confirm_unchanged": {
+      "old": {
+        "median": 68.36543190001976,
+        "min": 66.84071450005285,
+        "max": 70.37493990000803,
+        "peak_rss_mib_median": 9629.32421875
+      },
+      "new": {
+        "median": 32.04580349999014,
+        "min": 31.63372659997549,
+        "max": 33.398441799974535,
+        "peak_rss_mib_median": 9158.80859375
+      }
+    },
+    "export_signed": {
+      "old": {
+        "median": 33.841830599994864,
+        "min": 33.453826900047716,
+        "max": 34.192991599964444,
+        "peak_rss_mib_median": 9576.0390625
+      },
+      "new": {
+        "median": 23.818721100047696,
+        "min": 23.673956500017084,
+        "max": 24.297110100043938,
+        "peak_rss_mib_median": 6620.484375
+      }
+    }
+  },
+  "identity": [
+    "full canonical daily digest",
+    "per-store business fingerprint",
+    "schema",
+    "filenames",
+    "revision and number"
+  ],
+  "memory": "external 50ms sum main+child RSS; shared pages counted per process; validation separate",
+  "cache": "OS file cache not purged; alternating old/new then new/old, sequential execution",
+  "profile": "inclusive nested function timings are not additive; full session times include spawn, transfer, review, commit and file write"
+}

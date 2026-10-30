@@ -25,7 +25,8 @@ class WarehouseUi:
             if not c:text.setText('尚未导入；表内不需要仓库标识');continue
             text.setText(f"{len(c['items']):,}款 · 版本 {c['revision']}\n{Path(c['source_path']).name} · 导入 {c['imported_at']}")
     def choose_catalog(self,warehouse):
-        path,_=QFileDialog.getOpenFileName(self,'导入到'+warehouse+'（完整更新该仓快照）','','商品资料 (*.xlsx)')
+        from import_ui import choose
+        paths=choose(self,'catalog','导入到'+warehouse+'（完整更新该仓快照）');path=paths[0] if paths else None
         if path:self.import_catalog_path(path,warehouse)
     def import_catalog_path(self,path,warehouse):self.job(warehouse_catalog.import_catalog,(path,warehouse),self.catalog_imported)
     def catalog_imported(self,catalog):
@@ -61,6 +62,7 @@ class WarehouseUi:
     def route_changed(self,store):
         if self.initializing:return
         self.invalidate([store]);self.selection_changed()
+        if hasattr(self,'refresh_parameter_label'):self.refresh_parameter_label(store)
     def route_for(self,store):
         w=self.store_widgets[store]
         return warehouse_catalog.validate_route({'primary':w['primary'].currentData(),'secondary':w['secondary'].currentData()},self.loaded['catalogs'])

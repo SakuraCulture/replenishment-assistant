@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "differences": 0,
+  "checks": 90,
+  "real_rows": 23579,
+  "order": "original Qt order including ties, default full-store sort + all columns both directions on 400 rows",
+  "roles": "Display/User/Tooltip/Alignment/Foreground including type",
+  "event_export_scope": "full matching fixed snapshot independent of displayed page",
+  "whitelist": []
+}

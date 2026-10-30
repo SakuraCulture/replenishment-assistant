@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "canonical_bytes": 424556,
+  "initial_blocks": 23,
+  "unchanged_new_blocks": 0,
+  "one_row_change_new_blocks": 1,
+  "cases": [
+    "canonical JSON exact",
+    "legacy read",
+    "full value/type roundtrip",
+    "projection parity",
+    "dedup",
+    "one block changed",
+    "manifest corrupt rejected",
+    "block corrupt rejected",
+    "legacy database backup verified",
+    "overwrite revision CAS",
+    "failure rollback includes chunks"
+  ]
+}

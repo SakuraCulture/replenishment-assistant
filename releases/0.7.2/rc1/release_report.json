@@ -1,0 +1,29 @@
+{
+  "version": "0.7.2",
+  "source_commit": "edd2fba727f26407ed2fe168de94bdf1b2a013f0",
+  "build_id": "rc1",
+  "baseline": "a831049a78e41f33369ce06b28709f3080324087",
+  "passed": true,
+  "unchanged": {
+    "src/model.py": true,
+    "src/one_box_exception.py": true,
+    "src/allocation.py": true,
+    "src/default_config.json": true,
+    "src/work_repository.py": true,
+    "src/normal_exports.py": true,
+    "src/xlsx_exports.py": true
+  },
+  "user_db_unchanged": true,
+  "old_delivery_unchanged": true,
+  "exe_sha256": "7f77894fb6ad78db688c4f9a0bd1917b8694e6d5f955906ce484a0785245f331",
+  "limits": [
+    "daily storage and full large-job restore unchanged",
+    "first index build still loads complete snapshots in background",
+    "warm view timings include derived-cache reuse",
+    "same-machine validation; not a clean-machine reproducible build"
+  ],
+  "not_pushed_or_merged": true,
+  "zip_sha256": "94b822f812cc2da5de61fa3a01acf92dc930945992f6beed4c1a86feea53fabd",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.7.2_rc1\\补货助手_0.7.2_rc1.zip",
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.7.2_rc1\\补货助手"
+}

@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "checks": [
+    "source read-only and hash unchanged",
+    "all logical SQL rows and decoded values exact after rollback",
+    "legacy file contains only old zlib JSON",
+    "upgrade roundtrip exact including IDs/revisions/events",
+    "exclusive target refuses overwrite",
+    "cancel no final target or temporary residue",
+    "corrupt input no published output"
+  ],
+  "converted_records": {
+    "jobs": 1,
+    "normal_revisions": 4,
+    "normal_work_revisions": 3
+  }
+}

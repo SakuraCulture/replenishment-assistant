@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "checks": [
+    "exported workbook custom revision auto binds; non-box quantity 5 retained with warning, original issued 6 untouched",
+    "same returned values idempotent: no duplicate feedback version",
+    "missing revision requires explicit binding; blank preserves prior 5",
+    "explicit zero saved as rejection in version2; signed quantities unchanged",
+    "identical duplicates retain sources; conflicting duplicates and unknown SKU blocked",
+    "negative, formula, text and boolean return quantities rejected",
+    "feedback optimistic concurrency rejects stale preview",
+    "multi-order reply atomic rollback and retry; selected order retained",
+    "business forms cover historical parameters, quantities, raw/effective stockout, catalog; byte-exact source dedup; uncaptured warehouse explicitly missing",
+    "all six minimum templates: required headers, empty data area, instructions",
+    "cancel new business Excel cleans its own XML temporary files and publishes no partial workbook",
+    "legacy/upgrade copy preserves returned versions and original file BLOBs, original signed payload exact",
+    "new signing invalidates reply preview; V1 return never auto-applies to V2"
+  ],
+  "templates": [
+    "sales",
+    "catalog",
+    "legacy",
+    "priority",
+    "focus",
+    "feedback"
+  ],
+  "business_payload_differences": 0,
+  "new_tables": [
+    "source_files",
+    "merchant_feedback"
+  ],
+  "scope": "return and snapshot forms use isolated QA database; no user paths written"
+}

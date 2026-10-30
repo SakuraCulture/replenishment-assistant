@@ -1,0 +1,261 @@
+{
+  "rounds": 3,
+  "order": "AB/BA/AB sequential plus candidate rerun new-4 replacing new-1 after metadata query-order correction; inside QApplication event loop; earlier harness evidence retained separately",
+  "metrics": {
+    "constructor": {
+      "old": {
+        "median": 11.058675400039647,
+        "min": 10.856811799982097,
+        "max": 11.225316299998667
+      },
+      "new": {
+        "median": 0.07129569997778162,
+        "min": 0.0671662000240758,
+        "max": 0.0934397999662906
+      }
+    },
+    "cold_full_list": {
+      "old": {
+        "median": 11.070303399988916,
+        "min": 10.868052600009833,
+        "max": 11.239771099993959
+      },
+      "new": {
+        "median": 9.888263300003018,
+        "min": 9.868415799981449,
+        "max": 9.915663399966434
+      }
+    },
+    "warm_list": {
+      "old": {
+        "median": 10.852590000024065,
+        "min": 10.819478399993386,
+        "max": 10.961445100023411
+      },
+      "new": {
+        "median": 0.14726610004436225,
+        "min": 0.1465330999926664,
+        "max": 0.16192430001683533
+      }
+    },
+    "archive_search": {
+      "old": {
+        "median": 19.165307599992957,
+        "min": 18.95352839998668,
+        "max": 19.243379199993797
+      },
+      "new": {
+        "median": 0.16389229998458177,
+        "min": 0.15446619997965172,
+        "max": 0.18064860004233196
+      }
+    },
+    "detail_ready": {
+      "old": {
+        "median": 5.83520299999509,
+        "min": 5.825215399963781,
+        "max": 5.862832300015725
+      },
+      "new": {
+        "median": 0.14516279997769743,
+        "min": 0.14089330000570044,
+        "max": 0.15063910000026226
+      }
+    },
+    "detail_search": {
+      "old": {
+        "median": 5.833238799998071,
+        "min": 5.794884799979627,
+        "max": 6.161625400010962
+      },
+      "new": {
+        "median": 0.001975300023332238,
+        "min": 0.00195130001520738,
+        "max": 0.0021090999944135547
+      }
+    },
+    "work_set_rows": {
+      "old": {
+        "median": 3.9297130000195466,
+        "min": 3.900427899963688,
+        "max": 3.9907979000126943
+      },
+      "new": {
+        "median": 0.4390917999553494,
+        "min": 0.42824539996217936,
+        "max": 0.4433468999923207
+      }
+    },
+    "work_all": {
+      "old": {
+        "median": 2.3410037999856286,
+        "min": 2.3319994999910705,
+        "max": 2.5441355000366457
+      },
+      "new": {
+        "median": 1.5277195000089705,
+        "min": 1.5085020000115037,
+        "max": 1.542654599994421
+      }
+    },
+    "work_no_match": {
+      "old": {
+        "median": 0.06555429997388273,
+        "min": 0.04885900003137067,
+        "max": 0.08860810002079234
+      },
+      "new": {
+        "median": 0.04998650000197813,
+        "min": 0.048025700030848384,
+        "max": 0.06081950000952929
+      }
+    },
+    "work_clear": {
+      "old": {
+        "median": 2.4702388999867253,
+        "min": 2.4574163000215776,
+        "max": 2.9543808000162244
+      },
+      "new": {
+        "median": 1.645726700022351,
+        "min": 1.6328895000042394,
+        "max": 1.6646049999981187
+      }
+    },
+    "peak_tree_mib": {
+      "old": {
+        "median": 1390.29296875,
+        "min": 1356.546875,
+        "max": 1390.90625
+      },
+      "new": {
+        "median": 866.20703125,
+        "min": 866.09765625,
+        "max": 868.03515625
+      }
+    }
+  },
+  "runs": [
+    {
+      "kind": "new",
+      "iteration": 2,
+      "seconds": {
+        "constructor": 0.0934397999662906,
+        "cold_full_list": 9.915663399966434,
+        "warm_list": 0.14726610004436225,
+        "archive_search": 0.16389229998458177,
+        "detail_ready": 0.15063910000026226,
+        "detail_search": 0.001975300023332238,
+        "work_set_rows": 0.4390917999553494,
+        "work_all": 1.542654599994421,
+        "work_no_match": 0.04998650000197813,
+        "work_clear": 1.6328895000042394
+      },
+      "sampled_peak_tree_mib": 866.20703125,
+      "rss_end_mib": 506.24609375,
+      "sample_ms": 50,
+      "visible_order_sha256": "6e2a9d2c5c0b8ab7063f98cde2e6c6147609c89e43662212d8ba3c6a330d8cfe"
+    },
+    {
+      "kind": "new",
+      "iteration": 3,
+      "seconds": {
+        "constructor": 0.0671662000240758,
+        "cold_full_list": 9.868415799981449,
+        "warm_list": 0.16192430001683533,
+        "archive_search": 0.18064860004233196,
+        "detail_ready": 0.14516279997769743,
+        "detail_search": 0.0021090999944135547,
+        "work_set_rows": 0.42824539996217936,
+        "work_all": 1.5277195000089705,
+        "work_no_match": 0.06081950000952929,
+        "work_clear": 1.6646049999981187
+      },
+      "sampled_peak_tree_mib": 868.03515625,
+      "rss_end_mib": 506.24609375,
+      "sample_ms": 50,
+      "visible_order_sha256": "6e2a9d2c5c0b8ab7063f98cde2e6c6147609c89e43662212d8ba3c6a330d8cfe"
+    },
+    {
+      "kind": "new",
+      "iteration": 4,
+      "seconds": {
+        "constructor": 0.07129569997778162,
+        "cold_full_list": 9.888263300003018,
+        "warm_list": 0.1465330999926664,
+        "archive_search": 0.15446619997965172,
+        "detail_ready": 0.14089330000570044,
+        "detail_search": 0.00195130001520738,
+        "work_set_rows": 0.4433468999923207,
+        "work_all": 1.5085020000115037,
+        "work_no_match": 0.048025700030848384,
+        "work_clear": 1.645726700022351
+      },
+      "sampled_peak_tree_mib": 866.09765625,
+      "rss_end_mib": 506.46875,
+      "sample_ms": 50,
+      "visible_order_sha256": "6e2a9d2c5c0b8ab7063f98cde2e6c6147609c89e43662212d8ba3c6a330d8cfe"
+    },
+    {
+      "kind": "old",
+      "iteration": 1,
+      "seconds": {
+        "constructor": 11.058675400039647,
+        "cold_full_list": 11.070303399988916,
+        "warm_list": 10.819478399993386,
+        "archive_search": 19.165307599992957,
+        "detail_ready": 5.83520299999509,
+        "detail_search": 6.161625400010962,
+        "work_set_rows": 3.900427899963688,
+        "work_all": 2.5441355000366457,
+        "work_no_match": 0.08860810002079234,
+        "work_clear": 2.9543808000162244
+      },
+      "sampled_peak_tree_mib": 1390.29296875,
+      "rss_end_mib": 1156.62890625,
+      "sample_ms": 50,
+      "visible_order_sha256": "6e2a9d2c5c0b8ab7063f98cde2e6c6147609c89e43662212d8ba3c6a330d8cfe"
+    },
+    {
+      "kind": "old",
+      "iteration": 2,
+      "seconds": {
+        "constructor": 11.225316299998667,
+        "cold_full_list": 11.239771099993959,
+        "warm_list": 10.961445100023411,
+        "archive_search": 19.243379199993797,
+        "detail_ready": 5.862832300015725,
+        "detail_search": 5.794884799979627,
+        "work_set_rows": 3.9907979000126943,
+        "work_all": 2.3319994999910705,
+        "work_no_match": 0.04885900003137067,
+        "work_clear": 2.4574163000215776
+      },
+      "sampled_peak_tree_mib": 1390.90625,
+      "rss_end_mib": 1155.359375,
+      "sample_ms": 50,
+      "visible_order_sha256": "6e2a9d2c5c0b8ab7063f98cde2e6c6147609c89e43662212d8ba3c6a330d8cfe"
+    },
+    {
+      "kind": "old",
+      "iteration": 3,
+      "seconds": {
+        "constructor": 10.856811799982097,
+        "cold_full_list": 10.868052600009833,
+        "warm_list": 10.852590000024065,
+        "archive_search": 18.95352839998668,
+        "detail_ready": 5.825215399963781,
+        "detail_search": 5.833238799998071,
+        "work_set_rows": 3.9297130000195466,
+        "work_all": 2.3410037999856286,
+        "work_no_match": 0.06555429997388273,
+        "work_clear": 2.4702388999867253
+      },
+      "sampled_peak_tree_mib": 1356.546875,
+      "rss_end_mib": 1156.703125,
+      "sample_ms": 50,
+      "visible_order_sha256": "6e2a9d2c5c0b8ab7063f98cde2e6c6147609c89e43662212d8ba3c6a330d8cfe"
+    }
+  ],
+  "limits": "Actual Qt methods offscreen, source build; warm OS file cache not forcibly flushed; cold derived index per run, includes spawn/IPC; peak sum RSS process tree sampled 50ms includes shared pages counted in each process. No full daily restore."
+}

@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "full_block_reads": 233,
+  "export_block_reads": 33,
+  "checks": [
+    "projection exact fields/values/types",
+    "full and projected Excel identical",
+    "fixed historical revision",
+    "untouched blocks not read",
+    "full read rejects damage outside projection"
+  ],
+  "integrity_scope": "projection validates manifest and every accessed block; does not claim unrelated block verification"
+}

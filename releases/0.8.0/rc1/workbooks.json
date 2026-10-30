@@ -1,0 +1,222 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "candidate": "new-0",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（宝来店）（精简版）.xlsx",
+      "cells": 67848,
+      "differences": []
+    },
+    {
+      "candidate": "new-0",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（河东店）（精简版）.xlsx",
+      "cells": 46420,
+      "differences": []
+    },
+    {
+      "candidate": "new-0",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（琅琊古城店）（精简版）.xlsx",
+      "cells": 54846,
+      "differences": []
+    },
+    {
+      "candidate": "new-0",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（白鹭金岸店）（精简版）.xlsx",
+      "cells": 49148,
+      "differences": []
+    },
+    {
+      "candidate": "new-0",
+      "frozen": false,
+      "file": "2026-10-30盛吉惠携多超市(平邑店)（精简版）.xlsx",
+      "cells": 147246,
+      "differences": []
+    },
+    {
+      "candidate": "new-1",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（宝来店）（精简版）.xlsx",
+      "cells": 67848,
+      "differences": []
+    },
+    {
+      "candidate": "new-1",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（河东店）（精简版）.xlsx",
+      "cells": 46420,
+      "differences": []
+    },
+    {
+      "candidate": "new-1",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（琅琊古城店）（精简版）.xlsx",
+      "cells": 54846,
+      "differences": []
+    },
+    {
+      "candidate": "new-1",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（白鹭金岸店）（精简版）.xlsx",
+      "cells": 49148,
+      "differences": []
+    },
+    {
+      "candidate": "new-1",
+      "frozen": false,
+      "file": "2026-10-30盛吉惠携多超市(平邑店)（精简版）.xlsx",
+      "cells": 147246,
+      "differences": []
+    },
+    {
+      "candidate": "new-2",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（宝来店）（精简版）.xlsx",
+      "cells": 67848,
+      "differences": []
+    },
+    {
+      "candidate": "new-2",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（河东店）（精简版）.xlsx",
+      "cells": 46420,
+      "differences": []
+    },
+    {
+      "candidate": "new-2",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（琅琊古城店）（精简版）.xlsx",
+      "cells": 54846,
+      "differences": []
+    },
+    {
+      "candidate": "new-2",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（白鹭金岸店）（精简版）.xlsx",
+      "cells": 49148,
+      "differences": []
+    },
+    {
+      "candidate": "new-2",
+      "frozen": false,
+      "file": "2026-10-30盛吉惠携多超市(平邑店)（精简版）.xlsx",
+      "cells": 147246,
+      "differences": []
+    },
+    {
+      "candidate": "old-1",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（宝来店）（精简版）.xlsx",
+      "cells": 67848,
+      "differences": []
+    },
+    {
+      "candidate": "old-1",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（河东店）（精简版）.xlsx",
+      "cells": 46420,
+      "differences": []
+    },
+    {
+      "candidate": "old-1",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（琅琊古城店）（精简版）.xlsx",
+      "cells": 54846,
+      "differences": []
+    },
+    {
+      "candidate": "old-1",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（白鹭金岸店）（精简版）.xlsx",
+      "cells": 49148,
+      "differences": []
+    },
+    {
+      "candidate": "old-1",
+      "frozen": false,
+      "file": "2026-10-30盛吉惠携多超市(平邑店)（精简版）.xlsx",
+      "cells": 147246,
+      "differences": []
+    },
+    {
+      "candidate": "old-2",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（宝来店）（精简版）.xlsx",
+      "cells": 67848,
+      "differences": []
+    },
+    {
+      "candidate": "old-2",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（河东店）（精简版）.xlsx",
+      "cells": 46420,
+      "differences": []
+    },
+    {
+      "candidate": "old-2",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（琅琊古城店）（精简版）.xlsx",
+      "cells": 54846,
+      "differences": []
+    },
+    {
+      "candidate": "old-2",
+      "frozen": false,
+      "file": "2026-10-30柴小囤便利超市（白鹭金岸店）（精简版）.xlsx",
+      "cells": 49148,
+      "differences": []
+    },
+    {
+      "candidate": "old-2",
+      "frozen": false,
+      "file": "2026-10-30盛吉惠携多超市(平邑店)（精简版）.xlsx",
+      "cells": 147246,
+      "differences": []
+    },
+    {
+      "candidate": "exe-work-io",
+      "frozen": true,
+      "file": "2026-10-30柴小囤便利超市（宝来店）（精简版）.xlsx",
+      "cells": 67848,
+      "differences": []
+    },
+    {
+      "candidate": "exe-work-io",
+      "frozen": true,
+      "file": "2026-10-30柴小囤便利超市（河东店）（精简版）.xlsx",
+      "cells": 46420,
+      "differences": []
+    },
+    {
+      "candidate": "exe-work-io",
+      "frozen": true,
+      "file": "2026-10-30柴小囤便利超市（琅琊古城店）（精简版）.xlsx",
+      "cells": 54846,
+      "differences": []
+    },
+    {
+      "candidate": "exe-work-io",
+      "frozen": true,
+      "file": "2026-10-30柴小囤便利超市（白鹭金岸店）（精简版）.xlsx",
+      "cells": 49148,
+      "differences": []
+    },
+    {
+      "candidate": "exe-work-io",
+      "frozen": true,
+      "file": "2026-10-30盛吉惠携多超市(平邑店)（精简版）.xlsx",
+      "cells": 147246,
+      "differences": []
+    }
+  ],
+  "scope": "all OOXML entries, entry order, workbook structure, values/types/format/comments/custom properties; no sorting of cells or records",
+  "frozen_xml_comparison": "ElementTree normalizes namespace prefix and XML spelling only; preserves all node text/attributes/order; source comparisons retain raw XML bytes",
+  "whitelist": [
+    "docProps/core.xml dcterms:created",
+    "docProps/core.xml dcterms:modified",
+    "ZIP container metadata"
+  ]
+}

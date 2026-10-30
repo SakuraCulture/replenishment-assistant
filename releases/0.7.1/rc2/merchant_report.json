@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "version": "0.7.1",
+  "source_commit": "6c644ea6bf86565833b6b602d933786ecec003b9",
+  "baseline_commit": "850d31ded8595df72d221c7dc87358d522432ca7",
+  "fixture_sha256": "c5af94cd7c82007ce3c0857536d926d1a21eafdf1d5e539b92fb819012e6f7ff",
+  "checked_preserved_cells": 109940,
+  "unapproved_differences": 0,
+  "counts": {
+    "往期新品": {
+      "before": 9023,
+      "after": 5067
+    },
+    "本月新品": {
+      "before": 0,
+      "after": 0
+    },
+    "中心仓动销补货清单": {
+      "before": 430,
+      "after": 430
+    }
+  },
+  "seconds_single_trial": {
+    "old": 4.224892100028228,
+    "new": 1.9119055999908596
+  },
+  "authorized_changes": [
+    "exclude non-matched central warehouse rows from all 3 sheets",
+    "remove seven audit columns, retain U number, append V concise decision",
+    "P numeric two decimal display and width, R text/short missing status and width",
+    "U/V visible widths",
+    "comments/description now point to archive rather than removed hidden columns"
+  ],
+  "limits": "single full real-store snapshot, explicit empty focus; content comparison independent before/after processes; timing only one trial and includes smaller output, not pure style reuse benefit",
+  "executed_qa_script": {
+    "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\export_071\\merchant_contract_checked.py",
+    "sha256": "5d13abaa9906e835454c5aab379f3ea355c84d5c3ab508928f3c9e6a020665a3",
+    "note": "Compare copies of openpyxl StyleProxy targets, whose wrapper-to-wrapper equality is false even for identical styles; exact underlying style equality retained."
+  }
+}
