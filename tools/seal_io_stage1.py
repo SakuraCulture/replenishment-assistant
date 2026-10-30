@@ -22,6 +22,13 @@ def main():
             version=data['version'];build=version.get('source_commit') if isinstance(version,dict) else data.get('source_commit')
             assert build==meta['source_commit'],(name,build,meta['source_commit'])
     assert evidence['performance']['runs']==3
+    progress=evidence['work_io_ui']['progress']
+    assert all(progress.get(name) for name in ('save','confirm_normal','merchant_export'))
+    assert any(row['maximum']==1000 for row in progress['save'])
+    assert any(row['maximum']==0 for row in progress['save'])
+    assert all('已用时' in row['health'] for rows in progress.values() for row in rows)
+    merchant=list((qa/'exe-work-io/merchant').glob('*.xlsx'));assert len(merchant)==5
+    assert all(f.stem.endswith('（精简版）') for f in merchant)
     actual={f.name:sha(f) for f in (ROOT/'src').glob('*') if f.is_file()}
     for kind in ('old','new'):
         for i in range(3):
