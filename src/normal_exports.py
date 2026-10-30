@@ -17,9 +17,12 @@ SHEETS=['往期新品','本月新品','中心仓动销补货清单']
 TEMPLATE_SHA256='1cc7a8e9f99fec764d17286c6b0a028a7ea79416add7178a64e91512f311f7c6'
 
 
-def filename(order):
+def filename(order,warehouse=None):
     name=re.sub(r'[<>:"/\\|?*\x00-\x1f]','_',order['payload']['result']['store_name']).rstrip(' .')[:100] or order['store']
-    return order['day']+name+'（精简版）.xlsx'
+    if warehouse:
+        from warehouse_orders import child_number
+        child_number('',warehouse)
+    return order['day']+name+'（精简版'+('·'+warehouse if warehouse else '')+'）.xlsx'
 
 
 def groups(result,profile):
@@ -58,15 +61,24 @@ def decision(d):
     return '必卖补货' if d.get('_must_sell') else '动销补货'
 
 
-def export(order,path,cancel=None,progress=lambda s:None):
+def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None):
     from engine import checkpoint
     path=Path(path)
     if path.exists():raise FileExistsError('文件已存在，请选择新文件名；不会覆盖已发出的单据')
-    checkpoint(cancel);result=order['payload']['result'];profile=order['payload'].get('new_focus');focus.require_for(profile,order['day'],[result]);wb=Workbook();wb.remove(wb.active)
+    checkpoint(cancel);result=order['payload']['result'];profile=order['payload'].get('new_focus');focus.require_for(profile,order['day'],[result])
+    parent_number=order['number'];grouped=groups(result,profile)
+    if warehouse:
+        from warehouse_orders import partitions,child_number
+        grouped=partitions(result,profile).get(warehouse)
+        if grouped is None:raise ValueError('该修订没有可导出的'+warehouse+'商品')
+        order={**order,'number':child_number(parent_number,warehouse)}
+    wb=Workbook();wb.remove(wb.active)
     rev=f"V{order['revision']:03d}";historical=order['revision']!=order['current_revision'];font=Font(name='宋体',sz=11,charset=134,scheme='minor',color=Color(theme=1))
     wb.properties.title=order['number']+' '+rev;wb.properties.subject='内部签发建议，非实际采购订单';wb.properties.description='仅中心仓商品；Q列可供门店调整；完整签发建议与来源保存在应用历史归档。数量为库存单位，价格为基本售价。'
     for key,value in [('补货单号',order['number']),('修订',rev),('模板SHA256',TEMPLATE_SHA256),('版本状态','历史修订' if historical else '当前修订')]:wb.custom_doc_props.append(StringProperty(name=key,value=value))
-    for name,rows in groups(result,profile).items():
+    if warehouse:
+        for key,value in [('门店正常单号',parent_number),('供货仓',warehouse)]:wb.custom_doc_props.append(StringProperty(name=key,value=value))
+    for name,rows in grouped.items():
         ep.rows(progress,name,0,len(rows));ws=wb.create_sheet(name);ws.sheet_format.defaultColWidth=9;ws.sheet_format.defaultRowHeight=13.5;ws.append(HEADERS+AUDIT_HEADERS)
         ws.oddHeader.center.text=order['number']+' '+rev+(' 历史修订' if historical else '')
         ws['A1'].comment=Comment(order['number']+' '+rev+'；业务日期 '+order['day']+'；'+('历史修订' if historical else '当前修订'),'补货助手')

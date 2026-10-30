@@ -62,6 +62,7 @@ class WarehouseUi:
     def route_changed(self,store):
         if self.initializing:return
         self.invalidate([store]);self.selection_changed()
+        if hasattr(self,'refresh_parameter_label'):self.refresh_parameter_label(store)
     def route_for(self,store):
         w=self.store_widgets[store]
         return warehouse_catalog.validate_route({'primary':w['primary'].currentData(),'secondary':w['secondary'].currentData()},self.loaded['catalogs'])

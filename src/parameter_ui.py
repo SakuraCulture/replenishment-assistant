@@ -34,7 +34,7 @@ class ParameterDialog(QDialog):
         row=QHBoxLayout();row.addWidget(button('复制另存方案',lambda:self.save_preset(False)));row.addWidget(button('保存方案新版本',lambda:self.save_preset(True)))
         if trial:row.addWidget(button('与当前配置试算',lambda:self.try_trial(trial)))
         row.addStretch();v.addLayout(row)
-        row=QHBoxLayout();row.addWidget(button('取消',self.reject));row.addStretch();row.addWidget(button('仅用于本次',lambda:self.finish('temporary')));row.addWidget(button('保存为本店默认',lambda:self.finish('default'),True));v.addLayout(row)
+        row=QHBoxLayout();row.addWidget(button('取消',self.reject));row.addStretch();row.addWidget(button('仅用于本次',lambda:self.finish('temporary')));row.addWidget(button('保存为门店默认并应用',lambda:self.finish('default'),True));v.addLayout(row)
         if not scope.startswith('所选'):row.itemAt(row.count()-1).widget().setVisible(False);row.itemAt(row.count()-2).widget().setVisible(False)
         self.fill(config)
     def spin(self,value,maximum=1000000000):
@@ -131,12 +131,30 @@ class ParameterUi:
         if persist:self.save_store_defaults(codes)
     def refresh_parameter_label(self,s):
         p=self.preset_for(s);changed=json.loads(json.dumps(p['config']))!=json.loads(json.dumps(p.get('base_config',p['config'])));self.store_widgets[s]['params'].setText(f"{p['name']} v{p['version']}"+(' · 本店调整' if changed else ''));self.store_widgets[s]['params'].setToolTip('完整生效配置（本店调整包含在内）：\n'+json.dumps(p['config'],ensure_ascii=False,indent=2))
-    def save_store_defaults(self,codes=None):
+        import store_defaults
+        saved=getattr(self,'saved_store_defaults',{}).get(s)
+        state='历史快照' if self.readonly or getattr(self,'_restoring',False) else '已保存默认' if store_defaults.matches(saved,p,self.config_for(s),self.store_ui(s)) else '仅本次 / 默认未保存'
+        self.store_widgets[s]['params'].setText(self.store_widgets[s]['params'].text()+' · '+state)
+        self.store_widgets[s]['params'].setToolTip(self.store_widgets[s]['params'].toolTip()+'\n'+state+(' · '+saved.get('saved','') if saved else ''))
+    def save_default_dialog(self):
+        codes=self.selected_codes()
+        if not codes:return
+        d=QDialog(self);d.setObjectName('storeDefaultsConfirm');d.setWindowTitle('保存门店主从仓与完整参数');v=QVBoxLayout(d)
+        v.addWidget(label(f'将保存所选 {len(codes)} 家门店的主从仓、各仓周期、完整参数方案及本店调整。下次导入相同门店编码时自动带入；不修改历史单。'))
+        budget=QCheckBox('同时将本次预算保存为门店默认预算（不勾选则保留原默认预算）');v.addWidget(budget)
+        row=QHBoxLayout();row.addWidget(button('取消',d.reject));row.addWidget(button('保存为门店默认',d.accept,True));v.addLayout(row)
+        if d.exec()==QDialog.DialogCode.Accepted:self.save_store_defaults(codes,include_budget=budget.isChecked())
+    def save_store_defaults(self,codes=None,*,include_budget=False):
         codes=self.selected_codes() if codes is None or isinstance(codes,bool) else codes
         if not codes:return
-        try:self.work_repository.save_stores({s:{'preset':self.preset_for(s),'ui':self.store_ui(s)} for s in codes})
+        import store_defaults,work_repository as wr
+        try:
+            old=self.work_repository.stores();stamp=wr.now()
+            values={s:store_defaults.record(self.preset_for(s),self.config_for(s),self.store_ui(s),old.get(s),include_budget=include_budget,saved=stamp) for s in codes}
+            self.work_repository.save_stores(values);self.saved_store_defaults={**old,**values}
         except Exception as exc:self.failed('门店默认未保存：'+str(exc));return
-        self.status.setText(f'已保存 {len(codes)} 家门店的完整默认配置；作业记录需单独保存。')
+        for s in codes:self.refresh_parameter_label(s)
+        self.status.setText(f'已保存 {len(codes)} 家门店的主从仓与完整参数，下一次自动带入 · {stamp}。'+('预算也已保存。' if include_budget else '默认预算未改变。')+'历史单不变，当前作业需单独保存。')
     def trial_parameters(self,codes,config,dialog):
         if self.worker or self.input_dirty:raise ValueError('请先完成数据检查，等待当前任务结束')
         import parameter_trial

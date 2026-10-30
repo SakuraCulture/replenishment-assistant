@@ -21,6 +21,7 @@ def write(kind,path,progress=lambda _:None,cancel=None):
         for row in range(2,202):ws.cell(row,i+1).number_format='@' if ('编码' in c.value or c.value=='补货单号') else 'General'
     note=wb.create_sheet('填写说明');note.append(['事项','要求'])
     for item in [('适用内容',title),('必需表头','、'.join(required)),('可选表头','、'.join(optional)),('编码','按文本保存；保留前导零，禁止科学计数法和模糊匹配'),('数量单位','库存单位；回传数量为非负数字，0表示明确不补，空白表示未确认'),('缺失值','保留空白，不能为了通过校验编造0；缺货天数空白按现有规则处理'),('分仓','在导入入口选择河北仓或山东仓；不要以文件名猜测仓库'),('关注','填写关注/未关注、是/否、1/0'),('回传关联','无修订信息的文件，导入时必须明确选择签发修订；也可直接改加盟商确认单Q列回传'),('数据区','第1张表从第2行填写；模板不附可误导入的示例商品')]:note.append(item)
+    if kind=='feedback':note.append(('回传供货仓','新单填写原导出的仓子单号（-HB为河北仓，-SD为山东仓），按签发修订校验归属；两仓可一起导入。旧门店总单号仍兼容。不要手工改仓或按当前资料重新判断。'))
     note.column_dimensions['A'].width=22;note.column_dimensions['B'].width=100
     fd,tmp=tempfile.mkstemp(dir=target.parent,suffix='.xlsx');os.close(fd)
     try:wb.save(tmp);os.link(tmp,target)

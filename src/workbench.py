@@ -18,8 +18,8 @@ class Workbench(ParameterUi,BatchWindow):
         self.presets_btn=button('参数方案',self.open_preset_library);row.addWidget(self.presets_btn)
         self.save_job_btn=button('保存作业',self.save_current,True);row.addWidget(self.save_job_btn)
         self.centralWidget().layout().insertLayout(1,row)
-        row=QHBoxLayout();self.defaults_btn=button('保存所选门店为默认配置',self.save_store_defaults);row.addWidget(self.defaults_btn);self.fresh_btn=button('使用当前资料重新检查',self.use_current_data);row.addWidget(self.fresh_btn);row.addStretch();self.store_page.layout().insertLayout(2,row)
-        self.exception.hide();self.store_table.setColumnWidth(7,185);self.nav[1].setText('② 门店与参数')
+        row=QHBoxLayout();self.defaults_btn=button('保存主从仓与参数为门店默认',self.save_default_dialog);row.addWidget(self.defaults_btn);self.fresh_btn=button('使用当前资料重新检查',self.use_current_data);row.addWidget(self.fresh_btn);row.addStretch();self.store_page.layout().insertLayout(2,row)
+        self.exception.hide();self.store_table.setColumnWidth(7,310);self.nav[1].setText('② 门店与参数')
         self._hydrating=False;self.update_controls()
         if any(r['day']==wr.today() for r in self.work_repository.list_jobs()):self.status.setText('今天已有保存的作业，可从“作业记录”继续；新建内容不会自动覆盖。')
     def touch(self):
@@ -42,7 +42,7 @@ class Workbench(ParameterUi,BatchWindow):
         if not hasattr(self,'work_repository'):return
         previous=self._hydrating;self._hydrating=True;self.initializing=True
         try:
-            saved={} if self._restoring else self.work_repository.stores()
+            saved={} if self._restoring else self.work_repository.stores();self.saved_store_defaults=saved
             for s in self.store_widgets:
                 if s in saved:
                     p=copy.deepcopy(saved[s]['preset']);schema.validate(p['config']);self.store_presets[s]=p;self.overrides[s]=copy.deepcopy(p['config']['warehouses']);self.set_store_ui(s,saved[s]['ui'])

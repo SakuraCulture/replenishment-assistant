@@ -6,7 +6,7 @@ from runtime_support import Cancelled
 import merchant_feedback as feedback
 import business_excel
 
-HEADERS=['商品编码','商品名称','推荐分组','原签发建议','门店确认数量','与签发差额','确认状态']
+HEADERS=['商品编码','商品名称','推荐分组','原签发建议','门店确认数量','与签发差额','确认状态','所属仓']
 
 def import_returns(parent,host):
     from import_ui import choose
@@ -32,9 +32,10 @@ def import_returns(parent,host):
         d=QDialog(parent);d.setWindowTitle('确认保存门店回传 · 不改原签发建议');d.resize(1150,720);v=QVBoxLayout(d);rows=[];summary=[]
         for p in plan['plans']:
             h=p['head'];summary.append(f"{h['number']} V{h['revision']:03d}：{len(p['differences'])}款变化；{p['payload']['status']}；尚待确认{len(p['payload']['pending'])}款"+('；同一内容，无新增回传版本' if not p['changed'] else '')+('；绑定历史修订，不应用到当前单' if h['revision']!=h['current_revision'] else ''))
-            for row in p['differences']:rows.append([h['number'],*row])
+            summary.extend(wh+'：'+v['status']+'，待确认 '+str(len(v['pending']))+' 款' for wh,v in p['payload']['warehouses'].items())
+            for row in p['differences']:rows.append([p['payload']['incoming'][row[0]]['number'],*row,p['payload']['incoming'][row[0]]['warehouse']])
             summary.extend(p['warnings'])
-        v.addWidget(label('\n'.join(summary)));table,model=grid(d,['补货单号','商品编码','商品名称','原签发建议','上次回传','本次回传','与签发差额'],rows);v.addWidget(table,1)
+        v.addWidget(label('\n'.join(summary)));table,model=grid(d,['补货单号','商品编码','商品名称','原签发建议','上次回传','本次回传','与签发差额','所属仓'],rows);v.addWidget(table,1)
         v.addWidget(label('空白不清除已有回传，0表示明确不补；回传不会重算预算或自动规整箱规。','muted'));row=QHBoxLayout();cancel=button('取消',d.reject);cancel.setDefault(True);row.addWidget(cancel);save=button('确认保存独立回传',d.accept,True);save.setAutoDefault(False);row.addWidget(save);v.addLayout(row)
         if d.exec()!=QDialog.DialogCode.Accepted:return
         receipts=run(parent,feedback.commit,(path,plan),'保存回传（事务完成前不可关闭）',False)
@@ -55,7 +56,12 @@ class FeedbackDialog(QDialog):
         p=self.version.currentData();values=p['values'] if p else {};rows=[]
         for original in self.data['rows']:
             r=list(original);r[4]=values.get(r[0]);r[5]=None if r[4] is None else r[4]-r[3];r[6]='未确认' if r[4] is None else '已确认';rows.append(r)
-        self.model.replace(rows);self.note.setText((p['status'] if p else '尚未收到门店确认')+' · 原签发建议保持不变；回传数量使用库存单位。')
+        self.model.replace(rows)
+        status=[]
+        for wh in dict.fromkeys(r[7] for r in rows):
+            group=[r for r in rows if r[7]==wh];pending=sum(r[3]>0 and r[4] is None for r in group);received=sum(r[4] is not None for r in group)
+            status.append(str(wh)+'：'+('尚无回传' if not received else '部分确认' if pending else '已确认')+f'（待确认{pending}款）')
+        self.note.setText('；'.join(status)+' · 原签发建议不变，回传数量为库存单位。')
     def import_files(self):
         if import_returns(self,self.host):self.refresh()
     def template(self):

@@ -6,6 +6,7 @@ import openpyxl
 import work_repository as wr
 import input_adapter as adapter
 import normal_exports
+import warehouse_orders as wo
 import result_semantics as sem
 import source_archive
 from runtime_support import checkpoint
@@ -60,16 +61,24 @@ def choices(path,numbers,progress=lambda _:None,cancel=None):
     result={}
     with closing(connect(path)) as db:
         for number in numbers:
-            checkpoint(cancel);result[number]=[{'day':d,'store':s,'oid':o,'revision':v,'current':c,'saved':t} for d,s,o,v,c,t in db.execute('SELECT o.day,o.store,o.oid,r.revision,o.current,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid WHERE o.number=? ORDER BY r.revision DESC',(number,))]
+            checkpoint(cancel)
+            try:identity,warehouse=wo.resolve(db,number)
+            except ValueError:result[number]=[];continue
+            result[number]=[{'day':d,'store':s,'oid':o,'revision':v,'current':c,'saved':t,'warehouse':warehouse} for d,s,o,v,c,t in db.execute('SELECT o.day,o.store,o.oid,r.revision,o.current,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid WHERE o.number=? ORDER BY r.revision DESC',(identity[2],))]
     return result
 
 def prepare(path,scanned,bindings,progress=lambda _:None,cancel=None):
     from history_read import repository
     repo=repository(path);groups={};files=scanned['files']
+    identities={}
+    with closing(connect(path)) as db:
+        for number in dict.fromkeys(item['number'] for item in scanned['records']):
+            checkpoint(cancel);identities[number]=wo.resolve(db,number)
     for item in scanned['records']:
         revision=item['revision'] if item['revision'] is not None else bindings.get(item['number'])
         if not isinstance(revision,int) or revision<=0:raise ValueError('请选择明确的签发修订：'+item['number'])
-        key=(item['number'],revision);groups.setdefault(key,[]).append(item)
+        identity,warehouse=identities[item['number']]
+        key=(identity[2],revision);groups.setdefault(key,[]).append({**item,'warehouse':warehouse})
     by_number={}
     for number,revision in groups:
         if number in by_number and by_number[number]!=revision:raise ValueError('同一单号的不同修订请分开导入核对')
@@ -86,10 +95,11 @@ def prepare(path,scanned,bindings,progress=lambda _:None,cancel=None):
         for item in items:
             sku=item['sku'];qty=item['quantity'];checkpoint(cancel)
             if sku not in eligible:raise ValueError(number+'：商品不在该修订的中心仓确认单中：'+sku)
+            if item['warehouse'] and eligible[sku].get('AU')!=item['warehouse']:raise ValueError(item['number']+'：商品不属于该签发修订的'+item['warehouse']+'：'+sku)
             if sku in incoming:
                 if wr.dumps(incoming[sku]['quantity'])!=wr.dumps(qty):raise ValueError(number+'：同商品回传数量冲突：'+sku)
                 incoming[sku]['sources'].append(item['source']);duplicates+=1;continue
-            incoming[sku]={'quantity':qty,'note':item['note'],'sources':[item['source']]}
+            incoming[sku]={'quantity':qty,'note':item['note'],'sources':[item['source']],'warehouse':eligible[sku].get('AU'),'number':item['number']}
         differences=[]
         for sku,item in incoming.items():
             qty=item['quantity'];d=eligible[sku];before=values.get(sku)
@@ -101,7 +111,7 @@ def prepare(path,scanned,bindings,progress=lambda _:None,cancel=None):
         unpriced=[s for s in values if not sem.numeric(eligible[s].get('V'))]
         amount=round(sum(qty*eligible[s]['V'] for s,qty in values.items() if s not in unpriced),2)
         if amount>r['summary']['amount']:warnings.append('回传按签发基本售价估算金额高于签发金额；不会重跑预算或修改数量')
-        plans.append({'head':{k:v for k,v in order.items() if k!='payload'},'expected':old['version'] if old else None,'changed':bool(differences),'differences':differences,'warnings':warnings,'duplicates':duplicates,'payload':{'values':values,'incoming':incoming,'files':[f for f in files if f['sha'] in {i['source']['sha'] for i in items}],'pending':pending,'status':'暂无待确认项' if not required else '部分确认' if pending else '已确认','estimated_amount':amount,'unpriced':unpriced}})
+        plans.append({'head':{k:v for k,v in order.items() if k!='payload'},'expected':old['version'] if old else None,'changed':bool(differences),'differences':differences,'warnings':warnings,'duplicates':duplicates,'payload':{'warehouses':wo.feedback_status(eligible,values),'values':values,'incoming':incoming,'files':[f for f in files if f['sha'] in {i['source']['sha'] for i in items}],'pending':pending,'status':'暂无待确认项' if not required else '部分确认' if pending else '已确认','estimated_amount':amount,'unpriced':unpriced}})
     return {'plans':plans,'files':files}
 
 def commit(path,plan,progress=lambda _:None,cancel=None):
@@ -129,8 +139,8 @@ def commit(path,plan,progress=lambda _:None,cancel=None):
             h=p['head'];v=p['expected'] or 0
             if p['changed']:
                 v+=1;db.execute('INSERT INTO merchant_feedback VALUES(?,?,?,?,?)',(h['oid'],h['revision'],v,stamp,raw))
-                db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,h['oid'],h['revision'],'门店确认回传',wr.dumps({'number':h['number'],'store':h['store'],'feedback_version':v,'changed':len(p['differences']),'status':p['payload']['status'],'files':[f['name'] for f in plan['files']]})))
-            receipts.append({'number':h['number'],'revision':h['revision'],'feedback_version':v,'changed':p['changed'],'status':p['payload']['status']})
+                db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,h['oid'],h['revision'],'门店确认回传',wr.dumps({'number':h['number'],'store':h['store'],'feedback_version':v,'changed':len(p['differences']),'status':p['payload']['status'],'warehouses':p['payload']['warehouses'],'files':[f['name'] for f in p['payload']['files']]})))
+            receipts.append({'number':h['number'],'revision':h['revision'],'feedback_version':v,'changed':p['changed'],'status':p['payload']['status'],'warehouses':p['payload']['warehouses']})
     return receipts
 
 def view(path,head,progress=lambda _:None,cancel=None):
@@ -143,7 +153,7 @@ def view(path,head,progress=lambda _:None,cancel=None):
     values=record['payload']['values'] if record else {};rows=[]
     for sheet,items in normal_exports.groups(order['payload']['result'],order['payload'].get('new_focus')).items():
         for d in items:
-            q=values.get(d['E']);issued=sem.order_quantity(d);rows.append([d['E'],d.get('D'),sheet,issued,q,None if q is None else q-issued,'未确认' if q is None else '已确认'])
+            q=values.get(d['E']);issued=sem.order_quantity(d);rows.append([d['E'],d.get('D'),sheet,issued,q,None if q is None else q-issued,'未确认' if q is None else '已确认',d.get('AU')])
     return {'rows':rows,'history':history,'record':record}
 
 def export_source(path,head,version,sha,target,progress=lambda _:None,cancel=None):

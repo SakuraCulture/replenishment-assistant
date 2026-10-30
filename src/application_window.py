@@ -283,11 +283,12 @@ class ApplicationWindow(Workbench):
 
     def export_current(self,codes=None):
         if self.worker or self.input_dirty:return
+        warehouses=None
         if not isinstance(codes,list):
             from merchant_selection import MerchantSelection
             dialog=MerchantSelection(self)
             if dialog.exec()!=QDialog.DialogCode.Accepted:return
-            codes=dialog.codes()
+            codes=dialog.codes();warehouses=dialog.warehouses()
         if not codes:return
         from ui_work_io import Session,request
         from runtime_support import Cancelled
@@ -296,7 +297,7 @@ class ApplicationWindow(Workbench):
                 full=self.snapshot()
                 slim={k:full[k] for k in ('day','input_dirty','new_focus')}
                 slim.update(states={s:full['states'][s] for s in codes},results={s:full['results'][s] for s in codes},model_version=full['model_version'],_draft_summary=wr.summary(full))
-                prepared=request(self,session,'delivery_probe',[slim,codes]);plans=prepared['plans']
+                prepared=request(self,session,'delivery_probe',[slim,codes,warehouses]);plans=prepared['plans']
                 if any(not p['same'] for p in plans):
                     tail={**full,'results':{s:r for s,r in full['results'].items() if s not in codes}}
                     request(self,session,'delivery_expand',[tail,list(full['results'])])
@@ -304,7 +305,7 @@ class ApplicationWindow(Workbench):
                     for p in plans:
                         old=p['old'];action='沿用已归档修订' if p['same'] else f"覆盖当天正常单 V{old['revision']:03d} → V{old['revision']+1:03d}（旧版保留）" if old else '首次签发 V001'
                         lines.append(p['name']+' ('+p['store']+')：'+action+f"；¥{p['amount']:,.2f}")
-                    box.setText(f'已选 {len(plans)} 家门店，每店一份中心仓确认单。\n'+'\n'.join(lines)+'\n确认后自动归档并逐店导出；不是实际下单。')
+                    box.setText(f'已选 {len(plans)} 家门店，共 {sum(len(p["files"]) for p in plans)} 份分仓确认单。仅导出所选仓；归档仍保存各店完整正常单。\n'+'\n'.join(lines)+'\n确认后自动归档并逐店导出；不是实际下单。')
                     detail={'所选门店':[p['store'] for p in plans]}
                     if prepared['head']:
                         detail['同日草稿覆盖']={'原保存时间':prepared['head']['saved'],'原门店状态':prepared['head']['summary'],'本次门店状态':prepared['summary']};box.setInformativeText('同时覆盖当天完整草稿；未选门店正常单不变。展开详情查看草稿覆盖范围。')
@@ -317,8 +318,9 @@ class ApplicationWindow(Workbench):
                         diff_path,_=QFileDialog.getSaveFileName(self,'保存完整签发差异','签发差异.xlsx','Excel (*.xlsx)')
                         if diff_path:request(self,session,'review_export',diff_path if diff_path.lower().endswith('.xlsx') else diff_path+'.xlsx')
                     if box.clickedButton() is not accept:return
-                if len(plans)==1:
-                    path,_=QFileDialog.getSaveFileName(self,'导出本店加盟商确认单',plans[0]['filename'],'Excel (*.xlsx)')
+                files=[f for p in plans for f in p['files']]
+                if len(files)==1:
+                    path,_=QFileDialog.getSaveFileName(self,'导出本仓加盟商确认单',files[0]['filename'],'Excel (*.xlsx)')
                     if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
                 else:path=QFileDialog.getExistingDirectory(self,'选择批量确认单导出文件夹')
                 if not path:return
@@ -330,7 +332,7 @@ class ApplicationWindow(Workbench):
     def delivery_done(self,receipt):
         if receipt['signed']:
             self.saved_time=receipt['saved'];self.job_dirty=False;self.refresh_job_label()
-        self.status.setText(f"已导出 {len(receipt['paths'])} 家门店中心仓确认单；签发来源已归档。"+'；'.join(receipt['paths']))
+        self.status.setText(f"已导出 {len(receipt['paths'])} 份分仓确认单；签发来源已归档。"+'；'.join(receipt['paths']))
 
     def export_order(self,order):
         if self.worker:return
@@ -338,18 +340,22 @@ class ApplicationWindow(Workbench):
         self.job(read_for_export,(self.orders,order),self.export_loaded_order)
 
     def export_loaded_order(self,order):
-        name=normal_exports.filename(order)
-        path,_=QFileDialog.getSaveFileName(self,'导出本店加盟商确认单',name,'Excel (*.xlsx)')
+        from merchant_selection import MerchantSelection
+        from normal_delivery import export_signed
+        dialog=MerchantSelection(self,order)
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return
+        warehouses=dialog.warehouses().get(order['store'],[])
+        if not warehouses:return
+        if len(warehouses)==1:
+            path,_=QFileDialog.getSaveFileName(self,'导出本仓加盟商确认单',normal_exports.filename(order,warehouses[0]),'Excel (*.xlsx)')
+            if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
+        else:path=QFileDialog.getExistingDirectory(self,'选择分仓确认单导出文件夹')
         if not path:return
-        if not path.lower().endswith('.xlsx'):path+='.xlsx'
-        def done(path):
-            try:self.orders.log(order,'带号导出',{'path':path,'sha256':hashlib.sha256(Path(path).read_bytes()).hexdigest()})
-            except Exception as exc:self.failed('文件已导出，但导出日志未保存：'+str(exc));return
-            self.status.setText('已导出 '+path+'；归档版本不变。')
+        def done(paths):self.status.setText('已导出 '+'；'.join(paths)+f'；原归档 V{order["revision"]:03d} 不变。')
         def start():
             if self.closing:return
             if self.worker:QTimer.singleShot(10,start);return
-            self.job(normal_exports.export,(order,path),done)
+            self.job(export_signed,(self.orders,order,path,warehouses),done)
         QTimer.singleShot(0,start)
 
     def open_selected_archive(self):

@@ -105,8 +105,8 @@ def serve(connection,path,cancel):
                     result=str(destination)
                 elif op in ('delivery_prepare','delivery_probe'):
                     import normal_orders,normal_delivery
-                    batch=None;supplied,codes=arguments;repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
-                    with stage('核对导出修订',progress):batch=normal_delivery.prepare_owned_batch(repository,supplied,codes,progress=progress,cancel=cancel)
+                    batch=None;supplied,codes=arguments[:2];warehouses=arguments[2] if len(arguments)>2 else None;repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
+                    with stage('核对导出修订',progress):batch=normal_delivery.prepare_owned_batch(repository,supplied,codes,progress=progress,cancel=cancel,warehouses=warehouses)
                     batch['complete']=op=='delivery_prepare'
                     import order_review
                     review_records=[order_review.build(p['old'],batch['payload']['results'][p['store']],supplied.get('new_focus')) for p in batch['plans'] if not p['same']]
