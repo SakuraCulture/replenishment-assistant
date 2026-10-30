@@ -60,7 +60,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.file_report=QTableWidget(0,4);self.file_report.setHorizontalHeaderLabels(['文件','商品行数','门店数','读取结果 / 处理办法']);self.file_report.horizontalHeader().setSectionResizeMode(3,QHeaderView.ResizeMode.Stretch);self.file_report.setColumnWidth(0,300);self.file_report.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);v.addWidget(self.file_report,1)
         actions=QHBoxLayout();self.load_btn=button('检查文件',self.start_load);actions.addWidget(self.load_btn);self.conflict_btn=button('处理重复冲突',self.resolve_conflicts);actions.addWidget(self.conflict_btn);actions.addStretch();self.next_btn=button('下一步：选择门店',lambda:self.navigate(1),True);actions.addWidget(self.next_btn);outer.addLayout(actions)
     def make_stores(self):
-        self.store_page,v=self.page();v.addWidget(label('选择本次门店，分别设置可用资金','section'));v.addWidget(label('限额补货优先保必卖；不限预算按模型建议补货。金额为0表示本次不安排。各店资金不互相挪用。','muted'))
+        self.store_page,v=self.page();v.addWidget(label('选择本次门店，分别设置可用资金','section'));v.addWidget(label('按设定预算优先保必卖；末尾最多补足一个最小出库单位，整店超支不超过5%。0元仍不补；不限预算按模型建议，各店资金独立。','muted'))
         row=QHBoxLayout();self.store_search=QLineEdit();self.store_search.setPlaceholderText('搜索门店名称或编码');self.store_search.textChanged.connect(self.filter_stores);row.addWidget(self.store_search,1)
         self.only_issues=QCheckBox('只看需处理');self.only_issues.toggled.connect(self.filter_stores);row.addWidget(self.only_issues);row.addWidget(button('全选可计算门店',lambda:self.select_all(True)));row.addWidget(button('取消全选',lambda:self.select_all(False)));v.addLayout(row)
         row=QHBoxLayout();row.addWidget(button('批量设置主从仓',self.bulk_routes));row.addWidget(button('批量设置每店预算',self.bulk_budget));row.addWidget(button('批量设置仓参数',self.bulk_parameters));row.addStretch();row.addWidget(button('查看完整模型参数',self.show_parameters));v.addLayout(row)
@@ -245,6 +245,8 @@ class BatchWindow(WarehouseUi,SessionWindow):
             for n,r in enumerate(variants):
                 source=f"{n+1}. {Path(r['path']).name} 第{r['row']}行";combo.addItem(source,n);lines.append(source+'：'+ '；'.join(k+'='+str(r['values'].get(k)) for k in different))
             table.setItem(i,1,QTableWidgetItem('\n'.join(lines)));table.item(i,1).setToolTip('\n'.join(lines));combo.setCurrentIndex(c['choice']+1 if c['choice'] is not None else 0);table.setCellWidget(i,2,combo);table.setRowHeight(i,100);combos.append(combo)
+        from conflict_ui import add_bulk_choices
+        add_bulk_choices(dialog,v,table,conflicts,combos)
         v.addWidget(button('应用选择并重新检查',dialog.accept,True));v.addWidget(button('取消',dialog.reject))
         if dialog.exec()==QDialog.DialogCode.Accepted:
             for c,combo in zip(conflicts,combos):c['choice']=combo.currentData()
@@ -279,6 +281,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
     def cancel_work(self):
         if self.worker:
             self.worker.cancel.set();self.status.setText('已停止启动后续任务，正在计算的门店完成后结束。' if isinstance(self.worker,BatchWorker) else '正在取消文件操作…')
+            self.refresh_tables();self.update_controls()
     def job_finished(self):
         batch=isinstance(self.worker,BatchWorker);BackgroundJobs.job_finished(self)
         if batch:self.status.setText('本轮任务结束。可查看结果，或调整设置后只重算需要的门店。')
@@ -287,6 +290,8 @@ class BatchWindow(WarehouseUi,SessionWindow):
         if not hasattr(self,'overview'):return
         counts=Counter(self.states[s]['state'] for s in self.run_codes);task_total=len(self.run_codes)
         self.run_note.setText(f"本轮完成 {counts['已完成']} / {task_total} 家 · 计算中 {counts['计算中']} · 排队 {counts['排队中']} · 失败 {counts['计算失败']} · 停止 {counts['已停止']} · 排队门店自动补位，无需归档或导出")
+        if isinstance(self.worker,BatchWorker) and self.worker.cancel.is_set():
+            self.run_note.setText(f"停止请求已收到：不再启动新门店，等待正在运行的 {counts['计算中']} 家完成。已完成结果保留；请勿强制结束进程。")
         self.run_progress.setRange(0,max(task_total,1));self.run_progress.setValue(sum(counts[k] for k in ['已完成','计算失败','已停止']))
         keys=list(self.states);finished=sum(s['state']=='已完成' for s in self.states.values());total=len(keys);self.task_table.setRowCount(task_total)
         for i,s in enumerate(self.run_codes):
@@ -303,6 +308,8 @@ class BatchWindow(WarehouseUi,SessionWindow):
                 cache=self.__dict__.setdefault('_risk_counts',{})
                 if s not in cache or cache[s][0] is not r:cache[s]=(r,sum(bool(semantics.inbound_risk(d)) for d in r['rows']))
                 if cache[s][1]:values[-1]+=f'；在途衔接风险 {cache[s][1]} 条（点击提示查看）'
+                over=b.get('overrun',{})
+                if over.get('amount',0)>0:values[-1]+=f"；有限超支 {over['amount']:.2f} 元（商品 {over['sku']}）";values[8]=f"超 {over['amount']:.2f}"
             else:values=[state['name'],state['state']]+['—']*9+[state['error']]
             for j,val in enumerate(values):self.overview.setItem(i,j,QTableWidgetItem(val));self.overview.item(i,j).setToolTip(s+'\n'+str(val))
         for widget,value in zip(self.metrics,totals):widget.setText(f'{value:,.2f}' if finished else '—')
@@ -331,8 +338,10 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.nav[2].setEnabled(bool(self.states));self.nav[3].setEnabled(bool(self.states))
         valid=any(state['state']=='已完成' for state in self.states.values());self.batch_export.setEnabled(valid and not busy)
         can_export=self.result is not None and not self.dirty and not busy;self.export_all.setEnabled(can_export);self.export_filtered.setEnabled(can_export)
-        self.stop_btn.setEnabled(batch);self.retry_btn.setEnabled(not busy and not self.input_dirty and any(s['state']=='计算失败' for s in self.states.values()))
+        stopping=bool(batch and self.worker.cancel.is_set())
+        self.stop_btn.setEnabled(batch and not stopping);self.stop_btn.setText('等待运行中门店结束…' if stopping else '停止剩余任务');self.retry_btn.setEnabled(not busy and not self.input_dirty and any(s['state']=='计算失败' for s in self.states.values()))
         self.cancel_btn.setVisible(busy);self.cancel_btn.setText('停止剩余任务' if batch else '取消');self.progress.setVisible(busy and not batch)
+        self.cancel_btn.setEnabled(not stopping)
     def export_dialog(self):
         dialog=QDialog(self);dialog.setWindowTitle('导出本次补货结果');dialog.resize(660,520);v=QVBoxLayout(dialog);v.addWidget(label('勾选导出范围；未完成门店保留状态，只有有效结果生成补货明细。','muted'))
         checks={};scroll=QScrollArea();content=QWidget();cv=QVBoxLayout(content)

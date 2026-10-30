@@ -50,6 +50,8 @@ class ApplicationWindow(Workbench):
         self.save_job_btn.setText('保存草稿');self.history_btn.setText('草稿记录');self.batch_export.setText('内部批次明细导出');self.export_all.setText('内部全量明细');self.export_filtered.setText('内部当前筛选')
         focusrow=QHBoxLayout();self.focus_label=label("","muted");focusrow.addWidget(self.focus_label,1);self.focus_import_btn=button("导入新品明细 / 关注字段",self.import_focus);focusrow.addWidget(self.focus_import_btn);self.focus_empty_btn=button("本月无关注新品",self.empty_focus);focusrow.addWidget(self.focus_empty_btn);self.import_page.layout().addLayout(focusrow)
         self.refresh_focus();self.update_controls();self.show_section(0)
+        from usability import install
+        install(self,hv)
 
     def storage_copy(self):
         if self.worker or getattr(self,'_large_io_dialog',None):return

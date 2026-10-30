@@ -1,7 +1,7 @@
-﻿param([Parameter(Mandatory=$true)][ValidatePattern('^[a-zA-Z0-9_-]+$')][string]$BuildId)
+﻿param([Parameter(Mandatory=$true)][ValidatePattern('^[a-zA-Z0-9_-]+$')][string]$BuildId, [string]$PythonPath)
 $ErrorActionPreference = 'Stop'
 $taskRoot = $PSScriptRoot
-$taskPython = Join-Path $taskRoot '.venv\Scripts\python.exe'
+$taskPython = if ($PythonPath) { (Resolve-Path -LiteralPath $PythonPath).Path } else { Join-Path $taskRoot '.venv\Scripts\python.exe' }
 Push-Location $taskRoot
 try {
     $taskState = & git status --porcelain

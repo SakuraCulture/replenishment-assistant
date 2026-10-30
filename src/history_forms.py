@@ -43,6 +43,8 @@ def form(repo,order,scope,sku,cancel=None):
         if scope=='商品完整计算依据':data=d
         else:
             data={k:d.get(k) for k in 'A B D E G H I J K L N BA BD V AU AS _base_qty _candidate_qty _execution_qty _execution_amount _budget_gap'.split()}
+            if d.get('_budget_overrun'):
+                extra=d['_budget_overrun'];data['末尾补足与有限超支']={'追加库存单位数':extra['quantity'],'这一个出库单位金额':extra['unit_cost'],'全店实际超支':extra['overspend'],'设定预算':extra['budget'],'允许金额上限':extra['ceiling'],'规则':extra['rule']}
             # Execution is budget/status-aware; _execution_* alone is only a
             # pre-budget first-fill override, absent on ordinary moving goods.
             data['_execution_qty']=sem.order_quantity(d);data['_execution_amount']=sem.order_amount(d)

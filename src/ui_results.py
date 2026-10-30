@@ -84,6 +84,8 @@ class ResultsView:
         b=self.result.get('budget',{}) if calculated and self.result else {}
         if b.get('enabled'):
             self.budget_caption.setText(f"预算 {b['limit']:,.2f} 元 · 已用 {b['spent']:,.2f} · 剩余 {b['remaining']:,.2f} · 必卖 {b['must_spent']:,.2f} / 普通 {b['other_spent']:,.2f} · 未满足 {b['deferred']} 款 · 最低持有缺口 {b['holding_gaps']} 款")
+            over=b.get('overrun',{})
+            if over.get('amount',0)>0:self.budget_caption.setText(self.budget_caption.text()+f"\n有限超支 {over['amount']:.2f} 元；商品 {over['sku']} 追加 {over['quantity']:g} 个库存单位；本店金额上限 {over['ceiling']:.2f} 元。")
         else:self.budget_caption.setText('总预算未启用；保持原执行建议。' if calculated else '预算分配在原计算和禁用/停采排除之后执行。')
         if calculated and self.result.get('must_list'):
             ml=self.result['must_list'];self.budget_caption.setText(self.budget_caption.text()+f"\n必卖清单 {ml['total']} 款，本店命中 {ml['matched']} 款，{ml['missing']} 款未出现在本店导出；不自动新增补货。")

@@ -53,7 +53,10 @@ def identifier(value):
     return str(value),'编码以数值保存且超过15位或格式无效，需原始文本编码'
 
 
-def read_table(path, sheet, required):
+def read_table(path, sheet, required, *, _cells=None):
+    if _cells is not None:
+        header,values=_cells
+        return table_records(header,values,sheet,required)
     warnings.filterwarnings('ignore',message='Workbook contains no default style')
     book=openpyxl.load_workbook(path,read_only=True,data_only=True,keep_links=False)
     try:
@@ -170,23 +173,26 @@ def prepare_records(sr,sinfo,pr,pinfo,config):
                        'duplicate_sales_keys':[list(k) for k,n in keycounts.items() if n>1]}
 
 
+def execute_one(inp,meta,rules):
+    if meta['blocking']:
+        # Report all SKU rows; the interface does not manufacture data to force zero.
+        d=calculate(inp,rules)
+        d.update(AS='待补商品资料' if '待补商品资料' in meta['blocking'] else '输入待核',
+                 BM='；'.join(meta['blocking']),BV='数量未定',BW='；'.join(meta['blocking']))
+    else:
+        try:d=calculate(inp,rules)
+        except (ArithmeticError,ValueError,OverflowError) as exc:
+            # Unexpected arithmetic cannot become a healthy 0 or disappear.
+            from diagnostics import failure
+            message=failure(exc,stage='商品计算',store=inp.get('B',''),sku=inp.get('E',''),source=meta.get('export_file',''),row=meta.get('export_row',''))
+            d=dict(inp);d.update(AS='计算异常',BM=message,BV='数量未定',BW='计算异常',AW='计算异常')
+            meta['blocking'].append('计算异常：'+message)
+    d['_meta']=meta
+    return d
+
+
 def execute(normalized,rules):
-    results=[]
-    for inp,meta in normalized:
-        if meta['blocking']:
-            # Report all SKU rows; the interface does not manufacture data to force zero.
-            d=calculate(inp,rules)
-            d.update(AS='待补商品资料' if '待补商品资料' in meta['blocking'] else '输入待核',
-                     BM='；'.join(meta['blocking']),BV='数量未定',BW='；'.join(meta['blocking']))
-        else:
-            try:d=calculate(inp,rules)
-            except (ArithmeticError,ValueError,OverflowError) as exc:
-                # Unexpected arithmetic cannot become a healthy 0 or disappear.
-                d=dict(inp);d.update(AS='计算异常',BM=str(exc),BV='数量未定',BW='计算异常',AW='计算异常')
-                meta['blocking'].append('计算异常：'+str(exc))
-        d['_meta']=meta
-        results.append(d)
-    return results
+    return [execute_one(inp,meta,rules) for inp,meta in normalized]
 
 
 def business_checks(results,rules):
@@ -196,7 +202,10 @@ def business_checks(results,rules):
         if not number(q):checks['数量未定行数']+=1;continue
         checks['数值结果行数']+=1
         if q<0:failures.append([rn,'负补货量',q])
-        if number(step) and (abs(q/step-round(q/step))>1e-8):failures.append([rn,'未满足出库倍数',q,step])
+        if number(step):
+            from quantity_contract import packs
+            try:packs(q,step)
+            except ValueError:failures.append([rn,'未满足出库倍数',q,step])
         if number(d.get('BQ')) and q<d['BQ']:failures.append([rn,'最低恢复量未兑现',q,d['BQ']])
         inbound_capped=bool(d.get('_inbound_cap') and number(d.get('L')) and d['L']>0)
         if inbound_capped and number(d.get('BK')) and q>d['BK']:failures.append([rn,'已有在途追加突破库存额度',q,d['BK']])

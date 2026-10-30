@@ -122,6 +122,7 @@ def coverage(d):
 def explanation(d):
     if exclusion_reason(d):return '默认不补：'+exclusion_reason(d)+'；计算结果仅供参考'
     if issue_text(d):return issue_text(d)
+    if d.get('_budget_overrun'):return d['_budget_reason']+f"；本店超预算{d['_budget_overrun']['overspend']:.2f}元（上限5%）"
     if d.get('_new_requested',0)>0:return '新品首铺 · 人工选择 '+fmt(d['_new_requested'])+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))
     if d.get('_budget_gap',0)>0:return ('必卖：' if d.get('_must_sell') else '普通：')+d.get('_budget_reason','')
     if d['_source']=='地采商品':return '商品资料未匹配，按地采单列；保留销量库存，本版不补造价格或数量'

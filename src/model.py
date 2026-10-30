@@ -256,6 +256,8 @@ def calculate(inputs: dict, rules: Rules | None = None) -> dict:
             d["AM"] = 1
         else:
             trend = min(max(xround(exp(d["AB"]*(log(max(w,1e-10))-log(max(d["Y"],1e-10)))),4),.3),2)
+            if d['BL'] in {'持续上升','平稳后上升'} and z==0:
+                raise ValueError('趋势支撑无法确定：前7天日均Z为0，但早期销量差值非0；请核对日销/周销/月销精度，不自动回退预测')
             supported = w*min(2,xround((w/z)**d["AB"],4)) if d["BL"] in {"持续上升","平稳后上升"} else w
             d["AM"] = 1+ax/7*(max(0,min(trend,supported/d["AN"]))-1)
         d["AO"] = d["AN"]*(d["AG"]+d["AH"])

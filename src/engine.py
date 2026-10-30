@@ -38,6 +38,26 @@ def sheet_name(path,kind):
         return candidates[0]
     finally:book.close()
 
+def read_identified(path,kind,required):
+    """Recognize and read using one open archive; callers retain both hashes."""
+    from table_records import table_records
+    warnings.filterwarnings('ignore',message='Workbook contains no default style')
+    book=openpyxl.load_workbook(path,read_only=True,data_only=True,keep_links=False)
+    try:
+        required_sheet={'商品编码','日销','周销','月销','仓库/门店编码'} if kind=='sales' else {'商品编码','基本售价','分类','出库箱规'}
+        candidates=[]
+        for ws in book.worksheets:
+            ws.reset_dimensions();it=ws.iter_rows(values_only=True);header=next(it,())
+            heads={str(x).strip() for x in header if x is not None}
+            if required_sheet<=heads:candidates.append((ws.title,heads,header,it))
+            elif hasattr(it,'close'):it.close()
+        if not candidates:raise ValueError(('补货建议' if kind=='sales' else '商品资料')+'未找到唯一可用工作表。必需列：'+ '、'.join(sorted(required_sheet)))
+        if len(candidates)!=1:raise ValueError('发现多个可用工作表：'+ '、'.join(x[0] for x in candidates)+'；请保留本次要使用的一张表。')
+        sheet,heads,header,it=candidates[0]
+        rows,info=adapter.read_table(path,sheet,required,_cells=(header,it))
+        return sheet,heads,rows,info
+    finally:book.close()
+
 def load_inputs(sales,products,progress=lambda s:None,cancel=None) -> InputBatch:
     sales,products=Path(sales).resolve(),Path(products).resolve()
     if sales==products:raise ValueError('补货建议和商品资料必须选择两份不同的文件。')
@@ -133,14 +153,19 @@ def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabl
             depth,lead=warehouses.get(d['AU'],(-1,-1))
             if depth<0 or lead<0 or depth+lead<=0:m['blocking'].append('所属仓的备货/到货天数未配置')
             else:d.update(AG=depth,AH=lead)
-        b=adapter.execute([(d,m)],p)[0]
+        try:b=adapter.execute_one(d,m,p)
+        except Exception as exc:
+            raise RuntimeError(f"商品 {d.get('E')} / {d.get('D')}；来源 {m.get('export_file','')} / {m.get('export_sheet','')} / 行 {m.get('export_row','')}：{exc}") from exc
         x,a=apply_one_box_exception(b,m,enabled=enabled)
         baseline.append(b)
         if not a['applied'] and b!=x:raise RuntimeError('隔离检查失败：非例外商品发生变化')
         if a['applied']:
-            assert b['AS']==0 and x['AS']==b['BD']
-            assert all(b.get(k)==x.get(k) for k in set(b)|set(x) if k not in {'AS','BV','BM','BW'})
-        x=copy.deepcopy(x);x.update(_audit=a,_base_qty=b['AS'],_base_amount=b['BV'],_preview=False)
+            if not (b['AS']==0 and x['AS']==b['BD'] and all(b.get(k)==x.get(k) for k in set(b)|set(x) if k not in {'AS','BV','BM','BW'})):
+                raise RuntimeError('隔离检查失败：一箱例外改动超出允许范围')
+        # Applied exception owns a deep copy already; otherwise copy once to
+        # keep baseline and mutable execution/budget results independent.
+        if x is b:x=copy.deepcopy(x)
+        x.update(_audit=a,_base_qty=b['AS'],_base_amount=b['BV'],_preview=False)
         result.append(x)
     checkpoint(cancel);progress('正在核对数量、金额与例外隔离…')
     checks=adapter.business_checks(result,p)

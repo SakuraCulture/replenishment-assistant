@@ -11,7 +11,8 @@ class NumberInput(QDoubleSpinBox):
 class ParameterDialog(QDialog):
     def __init__(self,parent,config,preset,trial=None,scope=''):
         super().__init__(parent);self.setWindowTitle('完整参数 · '+scope);self.resize(1050,760);self.config=copy.deepcopy(config);self.preset=copy.deepcopy(preset);self.action=None;self.repository=parent.work_repository
-        v=QVBoxLayout(self);v.addWidget(label(scope+'。应用整个表单；各店预算和主从仓保留。修改先仅保留在此窗口。','muted'))
+        self.initial_config=copy.deepcopy(config)
+        v=QVBoxLayout(self);v.addWidget(label(scope+'。应用整个表单；各店预算和主从仓保留。修改先仅保留在此窗口。多店编辑以第一家显示，应用会统一这些参数。','muted'))
         row=QHBoxLayout();self.choices=QComboBox();self.presets=self.repository.presets()
         for p in self.presets:self.choices.addItem(f"{p['name']} v{p['version']}"+(' · 内置已验收基线' if p['builtin'] else ' · 自定义，效果需试算'),p)
         row.addWidget(self.choices,1);row.addWidget(button('载入此方案',self.load_selected));row.addWidget(button('归档所选版本',self.archive_selected));v.addLayout(row)
@@ -21,6 +22,9 @@ class ParameterDialog(QDialog):
         self.mapping=QTableWidget(0,2);self.mapping.setHorizontalHeaderLabels(['商品分类（可编辑，可在末行新增）','权重方案']);self.mapping.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.mapping,'分类映射')
         self.warehouses=QTableWidget(0,3);self.warehouses.setHorizontalHeaderLabels(['仓','备货天数','到货天数']);self.warehouses.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.warehouses.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.warehouses,'各仓周期')
         fixed=QTextBrowser();fixed.setPlainText(schema.FIXED);self.tabs.addTab(fixed,'固定规则')
+        self.effective=QTableWidget(0,7);self.effective.setHorizontalHeaderLabels(['参数路径','标准默认','方案值','打开时门店值','当前编辑值','差异所在层','实际用途']);self.effective.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.effective.setColumnWidth(0,300);self.effective.setColumnWidth(5,200);self.effective.setColumnWidth(6,300);self.tabs.addTab(self.effective,'生效核对')
+        self.tabs.currentChanged.connect(lambda i:self.refresh_effective() if self.tabs.widget(i) is self.effective else None)
         self.help=QTextBrowser();self.help.setMaximumHeight(115);v.addWidget(self.help)
         self.param_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText(schema.HELP[list(schema.HELP)[r]][2]) if r>=0 else None)
         self.weight_table.currentCellChanged.connect(lambda r,c,*_:self.help.setPlainText(schema.WEIGHT_HELP.get(['','alpha','w1','w2',''][c], 'w3=1-w1-w2，无分类自动跟随快销；缺货时还按有效有货天数修正。')) if c>=0 else None)
@@ -35,6 +39,15 @@ class ParameterDialog(QDialog):
         self.fill(config)
     def spin(self,value,maximum=1000000000):
         w=NumberInput();w.setDecimals(8);w.setRange(0,maximum);w.setSingleStep(.1);w.setValue(value);return w
+    def refresh_effective(self):
+        from parameter_view import comparison
+        try:rows=comparison(schema.standard(),self.preset.get('base_config',self.preset['config']),self.initial_config,self.value())
+        except ValueError as exc:self.note.setText('当前参数无效，不能应用：'+str(exc));self.effective.setRowCount(0);return
+        self.effective.setRowCount(len(rows))
+        for i,row in enumerate(rows):
+            for j,value in enumerate(row):
+                item=QTableWidgetItem(str(value));item.setToolTip(str(value));self.effective.setItem(i,j,item)
+        self.note.setText('按当前值比较覆盖层，不推断历史操作人。各仓周期优先；分类权重在主从仓归属后重新应用。未点击应用不会修改门店。')
     def fill(self,config):
         self.config=copy.deepcopy(config);base=self.preset.get('base_config',self.preset['config']);self.param_table.setRowCount(len(schema.HELP))
         for i,(key,(name,unit,helptext)) in enumerate(schema.HELP.items()):

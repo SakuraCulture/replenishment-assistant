@@ -26,8 +26,8 @@ def validate(data):
 
 def import_catalog(path,warehouse,progress=lambda s:None,cancel=None):
     if warehouse not in WAREHOUSES:raise ValueError('请明确选择河北仓或山东仓')
-    path=Path(path).resolve();before=engine.adapter.digest(path);sheet,heads=engine.sheet_name(path,'products')
-    progress('读取'+warehouse+'商品资料…');rows,info=engine.adapter.read_table(path,sheet,REQUIRED)
+    path=Path(path).resolve();before=engine.adapter.digest(path)
+    progress('读取'+warehouse+'商品资料…');sheet,heads,rows,info=engine.read_identified(path,'products',REQUIRED)
     if set(FIELDS)&set(info['duplicate_unused_headers']):raise ValueError('商品资料存在重复业务表头')
     items={}
     for raw in rows:

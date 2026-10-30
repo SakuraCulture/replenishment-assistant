@@ -30,7 +30,9 @@ class BatchWorker(QThread):
         super().__init__(parent);self.loaded=loaded;self.jobs=jobs;self.profile=profile;self.workers=workers;self.cancel=threading.Event()
     def run(self):
         try:batch_service.run(self.loaded,self.jobs,self.profile,self.workers,self.changed.emit,self.cancel)
-        except Exception as exc:self.failed.emit(str(exc))
+        except Exception as exc:
+            from diagnostics import failure
+            self.failed.emit(failure(exc,stage='批次调度'))
 
 
 class BackgroundJobs:

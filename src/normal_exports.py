@@ -37,6 +37,7 @@ def decision(d):
     excluded=sem.exclusion_reason(d)
     if excluded:return '禁用不补' if '禁用' in excluded else '停采不补'
     if sem.issue_text(d):return '资料待核'
+    if d.get('_budget_overrun'):return '预算补足'
     if d.get('_budget_gap',0)>0:return '预算限量' if sem.orderable(d) else '预算暂缓'
     if new_products.is_new(d):
         if d.get('_new_requested',0)>0:return '必卖首铺' if d.get('_must_sell') else '新品首铺'

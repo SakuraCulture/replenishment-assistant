@@ -91,6 +91,8 @@ def start_smoke(app,win,args):
             checks.append('log row resolves exact original signed revision, not latest replacement')
             target=out/'events.xlsx';QFileDialog.getSaveFileName=lambda *a,**k:(str(target),'');events.export();QFileDialog.getSaveFileName=save;assert target.exists();events.accept();events.deleteLater();d.reject();d.deleteLater()
             checks.append('queryable business log grid exports matching records as Excel; no JSON business view')
+            from review_smoke import verify
+            checks.extend(verify(win,out))
             finish()
         except Exception:finish(traceback.format_exc())
     sys.excepthook=lambda t,v,tb:finish(''.join(traceback.format_exception(t,v,tb)))
