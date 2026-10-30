@@ -29,7 +29,9 @@ def identity(row):return [row[k] for k in ('system','number','store','warehouse'
 def docid(row):return hashlib.sha256(wr.dumps(identity(row)).encode()).hexdigest()
 def fact(row):return {k:v for k,v in row.items() if k not in ('source','raw','sources','external_line_id','identity_reviewed')}
 def fingerprint(payload):
-    values={'schema':payload['schema'],'rows':[dict(fact(r),source=r['source'],sources=r.get('sources',[])) for r in payload['rows']],'files':[{k:f[k] for k in ('sha','name')} for f in payload['files']]}
+    # Full retained business/audit values, including raw cells and line identity.
+    # The transient preview approval and local file location are not fact identity.
+    values={'schema':payload['schema'],'rows':[{k:v for k,v in r.items() if k!='identity_reviewed'} for r in payload['rows']],'files':[{k:f[k] for k in ('sha','name')} for f in payload['files']]}
     return hashlib.sha256(wr.dumps(values).encode()).hexdigest()
 def current(db,did,version=None):
     if not exists(db):return None

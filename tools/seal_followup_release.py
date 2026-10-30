@@ -1,7 +1,7 @@
 """Seal 0.14.0 only after strict frozen business/export and real EXE checks."""
 import hashlib,json,shutil,subprocess,zipfile
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1];Q=ROOT/'qa/followup_014';DIST=ROOT/'交付_0.14.0_rc1';APP=DIST/'补货助手';REL=ROOT/'releases/0.14.0/rc1'
+ROOT=Path(__file__).resolve().parents[1];Q=ROOT/'qa/followup_014';DIST=ROOT/'交付_0.14.0_rc2';APP=DIST/'补货助手';REL=ROOT/'releases/0.14.0/rc2'
 
 def sha(path):
     h=hashlib.sha256()
@@ -33,7 +33,7 @@ def main():
     for name,path in reports.items():shutil.copy2(path,REL/name)
     for name in ('baseline.json','inputs.json','units.txt','optimized-tests.txt','environment.json'):shutil.copy2(Q/name,REL/name)
     for name in ('home-linked.png','purchase-preview-save.png','purchase-differences-save.png','execution-comparison.png','purchase-version.png'):shutil.copy2(Q/'exe-followup'/name,REL/name)
-    files={p.relative_to(APP).as_posix():sha(p) for p in APP.rglob('*') if p.is_file()};save(REL/'files.json',files);target=DIST/'补货助手_0.14.0_rc1.zip'
+    files={p.relative_to(APP).as_posix():sha(p) for p in APP.rglob('*') if p.is_file()};save(REL/'files.json',files);target=DIST/'补货助手_0.14.0_rc2.zip'
     with zipfile.ZipFile(target,'x',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         for name in files:z.write(APP/name,'补货助手/'+name)
     with zipfile.ZipFile(target) as z:

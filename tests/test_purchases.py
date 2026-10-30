@@ -162,5 +162,10 @@ class PurchaseTests(unittest.TestCase):
         payload=copy.deepcopy(self.payload);payload['result']['rows'][0]['AU']='旧混合仓';digest=no.fingerprint(payload['result'])
         with closing(sqlite3.connect(self.path)) as db,db:db.execute('UPDATE normal_revisions SET payload=?,digest=?',(no.encode(payload),digest))
         before=self.original();home=self.home()['records'];legacy=next(h for h in home if h['warehouse']=='旧版未标仓');self.assertIn('旧单仓归属待核',legacy['issues']);self.assertEqual(len(p.targets(self.path)),1);self.assertEqual(p.comparison(self.path,legacy)['rows'][0][0],'0001');self.assertEqual(self.original(),before)
+    def test_retained_raw_cells_are_integrity_checked(self):
+        self.save()
+        with closing(p.connect(self.path)) as db,db:
+            raw=db.execute('SELECT payload FROM purchase_versions').fetchone()[0];payload=wr.loads(raw);payload['rows'][0]['raw']['商品名称']='损坏的原始值';db.execute('UPDATE purchase_versions SET payload=?',(wr.dumps(payload),))
+        with self.assertRaisesRegex(ValueError,'校验失败'):p.documents(self.path)
 
 if __name__=='__main__':unittest.main()
