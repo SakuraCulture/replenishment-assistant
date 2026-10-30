@@ -4,6 +4,7 @@ from contextlib import closing
 from datetime import date
 from urllib.parse import quote
 import work_repository as wr
+import storage_chunks as chunks
 import new_product_focus as focus
 from version_info import MODEL_VERSION
 from io_stages import stage,compress as compress_bytes
@@ -26,7 +27,7 @@ def fingerprint_owned(result,new_focus=None):
 
 
 def encode(value):return zlib.compress(wr.dumps(value).encode())
-def decode(value):return wr.loads(zlib.decompress(value))
+def decode(value,db=None):return chunks.load(value,db)
 
 
 def revision_diff(old,new):
@@ -70,7 +71,7 @@ class Repository:
             oid,number,current=row;rev=current if revision is None else revision
             data=db.execute('SELECT digest,saved,payload FROM normal_revisions WHERE oid=? AND revision=?',(oid,rev)).fetchone()
             if data is None:raise ValueError('归档修订不存在')
-            payload=decode(data[2])
+            payload=chunks.load(data[2],db,binding=data[0])
             if fingerprint_owned(payload['result'],payload.get('new_focus'))!=data[0]:raise ValueError('归档快照校验失败')
             return {'oid':oid,'number':number,'day':day,'store':store,'revision':rev,'current_revision':current,'digest':data[0],'saved':data[1],'payload':payload}
 
@@ -80,12 +81,10 @@ class Repository:
         return [dict(zip(('day','store','oid','number','revision','digest','saved'),r)) for r in rows]
 
     def list(self):
-        with closing(self.work.connect()) as db:
-            rows=db.execute("SELECT o.day,o.store,o.number,o.current,r.saved,r.payload FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision ORDER BY o.day DESC,o.store").fetchall()
         records=[]
-        for day,store,number,rev,saved,p in rows:
-            result=decode(p)['result']
-            records.append({'day':day,'store':store,'number':number,'revision':rev,'saved':saved,'name':result['store_name'],'summary':result['summary']})
+        for head in self.headers():
+            order=self.get(head['day'],head['store'],head['revision']);result=order['payload']['result']
+            records.append({'day':head['day'],'store':head['store'],'number':head['number'],'revision':head['revision'],'saved':head['saved'],'name':result['store_name'],'summary':result['summary']})
         return records
 
     def events(self,oid=None):
@@ -118,11 +117,12 @@ class Repository:
             planned={}
             for s in codes:
                 planned[s]=db.execute("SELECT o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE o.day=? AND o.store=? AND o.kind='normal_model'",(day,s)).fetchone()
-        _,raw,digest=wr.prepare_job(day,payload,progress);stamp=wr.now()
+        existing=self.work.known_chunks()
+        _,work_pack,digest=wr.prepare_job(day,payload,progress,known=existing);stamp=wr.now()
+        existing.update(work_pack.chunks)
         changed_job=not planned_job or planned_job[1]!=digest
         work_revision=uuid.uuid4().hex if changed_job else planned_job[0]
-        compressed=compress_bytes(raw,progress) if changed_job else None
-        del raw
+
         prepared=[];heads=[]
         for index,s in enumerate(codes,1):
             progress(RowProgress(f'准备正常单：{index-1} / {len(codes)} 家 · {s}',index-1,len(codes)))
@@ -137,10 +137,11 @@ class Repository:
             heads.append({'oid':oid,'number':number,'day':day,'store':s,'revision':rev,'current_revision':rev,'digest':h,'saved':saved if same else stamp})
             if not same:
                 record={'schema':1,'model_version':MODEL_VERSION,'work_revision':work_revision,'result':result,'preset':payload.get('store_presets',{}).get(s),'new_focus':copy.deepcopy(payload.get('new_focus')),'item_ids':{d['E']:uuid.uuid5(uuid.UUID(oid),d['E']).hex for d in result['rows']}}
-                with stage('编码门店归档',store_progress):record_raw=wr.dumps(record).encode()
-                encoded=compress_bytes(record_raw,store_progress);del record_raw
+                encoded=chunks.prepare(record,existing,store_progress,binding=h)
+                existing.update(encoded.chunks)
                 prepared.append((s,oid,number,rev,h,encoded,result['summary']))
             progress(RowProgress(f'准备正常单：{index} / {len(codes)} 家',index,len(codes)))
+        if changed_job or prepared:chunks.backup_before_write(self.work.path,progress)
         with stage('提交归档与草稿（提交期间不可取消）',progress),closing(self.work.connect()) as db,db:
             db.execute('BEGIN IMMEDIATE')
             old=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
@@ -151,6 +152,7 @@ class Repository:
                 current=db.execute("SELECT current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,s)).fetchone()
                 if (current[0] if current else None)!=expected_orders.get(s):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)
                 if (current[0] if current else None)!=(planned[s][2] if planned[s] else None):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)
+            if changed_job or prepared:compressed=chunks.put(db,work_pack)
             if changed_job:
                 if old:db.execute('INSERT OR IGNORE INTO normal_work_revisions SELECT revision,day,payload FROM jobs WHERE day=?',(day,))
                 db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET revision=excluded.revision,digest=excluded.digest,saved=excluded.saved,summary=excluded.summary,payload=excluded.payload',(day,work_revision,digest,stamp,wr.dumps(info),compressed))
@@ -159,7 +161,7 @@ class Repository:
                     db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,s,'normal_model',oid,number,rev))
                 # Keep the issue's complete input/config draft even after later ordinary draft saves.
                 db.execute('INSERT OR IGNORE INTO normal_work_revisions SELECT revision,day,payload FROM jobs WHERE day=?',(day,))
-                db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,rev,h,stamp,encoded))
+                db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,rev,h,stamp,chunks.put(db,encoded)))
                 db.execute('UPDATE normal_orders SET current=? WHERE oid=?',(rev,oid))
                 db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,oid,rev,'确认归档' if rev==1 else '同日覆盖修订',wr.dumps({'number':number,'day':day,'store':s,'summary':summary,'previous_revision':rev-1 or None})))
         if headers_only:return heads

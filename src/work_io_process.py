@@ -39,7 +39,7 @@ def serve(connection,path,cancel):
                 checkpoint(cancel);writing=op in ('save','confirm_normal','delivery_execute','review_export')
                 if op=='prepare_save':
                     encoded_job=None;payload=arguments;progress('正在校验完整作业并核对同日记录…')
-                    save_day=payload['day'];encoded_job=wr.prepare_job(save_day,payload,progress);digest=encoded_job[2]
+                    save_day=payload['day'];encoded_job=wr.prepare_job(save_day,payload,progress,known=ro.known_chunks());digest=encoded_job[2]
                     with closing(ro.connect()) as db:row=db.execute('SELECT revision,digest,saved,summary FROM jobs WHERE day=?',(payload['day'],)).fetchone()
                     old={'revision':row[0],'digest':row[1],'saved':row[2],'summary':wr.loads(row[3])} if row else None
                     same=bool(old and old['digest']==digest)
