@@ -64,16 +64,28 @@ class Repository:
                 CREATE TABLE IF NOT EXISTS normal_work_revisions(revision TEXT PRIMARY KEY,day TEXT NOT NULL,payload BLOB NOT NULL);
             ''')
 
-    def get(self,day,store,revision=None):
+    def get(self,day,store,revision=None,*,view=None,progress=lambda _:None):
         with closing(self.work.connect()) as db:
             row=db.execute("SELECT oid,number,current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,store)).fetchone()
             if row is None:return None
             oid,number,current=row;rev=current if revision is None else revision
             data=db.execute('SELECT digest,saved,payload FROM normal_revisions WHERE oid=? AND revision=?',(oid,rev)).fetchone()
             if data is None:raise ValueError('归档修订不存在')
-            payload=chunks.load(data[2],db,binding=data[0])
-            if fingerprint_owned(payload['result'],payload.get('new_focus'))!=data[0]:raise ValueError('归档快照校验失败')
+            fields={'export':[('result','rows'),('result','summary'),('result','store'),('result','store_name'),('new_focus',)],'review':[('result','summary'),('result','effective_settings'),('result','sources'),('new_focus',)]}
+            if view is not None and view not in fields:raise ValueError('未知归档读取范围')
+            if view and chunks.manifest(data[2]) is not None:
+                parts=chunks.load(data[2],db,paths=fields[view],binding=data[0],progress=progress)
+                payload={'result':{path[1]:value for path,value in parts.items() if path[0]=='result'},'new_focus':parts.get(('new_focus',))}
+            else:
+                payload=chunks.load(data[2],db,binding=data[0],progress=progress)
+                if fingerprint_owned(payload['result'],payload.get('new_focus'))!=data[0]:raise ValueError('归档快照校验失败')
+                if view:payload={'result':{path[1]:payload['result'][path[1]] for path in fields[view] if len(path)==2 and path[1] in payload['result']},'new_focus':payload.get('new_focus')}
             return {'oid':oid,'number':number,'day':day,'store':store,'revision':rev,'current_revision':current,'digest':data[0],'saved':data[1],'payload':payload}
+
+    def head(self,day,store):
+        with closing(self.work.connect()) as db:
+            row=db.execute("SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE o.day=? AND o.store=? AND o.kind='normal_model'",(day,store)).fetchone()
+        return dict(zip(('day','store','oid','number','revision','digest','saved'),row)) if row else None
 
     def headers(self):
         with closing(self.work.connect()) as db:
@@ -165,4 +177,4 @@ class Repository:
                 db.execute('UPDATE normal_orders SET current=? WHERE oid=?',(rev,oid))
                 db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,oid,rev,'确认归档' if rev==1 else '同日覆盖修订',wr.dumps({'number':number,'day':day,'store':s,'summary':summary,'previous_revision':rev-1 or None})))
         if headers_only:return heads
-        with stage('读取并验证签发快照',progress):return [self.get(day,s) for s in codes]
+        with stage('读取并验证签发快照',progress):return [self.get(day,h['store'],h['revision'],progress=progress) for h in heads]

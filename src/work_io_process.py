@@ -1,4 +1,4 @@
-"""Isolated daily-work I/O. Existing Repository code and on-disk schema are unchanged."""
+"""Isolated daily-work I/O. Dual-format storage and fixed-revision projections; no Qt in the worker."""
 import hashlib,sqlite3,json,os,tempfile
 from pathlib import Path
 from contextlib import closing
@@ -47,7 +47,7 @@ def serve(connection,path,cancel):
                     # Drop this decoded tree before loading a second large job.
                     payload=None;arguments=None
                     if old and not same:
-                        with stage('读取原作业以核对覆盖差异',progress):old=compact_previous(ro.get_job(save_day))
+                        with stage('读取原作业以核对覆盖差异',progress):old=ro.review_job(save_day,progress)
                     result={'old':old,'same':same}
                 elif op=='save':
                     if encoded_job is None:raise ValueError('缺少已核对的作业快照')
@@ -64,11 +64,13 @@ def serve(connection,path,cancel):
                     head=normal_delivery.job_head(ro,payload['day']);expected_job=head['revision'] if head else None;expected_orders={};details={};lines=[]
                     for code in codes:
                         progress(f'核对正常单 {codes.index(code)+1}/{len(codes)} · {code}')
-                        checkpoint(cancel);r=payload['results'][code];previous=repository.get(payload['day'],code);expected_orders[code]=previous['revision'] if previous else None
-                        same=previous and previous['digest']==normal_orders.fingerprint_owned(r,payload.get('new_focus'))
+                        checkpoint(cancel);r=payload['results'][code];previous_head=repository.head(payload['day'],code)
+                        same=bool(previous_head and previous_head['digest']==normal_orders.fingerprint_owned(r,payload.get('new_focus')))
+                        previous=repository.get(payload['day'],code,previous_head['revision'],view='review' if same else None,progress=progress) if previous_head else None
+                        expected_orders[code]=previous['revision'] if previous else None
                         action='已归档，无需新修订' if same else f"同号 V{previous['revision']:03d} → V{previous['revision']+1:03d}" if previous else '首次 V001'
                         lines.append(r['store_name']+' ('+code+')：'+action+f"；¥{r['summary']['amount']:,.2f}，{r['summary']['positive']}款，待核{r['summary']['issues']}，预算缺口{r['summary']['budget_deferred']}")
-                        details[code]={'关注清单原版本':(previous['payload'].get('new_focus') or {}).get('revision') if previous else None,'关注清单新版本':(payload.get('new_focus') or {}).get('revision'),'new_selection':r.get('new_products',{}),'changes':normal_orders.revision_diff(previous['payload']['result'] if previous else None,r),'before_amount':previous['payload']['result']['summary']['amount'] if previous else None,'after_amount':r['summary']['amount']}
+                        details[code]={'关注清单原版本':(previous['payload'].get('new_focus') or {}).get('revision') if previous else None,'关注清单新版本':(payload.get('new_focus') or {}).get('revision'),'new_selection':r.get('new_products',{}),'changes':({'added':[],'removed':[],'changed':[],'old_settings':previous['payload']['result'].get('effective_settings'),'new_settings':r.get('effective_settings'),'old_sources':previous['payload']['result'].get('sources'),'new_sources':r.get('sources')} if same else normal_orders.revision_diff(previous['payload']['result'] if previous else None,r)),'before_amount':previous['payload']['result']['summary']['amount'] if previous else None,'after_amount':r['summary']['amount']}
                     if head:details['草稿覆盖']={'原保存时间':head['saved'],'原门店状态':head['summary']['stores'],'新门店状态':wr.summary(payload)['stores']}
                     review_text=json.dumps(details,ensure_ascii=False,indent=2)
                     result={'lines':lines,'detail_text':review_text[:120000],'truncated':len(review_text)>120000}
@@ -112,8 +114,8 @@ def serve(connection,path,cancel):
                     repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=work
                     result=normal_delivery.execute_batch(repository,batch,arguments,progress=progress,cancel=cancel)
                 elif op in ('load','copy_config'):
-                    with stage('读取并校验作业快照',progress):result=ro.get_job(arguments)
-                    if op=='copy_config' and result:result={k:result['payload'][k] for k in ('store_presets','store_ui')}
+                    with stage('读取并校验作业快照',progress):result=ro.get_job(arguments,paths=[('store_presets',),('store_ui',)] if op=='copy_config' else None,progress=progress)
+                    if op=='copy_config' and result:result={k:result['payload'][(k,)] for k in ('store_presets','store_ui')}
                 else:raise ValueError('未知作业操作')
                 if not writing:checkpoint(cancel)
                 connection.send(('success',None));send_tree(connection,result,None if writing else cancel,consume=op in ('load','copy_config'));result=None

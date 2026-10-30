@@ -72,7 +72,7 @@ class Index:
 def cached(path,cache,head,detail=False,cancel=None):
     idx=Index(cache);k=key(path,head);hit=idx.get(k,detail)
     if hit is not None:return hit
-    before=identity(path);order=repository(path).get(head['day'],head['store'],head['revision'])
+    before=identity(path);order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
     if order is None or order['digest']!=head['digest'] or before!=identity(path):raise ValueError('归档来源已变化，请刷新')
     view=project(order);record=summary_record(head,order['payload']['result'])
     if cancel is not None and cancel.is_set():raise InterruptedError('已取消')
@@ -138,6 +138,6 @@ def read_for_export(repo,head,progress=None,cancel=None):
     import engine
     engine.checkpoint(cancel)
     if progress:progress('读取并校验历史签发快照…')
-    order=repo.get(head['day'],head['store'],head['revision'])
+    order=repo.get(head['day'],head['store'],head['revision'],view='export',progress=progress or (lambda _:None))
     engine.checkpoint(cancel)
     return order

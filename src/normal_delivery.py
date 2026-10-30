@@ -36,7 +36,9 @@ def prepare_owned_batch(repository,payload,codes,progress=lambda s:None,cancel=N
         checkpoint(cancel);progress(f'核对门店 {i}/{len(codes)}：{store}')
         result=frozen['results'][store]
         if frozen.get('input_dirty') or frozen['states'][store]['state']!='已完成':raise ValueError('结果已失效：'+store)
-        old=repository.get(frozen['day'],store);same=bool(old and old['digest']==normal_orders.fingerprint_owned(result,frozen.get('new_focus')))
+        head_order=repository.head(frozen['day'],store)
+        same=bool(head_order and head_order['digest']==normal_orders.fingerprint_owned(result,frozen.get('new_focus')))
+        old=repository.get(frozen['day'],store,head_order['revision'],view='export' if same else None,progress=progress) if head_order else None
         if not same:
             if frozen['day']!=wr.today():raise ValueError('历史只读，请从历史页导出已签发修订')
             focus.require_for(frozen.get('new_focus'),frozen['day'],[result])
