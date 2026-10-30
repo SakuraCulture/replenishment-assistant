@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 
 def child(source,snapshot,out):
+    source_hashes={f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in (source/'src').glob('*') if f.is_file()}
     sys.path.insert(0,str(source/'src'));os.environ['REPLENISHMENT_DATA_DIR']=str(out/'settings')
     import sqlite3,work_repository as wr,normal_orders as no,new_product_focus as focus
     from ui_work_io import Session
@@ -26,7 +27,8 @@ def child(source,snapshot,out):
     export=out/'export';export.mkdir()
     def deliver(s,pr):s.call('delivery_prepare',[p,codes],pr);s.call('delivery_execute',str(export),pr)
     measure('export_signed_total',deliver)
-    r={'passed':True,'source':str(source),'timings':timings,'input_digest':hashlib.sha256(wr.dumps(p).encode()).hexdigest(),'rows':sum(len(r['rows']) for r in p['results'].values()),'amounts':{s:p['results'][s]['summary']['amount'] for s in codes},'files':[f.name for f in export.glob('*.xlsx')]}
+    assert source_hashes=={f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in (source/'src').glob('*') if f.is_file()},'source changed during measurement'
+    r={'passed':True,'source':str(source),'source_hashes':source_hashes,'timings':timings,'input_digest':hashlib.sha256(wr.dumps(p).encode()).hexdigest(),'rows':sum(len(r['rows']) for r in p['results'].values()),'amounts':{s:p['results'][s]['summary']['amount'] for s in codes},'files':[f.name for f in export.glob('*.xlsx')]}
     (out/'progress.json').write_text(json.dumps(messages,ensure_ascii=False),encoding='utf-8');(out/'result.json').write_text(json.dumps(r,ensure_ascii=False,indent=2),encoding='utf-8')
 
 def main():
