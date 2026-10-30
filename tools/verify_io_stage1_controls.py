@@ -56,6 +56,14 @@ def main():
     assert observed and observed[0][0]==500 and '已用时' in observed[0][1] and not observed[0][2];assert dialog.bar.value()==1000 and dialog.task.error is None
     dialog.deleteLater();app.processEvents()
     checks.append('Qt progress handles byte counts above 32-bit, real 50% stage, elapsed/status text, no write interruption and success-only final 100%')
+    from work_transfer import receive_tree
+    parent,child=multiprocessing.Pipe()
+    try:
+        try:receive_tree(parent,alive=lambda:False)
+        except RuntimeError as e:assert '进程已退出' in str(e)
+        else:raise AssertionError('dead reader was reported as successful')
+    finally:parent.close();child.close()
+    checks.append('dead transfer producer fails explicitly instead of waiting indefinitely or reporting success')
     assert not multiprocessing.active_children();report={'passed':True,'checks':checks,'remaining_children':[]};(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(report,ensure_ascii=False))
 
 if __name__=='__main__':multiprocessing.freeze_support();main()

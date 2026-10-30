@@ -40,7 +40,14 @@ def capture(source,fixture,out):
     extras={}
     for f in out.glob('*.xlsx'):
         with zipfile.ZipFile(f) as z:extras[f.name]={n:z.read(n) for n in z.namelist() if n.startswith(('xl/comments/','xl/drawings/')) or n=='docProps/custom.xml'}
-    (out/'capture.pkl').write_bytes(pickle.dumps({'records':records,'workbooks':workbooks,'extras':extras},protocol=5))
+    from datetime import date,datetime
+    original={'rows':[{'E':'00001','D':'类型边界','value':0,'empty':None,'text':'','nested':{'a':1,'b':2}}]}
+    variants=[]
+    for value in (False,0.0,None,'',1,[],(),date(2026,10,30),datetime(2026,10,30,12,30)):
+        other=copy.deepcopy(original);other['rows'][0]['value']=value;variants.append(no.revision_diff(original,other))
+    other=copy.deepcopy(original);del other['rows'][0]['empty'];other['rows'][0]['new_field']=None;variants.append(no.revision_diff(original,other))
+    other=copy.deepcopy(original);other['rows'][0]['nested']={'b':2,'a':1};variants.append(no.revision_diff(original,other))
+    (out/'capture.pkl').write_bytes(pickle.dumps({'records':records,'workbooks':workbooks,'extras':extras,'revision_type_cases':variants},protocol=5))
 
 
 def main():

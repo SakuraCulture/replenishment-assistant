@@ -12,7 +12,7 @@ def main():
     subprocess.run(['git','merge-base','--is-ancestor',meta['source_commit'],head],cwd=ROOT,check=True)
     changes=subprocess.check_output(['git','diff','--name-only',meta['source_commit'],head],cwd=ROOT,text=True).splitlines()
     assert all(x.startswith(('docs/','tools/','releases/')) or x in ('README.md','使用说明.txt') for x in changes)
-    files={'equivalence':qa/'equivalence_final/report.json','controls':qa/'controls_final/report.json','selected_controls':qa/'selected_controls_final/report.json','normal':qa/'normal_final/normal_report.json','performance':qa/'performance_final/report.json','workbooks':qa/'workbooks.json','preservation':qa/'protected_after.json'}
+    files={'equivalence':qa/'equivalence_release/report.json','controls':qa/'controls_release/report.json','selected_controls':qa/'selected_controls_release/report.json','normal':qa/'normal_final/normal_report.json','performance':qa/'performance_final/report.json','workbooks':qa/'workbooks.json','preservation':qa/'protected_after.json'}
     ui={'normal_ui':qa/'exe-normal/normal_ui_report.json','delivery_ui':qa/'exe-delivery/export_ui_report.json','history_ui':qa/'exe-history/history_ui_report.json','work_io_ui':qa/'exe-work-io/work_io_report.json'}
     evidence={}
     for name,path in {**files,**ui}.items():
