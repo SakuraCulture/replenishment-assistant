@@ -23,6 +23,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--business-flows-smoke' in sys.argv:
+        from business_flows_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--business-flows-smoke')+1:])
     if '--reconciliation-smoke' in sys.argv:
         from reconciliation_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--reconciliation-smoke')+1:])

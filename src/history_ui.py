@@ -40,8 +40,8 @@ class ArchiveDialog(QDialog):
         for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发明细（内部）','signed')]:
             b=button(title,lambda checked=False,k=kind:self.export_archive(k));exports.addWidget(b);self.archive_export_buttons.append(b)
         self.archive_export_btn=self.archive_export_buttons[0];v.insertLayout(1,exports)
-        row=QHBoxLayout();self.export_btn=button('导出门店确认单',self.export);self.audit_btn=button('查看计算依据',self.audit);row.addWidget(self.export_btn);row.addWidget(self.audit_btn);row.addWidget(button('此单操作日志',self.events));row.addWidget(button('关闭',self.reject));v.addLayout(row)
-        row.insertWidget(3,button('查看订单生命周期',self.purchases))
+        row=QHBoxLayout();self.export_btn=button('导出签发单',self.export);self.audit_btn=button('查看计算依据',self.audit);row.addWidget(self.export_btn);row.addWidget(self.audit_btn);row.addWidget(button('此单操作日志',self.events));row.addWidget(button('关闭',self.reject));v.addLayout(row)
+        row.insertWidget(3,button('查看订单跟踪',self.purchases))
         self.debounce=QTimer(self);self.debounce.setSingleShot(True);self.debounce.setInterval(275);self.debounce.timeout.connect(self.filter);self.search.textChanged.connect(lambda _:self.debounce.start());self.search.returnPressed.connect(self.filter);self.rev.currentIndexChanged.connect(self.load);self.load()
         self.export_btn.setText('导出签发单');self.audit_btn.setText('查看决策依据');self.tabs.currentChanged.connect(self.load_tab)
     def load(self):
@@ -123,24 +123,36 @@ class AuditDialog(QDialog):
         v.addWidget(label('左侧搜商品并点选，右侧切换当时参数、销量库存或商品资料。所有数据来自本次签发，不使用今天的资料补填。','muted'))
         splitter=QSplitter();left=QWidget();lv=QVBoxLayout(left);self.product_search=QLineEdit();self.product_search.setPlaceholderText('搜索本单商品名称 / 编码，空格分词');self.product_search.setClearButtonEnabled(True);lv.addWidget(self.product_search)
         self.products,self.product_model=grid(left,['商品编码','商品名称']);self.products.setColumnWidth(0,170);self.products.setColumnWidth(1,270);lv.addWidget(self.products,1);self.product_count=label('');lv.addWidget(self.product_count);splitter.addWidget(left)
-        right=QWidget();rv=QVBoxLayout(right);row=QHBoxLayout();self.scope=QComboBox();self.scope.addItems(['单据概况','当时参数','商品建议与销量库存','当时商品资料快照','商品完整计算依据']);self.scope.setCurrentIndex(2 if sku else 1);row.addWidget(self.scope);self.sku=QLineEdit(sku);self.sku.setPlaceholderText('也可输入精确商品编码后回车');row.addWidget(self.sku);self.load_btn=button('重新读取当前依据',self.load);row.addWidget(self.load_btn);rv.addLayout(row)
+        right=QWidget();rv=QVBoxLayout(right);row=QHBoxLayout();self.scope=QComboBox();self.scope.addItems(['单据概况','当时参数','商品建议与销量库存','当时商品资料快照','商品完整计算依据','决策总览']);self.scope.setCurrentText('决策总览');row.addWidget(self.scope);self.sku=QLineEdit(sku);self.sku.setPlaceholderText('也可输入精确商品编码后回车');row.addWidget(self.sku);self.load_btn=button('重新读取当前依据',self.load);row.addWidget(self.load_btn);rv.addLayout(row)
         self.note=label('');rv.addWidget(self.note);self.bar=QProgressBar();self.bar.setRange(0,0);rv.addWidget(self.bar);self.search=QLineEdit();self.search.setPlaceholderText('筛选本表单字段 / 数值；导出仍包含完整表单');self.search.setClearButtonEnabled(True);rv.addWidget(self.search);self.table,self.model=grid(right,['核对项目','当时值','类型']);self.table.setColumnWidth(0,330);self.table.setColumnWidth(1,430);self.table.setColumnWidth(2,65);rv.addWidget(self.table,1);self.search.textChanged.connect(self.filter_fields)
         self.export_hint=label('','muted');rv.addWidget(self.export_hint);row=QHBoxLayout();self.export_btn=button('导出此核对表单（非原表）',self.export);self.export_btn.setEnabled(False);row.addWidget(self.export_btn);self.original_btn=button('下载商品资料原表',lambda:self.host.export_archive(self.head,'original'));self.original_btn.setEnabled(not head.get('deleted'));row.addWidget(self.original_btn);row.addWidget(button('查看原始附件',self.sources));row.addWidget(button('关闭',self.reject));rv.addLayout(row);splitter.addWidget(right);splitter.setSizes([360,860]);v.addWidget(splitter,1)
+        self.problem=QComboBox();self.problem.addItems(['全部商品','签发大于0','签发为0','预算后减少']);lv.insertWidget(1,self.problem);self.problem.currentIndexChanged.connect(self.filter_products)
         self.product_search.textChanged.connect(self.filter_products);self.products.clicked.connect(self.select_product);self.scope.currentIndexChanged.connect(self.load);self.sku.returnPressed.connect(self.load)
         self.search_shortcut=QShortcut(QKeySequence('Ctrl+F'),self);self.search_shortcut.activated.connect(self.product_search.setFocus)
         if products is None:self.reader.request({'kind':'detail','head':head},lambda view:self.set_products(view['rows'],sku),self.failed)
         else:self.set_products(products,sku)
     def set_products(self,rows,sku):
         if self.disposed:return
-        self.product_model.replace([[r[0],r[1]] for r in rows]);self.filter_products()
-        index=next((i for i,r in enumerate(self.product_model.rows) if r[0]==sku),0)
-        if rows:self.products.selectRow(index);self.sku.setText(self.product_model.rows[index][0])
+        self.source_products=rows;self.product_model.replace([[r[0],r[1]] for r in rows]);self.filter_products()
+        exact=next((i for i,r in enumerate(self.product_model.rows) if r[0]==sku),None)
+        if sku and exact is None:self.product_search.setText(sku)
+        index=exact if exact is not None else (self.product_model.indices[0] if self.product_model.indices else None)
+        if index is not None:self.products.selectRow(self.product_model.indices.index(index));self.sku.setText(self.product_model.rows[index][0])
         self.load()
     def filter_products(self,*_):
-        self.product_model.filter(self.product_search.text());self.product_count.setText(f'找到 {self.product_model.rowCount()} / {len(self.product_model.rows)} 个商品；点击一行查看')
+        self.product_model.filter(self.product_search.text())
+        kind=self.problem.currentIndex() if hasattr(self,'problem') else 0
+        if kind:
+            def selected(index):
+                r=self.source_products[index]
+                try:qty=float(str(r[5]).replace(',',''));candidate=float(str(r[4]).replace(',',''))
+                except (ValueError,TypeError,IndexError):return False
+                return qty>0 if kind==1 else qty==0 if kind==2 else candidate>qty
+            m=self.product_model;m.beginResetModel();m.indices=[i for i in m.indices if selected(i)];m.endResetModel()
+        self.product_count.setText(f'找到 {self.product_model.rowCount()} / {len(self.product_model.rows)} 个商品；点击一行查看')
     def select_product(self,index):
         self.sku.setText(self.product_model.rows[self.product_model.indices[index.row()]][0])
-        if not self.scope.currentText().startswith('商品') and self.scope.currentText()!='当时商品资料快照':self.scope.setCurrentText('商品建议与销量库存')
+        if self.scope.currentText() in ('单据概况','当时参数'):self.scope.setCurrentText('决策总览')
         else:self.load()
     def filter_fields(self,*_):
         self.model.filter(self.search.text())

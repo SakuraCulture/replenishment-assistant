@@ -13,6 +13,7 @@ class ParameterDialog(QDialog):
         super().__init__(parent);self.setWindowTitle('完整参数 · '+scope);self.resize(1050,760);self.config=copy.deepcopy(config);self.preset=copy.deepcopy(preset);self.action=None;self.repository=parent.work_repository
         self.initial_config=copy.deepcopy(config);self.readonly=readonly;self.managing=not scope.startswith('所选') and not readonly;self.store_configs=store_configs or {};self.intent=intent
         v=QVBoxLayout(self);v.addWidget(label(scope+(' · 只读，不应用或保存。' if readonly else ' · 方案保存/停用立即生效，不应用到门店。' if self.managing else ' · 未应用的编辑仅在此窗口；应用整个表单，预算和主从仓保留。多店以第一家显示，应用前逐店核对差异。'),'muted'))
+        if intent=='defaults':v.itemAt(0).widget().setText(scope+' · 仅保存后续作业使用的默认；当前作业和历史签发不变。多店以第一家显示，保存前逐店核对完整差异。')
         if len(self.store_configs)>1 and any(c!=config for c in self.store_configs.values()):v.addWidget(label('注意：所选门店参数不完全相同；应用将统一完整参数，请核对每店差异。','section'))
         row=QHBoxLayout();self.choices=QComboBox();self.presets=self.repository.presets()
         for p in self.presets:self.choices.addItem(f"{p['name']} v{p['version']}"+(' · 内置已验收基线' if p['builtin'] else ' · 自定义，效果需试算'),p)

@@ -1,6 +1,6 @@
 """Explicit store/warehouse selection, independent of the current detail row."""
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QTableWidget,QTableWidgetItem,QDialogButtonBox,QPushButton,QLabel
+from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QTableWidget,QTableWidgetItem,QDialogButtonBox,QPushButton,QLabel,QLineEdit,QFileDialog,QMessageBox
 import warehouse_orders
 
 class MerchantSelection(QDialog):
@@ -24,12 +24,26 @@ class MerchantSelection(QDialog):
         for title,value in [('全选有效仓',True),('取消全选',False)]:
             button=QPushButton(title);button.clicked.connect(lambda _,v=value:self.select_all(v));row.addWidget(button)
         self.note=QLabel();row.addWidget(self.note);layout.addLayout(row)
+        self.destination=None
+        if order is None:
+            import export_locations
+            self.destination=QLineEdit(export_locations.initial_directory(parent));row=QHBoxLayout();row.addWidget(QLabel('本次导出位置'));row.addWidget(self.destination,1);browse=QPushButton('更改本次目录');browse.clicked.connect(self.browse);row.addWidget(browse);layout.addLayout(row)
         buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);self.ok=buttons.button(QDialogButtonBox.StandardButton.Ok);self.ok.setText('下一步：核对签发与输出范围');self.ok.setAutoDefault(False);self.ok.setDefault(False);buttons.button(QDialogButtonBox.StandardButton.Cancel).setDefault(True);buttons.button(QDialogButtonBox.StandardButton.Cancel).setText('取消');buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons);self.table.itemChanged.connect(self.update_count);self.update_count()
     def warehouses(self):
         values={}
         for s,w,c,valid in self.items:
             if valid and c.checkState()==Qt.CheckState.Checked:values.setdefault(s,[]).append(w)
         return values
+    def browse(self):
+        path=QFileDialog.getExistingDirectory(self,'选择本次导出目录',self.destination.text())
+        if path:self.destination.setText(path)
+    def accept(self):
+        if self.destination is not None:
+            import export_settings
+            try:self.destination.setText(export_settings.validate(self.destination.text(),writable=True))
+            except Exception as exc:QMessageBox.warning(self,'请选择可用目录',str(exc));return
+            if not self.destination.text():return
+        super().accept()
     def codes(self):return list(self.warehouses())
     def select_all(self,value):
         for _,_,c,valid in self.items:

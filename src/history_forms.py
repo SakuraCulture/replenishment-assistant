@@ -41,6 +41,20 @@ def form(repo,order,scope,sku,cancel=None):
     if scope=='单据概况':
         data={'补货单号':order['number'],'业务日期':order['day'],'门店编码':order['store'],'门店名称':r['store_name'],'签发修订':order['revision'],'归档时间':order['saved'],'签发金额':r['summary']['amount'],'签发款数':r['summary']['positive'],'说明':'原签发建议只读；门店回传独立保存'}
     elif scope=='当时参数':data={'实际生效设置':r.get('effective_settings'),'当时完整参数方案':p.get('preset'),'模型实际配置':r.get('config'),'关注清单':p.get('new_focus'),'首铺选择':r.get('new_products'),'输入来源':r.get('sources')}
+    elif scope=='决策总览':
+        d=next((x for x in r['rows'] if x['E']==sku),None)
+        if d is None:return [['商品','请选择本单商品','提示']]
+        import order_lifecycle
+        downstream=order_lifecycle.snapshot(repo.work.path,order,cancel=cancel) if wh else None
+        later=next((x for x in downstream['rows'] if x[0]==sku),None) if downstream else None
+        data={'签发事实':{'商品编码':sku,'商品名称':d.get('D'),'供货仓':d.get('AU'),'签发数量':sem.order_quantity(d),'签发金额':sem.order_amount(d),'已记录核心理由':normal_exports.decision(d)},
+              '当时销量库存':{LABELS[k]:d.get(k,'历史未留存此项') for k in ('H','I','J','K','L','N','BA')},
+              '实际参数与供货':{LABELS[k]:d.get(k,'历史未留存此项') for k in ('AG','AH','AN','AL','BD','V','U')},
+              '数量变化':{LABELS[k]:d.get(k,'历史未留存此项') for k in ('AR','BQ','AS','_base_qty','_candidate_qty','_budget_gap')},
+              '已有审计':{k:d[k] for k in ('_audit','_inbound_cap','_budget_overrun') if k in d},
+              '后续事实':dict(zip(order_lifecycle.HEADERS[3:],later[3:])) if later else '尚无此商品的后续资料',
+              '后续资料有效性':{'当前进度':downstream['status'],'提示':downstream['note'],'各环节已有效核对':downstream['health']} if downstream else '未分仓历史，仅能查原快照',
+              '证据边界':'上述为原签发快照和已保存后续单据；保底中间值不等于实际增量，历史未留存的归因不补写。'}
     elif scope in ('商品建议与销量库存','商品完整计算依据'):
         d=next((x for x in r['rows'] if x['E']==sku),None)
         if d is None:return [['商品','请输入本单内的精确商品编码','提示']]

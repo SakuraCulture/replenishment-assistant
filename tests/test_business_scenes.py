@@ -58,5 +58,21 @@ class BusinessScenes(unittest.TestCase):
                 self.assertEqual(len(d.receipt),3);self.assertEqual(f.view()['status'],'已收齐')
             d.deleteLater();self.app.processEvents()
         finally:self.win.work_repository=old;f.tearDown()
+    def test_default_compare_and_save_rejects_other_window_change(self):
+        import work_repository as wr,store_defaults
+        repo=self.win.work_repository;p=self.win.preset_for('T')
+        val=store_defaults.record(p,p['config'],{'primary':'河北仓','secondary':None,'mode':1,'amount':''})
+        repo.save_stores({'T':val},expected={'T':None})
+        with self.assertRaises(wr.Conflict):repo.save_stores({'T':val},expected={'T':None})
+        self.assertEqual(repo.stores()['T'],wr.loads(wr.dumps(val)))
+    def test_decision_overview_only_reads_frozen_and_saved_facts(self):
+        import test_lifecycle as fixture,history_forms
+        f=fixture.LifecycleTests();f.setUp()
+        try:
+            f.save('return',[{'门店确认数量':6}]);before=f.old_tables();order=f.repo.get(__import__('work_repository').today(),'T');order['warehouse']='河北仓'
+            rows=history_forms.form(f.repo,order,'决策总览','0001')
+            self.assertTrue(any('后续事实 / 门店确认数'==r[0] and r[1]=='6.0' for r in rows))
+            self.assertTrue(any('当时销量库存 / 可用库存'==r[0] for r in rows));self.assertEqual(f.old_tables(),before)
+        finally:f.tearDown()
 
 if __name__=='__main__':unittest.main()

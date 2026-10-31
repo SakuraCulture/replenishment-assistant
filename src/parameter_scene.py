@@ -93,7 +93,8 @@ class ParameterScene(QWidget):
         if not codes:
             return
         p = self.preset(codes[0])
-        ParameterDialog(self.host, p['config'], p, scope='保存的门店默认 · ' + codes[0], readonly=True).exec()
+        title='保存的门店默认 · ' if codes[0] in self.saved else '尚未保存默认，仅显示当前参考 · '
+        ParameterDialog(self.host, p['config'], p, scope=title + codes[0], readonly=True).exec()
 
     def edit_defaults(self):
         codes = self.require()
@@ -113,7 +114,8 @@ class ParameterScene(QWidget):
         for code in codes:
             ui = old.get(code, {}).get('ui') or (self.host.store_ui(code) if code in self.host.store_widgets else {})
             values[code] = store_defaults.record(d.preset, d.config, ui, old.get(code), saved=wr.now())
-        self.host.work_repository.save_stores(values)
+        try:self.host.work_repository.save_stores(values,expected={s:old.get(s) for s in codes})
+        except Exception as exc:QMessageBox.warning(self,'默认参数未保存',str(exc));return
         self.host.saved_store_defaults = {**old, **values}
         self.refresh()
         self.note.setText(f'已保存 {len(codes)} 店默认参数。当前作业和历史签发未改变。')
@@ -193,7 +195,7 @@ class ParameterScene(QWidget):
             if not review_rows(self, '核对门店默认变化', ['门店', '项目', '原值', '新值'], differences,
                                '仅保存以后使用的默认；当前作业和历史签发不变。', '保存门店默认'):
                 return
-            self.host.work_repository.save_stores(values)
+            self.host.work_repository.save_stores(values,expected={s:old.get(s) for s in codes})
             self.host.saved_store_defaults = {**old, **values}
             self.refresh()
             self.note.setText('门店默认已保存。当前作业未应用。')

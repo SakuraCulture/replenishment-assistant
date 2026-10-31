@@ -97,3 +97,16 @@ def prepare(path, documents, scope=None, progress=lambda _:None, cancel=None):
             files.update({f['sha']:f for f in result['files']})
             progress(RowProgress(f'核对单据 {len(plans)}/{count}',len(plans),count))
     return {'plans':plans,'files':list(files.values())}
+
+def export_signed(path,heads,folder,progress=lambda _:None,cancel=None):
+    """Existing immutable signed export, in explicit selected-order sequence."""
+    from history_read import repository
+    import normal_delivery,purchases
+    from contextlib import closing
+    repo=repository(path);files=[]
+    for i,h in enumerate(heads):
+        checkpoint(cancel);progress(RowProgress(f'导出签发单 {i+1}/{len(heads)}',i,len(heads)))
+        with closing(purchases.connect(path)) as db:purchases.validate_head(db,h)
+        order=repo.get(h['day'],h['store'],h['revision'],view='export')
+        files.extend(normal_delivery.export_signed(repo,order,folder,[h['warehouse']],progress,cancel))
+    return files

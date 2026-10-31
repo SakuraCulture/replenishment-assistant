@@ -22,7 +22,32 @@ class LifecycleWidget(QWidget):
         v.addLayout(row);self.bar=QProgressBar();self.bar.setMaximumHeight(14);v.addWidget(self.bar);self.note=label('待查询','muted');v.addWidget(self.note)
         self.table=QTableWidget();self.table.setColumnCount(12);self.table.setHorizontalHeaderLabels(['勾选','单据详情','下一步','业务日期','门店','仓','补货单号','当前进度','门店回传','门店付款','实际收货','资料提示']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
         row=QHBoxLayout();row.addWidget(button('勾选本页',lambda:self.select_page(True)));row.addWidget(button('清空勾选',lambda:self.select_page(False)));self.export_btn=button('导出勾选单生命周期对照',self.export);row.addWidget(self.export_btn);row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));self.selected_label=label('');row.addWidget(self.selected_label);v.addLayout(row)
-        v.addWidget(import_group(self,host,refresh=lambda:self.query(keep_page=True),scope_provider=lambda:list(self.checked.values())));v.addWidget(label('确认归档即签发。工作页可继续计算其它批次；完整单据及数量差异可在详情查看。','muted'));self.selection_label()
+        exports=QHBoxLayout();exports.addWidget(button('导出签发单',self.export_signed))
+        for s in service.STAGES:exports.addWidget(button('导出'+TITLES[s],lambda checked=False,k=s:export_selected(self,self.host,list(self.checked.values()),k)))
+        v.addLayout(exports)
+        v.addWidget(import_group(self,host,refresh=self.imported,scope_provider=lambda:list(self.checked.values())));v.addWidget(label('拖入多张订单或多个环节单据；有勾选时严格限定在所选订单。','muted'));self.selection_label();self.setAcceptDrops(True)
+    def imported(self):
+        self.query(keep_page=True);self.host.status.setText('所选生命周期单据已保存；原签发未改变。')
+    def dragEnterEvent(self,event):
+        from pathlib import Path
+        urls=event.mimeData().urls()
+        if urls and all(u.isLocalFile() and Path(u.toLocalFile()).suffix.lower()=='.xlsx' for u in urls):event.acceptProposedAction()
+    def dropEvent(self,event):
+        from lifecycle_batch_ui import import_batch
+        if import_batch(self,self.host,scope=list(self.checked.values()) or None,paths=[u.toLocalFile() for u in event.mimeData().urls()]):self.imported()
+        event.acceptProposedAction()
+    def export_signed(self):
+        from business_ui import run
+        from interaction_ui import confirm
+        import lifecycle_batch,export_locations
+        heads=list(self.checked.values())
+        if not heads:QMessageBox.information(self,'请选择订单','先勾选要导出的订单。');return
+        folder=export_locations.initial_directory(self)
+        if not confirm(self,'导出签发单','每店每仓一份原签发文件，不重新签发。\n'+'\n'.join(h['number'] for h in heads)+'\n导出位置：'+folder):return
+        try:
+            files=run(self,lifecycle_batch.export_signed,(self.host.work_repository.path,heads,folder),'导出签发单')
+            QMessageBox.information(self,'签发单已导出','\n'.join(files))
+        except Exception as exc:warn(self,exc)
     def query(self,*_,keep_page=False):
         if self.host.closing:return
         if not keep_page:self.page=0;self.checked.clear()

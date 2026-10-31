@@ -57,7 +57,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.archive_note=label('','muted');av.addWidget(self.archive_note)
         paging=QHBoxLayout();paging.addWidget(button('上一页',lambda:self.archive_turn(-1)));paging.addWidget(button('下一页',lambda:self.archive_turn(1)));av.addLayout(paging)
         row=QHBoxLayout();row.addWidget(label('单据查看请使用每行的“查看单据”；批量操作仅认勾选。','muted'));row.addWidget(button('查看操作记录',self.show_events));row.addWidget(button('刷新',self.refresh_archive));av.addLayout(row);av.addWidget(label('双击查看：签发快照、历史修订、逐商品数量和来源审计。历史页不改今日工作区。','muted'));self.sections.addWidget(archive)
-        self.overview_page.layout().addWidget(label('加盟商用途：制作确认单会先核对签发变化；内部核对文件请使用上方内部明细入口。','muted'));actions=QHBoxLayout();self.new_products_btn=button('选择门店并安排新品',lambda:self.choose_new_products(False));actions.addWidget(self.new_products_btn);self.issue_btn=button('仅确认归档（不导出）',self.confirm_normal);actions.addWidget(self.issue_btn);self.merchant_btn=button('导出门店确认单',self.export_current,True);actions.addWidget(self.merchant_btn);self.overview_page.layout().addLayout(actions)
+        self.overview_page.layout().addWidget(label('加盟商用途：制作确认单会先核对签发变化；内部核对文件请使用上方内部明细入口。','muted'));actions=QHBoxLayout();self.new_products_btn=button('选择门店并安排新品',lambda:self.choose_new_products(False));actions.addWidget(self.new_products_btn);self.issue_btn=button('仅确认归档（不导出）',self.confirm_normal);actions.addWidget(self.issue_btn);self.merchant_btn=button('导出签发单',self.export_current,True);actions.addWidget(self.merchant_btn);self.overview_page.layout().addLayout(actions)
         self.detail_new_btn=button('安排本店新品',lambda:self.choose_new_products(True));self.pages.widget(4).layout().insertWidget(1,self.detail_new_btn)
         self.mode.addItems(['动销补货','新品候选','新品推荐','缺货恢复及其他','在途衔接风险'])
         self.save_job_btn.setText('保存草稿');self.history_btn.setText('草稿记录');self.batch_export.setText('导出本批内部明细');self.export_all.setText('导出本店全量内部明细');self.export_filtered.setText('导出筛选内部明细')
@@ -67,6 +67,11 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         install(self,hv)
         from business_scenes import install as install_scenes
         install_scenes(self,hv)
+        self.auto_check=QTimer(self);self.auto_check.setSingleShot(True);self.auto_check.setInterval(400);self.auto_check.timeout.connect(self.check_added_files);self.sales.changed.connect(self.auto_check.start)
+
+    def check_added_files(self):
+        if not self.worker and not self.closing and not self.readonly and self.sales.paths and (self.products.path if self.master_legacy.isChecked() else self.catalogs):self.start_load()
+
 
     def storage_copy(self):
         if self.worker or getattr(self,'_large_io_dialog',None):return
@@ -242,7 +247,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         try:self.new_focus=self.focus_repository.load()
         except Exception as exc:self.new_focus=None;self.status.setText("新品关注清单未加载："+str(exc))
         self.refresh_focus()
-    def loaded_ok(self,loaded):self.new_bases={};super().loaded_ok(loaded)
+    def loaded_ok(self,loaded):
+        self.new_bases={};super().loaded_ok(loaded)
+        if not self.closing:self.navigate(1)
     def task_changed(self,store,state,result,error):
         if result:self.new_bases.pop(store,None)
         super().task_changed(store,state,result,error)
@@ -308,18 +315,18 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                         request(self,session,'review_export',path)
                 if box.clickedButton() is not accept:return
                 receipt=request(self,session,'confirm_normal',None)
-            self.saved_time=receipt['saved'];self.job_dirty=False;self.refresh_job_label();self.refresh_archive();self.status.setText('已自动归档：'+'；'.join(r['number']+f" V{r['revision']:03d}" for r in receipt['orders'])+'。可导出门店确认单。')
+            self.saved_time=receipt['saved'];self.job_dirty=False;self.refresh_job_label();self.refresh_archive();self.status.setText('已自动归档：'+'；'.join(r['number']+f" V{r['revision']:03d}" for r in receipt['orders'])+'。可导出签发单。')
         except Cancelled:self.status.setText('已取消核对，原正常单与草稿保留。')
         except Exception as exc:self.failed('归档操作未完成，请在历史记录核对状态：'+str(exc))
 
     def export_current(self,codes=None):
         if self.worker or self.input_dirty:return
-        warehouses=None
+        warehouses=None;destination=None
         if not isinstance(codes,list):
             from merchant_selection import MerchantSelection
             dialog=MerchantSelection(self)
             if dialog.exec()!=QDialog.DialogCode.Accepted:return
-            codes=dialog.codes();warehouses=dialog.warehouses()
+            codes=dialog.codes();warehouses=dialog.warehouses();destination=dialog.destination.text()
         if not codes:return
         from ui_work_io import Session,request
         from runtime_support import Cancelled
@@ -332,17 +339,17 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                 if any(not p['same'] for p in plans):
                     tail={**full,'results':{s:r for s,r in full['results'].items() if s not in codes}}
                     request(self,session,'delivery_expand',[tail,list(full['results'])])
-                    box=QMessageBox(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出门店确认单');lines=[]
+                    box=QMessageBox(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出签发单');lines=[]
                     for p in plans:
                         old=p['old'];action='沿用已归档修订' if p['same'] else f"覆盖当天正常单 V{old['revision']:03d} → V{old['revision']+1:03d}（旧版保留）" if old else '首次签发 V001'
                         lines.append(p['name']+' ('+p['store']+')：'+action+f"；¥{p['amount']:,.2f}")
-                    box.setText(f'草稿保存范围：当前完整每日草稿。\n正常单签发范围：所选 {len(plans)} 家店的完整正常单（包括未选择导出的仓）。\n文件输出范围：已选 {len(plans)} 家门店，共 {sum(len(p["files"]) for p in plans)} 份分仓确认单。仅导出所选仓；归档仍保存各店完整正常单。\n'+'\n'.join(lines)+'\n确认后自动归档并逐店导出；不是实际下单。')
+                    box.setText(f'导出位置：{destination or "下一步明确选择"}\n草稿保存范围：当前完整每日草稿。\n正常单签发范围：所选 {len(plans)} 家店的完整正常单（包括未选择导出的仓）。\n文件输出范围：已选 {len(plans)} 家门店，共 {sum(len(p["files"]) for p in plans)} 份分仓确认单。仅导出所选仓；归档仍保存各店完整正常单。\n'+'\n'.join(lines)+'\n确认后自动归档并逐店导出；不是实际下单。')
                     detail={'所选门店':[p['store'] for p in plans]}
                     if prepared['head']:
                         detail['同日草稿覆盖']={'原保存时间':prepared['head']['saved'],'原门店状态':prepared['head']['summary'],'本次门店状态':prepared['summary']};box.setInformativeText('同时覆盖当天完整草稿；未选门店正常单不变。展开详情查看草稿覆盖范围。')
                     from history_forms import fields
                     draft_text='\n'.join(k+'：'+v for k,v,t in fields(detail))
-                    box.setDetailedText(prepared['detail_text']+'\n\n草稿覆盖范围：\n'+draft_text);box.setInformativeText('确认时同时保存完整草稿；未选门店正常单不变。按所选门店顺序列出商品、参数和来源变化。'+('明细已截断，请导出完整差异Excel。' if prepared['truncated'] else '展开详情核对；可导出完整差异Excel。'));save_diff=box.addButton('导出完整差异Excel',QMessageBox.ButtonRole.ActionRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认归档并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
+                    box.setDetailedText(prepared['detail_text']+'\n\n草稿覆盖范围：\n'+draft_text);box.setInformativeText('确认时同时保存完整草稿；未选门店正常单不变。按所选门店顺序列出商品、参数和来源变化。'+('明细已截断，请导出完整差异Excel。' if prepared['truncated'] else '展开详情核对；可导出完整差异Excel。'));save_diff=box.addButton('导出完整差异Excel',QMessageBox.ButtonRole.ActionRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认签发并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
                     while True:
                         box.exec()
                         if box.clickedButton() is not save_diff:break
@@ -353,8 +360,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                     from interaction_ui import confirm
                     if not confirm(self,'导出已签发版本','不新增签发修订；按以下原修订生成文件：\n'+'\n'.join(p['name']+f" · V{p['old']['revision']:03d} · {len(p['files'])}份" for p in plans)):return
                 files=[f for p in plans for f in p['files']]
-                if len(files)==1:
-                    path,_=export_locations.save_file(self,'导出本仓门店确认单',files[0]['filename'],'Excel (*.xlsx)')
+                if destination:path=destination
+                elif len(files)==1:
+                    path,_=export_locations.save_file(self,'导出本仓签发单',files[0]['filename'],'Excel (*.xlsx)')
                     if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
                 else:path=export_locations.directory(self,'选择批量确认单导出文件夹')
                 if not path:return
@@ -386,7 +394,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             warehouses=dialog.warehouses().get(order['store'],[])
         if not warehouses:return
         if len(warehouses)==1:
-            path,_=export_locations.save_file(self,'导出本仓门店确认单',normal_exports.filename(order,warehouses[0]),'Excel (*.xlsx)')
+            path,_=export_locations.save_file(self,'导出本仓签发单',normal_exports.filename(order,warehouses[0]),'Excel (*.xlsx)')
             if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
         else:path=export_locations.directory(self,'选择分仓确认单导出文件夹')
         if not path:return

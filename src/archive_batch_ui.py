@@ -83,7 +83,7 @@ def original(parent,path,heads):
 class ArchiveBatchActions:
     def setup_archive_exports(self,layout):
         self.archive_checked={};row=QHBoxLayout();self.archive_export_buttons=[]
-        for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发建议','signed')]:
+        for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发明细（内部）','signed')]:
             b=button(title,lambda checked=False,k=kind:self.export_archive_batch(k));row.addWidget(b);self.archive_export_buttons.append(b)
         layout.addLayout(row)
         lifecycle=QGroupBox('业务单据导出（使用已勾选仓单）');actions=QHBoxLayout(lifecycle)
@@ -102,7 +102,7 @@ class ArchiveBatchActions:
             cell=QTableWidgetItem();cell.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);cell.setCheckState(Qt.CheckState.Checked if batch.key(h) in self.archive_checked else Qt.CheckState.Unchecked);table.setItem(i,0,cell)
             table.setItem(i,table.columnCount()-1,QTableWidgetItem(h.get('source_status','导出前核验')))
         col=table.columnCount();table.insertColumn(col);table.setHorizontalHeaderItem(col,QTableWidgetItem('查看'))
-        for i,h in enumerate(self.archive_orders):table.setCellWidget(i,col,button('查看单据',lambda checked=False,head=dict(h):self.open_archive(head)))
+        for i,h in enumerate(self.archive_orders):table.setCellWidget(i,col,button('查看单据',lambda checked=False,head=dict(h):self.open_archive(head,'audit',self.archive_search.text().strip())))
         del block;table.resizeColumnsToContents();self.selection_status()
     def archive_check_changed(self,item):
         if item.column()!=0 or item.row()>=len(self.archive_orders):return

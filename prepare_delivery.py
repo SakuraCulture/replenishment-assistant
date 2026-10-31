@@ -52,6 +52,16 @@ if version['version']=='0.16.1':
     templates=dest/'导入模板';templates.mkdir(exist_ok=True)
     for stage in lifecycle_io.STAGES:lifecycle_io.template(stage,templates/(lifecycle_io.TITLES[stage]+'模板.xlsx'))
 if (root/'third_party_licenses').exists():shutil.copytree(root/'third_party_licenses',licenses,dirs_exist_ok=True)
+if version['version']=='0.17.0':
+    (dest/'docs').mkdir(exist_ok=True)
+    for name in ['0.17.0四场景与批量单据.md','四个主干业务场景与低认知交互方案_V1.md','商品资料保存链路_0.16.0.md']:
+        shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
+    (dest/'使用说明.txt').write_bytes((root/'docs/0.17.0四场景与批量单据.md').read_bytes())
+    sys.path.insert(0,str(root/'src'))
+    import lifecycle_io
+    templates=dest/'导入模板';templates.mkdir(exist_ok=True)
+    for stage in lifecycle_io.STAGES:lifecycle_io.template(stage,templates/(lifecycle_io.TITLES[stage]+'模板.xlsx'))
 versions={}
 for name in ['PySide6-Essentials','shiboken6','openpyxl','et-xmlfile','pillow','PyInstaller']:
     dist=md.distribution(name);versions[name]=dist.version
