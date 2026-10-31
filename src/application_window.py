@@ -50,7 +50,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         dates.addWidget(self.archive_from);dates.addWidget(label('至'));dates.addWidget(self.archive_to);dates.addStretch();av.addLayout(dates)
         self.archive_search.setPlaceholderText('关键词可组合：门店 商品名 / 编码 / 单号（空格分开，回车立即查）');self.archive_search.setClearButtonEnabled(True);self.archive_search.returnPressed.connect(self.refresh_archive)
         from lifecycle_ui import import_group
-        av.addWidget(import_group(self,self,refresh=self.refresh_archive))
+        av.addWidget(import_group(self,self,refresh=self.refresh_archive,scope_provider=lambda:list(self.archive_checked.values())))
         av.addWidget(label('数据导出 · 勾选仓单后使用下列独立入口','section'))
         self.setup_archive_exports(av)
         self.archive_table=QTableWidget();self.archive_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.archive_table.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.archive_orders[i]) if c else None);self.archive_table.itemChanged.connect(self.archive_check_changed);av.addWidget(self.archive_table,1)

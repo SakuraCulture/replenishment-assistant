@@ -22,7 +22,7 @@ class LifecycleWidget(QWidget):
         v.addLayout(row);self.bar=QProgressBar();self.bar.setMaximumHeight(14);v.addWidget(self.bar);self.note=label('待查询','muted');v.addWidget(self.note)
         self.table=QTableWidget();self.table.setColumnCount(12);self.table.setHorizontalHeaderLabels(['勾选','单据详情','下一步','业务日期','门店','仓','补货单号','当前进度','门店回传','门店付款','实际收货','资料提示']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
         row=QHBoxLayout();row.addWidget(button('勾选本页',lambda:self.select_page(True)));row.addWidget(button('清空勾选',lambda:self.select_page(False)));self.export_btn=button('导出勾选单生命周期对照',self.export);row.addWidget(self.export_btn);row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));self.selected_label=label('');row.addWidget(self.selected_label);v.addLayout(row)
-        v.addWidget(import_group(self,host,refresh=self.query));v.addWidget(label('确认归档即签发。工作页可继续计算其它批次；完整单据及数量差异可在详情查看。','muted'));self.selection_label()
+        v.addWidget(import_group(self,host,refresh=lambda:self.query(keep_page=True),scope_provider=lambda:list(self.checked.values())));v.addWidget(label('确认归档即签发。工作页可继续计算其它批次；完整单据及数量差异可在详情查看。','muted'));self.selection_label()
     def query(self,*_,keep_page=False):
         if self.host.closing:return
         if not keep_page:self.page=0;self.checked.clear()

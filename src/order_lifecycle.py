@@ -92,7 +92,7 @@ def available(path, scanned, progress=lambda _: None, cancel=None):
 def current_targets(path, progress=lambda _:None, cancel=None):
     return [h for h in purchases.targets(path,progress=progress,cancel=cancel) if h['revision']==h['current_revision']]
 
-def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=None):
+def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=None, *, staged=None):
     """Public import: one order number, current signed facts; versions stay internal.
 
     Existing prepare/recheck remain exact-snapshot compatibility APIs. A current
@@ -116,13 +116,13 @@ def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=N
         if not matching(row,[h]):raise ValueError('源表门店或仓库与补货单号不一致：'+row['signed_number'])
         row['revision']=h['revision']
         bindings[binding_key(row)]=h
-    return prepare(path,scanned,bindings,progress,cancel)
+    return prepare(path,scanned,bindings,progress,cancel,staged=staged)
 
-def upstream(db, head, stage):
+def upstream(db, head, stage, staged=None):
     """Freeze every dependency; absence is also a token checked at commit."""
     index=STAGES.index(stage); tokens={}; previous=None; valid=True
     for s in STAGES[:index]:
-        doc=current(db,head,s)
+        doc=(staged or {}).get((*key(head),s)) or current(db,head,s)
         if doc is None and s=='return':
             legacy=legacy_return(db,head,head['products'])
             if legacy and legacy['complete']:
@@ -137,8 +137,8 @@ def upstream(db, head, stage):
     products=head['products'] if stage=='return' else rules.positive(previous['payload']['rows']) if previous and valid else {}
     return {'stage':'signed' if stage=='return' else STAGES[index-1], 'dependencies':tokens, 'signed_digest':head['digest'], 'ready':stage=='return' or valid, 'products':products}
 
-def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False):
-    basis=upstream(db,head,stage)
+def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False, *, staged=None):
+    basis=upstream(db,head,stage,staged)
     if explicit_zero and not basis['ready']:raise ValueError('上游未就绪，不能确认整单为0')
     effective=rules.reconcile(raw_rows,basis['products'],pending=not basis['ready'])
     missing=[r['sku'] for r in effective if r['quantity_origin']=='missing'];extra=[r['sku'] for r in effective if r['outside_basis']]
@@ -175,7 +175,7 @@ def match_payment_rows(path, head, rows):
         elif original in other_codes:raise ValueError('商品属于另一供货仓，请核对目标仓单：'+original)
         else:row['matching_basis']='清单外商品，需确认'
 
-def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None):
+def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None, *, staged=None):
     """Bindings are exact whole-document heads, no per-line quantity allocations."""
     stage = scanned['stage']
     if stage not in STAGES: raise ValueError('未知生命周期环节')
@@ -200,7 +200,7 @@ def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None):
                     before['sources'].extend(r['sources']); duplicates += 1
                 else: unique[sku] = r
             rows = list(unique.values()); used = {s['sha'] for r in rows for s in r['sources']}
-            plans.append(make_plan(db,h,stage,rows,[f for f in scanned['files'] if f['sha'] in used],duplicates))
+            plans.append(make_plan(db,h,stage,rows,[f for f in scanned['files'] if f['sha'] in used],duplicates,staged=staged))
             progress(RowProgress(f'核对整单 {i+1}/{len(groups)}：' + h['number'], i+1, len(groups)))
     if not plans: raise ValueError('没有可保存的整单')
     return {'plans': plans, 'files': scanned['files']}
@@ -238,6 +238,11 @@ def begin(db, cancel):
         except sqlite3.OperationalError as exc:
             if 'locked' not in str(exc).lower() or time.monotonic()-start > 10: raise
 
+def staged_document(plan):
+    """Exact document that this plan will commit, including unchanged versions."""
+    return {'version':(plan['expected'] or 0)+int(plan['changed']),
+            'digest':plan['digest'],'payload':plan['payload']}
+
 def commit(path, plan, progress=lambda _: None, cancel=None):
     checkpoint(cancel); contents = []
     for i, f in enumerate(plan['files']):
@@ -256,11 +261,16 @@ def commit(path, plan, progress=lambda _: None, cancel=None):
     receipts = []
     with closing(sqlite3.connect(path, timeout=.15)) as db, db:
         begin(db, cancel); schema(db)
+        staged={}
         for p in plan['plans']:
             checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'])
+            identity=(*key(p['head']),p['stage'])
+            if identity in staged:raise ValueError('同一订单同一环节只能保存一份完整单据')
             if (old['version'] if old else None) != p['expected']: raise wr.Conflict('单据在预览后被更新，请重新核对')
-            if p['payload']['basis'] != upstream(db,p['head'],p['stage']):raise wr.Conflict('上游单据在预览后变化，请重新核对')
+            if p['payload']['basis'] != upstream(db,p['head'],p['stage'],staged):raise wr.Conflict('上游单据在预览后变化，请重新核对')
             if fingerprint(p['payload']) != p['digest']: raise ValueError('预览内容变化')
+            if p['changed'] != (not old or old['digest']!=p['digest']):raise ValueError('预览更新状态变化')
+            staged[identity]=staged_document(p)
         # Last checkpoint. Never terminate the process between here and COMMIT.
         checkpoint(cancel); progress(COMMIT_BOUNDARY)
         for f, raw in contents: db.execute('INSERT OR IGNORE INTO lifecycle_files VALUES(?,?,?)', (f['sha'], f['name'], raw))
