@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "number": "BH-20261031-UAT001-ZC-HB",
+      "all_sku_quantities_and_order_equal": true,
+      "rows": 9
+    },
+    {
+      "number": "BH-20261031-UAT001-ZC-SD",
+      "all_sku_quantities_and_order_equal": true,
+      "rows": 2
+    },
+    {
+      "number": "BH-20261031-UAT002-ZC-HB",
+      "all_sku_quantities_and_order_equal": true,
+      "rows": 1
+    },
+    {
+      "number": "BH-20261031-UAT002-ZC-SD",
+      "all_sku_quantities_and_order_equal": true,
+      "rows": 10
+    },
+    "12 separate documents, reverse stage order, atomic save, four completed warehouse orders; original five tables unchanged",
+    "one workbook with three reversed-stage sheets resolves to same 12 documents",
+    {
+      "negative_quantity_rejected": "回传负数量.xlsx / 门店回传单 第2行：需要有限非负数字；撤单/退货不能用负数猜测",
+      "unknown_order_rejected": "本机未找到补货单号：BH-NOT-EXISTS-ZC-HB；不得按名称或相近日期猜测",
+      "unnumbered_requires_binding": "请为缺号的完整来源订单选择补货单号"
+    },
+    {
+      "duplicate_candidates_rejected": "BH-20261031-UAT001-ZC-HB 的门店回传单有多份候选，请只勾选一份完整单据；不会拼单或累加"
+    },
+    "extra SKU 9999 explicitly shown; preview not committed",
+    "header-based mapping preserves row order, quantity, origin, basis and difference",
+    "four original signed-layout workbooks auto-detected as return, quantities equal signed basis",
+    "13-column payment file resolves after explicit whole-order binding",
+    "cancel before read leaves data unchanged; clean retry already passed",
+    "both original master workbooks retained byte-for-byte",
+    "four warehouse history rows and two order progress events",
+    "all package input and seed hashes unchanged"
+  ],
+  "warehouse_orders": 4,
+  "sku_rows": 22,
+  "manual_execution_status": "未由业务人员执行",
+  "app_version": "0.17.1",
+  "source_root": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\manual_acceptance_20261031\\source",
+  "allowed_comparison_differences": "none in compared UI business rows; source file provenance intentionally differs for mixed vs separate files",
+  "original_tables_unchanged": [
+    "jobs",
+    "normal_orders",
+    "normal_revisions",
+    "normal_work_revisions",
+    "source_files"
+  ]
+}

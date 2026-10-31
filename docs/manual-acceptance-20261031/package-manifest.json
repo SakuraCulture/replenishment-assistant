@@ -1,0 +1,332 @@
+{
+  "synthetic": true,
+  "files": {
+    "01_补货输入/两店补货建议.xlsx": {
+      "bytes": 6287,
+      "sha256": "1b5c3fff7317d3866c0b63385fe41342fc488065c0b2bf509f25d2a55ad16241"
+    },
+    "01_补货输入/山东仓商品资料.xlsx": {
+      "bytes": 4711,
+      "sha256": "06cb01eb2db59ce3395373f1ac389a90755c6dbb9edb656782b1ad13564f2cbb"
+    },
+    "01_补货输入/必卖清单.xlsx": {
+      "bytes": 3884,
+      "sha256": "b8be6d90e68143f05568af99f2cdc9794e4055cb28045f532646146fa3f3d917"
+    },
+    "01_补货输入/新品关注清单.xlsx": {
+      "bytes": 3898,
+      "sha256": "e10086cd7f9962841b78a3cf486fd583a53f69a8686df5749c4bbfa905f76d59"
+    },
+    "01_补货输入/河北仓商品资料.xlsx": {
+      "bytes": 4767,
+      "sha256": "1d05a36310d5a1bfc42062cd2a7af78364612a6bac6eb76eec172ba549931666"
+    },
+    "02_原签发参考/2026-10-31练习乙店（精简版·山东仓）.xlsx": {
+      "bytes": 14678,
+      "sha256": "fdc9bf8323afc24543f3f6bd4f3100cd24713b04fdc719be1689400498677ac9"
+    },
+    "02_原签发参考/2026-10-31练习乙店（精简版·河北仓）.xlsx": {
+      "bytes": 13451,
+      "sha256": "c4130ce044c0c0918dafe5c69ab01d9786db7b87e5cd79657d5c73622232a473"
+    },
+    "02_原签发参考/2026-10-31练习甲店（精简版·山东仓）.xlsx": {
+      "bytes": 13557,
+      "sha256": "19f2bdd3817d7a4585a28daa7a01fde97cf1e401d6e228ed696dbebb619621a6"
+    },
+    "02_原签发参考/2026-10-31练习甲店（精简版·河北仓）.xlsx": {
+      "bytes": 14557,
+      "sha256": "032c9c0465a4228ba53bc5a2fd29c973e8c6fdb951e5aaaab0e0d05398dc4854"
+    },
+    "03_生命周期单据/混合三环节_十二单.xlsx": {
+      "bytes": 7300,
+      "sha256": "c8c2328ff3e52241a99513fa13d942eba436ff8ddcd49c3e61865ca30a62e898"
+    },
+    "03_生命周期单据/门店付款单/UAT001-山东仓.xlsx": {
+      "bytes": 4094,
+      "sha256": "bc72368b286f9cd8351485edfbd208d89a087769b0d3f978b2602ac0427d49a1"
+    },
+    "03_生命周期单据/门店付款单/UAT001-河北仓.xlsx": {
+      "bytes": 4290,
+      "sha256": "14d12cbbcec665f16d7be4daf6cd760c1f453b0a27e6ccaa5d284bae1c18b086"
+    },
+    "03_生命周期单据/门店付款单/UAT002-山东仓.xlsx": {
+      "bytes": 4348,
+      "sha256": "4c43de3b272dbfe62938867e71bda20694b9d1194192c3e8202a3c5fcca8fb9d"
+    },
+    "03_生命周期单据/门店付款单/UAT002-河北仓.xlsx": {
+      "bytes": 4084,
+      "sha256": "b2b1718265f2411476ac9965d04cbc8ecf076d76be0b7ca143df935ffb935331"
+    },
+    "03_生命周期单据/门店回传单/UAT001-山东仓.xlsx": {
+      "bytes": 4006,
+      "sha256": "c486298a5b33075be7159e41b53e5da4ee15f79442cbdaaf204c1df5bbc63b21"
+    },
+    "03_生命周期单据/门店回传单/UAT001-河北仓.xlsx": {
+      "bytes": 4233,
+      "sha256": "7a3646d39d7b598dbc60273b27bb3f4b5232fa23d96d0f5641de719afdd651dd"
+    },
+    "03_生命周期单据/门店回传单/UAT002-山东仓.xlsx": {
+      "bytes": 4285,
+      "sha256": "b010c018c06e23d94c364c5f90199b6d2e1a74a366cfe97d4bcf5daf442f10f3"
+    },
+    "03_生命周期单据/门店回传单/UAT002-河北仓.xlsx": {
+      "bytes": 3968,
+      "sha256": "59b657ece18e5dfa46716ecda9f58797ca1089acb393131d91a16a11e4ffc021"
+    },
+    "03_生命周期单据/门店实际收货单/UAT001-山东仓.xlsx": {
+      "bytes": 4045,
+      "sha256": "3478f752c3353724b420e8dc93366f0537d4b93b925d609d3c49ea3da9268452"
+    },
+    "03_生命周期单据/门店实际收货单/UAT001-河北仓.xlsx": {
+      "bytes": 4223,
+      "sha256": "a1778d9d3a54bf423e575b108df2aacb4656c9a8510329a096de4f822266eb28"
+    },
+    "03_生命周期单据/门店实际收货单/UAT002-山东仓.xlsx": {
+      "bytes": 4269,
+      "sha256": "25b1db7327cb53d6810359aeac4c8c1998077bde01cf2930d0d9372533734120"
+    },
+    "03_生命周期单据/门店实际收货单/UAT002-河北仓.xlsx": {
+      "bytes": 4034,
+      "sha256": "6eb70c4b43d456e649bb91ba81355253758dfb5f77fa66a5331181b073072b71"
+    },
+    "04_异常练习/原格式付款单_需绑定.xlsx": {
+      "bytes": 4513,
+      "sha256": "a309ee4ef8d6659177f9b60116e3ff77d2729e8197cbca9d1e240e86b8f3225e"
+    },
+    "04_异常练习/同单第二份回传.xlsx": {
+      "bytes": 4238,
+      "sha256": "3807f91476ad4fba050ca974bd3f7caaafe9edde00538147444f6337f10bbefd"
+    },
+    "04_异常练习/同店同品冲突.xlsx": {
+      "bytes": 4226,
+      "sha256": "deabbcae5bee46f4938fc501682f74b7f91e1be29dfa6cebaabd8544ed6dbc50"
+    },
+    "04_异常练习/回传列顺序变化.xlsx": {
+      "bytes": 4223,
+      "sha256": "c38dfa836f67f59472b8b9e28b01ef8e22d8dccd2357a5b3a9fafece8cd33f35"
+    },
+    "04_异常练习/回传新增商品.xlsx": {
+      "bytes": 3964,
+      "sha256": "59722527195f6f43ad28b018d63dd83488212b4a02ea1350dd55a6520921fef2"
+    },
+    "04_异常练习/回传未知单号.xlsx": {
+      "bytes": 3962,
+      "sha256": "89282be3b2c8003d51cc0aae4b811f84c253631f90573d51546812ef9906f616"
+    },
+    "04_异常练习/回传负数量.xlsx": {
+      "bytes": 3963,
+      "sha256": "ea6c65b0de39bbee124fdb26da37622d5f3a73d628370900ece67757084f393f"
+    },
+    "05_预期结果/expected.json": {
+      "bytes": 12909,
+      "sha256": "df9abc5986ee9ccfae5c0fd117f4fcbb4c38d29ff573400fcbea0788e66b4150"
+    },
+    "05_预期结果/逐商品核对答案.xlsx": {
+      "bytes": 5366,
+      "sha256": "1530f71c148339382a89020b121dca89a325bff114c1ff8942b785893f87f129"
+    },
+    "launch-practice.ps1": {
+      "bytes": 3261,
+      "sha256": "075cb470b01d3f55f806f820cfa7d76ba4666a1de4c975d82d13fdda832ab16e"
+    },
+    "seed/settings/must_sell.json": {
+      "bytes": 460,
+      "sha256": "25986e3a32e2d10d6d70c81ddccb36abcd8f31c1a00e7b8cecaad0deba876bb7"
+    },
+    "seed/settings/new_product_focus.json": {
+      "bytes": 846,
+      "sha256": "83c7bc295f321e2ba4092af92fd5b92c5799e3284a6a5009ec94a29f2e2de89a"
+    },
+    "seed/settings/warehouse_catalogs/山东仓.json": {
+      "bytes": 6179,
+      "sha256": "97c8c77334f5c617523d5ba29ff6b2d633d513bbe339a0c40835b586ce0089a4"
+    },
+    "seed/settings/warehouse_catalogs/河北仓.json": {
+      "bytes": 6588,
+      "sha256": "0aec3ca8c4c7056e24988a7300921a9df32bbea0bb5efa0d3973197bb34dd0e3"
+    },
+    "seed/settings/workbench.before-chunks-b13d03e3175912e9c4bac785dd80d94f.sqlite3": {
+      "bytes": 106496,
+      "sha256": "ac4c012de5982a0499780b825719a207adcbe00ba933582fcaca58f3fcbf632c"
+    },
+    "seed/settings/workbench.before-normal-orders.c6d3bd73a69a4b9db02c2d999c9a434a.sqlite3": {
+      "bytes": 28672,
+      "sha256": "921e0cf28451344a9334cf79bc160feb0b9da1a3cf0161cb63affad8acb99194"
+    },
+    "seed/settings/workbench.sqlite3": {
+      "bytes": 241664,
+      "sha256": "d0c205339bb43ab625ed54c3d4982183f08eb12cd3eb34e8c54d5bf2479f0397"
+    },
+    "业务验收记录.xlsx": {
+      "bytes": 13604,
+      "sha256": "ffc1559f4cd5e7ef0ef9790a3bc3246656176d63046e5666ec0c5269ecf965c7"
+    },
+    "从这里开始.html": {
+      "bytes": 23472,
+      "sha256": "8e2485c20296a7d696722cb9a1c059fde25ede2700af10ff7b2f67413e2a51d2"
+    },
+    "开始生命周期复查练习.cmd": {
+      "bytes": 134,
+      "sha256": "917ba7f62fae68ed513748933164ec1357e1fee90f6cd1b433407f13fe43d534"
+    },
+    "开始补货练习.cmd": {
+      "bytes": 134,
+      "sha256": "24952f07b3aac0163515774fa2fa854d4705348abeca2e5bc523662bd4ba7daf"
+    },
+    "新开生命周期复查练习.cmd": {
+      "bytes": 141,
+      "sha256": "8473998830206fd22e3c82513ddb868b6f43e47dfc72aa48f0a0838f12b87a8e"
+    },
+    "新开补货练习.cmd": {
+      "bytes": 141,
+      "sha256": "268f64d32d86f20c036d228f80f3eec5b0f10ddf237f23cf330562d94d235556"
+    },
+    "用例数据.json": {
+      "bytes": 19434,
+      "sha256": "07d8db1b855c04016011207a6c2dfa8d4a732987f97eb5f985a670d917f436d7"
+    }
+  },
+  "workbook_validation": [
+    {
+      "file": "01_补货输入/河北仓商品资料.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "01_补货输入/山东仓商品资料.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "01_补货输入/两店补货建议.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "01_补货输入/必卖清单.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "01_补货输入/新品关注清单.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "04_异常练习/同店同品冲突.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店回传单/UAT001-河北仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店付款单/UAT001-河北仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店实际收货单/UAT001-河北仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店回传单/UAT001-山东仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店付款单/UAT001-山东仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店实际收货单/UAT001-山东仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店回传单/UAT002-河北仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店付款单/UAT002-河北仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店实际收货单/UAT002-河北仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店回传单/UAT002-山东仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店付款单/UAT002-山东仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/门店实际收货单/UAT002-山东仓.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "03_生命周期单据/混合三环节_十二单.xlsx",
+      "sheets": 3,
+      "exact_values": true
+    },
+    {
+      "file": "04_异常练习/回传负数量.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "04_异常练习/回传未知单号.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "04_异常练习/回传新增商品.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "04_异常练习/同单第二份回传.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "04_异常练习/回传列顺序变化.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "04_异常练习/原格式付款单_需绑定.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "05_预期结果/逐商品核对答案.xlsx",
+      "sheets": 1,
+      "exact_values": true
+    },
+    {
+      "file": "业务验收记录.xlsx",
+      "sheets": 2,
+      "exact_values": true
+    }
+  ],
+  "manual_cases": 38,
+  "archive": {
+    "file": "业务验收练习包.zip",
+    "bytes": 293854,
+    "sha256": "10fff501e8ff7d3cf8b1a9863645c2987c838eb243a4161b8a1404a0877660cd"
+  }
+}
