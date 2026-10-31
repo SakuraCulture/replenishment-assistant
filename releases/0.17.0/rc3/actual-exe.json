@@ -1,0 +1,132 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "drag/drop automatically checked; configured stores selected, process queue computed two stores; sign and export to displayed default folder; persistent completion dialog",
+        "four mixed files dragged in reverse stage order; one unnumbered payment manually bound; preview cancel, retry, atomic four-document save",
+        "same order detail switches signed/lifecycle/evidence; frozen sales/stock/parameters plus downstream facts; no nested order window",
+        "standalone parameter form saves next-use defaults, leaves both current results exact; restart checked separately"
+      ],
+      "timings": {
+        "read_check_seconds": 0.5474242999916896,
+        "calculation_seconds": 0.5659257000079378,
+        "sign_export_seconds": 1.2721657999791205,
+        "mixed_import_seconds": 0.43752819998189807,
+        "review_seconds": 0.9327867000247352
+      },
+      "version": {
+        "app": "补货助手",
+        "version": "0.17.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "fa1c568d06b8e4363a68e27fd78c3c6e46a971ac",
+        "build_id": "rc3",
+        "built_at": "2026-10-31T15:49:00.8932610+08:00"
+      },
+      "phase": "exercise",
+      "ui_ticks": 140,
+      "max_ui_gap_seconds": 1.008169699984137,
+      "synthetic": true,
+      "automated_operation_counts": {
+        "replenishment": [
+          "drop inputs",
+          "start calculation",
+          "sign/export",
+          "confirm store/warehouse scope",
+          "confirm signature changes"
+        ],
+        "lifecycle": [
+          "drop four files",
+          "bind unnumbered payment source order once",
+          "open preview",
+          "acknowledge complete scope",
+          "save"
+        ],
+        "review": [
+          "search order",
+          "open decision evidence"
+        ],
+        "defaults": [
+          "select store",
+          "edit defaults",
+          "confirm per-store differences"
+        ]
+      },
+      "limits": "Automated scenario operations, not a human usability study; business reading/decision time not measured.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 11.10899999999674,
+      "peak_tree_mib": 368.69921875,
+      "sample_ms": 50,
+      "exe_sha256": "7423b5cd8d609f0f3f7efa59e84dae7a738ce172bc57571d9dc6ba029dfe9a0c"
+    },
+    {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "new process restored saved defaults and lifecycle without replacing signing"
+      ],
+      "timings": {},
+      "version": {
+        "app": "补货助手",
+        "version": "0.17.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "fa1c568d06b8e4363a68e27fd78c3c6e46a971ac",
+        "build_id": "rc3",
+        "built_at": "2026-10-31T15:49:00.8932610+08:00"
+      },
+      "phase": "reopen",
+      "ui_ticks": 30,
+      "max_ui_gap_seconds": 0.05685539997648448,
+      "synthetic": true,
+      "automated_operation_counts": {
+        "replenishment": [
+          "drop inputs",
+          "start calculation",
+          "sign/export",
+          "confirm store/warehouse scope",
+          "confirm signature changes"
+        ],
+        "lifecycle": [
+          "drop four files",
+          "bind unnumbered payment source order once",
+          "open preview",
+          "acknowledge complete scope",
+          "save"
+        ],
+        "review": [
+          "search order",
+          "open decision evidence"
+        ],
+        "defaults": [
+          "select store",
+          "edit defaults",
+          "confirm per-store differences"
+        ]
+      },
+      "limits": "Automated scenario operations, not a human usability study; business reading/decision time not measured.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 2.0160000000032596,
+      "peak_tree_mib": 203.109375,
+      "sample_ms": 50,
+      "exe_sha256": "7423b5cd8d609f0f3f7efa59e84dae7a738ce172bc57571d9dc6ba029dfe9a0c"
+    }
+  ]
+}

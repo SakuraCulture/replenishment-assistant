@@ -1,0 +1,291 @@
+{
+  "passed": true,
+  "baseline_commit": "3e167f5c86f64d1d8a98adffda8287b35ab76361",
+  "build_commit": "fa1c568d06b8e4363a68e27fd78c3c6e46a971ac",
+  "branch": "feat/business-flows-0.17.0",
+  "version": "0.17.0",
+  "model_version": "0.3.3-rules",
+  "build_id": "rc3",
+  "exe_sha256": "7423b5cd8d609f0f3f7efa59e84dae7a738ce172bc57571d9dc6ba029dfe9a0c",
+  "zip_sha256": "dd721466a4098bd96ce26d973ce680512bcacab70202ef80adcf81f781879486",
+  "file_count": 207,
+  "tests_normal": 185,
+  "tests_optimized": 185,
+  "original_export_cases": 12,
+  "original_export_differences": 0,
+  "model_capture_cases": 30,
+  "model_business_value_or_product_order_differences": 0,
+  "raw_model_completion_order_differences": [
+    [
+      "dual_parallel",
+      [
+        "$",
+        "dictionary key order",
+        "['QA_B', 'QA_A']",
+        "['QA_A', 'QA_B']"
+      ]
+    ]
+  ],
+  "controlled_parallel_orders_verified": [
+    "QA_A,QA_B",
+    "QA_B,QA_A"
+  ],
+  "controlled_parallel_differences": 0,
+  "lifecycle_payload_and_exports_differences": 0,
+  "native_launches": 2,
+  "core_hashes": {
+    "model.py": {
+      "before": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "after": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584"
+    },
+    "one_box_exception.py": {
+      "before": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "after": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "allocation.py": {
+      "before": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "after": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "default_config.json": {
+      "before": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "after": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "before": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "after": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    },
+    "engine.py": {
+      "before": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028",
+      "after": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028"
+    },
+    "input_adapter.py": {
+      "before": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+      "after": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700"
+    },
+    "batch_service.py": {
+      "before": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12",
+      "after": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12"
+    },
+    "warehouse_catalog.py": {
+      "before": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b",
+      "after": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b"
+    },
+    "new_products.py": {
+      "before": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232",
+      "after": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232"
+    },
+    "parameter_schema.py": {
+      "before": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+      "after": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85"
+    },
+    "result_semantics.py": {
+      "before": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92",
+      "after": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92"
+    },
+    "lifecycle_rules.py": {
+      "before": "db165d3f585e3dc6ede4726d5acd774322f8eb733772dc985e7e35cf6ae8813d",
+      "after": "db165d3f585e3dc6ede4726d5acd774322f8eb733772dc985e7e35cf6ae8813d"
+    },
+    "normal_exports.py": {
+      "before": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594",
+      "after": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594"
+    },
+    "lifecycle_exports.py": {
+      "before": "ff8b62e8e578dda6eb7fe3077751b0c80a6f86468d8975bc28efc488c861e3d7",
+      "after": "ff8b62e8e578dda6eb7fe3077751b0c80a6f86468d8975bc28efc488c861e3d7"
+    },
+    "normal_orders.py": {
+      "before": "a25db1eb5b4e7b637db91572efd106d6305920b555ebd98a7e1a612e9f676273",
+      "after": "a25db1eb5b4e7b637db91572efd106d6305920b555ebd98a7e1a612e9f676273"
+    },
+    "normal_delivery.py": {
+      "before": "a2d9c647d64691d9790fa76722f8da6803d9328ed38a642bf83b0b6a32b39bae",
+      "after": "a2d9c647d64691d9790fa76722f8da6803d9328ed38a642bf83b0b6a32b39bae"
+    },
+    "storage_chunks.py": {
+      "before": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8",
+      "after": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8"
+    }
+  },
+  "old_delivery_files_checked": 210,
+  "old_delivery_differences": [],
+  "daily_user_files_checked": 15,
+  "daily_user_differences": [],
+  "input_hashes": {
+    "catalogs.json": "081c4ab3c04ef466ef51bd14bb92788a6f57a230aa4aa2244840a1e3aa278efb",
+    "conflict.xlsx": "297c6adc1cb6cddb5a06dabad21e14db59aec6221c23cb78d69f7b82fa5a2da5",
+    "duplicate_header.xlsx": "0f7c0e668ef14494b572cf0cda0f3cd9affdabd8be13ff65b68b6c85195d2eaf",
+    "edge.xlsx": "10acabe406552e9f5f5d0e59a054842f642d0a4b6bd600da77f757191d0079a4",
+    "edge_master.xlsx": "dd4c66e8a24f6a53bb6abbd883f4f2e909b7b65870429a494ee3e2b24645e716",
+    "must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "numeric_store.xlsx": "8a4fa160a5a628d1d147b474a07f875c2bf2f480087baf7c9a35a20c016dcd7e",
+    "parameters.json": "1f3195d53e5113598d954ecec930f0758b323b89eedf0f1cd9186037309f426b",
+    "sales.xlsx": "a80082bdf7f27d12b0ab73483ae9e15eb9fc38e345882e9155dd34ce6fc57503",
+    "商品资料_20261024103312_203178058_1.xlsx": "cd7f14c9083001557bda20af64d5328e023f2615eb90ed60377c0845549e928c",
+    "山东仓.xlsx": "514ef8b88ea9b942d2b2edbeecb33c97c4d2ba294250c94ca370a1acef925765",
+    "河北仓.xlsx": "a7e9f7035281a4e90a2bde2266feb2fc253ce32a49fbee7bfb7d5f2db66e1ae6",
+    "混合仓商品资料.xlsx": "3c31fd1e3dbc17ea06661b1587c0f1173bb4dfdb1ae51e17abfb2c316c3d763e",
+    "补货建议导出服务.xlsx": "249c019e9ac2477f0954964e0e1f83658813ada66724f734f10c395b2a4e7fed"
+  },
+  "original_inputs": {
+    "D:\\企业微信\\WXWork\\1688855943717538\\Cache\\File\\2026-10\\补货建议导出服务.xlsx": {
+      "exists": true,
+      "sha256": "249c019e9ac2477f0954964e0e1f83658813ada66724f734f10c395b2a4e7fed",
+      "frozen_sha256": "249c019e9ac2477f0954964e0e1f83658813ada66724f734f10c395b2a4e7fed"
+    },
+    "D:\\企业微信\\WXWork\\1688855943717538\\Cache\\File\\2026-10\\混合仓商品资料.xlsx": {
+      "exists": true,
+      "sha256": "3c31fd1e3dbc17ea06661b1587c0f1173bb4dfdb1ae51e17abfb2c316c3d763e",
+      "frozen_sha256": "3c31fd1e3dbc17ea06661b1587c0f1173bb4dfdb1ae51e17abfb2c316c3d763e"
+    },
+    "D:\\企业微信\\WXWork\\1688855943717538\\Cache\\File\\2026-10\\商品资料_20261024103312_203178058_1.xlsx": {
+      "exists": true,
+      "sha256": "cd7f14c9083001557bda20af64d5328e023f2615eb90ed60377c0845549e928c",
+      "frozen_sha256": "cd7f14c9083001557bda20af64d5328e023f2615eb90ed60377c0845549e928c"
+    }
+  },
+  "source_hashes": {
+    "allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "app.ico": "43f1cca8dfed05f941a207266aa5308ebf8633a140aa4448a49acfac7c4ce7ed",
+    "app.py": "3073ca019871b92acc7fa183319281c14f61e646ff39b7063f01180a04d777ab",
+    "application_window.py": "153221c3b3a84791a5a8f43170c87c29fb28c780fdf991e699ff887352fa72bd",
+    "app_defaults.py": "fe9b7a4b1e5ec32719f945b07dfeacd1ecfd83318228c0dbd9998a4469b1e795",
+    "archive_batch.py": "bf3f77feff7b8f7e662dfe10fc12d02fb8325cabaad50231db02a5c325d59d6a",
+    "archive_batch_smoke.py": "a9eda5cbe973b0db37ffffde1bca30f305fee9d2c97f24576dc98a6595cd4af7",
+    "archive_batch_ui.py": "2122aeac56cf28b40c77c7f42738fa29f28f2f326f736b0e59890d1c2b9da51c",
+    "archive_exports.py": "6f1b76b0bf6fcaa0edb973b2b97954c084aa5f0c4306e28f526b17d6dfafc43c",
+    "archive_orders.py": "3e44f5d2ead875cce1b64a5cdc6189838b736a656732d653880fc0f3cf672f54",
+    "archive_smoke.py": "c6feee5fa0cf14d772ca71b05fd5496977a585eacb3967a7d99c872205c80816",
+    "batch_app.py": "22e9d56c4496e63cc12db1f99eb651ecd2d0c7749ca968a61e69b4cd05805679",
+    "batch_service.py": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12",
+    "batch_smoke.py": "b1818e7d5f774fa720254b9ffed9c5c3b39f94907623d439a82db12676e32a78",
+    "business_excel.py": "23a4c8b580e4e267ba8806cb8c08d48a822b877c9b08991dc66a5ef2a376b61e",
+    "business_flows_smoke.py": "f5785e2bc5683b0660bf7c138857445070b9d87e978749414604ba96fa8b638a",
+    "business_scenes.py": "73fee447cfc95cb97e8fe52aaeb3506f3afcb382959e40b1e8b1d38489eee25f",
+    "business_smoke.py": "c3d4f118755c453cb1c5823aeedf6b3539236d2af6bb31c401583a8448f3c16d",
+    "business_ui.py": "4acab893c95a2b5c2b0b8511e1a7da8ddb1b551ba84177fddd00342e8dee738a",
+    "conflict_choices.py": "3b72279c6424695d8cc49c7368d627dbe97b67025b63c90b7ebcdf984722e66b",
+    "conflict_ui.py": "bd7ac861cd2cbaf995280ffd3480b3506e12b509ed0b7c63a5f42a4f56981257",
+    "data_contracts.py": "0c794b4da29faa38f021390a076815cb675aef6586cc6a96c1dc97a0950a3a71",
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "delivery_smoke.py": "5af01da887f91271e44e9f757211799ad000c43afd2fe86bf186325d5872d791",
+    "diagnostics.py": "2cdb6a011944756409df9d9a2399b27f3c7b685132ab16531b7d8507d93a9734",
+    "display_fields.py": "ab56cb79ad94e08b644499f888fc4489d3845dd8bfbaa1d90f11448156385d8c",
+    "engine.py": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028",
+    "export_locations.py": "fbf7c4734648e4555e74378a9140e9cb2c6eddb6de46bcecb5cc6d9d7f7a3ae2",
+    "export_location_smoke.py": "79c0f8a6800a726053f8217c5822295cb4a21d9fcf0ec65e3a829e88660da09e",
+    "export_progress.py": "6b78f6f3109993e1775bd0763494f16181a9ed1954fe9c1fa705d854f3cc2141",
+    "export_settings.py": "b1862d1c57fc27b506ae5c6c1b4f99d9b0343b645b3a81b8a3749da205e42b9d",
+    "feedback_ui.py": "20e6b5e0c8b2d884d3c127bdc62aebd1bc27c969195cedba64a59a8b36f91922",
+    "file_intake.py": "a6ea67c6d27bc8d48251eb670cdfea10d4ac1570d930a2e3c9538583afbb6fc4",
+    "fixes_smoke.py": "726d117b08afdcae06a5aebd3ad5053cadc72ea5ca7a69eb1b60c7cbf1ce6a18",
+    "followup.py": "afba1bca2187649ae79a991c631a1840642d7ae5b44638ed4d4e1f4598598b0f",
+    "followup_smoke.py": "1d18625e5d79495bf41e2b80c5075d2a65dc037d4fbf8694df310bd7f02b3e28",
+    "followup_ui.py": "7bcd61e150ec3fdf02d36c5adc46510165e2d98362debd56887a23fb34e61236",
+    "history_forms.py": "ed35e5d6723c1107075725f96f573d40663332495ff04220fa7ea2a65e1f74d1",
+    "history_read.py": "3bf2f38f28dd3db036c8f1acb1ff594f4da57ccb00a0d5cf8531559bfa79a4e0",
+    "history_smoke.py": "995403bb97a7416397f0458c315499b91254063df3ca6d3130abbf86b076b98d",
+    "history_tasks.py": "67658fc964cb5c77fe1f5c9bc88f2283e2a9bc666b6f9c7b7e1fd3927d8a4bfd",
+    "history_ui.py": "76fb4b8ee321637776f2261bc49700d2faecd065d6cb3ea841677f020ff149bd",
+    "import_templates.py": "6608da5621d60f8dc0ba7eb8c1d9c70a30dcf0f22055b9470f5c0442f1d398e6",
+    "import_ui.py": "ee360905be25c5dae79fdbd26a89f5e10225a0c464a78e152850782690b4f167",
+    "inbound_smoke.py": "0b104e0b00c71c63b5d564320fbf6f311e7087a4f8b4a8b4efa6d510aed39831",
+    "input_adapter.py": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+    "intake_probe.py": "4ffa104f73af01b0da44642c9ca3c6f89c5f39568cfee9186c3c8923ac54505c",
+    "intake_smoke.py": "0a3fba139496606fc94a80eceaa5620fe5adddc51ee9085e28081ed293f61cf1",
+    "interaction_rules.py": "8538a9d3a7500b0f9e062203d691c31f9b1e529c8a3690de533ad46f73c15866",
+    "interaction_smoke.py": "796ed7fd295a639d8ebbe8a3fe7f90bb52827f103b832b45c5f9635efcebe370",
+    "interaction_ui.py": "9fdbbbc3c705be1ec256554a65177c7561479b8573e5da2444e827bf5ebd2109",
+    "io_stages.py": "9507aa20df8d3794339910f6514ec382753c03b2f46182ff0876f3215f6d22f9",
+    "legacy_window.py": "3799e92d932c194f389c9458690d94be0f7f1183e72303004f6439cd94d58245",
+    "lifecycle_batch.py": "f986abb8e8c4ca62c760b6e0dedbea61b83474aea6944edfc00294828d994936",
+    "lifecycle_batch_ui.py": "0ba62ca43294f5cff49c5eed037b5f886c9e6a0e35c3f21b1ae9135aa31384eb",
+    "lifecycle_exports.py": "ff8b62e8e578dda6eb7fe3077751b0c80a6f86468d8975bc28efc488c861e3d7",
+    "lifecycle_home.py": "a606a94e2cbb088fc3d473fab016abec4b49fb3581c65b69925970511e3f355c",
+    "lifecycle_home_ui.py": "c5267ca5e3a00f27c2f4e47084a9c991b5ce6cc16b56dd1854be302afdab70d8",
+    "lifecycle_io.py": "4c00c2ddda487b670be5ce42f32f4e06874ff1e8e5d0a4ddbb57b87854c918db",
+    "lifecycle_rules.py": "db165d3f585e3dc6ede4726d5acd774322f8eb733772dc985e7e35cf6ae8813d",
+    "lifecycle_smoke.py": "c8bbe33a91134f6e651d8dc63818d45d617eabf6cac097eb2e39bfbf656bab2a",
+    "lifecycle_ui.py": "47bcc1fc43cf454d1d5d0386d8cdf025047a63729418cdbe4c4aacbfc79d7b5e",
+    "merchant_feedback.py": "5c3a51ff266068a42c6a6df6fb65d3f8a3b1a396afa6c23155967695347563eb",
+    "merchant_selection.py": "a01700dc5e2f5db1f6d07c6f5f1319a2c8a51da63c8b8d2d09f7c3f45c1f174a",
+    "model.py": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+    "new_products.py": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232",
+    "new_product_focus.py": "270a25748146d4d388a460d35ea851a9ec46a21c8742f2f521d8933a69e2d895",
+    "new_product_focus_ui.py": "cbccb81689eda69355b853bb560696600687a224490ce4fa7f09f92a4c6f31dc",
+    "new_product_ui.py": "b4eeb0c69367247afed735c23963139957541fc497817e1fa9522405f916d8c7",
+    "normal_delivery.py": "a2d9c647d64691d9790fa76722f8da6803d9328ed38a642bf83b0b6a32b39bae",
+    "normal_exports.py": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594",
+    "normal_orders.py": "a25db1eb5b4e7b637db91572efd106d6305920b555ebd98a7e1a612e9f676273",
+    "normal_smoke.py": "ea46a253789cfab416f4ffcb2aa780b1285108b0a35f38cff15ab6fc8bda0071",
+    "one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "order_lifecycle.py": "aba2502b01a74b09027ce1d9139d6acb4ce73e3b5ef51d49ad245d20c826d477",
+    "order_review.py": "7999faed838a9860b631d586feb3587322ab70c75b07a8395cce01894aeab1af",
+    "parameter_scene.py": "970428147ae0af0b9eae99b9ed81f9e35e8f52b2cb4cf5ae927135043510eb74",
+    "parameter_schema.py": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+    "parameter_trial.py": "1f7489a4fa5d000d3ae2448ed2efd764e93755f0b69cc4ae33af625d4c43eba4",
+    "parameter_ui.py": "c9dc87b0b6e69be96334ac828de8ae0379a6df32bcae38c5f67e7b478194deaf",
+    "parameter_view.py": "2c64bad0068e805acf14b509c5928ed574aec05e1713af9d806e3624b7281173",
+    "priority_list.py": "9229f9cdabd66c4eaaa1d31ad90038cb054f833c4b0cb53ccdbb75f594943450",
+    "purchases.py": "964b8dbc8ebcd8c740c8c2dc69195e6bb2e755700e54467f37044efe9669a5f8",
+    "purchase_io.py": "296c8185182b67bee6b36a09e19ae628d3b6b41ad9cb155f4d29dc49386f313c",
+    "purchase_ui.py": "5fb2f4010f8c374a23f4cfd862ae8ce91da8443a6efff90ab90ae1b7b6276b07",
+    "quantity_contract.py": "930bd6fd709ba4684479dcea37bfc1e57663c4b3ce0241f879f96754eac0d334",
+    "reconciliation_smoke.py": "4b8ee10ca61eabdf91d5af46aa7cd0b66eb173dff1d1491c7efbfbdeaf5ec3d5",
+    "result_semantics.py": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92",
+    "review_smoke.py": "37749cd8875cf67da753979b6e503eacfc59424113146ae2de777d9e1cb80c67",
+    "runtime_support.py": "1b0f358bb298a7d5be1a943389535afa0b6a8e6768e7a73ccdc4b812641c33fd",
+    "smoke.py": "1b8ebf35cb94eb6e96f96b14b009aceb33df66f61912af4e52421ca7e561a524",
+    "source_archive.py": "2a5b6dbace2c08eb5ea3517b51b08b41ece1649383731b3cf603a7b601bb111a",
+    "source_binding.py": "68c976fe4323c36a719b59736fc9ec19db1ae5c0c3af8d7bfc8cc85d8fa408df",
+    "storage_chunks.py": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8",
+    "storage_maintenance.py": "156a0d9f89d301ee56ae6e4119a274cb1f2bd951f7c1605c02ac21c6aef7640c",
+    "storage_smoke.py": "c624236c25a8c0a430a0d87653062317cc2beac0032240a3cf957570feb19767",
+    "store_defaults.py": "e86d722c492761b61f0a76ab08488c07026fdb18abe3695dd7f6c1d285829b30",
+    "table_records.py": "267489aca45843d6d282c1987e377a0a289d08005429fc2812718063cc44f84c",
+    "ui_controls.py": "571ef00f83b826e1993420d4277e5d9d917019386bdc7d06c53d375846ea3cef",
+    "ui_goods_fast.py": "e8f3deac48a48aecfa300524a63172718e2444d576770f7bc00012f6c161d306",
+    "ui_results.py": "35471b6342fcc4f22d98b4a5d5cc68c4886e61a065428e96be48f6faa59b2b37",
+    "ui_session.py": "c53940a08df2ac34ff9c561a0882a56727cfd5163d6e80236211ee1d7314d5e0",
+    "ui_tasks.py": "5bbf67fb1431a7645021ddbb4253226ac92c18b8f88bcd533d3854b321d82d83",
+    "ui_work_io.py": "7bee0f6a6868624d68aac0cc9e23dd5cf370632da1810dc2cc391287e74b07a2",
+    "usability.py": "46925a039956614780b4c4bee9f622fe77dfb63748d2cc4b6b3f2d1861b0d8bc",
+    "version.json": "c15d933de1407199e2fb88370af8c370ac677599f1d4aa97f7758a2874645ee5",
+    "version_info.py": "6e9fe25bd61d7059758d5dc4484001ed7a24d6f624f3206a3230f7e1e4680b48",
+    "warehouse_catalog.py": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b",
+    "warehouse_delivery_smoke.py": "eee8fa29dc55c18cd51eded68107076543bfee648eaff647024479c9272ccde8",
+    "warehouse_orders.py": "5f86073f3a717d196f07b1432e251544f7345776d7da8c37be64415a8cee5bff",
+    "warehouse_smoke.py": "197a93dafbbaf927c9c014210ffdc07285b6e4ca09195b72eb7735830b7a20a9",
+    "warehouse_ui.py": "665192bf279631cbfa8ea2a92e7c1aff229e4067743f4cb491001f2a2bd2c00f",
+    "workbench.py": "2cdc938c2ad702982e99c4f73577f323fe8002cd948208ea89bc9c5bcfb362e7",
+    "workflow_smoke.py": "c83ec3b9d5babf039edca53c62da275b407149d55cb4a1b9f4152a1ccf31f4f4",
+    "work_io_process.py": "bbc8388b8ea2b91205c3c03e0ec42f23515c7c013fd1c3eed210a0e00c503254",
+    "work_io_smoke.py": "74743a206c89eda236546a07bf4a41c39a55113e6435d1c8fa94c580662331b2",
+    "work_repository.py": "48aa11661565586fcf38befd8c9977f383a71a40e10e7293c61f760f0fab2e8b",
+    "work_smoke.py": "4ebecd50d49eb27ed98d2ab8e49e6311cd8cf2154199c7234de7e15183127922",
+    "work_transfer.py": "ce0ed8b5d6d4e02e373d890719d0c177c8ab93c241d3c27063a66eeefacf8c11",
+    "xlsx_exports.py": "ce07a425e57039fe2e5b509db4f5416377d490dfa9d6d258654ba2bdf7986b45"
+  },
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "allowed_changes": [
+    "navigation and readonly business forms",
+    "explicit batch lifecycle preparation and one transaction using unchanged quantity rules",
+    "optional compare-and-save protection for stored defaults",
+    "completion and partial-export receipts",
+    "application version and opt-in QA entry; model/routing/storage versions unchanged"
+  ],
+  "limits": [
+    "No human usability study yet; regular signing still five necessary actions instead of target three",
+    "Payment original workbook not supplied; screenshot-header synthetic tests only",
+    "Global batch target chooser still reads available order set; long-history scale unmeasured",
+    "Old archives with missing attachments/audit fields remain missing; no historical algorithm replay",
+    "Natural process completion dictionary order is not deterministic in both versions; original difference retained, two controlled schedules and exported order match",
+    "Small four-product timing fixture; OS cache uncontrolled; do not extrapolate speedups",
+    "Local Windows EXE validated; clean-PC rebuild not newly validated"
+  ],
+  "no_push_or_merge": true
+}

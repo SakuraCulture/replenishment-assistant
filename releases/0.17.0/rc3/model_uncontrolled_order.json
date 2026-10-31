@@ -1,0 +1,247 @@
+{
+  "passed": false,
+  "baseline_commit": "3e167f5c86f64d1d8a98adffda8287b35ab76361",
+  "candidate_commit": "53206688efd3010d42866d5dafc22a841ed408f3",
+  "cases": [
+    {
+      "case": "real_loaded",
+      "differences": [
+        [
+          "$.config.category_profiles",
+          "dictionary key order",
+          "['快销', '日百', '休闲食品', '饮品', '乳品', '酒类', '速食/罐头', '粮油调味干货', '营养冲调', '营养保健', '个人洗护', '服饰鞋包', '家居日用', '家庭清洁', '宠物生活', '彩妆香水', '厨具餐具', '学习/办公用品', '成人用品', '母婴用品', '电脑数码', '手机通讯', '运动户外', '美容护肤', '家装建材', '家纺布艺', '节庆礼品', '家用电器', '医疗器械', '玩具乐器', '汽车用品', '花卉园艺', '手表眼镜', '数码家电', '日配', '分类', '蔬菜/豆制品', '门店耗材', '",
+          "['快销', '日百', '休闲食品', '饮品', '乳品', '酒类', '速食/罐头', '粮油调味干货', '营养冲调', '营养保健', '个人洗护', '服饰鞋包', '家居日用', '家庭清洁', '宠物生活', '彩妆香水', '厨具餐具', '学习/办公用品', '成人用品', '母婴用品', '电脑数码', '手机通讯', '运动户外', '美容护肤', '家装建材', '家纺布艺', '节庆礼品', '家用电器', '医疗器械', '玩具乐器', '汽车用品', '花卉园艺', '手表眼镜', '数码家电', '生肉/生禽/生蛋', '卫生纸品', '门店耗材', '蔬菜"
+        ]
+      ]
+    },
+    {
+      "case": "real_None",
+      "differences": []
+    },
+    {
+      "case": "real_0",
+      "differences": []
+    },
+    {
+      "case": "real_3000",
+      "differences": []
+    },
+    {
+      "case": "real_5000",
+      "differences": []
+    },
+    {
+      "case": "real_10000",
+      "differences": []
+    },
+    {
+      "case": "real_no_exception",
+      "differences": [
+        [
+          "$.config.category_profiles",
+          "dictionary key order",
+          "['快销', '日百', '休闲食品', '饮品', '乳品', '酒类', '速食/罐头', '粮油调味干货', '营养冲调', '营养保健', '个人洗护', '服饰鞋包', '家居日用', '家庭清洁', '宠物生活', '彩妆香水', '厨具餐具', '学习/办公用品', '成人用品', '母婴用品', '电脑数码', '手机通讯', '运动户外', '美容护肤', '家装建材', '家纺布艺', '节庆礼品', '家用电器', '医疗器械', '玩具乐器', '汽车用品', '花卉园艺', '手表眼镜', '数码家电', '日配', '分类', '蔬菜/豆制品', '门店耗材', '",
+          "['快销', '日百', '休闲食品', '饮品', '乳品', '酒类', '速食/罐头', '粮油调味干货', '营养冲调', '营养保健', '个人洗护', '服饰鞋包', '家居日用', '家庭清洁', '宠物生活', '彩妆香水', '厨具餐具', '学习/办公用品', '成人用品', '母婴用品', '电脑数码', '手机通讯', '运动户外', '美容护肤', '家装建材', '家纺布艺', '节庆礼品', '家用电器', '医疗器械', '玩具乐器', '汽车用品', '花卉园艺', '手表眼镜', '数码家电', '生肉/生禽/生蛋', '卫生纸品', '门店耗材', '蔬菜"
+        ]
+      ]
+    },
+    {
+      "case": "real_custom",
+      "differences": []
+    },
+    {
+      "case": "real_batch_loaded",
+      "differences": [
+        [
+          "$.config.category_profiles",
+          "dictionary key order",
+          "['快销', '日百', '休闲食品', '饮品', '乳品', '酒类', '速食/罐头', '粮油调味干货', '营养冲调', '营养保健', '个人洗护', '服饰鞋包', '家居日用', '家庭清洁', '宠物生活', '彩妆香水', '厨具餐具', '学习/办公用品', '成人用品', '母婴用品', '电脑数码', '手机通讯', '运动户外', '美容护肤', '家装建材', '家纺布艺', '节庆礼品', '家用电器', '医疗器械', '玩具乐器', '汽车用品', '花卉园艺', '手表眼镜', '数码家电', '日配', '分类', '蔬菜/豆制品', '门店耗材', '",
+          "['快销', '日百', '休闲食品', '饮品', '乳品', '酒类', '速食/罐头', '粮油调味干货', '营养冲调', '营养保健', '个人洗护', '服饰鞋包', '家居日用', '家庭清洁', '宠物生活', '彩妆香水', '厨具餐具', '学习/办公用品', '成人用品', '母婴用品', '电脑数码', '手机通讯', '运动户外', '美容护肤', '家装建材', '家纺布艺', '节庆礼品', '家用电器', '医疗器械', '玩具乐器', '汽车用品', '花卉园艺', '手表眼镜', '数码家电', '生肉/生禽/生蛋', '卫生纸品', '门店耗材', '蔬菜"
+        ]
+      ]
+    },
+    {
+      "case": "real_batch_result",
+      "differences": []
+    },
+    {
+      "case": "dual_loaded",
+      "differences": []
+    },
+    {
+      "case": "dual_serial_QA_A",
+      "differences": []
+    },
+    {
+      "case": "dual_serial_QA_B",
+      "differences": []
+    },
+    {
+      "case": "dual_parallel",
+      "differences": []
+    },
+    {
+      "case": "single_route",
+      "differences": []
+    },
+    {
+      "case": "single_catalog",
+      "differences": []
+    },
+    {
+      "case": "edge_loaded",
+      "differences": []
+    },
+    {
+      "case": "edge_result",
+      "differences": []
+    },
+    {
+      "case": "conflicts",
+      "differences": []
+    },
+    {
+      "case": "conflict_blocked",
+      "differences": []
+    },
+    {
+      "case": "conflict_resolved",
+      "differences": []
+    },
+    {
+      "case": "legacy_frozen_loaded",
+      "differences": []
+    },
+    {
+      "case": "legacy_frozen_result",
+      "differences": []
+    },
+    {
+      "case": "errors",
+      "differences": []
+    },
+    {
+      "case": "restored_payload",
+      "differences": []
+    },
+    {
+      "case": "preview",
+      "differences": []
+    },
+    {
+      "case": "parameter_trial",
+      "differences": []
+    },
+    {
+      "case": "batch.xlsx",
+      "differences": []
+    },
+    {
+      "case": "filtered.xlsx",
+      "differences": []
+    },
+    {
+      "case": "real.xlsx",
+      "differences": []
+    }
+  ],
+  "difference_count": 3,
+  "whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "core_hashes": {
+    "model.py": {
+      "before": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "after": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584"
+    },
+    "one_box_exception.py": {
+      "before": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "after": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "allocation.py": {
+      "before": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "after": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "default_config.json": {
+      "before": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "after": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "before": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "after": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    },
+    "engine.py": {
+      "before": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028",
+      "after": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028"
+    },
+    "input_adapter.py": {
+      "before": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+      "after": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700"
+    },
+    "batch_service.py": {
+      "before": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12",
+      "after": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12"
+    },
+    "warehouse_catalog.py": {
+      "before": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b",
+      "after": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b"
+    },
+    "new_products.py": {
+      "before": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232",
+      "after": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232"
+    },
+    "parameter_schema.py": {
+      "before": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+      "after": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85"
+    },
+    "result_semantics.py": {
+      "before": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92",
+      "after": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92"
+    },
+    "lifecycle_rules.py": {
+      "before": "db165d3f585e3dc6ede4726d5acd774322f8eb733772dc985e7e35cf6ae8813d",
+      "after": "db165d3f585e3dc6ede4726d5acd774322f8eb733772dc985e7e35cf6ae8813d"
+    },
+    "normal_exports.py": {
+      "before": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594",
+      "after": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594"
+    },
+    "lifecycle_exports.py": {
+      "before": "ff8b62e8e578dda6eb7fe3077751b0c80a6f86468d8975bc28efc488c861e3d7",
+      "after": "ff8b62e8e578dda6eb7fe3077751b0c80a6f86468d8975bc28efc488c861e3d7"
+    },
+    "normal_orders.py": {
+      "before": "a25db1eb5b4e7b637db91572efd106d6305920b555ebd98a7e1a612e9f676273",
+      "after": "a25db1eb5b4e7b637db91572efd106d6305920b555ebd98a7e1a612e9f676273"
+    },
+    "normal_delivery.py": {
+      "before": "a2d9c647d64691d9790fa76722f8da6803d9328ed38a642bf83b0b6a32b39bae",
+      "after": "a2d9c647d64691d9790fa76722f8da6803d9328ed38a642bf83b0b6a32b39bae"
+    },
+    "storage_chunks.py": {
+      "before": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8",
+      "after": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8"
+    }
+  },
+  "input_hashes": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\catalogs.json": "081c4ab3c04ef466ef51bd14bb92788a6f57a230aa4aa2244840a1e3aa278efb",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\conflict.xlsx": "297c6adc1cb6cddb5a06dabad21e14db59aec6221c23cb78d69f7b82fa5a2da5",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\duplicate_header.xlsx": "0f7c0e668ef14494b572cf0cda0f3cd9affdabd8be13ff65b68b6c85195d2eaf",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\edge.xlsx": "10acabe406552e9f5f5d0e59a054842f642d0a4b6bd600da77f757191d0079a4",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\edge_master.xlsx": "dd4c66e8a24f6a53bb6abbd883f4f2e909b7b65870429a494ee3e2b24645e716",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\numeric_store.xlsx": "8a4fa160a5a628d1d147b474a07f875c2bf2f480087baf7c9a35a20c016dcd7e",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\parameters.json": "1f3195d53e5113598d954ecec930f0758b323b89eedf0f1cd9186037309f426b",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\sales.xlsx": "a80082bdf7f27d12b0ab73483ae9e15eb9fc38e345882e9155dd34ce6fc57503",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\商品资料_20261024103312_203178058_1.xlsx": "cd7f14c9083001557bda20af64d5328e023f2615eb90ed60377c0845549e928c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\山东仓.xlsx": "514ef8b88ea9b942d2b2edbeecb33c97c4d2ba294250c94ca370a1acef925765",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\河北仓.xlsx": "a7e9f7035281a4e90a2bde2266feb2fc253ce32a49fbee7bfb7d5f2db66e1ae6",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\混合仓商品资料.xlsx": "3c31fd1e3dbc17ea06661b1587c0f1173bb4dfdb1ae51e17abfb2c316c3d763e",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\inputs\\补货建议导出服务.xlsx": "249c019e9ac2477f0954964e0e1f83658813ada66724f734f10c395b2a4e7fed"
+  },
+  "scope": "14244-row real input; five budgets and exception off; custom parameters; single/dual warehouse and opposite routes; serial/process calculation; conflicts and invalid codes; old mixed master; restore and trial. Exact types/values and list/dict order; no SKU reordering; full metadata except exact dynamic fields."
+}

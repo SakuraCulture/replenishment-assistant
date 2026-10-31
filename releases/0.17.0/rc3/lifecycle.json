@@ -1,0 +1,164 @@
+{
+  "passed": true,
+  "differences": [],
+  "changed_inputs": [],
+  "inputs": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\payment.xlsx": "2db19bd7ef4bc28a7992ba917e1a42bf5a2946905bf709fe18b3d48835cddb3d",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\receipt-invalid.xlsx": "856b253a19f1130a15faf4707077506f4294fffdaa48c815a9e24fd0ec3e3acd",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\receipt.xlsx": "a4b5629693d5b3076b0135bcf6405d0b206d2989238b7a13514a232ee066393b",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\return-hb-v2.xlsx": "25be1a06d045b18fb8ec78c444e7575a0ebeb0c51cf316b7f1a3896f490b06fc",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\return-hb.xlsx": "1099e8dc1806b659c4fe6a74d43cf9b3f36950acfd61c1a56c49068718298604",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\return-minimal.xlsx": "d2af623dd2b8013ffb4715f1fddfe6a3ea094e2ccc1d24398fa02ca39e614501",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\return-sd.xlsx": "011fd39b28a4c45fbcb89c83126d51b70165cdc1db0809b8013b5fa6e8c352ff",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\signed-hb.xlsx": "56cfd8998a0b4db17affaeb94aa1269d620a0c2952730aa6e84552a9a0d8b1fc",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\signed-sd.xlsx": "3756fac41d10cdffdb100878c88477ad29c6955a8eddaabd611ed43fe0e6be65",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\specs.json": "cf7deb2741c3eaf06f3b544bac4f40092ee4de5b31807646f649ef32013f74c7",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\山东仓.xlsx": "d5d354c7a164124811716fa535bd6dc8b37b6ce54559c7fe85025f7b00239f00",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\河北仓.xlsx": "d5d354c7a164124811716fa535bd6dc8b37b6ce54559c7fe85025f7b00239f00",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\settings\\workbench.before-normal-orders.90ffd22cfd22445d8714b51807c6bc29.sqlite3": "921e0cf28451344a9334cf79bc160feb0b9da1a3cf0161cb63affad8acb99194",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\lifecycle_equivalence_final\\fixture\\settings\\workbench.sqlite3": "3adc6400f2b1d525c52c5344e36879ca62e355fcf07919f641b0455b0dd824fc"
+  },
+  "baseline_source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_flows_0170\\baseline",
+  "baseline_commit": "3e167f5c86f64d1d8a98adffda8287b35ab76361",
+  "runs": {
+    "old": [
+      {
+        "read_seconds": 0.029954599973279983,
+        "prepare_seconds": 0.05200710002100095,
+        "commit_seconds": 0.02832539996597916,
+        "export_seconds": 0.43082790001062676,
+        "total_seconds": 0.5411225999705493,
+        "peak_tree_mib": 49.4921875,
+        "sample_ms": 20
+      },
+      {
+        "read_seconds": 0.04090730001917109,
+        "prepare_seconds": 0.031382900080643594,
+        "commit_seconds": 0.02467129990691319,
+        "export_seconds": 0.3741946999798529,
+        "total_seconds": 0.4711630999809131,
+        "peak_tree_mib": 49.5234375,
+        "sample_ms": 20
+      },
+      {
+        "read_seconds": 0.02990460000000894,
+        "prepare_seconds": 0.0449087000451982,
+        "commit_seconds": 0.023469500010833144,
+        "export_seconds": 0.3974233000189997,
+        "total_seconds": 0.4957134000142105,
+        "peak_tree_mib": 49.609375,
+        "sample_ms": 20
+      }
+    ],
+    "new": [
+      {
+        "read_seconds": 0.04690279997885227,
+        "prepare_seconds": 0.03722369996830821,
+        "commit_seconds": 0.029383599990978837,
+        "export_seconds": 0.3870961000211537,
+        "total_seconds": 0.5006088999798521,
+        "peak_tree_mib": 49.34765625,
+        "sample_ms": 20
+      },
+      {
+        "read_seconds": 0.04216939996695146,
+        "prepare_seconds": 0.03341760003240779,
+        "commit_seconds": 0.027103399974294007,
+        "export_seconds": 0.32022400002460927,
+        "total_seconds": 0.42291670001577586,
+        "peak_tree_mib": 49.40625,
+        "sample_ms": 20
+      },
+      {
+        "read_seconds": 0.041478400002233684,
+        "prepare_seconds": 0.031859699985943735,
+        "commit_seconds": 0.027240200026426464,
+        "export_seconds": 0.37432130001252517,
+        "total_seconds": 0.4749015999841504,
+        "peak_tree_mib": 49.44140625,
+        "sample_ms": 20
+      }
+    ]
+  },
+  "summary": {
+    "old": {
+      "read_seconds": {
+        "median": 0.029954599973279983,
+        "min": 0.02990460000000894,
+        "max": 0.04090730001917109
+      },
+      "prepare_seconds": {
+        "median": 0.0449087000451982,
+        "min": 0.031382900080643594,
+        "max": 0.05200710002100095
+      },
+      "commit_seconds": {
+        "median": 0.02467129990691319,
+        "min": 0.023469500010833144,
+        "max": 0.02832539996597916
+      },
+      "export_seconds": {
+        "median": 0.3974233000189997,
+        "min": 0.3741946999798529,
+        "max": 0.43082790001062676
+      },
+      "total_seconds": {
+        "median": 0.4957134000142105,
+        "min": 0.4711630999809131,
+        "max": 0.5411225999705493
+      },
+      "peak_tree_mib": {
+        "median": 49.5234375,
+        "min": 49.4921875,
+        "max": 49.609375
+      },
+      "sample_ms": {
+        "median": 20,
+        "min": 20,
+        "max": 20
+      }
+    },
+    "new": {
+      "read_seconds": {
+        "median": 0.04216939996695146,
+        "min": 0.041478400002233684,
+        "max": 0.04690279997885227
+      },
+      "prepare_seconds": {
+        "median": 0.03341760003240779,
+        "min": 0.031859699985943735,
+        "max": 0.03722369996830821
+      },
+      "commit_seconds": {
+        "median": 0.027240200026426464,
+        "min": 0.027103399974294007,
+        "max": 0.029383599990978837
+      },
+      "export_seconds": {
+        "median": 0.37432130001252517,
+        "min": 0.32022400002460927,
+        "max": 0.3870961000211537
+      },
+      "total_seconds": {
+        "median": 0.4749015999841504,
+        "min": 0.42291670001577586,
+        "max": 0.5006088999798521
+      },
+      "peak_tree_mib": {
+        "median": 49.40625,
+        "min": 49.34765625,
+        "max": 49.44140625
+      },
+      "sample_ms": {
+        "median": 20,
+        "min": 20,
+        "max": 20
+      }
+    }
+  },
+  "whitelist": [
+    "document envelope saved timestamp only",
+    "Excel exact build/clock cells in structure_oracle.excel_snapshot"
+  ],
+  "scope": "Exact payload/digest/version/source-row/order and complete existing lifecycle Excel cell/style snapshots; batch file arrival deliberately reversed. Synthetic two warehouses, four source files, four signed products; same frozen originals and interpreter; alternating serial runs, OS cache uncontrolled, no user reading/confirmation time."
+}
