@@ -98,6 +98,11 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
                     doc = base.code(d[DOCNUM[stage]], stage == 'return')
                     props = spec.get('properties', {}); signed = base.code(d['补货单号'], True)
                     rev = revision(d['签发修订'])
+                    if props.get('签发修订索引'):
+                        import json
+                        index=json.loads(props['签发修订索引']);embedded=revision(index.get(signed))
+                        if embedded is None or rev is not None and rev!=embedded:raise ValueError('单号与合并文件修订标识不一致')
+                        rev=embedded
                     if props.get('修订'):
                         if props.get('补货单号') != signed: raise ValueError('单号与导出文件修订标识不一致')
                         embedded = revision(props['修订'])
@@ -127,10 +132,11 @@ def template(stage, path):
     notes = [('必需字段', '、'.join(required(stage))), ('关联', '补货单号为分仓子单号，签发修订为V001；缺少时必须明确选择，不猜最新版。'), ('范围', '每张仓单提交完整环节版本；不累计、不分摊。核对确认后空白/缺行按0，保留原始原因。未导入整单不是0。'), ('单位', '付款原表数量与回传相同，不乘箱规；通用模板其它单位须明确换算依据。'), ('金额', '付款商品金额即实付，按源单保存，不使用模型价格估算。源单未提供币种时留空。'), ('日期', '不记录付款时间，不用下单时间代替。收货日期为YYYY-MM-DD。'), ('身份', '编码与单号按文本输入，保留前导零。每仓单每商品一行；重复同值去重，冲突拒绝。')]
     target = Path(path)
     if target.exists(): raise FileExistsError('目标文件已存在，不覆盖')
-    book = openpyxl.Workbook(); ws = book.active; ws.title = TITLES[stage]; ws.append(fields(stage)); ws.freeze_panes = 'A2'
+    columns=PAYMENT_HEADERS if stage=='payment' else fields(stage)
+    book = openpyxl.Workbook(); ws = book.active; ws.title = TITLES[stage]; ws.append(columns); ws.freeze_panes = 'A2'
     for cell in ws[1]: cell.font = Font(bold=True); ws.column_dimensions[cell.column_letter].width = 24
     for n in range(2,202):
-        for i, field in enumerate(fields(stage),1):
+        for i, field in enumerate(columns,1):
             if '编码' in field or '单号' in field or field == '签发修订': ws.cell(n,i).number_format = '@'
     help_sheet = book.create_sheet('填写说明'); help_sheet.append(['项目','说明'])
     for row in notes: help_sheet.append(row)

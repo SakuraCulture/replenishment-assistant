@@ -80,5 +80,37 @@ class ReconciliationTests(unittest.TestCase):
         with closing(sqlite3.connect(f.path)) as db,db:
             db.execute('CREATE TABLE merchant_feedback(oid TEXT,revision INTEGER,version INTEGER,saved TEXT,payload TEXT)');db.execute('INSERT INTO merchant_feedback VALUES(?,?,?,?,?)',('oid',1,1,wr.now(),wr.dumps({'values':{'0001':8},'warehouses':{}})))
         before=f.old_tables();f.save('payment');self.assertEqual(f.view()['next'],'receipt');self.assertEqual(f.old_tables(),before)
+    def test_return_export_keeps_template_zero_rows_and_original_signed(self):
+        import normal_exports as ne
+        f=self.f;before=copy.deepcopy(f.repo.get(wr.today(),'T'));f.save('return',[{'门店确认数量':None}]);result=lc.export(f.path,[f.h],f.root,'return');self.assertIsNone(result['error'])
+        original=f.root/'signed.xlsx';ne.export(before,original,warehouse='河北仓');a=openpyxl.load_workbook(original);b=openpyxl.load_workbook(result['files'][0])
+        try:
+            self.assertEqual(a.sheetnames,b.sheetnames)
+            found=False
+            for wa,wb in zip(a,b):
+                self.assertEqual((wa.max_row,wa.max_column),(wb.max_row,wb.max_column))
+                self.assertEqual(list(wa.column_dimensions),list(wb.column_dimensions))
+                for ra,rb in zip(wa,wb):
+                    for ca,cb in zip(ra,rb):
+                        self.assertEqual(ca._style,cb._style)
+                        if ca.column==17 and ca.row>1:self.assertEqual(cb.value,0);found=True
+                        else:self.assertEqual((ca.value,ca.data_type),(cb.value,cb.data_type))
+            self.assertTrue(found)
+        finally:a.close();b.close()
+        self.assertEqual(f.repo.get(wr.today(),'T'),before)
+    def test_return_two_warehouse_batch_and_no_missing_fake_document(self):
+        f=self.f;h=f.heads[1];f.save('return',[{}, {'商品编码':'0002','供货仓':'山东仓','补货单号':h['number']}])
+        result=lc.export(f.path,[h,f.h],f.root,'return','combined');self.assertIsNone(result['error']);self.assertEqual(len(result['files']),2)
+        for name,wh in zip(result['files'],['山东仓','河北仓']):
+            b=openpyxl.load_workbook(name)
+            try:self.assertEqual({r[18] for ws in b for r in list(ws.values)[1:]},{wh})
+            finally:b.close()
+    def test_missing_zero_in_payment_export_keeps_unknown_amount(self):
+        f=self.f;f.save('return',[{}, {'商品编码':'X','门店确认数量':2}]);f.save('payment')
+        result=lc.export(f.path,[f.h],f.root,'payment');self.assertIsNone(result['error']);b=openpyxl.load_workbook(result['files'][0])
+        try:
+            data=list(b.active.values);headers=data[0];rows=[dict(zip(headers,r)) for r in data[1:]];r=next(r for r in rows if r['商品编码']=='X')
+            self.assertEqual(r['付款单商品数量'],0);self.assertIsNone(r['实际金额']);self.assertIn('缺行按0',r['数量处理说明']);self.assertNotIn('付款日期',headers)
+        finally:b.close()
 
 if __name__=='__main__':unittest.main()

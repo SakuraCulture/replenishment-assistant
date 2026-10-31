@@ -6,7 +6,7 @@ from ui_controls import button,label
 from history_tasks import HistoryReader
 import work_repository as wr
 import order_lifecycle as service
-from lifecycle_ui import LifecycleDialog,import_document,import_group,export_selected,warn
+from lifecycle_ui import LifecycleDialog,import_document,import_group,export_selected,warn,review_again
 from lifecycle_io import TITLES
 
 class LifecycleWidget(QWidget):
@@ -35,14 +35,15 @@ class LifecycleWidget(QWidget):
         blocker=QSignalBlocker(self.table);self.table.setRowCount(len(self.records))
         for i,h in enumerate(self.records):
             c=QTableWidgetItem();c.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);c.setCheckState(Qt.CheckState.Checked if service.key(h) in self.checked else Qt.CheckState.Unchecked);self.table.setItem(i,0,c)
-            notices=[]
+            notices=[h['note']] if h.get('note') else []
             if h['legacy_incomplete']:notices.append('已有旧回传资料，请导入完整确认单')
             if h['old_revision']:notices.append('旧签发修订另有下游资料，未转移至本修订')
             if h['warehouse']=='旧版未标仓':notices.append('仓归属待核，不能自动关联')
             values=[h['day'],h['name']+'（'+h['store']+'）',h['warehouse'],h['number']+f" / V{h['revision']:03d}",h['status'],*[('已导入' if h['present'][s] else '未导入') for s in service.STAGES],'；'.join(notices)]
             for j,x in enumerate(values,3):self.table.setItem(i,j,QTableWidgetItem(str(x)))
             self.table.setCellWidget(i,1,button('查看生命周期',lambda checked=False,r=h:self.open_comparison(r)))
-            b=button('导入'+TITLES[h['next']] if h['next'] else '资料已收齐',lambda checked=False,r=h:self.next(r));b.setEnabled(h['next'] is not None and h['warehouse']!='旧版未标仓');self.table.setCellWidget(i,2,b)
+            recheck=h['next'] and h['present'][h['next']]
+            b=button(('重新核对' if recheck else '导入')+TITLES[h['next']] if h['next'] else '无后续待办',lambda checked=False,r=h:self.next(r));b.setEnabled(h['next'] is not None and h['warehouse']!='旧版未标仓');self.table.setCellWidget(i,2,b)
         del blocker
         for i,width in enumerate([45,110,165,100,185,70,250,85,90,90,90,260]):self.table.setColumnWidth(i,width)
         self.selection_label()
@@ -65,5 +66,8 @@ class LifecycleWidget(QWidget):
         try:LifecycleDialog(self,self.host,head).exec();self.query(keep_page=True)
         except Exception as exc:warn(self,exc)
     def next(self,head):
-        if head['next'] and import_document(self,self.host,head['next'],head):self.query(keep_page=True)
+        s=head['next']
+        if not s:return
+        result=review_again(self,self.host,head,s) if head['present'][s] else import_document(self,self.host,s,head)
+        if result:self.query(keep_page=True)
     def shutdown(self):self.reader.shutdown()

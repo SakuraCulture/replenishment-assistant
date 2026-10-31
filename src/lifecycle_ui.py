@@ -22,10 +22,10 @@ def template(parent, stage):
 
 class Files(ImportDialog):
     def __init__(self, parent, stage):
-        QDialog.__init__(self, parent); self.stage = stage; self.multiple = True; self.paths = []; self.extensions = ('.xlsx',); self.setAcceptDrops(True); self.resize(780,380); self.setWindowTitle('导入'+io.TITLES[stage]+' · 1/3 选择文件')
-        v = QVBoxLayout(self); v.addWidget(label('拖入一份或多份完整单据。每店、每仓、每签发修订独立保存，不改门店推荐数。', 'section')); self.list = QListWidget(); v.addWidget(self.list)
+        QDialog.__init__(self, parent); self.stage = stage; self.multiple = stage!='payment'; self.paths = []; self.extensions = ('.xlsx',); self.setAcceptDrops(True); self.resize(780,380); self.setWindowTitle('导入'+io.TITLES[stage]+' · 1/3 选择文件')
+        v = QVBoxLayout(self); v.addWidget(label('拖入所选仓单的一份完整付款表，沿用原表数量和商品金额。' if stage=='payment' else '拖入完整单据；门店回传可直接使用修改数量后的签发单。每店每仓独立保存。', 'section')); self.list = QListWidget(); v.addWidget(self.list)
         row = QHBoxLayout(); row.addWidget(button('选择文件', self.choose)); row.addWidget(button('下载'+io.TITLES[stage]+'模板', lambda: template(self,stage))); v.addLayout(row)
-        v.addWidget(label('付款必须是带商品明细的已付款单；收货必须是实际收货单。后环节先到可先存，首页仍提示最早缺少的单据。', 'muted'))
+        v.addWidget(label('数量空白、缺行在核对确认后按0；未导入整单不是0。付款不记录付款时间，数量不乘箱规。', 'muted'))
         row = QHBoxLayout(); self.go = button('读取并校验', self.accept, True); self.go.setEnabled(False); row.addWidget(self.go); row.addWidget(button('取消', self.reject)); v.addLayout(row)
 
 class Mapping(QDialog):
@@ -106,13 +106,26 @@ class Review(QDialog):
     def __init__(self,parent,plan):
         super().__init__(parent); self.setObjectName('lifecycleReview'); self.setWindowTitle('确认完整'+io.TITLES[plan['plans'][0]['stage']]); self.resize(1200,740); v=QVBoxLayout(self); summary=[]; rows=[]
         for p in plan['plans']:
-            h=p['head']; summary.append(head_text(h)+f"\n单据版本 {p['expected'] or 0} → {(p['expected'] or 0)+int(p['changed'])}；{len(p['payload']['rows'])}款；未列出 {len(p['payload']['missing'])}款；额外 {len(p['payload']['extra'])}款；同值重复 {p['duplicates']}行")
+            h=p['head'];payload=p['payload'];basis=payload['basis'];origins=[r['quantity_origin'] for r in payload['rows']]
+            basis_text='签发'+f"V{h['revision']:03d}" if basis['stage']=='signed' else io.TITLES[basis['stage']]+' '+str((basis['dependencies'].get(basis['stage']) or {}).get('version','未导入'))+'版'
+            summary.append(head_text(h)+f"\n依据：{basis_text}；本环节版本 {p['expected'] or 0} → {(p['expected'] or 0)+int(p['changed'])}；{len(payload['rows'])}款；明确0 {origins.count('zero')}款、空白转0 {origins.count('blank')}款、缺行转0 {origins.count('missing')}款；清单外 {len(payload['extra'])}款；同值重复 {p['duplicates']}行"+('；上游未就绪，本次仅留存，之后须重新核对。' if payload['pending'] else '')+('；本次明确确认整单为0，不生成原始Excel。' if payload['explicit_zero'] else ''))
+            source=next((r['source_order'] for r in payload['raw_rows'] if r.get('source_order')),None)
+            if source:summary.append('来源店铺：'+str(source.get('店铺名称'))+'；内部订单：'+str(source.get('内部订单号'))+'；线上订单：'+str(source.get('线上订单号'))+'。请与上方所选店仓单核对。')
             rows.extend(p['differences'])
-            rows.extend([[h['number'],f"V{h['revision']:03d}",s,h['products'][s]['name'],None,None,'本次未列出（不当作0）',None,None] for s in p['payload']['missing'] if not any(r[2]==s for r in p['differences'])])
-        details=QPlainTextEdit();details.setReadOnly(True);details.setPlainText('\n'.join(summary));details.setMaximumHeight(140);v.addWidget(details); search=QLineEdit(); search.setPlaceholderText('筛选单号 / 商品 / 未列出 / 额外商品'); v.addWidget(search); self.table,self.model=grid(self,['补货单号','签发修订','商品编码','商品名称','上版数量','本版数量','范围说明','上版实际金额','本版实际金额'],rows); v.addWidget(self.table,1); search.textChanged.connect(self.model.filter)
-        self.complete=QCheckBox('我已核对：这是本环节完整单据；未列出的商品不填0，按实保留差异。'+(' 此表确为已付款商品明细。' if plan['plans'][0]['stage']=='payment' else '')); v.addWidget(self.complete)
+        details=QPlainTextEdit();details.setReadOnly(True);details.setPlainText('\n'.join(summary));details.setMaximumHeight(150);v.addWidget(details)
+        self.search=QLineEdit();self.search.setPlaceholderText('搜索单号 / 商品编码 / 名称 / 处理说明');self.category=QComboBox();self.category.addItems(['全部','数量变化','明确填0','空白按0','缺行按0','清单外商品']);filters=QHBoxLayout();filters.addWidget(self.category);filters.addWidget(self.search);v.addLayout(filters)
+        self.all_rows=rows;self.table,self.model=grid(self,['补货单号','签发修订','商品编码','商品名称','上环节数量','本环节数量','与上环节差额','处理说明','本环节旧版数量','源单商品金额'],rows);v.addWidget(self.table,1);self.category.currentTextChanged.connect(self.filter_rows);self.search.textChanged.connect(self.filter_rows)
+        self.complete=QCheckBox('我已核对完整读取范围；对照范围内空白/缺行按0，不累计旧版本。'+(' 此表确为已付款商品明细，商品金额即实付。' if plan['plans'][0]['stage']=='payment' else ''));v.addWidget(self.complete)
+        self.extra_ack=QCheckBox('清单外商品已逐项核对，确属所选门店和仓单；完全匹配不上时已重新核对订单。');self.extra_ack.setVisible(any(p['payload']['extra'] for p in plan['plans']));self.extra_ack.setChecked(not any(p['payload']['extra'] for p in plan['plans']));v.addWidget(self.extra_ack)
         v.addWidget(label('数量与推荐不同不阻止环节完成。确认后独立留存新版本和原件，不修改签发、计算或其它环节。','muted'))
-        row=QHBoxLayout(); cancel=button('取消',self.reject); cancel.setDefault(True); row.addWidget(cancel); self.save=button('确认保存完整单据',self.accept,True); self.save.setEnabled(False); self.save.setAutoDefault(False); self.complete.toggled.connect(self.save.setEnabled); row.addWidget(self.save); v.addLayout(row)
+        row=QHBoxLayout(); cancel=button('取消',self.reject); cancel.setDefault(True); row.addWidget(cancel); self.save=button('确认保存完整单据',self.accept,True); self.save.setEnabled(False); self.save.setAutoDefault(False);self.complete.toggled.connect(self.allow_save);self.extra_ack.toggled.connect(self.allow_save);row.addWidget(self.save);v.addLayout(row)
+    def allow_save(self):self.save.setEnabled(self.complete.isChecked() and self.extra_ack.isChecked())
+    def filter_rows(self):
+        from decimal import Decimal
+        kind=self.category.currentText();rows=self.all_rows
+        if kind=='数量变化':rows=[r for r in rows if r[6] is not None and Decimal(str(r[6]))!=0]
+        elif kind!='全部':rows=[r for r in rows if kind in r[7]]
+        self.model.replace(rows);self.model.filter(self.search.text())
 
 def commit(parent,host,plan):
     task=Task(parent,service.commit,(host.work_repository.path,plan),'保存完整单据')
@@ -126,15 +139,29 @@ def commit(parent,host,plan):
     return result
 
 def import_document(parent,host,stage,head=None):
+    if stage=='payment' and head is None:
+        try:
+            heads=run(parent,service.purchases.targets,(host.work_repository.path,),'选择付款对应仓单')
+            names=[head_text(h) for h in heads];choice,ok=QInputDialog.getItem(parent,'选择付款对应订单','先选择一张店仓单；本次不做付款批量关联。',names,0,False)
+            if not ok or not names:return
+            head=heads[names.index(choice)]
+        except Exception as exc:warn(parent,exc);return
     d=Files(parent,stage)
     if d.exec()!=QDialog.DialogCode.Accepted:return
     try:
         infos=run(parent,io.inspect,(d.paths,),'识别'+io.TITLES[stage]); specs=[]
+        if stage=='payment' and len(infos)!=1:raise ValueError('本次付款仅导入一份完整仓单文件')
         for info in infos:
+            paid=io.payment_specs(info) if stage=='payment' else []
+            if paid:
+                chosen=[s['sheet'] for s in paid];skipped=[s['sheet'] for s in info['sheets'] if s['sheet'] not in chosen]
+                if not confirm(parent,'核对付款文件读取范围','已识别现有付款原表。读取：'+'、'.join(chosen)+('；不读取：'+'、'.join(skipped) if skipped else '')+'。数量与回传一致，不乘箱规；商品金额按实付保存。'):return
+                specs.extend(paid);continue
             m=Mapping(parent,host.work_repository.path,stage,info)
             if m.exec()!=QDialog.DialogCode.Accepted:return
             specs.extend(m.specs())
         scan=run(parent,io.scan,(stage,specs),'校验完整单据'); heads=run(parent,service.available,(host.work_repository.path,scan),'读取可关联签发修订')
+        if stage=='payment' and len({service.binding_key(r) for r in scan['rows']})!=1:raise ValueError('付款文件包含多个来源订单，请按一张完整仓单分别导入；不自动合并')
         b=Bindings(parent,scan,heads,head)
         if b.exec()!=QDialog.DialogCode.Accepted:return
         plan=run(parent,service.prepare,(host.work_repository.path,scan,b.bindings),'核对整单数量与来源'); review=Review(parent,plan)
@@ -149,10 +176,20 @@ def import_group(parent,host,head=None,refresh=lambda:None):
     for s in io.STAGES: row.addWidget(button('导入'+io.TITLES[s],lambda checked=False,k=s:action(k)))
     return group
 
+def review_again(parent,host,head,stage,zero=False):
+    try:
+        fn=service.zero_plan if zero else service.recheck
+        plan=run(parent,fn,(host.work_repository.path,head,stage),'整单为0核对' if zero else '按新上游版本重新核对');d=Review(parent,plan)
+        if d.exec()!=QDialog.DialogCode.Accepted:return
+        return commit(parent,host,plan)
+    except Exception as exc:warn(parent,exc)
+
 def export_selected(parent,host,heads,kind='comparison'):
     if not heads:return
     mode,ok=QInputDialog.getItem(parent,'选择导出方式','仅导出所选完整仓单；不受商品表搜索影响。',['每店每仓每修订一个文件','每仓一表多订单'],0,False)
     if not ok:return
+    count=len(heads) if mode.startswith('每店') else len({h['warehouse'] for h in heads})
+    if not confirm(parent,'核对导出范围','\n'.join(head_text(h) for h in heads)+f'\n共 {len(heads)} 张仓单，预计 {count} 个文件；'+mode+'。商品搜索不会缩小导出范围。'):return
     folder=export_locations.directory(parent,'选择导出目录（不会覆盖已有文件）')
     if not folder:return
     try:
@@ -170,7 +207,7 @@ class Document(QDialog):
         self.versions.currentIndexChanged.connect(self.show_version); self.show_version()
     def show_version(self):
         d=self.versions.currentData(); self.files.clear()
-        self.model.replace([[r['sku'],r['name'],r['base_quantity'],r['quantity'],r['unit'],r['amount'],r['currency'],r['document_number'],r['document_date'],'；'.join(s['file']+'/'+s['sheet']+':'+str(s['row']) for s in r['sources']),r['note']] for r in d['payload']['rows']] if d else [])
+        self.model.replace([[r['sku'],r['name'],r['base_quantity'],r['quantity'],r['unit'],r['amount'],r['currency'],r['document_number'],r['document_date'],'；'.join(s['file']+'/'+s['sheet']+':'+str(s['row']) for s in r['sources']), '；'.join(str(x) for x in (r.get('processing_note'),r.get('note')) if x)] for r in d['payload']['rows']] if d else [])
         if d:
             for f in d['payload']['files']:self.files.addItem(f['name'],f)
     def download(self):
@@ -184,19 +221,28 @@ class Document(QDialog):
 class LifecycleDialog(QDialog):
     def __init__(self,parent,host,head):
         super().__init__(parent);self.host=host;self.head=head;self.setWindowTitle('订单生命周期 · '+head['number']);self.resize(1400,820);v=QVBoxLayout(self);v.addWidget(label(head_text(head),'section'));self.note=label('');v.addWidget(self.note);self.imports=import_group(self,host,head,self.refresh);v.addWidget(self.imports)
-        v.addWidget(label('已签发 → 门店回传 → 门店付款 → 门店实际收货。以下四个数量独立保存；空白/未列出不等于0。','muted'));search=QLineEdit();search.setPlaceholderText('筛选商品编码 / 名称 / 资料说明');v.addWidget(search);self.table,self.model=grid(self,service.HEADERS);v.addWidget(self.table,1);search.textChanged.connect(self.model.filter)
+        v.addWidget(label('已签发 → 门店回传 → 门店付款 → 门店实际收货。新单据核对确认后空白/缺行按0；未导入整单不当作0。旧记录按旧口径保留。','muted'));search=QLineEdit();search.setPlaceholderText('筛选商品编码 / 名称 / 资料说明');v.addWidget(search);self.table,self.model=grid(self,service.HEADERS);v.addWidget(self.table,1);search.textChanged.connect(self.model.filter)
         sources=QGroupBox('单据与依据');row=QHBoxLayout(sources);row.addWidget(button('查看签发与计算依据',lambda:host.open_archive(head)));self.views={}
-        for s in io.STAGES:self.views[s]=button('查看'+io.TITLES[s]+('回传版本' if s=='return' else '版本'),lambda checked=False,k=s:self.document(k));row.addWidget(self.views[s])
+        for s in io.STAGES:self.views[s]=button('查看'+io.TITLES[s]+'版本',lambda checked=False,k=s:self.document(k));row.addWidget(self.views[s])
         v.addWidget(sources);exports=QGroupBox('数据导出');row=QHBoxLayout(exports);self.export_confirmation=button('导出门店确认单',lambda:host.export_order(head));row.addWidget(self.export_confirmation);self.exports={}
-        for s in ('payment','receipt'):self.exports[s]=button('导出'+io.TITLES[s],lambda checked=False,k=s:export_selected(self,host,[head],k));row.addWidget(self.exports[s])
+        for s in io.STAGES:self.exports[s]=button('导出'+io.TITLES[s],lambda checked=False,k=s:export_selected(self,host,[head],k));row.addWidget(self.exports[s])
         row.addWidget(button('导出生命周期对照',lambda:export_selected(self,host,[head])));v.addWidget(exports)
+        corrections=QGroupBox('重新核对（保留原版本）');row=QHBoxLayout(corrections);self.rechecks={}
+        for s in io.STAGES:self.rechecks[s]=button('重新核对'+io.TITLES[s],lambda checked=False,k=s:self.recheck(k));row.addWidget(self.rechecks[s])
+        v.addWidget(corrections);zeros=QGroupBox('特殊情况：明确确认本环节整单为0');row=QHBoxLayout(zeros);self.zeros={}
+        for s in io.STAGES:self.zeros[s]=button('确认'+io.TITLES[s]+'整单为0',lambda checked=False,k=s:self.recheck(k,True));row.addWidget(self.zeros[s])
+        v.addWidget(zeros)
         legacy=QGroupBox('历史兼容资料（不计为付款）');row=QHBoxLayout(legacy);row.addWidget(button('查看旧版门店回传',self.legacy_returns));row.addWidget(button('查看旧实际下单资料',self.legacy_purchases));row.addStretch();row.addWidget(button('关闭',self.reject));v.addWidget(legacy);self.refresh()
     def refresh(self):
-        self.view=run(self,service.snapshot,(self.host.work_repository.path,self.head),'读取生命周期对照');self.model.replace(self.view['rows']);next_stage=self.view['next'];self.note.setText(self.view['status']+' · '+('下一步：导入'+io.TITLES[next_stage] if next_stage else '四个环节的资料均已留存')+('；已有旧版回传资料，原版本继续保留。' if self.view['legacy_return'] else ''))
+        self.view=run(self,service.snapshot,(self.host.work_repository.path,self.head),'读取生命周期对照');self.model.replace(self.view['rows']);next_stage=self.view['next'];status='已完成' if self.view['status']=='已收齐' else self.view['status'];self.note.setText(status+' · '+(self.view.get('note') or ('下一步：导入'+io.TITLES[next_stage] if next_stage else '资料已留存'))+('；已有旧版回传资料，原版本继续保留。' if self.view['legacy_return'] else ''))
         for s,b in self.views.items():b.setEnabled(bool(self.view['documents'][s]))
         for s,b in self.exports.items():b.setEnabled(bool(self.view['documents'][s]) and not self.head.get('deleted'))
+        for s,b in self.rechecks.items():b.setEnabled(bool(self.view['documents'][s]) and not self.head.get('deleted'))
+        for s,b in self.zeros.items():b.setEnabled(not self.head.get('deleted'))
         self.imports.setEnabled(not self.head.get('deleted'));self.export_confirmation.setEnabled(not self.head.get('deleted'))
     def document(self,stage):Document(self,self.host,self.head,stage).exec()
+    def recheck(self,stage,zero=False):
+        if review_again(self,self.host,self.head,stage,zero):self.refresh()
     def legacy_returns(self):
         from feedback_ui import FeedbackDialog
         FeedbackDialog(self,self.host,self.head,readonly=True).exec();self.refresh()

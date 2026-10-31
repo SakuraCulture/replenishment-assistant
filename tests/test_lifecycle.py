@@ -150,7 +150,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(self.view()['status'],'待回传');self.assertTrue(self.read()['records'][0]['legacy_incomplete'])
     def test_template_formula_and_empty_inputs(self):
         for stage in io.STAGES:
-            p=self.root/(stage+'template.xlsx');io.template(stage,p);book=openpyxl.load_workbook(p);self.assertEqual(list(next(book.active.values)),io.fields(stage));book.close()
+            p=self.root/(stage+'template.xlsx');io.template(stage,p);book=openpyxl.load_workbook(p);self.assertEqual(list(next(book.active.values)),io.PAYMENT_HEADERS if stage=='payment' else io.fields(stage));book.close()
         with self.assertRaisesRegex(ValueError,'缓存'):self.scan('return',[{'门店确认数量':'=1+1'}])
         with self.assertRaisesRegex(ValueError,'没有商品'):self.scan(items=[])
     def test_signed_confirmation_export_can_be_read(self):
@@ -164,7 +164,7 @@ class LifecycleTests(unittest.TestCase):
     def test_export_scope_order_types_and_reimport(self):
         h=self.heads[1];self.save('payment',[{'补货单号':h['number'],'供货仓':h['warehouse'],'商品编码':'0002'},{}]);before=self.old_tables()
         result=lc.export(self.path,[h,self.h],self.root,'payment','combined');self.assertIsNone(result['error']);self.assertEqual(len(result['files']),2)
-        b=openpyxl.load_workbook(result['files'][0]);values=list(b.active.values);self.assertEqual(values[1][2],'山东仓');self.assertEqual(values[1][8],'0002');self.assertIsInstance(values[1][10],(int,float));b.close();self.assertEqual(self.old_tables(),before)
+        b=openpyxl.load_workbook(result['files'][0]);values=list(b.active.values);self.assertEqual(values[1][2],'山东仓');self.assertEqual(values[1][7],'0002');self.assertIsInstance(values[1][9],(int,float));self.assertNotIn('付款日期',values[0]);b.close();self.assertEqual(self.old_tables(),before)
         missing=lc.export(self.path,[self.h],self.root,'receipt');self.assertFalse(missing['files']);self.assertIn('尚未导入',missing['error'])
     def test_mapping_profiles_separate_stages(self):
         lc.mappings(self.path,'payment','ERP',{'headers':['SKU'],'mapping':{'商品编码':0},'defaults':{}});self.assertIn('ERP',lc.mappings(self.path,'payment'));self.assertEqual(lc.mappings(self.path,'receipt'),{})

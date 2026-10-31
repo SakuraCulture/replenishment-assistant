@@ -86,6 +86,10 @@ class ArchiveBatchActions:
         for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发建议','signed')]:
             b=button(title,lambda checked=False,k=kind:self.export_archive_batch(k));row.addWidget(b);self.archive_export_buttons.append(b)
         layout.addLayout(row)
+        lifecycle=QGroupBox('业务单据导出（使用已勾选仓单）');actions=QHBoxLayout(lifecycle)
+        for title,kind in [('导出门店回传单','return'),('导出门店付款单','payment'),('导出门店实际收货单','receipt'),('导出生命周期对照','comparison')]:
+            b=button(title,lambda checked=False,k=kind:self.export_lifecycle_batch(k));actions.addWidget(b);self.archive_export_buttons.append(b)
+        layout.addWidget(lifecycle)
         extras=QHBoxLayout();self.reference_btn=button('导出商品资料核对表（加工）',lambda:self.export_archive_batch('reference'));extras.addWidget(self.reference_btn);extras.addStretch();layout.addLayout(extras)
         maintenance=QGroupBox('维护管理');actions=QHBoxLayout(maintenance);self.trash_btn=button('移入回收站',lambda:self.change_archive_visibility(True));self.restore_btn=button('恢复归档',lambda:self.change_archive_visibility(False));self.restore_btn.hide();actions.addWidget(self.trash_btn);actions.addWidget(self.restore_btn);actions.addStretch();layout.addWidget(maintenance)
         self.archive_selection_note=label('已选 0 张仓单','muted');layout.addWidget(self.archive_selection_note)
@@ -127,3 +131,6 @@ class ArchiveBatchActions:
         heads=list(self.archive_checked.values()) if heads is None else heads
         if kind=='original':export(self,self.work_repository.path,heads,'original')
         else:export(self,self.work_repository.path,heads,kind)
+    def export_lifecycle_batch(self,kind):
+        from lifecycle_ui import export_selected
+        export_selected(self,self,list(self.archive_checked.values()),kind)

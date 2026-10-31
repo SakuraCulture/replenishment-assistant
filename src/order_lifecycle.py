@@ -122,6 +122,8 @@ def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=Fals
 def match_payment_rows(path, head, rows):
     import re
     if not any(r.get('adapter')=='paid_order' for r in rows):return
+    identities={tuple(str(r['source_order'].get(k) or '') for k in ('内部订单号','线上订单号','店铺名称','买家账号','平台站点')) for r in rows if r.get('adapter')=='paid_order'}
+    if len(identities)!=1:raise ValueError('付款文件含多个来源订单/店铺，请分别导入，不自动合并')
     order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
     if order['digest']!=head['digest']:raise wr.Conflict('签发快照已变化')
     barcodes={};other_codes=set()
@@ -174,6 +176,7 @@ def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None):
 
 def recheck(path, head, stage, progress=lambda _:None, cancel=None):
     checkpoint(cancel)
+    head=full_head(path,head)
     with closing(purchases.connect(path)) as db:
         purchases.validate_head(db,head);doc=current(db,head,stage)
         if not doc:raise ValueError('尚无此环节单据')
@@ -183,9 +186,18 @@ def recheck(path, head, stage, progress=lambda _:None, cancel=None):
 
 def zero_plan(path, head, stage, progress=lambda _:None, cancel=None):
     checkpoint(cancel)
+    head=full_head(path,head)
     with closing(purchases.connect(path)) as db:
         purchases.validate_head(db,head);plan=make_plan(db,head,stage,[],[],explicit_zero=True)
     return {'plans':[plan],'files':[]}
+
+def full_head(path,head):
+    if 'products' in head:return head
+    order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
+    if order['digest']!=head['digest']:raise wr.Conflict('签发快照已变化')
+    result=order['payload']['result']
+    products={d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':normal_exports.sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for rs in normal_exports.groups(result,order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d)==head['warehouse']}
+    return {**head,'products':products}
 
 def begin(db, cancel):
     start = time.monotonic()
@@ -311,7 +323,7 @@ def attachment(path, head, stage, version, sha, target, progress=lambda _: None,
 def export(path, heads, folder, kind='comparison', mode='separate', progress=lambda _: None, cancel=None):
     """New exports only. Existing signed/calculation/master exporters untouched."""
     from xlsx_exports import stream_book, write_table
-    if kind not in ('comparison', 'payment', 'receipt'): raise ValueError('未知导出类型')
+    if kind not in ('comparison', 'return', 'payment', 'receipt'): raise ValueError('未知导出类型')
     if mode not in ('separate', 'combined') or not heads: raise ValueError('请选择导出范围')
     completed = []; title = '生命周期对照' if kind == 'comparison' else TITLES[kind]
     try:
@@ -322,9 +334,13 @@ def export(path, heads, folder, kind='comparison', mode='separate', progress=lam
                 checkpoint(cancel); ao.require_active(db, h['oid'], h['warehouse']); view = snapshot(path, h, progress, cancel, db)
                 if kind != 'comparison' and not view['documents'][kind]: raise ValueError(h['number'] + '尚未导入' + title)
                 views.append(view)
+        if kind=='return':
+            from lifecycle_exports import export_returns
+            return export_returns(path,views,folder,mode,progress,cancel)
         groups = [[v] for v in views] if mode == 'separate' else [[v for v in views if v['head']['warehouse'] == wh] for wh in dict.fromkeys(v['head']['warehouse'] for v in views)]
         for group in groups:
             checkpoint(cancel); rows = []
+            modern=kind!='comparison' and any(v['documents'][kind]['payload'].get('schema')==SCHEMA for v in group)
             for v in group:
                 h = v['head']; prefix = [h['day'], h['store'], h['warehouse'], h['number'], h['revision']]
                 if kind == 'comparison':
@@ -333,9 +349,13 @@ def export(path, heads, folder, kind='comparison', mode='separate', progress=lam
                 else:
                     doc = v['documents'][kind]
                     for r in doc['payload']['rows']:
-                        rows.append([*prefix, doc['version'], r['document_number'], r['document_date'], r['sku'], r['name'], float(Decimal(r['base_quantity'])), '库存单位', float(Decimal(r['amount'])) if r['amount'] is not None else None, r['currency'], r['quantity'], r['unit'], r['factor'], r['conversion_basis'], r['note']])
-            headers = ['业务日期', '门店编码', '仓', '补货单号', '签发修订'] + (['回传版本', '付款版本', '收货版本'] + HEADERS if kind == 'comparison' else ['单据版本', DOCNUM[kind], DOCDATE[kind], '商品编码', '商品名称', QUANTITIES[kind], '数量单位', '实际金额', '币种', '源单数量', '源单单位', '换算系数', '换算依据', '备注'])
-            target = Path(folder) / (title + '-' + (group[0]['head']['number'] if mode == 'separate' else '多订单') + '-' + uuid.uuid4().hex[:8] + '.xlsx')
+                        values=[*prefix, doc['version'], r['document_number']]+([] if modern and kind=='payment' else [r['document_date']])+[r['sku'], r['name'], float(Decimal(r['base_quantity'])), '库存单位', float(Decimal(r['amount'])) if r['amount'] is not None else None, r['currency'], r['quantity'], r['unit'], r['factor'], r['conversion_basis'], r['note']]
+                        if modern:values.extend([r.get('upstream_quantity'),r.get('difference'),r.get('processing_note','历史旧口径'),v.get('note','')])
+                        rows.append(values)
+            body=['单据版本',DOCNUM.get(kind)]+([] if modern and kind=='payment' else [DOCDATE.get(kind)])+['商品编码','商品名称',QUANTITIES.get(kind),'数量单位','实际金额','币种','源单数量','源单单位','换算系数','换算依据','备注']
+            if modern:body+=['上环节数量','与上环节差额','数量处理说明','对照依据提示']
+            headers = ['业务日期', '门店编码', '仓', '补货单号', '签发修订'] + (['回传版本', '付款版本', '收货版本'] + HEADERS if kind == 'comparison' else body)
+            target = Path(folder) / (title + '-' + (group[0]['head']['number'] if mode == 'separate' else group[0]['head']['warehouse']+'-多订单') + '-' + uuid.uuid4().hex[:8] + '.xlsx')
             fd, tmp = tempfile.mkstemp(dir=target.parent, suffix='.xlsx'); os.close(fd)
             try:
                 with stream_book() as book:

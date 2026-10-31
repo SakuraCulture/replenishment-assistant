@@ -23,6 +23,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--reconciliation-smoke' in sys.argv:
+        from reconciliation_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--reconciliation-smoke')+1:])
     if '--export-location-smoke' in sys.argv:
         from export_location_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--export-location-smoke')+1:])
