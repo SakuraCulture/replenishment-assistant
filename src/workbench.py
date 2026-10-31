@@ -14,12 +14,12 @@ class Workbench(ParameterUi,BatchWindow):
         super().__init__();self.work_repository=wr.Repository(self.repository.folder)
         row=QHBoxLayout();self.job_label=label('','muted');row.addWidget(self.job_label,1)
         self.history_btn=button('作业记录',self.history);row.addWidget(self.history_btn)
-        self.new_job_btn=button('新建今日作业',self.new_job);row.addWidget(self.new_job_btn)
-        self.presets_btn=button('参数方案',self.open_preset_library);row.addWidget(self.presets_btn)
+        self.new_job_btn=button('新建今日草稿',self.new_job);row.addWidget(self.new_job_btn)
+        self.presets_btn=button('管理参数方案',self.open_preset_library);row.addWidget(self.presets_btn)
         self.save_job_btn=button('保存作业',self.save_current,True);row.addWidget(self.save_job_btn)
         self.centralWidget().layout().insertLayout(1,row)
-        row=QHBoxLayout();self.defaults_btn=button('保存主从仓与参数为门店默认',self.save_default_dialog);row.addWidget(self.defaults_btn);self.fresh_btn=button('使用当前资料重新检查',self.use_current_data);row.addWidget(self.fresh_btn);row.addStretch();self.store_page.layout().insertLayout(2,row)
-        self.exception.hide();self.store_table.setColumnWidth(7,310);self.nav[1].setText('② 门店与参数')
+        row=QHBoxLayout();self.defaults_btn=button('保存主从仓与参数为门店默认',self.save_default_dialog);row.addWidget(self.defaults_btn);self.fresh_btn=button('换用最新资料并重新检查',self.use_current_data);row.addWidget(self.fresh_btn);row.addStretch();self.store_page.layout().insertLayout(2,row)
+        self.exception.hide();self.store_table.setColumnWidth(7,400);self.nav[1].setText('② 门店与参数')
         self._hydrating=False;self.update_controls()
         if any(r['day']==wr.today() for r in self.work_repository.list_jobs()):self.status.setText('今天已有保存的作业，可从“作业记录”继续；新建内容不会自动覆盖。')
     def touch(self):
@@ -111,7 +111,7 @@ class Workbench(ParameterUi,BatchWindow):
     def save_current(self):
         if self.worker or self.readonly:return False
         if self.job_day!=wr.today():
-            box=QMessageBox(self);box.setWindowTitle('当前作业已跨天');box.setText('作业日期 '+self.job_day+'；今天 '+wr.today()+'。转为今日不会刷新旧输入数据，请核对来源时间。');cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);old_btn=box.addButton('保存原日期作业',QMessageBox.ButtonRole.AcceptRole);new_btn=box.addButton('转为今日作业',QMessageBox.ButtonRole.ActionRole);box.setDefaultButton(cancel);box.exec()
+            box=QMessageBox(self);box.setWindowTitle('当前作业已跨天');box.setText('作业日期 '+self.job_day+'；今天 '+wr.today()+'。转为今日不会刷新旧输入数据，请核对来源时间。');cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);old_btn=box.addButton('保存原日期草稿',QMessageBox.ButtonRole.AcceptRole);new_btn=box.addButton('转为今日草稿',QMessageBox.ButtonRole.ActionRole);box.setDefaultButton(cancel);box.exec()
             if box.clickedButton() is cancel:return False
             if box.clickedButton() is new_btn:self.job_day=wr.today();self.touch()
             elif box.clickedButton() is not old_btn:return False
@@ -128,12 +128,12 @@ class Workbench(ParameterUi,BatchWindow):
         except Cancelled:self.status.setText('已取消保存，原记录保留。');return False
         except Exception as exc:self.failed('作业未完成保存，请在作业记录核对状态：'+str(exc));return False
         self.saved_time=saved['saved'];self.job_dirty=False;self.refresh_job_label();self.status.setText('已保存 '+self.job_day+' 的完整作业。');return True
-    def leave_current(self):
+    def leave_current(self,next_action='继续当前操作'):
         if not self.job_dirty:return True
-        box=QMessageBox(self);box.setWindowTitle('有未保存的作业变更');box.setText('保存门店默认不等于保存作业。是否保存当前作业后继续？');save=box.addButton('保存后继续',QMessageBox.ButtonRole.AcceptRole);discard=box.addButton('放弃本次变更',QMessageBox.ButtonRole.DestructiveRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);box.setDefaultButton(cancel);box.exec()
+        box=QMessageBox(self);box.setWindowTitle('有未保存的作业变更');box.setText('保存门店默认不等于保存作业。是否保存当前作业后继续？');save=box.addButton('保存草稿后'+next_action,QMessageBox.ButtonRole.AcceptRole);discard=box.addButton('放弃本次变更',QMessageBox.ButtonRole.DestructiveRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);box.setDefaultButton(cancel);box.exec()
         return self.save_current() if box.clickedButton() is save else box.clickedButton() is discard
     def new_job(self):
-        if self.worker or not self.leave_current():return
+        if self.worker or not self.leave_current('新建今日草稿'):return
         self.reset_job()
     def reset_job(self):
         self._hydrating=True;self.initializing=True
@@ -171,8 +171,11 @@ class Workbench(ParameterUi,BatchWindow):
         if records:table.selectRow(0)
         action={'value':'open'}
         def choose(value):
-            if table.currentRow()>=0:action['value']=value;dialog.accept()
-        row=QHBoxLayout();row.addWidget(button('打开 / 继续今日作业',lambda:choose('open'),True));row.addWidget(button('复制配置用于今日',lambda:choose('copy')));row.addWidget(button('关闭',dialog.reject));v.addLayout(row)
+            if table.currentRow()>=0 and not table.isRowHidden(table.currentRow()):action['value']=value;dialog.accept()
+        row=QHBoxLayout();open_btn=button('查看历史草稿（只读）',lambda:choose('open'),True);row.addWidget(open_btn);copy_btn=button('用此配置新建今日草稿',lambda:choose('copy'));row.addWidget(copy_btn)
+        def update_open(*_):
+            i=table.currentRow();valid=i>=0 and not table.isRowHidden(i);open_btn.setEnabled(valid);copy_btn.setEnabled(valid);editable=valid and records[i]['day']==wr.today() and records[i]['summary'].get('model_version')==MODEL_VERSION;open_btn.setText('继续今日草稿' if editable else '查看历史草稿（只读）');open_btn.setToolTip('当日同模型，可继续编辑' if editable else '历史日期或模型版本不同，仅查看当时快照')
+        table.itemSelectionChanged.connect(update_open);search.textChanged.connect(update_open);update_open();row.addWidget(button('关闭',dialog.reject));v.addLayout(row)
         if dialog.exec()!=QDialog.DialogCode.Accepted or not self.leave_current():return
         from ui_work_io import read_job
         from runtime_support import Cancelled
@@ -185,7 +188,12 @@ class Workbench(ParameterUi,BatchWindow):
             self.reset_job();self.pending_copy=record;self.status.setText('已复制所选作业门店配置到本次内存；请导入今天数据。未保存为门店默认。');self.touch()
     def use_current_data(self):
         if self.worker or self.readonly:return
-        self.catalogs=self.catalog_repository.catalogs();self.profile=self.repository.profile();self.refresh_catalog_labels();self.refresh_profile_label();self.start_load()
+        catalogs=self.catalog_repository.catalogs();profile=self.repository.profile()
+        from interaction_ui import confirm
+        changes=[wh+'：'+str(self.catalogs.get(wh,{}).get('revision','未导入'))+' → '+str(catalogs.get(wh,{}).get('revision','未导入')) for wh in dict.fromkeys([*self.catalogs,*catalogs])]
+        changes.append('必卖清单：'+str((self.profile or {}).get('revision','未导入'))+' → '+str((profile or {}).get('revision','未导入')))
+        if not confirm(self,'换用最新资料并重新检查','\n'.join(changes)+'\n本次门店需重新检查/计算；已归档签发快照不变。'):return
+        self.catalogs=catalogs;self.profile=profile;self.refresh_catalog_labels();self.refresh_profile_label();self.start_load()
     def export_ok(self,path):
         if not self.readonly:self.export_log.append({'path':str(path),'time':wr.now()});self.touch()
         super().export_ok(path)
@@ -194,5 +202,5 @@ class Workbench(ParameterUi,BatchWindow):
         if pending is not None and not pending._completed:
             self.closing=True;pending.reject();event.ignore();return
         if self.worker:super().closeEvent(event);return
-        if self._discard_close or self.leave_current():event.accept()
+        if self._discard_close or self.leave_current('关闭'):event.accept()
         else:self.closing=False;event.ignore()

@@ -1,5 +1,6 @@
 """Explicit shared session state. Does not build pages or call virtual UI methods."""
 from __future__ import annotations
+import export_locations
 import sys,os,json,threading,traceback,html,logging
 from pathlib import Path
 from datetime import datetime
@@ -37,7 +38,7 @@ class SessionWindow(BackgroundJobs,ResultsView,QMainWindow):
 
     def backup_priority(self):
         if not self.profile:return
-        path,_=QFileDialog.getSaveFileName(self,'备份必卖清单，可在其他电脑导入','必卖清单_'+self.profile['revision']+'.json','清单备份 (*.json)',options=QFileDialog.Option.DontConfirmOverwrite)
+        path,_=export_locations.save_file(self,'备份必卖清单，可在其他电脑导入','必卖清单_'+self.profile['revision']+'.json','清单备份 (*.json)',options=QFileDialog.Option.DontConfirmOverwrite)
         if not path:return
         if not path.lower().endswith('.json'):path+='.json'
         try:priority_list.export_profile(self.profile,path);self.status.setText('清单已备份：'+path)

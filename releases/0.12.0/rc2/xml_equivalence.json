@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "scenarios": [
+    {
+      "kind": "calculation",
+      "mode": "combined",
+      "files": 2,
+      "rows": 18166,
+      "all_business_cells_including_trailing_blanks": 5932452,
+      "differences": 0
+    },
+    {
+      "kind": "signed",
+      "mode": "combined",
+      "files": 2,
+      "rows": 7436,
+      "all_business_cells_including_trailing_blanks": 171028,
+      "differences": 0
+    },
+    {
+      "kind": "signed",
+      "mode": "separate",
+      "files": 4,
+      "rows": 7436,
+      "all_business_cells_including_trailing_blanks": 171028,
+      "differences": 0
+    },
+    {
+      "kind": "calculation",
+      "mode": "separate",
+      "files": 4,
+      "rows": 18166,
+      "all_business_cells_including_trailing_blanks": 5695757,
+      "differences": 0
+    }
+  ],
+  "scope": "all columns including trailing blanks; exact XML literal values, types and resolved number formats; identity and row order; no tolerance or ignored business fields",
+  "differences": 0
+}

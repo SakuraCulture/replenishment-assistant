@@ -1,0 +1,163 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "fixture_sha256": "bfe9011d4a93cb056d7a97edc503f39c14ab824fac23f3c5b2a197f2afa0ad65",
+  "source_sha256": "6958c9e90c720a4c8343980ba317f00a7dc3ba69af3c27b2dbdf624cfb2138be",
+  "scale": {
+    "warehouse_orders": 1000,
+    "signed_rows": 50000,
+    "payment_rows": 5000,
+    "payment_documents": 100
+  },
+  "home_runs": [
+    {
+      "trial": 1,
+      "variant": "old",
+      "seconds": {
+        "cold": 4.318920099991374,
+        "warm": 0.5819802999612875
+      },
+      "peak_rss_mib": 52.30859375
+    },
+    {
+      "trial": 1,
+      "variant": "new",
+      "seconds": {
+        "cold": 4.15516809996916,
+        "warm": 0.27763700002105907
+      },
+      "peak_rss_mib": 52.1015625
+    },
+    {
+      "trial": 2,
+      "variant": "new",
+      "seconds": {
+        "cold": 4.044203600031324,
+        "warm": 0.27372550003929064
+      },
+      "peak_rss_mib": 51.8203125
+    },
+    {
+      "trial": 2,
+      "variant": "old",
+      "seconds": {
+        "cold": 4.253017699986231,
+        "warm": 0.671964899986051
+      },
+      "peak_rss_mib": 51.6015625
+    },
+    {
+      "trial": 3,
+      "variant": "old",
+      "seconds": {
+        "cold": 4.206778799998574,
+        "warm": 0.6912651000311598
+      },
+      "peak_rss_mib": 51.3046875
+    },
+    {
+      "trial": 3,
+      "variant": "new",
+      "seconds": {
+        "cold": 4.313840400020126,
+        "warm": 0.2848729999968782
+      },
+      "peak_rss_mib": 52.4453125
+    }
+  ],
+  "home": {
+    "old": {
+      "cold": {
+        "median": 4.253017699986231,
+        "min": 4.206778799998574,
+        "max": 4.318920099991374
+      },
+      "warm": {
+        "median": 0.671964899986051,
+        "min": 0.5819802999612875,
+        "max": 0.6912651000311598
+      }
+    },
+    "new": {
+      "cold": {
+        "median": 4.15516809996916,
+        "min": 4.044203600031324,
+        "max": 4.313840400020126
+      },
+      "warm": {
+        "median": 0.27763700002105907,
+        "min": 0.27372550003929064,
+        "max": 0.2848729999968782
+      }
+    }
+  },
+  "service_runs": [
+    {
+      "seconds": {
+        "inspect_and_read_5000_lines": 0.9173033999977633,
+        "load_100_exact_targets": 1.5724821000476368,
+        "prepare_100_complete_orders": 2.616086299996823,
+        "commit_including_first_backup": 0.19566399999894202,
+        "home_after_payment_cold": 4.836761599988677,
+        "export_100_orders_combined_per_warehouse": 1.6442566000041552
+      },
+      "peak_rss_mib": 87.1171875
+    },
+    {
+      "seconds": {
+        "inspect_and_read_5000_lines": 0.821907999983523,
+        "load_100_exact_targets": 1.5365568999550305,
+        "prepare_100_complete_orders": 2.098907199979294,
+        "commit_including_first_backup": 0.2605961000081152,
+        "home_after_payment_cold": 4.676327900029719,
+        "export_100_orders_combined_per_warehouse": 1.526467599964235
+      },
+      "peak_rss_mib": 98.70703125
+    },
+    {
+      "seconds": {
+        "inspect_and_read_5000_lines": 0.9352238000137731,
+        "load_100_exact_targets": 1.5997082000249065,
+        "prepare_100_complete_orders": 2.40376059996197,
+        "commit_including_first_backup": 0.21200060000410303,
+        "home_after_payment_cold": 3.929675000021234,
+        "export_100_orders_combined_per_warehouse": 1.5068427000078373
+      },
+      "peak_rss_mib": 101.51953125
+    }
+  ],
+  "service": {
+    "inspect_and_read_5000_lines": {
+      "median": 0.9173033999977633,
+      "min": 0.821907999983523,
+      "max": 0.9352238000137731
+    },
+    "load_100_exact_targets": {
+      "median": 1.5724821000476368,
+      "min": 1.5365568999550305,
+      "max": 1.5997082000249065
+    },
+    "prepare_100_complete_orders": {
+      "median": 2.40376059996197,
+      "min": 2.098907199979294,
+      "max": 2.616086299996823
+    },
+    "commit_including_first_backup": {
+      "median": 0.21200060000410303,
+      "min": 0.19566399999894202,
+      "max": 0.2605961000081152
+    },
+    "home_after_payment_cold": {
+      "median": 4.676327900029719,
+      "min": 3.929675000021234,
+      "max": 4.836761599988677
+    },
+    "export_100_orders_combined_per_warehouse": {
+      "median": 1.526467599964235,
+      "min": 1.5068427000078373,
+      "max": 1.6442566000041552
+    }
+  },
+  "measurement": "Same Python/dependencies/PC; old/new home alternate sequentially in separate processes; new services 3 sequential runs. 20ms service-process RSS samples, excludes GUI/spawn startup. Filesystem cache not flushed; cold refers to empty projection cache. New paid/receipt operations have no old semantic equivalent; no speedup claimed for those.",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]"
+}

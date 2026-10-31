@@ -1,0 +1,97 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "source_sha256": "02539086b276b23abc6400897a58d09b4e9fe7a6a1253cb93f98d30806ce47e9",
+  "scale": {
+    "parent_orders": 500,
+    "warehouse_orders": 1000,
+    "signed_rows": 50000,
+    "purchase_rows": 5000,
+    "purchase_orders": 100
+  },
+  "runs": [
+    {
+      "seconds": {
+        "home_cold_1000_warehouse_orders": 4.193934999988414,
+        "home_warm_same_scope": 0.5452841999940574,
+        "inspect_and_read_5000_purchase_lines": 0.7894485000288114,
+        "load_100_targets": 0.2603834999608807,
+        "prepare_100_purchase_orders": 3.1041082000010647,
+        "commit_100_orders_including_backup": 0.2485749000334181,
+        "home_after_purchase": 0.7015355000039563,
+        "export_100_orders_combined": 1.4611243000254035
+      },
+      "peak_service_process_rss_mib": 119.59375
+    },
+    {
+      "seconds": {
+        "home_cold_1000_warehouse_orders": 4.512126800022088,
+        "home_warm_same_scope": 0.5066037999931723,
+        "inspect_and_read_5000_purchase_lines": 0.793908299994655,
+        "load_100_targets": 0.2473823999753222,
+        "prepare_100_purchase_orders": 3.424504700000398,
+        "commit_100_orders_including_backup": 0.25551139999879524,
+        "home_after_purchase": 0.8782121000112966,
+        "export_100_orders_combined": 1.6568207000382245
+      },
+      "peak_service_process_rss_mib": 131.34375
+    },
+    {
+      "seconds": {
+        "home_cold_1000_warehouse_orders": 4.862873099977151,
+        "home_warm_same_scope": 0.5935718999826349,
+        "inspect_and_read_5000_purchase_lines": 0.8021292999619618,
+        "load_100_targets": 0.23996440001064911,
+        "prepare_100_purchase_orders": 3.5258798000286333,
+        "commit_100_orders_including_backup": 0.27600479999091476,
+        "home_after_purchase": 0.7805765999946743,
+        "export_100_orders_combined": 1.567416699952446
+      },
+      "peak_service_process_rss_mib": 132.91796875
+    }
+  ],
+  "seconds": {
+    "home_cold_1000_warehouse_orders": {
+      "median": 4.512126800022088,
+      "min": 4.193934999988414,
+      "max": 4.862873099977151
+    },
+    "home_warm_same_scope": {
+      "median": 0.5452841999940574,
+      "min": 0.5066037999931723,
+      "max": 0.5935718999826349
+    },
+    "inspect_and_read_5000_purchase_lines": {
+      "median": 0.793908299994655,
+      "min": 0.7894485000288114,
+      "max": 0.8021292999619618
+    },
+    "load_100_targets": {
+      "median": 0.2473823999753222,
+      "min": 0.23996440001064911,
+      "max": 0.2603834999608807
+    },
+    "prepare_100_purchase_orders": {
+      "median": 3.424504700000398,
+      "min": 3.1041082000010647,
+      "max": 3.5258798000286333
+    },
+    "commit_100_orders_including_backup": {
+      "median": 0.25551139999879524,
+      "min": 0.2485749000334181,
+      "max": 0.27600479999091476
+    },
+    "home_after_purchase": {
+      "median": 0.7805765999946743,
+      "min": 0.7015355000039563,
+      "max": 0.8782121000112966
+    },
+    "export_100_orders_combined": {
+      "median": 1.567416699952446,
+      "min": 1.4611243000254035,
+      "max": 1.6568207000382245
+    }
+  },
+  "measurement": "Same process/environment, sequential three runs, isolated SQLite copies. 20ms RSS sampling of this service process only; no GUI/spawn startup included. Filesystem cache not flushed; cold means new application projection cache only. New capabilities have no equivalent old-version benchmark; no speedup claimed.",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]"
+}

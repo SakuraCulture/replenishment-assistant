@@ -6,7 +6,7 @@ from test_rules import row
 from quantity_contract import packs
 from source_binding import bindings,restore
 from table_records import bridge_table
-from conflict_ui import proposals
+from conflict_choices import proposals
 from parameter_view import comparison
 
 class ReviewTests(unittest.TestCase):

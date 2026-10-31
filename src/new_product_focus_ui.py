@@ -22,6 +22,6 @@ class FocusMapping(QDialog):
 
 
 def confirm_focus(parent,data,old):
-    box=QMessageBox(parent);box.setObjectName('focusConfirm');box.setWindowTitle('确认使用新品关注清单');box.setText(f"适用月份：{data['month']}\n{data['name']}\n共 {len(data['items'])} 个商品，关注 {len(focus.members(data))} 个。\n用于本月/往期新品分组；未在本店新品候选中的商品不会新增。\n应用后保存为后续作业默认清单，并使当前签发分组需要重新确认；历史修订保留原清单。")
+    box=QMessageBox(parent);box.setObjectName('focusConfirm');box.setWindowTitle('确认使用新品关注清单');box.setText(f"适用月份：{data['month']}\n{data['name']}\n共 {len(data['items'])} 个商品；关注数量 {len(focus.members(old)) if old else 0} → {len(focus.members(data))} 个。\n用于本月/往期新品分组；未在本店新品候选中的商品不会新增。\n应用后保存为后续作业默认清单，并使当前签发分组需要重新确认；历史修订保留原清单。")
     box.setDetailedText('来源：'+data['source_path']+'\n文件校验：'+data['source_sha256']+'\n原清单：'+(old['name'] if old else '未设置')+'\n关注商品：\n'+'\n'.join(x['sku']+' '+x['name'] for x in data['items'] if x['focused']))
-    cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('使用并保存清单',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.exec();return box.clickedButton() is accept
+    cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('保存关注清单并用于本次',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.exec();return box.clickedButton() is accept

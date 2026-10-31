@@ -53,9 +53,14 @@ class Repository:
         with closing(self.connect()) as db,db:db.execute('UPDATE presets SET archived=1 WHERE id=? AND version=?',(pid,version))
     def stores(self):
         with closing(self.connect()) as db:return {k:loads(v) for k,v in db.execute('SELECT code,data FROM stores')}
-    def save_stores(self,values):
+    def save_stores(self,values,*,expected=None):
         for val in values.values():schema.validate(val['preset']['config'])
         with closing(self.connect()) as db,db:
+            if expected is not None:
+                db.execute('BEGIN IMMEDIATE')
+                for code,old in expected.items():
+                    row=db.execute('SELECT data FROM stores WHERE code=?',(code,)).fetchone()
+                    if (loads(row[0]) if row else None)!=old:raise Conflict('门店默认在核对后变化，请刷新后重新核对：'+code)
             for key,val in values.items():db.execute('INSERT INTO stores VALUES(?,?) ON CONFLICT(code) DO UPDATE SET data=excluded.data',(key,dumps(val)))
     def list_jobs(self):
         with closing(self.connect()) as db:return [{'day':d,'revision':r,'digest':h,'saved':t,'summary':loads(s)} for d,r,h,t,s in db.execute('SELECT day,revision,digest,saved,summary FROM jobs ORDER BY day DESC')]

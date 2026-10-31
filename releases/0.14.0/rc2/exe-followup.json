@@ -1,0 +1,90 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "actual spawned home reader shows two warehouse orders; query succeeds without rewriting signed data",
+        "actual drag/drop, header mapping, manual exact warehouse revision allocation, full difference preview, default cancel leaves no purchase record",
+        "actual UI confirms two independent purchase documents atomically; original signed snapshots and original master attachments byte-identical",
+        "actual business form displays independent quantities; actual export button writes new comparison workbook without changing existing exports",
+        "same source reimport retains manual associations and is idempotent; unknown values remain unknown"
+      ],
+      "screenshots": [
+        "home-exercise.png",
+        "mapping-cancel.png",
+        "purchase-preview-cancel.png",
+        "purchase-differences-cancel.png",
+        "mapping-save.png",
+        "purchase-preview-save.png",
+        "purchase-differences-save.png",
+        "home-linked.png",
+        "execution-comparison.png",
+        "purchase-library.png",
+        "purchase-version.png"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.14.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "built_at": "2026-10-31T00:56:09.0097949+08:00",
+        "build_id": "rc2",
+        "source_commit": "637c7ceddf87136fa00933aa4761b55857340bf1"
+      },
+      "phase": "exercise",
+      "ui_ticks": 23,
+      "max_ui_gap_seconds": 0.2350589000270702,
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": false,
+      "exe_sha256": "28d7388d4a4f2186f3b8f100e29f0c248264416e4371074f09871579b3d7bad7",
+      "elapsed_seconds": 6.280999999959022,
+      "peak_tree_mib": 239.25,
+      "sample_ms": 50,
+      "synthetic": true
+    },
+    {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "actual spawned home reader shows two warehouse orders; query succeeds without rewriting signed data",
+        "second application process restores current purchase versions, exact warehouse bindings and home statuses"
+      ],
+      "screenshots": [
+        "home-reopen.png"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.14.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "built_at": "2026-10-31T00:56:09.0097949+08:00",
+        "build_id": "rc2",
+        "source_commit": "637c7ceddf87136fa00933aa4761b55857340bf1"
+      },
+      "phase": "reopen",
+      "ui_ticks": 7,
+      "max_ui_gap_seconds": 0.05387160001555458,
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": false,
+      "exe_sha256": "28d7388d4a4f2186f3b8f100e29f0c248264416e4371074f09871579b3d7bad7",
+      "elapsed_seconds": 1.5160000000032596,
+      "peak_tree_mib": 212.2890625,
+      "sample_ms": 50,
+      "synthetic": true
+    }
+  ]
+}

@@ -1,0 +1,338 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "rows_per_stage": 5000,
+  "runs": [
+    {
+      "trial": 1,
+      "variant": "old",
+      "seconds": {
+        "target": 0.20483689999673516,
+        "return_read": 0.6719523000065237,
+        "return_preview": 1.9856109999818727,
+        "return_save": 0.21873999998206273,
+        "payment_read": 0.7919556999695487,
+        "payment_preview": 2.0563093000091612,
+        "payment_save": 0.17172430001664907,
+        "receipt_read": 0.6978379000211135,
+        "receipt_preview": 2.042135800002143,
+        "receipt_save": 0.15332540002418682,
+        "home_cold": 0.21716210001613945,
+        "home_warm": 0.008680500031914562,
+        "comparison_export": 1.7646650000242516,
+        "total": 11.921359100029804
+      },
+      "peak_rss_mib": 153.6953125,
+      "quantities_sha": "b2a13092b90cde259b3e3797a39776307eff5dbaa78cb8bbd2d951fc203cc04d",
+      "source_hashes": {
+        "lifecycle_io.py": "3ab4d63141425bd6062f5ccc34e8ad7b46019ed318eb319215c3533aff7aa3e9",
+        "order_lifecycle.py": "2203b68782dc33126e77cb55bf87243fb137676d18e6905fdd2286910b78b41a",
+        "lifecycle_home.py": "e9dfbc28bfc62b2a8c87955a9d7568084704c4b76a61592b68a74a0bd28b11ad"
+      }
+    },
+    {
+      "trial": 1,
+      "variant": "new",
+      "seconds": {
+        "target": 0.20703099999809638,
+        "return_read": 0.6707885999931023,
+        "return_preview": 1.9513681000098586,
+        "return_save": 0.1676370999775827,
+        "payment_read": 0.8082874999963678,
+        "payment_preview": 2.1343268000055104,
+        "payment_save": 0.29162389994598925,
+        "receipt_read": 0.7038703999714926,
+        "receipt_preview": 2.291727800038643,
+        "receipt_save": 0.4218805999844335,
+        "home_cold": 0.5889937999891117,
+        "home_warm": 0.009123099967837334,
+        "comparison_export": 1.7491462000180036,
+        "total": 12.891185400018003
+      },
+      "peak_rss_mib": 205.5859375,
+      "quantities_sha": "b2a13092b90cde259b3e3797a39776307eff5dbaa78cb8bbd2d951fc203cc04d",
+      "source_hashes": {
+        "lifecycle_io.py": "8d3fb58daf9df9a2717690a0fbb6b5d5be2e4fca2d9523a4ce9496e4e9b81037",
+        "order_lifecycle.py": "53319d0d77a942bd38a616c373f164fc7fb8612601bdc94695c8219f8ae8395c",
+        "lifecycle_home.py": "a606a94e2cbb088fc3d473fab016abec4b49fb3581c65b69925970511e3f355c"
+      }
+    },
+    {
+      "trial": 2,
+      "variant": "new",
+      "seconds": {
+        "target": 0.20209139998769388,
+        "return_read": 0.6690509999752976,
+        "return_preview": 1.962743500014767,
+        "return_save": 0.16289929999038577,
+        "payment_read": 0.808928599988576,
+        "payment_preview": 2.1566631000023335,
+        "payment_save": 0.2919503999873996,
+        "receipt_read": 0.7188114000018686,
+        "receipt_preview": 2.3420192999765277,
+        "receipt_save": 0.41764999995939434,
+        "home_cold": 0.6002414000104181,
+        "home_warm": 0.0091963000013493,
+        "comparison_export": 1.7314136000350118,
+        "total": 12.970950299990363
+      },
+      "peak_rss_mib": 205.7109375,
+      "quantities_sha": "b2a13092b90cde259b3e3797a39776307eff5dbaa78cb8bbd2d951fc203cc04d",
+      "source_hashes": {
+        "lifecycle_io.py": "8d3fb58daf9df9a2717690a0fbb6b5d5be2e4fca2d9523a4ce9496e4e9b81037",
+        "order_lifecycle.py": "53319d0d77a942bd38a616c373f164fc7fb8612601bdc94695c8219f8ae8395c",
+        "lifecycle_home.py": "a606a94e2cbb088fc3d473fab016abec4b49fb3581c65b69925970511e3f355c"
+      }
+    },
+    {
+      "trial": 2,
+      "variant": "old",
+      "seconds": {
+        "target": 0.20934709999710321,
+        "return_read": 0.6748863999964669,
+        "return_preview": 1.9725889000110328,
+        "return_save": 0.16523159999633208,
+        "payment_read": 0.808188599999994,
+        "payment_preview": 2.049505200004205,
+        "payment_save": 0.1696304000215605,
+        "receipt_read": 0.7048293999978341,
+        "receipt_preview": 2.051563000015449,
+        "receipt_save": 0.1458515000413172,
+        "home_cold": 0.21260999998776242,
+        "home_warm": 0.006978699995670468,
+        "comparison_export": 1.8289826000109315,
+        "total": 11.93382490001386
+      },
+      "peak_rss_mib": 156.921875,
+      "quantities_sha": "b2a13092b90cde259b3e3797a39776307eff5dbaa78cb8bbd2d951fc203cc04d",
+      "source_hashes": {
+        "lifecycle_io.py": "3ab4d63141425bd6062f5ccc34e8ad7b46019ed318eb319215c3533aff7aa3e9",
+        "order_lifecycle.py": "2203b68782dc33126e77cb55bf87243fb137676d18e6905fdd2286910b78b41a",
+        "lifecycle_home.py": "e9dfbc28bfc62b2a8c87955a9d7568084704c4b76a61592b68a74a0bd28b11ad"
+      }
+    },
+    {
+      "trial": 3,
+      "variant": "old",
+      "seconds": {
+        "target": 0.20576490001985803,
+        "return_read": 0.6695406000362709,
+        "return_preview": 1.9456324000493623,
+        "return_save": 0.16988170001422986,
+        "payment_read": 0.807269900047686,
+        "payment_preview": 2.0189235000289045,
+        "payment_save": 0.1679217999917455,
+        "receipt_read": 0.7051162000279874,
+        "receipt_preview": 2.0474396999925375,
+        "receipt_save": 0.1446286999853328,
+        "home_cold": 0.2106128999730572,
+        "home_warm": 0.006895500002428889,
+        "comparison_export": 1.7851781999925151,
+        "total": 11.81458519998705
+      },
+      "peak_rss_mib": 156.78515625,
+      "quantities_sha": "b2a13092b90cde259b3e3797a39776307eff5dbaa78cb8bbd2d951fc203cc04d",
+      "source_hashes": {
+        "lifecycle_io.py": "3ab4d63141425bd6062f5ccc34e8ad7b46019ed318eb319215c3533aff7aa3e9",
+        "order_lifecycle.py": "2203b68782dc33126e77cb55bf87243fb137676d18e6905fdd2286910b78b41a",
+        "lifecycle_home.py": "e9dfbc28bfc62b2a8c87955a9d7568084704c4b76a61592b68a74a0bd28b11ad"
+      }
+    },
+    {
+      "trial": 3,
+      "variant": "new",
+      "seconds": {
+        "target": 0.207096999976784,
+        "return_read": 0.67360399995232,
+        "return_preview": 1.9790326999500394,
+        "return_save": 0.16465590003645048,
+        "payment_read": 0.799954499991145,
+        "payment_preview": 2.1511921000201255,
+        "payment_save": 0.2947861000429839,
+        "receipt_read": 0.7284256999846548,
+        "receipt_preview": 2.242186399991624,
+        "receipt_save": 0.4345830000238493,
+        "home_cold": 0.5981358999852091,
+        "home_warm": 0.008945800014771521,
+        "comparison_export": 1.768963199981954,
+        "total": 12.935770299984142
+      },
+      "peak_rss_mib": 205.6875,
+      "quantities_sha": "b2a13092b90cde259b3e3797a39776307eff5dbaa78cb8bbd2d951fc203cc04d",
+      "source_hashes": {
+        "lifecycle_io.py": "8d3fb58daf9df9a2717690a0fbb6b5d5be2e4fca2d9523a4ce9496e4e9b81037",
+        "order_lifecycle.py": "53319d0d77a942bd38a616c373f164fc7fb8612601bdc94695c8219f8ae8395c",
+        "lifecycle_home.py": "a606a94e2cbb088fc3d473fab016abec4b49fb3581c65b69925970511e3f355c"
+      }
+    }
+  ],
+  "summary": {
+    "old": {
+      "target": {
+        "median": 0.20576490001985803,
+        "min": 0.20483689999673516,
+        "max": 0.20934709999710321
+      },
+      "return_read": {
+        "median": 0.6719523000065237,
+        "min": 0.6695406000362709,
+        "max": 0.6748863999964669
+      },
+      "return_preview": {
+        "median": 1.9725889000110328,
+        "min": 1.9456324000493623,
+        "max": 1.9856109999818727
+      },
+      "return_save": {
+        "median": 0.16988170001422986,
+        "min": 0.16523159999633208,
+        "max": 0.21873999998206273
+      },
+      "payment_read": {
+        "median": 0.807269900047686,
+        "min": 0.7919556999695487,
+        "max": 0.808188599999994
+      },
+      "payment_preview": {
+        "median": 2.049505200004205,
+        "min": 2.0189235000289045,
+        "max": 2.0563093000091612
+      },
+      "payment_save": {
+        "median": 0.1696304000215605,
+        "min": 0.1679217999917455,
+        "max": 0.17172430001664907
+      },
+      "receipt_read": {
+        "median": 0.7048293999978341,
+        "min": 0.6978379000211135,
+        "max": 0.7051162000279874
+      },
+      "receipt_preview": {
+        "median": 2.0474396999925375,
+        "min": 2.042135800002143,
+        "max": 2.051563000015449
+      },
+      "receipt_save": {
+        "median": 0.1458515000413172,
+        "min": 0.1446286999853328,
+        "max": 0.15332540002418682
+      },
+      "home_cold": {
+        "median": 0.21260999998776242,
+        "min": 0.2106128999730572,
+        "max": 0.21716210001613945
+      },
+      "home_warm": {
+        "median": 0.006978699995670468,
+        "min": 0.006895500002428889,
+        "max": 0.008680500031914562
+      },
+      "comparison_export": {
+        "median": 1.7851781999925151,
+        "min": 1.7646650000242516,
+        "max": 1.8289826000109315
+      },
+      "total": {
+        "median": 11.921359100029804,
+        "min": 11.81458519998705,
+        "max": 11.93382490001386
+      }
+    },
+    "new": {
+      "target": {
+        "median": 0.20703099999809638,
+        "min": 0.20209139998769388,
+        "max": 0.207096999976784
+      },
+      "return_read": {
+        "median": 0.6707885999931023,
+        "min": 0.6690509999752976,
+        "max": 0.67360399995232
+      },
+      "return_preview": {
+        "median": 1.962743500014767,
+        "min": 1.9513681000098586,
+        "max": 1.9790326999500394
+      },
+      "return_save": {
+        "median": 0.16465590003645048,
+        "min": 0.16289929999038577,
+        "max": 0.1676370999775827
+      },
+      "payment_read": {
+        "median": 0.8082874999963678,
+        "min": 0.799954499991145,
+        "max": 0.808928599988576
+      },
+      "payment_preview": {
+        "median": 2.1511921000201255,
+        "min": 2.1343268000055104,
+        "max": 2.1566631000023335
+      },
+      "payment_save": {
+        "median": 0.2919503999873996,
+        "min": 0.29162389994598925,
+        "max": 0.2947861000429839
+      },
+      "receipt_read": {
+        "median": 0.7188114000018686,
+        "min": 0.7038703999714926,
+        "max": 0.7284256999846548
+      },
+      "receipt_preview": {
+        "median": 2.291727800038643,
+        "min": 2.242186399991624,
+        "max": 2.3420192999765277
+      },
+      "receipt_save": {
+        "median": 0.4218805999844335,
+        "min": 0.41764999995939434,
+        "max": 0.4345830000238493
+      },
+      "home_cold": {
+        "median": 0.5981358999852091,
+        "min": 0.5889937999891117,
+        "max": 0.6002414000104181
+      },
+      "home_warm": {
+        "median": 0.009123099967837334,
+        "min": 0.008945800014771521,
+        "max": 0.0091963000013493
+      },
+      "comparison_export": {
+        "median": 1.7491462000180036,
+        "min": 1.7314136000350118,
+        "max": 1.768963199981954
+      },
+      "total": {
+        "median": 12.935770299984142,
+        "min": 12.891185400018003,
+        "max": 12.970950299990363
+      }
+    }
+  },
+  "peak_memory_mib": {
+    "old": {
+      "median": 156.78515625,
+      "min": 153.6953125,
+      "max": 156.921875
+    },
+    "new": {
+      "median": 205.6875,
+      "min": 205.5859375,
+      "max": 205.7109375
+    }
+  },
+  "input_hashes": {
+    "payment.xlsx": "0b2c33a511280b184ebee9c56d2d64a021dfb403f71e6a4819e8d7cb8bee42ea",
+    "receipt.xlsx": "a2b90bb2f96e2fb80fe6ff404bf110b05be11cedb824f347345f8787caaa7a6a",
+    "return.xlsx": "a3aaca3040e39bc06bebdecf80f99d2bee505c4f051ae3b88ae03ccdbfe204cb",
+    "山东仓.xlsx": "1b102e511a00141e12291270bc64cd8b889b0d95c1af860bec5427dff7fdd987",
+    "河北仓.xlsx": "1b102e511a00141e12291270bc64cd8b889b0d95c1af860bec5427dff7fdd987",
+    "settings\\workbench.before-normal-orders.c93176446a2f407f98197f1a9172c436.sqlite3": "921e0cf28451344a9334cf79bc160feb0b9da1a3cf0161cb63affad8acb99194",
+    "settings\\workbench.sqlite3": "7f7320b5aad74752562074927075a3bd31512510bfbdc699f53688fcdf14534c"
+  },
+  "inputs_unchanged": true,
+  "method": "Same PC/Python/dependencies; old/new alternate sequentially, 3 each, separate worker processes. Time includes reading, preview, save incl first safety backup, home cold/warm and comparison export. RSS sampled every 20ms in service process, no GUI; filesystem cache not flushed. New reconciliation does extra predecessor/audit work; this is not a promise of speedup. Common populated inputs ensure comparable numeric results; authorized blank/missing changes are separate functional tests."
+}

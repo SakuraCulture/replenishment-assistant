@@ -1,4 +1,5 @@
 from __future__ import annotations
+import export_locations
 from display_fields import COLUMNS
 """Shared goods table, filters, detail and result export interaction.
 
@@ -98,6 +99,7 @@ class ResultsView:
         if hasattr(self,'_pending_sort'):
             self.proxy.sort(*self._pending_sort);del self._pending_sort
         rows=self.visible_rows()
+        if hasattr(self,'sections'):self.export_filtered.setText(f'导出筛选内部明细（{len(rows)}行）');self.export_all.setToolTip('当前门店完整内部报告；不采用页面的仓、分类或商品筛选')
         if len(rows)<500:self.set_filtered_summary(semantics.summarize(rows))
         else:
             self.filtered_caption.setText(f'当前筛选 {len(rows):,} 行 · 统计中…');self.summary_pending=(self.filter_generation,rows);self.start_filtered_summary()
@@ -152,9 +154,9 @@ class ResultsView:
         if filtered and self.filter_timer.isActive():self.filter_changed()
         rows=self.visible_rows() if filtered else semantics.working_rows(self.result['rows'])
         if not rows:QMessageBox.information(self,'没有可导出商品','请调整筛选条件。');return
-        folder=Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))/'补货助手输出';folder.mkdir(parents=True,exist_ok=True)
+        folder=Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))/'补货助手输出'
         name=f'补货结果_{self.result["store"]}_{datetime.now():%Y%m%d_%H%M%S}.xlsx'
-        path,_=QFileDialog.getSaveFileName(self,f'导出{len(rows):,}行 · '+('当前筛选' if filtered else '本次全部结果'),str(folder/name),'Excel 工作簿 (*.xlsx)',options=QFileDialog.Option.DontConfirmOverwrite)
+        path,_=export_locations.save_file(self,f'导出{len(rows):,}行 · '+('当前筛选' if filtered else '本次全部结果'),str(folder/name),'Excel 工作簿 (*.xlsx)',options=QFileDialog.Option.DontConfirmOverwrite)
         if not path:return
         if not path.lower().endswith('.xlsx'):path+='.xlsx'
         scope=f'当前筛选：{self.mode.currentText()}；{self.warehouse_filter.currentText()}；{self.category_filter.currentText()}；搜索={self.search.text()}；共{len(rows)}行' if filtered else '本次全部结果'

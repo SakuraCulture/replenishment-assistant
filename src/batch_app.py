@@ -1,5 +1,6 @@
 """Guided native desktop workbench; business calculations remain in engine."""
 from __future__ import annotations
+import export_locations
 from app_defaults import DEFAULT_WAREHOUSES
 import copy,json,os,threading
 from collections import Counter
@@ -54,7 +55,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         files=QHBoxLayout();self.sales=SalesFiles();warehouses=self.make_warehouse_panel()
         files.addWidget(self.sales,3);files.addWidget(warehouses,3);v.addLayout(files)
         self.sales.changed.connect(self.file_changed)
-        card=QFrame();card.setObjectName('card');cv=QVBoxLayout(card);row=QHBoxLayout();row.addWidget(label('必卖清单','section'));row.addStretch();row.addWidget(button('查看清单',self.show_priority));row.addWidget(button('导入 / 更新',self.choose_priority));row.addWidget(button('备份',self.backup_priority));cv.addLayout(row)
+        card=QFrame();card.setObjectName('card');cv=QVBoxLayout(card);row=QHBoxLayout();row.addWidget(label('必卖清单','section'));row.addStretch();row.addWidget(button('查看清单',self.show_priority));row.addWidget(button('导入或更换必卖清单',self.choose_priority));row.addWidget(button('备份必卖清单',self.backup_priority));cv.addLayout(row)
         self.profile_label=label('','muted');cv.addWidget(self.profile_label);self.refresh_profile_label();v.addWidget(card)
         self.import_note=label('分仓资料分别导入后检查。需求按门店主从仓归属，不拆单、不预占仓库存；禁用或停采仍按执行规则排除。','muted');v.addWidget(self.import_note)
         self.file_report=QTableWidget(0,4);self.file_report.setHorizontalHeaderLabels(['文件','商品行数','门店数','读取结果 / 处理办法']);self.file_report.horizontalHeader().setSectionResizeMode(3,QHeaderView.ResizeMode.Stretch);self.file_report.setColumnWidth(0,300);self.file_report.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);v.addWidget(self.file_report,1)
@@ -62,8 +63,8 @@ class BatchWindow(WarehouseUi,SessionWindow):
     def make_stores(self):
         self.store_page,v=self.page();v.addWidget(label('选择本次门店，分别设置可用资金','section'));v.addWidget(label('按设定预算优先保必卖；末尾最多补足一个最小出库单位，整店超支不超过5%。0元仍不补；不限预算按模型建议，各店资金独立。','muted'))
         row=QHBoxLayout();self.store_search=QLineEdit();self.store_search.setPlaceholderText('搜索门店名称或编码');self.store_search.textChanged.connect(self.filter_stores);row.addWidget(self.store_search,1)
-        self.only_issues=QCheckBox('只看需处理');self.only_issues.toggled.connect(self.filter_stores);row.addWidget(self.only_issues);row.addWidget(button('全选可计算门店',lambda:self.select_all(True)));row.addWidget(button('取消全选',lambda:self.select_all(False)));v.addLayout(row)
-        row=QHBoxLayout();row.addWidget(button('批量设置主从仓',self.bulk_routes));row.addWidget(button('批量设置每店预算',self.bulk_budget));row.addWidget(button('批量设置仓参数',self.bulk_parameters));row.addStretch();row.addWidget(button('查看完整模型参数',self.show_parameters));v.addLayout(row)
+        self.only_issues=QCheckBox('只看需处理');self.only_issues.toggled.connect(self.filter_stores);row.addWidget(self.only_issues);row.addWidget(button('全选当前筛选',lambda:self.select_all(True,True)));row.addWidget(button('全选本批可计算',lambda:self.select_all(True)));row.addWidget(button('清空全部勾选',lambda:self.select_all(False)));row.addWidget(button('查看已选门店',self.show_selected_stores));v.addLayout(row)
+        row=QHBoxLayout();row.addWidget(button('批量设置主从仓',self.bulk_routes));row.addWidget(button('批量设置每店预算',self.bulk_budget));row.addWidget(button('批量编辑完整参数',self.bulk_parameters));row.addStretch();row.addWidget(button('管理参数方案',self.show_parameters));v.addLayout(row)
         self.store_table=QTableWidget(0,9);self.store_table.setHorizontalHeaderLabels(['选择','门店','数据检查','主仓','从仓','预算方式','本次预算（元）','参数','配置提示']);self.store_table.verticalHeader().hide();self.store_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.store_table.setAlternatingRowColors(True)
         for i,w in enumerate([50,235,165,140,140,140,145,110,190]):self.store_table.setColumnWidth(i,w)
         self.store_table.horizontalHeader().setSectionResizeMode(8,QHeaderView.ResizeMode.Stretch);v.addWidget(self.store_table,1)
@@ -135,9 +136,9 @@ class BatchWindow(WarehouseUi,SessionWindow):
             if saved:mode.setCurrentIndex(2 if saved['enabled'] else 1);amount.setText(f"{saved['amount']:.2f}")
             amount.setEnabled(mode.currentIndex()==2)
             self.store_table.setCellWidget(i,5,mode);self.store_table.setCellWidget(i,6,amount)
-            p=button('默认参数',lambda checked=False,code=s:self.edit_parameters([code]));self.store_table.setCellWidget(i,7,p)
+            p=button('编辑参数',lambda checked=False,code=s:self.edit_parameters([code]));cell=QWidget();pv=QVBoxLayout(cell);pv.setContentsMargins(3,3,3,3);state_label=label('');pv.addWidget(state_label);pr=QHBoxLayout();pr.addWidget(p);pr.addWidget(button('查看生效参数',lambda checked=False,code=s:self.view_parameters(code)));pv.addLayout(pr);self.store_table.setCellWidget(i,7,cell);self.store_table.setRowHeight(i,88)
             self.store_table.setItem(i,8,QTableWidgetItem('沿用上次预算' if saved else '请选择预算方式'))
-            self.store_widgets[s]={'row':i,'check':check,'mode':mode,'amount':amount,'params':p,'saved':bool(saved)}
+            self.store_widgets[s]={'row':i,'check':check,'mode':mode,'amount':amount,'params':p,'param_status':state_label,'saved':bool(saved)}
             self.install_route_widgets(s,i,routes)
             mode.currentIndexChanged.connect(lambda value,code=s:self.budget_changed(code));amount.textChanged.connect(lambda value,code=s:self.budget_changed(code))
         self.initializing=False;self.selection_changed()
@@ -179,12 +180,16 @@ class BatchWindow(WarehouseUi,SessionWindow):
                 message=str(exc)
                 if s in selected:invalid+=1
             self.store_table.item(w['row'],8).setText(message)
-        self.selection_note.setText(f'已选 {len(selected)} 家｜限额 {limited} 家，预算合计 ¥{total:,.2f}｜不限预算 {unlimited} 家｜需补设置 {invalid} 家\n预算合计仅统计限额门店；未选门店不参与本次计算。')
+        hidden=sum(self.store_table.isRowHidden(self.store_widgets[s]['row']) for s in selected)
+        self.selection_note.setText(f'筛选外隐藏已选 {hidden} 家 · 已选 {len(selected)} 家｜限额 {limited} 家，预算合计 ¥{total:,.2f}｜不限预算 {unlimited} 家｜需补设置 {invalid} 家\n预算合计仅统计限额门店；未选门店不参与本次计算。')
         self.ready=bool(selected) and not invalid and not self.input_dirty
         self.calculate_btn.setText(f'开始计算 {len(selected)} 家门店');self.update_controls()
-    def select_all(self,on):
+    def select_all(self,on,visible_only=False):
         for w in self.store_widgets.values():
-            if w['check'].isEnabled():w['check'].setChecked(on)
+            if w['check'].isEnabled() and (not visible_only or not self.store_table.isRowHidden(w['row'])):w['check'].setChecked(on)
+    def show_selected_stores(self):
+        from interaction_ui import show_rows
+        show_rows(self,'本次已选门店',['门店编码','门店名称','当前是否隐藏'],[[s,self.loaded['stores'][s],'是' if self.store_table.isRowHidden(self.store_widgets[s]['row']) else '否'] for s in self.selected_codes()])
     def filter_stores(self,*args):
         text=self.store_search.text().strip().lower()
         for s,w in self.store_widgets.items():
@@ -192,12 +197,13 @@ class BatchWindow(WarehouseUi,SessionWindow):
             try:self.selected_settings(s)
             except ValueError:invalid=True
             self.store_table.setRowHidden(w['row'],text not in (s+' '+self.loaded['stores'][s]).lower() or (self.only_issues.isChecked() and not invalid))
+        self.selection_changed()
     def bulk_budget(self):
         codes=self.selected_codes()
         if not codes:QMessageBox.information(self,'先选择门店','请先勾选需要设置的门店。');return
         dialog=QDialog(self);dialog.setWindowTitle('批量设置每店预算');v=QVBoxLayout(dialog);v.addWidget(label(f'将选中的 {len(codes)} 家门店分别设置为以下预算；不是共用一笔钱。'))
         mode=QComboBox();mode.addItems(['限额补货','不限预算']);v.addWidget(mode);value=QDoubleSpinBox();value.setRange(0,1000000000);value.setDecimals(2);value.setSuffix(' 元 / 店');v.addWidget(value);mode.currentIndexChanged.connect(lambda i:value.setEnabled(i==0))
-        v.addWidget(button('应用到所选门店',dialog.accept,True));v.addWidget(button('取消',dialog.reject))
+        v.addWidget(button(f'应用到本次 {len(codes)} 家门店',dialog.accept,True));v.addWidget(button('取消',dialog.reject))
         if dialog.exec()==QDialog.DialogCode.Accepted:
             for s in codes:
                 w=self.store_widgets[s];w['mode'].setCurrentIndex(2 if mode.currentIndex()==0 else 1);w['amount'].setText(f'{value.value():.2f}')
@@ -230,6 +236,10 @@ class BatchWindow(WarehouseUi,SessionWindow):
         if self.initializing:return
         self.invalidate(list(self.states));self.selection_changed()
     def priority_imported(self,profile):
+        from interaction_ui import confirm
+        old=self.profile
+        message=f"必卖清单：{len(old['items']) if old else 0} → {len(profile['items'])} 款\n原版本：{old['revision'] if old else '未导入'}\n新版本：{profile['revision']}\n将完整替换并保存；本次已有结果需重算，历史签发不变。"
+        if not confirm(self,'确认更新并保存必卖清单',message):return
         try:self.repository.save(profile)
         except Exception as exc:self.failed('清单保存失败，原清单保留：'+str(exc));return
         self.profile=profile;self.refresh_profile_label();self.mark_dirty();self.status.setText('必卖清单已保存；已有结果需重新计算。')
@@ -318,7 +328,9 @@ class BatchWindow(WarehouseUi,SessionWindow):
         s=self.overview_codes[row]
         if s not in self.results:
             self.status.setText(self.states[s]['error'] or '该店尚无结果，请先计算。');return
-        self.current_store=s;self.result=self.results[s];self.dirty=self.states[s]['state']!='已完成';self.set_rows(self.result['rows'],True)
+        self.current_store=s
+        if hasattr(self,'detail_new_btn'):self.detail_new_btn.setText('为 '+self.states[s]['name']+' 安排新品')
+        self.result=self.results[s];self.dirty=self.states[s]['state']!='已完成';self.set_rows(self.result['rows'],True)
         if self.dirty:self.result_caption.setText(self.result['store_name']+' · 上次结果已过期，请重算')
         modes={5:'必卖商品',7:'预算未满足',9:'最低持有缺口',10:'地采商品'}
         if column==11 and any(semantics.inbound_risk(d) for d in self.result['rows']):modes[11]='在途衔接风险'
@@ -339,7 +351,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         valid=any(state['state']=='已完成' for state in self.states.values());self.batch_export.setEnabled(valid and not busy)
         can_export=self.result is not None and not self.dirty and not busy;self.export_all.setEnabled(can_export);self.export_filtered.setEnabled(can_export)
         stopping=bool(batch and self.worker.cancel.is_set())
-        self.stop_btn.setEnabled(batch and not stopping);self.stop_btn.setText('等待运行中门店结束…' if stopping else '停止剩余任务');self.retry_btn.setEnabled(not busy and not self.input_dirty and any(s['state']=='计算失败' for s in self.states.values()))
+        self.stop_btn.setEnabled(batch and not stopping);self.stop_btn.setText('等待运行中门店结束…' if stopping else '停止剩余任务');self.retry_btn.setText(f"重试本批失败门店（{sum(s['state']=='计算失败' for s in self.states.values())}家）");self.retry_btn.setEnabled(not busy and not self.input_dirty and any(s['state']=='计算失败' for s in self.states.values()))
         self.cancel_btn.setVisible(busy);self.cancel_btn.setText('停止剩余任务' if batch else '取消');self.progress.setVisible(busy and not batch)
         self.cancel_btn.setEnabled(not stopping)
     def export_dialog(self):
@@ -359,11 +371,11 @@ class BatchWindow(WarehouseUi,SessionWindow):
         if not any(st['state']=='已完成' for st in states.values()):self.failed('所选门店没有可导出的有效结果。');return
         stamp=datetime.now().strftime('%Y%m%d_%H%M%S');split=mode.currentIndex()==1
         if split:
-            parent=QFileDialog.getExistingDirectory(self,'选择保存文件夹')
+            parent=export_locations.directory(self,'选择保存文件夹')
             if not parent:return
             path=str(Path(parent)/('补货结果_'+stamp))
         else:
-            path,_=QFileDialog.getSaveFileName(self,'保存汇总结果','补货结果_'+stamp+'.xlsx','Excel (*.xlsx)',options=QFileDialog.Option.DontConfirmOverwrite)
+            path,_=export_locations.save_file(self,'保存汇总结果','补货结果_'+stamp+'.xlsx','Excel (*.xlsx)',options=QFileDialog.Option.DontConfirmOverwrite)
             if not path:return
             if not path.lower().endswith('.xlsx'):path+='.xlsx'
         self.job(batch_service.export_batch,(results,states,path,split),self.export_ok)

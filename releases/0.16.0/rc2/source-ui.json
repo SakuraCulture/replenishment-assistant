@@ -1,0 +1,72 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "drag/drop existing signed format, all three sheets, default-cancel preview leaves no version",
+        "single selected warehouse payment, exact original 13-column format; no extra store/unit/payment-time fields; no carton multiplication",
+        "invalid quantity rejected; blank receipt retry becomes zero with source preserved",
+        "upstream revision flags payment then receipt; explicit recheck preserves original quantities and creates new bound versions",
+        "return template export and lifecycle business exports; multi-select keeps warehouses separate; explicit scope confirmation",
+        "original signed/work/master source tables remain exact; historic returned original can be downloaded"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.16.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "源码运行",
+        "build_id": "未打包"
+      },
+      "phase": "exercise",
+      "ui_ticks": 96,
+      "max_ui_gap_seconds": 0.06448770000133663,
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": true,
+      "exe_sha256": null,
+      "elapsed_seconds": 8.452999999979511,
+      "peak_tree_mib": 298.58203125,
+      "sample_ms": 50,
+      "synthetic": true
+    },
+    {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "second native process restores versions, predecessor binding and independent quantities"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.16.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "源码运行",
+        "build_id": "未打包"
+      },
+      "phase": "reopen",
+      "ui_ticks": 34,
+      "max_ui_gap_seconds": 0.04063579998910427,
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": true,
+      "exe_sha256": null,
+      "elapsed_seconds": 2.7030000000377186,
+      "peak_tree_mib": 242.921875,
+      "sample_ms": 50,
+      "synthetic": true
+    }
+  ]
+}

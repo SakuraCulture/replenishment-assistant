@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "differences": [],
+  "cases": [
+    "calculation/separate",
+    "calculation/combined",
+    "signed/separate",
+    "signed/combined",
+    "reference/separate",
+    "reference/combined",
+    "original/separate",
+    "original/combined",
+    "merchant/T/河北仓",
+    "merchant/T/山东仓",
+    "merchant/T2/河北仓",
+    "merchant/T2/山东仓"
+  ],
+  "database_unchanged": true,
+  "comparison": "exact ordered values/types/style snapshot; original Excel SHA256; same frozen archive database; explicit standard clock/build cell whitelist only"
+}

@@ -1,0 +1,87 @@
+{
+  "passed": true,
+  "baseline_commit": "dd76b57cc00a038b0fb3d15973e68fd1c712c137",
+  "build_commit": "17fa266a1cf0b7182b5440b68f5d12d220cd2024",
+  "version": "0.11.0",
+  "model_version": "0.3.3-rules",
+  "exe_sha256": "9ab000bb81e7da269d4f79f8a92eb2ea247f95a28e78c05ccf2669ab2b3cb1ab",
+  "zip_sha256": "72f42bbfd73105e18f6586f1fc06cd9a459783b9aa10cf551d5992f16d864085",
+  "file_count": 210,
+  "protected_count": 932,
+  "protected_changes": [],
+  "unchanged_business_files": {
+    "model.py": {
+      "baseline": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "candidate": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584"
+    },
+    "allocation.py": {
+      "baseline": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "candidate": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "one_box_exception.py": {
+      "baseline": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "candidate": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "default_config.json": {
+      "baseline": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "candidate": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "baseline": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "candidate": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    },
+    "engine.py": {
+      "baseline": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028",
+      "candidate": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028"
+    },
+    "input_adapter.py": {
+      "baseline": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+      "candidate": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700"
+    },
+    "batch_service.py": {
+      "baseline": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12",
+      "candidate": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12"
+    },
+    "warehouse_catalog.py": {
+      "baseline": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b",
+      "candidate": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b"
+    },
+    "new_products.py": {
+      "baseline": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232",
+      "candidate": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232"
+    },
+    "result_semantics.py": {
+      "baseline": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92",
+      "candidate": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92"
+    },
+    "parameter_schema.py": {
+      "baseline": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+      "candidate": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85"
+    },
+    "normal_exports.py": {
+      "baseline": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594",
+      "candidate": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594"
+    },
+    "storage_chunks.py": {
+      "baseline": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8",
+      "candidate": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8"
+    },
+    "work_repository.py": {
+      "baseline": "4c44b838564c31e4c2fe585f52f3ec8a9800ec10f9c888422e81b074041d4d17",
+      "candidate": "4c44b838564c31e4c2fe585f52f3ec8a9800ec10f9c888422e81b074041d4d17"
+    }
+  },
+  "allowed_changes": [
+    "warehouse history projection and child identity",
+    "three-sheet archive export only",
+    "archive_visibility table and recycle/restore audit events",
+    "reject signing/merchant export/replies to recycled child until restore",
+    "Python type contracts and Qt-free test imports"
+  ],
+  "business_snapshot_rewrite": false,
+  "exe_tests": {
+    "runs": 2,
+    "synthetic_ui": true,
+    "real_business_regression_separate": true
+  }
+}

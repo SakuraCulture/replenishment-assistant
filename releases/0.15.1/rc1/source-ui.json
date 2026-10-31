@@ -1,0 +1,69 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "phase": "exercise",
+      "checks": [
+        "actual top navigation opens settings; folder selection then Cancel creates no configuration",
+        "actual settings Save persists UTF-8 path atomically in active local configuration folder",
+        "temporary directory and cancelled nested save dialog preserve preference; basename/filter/options forwarded unchanged",
+        "actual template download and lifecycle batch export callbacks write three workbooks into configured directory, warehouses separate",
+        "deleted default folder produces explicit warning; falls back for current dialog without rewriting saved setting",
+        "signed orders, revisions, work snapshots and original source blobs unchanged"
+      ],
+      "screenshots": [
+        "settings-cancel.png",
+        "settings-save.png"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.15.1",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "源码运行",
+        "build_id": "未打包"
+      },
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": true,
+      "exe_sha256": null,
+      "elapsed_seconds": 7.51600000000326
+    },
+    {
+      "passed": true,
+      "error": null,
+      "phase": "reopen",
+      "checks": [
+        "second real process loads persisted default, opens settings form with exact configuration path; no user settings accessed"
+      ],
+      "screenshots": [
+        "settings-reopen.png"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.15.1",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "源码运行",
+        "build_id": "未打包"
+      },
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": true,
+      "exe_sha256": null,
+      "elapsed_seconds": 2.547000000020489
+    }
+  ]
+}

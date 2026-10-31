@@ -1,0 +1,3 @@
+# Portable core/archive tests. No Qt, business Excel or user database required.
+openpyxl==3.1.5
+et-xmlfile==2.0.0

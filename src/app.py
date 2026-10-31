@@ -23,6 +23,21 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--business-flows-smoke' in sys.argv:
+        from business_flows_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--business-flows-smoke')+1:])
+    if '--reconciliation-smoke' in sys.argv:
+        from reconciliation_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--reconciliation-smoke')+1:])
+    if '--export-location-smoke' in sys.argv:
+        from export_location_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--export-location-smoke')+1:])
+    if '--lifecycle-smoke' in sys.argv:
+        from lifecycle_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-smoke')+1:])
+    if '--followup-smoke' in sys.argv:
+        from followup_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--followup-smoke')+1:])
     if '--warehouse-delivery-smoke' in sys.argv:
         from warehouse_delivery_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--warehouse-delivery-smoke')+1:])

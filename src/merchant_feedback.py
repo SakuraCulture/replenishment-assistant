@@ -90,7 +90,10 @@ def prepare(path,scanned,bindings,progress=lambda _:None,cancel=None):
             row=db.execute('SELECT day,store FROM normal_orders WHERE number=?',(number,)).fetchone()
         if not row:raise ValueError('本机未找到补货单号：'+number+'；不得按名称或相近日期猜测')
         order=repo.get(*row,revision,view='export');r=order['payload']['result'];eligible={d['E']:d for rows in normal_exports.groups(r,order['payload'].get('new_focus')).values() for d in rows}
-        with closing(connect(path)) as db:old=current(db,order['oid'],revision)
+        with closing(connect(path)) as db:
+            old=current(db,order['oid'],revision)
+            from archive_orders import require_active
+            for wh in dict.fromkeys(eligible[i['sku']].get('AU') for i in items if i['sku'] in eligible):require_active(db,order['oid'],wh)
         values=dict(old['payload']['values']) if old else {};incoming={};warnings=[];duplicates=0
         for item in items:
             sku=item['sku'];qty=item['quantity'];checkpoint(cancel)
@@ -130,7 +133,10 @@ def commit(path,plan,progress=lambda _:None,cancel=None):
         db.execute('CREATE TABLE IF NOT EXISTS merchant_feedback(oid TEXT NOT NULL,revision INTEGER NOT NULL,version INTEGER NOT NULL,saved TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(oid,revision,version))')
         db.execute('CREATE TABLE IF NOT EXISTS source_files(sha TEXT PRIMARY KEY,name TEXT NOT NULL,saved TEXT NOT NULL,content BLOB NOT NULL)')
         for p in plan['plans']:
-            h=p['head'];now=db.execute('SELECT current FROM normal_orders WHERE oid=?',(h['oid'],)).fetchone();signed=db.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(h['oid'],h['revision'])).fetchone();old=current(db,h['oid'],h['revision'])
+            h=p['head']
+            from archive_orders import require_active
+            for wh in dict.fromkeys(item.get('warehouse') for item in p['payload']['incoming'].values()):require_active(db,h['oid'],wh)
+            now=db.execute('SELECT current FROM normal_orders WHERE oid=?',(h['oid'],)).fetchone();signed=db.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(h['oid'],h['revision'])).fetchone();old=current(db,h['oid'],h['revision'])
             if not now or now[0]!=h['current_revision'] or not signed or signed[0]!=h['digest']:raise wr.Conflict('签发记录在预览后变化，请重新核对回传')
             if (old['version'] if old else None)!=p['expected']:raise wr.Conflict('回传记录已被另一窗口更新，请重新核对')
         checkpoint(cancel);stamp=wr.now()
@@ -153,6 +159,7 @@ def view(path,head,progress=lambda _:None,cancel=None):
     values=record['payload']['values'] if record else {};rows=[]
     for sheet,items in normal_exports.groups(order['payload']['result'],order['payload'].get('new_focus')).items():
         for d in items:
+            if head.get('warehouse') and d.get('AU')!=head['warehouse']:continue
             q=values.get(d['E']);issued=sem.order_quantity(d);rows.append([d['E'],d.get('D'),sheet,issued,q,None if q is None else q-issued,'未确认' if q is None else '已确认',d.get('AU')])
     return {'rows':rows,'history':history,'record':record}
 
