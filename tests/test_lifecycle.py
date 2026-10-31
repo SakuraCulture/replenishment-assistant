@@ -38,20 +38,23 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(self.view()['rows'][0][3:6],[5.,5.,5.]);self.assertEqual(self.old_tables(),before)
         self.assertEqual(next(r for r in self.read()['records'] if r['warehouse']=='山东仓')['status'],'待回传')
     def test_out_of_order_documents_next_missing_not_highest_stage(self):
-        self.save('receipt');self.assertEqual(self.view()['next'],'return');self.assertTrue(self.view()['present']['receipt']);self.save('return');self.assertEqual(self.view()['next'],'payment');self.save('payment');self.assertIsNone(self.view()['next'])
+        self.save('receipt');self.assertEqual(self.view()['next'],'return');self.assertTrue(self.view()['present']['receipt']);self.save('return');self.assertEqual(self.view()['next'],'payment');self.save('payment');self.assertEqual(self.view()['next'],'receipt')
+        lc.commit(self.path,lc.recheck(self.path,self.h,'receipt'));self.assertIsNone(self.view()['next'])
     def test_quantity_differences_do_not_make_partial_stage(self):
         self.save('return',[{'门店确认数量':0}]);self.save('payment',[{'付款单商品数量':8}]);self.save('receipt',[{'实际收货数量':3}]);v=self.view();self.assertEqual(v['status'],'已收齐');self.assertEqual(v['rows'][0][3:6],[0,8,3]);self.assertEqual(v['rows'][0][7:9],[8,-5])
     def test_missing_sku_not_zero_and_extra_kept(self):
         self.save('payment',[{'商品编码':'EXTRA','付款单商品数量':9}]);v=self.view();self.assertIsNone(v['rows'][0][4]);self.assertEqual(v['rows'][-1][0],'EXTRA');self.assertEqual(v['rows'][-1][4],9);self.assertTrue(v['present']['payment']);self.assertEqual(v['status'],'待回传')
-    def test_blank_quantity_rejected_zero_valid(self):
+    def test_blank_quantity_zero_effect_preserves_raw(self):
         for stage in io.STAGES:
             with self.subTest(stage=stage):
-                with self.assertRaisesRegex(ValueError,'空白'):self.scan(stage,[{io.QUANTITIES[stage]:None}])
-                self.save(stage,[{io.QUANTITIES[stage]:0}])
+                plan=self.plan(self.scan(stage,[{io.QUANTITIES[stage]:None}]))
+                self.assertIsNone(plan['plans'][0]['payload']['raw_rows'][0]['quantity'])
+                self.assertEqual(plan['plans'][0]['payload']['rows'][0]['base_quantity'],'0')
+                lc.commit(self.path,plan)
         self.assertEqual(self.view()['rows'][0][3:6],[0,0,0])
-    def test_missing_paid_amount_and_currency_rejected(self):
+    def test_missing_paid_amount_rejected_currency_not_invented(self):
         with self.assertRaisesRegex(ValueError,'空白'):self.scan('payment',[{'实际金额':None}])
-        with self.assertRaisesRegex(ValueError,'币种'):self.scan('payment',[{'币种':None}])
+        self.assertEqual(self.scan('payment',[{'币种':None}])['rows'][0]['currency'],'')
     def test_payment_uses_source_amount_not_model_price(self):
         self.save('payment',[{'付款单商品数量':7,'实际金额':0.99,'币种':'USD'}]);v=self.view();self.assertEqual(v['rows'][0][9:11],['0.99','USD'])
     def test_exact_codes_and_units(self):

@@ -8,12 +8,13 @@ from decimal import Decimal
 from pathlib import Path
 import work_repository as wr
 import purchases, merchant_feedback, normal_exports, archive_orders as ao
+import lifecycle_rules as rules
 from history_read import repository
 from runtime_support import checkpoint, Cancelled
 from export_progress import RowProgress
 from lifecycle_io import STAGES, TITLES, QUANTITIES, DOCNUM, DOCDATE, fields
 
-SCHEMA = 1
+SCHEMA = 2
 STATUSES = ('待回传', '待付款', '待收货', '已收齐')
 COMMIT_BOUNDARY = '正在原子提交单据；提交完成前不可取消'
 
@@ -38,7 +39,7 @@ def fingerprint(payload):
 def decode(row):
     if not row: return None
     version, saved, digest, raw = row; payload = wr.loads(raw)
-    if payload.get('schema') != SCHEMA or fingerprint(payload) != digest: raise ValueError('生命周期单据快照校验失败')
+    if payload.get('schema') not in (1,SCHEMA) or fingerprint(payload) != digest: raise ValueError('生命周期单据快照校验失败')
     return {'version': version, 'saved': saved, 'digest': digest, 'payload': payload}
 
 def current(db, head, stage, version=None):
@@ -86,6 +87,61 @@ def available(path, scanned, progress=lambda _: None, cancel=None):
             else: unknown = True
     return purchases.targets(path, None if unknown else scopes, progress, cancel)
 
+def upstream(db, head, stage):
+    """Freeze every dependency; absence is also a token checked at commit."""
+    index=STAGES.index(stage); tokens={}; previous=None; valid=True
+    for s in STAGES[:index]:
+        doc=current(db,head,s)
+        if doc is None and s=='return':
+            legacy=legacy_return(db,head,head['products'])
+            if legacy and legacy['complete']:
+                doc={'version':legacy['version'],'digest':legacy['digest'],'payload':{'schema':1,'rows':[{'sku':k,'name':head['products'][k].get('name'),'base_quantity':str(v)} for k,v in legacy['values'].items()]}}
+        tokens[s]=rules.basis_token(doc)
+        if doc is None:
+            valid=False
+        elif doc['payload'].get('schema')==SCHEMA:
+            p=doc['payload']
+            if p.get('pending') or p.get('basis',{}).get('dependencies')!={k:v for k,v in tokens.items() if k!=s}:valid=False
+        previous=doc
+    products=head['products'] if stage=='return' else rules.positive(previous['payload']['rows']) if previous and valid else {}
+    return {'stage':'signed' if stage=='return' else STAGES[index-1], 'dependencies':tokens, 'signed_digest':head['digest'], 'ready':stage=='return' or valid, 'products':products}
+
+def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False):
+    basis=upstream(db,head,stage)
+    if explicit_zero and not basis['ready']:raise ValueError('上游未就绪，不能确认整单为0')
+    effective=rules.reconcile(raw_rows,basis['products'],pending=not basis['ready'])
+    missing=[r['sku'] for r in effective if r['quantity_origin']=='missing'];extra=[r['sku'] for r in effective if r['outside_basis']]
+    payload={'schema':SCHEMA,'rule':rules.RULE,'stage':stage,'head':{k:head[k] for k in ('oid','revision','warehouse','number','store','day','digest')},'basis':basis,'pending':not basis['ready'],'raw_rows':raw_rows,'rows':effective,'files':files,'missing':missing,'extra':extra,'explicit_zero':explicit_zero}
+    digest=fingerprint(payload);old=current(db,head,stage);prior={r['sku']:r for r in old['payload']['rows']} if old else {}
+    differences=[]
+    for r in effective:
+        a=prior.get(r['sku'],{})
+        differences.append([head['number'],f"V{head['revision']:03d}",r['sku'],r['name'],r['upstream_quantity'],r['base_quantity'],r['difference'],r['processing_note'],a.get('base_quantity'),r['amount']])
+    return {'head':head,'stage':stage,'expected':old['version'] if old else None,'digest':digest,'payload':payload,'changed':not old or old['digest']!=digest,'differences':differences,'duplicates':duplicates}
+
+def match_payment_rows(path, head, rows):
+    import re
+    if not any(r.get('adapter')=='paid_order' for r in rows):return
+    order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
+    if order['digest']!=head['digest']:raise wr.Conflict('签发快照已变化')
+    barcodes={};other_codes=set()
+    for d in order['payload']['result']['rows']:
+        if ao.warehouse(d)!=head['warehouse']:other_codes.add(d['E']);continue
+        for code in re.split(r'[,，;；\s]+',str(d.get('F') or '')):
+            if code:barcodes.setdefault(code,set()).add(d['E'])
+    for row in rows:
+        if row.get('adapter')!='paid_order':continue
+        original=row['sku'];aux=str(row['source_order'].get('辅助码') or '');hits=set()
+        for code in re.split(r'[,，;；\s]+',aux):hits.update(barcodes.get(code,set()))
+        if original in head['products']:
+            if hits and hits!={original}:raise ValueError('商品编码与辅助码指向不同商品：'+original)
+            row['matching_basis']='商品编码精确匹配'
+        elif len(hits)==1:
+            row['source_sku']=original;row['sku']=next(iter(hits));row['matching_basis']='辅助码唯一对应原签发条码'
+        elif len(hits)>1:raise ValueError('辅助码对应多个商品，请核对：'+original)
+        elif original in other_codes:raise ValueError('商品属于另一供货仓，请核对目标仓单：'+original)
+        else:row['matching_basis']='清单外商品，需确认'
+
 def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None):
     """Bindings are exact whole-document heads, no per-line quantity allocations."""
     stage = scanned['stage']
@@ -100,6 +156,7 @@ def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None):
             groups.setdefault(key(head), {'head': head, 'rows': []})['rows'].append(copy.deepcopy(row))
         for i, group in enumerate(groups.values()):
             checkpoint(cancel); h = group['head']; unique = {}; duplicates = 0
+            match_payment_rows(path,h,group['rows'])
             if len({(r['document_number'], r['document_date']) for r in group['rows']}) != 1: raise ValueError('一张仓单同一环节须提供一份完整单据；不同单号/日期不能自动拼成整单')
             for r in group['rows']:
                 sku = r['sku']; r['sources'] = [r.pop('source')]
@@ -110,18 +167,25 @@ def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None):
                     before['sources'].extend(r['sources']); duplicates += 1
                 else: unique[sku] = r
             rows = list(unique.values()); used = {s['sha'] for r in rows for s in r['sources']}
-            products = h['products']; missing = [s for s in products if s not in unique]; extra = [s for s in unique if s not in products]
-            payload = {'schema': SCHEMA, 'stage': stage, 'head': {k: h[k] for k in ('oid', 'revision', 'warehouse', 'number', 'store', 'day', 'digest')}, 'rows': rows, 'files': [f for f in scanned['files'] if f['sha'] in used], 'missing': missing, 'extra': extra}
-            digest = fingerprint(payload); old = current(db, h, stage)
-            prior = {r['sku']: r for r in old['payload']['rows']} if old else {}
-            differences = []
-            for sku in list(prior) + [s for s in unique if s not in prior]:
-                a = prior.get(sku); b = unique.get(sku)
-                differences.append([h['number'], f"V{h['revision']:03d}", sku, (b or a)['name'], a['base_quantity'] if a else None, b['base_quantity'] if b else None, '未列出' if b is None else '额外商品' if sku in extra else '已提供', a.get('amount') if a else None, b.get('amount') if b else None])
-            plans.append({'head': h, 'stage': stage, 'expected': old['version'] if old else None, 'digest': digest, 'payload': payload, 'changed': not old or old['digest'] != digest, 'differences': differences, 'duplicates': duplicates})
+            plans.append(make_plan(db,h,stage,rows,[f for f in scanned['files'] if f['sha'] in used],duplicates))
             progress(RowProgress(f'核对整单 {i+1}/{len(groups)}：' + h['number'], i+1, len(groups)))
     if not plans: raise ValueError('没有可保存的整单')
     return {'plans': plans, 'files': scanned['files']}
+
+def recheck(path, head, stage, progress=lambda _:None, cancel=None):
+    checkpoint(cancel)
+    with closing(purchases.connect(path)) as db:
+        purchases.validate_head(db,head);doc=current(db,head,stage)
+        if not doc:raise ValueError('尚无此环节单据')
+        p=doc['payload'];raw=copy.deepcopy(p.get('raw_rows',p['rows']))
+        plan=make_plan(db,head,stage,raw,p['files'],explicit_zero=p.get('explicit_zero',False))
+    return {'plans':[plan],'files':p['files'],'archived_sources':True}
+
+def zero_plan(path, head, stage, progress=lambda _:None, cancel=None):
+    checkpoint(cancel)
+    with closing(purchases.connect(path)) as db:
+        purchases.validate_head(db,head);plan=make_plan(db,head,stage,[],[],explicit_zero=True)
+    return {'plans':[plan],'files':[]}
 
 def begin(db, cancel):
     start = time.monotonic()
@@ -134,7 +198,13 @@ def begin(db, cancel):
 def commit(path, plan, progress=lambda _: None, cancel=None):
     checkpoint(cancel); contents = []
     for i, f in enumerate(plan['files']):
-        checkpoint(cancel); raw = Path(f['path']).read_bytes()
+        checkpoint(cancel)
+        if plan.get('archived_sources'):
+            with closing(purchases.connect(path)) as db:
+                row=db.execute('SELECT content FROM lifecycle_files WHERE sha=?',(f['sha'],)).fetchone()
+            if not row:raise ValueError('历史原件缺失')
+            raw=row[0]
+        else:raw = Path(f['path']).read_bytes()
         if hashlib.sha256(raw).hexdigest() != f['sha']: raise ValueError('原文件在预览后变化，请重新读取')
         contents.append((f, raw)); progress(RowProgress(f'留存原件 {i+1}/{len(plan["files"])}', i+1, len(plan['files'])))
     encoded = [wr.dumps(p['payload']) for p in plan['plans']]; checkpoint(cancel)
@@ -146,6 +216,7 @@ def commit(path, plan, progress=lambda _: None, cancel=None):
         for p in plan['plans']:
             checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'])
             if (old['version'] if old else None) != p['expected']: raise wr.Conflict('单据在预览后被更新，请重新核对')
+            if p['payload']['basis'] != upstream(db,p['head'],p['stage']):raise wr.Conflict('上游单据在预览后变化，请重新核对')
             if fingerprint(p['payload']) != p['digest']: raise ValueError('预览内容变化')
         # Last checkpoint. Never terminate the process between here and COMMIT.
         checkpoint(cancel); progress(COMMIT_BOUNDARY)
@@ -163,13 +234,37 @@ def state(present):
         if not present.get(stage): return STATUSES[i], stage
     return STATUSES[-1], None
 
+def document_summary(doc):
+    if not doc:return None
+    p=doc['payload']
+    return {'version':doc['version'],'digest':doc['digest'],'schema':p.get('schema',1),'pending':p.get('pending',False),'dependencies':p.get('basis',{}).get('dependencies',{}),'positive':len(rules.positive(p['rows']))}
+
+def progress_state(summaries, legacy=None):
+    summaries=dict(summaries)
+    if not summaries['return'] and legacy and legacy['complete']:
+        summaries['return']={'version':legacy['version'],'digest':legacy['digest'],'schema':1,'positive':sum(v>0 for v in legacy['values'].values())}
+    health={};tokens={}
+    for s in STAGES:
+        d=summaries[s]
+        health[s]=bool(d) and (d['schema']==1 or not d['pending'] and d['dependencies']==tokens and all(health.values()))
+        tokens[s]=rules.basis_token(d)
+    if not summaries['return'] and not (legacy and legacy['complete']):return '待回传','return','',health
+    for i,s in enumerate(STAGES[1:],1):
+        prev=summaries[STAGES[i-1]]
+        if not summaries[s]:
+            if prev and health[STAGES[i-1]] and prev['schema']==SCHEMA and prev['positive']==0 and not any(summaries[k] for k in STAGES[i:]):
+                return STATUSES[-1],None,'无要货，无需付款/收货' if s=='payment' else '无付款数量，无需收货',health
+            return STATUSES[i],s,'',health
+        if not health[s]:return STATUSES[i],s,TITLES[s]+'对照依据已更新或未就绪，请重新核对',health
+    return STATUSES[-1],None,'单据已收齐；不代表数量完全一致',health
+
 def legacy_return(db, head, products):
     old = merchant_feedback.current(db, head['oid'], head['revision'])
     if not old: return None
     values = old['payload'].get('values', {}); required = [s for s, p in products.items() if p['quantity'] > 0]
     supplied = {s: q for s, q in values.items() if s in products}
     complete = bool(supplied) and all(s in supplied for s in required)
-    return {'version': old['version'], 'saved': old['saved'], 'complete': complete, 'values': supplied, 'legacy': True}
+    return {'version': old['version'], 'saved': old['saved'], 'complete': complete, 'values': supplied, 'legacy': True,'digest':hashlib.sha256(wr.dumps(supplied).encode()).hexdigest()}
 
 def snapshot(path, head, progress=lambda _: None, cancel=None, db=None):
     if db is None:
@@ -190,12 +285,14 @@ def snapshot(path, head, progress=lambda _: None, cancel=None, db=None):
         name = eligible.get(sku, {}).get('name') or next((maps[s][sku]['name'] for s in STAGES if sku in maps[s]), '')
         nums = [eligible.get(sku, {}).get('quantity'), *[float(Decimal(v)) if v is not None else None for v in values]]
         diffs = [nums[i+1]-nums[i] if nums[i] is not None and nums[i+1] is not None else None for i in range(3)]
-        missing = '；'.join(TITLES[s] + ('未导入' if not docs[s] and not (s == 'return' and legacy) else '未列出此商品') for s in STAGES if sku not in maps[s])
+        missing = '；'.join(TITLES[s] + ('未导入' if not docs[s] and not (s == 'return' and legacy) else '未列出此商品（旧口径）' if docs[s] and docs[s]['payload'].get('schema')==1 else '不在本环节对照范围') for s in STAGES if sku not in maps[s])
+        notes=[TITLES[s]+'：'+maps[s][sku]['processing_note'] for s in STAGES if sku in maps[s] and maps[s][sku].get('processing_note')]
+        missing='；'.join([missing,*notes]).strip('；')
         rows.append([sku, name, *nums, *diffs, maps['payment'].get(sku, {}).get('amount'), maps['payment'].get(sku, {}).get('currency'), missing])
     present = {s: bool(docs[s]) for s in STAGES}
     if not present['return'] and legacy: present['return'] = legacy['complete']
-    status, next_stage = state(present)
-    return {'head': head, 'rows': rows, 'documents': docs, 'legacy_return': legacy, 'present': present, 'status': status, 'next': next_stage}
+    status,next_stage,note,health=progress_state({s:document_summary(docs[s]) for s in STAGES},legacy)
+    return {'head': head, 'rows': rows, 'documents': docs, 'legacy_return': legacy, 'present': present, 'status': status, 'next': next_stage,'note':note,'health':health}
 
 HEADERS = ['商品编码', '商品名称', '门店推荐数（签发时）', '门店确认数', '付款单商品数量', '实际收货数', '确认−推荐', '付款−确认', '收货−付款', '付款实际金额（源单）', '币种', '资料说明']
 

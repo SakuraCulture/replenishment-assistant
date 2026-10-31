@@ -38,9 +38,21 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                 head = {**h, 'warehouse': wh}; present = {s: (h['oid'], h['revision'], wh, s) in versions for s in lifecycle.STAGES}
                 legacy = lifecycle.legacy_return(db, head, part['products']) if not present['return'] else None
                 if legacy: present['return'] = legacy['complete']
-                status, next_stage = lifecycle.state(present)
+                summaries={}
+                for s in lifecycle.STAGES:
+                    version=versions.get((h['oid'],h['revision'],wh,s))
+                    if version is None:summaries[s]=None;continue
+                    doc_key=wr.dumps(['lifecycle-v2',str(Path(path).resolve()),h['oid'],h['revision'],wh,s,version])
+                    cached=idx.execute('SELECT payload,sha FROM lifecycle_projection WHERE k=?',(doc_key,)).fetchone()
+                    if cached and hashlib.sha256(cached[0].encode()).hexdigest()==cached[1]:summary=json.loads(cached[0])
+                    else:
+                        summary=lifecycle.document_summary(lifecycle.current(db,head,s,version));text=json.dumps(summary,ensure_ascii=False)
+                        idx.execute('INSERT OR REPLACE INTO lifecycle_projection VALUES(?,?,?)',(doc_key,text,hashlib.sha256(text.encode()).hexdigest()));idx.commit()
+                    summaries[s]=summary
+                status,next_stage,note,health=lifecycle.progress_state(summaries,legacy)
                 old = any(o == h['oid'] and r != h['revision'] and w == wh for o, r, w, s in versions)
                 record = {**h, 'warehouse': wh, 'name': part['name'], 'number': ao.number(h['number'], wh), 'parent_number': h['number'], 'current_revision': h['revision'], 'visibility_token': vis.get('token', 0), 'present': present, 'status': status, 'next': next_stage, 'old_revision': old, 'legacy_return': bool(legacy), 'legacy_incomplete': bool(legacy and not legacy['complete']), 'wait_days': max(0, (date.fromisoformat(wr.today()) - date.fromisoformat(h['saved'][:10])).days)}
+                record.update(note=note,health=health)
                 query = request.get('search', '').strip().lower()
                 search = ' '.join(str(record[k]) for k in ('day', 'store', 'name', 'warehouse', 'number')).lower()
                 if all(t in search for t in query.split()): records.append(record)
