@@ -64,7 +64,6 @@ def decision(d):
 def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None):
     from engine import checkpoint
     path=Path(path)
-    if path.exists():raise FileExistsError('文件已存在，请选择新文件名；不会覆盖已发出的单据')
     checkpoint(cancel);result=order['payload']['result'];profile=order['payload'].get('new_focus');focus.require_for(profile,order['day'],[result])
     parent_number=order['number'];grouped=groups(result,profile)
     if warehouse:
@@ -110,7 +109,12 @@ def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None):
     fd,temp=tempfile.mkstemp(prefix='.normal-',suffix='.xlsx',dir=path.parent);os.close(fd)
     try:
         with stage('压缩保存 Excel（完成后响应取消）',progress):wb.save(temp)
-        checkpoint(cancel);os.rename(temp,path)
+        checkpoint(cancel)
+        # The complete temporary workbook lives on the destination volume.
+        # Never remove/truncate the previous signed file before publication.
+        try:os.replace(temp,path)
+        except PermissionError as exc:
+            raise PermissionError('无法写入签发单：'+str(path)+'；如文件正被占用，请关闭 Excel/WPS 后重试，并确认目录有写入权限。已有文件未替换。') from exc
     finally:
         wb.close()
         if os.path.exists(temp):os.unlink(temp)

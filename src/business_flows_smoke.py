@@ -26,6 +26,9 @@ def start_smoke(app,win,args):
                 if d.objectName()=='deliveryConfirm':
                     if d.defaultButton().text()!='取消':raise AssertionError('unsafe default')
                     d.grab().save(str(out/'sign-confirm.png'));next(b for b in d.buttons() if b.text()=='确认签发并导出').click()
+                elif d.windowTitle() in ('导出已签发版本','导出签发单'):
+                    d.button(QMessageBox.StandardButton.Yes).click()
+                elif d.windowTitle()=='签发单已导出':d.accept()
                 else:raise AssertionError(d.windowTitle()+': '+d.text())
             elif d.windowTitle()=='签发与导出结果':next(b for b in d.findChildren(QPushButton) if b.text()=='继续本次补货').click()
             elif isinstance(d,BatchImport):
@@ -67,6 +70,8 @@ def start_smoke(app,win,args):
             if not list((out/'exports').glob('*.xlsx')):raise AssertionError('no signed files')
             win.show_section(3);wait(lambda:len(win.followup.records)>2)
             checks.append('drag/drop automatically checked; configured stores selected, process queue computed two stores; sign and export to displayed default folder; persistent completion dialog')
+            verify_signed_overwrite(win,out,wait,checks)
+            if state.get('automation_error'):raise AssertionError(state['automation_error'])
             from lifecycle_batch_ui import import_batch
             state['mode']='cancel'
             if import_batch(win,win) or service.history(win.work_repository.path,hb,'return'):raise AssertionError('cancel saved document')
@@ -98,3 +103,57 @@ def start_smoke(app,win,args):
             finish()
         except Exception:finish(traceback.format_exc()+'\n'+state.get('automation_error',''))
     QTimer.singleShot(500,exercise)
+
+
+def verify_signed_overwrite(win,out,wait,checks):
+    """QA-only repetition through the real work, tracking and detail UI paths."""
+    import zipfile
+    import xml.etree.ElementTree as ET
+    from contextlib import closing
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QFileDialog
+    import normal_exports as ne,order_lifecycle as lc
+
+    def content(path):
+        with zipfile.ZipFile(path) as z:
+            values={n:z.read(n) for n in z.namelist()}
+        core=ET.fromstring(values['docProps/core.xml'])
+        for node in list(core):
+            if node.tag in ('{http://purl.org/dc/terms/}created','{http://purl.org/dc/terms/}modified'):core.remove(node)
+        values['docProps/core.xml']=ET.tostring(core)
+        return values
+
+    def signed_data():
+        with closing(win.work_repository.connect()) as db:
+            return {t:db.execute('SELECT * FROM '+t+' ORDER BY rowid').fetchall()
+                    for t in ('normal_orders','normal_revisions','normal_work_revisions','jobs')}
+
+    files=list((out/'exports').glob('*.xlsx'));expected={p:content(p) for p in files};frozen=signed_data()
+    for p in files:p.write_bytes(b'old signed file to replace')
+    win.export_current()
+    if {p:content(p) for p in files}!=expected:raise AssertionError('work re-export content changed')
+    if signed_data()!=frozen:raise AssertionError('re-export changed signing/job snapshots')
+    checks.append('actual work UI re-export overwrote all same-name warehouse files via spawn; all workbook parts except created/modified clock identical')
+
+    wait(lambda:bool(win.followup.records) and win.followup.reader.active is None)
+    heads=[h for h in win.followup.records if h['store'] in ('QA_A','QA_B')]
+    if len(heads)!=len(files):raise AssertionError('tracking warehouse scope incomplete')
+    win.followup.checked={lc.key(h):h for h in heads}
+    for p in files:p.write_bytes(b'old signed file to replace again')
+    win.followup.export_signed()
+    if {p:content(p) for p in files}!=expected:raise AssertionError('tracking re-export content changed')
+    if signed_data()!=frozen:raise AssertionError('tracking changed signing/job snapshots')
+    win.followup.checked.clear();win.followup.selection_label()
+    checks.append('actual tracking UI batch re-export overwrote selected same-name files and wrote successful audit logs; signed snapshots unchanged')
+
+    head=heads[0];order=win.orders.get(head['day'],head['store'],head['revision'])
+    path=out/'exports'/ne.filename(order,head['warehouse']);path.write_bytes(b'previous detail export')
+    def choose(*args,**kwargs):
+        if not kwargs.get('options',QFileDialog.Option(0)) & QFileDialog.Option.DontConfirmOverwrite:
+            raise AssertionError('unexpected same-name confirmation')
+        return str(path),''
+    with patch.object(QFileDialog,'getSaveFileName',choose):
+        win.export_loaded_order({**order,'selected_warehouse':head['warehouse']})
+        wait(lambda:path.read_bytes().startswith(b'PK') and win.worker is None)
+    if content(path)!=expected[path] or signed_data()!=frozen:raise AssertionError('detail re-export drift')
+    checks.append('actual detail single-warehouse save overwrote same target; save dialog configured without extra overwrite confirmation')

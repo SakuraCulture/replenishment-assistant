@@ -6,7 +6,7 @@ import warehouse_orders
 class MerchantSelection(QDialog):
     def __init__(self,parent,order=None):
         super().__init__(parent);self.setObjectName('merchantSelection');self.setWindowTitle('选择门店与仓 · 加盟商确认单');self.resize(1060,520)
-        layout=QVBoxLayout(self);layout.addWidget(QLabel('每个门店每仓一份文件。默认全选；只导出所选仓，但签发仍保存该门店完整正常单与同一修订。'))
+        layout=QVBoxLayout(self);layout.addWidget(QLabel('每个门店每仓一份文件，同名文件直接覆盖。默认全选；只导出所选仓，但签发仍保存该门店完整正常单与同一修订。'))
         self.table=QTableWidget(0,8);self.table.setHorizontalHeaderLabels(['导出','门店名称','门店编码','供货仓','状态','动销款数','新品款数','安排金额']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);layout.addWidget(self.table);self.items=[]
         states=parent.states if order is None else {order['store']:{'state':'已完成','name':order['payload']['result']['store_name']}}
         results=parent.results if order is None else {order['store']:order['payload']['result']}

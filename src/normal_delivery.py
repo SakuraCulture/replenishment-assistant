@@ -62,8 +62,6 @@ def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=Non
     paths=[destination/f['filename'] for p,f in files] if destination.is_dir() else [destination]
     if len(paths)!=len(files):raise ValueError('多仓或多店导出请选择文件夹')
     if len({os.path.normcase(str(p.resolve())) for p in paths})!=len(paths):raise ValueError('门店文件名重复，请分次导出并指定不同文件名')
-    for path in paths:
-        if path.exists():raise FileExistsError('未归档、未覆盖；已有文件：'+str(path))
     fd,probe=tempfile.mkstemp(prefix='.delivery-check-',dir=paths[0].parent);os.close(fd);os.unlink(probe);checkpoint(cancel)
     signed=any(not p['same'] for p in plans);completed=[];orders=[]
     if signed:
@@ -111,8 +109,6 @@ def export_signed(repository,order,destination,warehouses,progress=lambda s:None
     selected=[w for w in available if w in warehouses];dest=Path(destination)
     paths=[dest/normal_exports.filename(order,w) for w in selected] if dest.is_dir() else [dest]
     if len(paths)!=len(selected):raise ValueError('多仓导出请选择文件夹')
-    for path in paths:
-        if path.exists():raise FileExistsError('不会覆盖已发出的单据：'+str(path))
     done=[]
     try:
         for i,(wh,path) in enumerate(zip(selected,paths),1):

@@ -362,7 +362,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                 files=[f for p in plans for f in p['files']]
                 if destination:path=destination
                 elif len(files)==1:
-                    path,_=export_locations.save_file(self,'导出本仓签发单',files[0]['filename'],'Excel (*.xlsx)')
+                    path,_=export_locations.save_file(self,'导出本仓签发单（同名直接覆盖）',files[0]['filename'],'Excel (*.xlsx)',options=QFileDialog.Option.DontConfirmOverwrite)
                     if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
                 else:path=export_locations.directory(self,'选择批量确认单导出文件夹')
                 if not path:return
@@ -396,7 +396,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             warehouses=dialog.warehouses().get(order['store'],[])
         if not warehouses:return
         if len(warehouses)==1:
-            path,_=export_locations.save_file(self,'导出本仓签发单',normal_exports.filename(order,warehouses[0]),'Excel (*.xlsx)')
+            path,_=export_locations.save_file(self,'导出本仓签发单（同名直接覆盖）',normal_exports.filename(order,warehouses[0]),'Excel (*.xlsx)',options=QFileDialog.Option.DontConfirmOverwrite)
             if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
         else:path=export_locations.directory(self,'选择分仓确认单导出文件夹')
         if not path:return

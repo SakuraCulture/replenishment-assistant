@@ -103,12 +103,19 @@ def export_signed(path,heads,folder,progress=lambda _:None,cancel=None):
     from history_read import repository
     import normal_delivery,purchases
     from contextlib import closing
-    repo=repository(path);files=[]
+    repo=repository(path);files=[];targets=set()
+    # Export appends an audit event. Reuse the normal work connection without
+    # repository initialization/migration; a read-only projection cannot log.
+    work=wr.Repository.__new__(wr.Repository);work.path=Path(path).resolve();repo.work=work
     for i,h in enumerate(heads):
         try:
             checkpoint(cancel);progress(RowProgress(f'导出签发单 {i+1}/{len(heads)}',i,len(heads)))
             with closing(purchases.connect(path)) as db:purchases.validate_head(db,h)
             order=repo.get(h['day'],h['store'],h['revision'],view='export')
+            import os,normal_exports
+            target=os.path.normcase(str((Path(folder)/normal_exports.filename(order,h['warehouse'])).resolve()))
+            if target in targets:raise ValueError('本批次门店文件名重复，请分次导出并指定不同目录；此前完成文件保留')
+            targets.add(target)
             files.extend(normal_delivery.export_signed(repo,order,folder,[h['warehouse']],progress,cancel))
         except Exception as exc:
             raise RuntimeError('原签发不变。此前已导出文件：'+('、'.join(files) or '无')+
