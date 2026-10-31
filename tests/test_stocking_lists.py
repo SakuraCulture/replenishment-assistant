@@ -67,6 +67,10 @@ class StockingTests(unittest.TestCase):
         self.assertEqual(d['name'],'逐行目标');sl.validate(d)
         d['items'][0]['target']=None;d['revision']=sl.revision(d)
         with self.assertRaisesRegex(ValueError,'部分商品没有目标'):sl.validate(d)
+    def test_unknown_focus_never_silently_excludes(self):
+        for value in ('是',True,1,1.0):self.assertTrue(sl.focused(value))
+        for value in ('否',False,0,0.0,None,''):self.assertFalse(sl.focused(value))
+        with self.assertRaisesRegex(ValueError,'无法识别'):sl.focused('不确定')
 
 
 if __name__=='__main__':unittest.main()

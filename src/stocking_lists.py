@@ -25,6 +25,15 @@ def revision(value):
     return hashlib.sha256(wr.dumps({k:v for k,v in value.items() if k not in ('revision','version','saved')}).encode()).hexdigest()
 
 
+def focused(value):
+    if value in (None,''):return False
+    if type(value) in (int,float) and value in (0,1):return bool(value)
+    text=str(value).strip().lower()
+    if text in new_product_focus.TRUE:return True
+    if text in new_product_focus.FALSE:return False
+    raise ValueError('关注字段无法识别：'+str(value)+'；请使用是/否、关注/未关注或1/0')
+
+
 def validate(value):
     if value.get('schema')!=1 or value.get('kind') not in set(KINDS)-{'manual'}:raise ValueError('清单格式或类型无效')
     if not value.get('name','').strip() or len(value['name'])>100:raise ValueError('清单名称须为1～100字')
@@ -34,6 +43,7 @@ def validate(value):
         sku,error=adapter.identifier(item.get('sku'))
         if error or sku!=item['sku'] or sku in seen:raise ValueError('清单商品编码缺失、重复或不可靠')
         seen.add(sku)
+        focused(item.get('focused'))
         if item.get('target') is not None and decimal(item['target'],'目标持有量')<=0:raise ValueError('目标持有量必须大于0')
     if not seen:raise ValueError('清单没有商品')
     defaults=value.get('defaults',{})
@@ -93,7 +103,7 @@ def import_list(specs, name, kind, defaults=None, progress=lambda _:None, cancel
                 if t<=0:raise ValueError('目标持有量必须大于0：'+sku)
                 target=scalar(t)
             item={'sku':sku,'name':str(r.get(mapping.get('name')) or ''),'target':target,
-                  'note':str(r.get(mapping.get('note')) or ''),'focused':str(r.get(mapping.get('focused')) or ''),
+                  'note':str(r.get(mapping.get('note')) or ''),'focused':focused(r.get(mapping.get('focused'))),
                   'source_rows':[{'source':index-1,'row':r['_row']}]}
             if sku in items:
                 prev=items[sku]

@@ -98,7 +98,7 @@ class StockingDialog(AsyncDialog):
         for key,c in self.scopes.items():c.setChecked(key in defaults.get('scopes',['zero']))
         self.valid_from.setText(d.get('valid_from',''));self.valid_to.setText(d.get('valid_to',''));self.table.setRowCount(len(d['items']))
         for i,item in enumerate(d['items']):
-            for j,value in enumerate([item['sku'],item.get('name',''),item.get('target'),item.get('focused',''),','.join(str(s['row']) for s in item.get('source_rows',[]))]):
+            for j,value in enumerate([item['sku'],item.get('name',''),item.get('target'),'是' if sl.focused(item.get('focused')) else '否',','.join(str(s['row']) for s in item.get('source_rows',[]))]):
                 cell=QTableWidgetItem('' if value is None else str(value))
                 if j!=2:cell.setFlags(cell.flags()&~Qt.ItemFlag.ItemIsEditable)
                 self.table.setItem(i,j,cell)
@@ -138,7 +138,7 @@ class StockingDialog(AsyncDialog):
                 if QMessageBox.question(self,'清单不在有效期','本次业务日期不在此清单有效期，仍明确用于本次？',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)!=QMessageBox.StandardButton.Yes:return
                 d['outside_period_confirmed_for']=day
             if self.focused.isChecked():
-                d['parent_revision']=d['revision'];d['items']=[i for i in d['items'] if str(i.get('focused','')).strip().lower() in sl.new_product_focus.TRUE]
+                d['parent_revision']=d['revision'];d['items']=[i for i in d['items'] if sl.focused(i.get('focused'))]
             d['revision']=sl.revision(d);sl.validate(d)
             self.run(sl.retain,(self.repository.path,d),self.used)
         except Exception as exc:self.message.setText('未应用：'+str(exc))
