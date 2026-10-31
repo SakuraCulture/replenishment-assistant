@@ -106,28 +106,40 @@ class Bindings(QDialog):
 
 class Review(QDialog):
     def __init__(self,parent,plan):
-        super().__init__(parent); self.setObjectName('lifecycleReview'); self.setWindowTitle('确认保存完整单据'); self.resize(1200,740); v=QVBoxLayout(self); summary=[]; rows=[]
+        super().__init__(parent); self.setObjectName('lifecycleReview'); self.setWindowTitle('确认保存完整单据'); self.resize(1200,740); v=QVBoxLayout(self); summary=[]; rows=[]; orders={}
         for p in plan['plans']:
             h=p['head'];payload=p['payload'];basis=payload['basis'];origins=[r['quantity_origin'] for r in payload['rows']]
             basis_text='签发建议' if basis['stage']=='signed' else io.TITLES[basis['stage']]
             summary.append(head_text(h)+' · '+io.TITLES[p['stage']]+(' · 更新已有单据' if p['expected'] else ' · 新增单据')+f"\n依据：{basis_text}；系统自动读取上环节数量；{len(payload['rows'])}款；明确0 {origins.count('zero')}款、空白转0 {origins.count('blank')}款、缺行转0 {origins.count('missing')}款；清单外 {len(payload['extra'])}款；同值重复 {p['duplicates']}行"+('；上游未就绪，本次仅留存，之后须重新核对。' if payload['pending'] else '')+('；本次明确确认整单为0，不生成原始Excel。' if payload['explicit_zero'] else ''))
             source=next((r['source_order'] for r in payload['raw_rows'] if r.get('source_order')),None)
             if source:summary.append('来源店铺：'+str(source.get('店铺名称'))+'；内部订单：'+str(source.get('内部订单号'))+'；线上订单：'+str(source.get('线上订单号'))+'。请与上方所选店仓单核对。')
-            rows.extend(p['differences'])
-        details=QPlainTextEdit();details.setReadOnly(True);details.setPlainText('\n'.join(summary));details.setMaximumHeight(150);v.addWidget(details)
-        self.search=QLineEdit();self.search.setPlaceholderText('搜索单号 / 商品编码 / 名称 / 处理说明');self.category=QComboBox();self.category.addItems(['全部','数量变化','明确填0','空白按0','缺行按0','清单外商品']);filters=QHBoxLayout();filters.addWidget(self.category);filters.addWidget(self.search);v.addLayout(filters)
-        self.all_rows=rows;self.table,self.model=grid(self,['补货单号','商品编码','商品名称','上环节数量（自动）','本环节数量','差额（自动）','处理说明','上次保存数量（自动）','源单商品金额'],[[r[0],*r[2:]] for r in rows]);v.addWidget(self.table,1);self.category.currentTextChanged.connect(self.filter_rows);self.search.textChanged.connect(self.filter_rows)
+            rows.extend([*r,io.TITLES[p['stage']]] for r in p['differences'])
+            item=orders.setdefault(h['number'],[h['number'],*['本次未提供']*len(io.STAGES)])
+            item[1+io.STAGES.index(p['stage'])]=('内容相同' if not p['changed'] else '拟更新' if p['expected'] else '拟新增')+(' · 仅留存待核' if payload['pending'] else '')
+        self.overview,self.overview_model=grid(self,['补货单号',*[io.TITLES[s] for s in io.STAGES]],list(orders.values()))
+        self.overview.setMaximumHeight(min(150,36+len(orders)*32));v.addWidget(self.overview)
+        disclosure=QCheckBox('查看完整读取范围与0 / 空白 / 缺行统计');v.addWidget(disclosure)
+        details=QPlainTextEdit();details.setReadOnly(True);details.setPlainText('\n'.join(summary));details.setMaximumHeight(150);details.hide();v.addWidget(details);disclosure.toggled.connect(details.setVisible)
+        self.search=QLineEdit();self.search.setPlaceholderText('搜索单号 / 商品编码 / 名称 / 处理说明');self.category=QComboBox();self.category.addItems(['全部','数量变化','明确填0','空白按0','缺行按0','清单外商品']);self.stage_filter=QComboBox();self.stage_filter.addItems(['全部环节',*[io.TITLES[s] for s in io.STAGES]]);filters=QHBoxLayout();filters.addWidget(self.stage_filter);filters.addWidget(self.category);filters.addWidget(self.search);v.addLayout(filters)
+        self.all_rows=rows;self.table,self.model=grid(self,['补货单号','环节','商品编码','商品名称','上环节数量（自动）','本环节数量','差额（自动）','处理说明','上次保存数量（自动）','源单商品金额'],self.display_rows(rows));v.addWidget(self.table,1);self.category.currentTextChanged.connect(self.filter_rows);self.stage_filter.currentTextChanged.connect(self.filter_rows);self.search.textChanged.connect(self.filter_rows);self.overview.clicked.connect(self.select_order)
+        self.table.setColumnWidth(1,120)
         self.complete=QCheckBox('我已核对完整读取范围；对照范围内空白/缺行按0，不累计旧版本。'+(' 此表确为已付款商品明细，商品金额即实付。' if any(p['stage']=='payment' for p in plan['plans']) else ''));v.addWidget(self.complete)
         self.extra_ack=QCheckBox('清单外商品已逐项核对，确属所选门店和仓单；完全匹配不上时已重新核对订单。');self.extra_ack.setVisible(any(p['payload']['extra'] for p in plan['plans']));self.extra_ack.setChecked(not any(p['payload']['extra'] for p in plan['plans']));v.addWidget(self.extra_ack)
         v.addWidget(label('数量与推荐不同不阻止环节完成。确认后独立留存新版本和原件，不修改签发、计算或其它环节。','muted'))
         row=QHBoxLayout(); cancel=button('取消',self.reject); cancel.setDefault(True); row.addWidget(cancel); self.save=button('确认保存完整单据',self.accept,True); self.save.setEnabled(False); self.save.setAutoDefault(False);self.complete.toggled.connect(self.allow_save);self.extra_ack.toggled.connect(self.allow_save);row.addWidget(self.save);v.addLayout(row)
     def allow_save(self):self.save.setEnabled(self.complete.isChecked() and self.extra_ack.isChecked())
+    @staticmethod
+    def display_rows(rows):return [[r[0],r[-1],*r[2:-1]] for r in rows]
+    def select_order(self,index):
+        self.search.setText(self.overview_model.rows[index.row()][0])
+        self.stage_filter.setCurrentText(io.TITLES[io.STAGES[index.column()-1]] if index.column() else '全部环节')
     def filter_rows(self):
         from decimal import Decimal
         kind=self.category.currentText();rows=self.all_rows
         if kind=='数量变化':rows=[r for r in rows if r[6] is not None and Decimal(str(r[6]))!=0]
         elif kind!='全部':rows=[r for r in rows if kind in r[7]]
-        self.model.replace([[r[0],*r[2:]] for r in rows]);self.model.filter(self.search.text())
+        if self.stage_filter.currentIndex():rows=[r for r in rows if r[-1]==self.stage_filter.currentText()]
+        self.model.replace(self.display_rows(rows));self.model.filter(self.search.text())
 
 def commit(parent,host,plan):
     task=Task(parent,service.commit,(host.work_repository.path,plan),'保存完整单据')

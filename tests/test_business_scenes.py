@@ -54,6 +54,12 @@ class BusinessScenes(unittest.TestCase):
             with patch('lifecycle_batch_ui.run',side_effect=lambda parent,fn,args,*a,**kw:fn(*args)):
                 d.add_paths([s['files'][0]['path'] for s in ds]);self.assertFalse(d.issues);self.assertEqual(len(d.documents),3)
                 d.preview();self.assertEqual([p['stage'] for p in d.plan['plans']],['return','payment','receipt']);self.assertFalse(d.review.save.isEnabled())
+                self.assertEqual(d.review.model.headers[1],'环节')
+                self.assertEqual(d.review.overview_model.rows,[[f.h['number'],'拟新增','拟新增','拟新增']])
+                d.review.stage_filter.setCurrentText('门店付款单')
+                self.assertTrue(d.review.model.rows)
+                self.assertTrue(all(r[1]=='门店付款单' for r in d.review.model.rows))
+                d.review.stage_filter.setCurrentIndex(0)
                 d.review.complete.setChecked(True);d.review.extra_ack.setChecked(True);self.assertTrue(d.review.save.isEnabled())
                 with patch('lifecycle_ui.commit',side_effect=lambda parent,host,plan:service.commit(host.work_repository.path,plan)):d.save()
                 self.assertEqual(len(d.receipt),3);self.assertEqual(f.view()['status'],'已收齐')
