@@ -119,6 +119,8 @@ class Repository:
         if payload.get('schema')!=1 or payload.get('model_version')!=MODEL_VERSION:raise ValueError('作业或模型版本不兼容，请重新计算')
         info=wr.summary(payload)
         if not codes or len(codes)!=len(set(codes)):raise ValueError('请选择互不重复的门店')
+        from preissue import validate_payload
+        validate_payload(payload,codes,cancel=cancel)
         for s in codes:
             checkpoint(cancel)
             if payload['states'].get(s,{}).get('state')!='已完成' or payload.get('input_dirty'):raise ValueError('门店结果失效或未完成：'+s)

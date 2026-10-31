@@ -76,6 +76,8 @@ def orderable(d):
 def order_status(d):
     if exclusion_reason(d):return '已排除'
     if d.get('_preview'):return '待计算'
+    if d.get('_preissue',{}).get('delta') or d.get('_preissue',{}).get('kind')=='manual' and d['_preissue'].get('quantity')==0:
+        return '人工不补' if order_quantity(d)==0 else '签发前调整'
     if d.get('_budget_gap',0)>0:return '预算部分分配' if numeric(order_quantity(d)) and order_quantity(d)>0 else '预算暂缓'
     if orderable(d):return '纳入补货'
     if numeric(d.get('AS')):return '无需补货'
@@ -122,6 +124,9 @@ def coverage(d):
 def explanation(d):
     if exclusion_reason(d):return '默认不补：'+exclusion_reason(d)+'；计算结果仅供参考'
     if issue_text(d):return issue_text(d)
+    adjustment=d.get('_preissue',{})
+    if adjustment.get('delta') or adjustment.get('kind')=='manual' and adjustment.get('quantity')==0:
+        return f"签发前调整：自动{fmt(adjustment['automatic_quantity'])} → 最终{fmt(adjustment['quantity'])}；{adjustment['reason']}"
     if d.get('_budget_overrun'):return d['_budget_reason']+f"；本店超预算{d['_budget_overrun']['overspend']:.2f}元（上限5%）"
     if d.get('_new_requested',0)>0:return '新品首铺 · 人工选择 '+fmt(d['_new_requested'])+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))
     if d.get('_budget_gap',0)>0:return ('必卖：' if d.get('_must_sell') else '普通：')+d.get('_budget_reason','')

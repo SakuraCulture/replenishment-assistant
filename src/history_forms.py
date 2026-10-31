@@ -41,6 +41,20 @@ def form(repo,order,scope,sku,cancel=None):
     if scope=='单据概况':
         data={'补货单号':order['number'],'业务日期':order['day'],'门店编码':order['store'],'门店名称':r['store_name'],'签发修订':order['revision'],'归档时间':order['saved'],'签发金额':r['summary']['amount'],'签发款数':r['summary']['positive'],'说明':'原签发建议只读；门店回传独立保存'}
     elif scope=='当时参数':data={'实际生效设置':r.get('effective_settings'),'当时完整参数方案':p.get('preset'),'模型实际配置':r.get('config'),'关注清单':p.get('new_focus'),'首铺选择':r.get('new_products'),'输入来源':r.get('sources')}
+    elif scope=='签发前调整':
+        d=next((x for x in r['rows'] if x['E']==sku),None)
+        if d is None:return [['商品','请选择本单商品','提示']]
+        a=d.get('_preissue')
+        if not a:data={'签发前调整':'当时没有签发前调整记录','原模型建议':d.get('AS'),'最终签发量':sem.order_quantity(d)}
+        else:
+            before=a['original_fields'];state=r.get('preissue',{})
+            data={'商品编码':sku,'商品名称':d.get('D'),'归属仓':d.get('AU'),'原模型建议':d.get('AS'),
+                  '自动预算前候选':before.get('_candidate_qty',{}).get('value'),'原自动安排量':a['automatic_quantity'],
+                  '原自动安排金额':a['automatic_amount'],'最终签发量':a['quantity'],'最终签发金额':a['amount'],'数量差额':a['delta'],
+                  '调整方式':{'manual':'人工改量','new':'新品补足','plan':'计划补足','promotion':'活动补足'}.get(a['kind'],a['kind']),
+                  '经营原因':a['reason'],'当时可用':d.get('K'),'当时在途':d.get('L'),'有效箱规':d.get('BD'),'当时基本售价':d.get('V'),
+                  '目标持有量':a.get('target'),'清单来源':a.get('source'),'已确认风险':[x['text'] for x in state.get('risks',[]) if x.get('sku')==sku and x['id'] in state.get('confirmed',[])],
+                  '业务日期':a['day'],'调整时间':a.get('edited_at'),'证据边界':'原模型及自动安排独立保留；该行最终量由签发前明确调整形成。'}
     elif scope=='决策总览':
         d=next((x for x in r['rows'] if x['E']==sku),None)
         if d is None:return [['商品','请选择本单商品','提示']]
@@ -55,6 +69,7 @@ def form(repo,order,scope,sku,cancel=None):
               '后续事实':dict(zip(order_lifecycle.HEADERS[3:],later[3:])) if later else '尚无此商品的后续资料',
               '后续资料有效性':{'当前进度':downstream['status'],'提示':downstream['note'],'各环节已有效核对':downstream['health']} if downstream else '未分仓历史，仅能查原快照',
               '证据边界':'上述为原签发快照和已保存后续单据；保底中间值不等于实际增量，历史未留存的归因不补写。'}
+        if d.get('_preissue'):data['签发前调整']={'原自动安排':d['_preissue']['automatic_quantity'],'最终量':d['_preissue']['quantity'],'差额':d['_preissue']['delta'],'原因':d['_preissue']['reason'],'查看方式':'选择“签发前调整”查看完整清单与风险依据'}
     elif scope in ('商品建议与销量库存','商品完整计算依据'):
         d=next((x for x in r['rows'] if x['E']==sku),None)
         if d is None:return [['商品','请输入本单内的精确商品编码','提示']]
@@ -101,6 +116,10 @@ def attachments(repo,order):
     for path,sha in parts.get(('loaded','intake','hashes'),{}).items():out.append(['销售 / 混合资料',path,sha])
     profile=order['payload'].get('new_focus') or {}
     if profile.get('source_sha256'):out.append(['关注清单',profile['source_path'],profile['source_sha256']])
+    seen=set()
+    for listing in order['payload']['result'].get('preissue',{}).get('lists',{}).values():
+        for source in listing.get('sources',[]):
+            if source['sha256'] not in seen:out.append(['铺货清单',source['path'],source['sha256']]);seen.add(source['sha256'])
     with closing(repo.work.connect()) as db:
         for row in out:
             exists=db.execute("SELECT 1 FROM sqlite_master WHERE name='source_files'").fetchone()

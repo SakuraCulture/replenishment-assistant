@@ -30,7 +30,8 @@ def groups(result,profile):
     focused=focus.members(profile);out={name:[] for name in SHEETS}
     for d in result['rows']:
         if d.get('_source')!='资料匹配' or not sem.work_eligible(d):continue
-        if new_products.is_new(d):out['本月新品' if d['E'] in focused else '往期新品'].append(d)
+        if d.get('_preissue',{}).get('current_month'):out['本月新品'].append(d)
+        elif new_products.is_new(d):out['本月新品' if d['E'] in focused else '往期新品'].append(d)
         elif sem.orderable(d):out['中心仓动销补货清单'].append(d)
     return out
 
@@ -40,6 +41,11 @@ def decision(d):
     excluded=sem.exclusion_reason(d)
     if excluded:return '禁用不补' if '禁用' in excluded else '停采不补'
     if sem.issue_text(d):return '资料待核'
+    adjustment=d.get('_preissue',{})
+    if adjustment.get('delta'):
+        if adjustment['kind']=='manual':return '人工不补' if adjustment['quantity']==0 else '人工增量' if adjustment['delta']>0 else '人工减量'
+        return {'new':'新品补足','plan':'计划补足','promotion':'活动补足'}[adjustment['kind']]
+    if adjustment.get('kind')=='manual' and adjustment.get('quantity')==0:return '人工不补'
     if d.get('_budget_overrun'):return '预算补足'
     if d.get('_budget_gap',0)>0:return '预算限量' if sem.orderable(d) else '预算暂缓'
     if new_products.is_new(d):

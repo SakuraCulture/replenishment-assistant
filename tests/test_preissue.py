@@ -28,6 +28,11 @@ def result(rows=None,budget=None):
 
 
 def edit(q,**kw):return {'quantity':q,'kind':'manual','reason':'经营判断',**kw}
+def listing(skus):
+    import stocking_lists as sl
+    value={'schema':1,'id':'synthetic','name':'合成清单','kind':'new','sources':[],
+           'items':[{'sku':s} for s in skus],'defaults':{'strategy':'minimum'}}
+    value['revision']=sl.revision(value);return value
 def commit(r,edits,**kw):
     preview=p.preview(r,edits,DAY,**kw)
     return p.finalize(preview,[x['id'] for x in preview['risks']],current=r)
@@ -129,14 +134,13 @@ class PreissueTests(unittest.TestCase):
         d=row(q=4,step=1);d.update(K=3,L=2);self.assertEqual(p.target_quantity(d,'target',12),7)
         d['BD']=6;self.assertEqual(p.target_quantity(d,'target',12),12)
     def test_list_repeat_and_manual_zero_preservation(self):
-        r=result();after=commit(r,{'a':edit(0)});listing={'name':'合成清单','kind':'new','revision':'test','items':[{'sku':'a'}]}
-        draft=p.list_edits(after,listing,'minimum');self.assertEqual(draft['edits']['a']['quantity'],0);self.assertEqual(len(draft['skipped']),1)
-        draft=p.list_edits(after,listing,'minimum',replace_manual=True);self.assertEqual(draft['edits']['a']['quantity'],24)
-        v=commit(after,draft['edits'],lists=draft['lists']);again=p.list_edits(v,listing,'minimum')
+        r=result();after=commit(r,{'a':edit(0)});items=listing(['a'])
+        draft=p.list_edits(after,items,'minimum');self.assertEqual(draft['edits']['a']['quantity'],0);self.assertEqual(len(draft['skipped']),1)
+        draft=p.list_edits(after,items,'minimum',replace_manual=True);self.assertEqual(draft['edits']['a']['quantity'],24)
+        v=commit(after,draft['edits'],lists=draft['lists']);again=p.list_edits(v,items,'minimum')
         self.assertEqual(again['edits']['a']['quantity'],24)
     def test_list_missing_is_not_zero(self):
-        listing={'name':'合成','kind':'new','revision':'test','items':[{'sku':'missing'}]}
-        draft=p.list_edits(result(),listing,'minimum');self.assertEqual(draft['edits'],{});self.assertEqual(len(draft['pending']),1)
+        draft=p.list_edits(result(),listing(['missing']),'minimum');self.assertEqual(draft['edits'],{});self.assertEqual(len(draft['pending']),1)
     def test_new_group_ignores_inbound_and_stockout_not_raw_missing(self):
         d=row(q=0);d.update(J=0,K=0,L=8,N=10)
         self.assertTrue(p.current_month(d));d['J']=None;self.assertFalse(p.current_month(d))

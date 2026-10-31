@@ -17,7 +17,7 @@ from archive_batch_ui import ArchiveBatchActions
 
 class ApplicationWindow(ArchiveBatchActions,Workbench):
     def __init__(self):
-        self.new_bases={};self.new_focus=None
+        self.new_bases={};self.new_focus=None;self.preissue_drafts={}
         super().__init__()
         self.orders=normal_orders.Repository(self.work_repository)
         from history_tasks import HistoryReader
@@ -66,6 +66,10 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         install(self,hv)
         from business_scenes import install as install_scenes
         install_scenes(self,hv)
+        self.final_list_btn=button('最终清单 / 改量',self.open_final_list,True)
+        self.overview_page.layout().addWidget(self.final_list_btn)
+        self.final_detail_btn=button('编辑本店最终清单',lambda:self.open_final_list(True),True)
+        self.pages.widget(4).layout().insertWidget(1,self.final_detail_btn)
         self.auto_check=QTimer(self);self.auto_check.setSingleShot(True);self.auto_check.setInterval(400);self.auto_check.timeout.connect(self.check_added_files);self.sales.changed.connect(self.auto_check.start)
 
     def check_added_files(self):
@@ -231,23 +235,30 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.issue_btn.setEnabled(ready and self.job_day==wr.today() and any(x['state']=='已完成' for x in self.states.values()))
         self.new_products_btn.setEnabled(ready and any(x['state']=='已完成' for x in self.states.values()))
         self.merchant_btn.setEnabled(not self.worker and not self.input_dirty and any(x['state']=='已完成' for x in self.states.values()))
+        if hasattr(self,'final_list_btn'):
+            self.final_list_btn.setEnabled(ready and self.job_day==wr.today() and any(x['state']=='已完成' for x in self.states.values()))
+            self.final_detail_btn.setEnabled(ready and self.job_day==wr.today() and self.states.get(self.current_store,{}).get('state')=='已完成')
 
     def snapshot(self):
         p=super().snapshot()
         if self.new_focus is not None:p["new_focus"]=copy.deepcopy(self.new_focus)
         if self.new_bases:p['new_product_bases']=dict(self.new_bases)
+        if self.preissue_drafts:p['preissue_drafts']=copy.deepcopy(self.preissue_drafts)
         return p
 
     def restore_job(self,record,owned=False):
         clone=(lambda value:value) if owned else copy.deepcopy
+        self.preissue_drafts=clone(record['payload'].get('preissue_drafts',{}))
         self.new_bases=clone(record['payload'].get('new_product_bases',{}));self.new_focus=clone(record['payload'].get('new_focus'));super().restore_job(record,owned=owned);self.refresh_focus()
 
     def reset_job(self):
-        self.new_bases={};super().reset_job()
+        self.new_bases={};self.preissue_drafts={};super().reset_job()
         try:self.new_focus=self.focus_repository.load()
         except Exception as exc:self.new_focus=None;self.status.setText("新品关注清单未加载："+str(exc))
         self.refresh_focus()
     def loaded_ok(self,loaded):
+        for s,r in self.results.items():
+            if r.get('preissue'):self.preissue_drafts[s]={'edits':copy.deepcopy(r['preissue']['edits']),'lists':copy.deepcopy(r['preissue'].get('lists',{})),'day':self.job_day,'status':'输入变化后待复核'}
         self.new_bases={};super().loaded_ok(loaded)
         if not self.closing:self.navigate(1)
     def task_changed(self,store,state,result,error):
@@ -260,7 +271,12 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if chosen and not self.worker:
             box=QMessageBox(self);box.setObjectName('newSelectionReset');box.setWindowTitle('重新计算前确认新品选择');box.setText('以下门店重新计算后将清空本次新品选择，请按新数据和参数重新选品；已归档单据保持原修订。\n'+'、'.join(chosen));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('重新计算并重选新品',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.exec()
             if box.clickedButton() is not accept:return
+        originals={s:self.results[s] for s in targets if s in self.results and self.results[s].get('preissue')}
+        if originals and not self.worker:
+            if QMessageBox.question(self,'重新计算与最终调整', '重新计算会生成新的自动结果，原人工调整保留为待核对草稿，确认风险需重新核对。已签发历史不变。\n'+'、'.join(originals),QMessageBox.StandardButton.Ok|QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)!=QMessageBox.StandardButton.Ok:return
         super().start_calculation(codes)
+        if self.worker:
+            for s,r in originals.items():self.preissue_drafts[s]={'edits':copy.deepcopy(r['preissue']['edits']),'lists':copy.deepcopy(r['preissue'].get('lists',{})),'day':self.job_day,'status':'重算后待复核'}
 
     def pick_store(self,use_current=False):
         codes=[s for s,x in self.states.items() if x['state']=='已完成']
@@ -273,6 +289,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if self.worker or self.readonly or self.input_dirty:return
         s=self.pick_store(use_current)
         if not s:return
+        if self.results[s].get('preissue') or s in self.preissue_drafts:
+            self.failed('本店已进入最终清单调整，请在“编辑本店最终清单”继续；如需重新自动分配新品预算，请明确重新计算并复核已有调整。');return
         current=self.results[s];base=self.new_bases.get(s,current)
         if base.get('new_products'):
             self.failed('当前草稿缺少新品原计算快照，请重新计算该店后选择。');return
@@ -292,6 +310,42 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         else:self.new_bases.pop(s,None)
         self.results[s]=result;self.current_store=s;self.result=result;self.dirty=False;self.set_rows(result['rows'],True);self.refresh_tables();self.touch();self.navigate(4)
         self.status.setText('新品选择与预算已应用到本店草稿；请返回门店汇总选择门店并导出。')
+
+    def open_stocking_library(self):
+        if self.worker or self.readonly:return
+        from stocking_ui import StockingDialog
+        d=StockingDialog(self,apply=True)
+        if d.exec()==QDialog.DialogCode.Accepted:self.open_final_list(listing=d.selected)
+        d.deleteLater()
+
+    def open_final_list(self,use_current=False,listing=None):
+        if self.worker or self.readonly or self.input_dirty or self.job_day!=wr.today():return
+        from interaction_ui import choose_stores
+        codes=[self.current_store] if use_current is True and self.states.get(self.current_store,{}).get('state')=='已完成' else choose_stores(self,'选择最终清单门店',self.states,self.selected_codes())
+        if not codes:return
+        from preissue_ui import FinalListDialog
+        d=FinalListDialog(self,codes,listing)
+        accepted=d.exec()==QDialog.DialogCode.Accepted;outcome=d.outcome
+        d.deleteLater()
+        if not accepted or not outcome:return
+        if outcome['action']=='draft':
+            self.preissue_drafts.update(outcome['drafts']);self.touch();saved=self.save_current();self.refresh_tables()
+            self.status.setText(('已保存待核对调整；' if saved else '待核对调整仅保留在当前窗口，尚未保存到磁盘；')+'这些门店须在最终清单核对通过后才能签发。')
+        else:
+            # Publish all selected stores together after every guard passes.
+            self.results={**self.results,**outcome['results']}
+            for s in codes:self.preissue_drafts.pop(s,None)
+            self.current_store=codes[0];self.result=self.results[codes[0]];self.dirty=False;self.set_rows(self.result['rows'],True);self.refresh_tables();self.touch();self.update_controls()
+            self.status.setText('最终数量已应用到本次草稿；原模型和未选商品不变。请核对后确认签发。')
+
+    def refresh_tables(self):
+        super().refresh_tables()
+        pending=getattr(self,'preissue_drafts',{})
+        for i,s in enumerate(getattr(self,'overview_codes',[])):
+            if s in pending:
+                cell=self.overview.item(i,11)
+                if cell:cell.setText('有签发前调整待核对；请打开最终清单')
+        if pending and hasattr(self,'overview_note'):self.overview_note.setText(self.overview_note.text()+f' · {len(pending)}店有最终调整待核对，不能直接签发。')
 
     def confirm_normal(self):
         if self.worker or self.readonly or self.input_dirty or self.job_day!=wr.today():return

@@ -31,6 +31,8 @@ def prepare_owned_batch(repository,payload,codes,progress=lambda s:None,cancel=N
     progress('冻结本批次草稿并检查所选门店…');checkpoint(cancel)
     frozen=payload
     if not codes or len(codes)!=len(set(codes)):raise ValueError('请选择互不重复的有效门店')
+    from preissue import validate_payload
+    validate_payload(frozen,codes,cancel=cancel)
     plans=[];head=job_head(repository.work,frozen['day'])
     for i,store in enumerate(codes,1):
         checkpoint(cancel);progress(f'核对门店 {i}/{len(codes)}：{store}')
