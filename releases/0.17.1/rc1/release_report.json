@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "baseline_commit": "db60859cabefd27d3810f301935577997ff38aca",
+  "build_commit": "f2226dd6ae416e7ba3384cfbd23e67763ff90fd1",
+  "branch": "fix/signed-export-overwrite-0.17.1",
+  "version": "0.17.1",
+  "model_version": "0.3.3-rules",
+  "exe_sha256": "8ea814a26333507f4620d7ec03a89a6b7f69d9fe0e2cb1a7328d1c1692dca28a",
+  "zip_sha256": "12eb5a04f1aeb9c9ec42beadef5d905d9436c652c596c164ebc3f9d37fe9e740",
+  "file_count": 208,
+  "old_delivery_files_verified": 208,
+  "old_delivery_changed": false,
+  "core_hashes": {
+    "model.py": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+    "one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+  },
+  "normal_tests": 195,
+  "optimized_tests": 195,
+  "export_cases": 12,
+  "export_differences": [],
+  "exe_launches": 2,
+  "no_push_or_merge": true,
+  "allowed_changes": [
+    "same-name signed Excel replacement",
+    "actionable locked-file error",
+    "tracking export audit logging and duplicate-target protection",
+    "overwrite UI text and save-dialog option",
+    "application version and QA-only repetition"
+  ],
+  "limits": [
+    "Occupied or unwritable files cannot be forcibly replaced; retry after closing.",
+    "Batch replacement remains sequential, not an all-files transaction; completed files remain.",
+    "EXE automated UI acceptance uses isolated small fixtures; not a fresh-machine build validation."
+  ]
+}
