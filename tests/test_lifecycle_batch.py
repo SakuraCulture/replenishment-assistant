@@ -73,4 +73,12 @@ class LifecycleBatch(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'缺号'):batch.prepare(self.f.path,[d])
         d['target']=self.f.h;p=batch.prepare(self.f.path,[d],self.f.heads[:1]);self.assertEqual(p['plans'][0]['head']['number'],self.f.h['number'])
 
+    def test_export_partial_failure_keeps_complete_batch_receipt(self):
+        with patch('normal_delivery.export_signed',side_effect=[['first.xlsx'],RuntimeError('second failed')]):
+            with self.assertRaises(RuntimeError) as error:
+                batch.export_signed(self.f.path,self.f.heads,self.f.root)
+        self.assertIn('first.xlsx',str(error.exception))
+        self.assertIn(self.f.heads[1]['number'],str(error.exception))
+        self.assertIn('second failed',str(error.exception))
+
 if __name__=='__main__':unittest.main()

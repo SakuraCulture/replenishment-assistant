@@ -105,8 +105,14 @@ def export_signed(path,heads,folder,progress=lambda _:None,cancel=None):
     from contextlib import closing
     repo=repository(path);files=[]
     for i,h in enumerate(heads):
-        checkpoint(cancel);progress(RowProgress(f'导出签发单 {i+1}/{len(heads)}',i,len(heads)))
-        with closing(purchases.connect(path)) as db:purchases.validate_head(db,h)
-        order=repo.get(h['day'],h['store'],h['revision'],view='export')
-        files.extend(normal_delivery.export_signed(repo,order,folder,[h['warehouse']],progress,cancel))
+        try:
+            checkpoint(cancel);progress(RowProgress(f'导出签发单 {i+1}/{len(heads)}',i,len(heads)))
+            with closing(purchases.connect(path)) as db:purchases.validate_head(db,h)
+            order=repo.get(h['day'],h['store'],h['revision'],view='export')
+            files.extend(normal_delivery.export_signed(repo,order,folder,[h['warehouse']],progress,cancel))
+        except Exception as exc:
+            raise RuntimeError('原签发不变。此前已导出文件：'+('、'.join(files) or '无')+
+                               '；本次中断订单：'+h['number']+'；尚未开始：'+
+                               ('、'.join(x['number'] for x in heads[i+1:]) or '无')+
+                               '。中断订单的文件状态见下方；请仅重试未完成订单。\n'+str(exc)) from exc
     return files
