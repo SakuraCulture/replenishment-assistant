@@ -208,7 +208,7 @@ class FinalListDialog(AsyncDialog):
         if not self.model.reason:self.message.setText('请先选择或填写原因');return
         for i in self.chosen():
             s,d=self.model.entries[i]
-            if d['E'] in self.model.edits[s]:self.model.edits[s][d['E']]['reason']=self.model.reason
+            if d['E'] in self.model.edits[s]:self.model.edits[s][d['E']].update(reason=self.model.reason,edited_at=wr.now())
         self.model.layoutChanged.emit();self.changed(True)
     def bulk(self):
         indices=self.chosen()

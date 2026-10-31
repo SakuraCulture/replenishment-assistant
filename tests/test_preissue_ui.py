@@ -84,6 +84,10 @@ class FinalUiTests(unittest.TestCase):
         results=self.host.results;v=preview_batch(results,{'S1':{'a':edit(0)}},{'S1':{}},self.host.job_day)
         with self.assertRaises(ValueError):finalize_batch(v,[],results)
         self.assertNotIn('preissue',results['S1'])
+    def test_partial_restore_does_not_clear_another_invalid_input(self):
+        d=self.create();d.model.setData(d.model.index(0,9),'25');d.model.setData(d.model.index(1,9),'13')
+        d.model.replace_edits({'S1':{}},cleared=[('S1','a')])
+        self.assertEqual(set(d.model.invalid),{('S1','b')});d.preview();self.assertIsNone(d.task)
 
 
 if __name__=='__main__':unittest.main()

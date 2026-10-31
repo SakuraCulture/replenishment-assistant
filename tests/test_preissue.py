@@ -117,6 +117,14 @@ class PreissueTests(unittest.TestCase):
         self.assertFalse(v['errors']);self.assertIn('budget',[x['kind'] for x in v['risks']])
         after=p.finalize(v,[x['id'] for x in v['risks']]);self.assertEqual(after['budget']['spent'],105)
         self.assertTrue(p.preview(r,{'a':edit(22)},DAY)['errors'])
+    def test_money_precision_does_not_become_quantity_error(self):
+        r=result([row('a',24,24,0.12345678901234567)])
+        after=commit(r,{'a':edit(48)})
+        # The source contract is an existing Python float (repr ends in 566),
+        # not the higher-precision decimal spelling of the literal above.
+        self.assertEqual(str(r['rows'][0]['V']),'0.12345678901234566')
+        self.assertEqual(after['rows'][0]['_preissue']['amount_exact'],'5.92592587259259168')
+        p.validate_result(after,DAY)
     def test_two_units_cannot_borrow_old_expensive_unit(self):
         r=result([row('base',1,1,100),row('extra',0,1,2)],100)
         self.assertTrue(p.preview(r,{'extra':edit(2)},DAY)['errors'])
