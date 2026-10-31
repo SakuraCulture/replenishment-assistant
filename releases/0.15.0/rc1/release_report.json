@@ -1,0 +1,134 @@
+{
+  "passed": true,
+  "version": "0.15.0",
+  "baseline_commit": "0ffb88abb2f5d1fe5ae00287c5770ce33dbccdb1",
+  "build_commit": "f218adc99770317dfb48f96360ffeb94b9b68844",
+  "branch": "feature/order-lifecycle-0.15.0",
+  "model_version": "0.3.3-rules",
+  "routing_version": "0.5.0",
+  "job_storage_format": 2,
+  "lifecycle_schema": 1,
+  "exe_sha256": "a1efe89efe195db21d96afd63414567ff3400a48184af7a834b4b2b8910c8c32",
+  "zip_sha256": "5dff64a0bb7067d06a2c7ed6687949a0279f63e15da77b9a6b91a7b0c01bd615",
+  "file_count": 215,
+  "protected_files": 6560,
+  "protected_changes": [],
+  "unchanged_business_files": {
+    "model.py": {
+      "baseline": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "candidate": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584"
+    },
+    "allocation.py": {
+      "baseline": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "candidate": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "one_box_exception.py": {
+      "baseline": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "candidate": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "default_config.json": {
+      "baseline": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "candidate": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "baseline": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "candidate": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    },
+    "engine.py": {
+      "baseline": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028",
+      "candidate": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028"
+    },
+    "input_adapter.py": {
+      "baseline": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+      "candidate": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700"
+    },
+    "batch_service.py": {
+      "baseline": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12",
+      "candidate": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12"
+    },
+    "warehouse_catalog.py": {
+      "baseline": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b",
+      "candidate": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b"
+    },
+    "new_products.py": {
+      "baseline": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232",
+      "candidate": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232"
+    },
+    "result_semantics.py": {
+      "baseline": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92",
+      "candidate": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92"
+    },
+    "parameter_schema.py": {
+      "baseline": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+      "candidate": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85"
+    },
+    "normal_exports.py": {
+      "baseline": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594",
+      "candidate": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594"
+    },
+    "archive_batch.py": {
+      "baseline": "bf3f77feff7b8f7e662dfe10fc12d02fb8325cabaad50231db02a5c325d59d6a",
+      "candidate": "bf3f77feff7b8f7e662dfe10fc12d02fb8325cabaad50231db02a5c325d59d6a"
+    },
+    "archive_exports.py": {
+      "baseline": "6f1b76b0bf6fcaa0edb973b2b97954c084aa5f0c4306e28f526b17d6dfafc43c",
+      "candidate": "6f1b76b0bf6fcaa0edb973b2b97954c084aa5f0c4306e28f526b17d6dfafc43c"
+    },
+    "xlsx_exports.py": {
+      "baseline": "ce07a425e57039fe2e5b509db4f5416377d490dfa9d6d258654ba2bdf7986b45",
+      "candidate": "ce07a425e57039fe2e5b509db4f5416377d490dfa9d6d258654ba2bdf7986b45"
+    },
+    "merchant_feedback.py": {
+      "baseline": "5c3a51ff266068a42c6a6df6fb65d3f8a3b1a396afa6c23155967695347563eb",
+      "candidate": "5c3a51ff266068a42c6a6df6fb65d3f8a3b1a396afa6c23155967695347563eb"
+    },
+    "storage_chunks.py": {
+      "baseline": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8",
+      "candidate": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8"
+    },
+    "work_repository.py": {
+      "baseline": "4c44b838564c31e4c2fe585f52f3ec8a9800ec10f9c888422e81b074041d4d17",
+      "candidate": "4c44b838564c31e4c2fe585f52f3ec8a9800ec10f9c888422e81b074041d4d17"
+    },
+    "normal_orders.py": {
+      "baseline": "a25db1eb5b4e7b637db91572efd106d6305920b555ebd98a7e1a612e9f676273",
+      "candidate": "a25db1eb5b4e7b637db91572efd106d6305920b555ebd98a7e1a612e9f676273"
+    },
+    "normal_delivery.py": {
+      "baseline": "a2d9c647d64691d9790fa76722f8da6803d9328ed38a642bf83b0b6a32b39bae",
+      "candidate": "a2d9c647d64691d9790fa76722f8da6803d9328ed38a642bf83b0b6a32b39bae"
+    },
+    "work_io_process.py": {
+      "baseline": "bbc8388b8ea2b91205c3c03e0ec42f23515c7c013fd1c3eed210a0e00c503254",
+      "candidate": "bbc8388b8ea2b91205c3c03e0ec42f23515c7c013fd1c3eed210a0e00c503254"
+    },
+    "history_forms.py": {
+      "baseline": "43a13d275164cccf49079513f07f798a4ce6239676ad68e55795c4e550ef165a",
+      "candidate": "43a13d275164cccf49079513f07f798a4ce6239676ad68e55795c4e550ef165a"
+    }
+  },
+  "business_field_changes": [],
+  "allowed_changes": [
+    "document-derived home progress and grouped lifecycle UI",
+    "fixed mirror names; no manual follow-up controls",
+    "new independent lifecycle versions/files/events/mappings",
+    "new downstream exports; existing exporters unchanged",
+    "app build metadata"
+  ],
+  "backup_side_effects": [
+    "original first-write safety backup",
+    "snapshot_chunks and snapshot_storage_meta may be created by existing backup mechanism"
+  ],
+  "deferred": [
+    "security dependency upgrade"
+  ],
+  "limitations": [
+    "Real external paid/receipt samples not supplied: generated templates, mappings and synthetic lifecycle fixtures verified",
+    "First row headers; equal-header sheets read together; different-header sheets need explicit mapping; no heuristic unit/status/revision inference",
+    "One complete external document per warehouse order stage, SKU-level duplicate conflicts reject rather than infer splits",
+    "Old EXE does not display new lifecycle tables; original jobs/signing/feedback/purchase rows remain unchanged",
+    "Source UI offscreen font rendering is not native proof; separate actual EXE/native Windows evidence supplied",
+    "Performance uses generated 1000-warehouse-order/5000-line fixtures on this PC; no all-machine promise"
+  ],
+  "no_remote_actions": true
+}

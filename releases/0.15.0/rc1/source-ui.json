@@ -1,0 +1,97 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "actual spawn home reader; four mutually exclusive document-derived states; no manual follow-up actions; grouped imports",
+        "actual multi-file drag/drop-compatible picker, field mapping, explicit missing revision binding, default-cancel complete-document preview",
+        "payment arrives first and is retained; home still prompts return, then receipt; exact warehouse orders independent",
+        "invalid blank quantity rejected; subsequent valid receipt retry succeeds; four stages complete",
+        "whole-document revision replaces current quantities without accumulating, keeps prior version, repeated import idempotent; original four tables exact",
+        "actual export dialog writes comparison/payment/receipt; combined option keeps Shandong and Hebei separate",
+        "business form versions and source-line audit readable; exact original version downloaded through UI",
+        "three minimum templates downloaded through actual UI functions"
+      ],
+      "screenshots": [
+        "home-exercise.png",
+        "mapping-return.png",
+        "preview-return-cancel.png",
+        "mapping-payment.png",
+        "preview-payment-save.png",
+        "mapping-return.png",
+        "preview-return-save.png",
+        "mapping-receipt.png",
+        "mapping-receipt.png",
+        "preview-receipt-save.png",
+        "mapping-return.png",
+        "preview-return-update.png",
+        "mapping-return.png",
+        "preview-return-repeat.png",
+        "lifecycle-comparison.png",
+        "document-versions.png",
+        "home-complete.png"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.15.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "源码运行",
+        "build_id": "未打包"
+      },
+      "phase": "exercise",
+      "ui_ticks": 69,
+      "max_ui_gap_seconds": 0.08510169998044148,
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": true,
+      "exe_sha256": null,
+      "elapsed_seconds": 4.952999999979511,
+      "peak_tree_mib": 301.48046875,
+      "sample_ms": 50,
+      "synthetic": true
+    },
+    {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "actual spawn home reader; four mutually exclusive document-derived states; no manual follow-up actions; grouped imports",
+        "second actual app process restores exact warehouse/revision versions and independent quantities"
+      ],
+      "screenshots": [
+        "home-reopen.png"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.15.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "源码运行",
+        "build_id": "未打包"
+      },
+      "phase": "reopen",
+      "ui_ticks": 22,
+      "max_ui_gap_seconds": 0.05092429998330772,
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": true,
+      "exe_sha256": null,
+      "elapsed_seconds": 2.6570000000065193,
+      "peak_tree_mib": 243.390625,
+      "sample_ms": 50,
+      "synthetic": true
+    }
+  ]
+}
