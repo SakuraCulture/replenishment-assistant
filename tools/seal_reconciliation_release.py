@@ -1,7 +1,7 @@
 """Seal exact tested 0.16.0 build; no remote actions or user data writes."""
 import hashlib,json,shutil,subprocess,zipfile
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1];Q=ROOT/'qa/reconciliation_016';DIST=ROOT/'交付_0.16.0_rc1';APP=DIST/'补货助手';REL=ROOT/'releases/0.16.0/rc1'
+ROOT=Path(__file__).resolve().parents[1];Q=ROOT/'qa/reconciliation_016';DIST=ROOT/'交付_0.16.0_rc2';APP=DIST/'补货助手';REL=ROOT/'releases/0.16.0/rc2'
 def sha(p):
     h=hashlib.sha256()
     with Path(p).open('rb') as f:
@@ -33,7 +33,7 @@ def main():
     for name in ('baseline.json','environment.json','units.txt','optimized-tests.txt'):shutil.copy2(Q/name,REL/name)
     save(REL/'input-hashes.json',frozen['inputs'])
     for name in ('home-exercise.png','lifecycle-form.png','preview-payment-save.png','preview-return-save.png'):shutil.copy2(Q/'exe-reconciliation'/name,REL/name)
-    files={p.relative_to(APP).as_posix():sha(p) for p in APP.rglob('*') if p.is_file()};save(REL/'files.json',files);target=DIST/'补货助手_0.16.0_rc1.zip'
+    files={p.relative_to(APP).as_posix():sha(p) for p in APP.rglob('*') if p.is_file()};save(REL/'files.json',files);target=DIST/'补货助手_0.16.0_rc2.zip'
     with zipfile.ZipFile(target,'x',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         for name in files:z.write(APP/name,'补货助手/'+name)
     with zipfile.ZipFile(target) as z:
