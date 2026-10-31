@@ -160,7 +160,7 @@ class AuditDialog(QDialog):
     def load(self):
         if self.disposed:return
         self.load_btn.setEnabled(False);self.load_btn.setText('正在读取依据…');self.loaded_key=None;self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在读取并校验当时快照…（可关闭取消，不必重复点击）');self.model.replace([])
-        scope=self.scope.currentText();sku=self.sku.text().strip();self.export_hint.setText(f'导出范围：本单 V{self.head["revision"]:03d} · {scope}'+(f' · 商品 {sku}' if scope not in ('单据概况','当时参数') else '')+' · 完整字段；不是加盟商确认单。')
+        scope=self.scope.currentText();sku=self.sku.text().strip();self.export_hint.setText(f'导出范围：本单 V{self.head["revision"]:03d} · {scope}'+(f' · 商品 {sku}' if scope not in ('单据概况','当时参数') else '')+' · 完整字段；不是签发单。')
         if scope not in ('单据概况','当时参数') and not any(r[0]==sku for r in self.product_model.rows):self.failed('请从左侧选择本单商品，或输入本单精确商品编码');return
         self.reader.request({'kind':'form','head':self.head,'scope':scope,'sku':sku},lambda value:self.ready(value,(scope,sku)),self.failed)
     def ready(self,value,key=None):

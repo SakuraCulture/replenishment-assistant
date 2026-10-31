@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from PySide6.QtCore import Qt,QSignalBlocker,QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QCheckBox,QFileDialog,QMessageBox,QTableWidgetItem,QGroupBox
+from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QCheckBox,QFileDialog,QMessageBox,QTableWidgetItem,QGroupBox,QWidget
 from ui_controls import button,label
 from business_ui import run,grid
 from runtime_support import Cancelled
@@ -86,12 +86,14 @@ class ArchiveBatchActions:
         for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发明细（内部）','signed')]:
             b=button(title,lambda checked=False,k=kind:self.export_archive_batch(k));row.addWidget(b);self.archive_export_buttons.append(b)
         layout.addLayout(row)
+        disclosure=QCheckBox('展开辅助导出与维护');layout.addWidget(disclosure)
+        self.archive_aux=QWidget();aux=QVBoxLayout(self.archive_aux);aux.setContentsMargins(0,0,0,0);layout.addWidget(self.archive_aux);self.archive_aux.hide();disclosure.toggled.connect(self.archive_aux.setVisible)
         lifecycle=QGroupBox('业务单据导出（使用已勾选仓单）');actions=QHBoxLayout(lifecycle)
         for title,kind in [('导出门店回传单','return'),('导出门店付款单','payment'),('导出门店实际收货单','receipt'),('导出生命周期对照','comparison')]:
             b=button(title,lambda checked=False,k=kind:self.export_lifecycle_batch(k));actions.addWidget(b);self.archive_export_buttons.append(b)
-        layout.addWidget(lifecycle)
-        extras=QHBoxLayout();self.reference_btn=button('导出商品资料核对表（加工）',lambda:self.export_archive_batch('reference'));extras.addWidget(self.reference_btn);extras.addStretch();layout.addLayout(extras)
-        maintenance=QGroupBox('维护管理');actions=QHBoxLayout(maintenance);self.trash_btn=button('移入回收站',lambda:self.change_archive_visibility(True));self.restore_btn=button('恢复归档',lambda:self.change_archive_visibility(False));self.restore_btn.hide();actions.addWidget(self.trash_btn);actions.addWidget(self.restore_btn);actions.addStretch();layout.addWidget(maintenance)
+        aux.addWidget(lifecycle)
+        extras=QHBoxLayout();self.reference_btn=button('导出商品资料核对表（加工）',lambda:self.export_archive_batch('reference'));extras.addWidget(self.reference_btn);extras.addStretch();aux.addLayout(extras)
+        maintenance=QGroupBox('维护管理');actions=QHBoxLayout(maintenance);self.trash_btn=button('移入回收站',lambda:self.change_archive_visibility(True));self.restore_btn=button('恢复归档',lambda:self.change_archive_visibility(False));self.restore_btn.hide();actions.addWidget(self.trash_btn);actions.addWidget(self.restore_btn);actions.addStretch();aux.addWidget(maintenance)
         self.archive_selection_note=label('已选 0 张仓单','muted');layout.addWidget(self.archive_selection_note)
         row=QHBoxLayout()
         for title,action in [('勾选本页',lambda:self.check_archive(self.archive_orders)),('勾选全部查询结果',lambda:self.check_archive([h for h,m in zip(self.archive_all,self.archive_matches) if m])),('清空全部勾选',self.clear_archive_selection),('已选明细',self.show_archive_selection)]:row.addWidget(button(title,action))
@@ -103,7 +105,9 @@ class ArchiveBatchActions:
             table.setItem(i,table.columnCount()-1,QTableWidgetItem(h.get('source_status','导出前核验')))
         col=table.columnCount();table.insertColumn(col);table.setHorizontalHeaderItem(col,QTableWidgetItem('查看'))
         for i,h in enumerate(self.archive_orders):table.setCellWidget(i,col,button('查看单据',lambda checked=False,head=dict(h):self.open_archive(head,'audit',self.archive_search.text().strip())))
-        del block;table.resizeColumnsToContents();self.selection_status()
+        del block;table.resizeColumnsToContents()
+        for i in range(table.columnCount()):table.setColumnHidden(i,False)
+        table.setColumnHidden(5,True);self.selection_status()
     def archive_check_changed(self,item):
         if item.column()!=0 or item.row()>=len(self.archive_orders):return
         h=self.archive_orders[item.row()];k=batch.key(h)
@@ -111,7 +115,7 @@ class ArchiveBatchActions:
         else:self.archive_checked.pop(k,None)
         self.selection_status()
     def selection_status(self):
-        hs=list(self.archive_checked.values());self.archive_selection_note.setText(f'已选 {len(hs)} 张仓单 · {len({h["store"] for h in hs})} 家店 · {len({h["day"] for h in hs})} 个业务日期；导出前核对确切修订与文件数')
+        hs=list(self.archive_checked.values());self.archive_selection_note.setText(f'已选 {len(hs)} 张仓单 · {len({h["store"] for h in hs})} 家店 · {len({h["day"] for h in hs})} 个业务日期；导出前核对订单范围与文件数')
         pending=getattr(self,'archive_query_pending',False);trash=bool(self.archive_trash.currentIndex())
         for b in [*self.archive_export_buttons,self.reference_btn]:b.setEnabled(bool(hs) and not trash and not pending)
         self.trash_btn.setVisible(not trash);self.restore_btn.setVisible(trash)

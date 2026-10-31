@@ -7,8 +7,8 @@ from structure_oracle import excel_snapshot
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def main():
     import argparse
-    ap=argparse.ArgumentParser();ap.add_argument('--qa',type=Path,required=True);a=ap.parse_args();q=a.qa.resolve()
-    old,new=q/'model_old',q/'model_new';oldcap=json.loads((old/'capture.json').read_text(encoding='utf-8'));newcap=json.loads((new/'capture.json').read_text(encoding='utf-8'));cases=[]
+    ap=argparse.ArgumentParser();ap.add_argument('--qa',type=Path,required=True);ap.add_argument('--old',default='model_old');ap.add_argument('--new',default='model_new');a=ap.parse_args();q=a.qa.resolve()
+    old,new=q/a.old,q/a.new;oldcap=json.loads((old/'capture.json').read_text(encoding='utf-8'));newcap=json.loads((new/'capture.json').read_text(encoding='utf-8'));cases=[]
     if oldcap['cases']!=newcap['cases']:raise ValueError('capture cases differ')
     def identity(x):
         if isinstance(x,dict):

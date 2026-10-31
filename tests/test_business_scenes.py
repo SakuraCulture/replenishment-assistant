@@ -31,6 +31,7 @@ class BusinessScenes(unittest.TestCase):
         w.show_section(3);w.show_section(4);w.show_section(3)
         self.assertEqual(w.followup.checked,{'sentinel':1})
         self.app.processEvents();self.assertEqual(w.recent.rowCount(),0)
+        w.tracking_stale=True;w.show_section(3);self.assertFalse(w.tracking_stale)
     def test_defaults_editor_has_no_current_apply(self):
         from parameter_ui import ParameterDialog
         from PySide6.QtWidgets import QPushButton

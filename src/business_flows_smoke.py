@@ -65,6 +65,7 @@ def start_smoke(app,win,args):
             start=time.perf_counter();win.export_current();timings['sign_export_seconds']=time.perf_counter()-start
             if state.get('automation_error'):raise AssertionError(state['automation_error'])
             if not list((out/'exports').glob('*.xlsx')):raise AssertionError('no signed files')
+            win.show_section(3);wait(lambda:len(win.followup.records)>2)
             checks.append('drag/drop automatically checked; configured stores selected, process queue computed two stores; sign and export to displayed default folder; persistent completion dialog')
             from lifecycle_batch_ui import import_batch
             state['mode']='cancel'

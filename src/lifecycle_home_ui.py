@@ -66,7 +66,7 @@ class LifecycleWidget(QWidget):
             if h['warehouse']=='旧版未标仓':notices.append('仓归属待核，不能自动关联')
             values=[h['day'],h['name']+'（'+h['store']+'）',h['warehouse'],h['number'],h['status'],*[('已导入' if h['present'][s] else '未导入') for s in service.STAGES],'；'.join(notices)]
             for j,x in enumerate(values,3):self.table.setItem(i,j,QTableWidgetItem(str(x)))
-            self.table.setCellWidget(i,1,button('查看生命周期',lambda checked=False,r=h:self.open_comparison(r)))
+            self.table.setCellWidget(i,1,button('查看订单详情',lambda checked=False,r=h:self.open_comparison(r)))
             recheck=h['next'] and h['present'][h['next']]
             b=button(('重新核对' if recheck else '导入')+TITLES[h['next']] if h['next'] else '无后续待办',lambda checked=False,r=h:self.next(r));b.setEnabled(h['next'] is not None and h['warehouse']!='旧版未标仓');self.table.setCellWidget(i,2,b)
         del blocker

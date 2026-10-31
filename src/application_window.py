@@ -40,7 +40,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         from lifecycle_home_ui import LifecycleWidget as FollowupWidget
         self.followup=FollowupWidget(self);hv.addWidget(self.followup,1)
         self.sections.addWidget(home);self.sections.addWidget(work)
-        archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('订单管理 · 每店每仓独立单据','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
+        archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('决策复查 · 查当时事实与数量变化','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
         filters=QHBoxLayout();self.archive_day=QComboBox();self.archive_day.addItem('全部日期','');self.archive_store=QComboBox();self.archive_store.addItem('全部门店','');filters.addWidget(label('业务日期'));filters.addWidget(self.archive_day);filters.addWidget(label('门店'));filters.addWidget(self.archive_store,1);filters.addWidget(button('清空条件',self.clear_archive_filters));av.addLayout(filters)
         self.archive_warehouse=QComboBox();self.archive_warehouse.addItem('全部仓','');self.archive_warehouse.addItems(['河北仓','山东仓','旧版未标仓']);filters.addWidget(self.archive_warehouse);self.archive_warehouse.currentIndexChanged.connect(self.filter_archive)
         self.archive_trash=QComboBox();self.archive_trash.addItems(['正常归档','回收站']);filters.addWidget(self.archive_trash);self.archive_trash.currentIndexChanged.connect(self.filter_archive)
@@ -49,8 +49,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         for field in (self.archive_from,self.archive_to):field.setPlaceholderText('YYYY-MM-DD');field.setMaximumWidth(145);field.textChanged.connect(self.filter_archive)
         dates.addWidget(self.archive_from);dates.addWidget(label('至'));dates.addWidget(self.archive_to);dates.addStretch();av.addLayout(dates)
         self.archive_search.setPlaceholderText('关键词可组合：门店 商品名 / 编码 / 单号（空格分开，回车立即查）');self.archive_search.setClearButtonEnabled(True);self.archive_search.returnPressed.connect(self.refresh_archive)
-        from lifecycle_ui import import_group
-        av.addWidget(import_group(self,self,refresh=self.refresh_archive,scope_provider=lambda:list(self.archive_checked.values())))
+        # Lifecycle actions live in the shared order detail and tracking scene.
         av.addWidget(label('数据导出 · 勾选仓单后使用下列独立入口','section'))
         self.setup_archive_exports(av)
         self.archive_table=QTableWidget();self.archive_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.archive_table.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.archive_orders[i]) if c else None);self.archive_table.itemChanged.connect(self.archive_check_changed);av.addWidget(self.archive_table,1)
@@ -129,7 +128,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
     def show_section(self,index):
         self.sections.setCurrentIndex(index)
         if index in (0,2) and not self.archive_all:self.refresh_archive()
-        if index==3 and hasattr(self,'followup') and not self.followup.records:self.followup.query()
+        if index==3 and hasattr(self,'followup') and (not self.followup.records or getattr(self,'tracking_stale',False)):
+            self.tracking_stale=False;self.followup.query(keep_page=True)
         if index==4:self.parameter_scene.refresh()
 
     def refresh_archive(self):
@@ -315,7 +315,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                         request(self,session,'review_export',path)
                 if box.clickedButton() is not accept:return
                 receipt=request(self,session,'confirm_normal',None)
-            self.saved_time=receipt['saved'];self.job_dirty=False;self.refresh_job_label();self.refresh_archive();self.status.setText('已自动归档：'+'；'.join(r['number']+f" V{r['revision']:03d}" for r in receipt['orders'])+'。可导出签发单。')
+            self.saved_time=receipt['saved'];self.job_dirty=False;self.tracking_stale=True;self.refresh_job_label();self.refresh_archive();self.status.setText('已自动归档：'+'；'.join(r['number']+f" V{r['revision']:03d}" for r in receipt['orders'])+'。可导出签发单。')
         except Cancelled:self.status.setText('已取消核对，原正常单与草稿保留。')
         except Exception as exc:self.failed('归档操作未完成，请在历史记录核对状态：'+str(exc))
 
@@ -372,6 +372,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         except Exception as exc:self.failed('导出操作未全部完成：'+str(exc))
 
     def delivery_done(self,receipt):
+        self.tracking_stale=True
+        self.refresh_archive()
         if receipt['signed']:
             self.saved_time=receipt['saved'];self.job_dirty=False;self.refresh_job_label()
         self.status.setText(f"已导出 {len(receipt['paths'])} 份分仓确认单；签发来源已归档。"+'；'.join(receipt['paths']))

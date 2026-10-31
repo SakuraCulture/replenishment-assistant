@@ -105,7 +105,12 @@ def issue_result(host, receipt):
     row = QHBoxLayout()
     if paths:
         row.addWidget(button('打开导出目录', lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(Path(paths[0]).parent)))))
-    row.addWidget(button('查看订单跟踪', lambda: (dialog.accept(), open_tracking(host))))
+    def current_orders():
+        dialog.accept();host.followup.start.setText(host.job_day);host.followup.end.setText(host.job_day);host.followup.search.clear();host.followup.checked.clear();host.tracking_stale=True
+        from PySide6.QtCore import QSignalBlocker
+        blocker=QSignalBlocker(host.followup.status);host.followup.status.setCurrentIndex(0);del blocker
+        open_tracking(host)
+    row.addWidget(button('查看当日订单跟踪', current_orders))
     row.addWidget(button('继续本次补货', dialog.accept))
     layout.addLayout(row)
     dialog.exec()

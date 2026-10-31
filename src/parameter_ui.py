@@ -166,7 +166,7 @@ class ParameterUi:
         p=self.preset_for(s);changed=json.loads(json.dumps(p['config']))!=json.loads(json.dumps(p.get('base_config',p['config'])))
         import store_defaults
         saved=getattr(self,'saved_store_defaults',{}).get(s)
-        state='历史快照' if self.readonly or getattr(self,'_restoring',False) else '已保存默认' if store_defaults.matches(saved,p,self.config_for(s),self.store_ui(s)) else '仅本次 · 默认未保存'
+        state='历史快照' if self.readonly or getattr(self,'_restoring',False) else '已保存默认' if store_defaults.matches(saved,p,self.config_for(s),self.store_ui(s)) else '本次与已保存默认不同' if saved else '仅本次 · 尚无门店默认'
         text=f"{p['name']} v{p['version']}"+(' · 本店调整' if changed else '')+' · '+state
         w=self.store_widgets[s];w['params'].setText('编辑参数');w['params'].setToolTip('编辑此店完整参数；不自动保存每日草稿')
         if 'param_status' in w:w['param_status'].setText(text);w['param_status'].setToolTip(text)

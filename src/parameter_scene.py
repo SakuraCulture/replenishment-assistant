@@ -117,6 +117,8 @@ class ParameterScene(QWidget):
         try:self.host.work_repository.save_stores(values,expected={s:old.get(s) for s in codes})
         except Exception as exc:QMessageBox.warning(self,'默认参数未保存',str(exc));return
         self.host.saved_store_defaults = {**old, **values}
+        for code in codes:
+            if code in self.host.store_widgets:self.host.refresh_parameter_label(code)
         self.refresh()
         self.note.setText(f'已保存 {len(codes)} 店默认参数。当前作业和历史签发未改变。')
 
