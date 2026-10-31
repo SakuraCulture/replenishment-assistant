@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "cases": 64,
+  "differences": [],
+  "coverage_rows": {
+    "one_box_applied": 32,
+    "inbound_cap": 32,
+    "budget_gap": 96,
+    "secondary": 96
+  },
+  "whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "strict_order_and_types": true
+}

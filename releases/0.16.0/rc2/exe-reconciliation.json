@@ -1,0 +1,74 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "drag/drop existing signed format, all three sheets, default-cancel preview leaves no version",
+        "single selected warehouse payment, exact original 13-column format; no extra store/unit/payment-time fields; no carton multiplication",
+        "invalid quantity rejected; blank receipt retry becomes zero with source preserved",
+        "upstream revision flags payment then receipt; explicit recheck preserves original quantities and creates new bound versions",
+        "return template export and lifecycle business exports; multi-select keeps warehouses separate; explicit scope confirmation",
+        "original signed/work/master source tables remain exact; historic returned original can be downloaded"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.16.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "built_at": "2026-10-31T12:41:10.1092971+08:00",
+        "build_id": "rc2",
+        "source_commit": "30732638842c5cc86116a84d576de9203d41bb53"
+      },
+      "phase": "exercise",
+      "ui_ticks": 66,
+      "max_ui_gap_seconds": 0.24276920000556856,
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": false,
+      "exe_sha256": "bf3a68226dd4a6f00c04554c7fdc4e78cd85ee1f7495bb6dc18499a478d96cc4",
+      "elapsed_seconds": 8.860000000044238,
+      "peak_tree_mib": 276.55859375,
+      "sample_ms": 50,
+      "synthetic": true
+    },
+    {
+      "passed": true,
+      "error": null,
+      "checks": [
+        "second native process restores versions, predecessor binding and independent quantities"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.16.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "built_at": "2026-10-31T12:41:10.1092971+08:00",
+        "build_id": "rc2",
+        "source_commit": "30732638842c5cc86116a84d576de9203d41bb53"
+      },
+      "phase": "reopen",
+      "ui_ticks": 16,
+      "max_ui_gap_seconds": 0.04148040001746267,
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": false,
+      "exe_sha256": "bf3a68226dd4a6f00c04554c7fdc4e78cd85ee1f7495bb6dc18499a478d96cc4",
+      "elapsed_seconds": 1.875,
+      "peak_tree_mib": 212.359375,
+      "sample_ms": 50,
+      "synthetic": true
+    }
+  ]
+}
