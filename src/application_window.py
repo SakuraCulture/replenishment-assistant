@@ -28,18 +28,18 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         try:self.new_focus=self.focus_repository.load()
         except Exception as exc:self.status.setText("新品关注清单未加载，请重新导入："+str(exc))
         work=self.takeCentralWidget();root=QWidget();v=QVBoxLayout(root);v.setContentsMargins(8,6,8,6);nav=QHBoxLayout();self.top_nav=[]
-        for i,title in enumerate(['首页','工作页','历史记录']):
+        for i,title in enumerate(['首页','工作页','订单管理']):
             b=button(title,lambda checked=False,n=i:self.show_section(n));self.top_nav.append(b);nav.addWidget(b)
         nav.addStretch();v.addLayout(nav);self.sections=QStackedWidget();v.addWidget(self.sections,1);self.setCentralWidget(root)
         home=QWidget();hv=QVBoxLayout(home);hv.setContentsMargins(36,26,36,26);hv.addWidget(label('今天的补货，从这里开始','title'));self.home_status=label('','section');hv.addWidget(self.home_status)
         hr=QHBoxLayout();hr.addWidget(button('进入工作页',lambda:self.show_section(1),True));hr.addWidget(button('继续已保存的今日草稿',self.resume_today));hr.addWidget(button('查询历史正常单',lambda:self.show_section(2)));hr.addWidget(button('数据维护',self.storage_copy));hv.addLayout(hr)
-        hv.addWidget(label('保存草稿用于续做；导出时确认并自动归档，供加盟商核对。每天每店仅一张当前正常单。','muted'))
+        hv.addWidget(label('计算后确认归档即签发；门店确认单按仓导出。回传、付款、实际收货在订单生命周期中独立留存。','muted'))
         self.recent=QTableWidget();self.recent.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.recent.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.recent_orders[i]));hv.addWidget(self.recent,1)
         self.recent.hide();hv.removeWidget(self.recent)
-        from followup_ui import FollowupWidget
+        from lifecycle_home_ui import LifecycleWidget as FollowupWidget
         self.followup=FollowupWidget(self);hv.addWidget(self.followup,1)
         self.sections.addWidget(home);self.sections.addWidget(work)
-        archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('历史归档 · 每店每仓独立单据','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
+        archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('订单管理 · 每店每仓独立单据','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
         filters=QHBoxLayout();self.archive_day=QComboBox();self.archive_day.addItem('全部日期','');self.archive_store=QComboBox();self.archive_store.addItem('全部门店','');filters.addWidget(label('业务日期'));filters.addWidget(self.archive_day);filters.addWidget(label('门店'));filters.addWidget(self.archive_store,1);filters.addWidget(button('清空条件',self.clear_archive_filters));av.addLayout(filters)
         self.archive_warehouse=QComboBox();self.archive_warehouse.addItem('全部仓','');self.archive_warehouse.addItems(['河北仓','山东仓','旧版未标仓']);filters.addWidget(self.archive_warehouse);self.archive_warehouse.currentIndexChanged.connect(self.filter_archive)
         self.archive_trash=QComboBox();self.archive_trash.addItems(['正常归档','回收站']);filters.addWidget(self.archive_trash);self.archive_trash.currentIndexChanged.connect(self.filter_archive)
@@ -48,12 +48,15 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         for field in (self.archive_from,self.archive_to):field.setPlaceholderText('YYYY-MM-DD');field.setMaximumWidth(145);field.textChanged.connect(self.filter_archive)
         dates.addWidget(self.archive_from);dates.addWidget(label('至'));dates.addWidget(self.archive_to);dates.addStretch();av.addLayout(dates)
         self.archive_search.setPlaceholderText('关键词可组合：门店 商品名 / 编码 / 单号（空格分开，回车立即查）');self.archive_search.setClearButtonEnabled(True);self.archive_search.returnPressed.connect(self.refresh_archive)
+        from lifecycle_ui import import_group
+        av.addWidget(import_group(self,self,refresh=self.refresh_archive))
+        av.addWidget(label('数据导出 · 勾选仓单后使用下列独立入口','section'))
         self.setup_archive_exports(av)
         self.archive_table=QTableWidget();self.archive_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.archive_table.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.archive_orders[i]) if c else None);self.archive_table.itemChanged.connect(self.archive_check_changed);av.addWidget(self.archive_table,1)
         self.archive_note=label('','muted');av.addWidget(self.archive_note)
         paging=QHBoxLayout();paging.addWidget(button('上一页',lambda:self.archive_turn(-1)));paging.addWidget(button('下一页',lambda:self.archive_turn(1)));av.addLayout(paging)
-        row=QHBoxLayout();row.addWidget(label('单据查看请使用每行的“查看单据”；批量操作仅认勾选。','muted'));row.addWidget(button('批量导入加盟商回传',self.import_merchant_returns));row.addWidget(button('查看操作记录',self.show_events));row.addWidget(button('刷新',self.refresh_archive));av.addLayout(row);av.addWidget(label('双击查看：签发快照、历史修订、逐商品数量和来源审计。历史页不改今日工作区。','muted'));self.sections.addWidget(archive)
-        self.overview_page.layout().addWidget(label('加盟商用途：制作确认单会先核对签发变化；内部核对文件请使用上方内部明细入口。','muted'));actions=QHBoxLayout();self.new_products_btn=button('选择门店并安排新品',lambda:self.choose_new_products(False));actions.addWidget(self.new_products_btn);self.issue_btn=button('仅确认归档（不导出）',self.confirm_normal);actions.addWidget(self.issue_btn);self.merchant_btn=button('制作加盟商确认单',self.export_current,True);actions.addWidget(self.merchant_btn);self.overview_page.layout().addLayout(actions)
+        row=QHBoxLayout();row.addWidget(label('单据查看请使用每行的“查看单据”；批量操作仅认勾选。','muted'));row.addWidget(button('查看操作记录',self.show_events));row.addWidget(button('刷新',self.refresh_archive));av.addLayout(row);av.addWidget(label('双击查看：签发快照、历史修订、逐商品数量和来源审计。历史页不改今日工作区。','muted'));self.sections.addWidget(archive)
+        self.overview_page.layout().addWidget(label('加盟商用途：制作确认单会先核对签发变化；内部核对文件请使用上方内部明细入口。','muted'));actions=QHBoxLayout();self.new_products_btn=button('选择门店并安排新品',lambda:self.choose_new_products(False));actions.addWidget(self.new_products_btn);self.issue_btn=button('仅确认归档（不导出）',self.confirm_normal);actions.addWidget(self.issue_btn);self.merchant_btn=button('导出门店确认单',self.export_current,True);actions.addWidget(self.merchant_btn);self.overview_page.layout().addLayout(actions)
         self.detail_new_btn=button('安排本店新品',lambda:self.choose_new_products(True));self.pages.widget(4).layout().insertWidget(1,self.detail_new_btn)
         self.mode.addItems(['动销补货','新品候选','新品推荐','缺货恢复及其他','在途衔接风险'])
         self.save_job_btn.setText('保存草稿');self.history_btn.setText('草稿记录');self.batch_export.setText('导出本批内部明细');self.export_all.setText('导出本店全量内部明细');self.export_filtered.setText('导出筛选内部明细')
@@ -301,7 +304,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                         request(self,session,'review_export',path)
                 if box.clickedButton() is not accept:return
                 receipt=request(self,session,'confirm_normal',None)
-            self.saved_time=receipt['saved'];self.job_dirty=False;self.refresh_job_label();self.refresh_archive();self.status.setText('已自动归档：'+'；'.join(r['number']+f" V{r['revision']:03d}" for r in receipt['orders'])+'。可导出加盟商确认单。')
+            self.saved_time=receipt['saved'];self.job_dirty=False;self.refresh_job_label();self.refresh_archive();self.status.setText('已自动归档：'+'；'.join(r['number']+f" V{r['revision']:03d}" for r in receipt['orders'])+'。可导出门店确认单。')
         except Cancelled:self.status.setText('已取消核对，原正常单与草稿保留。')
         except Exception as exc:self.failed('归档操作未完成，请在历史记录核对状态：'+str(exc))
 
@@ -325,7 +328,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                 if any(not p['same'] for p in plans):
                     tail={**full,'results':{s:r for s,r in full['results'].items() if s not in codes}}
                     request(self,session,'delivery_expand',[tail,list(full['results'])])
-                    box=QMessageBox(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出加盟商单');lines=[]
+                    box=QMessageBox(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出门店确认单');lines=[]
                     for p in plans:
                         old=p['old'];action='沿用已归档修订' if p['same'] else f"覆盖当天正常单 V{old['revision']:03d} → V{old['revision']+1:03d}（旧版保留）" if old else '首次签发 V001'
                         lines.append(p['name']+' ('+p['store']+')：'+action+f"；¥{p['amount']:,.2f}")
@@ -347,7 +350,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                     if not confirm(self,'导出已签发版本','不新增签发修订；按以下原修订生成文件：\n'+'\n'.join(p['name']+f" · V{p['old']['revision']:03d} · {len(p['files'])}份" for p in plans)):return
                 files=[f for p in plans for f in p['files']]
                 if len(files)==1:
-                    path,_=QFileDialog.getSaveFileName(self,'导出本仓加盟商确认单',files[0]['filename'],'Excel (*.xlsx)')
+                    path,_=QFileDialog.getSaveFileName(self,'导出本仓门店确认单',files[0]['filename'],'Excel (*.xlsx)')
                     if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
                 else:path=QFileDialog.getExistingDirectory(self,'选择批量确认单导出文件夹')
                 if not path:return
@@ -377,7 +380,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             warehouses=dialog.warehouses().get(order['store'],[])
         if not warehouses:return
         if len(warehouses)==1:
-            path,_=QFileDialog.getSaveFileName(self,'导出本仓加盟商确认单',normal_exports.filename(order,warehouses[0]),'Excel (*.xlsx)')
+            path,_=QFileDialog.getSaveFileName(self,'导出本仓门店确认单',normal_exports.filename(order,warehouses[0]),'Excel (*.xlsx)')
             if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
         else:path=QFileDialog.getExistingDirectory(self,'选择分仓确认单导出文件夹')
         if not path:return

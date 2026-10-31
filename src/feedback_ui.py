@@ -49,8 +49,12 @@ from interaction_rules import validate_return_scope
 
 
 class FeedbackDialog(QDialog):
-    def __init__(self,parent,host,head):
+    def __init__(self,parent,host,head,readonly=False):
         super().__init__(parent);self.host=host;self.head=head;self.setWindowTitle(head['number']+f" V{head['revision']:03d} · 门店回传");self.resize(1150,700);v=QVBoxLayout(self);self.note=label('');v.addWidget(self.note);self.version=QComboBox();v.addWidget(self.version);self.table,self.model=grid(self,HEADERS);v.addWidget(self.table,1);row=QHBoxLayout();row.addWidget(button('导入本仓单回传' if head.get('warehouse') else '批量导入加盟商回传',self.import_files));row.addWidget(button('下载门店回传模板',self.template));row.addWidget(button('查看回传附件',self.sources));row.addWidget(button('导出本仓单回传对照',self.export));row.addWidget(button('关闭',self.accept));v.addLayout(row);self.version.currentIndexChanged.connect(self.show_version);self.refresh()
+        if readonly:
+            from PySide6.QtWidgets import QPushButton
+            for b in self.findChildren(QPushButton):
+                if b.text().startswith('导入'):b.setEnabled(False);b.setToolTip('历史兼容只读；新回传请使用订单生命周期中的导入门店确认单。')
     def refresh(self):
         self.data=run(self,feedback.view,(self.host.work_repository.path,self.head),'读取门店确认记录');self.version.blockSignals(True);self.version.clear()
         for ver,saved,p in self.data['history']:self.version.addItem(f'回传第{ver}版 · {saved}',p)

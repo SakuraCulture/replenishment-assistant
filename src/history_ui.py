@@ -38,8 +38,8 @@ class ArchiveDialog(QDialog):
         for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发建议','signed')]:
             b=button(title,lambda checked=False,k=kind:self.export_archive(k));exports.addWidget(b);self.archive_export_buttons.append(b)
         self.archive_export_btn=self.archive_export_buttons[0];v.insertLayout(1,exports)
-        row=QHBoxLayout();self.export_btn=button('导出此修订确认单',self.export);self.audit_btn=button('查看计算依据',self.audit);row.addWidget(self.export_btn);row.addWidget(self.audit_btn);row.addWidget(button('查看门店回传',self.feedback));row.addWidget(button('此单操作日志',self.events));row.addWidget(button('关闭',self.reject));v.addLayout(row)
-        row.insertWidget(3,button('查看实际下单对照',self.purchases))
+        row=QHBoxLayout();self.export_btn=button('导出门店确认单',self.export);self.audit_btn=button('查看计算依据',self.audit);row.addWidget(self.export_btn);row.addWidget(self.audit_btn);row.addWidget(button('此单操作日志',self.events));row.addWidget(button('关闭',self.reject));v.addLayout(row)
+        row.insertWidget(3,button('查看订单生命周期',self.purchases))
         self.debounce=QTimer(self);self.debounce.setSingleShot(True);self.debounce.setInterval(275);self.debounce.timeout.connect(self.filter);self.search.textChanged.connect(lambda _:self.debounce.start());self.search.returnPressed.connect(self.filter);self.rev.currentIndexChanged.connect(self.load);self.load()
     def load(self):
         if self.disposed:return
@@ -79,8 +79,8 @@ class ArchiveDialog(QDialog):
         except Exception as exc:QMessageBox.warning(self,'未打开回传',str(exc))
     def purchases(self):
         if not self.selected:return
-        from purchase_ui import ComparisonDialog
-        try:ComparisonDialog(self,self.host,self.selected).exec()
+        from lifecycle_ui import LifecycleDialog
+        try:LifecycleDialog(self,self.host,self.selected).exec()
         except Exception as exc:QMessageBox.warning(self,'未打开执行对照',str(exc))
     def audit(self):
         if not self.selected:return
