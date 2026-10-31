@@ -1,0 +1,13 @@
+......................................................................................................................................................ERROR:root:诊断 c25128d1ac25 阶段=商品计算 门店=T 商品=SKU 文件= 行=2
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\input_adapter.py", line 183, in execute_one
+    try:d=calculate(inp,rules)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\model.py", line 260, in calculate
+    raise ValueError('趋势支撑无法确定：前7天日均Z为0，但早期销量差值非0；请核对日销/周销/月销精度，不自动回退预测')
+ValueError: 趋势支撑无法确定：前7天日均Z为0，但早期销量差值非0；请核对日销/周销/月销精度，不自动回退预测
+....................
+----------------------------------------------------------------------
+Ran 170 tests in 19.466s
+
+OK

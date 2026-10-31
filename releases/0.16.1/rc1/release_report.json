@@ -1,0 +1,148 @@
+{
+  "passed": true,
+  "baseline_commit": "0d1753d330f874a831fc74cb4fa874219f0fa12b",
+  "build_commit": "45d63f11c59b4a19607c4754c2c061220da3ae96",
+  "version": "0.16.1",
+  "branch": "fix/lifecycle-simple-import-0.16.1",
+  "model_version": "0.3.3-rules",
+  "exe_sha256": "8931a748ac24b91dd7e8103b72237b6bf5ec9629bef8a6a90d87f4ff7673dbb6",
+  "zip_sha256": "d4a4544b2fc918ab645c3cc800cf317eb299ed4048cbd1c4e2ca133929db7ee5",
+  "file_count": 210,
+  "old_delivery_files_checked": 206,
+  "old_delivery_differences": [],
+  "core_hashes": {
+    "model.py": {
+      "old": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "new": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584"
+    },
+    "allocation.py": {
+      "old": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "new": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "one_box_exception.py": {
+      "old": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "new": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "default_config.json": {
+      "old": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "new": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "old": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "new": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    },
+    "engine.py": {
+      "old": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028",
+      "new": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028"
+    },
+    "input_adapter.py": {
+      "old": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+      "new": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700"
+    },
+    "batch_service.py": {
+      "old": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12",
+      "new": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12"
+    },
+    "warehouse_catalog.py": {
+      "old": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b",
+      "new": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b"
+    },
+    "new_products.py": {
+      "old": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232",
+      "new": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232"
+    },
+    "result_semantics.py": {
+      "old": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92",
+      "new": "f244f64cff37cf324f581490b8dec6f29eaf5aff32e6de6abd5bf2f42a983e92"
+    },
+    "parameter_schema.py": {
+      "old": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+      "new": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85"
+    },
+    "normal_exports.py": {
+      "old": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594",
+      "new": "39475cc2a94b456f0bafcd2553f353d85368773bc431af22723b65c6d03d3594"
+    },
+    "archive_batch.py": {
+      "old": "bf3f77feff7b8f7e662dfe10fc12d02fb8325cabaad50231db02a5c325d59d6a",
+      "new": "bf3f77feff7b8f7e662dfe10fc12d02fb8325cabaad50231db02a5c325d59d6a"
+    },
+    "archive_exports.py": {
+      "old": "6f1b76b0bf6fcaa0edb973b2b97954c084aa5f0c4306e28f526b17d6dfafc43c",
+      "new": "6f1b76b0bf6fcaa0edb973b2b97954c084aa5f0c4306e28f526b17d6dfafc43c"
+    },
+    "xlsx_exports.py": {
+      "old": "ce07a425e57039fe2e5b509db4f5416377d490dfa9d6d258654ba2bdf7986b45",
+      "new": "ce07a425e57039fe2e5b509db4f5416377d490dfa9d6d258654ba2bdf7986b45"
+    },
+    "merchant_feedback.py": {
+      "old": "5c3a51ff266068a42c6a6df6fb65d3f8a3b1a396afa6c23155967695347563eb",
+      "new": "5c3a51ff266068a42c6a6df6fb65d3f8a3b1a396afa6c23155967695347563eb"
+    },
+    "storage_chunks.py": {
+      "old": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8",
+      "new": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8"
+    },
+    "work_repository.py": {
+      "old": "4c44b838564c31e4c2fe585f52f3ec8a9800ec10f9c888422e81b074041d4d17",
+      "new": "4c44b838564c31e4c2fe585f52f3ec8a9800ec10f9c888422e81b074041d4d17"
+    },
+    "normal_orders.py": {
+      "old": "a25db1eb5b4e7b637db91572efd106d6305920b555ebd98a7e1a612e9f676273",
+      "new": "a25db1eb5b4e7b637db91572efd106d6305920b555ebd98a7e1a612e9f676273"
+    },
+    "normal_delivery.py": {
+      "old": "a2d9c647d64691d9790fa76722f8da6803d9328ed38a642bf83b0b6a32b39bae",
+      "new": "a2d9c647d64691d9790fa76722f8da6803d9328ed38a642bf83b0b6a32b39bae"
+    },
+    "work_io_process.py": {
+      "old": "bbc8388b8ea2b91205c3c03e0ec42f23515c7c013fd1c3eed210a0e00c503254",
+      "new": "bbc8388b8ea2b91205c3c03e0ec42f23515c7c013fd1c3eed210a0e00c503254"
+    },
+    "history_forms.py": {
+      "old": "43a13d275164cccf49079513f07f798a4ce6239676ad68e55795c4e550ef165a",
+      "new": "43a13d275164cccf49079513f07f798a4ce6239676ad68e55795c4e550ef165a"
+    },
+    "source_archive.py": {
+      "old": "2a5b6dbace2c08eb5ea3517b51b08b41ece1649383731b3cf603a7b601bb111a",
+      "new": "2a5b6dbace2c08eb5ea3517b51b08b41ece1649383731b3cf603a7b601bb111a"
+    },
+    "lifecycle_rules.py": {
+      "old": "db165d3f585e3dc6ede4726d5acd774322f8eb733772dc985e7e35cf6ae8813d",
+      "new": "db165d3f585e3dc6ede4726d5acd774322f8eb733772dc985e7e35cf6ae8813d"
+    },
+    "lifecycle_exports.py": {
+      "old": "ff8b62e8e578dda6eb7fe3077751b0c80a6f86468d8975bc28efc488c861e3d7",
+      "new": "ff8b62e8e578dda6eb7fe3077751b0c80a6f86468d8975bc28efc488c861e3d7"
+    }
+  },
+  "internal_lifecycle_functions_unchanged": {
+    "prepare": true,
+    "commit": true,
+    "snapshot": true,
+    "recheck": true,
+    "upstream": true,
+    "fingerprint": true,
+    "make_plan": true
+  },
+  "tests_normal": 170,
+  "tests_optimized": 170,
+  "original_exports_cases": 12,
+  "original_exports_differences": 0,
+  "native_launches": 4,
+  "allowed_changes": [
+    "public import associates current signing by warehouse order number; supplied revision does not choose target",
+    "return minimal template 5 labelled fields; receipt removes system fields; payment original template retained",
+    "mapping UI only business fields; automatic predecessor quantities and differences; no revision picker",
+    "public homepage/current order labels omit revision; private audit and historical snapshot formats preserved",
+    "application version and QA instrumentation"
+  ],
+  "limits": [
+    "No payment batch import added",
+    "No generic header-row detection or universal mappings added",
+    "Actual payment ERP workbook not provided; screenshot-header synthetic fixtures only",
+    "Old revisions/data preserved; current signing can have changed since an old return file was sent, so whole-order preview remains required",
+    "This focused patch reruns 170 unit tests, original export equivalence and native workflows; it does not claim a new 14244-row/performance benchmark run"
+  ],
+  "no_push_or_merge": true
+}
