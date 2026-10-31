@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "baseline_commit": "7360b03e8aab129f6ff2d28e43e8013f76d153a1",
+  "build_commit": "c24202fc70178dcea4decee04eb40178f2ec3217",
+  "documentation_commit": "a0596459660684f19655679d6d1de997da6db2c7",
+  "branch": "feat/preissue-adjustment-0.18.0",
+  "version": "0.18.0",
+  "model_version": "0.3.3-rules",
+  "exe_sha256": "e3ff8849273026e9a9cf0686dbdeef71988ad3e2281cc9f5adaf9abe663128f6",
+  "zip_sha256": "a7c5b183eb4e69ccae923cae01235b700ece437a0403484a97de6aa6a8f20cac",
+  "file_count": 209,
+  "protected_files_verified": 239,
+  "core_hashes": {
+    "model.py": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+    "one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "quantity_contract.py": "930bd6fd709ba4684479dcea37bfc1e57663c4b3ce0241f879f96754eac0d334",
+    "input_adapter.py": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+    "warehouse_catalog.py": "fe0a7edee3b367b49fd8a57949898d81a11d2cbcbe6d11536e1943fd2a75e49b",
+    "parameter_schema.py": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+    "new_products.py": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232"
+  },
+  "normal_tests": 254,
+  "optimized_tests": 254,
+  "strict_cases": 30,
+  "raw_differences": [],
+  "controlled_parallel_passed": true,
+  "export_cases": 12,
+  "exe_launches": 4,
+  "no_push_or_merge": true,
+  "adjustment_evidence": "adjusted-real.json",
+  "notes": [
+    "Model/defaults unchanged; only explicit final edits alter quantities and corresponding execution audit.",
+    "Original candidate rc1 was not delivered; rc2 includes strict focus-value validation.",
+    "No cross-machine build or human usability claim.",
+    "Old EXEs must not edit or re-sign new final-adjustment drafts.",
+    "No self-generated input copies included in the application ZIP."
+  ]
+}

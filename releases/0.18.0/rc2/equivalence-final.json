@@ -1,0 +1,147 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "name": "real_loaded",
+      "differences": []
+    },
+    {
+      "name": "real_None",
+      "differences": []
+    },
+    {
+      "name": "real_0",
+      "differences": []
+    },
+    {
+      "name": "real_3000",
+      "differences": []
+    },
+    {
+      "name": "real_5000",
+      "differences": []
+    },
+    {
+      "name": "real_10000",
+      "differences": []
+    },
+    {
+      "name": "real_no_exception",
+      "differences": []
+    },
+    {
+      "name": "real_custom",
+      "differences": []
+    },
+    {
+      "name": "real_batch_loaded",
+      "differences": []
+    },
+    {
+      "name": "real_batch_result",
+      "differences": []
+    },
+    {
+      "name": "dual_loaded",
+      "differences": []
+    },
+    {
+      "name": "dual_serial_QA_A",
+      "differences": []
+    },
+    {
+      "name": "dual_serial_QA_B",
+      "differences": []
+    },
+    {
+      "name": "dual_parallel",
+      "differences": []
+    },
+    {
+      "name": "single_route",
+      "differences": []
+    },
+    {
+      "name": "single_catalog",
+      "differences": []
+    },
+    {
+      "name": "edge_loaded",
+      "differences": []
+    },
+    {
+      "name": "edge_result",
+      "differences": []
+    },
+    {
+      "name": "conflicts",
+      "differences": []
+    },
+    {
+      "name": "conflict_blocked",
+      "differences": []
+    },
+    {
+      "name": "conflict_resolved",
+      "differences": []
+    },
+    {
+      "name": "legacy_frozen_loaded",
+      "differences": []
+    },
+    {
+      "name": "legacy_frozen_result",
+      "differences": []
+    },
+    {
+      "name": "errors",
+      "differences": []
+    },
+    {
+      "name": "restored_payload",
+      "differences": []
+    },
+    {
+      "name": "preview",
+      "differences": []
+    },
+    {
+      "name": "parameter_trial",
+      "differences": []
+    },
+    {
+      "name": "batch.xlsx",
+      "differences": []
+    },
+    {
+      "name": "filtered.xlsx",
+      "differences": []
+    },
+    {
+      "name": "real.xlsx",
+      "differences": []
+    }
+  ],
+  "whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "core_unchanged": {
+    "model.py": true,
+    "one_box_exception.py": true,
+    "allocation.py": true,
+    "default_config.json": true,
+    "default_must_sell.json": true,
+    "quantity_contract.py": true,
+    "input_adapter.py": true,
+    "warehouse_catalog.py": true,
+    "parameter_schema.py": true,
+    "new_products.py": true
+  },
+  "changed_protected": [],
+  "baseline_commit": "7360b03e8aab129f6ff2d28e43e8013f76d153a1",
+  "comparison": "Exact values, types, full records, source and dictionary/list order; no SKU reordering."
+}

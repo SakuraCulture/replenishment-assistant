@@ -1,0 +1,461 @@
+{
+  "runs": {
+    "old": [
+      {
+        "timing": {
+          "save_seconds": 1.3892680999997538,
+          "prepare_seconds": 1.355985000000146,
+          "archive_seconds": 3.951032099999793,
+          "export_seconds": 1.9093133000005764,
+          "total_seconds": 8.605718500000876,
+          "peak_tree_mib": 576.8125
+        },
+        "rows": 14244,
+        "summary": {
+          "rows": 14244,
+          "local": 5161,
+          "issues": 1,
+          "calculable": 9083,
+          "positive": 430,
+          "amount": 12268.87,
+          "calculated_positive": 1046,
+          "calculated_amount": 23833.55,
+          "excluded": 3269,
+          "excluded_positive": 616,
+          "excluded_amount": 11564.68,
+          "unpriced": 0,
+          "candidate_amount": 12268.87,
+          "must_amount": 6899.18,
+          "must_candidate_amount": 6899.18,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 8,
+          "extra": 378.8
+        },
+        "files": [
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\old-0\\河北仓.xlsx",
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\old-0\\山东仓.xlsx"
+        ],
+        "sample_ms": 20,
+        "adjusted_products": 0
+      },
+      {
+        "timing": {
+          "save_seconds": 1.4888109999992594,
+          "prepare_seconds": 1.3638806999988446,
+          "archive_seconds": 3.867955899999288,
+          "export_seconds": 1.8571901000013895,
+          "total_seconds": 8.577959099999134,
+          "peak_tree_mib": 573.953125
+        },
+        "rows": 14244,
+        "summary": {
+          "rows": 14244,
+          "local": 5161,
+          "issues": 1,
+          "calculable": 9083,
+          "positive": 430,
+          "amount": 12268.87,
+          "calculated_positive": 1046,
+          "calculated_amount": 23833.55,
+          "excluded": 3269,
+          "excluded_positive": 616,
+          "excluded_amount": 11564.68,
+          "unpriced": 0,
+          "candidate_amount": 12268.87,
+          "must_amount": 6899.18,
+          "must_candidate_amount": 6899.18,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 8,
+          "extra": 378.8
+        },
+        "files": [
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\old-1\\河北仓.xlsx",
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\old-1\\山东仓.xlsx"
+        ],
+        "sample_ms": 20,
+        "adjusted_products": 0
+      },
+      {
+        "timing": {
+          "save_seconds": 1.310311699999147,
+          "prepare_seconds": 1.3565237000002526,
+          "archive_seconds": 3.914187899999888,
+          "export_seconds": 1.9048351000001276,
+          "total_seconds": 8.4859890000007,
+          "peak_tree_mib": 574.5859375
+        },
+        "rows": 14244,
+        "summary": {
+          "rows": 14244,
+          "local": 5161,
+          "issues": 1,
+          "calculable": 9083,
+          "positive": 430,
+          "amount": 12268.87,
+          "calculated_positive": 1046,
+          "calculated_amount": 23833.55,
+          "excluded": 3269,
+          "excluded_positive": 616,
+          "excluded_amount": 11564.68,
+          "unpriced": 0,
+          "candidate_amount": 12268.87,
+          "must_amount": 6899.18,
+          "must_candidate_amount": 6899.18,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 8,
+          "extra": 378.8
+        },
+        "files": [
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\old-2\\河北仓.xlsx",
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\old-2\\山东仓.xlsx"
+        ],
+        "sample_ms": 20,
+        "adjusted_products": 0
+      }
+    ],
+    "new": [
+      {
+        "timing": {
+          "save_seconds": 1.3398059999999532,
+          "prepare_seconds": 1.3463795999996364,
+          "archive_seconds": 3.8889712000000145,
+          "export_seconds": 1.8694089999989956,
+          "total_seconds": 8.444705399999293,
+          "peak_tree_mib": 586.45703125
+        },
+        "rows": 14244,
+        "summary": {
+          "rows": 14244,
+          "local": 5161,
+          "issues": 1,
+          "calculable": 9083,
+          "positive": 430,
+          "amount": 12268.87,
+          "calculated_positive": 1046,
+          "calculated_amount": 23833.55,
+          "excluded": 3269,
+          "excluded_positive": 616,
+          "excluded_amount": 11564.68,
+          "unpriced": 0,
+          "candidate_amount": 12268.87,
+          "must_amount": 6899.18,
+          "must_candidate_amount": 6899.18,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 8,
+          "extra": 378.8
+        },
+        "files": [
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\new-0\\河北仓.xlsx",
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\new-0\\山东仓.xlsx"
+        ],
+        "sample_ms": 20,
+        "adjusted_products": 0
+      },
+      {
+        "timing": {
+          "save_seconds": 1.339149700001144,
+          "prepare_seconds": 1.4043882999994821,
+          "archive_seconds": 3.958363100000497,
+          "export_seconds": 1.85461579999901,
+          "total_seconds": 8.556660500000362,
+          "peak_tree_mib": 581.3359375
+        },
+        "rows": 14244,
+        "summary": {
+          "rows": 14244,
+          "local": 5161,
+          "issues": 1,
+          "calculable": 9083,
+          "positive": 430,
+          "amount": 12268.87,
+          "calculated_positive": 1046,
+          "calculated_amount": 23833.55,
+          "excluded": 3269,
+          "excluded_positive": 616,
+          "excluded_amount": 11564.68,
+          "unpriced": 0,
+          "candidate_amount": 12268.87,
+          "must_amount": 6899.18,
+          "must_candidate_amount": 6899.18,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 8,
+          "extra": 378.8
+        },
+        "files": [
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\new-1\\河北仓.xlsx",
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\new-1\\山东仓.xlsx"
+        ],
+        "sample_ms": 20,
+        "adjusted_products": 0
+      },
+      {
+        "timing": {
+          "save_seconds": 1.346487500000876,
+          "prepare_seconds": 1.3665622000007716,
+          "archive_seconds": 3.9160592000007455,
+          "export_seconds": 1.8709159000009095,
+          "total_seconds": 8.500139699999636,
+          "peak_tree_mib": 576.76171875
+        },
+        "rows": 14244,
+        "summary": {
+          "rows": 14244,
+          "local": 5161,
+          "issues": 1,
+          "calculable": 9083,
+          "positive": 430,
+          "amount": 12268.87,
+          "calculated_positive": 1046,
+          "calculated_amount": 23833.55,
+          "excluded": 3269,
+          "excluded_positive": 616,
+          "excluded_amount": 11564.68,
+          "unpriced": 0,
+          "candidate_amount": 12268.87,
+          "must_amount": 6899.18,
+          "must_candidate_amount": 6899.18,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 8,
+          "extra": 378.8
+        },
+        "files": [
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\new-2\\河北仓.xlsx",
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\new-2\\山东仓.xlsx"
+        ],
+        "sample_ms": 20,
+        "adjusted_products": 0
+      }
+    ],
+    "adjusted": [
+      {
+        "timing": {
+          "preview_seconds": 1.3435840999991342,
+          "save_seconds": 1.368144799998845,
+          "prepare_seconds": 4.176670499999091,
+          "archive_seconds": 6.500430199999755,
+          "export_seconds": 1.8542147999996814,
+          "total_seconds": 15.274030500000663,
+          "peak_tree_mib": 581.87890625
+        },
+        "rows": 14244,
+        "summary": {
+          "rows": 14244,
+          "local": 5161,
+          "issues": 1,
+          "calculable": 9083,
+          "positive": 420,
+          "amount": 11297.89,
+          "calculated_positive": 1046,
+          "calculated_amount": 23833.55,
+          "excluded": 3269,
+          "excluded_positive": 616,
+          "excluded_amount": 11564.68,
+          "unpriced": 0,
+          "candidate_amount": 11297.89,
+          "must_amount": 5974.48,
+          "must_candidate_amount": 5974.48,
+          "budget_deferred": 0,
+          "holding_gaps": 4,
+          "exception": 8,
+          "extra": 378.8
+        },
+        "files": [
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\adjusted-0\\河北仓.xlsx",
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\adjusted-0\\山东仓.xlsx"
+        ],
+        "sample_ms": 20,
+        "adjusted_products": 10
+      },
+      {
+        "timing": {
+          "preview_seconds": 1.345267699998658,
+          "save_seconds": 1.3019425999991654,
+          "prepare_seconds": 3.91656839999996,
+          "archive_seconds": 6.4846346000013,
+          "export_seconds": 1.9160783999996056,
+          "total_seconds": 14.994688999999198,
+          "peak_tree_mib": 588.54296875
+        },
+        "rows": 14244,
+        "summary": {
+          "rows": 14244,
+          "local": 5161,
+          "issues": 1,
+          "calculable": 9083,
+          "positive": 420,
+          "amount": 11297.89,
+          "calculated_positive": 1046,
+          "calculated_amount": 23833.55,
+          "excluded": 3269,
+          "excluded_positive": 616,
+          "excluded_amount": 11564.68,
+          "unpriced": 0,
+          "candidate_amount": 11297.89,
+          "must_amount": 5974.48,
+          "must_candidate_amount": 5974.48,
+          "budget_deferred": 0,
+          "holding_gaps": 4,
+          "exception": 8,
+          "extra": 378.8
+        },
+        "files": [
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\adjusted-1\\河北仓.xlsx",
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\adjusted-1\\山东仓.xlsx"
+        ],
+        "sample_ms": 20,
+        "adjusted_products": 10
+      },
+      {
+        "timing": {
+          "preview_seconds": 1.3209655999999086,
+          "save_seconds": 1.344270100000358,
+          "prepare_seconds": 3.9242568999998184,
+          "archive_seconds": 6.4080282999984775,
+          "export_seconds": 1.857194599999275,
+          "total_seconds": 14.88774149999881,
+          "peak_tree_mib": 587.62890625
+        },
+        "rows": 14244,
+        "summary": {
+          "rows": 14244,
+          "local": 5161,
+          "issues": 1,
+          "calculable": 9083,
+          "positive": 420,
+          "amount": 11297.89,
+          "calculated_positive": 1046,
+          "calculated_amount": 23833.55,
+          "excluded": 3269,
+          "excluded_positive": 616,
+          "excluded_amount": 11564.68,
+          "unpriced": 0,
+          "candidate_amount": 11297.89,
+          "must_amount": 5974.48,
+          "must_candidate_amount": 5974.48,
+          "budget_deferred": 0,
+          "holding_gaps": 4,
+          "exception": 8,
+          "extra": 378.8
+        },
+        "files": [
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\adjusted-2\\河北仓.xlsx",
+          "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\preissue_0180\\performance\\adjusted-2\\山东仓.xlsx"
+        ],
+        "sample_ms": 20,
+        "adjusted_products": 10
+      }
+    ]
+  },
+  "summary": {
+    "old": {
+      "save_seconds": {
+        "median": 1.3892680999997538,
+        "min": 1.310311699999147,
+        "max": 1.4888109999992594
+      },
+      "prepare_seconds": {
+        "median": 1.3565237000002526,
+        "min": 1.355985000000146,
+        "max": 1.3638806999988446
+      },
+      "archive_seconds": {
+        "median": 3.914187899999888,
+        "min": 3.867955899999288,
+        "max": 3.951032099999793
+      },
+      "export_seconds": {
+        "median": 1.9048351000001276,
+        "min": 1.8571901000013895,
+        "max": 1.9093133000005764
+      },
+      "total_seconds": {
+        "median": 8.577959099999134,
+        "min": 8.4859890000007,
+        "max": 8.605718500000876
+      },
+      "peak_tree_mib": {
+        "median": 574.5859375,
+        "min": 573.953125,
+        "max": 576.8125
+      }
+    },
+    "new": {
+      "save_seconds": {
+        "median": 1.3398059999999532,
+        "min": 1.339149700001144,
+        "max": 1.346487500000876
+      },
+      "prepare_seconds": {
+        "median": 1.3665622000007716,
+        "min": 1.3463795999996364,
+        "max": 1.4043882999994821
+      },
+      "archive_seconds": {
+        "median": 3.9160592000007455,
+        "min": 3.8889712000000145,
+        "max": 3.958363100000497
+      },
+      "export_seconds": {
+        "median": 1.8694089999989956,
+        "min": 1.85461579999901,
+        "max": 1.8709159000009095
+      },
+      "total_seconds": {
+        "median": 8.500139699999636,
+        "min": 8.444705399999293,
+        "max": 8.556660500000362
+      },
+      "peak_tree_mib": {
+        "median": 581.3359375,
+        "min": 576.76171875,
+        "max": 586.45703125
+      }
+    },
+    "adjusted": {
+      "preview_seconds": {
+        "median": 1.3435840999991342,
+        "min": 1.3209655999999086,
+        "max": 1.345267699998658
+      },
+      "save_seconds": {
+        "median": 1.344270100000358,
+        "min": 1.3019425999991654,
+        "max": 1.368144799998845
+      },
+      "prepare_seconds": {
+        "median": 3.9242568999998184,
+        "min": 3.91656839999996,
+        "max": 4.176670499999091
+      },
+      "archive_seconds": {
+        "median": 6.4846346000013,
+        "min": 6.4080282999984775,
+        "max": 6.500430199999755
+      },
+      "export_seconds": {
+        "median": 1.857194599999275,
+        "min": 1.8542147999996814,
+        "max": 1.9160783999996056
+      },
+      "total_seconds": {
+        "median": 14.994688999999198,
+        "min": 14.88774149999881,
+        "max": 15.274030500000663
+      },
+      "peak_tree_mib": {
+        "median": 587.62890625,
+        "min": 581.87890625,
+        "max": 588.54296875
+      }
+    }
+  },
+  "input": "Frozen real 14244-row result; adjusted scenario synthetically edits first ten eligible positive quantities to zero, with recorded risk approval.",
+  "method": "Same interpreter, old/new alternating order, serial 3 runs each, private empty DB each run; full save/preparation/archive/export measured. OS caches uncontrolled; tree working-set sum sampled every20ms, shared pages may double count. New UI responsiveness measured separately in EXE report.",
+  "baseline": "7360b03e8aab129f6ff2d28e43e8013f76d153a1"
+}

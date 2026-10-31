@@ -1,0 +1,200 @@
+{
+  "passed": true,
+  "synthetic_edits_on_real_14244_rows": true,
+  "row_count": 14244,
+  "changes": [
+    {
+      "sku": "1734058784672522298",
+      "original_quantity": 1.0,
+      "final_quantity": 0,
+      "original_amount": 5.04,
+      "final_amount": 0.0,
+      "changed_fields": [
+        "_budget_gap",
+        "_budget_reason",
+        "_candidate_amount",
+        "_candidate_qty",
+        "_execution_amount",
+        "_execution_qty",
+        "_holding_gap",
+        "_preissue"
+      ]
+    },
+    {
+      "sku": "1766989103569924183",
+      "original_quantity": 5.0,
+      "final_quantity": 0,
+      "original_amount": 25.2,
+      "final_amount": 0.0,
+      "changed_fields": [
+        "_budget_gap",
+        "_budget_reason",
+        "_candidate_amount",
+        "_candidate_qty",
+        "_execution_amount",
+        "_execution_qty",
+        "_holding_gap",
+        "_preissue"
+      ]
+    },
+    {
+      "sku": "1706181426371829767",
+      "original_quantity": 5.0,
+      "final_quantity": 0,
+      "original_amount": 25.2,
+      "final_amount": 0.0,
+      "changed_fields": [
+        "_budget_gap",
+        "_budget_reason",
+        "_candidate_amount",
+        "_candidate_qty",
+        "_execution_amount",
+        "_execution_qty",
+        "_holding_gap",
+        "_preissue"
+      ]
+    },
+    {
+      "sku": "1914138828386762839",
+      "original_quantity": 2.0,
+      "final_quantity": 0,
+      "original_amount": 16.4,
+      "final_amount": 0.0,
+      "changed_fields": [
+        "_budget_gap",
+        "_budget_reason",
+        "_candidate_amount",
+        "_candidate_qty",
+        "_execution_amount",
+        "_execution_qty",
+        "_holding_gap",
+        "_preissue"
+      ]
+    },
+    {
+      "sku": "1913527564861911101",
+      "original_quantity": 2.0,
+      "final_quantity": 0,
+      "original_amount": 6.6,
+      "final_amount": 0.0,
+      "changed_fields": [
+        "_budget_gap",
+        "_budget_reason",
+        "_candidate_amount",
+        "_candidate_qty",
+        "_execution_amount",
+        "_execution_qty",
+        "_holding_gap",
+        "_preissue"
+      ]
+    },
+    {
+      "sku": "1871806145036615733",
+      "original_quantity": 1.0,
+      "final_quantity": 0,
+      "original_amount": 3.3,
+      "final_amount": 0.0,
+      "changed_fields": [
+        "_budget_gap",
+        "_budget_reason",
+        "_candidate_amount",
+        "_candidate_qty",
+        "_execution_amount",
+        "_execution_qty",
+        "_holding_gap",
+        "_preissue"
+      ]
+    },
+    {
+      "sku": "1706308376176619614",
+      "original_quantity": 1.0,
+      "final_quantity": 0,
+      "original_amount": 10.0,
+      "final_amount": 0.0,
+      "changed_fields": [
+        "_budget_gap",
+        "_budget_reason",
+        "_candidate_amount",
+        "_candidate_qty",
+        "_execution_amount",
+        "_execution_qty",
+        "_holding_gap",
+        "_preissue"
+      ]
+    },
+    {
+      "sku": "1865964727436636163",
+      "original_quantity": 3.0,
+      "final_quantity": 0,
+      "original_amount": 51.0,
+      "final_amount": 0.0,
+      "changed_fields": [
+        "_budget_gap",
+        "_budget_reason",
+        "_candidate_amount",
+        "_candidate_qty",
+        "_execution_amount",
+        "_execution_qty",
+        "_holding_gap",
+        "_preissue"
+      ]
+    },
+    {
+      "sku": "1678739775844282375",
+      "original_quantity": 1.0,
+      "final_quantity": 0,
+      "original_amount": 8.24,
+      "final_amount": 0.0,
+      "changed_fields": [
+        "_budget_gap",
+        "_budget_reason",
+        "_candidate_amount",
+        "_candidate_qty",
+        "_execution_amount",
+        "_execution_qty",
+        "_holding_gap",
+        "_preissue"
+      ]
+    },
+    {
+      "sku": "1907328795170725897",
+      "original_quantity": 20.0,
+      "final_quantity": 0,
+      "original_amount": 820.0,
+      "final_amount": 0.0,
+      "changed_fields": [
+        "_budget_gap",
+        "_budget_reason",
+        "_candidate_amount",
+        "_candidate_qty",
+        "_execution_amount",
+        "_execution_qty",
+        "_holding_gap",
+        "_preissue"
+      ]
+    }
+  ],
+  "unexpected": [],
+  "allowed_row_fields": [
+    "_allocated_amount",
+    "_allocated_amount_exact",
+    "_allocated_qty",
+    "_budget_gap",
+    "_budget_overrun",
+    "_budget_reason",
+    "_candidate_amount",
+    "_candidate_qty",
+    "_execution_amount",
+    "_execution_qty",
+    "_holding_gap",
+    "_preissue",
+    "_quantity_normalization"
+  ],
+  "allowed_root_fields": [
+    "preissue",
+    "summary",
+    "budget"
+  ],
+  "original_restoration_differences": [],
+  "row_identity_order_unchanged": true
+}

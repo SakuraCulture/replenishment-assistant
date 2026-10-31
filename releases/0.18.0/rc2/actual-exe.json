@@ -1,0 +1,80 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "phase": "exercise",
+      "checks": [
+        "actual final-list cancel, pending draft saved, signing pending rejected, zero risk checkbox and atomic apply; original result exactly restorable",
+        "reordered-header list drag/drop, explicit mapping, reusable save, target gap fill, manual zero protected, unselected rows/stores unchanged",
+        "actual spawn work I/O confirms/signs split-warehouse Excel and stores final quantity plus original audit"
+      ],
+      "timings": {
+        "check_seconds": 0.47811369999908493,
+        "calculate_seconds": 0.537361200000305,
+        "manual_preview_apply_seconds": 0.25649580000026617,
+        "sign_export_seconds": 1.0821432000011555
+      },
+      "max_ui_gap_seconds": 0.3476422999992792,
+      "ui_ticks": 111,
+      "version": {
+        "app": "补货助手",
+        "version": "0.18.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "c24202fc70178dcea4decee04eb40178f2ec3217",
+        "build_id": "rc2",
+        "built_at": "2026-10-31T20:36:13.1163634+08:00"
+      },
+      "synthetic": true,
+      "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 8.90599999999904,
+      "peak_tree_mib": 300.42578125,
+      "sample_ms": 50,
+      "exe_sha256": "e3ff8849273026e9a9cf0686dbdeef71988ad3e2281cc9f5adaf9abe663128f6"
+    },
+    {
+      "passed": true,
+      "error": null,
+      "phase": "reopen",
+      "checks": [
+        "fresh process restored final edits, reusable list and historical adjustment business form"
+      ],
+      "timings": {},
+      "max_ui_gap_seconds": 0.2513340000004973,
+      "ui_ticks": 35,
+      "version": {
+        "app": "补货助手",
+        "version": "0.18.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "c24202fc70178dcea4decee04eb40178f2ec3217",
+        "build_id": "rc2",
+        "built_at": "2026-10-31T20:36:13.1163634+08:00"
+      },
+      "synthetic": true,
+      "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 2.485000000000582,
+      "peak_tree_mib": 229.25390625,
+      "sample_ms": 50,
+      "exe_sha256": "e3ff8849273026e9a9cf0686dbdeef71988ad3e2281cc9f5adaf9abe663128f6"
+    }
+  ]
+}
