@@ -150,7 +150,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(self.view()['status'],'待回传');self.assertTrue(self.read()['records'][0]['legacy_incomplete'])
     def test_template_formula_and_empty_inputs(self):
         for stage in io.STAGES:
-            p=self.root/(stage+'template.xlsx');io.template(stage,p);book=openpyxl.load_workbook(p);self.assertEqual(list(next(book.active.values)),io.PAYMENT_HEADERS if stage=='payment' else io.fields(stage));book.close()
+            p=self.root/(stage+'template.xlsx');io.template(stage,p);book=openpyxl.load_workbook(p);self.assertEqual([io.field_key(h) for h in next(book.active.values)],io.PAYMENT_HEADERS if stage=='payment' else io.input_fields(stage));book.close()
         with self.assertRaisesRegex(ValueError,'缓存'):self.scan('return',[{'门店确认数量':'=1+1'}])
         with self.assertRaisesRegex(ValueError,'没有商品'):self.scan(items=[])
     def test_signed_confirmation_export_can_be_read(self):

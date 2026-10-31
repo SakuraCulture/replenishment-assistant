@@ -20,7 +20,7 @@ class LifecycleWidget(QWidget):
         for title in service.STATUSES:
             b=button(title+'\n—',lambda checked=False,s=title:self.status.setCurrentText(s));self.cards[title]=b;row.addWidget(b)
         v.addLayout(row);self.bar=QProgressBar();self.bar.setMaximumHeight(14);v.addWidget(self.bar);self.note=label('待查询','muted');v.addWidget(self.note)
-        self.table=QTableWidget();self.table.setColumnCount(12);self.table.setHorizontalHeaderLabels(['勾选','单据详情','下一步','业务日期','门店','仓','补货单号 / 签发修订','当前进度','门店回传','门店付款','实际收货','资料提示']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
+        self.table=QTableWidget();self.table.setColumnCount(12);self.table.setHorizontalHeaderLabels(['勾选','单据详情','下一步','业务日期','门店','仓','补货单号','当前进度','门店回传','门店付款','实际收货','资料提示']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
         row=QHBoxLayout();row.addWidget(button('勾选本页',lambda:self.select_page(True)));row.addWidget(button('清空勾选',lambda:self.select_page(False)));self.export_btn=button('导出勾选单生命周期对照',self.export);row.addWidget(self.export_btn);row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));self.selected_label=label('');row.addWidget(self.selected_label);v.addLayout(row)
         v.addWidget(import_group(self,host,refresh=self.query));v.addWidget(label('确认归档即签发。工作页可继续计算其它批次；完整单据及数量差异可在详情查看。','muted'));self.selection_label()
     def query(self,*_,keep_page=False):
@@ -39,7 +39,7 @@ class LifecycleWidget(QWidget):
             if h['legacy_incomplete']:notices.append('已有旧回传资料，请导入完整确认单')
             if h['old_revision']:notices.append('旧签发修订另有下游资料，未转移至本修订')
             if h['warehouse']=='旧版未标仓':notices.append('仓归属待核，不能自动关联')
-            values=[h['day'],h['name']+'（'+h['store']+'）',h['warehouse'],h['number']+f" / V{h['revision']:03d}",h['status'],*[('已导入' if h['present'][s] else '未导入') for s in service.STAGES],'；'.join(notices)]
+            values=[h['day'],h['name']+'（'+h['store']+'）',h['warehouse'],h['number'],h['status'],*[('已导入' if h['present'][s] else '未导入') for s in service.STAGES],'；'.join(notices)]
             for j,x in enumerate(values,3):self.table.setItem(i,j,QTableWidgetItem(str(x)))
             self.table.setCellWidget(i,1,button('查看生命周期',lambda checked=False,r=h:self.open_comparison(r)))
             recheck=h['next'] and h['present'][h['next']]

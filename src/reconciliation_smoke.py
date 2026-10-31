@@ -18,17 +18,16 @@ def start_smoke(app,win,args):
         if not d:return
         try:
             if isinstance(d,Files):
-                mime=QMimeData();mime.setUrls([QUrl.fromLocalFile(str(out/state['file']))]);e=QDropEvent(QPointF(20,20),Qt.DropAction.CopyAction,mime,Qt.MouseButton.LeftButton,Qt.KeyboardModifier.NoModifier);d.dropEvent(e)
-                if d.paths!=[str((out/state['file']).resolve())]:raise AssertionError('drag drop failed')
+                files=state['file'] if isinstance(state['file'],list) else [state['file']]
+                mime=QMimeData();mime.setUrls([QUrl.fromLocalFile(str(out/f)) for f in files]);e=QDropEvent(QPointF(20,20),Qt.DropAction.CopyAction,mime,Qt.MouseButton.LeftButton,Qt.KeyboardModifier.NoModifier);d.dropEvent(e)
+                if d.paths!=[str((out/f).resolve()) for f in files]:raise AssertionError('drag drop failed')
                 if d.stage=='payment' and d.multiple:raise AssertionError('payment batch import not deferred')
                 d.accept()
-            elif isinstance(d,Mapping):d.accept()
+            elif isinstance(d,Mapping):
+                if set(d.fields)&{'签发修订','门店编码','供货仓','数量单位','折合库存单位系数','换算依据'}:raise AssertionError('internal fields exposed for manual input')
+                d.grab().save(str(out/'simple-mapping.png'));d.accept()
             elif isinstance(d,Bindings):
-                for c in d.combos.values():
-                    if c.currentData() is None:
-                        if c.count()!=2:raise AssertionError('wrong exact binding')
-                        c.setCurrentIndex(1)
-                d.accept()
+                raise AssertionError('public import still asks for signing revision')
             elif isinstance(d,Review):
                 if d.save.isEnabled():raise AssertionError('confirmation default unsafe')
                 d.grab().save(str(out/('preview-'+state.get('stage','')+'-'+state.get('mode','')+'.png')))
@@ -60,7 +59,7 @@ def start_smoke(app,win,args):
             before=originals();state.update(file='return-hb.xlsx',stage='return',mode='cancel')
             if import_document(win,win,'return',hb) or service.history(path,hb,'return'):raise AssertionError('preview cancel saved')
             checks.append('drag/drop existing signed format, all three sheets, default-cancel preview leaves no version')
-            for stage,file,h in [('return','return-hb.xlsx',hb),('return','return-sd.xlsx',sd),('payment','payment.xlsx',hb)]:
+            for stage,file,h in [('return',['return-minimal.xlsx','return-sd.xlsx'],None),('payment','payment.xlsx',hb)]:
                 state.update(file=file,stage=stage,mode='save')
                 if not import_document(win,win,stage,h):raise AssertionError(state.get('automation_error','import failed'))
             v=service.snapshot(path,hb);ret=v['documents']['return']['payload']['rows']
@@ -68,6 +67,7 @@ def start_smoke(app,win,args):
             paid=v['documents']['payment']['payload']['rows'][0]
             if paid['base_quantity']!='4' or paid['amount']!='5.2' or paid['document_date'] is not None:raise AssertionError('payment unit/amount/date differs')
             checks.append('single selected warehouse payment, exact original 13-column format; no extra store/unit/payment-time fields; no carton multiplication')
+            checks.append('global batch return: five-column minimal template plus original signed workbook; association by order number only, no revision picker or retyped upstream quantities')
             state.update(file='receipt-invalid.xlsx',stage='receipt',mode='invalid')
             if import_document(win,win,'receipt',hb) or not state.get('error_seen'):raise AssertionError('invalid quantity accepted')
             state.update(file='receipt.xlsx',mode='save')

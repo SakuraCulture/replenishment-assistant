@@ -23,6 +23,10 @@ def fixture(out):
                     if sku=='0004':ws.delete_rows(n)
                     else:ws.cell(n,17).value=None if sku=='0003' else 8 if suffix else 6
             b.save(out/('return-'+tag+suffix+'.xlsx'));b.close()
+    io.template('return',out/'return-minimal.xlsx');b=openpyxl.load_workbook(out/'return-minimal.xlsx');s=b.active
+    for n,row in enumerate([['BH-T-ZC-HB','0001',6],['BH-T-ZC-HB','0003',None]],2):
+        for col,value in enumerate(row,1):s.cell(n,col,value)
+    b.save(out/'return-minimal.xlsx');b.close()
     b=openpyxl.Workbook();s=b.active;s.title='原付款明细';s.append(io.PAYMENT_HEADERS);s.append(['1298602','S0000001','测试店','001588','2026-10-05 15:01:24','线下店铺','0001','合成商品',24,4,1.3,5.2,'']);b.save(out/'payment.xlsx');b.close()
     for name,quantity in [('receipt.xlsx',None),('receipt-invalid.xlsx','invalid')]:
         b=openpyxl.Workbook();s=b.active;s.append(io.fields('receipt'));r={'补货单号':'BH-T-ZC-HB','签发修订':1,'供货仓':'河北仓','商品编码':'0001','数量单位':'库存单位','实际收货数量':quantity,'收货单号':'R001','收货日期':wr.today()};s.append([r.get(f) for f in io.fields('receipt')]);b.save(out/name);b.close()

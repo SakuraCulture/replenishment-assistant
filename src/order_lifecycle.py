@@ -89,6 +89,35 @@ def available(path, scanned, progress=lambda _: None, cancel=None):
             else: unknown = True
     return purchases.targets(path, None if unknown else scopes, progress, cancel)
 
+def current_targets(path, progress=lambda _:None, cancel=None):
+    return [h for h in purchases.targets(path,progress=progress,cancel=cancel) if h['revision']==h['current_revision']]
+
+def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=None):
+    """Public import: one order number, current signed facts; versions stay internal.
+
+    Existing prepare/recheck remain exact-snapshot compatibility APIs. A current
+    head is frozen here; validate_head still rejects re-signing after preview.
+    """
+    scanned=copy.deepcopy(scanned)
+    for row in scanned['rows']:
+        checkpoint(cancel)
+        if not row.get('signed_number'):
+            if scope:row['signed_number']=scope['number']
+            else:raise ValueError('缺少补货单号：批量导入须填写；单张订单可从该订单详情进入，由系统带入')
+        if scope and row['signed_number']!=scope['number']:raise ValueError('补货单号与所选订单不一致')
+        row['revision']=None
+    heads=[h for h in available(path,scanned,progress,cancel) if h['revision']==h['current_revision']]
+    bindings={}
+    for row in scanned['rows']:
+        checkpoint(cancel)
+        choices=[h for h in heads if h['number']==row['signed_number']]
+        if len(choices)!=1:raise ValueError('补货单号未对应唯一有效仓单：'+row['signed_number']+'；请使用分仓补货单号')
+        h=choices[0]
+        if not matching(row,[h]):raise ValueError('源表门店或仓库与补货单号不一致：'+row['signed_number'])
+        row['revision']=h['revision']
+        bindings[binding_key(row)]=h
+    return prepare(path,scanned,bindings,progress,cancel)
+
 def upstream(db, head, stage):
     """Freeze every dependency; absence is also a token checked at commit."""
     index=STAGES.index(stage); tokens={}; previous=None; valid=True

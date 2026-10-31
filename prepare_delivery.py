@@ -38,12 +38,19 @@ if version['version']=='0.15.1':
     shutil.copy2(root/'docs/0.15.1默认导出位置.md',dest/'docs/0.15.1默认导出位置.md')
     (dest/'使用说明.txt').write_bytes((root/'docs/0.15.1默认导出位置.md').read_bytes())
 licenses=dest/'licenses';licenses.mkdir(exist_ok=True)
-if version['version']=='0.16.0':
+if version['version'] in {'0.16.0','0.16.1'}:
     (dest/'docs').mkdir(exist_ok=True)
     for name in ['0.15.0订单生命周期.md','0.15.1默认导出位置.md','0.16.0逐环节核对方案.md','0.16.0使用说明.md','商品资料保存链路_0.16.0.md']:
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
     (dest/'使用说明.txt').write_bytes((root/'docs/0.16.0使用说明.md').read_bytes())
+if version['version']=='0.16.1':
+    shutil.copy2(root/'docs/0.16.1简化生命周期导入.md',dest/'docs/0.16.1简化生命周期导入.md')
+    (dest/'使用说明.txt').write_bytes((root/'docs/0.16.1简化生命周期导入.md').read_bytes())
+    sys.path.insert(0,str(root/'src'))
+    import lifecycle_io
+    templates=dest/'导入模板';templates.mkdir(exist_ok=True)
+    for stage in lifecycle_io.STAGES:lifecycle_io.template(stage,templates/(lifecycle_io.TITLES[stage]+'模板.xlsx'))
 if (root/'third_party_licenses').exists():shutil.copytree(root/'third_party_licenses',licenses,dirs_exist_ok=True)
 versions={}
 for name in ['PySide6-Essentials','shiboken6','openpyxl','et-xmlfile','pillow','PyInstaller']:
