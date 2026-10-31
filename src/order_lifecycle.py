@@ -32,7 +32,9 @@ def exists(db):
 def key(head): return (head['oid'], head['revision'], head['warehouse'])
 
 def fingerprint(payload):
-    value = copy.deepcopy(payload)
+    # Only file paths are projected out. Nested business data is read-only here;
+    # copying every raw cell doubled peak memory without changing the digest.
+    value = dict(payload)
     value['files'] = [{k: f[k] for k in ('name', 'sha')} for f in value['files']]
     return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
 

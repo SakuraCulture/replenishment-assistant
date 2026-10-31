@@ -14,7 +14,7 @@ def returned_book(path,view,folder,progress,cancel):
     h=view['head'];doc=view['documents']['return'];order=repository(path).get(h['day'],h['store'],h['revision'],view='export')
     if order['digest']!=h['digest']:raise ValueError('签发修订校验失败')
     original=Path(folder)/('original-'+uuid.uuid4().hex+'.xlsx');ne.export(order,original,warehouse=h['warehouse'],progress=progress,cancel=cancel)
-    b=openpyxl.load_workbook(original);rows={r['sku']:r for r in doc['payload']['rows']};seen=set()
+    b=openpyxl.load_workbook(original);rows={r['sku']:r for r in doc['payload']['rows']};raw_rows={r['sku']:r for r in doc['payload'].get('raw_rows',doc['payload']['rows'])};seen=set()
     try:
         for ws in b:
             ws['Q1'].comment=Comment('补货数量为本版门店确认数；原签发建议独立保留在应用中。','补货助手')
@@ -25,7 +25,7 @@ def returned_book(path,view,folder,progress,cancel):
         for r in doc['payload']['rows']:
             if r['sku'] in seen:continue
             checkpoint(cancel);source_sheet=next((s['sheet'] for s in r['sources'] if s['sheet'] in ne.SHEETS),ne.SHEETS[-1]);ws=b[source_sheet]
-            raw={k:v for k,v in zip(r.get('raw_headers',[]),r.get('raw_values',[]))};values=[raw.get(k) for k in ne.HEADERS+ne.AUDIT_HEADERS]
+            source=raw_rows.get(r['sku'],r);raw={k:v for k,v in zip(source.get('raw_headers',[]),source.get('raw_values',[]))};values=[raw.get(k) for k in ne.HEADERS+ne.AUDIT_HEADERS]
             values[0]=order['payload']['result']['store_name'];values[1]=h['store'];values[3]=r['name'];values[4]=r['sku'];values[16]=float(Decimal(r['base_quantity']));values[18]=h['warehouse'];values[20]=h['number'];values[21]='门店追加'
             ws.append(values)
             for i,c in enumerate(ws[ws.max_row],1):

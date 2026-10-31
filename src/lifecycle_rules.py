@@ -19,7 +19,10 @@ def reconcile(raw_rows, products, pending=False):
             row={'sku':sku,'name':products[sku].get('name'),'quantity':None,'unit':'库存单位','factor':None,'conversion_basis':None,'base_quantity':'0','amount':None,'currency':'','document_number':raw_rows[0]['document_number'] if raw_rows else '', 'document_date':None,'note':None,'sources':[],'raw_headers':[],'raw_values':[]}
             origin='missing'
         else:
-            row=copy.deepcopy(source)
+            # Raw cells and ERP columns are retained once in payload.raw_rows.
+            # Effective rows retain quantity/source references, not another full
+            # copy of the entire source worksheet record.
+            row={k:v for k,v in source.items() if k not in ('raw_headers','raw_values','source_order')}
             if row.get('base_quantity') is None:
                 row['base_quantity']='0'; origin='blank'
             else:origin='zero' if Decimal(str(row['base_quantity']))==0 else 'value'
