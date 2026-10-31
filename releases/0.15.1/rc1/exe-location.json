@@ -1,0 +1,71 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "phase": "exercise",
+      "checks": [
+        "actual top navigation opens settings; folder selection then Cancel creates no configuration",
+        "actual settings Save persists UTF-8 path atomically in active local configuration folder",
+        "temporary directory and cancelled nested save dialog preserve preference; basename/filter/options forwarded unchanged",
+        "actual template download and lifecycle batch export callbacks write three workbooks into configured directory, warehouses separate",
+        "deleted default folder produces explicit warning; falls back for current dialog without rewriting saved setting",
+        "signed orders, revisions, work snapshots and original source blobs unchanged"
+      ],
+      "screenshots": [
+        "settings-cancel.png",
+        "settings-save.png"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.15.1",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "built_at": "2026-10-31T10:39:42.5792431+08:00",
+        "source_commit": "43cdd0d5372153b8cbe40211508aa80b8921125c",
+        "build_id": "rc1"
+      },
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": false,
+      "exe_sha256": "97b359700e2f7e4eb6cfcfc7a24992e6a2c4e0073bd1d8db5354f374879f0566",
+      "elapsed_seconds": 5.092999999993481
+    },
+    {
+      "passed": true,
+      "error": null,
+      "phase": "reopen",
+      "checks": [
+        "second real process loads persisted default, opens settings form with exact configuration path; no user settings accessed"
+      ],
+      "screenshots": [
+        "settings-reopen.png"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.15.1",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.0",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "built_at": "2026-10-31T10:39:42.5792431+08:00",
+        "source_commit": "43cdd0d5372153b8cbe40211508aa80b8921125c",
+        "build_id": "rc1"
+      },
+      "exit_code": 0,
+      "remaining_children": [],
+      "development": false,
+      "exe_sha256": "97b359700e2f7e4eb6cfcfc7a24992e6a2c4e0073bd1d8db5354f374879f0566",
+      "elapsed_seconds": 1.3910000000032596
+    }
+  ]
+}

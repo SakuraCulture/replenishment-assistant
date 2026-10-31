@@ -1,0 +1,106 @@
+{
+  "passed": true,
+  "errors": [],
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "executable": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+  "prefix": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv",
+  "lock_sha256": "fe7859a16eaf1c9aa5875b9015427ed4ea58516f7d62d696a0780cd3f69a4b36",
+  "packages": [
+    {
+      "name": "PySide6-Essentials",
+      "locked": "6.12.0",
+      "installed": "6.12.0",
+      "matches": true
+    },
+    {
+      "name": "shiboken6",
+      "locked": "6.12.0",
+      "installed": "6.12.0",
+      "matches": true
+    },
+    {
+      "name": "openpyxl",
+      "locked": "3.1.5",
+      "installed": "3.1.5",
+      "matches": true
+    },
+    {
+      "name": "et-xmlfile",
+      "locked": "2.0.0",
+      "installed": "2.0.0",
+      "matches": true
+    },
+    {
+      "name": "pillow",
+      "locked": "12.3.0",
+      "installed": "12.3.0",
+      "matches": true
+    },
+    {
+      "name": "PyInstaller",
+      "locked": "6.22.3",
+      "installed": "6.22.3",
+      "matches": true
+    },
+    {
+      "name": "pyinstaller-hooks-contrib",
+      "locked": "2026.9",
+      "installed": "2026.9",
+      "matches": true
+    },
+    {
+      "name": "altgraph",
+      "locked": "0.17.5",
+      "installed": "0.17.5",
+      "matches": true
+    },
+    {
+      "name": "packaging",
+      "locked": "26.3",
+      "installed": "26.3",
+      "matches": true
+    },
+    {
+      "name": "pefile",
+      "locked": "2024.8.26",
+      "installed": "2024.8.26",
+      "matches": true
+    },
+    {
+      "name": "pywin32-ctypes",
+      "locked": "0.2.3",
+      "installed": "0.2.3",
+      "matches": true
+    },
+    {
+      "name": "setuptools",
+      "locked": "84.1.0",
+      "installed": "84.1.0",
+      "matches": true
+    }
+  ],
+  "runtime_imports": {
+    "version": "6.12.0",
+    "core_file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PySide6\\QtCore.pyd",
+    "widgets_loaded": true
+  },
+  "pip_check": "No broken requirements found.",
+  "git": {
+    "branch": "feature/default-export-location-0.15.1",
+    "commit": "fd7ea1038d0746febda3290bbd661fc10bf37fac",
+    "status": "M prepare_delivery.py\n M src/app.py\n M src/application_window.py\n M src/archive_batch_ui.py\n M src/batch_app.py\n M src/feedback_ui.py\n M src/history_ui.py\n M src/import_ui.py\n M src/lifecycle_ui.py\n M src/purchase_ui.py\n M src/ui_results.py\n M src/ui_session.py\n M src/version.json\n?? \"docs/0.15.1\\351\\273\\230\\350\\256\\244\\345\\257\\274\\345\\207\\272\\344\\275\\215\\347\\275\\256.md\"\n?? src/export_location_smoke.py\n?? src/export_locations.py\n?? src/export_settings.py\n?? tests/test_export_settings.py\n?? tools/seal_export_location_release.py\n?? tools/verify_export_location_exe.py"
+  },
+  "application": {
+    "app": "补货助手",
+    "version": "0.15.1",
+    "parameter_schema_version": 1,
+    "job_schema_version": 1,
+    "routing_version": "0.5.0",
+    "model_version": "0.3.3-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2
+  },
+  "data_dir": null,
+  "limits": "Installed versions and runtime imports checked. This is not installed-file hash verification, a fresh-PC test or business acceptance."
+}
