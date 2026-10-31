@@ -219,10 +219,10 @@ class Document(QDialog):
             except Exception as exc:warn(self,exc)
 
 class LifecycleDialog(QDialog):
-    def __init__(self,parent,host,head):
+    def __init__(self,parent,host,head,on_audit=None):
         super().__init__(parent);self.host=host;self.head=head;self.setWindowTitle('订单生命周期 · '+head['number']);self.resize(1400,820);v=QVBoxLayout(self);v.addWidget(label(head_text(head),'section'));self.note=label('');v.addWidget(self.note);self.imports=import_group(self,host,head,self.refresh);v.addWidget(self.imports)
         v.addWidget(label('已签发 → 门店回传 → 门店付款 → 门店实际收货。新单据核对确认后空白/缺行按0；未导入整单不当作0。旧记录按旧口径保留。','muted'));search=QLineEdit();search.setPlaceholderText('筛选商品编码 / 名称 / 资料说明');v.addWidget(search);self.table,self.model=grid(self,service.HEADERS);v.addWidget(self.table,1);search.textChanged.connect(self.model.filter)
-        sources=QGroupBox('单据与依据');row=QHBoxLayout(sources);row.addWidget(button('查看签发与计算依据',lambda:host.open_archive(head)));self.views={}
+        sources=QGroupBox('单据与依据');row=QHBoxLayout(sources);row.addWidget(button('查看决策依据',on_audit or (lambda:host.open_archive(head))));self.views={}
         for s in io.STAGES:self.views[s]=button('查看'+io.TITLES[s]+'版本',lambda checked=False,k=s:self.document(k));row.addWidget(self.views[s])
         v.addWidget(sources);exports=QGroupBox('数据导出');row=QHBoxLayout(exports);self.export_confirmation=button('导出门店确认单',lambda:host.export_order(head));row.addWidget(self.export_confirmation);self.exports={}
         for s in io.STAGES:self.exports[s]=button('导出'+io.TITLES[s],lambda checked=False,k=s:export_selected(self,host,[head],k));row.addWidget(self.exports[s])

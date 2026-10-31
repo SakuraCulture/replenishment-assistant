@@ -63,7 +63,7 @@ class LifecycleWidget(QWidget):
     def all_pending(self):self.start.clear();self.end.clear();b=QSignalBlocker(self.status);self.status.setCurrentText('全部未完成');del b;self.query()
     def export(self):export_selected(self,self.host,sorted(self.checked.values(),key=lambda h:h['list_position']))
     def open_comparison(self,head):
-        try:LifecycleDialog(self,self.host,head).exec();self.query(keep_page=True)
+        try:self.host.open_archive(head,'lifecycle');self.query(keep_page=True)
         except Exception as exc:warn(self,exc)
     def next(self,head):
         s=head['next']

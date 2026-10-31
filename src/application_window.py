@@ -65,6 +65,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.refresh_focus();self.update_controls();self.show_section(0)
         from usability import install
         install(self,hv)
+        from business_scenes import install as install_scenes
+        install_scenes(self,hv)
 
     def storage_copy(self):
         if self.worker or getattr(self,'_large_io_dialog',None):return
@@ -121,8 +123,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
 
     def show_section(self,index):
         self.sections.setCurrentIndex(index)
-        if index in (0,2):self.refresh_archive()
-        if index==0 and hasattr(self,'followup'):self.followup.query()
+        if index in (0,2) and not self.archive_all:self.refresh_archive()
+        if index==3 and hasattr(self,'followup') and not self.followup.records:self.followup.query()
+        if index==4:self.parameter_scene.refresh()
 
     def refresh_archive(self):
         self.archive_timer.stop();self.query_archive()
@@ -364,6 +367,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if receipt['signed']:
             self.saved_time=receipt['saved'];self.job_dirty=False;self.refresh_job_label()
         self.status.setText(f"已导出 {len(receipt['paths'])} 份分仓确认单；签发来源已归档。"+'；'.join(receipt['paths']))
+        from business_scenes import issue_result
+        issue_result(self,receipt)
 
     def export_order(self,order):
         if self.worker:return
@@ -422,10 +427,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         i=self.archive_table.currentRow()
         if i>=0:self.open_archive(self.archive_orders[i])
 
-    def open_archive(self,record):
+    def open_archive(self,record,initial_tab='signed',sku=''):
         from history_ui import ArchiveDialog
-        dialog=ArchiveDialog(self,record);dialog.exec();dialog.dispose();dialog.deleteLater()
-        if not self.closing:self.refresh_archive()
+        dialog=ArchiveDialog(self,record,initial_tab,sku);dialog.exec();dialog.dispose();dialog.deleteLater()
 
     def import_merchant_returns(self):
         from feedback_ui import import_returns

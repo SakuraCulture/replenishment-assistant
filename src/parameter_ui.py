@@ -9,9 +9,9 @@ class NumberInput(QDoubleSpinBox):
     def textFromValue(self,value):return f'{value:.8f}'.rstrip('0').rstrip('.') or '0'
 
 class ParameterDialog(QDialog):
-    def __init__(self,parent,config,preset,trial=None,scope='',readonly=False,store_configs=None):
+    def __init__(self,parent,config,preset,trial=None,scope='',readonly=False,store_configs=None,intent='current'):
         super().__init__(parent);self.setWindowTitle('完整参数 · '+scope);self.resize(1050,760);self.config=copy.deepcopy(config);self.preset=copy.deepcopy(preset);self.action=None;self.repository=parent.work_repository
-        self.initial_config=copy.deepcopy(config);self.readonly=readonly;self.managing=not scope.startswith('所选') and not readonly;self.store_configs=store_configs or {}
+        self.initial_config=copy.deepcopy(config);self.readonly=readonly;self.managing=not scope.startswith('所选') and not readonly;self.store_configs=store_configs or {};self.intent=intent
         v=QVBoxLayout(self);v.addWidget(label(scope+(' · 只读，不应用或保存。' if readonly else ' · 方案保存/停用立即生效，不应用到门店。' if self.managing else ' · 未应用的编辑仅在此窗口；应用整个表单，预算和主从仓保留。多店以第一家显示，应用前逐店核对差异。'),'muted'))
         if len(self.store_configs)>1 and any(c!=config for c in self.store_configs.values()):v.addWidget(label('注意：所选门店参数不完全相同；应用将统一完整参数，请核对每店差异。','section'))
         row=QHBoxLayout();self.choices=QComboBox();self.presets=self.repository.presets()
@@ -38,8 +38,10 @@ class ParameterDialog(QDialog):
         if trial:v.addWidget(button('与本次所选门店配置试算',lambda:self.try_trial(trial)))
         row=QHBoxLayout();cancel=button('关闭' if self.managing or readonly else '放弃未应用编辑',self.reject);cancel.setDefault(True);row.addWidget(cancel);row.addStretch()
         if not self.managing and not readonly:
-            row.addWidget(button('应用到本次门店',lambda:self.finish('temporary')))
-            row.addWidget(button('应用并保存为门店默认',lambda:self.finish('default'),True))
+            if intent=='defaults':row.addWidget(button('保存为门店默认',lambda:self.finish('default'),True))
+            else:
+                row.addWidget(button('应用到本次作业',lambda:self.finish('temporary')))
+                row.addWidget(button('应用并保存为门店默认',lambda:self.finish('default'),True))
         v.addLayout(row);self.fill(config)
         if readonly:
             self.exception.setEnabled(False)
@@ -127,7 +129,9 @@ class ParameterDialog(QDialog):
             from interaction_ui import review_rows
             rows=configuration_changes(self.store_configs,edited)
             target='应用并保存为门店默认' if action=='default' else '仅应用到本次门店'
-            if not review_rows(self,'逐店核对完整参数变化',['门店','参数','原值','新值'],rows,f'{len(self.store_configs)} 家门店；共 {len(rows)} 项变化。预算和主从仓不变。'+('同时保存门店默认；每日草稿需另存。' if action=='default' else '不保存门店默认；每日草稿需另存。'),target):return
+            message=f'{len(self.store_configs)} 家门店；共 {len(rows)} 项变化。预算和主从仓不变。'+('同时保存门店默认；每日草稿需另存。' if action=='default' else '不保存门店默认；每日草稿需另存。')
+            if self.intent=='defaults':target='保存为门店默认';message=f'{len(self.store_configs)} 家门店；共 {len(rows)} 项变化。仅供后续作业带入，当前作业和历史签发不变；预算和主从仓保留。'
+            if not review_rows(self,'逐店核对完整参数变化',['门店','参数','原值','新值'],rows,message,target):return
         self.config=edited;self.action=action;self.accept()
     def try_trial(self,callback):
         try:c=self.value();callback(c,self)

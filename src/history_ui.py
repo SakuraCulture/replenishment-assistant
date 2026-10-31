@@ -4,7 +4,7 @@ import json
 from contextlib import closing
 from PySide6.QtGui import QShortcut,QKeySequence
 from PySide6.QtCore import Qt,QAbstractTableModel,QModelIndex,QTimer
-from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QLineEdit,QTableView,QFileDialog,QTextBrowser,QMessageBox,QAbstractItemView,QProgressBar,QSplitter,QWidget
+from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QLineEdit,QTableView,QFileDialog,QTextBrowser,QMessageBox,QAbstractItemView,QProgressBar,QSplitter,QWidget,QTabWidget
 from ui_controls import label,button
 import work_repository as wr
 from history_read import repository
@@ -26,24 +26,27 @@ class ArchiveModel(QAbstractTableModel):
 
 
 class ArchiveDialog(QDialog):
-    def __init__(self,host,record):
+    def __init__(self,host,record,initial_tab='signed',sku=''):
         super().__init__(host);self.host=host;self.record=record;self.selected=None;self.disposed=False;self.setWindowTitle(record['number']+' · 历史签发快照');self.resize(1100,730)
         from history_tasks import HistoryReader
         self.reader=HistoryReader(host.work_repository.path,host.history_reader.cache,self)
-        v=QVBoxLayout(self);self.rev=QComboBox();self.rev.addItems([f'V{i:03d}'+(' · 当前' if i==record['revision'] else ' · 历史') for i in range(1,record['revision']+1)]);self.rev.setCurrentIndex(record['revision']-1);v.addWidget(self.rev)
+        self.initial_tab=initial_tab;self.initial_sku=sku;self.children_views={};root=QVBoxLayout(self);root.addWidget(label(record['number']+' · '+record.get('name',record['store'])+' · '+record.get('warehouse',''),'section'));self.tabs=QTabWidget();root.addWidget(self.tabs,1);page=QWidget();v=QVBoxLayout(page);self.tabs.addTab(page,'签发明细');self.tabs.addTab(QWidget(),'订单跟踪');self.tabs.addTab(QWidget(),'决策依据')
+        self.rev=QComboBox();self.rev.addItems([f'V{i:03d}'+(' · 当前' if i==record['revision'] else ' · 历史') for i in range(1,record['revision']+1)]);self.rev.setCurrentIndex(record['revision']-1);self.rev.hide();v.addWidget(button('查看签发历史记录',self.rev.show));v.addWidget(self.rev)
         self.note=label('读取中…','muted');v.addWidget(self.note);self.search=QLineEdit();self.search.setPlaceholderText('筛选商品名称 / 编码（不影响正式导出范围）');v.addWidget(self.search)
         self.model=ArchiveModel(self);self.table=QTableView();self.table.setModel(self.model);self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);v.addWidget(self.table,1)
         for i,width in enumerate([150,260,115,100,100,100,110,340]):self.table.setColumnWidth(i,width)
         self.table.doubleClicked.connect(lambda _:self.audit())
         exports=QHBoxLayout();self.archive_export_buttons=[]
-        for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发建议','signed')]:
+        for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发明细（内部）','signed')]:
             b=button(title,lambda checked=False,k=kind:self.export_archive(k));exports.addWidget(b);self.archive_export_buttons.append(b)
         self.archive_export_btn=self.archive_export_buttons[0];v.insertLayout(1,exports)
         row=QHBoxLayout();self.export_btn=button('导出门店确认单',self.export);self.audit_btn=button('查看计算依据',self.audit);row.addWidget(self.export_btn);row.addWidget(self.audit_btn);row.addWidget(button('此单操作日志',self.events));row.addWidget(button('关闭',self.reject));v.addLayout(row)
         row.insertWidget(3,button('查看订单生命周期',self.purchases))
         self.debounce=QTimer(self);self.debounce.setSingleShot(True);self.debounce.setInterval(275);self.debounce.timeout.connect(self.filter);self.search.textChanged.connect(lambda _:self.debounce.start());self.search.returnPressed.connect(self.filter);self.rev.currentIndexChanged.connect(self.load);self.load()
+        self.export_btn.setText('导出签发单');self.audit_btn.setText('查看决策依据');self.tabs.currentChanged.connect(self.load_tab)
     def load(self):
         if self.disposed:return
+        self.clear_tabs()
         self.selected=None;self.archive_export_btn.setEnabled(False);self.export_btn.setEnabled(False);self.audit_btn.setEnabled(False);self.model.replace({'rows':[],'search':[]});self.note.setText('正在读取并校验归档…（可关闭取消）')
         for b in self.archive_export_buttons:b.setEnabled(False)
         # Header read is tiny and binds the requested historical revision.
@@ -62,8 +65,9 @@ class ArchiveDialog(QDialog):
         self.model.replace(view);self.filter();self.export_btn.setEnabled(not self.selected.get('deleted'));self.archive_export_btn.setEnabled(not self.selected.get('deleted'));self.audit_btn.setEnabled(True)
         for b in self.archive_export_buttons:b.setEnabled(not self.selected.get('deleted'))
         if self.model.rowCount():self.table.selectRow(0)
-        self.audit_btn.setText('查看计算依据')
+        self.audit_btn.setText('查看决策依据')
         self.export_btn.setToolTip('导出此门店、此修订的完整中心仓确认单；不受商品搜索过滤影响。')
+        self.tabs.setCurrentIndex({'signed':0,'lifecycle':1,'audit':2}[self.initial_tab]);self.initial_tab='signed';self.load_tab(self.tabs.currentIndex())
     def failed(self,message):
         if not self.disposed:self.note.setText('读取失败：'+message+'；重新选择修订可重试')
     def filter(self):self.debounce.stop();self.model.filter(self.search.text())
@@ -79,16 +83,33 @@ class ArchiveDialog(QDialog):
         try:FeedbackDialog(self,self.host,self.selected).exec()
         except Exception as exc:QMessageBox.warning(self,'未打开回传',str(exc))
     def purchases(self):
-        if not self.selected:return
-        from lifecycle_ui import LifecycleDialog
-        try:LifecycleDialog(self,self.host,self.selected).exec()
-        except Exception as exc:QMessageBox.warning(self,'未打开执行对照',str(exc))
+        if self.selected:self.tabs.setCurrentIndex(1)
     def audit(self):
         if not self.selected:return
         i=self.table.currentIndex().row();sku=self.model.rows[self.model.indices[i]][0] if i>=0 else ''
-        dialog=AuditDialog(self,self.host,self.selected,products=self.model.rows,sku=sku);dialog.exec();dialog.dispose();dialog.deleteLater()
+        self.initial_sku=sku;self.tabs.setCurrentIndex(2);self.load_tab(2)
+        d=self.children_views.get(2)
+        if d and sku:d.sku.setText(sku);d.scope.setCurrentText('商品建议与销量库存');d.load()
+    def clear_tabs(self):
+        for d in self.children_views.values():
+            if hasattr(d,'dispose'):d.dispose()
+            d.hide();d.deleteLater()
+        self.children_views.clear()
+    def load_tab(self,index):
+        if not self.selected or not index or index in self.children_views:return
+        try:
+            if index==1:
+                from lifecycle_ui import LifecycleDialog
+                d=LifecycleDialog(self,self.host,self.selected,on_audit=self.audit)
+            else:d=AuditDialog(self,self.host,self.selected,products=self.model.rows,sku=self.initial_sku)
+            d.setWindowFlags(Qt.WindowType.Widget);page=self.tabs.widget(index);layout=page.layout() or QVBoxLayout(page);layout.addWidget(d);self.children_views[index]=d;d.show()
+            # Embedded detail is closed with the common outer window.
+            from PySide6.QtWidgets import QPushButton
+            for b in d.findChildren(QPushButton):
+                if b.text()=='关闭':b.hide()
+        except Exception as exc:QMessageBox.warning(self,'未打开订单依据',str(exc))
     def dispose(self):
-        self.disposed=True;self.debounce.stop();self.reader.shutdown();self.model.replace({'rows':[],'search':[]});self.selected=None
+        self.disposed=True;self.clear_tabs();self.debounce.stop();self.reader.shutdown();self.model.replace({'rows':[],'search':[]});self.selected=None
     def done(self,code):self.dispose();super().done(code)
 
 
