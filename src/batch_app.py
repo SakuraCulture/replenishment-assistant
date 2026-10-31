@@ -1,5 +1,6 @@
 """Guided native desktop workbench; business calculations remain in engine."""
 from __future__ import annotations
+import export_locations
 from app_defaults import DEFAULT_WAREHOUSES
 import copy,json,os,threading
 from collections import Counter
@@ -370,11 +371,11 @@ class BatchWindow(WarehouseUi,SessionWindow):
         if not any(st['state']=='已完成' for st in states.values()):self.failed('所选门店没有可导出的有效结果。');return
         stamp=datetime.now().strftime('%Y%m%d_%H%M%S');split=mode.currentIndex()==1
         if split:
-            parent=QFileDialog.getExistingDirectory(self,'选择保存文件夹')
+            parent=export_locations.directory(self,'选择保存文件夹')
             if not parent:return
             path=str(Path(parent)/('补货结果_'+stamp))
         else:
-            path,_=QFileDialog.getSaveFileName(self,'保存汇总结果','补货结果_'+stamp+'.xlsx','Excel (*.xlsx)',options=QFileDialog.Option.DontConfirmOverwrite)
+            path,_=export_locations.save_file(self,'保存汇总结果','补货结果_'+stamp+'.xlsx','Excel (*.xlsx)',options=QFileDialog.Option.DontConfirmOverwrite)
             if not path:return
             if not path.lower().endswith('.xlsx'):path+='.xlsx'
         self.job(batch_service.export_batch,(results,states,path,split),self.export_ok)

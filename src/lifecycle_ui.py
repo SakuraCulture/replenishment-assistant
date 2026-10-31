@@ -1,4 +1,5 @@
 """Grouped whole-document import, history and export; fixed mirror naming."""
+import export_locations
 from pathlib import Path
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QComboBox, QLineEdit, QFileDialog, QMessageBox, QListWidget, QScrollArea, QWidget, QInputDialog, QGroupBox, QCheckBox, QPlainTextEdit
@@ -14,7 +15,7 @@ def warn(parent, exc):
     if not isinstance(exc, Cancelled): QMessageBox.warning(parent, '未完成', str(exc))
 
 def template(parent, stage):
-    path, _ = QFileDialog.getSaveFileName(parent, '下载' + io.TITLES[stage] + '最低标准模板', io.TITLES[stage] + '模板.xlsx', 'Excel (*.xlsx)')
+    path, _ = export_locations.save_file(parent, '下载' + io.TITLES[stage] + '最低标准模板', io.TITLES[stage] + '模板.xlsx', 'Excel (*.xlsx)')
     if path:
         try: io.template(stage, path if path.lower().endswith('.xlsx') else path+'.xlsx'); QMessageBox.information(parent, '模板已保存', path)
         except Exception as exc: warn(parent, exc)
@@ -152,7 +153,7 @@ def export_selected(parent,host,heads,kind='comparison'):
     if not heads:return
     mode,ok=QInputDialog.getItem(parent,'选择导出方式','仅导出所选完整仓单；不受商品表搜索影响。',['每店每仓每修订一个文件','每仓一表多订单'],0,False)
     if not ok:return
-    folder=QFileDialog.getExistingDirectory(parent,'选择导出目录（不会覆盖已有文件）')
+    folder=export_locations.directory(parent,'选择导出目录（不会覆盖已有文件）')
     if not folder:return
     try:
         result=run(parent,service.export,(host.work_repository.path,heads,folder,kind,'separate' if mode.startswith('每店') else 'combined'),'导出生命周期资料')
@@ -175,7 +176,7 @@ class Document(QDialog):
     def download(self):
         f=self.files.currentData();d=self.versions.currentData()
         if not f or not d:return
-        target,_=QFileDialog.getSaveFileName(self,'下载原文件',f['name'],'Excel (*.xlsx)')
+        target,_=export_locations.save_file(self,'下载原文件',f['name'],'Excel (*.xlsx)')
         if target:
             try:run(self,service.attachment,(self.host.work_repository.path,self.head,self.stage,d['version'],f['sha'],target),'下载单据原件')
             except Exception as exc:warn(self,exc)

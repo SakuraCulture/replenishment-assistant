@@ -1,11 +1,12 @@
 """One drop/picker/template entry used by all import flows."""
+import export_locations
 from pathlib import Path
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QFileDialog,QListWidget,QMessageBox
 from ui_controls import button,label
 import import_templates
 
 def download(parent,kind):
-    path,_=QFileDialog.getSaveFileName(parent,'下载最低标准模板',import_templates.TEMPLATES[kind][0]+'模板.xlsx','Excel (*.xlsx)')
+    path,_=export_locations.save_file(parent,'下载最低标准模板',import_templates.TEMPLATES[kind][0]+'模板.xlsx','Excel (*.xlsx)')
     if not path:return
     if not path.lower().endswith('.xlsx'):path+='.xlsx'
     try:import_templates.write(kind,path);QMessageBox.information(parent,'模板已保存',path)

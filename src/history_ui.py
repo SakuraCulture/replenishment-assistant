@@ -1,4 +1,5 @@
 """Read-only archive views. Lightweight projections, no full snapshot in Qt."""
+import export_locations
 import json
 from contextlib import closing
 from PySide6.QtGui import QShortcut,QKeySequence
@@ -142,7 +143,7 @@ class AuditDialog(QDialog):
         key=(self.scope.currentText(),self.sku.text().strip())
         if self.loaded_key!=key:self.load();return
         scope,sku=key;name=self.head['number']+f'-V{self.head["revision"]:03d}-'+scope+('' if scope in ('单据概况','当时参数') else '-'+sku)+'.xlsx'
-        path,_=QFileDialog.getSaveFileName(self,'导出已显示的完整表单（不是门店确认单）',name,'Excel (*.xlsx)')
+        path,_=export_locations.save_file(self,'导出已显示的完整表单（不是门店确认单）',name,'Excel (*.xlsx)')
         if path:
             self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在导出所选修订完整表单…')
             self.reader.request({'kind':'form_export','head':self.head,'scope':scope,'sku':sku,'path':path},self.exported,self.failed)
@@ -162,7 +163,7 @@ class AuditDialog(QDialog):
             item=model.rows[model.indices[i]]
             if item[3]!='已留存':note.setText('历史原文件未留存');return
             from pathlib import Path
-            path,_=QFileDialog.getSaveFileName(d,'保存原文件副本',Path(item[1]).name,'原文件 (*)')
+            path,_=export_locations.save_file(d,'保存原文件副本',Path(item[1]).name,'原文件 (*)')
             if path:self.reader.request({'kind':'source_export','head':self.head,'sha':item[2],'path':path},lambda p:note.setText('已保存：'+p),note.setText)
         v.addWidget(button('下载选中的原文件',save));v.addWidget(button('关闭',d.accept));d.exec();self.reader.cancel();self.load()
     def dispose(self):self.disposed=True;self.reader.shutdown()

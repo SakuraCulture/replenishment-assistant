@@ -1,4 +1,5 @@
 """Explicit purchase import, version review and allocation forms; no model writes."""
+import export_locations
 import copy
 from contextlib import closing
 from pathlib import Path
@@ -17,7 +18,7 @@ def warn(parent,exc):
     else:QMessageBox.warning(parent,'未完成',str(exc))
 
 def download_template(parent):
-    p,_=QFileDialog.getSaveFileName(parent,'下载实际下单最低标准模板','实际下单明细模板.xlsx','Excel (*.xlsx)')
+    p,_=export_locations.save_file(parent,'下载实际下单最低标准模板','实际下单明细模板.xlsx','Excel (*.xlsx)')
     if p:
         try:io.template(p if p.lower().endswith('.xlsx') else p+'.xlsx');QMessageBox.information(parent,'已下载','请按填写说明录入；模板中不包含示例订单。')
         except Exception as exc:warn(parent,exc)
@@ -233,7 +234,7 @@ class PurchaseView(QDialog):
         if not files:QMessageBox.information(self,'无原件','此记录没有留存原件引用。');return
         text,ok=QInputDialog.getItem(self,'选择原件','按原始字节下载，不重新生成表格。',names,0,False)
         if not ok:return
-        f=files[names.index(text)];p,_=QFileDialog.getSaveFileName(self,'原件另存为新文件',f['name'],'Excel (*.xlsx)')
+        f=files[names.index(text)];p,_=export_locations.save_file(self,'原件另存为新文件',f['name'],'Excel (*.xlsx)')
         if p:
             try:run(self,service.attachment,(self.host.work_repository.path,f['sha'],p),'下载采购原件');QMessageBox.information(self,'已下载',p)
             except Exception as exc:warn(self,exc)
@@ -258,7 +259,7 @@ def export_selected(parent,host,heads):
     if not heads:QMessageBox.warning(parent,'尚未勾选','请先勾选需要导出的订单。');return
     mode,ok=QInputDialog.getItem(parent,'导出执行对照','只导出勾选订单的此修订；不受商品关键词过滤影响。',['每店每仓每修订一个文件','合并为一张多订单表'],0,False)
     if not ok:return
-    folder=QFileDialog.getExistingDirectory(parent,'选择输出目录（新文件，不覆盖旧导出）')
+    folder=export_locations.directory(parent,'选择输出目录（新文件，不覆盖旧导出）')
     if folder:
         try:
             receipt=run(parent,service.export_comparisons,(host.work_repository.path,heads,folder,'separate' if mode.startswith('每店') else 'combined'),'导出独立执行对照');message=f"已完成 {len(receipt['files'])} 个文件。"+('已取消剩余导出，已完成文件保留。' if receipt['cancelled'] else '')+('后续写出失败：'+receipt['error'] if receipt['error'] else '')+'\n'+'\n'.join(receipt['files']);QMessageBox.information(parent,'执行对照已导出' if not receipt['cancelled'] and not receipt['error'] else '导出未全部完成',message)

@@ -1,4 +1,5 @@
 """Merchant reply preview and independent revision history, outside calculation work."""
+import export_locations
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QFileDialog,QMessageBox
 from ui_controls import label,button
 from business_ui import run,grid
@@ -87,14 +88,14 @@ class FeedbackDialog(QDialog):
         def save():
             f=files.currentData()
             if not f:return
-            path,_=QFileDialog.getSaveFileName(d,'下载回传原文件',f['name'],'Excel (*.xlsx)')
+            path,_=export_locations.save_file(d,'下载回传原文件',f['name'],'Excel (*.xlsx)')
             if not path:return
             version=self.data['history'][self.version.currentIndex()][0]
             try:run(d,feedback.export_source,(self.host.work_repository.path,self.head,version,f['sha'],path),'下载回传原文件')
             except Exception as exc:QMessageBox.warning(d,'未下载',str(exc))
         v.addWidget(button('下载选中的回传原文件',save));v.addWidget(button('关闭',d.accept));d.exec()
     def export(self):
-        path,_=QFileDialog.getSaveFileName(self,'导出数量对照',self.head['number']+'门店确认对照.xlsx','Excel (*.xlsx)')
+        path,_=export_locations.save_file(self,'导出数量对照',self.head['number']+'门店确认对照.xlsx','Excel (*.xlsx)')
         if not path:return
         info=[['补货单号',self.head['number']],['签发修订',self.head['revision']],['回传版本',self.version.currentText()],['数量单位','库存单位；签发建议与回传独立保存']]
         try:run(self,business_excel.write,(path,[('数量对照',HEADERS,self.model.rows),('单据信息',['项目','内容'],info)]),'导出数量对照')

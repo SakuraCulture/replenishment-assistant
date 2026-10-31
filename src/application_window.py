@@ -1,4 +1,5 @@
 """Home/work/archive shell. Workbench remains a persistent live instance."""
+import export_locations
 import copy,hashlib,json
 from pathlib import Path
 from PySide6.QtCore import Qt,QTimer,QSignalBlocker
@@ -30,7 +31,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         work=self.takeCentralWidget();root=QWidget();v=QVBoxLayout(root);v.setContentsMargins(8,6,8,6);nav=QHBoxLayout();self.top_nav=[]
         for i,title in enumerate(['首页','工作页','订单管理']):
             b=button(title,lambda checked=False,n=i:self.show_section(n));self.top_nav.append(b);nav.addWidget(b)
-        nav.addStretch();v.addLayout(nav);self.sections=QStackedWidget();v.addWidget(self.sections,1);self.setCentralWidget(root)
+        nav.addStretch();nav.addWidget(button('导出设置',lambda:export_locations.ExportSettingsDialog(self).exec()));v.addLayout(nav);self.sections=QStackedWidget();v.addWidget(self.sections,1);self.setCentralWidget(root)
         home=QWidget();hv=QVBoxLayout(home);hv.setContentsMargins(36,26,36,26);hv.addWidget(label('今天的补货，从这里开始','title'));self.home_status=label('','section');hv.addWidget(self.home_status)
         hr=QHBoxLayout();hr.addWidget(button('进入工作页',lambda:self.show_section(1),True));hr.addWidget(button('继续已保存的今日草稿',self.resume_today));hr.addWidget(button('查询历史正常单',lambda:self.show_section(2)));hr.addWidget(button('数据维护',self.storage_copy));hv.addLayout(hr)
         hv.addWidget(label('计算后确认归档即签发；门店确认单按仓导出。回传、付款、实际收货在订单生命周期中独立留存。','muted'))
@@ -69,7 +70,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if self.worker or getattr(self,'_large_io_dialog',None):return
         choice,ok=QInputDialog.getItem(self,'存储维护 · 只生成副本','原数据库保持不变。旧版EXE不能直接读分块记录；可生成旧格式副本用于回退。', ['生成旧格式兼容副本','生成完整分块副本（校验并转换历史）'],0,False)
         if not ok:return
-        path,_=QFileDialog.getSaveFileName(self,'保存为新的数据库副本','','SQLite (*.sqlite3)')
+        path,_=export_locations.save_file(self,'保存为新的数据库副本','','SQLite (*.sqlite3)')
         if not path:return
         if Path(path).exists():self.failed('目标文件已存在，请使用新文件名；不会覆盖任何数据库。');return
         from ui_work_io import Session,request
@@ -298,7 +299,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                 while True:
                     box.exec()
                     if box.clickedButton() is not review:break
-                    path,_=QFileDialog.getSaveFileName(self,'保存完整签发差异','签发差异.xlsx','Excel (*.xlsx)')
+                    path,_=export_locations.save_file(self,'保存完整签发差异','签发差异.xlsx','Excel (*.xlsx)')
                     if path:
                         if not path.lower().endswith('.xlsx'):path+='.xlsx'
                         request(self,session,'review_export',path)
@@ -342,7 +343,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                     while True:
                         box.exec()
                         if box.clickedButton() is not save_diff:break
-                        diff_path,_=QFileDialog.getSaveFileName(self,'保存完整签发差异','签发差异.xlsx','Excel (*.xlsx)')
+                        diff_path,_=export_locations.save_file(self,'保存完整签发差异','签发差异.xlsx','Excel (*.xlsx)')
                         if diff_path:request(self,session,'review_export',diff_path if diff_path.lower().endswith('.xlsx') else diff_path+'.xlsx')
                     if box.clickedButton() is not accept:return
                 else:
@@ -350,9 +351,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                     if not confirm(self,'导出已签发版本','不新增签发修订；按以下原修订生成文件：\n'+'\n'.join(p['name']+f" · V{p['old']['revision']:03d} · {len(p['files'])}份" for p in plans)):return
                 files=[f for p in plans for f in p['files']]
                 if len(files)==1:
-                    path,_=QFileDialog.getSaveFileName(self,'导出本仓门店确认单',files[0]['filename'],'Excel (*.xlsx)')
+                    path,_=export_locations.save_file(self,'导出本仓门店确认单',files[0]['filename'],'Excel (*.xlsx)')
                     if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
-                else:path=QFileDialog.getExistingDirectory(self,'选择批量确认单导出文件夹')
+                else:path=export_locations.directory(self,'选择批量确认单导出文件夹')
                 if not path:return
                 receipt=request(self,session,'delivery_execute',path)
             self.delivery_done(receipt)
@@ -380,9 +381,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             warehouses=dialog.warehouses().get(order['store'],[])
         if not warehouses:return
         if len(warehouses)==1:
-            path,_=QFileDialog.getSaveFileName(self,'导出本仓门店确认单',normal_exports.filename(order,warehouses[0]),'Excel (*.xlsx)')
+            path,_=export_locations.save_file(self,'导出本仓门店确认单',normal_exports.filename(order,warehouses[0]),'Excel (*.xlsx)')
             if path and not path.lower().endswith('.xlsx'):path+='.xlsx'
-        else:path=QFileDialog.getExistingDirectory(self,'选择分仓确认单导出文件夹')
+        else:path=export_locations.directory(self,'选择分仓确认单导出文件夹')
         if not path:return
         def done(paths):self.status.setText('已导出 '+'；'.join(paths)+f'；原归档 V{order["revision"]:03d} 不变。')
         def start():

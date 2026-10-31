@@ -1,4 +1,5 @@
 """Independent export entrypoints and explicit multi-order selection."""
+import export_locations
 import json
 from pathlib import Path
 from PySide6.QtCore import Qt,QSignalBlocker,QUrl
@@ -61,7 +62,7 @@ def export(parent,path,heads,kind,mode=None):
         plan=run(parent,batch.prepare,(path,heads,kind,mode),'核对历史导出范围')
         preview=Preview(parent,plan)
         if preview.exec()!=QDialog.DialogCode.Accepted:return
-        folder=QFileDialog.getExistingDirectory(parent,'选择导出目录（自动新建本次任务文件夹）')
+        folder=export_locations.directory(parent,'选择导出目录（自动新建本次任务文件夹）')
         if not folder:return
         try:
             from priority_list import atomic_json

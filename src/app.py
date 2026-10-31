@@ -23,6 +23,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--export-location-smoke' in sys.argv:
+        from export_location_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--export-location-smoke')+1:])
     if '--lifecycle-smoke' in sys.argv:
         from lifecycle_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-smoke')+1:])
