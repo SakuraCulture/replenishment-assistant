@@ -221,6 +221,7 @@ class ProductPicker(AsyncDialog):
         v=QVBoxLayout(self);self.body=QWidget();v.addWidget(self.body,1);b=QVBoxLayout(self.body)
         b.addWidget(label('搜索并勾选商品；两仓相同编码只选一次。供货仓、箱规和禁用/停采在补足预览中按门店核对。','muted'))
         filters=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('搜索商品名称 / 商品编码；空格可组合关键词');self.warehouse=QComboBox();self.category=QComboBox();self.only_selected=QCheckBox('只看已勾选')
+        self.warehouse.setMinimumWidth(150);self.category.setMinimumWidth(150)
         for w in (self.search,self.warehouse,self.category,self.only_selected):filters.addWidget(w,1 if w is self.search else 0)
         b.addLayout(filters);self.table=QTableView();self.table.setSortingEnabled(True);self.table.setAlternatingRowColors(True);self.table.verticalHeader().hide();b.addWidget(self.table,1)
         actions=QHBoxLayout();actions.addWidget(button('勾选当前筛选',self.check_visible));actions.addWidget(button('清空全部勾选',self.clear_checks));self.count=label('','muted');actions.addWidget(self.count,1);b.addLayout(actions)
