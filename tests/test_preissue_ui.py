@@ -66,6 +66,36 @@ class FinalUiTests(unittest.TestCase):
     def test_edit_invalidates_previous_preview(self):
         d=self.create();d.model.reason='经营判断';d.model.setData(d.model.index(0,9),48);d.preview();self.wait_task();self.assertIsNotNone(d.prepared)
         d.model.setData(d.model.index(0,9),72);self.assertIsNone(d.prepared);self.assertFalse(d.apply_btn.isEnabled())
+        self.assertEqual(d.model.risks,{});self.assertFalse(d.model.reviewed)
+    def test_confirmed_risk_leaves_pending_filter_and_edit_clears_it(self):
+        d=self.create();d.model.reason='暂不补货';d.model.setData(d.model.index(0,9),0);d.preview();self.wait_task()
+        d.scope.setCurrentText('风险待确认');self.app.processEvents();self.assertEqual(d.proxy.rowCount(),1)
+        d.confirm_all.setChecked(True);self.app.processEvents();self.assertEqual(d.proxy.rowCount(),0)
+        d.model.setData(d.model.index(0,9),24);self.app.processEvents()
+        self.assertIsNone(d.prepared);self.assertFalse(d.model.risks);self.assertFalse(d.apply_btn.isEnabled())
+    def test_check_and_reason_updates_are_data_changes_not_unpaired_layout(self):
+        from PySide6.QtCore import QPersistentModelIndex,Qt
+        d=self.create();index=QPersistentModelIndex(d.proxy.index(0,3));sku=index.data();signals=[]
+        d.model.layoutChanged.connect(lambda *args:signals.append('layout'))
+        d.check_visible(True);d.model.reason='经营判断';d.model.setData(d.model.index(0,9),48);d.assign_reason();d.clear_checks();self.app.processEvents()
+        self.assertEqual(signals,[]);self.assertTrue(index.isValid());self.assertEqual(index.data(),sku)
+    def test_actual_delegate_edit_commit_keeps_sku_under_sort_and_filter(self):
+        from PySide6.QtCore import Qt
+        from PySide6.QtTest import QTest,QAbstractItemModelTester
+        from preissue_ui import PackInput
+        self.host.results['S1']=result([row(str(i),24,24,2) for i in range(30)])
+        d=self.create();d.show();d.model.reason='暂不补货'
+        testers=[QAbstractItemModelTester(m,QAbstractItemModelTester.FailureReportingMode.Fatal) for m in (d.model,d.proxy)]
+        d.scope.setCurrentText('拟签发大于0');d.table.sortByColumn(9,Qt.SortOrder.DescendingOrder)
+        for n in range(20):
+            self.app.processEvents();target=d.proxy.index(0,3).data();index=d.proxy.index(0,9)
+            d.table.selectRow(0);d.table.setCurrentIndex(index);d.table.edit(index);self.app.processEvents()
+            editor=d.table.findChild(PackInput);self.assertIsNotNone(editor)
+            editor.lineEdit().selectAll();QTest.keyClicks(editor.lineEdit(),'0');QTest.keyClick(editor.lineEdit(),Qt.Key.Key_Return)
+            self.app.processEvents();d.check_visible(True);d.table.viewport().repaint();d.table.horizontalHeader().repaint();self.app.processEvents()
+            self.assertEqual(d.model.edits['S1'][target]['quantity'],0)
+            self.assertEqual(d.proxy.rowCount(),29-n)
+        self.assertEqual(len(d.model.edits['S1']),20)
     def test_draft_not_applied_and_keeps_zero(self):
         d=self.create();d.model.reason='暂不补货';d.model.setData(d.model.index(0,9),0);d.keep_draft()
         self.assertEqual(d.outcome['drafts']['S1']['edits']['a']['quantity'],0);self.assertEqual(self.host.results['S1']['rows'][0]['AS'],24)
