@@ -31,8 +31,11 @@ class Task(QDialog):
         super().__init__(parent);self.setWindowTitle(title);self.resize(610,190);self.complete=False;self._completed=False;self.result=None;self.error=None;self.started=time.monotonic();self.cancellable=cancellable
         v=QVBoxLayout(self);self.note=label('准备中…');v.addWidget(self.note);self.bar=QProgressBar();self.bar.setRange(0,0);v.addWidget(self.bar);self.health=label('');v.addWidget(self.health);self.cancel_btn=button('取消当前任务' if cancellable else '正在提交，暂不能取消',self.reject);self.cancel_btn.setEnabled(cancellable);v.addWidget(self.cancel_btn)
         self.worker=Worker(fn,args,self);self.worker.status.connect(self.note.setText);self.worker.row_progress.connect(self.count);self.worker.success.connect(self.success);self.worker.failed.connect(self.failed);self.worker.cancelled.connect(lambda:self.failed(Cancelled('已取消')));self.worker.finished.connect(self.finish)
+        self.worker.commit_state.connect(self.commit_state)
         self.clock=QTimer(self);self.clock.setInterval(300);self.clock.timeout.connect(lambda:self.health.setText(f'已用时 {time.monotonic()-self.started:.1f} 秒 · 后台处理中，等待当前阶段完成'));self.clock.start()
     def count(self,n,total):self.bar.setRange(0,max(total,1) if total else 0);self.bar.setValue(n)
+    def commit_state(self,active):
+        self.cancellable=not active;self.cancel_btn.setEnabled(not active and not self.worker.cancel.is_set());self.cancel_btn.setText('正在提交，暂不能取消' if active else '取消当前任务')
     def success(self,result):self.result=result
     def failed(self,message):self.error=message if isinstance(message,Exception) else RuntimeError(message)
     def finish(self):self.complete=True;self._completed=True;self.clock.stop();self.accept()

@@ -34,6 +34,7 @@ def schema(db):
         'CREATE TABLE IF NOT EXISTS jst_warehouses(warehouse TEXT PRIMARY KEY,bid TEXT NOT NULL,serial INTEGER NOT NULL)',
         'CREATE TABLE IF NOT EXISTS jst_generations(gid TEXT PRIMARY KEY,operation TEXT UNIQUE NOT NULL,oid TEXT NOT NULL,revision INTEGER NOT NULL,warehouse TEXT NOT NULL,day TEXT NOT NULL,saved TEXT NOT NULL,payload TEXT NOT NULL,digest TEXT NOT NULL)',
         'CREATE TABLE IF NOT EXISTS jst_active(oid TEXT,warehouse TEXT,gid TEXT NOT NULL,PRIMARY KEY(oid,warehouse))',
+        'CREATE TABLE IF NOT EXISTS jst_headers(gid TEXT PRIMARY KEY,payload TEXT NOT NULL)',
         'CREATE TABLE IF NOT EXISTS jst_locks(oid TEXT,warehouse TEXT,gid TEXT NOT NULL,locked INTEGER NOT NULL,at TEXT NOT NULL,reason TEXT NOT NULL,PRIMARY KEY(oid,warehouse))',
         'CREATE TABLE IF NOT EXISTS jst_reservations(gid TEXT,sku TEXT,quantity TEXT NOT NULL,PRIMARY KEY(gid,sku))',
         'CREATE TABLE IF NOT EXISTS jst_events(id INTEGER PRIMARY KEY,at TEXT,day TEXT,oid TEXT,warehouse TEXT,action TEXT,detail TEXT)',
@@ -98,6 +99,8 @@ def get(path, gid, progress=lambda _: None, cancel=None):
         value = decode(db.execute('SELECT payload,digest FROM jst_generations WHERE gid=?', (gid,)).fetchone())
         if value is None:
             raise ValueError('生成单不存在')
+        if value.get('gid') != gid:
+            raise ValueError('生成记录标识与快照不一致')
         return value
 
 
@@ -157,6 +160,8 @@ def commit_refresh(path, plan, progress=lambda _: None, cancel=None):
         lc.begin(db, cancel); schema(db)
         if state(db, p['warehouse']) != (tuple(p['expected']) if p['expected'] else None):
             raise wr.Conflict('读取期间锁单、分配或仓资料变化，请刷新后重新更新库存')
+        locked_ids=[r[0] for r in db.execute('SELECT gid FROM jst_locks WHERE warehouse=? AND locked=1 ORDER BY rowid',(p['warehouse'],))]
+        if locked_ids!=p['included']:raise wr.Conflict('读取期间锁单变化，请重新更新库存')
         db.execute('INSERT INTO jst_baselines VALUES(?,?,?,?,?)', (p['bid'], p['warehouse'], p['created'], wr.dumps(p), plan['digest']))
         serial = (p['expected'][1] if p['expected'] else 0) + 1
         db.execute('INSERT INTO jst_warehouses VALUES(?,?,?) ON CONFLICT(warehouse) DO UPDATE SET bid=excluded.bid,serial=excluded.serial', (p['warehouse'], p['bid'], serial))
@@ -174,7 +179,8 @@ def return_basis(db, head):
         raise ValueError('门店回传尚未确认或依据已变化：' + head['number'])
     doc = lc.current(db, head, 'return')
     rows = doc['payload']['rows'] if doc else [dict(sku=s, name=p.get('name'), base_quantity=p['quantity'], sources=[]) for s,p in basis['products'].items()]
-    return basis, rows, doc['saved'] if doc else head['saved']
+    legacy = lc.legacy_return(db,head,head['products']) if doc is None else None
+    return basis, rows, doc['saved'] if doc else legacy['saved'], copy.deepcopy(head['products']) if doc is None else None
 
 
 def reservations(db, wh, included, exclude=()):
@@ -197,7 +203,7 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
             seen.add(key); lock = locked(db, h); old = active(db, h)
             if lock or lc.current(db,h,'payment') or lc.current(db,h,'receipt') or old and not correction:
                 skipped.append({'head': supplied, 'reason': '已锁单' if lock else '已有付款／收货' if lc.current(db,h,'payment') or lc.current(db,h,'receipt') else '已生成，原样导出或选择重新分配'}); continue
-            basis, rows, saved = return_basis(db, h)
+            basis, rows, saved, signed_products = return_basis(db, h)
             if not any(Decimal(r['base_quantity']) > 0 for r in rows):
                 skipped.append({'head': supplied, 'reason': '无要货，无需生成'}); continue
             wh = h['warehouse']
@@ -207,7 +213,7 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                 raise ValueError(wh + '尚未建立库存基准，请导入或采用默认仓资料')
             states[wh] = state(db, wh)
             compact = {k:v for k,v in h.items() if k != 'products'}
-            orders.append({'head': compact, 'basis': basis, 'rows': rows, 'saved': saved, 'old': old})
+            orders.append({'head': compact, 'basis': basis, 'rows': rows, 'saved': saved, 'old': old, 'signed_products':signed_products})
         if correction:
             # A correction changes subsequent balances; include ALL unlocked active orders in each affected warehouse.
             chosen = {o['old'] for o in orders if o['old']}
@@ -232,6 +238,7 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                      'head': o['head'], 'basis': o['basis'], 'bid': b['bid'], 'old': o['old'],
                      'rows': rows, 'summary': allocation.totals(rows), 'saved': wr.now(), 'position': i+1,
                      'catalog': warehouse_catalog.metadata(b['catalog']), 'draft_status': '待核对付款单'}
+            if o['signed_products'] is not None:value['signed_products']=o['signed_products']
             plans.append(value); progress(RowProgress(f'预览分配 {i+1}/{len(orders)}：'+o['head']['number'],i+1,len(orders)))
     result = {'runid': runid, 'states': states, 'plans': plans, 'skipped': skipped, 'correction': correction, 'reserved': reserved}
     return {'payload': result, 'digest': digest(result)}
@@ -245,7 +252,7 @@ def validate_plan(db, p):
     if active(db,h) != p['old']:
         raise wr.Conflict('生成记录已变化：'+h['number'])
     # Modern returns carry all effective rows. Legacy needs the frozen upstream products.
-    h = {**h, 'products':p['basis']['products']}
+    h = {**h, 'products':p.get('signed_products',p['basis']['products'])}
     if lc.upstream(db,h,'payment') != p['basis']:
         raise wr.Conflict('回传依据已变化：'+h['number'])
 
@@ -254,6 +261,7 @@ def put_generation(db, p):
     h=p['head']; raw=wr.dumps(p)
     db.execute('INSERT INTO jst_generations VALUES(?,?,?,?,?,?,?,?,?)', (p['gid'],p['operation'],h['oid'],h['revision'],h['warehouse'],h['day'],p['saved'],raw,digest(p)))
     db.execute('INSERT INTO jst_active VALUES(?,?,?) ON CONFLICT(oid,warehouse) DO UPDATE SET gid=excluded.gid', (h['oid'],h['warehouse'],p['gid']))
+    db.execute('INSERT INTO jst_headers VALUES(?,?)',(p['gid'],wr.dumps({'summary':p['summary'],'return':p['basis']['dependencies'].get('return'),'revision':h['revision'],'saved':p['saved']})))
     db.executemany('INSERT INTO jst_reservations VALUES(?,?,?)', [(p['gid'],r['sku'],r['quantity']) for r in p['rows'] if Decimal(r['quantity'])>0])
     event(db,h,'生成聚水潭订单',{'gid':p['gid'],'summary':p['summary'],'old':p['old']})
 
@@ -296,7 +304,8 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                 for w in whs:db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(w,))
                 db.execute('INSERT OR IGNORE INTO jst_runs VALUES(?,?,?,?)',(v['runid'],wr.now(),run_raw,plan['digest']))
                 checkpoint(cancel);progress(CommitProgress(True));db.commit()
-                for w in whs:expected[w]=state(db,w)
+                # Advance only our own transaction; never adopt a concurrent refresh after COMMIT.
+                for w in whs:expected[w]=(expected[w][0],expected[w][1]+1)
             progress(CommitProgress(False))
             for p in group:
                 (result['generated'] if p['summary']['positive'] else result['zero']).append(p['gid'] if p['summary']['positive'] else p['head']['number'])
@@ -307,6 +316,19 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
             result['cancelled']=True;break
         except Exception as exc:
             blocked.update(whs);result['errors'].append({'orders':[p['head']['number'] for p in group],'error':str(exc)})
+        finally:
+            progress(CommitProgress(False))
+    if result['cancelled'] or result['errors']:
+        # Audit only: cancellation never fabricates an order. Do not wait on someone else's write lock.
+        try:
+            with closing(sqlite3.connect(path,timeout=.1)) as db,db:
+                db.execute('BEGIN IMMEDIATE')
+                for h in [p['head'] for p in v['plans']]:
+                    event(db,h,'批次停止' if result['cancelled'] else '批次存在未完成订单',{'runid':v['runid'],'result':result})
+        except sqlite3.Error as exc:
+            import logging
+            result['audit_warning']='数据库忙，未能保存停止／失败日志：'+str(exc)
+            logging.exception(result['audit_warning'])
     return result
 
 
@@ -321,10 +343,9 @@ def lock(path, gids, reason='', unlock=False, progress=lambda _:None, cancel=Non
             if active(db,h)!=p['gid']:raise wr.Conflict('生成单已变化，请重新核对')
             if unlock and (lc.current(db,h,'payment') or lc.current(db,h,'receipt')):raise ValueError('已有实际付款／收货，不能解除保护覆盖下游事实')
             if not unlock:
-                if lc.upstream(db,{**h,'products':p['basis']['products']},'payment')!=p['basis']:raise wr.Conflict('回传已变化，不能锁定旧生成单')
+                if lc.upstream(db,{**h,'products':p.get('signed_products',p['basis']['products'])},'payment')!=p['basis']:raise wr.Conflict('回传已变化，不能锁定旧生成单')
             if bool(locked(db,h)) == (not unlock):continue
             db.execute('INSERT INTO jst_locks VALUES(?,?,?,?,?,?) ON CONFLICT(oid,warehouse) DO UPDATE SET gid=excluded.gid,locked=excluded.locked,at=excluded.at,reason=excluded.reason',(h['oid'],h['warehouse'],p['gid'],int(not unlock),wr.now(),reason))
-            db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(h['warehouse'],))
             event(db,h,'更正解除锁定' if unlock else '确认下单并锁定',{'gid':p['gid'],'reason':reason})
         checkpoint(cancel);progress(CommitProgress(True));db.commit()
     progress(CommitProgress(False));return gids
@@ -348,3 +369,36 @@ def payment_plan(path, gid, progress=lambda _:None, cancel=None):
 def guard_payment(db, p):
     gid=p['payload'].get('jst_generation')
     if gid and active(db,p['head'])!=gid:raise wr.Conflict('付款草稿对应生成单已变化，请重新核对')
+
+
+def cancel_generated(path,gids,reason,progress=lambda _:None,cancel=None):
+    if not reason.strip():raise ValueError('撤销生成单须填写原因')
+    orders=[get(path,g,cancel=cancel) for g in gids]
+    storage_chunks.backup_before_write(Path(path),progress);checkpoint(cancel)
+    with closing(sqlite3.connect(path,timeout=.1)) as db,db:
+        lc.begin(db,cancel)
+        for p in orders:
+            checkpoint(cancel);h=p['head'];purchases.validate_head(db,h)
+            if active(db,h)!=p['gid']:raise wr.Conflict('生成单已变化，请重新核对')
+            if locked(db,h) or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):raise ValueError('已锁或已有付款／收货，不可作为未下单生成单撤销')
+        for p in orders:
+            h=p['head'];db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(h['oid'],h['warehouse']))
+            db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(h['warehouse'],))
+            event(db,h,'撤销未下单生成单',{'gid':p['gid'],'reason':reason})
+        checkpoint(cancel);progress(CommitProgress(True));db.commit()
+    progress(CommitProgress(False));return gids
+
+
+def export_source(path,gid,target,progress=lambda _:None,cancel=None):
+    import source_archive,os,tempfile
+    p=get(path,gid,cancel=cancel);sha=p['catalog'].get('source_sha256')
+    with closing(sqlite3.connect(path)) as db:
+        row=db.execute('SELECT name,content FROM jst_files WHERE sha=?',(sha,)).fetchone() or source_archive.read(db,sha)
+    if not row:raise ValueError('当时原件未留存，不能使用当前资料替代')
+    if hashlib.sha256(row[1]).hexdigest()!=sha:raise ValueError('原件校验失败')
+    target=Path(target);fd,tmp=tempfile.mkstemp(dir=target.parent,prefix='.jst-source-')
+    try:
+        with os.fdopen(fd,'wb') as stream:stream.write(row[1])
+        checkpoint(cancel);os.link(tmp,target)
+    finally:Path(tmp).unlink(missing_ok=True)
+    return str(target)

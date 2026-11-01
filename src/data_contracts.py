@@ -103,3 +103,26 @@ class CalculationResult(_CalculationResultRequired,total=False):
     import_audit:dict[str,Any]
     version:dict[str,Any]
     task:dict[str,int|float]
+
+
+class JstRow(TypedDict):
+    sku:str
+    demand:str
+    quantity:str
+    amount:str|None
+    price:str|None
+    step:str|None
+    stock:str|None
+    before:str|None
+    after:str|None
+    missing:str
+    reason:str
+    issue:bool
+
+
+class JstReceipt(TypedDict):
+    generated:list[str]
+    skipped:list[dict[str,Any]]
+    zero:list[str]
+    errors:list[dict[str,Any]]
+    cancelled:bool

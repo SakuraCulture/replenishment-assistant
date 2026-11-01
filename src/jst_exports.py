@@ -22,7 +22,7 @@ def filename(p):
 
 def export(path, gids, folder, progress=lambda _:None, cancel=None):
     folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
-    result={'files':[], 'failed':[], 'cancelled':False}
+    result={'files':[], 'failed':[], 'cancelled':False,'warnings':[]}
     for i,gid in enumerate(gids):
         tmp=None
         try:
@@ -45,10 +45,15 @@ def export(path, gids, folder, progress=lambda _:None, cancel=None):
             book.save(tmp);book.close();checkpoint(cancel)
             with open(tmp,'rb') as stream:sha=hashlib.file_digest(stream,'sha256').hexdigest()
             os.replace(tmp,target);tmp=None
-            with closing(sqlite3.connect(path,timeout=.1)) as db,db:
-                # File is already written: record that fact even if cancellation just arrived.
-                orders.lc.begin(db,None);orders.event(db,p['head'],'导出聚水潭订单',{'gid':gid,'path':str(target),'sha256':sha})
             result['files'].append({'gid':gid,'path':str(target),'sha256':sha})
+            try:
+                with closing(sqlite3.connect(path,timeout=.1)) as db,db:
+                    # File is already written: record that fact even if cancellation just arrived.
+                    orders.lc.begin(db,None);orders.event(db,p['head'],'导出聚水潭订单',{'gid':gid,'path':str(target),'sha256':sha})
+            except sqlite3.Error as exc:
+                import logging
+                message=f'文件已完成，但导出日志未保存：{target}；{exc}'
+                logging.exception(message);result['warnings'].append(message)
             progress(RowProgress(f'已导出 {i+1}/{len(gids)}：'+p['head']['number'],i+1,len(gids)))
         except Cancelled:
             result['cancelled']=True;break

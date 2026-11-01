@@ -15,6 +15,8 @@ import jst_exports as ex
 import warehouse_catalog as cat
 import order_lifecycle as lc
 import work_repository as wr
+import normal_orders as no
+import purchases
 import test_lifecycle as fixture
 from runtime_support import Cancelled,CommitProgress
 
@@ -109,6 +111,116 @@ class Service(unittest.TestCase):
         with self.assertRaises(wr.Conflict):self.f.save('return',[{'门店确认数量':20}])
         with closing(sqlite3.connect(self.path)) as db:
             with self.assertRaises(wr.Conflict):j.guard_resign(db,self.h['oid'])
+
+    def second_store(self):
+        p=copy.deepcopy(self.f.payload);p['result']['store']='U';p['result']['store_name']='第二店';d=no.fingerprint(p['result'])
+        with closing(sqlite3.connect(self.path)) as db,db:
+            db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),'U','normal_model','oid-u','BH-U-ZC',1))
+            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid-u',1,d,wr.now(),no.encode(p)))
+        h=next(h for h in purchases.targets(self.path) if h['store']=='U' and h['warehouse']=='河北仓')
+        old=self.f.h;self.f.h=h
+        try:self.f.save('return',[{'门店编码':'U','门店确认数量':80}])
+        finally:self.f.h=old
+        return h
+
+    def test_multi_order_priority_manual_order_and_lock_while_running(self):
+        h=self.second_store();p=j.prepare(self.path,[h,self.h])
+        self.assertEqual([x['head']['store'] for x in p['payload']['plans']],['T','U'])
+        self.assertEqual([x['summary']['quantity'] for x in p['payload']['plans']],['40','60'])
+        reverse=j.prepare(self.path,[h,self.h],True)
+        self.assertEqual([x['summary']['quantity'] for x in reverse['payload']['plans']],['80','20'])
+        def progress(v):
+            if hasattr(v,'business_event') and v.business_event['gid']==p['payload']['plans'][0]['gid']:j.lock(self.path,[v.business_event['gid']])
+        result=j.commit(self.path,p,progress=progress)
+        self.assertEqual(len(result['generated']),2);self.assertFalse(result['errors']);self.assertEqual(self.balances(),0)
+
+    def test_failure_second_order_retains_first_then_retry_requires_repreview(self):
+        h=self.second_store();p=j.prepare(self.path,[self.h,h])
+        with closing(sqlite3.connect(self.path)) as db,db:
+            db.execute("CREATE TRIGGER fail_u BEFORE INSERT ON jst_generations WHEN NEW.oid='oid-u' BEGIN SELECT RAISE(ABORT,'injected'); END")
+        r=j.commit(self.path,p);self.assertEqual(len(r['generated']),1);self.assertTrue(r['errors']);self.assertEqual(self.balances(),60)
+        with closing(sqlite3.connect(self.path)) as db,db:db.execute('DROP TRIGGER fail_u')
+        r=j.commit(self.path,p);self.assertEqual(len(r['generated']),2);self.assertEqual(self.balances(),0)
+
+    def test_correction_is_atomic_and_export_exact_old_generation(self):
+        h=self.second_store();old=j.commit(self.path,j.prepare(self.path,[self.h,h]))['generated']
+        p=j.prepare(self.path,[h,self.h],True,True)
+        with closing(sqlite3.connect(self.path)) as db,db:
+            db.execute("CREATE TRIGGER fail_t BEFORE INSERT ON jst_generations WHEN NEW.oid='oid' BEGIN SELECT RAISE(ABORT,'injected'); END")
+        self.assertTrue(j.commit(self.path,p)['errors'])
+        with closing(sqlite3.connect(self.path)) as db:self.assertEqual(j.active(db,self.h),old[0]);self.assertEqual(j.active(db,h),old[1])
+        with closing(sqlite3.connect(self.path)) as db,db:db.execute('DROP TRIGGER fail_t')
+        r=j.commit(self.path,p);self.assertFalse(r['errors']);self.assertEqual(self.balances(),0)
+        self.assertEqual(j.get(self.path,old[0])['summary']['quantity'],'40')
+        self.assertEqual(j.get(self.path,r['generated'][1])['summary']['quantity'],'20')
+        import openpyxl
+        x=ex.export(self.path,[old[0]],self.f.root/'old-output')['files'][0]
+        book=openpyxl.load_workbook(x['path']);self.assertEqual(book.active['C2'].value,40);book.close()
+
+    def test_cancel_after_first_keeps_first_and_retry_no_old_cancel(self):
+        h=self.second_store();p=j.prepare(self.path,[self.h,h]);e=threading.Event()
+        def progress(v):
+            if hasattr(v,'business_event'):e.set()
+        r=j.commit(self.path,p,progress=progress,cancel=e)
+        self.assertTrue(r['cancelled']);self.assertEqual(len(r['generated']),1);self.assertEqual(self.balances(),60)
+        e.clear();r=j.commit(self.path,p,cancel=e);self.assertEqual(len(r['generated']),2);self.assertEqual(self.balances(),0)
+
+    def test_waiting_write_lock_cancelled_no_generation(self):
+        import time
+        p=self.plan();e=threading.Event();results=[];db=sqlite3.connect(self.path);db.execute('BEGIN IMMEDIATE')
+        t=threading.Thread(target=lambda:results.append(j.commit(self.path,p,cancel=e)));t.start();time.sleep(.15);e.set();t.join(3);db.rollback();db.close()
+        self.assertFalse(t.is_alive());self.assertTrue(results[0]['cancelled']);self.assertEqual(self.balances(),100)
+
+    def test_daily_projection_and_logs_do_not_promote_draft(self):
+        import daily_batch
+        cache=self.f.root/'daily.db';request={'from':wr.today(),'to':wr.today()}
+        rows=daily_batch.read(self.path,cache,request)['records'];self.assertEqual(rows[0]['status'],'待生成聚水潭订单')
+        _,gid=self.generated();rows=daily_batch.read(self.path,cache,request)['records'];self.assertEqual(rows[0]['status'],'待核对付款单')
+        j.lock(self.path,[gid]);rows=daily_batch.read(self.path,cache,request)['records'];self.assertTrue(rows[0]['locked'])
+        logs=daily_batch.logs(self.path,wr.today(),wr.today());self.assertTrue(any(r['action']=='确认下单并锁定' for r in logs))
+        self.assertFalse(self.f.view()['present']['payment'])
+
+    def test_cancel_unused_generation_releases_only_local_reservation(self):
+        _,gid=self.generated();before=self.f.view()['documents']['return']
+        with self.assertRaises(ValueError):j.cancel_generated(self.path,[gid],'')
+        j.cancel_generated(self.path,[gid],'门店更正，尚未下单')
+        self.assertEqual(self.balances(),100);self.assertEqual(j.get(self.path,gid)['summary']['quantity'],'40')
+        self.assertEqual(self.f.view()['documents']['return'],before)
+        _,new=self.generated();j.lock(self.path,[new])
+        with self.assertRaises(ValueError):j.cancel_generated(self.path,[new],'不可绕过锁单')
+
+    def test_legacy_return_preserves_original_signed_dependency(self):
+        with closing(sqlite3.connect(self.path)) as db,db:
+            db.execute("DELETE FROM lifecycle_versions WHERE stage='return'")
+            db.execute('CREATE TABLE merchant_feedback(oid TEXT,revision INTEGER,version INTEGER,saved TEXT,payload TEXT)')
+            db.execute('INSERT INTO merchant_feedback VALUES(?,?,?,?,?)',('oid',1,1,wr.now(),wr.dumps({'values':{'0001':40},'warehouses':{}})))
+        p,gid=self.generated();self.assertIn('signed_products',p['payload']['plans'][0])
+        j.lock(self.path,[gid]);lc.commit(self.path,j.payment_plan(self.path,gid))
+        self.assertTrue(self.f.view()['present']['payment'])
+
+    def test_original_catalog_is_exact_bytes_and_missing_never_substituted(self):
+        import openpyxl,hashlib
+        path=self.f.root/'source.xlsx';book=openpyxl.Workbook();ws=book.active;ws.append(cat.FIELDS)
+        item=catalog()['items']['0001'];ws.append([item.get(k) for k in cat.FIELDS]);book.save(path);book.close()
+        j.commit_refresh(self.path,j.prepare_refresh(self.path,'河北仓',source=path))
+        _,gid=self.generated();expected=hashlib.sha256(path.read_bytes()).hexdigest();path.unlink()
+        target=self.f.root/'original.xlsx';j.export_source(self.path,gid,target)
+        self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(),expected)
+
+    def test_payment_preview_bound_to_generation_and_failures_are_journaled(self):
+        _,gid=self.generated();old=j.payment_plan(self.path,gid)
+        changed=j.commit(self.path,j.prepare(self.path,[self.h],correction=True));self.assertTrue(changed['generated'])
+        with self.assertRaises(wr.Conflict):lc.commit(self.path,old)
+        p=j.prepare(self.path,[self.h],correction=True);self.refresh(90)
+        r=j.commit(self.path,p);self.assertTrue(r['errors'])
+        with closing(sqlite3.connect(self.path)) as db:self.assertTrue(db.execute("SELECT 1 FROM jst_events WHERE action='批次存在未完成订单'").fetchone())
+
+    def test_written_file_is_not_reported_missing_when_journal_fails(self):
+        _,gid=self.generated()
+        with patch('jst_orders.event',side_effect=sqlite3.OperationalError('injected journal failure')),self.assertLogs(level='ERROR'):
+            r=ex.export(self.path,[gid],self.f.root/'journal-failed')
+        self.assertEqual(len(r['files']),1);self.assertEqual(r['failed'],[]);self.assertTrue(r['warnings'])
+        self.assertTrue(Path(r['files'][0]['path']).is_file())
 
 
 if __name__=='__main__':unittest.main()

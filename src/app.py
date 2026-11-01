@@ -23,6 +23,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--jst-smoke' in sys.argv:
+        from jst_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--jst-smoke')+1:])
     if '--preissue-smoke' in sys.argv:
         from preissue_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--preissue-smoke')+1:])

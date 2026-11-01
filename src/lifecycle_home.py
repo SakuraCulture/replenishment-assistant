@@ -60,6 +60,7 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
         if heads != repo.headers(): raise wr.Conflict('签发修订在查询期间变化，请刷新')
     counts = {s: sum(r['status'] == s for r in records) for s in lifecycle.STATUSES}
     for i, r in enumerate(records): r['list_position'] = i
+    if request.get('all_records'):return {'records':records,'counts':counts,'scope':len(records)}
     kind = request.get('status', '')
     matched = [r for r in records if not kind or kind == '全部未完成' and r['next'] or kind == r['status']]
     page = min(max(0, int(request.get('page', 0))), max(0, (len(matched)-1)//50))

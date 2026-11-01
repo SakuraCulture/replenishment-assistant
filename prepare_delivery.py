@@ -106,3 +106,16 @@ if version['version']=='0.20.0':
     name='0.20.0最终清单与筛选.md'
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     (dest/'使用说明.txt').write_bytes((root/'docs'/name).read_bytes())
+
+if version['version']=='0.21.0':
+    (dest/'docs').mkdir(exist_ok=True)
+    for name in ['0.17.0四场景与批量单据.md','0.18.0签发前最终清单.md','0.20.0最终清单与筛选.md','0.21.0日批次与聚水潭订单.md','商品资料保存链路_0.16.0.md']:
+        shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
+    (dest/'使用说明.txt').write_bytes((root/'docs/0.21.0日批次与聚水潭订单.md').read_bytes())
+    sys.path.insert(0,str(root/'src'))
+    import lifecycle_io,import_templates,business_excel,warehouse_catalog
+    templates=dest/'导入模板';templates.mkdir(exist_ok=True)
+    for stage in lifecycle_io.STAGES:lifecycle_io.template(stage,templates/(lifecycle_io.TITLES[stage]+'模板.xlsx'))
+    import_templates.write('stocking',templates/'铺货清单最低模板.xlsx')
+    business_excel.write(templates/'仓商品资料最低模板.xlsx',[('商品资料',warehouse_catalog.FIELDS,[])])
