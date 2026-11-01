@@ -1,0 +1,8 @@
+{
+  "source_commit": "527f9d15d91ffb96bd9a30e376ed92ca9b002de7",
+  "build_id": "rc1",
+  "version": "0.23.0",
+  "built_at": "2026-11-01T22:16:13.653108+08:00",
+  "source_archive_sha256": "1089109b3c6d4e9e284d89e3d87b51bbda4def6c1f9f70e0cca703831eb04d4b",
+  "source_mode": "immutable git archive; no working-tree overlay"
+}

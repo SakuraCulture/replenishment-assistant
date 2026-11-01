@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "stores": 31,
+  "orders": 62,
+  "differences": 0,
+  "comparison": "exact ordered filenames, gid and all Excel values/types/styles/sheet/row/column order; existing clock/build-cell whitelist only, none of those cells in JST files",
+  "frozen_db_unchanged": true,
+  "query_seconds": [
+    {
+      "cold": 0.5136034000024665,
+      "warm": 0.07478439999977127
+    },
+    {
+      "cold": 0.49848750000819564,
+      "warm": 0.07027100000414066
+    },
+    {
+      "cold": 0.5267775999964215,
+      "warm": 0.07764940000197385
+    }
+  ],
+  "median_query_seconds": {
+    "cold": 0.5136034000024665,
+    "warm": 0.07478439999977127
+  }
+}

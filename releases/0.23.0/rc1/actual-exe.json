@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "actual_exe": true,
+  "exe_sha256": "0388de8ace6906a14e2b66dc35137a0d56f126298951ef0a7ec3815614dbe898",
+  "runs": [
+    {
+      "exit_code": 0,
+      "elapsed": 5.955869799989159,
+      "peak_tree_mib": 278.390625,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "passed": true,
+      "phase": "exercise",
+      "checks": [
+        "结果页保持打开时自动生成4个仓单；不继承生命周期和隐藏筛选",
+        "同页两次真实点击导出全部，无确认弹框；4份同名覆盖且值/类型/样式/顺序相同",
+        "键盘Space勾选单仓、门店部分选中，导出勾选仅1份",
+        "搜索清空勾选；筛选无行时整批全部仍是4份",
+        "真实Windows文件占用失败；关闭占用后只重试原失败1份",
+        "真实停止按钮取消剩余文件，按原gid重试，不再次计算",
+        "导出时关闭窗口，安全退出，无强杀提交"
+      ],
+      "heartbeat_max": 0.11097329999029171,
+      "source_commit": "527f9d15d91ffb96bd9a30e376ed92ca9b002de7"
+    },
+    {
+      "exit_code": 0,
+      "elapsed": 2.4954714000050444,
+      "peak_tree_mib": 277.8359375,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "passed": true,
+      "phase": "reopen",
+      "checks": [
+        "结果页保持打开时自动生成4个仓单；不继承生命周期和隐藏筛选",
+        "重启直接读取2店4仓单，重复导出无需生命周期筛选",
+        "1100×720逻辑像素窗口底部按钮/进度可见，Tab跳过禁用勾选导出到打开目录"
+      ],
+      "heartbeat_max": 0.1036686000006739,
+      "source_commit": "527f9d15d91ffb96bd9a30e376ed92ca9b002de7"
+    }
+  ]
+}

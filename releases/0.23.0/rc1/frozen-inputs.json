@@ -1,0 +1,16 @@
+{
+  "db_sha256": "ec1bc23c0a8a9ddd0c3d4d6b36344ad8d8684b4948c0125204f9c9283ac89672",
+  "gids_sha256": "9070d79a583f875378ef068098db91eb465710d4af726c6a803edfd7e7b76023",
+  "inputs": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\jst_results_0230\\compare\\seed\\returns.xlsx": "2339a9e6fc3edafc8044338532355d56766ca009ba8826d7c352e1518b7f785c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\jst_results_0230\\compare\\seed\\山东仓-分配.xlsx": "8d62b3b2a54b06c36335339912a246bced25304525f552c078482e22cf04a711",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\jst_results_0230\\compare\\seed\\山东仓-新库存.xlsx": "915dbf9974167bab86f6c9d1c8982af52dd190f3f823682a751e91d633ef7a23",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\jst_results_0230\\compare\\seed\\山东仓.xlsx": "f806e0d92888d9594a476a4b7ae0d7861e09a57604caefc229b08b4777d8721c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\jst_results_0230\\compare\\seed\\河北仓-分配.xlsx": "8d62b3b2a54b06c36335339912a246bced25304525f552c078482e22cf04a711",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\jst_results_0230\\compare\\seed\\河北仓-新库存.xlsx": "915dbf9974167bab86f6c9d1c8982af52dd190f3f823682a751e91d633ef7a23",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\jst_results_0230\\compare\\seed\\河北仓.xlsx": "f806e0d92888d9594a476a4b7ae0d7861e09a57604caefc229b08b4777d8721c"
+  },
+  "synthetic": true,
+  "stores": 31,
+  "orders": 62
+}
