@@ -51,6 +51,18 @@ class JstUI(unittest.TestCase):
             d=GenerationDialog(self.win,self.win,[]);self.app.processEvents();d.boundary(True)
             self.assertFalse(d.stop_btn.isEnabled());self.assertTrue(d.committing)
             d.boundary(False);self.assertTrue(d.stop_btn.isEnabled());d.reject();d.deleteLater();self.app.processEvents()
+    def test_cancelled_batch_summary_only_counts_committed_orders(self):
+        from jst_ui import GenerationDialog
+        from test_jst_review import plans
+        with patch.object(GenerationDialog,'load_catalogs'):
+            d=GenerationDialog(self.win,self.win,[]);self.app.processEvents();rows=plans()
+            for i,p in enumerate(rows):p['gid']='G'+str(i)
+            d.plan={'payload':{'plans':rows}}
+            d.generation_done({'generated':['G0'],'zero':[],'errors':[],'cancelled':True})
+            self.assertEqual(len(d.review.groups),1);self.assertEqual(len(d.review.groups[0]['plans']),1)
+            self.assertEqual(d.review.groups[0]['metrics']['allocated'],63)
+            d.invalidate();self.assertFalse(d.review.groups)
+            d.reject();d.deleteLater();self.app.processEvents()
     def test_generation_ready_and_old_callback_do_not_mark_paid(self):
         from jst_ui import GenerationDialog
         with patch.object(GenerationDialog,'load_catalogs'):

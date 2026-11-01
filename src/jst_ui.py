@@ -16,6 +16,7 @@ import jst_exports
 import daily_batch
 import export_locations
 import warehouse_catalog
+from jst_review_ui import AllocationReview
 
 
 def selected_ids(path, heads, progress=lambda _:None,cancel=None):
@@ -67,8 +68,7 @@ class GenerationDialog(QDialog):
         options=QHBoxLayout();self.manual=QCheckBox('使用上方人工顺序（可拖动）；未勾选按回传确认时间优先');self.correction=QCheckBox('重新分配所选未锁单（须选齐该仓全部未锁生成单）');options.addWidget(self.manual);options.addWidget(self.correction);v.addLayout(options);self.manual.toggled.connect(self.invalidate);self.correction.toggled.connect(self.invalidate)
         self.preview_btn=button('预览库存分配',self.preview,True);v.addWidget(self.preview_btn)
         self.summary=label('预览不会占用库存。新资料已扣此前已锁单；未锁预留继续保留。','muted');self.summary.setWordWrap(True);v.addWidget(self.summary)
-        self.table,self.model=grid(self,['补货单号','商品编码','商品名称','回传量','本次数量','单价','金额','原因','箱规','资料可用','分配前余额','分配后余额']);v.addWidget(self.table,1)
-        for i,width in enumerate([190,125,155,70,80,70,85,155,70,80,90,90]):self.table.setColumnWidth(i,width)
+        self.review=AllocationReview(self);v.addWidget(self.review,1)
         self.accept_issues=QCheckBox('已核对缺口及待核原因，同意待核商品本次不安排');v.addWidget(self.accept_issues)
         self.auto_export=QCheckBox('每单保存后立即导出，后续继续生成');self.auto_export.setChecked(True);v.addWidget(self.auto_export)
         self.bar=QProgressBar();self.bar.setRange(0,1);v.addWidget(self.bar);self.status=label('待预览','muted');self.status.setWordWrap(True);v.addWidget(self.status)
@@ -84,7 +84,9 @@ class GenerationDialog(QDialog):
         c=self.catalogs.get(self.warehouse.currentText())
         if not c:self.source.setText('该仓未提供资料；请更新或维护默认仓资料。');return
         x=c['catalog'];self.source.setText(f"{x['warehouse']} · {x.get('source_path','')} · 导入 {x.get('imported_at','')} · {len(x['items'])}款 · "+('当前库存基准，可直接预览' if c['bid'] else '默认资料尚未建立库存基准，请点击采用'))
-    def invalidate(self,*_):self.plan=None;self.generate_btn.setEnabled(False);self.summary.setText('资料或顺序变化，请重新预览。')
+    def invalidate(self,*_):
+        self.plan=None;self.generate_btn.setEnabled(False);self.summary.setText('资料或顺序变化，请重新预览。')
+        self.review.replace([],'原预览已失效，请重新预览')
     def choose(self):
         from PySide6.QtWidgets import QFileDialog
         p,_=QFileDialog.getOpenFileName(self,'更新'+self.warehouse.currentText()+'资料','','Excel (*.xlsx)')
@@ -127,13 +129,10 @@ class GenerationDialog(QDialog):
                     run(self,service.commit_refresh,(self.path,p),'建立库存基准');c['bid']=p['payload']['bid']
             self.describe()
             self.plan=run(self,service.prepare,(self.path,heads,self.manual.isChecked(),self.correction.isChecked()),'预览库存分配')
-            v=self.plan['payload'];rows=[]
-            for p in v['plans']:
-                rows.extend([[p['head']['number']]+[r[k] for k in ('sku','name','demand','quantity','price','amount','reason','step','stock','before','after')] for r in p['rows']])
-            total=sum((Decimal(p['summary']['amount']) for p in v['plans']),Decimal(0));shortages=sum(p['summary']['shortages'] for p in v['plans'])
-            self.model.replace(rows);self.summary.setText(f"本次{len(v['plans'])}单，生成金额{total:,.2f}元，缺口{shortages}款，跳过{len(v['skipped'])}单；"+'；'.join(s['head']['number']+'：'+s['reason'] for s in v['skipped']))
+            v=self.plan['payload'];self.review.replace(v['plans'])
+            self.summary.setText(f"本次预览 {len(v['plans'])} 张仓单；跳过 {len(v['skipped'])} 张（不计入本次汇总）。"+'；'.join(s['head']['number']+'：'+s['reason'] for s in v['skipped']))
             self.generate_btn.setEnabled(bool(v['plans']));self.accept_issues.setChecked(False)
-        except Exception as exc:self.plan=None;self.generate_btn.setEnabled(False);warn(self,exc)
+        except Exception as exc:self.plan=None;self.review.replace([],'预览失败，请重新预览');self.generate_btn.setEnabled(False);warn(self,exc)
     def generate(self):
         if not self.plan or self.worker:return
         v=self.plan['payload']
@@ -169,6 +168,10 @@ class GenerationDialog(QDialog):
         w=self.export_worker;self.export_worker=None;w.deleteLater();self.dispatch_export()
         if self.close_pending and not self.worker and not self.export_worker:self._completed=True;self.accept()
     def generation_done(self,r):
+        plans=self.plan['payload']['plans'] if self.plan else []
+        committed=[p for p in plans if p['gid'] in r['generated'] or p['head']['number'] in r['zero']]
+        self.review.replace(committed,'本次已保存分配结果（含零分配）')
+        self.summary.setText(f"已保存 {len(committed)} / {len(plans)} 张仓单；取消、失败或尚未处理的预览不计入上方结果。")
         self.receipt=r;self.status.setText(f"已保存{len(r['generated'])}单，零分配{len(r['zero'])}单，失败/未处理{len(r['errors'])}项，停止：{r['cancelled']}。"+'；'.join(x['error'] for x in r['errors'])+r.get('audit_warning',''))
     def worker_finished(self):
         w=self.worker;self.worker=None;w.deleteLater();self.committing=False;self.stop_btn.setEnabled(False)
@@ -237,16 +240,16 @@ def detail(parent,host,heads):
     try:
         gids=run(parent,selected_ids,(host.work_repository.path,heads),'读取聚水潭订单')
         if not gids:raise ValueError('所选单尚未生成')
-        d=QDialog(parent);d.setWindowTitle('聚水潭分配依据 · 原回传和签发不变');d.resize(1150,720);v=QVBoxLayout(d);choice=QComboBox();v.addWidget(choice)
+        d=QDialog(parent);d.setWindowTitle('聚水潭分配依据 · 门店汇总');d.resize(1250,820);v=QVBoxLayout(d)
         note=label('','muted');note.setWordWrap(True);v.addWidget(note)
-        table,model=grid(d,['商品编码','商品名称','回传要货','箱规','资料可用','分配前余额','生成数量','分配后余额','基本售价','生成金额','缺口','原因']);v.addWidget(table,1)
+        review=AllocationReview(d);v.addWidget(review,1)
+        v.addWidget(label('当时资料原件：选择对应仓单后下载，不使用当前资料替代。','muted'));choice=QComboBox();v.addWidget(choice)
         values=[]
         def load(i):
             p=values[i];note.setText(p['head']['number']+' · '+p['head']['warehouse']+' · 生成 '+p['saved']+' · 资料 '+p['catalog'].get('source_path',''))
-            model.replace([[r[k] for k in ('sku','name','demand','step','stock','before','quantity','after','price','amount','missing','reason')] for r in p['rows']])
         for gid in gids:
             p=run(parent,service.get,(host.work_repository.path,gid),'读取当时分配依据');values.append(p);choice.addItem(p['head']['number'])
-        choice.currentIndexChanged.connect(load);load(0)
+        choice.currentIndexChanged.connect(load);load(0);review.replace(values,'所选已生成仓单（历史分配结果）')
         def source():
             target,_=export_locations.save_file(d,'下载当时仓商品资料原表','当时仓商品资料.xlsx','Excel (*.xlsx)')
             if target:

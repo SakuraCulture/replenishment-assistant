@@ -27,6 +27,17 @@ def start_smoke(app,win,args):
             else:state['error']=d.windowTitle()+': '+d.text();d.reject()
         elif isinstance(d,Review):
             d.complete.setChecked(True);d.extra_ack.setChecked(True);d.save.click()
+        elif d is not None and d.windowTitle()=='聚水潭分配依据 · 门店汇总':
+            try:
+                from jst_review_ui import AllocationReview
+                from PySide6.QtTest import QTest
+                review=d.findChild(AllocationReview)
+                if review.store_model.rowCount()!=2 or review.model.rowCount()!=0:raise AssertionError('history must start at stores')
+                index=review.store_model.index(1,0);QTest.mouseClick(review.store_table.viewport(),Qt.MouseButton.LeftButton,pos=review.store_table.visualRect(index).center())
+                if review.pages.currentIndex()!=1 or not review.model.rowCount():raise AssertionError('history drilldown')
+                d.grab().save(str(out/'history-store-drilldown.png'));state['history_checked']=True
+            except Exception:state['error']=traceback.format_exc()
+            d.reject()
     driver=QTimer(win);driver.setInterval(25);driver.timeout.connect(automate);driver.start()
     def wait(fn,seconds=90):
         loop=QEventLoop();timer=QTimer();start=time.monotonic();timer.timeout.connect(lambda:loop.quit() if fn() or time.monotonic()-start>seconds else None);timer.start(15);loop.exec();timer.stop()
@@ -51,12 +62,25 @@ def start_smoke(app,win,args):
                 checks.append('四个独立环节工作页、主动作与筛选、返回保留总览条件')
                 if sum(r['next']=='payment' for r in win.followup.records)!=4:raise AssertionError('daily stage')
                 dialog=jst_ui.GenerationDialog(win,win,heads);dialog.show();wait(lambda:len(dialog.catalogs)==2)
-                dialog.preview();dialog.grab().save(str(out/'preview.png'))
+                dialog.preview()
+                from PySide6.QtTest import QTest
+                QTest.qWait(60);dialog.grab().save(str(out/'preview.png'))
                 if len(dialog.plan['payload']['plans'])!=4:raise AssertionError('preview scope')
+                from decimal import Decimal
+                review=dialog.review
+                if review.pages.currentIndex()!=0 or review.store_model.rowCount()!=2 or review.model.rowCount()!=0:raise AssertionError('default must be store overview')
+                if review.total.height()<review.total.heightForWidth(review.total.width()) or review.total.geometry().bottom()>=review.definition.geometry().top():raise AssertionError('summary text clipped or overlapping')
+                expected=sum((Decimal(r['demand'])*Decimal(r['price'])-Decimal(r['amount']) for p in dialog.plan['payload']['plans'] for r in p['rows']),Decimal(0))
+                if sum(g['metrics']['reduced'] for g in review.groups)!=expected:raise AssertionError('store reduction reconciliation')
+                index=review.store_model.index(0,0);QTest.mouseClick(review.store_table.viewport(),Qt.MouseButton.LeftButton,pos=review.store_table.visualRect(index).center())
+                if review.pages.currentIndex()!=1:raise AssertionError('store click did not drill down')
+                review.kind.setCurrentText('有减量');review.warehouse.setCurrentText('河北仓');review.search.setText('合成')
+                QTest.qWait(60);dialog.grab().save(str(out/'store-drilldown.png'));review.pages.setCurrentIndex(0)
+                checks.append('默认2家门店汇总、减少金额独立核算、实际鼠标进入商品、仓/减量/搜索组合及返回')
                 dialog.generate();wait(lambda:dialog.worker is None and dialog.export_worker is None and not dialog.export_queue and dialog.receipt is not None)
                 r=dialog.receipt
                 if len(r['generated'])!=4 or r['errors']:raise AssertionError(r)
-                checks.append('实际窗口预览、四店仓单后台生成、逐单导出与三列文件')
+                checks.append('实际窗口预览、四店仓单后台生成、逐单导出与四列文件')
                 dialog.completed.item(0).setSelected(True);gid=dialog.completed.item(0).data(Qt.ItemDataRole.UserRole);p=j.get(path,gid)
                 dialog.lock_saved()
                 with closing(sqlite3.connect(path)) as db:
@@ -74,6 +98,9 @@ def start_smoke(app,win,args):
                 dialog.preview()
                 if dialog.plan['payload']['plans'] or len(dialog.plan['payload']['skipped'])!=4:raise AssertionError('repeated generation not skipped')
                 dialog.grab().save(str(out/'generated-and-locked.png'));dialog.reject();dialog.deleteLater();dialog=None
+                jst_ui.detail(win,win,heads)
+                if not state.get('history_checked') or state.get('error'):raise AssertionError(state)
+                checks.append('已生成分配依据默认门店汇总、实际点击展开本店商品')
                 jst_ui.payment(win,win,p['head']);v=lc.snapshot(path,p['head'])
                 if not v['present']['payment'] or v['next']!='receipt':raise AssertionError('payment review failed')
                 checks.append('实际付款核对表单、确认后进入待收货')
