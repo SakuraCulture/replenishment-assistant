@@ -75,6 +75,11 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         detail_actions=QHBoxLayout();detail_actions.addWidget(back);detail_actions.addWidget(self.final_detail_btn);detail_actions.addWidget(self.detail_new_btn);detail_layout.insertLayout(0,detail_actions)
         self.auto_check=QTimer(self);self.auto_check.setSingleShot(True);self.auto_check.setInterval(400);self.auto_check.timeout.connect(self.check_added_files);self.sales.changed.connect(self.auto_check.start)
         axrow=QHBoxLayout();self.aoxiang_setup_btn=button('翱象连接与门店配置',self.open_aoxiang_setup);axrow.addWidget(self.aoxiang_setup_btn);axrow.addWidget(label('维护平台门店目录与两仓供应商对应；核验登录后保存复用。','muted'),1);self.import_page.layout().addLayout(axrow)
+        self.aoxiang_fetch_btn=button('获取翱象补货建议',self.open_aoxiang_fetch,True);axrow.insertWidget(0,self.aoxiang_fetch_btn)
+
+    def open_aoxiang_fetch(self):
+        from aoxiang_fetch_ui import open_fetch
+        open_fetch(self)
 
     def open_aoxiang_setup(self):
         from aoxiang_setup_ui import open_setup
@@ -242,6 +247,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
 
     def update_controls(self):
         super().update_controls()
+        for name in ['aoxiang_setup_btn','aoxiang_fetch_btn']:
+            if hasattr(self,name):getattr(self,name).setEnabled(not self.worker and not self.readonly and not self.closing)
         if not hasattr(self,'issue_btn'):return
         ready=not self.worker and not self.readonly and not self.input_dirty
         if hasattr(self,'focus_import_btn'):

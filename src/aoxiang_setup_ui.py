@@ -11,29 +11,10 @@ from aoxiang_client import ProcessClient
 from aoxiang_directory import Directory, read_directory
 
 
-def component_root():
-    base = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent.parent))
-    return base / 'components/aoxiang'
+from aoxiang_ui_common import ComponentDialog, Call, component_root, show_modal
 
 
-class Call(QThread):
-    succeeded = Signal(object)
-    failed = Signal(str)
-    progress = Signal(str)
-
-    def __init__(self, operation, parent):
-        super().__init__(parent)
-        self.operation = operation
-
-    def run(self):
-        try:
-            self.succeeded.emit(self.operation(self.progress.emit))
-        except Exception as exc:
-            code = getattr(exc, 'code', '')
-            self.failed.emit((code + '：' if code else '') + str(exc))
-
-
-class SetupDialog(QDialog):
+class SetupDialog(ComponentDialog):
     def __init__(self, parent, folder, *, client_factory=ProcessClient):
         super().__init__(parent)
         self.setWindowTitle('翱象连接与门店配置')
@@ -133,51 +114,10 @@ class SetupDialog(QDialog):
             self.supplier_edits[warehouse].setText(value)
         self.fill_directory()
 
-    def run(self, operation, success):
-        if self.worker:
-            return
-        worker = Call(operation, self)
-        self.worker = worker
-        self.update_buttons()
-        worker.progress.connect(self.status.setText)
-        worker.succeeded.connect(success)
-        worker.failed.connect(self.failure)
-        worker.finished.connect(self.task_finished)
-        worker.start()
-
-    def task_finished(self):
-        previous, self.worker = self.worker, None
-        previous.deleteLater()
-        self.update_buttons()
-        if self._closing:
-            if self._close_done:
-                self._can_close = True
-                self._closing = False
-                self.close()
-            else:
-                QTimer.singleShot(600, self.finish_close)
-        elif self.cancel_pending:
+    def on_idle(self):
+        if self.cancel_pending:
             self.cancel_pending = False
             self.stop_setup()
-
-    def failure(self, text):
-        self.status.setText('未完成：' + text)
-        if not self._closing:
-            QMessageBox.warning(self, '翱象操作未完成', text)
-
-    def ensure_client(self):
-        if self.started and not self.client.running:
-            self.client.close()
-            self.client = self.client_factory(component_root(), self.folder / 'component-state')
-            self.started = False
-        if not self.started and getattr(self.client, '_process', None) is not None:
-            if self.client.running:
-                raise RuntimeError('现有组件仍在启动或等待退出，请先关闭本窗口再重新连接')
-            self.client.close()
-            self.client = self.client_factory(component_root(), self.folder / 'component-state')
-        if not self.started:
-            self.client.start()
-            self.started = True
 
     def import_directory(self):
         from import_ui import choose
@@ -326,39 +266,9 @@ class SetupDialog(QDialog):
         self.stop_btn.setEnabled(not self._closing and not self.setup_cancel_requested and self.setup_state in ('RUNNING', 'READY'))
         self.close_btn.setEnabled(not self._closing)
 
-    def reject(self):
-        self.close()
-
-    def closeEvent(self, event):
-        if self._can_close:
-            event.accept()
-            return
-        event.ignore()
-        self._closing = True
-        self.poll.stop()
-        self.status.setText('正在安全关闭连接，等待当前网页动作结束；不会关闭你的 Edge。')
-        self.update_buttons()
-        self.finish_close()
-
-    def finish_close(self):
-        if self.worker:
-            return
-        self.run(lambda _: self.client.close(timeout=.5), self.closed_result)
-
-    def closed_result(self, done):
-        self._close_done = bool(done)
-
 
 def open_setup(host):
     if host.worker or getattr(host, 'readonly', False):
         return
     dialog = SetupDialog(host, host.repository.folder)
-    host._aoxiang_dialog = dialog
-    try:
-        dialog.exec()
-    finally:
-        host._aoxiang_dialog = None
-        dialog.deleteLater()
-        if getattr(host, '_aoxiang_close_requested', False):
-            host._aoxiang_close_requested = False
-            QTimer.singleShot(0, host.close)
+    show_modal(host, dialog)

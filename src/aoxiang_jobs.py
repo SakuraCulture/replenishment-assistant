@@ -91,6 +91,20 @@ class Jobs:
             result[key] = json.loads(result[key]) if result[key] is not None else None
         return result
 
+    def recent(self, limit=100, *, include_unfinished=False) -> list[dict]:
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError('每次最多读取100个作业')
+        with closing(self.connect()) as db:
+            ids = [row[0] for row in db.execute('SELECT id FROM ax_jobs ORDER BY rowid DESC LIMIT ?', (limit,))]
+        if include_unfinished:
+            ids.extend(row['id'] for row in self.unfinished() if row['id'] not in ids)
+        return [self.get(value) for value in ids]
+
+    def unfinished(self) -> list[dict]:
+        with closing(self.connect()) as db:
+            rows = db.execute("SELECT id,command,state FROM ax_jobs WHERE state NOT IN ('SUCCEEDED','COMPLETED_WITH_ERRORS','CANCELLED') ORDER BY rowid").fetchall()
+        return [{'id': row[0], 'command': json.loads(row[1]), 'state': row[2]} for row in rows]
+
     def observe(self, command_id: str, record: dict) -> bool:
         with closing(self.connect()) as db, db:
             db.execute('BEGIN IMMEDIATE')
@@ -112,6 +126,8 @@ class Jobs:
     def dispatch(self, client, command_id: str) -> dict:
         """Persisted intent precedes send. Same command replay uses the component's durable ID contract."""
         job = self.get(command_id)
+        if job['state'] == 'CANCELLED':
+            raise ValueError('未受理请求已取消，不能再次派发原请求')
         try:
             receipt = client.request('reserve', command=job['command'])
             self.observe(command_id, receipt['record'])
@@ -120,6 +136,26 @@ class Jobs:
                 db.execute('UPDATE ax_jobs SET last_error=?,updated=? WHERE id=?',
                            (encoded({'code': error.code, 'message': str(error), 'requires_query': True}), now(), command_id))
             raise
+        return self.get(command_id)
+
+    def cancel_unaccepted(self, client, command_id: str) -> dict:
+        job = self.get(command_id)
+        if job['state'] != 'PREPARED' or job['record'] is not None:
+            raise ValueError('已受理任务不能取消本地关联，请保留原任务')
+        try:
+            record = client.request('status', command_id=command_id)
+        except ComponentError as exc:
+            if exc.code != 'COMMAND_NOT_FOUND':
+                raise
+        else:
+            self.observe(command_id, record)
+            raise ValueError('原任务已受理，已更新状态；不能作为未受理请求取消')
+        with closing(self.connect()) as db, db:
+            db.execute('BEGIN IMMEDIATE')
+            row = db.execute('SELECT state,record FROM ax_jobs WHERE id=?', (command_id,)).fetchone()
+            if row != ('PREPARED', None):
+                raise ValueError('原任务状态已改变，请刷新')
+            db.execute("UPDATE ax_jobs SET state='CANCELLED',last_error=NULL,updated=? WHERE id=?", (now(), command_id))
         return self.get(command_id)
 
     def refresh(self, client, command_id: str) -> dict:
