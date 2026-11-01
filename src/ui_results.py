@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBo
     QFileDialog,QComboBox,QCheckBox,QDoubleSpinBox,QTableWidget,QTableWidgetItem,QHeaderView,QTableView,QLineEdit,
     QStackedWidget,QSplitter,QTextBrowser,QMessageBox,QDialog,QProgressBar,QAbstractItemView,QScrollArea)
 import result_semantics as semantics
+import review_amounts
+from ui_review_amounts import ReviewAmounts
 import engine
 import priority_list
 from version_info import VERSION
@@ -39,9 +41,11 @@ class ResultsView:
         for title in ['执行补货金额（元）','执行补货商品','一箱例外候选 / 候选金额','地采 / 已排除']:
             c=QFrame();c.setObjectName('card');cv=QVBoxLayout(c);cv.setContentsMargins(16,12,16,12);cv.addWidget(label(title,'muted'));x=label('—','metric');cv.addWidget(x);metrics.addWidget(c);self.metric_values.append(x)
         v.addLayout(metrics)
+        self.detail_review_amounts=ReviewAmounts();v.addWidget(self.detail_review_amounts)
         self.budget_caption=label('','muted');v.addWidget(self.budget_caption)
         tools=QHBoxLayout();self.mode=QComboBox();self.mode.addItems(['全部商品','建议补货','必卖商品','预算未满足','最低持有缺口','已排除','商品资料禁用','补货建议停采','资料匹配','一箱例外','地采商品','待处理','重点关注']);tools.addWidget(self.mode)
         self.warehouse_filter=QComboBox();self.warehouse_filter.addItem('全部仓');tools.addWidget(self.warehouse_filter)
+        self.mode.addItems(['人工改量商品','签发单新品'])
         self.category_filter=QComboBox();self.category_filter.addItem('全部分类');tools.addWidget(self.category_filter)
         self.search=QLineEdit();self.search.setPlaceholderText('搜索商品名称 / 编码 / 条码');self.search.setClearButtonEnabled(True);tools.addWidget(self.search,1)
         self.export_all=button('导出补货清单与明细',lambda:self.export(False),True);tools.addWidget(self.export_all)
@@ -77,6 +81,8 @@ class ResultsView:
         self.metric_values[1].setText(f"{s['positive']:,}" if calculated else '待计算')
         self.metric_values[2].setText(f"{s['exception']} / +{s['extra']:,.2f}" if calculated else '待计算')
         self.metric_values[3].setText(f"{s['local']:,} / {s['excluded']:,}")
+        self.detail_review_amounts.set_summary((review_amounts.cached(self,self.result) if self.result and rows is self.result['rows'] else review_amounts.summarize(rows)) if calculated else None)
+        self.detail_review_amounts.setToolTip('本店完整结果的金额；不随下方仓库、分类或搜索筛选变化。'+review_amounts.NOTE)
         name=self.loaded['stores'].get(self.selected_store(),'') if self.loaded else ''
         self.result_caption.setText(f'{name} · '+('计算完成' if calculated else '导入预览 · 尚未计算')+ (f" · {s['unpriced']}款补货未计价" if s['unpriced'] else ''))
         if calculated:

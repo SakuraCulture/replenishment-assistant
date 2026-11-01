@@ -11,6 +11,19 @@ def main():
     (out/'exports').mkdir();repo=wr.Repository(out/'settings');export_settings.save(out/'settings/export_settings.json',str(out/'exports'))
     source=ROOT/'qa/preissue_0180/inputs'
     for name in ('sales.xlsx','河北仓.xlsx','山东仓.xlsx'):shutil.copy2(source/name,out/name)
+    # Extend, never modify, the established fixtures: one extra synthetic SKU
+    # in both stores/catalogs exercises positive new-product money in the EXE.
+    import openpyxl
+    for name in ('sales.xlsx','河北仓.xlsx','山东仓.xlsx'):
+        path=out/name;book=openpyxl.load_workbook(path);ws=book.active;headers=[c.value for c in ws[1]]
+        sku=headers.index('商品编码');title=headers.index('商品名称')
+        prototypes=[list(r) for r in ws.iter_rows(min_row=2,values_only=True) if r[sku]=='both']
+        for values in prototypes:
+            values[sku]='qa_new_amount';values[title]='合成新增-新品金额验收'
+            if name=='sales.xlsx':
+                for field in ('日销','周销','月销','可用库存','在途库存','缺货天数（天）'):values[headers.index(field)]=0
+            ws.append(values)
+        book.save(path);book.close()
     catalog=wc.Repository(out/'settings')
     for wh in wc.WAREHOUSES:catalog.save(wc.import_catalog(out/(wh+'.xlsx'),wh))
     preset=repo.presets()[0];config=ps.standard()

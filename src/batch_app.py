@@ -16,6 +16,8 @@ from ui_controls import FileCard,SalesFiles,label,button
 from ui_tasks import BatchWorker,BackgroundJobs
 from ui_session import SessionWindow
 import result_semantics as semantics
+import review_amounts
+from ui_review_amounts import ReviewAmounts
 import engine,priority_list,batch_service
 import warehouse_catalog
 from warehouse_ui import WarehouseUi
@@ -83,7 +85,14 @@ class BatchWindow(WarehouseUi,SessionWindow):
         for title in ['预算前可补需求（元）','本次安排金额（元）','未满足需求（元）']:
             c=QFrame();c.setObjectName('card');cv=QVBoxLayout(c);cv.addWidget(label(title,'muted'));x=label('—','metric');cv.addWidget(x);row.addWidget(c);self.metrics.append(x)
         v.addLayout(row);v.addWidget(label('金额只统计有效完成门店；地采及缺价单列，不视为零成本。点击门店或缺口列查看商品。','muted'))
-        self.overview=QTableWidget(0,12);self.overview.setHorizontalHeaderLabels(['门店','状态','预算','可补需求','本次安排','必卖金额','其他金额','未满足需求','剩余预算','最低持有缺口','地采 / 已排除','提示'])
+        self.review_amounts=ReviewAmounts();v.addWidget(self.review_amounts)
+        self.overview=QTableWidget(0,14);self.overview.setHorizontalHeaderLabels(['门店','状态','预算','可补需求','本次安排','必卖金额','其他金额','未满足需求','剩余预算','最低持有缺口','地采 / 已排除','提示','人工改量金额','新品金额'])
+        # Preserve logical column indices used by existing click actions; only
+        # place the two new columns visually beside the final arranged amount.
+        self.overview.horizontalHeader().moveSection(12,5);self.overview.horizontalHeader().moveSection(13,6)
+        self.overview.setColumnWidth(12,210);self.overview.setColumnWidth(13,140)
+        self.overview.horizontalHeaderItem(12).setToolTip(review_amounts.MANUAL_HELP)
+        self.overview.horizontalHeaderItem(13).setToolTip(review_amounts.NEW_HELP)
         self.overview.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.overview.setAlternatingRowColors(True);self.overview.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);self.overview.setColumnWidth(0,250);self.overview.setColumnWidth(11,330);self.overview.cellClicked.connect(self.open_overview);v.addWidget(self.overview,1)
         row=QHBoxLayout();row.addWidget(button('返回门店设置',lambda:self.navigate(1)));row.addStretch();self.batch_export=button('导出本次补货结果',self.export_dialog,True);row.addWidget(self.batch_export);v.addLayout(row)
     def about(self):
@@ -308,7 +317,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
             state=self.states[s];r=self.results.get(s) if state['state']=='已完成' else None
             for j,val in enumerate([state['name'],state['state'],f"¥{r['summary']['amount']:,.2f}" if r else '—',state['error']]):self.task_table.setItem(i,j,QTableWidgetItem(val))
         self.overview_codes=sorted(keys,key=lambda s:(0 if self.states[s]['state'] in {'计算失败','待重算'} else 1 if self.results.get(s,{}).get('summary',{}).get('holding_gaps',0) else 2,s));self.overview.setRowCount(len(keys))
-        totals=[0,0,0];unpriced=0
+        totals=[0,0,0];unpriced=0;review_totals=[]
         self._risk_counts={s:v for s,v in getattr(self,'_risk_counts',{}).items() if self.results.get(s) is v[0]}
         for i,s in enumerate(self.overview_codes):
             state=self.states[s];r=self.results.get(s) if state['state']=='已完成' else None
@@ -321,8 +330,16 @@ class BatchWindow(WarehouseUi,SessionWindow):
                 over=b.get('overrun',{})
                 if over.get('amount',0)>0:values[-1]+=f"；有限超支 {over['amount']:.2f} 元（商品 {over['sku']}）";values[8]=f"超 {over['amount']:.2f}"
             else:values=[state['name'],state['state']]+['—']*9+[state['error']]
+            if r:
+                money=review_amounts.cached(self,r);review_totals.append(money)
+                values += [review_amounts.amount_text(money,'manual')+'\n'+review_amounts.delta_text(money),review_amounts.amount_text(money,'new')]
+            else:values += ['—','—']
             for j,val in enumerate(values):self.overview.setItem(i,j,QTableWidgetItem(val));self.overview.item(i,j).setToolTip(s+'\n'+str(val))
+            if r:
+                for j,key,help_text in [(12,'manual',review_amounts.MANUAL_HELP),(13,'new',review_amounts.NEW_HELP)]:
+                    self.overview.item(i,j).setToolTip(s+'\n'+values[j]+'\n'+review_amounts.count_text(money,key)+'\n'+help_text+'\n点击查看对应商品（包括改为0和未安排的新品）。')
         for widget,value in zip(self.metrics,totals):widget.setText(f'{value:,.2f}' if finished else '—')
+        self.review_amounts.set_summary(review_amounts.combine(review_totals) if review_totals else None)
         self.overview_note.setText(f'有效完成 {finished} / {total} 家。'+('部分完成，未完成或过期门店不计入合计。' if finished<total else '全部门店结果就绪。')+f' 补货未计价 {unpriced} 款。')
     def open_overview(self,row,column):
         s=self.overview_codes[row]
@@ -332,7 +349,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         if hasattr(self,'detail_new_btn'):self.detail_new_btn.setText('为 '+self.states[s]['name']+' 安排新品')
         self.result=self.results[s];self.dirty=self.states[s]['state']!='已完成';self.set_rows(self.result['rows'],True)
         if self.dirty:self.result_caption.setText(self.result['store_name']+' · 上次结果已过期，请重算')
-        modes={5:'必卖商品',7:'预算未满足',9:'最低持有缺口',10:'地采商品'}
+        modes={5:'必卖商品',7:'预算未满足',9:'最低持有缺口',10:'地采商品',12:'人工改量商品',13:'签发单新品'}
         if column==11 and any(semantics.inbound_risk(d) for d in self.result['rows']):modes[11]='在途衔接风险'
         self.mode.setCurrentText(modes.get(column,'建议补货'));self.pages.setCurrentIndex(4);self.update_controls()
     def navigate(self,index):

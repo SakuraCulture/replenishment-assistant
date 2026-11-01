@@ -18,6 +18,7 @@ def start_smoke(app,win,args):
         from stocking_ui import MappingDialog,ProductPicker
         from import_ui import ImportDialog
         from merchant_selection import MerchantSelection
+        from new_product_ui import NewProductDialog
         now=time.perf_counter();ticks.append(now-last[0]);last[0]=now
         d=QApplication.activeModalWidget()
         if d is None:return
@@ -30,6 +31,9 @@ def start_smoke(app,win,args):
                 if state['mode']=='pick_cancel':d.reject()
                 else:
                     d.search.clear();d.grab().save(str(out/'picker-visible-products.png'));d.finish(state['mode']=='pick_preview')
+            elif isinstance(d,NewProductDialog):
+                choice=next(i for i,(c,q) in enumerate(d.widgets) if c.isEnabled())
+                c,q=d.widgets[choice];c.setChecked(True);q.setValue(d.rows[choice]['BD']);d.preview_btn.click()
             elif isinstance(d,ImportDialog) and d.kind=='stocking':drop(d,out/'stocking.xlsx');d.go.click()
             elif isinstance(d,MappingDialog):d.accept()
             elif isinstance(d,FinalListDialog):
@@ -45,7 +49,7 @@ def start_smoke(app,win,args):
                 d.grab().save(str(out/('final-'+mode+'.png')));d.apply()
             elif isinstance(d,MerchantSelection):d.accept()
             elif isinstance(d,QMessageBox):
-                expected={'dailyOverwrite':'覆盖当天记录','deliveryConfirm':'确认签发并导出'}
+                expected={'dailyOverwrite':'覆盖当天记录','deliveryConfirm':'确认签发并导出','newBudgetPreview':'应用到本店草稿'}
                 title=d.windowTitle()
                 if d.objectName() in expected:next(b for b in d.buttons() if b.text()==expected[d.objectName()]).click()
                 elif title=='清单遇到已人工修改商品':next(b for b in d.buttons() if b.text()=='保留人工修改').click()
@@ -58,6 +62,28 @@ def start_smoke(app,win,args):
             if hasattr(d,'dirty'):d.dirty=False
             d.reject()
     timer=QTimer(win);timer.setInterval(30);timer.timeout.connect(automate);timer.start()
+    def check_amounts(s, name):
+        # Independent expected values from final rows; no projection helper.
+        from decimal import Decimal
+        import normal_exports,result_semantics as sem
+        before=copy.deepcopy(win.results);r=win.results[s]
+        manual=[d for d in r['rows'] if d.get('_preissue',{}).get('kind')=='manual' and d['_source']=='资料匹配' and sem.work_eligible(d)]
+        total=sum((Decimal(str(sem.order_amount(d))) for d in manual),Decimal(0))
+        delta=sum((Decimal(str(sem.order_amount(d)))-Decimal(str(d['_preissue']['automatic_amount'])) for d in manual),Decimal(0))
+        grouped=normal_exports.groups(r,win.new_focus)
+        new=sum((Decimal(str(sem.order_amount(d))) for k in ('本月新品','往期新品') for d in grouped[k] if sem.numeric(sem.order_amount(d))),Decimal(0))
+        win.refresh_tables();i=win.overview_codes.index(s)
+        if win.overview.item(i,12).text()!=f'{total:,.2f}\n较自动安排 {delta:+,.2f} 元':raise AssertionError('manual money cell differs')
+        if win.overview.item(i,13).text()!=f'{new:,.2f}':raise AssertionError('new money cell differs')
+        win.navigate(3);win.grab().save(str(out/(name+'-overview.png')))
+        win.open_overview(i,12)
+        if {d['E'] for d in win.visible_rows()}!={d['E'] for d in manual}:raise AssertionError('manual drilldown loses zero rows')
+        if win.detail_review_amounts.values['manual'].text()!=f'{total:,.2f}':raise AssertionError('detail amount differs')
+        win.grab().save(str(out/(name+'-detail.png')))
+        win.open_overview(i,13)
+        if {d['E'] for d in win.visible_rows()}!={d['E'] for k in ('本月新品','往期新品') for d in grouped[k]}:raise AssertionError('new drilldown disagrees with export')
+        if win.results!=before:raise AssertionError('money view mutated business result')
+        checks.append(name+': amount columns, manual delta, zero-quantity drilldown, new export grouping and nonmutation')
     def finish(error=None):
         timer.stop()
         from version_info import diagnostic
@@ -84,7 +110,7 @@ def start_smoke(app,win,args):
                 query_wh=next(r['AU'] for r in win.results[head['store']]['rows'] if r['E']==selected['sku'])
                 d=AuditDialog(win,win,{**head,'warehouse':query_wh},sku=selected['sku']);d.show();d.scope.setCurrentText('签发前调整');wait(lambda:bool(d.loaded_key))
                 if '搜索选商品' not in str(d.model.rows):raise AssertionError('history query provenance is not visible')
-                d.grab().save(str(out/'historical-query-source.png'));d.reject();d.deleteLater();checks.append('query-selected SKU, catalog revision and source rows visible after packaged restart');finish();return
+                d.grab().save(str(out/'historical-query-source.png'));d.reject();d.deleteLater();checks.append('query-selected SKU, catalog revision and source rows visible after packaged restart');check_amounts(head['store'],'money-restored');finish();return
             win.show_section(1);start=time.perf_counter();drop(win.sales,out/'sales.xlsx');wait(lambda:win.worker is None and win.loaded is not None);timings['check_seconds']=time.perf_counter()-start
             start=time.perf_counter();win.calculate_btn.click();wait(lambda:win.worker is None and len(win.results)==2);timings['calculate_seconds']=time.perf_counter()-start
             if any(st['state']!='已完成' for st in win.states.values()):raise AssertionError(win.states)
@@ -96,6 +122,13 @@ def start_smoke(app,win,args):
                 if not d['_meta']['product_file'].endswith('河北仓.xlsx'):raise AssertionError('fallback source lost')
                 if rows['local']['_source']!='地采商品' or sem.order_quantity(rows['both_disabled'])!=0 or sem.order_quantity(rows['stopped'])!=0:raise AssertionError('fallback changed exclusion/local rules')
             checks.append('actual spawn: secondary missing retains primary catalog, price, carton and demand; disabled/stopped/local boundaries preserved')
+            import new_products
+            new_store=list(win.results)[-1];win.current_store=new_store
+            if win.worker or win.readonly or win.input_dirty:raise AssertionError(('new selection unavailable',bool(win.worker),win.readonly,win.input_dirty))
+            win.choose_new_products(True);wait(lambda:win.worker is None)
+            if state.get('automation_error'):raise AssertionError(state['automation_error'])
+            if not any(sem.order_amount(d)>0 for d in win.results[new_store]['rows'] if new_products.is_new(d) and sem.numeric(sem.order_amount(d))):raise AssertionError('positive new selection did not apply')
+            check_amounts(new_store,'money-new-applied')
             base=copy.deepcopy(win.results);s=next(iter(win.results));r=win.results[s]
             eligible=[d for d in r['rows'] if not rules.blocked(d) and sem.order_quantity(d)>0 and d['K']==0 and d['L']==0]
             if not eligible:raise AssertionError('fixture lacks dual zero')
@@ -112,6 +145,7 @@ def start_smoke(app,win,args):
             if sem.order_quantity(next(d for d in win.results[s]['rows'] if d['E']==sku))!=0:raise AssertionError('zero not final')
             if rules.original(win.results[s])!=base[s]:raise AssertionError('model/automatic changed')
             checks.append('actual final-list cancel, pending draft saved, signing pending rejected, zero risk checkbox and atomic apply; original result exactly restorable')
+            check_amounts(s,'money-manual-applied')
             other=next(d for d in r['rows'] if d['E']!=sku and not rules.blocked(d))
             import openpyxl
             b=openpyxl.Workbook();ws=b.active;ws.append(['目标持有量','商品名称','商品编码']);ws.append([float(rules.holding(other))+sem.order_quantity(other)+other['BD'],other['D'],other['E']]);b.save(out/'stocking.xlsx');b.close()
