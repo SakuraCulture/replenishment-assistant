@@ -241,9 +241,9 @@ def detail(parent,host,heads):
         gids=run(parent,selected_ids,(host.work_repository.path,heads),'读取聚水潭订单')
         if not gids:raise ValueError('所选单尚未生成')
         d=QDialog(parent);d.setWindowTitle('聚水潭分配依据 · 门店汇总');d.resize(1250,820);v=QVBoxLayout(d)
-        note=label('','muted');note.setWordWrap(True);v.addWidget(note)
+        note=label('','muted');note.setWordWrap(True)
         review=AllocationReview(d);v.addWidget(review,1)
-        v.addWidget(label('当时资料原件：选择对应仓单后下载，不使用当前资料替代。','muted'));choice=QComboBox();v.addWidget(choice)
+        v.addWidget(label('当时资料原件：选择对应仓单后下载，不使用当前资料替代。','muted'));choice=QComboBox();v.addWidget(choice);v.addWidget(note)
         values=[]
         def load(i):
             p=values[i];note.setText(p['head']['number']+' · '+p['head']['warehouse']+' · 生成 '+p['saved']+' · 资料 '+p['catalog'].get('source_path',''))

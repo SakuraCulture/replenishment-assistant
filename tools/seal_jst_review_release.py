@@ -2,7 +2,7 @@
 import argparse,hashlib,json,shutil,zipfile
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-Q=ROOT/'qa/jst_review_0221';OUT=ROOT/'releases/0.22.1/rc1'
+Q=ROOT/'qa/jst_review_0221';OUT=ROOT/'releases/0.22.1/rc2'
 def read(p):return json.loads(Path(p).read_text(encoding='utf-8'))
 def sha(p):
     with Path(p).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
@@ -10,7 +10,7 @@ def save(p,v):Path(p).write_text(json.dumps(v,ensure_ascii=False,indent=2),encod
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--normal-run',required=True);ap.add_argument('--optimized-run',required=True);a=ap.parse_args()
     OUT.mkdir(parents=True,exist_ok=False)
-    for name,p in [('original-exports',Q/'original-exports/report.json'),('actual-exe',Q/'exe/report.json'),('actual-exe-auto',Q/'exe-auto/report.json')]:
+    for name,p in [('original-exports',Q/'original-exports/report.json'),('actual-exe',Q/'exe-rc2/report.json'),('actual-exe-auto',Q/'exe-auto-rc2/report.json')]:
         r=read(p)
         if not r['passed']:raise AssertionError(p)
         shutil.copy2(p,OUT/(name+'.json'))
@@ -30,20 +30,20 @@ def main():
     if sha(oldzip)!='bb0a4cf834162a9c4e2505f0e2709eb0ef472e3b652130537831f89965de4dc3':changed.append(str(oldzip))
     save(OUT/'protection.json',{'old_release_files':len(old),'changed':changed,'daily_database_used':False,'qa_data':'isolated synthetic fixtures; no daily database comparison claimed'})
     if changed:raise AssertionError(changed)
-    build=ROOT/'build_0.22.1_rc1';info=read(build/'build_info.json')
+    build=ROOT/'build_0.22.1_rc2';info=read(build/'build_info.json')
     for p in current.iterdir():
         if p.is_file() and sha(p)!=sha(build/'source/src'/p.name):raise AssertionError('Built source differs '+p.name)
     for name in ('build_info.json','command.json','build.log'):shutil.copy2(build/name,OUT/name)
-    package=ROOT/'交付_0.22.1_rc1/补货助手';exe=package/'补货助手.exe'
+    package=ROOT/'交付_0.22.1_rc2/补货助手';exe=package/'补货助手.exe'
     save(OUT/'files-sha256.json',{str(p.relative_to(package)).replace('\\','/'):sha(p) for p in sorted(package.rglob('*')) if p.is_file()})
     save(OUT/'source-hashes.json',{p.name:sha(p) for p in sorted(current.iterdir()) if p.is_file()})
-    auto=read(Q/'exe-auto/report.json');manual=read(Q/'exe/report.json')
+    auto=read(Q/'exe-auto-rc2/report.json');manual=read(Q/'exe-rc2/report.json')
     for r in (auto,manual):
         if not r['actual_exe'] or r['exe_sha256']!=sha(exe):raise AssertionError('Packaged executable mismatch')
     reports=[auto,*manual['runs']]
     for r in reports:
         if r['exit_code'] or r['remaining_children']:raise AssertionError('Packaged acceptance mismatch')
-    archive=package.parent/'补货助手_0.22.1_rc1.zip'
+    archive=package.parent/'补货助手_0.22.1_rc2.zip'
     if archive.exists():raise FileExistsError(archive)
     with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
         for p in sorted(package.rglob('*')):
