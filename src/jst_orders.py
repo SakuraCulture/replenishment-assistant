@@ -359,7 +359,11 @@ def payment_plan(path, gid, progress=lambda _:None, cancel=None):
         rows=[]
         for r in p['rows']:
             if Decimal(r['quantity'])<=0:continue
-            rows.append({'sku':r['sku'],'name':r['name'],'quantity':r['quantity'],'base_quantity':r['quantity'],'unit':'库存单位','factor':'1','conversion_basis':None,'amount':r['amount'],'currency':'CNY','document_number':h['number'],'document_date':None,'note':'核对聚水潭生成草稿后确认实际付款','sources':[],'raw_headers':[],'raw_values':[]})
+            rows.append({'sku':r['sku'],'name':r['name'],'quantity':r['quantity'],'base_quantity':r['quantity'],'unit':'库存单位','factor':None,'conversion_basis':None,'amount':r['amount'],'price':r['price'],'currency':'CNY','document_number':None,'document_date':None,'note':None,'sources':[],'raw_headers':[],'raw_values':[],'adapter':'jst_import_return','amount_basis':'数量×单价','external_order_number':None})
+        from purchase_io import number
+        for row in rows:
+            for field in ('quantity','base_quantity','amount','price'):row[field]=number(row[field])
+            row['document_number']=''
         plan=lc.make_plan(db,h,'payment',rows,[])
         plan['payload']['jst_generation']=gid;plan['digest']=lc.fingerprint(plan['payload'])
         old=lc.current(db,h,'payment');plan['changed']=not old or old['digest']!=plan['digest']

@@ -1,4 +1,4 @@
-"""Exact-generation, three-column exports. Never allocate on export."""
+"""Exact-generation exports with the local warehouse order number; no allocation."""
 import hashlib
 import os
 import re
@@ -31,8 +31,9 @@ def export(path, gids, folder, progress=lambda _:None, cancel=None):
             book=openpyxl.Workbook(write_only=True);sheet=book.create_sheet('订单明细')
             sheet.column_dimensions['A'].width=28;sheet.column_dimensions['B'].width=16;sheet.column_dimensions['C'].width=16
             sheet.freeze_panes='A2'
+            sheet.column_dimensions['D'].width=46
             title=[]
-            for value in ['商品编码','单价','数量']:
+            for value in ['商品编码','单价','数量','订单号']:
                 cell=WriteOnlyCell(sheet,value);cell.font=Font(bold=True,color='FFFFFF');cell.fill=PatternFill('solid',fgColor='176B65');title.append(cell)
             sheet.append(title)
             for r in p['rows']:
@@ -41,7 +42,8 @@ def export(path, gids, folder, progress=lambda _:None, cancel=None):
                 sku=WriteOnlyCell(sheet,r['sku']);sku.data_type='s';sku.number_format='@'
                 price=WriteOnlyCell(sheet,Decimal(r['price']));price.number_format='0.00########'
                 qty=WriteOnlyCell(sheet,Decimal(r['quantity']));qty.number_format='0.########'
-                sheet.append([sku,price,qty])
+                number=WriteOnlyCell(sheet,p['head']['number']);number.data_type='s';number.number_format='@'
+                sheet.append([sku,price,qty,number])
             book.save(tmp);book.close();checkpoint(cancel)
             with open(tmp,'rb') as stream:sha=hashlib.file_digest(stream,'sha256').hexdigest()
             os.replace(tmp,target);tmp=None

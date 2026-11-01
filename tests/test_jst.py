@@ -78,7 +78,7 @@ class Service(unittest.TestCase):
         self.assertEqual(self.balances(),60)
         import openpyxl
         b=openpyxl.load_workbook(next((self.f.root/'out').glob('*.xlsx')))
-        self.assertEqual(b.sheetnames,['订单明细']);self.assertEqual(list(b.active.values),[('商品编码','单价','数量'),('0001',2,40)])
+        self.assertEqual(b.sheetnames,['订单明细']);self.assertEqual(list(b.active.values),[('商品编码','单价','数量','订单号'),('0001',2,40,self.h['number'])])
         self.assertEqual(b.active['A2'].data_type,'s');b.close()
     def test_generation_draft_is_not_actual_payment(self):
         _,gid=self.generated();self.assertIsNone(self.f.view()['documents']['payment'])
@@ -174,8 +174,8 @@ class Service(unittest.TestCase):
     def test_daily_projection_and_logs_do_not_promote_draft(self):
         import daily_batch
         cache=self.f.root/'daily.db';request={'from':wr.today(),'to':wr.today()}
-        rows=daily_batch.read(self.path,cache,request)['records'];self.assertEqual(rows[0]['status'],'待生成聚水潭订单')
-        _,gid=self.generated();rows=daily_batch.read(self.path,cache,request)['records'];self.assertEqual(rows[0]['status'],'待核对付款单')
+        rows=daily_batch.read(self.path,cache,request)['records'];self.assertEqual(rows[0]['status'],'待付款')
+        _,gid=self.generated();rows=daily_batch.read(self.path,cache,request)['records'];self.assertEqual(rows[0]['status'],'待付款')
         j.lock(self.path,[gid]);rows=daily_batch.read(self.path,cache,request)['records'];self.assertTrue(rows[0]['locked'])
         logs=daily_batch.logs(self.path,wr.today(),wr.today());self.assertTrue(any(r['action']=='确认下单并锁定' for r in logs))
         self.assertFalse(self.f.view()['present']['payment'])

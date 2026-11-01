@@ -8,14 +8,17 @@ import order_lifecycle as lc
 import jst_orders as jst
 from runtime_support import checkpoint
 
-STATUSES=('待回传','待生成聚水潭订单','待核对付款单','待收货','已结束')
+STATUSES=('待回传','待付款','待收货','已结束')
 
 
 def read(path,cache,request,cancel=None,progress=lambda _:None):
     base=lifecycle_home.read(path,cache,{**request,'status':'','all_records':True},cancel,progress)
     records=base['records']
     with closing(sqlite3.connect(path)) as db:
-        current={};locks={}
+        current={};locks={};tasks={}
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_tasks'").fetchone():
+            for raw,status,message in db.execute('SELECT head,status,message FROM jst_tasks ORDER BY created,rowid'):
+                h=wr.loads(raw);tasks[(h['oid'],h['warehouse'])]={'status':status,'message':message}
         if jst.exists(db):
             current={(o,w):(g,wr.loads(p)) for o,w,g,p in db.execute('SELECT a.oid,a.warehouse,a.gid,h.payload FROM jst_active a JOIN jst_headers h ON a.gid=h.gid')}
             locks={(o,w):g for o,w,g in db.execute('SELECT oid,warehouse,gid FROM jst_locks WHERE locked=1')}
@@ -24,13 +27,13 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
             r.update(gid=g[0] if g else None,locked=key in locks,generation_summary=g[1]['summary'] if g else None)
             if r['status']=='已收齐':r.update(status='已结束',next=None)
             elif r['next']=='payment':
-                if r['present']['payment']:r['status']='待核对付款单'
-                elif g:
-                    r.update(status='待核对付款单',next='jst_payment')
+                r.update(status='待付款',next='payment')
+                if g:
                     ret=lc.current(db,r,'return');token=lc.rules.basis_token(ret)
                     if token!=g[1]['return'] or r['revision']!=g[1]['revision']:
                         r['note']='回传或签发依据已变化，请核对生成单；未自动重分配'
-                else:r.update(status='待生成聚水潭订单',next='jst_generate')
+                else:r['note']='待生成聚水潭导入单；也可直接导入实际付款单'
+            if key in tasks:r['generation_task']=tasks[key]
     counts={s:sum(r['status']==s for r in records) for s in STATUSES}
     wh=request.get('warehouse');lock=request.get('lock');stage=request.get('status','')
     view=request.get('stage_view');kind=request.get('stage_filter');scope=request.get('scope')
@@ -39,10 +42,10 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
         if chosen is not None and (r['oid'],r['warehouse']) not in chosen:return False
         if not view:return True
         if view=='jst':
-            if kind=='待生成':return r['next']=='jst_generate'
+            if kind=='待生成':return r['next']=='payment' and not r['gid']
             if kind=='已生成未锁':return bool(r['gid']) and not r['locked']
             if kind=='已锁':return r['locked']
-            return bool(r['gid']) or r['next']=='jst_generate'
+            return bool(r['gid']) or r['next']=='payment'
         pending=r['next'] in ('payment','jst_payment') if view=='payment' else r['next']==view
         return pending if kind=='待处理' else pending or r['present'].get(view,False)
     matched=[r for r in records if in_stage(r) and (not stage or stage==r['status'] or stage=='全部未完成' and r['next']) and (not wh or r['warehouse']==wh) and (not lock or r['locked']==(lock=='已锁'))]

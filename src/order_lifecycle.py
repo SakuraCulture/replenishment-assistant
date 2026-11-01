@@ -143,12 +143,23 @@ def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=Fals
     effective=rules.reconcile(raw_rows,basis['products'],pending=not basis['ready'])
     missing=[r['sku'] for r in effective if r['quantity_origin']=='missing'];extra=[r['sku'] for r in effective if r['outside_basis']]
     payload={'schema':SCHEMA,'rule':rules.RULE,'stage':stage,'head':{k:head[k] for k in ('oid','revision','warehouse','number','store','day','digest')},'basis':basis,'pending':not basis['ready'],'raw_rows':raw_rows,'rows':effective,'files':files,'missing':missing,'extra':extra,'explicit_zero':explicit_zero}
+    if stage=='payment':
+        kinds=list(dict.fromkeys(r.get('adapter','payment_file') for r in raw_rows))
+        if 'jst_import_return' in kinds:
+            payload['payment_source']={'type':'jst_import_return','external_order_number':None,'amount_basis':'数量×单价'}
     digest=fingerprint(payload);old=current(db,head,stage);prior={r['sku']:r for r in old['payload']['rows']} if old else {}
     differences=[]
     for r in effective:
         a=prior.get(r['sku'],{})
         differences.append([head['number'],f"V{head['revision']:03d}",r['sku'],r['name'],r['upstream_quantity'],r['base_quantity'],r['difference'],r['processing_note'],a.get('base_quantity'),r['amount']])
-    return {'head':head,'stage':stage,'expected':old['version'] if old else None,'digest':digest,'payload':payload,'changed':not old or old['digest']!=digest,'differences':differences,'duplicates':duplicates}
+    calibration=[]
+    if old:
+        after={r['sku']:r for r in effective}
+        for sku in dict.fromkeys([*prior,*after]):
+            a=prior.get(sku,{});b=after.get(sku,{})
+            if any(a.get(k)!=b.get(k) for k in ('base_quantity','amount','document_number')):
+                calibration.append([sku,b.get('name') or a.get('name'),a.get('base_quantity'),b.get('base_quantity'),a.get('amount'),b.get('amount'),a.get('document_number'),b.get('document_number')])
+    return {'head':head,'stage':stage,'expected':old['version'] if old else None,'digest':digest,'payload':payload,'changed':not old or old['digest']!=digest,'differences':differences,'duplicates':duplicates,'calibration':calibration}
 
 def match_payment_rows(path, head, rows):
     import re
@@ -281,6 +292,9 @@ def commit(path, plan, progress=lambda _: None, cancel=None):
             v = p['expected'] or 0; h = p['head']
             if p['changed']:
                 v += 1; db.execute('INSERT INTO lifecycle_versions VALUES(?,?,?,?,?,?,?,?)', (*key(h), p['stage'], v, wr.now(), p['digest'], raw))
+                if p['stage']=='return':
+                    from jst_tasks import enqueue
+                    enqueue(db,h,{'version':v,'digest':p['digest']})
                 db.execute('INSERT INTO lifecycle_events(at,oid,revision,warehouse,stage,version,action,detail) VALUES(?,?,?,?,?,?,?,?)', (wr.now(), *key(h), p['stage'], v, '确认完整单据', wr.dumps({'number': h['number'], 'rows': len(p['payload']['rows']), 'missing': p['payload']['missing'], 'extra': p['payload']['extra']})))
             receipts.append({'number': h['number'], 'revision': h['revision'], 'stage': p['stage'], 'version': v, 'changed': p['changed']})
     return receipts

@@ -27,7 +27,8 @@ class LifecycleTests(unittest.TestCase):
         with closing(sqlite3.connect(self.path)) as db:
             # Existing backup mechanism may create these two storage metadata tables.
             # They are not signed/job facts. All original business tables stay exact.
-            names=[x[0] for x in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'lifecycle_%' AND name NOT IN ('snapshot_chunks','snapshot_storage_meta')")]
+            # 0.22 adds only the explicitly tested durable generation outbox.
+            names=[x[0] for x in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'lifecycle_%' AND name NOT IN ('snapshot_chunks','snapshot_storage_meta','jst_tasks')")]
             return {n:db.execute('SELECT * FROM "'+n+'"').fetchall() for n in names}
     def read(self,**kw):return home.read(self.path,self.root/'home.db',kw)
     def view(self,h=None):return lc.snapshot(self.path,h or self.h)

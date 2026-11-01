@@ -47,6 +47,10 @@ def payment_specs(info):
     result=[]
     for sheet in info['sheets']:
         hs=sheet['headers']
+        if all(hs.count(h)==1 for h in ('商品编码','单价','数量','订单号')):
+            aliases={'补货单号':'订单号','商品编码':'商品编码','付款单商品数量':'数量'}
+            result.append({**info,**sheet,'mapping':{f:hs.index(aliases[f]) if f in aliases else None for f in fields('payment')},'defaults':{'数量单位':'库存单位','币种':'CNY'},'adapter':'jst_import_return','price_column':hs.index('单价')})
+            continue
         if not all(hs.count(h)==1 for h in PAYMENT_HEADERS):continue
         aliases={'商品编码':'商品编码','商品名称':'商品名称','付款单商品数量':'数量','付款单号':'内部订单号','实际金额':'商品金额'}
         result.append({**info,**sheet,'mapping':{f:hs.index(aliases[f]) if f in aliases else None for f in fields('payment')},'defaults':{'数量单位':'库存单位'},'adapter':'paid_order'})
@@ -83,6 +87,7 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
         columns = [v for v in mapping.values() if v is not None]
         if len(columns) != len(set(columns)): raise ValueError('一个源列不能同时映射多个字段')
         for key in required(stage):
+            if stage=='payment' and spec.get('adapter')=='jst_import_return' and key in ('付款单号','实际金额'):continue
             if mapping.get(key) is None and defaults.get(key) in (None, ''): raise ValueError('缺少字段映射：' + key)
         book = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=False, keep_links=False); cached = None
         try:
@@ -94,12 +99,14 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
                 try:
                     d = {f: cells[c] if c is not None and c < len(cells) else defaults.get(f) for f in names for c in [mapping.get(f)]}
                     if number_only:d['签发修订']=None
+                    price_column=spec.get('price_column') if spec.get('adapter')=='jst_import_return' else None
+                    if price_column is not None:d['_price']=cells[price_column] if price_column<len(cells) else None
                     if any(isinstance(v, str) and v.startswith('=') for v in d.values()):
                         if cached is None: cached = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=True, keep_links=False)
                         values = next(cached[spec['sheet']].iter_rows(min_row=n, max_row=n, values_only=True))
                         for f, v in list(d.items()):
                             if isinstance(v, str) and v.startswith('='):
-                                c = mapping[f]; d[f] = values[c] if c < len(values) else None
+                                c = price_column if f=='_price' else mapping[f]; d[f] = values[c] if c < len(values) else None
                                 if d[f] is None: raise ValueError(f + '公式无缓存值，请在Excel计算保存后重试')
                     raw_qty=d[QUANTITIES[stage]]
                     blank=raw_qty is None or isinstance(raw_qty,str) and not raw_qty.strip()
@@ -118,7 +125,13 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
                     elif day not in (None, ''): day = str(day).strip(); date.fromisoformat(day)
                     else: day = None
                     if stage == 'receipt' and day is None: raise ValueError(DOCDATE[stage] + '不能为空')
-                    doc = base.code(d[DOCNUM[stage]], stage == 'return')
+                    generated=stage=='payment' and spec.get('adapter')=='jst_import_return'
+                    if generated:
+                        price=base.number(d['_price'], blank or Decimal(qty or '0')==0)
+                        with localcontext() as ctx:
+                            ctx.prec=50
+                            d['实际金额']=base.number(Decimal(qty or '0')*Decimal(price or '0'))
+                    doc = base.code(d[DOCNUM[stage]], stage == 'return' or generated)
                     props = spec.get('properties', {}); signed = base.code(d['补货单号'], True)
                     rev = revision(d['签发修订'])
                     if props.get('签发修订索引') and not number_only:
@@ -137,6 +150,9 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
                     currency = str(d.get('币种') or '').strip()
                     rows.append({'sku': base.code(d['商品编码']), 'name': str(d['商品名称'] or ''), 'signed_number': signed, 'revision': rev, 'store': base.code(d['门店编码'], True), 'warehouse': wh, 'document_number': doc, 'document_date': day, 'quantity': qty, 'unit': unit, 'factor': factor, 'conversion_basis': basis, 'base_quantity': converted, 'amount': base.number(d.get('实际金额'), stage != 'payment'), 'currency': currency, 'note': d['备注'], 'source': {'sha': spec['sha'], 'file': p.name, 'sheet': ws.title, 'row': n}, 'raw_headers': spec['headers'], 'raw_values': list(cells)})
                     rows[-1]['quantity_origin']='blank' if blank else 'zero' if Decimal(qty)==0 else 'value'
+                    if generated:
+                        if not signed:raise ValueError('聚水潭导入单缺少订单号，不能猜测关联')
+                        rows[-1].update(adapter='jst_import_return',price=price,amount_basis='数量×单价',external_order_number=None)
                     if spec.get('adapter')=='paid_order':
                         rows[-1]['source_order']={h:cells[spec['headers'].index(h)] if spec['headers'].index(h)<len(cells) else None for h in PAYMENT_HEADERS}
                         rows[-1]['adapter']='paid_order'
