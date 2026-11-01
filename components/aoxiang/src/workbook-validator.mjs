@@ -67,7 +67,7 @@ export async function validateWorkbook(file,{warehouseCode,expectedRows,contract
             const sku=row[contract.keyColumnPositions1Based.skuCode-1]??'';
             entities.set(code,(entities.get(code)||0)+1);if(!code||!sku)nullKeys++;
             const key=JSON.stringify([code,sku,...(contract.keyColumnPositions1Based.purchaseOrder?[row[contract.keyColumnPositions1Based.purchaseOrder-1]]:[])]);if(keys.has(key))duplicates++;keys.add(key);
-            if(contract.captureColumns1Based){if(capturedRows.length>=500000)fail('CAPTURE_LIMIT','原生明细超过本版本50万行校验保护值');capturedRows.push(Object.fromEntries(Object.entries(contract.captureColumns1Based).map(([k,v])=>[k,row[v-1]??''])));}
+            if(contract.captureColumns1Based){if(capturedRows.length>=500000)fail('CAPTURE_LIMIT','原生明细超过本版本50万行校验保护值');capturedRows.push({...Object.fromEntries(Object.entries(contract.captureColumns1Based).map(([k,v])=>[k,row[v-1]??''])),...(contract.captureSourceRow?{_sourceRow:rowNumber}:{})});}
           }row=null;
         }
       }

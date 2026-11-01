@@ -1,4 +1,4 @@
-"""AX06-09 local procurement acceptance against fixed AX01 business baseline. Never connects AX."""
+"""AX06-12 local acceptance against fixed AX01 business baseline. Never connects AX."""
 import argparse
 import hashlib
 import json
@@ -19,6 +19,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--qa', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--stage', choices=('creation', 'receipts'), default='creation')
     args = parser.parse_args()
     qa, output = args.qa.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -73,7 +74,7 @@ def main():
         comparisons.append({'case': file.name, 'differences': len(changes), 'details': changes})
     changed_protected = [n for n, h in protected.items() if sha(n) != h]
     total = sum(c['differences'] for c in comparisons)
-    report = {'task': 'AX06-AX09-local-procurement', 'passed_local': not total and not changed_protected,
+    report = {'task': 'AX10-AX12-local-receipts' if args.stage == 'receipts' else 'AX06-AX09-local-procurement', 'passed_local': not total and not changed_protected,
               'baseline_commit': baseline['baseline_commit'], 'head_before_commit': git('rev-parse', 'HEAD'), 'branch': git('branch', '--show-current'),
               'python_tests': int(re.search(r'Ran (\d+) tests', py)[1]), 'component_tests': int(re.search(r'tests (\d+)', js)[1]),
               'runs': runs, 'comparisons': comparisons, 'total_differences': total, 'strict_order_and_types': True,
@@ -87,8 +88,16 @@ def main():
                                    'Qt preview/recovery buttons, default cancel, old task state protection and safe close'],
               'limitations': ['Real AX integration explicitly deferred by user; no real export or purchase submitted in this run.',
                               'Live multi-SKU import task counts, supplier behaviour, marker preservation and main/detail checks still require acceptance.',
-                              'No EXE build acceptance claimed. Receipt monitoring/final lifecycle sync and manual proof-assisted binding remain subsequent work.',
+                              'No EXE or live receipt acceptance claimed. Batch scheduling, periodic monitoring, manual proof-assisted binding and integration packaging remain subsequent work.',
                               'Suite durations are test execution times, not platform performance measurements.']}
+    if args.stage == 'receipts':
+        report['new_local_checks'] += [
+            'D16 terminal latch and final-sync pending survive failed D17, restart and retry of original export tasks',
+            'fresh observation does not reuse previous completed export; crash after proof save resumes exact file',
+            'actual native source row, blank/zero distinction, SKU coverage, state and quantity/amount conflict',
+            'existing lifecycle commit used for final receipt, lost acknowledgement idempotency and manual receipt protection',
+            'payment change, original file tamper, cancellation and concurrent lifecycle update reject formal write',
+            'focused Qt receipt page: local-only open, exact task stop/resume, safe close and final-save retry']
     (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(json.dumps({k:report[k] for k in ('passed_local','python_tests','component_tests','total_differences')}, ensure_ascii=False))
     if not report['passed_local']:

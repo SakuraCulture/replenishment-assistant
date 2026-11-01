@@ -27,7 +27,7 @@ export function validatePurchasePair(run,main,detail){
   return {status:'VALIDATED',queryParents:expected.size,mainRows:main.rows,detailRows:detail.rows,linkedParents:childSku.size,orphanRows:0,parentCoverage:'EXACT_SET',skuCoverage:'DISTINCT_SKU_PER_ORDER',duplicatesPreserved:true,dateBasis:run.dateBasis};
 }
 export class PurchaseCoordinator{
-  constructor({state,config,binding,adapter,onProgress=()=>{},signal}){Object.assign(this,{state,config,binding,adapter,onProgress,signal});}
+  constructor({state,config,binding,adapter,onProgress=()=>{},onSourceValidated=null,signal}){Object.assign(this,{state,config,binding,adapter,onProgress,onSourceValidated,signal});}
   stopped(){if(this.signal?.aborted)fail('PAUSED','采购作业已暂停；继续时恢复原任务');}
   async progress(stage,body={}){await this.onProgress({stage,...body});}
   save(run){this.state.putPurchase(run);return run;}
@@ -65,7 +65,7 @@ export class PurchaseCoordinator{
       for(const sourceId of ['D16','D17']){
         this.stopped();let e=this.state.getPurchase(run.id).exports[sourceId];
         if(e.stage==='SUCCEEDED'){
-          try{await this.sourceFile(this.state.getPurchase(run.id),sourceId);continue;}catch(error){if(!e.taskId)throw error;const file=await outputPath(this.binding.outputRoot,e.asset.relativePath);if(await exists(file))throw error;update(sourceId,{stage:'ACCEPTED',downloaded:null});e=this.state.getPurchase(run.id).exports[sourceId];}
+          try{const file=await this.sourceFile(this.state.getPurchase(run.id),sourceId);if(this.onSourceValidated)await this.onSourceValidated({run:this.state.getPurchase(run.id),sourceId,file});continue;}catch(error){if(!e.taskId)throw error;const file=await outputPath(this.binding.outputRoot,e.asset.relativePath);if(await exists(file))throw error;update(sourceId,{stage:'ACCEPTED',downloaded:null});e=this.state.getPurchase(run.id).exports[sourceId];}
         }
         if(BAD.has(e.stage))fail('SUBMISSION_UNKNOWN','采购原提交仍未消歧，禁止重提',{runId:run.id,sourceId,taskId:e.taskId||null});
         if(e.stage==='FAILED_CONFIRMED')fail('PURCHASE_TASK_FAILED','采购原任务包含失败；请核对平台错误后再显式重跑');
@@ -95,6 +95,7 @@ export class PurchaseCoordinator{
         this.stopped();const validation=await validateWorkbook(downloaded.file,{warehouseCode:run.target.buyerWarehouseCode,expectedRows:taskSummary.successCount,contract:purchaseContract(sourceId),maxCompressedBytes:67108864});
         if(sourceId==='D16'&&validation.rows!==run.query.total)fail('PURCHASE_PARENT_COVERAGE','采购主单查询计数与导出物理行数不符');
         const {capturedRows,...summary}=validation;update(sourceId,{stage:'VALIDATED',validation:summary});
+        if(this.onSourceValidated)await this.onSourceValidated({run:this.state.getPurchase(run.id),sourceId,file:downloaded.file});
       }
       run=this.state.getPurchase(run.id);this.stopped();const validations={};
       for(const sourceId of ['D16','D17']){const e=run.exports[sourceId],file=e.stage==='SUCCEEDED'?await this.sourceFile(run,sourceId):e.downloaded.file;validations[sourceId]=await validateWorkbook(file,{warehouseCode:run.target.buyerWarehouseCode,expectedRows:e.taskSummary.successCount,contract:purchaseContract(sourceId),maxCompressedBytes:67108864});}

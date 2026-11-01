@@ -10,7 +10,9 @@ const fields={ping:[],configuration:[],list:['offset','limit'],reserve:['command
   'setup.cancel':['setup_id'],'setup.commit':['setup_id'],
   'template.start':[],'template.status':['template_id'],'template.cancel':['template_id'],
   'purchase.reserve':['package_file','package_sha256'],'purchase.start':['purchase_id'],
-  'purchase.status':['purchase_id'],'purchase.pause':['purchase_id'],'purchase.cancel':['purchase_id'],'purchase.list':['offset','limit']};
+  'purchase.status':['purchase_id'],'purchase.pause':['purchase_id'],'purchase.cancel':['purchase_id'],'purchase.list':['offset','limit'],
+  'receipt.start':['purchase_id'],'receipt.status':['purchase_id'],'receipt.pause':['purchase_id'],
+  'receipt.synced':['purchase_id','manifest_sha256','receipt'],'receipt.list':['offset','limit']};
 export function validateRequest(value){
   if(!value||typeof value!=='object'||Array.isArray(value)||value.protocol_version!==1||
     typeof value.request_id!=='string'||!idPattern.test(value.request_id)||!Object.hasOwn(fields,value.action))fail('REQUEST_SCHEMA','机器请求版本、编号或动作无效');
@@ -21,6 +23,7 @@ export function validateRequest(value){
   if(fields[value.action].includes('setup_id')&&(typeof value.setup_id!=='string'||!idPattern.test(value.setup_id)))fail('REQUEST_SCHEMA','连接核验编号无效');
   if(fields[value.action].includes('template_id')&&(typeof value.template_id!=='string'||!idPattern.test(value.template_id)))fail('REQUEST_SCHEMA','模板获取编号无效');
   if(fields[value.action].includes('purchase_id')&&(typeof value.purchase_id!=='string'||!idPattern.test(value.purchase_id)))fail('REQUEST_SCHEMA','采购任务编号无效');
+  if(value.action==='receipt.synced'&&(!/^[a-f0-9]{64}$/.test(value.manifest_sha256||'')||!value.receipt||Object.keys(value.receipt).some(k=>!['number','revision','stage','version','changed'].includes(k))))fail('REQUEST_SCHEMA','正式实收回执或快照哈希无效');
   if(value.action==='purchase.reserve'&&(typeof value.package_file!=='string'||!value.package_file||value.package_file.length>2048||!(/^[a-f0-9]{64}$/).test(value.package_sha256||'')))fail('REQUEST_SCHEMA','采购任务文件及哈希无效');
   if(value.action==='setup.start'){
     const text=v=>typeof v==='string'&&v.trim().length>0&&v.length<=1024;
