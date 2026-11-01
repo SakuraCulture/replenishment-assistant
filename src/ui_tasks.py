@@ -7,10 +7,13 @@ from export_progress import RowProgress
 
 class Worker(QThread):
     status=Signal(str);row_progress=Signal(int,int);success=Signal(object);failed=Signal(str);cancelled=Signal()
+    commit_state=Signal(bool);business_event=Signal(object)
     def __init__(self,fn,args,parent):super().__init__(parent);self.fn=fn;self.args=args;self.cancel=threading.Event()
     def run(self):
         try:
             def report(message):
+                if hasattr(message,'active'):self.commit_state.emit(message.active)
+                if hasattr(message,'business_event'):self.business_event.emit(message.business_event)
                 self.row_progress.emit(message.current,message.total) if isinstance(message,RowProgress) else self.row_progress.emit(0,0)
                 self.status.emit(str(message))
             result=self.fn(*self.args,progress=report,cancel=self.cancel)

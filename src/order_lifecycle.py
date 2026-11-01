@@ -264,6 +264,9 @@ def commit(path, plan, progress=lambda _: None, cancel=None):
         staged={}
         for p in plan['plans']:
             checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'])
+            from jst_orders import guard_return,guard_payment
+            if p['stage']=='return' and p['changed']:guard_return(db,p['head'])
+            if p['stage']=='payment':guard_payment(db,p)
             identity=(*key(p['head']),p['stage'])
             if identity in staged:raise ValueError('同一订单同一环节只能保存一份完整单据')
             if (old['version'] if old else None) != p['expected']: raise wr.Conflict('单据在预览后被更新，请重新核对')

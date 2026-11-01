@@ -177,6 +177,9 @@ class Repository:
             if (old[0] if old else None)!=expected_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')
             if old!=planned_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')
             # Compare all expected revisions before any mutation.
+            from jst_orders import guard_resign
+            for s,oid,number,rev,h,encoded,summary in prepared:
+                guard_resign(db,oid)
             for s in codes:
                 from archive_orders import require_active
                 if planned[s]:require_active(db,planned[s][0])
