@@ -1,0 +1,392 @@
+"""Application-lifetime queue owner and business-facing batch status. No model changes."""
+import time
+import sqlite3
+from datetime import datetime
+from decimal import Decimal
+from pathlib import Path
+
+from PySide6.QtCore import QObject, QThread, Signal, QTimer, Qt, QSignalBlocker
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QProgressBar,
+                             QTableWidget, QTableWidgetItem, QMessageBox, QSpinBox, QLineEdit)
+from ui_controls import button, label
+from aoxiang_session import SessionGate
+from aoxiang_workflows import Workflows, DONE_ITEM
+from aoxiang_workflow_runner import Runner
+from aoxiang_client import ProcessClient
+from aoxiang_ui_common import ComponentDialog, component_root, show_modal
+from runtime_support import Cancelled
+
+KINDS = {'prepare': '采购预览', 'upload': '确认上传采购', 'receipt': '收货同步'}
+STATES = {'QUEUED': '排队', 'RUNNING': '正在处理', 'YIELDED': '等待人工操作结束', 'PAUSED': '已停止，可继续原任务',
+          'FAILED': '批次未完成', 'READY': '预览完成，尚未上传', 'COMPLETED': '完成', 'COMPLETED_WITH_ERRORS': '已处理，有待核项', 'CANCELLED': '剩余任务已取消',
+          'PENDING': '未处理', 'PREPARED': '预览就绪，未上传', 'BOUND': '已关联采购单', 'OBSERVED': '已观察，尚未完成', 'SYNCED': '正式实收已保存', 'REVIEW': '待核，不自动重试', 'SKIPPED': '周期已停止，本次跳过'}
+
+
+class QueueWorker(QThread):
+    progress = Signal(str)
+    def __init__(self, manager, job, token):
+        super().__init__(manager)
+        self.manager, self.job, self.token = manager, job, token
+
+    def run(self):
+        m = self.manager
+        client = None
+        try:
+            if self.token.is_set():
+                raise Cancelled('任务尚未开始，已请求停止')
+            client = m.client_factory(component_root(), m.store.folder / 'component-state')
+            client.start()
+            Runner(m.store, client, component_root(), m.host.work_repository.path, cancel=self.token, progress=self.progress.emit).run(self.job['id'])
+        except Exception as exc:
+            state = 'YIELDED' if isinstance(exc, Cancelled) and m.gate.yielding and not m.explicit_stop else 'PAUSED'
+            try:
+                m.store.update(self.job['id'], state=state, message=str(exc))
+            except Exception as failed:
+                self.progress.emit('队列状态保存失败，请保留原记录：' + str(failed))
+        finally:
+            # Keep the gate until the actual child process has exited, including slow shutdown.
+            while client is not None and not client.close(timeout=.5):
+                self.progress.emit('等待当前翱象动作安全结束；不会强杀正在提交的任务。')
+                time.sleep(.2)
+            m.gate.release_background(self.token)
+
+
+class Manager(QObject):
+    changed = Signal()
+    def __init__(self, host, *, client_factory=ProcessClient):
+        super().__init__(host)
+        self.host, self.client_factory = host, client_factory
+        self.store = Workflows(Path(host.repository.folder) / 'aoxiang')
+        self.gate = SessionGate()
+        self.worker = self.token = None
+        self.stopping = self.explicit_stop = self.close_requested = False
+        self.message = '翱象队列空闲；周期同步默认未启用'
+        self.owner = None
+        try:
+            self.store.folder.mkdir(parents=True, exist_ok=True)
+            self.owner = sqlite3.connect(self.store.folder / 'scheduler.lock.sqlite3', timeout=0)
+            self.owner.execute('CREATE TABLE IF NOT EXISTS owner_lock(id INTEGER PRIMARY KEY)')
+            self.owner.execute('BEGIN IMMEDIATE')
+            self.store.recover()
+        except Exception as exc:
+            if self.owner:self.owner.close()
+            self.owner = None;self.stopping = True
+            self.message = '翱象后台队列未启动（可能有另一个实例）：' + str(exc)
+        self.timer = QTimer(self)
+        self.timer.setInterval(2000)
+        self.timer.timeout.connect(self.tick)
+        self.timer.start()
+        # Embedded/test hosts can destroy an idle window without sending closeEvent.
+        host.destroyed.connect(self.shutdown)
+
+    def status(self, text):
+        self.message = text
+        self.changed.emit()
+
+    def tick(self):
+        if self.worker or self.stopping or self.gate.yielding or getattr(self.host, 'closing', False):
+            return
+        try:
+            self.store.enqueue_due()
+            job = self.store.next_queued()
+            if not job:
+                return
+            token = self.gate.claim_background()
+            if token is None:
+                return
+            self.explicit_stop = False
+            self.token = token
+            self.worker = QueueWorker(self, job, token)
+            self.worker.progress.connect(self.status)
+            self.worker.finished.connect(self.finished)
+            self.status(KINDS[job['kind']] + ' · 正在开始本批作业')
+            self.worker.start()
+        except Exception as exc:
+            self.stopping = True
+            self.status('翱象队列停止，原记录保留：' + str(exc))
+
+    def finished(self):
+        previous, self.worker = self.worker, None
+        self.token = None
+        previous.deleteLater()
+        self.status('本轮翱象作业已安全结束；可在队列查看逐单结果')
+        if self.close_requested:
+            QTimer.singleShot(0, self.host.close)
+
+    def stop(self, expected_id=None):
+        if expected_id and (not self.worker or self.worker.job['id'] != expected_id):
+            return
+        self.explicit_stop = True
+        if self.token:
+            self.token.set()
+            self.status('已请求停止剩余动作，等待当前动作安全结束；已建单不会撤销')
+
+    def prepare_close(self):
+        self.stopping = True
+        self.close_requested = True
+        self.stop()
+        return self.worker is None
+
+    def resume_after_cancelled_close(self):
+        self.stopping = self.owner is None
+        self.close_requested = False
+
+    def shutdown(self):
+        self.timer.stop()
+        if self.owner:
+            self.owner.rollback();self.owner.close();self.owner=None
+
+    def open_queue(self, id=None):
+        QueueDialog(self.host, self, id).exec()
+
+    def ensure_owner(self):
+        if self.owner is None or self.stopping:
+            raise ValueError('本窗口没有后台调度权或正在关闭；请先处理另一实例或队列错误')
+
+
+class QueueDialog(QDialog):
+    def __init__(self, parent, manager, id=None):
+        super().__init__(parent)
+        self.manager, self.id, self.current = manager, id, None
+        self.setWindowTitle('翱象批次作业 · 按门店和仓查看')
+        self.resize(1160, 720)
+        v = QVBoxLayout(self)
+        v.addWidget(label('采购先预览再确认上传；收货按原采购单查询。各订单按选择顺序串行处理。', 'section'))
+        self.jobs = QComboBox()
+        self.jobs.currentIndexChanged.connect(self.selected)
+        v.addWidget(self.jobs)
+        self.summary = label('')
+        self.summary.setWordWrap(True)
+        v.addWidget(self.summary)
+        self.table = QTableWidget(0, 8)
+        self.table.setHorizontalHeaderLabels(['选择', '门店', '仓', '补货单号', '本项状态', '款数 / 付款金额', '平台采购单', '提示'])
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.cellDoubleClicked.connect(lambda *_:self.details())
+        v.addWidget(self.table, 1)
+        row = QHBoxLayout()
+        row.addWidget(button('查看所选订单采购明细', self.details))
+        self.upload_btn = button('确认上传勾选的采购预览', self.upload, True)
+        self.resume_btn = button('继续本批原未完任务', self.resume)
+        self.stop_btn = button('停止本批剩余动作', lambda:manager.stop(self.id))
+        self.cancel_btn = button('取消本批未开始的剩余任务', self.cancel)
+        for b in (self.upload_btn, self.resume_btn, self.stop_btn, self.cancel_btn): row.addWidget(b)
+        v.addLayout(row)
+        row = QHBoxLayout()
+        row.addWidget(button('查看 / 配置批量收货同步', lambda: open_receipt_selection(self, manager.host)))
+        row.addWidget(button('关闭（已排队作业继续）', self.accept))
+        v.addLayout(row)
+        self.bar = QProgressBar();v.addWidget(self.bar)
+        self.note = label('');self.note.setWordWrap(True);v.addWidget(self.note)
+        self.timer = QTimer(self);self.timer.setInterval(1000);self.timer.timeout.connect(self.refresh);self.timer.start()
+        self.refresh()
+
+    def selected(self):
+        self.id = self.jobs.currentData();self.current = None;self.refresh()
+
+    def refresh(self):
+        try:
+            jobs = self.manager.store.list()
+            if self.id and all(j['id']!=self.id for j in jobs):jobs.insert(0,self.manager.store.get(self.id))
+            selected = self.id or (jobs[-1]['id'] if jobs else None)
+            with QSignalBlocker(self.jobs):
+                self.jobs.clear()
+                for j in jobs:
+                    self.jobs.addItem(datetime.fromtimestamp(j['created_at']).strftime('%m-%d %H:%M:%S') + ' · ' + KINDS[j['kind']] + ' · ' + STATES[j['state']], j['id'])
+                self.jobs.setCurrentIndex(self.jobs.findData(selected))
+            self.id = selected
+            job = next((j for j in jobs if j['id'] == selected), None)
+            active = bool(self.manager.worker and self.manager.worker.job['id'] == selected)
+            self.note.setText(self.manager.message)
+            self.stop_btn.setEnabled(active)
+            self.resume_btn.setEnabled(bool(job and job['state'] in ('PAUSED', 'FAILED')) and not active)
+            self.cancel_btn.setEnabled(bool(job and job['state'] in ('QUEUED', 'PAUSED', 'YIELDED', 'FAILED')) and not active)
+            self.upload_btn.setEnabled(bool(job and job['kind'] == 'prepare' and job['state'] in ('READY', 'COMPLETED_WITH_ERRORS', 'CANCELLED') and any(i['state']=='PREPARED' for i in job['items'])))
+            if not job:
+                self.summary.setText('尚无批次。付款核对页可勾选订单后批量生成采购预览。')
+                self.table.setRowCount(0);return
+            done = sum(i['state'] in DONE_ITEM for i in job['items'])
+            self.bar.setRange(0, len(job['items']));self.bar.setValue(done)
+            self.bar.setFormat(f'已处理 {done} / {len(job["items"])} 单 · ' + STATES[job['state']])
+            self.summary.setText(STATES[job['state']] + ' · ' + str(job.get('message') or '') + '\n停止、取消只影响剩余动作；已经上传的采购单不会撤销。')
+            if self.current and self.current['sequence'] == job['sequence']:
+                return
+            checked = {i for i in range(self.table.rowCount()) if getattr(self,'rendered_id',None)==job['id'] and self.table.item(i, 0) and self.table.item(i, 0).checkState() == Qt.CheckState.Checked}
+            self.rendered_id=job['id']
+            self.current = job
+            self.table.setRowCount(len(job['items']))
+            for n, i in enumerate(job['items']):
+                h = i.get('head') or i.get('basis') or {}
+                check = QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
+                check.setCheckState(Qt.CheckState.Checked if n in checked else Qt.CheckState.Unchecked)
+                if i['state'] != 'PREPARED': check.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                self.table.setItem(n, 0, check)
+                summary = i.get('summary') or {}
+                values = [i.get('display_name') or h.get('name') or h.get('store'), h.get('warehouse'), h.get('number'), STATES.get(i['state'], i['state']),
+                          f"{summary.get('sku_count', '—')} / {summary.get('amount', '—')}", (i.get('result') or {}).get('binding', {}).get('orderId') or i.get('order_id', '—'),
+                          (i.get('error') or {}).get('message', '')]
+                for c, x in enumerate(values, 1):
+                    item = QTableWidgetItem(str(x));item.setToolTip(str(x));self.table.setItem(n, c, item)
+            for c, width in enumerate((50, 140, 70, 235, 160, 120, 170, 240)):self.table.setColumnWidth(c, width)
+        except Exception as exc:
+            self.note.setText('读取队列失败：' + str(exc))
+
+    def details(self):
+        n = self.table.currentRow()
+        if not self.current or n < 0:
+            QMessageBox.information(self, '先选择订单', '请先点击要核对的订单行。');return
+        p = self.current['items'][n].get('package')
+        if not p:
+            QMessageBox.information(self, '采购明细', '此项没有采购预览；收货商品明细请在对应订单的翱象收货页核对。');return
+        try:
+            from business_ui import run, grid
+            from aoxiang_receipts import checked_json
+            def read(progress, cancel):
+                return checked_json(p['plan_file'], p['plan_sha256'])
+            plan = run(self, read, (), '读取已冻结付款采购明细')
+            d = QDialog(self);d.setWindowTitle('采购预览 · ' + plan['head']['number']);d.resize(950, 650)
+            v = QVBoxLayout(d)
+            v.addWidget(label(plan['head']['name'] + ' · ' + plan['head']['warehouse'] + ' · 付款数量 ' + plan['total_quantity'] + ' · 金额 ' + plan['total_amount'] + ' 元', 'section'))
+            search = QLineEdit();search.setPlaceholderText('查找商品编码或名称');v.addWidget(search)
+            table, model = grid(d, ['商品编码', '商品名称', '付款基础数量', '付款商品金额（元）'], [[r['sku'], r['name'], r['quantity'], r['amount']] for r in plan['rows']])
+            search.textChanged.connect(model.filter);v.addWidget(table, 1)
+            v.addWidget(label('逐项取自已确认付款快照；不换算基础数量，不用最新价格替代付款金额。', 'muted'))
+            v.addWidget(button('关闭预览', d.accept));d.exec();d.deleteLater()
+        except Exception as exc:QMessageBox.warning(self, '未打开采购明细', str(exc))
+
+    def upload(self):
+        if not self.current:return
+        prepared_id, expected_sequence = self.current['id'], self.current['sequence']
+        positions = [i for i in range(self.table.rowCount()) if self.table.item(i, 0).checkState() == Qt.CheckState.Checked and self.current['items'][i]['state'] == 'PREPARED']
+        if not positions:
+            QMessageBox.information(self, '先选择范围', '请勾选要上传的成功采购预览。');return
+        items = [self.current['items'][i] for i in positions]
+        amount = sum((Decimal(i['summary']['amount']) for i in items), Decimal(0))
+        names = '\n'.join(i['head']['name'] + ' · ' + i['head']['warehouse'] + ' · ' + i['head']['number'] for i in items[:12])
+        if len(items) > 12: names += f'\n其余 {len(items)-12} 单见已勾选列表。'
+        text = f'将上传勾选的 {len(items)} 张采购单，付款商品金额合计 {amount} 元。\n{names}\n\n仅创建为待提交，不自动提交或审核；未勾选及失败项不会上传。'
+        if QMessageBox.question(self, '确认批量上传采购', text, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:return
+        try:
+            self.manager.ensure_owner()
+            job = self.manager.store.upload(prepared_id, positions, expected_sequence)
+            self.id = job['id'];self.current = None;self.manager.tick();self.refresh()
+        except Exception as exc:QMessageBox.warning(self, '未开始上传', str(exc))
+
+    def resume(self):
+        try:self.manager.ensure_owner();self.manager.store.resume(self.id);self.manager.tick();self.refresh()
+        except Exception as exc:QMessageBox.warning(self, '未继续', str(exc))
+
+    def cancel(self):
+        if QMessageBox.question(self, '取消剩余任务', '只取消本批剩余排队动作；已创建的平台单据与预留采购意图保留。确认取消？', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:return
+        try:self.manager.ensure_owner();self.manager.store.cancel_queued(self.id);self.refresh()
+        except Exception as exc:QMessageBox.warning(self, '未取消', str(exc))
+
+    def done(self, result):self.timer.stop();super().done(result)
+
+
+class ReceiptSelection(ComponentDialog):
+    def __init__(self, parent, host, heads=None, *, client_factory=ProcessClient):
+        super().__init__(parent)
+        self.host, self.heads = host, heads
+        self.folder = Path(host.repository.folder) / 'aoxiang'
+        self.client_factory = client_factory;self.client = client_factory(component_root(), self.folder / 'component-state')
+        self.started = False;self.worker = None;self._closing = self._can_close = self._close_done = False
+        self.records = [];self.created_job = None
+        self.poll = QTimer(self)
+        self.setWindowTitle('批量收货同步 · 选择已关联采购单');self.resize(1040, 700)
+        v = QVBoxLayout(self);v.addWidget(label('立即同步与周期计划分开。打开本页只读取本地记录；周期仅在应用运行时执行。', 'section'))
+        self.search = QLineEdit();self.search.setPlaceholderText('筛选门店、仓、补货单号或采购单号');self.search.textChanged.connect(self.filter);v.addWidget(self.search)
+        self.table = QTableWidget(0, 6);self.table.setHorizontalHeaderLabels(['选择', '门店 / 仓', '补货单号', '采购单号', '周期计划', '平台 / 最终同步']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);v.addWidget(self.table, 1)
+        row = QHBoxLayout();row.addWidget(button('勾选当前筛选', self.select_visible));row.addWidget(button('清空勾选', self.clear));self.now_btn = button('立即同步勾选采购单', self.enqueue, True);row.addWidget(self.now_btn);v.addLayout(row)
+        row = QHBoxLayout();row.addWidget(QLabel('周期（分钟）'));self.minutes = QSpinBox();self.minutes.setRange(5, 1440);self.minutes.setValue(30);row.addWidget(self.minutes)
+        self.enable_btn = button('启用勾选周期同步', lambda:self.configure(True));self.disable_btn = button('停止勾选周期同步', lambda:self.configure(False));row.addWidget(self.enable_btn);row.addWidget(self.disable_btn);v.addLayout(row)
+        v.addWidget(label('30分钟仅为可修改的初始填写值，尚未实测平台负载；不点击启用就不会自动执行。已完成订单不再常规查询，最终实收待办单独恢复。', 'muted'))
+        self.bar = QProgressBar();v.addWidget(self.bar);self.status = label('读取本地采购记录中…');self.status.setWordWrap(True);v.addWidget(self.status)
+        v.addWidget(button('关闭', self.close));self.update_buttons();QTimer.singleShot(0, self.load)
+
+    def update_buttons(self):
+        ready = not self.worker and not self._closing
+        for b in (self.now_btn, self.enable_btn, self.disable_btn):b.setEnabled(ready and bool(self.records))
+        self.bar.setRange(0, 0 if self.worker else 1)
+        if not self.worker:self.bar.setValue(1)
+
+    def load(self):
+        def operation(_):
+            self.ensure_client();items=[];states={}
+            for action in ('purchase.list', 'receipt.list'):
+                offset=0
+                while True:
+                    page=self.client.request(action,offset=offset,limit=100)
+                    if action=='purchase.list':items.extend(r for r in page['items'] if r['state']=='BOUND')
+                    else:states.update({r['id']:r for r in page['items']})
+                    offset+=len(page['items'])
+                    if offset>=page['total'] or not page['items']:break
+            if self.heads is not None:
+                # Selection order follows the source lifecycle list, never completion time.
+                items=[r for h in self.heads for r in items if all(r['basis'][k]==h[k] for k in ('number','store','warehouse'))]
+            return [{**r,'receipt_terminal':states.get(r['id'],{}).get('terminal',False),'receipt_state':states.get(r['id'],{}).get('state','未查询')} for r in items]
+        self.run(operation,self.loaded)
+
+    def loaded(self, records):
+        self.records=records;self.render()
+        self.status.setText(f'共 {len(records)} 张已核验关联采购单；未连接平台。')
+
+    def render(self):
+        schedules={r['id']:r for r in self.host.aoxiang_workflows.store.schedules()};self.table.setRowCount(len(self.records))
+        for n,r in enumerate(self.records):
+            check=QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);check.setCheckState(Qt.CheckState.Unchecked);self.table.setItem(n,0,check)
+            s=schedules.get(r['id'],{});plan=('已完成停止' if s.get('terminal') else str(s['interval_seconds']//60)+'分钟' if s.get('enabled') else '未启用')
+            if s.get('final_pending'):plan+=' · 最终同步待办'
+            from aoxiang_receipt_ui import STATES as RECEIPT_STATES
+            values=[r['target']['displayName']+' / '+r['basis']['warehouse'],r['basis']['number'],r['binding']['orderId'],plan,RECEIPT_STATES.get(r['receipt_state'],r['receipt_state'])]
+            for c,x in enumerate(values,1):self.table.setItem(n,c,QTableWidgetItem(x))
+        for c,w in enumerate((50,190,270,180,150,160)):self.table.setColumnWidth(c,w)
+        self.filter()
+
+    def filter(self):
+        tokens=self.search.text().lower().split()
+        for n,r in enumerate(self.records):self.table.setRowHidden(n,not all(t in str(r).lower() for t in tokens))
+
+    def select_visible(self):
+        for n in range(len(self.records)):
+            if not self.table.isRowHidden(n):self.table.item(n,0).setCheckState(Qt.CheckState.Checked)
+
+    def clear(self):
+        for n in range(len(self.records)):self.table.item(n,0).setCheckState(Qt.CheckState.Unchecked)
+
+    def selected(self):
+        return [r for n,r in enumerate(self.records) if self.table.item(n,0).checkState()==Qt.CheckState.Checked]
+
+    def enqueue(self):
+        try:
+            self.host.aoxiang_workflows.ensure_owner()
+            self.created_job=self.host.aoxiang_workflows.store.receipt(self.selected());self.close()
+        except Exception as exc:QMessageBox.warning(self,'未加入队列',str(exc))
+
+    def configure(self,enabled):
+        records=self.selected()
+        if not records:QMessageBox.information(self,'先选择范围','请先勾选采购单。');return
+        if enabled and QMessageBox.question(self,'启用周期同步',f'启用勾选的 {len(records)} 单，每 {self.minutes.value()} 分钟查询一次，仅在应用运行时执行。\n完整终态验收后自动保存正式实收；已有人工收货或依据变化时停止待核。',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return
+        try:
+            self.host.aoxiang_workflows.ensure_owner()
+            self.host.aoxiang_workflows.store.configure_schedules(records,self.minutes.value(),enabled);self.render();self.status.setText('周期计划已保存；当前人工窗口关闭后后台才能接管连接。')
+        except Exception as exc:QMessageBox.warning(self,'未保存周期计划',str(exc))
+
+
+def open_receipt_selection(parent, host, heads=None):
+    dialog=ReceiptSelection(parent,host,heads)
+    proceed=show_modal(host,dialog)
+    if proceed and dialog.created_job:host.aoxiang_workflows.open_queue(dialog.created_job['id'])
+
+
+def prepare_selected(parent, host, heads):
+    if not heads:QMessageBox.information(parent,'先选择范围','请先勾选已确认付款的订单。');return
+    try:
+        host.aoxiang_workflows.ensure_owner()
+        job=host.aoxiang_workflows.store.prepare(heads);host.aoxiang_workflows.tick();host.aoxiang_workflows.open_queue(job['id'])
+    except Exception as exc:QMessageBox.warning(parent,'未开始准备',str(exc))
+
+
+def install(host, layout):
+    host.aoxiang_workflows=Manager(host)
+    row=QHBoxLayout();text=label(host.aoxiang_workflows.message,'muted');row.addWidget(text,1);row.addWidget(button('查看翱象批次作业',host.aoxiang_workflows.open_queue));layout.addLayout(row)
+    host.aoxiang_workflows.changed.connect(lambda:text.setText(host.aoxiang_workflows.message))

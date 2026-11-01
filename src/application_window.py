@@ -76,6 +76,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.auto_check=QTimer(self);self.auto_check.setSingleShot(True);self.auto_check.setInterval(400);self.auto_check.timeout.connect(self.check_added_files);self.sales.changed.connect(self.auto_check.start)
         axrow=QHBoxLayout();self.aoxiang_setup_btn=button('翱象连接与门店配置',self.open_aoxiang_setup);axrow.addWidget(self.aoxiang_setup_btn);axrow.addWidget(label('维护平台门店目录与两仓供应商对应；核验登录后保存复用。','muted'),1);self.import_page.layout().addLayout(axrow)
         self.aoxiang_fetch_btn=button('获取翱象补货建议',self.open_aoxiang_fetch,True);axrow.insertWidget(0,self.aoxiang_fetch_btn)
+        from aoxiang_workflow_ui import install as install_aoxiang_workflows
+        install_aoxiang_workflows(self,hv)
 
     def open_aoxiang_fetch(self):
         from aoxiang_fetch_ui import open_fetch
@@ -221,17 +223,22 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         axdialog=getattr(self,'_aoxiang_dialog',None)
         if axdialog is not None:
             self._aoxiang_close_requested=True;axdialog.close();event.ignore();return
+        axmanager=getattr(self,'aoxiang_workflows',None)
+        if axmanager and not axmanager.prepare_close():event.ignore();return
         generator=getattr(self,'jst_generator',None)
         if generator and generator.worker:
             self.closing=True;generator.cancel();event.ignore();return
         super().closeEvent(event)
         if event.isAccepted():
+            if axmanager:axmanager.shutdown()
             self.archive_timer.stop();self.history_reader.shutdown()
             self.followup.shutdown()
             self.summary_pending=None
             if self.summary_task:self.summary_task.wait()
             if self.status_hash_task:
                 self.status_hash_task.requestInterruption();self.status_hash_task.wait()
+        elif axmanager:
+            axmanager.resume_after_cancelled_close()
 
     def resume_today(self):
         if self.worker:return

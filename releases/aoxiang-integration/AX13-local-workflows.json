@@ -1,0 +1,584 @@
+{
+  "task": "AX13-local-workflows",
+  "passed_local": true,
+  "baseline_commit": "cbaeecad190a2fea54fed8576ab2437341da00ce",
+  "head_before_commit": "aca66825da4ee51c888e2950770ac268bf5e9e88",
+  "branch": "feat/aoxiang-automation-integration",
+  "python_tests": 448,
+  "component_tests": 113,
+  "runs": [
+    {
+      "name": "environment",
+      "command": [
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+        "tools/check_environment.py",
+        "--report",
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101\\ax13-workflows-v2\\environment.json"
+      ],
+      "exit_code": 0,
+      "seconds": 2.149352299995371,
+      "log_sha256": "9bc5b5025a5c44d50651c8fca57efe40cf73dc6bd8381aca43b9327c6935248d"
+    },
+    {
+      "name": "component",
+      "command": [
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\components\\aoxiang\\runtime\\node.exe",
+        "--test",
+        "test/*.test.mjs"
+      ],
+      "exit_code": 0,
+      "seconds": 5.518922899995232,
+      "log_sha256": "e336282380f1258aab2164444b3fdda6c87f15295360247bf6ddc256b1d3c62a"
+    },
+    {
+      "name": "python",
+      "command": [
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "exit_code": 0,
+      "seconds": 65.17304839999997,
+      "log_sha256": "0487b3fe2c8bb96caec140bc4e62b7f0fee1e664689e22b2482c651e1498e98b"
+    },
+    {
+      "name": "capture",
+      "command": [
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+        "tools/parallel_qa.py",
+        "capture",
+        "--qa",
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101",
+        "--source",
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+        "--output",
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101\\ax13-workflows-v2\\capture"
+      ],
+      "exit_code": 0,
+      "seconds": 57.94851259999268,
+      "log_sha256": "4d688a6f3d9af25b18491e28a729777e7794ab2755a2cbbc0ac2541da8bbbd02"
+    }
+  ],
+  "comparisons": [
+    {
+      "case": "single_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "single_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "single_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "nonoverlap_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "nonoverlap_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "nonoverlap_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "overlap_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "overlap_blocked",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "overlap_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "overlap_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "reversed_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "reversed_blocked",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "reversed_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "reversed_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "path_dedup_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "path_dedup_blocked",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "path_dedup_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "path_dedup_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "mixed_error_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "mixed_error_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "mixed_error_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "all_error",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "warehouse_intake",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "warehouse_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "warehouse_results",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_loaded",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_None_True",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_0_True",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_3000_True",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_5000_True",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_10000_True",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_None_False",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real_custom",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "filtered.xlsx",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "overlap.xlsx",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "real.xlsx",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "reversed.xlsx",
+      "differences": 0,
+      "details": []
+    },
+    {
+      "case": "warehouse.xlsx",
+      "differences": 0,
+      "details": []
+    }
+  ],
+  "total_differences": 0,
+  "strict_order_and_types": true,
+  "dynamic_whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "changed_protected": [],
+  "protected_files_checked": 852,
+  "changed_original_application_files": [
+    "src/application_window.py",
+    "src/import_templates.py",
+    "src/lifecycle_home_ui.py",
+    "src/lifecycle_ui.py"
+  ],
+  "unchanged_original_application_files": 143,
+  "core_sha256": {
+    "src/model.py": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+    "src/one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "src/allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+  },
+  "candidate_source_sha256": {
+    "src\\allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "src\\aoxiang_acquisition.py": "69646c9352e6e1ae118d0d52ac88818018503d649d19c7ffc73ec8c5fd614177",
+    "src\\aoxiang_client.py": "cff80f1c4cf7338cc9801891b4974788af8643ab7b1b42ae3ead74ef18e126ad",
+    "src\\aoxiang_directory.py": "3e96052fa65f27f74c422ac963d1388aa9e4fc792351c5643fdfa6f471739200",
+    "src\\aoxiang_fetch_ui.py": "c9301ac6fc0246ff51e57a5087b672cd00c1f7407b9ac51912d2cd63de7e2f14",
+    "src\\aoxiang_input_ui.py": "4306f16e9732943c280be1125e0a12b389f15de61f377c7f78417983cbef69c4",
+    "src\\aoxiang_jobs.py": "e35d1b60ddca8d89fc18e547fad129806a748823083cf097ad78f7126df51299",
+    "src\\aoxiang_purchase.py": "76e0048b7f1b42faf30f646b22cd67bf24f1643b874e80d2731287903bfdcb6e",
+    "src\\aoxiang_purchase_excel.py": "fdb3f234db577ee5e5ba7df5581262429d10827981d654be62e0ed3ab70fa7c1",
+    "src\\aoxiang_purchase_tasks.py": "7f2275ac0b7c9a73bf7527121384e5bf6b27460c41e3494e641219d901637cee",
+    "src\\aoxiang_purchase_ui.py": "262d75ac37ef194e2db5eb26709443855e5135c722768f2133a88835ce00d44c",
+    "src\\aoxiang_receipt_ui.py": "d2c0b1ea62a02a325554e57de4c0a054cf2dc5e56482bef76be52b60c0022cd1",
+    "src\\aoxiang_receipts.py": "12deb2c38c4cef3a8552fee89fc353f954425ae0af9757253f5f7b87782083ae",
+    "src\\aoxiang_session.py": "45e954a7b46a0b4d389e9697a518b33afbdd9ac9e9efcbc48dbed688ed7ea8c2",
+    "src\\aoxiang_setup_ui.py": "add16f94e0b0505068059ece3afc3ab7a33f94caac95320dcbf061acc591b0d3",
+    "src\\aoxiang_ui_common.py": "3d98739dd1303d636467dfab6af376490459593666da13e11c27c446a21aef49",
+    "src\\aoxiang_workflow_runner.py": "a85e6774531e1ecad8f200bc5dd92739cec7c9915806c44e6286dab370290554",
+    "src\\aoxiang_workflow_ui.py": "91c948a121676ce9768c696a7c524d8b0c721790cd68b4ae8415b09c3f1e3ba4",
+    "src\\aoxiang_workflows.py": "4f576ebb32420a0bd967b594ec1af668d9316639f36bdad32f82297f3eb9b2aa",
+    "src\\app.ico": "43f1cca8dfed05f941a207266aa5308ebf8633a140aa4448a49acfac7c4ce7ed",
+    "src\\app.py": "2b69d96507de366502e3a6889645e33c8a12531df30c7b81aad95ee35fa48b61",
+    "src\\app_defaults.py": "fe9b7a4b1e5ec32719f945b07dfeacd1ecfd83318228c0dbd9998a4469b1e795",
+    "src\\application_window.py": "7ffa5def5fd3703ece3b01fe484cf734b0a1f9e9076c43c6c96f2ccf2fd96cfc",
+    "src\\archive_batch.py": "bf3f77feff7b8f7e662dfe10fc12d02fb8325cabaad50231db02a5c325d59d6a",
+    "src\\archive_batch_smoke.py": "a9eda5cbe973b0db37ffffde1bca30f305fee9d2c97f24576dc98a6595cd4af7",
+    "src\\archive_batch_ui.py": "2122aeac56cf28b40c77c7f42738fa29f28f2f326f736b0e59890d1c2b9da51c",
+    "src\\archive_exports.py": "6f1b76b0bf6fcaa0edb973b2b97954c084aa5f0c4306e28f526b17d6dfafc43c",
+    "src\\archive_orders.py": "3e44f5d2ead875cce1b64a5cdc6189838b736a656732d653880fc0f3cf672f54",
+    "src\\archive_smoke.py": "c6feee5fa0cf14d772ca71b05fd5496977a585eacb3967a7d99c872205c80816",
+    "src\\batch_app.py": "f4ac4083b11e55c7b250fcf3c913bec08f56bc35a4efe6f2d31c5549b7c04fb7",
+    "src\\batch_service.py": "20115607e1e132f8a3f085a36b6645f313a22ef7ba8e9afdb66109b17c6efb12",
+    "src\\batch_smoke.py": "b1818e7d5f774fa720254b9ffed9c5c3b39f94907623d439a82db12676e32a78",
+    "src\\business_excel.py": "23a4c8b580e4e267ba8806cb8c08d48a822b877c9b08991dc66a5ef2a376b61e",
+    "src\\business_flows_smoke.py": "cd15e1b6ca0f646edbb4fd33758ad4e991c35818d34a36bde63e5cd50a00a9a8",
+    "src\\business_scenes.py": "c03929ac480ce82945eba6126a5c1bad4511ace8841dbf77591b5b1d0a2135c6",
+    "src\\business_smoke.py": "c3d4f118755c453cb1c5823aeedf6b3539236d2af6bb31c401583a8448f3c16d",
+    "src\\business_ui.py": "4bc5f27097b057d01afb103374792b83aac49b52b21735ff9f3f39cf9ca9f688",
+    "src\\conflict_choices.py": "3b72279c6424695d8cc49c7368d627dbe97b67025b63c90b7ebcdf984722e66b",
+    "src\\conflict_ui.py": "bd7ac861cd2cbaf995280ffd3480b3506e12b509ed0b7c63a5f42a4f56981257",
+    "src\\daily_batch.py": "77617ccd077f638002dda95b1330d80a5d093b7b92f281c7b0961eacdf8d17f2",
+    "src\\data_contracts.py": "36f07495984d2c237001d32bebd0353151439aec22d8e7669fa329817a24869d",
+    "src\\default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src\\default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "src\\delivery_smoke.py": "5af01da887f91271e44e9f757211799ad000c43afd2fe86bf186325d5872d791",
+    "src\\diagnostics.py": "2cdb6a011944756409df9d9a2399b27f3c7b685132ab16531b7d8507d93a9734",
+    "src\\display_fields.py": "ab56cb79ad94e08b644499f888fc4489d3845dd8bfbaa1d90f11448156385d8c",
+    "src\\draft_review.py": "c4785b6903490fe3480bdfd6b67c9e98cc63601b1e31763a59443d33d2e31eed",
+    "src\\engine.py": "c7dbeb649ad5f1915a972af553f6038188984ebff5a0f14452bac532ab3c0028",
+    "src\\export_location_smoke.py": "79c0f8a6800a726053f8217c5822295cb4a21d9fcf0ec65e3a829e88660da09e",
+    "src\\export_locations.py": "fbf7c4734648e4555e74378a9140e9cb2c6eddb6de46bcecb5cc6d9d7f7a3ae2",
+    "src\\export_progress.py": "6b78f6f3109993e1775bd0763494f16181a9ed1954fe9c1fa705d854f3cc2141",
+    "src\\export_settings.py": "b1862d1c57fc27b506ae5c6c1b4f99d9b0343b645b3a81b8a3749da205e42b9d",
+    "src\\feedback_ui.py": "20e6b5e0c8b2d884d3c127bdc62aebd1bc27c969195cedba64a59a8b36f91922",
+    "src\\file_intake.py": "a6ea67c6d27bc8d48251eb670cdfea10d4ac1570d930a2e3c9538583afbb6fc4",
+    "src\\final_review_smoke.py": "27170fe6ee7a0c9045a9fa4514bd8a7b4ba8891e2603760d16bdcd5bdad11e66",
+    "src\\fixes_smoke.py": "726d117b08afdcae06a5aebd3ad5053cadc72ea5ca7a69eb1b60c7cbf1ce6a18",
+    "src\\followup.py": "afba1bca2187649ae79a991c631a1840642d7ae5b44638ed4d4e1f4598598b0f",
+    "src\\followup_smoke.py": "1d18625e5d79495bf41e2b80c5075d2a65dc037d4fbf8694df310bd7f02b3e28",
+    "src\\followup_ui.py": "7bcd61e150ec3fdf02d36c5adc46510165e2d98362debd56887a23fb34e61236",
+    "src\\history_forms.py": "3f338157619ed11fecbb691a266c1239554a89610f5e1586023c14b43a2c74e4",
+    "src\\history_read.py": "65197f10bf60451cf1c0e384414539d5bb88d8e09eaaf106a2787dd348391d86",
+    "src\\history_smoke.py": "995403bb97a7416397f0458c315499b91254063df3ca6d3130abbf86b076b98d",
+    "src\\history_tasks.py": "67658fc964cb5c77fe1f5c9bc88f2283e2a9bc666b6f9c7b7e1fd3927d8a4bfd",
+    "src\\history_ui.py": "d2237ee4dd4a642a1ba2a46410002a5983cc7cc8dbd5cfa1edaf797a2f0c510f",
+    "src\\import_templates.py": "ad7ab042825b536fdb5c63d3d409e052103c0f6eed54f273062ee6f1cc046cd6",
+    "src\\import_ui.py": "ee360905be25c5dae79fdbd26a89f5e10225a0c464a78e152850782690b4f167",
+    "src\\inbound_smoke.py": "0b104e0b00c71c63b5d564320fbf6f311e7087a4f8b4a8b4efa6d510aed39831",
+    "src\\input_adapter.py": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+    "src\\intake_probe.py": "4ffa104f73af01b0da44642c9ca3c6f89c5f39568cfee9186c3c8923ac54505c",
+    "src\\intake_smoke.py": "0a3fba139496606fc94a80eceaa5620fe5adddc51ee9085e28081ed293f61cf1",
+    "src\\interaction_rules.py": "8538a9d3a7500b0f9e062203d691c31f9b1e529c8a3690de533ad46f73c15866",
+    "src\\interaction_smoke.py": "796ed7fd295a639d8ebbe8a3fe7f90bb52827f103b832b45c5f9635efcebe370",
+    "src\\interaction_ui.py": "9fdbbbc3c705be1ec256554a65177c7561479b8573e5da2444e827bf5ebd2109",
+    "src\\io_stages.py": "9507aa20df8d3794339910f6514ec382753c03b2f46182ff0876f3215f6d22f9",
+    "src\\jst_allocation.py": "9908e6595ea4e5bd6af9cbc222b7cc2d94d76f90b8616da65060df1b54294164",
+    "src\\jst_exports.py": "e01847f0aed37670930e1e755204a677aa62f85ed3a02cec56b8e4f5cabc4458",
+    "src\\jst_orders.py": "829deb5246c9abcffce8adf0e27fbc8de26070fd7474ab26c26a44dc1688b285",
+    "src\\jst_results.py": "453ccd23e212dd65c6bff27f3e3f6e022a1c212072b1f71f8eee5214db179e04",
+    "src\\jst_results_smoke.py": "f08d3977849aa4ba3f8f13895998a53e0ec251fe7335f0bfa067cf987982f037",
+    "src\\jst_results_ui.py": "5b2774b53e0ae773f6b447e27ed0505574de71cefc06470db36b17a3e60d4e21",
+    "src\\jst_review.py": "6395d5eb7284132fd3670292225cc242b1933695f40cca7293e6dfa295e7407f",
+    "src\\jst_review_ui.py": "cd723a3a7cc5cf543a562f7e56d03172211fb63423dc4ee504654dafbc528ca6",
+    "src\\jst_smoke.py": "b38c99552d82c132fcd7941f7af00e75844d8235f760a9f7aaa5add173a0b082",
+    "src\\jst_task_ui.py": "04045d33d1d038d41f3d4d4726a2299aab17c243b120d7db698dc370dd55d2e5",
+    "src\\jst_tasks.py": "ec2c6463c168586ccb4a544adb76a8e31083ebd2a62e5ce43882a250e02c8d0c",
+    "src\\jst_ui.py": "f4b42e2c4c2ee3c1b12c8ba866c71cca2d9ea29d4043d6261586e13feb626922",
+    "src\\legacy_window.py": "3799e92d932c194f389c9458690d94be0f7f1183e72303004f6439cd94d58245",
+    "src\\lifecycle_batch.py": "1f4f5b90339c5cc9b0301bbd3b75a1bb23ace2e29d27a48d98062fefa16f0650",
+    "src\\lifecycle_batch_ui.py": "0ba62ca43294f5cff49c5eed037b5f886c9e6a0e35c3f21b1ae9135aa31384eb",
+    "src\\lifecycle_exports.py": "ff8b62e8e578dda6eb7fe3077751b0c80a6f86468d8975bc28efc488c861e3d7",
+    "src\\lifecycle_home.py": "777d118b24f2570d7ca635927453d11dc8a03efaf5fd478e57f2038bf9f8953d",
+    "src\\lifecycle_home_ui.py": "d593e5c9e8109087d843f21041e0ec32627e0edb94cbf4191eb24346f649af90",
+    "src\\lifecycle_io.py": "8297157126880a40e99611a7e8d1f7b91cdeb432252902eb2ffd71d64cff00d6",
+    "src\\lifecycle_rules.py": "db165d3f585e3dc6ede4726d5acd774322f8eb733772dc985e7e35cf6ae8813d",
+    "src\\lifecycle_smoke.py": "c8bbe33a91134f6e651d8dc63818d45d617eabf6cac097eb2e39bfbf656bab2a",
+    "src\\lifecycle_ui.py": "c87b943a08e03c182af09a9f7fa2ccc957e42b983942a2298c292e6b9bdb7309",
+    "src\\merchant_feedback.py": "5c3a51ff266068a42c6a6df6fb65d3f8a3b1a396afa6c23155967695347563eb",
+    "src\\merchant_selection.py": "686193eb6172ac6ee80121b998a817a7ac417c0116cf0167ffa528c417c2e8cf",
+    "src\\model.py": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+    "src\\new_product_focus.py": "9e3a65cfa6646b30a4ef07a9cd2bac4973230576a8345da749ff47873b8667ca",
+    "src\\new_product_focus_ui.py": "cbccb81689eda69355b853bb560696600687a224490ce4fa7f09f92a4c6f31dc",
+    "src\\new_product_ui.py": "2f09f9aa0b5c07709eebf902b13ba51de66bc0a37a0a6d9c94fc35d2cf661cd3",
+    "src\\new_products.py": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232",
+    "src\\normal_delivery.py": "5bae4d764cd0cd5cbc5a6fc211acf555e9242a6df6bfd6f8b95bbd5f10df07bf",
+    "src\\normal_exports.py": "f2bed2d28cd749bd0d5de155e6273f3f2bedbd37c4186fb997f82da2f1da7500",
+    "src\\normal_orders.py": "48044b1298d170c4bfa62c31375b33726c9ad6a4c090e6ca4f872878165d9bc2",
+    "src\\normal_smoke.py": "ea46a253789cfab416f4ffcb2aa780b1285108b0a35f38cff15ab6fc8bda0071",
+    "src\\one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "src\\order_lifecycle.py": "edad76bbb2b64f1a614fb45353ff958e559c6a06e5216652094c62505e74abf0",
+    "src\\order_review.py": "7999faed838a9860b631d586feb3587322ab70c75b07a8395cce01894aeab1af",
+    "src\\parameter_scene.py": "dea59b6192fcf9038ad58f2ebf86874b44ada87cd3d1d1160427c33fbf266f55",
+    "src\\parameter_schema.py": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+    "src\\parameter_trial.py": "1f7489a4fa5d000d3ae2448ed2efd764e93755f0b69cc4ae33af625d4c43eba4",
+    "src\\parameter_ui.py": "c9dc87b0b6e69be96334ac828de8ae0379a6df32bcae38c5f67e7b478194deaf",
+    "src\\parameter_view.py": "2c64bad0068e805acf14b509c5928ed574aec05e1713af9d806e3624b7281173",
+    "src\\payment_source_smoke.py": "14c1b9ab79d42b37bed11a39f7fd79eac8c80dc6e9bdb138e5d1b0c23744dbce",
+    "src\\preissue.py": "072e8aaf55e07cc799e1ed44f6502a963a6086830dff5f0d32ea1ceeb95b587a",
+    "src\\preissue_smoke.py": "64b616b93a6b8f1d3ff6b4ead0f9f10565d0be0d484b3dffbc422901c8ee7160",
+    "src\\preissue_ui.py": "790a62d7df696515c96db30b92082b36803e2de192806760b539917be2f6d5e0",
+    "src\\priority_list.py": "9229f9cdabd66c4eaaa1d31ad90038cb054f833c4b0cb53ccdbb75f594943450",
+    "src\\purchase_io.py": "296c8185182b67bee6b36a09e19ae628d3b6b41ad9cb155f4d29dc49386f313c",
+    "src\\purchase_ui.py": "5fb2f4010f8c374a23f4cfd862ae8ce91da8443a6efff90ab90ae1b7b6276b07",
+    "src\\purchases.py": "964b8dbc8ebcd8c740c8c2dc69195e6bb2e755700e54467f37044efe9669a5f8",
+    "src\\quantity_contract.py": "930bd6fd709ba4684479dcea37bfc1e57663c4b3ce0241f879f96754eac0d334",
+    "src\\reconciliation_smoke.py": "4b8ee10ca61eabdf91d5af46aa7cd0b66eb173dff1d1491c7efbfbdeaf5ec3d5",
+    "src\\result_semantics.py": "01b45e5acfe37709d4db92765212b752378cb9f99454db4f0a09f34d53d97272",
+    "src\\review_amounts.py": "e94189d3e46ee6c0d8cbf1b359daf8cf5023ff0e4167ac8ea4f70a15a0aa22ea",
+    "src\\review_filters.py": "65a7a046a9d30c354a1696a57c59a8d21aade66670beab231995513299fc22b7",
+    "src\\review_smoke.py": "37749cd8875cf67da753979b6e503eacfc59424113146ae2de777d9e1cb80c67",
+    "src\\runtime_support.py": "1b0f358bb298a7d5be1a943389535afa0b6a8e6768e7a73ccdc4b812641c33fd",
+    "src\\smoke.py": "1b8ebf35cb94eb6e96f96b14b009aceb33df66f61912af4e52421ca7e561a524",
+    "src\\source_archive.py": "2a5b6dbace2c08eb5ea3517b51b08b41ece1649383731b3cf603a7b601bb111a",
+    "src\\source_binding.py": "68c976fe4323c36a719b59736fc9ec19db1ae5c0c3af8d7bfc8cc85d8fa408df",
+    "src\\stocking_lists.py": "69985a2574e5834bbc5a9d825f337a950d64c20c772b22506d5f8f30dba3f34b",
+    "src\\stocking_selection.py": "60494c92a819b3f8941c008f7fdb6529af3233bfd693d67637d93247c56bdcde",
+    "src\\stocking_ui.py": "d4b372afceec4d67384208ba84a6c7ecfd02c96614c4d427f73291fc29411139",
+    "src\\storage_chunks.py": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8",
+    "src\\storage_maintenance.py": "156a0d9f89d301ee56ae6e4119a274cb1f2bd951f7c1605c02ac21c6aef7640c",
+    "src\\storage_smoke.py": "c624236c25a8c0a430a0d87653062317cc2beac0032240a3cf957570feb19767",
+    "src\\store_defaults.py": "e86d722c492761b61f0a76ab08488c07026fdb18abe3695dd7f6c1d285829b30",
+    "src\\table_records.py": "267489aca45843d6d282c1987e377a0a289d08005429fc2812718063cc44f84c",
+    "src\\ui_controls.py": "571ef00f83b826e1993420d4277e5d9d917019386bdc7d06c53d375846ea3cef",
+    "src\\ui_goods_fast.py": "7cd533c7c1e091df94084433bb44c6a632aa4c325c51a6e050101198dbf24e45",
+    "src\\ui_results.py": "1f7da069cba3dc469c1f2783d89734bc06bc89d69f22015721e466d481bfcbfc",
+    "src\\ui_review_amounts.py": "8ad2dd90574b259e8146d4ee0abafc77c0c91a5a5e59bbae4d1cdce440314c05",
+    "src\\ui_review_filters.py": "d1f9570a4a671e4ba616199f22107c8d0af88059c9e7a56f67d957feece2825c",
+    "src\\ui_session.py": "c53940a08df2ac34ff9c561a0882a56727cfd5163d6e80236211ee1d7314d5e0",
+    "src\\ui_tasks.py": "2edbf92b2ad6e63a62573d938d76cd56980bfc95bc51311c9593bf6d1332578d",
+    "src\\ui_work_io.py": "7bee0f6a6868624d68aac0cc9e23dd5cf370632da1810dc2cc391287e74b07a2",
+    "src\\usability.py": "46925a039956614780b4c4bee9f622fe77dfb63748d2cc4b6b3f2d1861b0d8bc",
+    "src\\version.json": "426648671832c8cc8bb2a79cfb19bbcd82eba502ee37b648a81225975e091faa",
+    "src\\version_info.py": "6e9fe25bd61d7059758d5dc4484001ed7a24d6f624f3206a3230f7e1e4680b48",
+    "src\\warehouse_catalog.py": "4836ad59df55658f6a5951e0243dcee0ec7bb764ba6180b068a9a3c09202186e",
+    "src\\warehouse_delivery_smoke.py": "eee8fa29dc55c18cd51eded68107076543bfee648eaff647024479c9272ccde8",
+    "src\\warehouse_orders.py": "5f86073f3a717d196f07b1432e251544f7345776d7da8c37be64415a8cee5bff",
+    "src\\warehouse_smoke.py": "197a93dafbbaf927c9c014210ffdc07285b6e4ca09195b72eb7735830b7a20a9",
+    "src\\warehouse_ui.py": "665192bf279631cbfa8ea2a92e7c1aff229e4067743f4cb491001f2a2bd2c00f",
+    "src\\work_io_process.py": "bbc8388b8ea2b91205c3c03e0ec42f23515c7c013fd1c3eed210a0e00c503254",
+    "src\\work_io_smoke.py": "74743a206c89eda236546a07bf4a41c39a55113e6435d1c8fa94c580662331b2",
+    "src\\work_repository.py": "48aa11661565586fcf38befd8c9977f383a71a40e10e7293c61f760f0fab2e8b",
+    "src\\work_smoke.py": "4ebecd50d49eb27ed98d2ab8e49e6311cd8cf2154199c7234de7e15183127922",
+    "src\\work_transfer.py": "ce0ed8b5d6d4e02e373d890719d0c177c8ab93c241d3c27063a66eeefacf8c11",
+    "src\\workbench.py": "2cdc938c2ad702982e99c4f73577f323fe8002cd948208ea89bc9c5bcfb362e7",
+    "src\\workflow_smoke.py": "c83ec3b9d5babf039edca53c62da275b407149d55cb4a1b9f4152a1ccf31f4f4",
+    "src\\xlsx_exports.py": "ce07a425e57039fe2e5b509db4f5416377d490dfa9d6d258654ba2bdf7986b45"
+  },
+  "new_local_checks": [
+    "exact native template package -> real Node reservation -> restart / cancel / no-browser failure",
+    "persistent purchase identity, pause before/during upload, unknown acceptance never replayed, late receipt recovery",
+    "per-SKU native main/detail amount checks including null vs zero and equal-total swaps",
+    "isolated Edge native file input and confirm with locally fulfilled response; external traffic denied",
+    "Qt preview/recovery buttons, default cancel, old task state protection and safe close",
+    "D16 terminal latch and final-sync pending survive failed D17, restart and retry of original export tasks",
+    "fresh observation does not reuse previous completed export; crash after proof save resumes exact file",
+    "actual native source row, blank/zero distinction, SKU coverage, state and quantity/amount conflict",
+    "existing lifecycle commit used for final receipt, lost acknowledgement idempotency and manual receipt protection",
+    "payment change, original file tamper, cancellation and concurrent lifecycle update reject formal write",
+    "focused Qt receipt page: local-only open, exact task stop/resume, safe close and final-save retry",
+    "ordered persistent batch preparation, frozen per-order preview and explicit selection-bound upload confirmation",
+    "periodic receipt opt-in, due-order exclusion, terminal latch, final-save retry and post-queue disable",
+    "foreground handoff waits for actual component exit while Qt heartbeat remains responsive",
+    "same-directory scheduler lock, targeted stop, safe app close, original-task restart and initialization failure",
+    "real original lifecycle commit through batch runner, lost-ack retry adds no receipt version"
+  ],
+  "limitations": [
+    "Real AX integration explicitly deferred by user; no real export or purchase submitted in this run.",
+    "Live multi-SKU import task counts, supplier behaviour, marker preservation and main/detail checks still require acceptance.",
+    "No EXE or live platform acceptance claimed. Manual proof-assisted binding, complete integration migration and candidate packaging remain subsequent work.",
+    "Suite durations are test execution times, not platform performance measurements."
+  ],
+  "supplemental": {
+    "phase_base_commit": "aca66825da4ee51c888e2950770ac268bf5e9e88",
+    "report_file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101\\ax13-workflows-v2\\report.json",
+    "report_sha256": "442f770d7ca01a2cfc4174d1c722955a48e093c3ef7eed44d4d84b989cbf6d45",
+    "initial_failed_run": {
+      "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101\\ax13-workflows-v1\\python.txt",
+      "sha256": "3b4a3ccade324f2a11fcb70da470eb5922019418a7f6acd1dcebd6d564d01428",
+      "errors": 5,
+      "cause": "idle host destruction did not release new scheduler lock; fixed without changing existing test expectations"
+    },
+    "optimized_check": {
+      "command": ".venv/Scripts/python.exe -O -m unittest discover -s tests -p test_aoxiang_workflow*.py -v",
+      "tests": 23,
+      "exit_code": 0,
+      "test_seconds": 5.439,
+      "evidence": "tool execution chunk 816672; no separate raw log for this supplemental invocation"
+    },
+    "local_views_and_latency": {
+      "synthetic": true,
+      "exe": false,
+      "real_platform": false,
+      "completed_one_order_batches": 1000,
+      "operation": "recent100 + due scan with no enabled plan + first queued lookup",
+      "runs_seconds_per_cycle": [
+        0.00453477000046405,
+        0.004410959999950137,
+        0.0038698199998179915
+      ],
+      "median_seconds": 0.004410959999950137,
+      "min_seconds": 0.0038698199998179915,
+      "max_seconds": 0.00453477000046405,
+      "cache": "same local machine, warm file cache; 3 serial groups of 20 cycles",
+      "limits": "local database responsiveness only; no baseline speedup claim, network, large-SKU or EXE performance claim",
+      "screenshots_sha256": {
+        "batch-synthetic.png": "c30895f0b49d4739b6a8ab23464c8b80db7a3ea1cf4250cf12711b8a0ed1dfb8",
+        "receipt-selection-synthetic.png": "3608c8c478e54c82fe3a6a33d9effe11e912ad45089b61f1b841f1ac9030fe8f"
+      }
+    },
+    "views_report_sha256": "73d28f8db2102c921bc3e6ab79ac2db415b7154a29205607cccbf32bd65d98a0",
+    "early_view_measurement_note": "ax13-views-v1 overlaps full regression and is not used for latency conclusions",
+    "component_source_sha256": {
+      "components\\aoxiang\\src\\aoxiang-ui.mjs": "dffff146278db6bc791142b0d28c5cf11d23ad4ff075ce9b4471ef807b1c43f6",
+      "components\\aoxiang\\src\\bound-browser.mjs": "d429cf81ac57c8ad0bf0c3f5388f51ed0f87b84773fbd494d2d9e441d061e285",
+      "components\\aoxiang\\src\\browser-worker.mjs": "0d1b7c2089700fca7cc7f8eaec8e343a4e25275bce15495aba8c07498a8ffd47",
+      "components\\aoxiang\\src\\cli.mjs": "e3ecfe4555228d6c25c7f7f6d0ccc745af4b8fbd87caeafba8dbeac1e24adca0",
+      "components\\aoxiang\\src\\common.mjs": "f6c450c079375947bbd532a1b4c059186f0c03a110758693e75954262f2c6718",
+      "components\\aoxiang\\src\\config.mjs": "cbf16f53bf7fe228c4573725b368abef37d144f4a7df0fef9c24f647dc2f15ba",
+      "components\\aoxiang\\src\\coordinator.mjs": "46e3b865681dc2beb434d262e8ee7742615f48f592518577fb175945014345d3",
+      "components\\aoxiang\\src\\downloader.mjs": "041db41851e457b2cfde55db1130e1bab6d7bbf54598c13566708028a9543f08",
+      "components\\aoxiang\\src\\edge-bridge.mjs": "ce976db92d5b58eb1e6f6cdef2e9638ea65e0192e80b7f0fb8aec686609ca622",
+      "components\\aoxiang\\src\\environment.mjs": "ddf243b782b37f9072d6bfe59b8e06bf7d11c81ad43a8eb5c9fda42775fd40d0",
+      "components\\aoxiang\\src\\event-log.mjs": "9c3adb5a4f447826644011202017859ccfecc1a66abe1946c3bc5a3ad182ef53",
+      "components\\aoxiang\\src\\integrity.mjs": "638773452526bf3a32e3fdfff2b3b7791d0975f65d9a6060d1bb08989cc2d21f",
+      "components\\aoxiang\\src\\machine-assets.mjs": "0e93e22468ee0bf70e62fc0c66ca8d82f38ba416a0fd7b21808d4ad0c3b2a21f",
+      "components\\aoxiang\\src\\machine-commands.mjs": "7d2cfec51360d71fb441217bc16b61d993969e2b10ecb128e6aee6cb76d61e8e",
+      "components\\aoxiang\\src\\machine-entry.mjs": "b7de1a0e124b1c349bf9ab337f7dc7cf241eaa79322fb4aa4b477a33a3f1beef",
+      "components\\aoxiang\\src\\machine-protocol.mjs": "bc22a2c72b34cbe8e7bfd8f58aaa11b32a48e8a260efbfdb967d9bb36d74ecf4",
+      "components\\aoxiang\\src\\machine-purchase-create.mjs": "6e7811af5a397a4a1bfb1048ef9792f65742caa629af4f0213722f851ffb21d0",
+      "components\\aoxiang\\src\\machine-purchase-receipt.mjs": "4d538f79d706df659330f0aff05d67a70c0dd34d49f2b88614d59e4533005140",
+      "components\\aoxiang\\src\\machine-runtime.mjs": "872457a9fc39ee1744bf4d96e33988b5de87b2998a01922d1cd62ed5a86b8669",
+      "components\\aoxiang\\src\\machine-setup.mjs": "fb9f65f10037876c3ca547af3e72ccc6ef977aa0e6eb3926a589969b55a546ad",
+      "components\\aoxiang\\src\\machine-template.mjs": "95c98133b15b49144f4406f4a73edf9a5b4946f1254d0ca929f2e4095bf39f5a",
+      "components\\aoxiang\\src\\migration.mjs": "e54d18b4ec418d535eb660784a3b8c266223915b4245604c50f29b3f0338ae46",
+      "components\\aoxiang\\src\\preflight.mjs": "9cacc67491a21857d3970ec8dd44f2f2a95099cf9d64267634816164f2b6062c",
+      "components\\aoxiang\\src\\publisher.mjs": "4ca6e37b8d39f750d1f47a61a964b89f53bffb18cc00c8a42a9b7bfdf79b083b",
+      "components\\aoxiang\\src\\purchase-contract.mjs": "0324e34c93253328ba33927d6f5d3b20c082d4ead87a335f5a90d56d2cf0b689",
+      "components\\aoxiang\\src\\purchase-coordinator.mjs": "91b250e39264240258ba1510530433d2e8c011e471e3328529ec83d270869713",
+      "components\\aoxiang\\src\\purchase-create-artifacts.mjs": "5b6de6c3f79192ec69a850c4415af71594351f9546d1586c39c37956e77cc13a",
+      "components\\aoxiang\\src\\purchase-create-contract.mjs": "4b1fb4769b3cc6feb61ca415af8e19aeafb30e3864477095433a14007f782d6e",
+      "components\\aoxiang\\src\\purchase-create-ledger.mjs": "89dabc34d2996e4d50aab69c311ed457da1fb6ce81128b4d572eca5287e001ea",
+      "components\\aoxiang\\src\\purchase-create-service.mjs": "28b050422f6267e2b0df11d750f24f7e2b9bd5b6d44757f8f86d17ab1c9c4148",
+      "components\\aoxiang\\src\\purchase-create-ui.mjs": "74e9e0321030afba68e43049dbbc0aec6efdc69acaeecf08d8d8b72c1580d7bb",
+      "components\\aoxiang\\src\\purchase-migration.mjs": "1e8d1984b61e5b666ea58eede11dd10e3ebb8df7963a424d60c1485d6d6da973",
+      "components\\aoxiang\\src\\purchase-receipt-ledger.mjs": "06b04beb62fc51d432714bfd249f0af983d25d78ab4a4ce95d50a6905165b4a2",
+      "components\\aoxiang\\src\\purchase-receipt-service.mjs": "160329e135196b8703ab1e7a49120b9d172a72f19f0d8d7fd24f53c251468f2a",
+      "components\\aoxiang\\src\\purchase-receipts.mjs": "f6574cd289231f31b5f4e02e4505477635eb006d4eaf1542d481cba3b8c2d708",
+      "components\\aoxiang\\src\\purchase-template-download.mjs": "d60be355bd81c1a4055b1fbf77df813f1a406edccb9f46504491681a2f803282",
+      "components\\aoxiang\\src\\purchase-template.mjs": "5156ff8bf7e4d3eb54a659983e37d9ebeaf3262864e06f7cc3d7e9ac7986489f",
+      "components\\aoxiang\\src\\purchase-ui.mjs": "b3a5bcc9590e9c4a5490973f86acc8b813ae7fdf31f29ae5d06076e94bb183eb",
+      "components\\aoxiang\\src\\run-plan.mjs": "a97dbfab542e7fad5743c41cf9a57caaccbe5398bfdb976ea9aee96a54329411",
+      "components\\aoxiang\\src\\state.mjs": "02305f7b58ce48c9ec59fbf5d0d1ee8fab2774e8affb68588e6cb109ff865b77",
+      "components\\aoxiang\\src\\workbook-validator.mjs": "cff13c12d6ea336adc39b902e5a23843e2deaa60152ac32b1fc26f6fb21749cc",
+      "components\\aoxiang\\src\\worker-client.mjs": "47798eb891ef4482725cea9865e07fa0177a140596a2920ea2ef1d6c2b6462ab",
+      "components\\aoxiang\\src\\zip.mjs": "eeba3520d062841f4aa4a400cee603b25c80f141846dd2448ff21b7191f6fe7a"
+    },
+    "added_tests_tools_sha256": {
+      "tests\\test_aoxiang_workflows.py": "58266e51668b8e65f50366afdf1c31e52f31a54cd03a64ab1f9da40e54d89808",
+      "tests\\test_aoxiang_workflow_ui.py": "1d5e402b0232fc38bf2408bc565893610c6e8be41e98d1ac5c0203f18ddea44a",
+      "tools\\verify_aoxiang_workflow_views.py": "fb974b3540d13f0f2bb677e48c70a495806645f43e0ace6f65e5920331c101ec",
+      "tools\\verify_aoxiang_creation.py": "9c90cbbc1d5d4ad57b0948d5521ecac021afec63f42e6d6bae4bdb109906ed02"
+    },
+    "platform": {
+      "real_connection": false,
+      "real_export": false,
+      "real_upload": false,
+      "user_schedule_enabled": false,
+      "exe_tested": false
+    },
+    "publication": {
+      "merged": false,
+      "pushed": false,
+      "release_tag": null
+    },
+    "unfinished": [
+      "manual proof-assisted binding",
+      "complete app migration",
+      "candidate build and actual EXE acceptance",
+      "deferred live AX creation and completed-order receipt acceptance"
+    ]
+  }
+}

@@ -19,7 +19,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--qa', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--stage', choices=('creation', 'receipts'), default='creation')
+    parser.add_argument('--stage', choices=('creation', 'receipts', 'workflows'), default='creation')
     args = parser.parse_args()
     qa, output = args.qa.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -37,6 +37,8 @@ def main():
         changed = [n for n in originals if hashlib.sha256(archive.read(n)).hexdigest() != sha(ROOT / n)]
     # Explicit UI integration surfaces, not a business-field exclusion list.
     allowed = ['src/application_window.py', 'src/import_templates.py', 'src/lifecycle_ui.py']
+    if args.stage == 'workflows':
+        allowed.append('src/lifecycle_home_ui.py')
     if set(changed) != set(allowed):
         raise ValueError('Unexpected baseline source modification: ' + repr(changed))
     env = dict(os.environ, PYTHONUTF8='1', PYTHONHASHSEED='0', QT_QPA_PLATFORM='offscreen',
@@ -74,7 +76,7 @@ def main():
         comparisons.append({'case': file.name, 'differences': len(changes), 'details': changes})
     changed_protected = [n for n, h in protected.items() if sha(n) != h]
     total = sum(c['differences'] for c in comparisons)
-    report = {'task': 'AX10-AX12-local-receipts' if args.stage == 'receipts' else 'AX06-AX09-local-procurement', 'passed_local': not total and not changed_protected,
+    report = {'task': {'creation':'AX06-AX09-local-procurement','receipts':'AX10-AX12-local-receipts','workflows':'AX13-local-workflows'}[args.stage], 'passed_local': not total and not changed_protected,
               'baseline_commit': baseline['baseline_commit'], 'head_before_commit': git('rev-parse', 'HEAD'), 'branch': git('branch', '--show-current'),
               'python_tests': int(re.search(r'Ran (\d+) tests', py)[1]), 'component_tests': int(re.search(r'tests (\d+)', js)[1]),
               'runs': runs, 'comparisons': comparisons, 'total_differences': total, 'strict_order_and_types': True,
@@ -90,7 +92,7 @@ def main():
                               'Live multi-SKU import task counts, supplier behaviour, marker preservation and main/detail checks still require acceptance.',
                               'No EXE or live receipt acceptance claimed. Batch scheduling, periodic monitoring, manual proof-assisted binding and integration packaging remain subsequent work.',
                               'Suite durations are test execution times, not platform performance measurements.']}
-    if args.stage == 'receipts':
+    if args.stage in ('receipts', 'workflows'):
         report['new_local_checks'] += [
             'D16 terminal latch and final-sync pending survive failed D17, restart and retry of original export tasks',
             'fresh observation does not reuse previous completed export; crash after proof save resumes exact file',
@@ -98,6 +100,14 @@ def main():
             'existing lifecycle commit used for final receipt, lost acknowledgement idempotency and manual receipt protection',
             'payment change, original file tamper, cancellation and concurrent lifecycle update reject formal write',
             'focused Qt receipt page: local-only open, exact task stop/resume, safe close and final-save retry']
+    if args.stage == 'workflows':
+        report['new_local_checks'] += [
+            'ordered persistent batch preparation, frozen per-order preview and explicit selection-bound upload confirmation',
+            'periodic receipt opt-in, due-order exclusion, terminal latch, final-save retry and post-queue disable',
+            'foreground handoff waits for actual component exit while Qt heartbeat remains responsive',
+            'same-directory scheduler lock, targeted stop, safe app close, original-task restart and initialization failure',
+            'real original lifecycle commit through batch runner, lost-ack retry adds no receipt version']
+        report['limitations'][2] = 'No EXE or live platform acceptance claimed. Manual proof-assisted binding, complete integration migration and candidate packaging remain subsequent work.'
     (output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(json.dumps({k:report[k] for k in ('passed_local','python_tests','component_tests','total_differences')}, ensure_ascii=False))
     if not report['passed_local']:

@@ -63,6 +63,11 @@ class ComponentDialog(QDialog):
             QMessageBox.warning(self, '翱象操作未完成', text)
 
     def ensure_client(self):
+        ticket = getattr(self, '_session_ticket', None)
+        if ticket is not None:
+            if self.worker:
+                self.worker.progress.emit('等待后台翱象任务安全交接；不会重复连接或强杀正在执行的动作。')
+            ticket.wait(lambda: self._closing)
         if self.started and not self.client.running:
             self.client.close()
             self.client = self.client_factory(component_root(), self.folder / 'component-state')
@@ -99,10 +104,15 @@ class ComponentDialog(QDialog):
 
 
 def show_modal(host, dialog):
+    manager = getattr(host, 'aoxiang_workflows', None)
+    ticket = manager.gate.request_foreground() if manager else None
+    dialog._session_ticket = ticket
     host._aoxiang_dialog = dialog
     try:
         dialog.exec()
     finally:
+        if ticket:
+            ticket.release()
         host._aoxiang_dialog = None
         dialog.deleteLater()
         requested = getattr(host, '_aoxiang_close_requested', False)

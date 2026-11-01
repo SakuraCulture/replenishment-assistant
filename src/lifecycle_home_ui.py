@@ -53,6 +53,8 @@ class LifecycleWidget(QWidget):
                 primary('导入'+TITLES[stage],lambda:self.import_stage(stage))
                 row.addWidget(button('导出'+TITLES[stage],lambda:export_selected(self,self.host,list(self.checked.values()),stage)))
                 if stage=='payment':row.addWidget(button('使用聚水潭导入单作为付款来源',self.review_payment))
+                if stage=='payment':row.addWidget(button('勾选单批量生成翱象采购预览',self.aoxiang_prepare))
+                if stage=='receipt':row.addWidget(button('勾选单批量同步翱象收货',self.aoxiang_receipts))
                 if stage=='return':row.addWidget(button('导出原签发单',self.export_signed))
                 if stage in ('return','payment'):row.addWidget(button('聚水潭导入单',lambda:self.open_stage('jst')))
                 v.addLayout(row)
@@ -189,6 +191,15 @@ class LifecycleWidget(QWidget):
         result=review_again(self,self.host,head,s) if head['present'][s] else import_document(self,self.host,s,head)
         if result:self.query(keep_page=True)
     def shutdown(self):self.reader.shutdown()
+
+    def aoxiang_prepare(self):
+        from aoxiang_workflow_ui import prepare_selected
+        prepare_selected(self,self.host,sorted(self.checked.values(),key=lambda h:h['list_position']))
+
+    def aoxiang_receipts(self):
+        if not self.checked:QMessageBox.information(self,'先选择范围','请先勾选要同步的仓单。');return
+        from aoxiang_workflow_ui import open_receipt_selection
+        open_receipt_selection(self,self.host,sorted(self.checked.values(),key=lambda h:h['list_position']))
 
 
 class StageDialog(QDialog):
