@@ -1,0 +1,89 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "phase": "exercise",
+      "checks": [
+        "actual spawn: secondary missing retains primary catalog, price, carton and demand; disabled/stopped/local boundaries preserved",
+        "money-new-applied: amount columns, manual delta, zero-quantity drilldown, new export grouping and nonmutation",
+        "30 actual delegate edits: Tab/mouse/Enter, both sort orders, source identity, live money, stale risk and hidden selection scope",
+        "actual final-list cancel, pending draft saved, signing pending rejected, zero risk checkbox and atomic apply; original result exactly restorable",
+        "money-manual-applied: amount columns, manual delta, zero-quantity drilldown, new export grouping and nonmutation",
+        "reordered-header list drag/drop, explicit mapping, reusable save, target gap fill, manual zero protected, unselected rows/stores unchanged",
+        "actual search/select keeps hidden checks, cancels without side effects, direct preview creates temporary list without Excel or mandatory save",
+        "query append preserves file targets, saves V2, applies existing carton/budget/risk preview and keeps original model/other store intact",
+        "actual split-warehouse signed Excel includes restored product only under Hebei",
+        "actual spawn work I/O confirms/signs split-warehouse Excel and stores final quantity plus original audit"
+      ],
+      "timings": {
+        "check_seconds": 0.4874971000099322,
+        "calculate_seconds": 0.5233079000026919,
+        "manual_preview_apply_seconds": 0.2824140000011539,
+        "sign_export_seconds": 1.0952155999984825
+      },
+      "max_ui_gap_seconds": 4.678703100013081,
+      "ui_ticks": 125,
+      "version": {
+        "app": "补货助手",
+        "version": "0.20.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.1",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "built_at": "2026-11-01T16:12:39.1910597+08:00",
+        "build_id": "rc1",
+        "source_commit": "aa4dc6200686c973877c4aca6c31c9aec1255735"
+      },
+      "synthetic": true,
+      "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 12.063000000009197,
+      "peak_tree_mib": 386.984375,
+      "sample_ms": 50,
+      "exe_sha256": "cf044b3d5bce52323cc5ff3a9e6080e6f92d03274ee34e7672b92137cb35e9c2"
+    },
+    {
+      "passed": true,
+      "error": null,
+      "phase": "reopen",
+      "checks": [
+        "fresh process restored final edits, reusable list and historical adjustment business form",
+        "query-selected SKU, catalog revision and source rows visible after packaged restart",
+        "money-restored: amount columns, manual delta, zero-quantity drilldown, new export grouping and nonmutation"
+      ],
+      "timings": {},
+      "max_ui_gap_seconds": 0.3511231000011321,
+      "ui_ticks": 56,
+      "version": {
+        "app": "补货助手",
+        "version": "0.20.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.1",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "built_at": "2026-11-01T16:12:39.1910597+08:00",
+        "build_id": "rc1",
+        "source_commit": "aa4dc6200686c973877c4aca6c31c9aec1255735"
+      },
+      "synthetic": true,
+      "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 3.7660000000032596,
+      "peak_tree_mib": 245.40625,
+      "sample_ms": 50,
+      "exe_sha256": "cf044b3d5bce52323cc5ff3a9e6080e6f92d03274ee34e7672b92137cb35e9c2"
+    }
+  ]
+}

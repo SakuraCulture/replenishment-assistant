@@ -1,0 +1,93 @@
+222 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.9
+222 INFO: Python: 3.12.14
+263 INFO: Platform: Windows-11-10.0.26200-SP0
+263 INFO: Python environment: D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\.venv
+264 INFO: wrote D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\qa\final_review_0200\build_checkout\build_0.20.0_rc1\��������.spec
+267 INFO: Removing temporary files and cleaning cache in C:\Users\lenovo\AppData\Local\pyinstaller
+276 INFO: Module search paths (PYTHONPATH):
+['D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\qa\\final_review_0200\\build_checkout',
+ 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python312.zip',
+ 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\DLLs',
+ 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib',
+ 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python',
+ 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv',
+ 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages',
+ 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages',
+ 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\qa\\final_review_0200\\build_checkout\\src']
+972 INFO: Appending 'datas' from .spec
+973 INFO: checking Analysis
+973 INFO: Building Analysis because Analysis-00.toc is non existent
+973 INFO: Looking for Python shared library...
+973 INFO: Using Python shared library: C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python312.dll
+973 INFO: Running Analysis Analysis-00.toc
+973 INFO: Target bytecode optimization level: 0
+973 INFO: Initializing module dependency graph...
+976 INFO: Initializing module graph hook caches...
+991 INFO: Analyzing modules for base_library.zip ...
+2710 INFO: Processing standard module hook 'hook-encodings.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3396 INFO: Processing standard module hook 'hook-math.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3971 INFO: Processing standard module hook 'hook-pickle.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4478 INFO: Processing standard module hook 'hook-heapq.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4759 INFO: Caching module dependency graph...
+4785 INFO: Analyzing D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\qa\final_review_0200\build_checkout\src\app.py
+4793 INFO: Processing standard module hook 'hook-PySide6.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5127 INFO: Processing standard module hook 'hook-shiboken6.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5221 INFO: Processing standard module hook 'hook-PySide6.QtNetwork.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+6657 INFO: Processing standard module hook 'hook-PySide6.QtCore.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8353 INFO: Processing standard module hook 'hook-PySide6.QtGui.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+15713 INFO: Processing standard module hook 'hook-PySide6.QtWidgets.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+17456 INFO: Processing standard module hook 'hook-openpyxl.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+17895 INFO: Processing standard module hook 'hook-xml.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+17910 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+18182 INFO: Processing standard module hook 'hook-PIL.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+18249 INFO: Processing standard module hook 'hook-PIL.Image.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+18901 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+19488 INFO: Processing standard module hook 'hook-platform.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+19667 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+19897 INFO: Processing standard module hook 'hook-_ctypes.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+19960 INFO: Processing standard module hook 'hook-sqlite3.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+21250 INFO: Processing standard module hook 'hook-PySide6.QtTest.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+21774 INFO: Processing standard module hook 'hook-difflib.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+22350 INFO: Processing module hooks (post-graph stage)...
+22511 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+22679 INFO: Performing binary vs. data reclassification (126 entries)
+22739 INFO: Looking for ctypes DLLs
+22743 INFO: Analyzing run-time hooks ...
+22744 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+22746 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+22748 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+22750 INFO: Including run-time hook 'pyi_rth_pyside6.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+22751 INFO: Processing pre-find-module-path hook 'hook-_pyi_rth_utils.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+22793 INFO: Processing standard module hook 'hook-_pyi_rth_utils.py' from 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+22803 INFO: Creating base_library.zip...
+22817 INFO: Looking for dynamic libraries
+23847 INFO: Extra DLL search directories (AddDllDirectory): ['D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\shiboken6', 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages\\numpy.libs']
+23848 INFO: Extra DLL search directories (PATH): ['D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PySide6']
+24786 INFO: Warnings written to D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\qa\final_review_0200\build_checkout\build_0.20.0_rc1\work\��������\warn-��������.txt
+24819 INFO: Graph cross-reference written to D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\qa\final_review_0200\build_checkout\build_0.20.0_rc1\work\��������\xref-��������.html
+24847 INFO: checking PYZ
+24848 INFO: Building PYZ because PYZ-00.toc is non existent
+24848 INFO: Building PYZ (ZlibArchive) D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\qa\final_review_0200\build_checkout\build_0.20.0_rc1\work\��������\PYZ-00.pyz
+25166 INFO: Building PYZ (ZlibArchive) D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\qa\final_review_0200\build_checkout\build_0.20.0_rc1\work\��������\PYZ-00.pyz completed successfully.
+25176 INFO: checking PKG
+25176 INFO: Building PKG because PKG-00.toc is non existent
+25176 INFO: Building PKG (CArchive) ��������.pkg
+25211 INFO: Building PKG (CArchive) ��������.pkg completed successfully.
+25214 INFO: Bootloader D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\.venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+25214 INFO: checking EXE
+25214 INFO: Building EXE because EXE-00.toc is non existent
+25214 INFO: Building EXE from EXE-00.toc
+25214 INFO: Copying bootloader EXE to D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\qa\final_review_0200\build_checkout\build_0.20.0_rc1\work\��������\��������.exe
+25314 INFO: Copying icon to EXE
+25394 INFO: Copying 0 resources to EXE
+25394 INFO: Embedding manifest in EXE
+25471 INFO: Appending PKG archive to EXE
+25617 INFO: Fixing EXE headers
+26092 INFO: Building EXE from EXE-00.toc completed successfully.
+26094 INFO: checking COLLECT
+26094 INFO: Building COLLECT because COLLECT-00.toc is non existent
+26094 INFO: Building COLLECT COLLECT-00.toc
+26646 INFO: Building COLLECT COLLECT-00.toc completed successfully.
+26650 INFO: Build complete! The results are available in: D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\qa\final_review_0200\build_checkout\����_0.20.0_rc1
+{"PySide6-Essentials": "6.12.0", "shiboken6": "6.12.0", "openpyxl": "3.1.5", "et-xmlfile": "2.0.0", "pillow": "12.3.0", "PyInstaller": "6.22.3"}
+D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\final_review_0200\build_checkout\交付_0.20.0_rc1
