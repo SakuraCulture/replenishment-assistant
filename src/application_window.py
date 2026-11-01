@@ -74,6 +74,11 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         detail_layout=self.pages.widget(4).layout();back=detail_layout.itemAt(0).widget();detail_layout.removeWidget(back);detail_layout.removeWidget(self.detail_new_btn)
         detail_actions=QHBoxLayout();detail_actions.addWidget(back);detail_actions.addWidget(self.final_detail_btn);detail_actions.addWidget(self.detail_new_btn);detail_layout.insertLayout(0,detail_actions)
         self.auto_check=QTimer(self);self.auto_check.setSingleShot(True);self.auto_check.setInterval(400);self.auto_check.timeout.connect(self.check_added_files);self.sales.changed.connect(self.auto_check.start)
+        axrow=QHBoxLayout();self.aoxiang_setup_btn=button('翱象连接与门店配置',self.open_aoxiang_setup);axrow.addWidget(self.aoxiang_setup_btn);axrow.addWidget(label('维护平台门店目录与两仓供应商对应；核验登录后保存复用。','muted'),1);self.import_page.layout().addLayout(axrow)
+
+    def open_aoxiang_setup(self):
+        from aoxiang_setup_ui import open_setup
+        open_setup(self)
 
     def check_added_files(self):
         if not self.worker and not self.closing and not self.readonly and self.sales.paths and (self.products.path if self.master_legacy.isChecked() else self.catalogs):self.start_load()
@@ -208,6 +213,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         return bool(cached and cached[0] is self.results.get(s) and cached[1] is self.new_focus)
 
     def closeEvent(self,event):
+        axdialog=getattr(self,'_aoxiang_dialog',None)
+        if axdialog is not None:
+            self._aoxiang_close_requested=True;axdialog.close();event.ignore();return
         generator=getattr(self,'jst_generator',None)
         if generator and generator.worker:
             self.closing=True;generator.cancel();event.ignore();return

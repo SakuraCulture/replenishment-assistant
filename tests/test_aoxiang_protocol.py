@@ -202,6 +202,23 @@ for t in threads: t.join()
         time.sleep(.3)
         self.assertEqual(client.request('list'), 'list')
 
+    def test_cooperative_close_can_be_polled_without_resending_on_closed_stdin(self):
+        peer = self.root / 'slow_close.py'
+        peer.write_text('''import json,sys,time
+print(json.dumps(dict(protocol_version=1,type='ready')),flush=True)
+for line in sys.stdin:
+ r=json.loads(line)
+ print(json.dumps(dict(protocol_version=1,type='response',request_id=r['request_id'],ok=True,result={'closing':True})),flush=True)
+ if r['action']=='shutdown': time.sleep(.3);break
+''', encoding='utf-8')
+        original = subprocess.Popen
+        client = self.connect('close-test')
+        with patch('aoxiang_client.subprocess.Popen', side_effect=lambda _argv, **kwargs: original([sys.executable, str(peer)], **kwargs)):
+            client.start()
+        self.assertFalse(client.close(timeout=.02))
+        self.assertTrue(client.running)
+        self.assertTrue(client.close(timeout=2))
+
 
 if __name__ == '__main__':
     unittest.main()

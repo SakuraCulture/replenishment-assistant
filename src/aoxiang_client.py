@@ -161,7 +161,7 @@ class ProcessClient:
         if self._process is None:
             return True
         if self.running:
-            if not self._failure and self._hello is not None:
+            if not self._process.stdin.closed and not self._failure and self._hello is not None:
                 try:
                     self.request('shutdown', timeout=min(timeout, 5))
                 except ComponentError:

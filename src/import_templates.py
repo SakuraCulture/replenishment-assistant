@@ -5,6 +5,7 @@ from openpyxl.styles import Font,PatternFill
 import os,tempfile
 
 TEMPLATES={
+ 'aoxiang_stores':('翱象门店目录','门店目录',['门店编码','门店名称'],[]),
  'stocking':('铺货清单','铺货清单',['商品编码'],['商品名称','目标持有量','备注','关注']),
  'sales':('补货建议','商品补货建议',['仓库/门店编码','商品编码','日销','周销','月销','可用库存','在途库存','缺货天数（天）'],['仓库/门店名称','商品名称','单位类型','补货状态']),
  'catalog':('分仓商品资料','Sheet1',['商品编码','分类','基本售价','出库箱规','商品状态','可用数'],['商品名称','商品等级','补货模型分类']),
@@ -23,6 +24,9 @@ def write(kind,path,progress=lambda _:None,cancel=None):
     note=wb.create_sheet('填写说明');note.append(['事项','要求'])
     for item in [('适用内容',title),('必需表头','、'.join(required)),('可选表头','、'.join(optional)),('编码','按文本保存；保留前导零，禁止科学计数法和模糊匹配'),('数量单位','库存单位；回传数量为非负数字，0表示明确不补，空白表示未确认'),('缺失值','保留空白，不能为了通过校验编造0；缺货天数空白按现有规则处理'),('分仓','在导入入口选择河北仓或山东仓；不要以文件名猜测仓库'),('关注','填写关注/未关注、是/否、1/0'),('回传关联','无修订信息的文件，导入时必须明确选择签发修订；也可直接改加盟商确认单Q列回传'),('数据区','第1张表从第2行填写；模板不附可误导入的示例商品')]:note.append(item)
     if kind=='feedback':note.append(('回传供货仓','新单填写原导出的仓子单号（-HB为河北仓，-SD为山东仓），按签发修订校验归属；两仓可一起导入。旧门店总单号仍兼容。不要手工改仓或按当前资料重新判断。'))
+    if kind=='aoxiang_stores':
+        note.delete_rows(2,note.max_row)
+        for item in [('必填字段','门店编码、门店名称；无需填写账号、仓供应商或系统版本'),('编码','按文本填写，保留前导零和长编码；按编码关联，不按相似名称合并'),('表头','按表头识别，列位置可调整；可直接使用翱象门店数据导出文件'),('重复','相同编码与名称去重并保留来源行；同码不同名阻断；同名不同码保留'),('核验','导入目录不代表已经核验平台权限；连接时按实际查询编码核对'),('原件','导入后保留原文件快照，不修改原文件')]:note.append(item)
     note.column_dimensions['A'].width=22;note.column_dimensions['B'].width=100
     fd,tmp=tempfile.mkstemp(dir=target.parent,suffix='.xlsx');os.close(fd)
     try:wb.save(tmp);os.link(tmp,target)
