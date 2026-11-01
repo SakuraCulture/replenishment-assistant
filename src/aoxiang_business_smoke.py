@@ -130,4 +130,40 @@ def exercise(win, output, wait, active, checks):
     if after['documents']['receipt']['payload']['rows'][0]['base_quantity']!='5':
         raise ValueError('Receipt quantity changed')
     checks.append('合成完成单实收5件按原生命周期落库，重复同步不新增修订；付款7件及回传5件原事实保持')
+    # Explicit QA business edit after successful synchronization: original procurement
+    # stays at 7 / 0.99 while current confirmed payment becomes 8 / 1.23.
+    import lifecycle_io as io
+    payment_file = output/'synthetic-payment-update.xlsx'
+    wb = openpyxl.load_workbook(output/'payment.xlsx')
+    ws = wb.active
+    headers = [c.value for c in ws[1]]
+    ws.cell(2,headers.index(io.QUANTITIES['payment'])+1,8)
+    ws.cell(2,headers.index('实际金额')+1,1.23)
+    wb.save(payment_file)
+    wb.close()
+    input_file = io.inspect([payment_file])[0]
+    sheet = input_file['sheets'][0]
+    scan = io.scan('payment',[{**input_file,**sheet,'mapping':{h:i for i,h in enumerate(sheet['headers'])}}])
+    lc.commit(win.work_repository.path,lc.prepare(win.work_repository.path,scan,{lc.binding_key(r):fixture['head'] for r in scan['rows']}))
+    changed = lc.snapshot(win.work_repository.path,fixture['head'])
+    began = time.perf_counter()
+    dialog = PurchaseDialog(win,win,fixture['head'],client_factory=LocalOnly)
+    active['dialog'] = dialog
+    dialog.show()
+    wait(lambda:dialog.current is not None and dialog.worker is None)
+    times['stale_basis_open_seconds'] = time.perf_counter()-began
+    if '付款单已更新' not in dialog.basis_note.text() or dialog.upload_btn.isEnabled():
+        raise ValueError('Outdated procurement basis not visible or upload still enabled')
+    if dialog.table.item(0,2).text()!='7' or dialog.table.item(0,3).text()!='0.99':
+        raise ValueError('Outdated procurement was silently repriced or changed')
+    dialog.grab().save(str(output/'purchase-stale-basis.png'))
+    dialog.close()
+    wait(lambda:dialog._can_close and dialog.worker is None)
+    if dialog.client.running:
+        raise ValueError('Stale-basis component survived close')
+    dialog.deleteLater()
+    active['dialog'] = None
+    if lc.snapshot(win.work_repository.path,fixture['head'])!=changed:
+        raise ValueError('Reading stale basis mutated original lifecycle facts')
+    checks.append('当前付款更新为8件/1.23元后，旧采购预览明确待核且禁用上传；仍展示原7件/0.99元，查询无业务写入')
     atomic_json(output/'business-local-evidence.json',dict(synthetic=True,live_platform=False,checks=checks,timings=times,protocol_actions=calls,receipt_first=first,receipt_second=second))

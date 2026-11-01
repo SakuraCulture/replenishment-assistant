@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QComboBox, QLineEdit, QP
 from aoxiang_client import ProcessClient
 from aoxiang_directory import Directory
 from aoxiang_receipts import checked_json, synchronize
+from aoxiang_purchase_tasks import inspect_basis
 from aoxiang_ui_common import ComponentDialog, component_root, show_modal
 from business_ui import grid
 from ui_controls import button, label
@@ -77,6 +78,9 @@ class ReceiptDialog(ComponentDialog):
         self.note = label('打开本页只读取已保存记录；点击立即同步后才查询平台。空白实收显示“未知”，不当作0。')
         self.note.setWordWrap(True)
         v.addWidget(self.note)
+        self.basis_note = label('尚未选择采购记录。', 'muted')
+        self.basis_note.setWordWrap(True)
+        v.addWidget(self.basis_note)
         row = QHBoxLayout()
         self.sync_btn = button('立即同步 / 继续原下载任务', self.start_sync, True)
         self.save_btn = button('重试保存已验收实收', self.retry_save)
@@ -130,6 +134,7 @@ class ReceiptDialog(ComponentDialog):
         self.orders.setCurrentIndex(0)
         self.orders.blockSignals(False)
         self.current = None
+        self.basis_note.setText('正在核对原采购依据与当前付款…' if self.records else '尚无已关联采购记录。')
         self.model.replace([])
         if self.records:
             # load's worker has not finished yet; defer the selected status call to on_idle.
@@ -141,13 +146,22 @@ class ReceiptDialog(ComponentDialog):
     def select_record(self, index):
         if 0 <= index < len(self.records):
             self.current = None
+            self.basis_note.setText('正在核对原采购依据与当前付款…')
             self.pending_read = self.records[index]['id']
             self.on_idle()
 
-    def status_data(self, id):
+    def status_data(self, id, *, check_basis=False):
         record = self.client.request('receipt.status', purchase_id=id)
         observation = checked_json(record['manifest']['file'], record['manifest']['sha256']) if record.get('manifest') else None
-        return record, observation
+        state = None
+        if check_basis:
+            context = self.folder / 'purchase-packages' / id / '本地任务索引.json'
+            try:
+                package = json.loads(context.read_text(encoding='utf-8'))
+            except (OSError, ValueError):
+                package = None
+            state = inspect_basis(self.host.work_repository.path, package, self.client.request('configuration'), Directory(self.folder).suppliers())
+        return record, observation, state
 
     def on_idle(self):
         if self.worker or self._closing:
@@ -155,16 +169,18 @@ class ReceiptDialog(ComponentDialog):
         id = getattr(self, 'pending_read', None)
         if id:
             self.pending_read = None
-            self.run(lambda _: self.status_data(id), self.render)
+            self.run(lambda _: self.status_data(id, check_basis=True), self.render)
         elif self.pending_save:
             self.pending_save = False
             self.save_receipt()
 
     def render(self, data):
-        record, o = data
+        record, o = data[:2]
         if record['id'] != self.orders.currentData() or self.current and record['sequence'] < self.current['sequence']:
             return
         self.current = record
+        if len(data)>2 and data[2] is not None:
+            self.basis_note.setText(data[2]['message'])
         summary = record.get('summary') or {}
         self.summary.setText('采购单 ' + record['scope']['orderId'] + ' · ' + STATES.get(record['state'], record['state']) +
                              '\n平台状态：' + summary.get('status', '尚未查询') + ' · 最后观察：' + display_time(summary.get('observedAt')))

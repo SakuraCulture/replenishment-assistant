@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QPro
                              QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox)
 from aoxiang_client import ProcessClient
 from aoxiang_directory import Directory, atomic_json
-from aoxiang_purchase_tasks import prepare, validate_for_upload
+from aoxiang_purchase_tasks import prepare, validate_for_upload, inspect_basis
 from aoxiang_ui_common import ComponentDialog, component_root, show_modal
 from ui_controls import label, button
 from aoxiang_binding_ui import BindingActions
@@ -32,6 +32,8 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         self.configuration = self.suppliers = self.receipt = self.package = self.current = None
         self.template_id = None
         self.make_preview_pending = False
+        self.pending_basis = None
+        self.basis_state = None
         self.records = []
         self.began = time.monotonic()
         self.poll = QTimer(self)
@@ -64,6 +66,9 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         self.note = label('预览逐项来自本单付款快照，不以最新商品价格替换。')
         self.note.setWordWrap(True)
         layout.addWidget(self.note)
+        self.basis_note = label('尚未选择采购记录。', 'muted')
+        self.basis_note.setWordWrap(True)
+        layout.addWidget(self.basis_note)
         row = QHBoxLayout()
         self.preview_btn = button('生成采购预览（获取最新模板）', self.fetch_template)
         self.upload_btn = button('上传建单（保留待提交）', self.upload, True)
@@ -96,7 +101,7 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         pending = any(r['state'] != 'CANCELLED_BEFORE_UPLOAD' for r in self.records)
         attempted = bool((self.current or {}).get('uploadAttempted'))
         self.preview_btn.setEnabled(idle and not active and available and not pending and not self.head.get('deleted'))
-        self.upload_btn.setEnabled(idle and not active and available and bool(self.package) and not attempted
+        self.upload_btn.setEnabled(idle and not active and available and bool(self.package) and bool((self.basis_state or {}).get('valid')) and not attempted
                                    and (self.current or {}).get('state') != 'CANCELLED_BEFORE_UPLOAD' and not self.head.get('deleted'))
         self.verify_btn.setEnabled(idle and not active and bool((self.current or {}).get('taskId'))
                                    and (self.current or {}).get('state') != 'BOUND' and not (self.current or {}).get('additionalTaskIds'))
@@ -148,10 +153,13 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         super().failure(text)
 
     def select_record(self, index):
+        self.pending_basis = None
+        self.basis_state = None
         if not 0 <= index < len(self.records):
             self.current = None
             self.package = None
             self.restore_binding(None)
+            self.basis_note.setText('尚未选择采购记录。')
             return
         self.current = self.records[index]
         self.restore_binding(self.current)
@@ -160,7 +168,11 @@ class PurchaseDialog(BindingActions, ComponentDialog):
             self.package = json.loads(context.read_text(encoding='utf-8')) if context.is_file() else None
         except (OSError, ValueError):
             self.package = None
+        self.pending_basis = self.current['id']
+        self.basis_note.setText('正在核对原采购依据与当前付款…')
         self.render()
+        if not self.worker:
+            self.on_idle()
 
     def render(self):
         if self.package:
@@ -225,6 +237,20 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         if self.make_preview_pending:
             self.make_preview_pending = False
             self.run(self.prepare_package, self.package_ready)
+        elif self.pending_basis:
+            id, package = self.pending_basis, self.package
+            self.pending_basis = None
+            def operation(_):
+                state = inspect_basis(self.host.work_repository.path, package, self.client.request('configuration'), Directory(self.folder).suppliers())
+                return id, state
+            self.run(operation, self.basis_ready)
+
+    def basis_ready(self, data):
+        id, state = data
+        if self.current and self.current['id'] == id:
+            self.basis_state = state
+            self.basis_note.setText(state['message'])
+            self.update_buttons()
 
     def prepare_package(self, progress):
         config = self.client.request('configuration')
@@ -239,6 +265,10 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         p, record = data
         self.package = p
         self.current = record
+        self.pending_basis = None
+        # prepare() already checked the same frozen basis immediately before returning.
+        self.basis_state = {'valid':True}
+        self.basis_note.setText('采购依据已核对：与当前已确认付款一致（本次生成时）。')
         self.restore_binding(record)
         self.records.append(record)
         self.history.blockSignals(True)

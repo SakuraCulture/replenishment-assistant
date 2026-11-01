@@ -64,3 +64,30 @@ def validate_for_upload(path, package, configuration, suppliers, *, cancel=None)
         raise ValueError('采购上传文件已变化')
     validate_basis(path, plan, configuration, suppliers, cancel=cancel)
     return True
+
+
+def inspect_basis(path, package, configuration, suppliers):
+    """Read-only UI assessment. Dispatch/save still repeat their original checks.
+
+    Check the frozen business basis, not the possibly removed upload workbook.
+    Call from the existing background worker, once per selected record/refresh.
+    """
+    try:
+        if not package or not Path(path).is_file():
+            raise ValueError('原采购付款依据未找到，无法确认是否仍有效')
+        plan_file = Path(package['plan_file'])
+        if file_hash(plan_file) != package['plan_sha256']:
+            raise ValueError('原采购付款依据文件已变化，不能作为有效依据')
+        plan = json.loads(plan_file.read_text(encoding='utf-8'))
+        validate_basis(path, plan, configuration, suppliers)
+    except ValueError as exc:
+        reason = str(exc)
+    except (KeyError, TypeError, OSError):
+        reason = '原采购付款依据缺失、字段不完整或无法读取'
+    except Exception:
+        import logging
+        logging.exception('读取翱象采购依据状态失败')
+        reason = '当前无法完成依据核对，请保留原记录并检查日志'
+    else:
+        return {'valid':True, 'message':'采购依据已核对：与当前已确认付款一致（本次打开或刷新时）。'}
+    return {'valid':False, 'message':'采购依据待核：'+reason+'。原采购记录保留，不会自动改量或重建；请先核对变更。'}
