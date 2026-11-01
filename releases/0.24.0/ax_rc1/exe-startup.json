@@ -1,0 +1,82 @@
+{
+  "passed": true,
+  "actual_exe": true,
+  "live_platform": false,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.24.0_ax_rc1\\补货助手\\补货助手.exe",
+  "exe_sha256": "3abd0d759b4be98631ec5dd033c57a43cb776790f951156432096c8684d06f67",
+  "build_commit": "a48962edf432464c59dff77d4c48924d56cd1020",
+  "component_manifest_sha256": "68c66ccfd0c134868d59cc0a9428f15dc73c6e03bed0ca83e99a17640a890ed8",
+  "runs": [
+    {
+      "passed": true,
+      "actual_exe": true,
+      "live_platform": false,
+      "checks": [
+        "真实固定Node进程启动并读取本地未配置状态，第1次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "真实固定Node进程启动并读取本地未配置状态，第2次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "本地批次队列打开、空状态与关闭；未创建周期计划"
+      ],
+      "heartbeat_samples": 70,
+      "max_heartbeat_gap": 0.07288839999819174,
+      "source_commit": "a48962edf432464c59dff77d4c48924d56cd1020",
+      "exit_code": 0,
+      "remaining_children": [],
+      "sampled_descendants": 5,
+      "elapsed_seconds": 6.783777999997255,
+      "peak_tree_rss_bytes": 281657344
+    },
+    {
+      "passed": true,
+      "actual_exe": true,
+      "live_platform": false,
+      "checks": [
+        "真实固定Node进程启动并读取本地未配置状态，第1次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "真实固定Node进程启动并读取本地未配置状态，第2次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "本地批次队列打开、空状态与关闭；未创建周期计划"
+      ],
+      "heartbeat_samples": 61,
+      "max_heartbeat_gap": 0.06291240001155529,
+      "source_commit": "a48962edf432464c59dff77d4c48924d56cd1020",
+      "exit_code": 0,
+      "remaining_children": [],
+      "sampled_descendants": 5,
+      "elapsed_seconds": 3.21187669999199,
+      "peak_tree_rss_bytes": 295706624
+    },
+    {
+      "passed": true,
+      "actual_exe": true,
+      "live_platform": false,
+      "checks": [
+        "真实固定Node进程启动并读取本地未配置状态，第1次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "真实固定Node进程启动并读取本地未配置状态，第2次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "本地批次队列打开、空状态与关闭；未创建周期计划"
+      ],
+      "heartbeat_samples": 58,
+      "max_heartbeat_gap": 0.07415040000341833,
+      "source_commit": "a48962edf432464c59dff77d4c48924d56cd1020",
+      "exit_code": 0,
+      "remaining_children": [],
+      "sampled_descendants": 5,
+      "elapsed_seconds": 3.214531799996621,
+      "peak_tree_rss_bytes": 285003776
+    }
+  ],
+  "upgrade_fixture": null,
+  "historical_tables": {},
+  "historical_table_differences": [],
+  "business_comparison": null,
+  "added_tables": [],
+  "original_fixture_unchanged": false,
+  "memory_method": "50 ms samples; sum of RSS of app and observed descendants; shared pages may be counted more than once",
+  "limitations": [
+    "No live platform query/upload/receipt; business fixtures are explicitly synthetic",
+    "Local EXE operations do not prove the real platform end-to-end chain"
+  ]
+}

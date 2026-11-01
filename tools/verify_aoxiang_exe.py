@@ -12,6 +12,7 @@ import sqlite3
 import subprocess
 import sys
 import time
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +46,20 @@ def files_snapshot(folder):
     return {name:sha(path) for name,path in inventory(folder).items()}
 
 
+def reference(out):
+    """Independent process using the exact committed source and same build metadata."""
+    sys.path.insert(0,str(out/'source-reference/src'))
+    import batch_service, engine, parameter_schema
+    fixture = json.loads((out/'business-fixture.json').read_text(encoding='utf-8'))
+    loaded = batch_service.load([f['file'] for f in fixture['manifest']['files']],fixture['master'])
+    profile = json.loads((out/'source-reference/src/default_must_sell.json').read_text(encoding='utf-8'))
+    jobs = {code:dict(warehouses=engine.DEFAULT_WAREHOUSES,exception=True,budget=budget,parameter_config=parameter_schema.standard()) for code,budget in [('W2',30),('W1',None)]}
+    result_map = batch_service.run(loaded,jobs,profile,2)
+    for code in jobs:
+        engine.export_xlsx(result_map[code],out/(code+'-source.xlsx'))
+    (out/'source-results.json').write_text(json.dumps([result_map[code] for code in jobs],ensure_ascii=False),encoding='utf-8')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--exe', type=Path, required=True)
@@ -52,7 +67,11 @@ def main():
     parser.add_argument('--upgrade-from', type=Path)
     parser.add_argument('--runs', type=int, default=2)
     parser.add_argument('--business', action='store_true', help='Synthetic input/payment/receipt exercise; requires --runs 1')
+    parser.add_argument('--reference', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.reference:
+        reference(args.output.resolve())
+        return
     if not 1 <= args.runs <= 5:
         raise ValueError('Use 1 to 5 isolated serial runs')
     if args.business and (args.upgrade_from or args.runs != 1):
@@ -132,25 +151,27 @@ def main():
         raise ValueError('Bundled component changed during execution')
     business_comparison = None
     if args.business:
-        sys.path.insert(0,str(ROOT/'src'))
-        import batch_service, engine, parameter_schema
         from parallel_qa import diff, clean, WHITELIST
         from structure_oracle import excel_snapshot
-        loaded = batch_service.load([f['file'] for f in fixture['manifest']['files']],fixture['master'])
-        profile = json.loads((ROOT/'src/default_must_sell.json').read_text(encoding='utf-8'))
+        archive = out/'source-reference.zip'
+        subprocess.run(['git','archive','--format=zip','-o',str(archive),info['source_commit'],'src'],cwd=ROOT,check=True)
+        with zipfile.ZipFile(archive) as source_zip:
+            source_zip.extractall(out/'source-reference')
+        # Populate the same read-only build metadata that PyInstaller embeds;
+        # never add exclusions to disguise missing source-side build fields.
+        shutil.copyfile(exe.parent/'_internal/build_info.json',out/'source-reference/src/build_info.json')
+        with (out/'reference-process.txt').open('w',encoding='utf-8') as log:
+            subprocess.run([sys.executable,str(Path(__file__).resolve()),'--reference','--output',str(out),'--exe',str(exe)],
+                           cwd=ROOT,env=env,stdout=log,stderr=log,check=True)
         frozen = json.loads((out/'business-results.json').read_text(encoding='utf-8'))
-        source, excel_differences = [], []
-        jobs = {code:dict(warehouses=engine.DEFAULT_WAREHOUSES,exception=True,budget=budget,parameter_config=parameter_schema.standard()) for code,budget in [('W2',30),('W1',None)]}
-        result_map = batch_service.run(loaded,jobs,profile,2)
-        for code in jobs:
-            result = result_map[code]
-            source.append(result)
-            engine.export_xlsx(result,out/(code+'-source.xlsx'))
+        source = json.loads((out/'source-results.json').read_text(encoding='utf-8'))
+        excel_differences = []
+        for code in ('W2','W1'):
             excel_differences += diff(excel_snapshot(out/(code+'-source.xlsx')),excel_snapshot(out/(code+'-frozen.xlsx')))
-        # Round-trip only to normalize Python tuples to their JSON representation.
-        source = json.loads(json.dumps(source,ensure_ascii=False))
         differences = diff(clean(source),clean(frozen))
         business_comparison = dict(differences=differences,excel_differences=excel_differences,whitelist=WHITELIST,
+                                   reference_commit=info['source_commit'],reference_source_archive_sha256=sha(archive),
+                                   build_metadata_sha256=sha(out/'source-reference/src/build_info.json'),
                                    scope='Frozen application vs same source, identical synthetic inputs; baseline rules verified separately')
         if differences or excel_differences:
             (out/'business-differences.json').write_text(json.dumps(business_comparison,ensure_ascii=False,indent=2),encoding='utf-8')

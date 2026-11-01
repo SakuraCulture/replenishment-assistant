@@ -1,0 +1,13 @@
+{
+  "channel": "local candidate; live platform acceptance deferred",
+  "build_commit": "a48962edf432464c59dff77d4c48924d56cd1020",
+  "exe_sha256": "3abd0d759b4be98631ec5dd033c57a43cb776790f951156432096c8684d06f67",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.24.0_ax_rc1\\补货助手_0.24.0_ax_rc1_本地候选.zip",
+  "zip_bytes": 88116560,
+  "zip_sha256": "7307f77136dd0396737ea128c26d1e76ca9c468714e2b1353e64a2df9be1ddb4",
+  "delivery_files": 1083,
+  "delivery_inventory_sha256": "5e03bc8ec266adfa0fd2edb56d6f351537b8821facf04a327e1b173ca04ccee7",
+  "zip_members_byte_verified": true,
+  "old_delivery_replaced": false,
+  "pushed_or_merged": false
+}

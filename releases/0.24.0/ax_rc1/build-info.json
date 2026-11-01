@@ -1,0 +1,17 @@
+{
+  "source_commit": "a48962edf432464c59dff77d4c48924d56cd1020",
+  "build_id": "ax_rc1",
+  "version": "0.24.0",
+  "built_at": "2026-11-02T04:19:51.477642+08:00",
+  "source_archive_sha256": "f5b2a31d4227f0d71ef484399dbd41c669be3d055c21881ef13d0f7b034ba63b",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "a48962edf432464c59dff77d4c48924d56cd1020",
+    "files": 864,
+    "manifest_sha256": "68c66ccfd0c134868d59cc0a9428f15dc73c6e03bed0ca83e99a17640a890ed8",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  }
+}
