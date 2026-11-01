@@ -74,3 +74,13 @@ test('非法机器帧不当作命令执行，错误不回显原始敏感文本',
   const error=await child.next();assert.equal(error.type,'fatal');assert.equal(error.error.code,'FRAME_JSON');
   assert.equal(JSON.stringify(error).includes('secret-cookie'),false);assert.equal((await child.exit)[0],1);
 });
+
+test('invalid business form returns its exact request error and leaves the same process usable',async t=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'ax-form-invalid-')),child=launch(root);
+  t.after(async()=>{if(child.child.exitCode===null){child.send(request('shutdown'));await child.exit;}await fs.rm(root,{recursive:true,force:true});});
+  assert.equal((await child.next()).type,'ready');
+  const bad=request('binding.start',{purchase_id:'p',binding_request:{order_id:'PO1',created_day:'2026-11-01',reason:''}});
+  child.send(bad);const error=await child.next();assert.equal(error.request_id,bad.request_id);assert.equal(error.ok,false);assert.equal(error.error.code,'BINDING_INPUT');
+  child.send(request('ping'));const answer=await child.next();assert.equal(answer.ok,true);assert.equal(answer.result.active_binding_id,null);
+  child.send(request('purchase.list'));assert.equal((await child.next()).result.total,0);
+});

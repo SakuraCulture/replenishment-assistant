@@ -11,7 +11,12 @@ export class PurchaseReceiptService{
     if(c.state!=='BOUND')fail('RECEIPT_NOT_BOUND','必须先核验唯一采购单，才能同步收货');
     const original=this.state.rows('purchase_runs').filter(r=>r.status==='SUCCEEDED'&&r.orderId===c.binding.orderId&&r.dateBasis==='created'&&sameIdentity(r.identity,c.intent.identity)&&c.binding.files.every(f=>r.exports[f.source]?.asset?.sha256===f.sha256));
     if(!original.length||new Set(original.map(r=>r.from)).size!==1)fail('RECEIPT_CREATION_PROOF','缺少原采购单已验收的制单日与主子原件依据，不按本地日期猜测');
-    return this.ledger.register(c,original[0].from);
+    const registered=this.ledger.register(c,original[0].from);
+    if(c.binding.status==='已完成'&&!registered.terminal){
+      const main=c.binding.files.find(f=>f.source==='D16');
+      return this.ledger.terminal(id,main);
+    }
+    return registered;
   }
   async observe(id,{signal}){
     let record=this.ledger.get(id);const c=this.creates.get(id),context=await this.creationService.context(c.intent,signal);

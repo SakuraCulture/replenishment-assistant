@@ -323,7 +323,7 @@ class ReceiptSelection(ComponentDialog):
             if self.heads is not None:
                 # Selection order follows the source lifecycle list, never completion time.
                 items=[r for h in self.heads for r in items if all(r['basis'][k]==h[k] for k in ('number','store','warehouse'))]
-            return [{**r,'receipt_terminal':states.get(r['id'],{}).get('terminal',False),'receipt_state':states.get(r['id'],{}).get('state','未查询')} for r in items]
+            return [{**r,'receipt_terminal':states.get(r['id'],{}).get('terminal',False) or r['binding'].get('status')=='已完成','receipt_state':states.get(r['id'],{}).get('state','未查询')} for r in items]
         self.run(operation,self.loaded)
 
     def loaded(self, records):

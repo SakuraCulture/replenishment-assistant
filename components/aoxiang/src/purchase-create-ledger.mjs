@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import {DatabaseSync,backup} from 'node:sqlite';
 import {canonical,sha256,now,uid,fail} from './common.mjs';
-import {orderKey,validatePurchaseIntent,checkImportReceipt,checkCreatedPurchase} from './purchase-create-contract.mjs';
+import {orderKey,validatePurchaseIntent,checkImportReceipt,checkCreatedPurchase,canBind,bindingEligible,checkedBinding} from './purchase-create-contract.mjs';
 
 const transitions={
   RESERVED:['PREPARING','PAUSED','CANCELLED_BEFORE_UPLOAD'],PREPARING:['READY','PAUSED','FAILED_PRECHECK'],
@@ -41,7 +41,8 @@ export class PurchaseCreates{
       this.db.prepare('INSERT INTO purchase_creates VALUES(?,?,?,?,?,?,?,?)').run(r.id,key,sha256(canonical(intent.identity)),requestHash,r.state,r.sequence,null,JSON.stringify(r));this.event(r,'RESERVED');return {created:true,record:r};
     });
   }
-  event(r,kind){this.db.prepare('INSERT INTO purchase_create_events VALUES(?,?,?)').run(r.id,r.sequence,JSON.stringify({id:r.id,sequence:r.sequence,state:r.state,at:r.updatedAt,kind,error:r.error,taskId:r.receipt?.taskId||null,orderId:r.binding?.orderId||null}));}
+  event(r,kind){this.db.prepare('INSERT INTO purchase_create_events VALUES(?,?,?)').run(r.id,r.sequence,JSON.stringify({id:r.id,sequence:r.sequence,state:r.state,at:r.updatedAt,kind,error:r.error,taskId:r.receipt?.taskId||null,orderId:r.binding?.orderId||null,
+    ...(r.bindingProposal?{proposalId:r.bindingProposal.id,proposalState:r.bindingProposal.state,proofSha256:r.bindingProposal.manifest?.sha256||null,proposalError:r.bindingProposal.error}:{} )}));}
   update(id,sequence,next,changes={},kind=next){
     return this.state.write(()=>{
       const old=this.get(id);if(old.sequence!==sequence)fail('PURCHASE_STATE_CONFLICT','采购任务已更新，请读取原记录');
@@ -58,7 +59,39 @@ export class PurchaseCreates{
     if(r.receipt?.taskId===receipt.taskId)return r;
     if(r.receipt){return this.update(r.id,r.sequence,'NEEDS_REVIEW',{additionalTaskIds:[...new Set([...(r.additionalTaskIds||[]),receipt.taskId])],error:{code:'MULTIPLE_IMPORT_TASKS',message:'发现不同导入任务号，禁止自动关联或重传'}},'CONFLICTING_RECEIPT');}
     if(!r.uploadAttempted)fail('UNEXPECTED_IMPORT_RECEIPT','未进入上传边界却收到受理记录');
+    if(r.state==='BOUND'&&r.binding.method==='operator_confirmed_exact_native_rows'){
+      return this.state.write(()=>{
+        const current=this.get(r.id);if(current.sequence!==r.sequence)fail('PURCHASE_STATE_CONFLICT','原采购记录已变化');
+        const next={...current,receipt:structuredClone(receipt),sequence:current.sequence+1,updatedAt:now()};
+        this.db.prepare('UPDATE purchase_creates SET sequence=?,payload=? WHERE id=?').run(next.sequence,JSON.stringify(next),r.id);
+        this.event(next,'LATE_RECEIPT_AFTER_MANUAL_BIND');return next;
+      });
+    }
     return this.update(r.id,r.sequence,'ACCEPTED',{receipt,error:null},'ACCEPTED');
+  }
+  putBindingProposal(id,sequence,proposal,kind){
+    return this.state.write(()=>{
+      const r=this.get(id);
+      if(r.sequence!==sequence)fail('PURCHASE_STATE_CONFLICT','采购记录已变化，请重新核对');
+      // A late original receipt may supersede a running read-only proof. Retire
+      // only that exact proposal; this exception cannot create or alter evidence.
+      const retiring=!bindingEligible(r)&&r.bindingProposal?.state==='RUNNING'&&proposal.state==='SUPERSEDED'&&
+        canonical({...proposal,state:null,error:null})===canonical({...r.bindingProposal,state:null,error:null});
+      if(!retiring)canBind(r);
+      const next={...r,bindingProposal:structuredClone(proposal),sequence:r.sequence+1,updatedAt:now()};
+      this.db.prepare('UPDATE purchase_creates SET sequence=?,payload=? WHERE id=?').run(next.sequence,JSON.stringify(next),id);
+      this.event(next,kind);return next;
+    });
+  }
+  confirmBinding(id,sequence,proof,proposalId,proofHash){
+    return this.state.write(()=>{
+      const r=this.get(id);
+      if(r.sequence!==sequence||r.bindingProposal?.id!==proposalId||r.bindingProposal.state!=='READY'||r.bindingProposal.manifest.sha256!==proofHash)fail('BINDING_PREVIEW_STALE','关联核对期间记录已更新，请重新预览');
+      const binding={...checkedBinding(r,proof),proposalId,proofSha256:proofHash};
+      const next={...r,state:'BOUND',binding,evidence:{manual:true,manifest:r.bindingProposal.manifest},error:null,sequence:r.sequence+1,updatedAt:now(),bindingProposal:{...r.bindingProposal,state:'CONFIRMED'}};
+      this.db.prepare('UPDATE purchase_creates SET state=?,sequence=?,platform_order=?,payload=? WHERE id=?').run(next.state,next.sequence,binding.orderId,JSON.stringify(next),id);
+      this.event(next,'OPERATOR_CONFIRMED_NATIVE_BINDING');return next;
+    });
   }
   bind(id,evidence){
     const r=this.get(id);if(r.additionalTaskIds?.length)fail('MULTIPLE_IMPORT_TASKS','导入任务不唯一，需人工核对');
@@ -70,11 +103,14 @@ export class PurchaseCreates{
       if(['PREPARING','READY'].includes(r.state))this.update(r.id,r.sequence,'PAUSED',{error:{code:'PROCESS_INTERRUPTED',message:'准备阶段中断，尚未进入上传'}});
       if(r.state==='SUBMITTING')this.update(r.id,r.sequence,'NEEDS_REVIEW',{error:{code:'SUBMISSION_UNKNOWN',message:'上传期间中断，只核对原任务，禁止重传'}});
       if(r.state==='VERIFYING')this.update(r.id,r.sequence,'ACCEPTED',{error:{code:'VERIFY_INTERRUPTED',message:'结果核对中断，可继续查询原任务'}});
+      const latest=this.get(r.id);
+      if(latest.bindingProposal?.state==='RUNNING')this.putBindingProposal(r.id,latest.sequence,{...latest.bindingProposal,state:bindingEligible(latest)?'PAUSED':'SUPERSEDED',error:{code:'BINDING_INTERRUPTED',message:'关联核对中断；保留原采购与下载任务，请刷新本单记录继续原任务'}},'BINDING_RECOVERED');
     }
   }
 }
 export function purchasePublic(r){
   return {id:r.id,state:r.state,sequence:r.sequence,createdAt:r.createdAt,updatedAt:r.updatedAt,
     basis:r.intent.basis,target:r.intent.target,supplierCode:r.intent.supplierCode,rows:r.intent.rows.length,totalQuantity:r.intent.totalQuantity,totalAmount:r.intent.totalAmount,
-    uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding:r.binding,error:r.error,additionalTaskIds:r.additionalTaskIds||[]};
+    uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding:r.binding,error:r.error,additionalTaskIds:r.additionalTaskIds||[],
+    ...(r.bindingProposal?{bindingProposal:r.bindingProposal}:{})};
 }

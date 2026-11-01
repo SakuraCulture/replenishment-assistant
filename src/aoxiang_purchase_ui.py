@@ -11,14 +11,15 @@ from aoxiang_directory import Directory, atomic_json
 from aoxiang_purchase_tasks import prepare, validate_for_upload
 from aoxiang_ui_common import ComponentDialog, component_root, show_modal
 from ui_controls import label, button
+from aoxiang_binding_ui import BindingActions
 
 STATES = {'RESERVED': '已准备，尚未上传', 'PREPARING': '核验上传准备', 'READY': '准备就绪',
           'SUBMITTING': '正在上传，等待唯一回执', 'ACCEPTED': '已受理，待核对原任务', 'VERIFYING': '正在核对采购单',
-          'BOUND': '已关联采购单 · 待提交', 'PAUSED': '已停止，尚未上传', 'FAILED_PRECHECK': '准备未通过，尚未上传',
+          'BOUND': '已关联采购单', 'PAUSED': '已停止，尚未上传', 'FAILED_PRECHECK': '准备未通过，尚未上传',
           'NEEDS_REVIEW': '上传结果待核，禁止重传', 'CANCELLED_BEFORE_UPLOAD': '已在上传前取消'}
 
 
-class PurchaseDialog(ComponentDialog):
+class PurchaseDialog(BindingActions, ComponentDialog):
     def __init__(self, parent, host, head, *, client_factory=ProcessClient):
         super().__init__(parent)
         self.host, self.head = host, head
@@ -84,12 +85,13 @@ class PurchaseDialog(ComponentDialog):
         self.status = label('正在读取本地配置…', 'muted')
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
+        self.setup_binding(layout)
         self.update_buttons()
         QTimer.singleShot(0, self.load)
 
     def update_buttons(self):
         idle = not self.worker and not self._closing
-        active = bool(self.template_id or (self.current or {}).get('active'))
+        active = bool(self.template_id or (self.current or {}).get('active') or self.binding_active())
         available = bool((self.configuration or {}).get('enabled'))
         pending = any(r['state'] != 'CANCELLED_BEFORE_UPLOAD' for r in self.records)
         attempted = bool((self.current or {}).get('uploadAttempted'))
@@ -106,6 +108,7 @@ class PurchaseDialog(ComponentDialog):
         self.bar.setRange(0, 0 if self.worker or active else 1)
         if not self.worker and not active:
             self.bar.setValue(1 if (self.current or {}).get('state') == 'BOUND' or self.package else 0)
+        self.update_binding_buttons()
 
     def load(self):
         def operation(_):
@@ -141,14 +144,17 @@ class PurchaseDialog(ComponentDialog):
         self.make_preview_pending = False
         if self.current:
             self.current = {**self.current, 'active': False}
+        if self.binding_record:self.binding_record={**self.binding_record,'active':False}
         super().failure(text)
 
     def select_record(self, index):
         if not 0 <= index < len(self.records):
             self.current = None
             self.package = None
+            self.restore_binding(None)
             return
         self.current = self.records[index]
+        self.restore_binding(self.current)
         context = self.folder / 'purchase-packages' / self.current['id'] / '本地任务索引.json'
         try:
             self.package = json.loads(context.read_text(encoding='utf-8')) if context.is_file() else None
@@ -173,7 +179,7 @@ class PurchaseDialog(ComponentDialog):
             r = self.current
             text = STATES.get(r['state'], r['state'])
             if r.get('binding'):
-                text += ' · 采购单号：' + r['binding']['orderId']
+                text += ' · 采购单号：' + r['binding']['orderId'] + ' · ' + (r['binding'].get('status') or '平台状态未提供')
             elif r.get('taskId'):
                 text += '\n原导入任务号：' + r['taskId']
             if r.get('error'):
@@ -193,7 +199,9 @@ class PurchaseDialog(ComponentDialog):
     def refresh_current(self):
         if self.worker or self._closing:
             return
-        if self.template_id:
+        if self.binding_active():
+            self.binding_refresh()
+        elif self.template_id:
             expected = self.template_id
             self.run(lambda _: self.client.request('template.status', template_id=expected), self.template_status)
         elif self.current and self.current.get('active'):
@@ -231,6 +239,7 @@ class PurchaseDialog(ComponentDialog):
         p, record = data
         self.package = p
         self.current = record
+        self.restore_binding(record)
         self.records.append(record)
         self.history.blockSignals(True)
         self.history.addItem(record['createdAt'] + ' · ' + STATES.get(record['state'], record['state']), record['id'])
@@ -261,6 +270,7 @@ class PurchaseDialog(ComponentDialog):
         if self.current and result['sequence'] < self.current['sequence']:
             return
         self.current = result
+        self.restore_binding(result)
         if any(r['id'] == result['id'] for r in self.records):
             self.records = [result if r['id'] == result['id'] else r for r in self.records]
         else:
@@ -280,7 +290,9 @@ class PurchaseDialog(ComponentDialog):
         self.run(lambda _: self.client.request('purchase.start', purchase_id=self.current['id']), self.purchase_status)
 
     def stop(self):
-        if self.template_id:
+        if self.binding_active():
+            self.run(lambda _:self.client.request('binding.pause',purchase_id=self.current['id']),self.binding_status)
+        elif self.template_id:
             self.run(lambda _: self.client.request('template.cancel', template_id=self.template_id), self.template_status)
         elif self.current:
             self.run(lambda _: self.client.request('purchase.pause', purchase_id=self.current['id']), self.purchase_status)

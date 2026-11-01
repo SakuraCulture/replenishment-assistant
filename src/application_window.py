@@ -230,6 +230,11 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             self.closing=True;generator.cancel();event.ignore();return
         super().closeEvent(event)
         if event.isAccepted():
+            # Accepted close must also block already-queued timer callbacks.
+            # Otherwise an idle generator can start a thread after close, just
+            # before its parent window is destroyed.
+            self.closing=True
+            if generator:generator.timer.stop()
             if axmanager:axmanager.shutdown()
             self.archive_timer.stop();self.history_reader.shutdown()
             self.followup.shutdown()
