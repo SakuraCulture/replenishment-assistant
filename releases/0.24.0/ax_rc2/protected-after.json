@@ -1,0 +1,16 @@
+{
+  "checked": 852,
+  "changed": [],
+  "source_snapshot_matches": true,
+  "baseline_commit": "cbaeecad190a2fea54fed8576ab2437341da00ce",
+  "core_sha256": {
+    "src/model.py": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+    "src/one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "src/allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+  },
+  "source_archive_sha256": "bab8da7d99d4774141c67e182896ef4018501a19767f2def4a2601c6c3fdf551",
+  "previous_candidate_files_checked": 1083,
+  "previous_candidate_zip_unchanged": true
+}

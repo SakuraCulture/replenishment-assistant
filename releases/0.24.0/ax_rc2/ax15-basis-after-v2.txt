@@ -1,0 +1,12 @@
+test_background_basis_check_keeps_ui_responsive_and_close_waits (test_aoxiang_basis_ui.BasisUiTests.test_background_basis_check_keeps_ui_responsive_and_close_waits) ... ok
+test_bound_purchase_updated_payment_is_visible_without_mutating_original (test_aoxiang_basis_ui.BasisUiTests.test_bound_purchase_updated_payment_is_visible_without_mutating_original) ... ok
+test_current_payment_matches_and_prepared_upload_remains_available (test_aoxiang_basis_ui.BasisUiTests.test_current_payment_matches_and_prepared_upload_remains_available) ... ok
+test_missing_or_modified_frozen_basis_is_review_not_current (test_aoxiang_basis_ui.BasisUiTests.test_missing_or_modified_frozen_basis_is_review_not_current) ... ok
+test_prepared_payment_update_disables_upload_but_keeps_original_preview (test_aoxiang_basis_ui.BasisUiTests.test_prepared_payment_update_disables_upload_but_keeps_original_preview) ... ok
+test_receipt_window_shows_stale_source_without_starting_platform_query (test_aoxiang_basis_ui.BasisUiTests.test_receipt_window_shows_stale_source_without_starting_platform_query) ... ok
+test_supplier_change_visible_and_rechecking_does_not_reprice (test_aoxiang_basis_ui.BasisUiTests.test_supplier_change_visible_and_rechecking_does_not_reprice) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 9.928s
+
+OK

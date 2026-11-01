@@ -1,0 +1,41 @@
+test_bound_purchase_updated_payment_is_visible_without_mutating_original (test_aoxiang_basis_ui.BasisUiTests.test_bound_purchase_updated_payment_is_visible_without_mutating_original) ... FAIL
+test_current_payment_matches_and_prepared_upload_remains_available (test_aoxiang_basis_ui.BasisUiTests.test_current_payment_matches_and_prepared_upload_remains_available) ... FAIL
+test_prepared_payment_update_disables_upload_but_keeps_original_preview (test_aoxiang_basis_ui.BasisUiTests.test_prepared_payment_update_disables_upload_but_keeps_original_preview) ... FAIL
+test_receipt_window_shows_stale_source_without_starting_platform_query (test_aoxiang_basis_ui.BasisUiTests.test_receipt_window_shows_stale_source_without_starting_platform_query) ... FAIL
+
+======================================================================
+FAIL: test_bound_purchase_updated_payment_is_visible_without_mutating_original (test_aoxiang_basis_ui.BasisUiTests.test_bound_purchase_updated_payment_is_visible_without_mutating_original)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_aoxiang_basis_ui.py", line 74, in test_bound_purchase_updated_payment_is_visible_without_mutating_original
+    self.assertIn('�ɹ����ݴ���',self.text(d))
+AssertionError: '�ɹ����ݴ���' not found in '���Ե� �� �ӱ��� �� BH-T-ZC-HB\nʹ����ȷ�ϸ��������ͽ�����ɲɹ�����������Ϊ�����ύ���������ύ��ҵ���ڰ��������\n���Ե� �� �ӱ��� �� ��Ӧ�� 2078246\n1 �� �� �������� 7 �� ������ 0.99 Ԫ\n�����ɹ���¼\n�ѹ����ɹ��� �� �ɹ����ţ�original-PO �� ���ύ\n���ؼ�¼�Ѷ�ȡ������Ԥ�����ȡ����ԭ��ģ�壬Ԥ���������ᴴ���ɹ�����\n���������ع�ϵ�����ϴ����ύ���޸�ƽ̨�ɹ����޻�ִʱ����˶Ա��α����Ψһ�ɹ�����\n���޹����˶ԣ������ϴ��ɹ�����Ҫ�˲�����'
+
+======================================================================
+FAIL: test_current_payment_matches_and_prepared_upload_remains_available (test_aoxiang_basis_ui.BasisUiTests.test_current_payment_matches_and_prepared_upload_remains_available)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_aoxiang_basis_ui.py", line 84, in test_current_payment_matches_and_prepared_upload_remains_available
+    self.assertIn('�뵱ǰ��ȷ�ϸ���һ��',self.text(d))
+AssertionError: '�뵱ǰ��ȷ�ϸ���һ��' not found in '���Ե� �� �ӱ��� �� BH-T-ZC-HB\nʹ����ȷ�ϸ��������ͽ�����ɲɹ�����������Ϊ�����ύ���������ύ��ҵ���ڰ��������\n���Ե� �� �ӱ��� �� ��Ӧ�� 2078246\n1 �� �� �������� 7 �� ������ 0.99 Ԫ\n�����ɹ���¼\n��׼������δ�ϴ�\n���ؼ�¼�Ѷ�ȡ������Ԥ�����ȡ����ԭ��ģ�壬Ԥ���������ᴴ���ɹ�����\n���������ع�ϵ�����ϴ����ύ���޸�ƽ̨�ɹ����޻�ִʱ����˶Ա��α����Ψһ�ɹ�����\n���޹����˶ԣ������ϴ��ɹ�����Ҫ�˲�����'
+
+======================================================================
+FAIL: test_prepared_payment_update_disables_upload_but_keeps_original_preview (test_aoxiang_basis_ui.BasisUiTests.test_prepared_payment_update_disables_upload_but_keeps_original_preview)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_aoxiang_basis_ui.py", line 92, in test_prepared_payment_update_disables_upload_but_keeps_original_preview
+    self.assertIn('����Ѹ���',self.text(d))
+AssertionError: '����Ѹ���' not found in '���Ե� �� �ӱ��� �� BH-T-ZC-HB\nʹ����ȷ�ϸ��������ͽ�����ɲɹ�����������Ϊ�����ύ���������ύ��ҵ���ڰ��������\n���Ե� �� �ӱ��� �� ��Ӧ�� 2078246\n1 �� �� �������� 7 �� ������ 0.99 Ԫ\n�����ɹ���¼\n��׼������δ�ϴ�\n���ؼ�¼�Ѷ�ȡ������Ԥ�����ȡ����ԭ��ģ�壬Ԥ���������ᴴ���ɹ�����\n���������ع�ϵ�����ϴ����ύ���޸�ƽ̨�ɹ����޻�ִʱ����˶Ա��α����Ψһ�ɹ�����\n���޹����˶ԣ������ϴ��ɹ�����Ҫ�˲�����'
+
+======================================================================
+FAIL: test_receipt_window_shows_stale_source_without_starting_platform_query (test_aoxiang_basis_ui.BasisUiTests.test_receipt_window_shows_stale_source_without_starting_platform_query)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_aoxiang_basis_ui.py", line 100, in test_receipt_window_shows_stale_source_without_starting_platform_query
+    self.assertIn('�ɹ����ݴ���',self.text(d))
+AssertionError: '�ɹ����ݴ���' not found in '���Ե� �� �ӱ��� �� BH-T-ZC-HB\n���ѹ����ɹ���ͬ��������ɼ�ֹͣ�����أ�ʵ������У����Զ����棬ԭ�����ǩ�����䡣\n�ɹ��� original-PO �� �ȴ���һ�β�ѯ\nƽ̨״̬����δ��ѯ �� ���۲죺��\n��δ��������ɡ�����֪���ֵ�������ȹ۲죬����ǰ���ˡ�\n�ȴ���һ�β�ѯ'
+
+----------------------------------------------------------------------
+Ran 4 tests in 3.921s
+
+FAILED (failures=4)

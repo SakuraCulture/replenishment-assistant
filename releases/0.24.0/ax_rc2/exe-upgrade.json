@@ -1,0 +1,394 @@
+{
+  "passed": true,
+  "actual_exe": true,
+  "live_platform": false,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.24.0_ax_rc2\\补货助手\\补货助手.exe",
+  "exe_sha256": "540b0ba47b78cc8f07e5ad43e46d99175fcebb437a795a3b442ee428b20e438e",
+  "build_commit": "a4c820abfbc767a02815f3e22c35feb5a5838939",
+  "component_manifest_sha256": "361696dd08d54376e77f03d7cc68da224e9b76ddfb1c4343d1c795687f095800",
+  "runs": [
+    {
+      "passed": true,
+      "actual_exe": true,
+      "live_platform": false,
+      "checks": [
+        "真实固定Node进程启动并读取本地未配置状态，第1次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "真实固定Node进程启动并读取本地未配置状态，第2次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "本地批次队列打开、空状态与关闭；未创建周期计划"
+      ],
+      "heartbeat_samples": 60,
+      "max_heartbeat_gap": 0.07253340000170283,
+      "source_commit": "a4c820abfbc767a02815f3e22c35feb5a5838939",
+      "exit_code": 0,
+      "remaining_children": [],
+      "sampled_descendants": 5,
+      "elapsed_seconds": 3.2500110999972094,
+      "peak_tree_rss_bytes": 272646144
+    },
+    {
+      "passed": true,
+      "actual_exe": true,
+      "live_platform": false,
+      "checks": [
+        "真实固定Node进程启动并读取本地未配置状态，第1次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "真实固定Node进程启动并读取本地未配置状态，第2次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "本地批次队列打开、空状态与关闭；未创建周期计划"
+      ],
+      "heartbeat_samples": 58,
+      "max_heartbeat_gap": 0.07606609998038039,
+      "source_commit": "a4c820abfbc767a02815f3e22c35feb5a5838939",
+      "exit_code": 0,
+      "remaining_children": [],
+      "sampled_descendants": 5,
+      "elapsed_seconds": 3.1837813000020105,
+      "peak_tree_rss_bytes": 292388864
+    },
+    {
+      "passed": true,
+      "actual_exe": true,
+      "live_platform": false,
+      "checks": [
+        "真实固定Node进程启动并读取本地未配置状态，第1次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "真实固定Node进程启动并读取本地未配置状态，第2次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "本地批次队列打开、空状态与关闭；未创建周期计划"
+      ],
+      "heartbeat_samples": 59,
+      "max_heartbeat_gap": 0.07353699998930097,
+      "source_commit": "a4c820abfbc767a02815f3e22c35feb5a5838939",
+      "exit_code": 0,
+      "remaining_children": [],
+      "sampled_descendants": 5,
+      "elapsed_seconds": 3.219981599977473,
+      "peak_tree_rss_bytes": 279412736
+    }
+  ],
+  "upgrade_fixture": "qa\\jst_results_0230\\exe-rc1\\settings",
+  "historical_tables": {
+    "jobs": {
+      "schema": "CREATE TABLE jobs(day TEXT PRIMARY KEY, revision TEXT NOT NULL, digest TEXT NOT NULL, saved TEXT NOT NULL, summary TEXT NOT NULL, payload BLOB NOT NULL)",
+      "columns": [
+        "day",
+        "revision",
+        "digest",
+        "saved",
+        "summary",
+        "payload"
+      ],
+      "rows": 0,
+      "values_types_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "jst_active": {
+      "schema": "CREATE TABLE jst_active(oid TEXT,warehouse TEXT,gid TEXT NOT NULL,PRIMARY KEY(oid,warehouse))",
+      "columns": [
+        "oid",
+        "warehouse",
+        "gid"
+      ],
+      "rows": 4,
+      "values_types_sha256": "66d10e61c00b2c50136e00ec9226f29256f78b8c4c684f54a7818ccdf0559316"
+    },
+    "jst_baselines": {
+      "schema": "CREATE TABLE jst_baselines(bid TEXT PRIMARY KEY,warehouse TEXT NOT NULL,created TEXT NOT NULL,payload TEXT NOT NULL,digest TEXT NOT NULL)",
+      "columns": [
+        "bid",
+        "warehouse",
+        "created",
+        "payload",
+        "digest"
+      ],
+      "rows": 2,
+      "values_types_sha256": "87e94b736c3e4bedee0e14d579594669e8f7ee87a4cf76eb57fe5d25682827c9"
+    },
+    "jst_events": {
+      "schema": "CREATE TABLE jst_events(id INTEGER PRIMARY KEY,at TEXT,day TEXT,oid TEXT,warehouse TEXT,action TEXT,detail TEXT)",
+      "columns": [
+        "id",
+        "at",
+        "day",
+        "oid",
+        "warehouse",
+        "action",
+        "detail"
+      ],
+      "rows": 32,
+      "values_types_sha256": "65d5571d4cbfa0d2f094e3621721af7b9ea824eea95010258b5976961e0c4273"
+    },
+    "jst_files": {
+      "schema": "CREATE TABLE jst_files(sha TEXT PRIMARY KEY,name TEXT,content BLOB)",
+      "columns": [
+        "sha",
+        "name",
+        "content"
+      ],
+      "rows": 1,
+      "values_types_sha256": "e8114058978a831b185acaca2645cc1af0dcf0ba3fac3c75f873c3835fdfb7ab"
+    },
+    "jst_generations": {
+      "schema": "CREATE TABLE jst_generations(gid TEXT PRIMARY KEY,operation TEXT UNIQUE NOT NULL,oid TEXT NOT NULL,revision INTEGER NOT NULL,warehouse TEXT NOT NULL,day TEXT NOT NULL,saved TEXT NOT NULL,payload TEXT NOT NULL,digest TEXT NOT NULL)",
+      "columns": [
+        "gid",
+        "operation",
+        "oid",
+        "revision",
+        "warehouse",
+        "day",
+        "saved",
+        "payload",
+        "digest"
+      ],
+      "rows": 4,
+      "values_types_sha256": "c486d2b651bdea3b7513df94954a849ea0337d84b3094b7a230a92ecb1a92351"
+    },
+    "jst_headers": {
+      "schema": "CREATE TABLE jst_headers(gid TEXT PRIMARY KEY,payload TEXT NOT NULL)",
+      "columns": [
+        "gid",
+        "payload"
+      ],
+      "rows": 4,
+      "values_types_sha256": "2e135b71c8e5980741fd2560c04a4b6ead040bd6e4b5527676f47794d78e2a55"
+    },
+    "jst_locks": {
+      "schema": "CREATE TABLE jst_locks(oid TEXT,warehouse TEXT,gid TEXT NOT NULL,locked INTEGER NOT NULL,at TEXT NOT NULL,reason TEXT NOT NULL,PRIMARY KEY(oid,warehouse))",
+      "columns": [
+        "oid",
+        "warehouse",
+        "gid",
+        "locked",
+        "at",
+        "reason"
+      ],
+      "rows": 0,
+      "values_types_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "jst_reservations": {
+      "schema": "CREATE TABLE jst_reservations(gid TEXT,sku TEXT,quantity TEXT NOT NULL,PRIMARY KEY(gid,sku))",
+      "columns": [
+        "gid",
+        "sku",
+        "quantity"
+      ],
+      "rows": 4,
+      "values_types_sha256": "97500fbdcdea45a72bf7674acd514686cdcb5cb2bc769b3360199eafeb48e23b"
+    },
+    "jst_runs": {
+      "schema": "CREATE TABLE jst_runs(runid TEXT PRIMARY KEY,created TEXT,payload TEXT,digest TEXT)",
+      "columns": [
+        "runid",
+        "created",
+        "payload",
+        "digest"
+      ],
+      "rows": 4,
+      "values_types_sha256": "6db5b1bcbc0280174bbf33d62e5af4a107c7c2c18292f66a371b972a2565122f"
+    },
+    "jst_steps": {
+      "schema": "CREATE TABLE jst_steps(operation TEXT PRIMARY KEY,runid TEXT NOT NULL,result TEXT NOT NULL)",
+      "columns": [
+        "operation",
+        "runid",
+        "result"
+      ],
+      "rows": 4,
+      "values_types_sha256": "5a41d360a8b4b50d44c73e5593a47a8da6664dd43b7739b1d6be71871bd5ef63"
+    },
+    "jst_tasks": {
+      "schema": "CREATE TABLE jst_tasks(task TEXT PRIMARY KEY,created TEXT,head TEXT,token TEXT,status TEXT,plan TEXT,message TEXT)",
+      "columns": [
+        "task",
+        "created",
+        "head",
+        "token",
+        "status",
+        "plan",
+        "message"
+      ],
+      "rows": 4,
+      "values_types_sha256": "a6bc940704cf7abe7f84f1d2e0d034bbe634029dbec812b4da3d3db22fcc6172"
+    },
+    "jst_warehouses": {
+      "schema": "CREATE TABLE jst_warehouses(warehouse TEXT PRIMARY KEY,bid TEXT NOT NULL,serial INTEGER NOT NULL)",
+      "columns": [
+        "warehouse",
+        "bid",
+        "serial"
+      ],
+      "rows": 2,
+      "values_types_sha256": "f6f361f99338c99e9ff46063bc06bc3dc4a32ca205cd2a9c578dff5db09b6c8a"
+    },
+    "lifecycle_events": {
+      "schema": "CREATE TABLE lifecycle_events(id INTEGER PRIMARY KEY,at TEXT,oid TEXT,revision INTEGER,warehouse TEXT,stage TEXT,version INTEGER,action TEXT,detail TEXT)",
+      "columns": [
+        "id",
+        "at",
+        "oid",
+        "revision",
+        "warehouse",
+        "stage",
+        "version",
+        "action",
+        "detail"
+      ],
+      "rows": 4,
+      "values_types_sha256": "d0b868664bd3b4dfa04628cd236c76d8b5c78f260d5f928599fc68826121ac62"
+    },
+    "lifecycle_files": {
+      "schema": "CREATE TABLE lifecycle_files(sha TEXT PRIMARY KEY,name TEXT,content BLOB)",
+      "columns": [
+        "sha",
+        "name",
+        "content"
+      ],
+      "rows": 1,
+      "values_types_sha256": "9e01d264a4394ccc2438df7dbc2f04a219b359527d5f32d4592a3a27d2b1a0b5"
+    },
+    "lifecycle_mappings": {
+      "schema": "CREATE TABLE lifecycle_mappings(stage TEXT,name TEXT,payload TEXT,PRIMARY KEY(stage,name))",
+      "columns": [
+        "stage",
+        "name",
+        "payload"
+      ],
+      "rows": 0,
+      "values_types_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lifecycle_versions": {
+      "schema": "CREATE TABLE lifecycle_versions(oid TEXT,revision INTEGER,warehouse TEXT,stage TEXT,version INTEGER,saved TEXT,digest TEXT,payload TEXT,PRIMARY KEY(oid,revision,warehouse,stage,version))",
+      "columns": [
+        "oid",
+        "revision",
+        "warehouse",
+        "stage",
+        "version",
+        "saved",
+        "digest",
+        "payload"
+      ],
+      "rows": 4,
+      "values_types_sha256": "63cbf08773ab4474f8ec8dd3aa5664ea0afd170c4013f453c1478ba0af1ef723"
+    },
+    "normal_events": {
+      "schema": "CREATE TABLE normal_events(id INTEGER PRIMARY KEY AUTOINCREMENT,at TEXT NOT NULL,oid TEXT,revision INTEGER,action TEXT NOT NULL,detail TEXT NOT NULL)",
+      "columns": [
+        "id",
+        "at",
+        "oid",
+        "revision",
+        "action",
+        "detail"
+      ],
+      "rows": 0,
+      "values_types_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "normal_orders": {
+      "schema": "CREATE TABLE normal_orders(day TEXT NOT NULL,store TEXT NOT NULL,kind TEXT NOT NULL,oid TEXT NOT NULL UNIQUE,number TEXT NOT NULL UNIQUE,current INTEGER NOT NULL,PRIMARY KEY(day,store,kind))",
+      "columns": [
+        "day",
+        "store",
+        "kind",
+        "oid",
+        "number",
+        "current"
+      ],
+      "rows": 2,
+      "values_types_sha256": "83e9be722d8747efdbffcf888fabb4db31546a314bc7dd66feea9975308625c3"
+    },
+    "normal_revisions": {
+      "schema": "CREATE TABLE normal_revisions(oid TEXT NOT NULL,revision INTEGER NOT NULL,digest TEXT NOT NULL,saved TEXT NOT NULL,payload BLOB NOT NULL,PRIMARY KEY(oid,revision))",
+      "columns": [
+        "oid",
+        "revision",
+        "digest",
+        "saved",
+        "payload"
+      ],
+      "rows": 2,
+      "values_types_sha256": "80eb6edf2e4dffd05ea82f7256a2debcf271215911d2193b20ec22d5737171e1"
+    },
+    "normal_work_revisions": {
+      "schema": "CREATE TABLE normal_work_revisions(revision TEXT PRIMARY KEY,day TEXT NOT NULL,payload BLOB NOT NULL)",
+      "columns": [
+        "revision",
+        "day",
+        "payload"
+      ],
+      "rows": 1,
+      "values_types_sha256": "da9db04019cb76d08517c8f374d9d89fb34e2e88927fd720f061ffc2984db120"
+    },
+    "presets": {
+      "schema": "CREATE TABLE presets(id TEXT NOT NULL, version INTEGER NOT NULL, name TEXT NOT NULL, config TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(id,version))",
+      "columns": [
+        "id",
+        "version",
+        "name",
+        "config",
+        "archived"
+      ],
+      "rows": 0,
+      "values_types_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "snapshot_chunks": {
+      "schema": "CREATE TABLE snapshot_chunks(hash TEXT PRIMARY KEY, size INTEGER NOT NULL, data BLOB NOT NULL)",
+      "columns": [
+        "hash",
+        "size",
+        "data"
+      ],
+      "rows": 0,
+      "values_types_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "snapshot_storage_meta": {
+      "schema": "CREATE TABLE snapshot_storage_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL)",
+      "columns": [
+        "key",
+        "value"
+      ],
+      "rows": 1,
+      "values_types_sha256": "413517a0f0fecd399d98b77a38705bb56543702d070c03884b2785ad724cc7ec"
+    },
+    "source_files": {
+      "schema": "CREATE TABLE source_files(sha TEXT PRIMARY KEY,name TEXT NOT NULL,saved TEXT NOT NULL,content BLOB NOT NULL)",
+      "columns": [
+        "sha",
+        "name",
+        "saved",
+        "content"
+      ],
+      "rows": 1,
+      "values_types_sha256": "856f4ae141378b87fab227a901842f70106b4baf11388a8b73973bf8025027ac"
+    },
+    "sqlite_sequence": {
+      "schema": "CREATE TABLE sqlite_sequence(name,seq)",
+      "columns": [
+        "name",
+        "seq"
+      ],
+      "rows": 0,
+      "values_types_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stores": {
+      "schema": "CREATE TABLE stores(code TEXT PRIMARY KEY,data TEXT NOT NULL)",
+      "columns": [
+        "code",
+        "data"
+      ],
+      "rows": 0,
+      "values_types_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "historical_table_differences": [],
+  "business_comparison": null,
+  "added_tables": [],
+  "original_fixture_unchanged": true,
+  "memory_method": "50 ms samples; sum of RSS of app and observed descendants; shared pages may be counted more than once",
+  "limitations": [
+    "No live platform query/upload/receipt; business fixtures are explicitly synthetic",
+    "Local EXE operations do not prove the real platform end-to-end chain"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "channel": "local candidate; live platform acceptance deferred",
+  "build_commit": "a4c820abfbc767a02815f3e22c35feb5a5838939",
+  "exe_sha256": "540b0ba47b78cc8f07e5ad43e46d99175fcebb437a795a3b442ee428b20e438e",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.24.0_ax_rc2\\补货助手_0.24.0_ax_rc2_本地候选.zip",
+  "zip_bytes": 88120365,
+  "zip_sha256": "04521db5fa0a664c6928e1b42e3715749c09ce58b8d7021fa456c92ce6b71c71",
+  "delivery_files": 1083,
+  "delivery_inventory_sha256": "5f3cc2a5b9147f7ef9a679a917ad57c1b4ef4ee8919fa4f15e616161930b8281",
+  "zip_members_byte_verified": true,
+  "postbuild_documents_only": {
+    "docs/0.24.0_ax_rc2本地候选验收.md": {
+      "before_sha256": null,
+      "after_sha256": "26eae4982fd650433d00c98af7291beffe1d39fe22b6f2f9eae12328a6dfe7f6",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.24.0\\ax_rc2\\本地候选验收.md"
+    },
+    "docs/0.24.0翱象本地候选.md": {
+      "before_sha256": "4c5dfe875f31d2cf47530e41182745ec8ae4856e54e756b46d36f6ce9d4c8138",
+      "after_sha256": "562494373596037e0dc0a82c7a4dfaafe705b4a79e033a2dd2358b548bb41886",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\docs\\0.24.0翱象本地候选.md"
+    }
+  },
+  "runtime_code_overlay": false,
+  "old_delivery_replaced": false,
+  "pushed_or_merged": false
+}

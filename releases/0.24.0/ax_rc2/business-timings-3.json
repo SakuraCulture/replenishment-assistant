@@ -1,0 +1,46 @@
+{
+  "synthetic": true,
+  "live_platform": false,
+  "checks": [
+    "合成两店文件经原检查Worker与Windows spawn采用，门店顺序W2/W1保持",
+    "两店分别按30元/不限预算计算并导出；由外部脚本与源码同输入逐字段及Excel对照",
+    "真实固定Node登记采购任务，付款7件/0.99元保持；窗口重开恢复原预览与唯一任务，未上传",
+    "合成完成单实收5件按原生命周期落库，重复同步不新增修订；付款7件及回传5件原事实保持",
+    "当前付款更新为8件/1.23元后，旧采购预览明确待核且禁用上传；仍展示原7件/0.99元，查询无业务写入"
+  ],
+  "timings": {
+    "input_adoption_seconds": 0.5379586000053678,
+    "calculate_and_export_seconds": 0.8886696000117809,
+    "purchase_prepare_reserve_seconds": 0.1035486999899149,
+    "stale_basis_open_seconds": 0.7561892999801785
+  },
+  "protocol_actions": [
+    "configuration",
+    "purchase.list",
+    "configuration",
+    "purchase.reserve",
+    "shutdown",
+    "configuration",
+    "purchase.list",
+    "configuration",
+    "shutdown",
+    "configuration",
+    "purchase.list",
+    "configuration",
+    "shutdown"
+  ],
+  "receipt_first": {
+    "number": "BH-T-ZC-HB",
+    "revision": 1,
+    "stage": "receipt",
+    "version": 1,
+    "changed": true
+  },
+  "receipt_second": {
+    "number": "BH-T-ZC-HB",
+    "revision": 1,
+    "stage": "receipt",
+    "version": 1,
+    "changed": false
+  }
+}
