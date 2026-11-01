@@ -9,6 +9,7 @@ import {publishAsset,recoverPublications,outputPath,dailyRelative} from './publi
 import {uid,now,businessDate,scopeHash,exists,fail,countValue,sameIdentity,AppError,wait} from './common.mjs';
 import {checkOutput} from './preflight.mjs';
 import {writeRunReport} from './event-log.mjs';
+import {planReplenishmentRun,insertRunPlan} from './run-plan.mjs';
 
 const DONE=new Set(['SUCCEEDED','REUSED']);
 function matchesReceipt(receipt,warehouseCode,semanticVersion){
@@ -39,12 +40,8 @@ export class Coordinator{
     let run=runId?this.state.getRun(runId):null;
     if(runId&&!run)fail('RUN_NOT_FOUND','未找到指定作业');
     if(!run){
-      const batch=this.config.batches.find(b=>b.id===batchId);
-      const codes=warehouseCode?[warehouseCode]:batch?.targetWarehouseCodes;
-      if(!codes?.length)fail('BATCH_NOT_FOUND','批次不存在或没有仓店');
-      const targets=[...new Set(codes)].map(code=>{const t=this.config.targets.find(t=>t.buyerWarehouseCode===code);if(!t)fail('TARGET_NOT_CONFIGURED','请先在门店批次中核对并保存该仓点');return t;});
-      run={id:uid(),mode,day:businessDate(),createdAt:now(),identity:this.config.tenantBinding,status:'RUNNING',targets};this.state.putRun(run);
-      for(const target of targets)this.state.putItem({id:uid(),runId:run.id,target,stage:'PLANNED',attemptId:null,createdAt:now()});
+      const plan=planReplenishmentRun(this.config,{mode,batchId,warehouseCode});
+      this.state.write(()=>insertRunPlan(this.state.db,plan));run=plan.run;
     }
     if(!sameIdentity(run.identity,this.config.tenantBinding))fail('RUN_IDENTITY_MISMATCH','原作业与当前配置账号/商家不同');
     await this.progress('RUNNING',{runId:run.id,targets:run.targets.length});
@@ -56,7 +53,7 @@ export class Coordinator{
         const key=assetKey({...identity,buyerWarehouseCode:target.buyerWarehouseCode,acquisitionDate:run.day,scopeHash:scope,semanticVersion});
         const existing=this.state.getAsset(key);
         if(attempt?.taskId&&existing?.taskId===attempt.taskId){
-          try{await this.validateAsset(existing);this.state.putAttempt({...attempt,stage:'SUCCEEDED'});item={...item,stage:'SUCCEEDED',assetKey:key};this.state.putItem(item);continue;}
+          try{await this.validateAsset(existing);this.state.putAttempt({...attempt,stage:'SUCCEEDED'});item={...item,stage:'SUCCEEDED',assetKey:key,assetSnapshot:existing};this.state.putItem(item);continue;}
           catch(e){if(e.code!=='ASSET_FILE_MISSING')throw e;}
         }
         const unresolved=this.state.pending(identity,target.buyerWarehouseCode,scope).filter(a=>a.id!==attempt?.id);
@@ -67,7 +64,7 @@ export class Coordinator{
           const query=await this.adapter.querySingle(target.buyerWarehouseCode,target.displayName);
           if(!sameIdentity(query.identity,identity))fail('WRONG_IDENTITY','当前查询的账号/商家与作业不符');
           if(run.mode!=='rerun'&&existing){
-            try{const file=await this.validateAsset(existing);item={...item,stage:'REUSED',assetKey:key};this.state.putItem(item);await this.progress('REUSED',{warehouseCode:target.buyerWarehouseCode,file,collectedAt:existing.collectedAt});continue;}
+            try{const file=await this.validateAsset(existing);item={...item,stage:'REUSED',assetKey:key,assetSnapshot:existing};this.state.putItem(item);await this.progress('REUSED',{warehouseCode:target.buyerWarehouseCode,file,collectedAt:existing.collectedAt});continue;}
             catch(e){if(e.code!=='ASSET_FILE_MISSING')throw e;
               attempt={id:uid(),itemId:item.id,runId:run.id,...identity,buyerWarehouseCode:target.buyerWarehouseCode,scopeHash:existing.scopeHash,semanticVersion:existing.semanticVersion,acquisitionDate:existing.acquisitionDate,createdAt:now(),stage:'ACCEPTED',taskId:existing.taskId,query:{warehouseCode:target.buyerWarehouseCode,name:target.displayName,total:existing.rows,observedAt:existing.collectedAt,identity},recoveryFromAsset:true};
               this.state.putAttempt(attempt);item={...item,stage:'ACCEPTED',attemptId:attempt.id};this.state.putItem(item);await this.progress('RECOVER_KNOWN_TASK',{warehouseCode:target.buyerWarehouseCode,taskId:existing.taskId});
@@ -105,7 +102,7 @@ export class Coordinator{
           }
         }
         this.stopped();
-        if(attempt.stage==='SUCCEEDED'){item={...item,stage:'SUCCEEDED'};this.state.putItem(item);continue;}
+        if(attempt.stage==='SUCCEEDED'){item={...item,stage:'SUCCEEDED',assetSnapshot:item.assetSnapshot||existing};this.state.putItem(item);continue;}
         let downloaded=attempt.downloaded;
         if(!downloaded||!await exists(downloaded.file)||await fileHash(downloaded.file)!==downloaded.sha256){
           if(!attempt.taskId)fail('SUBMISSION_UNKNOWN','未取得明确任务ID');
@@ -139,7 +136,7 @@ export class Coordinator{
         this.stopped();
         const saved=await this.publish({state:this.state,outputRoot:this.binding.outputRoot,sourceFile:downloaded.file,asset,attemptId:attempt.id,replace:run.mode==='rerun'});
         attempt={...attempt,stage:'SUCCEEDED',assetKey:saved.assetKey,completedAt:now()};this.state.putAttempt(attempt);
-        item={...item,stage:'SUCCEEDED',assetKey:saved.assetKey};this.state.putItem(item);await this.progress('SAVED',{warehouseCode:target.buyerWarehouseCode,taskId:attempt.taskId,file:path.join(this.binding.outputRoot,saved.relativePath),rows:validation.rows});
+        item={...item,stage:'SUCCEEDED',assetKey:saved.assetKey,assetSnapshot:saved};this.state.putItem(item);await this.progress('SAVED',{warehouseCode:target.buyerWarehouseCode,taskId:attempt.taskId,file:path.join(this.binding.outputRoot,saved.relativePath),rows:validation.rows});
       }
       const {errorCode,...cleanRun}=run;run={...cleanRun,status:'SUCCEEDED',completedAt:now()};this.state.putRun(run);await writeRunReport(this.state,run,this.binding);await this.progress('COMPLETE',{runId:run.id});return run;
     }catch(e){run={...run,status:this.signal?.aborted?'PAUSED':'NEEDS_ATTENTION',errorCode:e.code||'FAILED',updatedAt:now()};this.state.putRun(run);await writeRunReport(this.state,run,this.binding);throw e;}
