@@ -55,6 +55,9 @@ def form(repo,order,scope,sku,cancel=None):
                   '经营原因':a['reason'],'当时可用':d.get('K'),'当时在途':d.get('L'),'有效箱规':d.get('BD'),'当时基本售价':d.get('V'),
                   '目标持有量':a.get('target'),'清单来源':a.get('source'),'已确认风险':[x['text'] for x in state.get('risks',[]) if x.get('sku')==sku and x['id'] in state.get('confirmed',[])],
                   '业务日期':a['day'],'调整时间':a.get('edited_at'),'证据边界':'原模型及自动安排独立保留；该行最终量由签发前明确调整形成。'}
+            listing=state.get('lists',{}).get(state.get('edits',{}).get(sku,{}).get('list_revision'),{})
+            item=next((x for x in listing.get('items',[]) if x['sku']==sku),{})
+            if item.get('selection_sources'):data.update(选品方式='搜索选商品',选品时商品资料依据=item['selection_sources'])
     elif scope=='决策总览':
         d=next((x for x in r['rows'] if x['E']==sku),None)
         if d is None:return [['商品','请选择本单商品','提示']]

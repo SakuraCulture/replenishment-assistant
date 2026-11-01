@@ -15,14 +15,22 @@ def start_smoke(app,win,args):
         mime=QMimeData();mime.setUrls([QUrl.fromLocalFile(str(path))]);event=QDropEvent(QPointF(20,20),Qt.DropAction.CopyAction,mime,Qt.MouseButton.LeftButton,Qt.KeyboardModifier.NoModifier);widget.dropEvent(event)
     def automate():
         from preissue_ui import FinalListDialog
-        from stocking_ui import MappingDialog
+        from stocking_ui import MappingDialog,ProductPicker
         from import_ui import ImportDialog
         from merchant_selection import MerchantSelection
         now=time.perf_counter();ticks.append(now-last[0]);last[0]=now
         d=QApplication.activeModalWidget()
         if d is None:return
         try:
-            if isinstance(d,ImportDialog) and d.kind=='stocking':drop(d,out/'stocking.xlsx');d.go.click()
+            if isinstance(d,ProductPicker):
+                if d.task or d.model is None:return
+                d.search.setText(state['pick_sku']);d.model.setData(d.model.index(d.model.positions[state['pick_sku']],0),Qt.CheckState.Checked,Qt.ItemDataRole.CheckStateRole);d.search.setText('不会匹配的关键词')
+                if state['pick_sku'] not in d.model.checked or '筛选外1' not in d.count.text():raise AssertionError('picker lost hidden selection')
+                d.grab().save(str(out/('picker-'+state['mode']+'.png')))
+                if state['mode']=='pick_cancel':d.reject()
+                else:
+                    d.search.clear();d.grab().save(str(out/'picker-visible-products.png'));d.finish(state['mode']=='pick_preview')
+            elif isinstance(d,ImportDialog) and d.kind=='stocking':drop(d,out/'stocking.xlsx');d.go.click()
             elif isinstance(d,MappingDialog):d.accept()
             elif isinstance(d,FinalListDialog):
                 if d.task:return
@@ -70,7 +78,13 @@ def start_smoke(app,win,args):
                 sku=next(iter(win.results[head['store']]['preissue']['edits']))
                 d=AuditDialog(win,win,head,sku=sku);d.show();d.scope.setCurrentText('签发前调整');wait(lambda:bool(d.loaded_key));d.grab().save(str(out/'historical-adjustment.png'))
                 if not any('最终签发量' in str(r) for r in d.model.rows):raise AssertionError('adjustment form empty')
-                d.reject();d.deleteLater();checks.append('fresh process restored final edits, reusable list and historical adjustment business form');finish();return
+                d.reject();d.deleteLater();checks.append('fresh process restored final edits, reusable list and historical adjustment business form')
+                selected=next((item for value in win.results[head['store']]['preissue']['lists'].values() for item in value['items'] if item.get('selection_sources')),None)
+                if not selected:raise AssertionError('query selection snapshot missing after restart')
+                query_wh=next(r['AU'] for r in win.results[head['store']]['rows'] if r['E']==selected['sku'])
+                d=AuditDialog(win,win,{**head,'warehouse':query_wh},sku=selected['sku']);d.show();d.scope.setCurrentText('签发前调整');wait(lambda:bool(d.loaded_key))
+                if '搜索选商品' not in str(d.model.rows):raise AssertionError('history query provenance is not visible')
+                d.grab().save(str(out/'historical-query-source.png'));d.reject();d.deleteLater();checks.append('query-selected SKU, catalog revision and source rows visible after packaged restart');finish();return
             win.show_section(1);start=time.perf_counter();drop(win.sales,out/'sales.xlsx');wait(lambda:win.worker is None and win.loaded is not None);timings['check_seconds']=time.perf_counter()-start
             start=time.perf_counter();win.calculate_btn.click();wait(lambda:win.worker is None and len(win.results)==2);timings['calculate_seconds']=time.perf_counter()-start
             if any(st['state']!='已完成' for st in win.states.values()):raise AssertionError(win.states)
@@ -119,6 +133,32 @@ def start_smoke(app,win,args):
                     for old,new in zip(r0['rows'],win.results[store]['rows']):
                         if old['E'] not in edits and old!=new:raise AssertionError('unselected row changed')
             checks.append('reordered-header list drag/drop, explicit mapping, reusable save, target gap fill, manual zero protected, unselected rows/stores unchanged')
+            # Query path: cancellation is read-only; direct preview needs no saved
+            # list. Then append to a file list and save a new reusable version.
+            pick=next(d for d in r['rows'] if d['E'] not in {sku,other['E']} and not rules.blocked(d))
+            state.update(pick_sku=pick['E'],mode='pick_cancel');before=copy.deepcopy(win.results)
+            lib=StockingDialog(win,codes=[s]);lib.show();lib.search_products()
+            if lib.current is not None or win.results!=before:raise AssertionError('cancel selection mutated draft')
+            state['mode']='pick_preview';lib.kind.setCurrentIndex(lib.kind.findData('plan'));lib.search_products();wait(lambda:lib.task is None)
+            if state.get('automation_error'):raise AssertionError(state['automation_error'])
+            if not lib.selected or lib.selected.get('version') or lib.selected['sources']:raise AssertionError('direct query preview forced save/file: '+lib.message.text())
+            checks.append('actual search/select keeps hidden checks, cancels without side effects, direct preview creates temporary list without Excel or mandatory save');lib.deleteLater()
+            lib=StockingDialog(win,codes=[s]);lib.show();saved=lib.repository.all()[0];old_items=copy.deepcopy(saved['items']);lib.show_value(saved);lib.target.setText('1')
+            state['mode']='pick_append';lib.search_products()
+            if lib.current['items'][:len(old_items)]!=old_items:raise AssertionError('query append overwrote existing file targets')
+            new_index=next(i for i,x in enumerate(lib.current['items']) if x['sku']==pick['E']);lib.table.item(new_index,2).setText(str(float(rules.holding(pick))+sem.order_quantity(pick)+pick['BD']))
+            lib.save(True);wait(lambda:lib.task is None)
+            if lib.current.get('version')!=2:raise AssertionError('query append revision save failed: '+lib.message.text())
+            lib.grab().save(str(out/'query-merged-library.png'));lib.use();wait(lambda:lib.task is None)
+            listing=lib.selected
+            if not listing:raise AssertionError('query list did not preview')
+            lib.deleteLater();state['mode']='list';win.open_final_list(True,listing)
+            if state.get('automation_error'):raise AssertionError(state['automation_error'])
+            if pick['E'] not in win.results[s]['preissue']['edits']:raise AssertionError('query selected product not applied')
+            if rules.original(win.results[s])!=base[s]:raise AssertionError('query changed model/automatic data')
+            for store,original in base.items():
+                if store!=s and win.results[store]!=original:raise AssertionError('query changed unselected store')
+            checks.append('query append preserves file targets, saves V2, applies existing carton/budget/risk preview and keeps original model/other store intact')
             start=time.perf_counter();win.export_current();timings['sign_export_seconds']=time.perf_counter()-start
             if state.get('automation_error'):raise AssertionError(state['automation_error'])
             if not list((out/'exports').glob('*.xlsx')):raise AssertionError('no signed files')

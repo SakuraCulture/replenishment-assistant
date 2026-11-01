@@ -284,7 +284,7 @@ class FinalListDialog(AsyncDialog):
         self.dirty=False;self.accept()
     def choose_list(self):
         if self.model.invalid:self.message.setText('请先修正当前非法数量');return
-        d=StockingDialog(self.host)
+        d=StockingDialog(self.host,codes=self.codes)
         if d.exec()==QDialog.DialogCode.Accepted:self.use_list(d.selected)
         d.deleteLater()
     def use_list(self,listing):

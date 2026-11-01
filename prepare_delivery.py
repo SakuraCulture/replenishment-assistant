@@ -52,7 +52,7 @@ if version['version']=='0.16.1':
     templates=dest/'导入模板';templates.mkdir(exist_ok=True)
     for stage in lifecycle_io.STAGES:lifecycle_io.template(stage,templates/(lifecycle_io.TITLES[stage]+'模板.xlsx'))
 if (root/'third_party_licenses').exists():shutil.copytree(root/'third_party_licenses',licenses,dirs_exist_ok=True)
-if version['version'] in {'0.17.0','0.17.1','0.18.0','0.18.1'}:
+if version['version'] in {'0.17.0','0.17.1','0.18.0','0.18.1','0.19.0'}:
     (dest/'docs').mkdir(exist_ok=True)
     for name in ['0.17.0四场景与批量单据.md','四个主干业务场景与低认知交互方案_V1.md','商品资料保存链路_0.16.0.md']:
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
@@ -62,17 +62,21 @@ if version['version'] in {'0.17.0','0.17.1','0.18.0','0.18.1'}:
     import lifecycle_io
     templates=dest/'导入模板';templates.mkdir(exist_ok=True)
     for stage in lifecycle_io.STAGES:lifecycle_io.template(stage,templates/(lifecycle_io.TITLES[stage]+'模板.xlsx'))
-if version['version'] in {'0.18.0','0.18.1'}:
+if version['version'] in {'0.18.0','0.18.1','0.19.0'}:
     name='0.18.0签发前最终清单.md'
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     (dest/'使用说明.txt').write_bytes((root/'docs'/name).read_bytes())
     import import_templates
     import_templates.write('stocking',dest/'导入模板/铺货清单最低模板.xlsx')
-if version['version']=='0.18.1':
+if version['version'] in {'0.18.1','0.19.0'}:
     name='0.18.1缺从仓资料保留主仓.md'
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     with (dest/'使用说明.txt').open('a',encoding='utf-8') as f:
         f.write('\n\n'+(root/'docs'/name).read_text(encoding='utf-8'))
+if version['version']=='0.19.0':
+    name='0.19.0搜索选品与清单补足.md'
+    shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    (dest/'使用说明.txt').write_text((root/'docs'/name).read_text(encoding='utf-8')+'\n\n'+(dest/'使用说明.txt').read_text(encoding='utf-8'),encoding='utf-8')
 if version['version']=='0.17.1':
     shutil.copy2(root/'docs/0.17.1签发同名覆盖.md',dest/'docs/0.17.1签发同名覆盖.md')
     with (dest/'使用说明.txt').open('a',encoding='utf-8') as f:
