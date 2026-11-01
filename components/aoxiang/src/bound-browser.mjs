@@ -8,7 +8,7 @@ export class BoundBrowser{
   constructor({state,config,binding,signal,onProgress=()=>{},Client=BrowserClient,discoverEnvironment=discover}){
     Object.assign(this,{state,config,binding,signal,onProgress,Client,discoverEnvironment});
     this.client=null;this.adapter={onReceipt:null};
-    for(const method of ['verifyIdentity','querySingle','warehouseOptions','prepareExport','submitOnce','findTask','downloadPurchaseTemplate']){
+    for(const method of ['verifyIdentity','querySingle','warehouseOptions','prepareExport','submitOnce','findTask','downloadPurchaseTemplate','preparePurchaseCreate','uploadPurchaseOnce','purchaseImportTask','queryCreateOrders','queryPurchase','preparePurchase','submitPurchase','purchaseTask','downloadPurchase']){
       this.adapter[method]=async(...args)=>{
         this.check();await this.ensure();this.check();return this.client[method](...args);
       };
@@ -24,7 +24,8 @@ export class BoundBrowser{
     if(!profile||!edge)fail('MACHINE_REBIND_REQUIRED','本机浏览器或已有用户配置变化，请重新绑定');
     if(!this.client||this.client.closed)this.client=new this.Client({
       onPhase:stage=>this.onProgress({stage}),
-      onAccepted:receipt=>{this.state.recordReceipt(receipt);this.adapter.onReceipt?.(receipt);}
+      onAccepted:receipt=>{if(!this.state.recordReceipt(receipt))this.state.recordPurchaseReceipt(receipt);this.adapter.onReceipt?.(receipt);},
+      onImportReceipt:receipt=>this.adapter.onImportReceipt?.(receipt)
     });
     const connected=await this.client.connect({candidate:{...profile,edgeExecutable:edge.executable},
       expectedIdentity:this.config.tenantBinding,stateRoot:this.state.root,

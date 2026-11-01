@@ -12,8 +12,12 @@ import {verifyInstallation} from './integrity.mjs';
 import {assertHandoff} from './preflight.mjs';
 import {MachineSetup,recoverConfiguration} from './machine-setup.mjs';
 import {MachineTemplate} from './machine-template.mjs';
+import {PurchaseCreates,purchasePublic} from './purchase-create-ledger.mjs';
+import {MachinePurchaseCreate} from './machine-purchase-create.mjs';
+import {PurchaseCreateService} from './purchase-create-service.mjs';
+import {readPurchasePackage,checkPurchaseConfiguration,checkPurchaseInput,freezePurchaseInput} from './purchase-create-artifacts.mjs';
 
-let lock,state,runtime,setup,template,outputFailed=false;
+let lock,state,runtime,setup,template,purchase,outputFailed=false;
 const browsers=new BoundBrowserPool();
 const send=value=>writeFrame(process.stdout,{protocol_version:1,...value});
 const rootArg=process.argv.slice(2);
@@ -25,6 +29,9 @@ async function main(){
   state=await StateStore.open(root);const commands=new MachineCommands(state);
   const configurationRecovered=await recoverConfiguration(root);setup=new MachineSetup({root});
   template=new MachineTemplate({root,state,browsers});
+  const purchases=await PurchaseCreates.open(state);purchases.recover();
+  const purchaseService=new PurchaseCreateService({root,state,ledger:purchases,browsers,progress:stage=>purchase?.progress(stage)});
+  purchase=new MachinePurchaseCreate({ledger:purchases,adapter:purchaseService,preflight:p=>purchaseService.preflight(p),onFatal:error=>{void fatal(error);}});
   const recovered=commands.recoverInterrupted();
   runtime=new MachineRuntime({commands,onFatal:error=>{void fatal(error);},
     needsReview:item=>state.getItems(item.run_id).some(i=>['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED'].includes(state.getAttempt(i.attemptId)?.stage)),
@@ -45,6 +52,7 @@ async function main(){
     try{
       request=validateRequest(raw);
       const configurationActions=['discover','setup.start','setup.commit','template.start'];
+      if((configurationActions.includes(request.action)||['reserve','resume','purchase.start'].includes(request.action))&&purchase.busy)fail('PURCHASE_CREATE_BUSY','当前采购动作正在运行或安全停止，请等待后再执行其他浏览器作业');
       if(configurationActions.includes(request.action)&&(runtime.active||commands.list().some(r=>r.state==='QUEUED')))fail('COMPONENT_BUSY','先暂停或完成当前取数任务，再修改连接与目录');
       if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
       switch(request.action){
@@ -56,13 +64,30 @@ async function main(){
         case 'template.start':if(setup.busy)fail('SETUP_BUSY','先保存或取消当前连接核验');result=template.start();break;
         case 'template.status':result=template.status(request.template_id);break;
         case 'template.cancel':result=template.cancel(request.template_id);break;
+        case 'purchase.reserve':{
+          if(runtime.closing)fail('SHUTTING_DOWN','组件正在安全退出');
+          const p=await readPurchasePackage(request.package_file,request.package_sha256);
+          const existing=purchases.list().find(r=>r.id===p.id);
+          if(existing){if(existing.requestHash!==request.package_sha256)fail('PURCHASE_INTENT_CHANGED','已有采购命令不能替换文件');result={created:false,record:purchase.status(p.id)};break;}
+          const config=await loadConfig(root);checkPurchaseConfiguration(p,config);await assertHandoff(root,config.tenantBinding);await checkPurchaseInput(p);
+          const accepted=purchases.reserve(await freezePurchaseInput(root,p),request.package_sha256);
+          result={created:accepted.created,record:purchasePublic(accepted.record)};break;
+        }
+        case 'purchase.start':{
+          if(runtime.closing||runtime.active||commands.list().some(r=>r.state==='QUEUED')||setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止当前取数、模板或连接任务');
+          result=purchase.start(request.purchase_id);break;
+        }
+        case 'purchase.status':result=purchase.status(request.purchase_id);break;
+        case 'purchase.pause':result=purchase.pause(request.purchase_id);break;
+        case 'purchase.cancel':result=purchase.cancelBeforeUpload(request.purchase_id);break;
+        case 'purchase.list':{const all=purchases.list();result={total:all.length,items:all.slice(request.offset||0,(request.offset||0)+(request.limit||50)).map(purchasePublic)};break;}
         case 'configuration':{
           if(!await exists(path.join(root,'config/portable.config.json'))){result={configured:false};break;}
           const config=await loadConfig(root);
           result={configured:true,enabled:config.enabled,account_binding:{account_id:config.tenantBinding.accountId,merchant_code:config.tenantBinding.merchantCode},
             display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.targets};break;
         }
-        case 'ping':result={closing:runtime.closing,active_command_id:runtime.active?.id||null};break;
+        case 'ping':result={closing:runtime.closing,active_command_id:runtime.active?.id||null,active_purchase_id:purchase.busy?purchase.job.id:null};break;
         case 'list':{const records=commands.list(),offset=request.offset||0,limit=request.limit||50;result={total:records.length,items:records.slice(offset,offset+limit).map(publicRecord)};break;}
         case 'reserve':{
           if(setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取，再开始取数');
@@ -77,6 +102,7 @@ async function main(){
         case 'resume':if(setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取');result=publicRecord(runtime.resume(request.command_id));kick=true;break;
         case 'shutdown':{
           runtime.closing=true;
+          if(purchase.busy)purchase.pause(purchase.job.id);
           for(const record of commands.list())if(['QUEUED','RUNNING'].includes(record.state))runtime.pause(record.id);
           result={closing:true,message:'停止新动作；等待当前操作安全结束，已受理任务保留'};stop=true;break;
         }
@@ -93,6 +119,7 @@ async function fatal(error){
   process.exitCode=1;
   if(!outputFailed)try{await send({type:'fatal',error:errorInfo(error)});}catch{outputFailed=true;}
   if(runtime)await runtime.shutdown();
+  await purchase?.close();
   process.stdin.destroy();
 }
 process.stdout.on('error',error=>{outputFailed=true;void fatal(error);});
@@ -101,5 +128,5 @@ process.on('SIGTERM',()=>{void runtime?.shutdown();process.stdin.destroy();});
 try{await main();}catch(error){await fatal(error);}
 finally{
   try{await runtime?.shutdown();}catch(error){process.exitCode=1;process.stderr.write(errorInfo(error).code+'\n');}
-  await setup?.close();await template?.close();await browsers.close();state?.close();lock?.release();
+  await setup?.close();await template?.close();await purchase?.close();await browsers.close();state?.close();lock?.release();
 }

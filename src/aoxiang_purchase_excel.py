@@ -38,7 +38,7 @@ def text_value(value):
     return escape(value)
 
 
-def build_input_sheet(raw, plan, spec):
+def build_input_sheet(raw, plan, spec, *, note=None):
     root = ET.fromstring(raw)
     data = root.find('s:sheetData', NS)
     if data is None:
@@ -70,7 +70,7 @@ def build_input_sheet(raw, plan, spec):
         raise ValueError('模板样例清除范围不符')
     for index, row in enumerate(plan['rows'], start):
         values = [plan['head']['store'], plan['supplier_code'], row['sku'], row['quantity'], None, row['amount'],
-                  None, row['name'], None, plan['head']['number'], '否', None]
+                  None, row['name'], None, plan['head']['number'] if note is None else note, '否', None]
         attrs = {k: v for k, v in (samples[0].attrib if samples else {}).items() if k not in ('r', 'spans')}
         attrs['r'] = str(index)
         cells = []
@@ -100,7 +100,7 @@ def build_input_sheet(raw, plan, spec):
     return rewritten.encode('utf-8')
 
 
-def generate(plan, receipt, contract_path, target, *, progress=lambda _: None, cancel=None):
+def generate(plan, receipt, contract_path, target, *, progress=lambda _: None, cancel=None, note=None):
     checkpoint(cancel)
     if fingerprint(plan) != plan['fingerprint']:
         raise ValueError('采购预览内容已变化')
@@ -129,7 +129,7 @@ def generate(plan, receipt, contract_path, target, *, progress=lambda _: None, c
             member = posixpath.normpath(destination.lstrip('/') if destination.startswith('/') else 'xl/' + destination)
             if not member.startswith('xl/worksheets/'):
                 raise ValueError('模板工作表位置未支持')
-            rewritten = build_input_sheet(original.read(member), plan, spec)
+            rewritten = build_input_sheet(original.read(member), plan, spec, note=note)
             with zipfile.ZipFile(temp, 'w') as output:
                 output.comment = original.comment
                 for entry in original.infolist():

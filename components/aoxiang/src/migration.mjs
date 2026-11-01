@@ -49,6 +49,9 @@ function checkManifest(manifest,config){
   }
 }
 export async function exportMigration({state,config,output,sourceStopped=false,includeResults=false,outputRoot}){
+  // The legacy component-only package cannot carry host payment packages or creation
+  // identities. Never label a partial transfer as safe handoff after procurement exists.
+  if(state.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='purchase_creates'").get()&&state.db.prepare("SELECT 1 FROM purchase_creates WHERE state<>'CANCELLED_BEFORE_UPLOAD' LIMIT 1").get())fail('INTEGRATED_PURCHASE_MIGRATION_REQUIRED','此状态含补货助手采购创建记录；旧组件迁移包不会完整保留订单关联，请保留整套应用数据，不使用旧迁移入口接力建单');
   await validateConfig('portable.config',config);
   const body=Buffer.from(JSON.stringify(config,null,2)+'\n'),members=[{relativePath:'config/portable.config.json',buffer:body}];
   const manifest={schemaVersion:'2.0',exampleOnly:false,migrationId:uid(),createdAt:now(),sourceStateGeneration:Math.max(1,state.generation()),handoffStatus:sourceStopped?'SOURCE_STOPPED':'CONFIG_ONLY_SNAPSHOT',tenantBinding:config.tenantBinding,

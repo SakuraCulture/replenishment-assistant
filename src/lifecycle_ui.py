@@ -221,7 +221,9 @@ class LifecycleDialog(QDialog):
         v.addWidget(label('已签发 → 门店回传 → 门店付款 → 门店实际收货。新单据核对确认后空白/缺行按0；未导入整单不当作0。旧记录按旧口径保留。','muted'));search=QLineEdit();search.setPlaceholderText('筛选商品编码 / 名称 / 资料说明');v.addWidget(search);self.table,self.model=grid(self,service.HEADERS);v.addWidget(self.table,1);search.textChanged.connect(self.model.filter)
         sources=QGroupBox('单据与依据');row=QHBoxLayout(sources);row.addWidget(button('查看决策依据',on_audit or (lambda:host.open_archive(head))));self.views={}
         for s in io.STAGES:self.views[s]=button('查看'+io.TITLES[s]+'版本',lambda checked=False,k=s:self.document(k));row.addWidget(self.views[s])
-        v.addWidget(sources);exports=QGroupBox('数据导出');row=QHBoxLayout(exports);self.export_confirmation=button('导出签发单',lambda:host.export_order(head));row.addWidget(self.export_confirmation);self.exports={}
+        v.addWidget(sources)
+        ax=QGroupBox('翱象采购（以已确认付款为依据）');ax_row=QHBoxLayout(ax);self.ax_purchase=button('打开翱象采购',self.open_ax_purchase);ax_row.addWidget(self.ax_purchase);ax_row.addWidget(label('生成预览、上传建单、核对原任务；建单后保留待提交。','muted'));ax_row.addStretch();v.addWidget(ax)
+        exports=QGroupBox('数据导出');row=QHBoxLayout(exports);self.export_confirmation=button('导出签发单',lambda:host.export_order(head));row.addWidget(self.export_confirmation);self.exports={}
         for s in io.STAGES:self.exports[s]=button('导出'+io.TITLES[s],lambda checked=False,k=s:export_selected(self,host,[head],k));row.addWidget(self.exports[s])
         row.addWidget(button('导出生命周期对照',lambda:export_selected(self,host,[head])));v.addWidget(exports)
         corrections=QGroupBox('重新核对（保留原版本）');row=QHBoxLayout(corrections);self.rechecks={}
@@ -237,6 +239,10 @@ class LifecycleDialog(QDialog):
         for s,b in self.rechecks.items():b.setEnabled(bool(self.view['documents'][s]) and not self.head.get('deleted'))
         for s,b in self.zeros.items():b.setEnabled(not self.head.get('deleted'))
         self.imports.setEnabled(not self.head.get('deleted'));self.export_confirmation.setEnabled(not self.head.get('deleted'))
+        self.ax_purchase.setEnabled(not self.head.get('deleted') and bool(self.view['documents']['payment']))
+    def open_ax_purchase(self):
+        from aoxiang_purchase_ui import open_purchase
+        open_purchase(self,self.host,self.head)
     def document(self,stage):Document(self,self.host,self.head,stage).exec()
     def recheck(self,stage,zero=False):
         if review_again(self,self.host,self.head,stage,zero):self.refresh()
