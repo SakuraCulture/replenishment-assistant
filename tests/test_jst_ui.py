@@ -22,7 +22,7 @@ class JstUI(unittest.TestCase):
         w=self.win.followup
         from PySide6.QtWidgets import QPushButton
         texts=[b.text() for b in w.findChildren(QPushButton)]
-        self.assertIn('聚水潭导入单 · 生成与导出',texts);self.assertIn('进入回传处理',texts)
+        self.assertIn('聚水潭导入单',texts);self.assertIn('进入回传处理',texts)
         self.assertNotIn('生成勾选聚水潭订单',texts);self.assertNotIn('确认勾选已下单并锁定',texts)
         self.assertEqual(list(w.cards),['待回传','待付款','待收货','已结束'])
         self.assertEqual(w.start.text(),w.end.text())
@@ -31,17 +31,32 @@ class JstUI(unittest.TestCase):
         from PySide6.QtWidgets import QPushButton
         from lifecycle_home_ui import StageDialog
         w=self.win.followup;w.start.setText('2026-10-30');w.search.setText('门店A');w.checked={'sentinel':1}
-        for stage,primary,absent in [('return','导入门店回传单','导入门店付款单'),('jst','生成勾选聚水潭订单','导入门店回传单'),('payment','导入门店付款单','导入门店实际收货单'),('receipt','导入门店实际收货单','生成勾选聚水潭订单')]:
+        for stage,primary,absent in [('return','导入门店回传单','导入门店付款单'),('payment','导入门店付款单','导入门店实际收货单'),('receipt','导入门店实际收货单','生成勾选聚水潭订单')]:
             with self.subTest(stage=stage):
                 d=StageDialog(w,stage);self.app.processEvents();p=d.panel
                 texts=[b.text() for b in p.findChildren(QPushButton)];self.assertIn(primary,texts);self.assertNotIn(absent,texts)
                 self.assertEqual(p.start.text(),'2026-10-30');self.assertEqual(p.search.text(),'门店A')
                 p.search.setText('本环节独立筛选');d.reject();d.deleteLater();self.app.processEvents()
                 self.assertEqual(w.search.text(),'门店A');self.assertEqual(w.checked,{'sentinel':1})
+    def test_result_page_does_not_inherit_lifecycle_or_hidden_filters(self):
+        from lifecycle_home_ui import StageDialog
+        import work_repository as wr
+        w=self.win.followup;w.start.setText('2026-10-30');w.search.setText('门店A');w.warehouse_filter.setCurrentText('河北仓');w.lock_filter.setCurrentText('已锁')
+        d=StageDialog(w,'jst');self.app.processEvents();p=d.panel
+        self.assertEqual(p.day.text(),wr.today());self.assertEqual(p.search.text(),'');self.assertEqual(p.warehouse.currentText(),'全部仓')
+        self.assertIsNone(p.scope);self.assertEqual(p.all_btn.text(),'导出本批全部（0份）');self.assertTrue(d.property('jstResults'))
+        self.assertEqual(self.reader_mock.call_args.args[0]['kind'],'jst_results')
+        d.reject();d.deleteLater();self.app.processEvents();self.assertEqual(w.search.text(),'门店A')
+        from PySide6.QtWidgets import QPushButton
+        w.checked={'unrelated':{'day':'2026-10-30'}}
+        with patch.object(w,'open_stage') as opened:
+            next(b for b in self.win.findChildren(QPushButton) if b.text()=='查看分配结果').click()
+            opened.assert_called_once_with('jst',use_selection=False)
     def test_generator_has_distinct_qt_finished_signal_and_worker_callback(self):
         from jst_ui import GenerationDialog
         with patch.object(GenerationDialog,'load_catalogs'):
             d=GenerationDialog(self.win,self.win,[]);self.app.processEvents()
+            self.assertFalse(d.auto_export.isChecked())
             self.assertTrue(callable(d.worker_finished));self.assertTrue(hasattr(d.finished,'connect'))
             self.assertFalse(d.generate_btn.isEnabled());self.assertFalse(d._completed)
             d.reject();self.assertTrue(d._completed);d.deleteLater();self.app.processEvents()

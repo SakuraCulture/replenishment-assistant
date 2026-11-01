@@ -12,13 +12,15 @@ class Generator(QObject):
         row=QHBoxLayout();self.note=label('回传确认后自动生成聚水潭导入单；不自动确认付款。','muted')
         row.addWidget(self.note,1);self.bar=QProgressBar();self.bar.setMaximumWidth(180);self.bar.setRange(0,1);row.addWidget(self.bar)
         self.stop=button('停止后续生成',self.cancel);self.resume=button('继续生成',self.start);self.stop.setEnabled(False)
-        row.addWidget(self.stop);row.addWidget(self.resume);layout.addLayout(row)
+        row.addWidget(self.stop);row.addWidget(self.resume)
+        row.addWidget(button('查看分配结果',lambda:host.followup.open_stage('jst',use_selection=False)));layout.addLayout(row)
         self.timer=QTimer(self);self.timer.setInterval(3000);self.timer.timeout.connect(self.tick);self.timer.start()
         QTimer.singleShot(500,self.tick)
     def start(self):self.stopped=False;self.tick()
     def tick(self):
         h=self.host
-        if self.worker or self.stopped or h.closing or h.worker or getattr(h,'_large_io_dialog',None) or QApplication.activeModalWidget():return
+        modal=QApplication.activeModalWidget();io=getattr(h,'_large_io_dialog',None)
+        if self.worker or self.stopped or h.closing or h.worker or (io and not io.property('jstResults')) or (modal and not modal.property('jstResults')):return
         w=Worker(jst_tasks.drain,(h.work_repository.path,h.repository.folder),self);self.worker=w
         w.status.connect(self.note.setText);w.row_progress.connect(self.progress);w.commit_state.connect(self.boundary)
         w.success.connect(self.ready);w.failed.connect(lambda s:self.note.setText('回传已保存；生成未完成：'+s))

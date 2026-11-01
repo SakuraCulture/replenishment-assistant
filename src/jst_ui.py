@@ -70,7 +70,7 @@ class GenerationDialog(QDialog):
         self.summary=label('预览不会占用库存。新资料已扣此前已锁单；未锁预留继续保留。','muted');self.summary.setWordWrap(True);v.addWidget(self.summary)
         self.review=AllocationReview(self);v.addWidget(self.review,1)
         self.accept_issues=QCheckBox('已核对缺口及待核原因，同意待核商品本次不安排');v.addWidget(self.accept_issues)
-        self.auto_export=QCheckBox('每单保存后立即导出，后续继续生成');self.auto_export.setChecked(True);v.addWidget(self.auto_export)
+        self.auto_export=QCheckBox('每单保存后立即导出，后续继续生成');self.auto_export.setChecked(False);v.addWidget(self.auto_export)
         self.bar=QProgressBar();self.bar.setRange(0,1);v.addWidget(self.bar);self.status=label('待预览','muted');self.status.setWordWrap(True);v.addWidget(self.status)
         actions=QHBoxLayout();self.generate_btn=button('确认生成',self.generate,True);self.generate_btn.setEnabled(False);actions.addWidget(self.generate_btn);self.stop_btn=button('停止剩余任务',self.stop);self.stop_btn.setEnabled(False);actions.addWidget(self.stop_btn);actions.addWidget(button('关闭',self.reject));v.addLayout(actions)
         self.completed=QListWidget();self.completed.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection);self.completed.setMaximumHeight(115);v.addWidget(self.completed)

@@ -55,13 +55,15 @@ def start_smoke(app,win,args):
                 from lifecycle_home_ui import StageDialog
                 overview=(win.followup.start.text(),win.followup.end.text(),win.followup.search.text())
                 for stage in ('return','jst','payment','receipt'):
-                    focused=StageDialog(win.followup,stage);focused.show();wait(lambda:hasattr(focused.panel,'count') and focused.panel.table.isEnabled())
+                    focused=StageDialog(win.followup,stage);focused.show();wait(lambda:focused.panel.data is not None if stage=='jst' else hasattr(focused.panel,'count') and focused.panel.table.isEnabled())
                     if stage=='jst' and focused.panel.count!=4:raise AssertionError('focused generation scope')
                     focused.grab().save(str(out/('stage-'+stage+'.png')));focused.reject();focused.deleteLater()
                 if overview!=(win.followup.start.text(),win.followup.end.text(),win.followup.search.text()):raise AssertionError('overview filters changed')
                 checks.append('四个独立环节工作页、主动作与筛选、返回保留总览条件')
                 if sum(r['next']=='payment' for r in win.followup.records)!=4:raise AssertionError('daily stage')
                 dialog=jst_ui.GenerationDialog(win,win,heads);dialog.show();wait(lambda:len(dialog.catalogs)==2)
+                if dialog.auto_export.isChecked():raise AssertionError('manual generation must not export by default')
+                dialog.auto_export.setChecked(True)  # Explicit opt-in exercises the retained advanced path.
                 dialog.preview()
                 from PySide6.QtTest import QTest
                 QTest.qWait(60);dialog.grab().save(str(out/'preview.png'))

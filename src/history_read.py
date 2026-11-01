@@ -95,6 +95,9 @@ def cached(path,cache,head,detail=False,cancel=None):
 
 
 def execute(path,cache,request,cancel,progress):
+    if request.get('kind')=='jst_results':
+        import jst_results
+        return jst_results.read(path,cache,request['day'],request.get('scope'),lambda p:progress({'text':str(p),'done':p.current,'total':p.total}),cancel)
     if request.get('kind')=='daily_batch':
         import daily_batch
         return daily_batch.read(path,cache,request,cancel,progress)

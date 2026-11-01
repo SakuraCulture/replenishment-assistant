@@ -11,7 +11,7 @@ from lifecycle_ui import LifecycleDialog,import_document,import_group,export_sel
 from lifecycle_io import TITLES
 
 class LifecycleWidget(QWidget):
-    STAGES={'return':'回传处理','jst':'聚水潭导入单（执行附件）','payment':'付款核对','receipt':'收货核对'}
+    STAGES={'return':'回传处理','jst':'聚水潭导入单','payment':'付款核对','receipt':'收货核对'}
     def __init__(self,host,stage=None,scope=None):
         super().__init__(host);self.host=host;self.stage=stage;self.fixed_scope=scope;self.records=[];self.page=0;self.checked={};self.reader=HistoryReader(host.work_repository.path,host.repository.folder/'lifecycle_index.sqlite3',self)
         v=QVBoxLayout(self);v.setContentsMargins(0,0,0,0);v.addWidget(label(self.STAGES.get(stage,'日批次总览 · 看进度，进入对应环节处理'),'section'));filters=QHBoxLayout();self.start=QLineEdit(wr.today());self.end=QLineEdit(wr.today())
@@ -32,10 +32,10 @@ class LifecycleWidget(QWidget):
             row=QHBoxLayout()
             for key,title in self.STAGES.items():
                 if key!='jst':row.addWidget(button('进入'+title,lambda checked=False,k=key:self.open_stage(k)))
-            row.addWidget(button('聚水潭导入单 · 生成与导出',lambda:self.open_stage('jst')))
+            row.addWidget(button('聚水潭导入单',lambda:self.open_stage('jst')))
             v.addLayout(row);row=QHBoxLayout();row.addWidget(button('批次作业日志',self.logs));row.addWidget(button('导出勾选签发单',self.export_signed));row.addWidget(button('批量导入混合环节单据',lambda:self.import_stage(None)));v.addLayout(row)
             self.actions.hide()
-            v.addWidget(label('总览只看进度；按环节进入工作页。勾选后带入所选订单，不勾选则带入日期、仓和搜索条件。','muted'))
+            v.addWidget(label('总览只看进度；按环节进入工作页。勾选后带入所选订单；聚水潭导入单默认本日全部，不继承筛选。其他环节沿用日期、仓和搜索。','muted'))
         else:
             row=QHBoxLayout()
             def primary(title,fn):
@@ -54,7 +54,7 @@ class LifecycleWidget(QWidget):
                 row.addWidget(button('导出'+TITLES[stage],lambda:export_selected(self,self.host,list(self.checked.values()),stage)))
                 if stage=='payment':row.addWidget(button('使用聚水潭导入单作为付款来源',self.review_payment))
                 if stage=='return':row.addWidget(button('导出原签发单',self.export_signed))
-                if stage in ('return','payment'):row.addWidget(button('聚水潭导入单 · 生成与导出',lambda:self.open_stage('jst')))
+                if stage in ('return','payment'):row.addWidget(button('聚水潭导入单',lambda:self.open_stage('jst')))
                 v.addLayout(row)
             self.actions.hide();v.addWidget(label('本页只处理'+self.STAGES[stage]+'。已完成后可切换“本环节全部”查看或更正；下一环节从总览进入。','muted'))
         self.selection_label();self.setAcceptDrops(True)
@@ -75,10 +75,17 @@ class LifecycleWidget(QWidget):
             run(self,jst_tasks.retry,(self.host.work_repository.path,heads),'记录生成重试')
             self.host.jst_generator.start();self.query(keep_page=True)
         except Exception as exc:warn(self,exc)
-    def open_stage(self,stage,heads=None):
+    def open_stage(self,stage,heads=None,use_selection=True):
         if stage is None:return
-        d=StageDialog(self,stage,heads if heads is not None else list(self.checked.values()) or None)
-        d.exec();d.deleteLater();self.query(keep_page=True)
+        d=StageDialog(self,stage,heads if heads is not None else (list(self.checked.values()) or None) if use_selection else None)
+        previous=getattr(self.host,'_large_io_dialog',None)
+        if stage=='jst':self.host._large_io_dialog=d
+        try:d.exec()
+        finally:
+            if stage=='jst':self.host._large_io_dialog=previous
+            d.deleteLater()
+        self.query(keep_page=True)
+        if self.host.closing:QTimer.singleShot(0,self.host.close)
     def imported(self):
         self.query(keep_page=True);self.host.status.setText('所选生命周期单据已保存；原签发未改变。')
         if hasattr(self.host,'jst_generator'):self.host.jst_generator.start()
@@ -187,8 +194,11 @@ class LifecycleWidget(QWidget):
 class StageDialog(QDialog):
     """Focused task workspace; overview state remains in its existing widget."""
     def __init__(self,overview,stage,scope=None):
-        super().__init__(overview);self.overview=overview;self.setWindowTitle(LifecycleWidget.STAGES[stage]+' · 环节工作页');self.resize(1360,850)
+        super().__init__(overview);self.overview=overview;self.stage=stage;self._completed=False;self.setWindowTitle(LifecycleWidget.STAGES[stage]+' · 环节工作页');self.resize(1360,850)
         v=QVBoxLayout(self);v.addWidget(button('← 返回订单跟踪总览',self.reject))
+        if stage=='jst':
+            from jst_results_ui import ResultsPage
+            self.setProperty('jstResults',True);self.panel=ResultsPage(overview.host,scope,self);v.addWidget(self.panel,1);return
         v.addWidget(label('限定所选 '+str(len(scope))+' 单' if scope is not None else '沿用总览日期、仓及搜索；本页筛选不改总览。','muted'))
         self.panel=LifecycleWidget(overview.host,stage,scope);v.addWidget(self.panel,1)
         for target,source in ((self.panel.start,overview.start),(self.panel.end,overview.end),(self.panel.search,overview.search)):target.setText(source.text())
@@ -197,5 +207,11 @@ class StageDialog(QDialog):
         if scope:
             self.panel.checked={service.key(h):h for h in scope};blocker=QSignalBlocker(self.panel.status);self.panel.status.setCurrentIndex(self.panel.status.count()-1);del blocker
         QTimer.singleShot(0,lambda:self.panel.query(keep_page=True))
-    def done(self,result):self.panel.shutdown();super().done(result)
-    def closeEvent(self,event):self.panel.shutdown();event.accept()
+    def done(self,result):
+        if self.stage=='jst' and self.panel.worker:
+            self.panel.close_pending=result;self.panel.stop();return
+        self.panel.shutdown();self._completed=True;super().done(result)
+    def closeEvent(self,event):
+        self.reject()
+        if self._completed:event.accept()
+        else:event.ignore()
