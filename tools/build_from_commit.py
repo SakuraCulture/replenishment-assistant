@@ -2,7 +2,7 @@
 
 Same PyInstaller options as build.ps1. New build/delivery directories only.
 """
-import argparse,hashlib,json,os,re,subprocess,sys,zipfile
+import argparse,hashlib,json,os,re,subprocess,sys,zipfile,shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -21,6 +21,13 @@ def main():
     subprocess.run(['git','archive','--format=zip','-o',str(archive),commit],cwd=ROOT,check=True)
     with zipfile.ZipFile(archive) as z:z.extractall(source)
     info={'source_commit':commit,'build_id':a.build_id,'version':version,'built_at':datetime.now().astimezone().isoformat(),'source_archive_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'source_mode':'immutable git archive; no working-tree overlay'}
+    component=source/'components/aoxiang'
+    if component.exists():
+        # Execute the bundler from the same immutable archive as the application.
+        sys.path.insert(0,str(source/'tools'))
+        import aoxiang_bundle
+        staged=build/'aoxiang-component'
+        info['aoxiang']=aoxiang_bundle.stage(component,ROOT/'components/aoxiang',staged,source_commit=commit,app_version=version)
     (build/'build_info.json').write_text(json.dumps(info,ensure_ascii=False,indent=2),encoding='utf-8')
     env=os.environ.copy();env['PATH']=os.environ['WINDIR']+';'+str(Path(os.environ['WINDIR'])/'System32')+';'+str(Path(sys.executable).parent)
     cmd=[sys.executable,'-m','PyInstaller','--clean','--windowed','--onedir','--noupx','--name','补货助手','--icon',str(source/'src/app.ico')]
@@ -30,6 +37,10 @@ def main():
     (build/'command.json').write_text(json.dumps(cmd,ensure_ascii=False,indent=2),encoding='utf-8')
     with (build/'build.log').open('w',encoding='utf-8') as log:
         subprocess.run(cmd,cwd=source,env=env,stdout=log,stderr=log,check=True)
+        if component.exists():
+            target=dist/'补货助手/_internal/components/aoxiang'
+            shutil.copytree(staged,target)
+            aoxiang_bundle.verify(target)
         subprocess.run([sys.executable,str(source/'prepare_delivery.py'),'--delivery',str(dist/'补货助手')],cwd=source,env=env,stdout=log,stderr=log,check=True)
     print(json.dumps({'delivery':str(dist),'source_commit':commit,'log':str(build/'build.log')},ensure_ascii=False))
 

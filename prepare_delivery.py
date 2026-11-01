@@ -120,7 +120,7 @@ if version['version']=='0.21.0':
     import_templates.write('stocking',templates/'铺货清单最低模板.xlsx')
     business_excel.write(templates/'仓商品资料最低模板.xlsx',[('商品资料',warehouse_catalog.FIELDS,[])])
 
-if version['version']=='0.23.0':
+if version['version'] in {'0.23.0','0.24.0'}:
     (dest/'docs').mkdir(exist_ok=True)
     for name in ['0.17.0四场景与批量单据.md','0.20.0最终清单与筛选.md','0.22.0付款来源与自动生成.md','0.22.1聚水潭门店汇总.md','0.23.0聚水潭结果与导出.md','商品资料保存链路_0.16.0.md']:
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
@@ -132,3 +132,9 @@ if version['version']=='0.23.0':
     for stage in lifecycle_io.STAGES:lifecycle_io.template(stage,templates/(lifecycle_io.TITLES[stage]+'模板.xlsx'))
     import_templates.write('stocking',templates/'铺货清单最低模板.xlsx')
     business_excel.write(templates/'仓商品资料最低模板.xlsx',[('商品资料',warehouse_catalog.FIELDS,[])])
+
+if version['version']=='0.24.0':
+    for name in ['0.24.0翱象本地候选.md','翱象采购上传与关联.md','翱象收货同步与终态恢复.md','翱象批次作业与周期同步.md']:
+        shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    (dest/'使用说明.txt').write_bytes((root/'docs/0.24.0翱象本地候选.md').read_bytes())
+    import_templates.write('aoxiang_stores',dest/'导入模板/翱象门店目录最低模板.xlsx')
