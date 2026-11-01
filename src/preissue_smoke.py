@@ -74,6 +74,14 @@ def start_smoke(app,win,args):
             win.show_section(1);start=time.perf_counter();drop(win.sales,out/'sales.xlsx');wait(lambda:win.worker is None and win.loaded is not None);timings['check_seconds']=time.perf_counter()-start
             start=time.perf_counter();win.calculate_btn.click();wait(lambda:win.worker is None and len(win.results)==2);timings['calculate_seconds']=time.perf_counter()-start
             if any(st['state']!='已完成' for st in win.states.values()):raise AssertionError(win.states)
+            # Existing fixture: Hebei has child_missing with stock zero; Shandong
+            # has no entry. Exercise the real packaged spawn calculation path.
+            for store,result in win.results.items():
+                rows={d['E']:d for d in result['rows']};d=rows['child_missing']
+                if d['AU']!='河北仓' or d['_source']!='资料匹配' or d['V']!=2 or d['BD']!=1 or sem.order_quantity(d)<=0:raise AssertionError(('warehouse fallback',store,d))
+                if not d['_meta']['product_file'].endswith('河北仓.xlsx'):raise AssertionError('fallback source lost')
+                if rows['local']['_source']!='地采商品' or sem.order_quantity(rows['both_disabled'])!=0 or sem.order_quantity(rows['stopped'])!=0:raise AssertionError('fallback changed exclusion/local rules')
+            checks.append('actual spawn: secondary missing retains primary catalog, price, carton and demand; disabled/stopped/local boundaries preserved')
             base=copy.deepcopy(win.results);s=next(iter(win.results));r=win.results[s]
             eligible=[d for d in r['rows'] if not rules.blocked(d) and sem.order_quantity(d)>0 and d['K']==0 and d['L']==0]
             if not eligible:raise AssertionError('fixture lacks dual zero')
@@ -114,6 +122,21 @@ def start_smoke(app,win,args):
             start=time.perf_counter();win.export_current();timings['sign_export_seconds']=time.perf_counter()-start
             if state.get('automation_error'):raise AssertionError(state['automation_error'])
             if not list((out/'exports').glob('*.xlsx')):raise AssertionError('no signed files')
+            import openpyxl
+            exported=0
+            for path in (out/'exports').glob('*.xlsx'):
+                book=openpyxl.load_workbook(path,read_only=True,data_only=True)
+                try:
+                    for sheet in book:
+                        values=sheet.values;headers=next(values)
+                        if '商品编码' not in headers:continue
+                        for row in values:
+                            if row[headers.index('商品编码')]=='child_missing':
+                                if row[headers.index('所属仓')]!='河北仓':raise AssertionError('fallback exported to wrong warehouse')
+                                exported+=1
+                finally:book.close()
+            if not exported:raise AssertionError('fallback missing from signed export')
+            checks.append('actual split-warehouse signed Excel includes restored product only under Hebei')
             orders=[h for h in win.orders.headers() if h['store']==s]
             if not orders:raise AssertionError('no signed order')
             order=win.orders.get(win.job_day,s);rules.validate_result(order['payload']['result'],win.job_day)

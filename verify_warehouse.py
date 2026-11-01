@@ -53,14 +53,16 @@ def main():
     profile=json.loads((root/'src/default_must_sell.json').read_text(encoding='utf-8'))
     def settings(primary='河北仓',secondary='山东仓',budget=None):return {'warehouses':engine.DEFAULT_WAREHOUSES,'exception':True,'budget':budget,'supply_route':{'primary':primary,'secondary':secondary}}
     aresult=batch_service.calculate_store(loaded,'QA_A',settings(),profile);rows={d['E']:d for d in aresult['rows']}
-    for sku in ['both','unknown','small','standby']:assert rows[sku]['AU']=='河北仓',(sku,rows[sku])
-    for sku in ['disabled','empty','missing','both_empty','both_disabled','child_missing']:assert rows[sku]['AU']=='山东仓',(sku,rows[sku])
+    for sku in ['both','unknown','small','standby','child_missing']:assert rows[sku]['AU']=='河北仓',(sku,rows[sku])
+    for sku in ['disabled','empty','missing','both_empty','both_disabled']:assert rows[sku]['AU']=='山东仓',(sku,rows[sku])
     for sku in ['disabled','empty','missing','both_empty']:
         d=rows[sku];assert d['V']==3 and d['S']=='启用' and engine.order_quantity(d)>0 and engine.order_quantity(d)%3==0,d
     assert rows['both']['V']==2 and rows['small']['AS']>1 and engine.order_quantity(rows['small'])>1
     assert rows['both_disabled']['AS']>0 and engine.order_quantity(rows['both_disabled'])==0
     assert engine.order_quantity(rows['stopped'])==0
-    assert rows['child_missing']['_source']=='匹配待核' and not engine.numeric(rows['child_missing'].get('V'))
+    # 0.18.1 approved rule: absent secondary entry retains the primary record.
+    assert rows['child_missing']['_source']=='资料匹配' and rows['child_missing']['V']==2 and rows['child_missing']['BD']==1
+    assert engine.order_quantity(rows['child_missing'])>0 and '保留主仓' in rows['child_missing']['_meta']['routing']['reason']
     assert rows['local']['_source']=='地采商品' and rows['local']['AU']=='地采'
     assert '待核' in rows['unknown']['_meta']['routing']['reason']
     assert rows['both']['AB']==0.4 and rows['empty']['AB']==0.2 and rows['both']['AH']==4 and rows['empty']['AH']==5
@@ -83,7 +85,16 @@ def main():
     jobs={'QA_A':settings(budget=60),'QA_B':settings('山东仓','河北仓',80)}
     parallel=batch_service.run(loaded,jobs,profile,2)
     for s,c in jobs.items():
-        serial=batch_service.calculate_store(loaded,s,c,profile);assert signature(serial)==signature(parallel[s]);assert serial['summary']['amount']<=c['budget']
+        serial=batch_service.calculate_store(loaded,s,c,profile);assert signature(serial)==signature(parallel[s])
+        # Since 0.9.2 the approved last-unit rule permits <=5% overspend.
+        # The old <=budget assertion also fails on frozen 0.18.0; validate the
+        # actual authorized cap AND one-unit audit, never relax model results.
+        from decimal import Decimal
+        assert Decimal(str(serial['summary']['amount']))<=Decimal(str(c['budget']))*Decimal('1.05')
+        extra=[d for d in serial['rows'] if d.get('_budget_overrun')]
+        assert len(extra)<=1
+        if serial['summary']['amount']>c['budget']:
+            assert len(extra)==1 and extra[0]['_budget_overrun']['quantity']==extra[0]['BD']
         assert all(engine.order_quantity(d)%d['BD']==0 for d in serial['rows'] if engine.orderable(d))
     assert {d['E']:d for d in parallel['QA_B']['rows']}['both']['V']==3
     assert catalogs==before
