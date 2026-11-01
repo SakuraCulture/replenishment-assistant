@@ -8,7 +8,7 @@ export class BoundBrowser{
   constructor({state,config,binding,signal,onProgress=()=>{},Client=BrowserClient,discoverEnvironment=discover}){
     Object.assign(this,{state,config,binding,signal,onProgress,Client,discoverEnvironment});
     this.client=null;this.adapter={onReceipt:null};
-    for(const method of ['verifyIdentity','querySingle','warehouseOptions','prepareExport','submitOnce','findTask']){
+    for(const method of ['verifyIdentity','querySingle','warehouseOptions','prepareExport','submitOnce','findTask','downloadPurchaseTemplate']){
       this.adapter[method]=async(...args)=>{
         this.check();await this.ensure();this.check();return this.client[method](...args);
       };

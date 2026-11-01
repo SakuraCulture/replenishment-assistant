@@ -7,7 +7,8 @@ const idPattern=/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 const fields={ping:[],configuration:[],list:['offset','limit'],reserve:['command'],status:['command_id'],
   events:['command_id','after','limit'],pause:['command_id'],resume:['command_id'],shutdown:[],
   discover:[],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
-  'setup.cancel':['setup_id'],'setup.commit':['setup_id']};
+  'setup.cancel':['setup_id'],'setup.commit':['setup_id'],
+  'template.start':[],'template.status':['template_id'],'template.cancel':['template_id']};
 export function validateRequest(value){
   if(!value||typeof value!=='object'||Array.isArray(value)||value.protocol_version!==1||
     typeof value.request_id!=='string'||!idPattern.test(value.request_id)||!Object.hasOwn(fields,value.action))fail('REQUEST_SCHEMA','机器请求版本、编号或动作无效');
@@ -16,6 +17,7 @@ export function validateRequest(value){
   if(fields[value.action].includes('command_id')&&(typeof value.command_id!=='string'||!idPattern.test(value.command_id)))fail('REQUEST_SCHEMA','命令编号不能为空且必须符合契约');
   if(value.action==='reserve'&&!value.command)fail('REQUEST_SCHEMA','缺少待派发命令');
   if(fields[value.action].includes('setup_id')&&(typeof value.setup_id!=='string'||!idPattern.test(value.setup_id)))fail('REQUEST_SCHEMA','连接核验编号无效');
+  if(fields[value.action].includes('template_id')&&(typeof value.template_id!=='string'||!idPattern.test(value.template_id)))fail('REQUEST_SCHEMA','模板获取编号无效');
   if(value.action==='setup.start'){
     const text=v=>typeof v==='string'&&v.trim().length>0&&v.length<=1024;
     const candidate=value.candidate;

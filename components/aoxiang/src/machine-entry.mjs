@@ -11,8 +11,9 @@ import {readJson,fail,sameIdentity,exists} from './common.mjs';
 import {verifyInstallation} from './integrity.mjs';
 import {assertHandoff} from './preflight.mjs';
 import {MachineSetup,recoverConfiguration} from './machine-setup.mjs';
+import {MachineTemplate} from './machine-template.mjs';
 
-let lock,state,runtime,setup,outputFailed=false;
+let lock,state,runtime,setup,template,outputFailed=false;
 const browsers=new BoundBrowserPool();
 const send=value=>writeFrame(process.stdout,{protocol_version:1,...value});
 const rootArg=process.argv.slice(2);
@@ -23,6 +24,7 @@ async function main(){
   lock=await ExclusiveLock.acquire(path.join(root,'coordinator.lock.sqlite'));
   state=await StateStore.open(root);const commands=new MachineCommands(state);
   const configurationRecovered=await recoverConfiguration(root);setup=new MachineSetup({root});
+  template=new MachineTemplate({root,state,browsers});
   const recovered=commands.recoverInterrupted();
   runtime=new MachineRuntime({commands,onFatal:error=>{void fatal(error);},
     needsReview:item=>state.getItems(item.run_id).some(i=>['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED'].includes(state.getAttempt(i.attemptId)?.stage)),
@@ -42,14 +44,18 @@ async function main(){
     let request,result,stop=false,kick=false;
     try{
       request=validateRequest(raw);
-      const configurationActions=['discover','setup.start','setup.commit'];
+      const configurationActions=['discover','setup.start','setup.commit','template.start'];
       if(configurationActions.includes(request.action)&&(runtime.active||commands.list().some(r=>r.state==='QUEUED')))fail('COMPONENT_BUSY','先暂停或完成当前取数任务，再修改连接与目录');
+      if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
       switch(request.action){
         case 'discover':result=await setup.discover();break;
         case 'setup.start':await browsers.close();result=setup.begin(request);break;
         case 'setup.status':result=setup.status(request.setup_id);break;
         case 'setup.cancel':result=await setup.cancel(request.setup_id);break;
         case 'setup.commit':result=await setup.commit(request.setup_id);break;
+        case 'template.start':if(setup.busy)fail('SETUP_BUSY','先保存或取消当前连接核验');result=template.start();break;
+        case 'template.status':result=template.status(request.template_id);break;
+        case 'template.cancel':result=template.cancel(request.template_id);break;
         case 'configuration':{
           if(!await exists(path.join(root,'config/portable.config.json'))){result={configured:false};break;}
           const config=await loadConfig(root);
@@ -59,7 +65,7 @@ async function main(){
         case 'ping':result={closing:runtime.closing,active_command_id:runtime.active?.id||null};break;
         case 'list':{const records=commands.list(),offset=request.offset||0,limit=request.limit||50;result={total:records.length,items:records.slice(offset,offset+limit).map(publicRecord)};break;}
         case 'reserve':{
-          if(setup.busy)fail('SETUP_BUSY','先保存或取消当前连接核验，再开始取数');
+          if(setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取，再开始取数');
           if(runtime.closing)fail('SHUTTING_DOWN','组件正在安全退出');
           const config=await loadConfig(root);await assertHandoff(root,config.tenantBinding);
           const accepted=await commands.reserve(request.command,config);
@@ -68,7 +74,7 @@ async function main(){
         case 'status':result=publicRecord(commands.get(request.command_id));if(!result)fail('COMMAND_NOT_FOUND','未找到自动化作业');break;
         case 'events':result={events:commands.events(request.command_id,request.after||0,request.limit||50)};break;
         case 'pause':result=publicRecord(runtime.pause(request.command_id));break;
-        case 'resume':if(setup.busy)fail('SETUP_BUSY','先保存或取消当前连接核验');result=publicRecord(runtime.resume(request.command_id));kick=true;break;
+        case 'resume':if(setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取');result=publicRecord(runtime.resume(request.command_id));kick=true;break;
         case 'shutdown':{
           runtime.closing=true;
           for(const record of commands.list())if(['QUEUED','RUNNING'].includes(record.state))runtime.pause(record.id);
@@ -95,5 +101,5 @@ process.on('SIGTERM',()=>{void runtime?.shutdown();process.stdin.destroy();});
 try{await main();}catch(error){await fatal(error);}
 finally{
   try{await runtime?.shutdown();}catch(error){process.exitCode=1;process.stderr.write(errorInfo(error).code+'\n');}
-  await setup?.close();await browsers.close();state?.close();lock?.release();
+  await setup?.close();await template?.close();await browsers.close();state?.close();lock?.release();
 }

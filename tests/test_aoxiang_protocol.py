@@ -136,6 +136,23 @@ class ActualProcessTests(unittest.TestCase):
                                 cwd=COMPONENT, capture_output=True, check=True)
         self.assertEqual(result.stdout.decode('ascii'), fingerprint(command()))
 
+    def test_real_template_control_fails_without_config_and_remains_responsive(self):
+        client = self.connect('template-unconfigured')
+        client.start()
+        job = client.request('template.start')
+        self.assertEqual(job['state'], 'RUNNING')
+        until = time.monotonic() + 5
+        while time.monotonic() < until:
+            status = client.request('template.status', template_id=job['id'])
+            if status['state'] != 'RUNNING':
+                break
+            time.sleep(.01)
+        self.assertEqual(status['state'], 'FAILED')
+        self.assertIsNone(status['receipt'])
+        self.assertIsNotNone(status['error'])
+        self.assertFalse(client.request('ping')['closing'])
+        self.assertTrue(client.close())
+
     def test_real_dispatch_reopen_and_original_id_binding(self):
         # Seed a synthetic directory, with no browser binding: execution must stop before browser I/O.
         state_root = self.root / 'seeded'

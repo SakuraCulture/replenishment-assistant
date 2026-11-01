@@ -1,0 +1,124 @@
+{
+  "scope": "AX06 local payment snapshot and file generator only",
+  "passed_local": true,
+  "fixture": "Received native purchase template; synthetic local signed/return/payment order",
+  "head": "6bd8a5a3d459fd5bd730cf6b0ead3b002ea5968c",
+  "template_sha256": "c70f4fe1f89d6b7cdaa45addee30596d2b73b90be2e78009d8bcf5bdd466e955",
+  "outputs": [
+    {
+      "schema": 1,
+      "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101\\ax06-native-final\\合成采购-1.xlsx",
+      "sha256": "ff4742eb9fe1556bcf2b88a279c9f5579f1461e6014db2cfe81c6c914899d168",
+      "bytes": 6669,
+      "plan_fingerprint": "442c8e8e517620e3a2ea6458b0605071be92398d53023c6d1b725e7f2ee15789",
+      "template_sha256": "c70f4fe1f89d6b7cdaa45addee30596d2b73b90be2e78009d8bcf5bdd466e955",
+      "template_receipt": {
+        "source": "provided native template + synthetic payment QA; NOT a live latest-template receipt",
+        "contractVersion": "purchase-import-native-20261101-1",
+        "identity": {
+          "accountId": "A",
+          "merchantCode": "M"
+        }
+      },
+      "rows": 1,
+      "amount": "0.99",
+      "modified_zip_member": "xl/worksheets/sheet1.xml"
+    },
+    {
+      "schema": 1,
+      "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101\\ax06-native-final\\合成采购-2.xlsx",
+      "sha256": "ff4742eb9fe1556bcf2b88a279c9f5579f1461e6014db2cfe81c6c914899d168",
+      "bytes": 6669,
+      "plan_fingerprint": "442c8e8e517620e3a2ea6458b0605071be92398d53023c6d1b725e7f2ee15789",
+      "template_sha256": "c70f4fe1f89d6b7cdaa45addee30596d2b73b90be2e78009d8bcf5bdd466e955",
+      "template_receipt": {
+        "source": "provided native template + synthetic payment QA; NOT a live latest-template receipt",
+        "contractVersion": "purchase-import-native-20261101-1",
+        "identity": {
+          "accountId": "A",
+          "merchantCode": "M"
+        }
+      },
+      "rows": 1,
+      "amount": "0.99",
+      "modified_zip_member": "xl/worksheets/sheet1.xml"
+    },
+    {
+      "schema": 1,
+      "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101\\ax06-native-final\\合成采购-3.xlsx",
+      "sha256": "ff4742eb9fe1556bcf2b88a279c9f5579f1461e6014db2cfe81c6c914899d168",
+      "bytes": 6669,
+      "plan_fingerprint": "442c8e8e517620e3a2ea6458b0605071be92398d53023c6d1b725e7f2ee15789",
+      "template_sha256": "c70f4fe1f89d6b7cdaa45addee30596d2b73b90be2e78009d8bcf5bdd466e955",
+      "template_receipt": {
+        "source": "provided native template + synthetic payment QA; NOT a live latest-template receipt",
+        "contractVersion": "purchase-import-native-20261101-1",
+        "identity": {
+          "accountId": "A",
+          "merchantCode": "M"
+        }
+      },
+      "rows": 1,
+      "amount": "0.99",
+      "modified_zip_member": "xl/worksheets/sheet1.xml"
+    }
+  ],
+  "timings_raw": [
+    {
+      "prepare_seconds": 0.0023215999972308055,
+      "recheck_and_write_seconds": 0.01922289999492932,
+      "total_seconds": 0.021544599992921576
+    },
+    {
+      "prepare_seconds": 0.002511600003344938,
+      "recheck_and_write_seconds": 0.009575599993695505,
+      "total_seconds": 0.012087299997801892
+    },
+    {
+      "prepare_seconds": 0.002398399999947287,
+      "recheck_and_write_seconds": 0.00847780000185594,
+      "total_seconds": 0.010876300002564676
+    }
+  ],
+  "quantity": "7",
+  "amount": "0.99",
+  "changed_original_template": false,
+  "changed_business_facts": false,
+  "code_sha256": {
+    "src/aoxiang_purchase.py": "76e0048b7f1b42faf30f646b22cd67bf24f1643b874e80d2731287903bfdcb6e",
+    "src/aoxiang_purchase_excel.py": "d73625212372c052e72e596ea5aaef091756b12a95e2d8660a83f886352d8958",
+    "components/aoxiang/src/machine-template.mjs": "95c98133b15b49144f4406f4a73edf9a5b4946f1254d0ca929f2e4095bf39f5a",
+    "components/aoxiang/src/machine-entry.mjs": "325c1e80b27a902374284c6dfb429de391cb527a48df0916e6a531b8f0a3aaaf",
+    "components/aoxiang/src/machine-protocol.mjs": "e0ab8069fec805796f7d2df0993f527d3693591d26b7826ca954115216d18231",
+    "components/aoxiang/src/bound-browser.mjs": "2dc934143219e6637483e763de43ad19e468ad8162698e862184152417ad7b45",
+    "components/aoxiang/src/purchase-template-download.mjs": "d60be355bd81c1a4055b1fbf77df813f1a406edccb9f46504491681a2f803282"
+  },
+  "limitations": [
+    "No live latest-template fetch, procurement upload or EXE verification.",
+    "Three tiny warm local synthetic trials are diagnostics, not real batch performance evidence.",
+    "UI and durable procurement creation/binding remain under development."
+  ],
+  "task": "AX06-AX07-foundation",
+  "component_tests": 87,
+  "python_full_tests": 406,
+  "supplemental_protocol_tests": 10,
+  "supplemental_purchase_tests": 6,
+  "received_component_changed_files": [
+    "src/coordinator.mjs",
+    "src/purchase-template-download.mjs"
+  ],
+  "core_sha256": {
+    "src/model.py": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+    "src/one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "src/allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+  },
+  "logs": {
+    "ax06-full-python.txt": "58455de485ddd8926ec6cabf2e0c646c6be62b22980059e2847707c1bc5d0823",
+    "ax06-component-v1.txt": "aa9991a5727b409ca0b15f32713820c0fe96868904496270d5ffedc8c1004894",
+    "ax06-component-v2.txt": "20cfe63082a70ab07f9315c8e49571ab080cd50cfe7beb138db90d743c9a5cae",
+    "ax06-protocol-check.txt": "550b057c786604832cac640bf8f642c4a625ed3b05ab785b92ddda8824a479d8",
+    "ax06-purchase-final.txt": "cde8b5e45cfe6728964826593e7370ce5a8792b118c97df20c51a6fbe069e476"
+  }
+}
