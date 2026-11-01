@@ -23,6 +23,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--payment-source-smoke' in sys.argv:
+        from payment_source_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--payment-source-smoke')+1:])
     if '--jst-smoke' in sys.argv:
         from jst_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--jst-smoke')+1:])

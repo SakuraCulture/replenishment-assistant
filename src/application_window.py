@@ -66,6 +66,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         install(self,hv)
         from business_scenes import install as install_scenes
         install_scenes(self,hv)
+        from jst_task_ui import Generator
+        self.jst_generator=Generator(self,self.followup.layout())
         self.final_list_btn=button('最终清单 / 改量',self.open_final_list,True)
         actions.insertWidget(0,self.final_list_btn)
         self.final_detail_btn=button('编辑本店最终清单',lambda:self.open_final_list(True),True)
@@ -206,6 +208,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         return bool(cached and cached[0] is self.results.get(s) and cached[1] is self.new_focus)
 
     def closeEvent(self,event):
+        generator=getattr(self,'jst_generator',None)
+        if generator and generator.worker:
+            self.closing=True;generator.cancel();event.ignore();return
         super().closeEvent(event)
         if event.isAccepted():
             self.archive_timer.stop();self.history_reader.shutdown()

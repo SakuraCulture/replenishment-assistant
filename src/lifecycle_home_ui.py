@@ -11,7 +11,7 @@ from lifecycle_ui import LifecycleDialog,import_document,import_group,export_sel
 from lifecycle_io import TITLES
 
 class LifecycleWidget(QWidget):
-    STAGES={'return':'回传处理','jst':'聚水潭出单','payment':'付款核对','receipt':'收货核对'}
+    STAGES={'return':'回传处理','jst':'聚水潭导入单（执行附件）','payment':'付款核对','receipt':'收货核对'}
     def __init__(self,host,stage=None,scope=None):
         super().__init__(host);self.host=host;self.stage=stage;self.fixed_scope=scope;self.records=[];self.page=0;self.checked={};self.reader=HistoryReader(host.work_repository.path,host.repository.folder/'lifecycle_index.sqlite3',self)
         v=QVBoxLayout(self);v.setContentsMargins(0,0,0,0);v.addWidget(label(self.STAGES.get(stage,'日批次总览 · 看进度，进入对应环节处理'),'section'));filters=QHBoxLayout();self.start=QLineEdit(wr.today());self.end=QLineEdit(wr.today())
@@ -20,7 +20,7 @@ class LifecycleWidget(QWidget):
         self.status=QComboBox();self.status.addItems((['待生成','已生成未锁','已锁','本环节全部'] if stage=='jst' else ['待处理','本环节全部']) if stage else ['全部记录','全部未完成',*daily_batch.STATUSES]);row=QHBoxLayout();row.addWidget(self.status);self.warehouse_filter=QComboBox();self.warehouse_filter.addItems(['全部仓','河北仓','山东仓']);row.addWidget(self.warehouse_filter);self.lock_filter=QComboBox();self.lock_filter.addItems(['全部锁状态','已锁','未锁']);row.addWidget(self.lock_filter);row.addWidget(label('一天一批，各单独立推进；锁单不等于付款。','muted'),1);v.addLayout(row);self.status.currentIndexChanged.connect(self.query);self.warehouse_filter.currentIndexChanged.connect(self.query);self.lock_filter.currentIndexChanged.connect(self.query);self.search.returnPressed.connect(self.query)
         self.cards={};row=QHBoxLayout()
         for title in daily_batch.STATUSES:
-            key={'待回传':'return','待生成聚水潭订单':'jst','待核对付款单':'payment','待收货':'receipt'}.get(title)
+            key={'待回传':'return','待付款':'payment','待收货':'receipt'}.get(title)
             b=button(title+'\n—',lambda checked=False,s=title,k=key:self.open_stage(k) if k else self.status.setCurrentText(s));self.cards[title]=b;row.addWidget(b);b.setVisible(stage is None)
         v.addLayout(row);self.bar=QProgressBar();self.bar.setMaximumHeight(14);v.addWidget(self.bar);self.note=label('待查询','muted');v.addWidget(self.note)
         self.table=QTableWidget();self.table.setColumnCount(12);self.table.setHorizontalHeaderLabels(['勾选','单据详情','下一步','业务日期','门店','仓','补货单号','当前进度','门店回传','门店付款','实际收货','资料提示']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
@@ -30,7 +30,9 @@ class LifecycleWidget(QWidget):
         self.actions=QTabWidget();self.primary_actions=[]
         if stage is None:
             row=QHBoxLayout()
-            for key,title in self.STAGES.items():row.addWidget(button('进入'+title,lambda checked=False,k=key:self.open_stage(k)))
+            for key,title in self.STAGES.items():
+                if key!='jst':row.addWidget(button('进入'+title,lambda checked=False,k=key:self.open_stage(k)))
+            row.addWidget(button('聚水潭导入单 · 生成与导出',lambda:self.open_stage('jst')))
             v.addLayout(row);row=QHBoxLayout();row.addWidget(button('批次作业日志',self.logs));row.addWidget(button('导出勾选签发单',self.export_signed));row.addWidget(button('批量导入混合环节单据',lambda:self.import_stage(None)));v.addLayout(row)
             self.actions.hide()
             v.addWidget(label('总览只看进度；按环节进入工作页。勾选后带入所选订单，不勾选则带入日期、仓和搜索条件。','muted'))
@@ -41,6 +43,7 @@ class LifecycleWidget(QWidget):
             if stage=='jst':
                 from jst_ui import generate,export_orders,change_lock,cancel_orders,detail
                 primary('生成勾选聚水潭订单',lambda:self.jst_action(generate))
+                row.addWidget(button('重试勾选未完成生成',self.retry_generation))
                 row.addWidget(button('导出勾选聚水潭订单',lambda:self.jst_action(export_orders)))
                 row.addWidget(button('确认勾选已下单并锁定',lambda:self.jst_action(change_lock)))
                 v.addLayout(row);secondary=QHBoxLayout();secondary.addWidget(button('查看分配依据',lambda:self.jst_action(detail)));secondary.addWidget(button('批次作业日志',self.logs));v.addLayout(secondary)
@@ -49,8 +52,9 @@ class LifecycleWidget(QWidget):
             else:
                 primary('导入'+TITLES[stage],lambda:self.import_stage(stage))
                 row.addWidget(button('导出'+TITLES[stage],lambda:export_selected(self,self.host,list(self.checked.values()),stage)))
-                if stage=='payment':row.addWidget(button('核对所选生成付款草稿',self.review_payment))
+                if stage=='payment':row.addWidget(button('使用聚水潭导入单作为付款来源',self.review_payment))
                 if stage=='return':row.addWidget(button('导出原签发单',self.export_signed))
+                if stage in ('return','payment'):row.addWidget(button('聚水潭导入单 · 生成与导出',lambda:self.open_stage('jst')))
                 v.addLayout(row)
             self.actions.hide();v.addWidget(label('本页只处理'+self.STAGES[stage]+'。已完成后可切换“本环节全部”查看或更正；下一环节从总览进入。','muted'))
         self.selection_label();self.setAcceptDrops(True)
@@ -62,12 +66,22 @@ class LifecycleWidget(QWidget):
         heads=list(self.checked.values())
         if len(heads)!=1:QMessageBox.information(self,'选择一张付款草稿','请勾选一张订单核对实际付款；多张实际付款单可使用批量导入。');return
         payment(self,self.host,heads[0]);self.query(keep_page=True)
+    def retry_generation(self):
+        from business_ui import run
+        import jst_tasks
+        heads=list(self.checked.values())
+        if not heads:QMessageBox.information(self,'请选择订单','先勾选需要重试的订单；已有生成单不会重新分配。');return
+        try:
+            run(self,jst_tasks.retry,(self.host.work_repository.path,heads),'记录生成重试')
+            self.host.jst_generator.start();self.query(keep_page=True)
+        except Exception as exc:warn(self,exc)
     def open_stage(self,stage,heads=None):
         if stage is None:return
         d=StageDialog(self,stage,heads if heads is not None else list(self.checked.values()) or None)
         d.exec();d.deleteLater();self.query(keep_page=True)
     def imported(self):
         self.query(keep_page=True);self.host.status.setText('所选生命周期单据已保存；原签发未改变。')
+        if hasattr(self.host,'jst_generator'):self.host.jst_generator.start()
     def jst_action(self,fn):
         heads=sorted(self.checked.values(),key=lambda h:h['list_position'])
         if not heads:QMessageBox.information(self,'请选择订单','请先勾选要操作的店仓订单。');return
@@ -115,6 +129,7 @@ class LifecycleWidget(QWidget):
             notices=[h['note']] if h.get('note') else []
             if h.get('locked'):notices.append('已下单锁定：后续不再分配')
             if h.get('generation_summary'):notices.append('聚水潭生成 '+h['generation_summary']['amount']+' 元')
+            if h.get('generation_task'):notices.append(h['generation_task']['message'])
             if h['legacy_incomplete']:notices.append('已有旧回传资料，请导入完整确认单')
             if h['old_revision']:notices.append('旧签发修订另有下游资料，未转移至本修订')
             if h['warehouse']=='旧版未标仓':notices.append('仓归属待核，不能自动关联')

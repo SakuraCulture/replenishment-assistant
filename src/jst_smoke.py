@@ -8,6 +8,9 @@ from PySide6.QtWidgets import QApplication,QMessageBox
 
 
 def start_smoke(app,win,args):
+    # This legacy manual-generation suite owns its execution scope; automatic
+    # generation is exercised separately by payment_source_smoke.
+    win.jst_generator.stopped=True;win.jst_generator.timer.stop()
     out=Path(args[0]);phase=args[1];checks=[];state={};ticks=[];last=[time.perf_counter()]
     heartbeat=QTimer(win);heartbeat.setInterval(50)
     def tick():
@@ -46,7 +49,7 @@ def start_smoke(app,win,args):
                     focused.grab().save(str(out/('stage-'+stage+'.png')));focused.reject();focused.deleteLater()
                 if overview!=(win.followup.start.text(),win.followup.end.text(),win.followup.search.text()):raise AssertionError('overview filters changed')
                 checks.append('四个独立环节工作页、主动作与筛选、返回保留总览条件')
-                if sum(r['next']=='jst_generate' for r in win.followup.records)!=4:raise AssertionError('daily stage')
+                if sum(r['next']=='payment' for r in win.followup.records)!=4:raise AssertionError('daily stage')
                 dialog=jst_ui.GenerationDialog(win,win,heads);dialog.show();wait(lambda:len(dialog.catalogs)==2)
                 dialog.preview();dialog.grab().save(str(out/'preview.png'))
                 if len(dialog.plan['payload']['plans'])!=4:raise AssertionError('preview scope')

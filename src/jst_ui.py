@@ -33,7 +33,7 @@ def export_orders(parent,host,heads):
         gids=run(parent,selected_ids,(host.work_repository.path,heads),'读取所选生成单')
         if not gids:QMessageBox.information(parent,'尚未生成','所选订单没有可导出的聚水潭生成记录。');return
         folder=export_locations.initial_directory(parent)
-        if not confirm(parent,'导出聚水潭订单',f'所选{len(heads)}单，可导出{len(gids)}单；其余未生成将跳过。每店每仓一份，三列，同名安全覆盖。\n'+folder):return
+        if not confirm(parent,'导出聚水潭导入单',f'所选{len(heads)}单，可导出{len(gids)}单；其余未生成将跳过。商品编码、单价、数量、订单号四列，每店每仓一份，同名安全覆盖。\n'+folder):return
         r=run(parent,jst_exports.export,(host.work_repository.path,gids,folder),'导出聚水潭订单')
         QMessageBox.information(parent,'导出结果',f"成功{len(r['files'])}份，失败{len(r['failed'])}份，取消：{r['cancelled']}\n"+'\n'.join([*(x['error'] for x in r['failed']),*r.get('warnings',[])]))
     except Exception as exc:warn(parent,exc)
@@ -44,7 +44,7 @@ def payment(parent,host,head):
         gids=run(parent,selected_ids,(host.work_repository.path,[head]),'读取付款草稿')
         if not gids:raise ValueError('未找到生成单，请先生成或导入真实付款单')
         plan=run(parent,service.payment_plan,(host.work_repository.path,gids[0]),'核对付款草稿')
-        d=Review(parent,plan);d.setWindowTitle('核对门店付款单 · 生成草稿不是已付款')
+        d=Review(parent,plan);d.setWindowTitle('导入门店付款单 · 使用聚水潭导入单')
         d.layout().insertWidget(0,label('只有数量和金额与实际已付款订单一致，才确认保存。存在差异请取消，使用“导入门店付款单”。','section'))
         if d.exec():commit_lifecycle(parent,host,plan)
         d.deleteLater()

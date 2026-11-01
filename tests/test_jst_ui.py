@@ -22,9 +22,9 @@ class JstUI(unittest.TestCase):
         w=self.win.followup
         from PySide6.QtWidgets import QPushButton
         texts=[b.text() for b in w.findChildren(QPushButton)]
-        self.assertIn('进入聚水潭出单',texts);self.assertIn('进入回传处理',texts)
+        self.assertIn('聚水潭导入单 · 生成与导出',texts);self.assertIn('进入回传处理',texts)
         self.assertNotIn('生成勾选聚水潭订单',texts);self.assertNotIn('确认勾选已下单并锁定',texts)
-        self.assertIn('待生成聚水潭订单',w.cards);self.assertIn('待核对付款单',w.cards)
+        self.assertEqual(list(w.cards),['待回传','待付款','待收货','已结束'])
         self.assertEqual(w.start.text(),w.end.text())
         w.query();request=self.reader_mock.call_args.args[0];self.assertEqual(request['kind'],'daily_batch')
     def test_stage_workspace_has_only_its_own_actions_and_keeps_overview(self):
