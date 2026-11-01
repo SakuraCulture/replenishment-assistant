@@ -43,11 +43,11 @@ def freeze(q):
     print(json.dumps({'baseline':commit, 'inputs':len(manifest['inputs']), 'protected':len(protected)}))
 
 
-def compare(q,candidate=None):
+def compare(q,candidate=None,reference=None):
     sys.path.insert(0, str(ROOT/'tools'))
     from parallel_qa import clean, diff, read, WHITELIST
     from structure_oracle import excel_snapshot
-    a, b = q/'model_old', candidate or q/'model_new'
+    a, b = reference or q/'model_old', candidate or q/'model_new'
     names = json.loads((a/'capture.json').read_text(encoding='utf-8'))['cases']
     if names != json.loads((b/'capture.json').read_text(encoding='utf-8'))['cases']:
         raise ValueError('Capture cases differ')
@@ -73,7 +73,8 @@ def compare(q,candidate=None):
     report = {'passed':not changed and all(core.values()) and not any(c['differences'] for c in cases),
               'cases':cases, 'whitelist':WHITELIST, 'core_unchanged':core,
               'changed_protected':changed, 'baseline_commit':frozen['commit'],
-              'comparison':'Exact values, types, full records, source and dictionary/list order; no SKU reordering.'}
+              'comparison':'Exact values, types, full records, source and dictionary/list order; no SKU reordering.',
+              'reference_capture':str(a),'candidate_capture':str(b)}
     save(q/('equivalence-final.json' if candidate else 'equivalence.json'), report)
     print(json.dumps({'passed':report['passed'], 'cases':len(cases), 'differences':sum(len(c['differences']) for c in cases)}))
     if not report['passed']:raise AssertionError('Business equivalence failed; see report')
@@ -81,6 +82,6 @@ def compare(q,candidate=None):
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(); p.add_argument('action', choices=['freeze', 'compare']); p.add_argument('--qa', type=Path, required=True);p.add_argument('--candidate',type=Path)
-    a = p.parse_args()
+    p.add_argument('--reference',type=Path);a = p.parse_args()
     if a.action=='freeze':freeze(a.qa.resolve())
-    else:compare(a.qa.resolve(),a.candidate.resolve() if a.candidate else None)
+    else:compare(a.qa.resolve(),a.candidate.resolve() if a.candidate else None,a.reference.resolve() if a.reference else None)

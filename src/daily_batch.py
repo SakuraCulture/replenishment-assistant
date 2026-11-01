@@ -33,7 +33,19 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
                 else:r.update(status='待生成聚水潭订单',next='jst_generate')
     counts={s:sum(r['status']==s for r in records) for s in STATUSES}
     wh=request.get('warehouse');lock=request.get('lock');stage=request.get('status','')
-    matched=[r for r in records if (not stage or stage==r['status'] or stage=='全部未完成' and r['next']) and (not wh or r['warehouse']==wh) and (not lock or r['locked']==(lock=='已锁'))]
+    view=request.get('stage_view');kind=request.get('stage_filter');scope=request.get('scope')
+    chosen={tuple(k) for k in scope} if scope is not None else None
+    def in_stage(r):
+        if chosen is not None and (r['oid'],r['warehouse']) not in chosen:return False
+        if not view:return True
+        if view=='jst':
+            if kind=='待生成':return r['next']=='jst_generate'
+            if kind=='已生成未锁':return bool(r['gid']) and not r['locked']
+            if kind=='已锁':return r['locked']
+            return bool(r['gid']) or r['next']=='jst_generate'
+        pending=r['next'] in ('payment','jst_payment') if view=='payment' else r['next']==view
+        return pending if kind=='待处理' else pending or r['present'].get(view,False)
+    matched=[r for r in records if in_stage(r) and (not stage or stage==r['status'] or stage=='全部未完成' and r['next']) and (not wh or r['warehouse']==wh) and (not lock or r['locked']==(lock=='已锁'))]
     page=min(max(0,int(request.get('page',0))),max(0,(len(matched)-1)//50))
     return {'records':matched[page*50:(page+1)*50],'count':len(matched),'page':page,'counts':counts,'scope':len(records)}
 

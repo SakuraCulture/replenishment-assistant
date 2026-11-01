@@ -222,5 +222,17 @@ class Service(unittest.TestCase):
         self.assertEqual(len(r['files']),1);self.assertEqual(r['failed'],[]);self.assertTrue(r['warnings'])
         self.assertTrue(Path(r['files'][0]['path']).is_file())
 
+    def test_focused_stage_queries_are_disjoint_and_do_not_mutate_facts(self):
+        import daily_batch
+        cache=self.f.root/'focus-index.db'
+        def read(stage,kind='待处理',scope=None):return daily_batch.read(self.path,cache,{'stage_view':stage,'stage_filter':kind,'scope':scope})['records']
+        self.assertEqual([r['warehouse'] for r in read('return')],['山东仓'])
+        self.assertEqual([r['warehouse'] for r in read('jst','待生成')],['河北仓'])
+        self.assertEqual(read('jst','待生成',[['other','河北仓']]),[])
+        _,gid=self.generated();self.assertEqual(read('jst','待生成'),[])
+        self.assertEqual(len(read('jst','已生成未锁')),1);self.assertEqual(len(read('payment')),1)
+        j.lock(self.path,[gid]);self.assertEqual(read('jst','已生成未锁'),[]);self.assertEqual(len(read('jst','已锁')),1)
+        lc.commit(self.path,j.payment_plan(self.path,gid));self.assertEqual(read('payment'),[]);self.assertEqual(len(read('receipt')),1)
+
 
 if __name__=='__main__':unittest.main()

@@ -25,7 +25,7 @@ def install(host, home_layout):
     orders = QWidget()
     v = QVBoxLayout(orders)
     v.addWidget(label('订单跟踪', 'title'))
-    v.addWidget(label('按补货单号保存回传、付款和实际收货；点每单的下一步即可继续。', 'muted'))
+    v.addWidget(label('总览看各单进度；进入回传处理、聚水潭出单、付款核对或收货核对，完成当前动作。', 'muted'))
     v.addWidget(host.followup, 1)
     host.sections.addWidget(orders)  # 3
     from parameter_scene import ParameterScene
