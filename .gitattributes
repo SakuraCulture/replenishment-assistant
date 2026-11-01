@@ -8,3 +8,5 @@
 *.ico binary
 # Received component retains original CRLF bytes; still check actual trailing spaces.
 components/aoxiang/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Keep Windows-generated acceptance evidence byte-identical to the QA originals.
+releases/0.24.0/ax_rc1/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
