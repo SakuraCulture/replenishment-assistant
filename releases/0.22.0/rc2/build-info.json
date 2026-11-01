@@ -1,0 +1,8 @@
+{
+  "source_commit": "99fc2be01bea8d2d2a71e22d99b9789385c892f1",
+  "build_id": "rc2",
+  "version": "0.22.0",
+  "built_at": "2026-11-01T21:02:24.620585+08:00",
+  "source_archive_sha256": "ec15b26c58f13fdf7b8e3e7947fbc6e0d8d547acb3db0ca9b8f13bd6f9907198",
+  "source_mode": "immutable git archive; no working-tree overlay"
+}

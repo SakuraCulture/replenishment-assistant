@@ -1,0 +1,18 @@
+{
+  "core": {
+    "model.py": true,
+    "one_box_exception.py": true,
+    "allocation.py": true,
+    "default_config.json": true,
+    "default_must_sell.json": true,
+    "quantity_contract.py": true,
+    "input_adapter.py": true,
+    "warehouse_catalog.py": true,
+    "parameter_schema.py": true,
+    "new_products.py": true
+  },
+  "changed": [],
+  "previous_package_files": 211,
+  "input_files": 14,
+  "protected_paths": 225
+}

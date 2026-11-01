@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "actual_exe": true,
+  "exe_sha256": "4b568e7ee3f8ba2ec9283b2eb0a45feb5c63da8cfdc80d0c7bdc295b2066baaf",
+  "runs": [
+    {
+      "exit_code": 0,
+      "elapsed": 3.8244439999980386,
+      "peak_tree_mib": 301.60546875,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "passed": true,
+      "phase": "exercise",
+      "checks": [
+        "四个独立环节工作页、主动作与筛选、返回保留总览条件",
+        "实际窗口预览、四店仓单后台生成、逐单导出与三列文件",
+        "已生成单选择、确认下单锁定",
+        "实际拖拽更新仓资料、已锁不重复扣、未锁预留保留",
+        "实际付款核对表单、确认后进入待收货",
+        "后台取消、完成后重试",
+        "业务日志分页、详情表单、spawn后台查询"
+      ],
+      "ui_heartbeat_max": 0.3750834999955259,
+      "source_commit": "99fc2be01bea8d2d2a71e22d99b9789385c892f1"
+    },
+    {
+      "exit_code": 0,
+      "elapsed": 0.7057976000069175,
+      "peak_tree_mib": 217.4140625,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "passed": true,
+      "phase": "reopen",
+      "checks": [
+        "重开、日批次与锁单和付款恢复",
+        "原生成重复导出同名覆盖",
+        "业务日志分页、详情表单、spawn后台查询"
+      ],
+      "ui_heartbeat_max": 0.06943090001004748,
+      "source_commit": "99fc2be01bea8d2d2a71e22d99b9789385c892f1"
+    },
+    {
+      "exit_code": 0,
+      "elapsed": 1.3546425999957137,
+      "peak_tree_mib": 241.61328125,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "passed": true,
+      "phase": "close_retry",
+      "checks": [
+        "生成准备中实际关闭窗口、安全停止、再次打开生成；使用QA延迟确保触发",
+        "业务日志分页、详情表单、spawn后台查询"
+      ],
+      "ui_heartbeat_max": 0.2711349000019254,
+      "source_commit": "99fc2be01bea8d2d2a71e22d99b9789385c892f1"
+    }
+  ]
+}

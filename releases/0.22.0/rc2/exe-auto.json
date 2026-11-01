@@ -1,0 +1,17 @@
+{
+  "actual_exe": true,
+  "exe_sha256": "4b568e7ee3f8ba2ec9283b2eb0a45feb5c63da8cfdc80d0c7bdc295b2066baaf",
+  "exit_code": 0,
+  "elapsed": 5.545008500004769,
+  "peak_tree_mib": 230.7421875,
+  "sample_ms": 50,
+  "remaining_children": [],
+  "passed": true,
+  "checks": [
+    "重启自动恢复4个回传任务，完成生成，无自动付款",
+    "四列每店仓单导出、末列文本单号，库存不因导出增加占用",
+    "实际付款确认表单直接采用生成明细，允许缺少聚水潭内部单号",
+    "实际批量导入界面读取四列文件、核对保存，按补货单号关联"
+  ],
+  "heartbeat_max": 0.3232456999976421
+}

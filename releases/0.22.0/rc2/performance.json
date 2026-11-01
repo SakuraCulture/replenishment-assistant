@@ -1,0 +1,357 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "rounds": 3,
+  "ordered_business_differences": 0,
+  "first_three_export_differences": 0,
+  "scope": "all generation rows, summary, upstream basis; ordered first 3 Excel columns values/types/styles; fourth column is intentional addition",
+  "memory": "50ms process tree RSS sum, shared pages not deduplicated; fresh processes, OS cache not flushed",
+  "runs": [
+    {
+      "stores": 3,
+      "repeat": 0,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 1.1230421000072965,
+      "peak_tree_mib": 49.7734375,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.04714490000333171,
+      "allocation_preview": 0.0033702999935485423,
+      "generation_save": 0.02960329999041278,
+      "export": 0.10381679999409243,
+      "payment_preview": 0.02112969999143388
+    },
+    {
+      "stores": 3,
+      "repeat": 0,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 1.0606261000066297,
+      "peak_tree_mib": 49.13671875,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.01798649999545887,
+      "allocation_preview": 0.00316469999961555,
+      "generation_save": 0.03304309998929966,
+      "export": 0.12102239999512676,
+      "payment_preview": 0.02119069999025669
+    },
+    {
+      "stores": 3,
+      "repeat": 1,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 1.002630200004205,
+      "peak_tree_mib": 48.89453125,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.01859550000517629,
+      "allocation_preview": 0.0034752000065054744,
+      "generation_save": 0.030578300007618964,
+      "export": 0.10156940000888426,
+      "payment_preview": 0.01985179999610409
+    },
+    {
+      "stores": 3,
+      "repeat": 1,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 0.9337813000020105,
+      "peak_tree_mib": 48.796875,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.01942630000121426,
+      "allocation_preview": 0.0032100999960675836,
+      "generation_save": 0.02933580000535585,
+      "export": 0.08098360001167748,
+      "payment_preview": 0.019971300003817305
+    },
+    {
+      "stores": 3,
+      "repeat": 2,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 1.0541408999997657,
+      "peak_tree_mib": 48.96484375,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.02193529999931343,
+      "allocation_preview": 0.0032881000079214573,
+      "generation_save": 0.028492000012192875,
+      "export": 0.08477390000189189,
+      "payment_preview": 0.023950500006321818
+    },
+    {
+      "stores": 3,
+      "repeat": 2,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 0.9343020999949658,
+      "peak_tree_mib": 49.0,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.017767600002116524,
+      "allocation_preview": 0.0031765999883646145,
+      "generation_save": 0.03163559999666177,
+      "export": 0.10576859999855515,
+      "payment_preview": 0.022830700007034466
+    },
+    {
+      "stores": 10,
+      "repeat": 0,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 1.4097703000006732,
+      "peak_tree_mib": 49.7421875,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.046479600001475774,
+      "allocation_preview": 0.008093399999779649,
+      "generation_save": 0.1062503999855835,
+      "export": 0.31595720000041183,
+      "payment_preview": 0.08741069999814499
+    },
+    {
+      "stores": 10,
+      "repeat": 0,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 1.709755199990468,
+      "peak_tree_mib": 49.6796875,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.020428400006494485,
+      "allocation_preview": 0.007261400009156205,
+      "generation_save": 0.1183418000000529,
+      "export": 0.5348681000032229,
+      "payment_preview": 0.08643720000691246
+    },
+    {
+      "stores": 10,
+      "repeat": 1,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 1.524962700001197,
+      "peak_tree_mib": 49.9375,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.019972399997641332,
+      "allocation_preview": 0.0069377000036183745,
+      "generation_save": 0.1583352999878116,
+      "export": 0.4003744999936316,
+      "payment_preview": 0.07669970000279136
+    },
+    {
+      "stores": 10,
+      "repeat": 1,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 1.3951681000035023,
+      "peak_tree_mib": 50.0703125,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.019039200007682666,
+      "allocation_preview": 0.006428600012441166,
+      "generation_save": 0.10278840000682976,
+      "export": 0.28231439999944996,
+      "payment_preview": 0.09528209999552928
+    },
+    {
+      "stores": 10,
+      "repeat": 2,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 1.477611700000125,
+      "peak_tree_mib": 49.66015625,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.01842600000964012,
+      "allocation_preview": 0.0069205000036163256,
+      "generation_save": 0.10817490000044927,
+      "export": 0.3026652999978978,
+      "payment_preview": 0.09848800000327174
+    },
+    {
+      "stores": 10,
+      "repeat": 2,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 1.5210965000005672,
+      "peak_tree_mib": 49.53515625,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "stock_prepare": 0.019855100006680004,
+      "allocation_preview": 0.007937300004414283,
+      "generation_save": 0.10418040001241025,
+      "export": 0.41623830000753514,
+      "payment_preview": 0.08261450000281911
+    }
+  ],
+  "summary": [
+    {
+      "stores": 3,
+      "mode": "old",
+      "metrics": {
+        "stock_prepare": {
+          "median": 0.02193529999931343,
+          "min": 0.01942630000121426,
+          "max": 0.04714490000333171
+        },
+        "allocation_preview": {
+          "median": 0.0032881000079214573,
+          "min": 0.0032100999960675836,
+          "max": 0.0033702999935485423
+        },
+        "generation_save": {
+          "median": 0.02933580000535585,
+          "min": 0.028492000012192875,
+          "max": 0.02960329999041278
+        },
+        "export": {
+          "median": 0.08477390000189189,
+          "min": 0.08098360001167748,
+          "max": 0.10381679999409243
+        },
+        "payment_preview": {
+          "median": 0.02112969999143388,
+          "min": 0.019971300003817305,
+          "max": 0.023950500006321818
+        },
+        "elapsed": {
+          "median": 1.0541408999997657,
+          "min": 0.9337813000020105,
+          "max": 1.1230421000072965
+        },
+        "peak_tree_mib": {
+          "median": 48.96484375,
+          "min": 48.796875,
+          "max": 49.7734375
+        }
+      }
+    },
+    {
+      "stores": 3,
+      "mode": "new",
+      "metrics": {
+        "stock_prepare": {
+          "median": 0.01798649999545887,
+          "min": 0.017767600002116524,
+          "max": 0.01859550000517629
+        },
+        "allocation_preview": {
+          "median": 0.0031765999883646145,
+          "min": 0.00316469999961555,
+          "max": 0.0034752000065054744
+        },
+        "generation_save": {
+          "median": 0.03163559999666177,
+          "min": 0.030578300007618964,
+          "max": 0.03304309998929966
+        },
+        "export": {
+          "median": 0.10576859999855515,
+          "min": 0.10156940000888426,
+          "max": 0.12102239999512676
+        },
+        "payment_preview": {
+          "median": 0.02119069999025669,
+          "min": 0.01985179999610409,
+          "max": 0.022830700007034466
+        },
+        "elapsed": {
+          "median": 1.002630200004205,
+          "min": 0.9343020999949658,
+          "max": 1.0606261000066297
+        },
+        "peak_tree_mib": {
+          "median": 49.0,
+          "min": 48.89453125,
+          "max": 49.13671875
+        }
+      }
+    },
+    {
+      "stores": 10,
+      "mode": "old",
+      "metrics": {
+        "stock_prepare": {
+          "median": 0.019039200007682666,
+          "min": 0.01842600000964012,
+          "max": 0.046479600001475774
+        },
+        "allocation_preview": {
+          "median": 0.0069205000036163256,
+          "min": 0.006428600012441166,
+          "max": 0.008093399999779649
+        },
+        "generation_save": {
+          "median": 0.1062503999855835,
+          "min": 0.10278840000682976,
+          "max": 0.10817490000044927
+        },
+        "export": {
+          "median": 0.3026652999978978,
+          "min": 0.28231439999944996,
+          "max": 0.31595720000041183
+        },
+        "payment_preview": {
+          "median": 0.09528209999552928,
+          "min": 0.08741069999814499,
+          "max": 0.09848800000327174
+        },
+        "elapsed": {
+          "median": 1.4097703000006732,
+          "min": 1.3951681000035023,
+          "max": 1.477611700000125
+        },
+        "peak_tree_mib": {
+          "median": 49.7421875,
+          "min": 49.66015625,
+          "max": 50.0703125
+        }
+      }
+    },
+    {
+      "stores": 10,
+      "mode": "new",
+      "metrics": {
+        "stock_prepare": {
+          "median": 0.019972399997641332,
+          "min": 0.019855100006680004,
+          "max": 0.020428400006494485
+        },
+        "allocation_preview": {
+          "median": 0.007261400009156205,
+          "min": 0.0069377000036183745,
+          "max": 0.007937300004414283
+        },
+        "generation_save": {
+          "median": 0.1183418000000529,
+          "min": 0.10418040001241025,
+          "max": 0.1583352999878116
+        },
+        "export": {
+          "median": 0.41623830000753514,
+          "min": 0.4003744999936316,
+          "max": 0.5348681000032229
+        },
+        "payment_preview": {
+          "median": 0.08261450000281911,
+          "min": 0.07669970000279136,
+          "max": 0.08643720000691246
+        },
+        "elapsed": {
+          "median": 1.524962700001197,
+          "min": 1.5210965000005672,
+          "max": 1.709755199990468
+        },
+        "peak_tree_mib": {
+          "median": 49.6796875,
+          "min": 49.53515625,
+          "max": 49.9375
+        }
+      }
+    }
+  ]
+}

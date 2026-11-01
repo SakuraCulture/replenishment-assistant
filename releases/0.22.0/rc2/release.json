@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "build": {
+    "source_commit": "99fc2be01bea8d2d2a71e22d99b9789385c892f1",
+    "build_id": "rc2",
+    "version": "0.22.0",
+    "built_at": "2026-11-01T21:02:24.620585+08:00",
+    "source_archive_sha256": "ec15b26c58f13fdf7b8e3e7947fbc6e0d8d547acb3db0ca9b8f13bd6f9907198",
+    "source_mode": "immutable git archive; no working-tree overlay"
+  },
+  "exe_sha256": "4b568e7ee3f8ba2ec9283b2eb0a45feb5c63da8cfdc80d0c7bdc295b2066baaf",
+  "zip_sha256": "bb0a4cf834162a9c4e2505f0e2709eb0ef472e3b652130537831f89965de4dc3",
+  "zip_bytes": 48513147,
+  "actual_exe_starts": 6,
+  "tests_per_mode": 346,
+  "pushed": false,
+  "merged": false
+}
