@@ -1,0 +1,280 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "portable.config design contract 2.0",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "2.0"
+    },
+    "exampleOnly": {
+      "type": "boolean"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "timezone": {
+      "const": "Asia/Shanghai"
+    },
+    "browserInteraction": {
+      "type": "object",
+      "properties": {"mode": {"enum": ["background_tab", "visible_tab"]}},
+      "required": ["mode"],
+      "additionalProperties": false
+    },
+    "tenantBinding": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "merchantCode": {
+          "type": "string",
+          "minLength": 1
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "accountId",
+        "merchantCode",
+        "displayName"
+      ],
+      "additionalProperties": false
+    },
+    "exportPolicy": {
+      "type": "object",
+      "properties": {
+        "sourceId": {
+          "const": "D13"
+        },
+        "variant": {
+          "const": "all_information"
+        },
+        "semanticVersion": {
+          "enum": [
+            "D13-all-info-1",
+            "D13-all-info-2"
+          ]
+        },
+        "allGoods": {
+          "const": true
+        },
+        "suggestedQuantityPositiveOnly": {
+          "const": false
+        },
+        "additionalFilters": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "normalRun": {
+          "const": "reuse_valid_daily_asset_then_export_missing"
+        },
+        "rerun": {
+          "const": "explicit_export_then_validate_then_replace"
+        }
+      },
+      "required": [
+        "sourceId",
+        "variant",
+        "semanticVersion",
+        "allGoods",
+        "suggestedQuantityPositiveOnly",
+        "additionalFilters",
+        "normalRun",
+        "rerun"
+      ],
+      "additionalProperties": false
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "buyerWarehouseCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operatingStores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "code",
+                "name"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          },
+          "mappingSource": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mappingVerifiedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "buyerWarehouseCode",
+          "displayName",
+          "operatingStores",
+          "mappingSource",
+          "mappingVerifiedAt"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "batches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "targetWarehouseCodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "targetWarehouseCodes"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "resultLayout": {
+      "type": "object",
+      "properties": {
+        "rootPreset": {
+          "enum": [
+            "Documents",
+            "ChooseOnSetup"
+          ]
+        },
+        "folderTemplate": {
+          "type": "string",
+          "minLength": 1
+        },
+        "filenameTemplate": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "rootPreset",
+        "folderTemplate",
+        "filenameTemplate"
+      ],
+      "additionalProperties": false
+    },
+    "resourceLimits": {
+      "type": "object",
+      "properties": {
+        "connectTimeoutMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pageTimeoutMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pollIntervalMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "taskWaitBudgetMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "downloadTimeoutMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxCompressedFileBytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "connectTimeoutMs",
+        "pageTimeoutMs",
+        "pollIntervalMs",
+        "taskWaitBudgetMs",
+        "downloadTimeoutMs",
+        "maxCompressedFileBytes"
+      ],
+      "additionalProperties": false
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "exampleOnly",
+    "enabled",
+    "timezone",
+    "tenantBinding",
+    "exportPolicy",
+    "targets",
+    "batches",
+    "resultLayout",
+    "resourceLimits"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "enabled": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "exampleOnly": {
+            "const": false
+          }
+        }
+      }
+    }
+  ]
+}

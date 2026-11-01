@@ -1,0 +1,927 @@
+{
+  "kind": "IMPLEMENTATION_ACCEPTANCE_EVIDENCE",
+  "version": "0.2.1",
+  "channel": "CONTROLLED_TEST_BUILD",
+  "updatedAt": "2026-11-01T10:20:15.371Z",
+  "formalAllGatesPassed": false,
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "windowsKernel": "10.0.26200",
+    "node": "v24.22.1",
+    "playwrightCore": "1.62.1",
+    "edge": "156.0.4314.58",
+    "realExistingProfilesTested": 1,
+    "realWindowsComputersTested": 1
+  },
+  "gates": {
+    "G01": "PARTIAL_LIVE",
+    "G02": "PARTIAL_SINGLE_EXISTING_PROFILE",
+    "G03": "PARTIAL_LIVE_AND_FIXTURE",
+    "G04": "PARTIAL_THREE_WAREHOUSES_DIRECT_SCOPE",
+    "G05": "PARTIAL_SYSTEM_FIXTURES",
+    "G06": "SAME_PC_ISOLATED_ROOT_TESTS_ONLY"
+  },
+  "tests": {
+    "total": 52,
+    "pass": 52,
+    "fail": 0,
+    "skipped": 0,
+    "source": "dev-evidence/tests-0.2.1.tap"
+  },
+  "liveExports": [
+    {
+      "buyerWarehouseCode": "WLD2025",
+      "taskId": "11362438",
+      "queryRows": 11840,
+      "taskSuccessRows": 11840,
+      "rows": 11840,
+      "columns": 54,
+      "bytes": 4128589,
+      "sha256": "45e7caf0e8600e4bfd3cabb4c0aea0214acb0ecc637788e656f6e69dd66eae86",
+      "semanticVersion": "D13-all-info-2",
+      "scopeHash": "0cb6a32ff1e9d63fbe66e6c5d941255686eea4194a05e1c390f6e99133af60e3",
+      "collectedAt": "2026-11-01T06:06:59.806Z",
+      "relativePath": "优团生活科技（山东）有限公司_LY_TT_QQD/2026-11-01/柴小囤便利超市（五莲店）_WLD2025_20261101_补货建议.xlsx",
+      "entityCounts": {
+        "WLD2025": 11840
+      },
+      "query": {
+        "buyerWarehouseCodeList": [
+          "WLD2025"
+        ],
+        "pageIndex": "1",
+        "pageSize": "20"
+      },
+      "receiptCode": "SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2"
+    },
+    {
+      "buyerWarehouseCode": "CXTCXD20251129",
+      "taskId": "11372224",
+      "queryRows": 20971,
+      "taskSuccessRows": 20971,
+      "rows": 20971,
+      "columns": 54,
+      "bytes": 7481465,
+      "sha256": "eee5e6d7ca222cab90d20ab1aebaa774be5cc3d662c78a9bb796e4e529d6f589",
+      "semanticVersion": "D13-all-info-2",
+      "scopeHash": "01430bb136edbb2326af2af07076f15c650a4ed169640c77ade8c39737c1374a",
+      "collectedAt": "2026-11-01T06:24:20.084Z",
+      "relativePath": "优团生活科技（山东）有限公司_LY_TT_QQD/2026-11-01/柴小囤便利超市（曹县店）_CXTCXD20251129_20261101_补货建议.xlsx",
+      "entityCounts": {
+        "CXTCXD20251129": 20971
+      },
+      "query": {
+        "buyerWarehouseCodeList": [
+          "CXTCXD20251129"
+        ],
+        "pageIndex": "1",
+        "pageSize": "20"
+      },
+      "receiptCode": "SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2"
+    },
+    {
+      "buyerWarehouseCode": "CXTLSD251119",
+      "taskId": "11364301",
+      "queryRows": 14152,
+      "taskSuccessRows": 14152,
+      "rows": 14152,
+      "columns": 54,
+      "bytes": 5219840,
+      "sha256": "7ad42d813f728405f0a8ad05e374e178f25e86b24e41821f568b1b9115b311ae",
+      "semanticVersion": "D13-all-info-2",
+      "scopeHash": "fa1c5f665ab867aafb6be702c1ecf6a57915a4d21446feb2a5b97ac14d600317",
+      "collectedAt": "2026-11-01T06:30:03.451Z",
+      "relativePath": "优团生活科技（山东）有限公司_LY_TT_QQD/2026-11-01/柴小囤（梁山店）_CXTLSD251119_20261101_补货建议.xlsx",
+      "entityCounts": {
+        "CXTLSD251119": 14152
+      },
+      "query": {
+        "buyerWarehouseCodeList": [
+          "CXTLSD251119"
+        ],
+        "pageIndex": "1",
+        "pageSize": "20"
+      },
+      "receiptCode": "SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2"
+    }
+  ],
+  "controlledExpiry": {
+    "type": "CONTROLLED_LIVE_403_REFRESH",
+    "taskId": "10920185",
+    "expiryMode": "FORCED_PAST_EXPIRES_PARAMETER",
+    "deniedAsExpected": true,
+    "sameObject": true,
+    "bytes": 462494,
+    "sha256": "567952e1e17d1e5b349465aa107df54f1e72da1ef8ad955d48ade4033ff7a39a",
+    "baselineHashMatched": true,
+    "newExportSubmitted": false
+  },
+  "disconnect": {
+    "ownedTargetClosed": true,
+    "userPageCountBefore": 5,
+    "userPageCountAfter": 5,
+    "allPreviousUserTargetsSurvived": true,
+    "browserCloseSent": false
+  },
+  "standaloneCli": {
+    "startedAt": "2026-11-01T06:44:10.604Z",
+    "completedAt": "2026-11-01T06:45:03.497Z",
+    "entry": "src/cli.mjs run --batch default --json",
+    "exitCode": 0,
+    "runId": "fd7a4a49-aefa-414c-b58b-206300e5c195",
+    "status": "SUCCEEDED",
+    "targets": 3,
+    "reused": 3,
+    "attemptsBefore": 3,
+    "attemptsAfter": 3,
+    "newExportSubmitted": false,
+    "workerLockReleased": true,
+    "workerLockVerifiedAt": "2026-11-01T06:47:58.802Z",
+    "version": "0.1.0",
+    "retainedPriorVersionEvidence": true
+  },
+  "batchReuse": {
+    "targets": 3,
+    "attemptCount": 3,
+    "probeRunId": "ba0e9651-c7bc-4a4a-b0c6-b974c6069e7b",
+    "probeAllReused": true,
+    "cliAllReused": true
+  },
+  "cases": [
+    {
+      "id": "E01",
+      "gate": "ENV",
+      "title": "无开发环境的新电脑",
+      "mandatory": true,
+      "status": "PARTIAL_SAME_PC",
+      "evidence": "随包运行时启动成功；无开发环境的新电脑未测"
+    },
+    {
+      "id": "E02",
+      "gate": "ENV",
+      "title": "安装目录迁移和中文空格",
+      "mandatory": true,
+      "status": "PARTIAL_SAME_PC_PATHS",
+      "evidence": "源码位置及中文空格发行位置均通过启动.cmd；PATH不含系统Node，状态根相同。变更盘符和用户名未测。"
+    },
+    {
+      "id": "E03",
+      "gate": "ENV",
+      "title": "Edge缺失及企业限制",
+      "mandatory": true,
+      "status": "PARTIAL_FIXTURE",
+      "evidence": "失效端点已测；Edge缺失/企业策略环境未测"
+    },
+    {
+      "id": "E04",
+      "gate": "ENV",
+      "title": "目录不可写及低磁盘",
+      "mandatory": true,
+      "status": "PARTIAL_SYSTEM_FIXTURE",
+      "evidence": "低磁盘与真实Windows文件锁已测；完整ACL/磁盘矩阵未测"
+    },
+    {
+      "id": "E05",
+      "gate": "ENV",
+      "title": "发行内容被改动",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "发行哈希篡改夹具通过"
+    },
+    {
+      "id": "B01",
+      "gate": "G01",
+      "title": "复用已登录Edge",
+      "mandatory": true,
+      "status": "PASS_LIVE",
+      "evidence": "已有Edge配置、身份、原生查询及正式命令三仓复用；0.1.1郓城后台真实登录账号查询、复用和重导全链路通过"
+    },
+    {
+      "id": "B02",
+      "gate": "G01",
+      "title": "授权等待与超时",
+      "mandatory": true,
+      "status": "PARTIAL_LIVE",
+      "evidence": "一次连接等待及故障状态；完整授权拒绝矩阵未测"
+    },
+    {
+      "id": "B03",
+      "gate": "G01",
+      "title": "断开重连不关闭Edge",
+      "mandatory": true,
+      "status": "PASS_LIVE",
+      "evidence": "关闭自有页，5个原用户页全部保留；正式worker锁释放"
+    },
+    {
+      "id": "B04",
+      "gate": "G01",
+      "title": "陈旧端口文件",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "失效发现端口不判连接成功"
+    },
+    {
+      "id": "B05",
+      "gate": "G02",
+      "title": "两套已有用户配置",
+      "mandatory": true,
+      "status": "PENDING_ENVIRONMENT",
+      "evidence": "只有一套真实已有用户配置"
+    },
+    {
+      "id": "B06",
+      "gate": "G02",
+      "title": "相同商家存在于两配置",
+      "mandatory": true,
+      "status": "PENDING_ENVIRONMENT",
+      "evidence": "缺少同商家不同已有配置"
+    },
+    {
+      "id": "B07",
+      "gate": "G02",
+      "title": "自定义数据根和配置目录",
+      "mandatory": true,
+      "status": "PENDING_ENVIRONMENT",
+      "evidence": "真实自定义数据根未测"
+    },
+    {
+      "id": "B08",
+      "gate": "G01",
+      "title": "登录过期",
+      "mandatory": true,
+      "status": "PENDING_LIVE",
+      "evidence": "真实登录过期恢复未测"
+    },
+    {
+      "id": "B09",
+      "gate": "G04",
+      "title": "执行中切换身份或筛选",
+      "mandatory": true,
+      "status": "PARTIAL_FIXTURE",
+      "evidence": "错误范围受理和断开阻断；人工切换身份/筛选现场矩阵未测"
+    },
+    {
+      "id": "C01",
+      "gate": "G04",
+      "title": "一仓多店",
+      "mandatory": true,
+      "status": "PARTIAL_IMPLEMENTED",
+      "evidence": "按唯一接收仓配置；一仓多经营店现场关系未验证"
+    },
+    {
+      "id": "C02",
+      "gate": "G04",
+      "title": "同名门店或关系缺失",
+      "mandatory": true,
+      "status": "PARTIAL_IMPLEMENTED",
+      "evidence": "精确名称/编码检查实现；同名完整反例未测"
+    },
+    {
+      "id": "C03",
+      "gate": "G04",
+      "title": "全部商品筛选",
+      "mandatory": true,
+      "status": "PASS_LIVE",
+      "evidence": "三仓原生查询与受理均只有指定buyerWarehouseCodeList"
+    },
+    {
+      "id": "C04",
+      "gate": "G04",
+      "title": "至少三个不同仓点",
+      "mandatory": true,
+      "status": "PASS_LIVE",
+      "evidence": "三仓文件全部验收通过"
+    },
+    {
+      "id": "C05",
+      "gate": "G04",
+      "title": "全量反例",
+      "mandatory": true,
+      "status": "HISTORICAL_CONSTRAINT",
+      "evidence": "保留全量少导反例约束；新程序只按单仓提交"
+    },
+    {
+      "id": "D01",
+      "gate": "G03",
+      "title": "脚本下载已知任务文件",
+      "mandatory": true,
+      "status": "PASS_LIVE",
+      "evidence": "10920185同任务与原生文件字节哈希一致"
+    },
+    {
+      "id": "D02",
+      "gate": "G03",
+      "title": "签名过期",
+      "mandatory": true,
+      "status": "PASS_CONTROLLED_LIVE",
+      "evidence": "过去Expires参数产生真实403，刷新原任务后对象与哈希一致"
+    },
+    {
+      "id": "D03",
+      "gate": "G03",
+      "title": "浏览器与脚本代理差异",
+      "mandatory": true,
+      "status": "PARTIAL_LIVE",
+      "evidence": "当前网络下载成功；企业代理差异未测"
+    },
+    {
+      "id": "D04",
+      "gate": "G03",
+      "title": "错误页和损坏文件",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "HTML、CRC、错误实体和行数不通过验收"
+    },
+    {
+      "id": "D05",
+      "gate": "G03",
+      "title": "共用浏览器其他下载",
+      "mandatory": true,
+      "status": "PARTIAL_GUARDED",
+      "evidence": "拦截修改共用下载行为；用户普通下载前后现场对照未测"
+    },
+    {
+      "id": "D06",
+      "gate": "G03",
+      "title": "下载中断和结果变化",
+      "mandatory": true,
+      "status": "PARTIAL_FIXTURE",
+      "evidence": "对象身份保护已测；真实断流完整矩阵未测"
+    },
+    {
+      "id": "F01",
+      "gate": "G04",
+      "title": "XLSX错误dimension",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "从XML真实行计数，忽略dimension=A1:A1"
+    },
+    {
+      "id": "F02",
+      "gate": "G04",
+      "title": "重复表头和合法展开",
+      "mandatory": true,
+      "status": "PASS_LIVE_AND_FIXTURE",
+      "evidence": "V1/52列和V2/54列契约，重复毛利列、合法重复行保持"
+    },
+    {
+      "id": "F03",
+      "gate": "CONDITIONAL",
+      "title": "零行查询",
+      "mandatory": false,
+      "status": "UNVERIFIED_CONDITIONAL",
+      "evidence": "未接受零行契约；不会生成空表冒充成功"
+    },
+    {
+      "id": "F04",
+      "gate": "CONDITIONAL",
+      "title": "单仓超限及分卷",
+      "mandatory": false,
+      "status": "UNVERIFIED_CONDITIONAL",
+      "evidence": "真实上限/多分卷/子片未验证"
+    },
+    {
+      "id": "F05",
+      "gate": "G04",
+      "title": "长编码和数值精度",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "长文本ID、前导零、无损JSON，超15位原生数值ID阻断"
+    },
+    {
+      "id": "R01",
+      "gate": "G05",
+      "title": "提交后结果未知",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "UNKNOWN不可重放，匹配受理证据才能接续"
+    },
+    {
+      "id": "R02",
+      "gate": "G05",
+      "title": "双启动与复制发行目录",
+      "mandatory": true,
+      "status": "PASS_SYSTEM_FIXTURE",
+      "evidence": "本机独占锁及跨进程worker锁"
+    },
+    {
+      "id": "R03",
+      "gate": "G05",
+      "title": "协调器崩溃但worker仍存活",
+      "mandatory": true,
+      "status": "PASS_SYSTEM_FIXTURE",
+      "evidence": "独立worker持锁，父IPC断开后释放；真实导出中崩溃未注入"
+    },
+    {
+      "id": "R04",
+      "gate": "G05",
+      "title": "任务列表暂缺或候选多个",
+      "mandatory": true,
+      "status": "PARTIAL_LIVE",
+      "evidence": "精确任务分页定位；暂缺及多候选完整矩阵未测"
+    },
+    {
+      "id": "R05",
+      "gate": "G05",
+      "title": "重跑与Excel占用",
+      "mandatory": true,
+      "status": "PASS_LIVE_AND_SYSTEM_FIXTURE",
+      "evidence": "真实Windows文件锁、旧文件保存及解锁后本地恢复；0.1.1郓城实际重导发布成功，旧文件备份哈希核对"
+    },
+    {
+      "id": "R06",
+      "gate": "G05",
+      "title": "发布阶段崩溃",
+      "mandatory": true,
+      "status": "PARTIAL_FIXTURE",
+      "evidence": "发布失败恢复通过；所有崩溃点未逐一注入"
+    },
+    {
+      "id": "R07",
+      "gate": "G05",
+      "title": "已完成任务继续下载",
+      "mandatory": true,
+      "status": "PASS_LIVE_AND_FIXTURE",
+      "evidence": "首仓恢复原11362438，文件缺失只恢复原任务"
+    },
+    {
+      "id": "R08",
+      "gate": "G05",
+      "title": "跨午夜和跨日恢复",
+      "mandatory": true,
+      "status": "PARTIAL_FIXTURE",
+      "evidence": "上海日期及迁入原日期冻结；跨午夜全链路未测"
+    },
+    {
+      "id": "R09",
+      "gate": "G05",
+      "title": "用户暂停",
+      "mandatory": true,
+      "status": "PARTIAL_FIXTURE",
+      "evidence": "派发前暂停、IPC退出及下载中止路径；所有阶段未逐一注入"
+    },
+    {
+      "id": "R10",
+      "gate": "G05",
+      "title": "字段漂移和状态损坏",
+      "mandatory": true,
+      "status": "PARTIAL_FIXTURE",
+      "evidence": "字段漂移、状态缺失和未知版本拒绝；全部损坏类型未测"
+    },
+    {
+      "id": "R11",
+      "gate": "G05",
+      "title": "正常补缺与复用",
+      "mandatory": true,
+      "status": "PASS_LIVE",
+      "evidence": "两轮三仓正常复用，实际提交尝试数保持3；0.1.1郓城复用无新任务，随后只增加一次显式重导"
+    },
+    {
+      "id": "M01",
+      "gate": "G06",
+      "title": "两台Windows迁移",
+      "mandatory": true,
+      "status": "PENDING_ENVIRONMENT",
+      "evidence": "缺少第二台真实Windows"
+    },
+    {
+      "id": "M02",
+      "gate": "G06",
+      "title": "同名配置身份不同",
+      "mandatory": true,
+      "status": "PENDING_ENVIRONMENT",
+      "evidence": "同名配置不同身份的迁入现场未测"
+    },
+    {
+      "id": "M03",
+      "gate": "G06",
+      "title": "迁移包凭据排除",
+      "mandatory": true,
+      "status": "PASS_WHITELIST_FIXTURE",
+      "evidence": "迁移严格白名单，凭据/本机绑定/浏览器资料排除"
+    },
+    {
+      "id": "M04",
+      "gate": "G06",
+      "title": "重复导入与冲突",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "重复导入、同ID冲突和配置差异保护"
+    },
+    {
+      "id": "M05",
+      "gate": "G06",
+      "title": "旧迁移包和未决提交",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "旧已知记录不能消除UNKNOWN，同仓跨口径继续阻断"
+    },
+    {
+      "id": "M06",
+      "gate": "G06",
+      "title": "随迁结果的路径和哈希",
+      "mandatory": true,
+      "status": "PASS_SAME_PC_FIXTURE",
+      "evidence": "不同状态根和输出路径，逐文件原字节/实体/计数重验；两机未测"
+    },
+    {
+      "id": "M07",
+      "gate": "G06",
+      "title": "只迁配置不迁结果",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "无结果包不登记本机资产或扫描Downloads"
+    },
+    {
+      "id": "M08",
+      "gate": "G06",
+      "title": "源机未正式停止",
+      "mandatory": true,
+      "status": "PARTIAL_IMPLEMENTED",
+      "evidence": "源机停止标记和快照阻断实现；双机交接现场未测"
+    },
+    {
+      "id": "M09",
+      "gate": "G06",
+      "title": "恶意或损坏ZIP",
+      "mandatory": true,
+      "status": "PARTIAL_FIXTURE",
+      "evidence": "路径、白名单、哈希及成员保护；全部恶意ZIP类型未逐一构造"
+    },
+    {
+      "id": "M10",
+      "gate": "G06",
+      "title": "状态版本升级失败",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "未知状态版本不升级或清空，原版本值保持"
+    },
+    {
+      "id": "M11",
+      "gate": "G06",
+      "title": "同日资产不同哈希",
+      "mandatory": true,
+      "status": "PARTIAL_FIXTURE",
+      "evidence": "同日资产和未知文件不覆盖；迁入多包冲突完整矩阵未测"
+    },
+    {
+      "id": "M12",
+      "gate": "G06",
+      "title": "迁移包未携带未决记录",
+      "mandatory": true,
+      "status": "PASS_FIXTURE",
+      "evidence": "删减恢复数组后数量/集合哈希不符，拒绝导入"
+    },
+    {
+      "id": "T01",
+      "title": "获取最新采购导入模板",
+      "status": "LIVE_CLI_AND_ISOLATED_EDGE_FIXTURE",
+      "evidence": "正式CLI经独立worker从现有Edge获取12列原生模板，6953字节，SHA256一致。7项新增测试通过；失败不回退、不兼容变更停止准备；本次无新增导入。"
+    }
+  ],
+  "summary": {
+    "totalCases": 53,
+    "mandatoryCases": 51,
+    "fullyPassedUnderStatedEvidence": 25,
+    "pendingOrPartial": 28
+  },
+  "limits": [
+    "两套真实已有配置/两台Windows未完成",
+    "从经营店目录自动同步仓店关系未完成",
+    "零行/超限子片/多分卷未验收",
+    "自然过期、代理、人工切换及普通下载现场矩阵未完成"
+  ],
+  "packagePathCheck": {
+    "verifiedAt": "2026-11-01T10:20:15.370Z",
+    "tests": [
+      {
+        "label": "source-checkout",
+        "launcher": "启动.cmd doctor --json",
+        "systemNodeRemovedFromPath": true,
+        "node": "v24.22.1",
+        "stateRootSame": true,
+        "edgeFound": 1,
+        "profilesFound": 1
+      },
+      {
+        "label": "packaged-chinese-space-path",
+        "launcher": "启动.cmd doctor --json",
+        "systemNodeRemovedFromPath": true,
+        "node": "v24.22.1",
+        "stateRootSame": true,
+        "edgeFound": 1,
+        "profilesFound": 1
+      }
+    ]
+  },
+  "hotfix": {
+    "kind": "POST_EXPORT_OVERLAY_AND_BACKGROUND_TAB",
+    "version": "0.1.1",
+    "checkedAt": "2026-11-01T07:17:36.553Z",
+    "reproducedInIsolatedRealEdge": true,
+    "unexpectedDialogsPreserved": true,
+    "backgroundTargetSameProfileChecked": true,
+    "originalFixturePagePreserved": true,
+    "systemMouseOrScreenAutomationUsed": false,
+    "productionLoginProfileCopied": false,
+    "currentUserBusinessConnectionTakenOver": false,
+    "liveBusinessWorkflowAfterHotfix": "PASSED_CURRENT_ACCOUNT_BACKGROUND_FULL_CHAIN",
+    "existingYunchengTask": {
+      "taskId": "11372232",
+      "rows": 16035,
+      "sha256": "ad9169f5409c86ebc58a9fa485529f18018db6372082bb14e3292e40865e93d0",
+      "fileHashMatched": true,
+      "newExportSubmittedByHotfix": false,
+      "oldFileRetainedAsVerifiedBackup": true
+    }
+  },
+  "liveBackground011": {
+    "version": "0.1.1",
+    "status": "PASSED",
+    "startedAt": "2026-11-01T07:31:29.921Z",
+    "completedAt": "2026-11-01T07:33:55.245Z",
+    "testedComponents": "packaged BrowserClient + independent browser-worker + packaged Coordinator",
+    "firstSetupWizardRetested": false,
+    "mode": "background_tab",
+    "profileDirectory": "Profile 1",
+    "profilePathVerified": true,
+    "merchantCode": "LY_TT_QQD",
+    "warehouseCode": "YCD20251613",
+    "taskId": "11374081",
+    "query": {
+      "buyerWarehouseCodeList": [
+        "YCD20251613"
+      ],
+      "pageIndex": "1",
+      "pageSize": "20"
+    },
+    "queryRows": 16035,
+    "taskSuccessCount": 16035,
+    "taskFailCount": 0,
+    "rows": 16035,
+    "columns": 54,
+    "sha256": "e381696231603e9922d006c25f3925567917de94076668b41cb3dbc618e1e15e",
+    "bytes": 5590162,
+    "entityCounts": {
+      "YCD20251613": 16035
+    },
+    "reuseWithoutNewSubmission": true,
+    "singleRerunSubmission": true,
+    "postExportHistorySucceeded": true,
+    "manualPageRecoveryUsed": false,
+    "oldFileBackupHashMatched": true,
+    "configFileUnchanged": true,
+    "workerLockReleased": true,
+    "originalEdgeProcessesSurvived": true,
+    "liveReport": "dev-evidence/live-background-0.1.1.json"
+  },
+  "purchaseExports": {
+    "implementedVersion": "0.2.0",
+    "verifiedAt": "2026-11-01T08:32:03.745Z",
+    "route": "#/chain/order/purchase",
+    "sourceIds": [
+      "D16",
+      "D17"
+    ],
+    "nativeMainColumns": 25,
+    "nativeDetailColumns": 43,
+    "recoveryFromKnownTasks": {
+      "runId": "5de1987d-42e3-4212-b99e-c5ea5c206913",
+      "from": "2026-10-31",
+      "to": "2026-10-31",
+      "dateBasis": "created",
+      "target": {
+        "buyerWarehouseCode": "YCD20251613",
+        "displayName": "优团生活·精品超市（郓城店）"
+      },
+      "status": "SUCCEEDED",
+      "pairValidation": {
+        "status": "VALIDATED",
+        "queryParents": 1,
+        "mainRows": 1,
+        "detailRows": 259,
+        "linkedParents": 1,
+        "orphanRows": 0,
+        "parentCoverage": "EXACT_SET",
+        "skuCoverage": "DISTINCT_SKU_PER_ORDER",
+        "duplicatesPreserved": true,
+        "dateBasis": "created"
+      },
+      "exports": {
+        "D16": {
+          "taskId": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT@261101160417@5085",
+          "taskSummary": {
+            "taskId": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT@261101160417@5085",
+            "code": "SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT",
+            "successCount": 1,
+            "failCount": 0
+          },
+          "asset": {
+            "relativePath": "采购单/LY_TT_QQD/YCD20251613/2026-10-31_created/5de1987d-42e3-4212-b99e-c5ea5c206913/优团生活·精品超市（郓城店）_2026-10-31_采购主单.xlsx",
+            "sha256": "9aff7e7151a1a046aea701189e8ea4c461a46bef992b52cb04c338df57ec1f8c",
+            "bytes": 4454,
+            "rows": 1,
+            "columns": 25,
+            "publishedAt": "2026-11-01T08:17:25.208Z"
+          }
+        },
+        "D17": {
+          "taskId": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT@261101160723@4465",
+          "taskSummary": {
+            "taskId": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT@261101160723@4465",
+            "code": "SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT",
+            "successCount": 259,
+            "failCount": 0
+          },
+          "asset": {
+            "relativePath": "采购单/LY_TT_QQD/YCD20251613/2026-10-31_created/5de1987d-42e3-4212-b99e-c5ea5c206913/优团生活·精品超市（郓城店）_2026-10-31_采购商品明细.xlsx",
+            "sha256": "94b9e0d895510dfdfb7402c7ab04d3dfc103058d804f7404407b56d21519f56c",
+            "bytes": 73937,
+            "rows": 259,
+            "columns": 43,
+            "publishedAt": "2026-11-01T08:17:25.233Z"
+          }
+        }
+      },
+      "reportRelativePath": "采购单/LY_TT_QQD/YCD20251613/2026-10-31_created/5de1987d-42e3-4212-b99e-c5ea5c206913/验收记录.json"
+    },
+    "fullSourceSubmissionAndDownload": {
+      "runId": "525bb6be-1b1d-4029-9a6f-8d5c12af5cd3",
+      "from": "2026-10-31",
+      "to": "2026-10-31",
+      "dateBasis": "created",
+      "target": {
+        "buyerWarehouseCode": "YCD20251613",
+        "displayName": "优团生活·精品超市（郓城店）"
+      },
+      "status": "SUCCEEDED",
+      "pairValidation": {
+        "status": "VALIDATED",
+        "queryParents": 1,
+        "mainRows": 1,
+        "detailRows": 259,
+        "linkedParents": 1,
+        "orphanRows": 0,
+        "parentCoverage": "EXACT_SET",
+        "skuCoverage": "DISTINCT_SKU_PER_ORDER",
+        "duplicatesPreserved": true,
+        "dateBasis": "created"
+      },
+      "exports": {
+        "D16": {
+          "taskId": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT@261101162035@8516",
+          "taskSummary": {
+            "taskId": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT@261101162035@8516",
+            "code": "SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT",
+            "successCount": 1,
+            "failCount": 0
+          },
+          "asset": {
+            "relativePath": "采购单/LY_TT_QQD/YCD20251613/2026-10-31_created/525bb6be-1b1d-4029-9a6f-8d5c12af5cd3/优团生活·精品超市（郓城店）_2026-10-31_采购主单.xlsx",
+            "sha256": "c38bf5d85045fd7011dedb7abdb2e5d25c311a3e7453dca34dac01c5e995a5aa",
+            "bytes": 4454,
+            "rows": 1,
+            "columns": 25,
+            "publishedAt": "2026-11-01T08:21:05.984Z"
+          }
+        },
+        "D17": {
+          "taskId": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT@261101162048@1441",
+          "taskSummary": {
+            "taskId": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT@261101162048@1441",
+            "code": "SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT",
+            "successCount": 259,
+            "failCount": 0
+          },
+          "asset": {
+            "relativePath": "采购单/LY_TT_QQD/YCD20251613/2026-10-31_created/525bb6be-1b1d-4029-9a6f-8d5c12af5cd3/优团生活·精品超市（郓城店）_2026-10-31_采购商品明细.xlsx",
+            "sha256": "2a79c80c9963d6c3fe547301d6a305e3c2ccbd83da3c3462a2c1f480ca3bb09c",
+            "bytes": 73937,
+            "rows": 259,
+            "columns": 43,
+            "publishedAt": "2026-11-01T08:21:06.006Z"
+          }
+        }
+      },
+      "reportRelativePath": "采购单/LY_TT_QQD/YCD20251613/2026-10-31_created/525bb6be-1b1d-4029-9a6f-8d5c12af5cd3/验收记录.json"
+    },
+    "queryPagination": {
+      "total": 345,
+      "pages": 12,
+      "enumeratedParents": 345,
+      "uniqueParents": 345,
+      "request": {
+        "storeCodeList": [
+          "YCD20251613"
+        ],
+        "orderType": "3",
+        "merchantSubBizType": "CONSIGNEE",
+        "pageIndex": "1",
+        "pageSize": "30",
+        "sort": "main_order_gmt_create",
+        "start": "1767196800000",
+        "end": "1793462399000"
+      },
+      "orderSetSha256": "c20bc32ea514ab8703bc6846e1aadddff2acb215be66c40e1bd9372ec12a9cbd",
+      "exported": false,
+      "observedAt": "2026-11-01T08:24:18.947Z"
+    },
+    "updatedTimeFilterQuery": {
+      "total": 1,
+      "enumeratedParents": 1,
+      "uniqueParents": 1,
+      "request": {
+        "storeCodeList": [
+          "YCD20251613"
+        ],
+        "orderType": "3",
+        "merchantSubBizType": "CONSIGNEE",
+        "pageIndex": "1",
+        "pageSize": "30",
+        "sort": "main_order_gmt_create",
+        "modifiedStart": "1793376000000",
+        "modifiedEnd": "1793462399000"
+      },
+      "orderSetSha256": "8c2906da5dd82077b81973d18b4c78aada2142551bcd1cfbb8931b87dfa36e7e",
+      "exported": false,
+      "observedAt": "2026-11-01T08:22:12.088Z"
+    },
+    "session": {
+      "at": "2026-11-01T08:26:01.193Z",
+      "sameBusinessConfig": true,
+      "stateSchemaVersion": "2",
+      "purchaseRuns": [
+        {
+          "id": "5de1987d-42e3-4212-b99e-c5ea5c206913",
+          "status": "SUCCEEDED",
+          "taskIds": [
+            "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT@261101160417@5085",
+            "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT@261101160723@4465"
+          ]
+        },
+        {
+          "id": "525bb6be-1b1d-4029-9a6f-8d5c12af5cd3",
+          "status": "SUCCEEDED",
+          "taskIds": [
+            "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT@261101162035@8516",
+            "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT@261101162048@1441"
+          ]
+        }
+      ],
+      "unresolvedPurchaseRuns": 0,
+      "browserMode": "background_tab",
+      "profilePathVerified": true,
+      "guardBlocked": []
+    },
+    "nativeExportSubmissionsThisTask": 4,
+    "fullRunNewSubmissions": 2,
+    "onlyReadsAndNativeExports": true,
+    "engineeringLimits": {
+      "dailyParentOrders": 3000,
+      "physicalValidationRows": 500000,
+      "singleBufferedWorkbookBytes": 67108864,
+      "platformExportMaximumVerified": false
+    },
+    "migration": {
+      "format": "2.1",
+      "sqliteSchema": "2",
+      "consistentBackupBeforeUpgrade": true,
+      "unknownPreserved": true,
+      "rawFileTransfer": "SAME_PC_ISOLATED_STATE_AND_OUTPUT_ROOTS_VERIFIED",
+      "realSecondComputerVerified": false
+    },
+    "remaining": [
+      "平台最大行数、最大时间窗口及超限行为未验证",
+      "更新时间筛选已核验控件与原生查询请求；按更新时间的新导出文件未独立实测",
+      "采购原生零行子单文件契约未验证",
+      "新采购能力的正式独立worker现场执行未另建授权连接；源代码适配器及协调器在原长连接中实测，独立worker接入沿用原架构",
+      "双真实Edge配置及第二台真实Windows迁移未验证"
+    ]
+  },
+  "purchaseTemplate": {
+    "status": "LIVE_CLI_DOWNLOAD_AND_FIXTURE_PASSED",
+    "verifiedAt": "2026-11-01T10:15:04.485Z",
+    "attemptId": "88b77c3f-e98b-4b8b-8430-66ff6c561186",
+    "merchantCode": "LY_TT_QQD",
+    "bytes": 6953,
+    "sha256": "44c4f65dbbb82ae03244c9a2e1427b8a1c44cddbb8eef8857017c8009902eefa",
+    "columns": 12,
+    "headerRow": 7,
+    "inputStartRow": 8,
+    "uiProductLimit": 12000,
+    "nativeValidationRange": "K2:K3001",
+    "hiddenLookupPreserved": true,
+    "sourceCode": "SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-IMPORT-V2",
+    "importSubmissions": 0,
+    "automaticPreparation": "SERVICE_AND_CONTROLLED_PREP_HOOK_IMPLEMENTED_FIXTURE_VERIFIED_NO_NEW_LIVE_IMPORT",
+    "file": "C:\\Users\\lenovo\\Documents\\翱象补货建议\\模板\\采购单\\LY_TT_QQD_96aa5118a63b0fe77c23\\原生版本\\44c4f65dbbb82ae03244c9a2e1427b8a1c44cddbb8eef8857017c8009902eefa.xlsx",
+    "recordFile": "C:/Users/lenovo/Documents/翱象补货建议/模板/采购单/LY_TT_QQD_96aa5118a63b0fe77c23/获取记录/88b77c3f-e98b-4b8b-8430-66ff6c561186.json",
+    "source": "dev-evidence/template-cli-live-0.2.1.json",
+    "limits": [
+      "通用批量导入命令尚未发布",
+      "平台更新后的真实模板尚无新版本供现场对照；字段漂移使用修改副本测试",
+      "平台数量临界与超限导入未测试"
+    ]
+  }
+}

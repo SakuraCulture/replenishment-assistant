@@ -1,0 +1,9 @@
+{
+  "profileId":"D13-V2-20261101",
+  "businessOrigins":["https://saas-retail.ele.me","https://tc-supply-chain-portal.ele.me","https://sc-gei-tc-supply-chain-portal.ele.me"],
+  "downloadHosts":["tc-open-gateway-supply-deploy.oss-cn-zhangjiakou.aliyuncs.com"],
+  "exportCodes":["SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT","SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2"],
+  "currentExportCode":"SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2",
+  "currentContractId":"D13-V2-observed-20261101-54cols",
+  "currentSemanticVersion":"D13-all-info-2"
+}

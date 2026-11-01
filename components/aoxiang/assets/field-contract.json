@@ -1,0 +1,240 @@
+{
+  "schemaVersion": "2.0",
+  "sourceId": "D13",
+  "variant": "all_information",
+  "contractId": "D13-observed-20261016-52cols",
+  "evidenceStatus": "HISTORICAL_SAMPLE_REQUIRES_CURRENT_COMPATIBILITY_CHECK",
+  "nativeSheetName": "商品补货建议",
+  "headerRow": 1,
+  "headerColumns": 52,
+  "columns": [
+    {
+      "position1Based": 1,
+      "rawHeader": "仓库/门店名称"
+    },
+    {
+      "position1Based": 2,
+      "rawHeader": "仓库/门店编码"
+    },
+    {
+      "position1Based": 3,
+      "rawHeader": "发货仓名称"
+    },
+    {
+      "position1Based": 4,
+      "rawHeader": "发货仓编码"
+    },
+    {
+      "position1Based": 5,
+      "rawHeader": "供应商名称"
+    },
+    {
+      "position1Based": 6,
+      "rawHeader": "供应商编码"
+    },
+    {
+      "position1Based": 7,
+      "rawHeader": "商品名称"
+    },
+    {
+      "position1Based": 8,
+      "rawHeader": "商品编码"
+    },
+    {
+      "position1Based": 9,
+      "rawHeader": "商品条码"
+    },
+    {
+      "position1Based": 10,
+      "rawHeader": "类目"
+    },
+    {
+      "position1Based": 11,
+      "rawHeader": "规格"
+    },
+    {
+      "position1Based": 12,
+      "rawHeader": "箱规"
+    },
+    {
+      "position1Based": 13,
+      "rawHeader": "补货状态"
+    },
+    {
+      "position1Based": 14,
+      "rawHeader": "补货策略"
+    },
+    {
+      "position1Based": 15,
+      "rawHeader": "采购模式"
+    },
+    {
+      "position1Based": 16,
+      "rawHeader": "建议补货量"
+    },
+    {
+      "position1Based": 17,
+      "rawHeader": "单位类型"
+    },
+    {
+      "position1Based": 18,
+      "rawHeader": "单位"
+    },
+    {
+      "position1Based": 19,
+      "rawHeader": "最小起订量"
+    },
+    {
+      "position1Based": 20,
+      "rawHeader": "起订倍数"
+    },
+    {
+      "position1Based": 21,
+      "rawHeader": "供应商商品名称"
+    },
+    {
+      "position1Based": 22,
+      "rawHeader": "供应商商品编码"
+    },
+    {
+      "position1Based": 23,
+      "rawHeader": "供应商商品规格"
+    },
+    {
+      "position1Based": 24,
+      "rawHeader": "采购价(门店采购价)"
+    },
+    {
+      "position1Based": 25,
+      "rawHeader": "要货价"
+    },
+    {
+      "position1Based": 26,
+      "rawHeader": "是否包邮"
+    },
+    {
+      "position1Based": 27,
+      "rawHeader": "采购链接"
+    },
+    {
+      "position1Based": 28,
+      "rawHeader": "换算系数（翱象）"
+    },
+    {
+      "position1Based": 29,
+      "rawHeader": "换算系数（外部渠道）"
+    },
+    {
+      "position1Based": 30,
+      "rawHeader": "日销"
+    },
+    {
+      "position1Based": 31,
+      "rawHeader": "周销"
+    },
+    {
+      "position1Based": 32,
+      "rawHeader": "月销"
+    },
+    {
+      "position1Based": 33,
+      "rawHeader": "可用库存"
+    },
+    {
+      "position1Based": 34,
+      "rawHeader": "在途库存"
+    },
+    {
+      "position1Based": 35,
+      "rawHeader": "在途库存天数"
+    },
+    {
+      "position1Based": 36,
+      "rawHeader": "库存单位"
+    },
+    {
+      "position1Based": 37,
+      "rawHeader": "可售（天）"
+    },
+    {
+      "position1Based": 38,
+      "rawHeader": "开始缺货时间"
+    },
+    {
+      "position1Based": 39,
+      "rawHeader": "缺货天数（天）"
+    },
+    {
+      "position1Based": 40,
+      "rawHeader": "缺货损失（元）"
+    },
+    {
+      "position1Based": 41,
+      "rawHeader": "淘宝闪购零售价（元）"
+    },
+    {
+      "position1Based": 42,
+      "rawHeader": "毛利"
+    },
+    {
+      "position1Based": 43,
+      "rawHeader": "美团零售价（元）"
+    },
+    {
+      "position1Based": 44,
+      "rawHeader": "毛利"
+    },
+    {
+      "position1Based": 45,
+      "rawHeader": "京东零售价（元）"
+    },
+    {
+      "position1Based": 46,
+      "rawHeader": "毛利"
+    },
+    {
+      "position1Based": 47,
+      "rawHeader": "最近补货数量"
+    },
+    {
+      "position1Based": 48,
+      "rawHeader": "最近补货单价"
+    },
+    {
+      "position1Based": 49,
+      "rawHeader": "最近补货金额"
+    },
+    {
+      "position1Based": 50,
+      "rawHeader": "最近补货时间"
+    },
+    {
+      "position1Based": 51,
+      "rawHeader": "更新时间"
+    },
+    {
+      "position1Based": 52,
+      "rawHeader": "商品标签"
+    }
+  ],
+  "keyColumnPositions1Based": {
+    "buyerWarehouseCode": 2,
+    "skuCode": 8,
+    "sellerWarehouseCode": 4,
+    "supplierCode": 6,
+    "barcode": 9
+  },
+  "duplicateHeaderPositions1Based": {
+    "毛利": [
+      42,
+      44,
+      46
+    ]
+  },
+  "businessRowsPackaged": false,
+  "maximumExportRows": null,
+  "preserveNativeFileBytes": true,
+  "idParsing": "text_or_lossless_decimal_lexeme_never_unsafe_JS_Number",
+  "rowPolicy": "preserve_physical_rows_and_native_expansion_no_sku_dedup",
+  "schemaDriftPolicy": "quarantine_for_compatibility_review"
+}

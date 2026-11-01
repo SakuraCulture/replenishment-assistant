@@ -1,0 +1,24 @@
+{
+  "name": "aoxiang-replenish-assistant",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "scripts": {
+    "start": "node src/cli.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "description": "使用本机已有Edge用户配置的翱象补货建议及采购主单、商品明细导出助手",
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "lossless-json": "4.3.3",
+    "playwright-core": "1.62.1",
+    "saxes": "6.0.0",
+    "ws": "8.18.3",
+    "yauzl": "3.2.0",
+    "yazl": "3.3.1"
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "version": "purchase-import-native-20261101-1",
+  "verifiedNativeSha256": "44c4f65dbbb82ae03244c9a2e1427b8a1c44cddbb8eef8857017c8009902eefa",
+  "schema": {
+    "format": 1,
+    "definedNames": [
+      {
+        "name": "hidden_sheet1_col_10",
+        "value": "hidden_sheet1_col_10!A1:A3002"
+      }
+    ],
+    "sheets": [
+      {
+        "name": "sheet1",
+        "state": "visible",
+        "headerRow": 7,
+        "inputStartRow": 8,
+        "headers": [
+          {
+            "ref": "A7",
+            "value": "*仓库/门店编码"
+          },
+          {
+            "ref": "B7",
+            "value": "*供应商编码"
+          },
+          {
+            "ref": "C7",
+            "value": "*商品编码"
+          },
+          {
+            "ref": "D7",
+            "value": "*采购数量（基础单位）"
+          },
+          {
+            "ref": "E7",
+            "value": "采购单价（元）"
+          },
+          {
+            "ref": "F7",
+            "value": "采购金额（元）"
+          },
+          {
+            "ref": "G7",
+            "value": "物流单号"
+          },
+          {
+            "ref": "H7",
+            "value": "商品名称"
+          },
+          {
+            "ref": "I7",
+            "value": "规格"
+          },
+          {
+            "ref": "J7",
+            "value": "网采订单留言"
+          },
+          {
+            "ref": "K7",
+            "value": "是否创建外部订单"
+          },
+          {
+            "ref": "L7",
+            "value": "外部采购账号"
+          }
+        ],
+        "instructions": [
+          {
+            "row": 6,
+            "cells": [
+              {
+                "ref": "A6",
+                "value": "必填（可在门店管理查询）"
+              },
+              {
+                "ref": "B6",
+                "value": "必填（可在供应商管理查询）"
+              },
+              {
+                "ref": "C6",
+                "value": "必填（可在门店商品查询）"
+              },
+              {
+                "ref": "D6",
+                "value": "必填（请填写基础单位的采购数量。例如：箱规为12瓶/箱的矿泉水，填写单位为瓶对应的采购数量）"
+              },
+              {
+                "ref": "E6",
+                "value": "选填（请填写基础单位采购单价；单价、金额只填1项时自动计算另1项，都填时以金额为准；都不填时取该仓库/门店商品的最新基础单位采购价并计算金额，无可用采购价时需手工填写）"
+              },
+              {
+                "ref": "F6",
+                "value": "选填（请填写基础单位采购单价；单价、金额只填1项时自动计算另1项，都填时以金额为准；都不填时取该仓库/门店商品的最新基础单位采购价并计算金额，无可用采购价时需手工填写）"
+              },
+              {
+                "ref": "G6",
+                "value": "选填（如果1个品有多个物流单号，用“，”隔开；创建1688渠道采购单时，无需填写物流单号）"
+              },
+              {
+                "ref": "H6",
+                "value": "选填"
+              },
+              {
+                "ref": "I6",
+                "value": "选填（规格存在多个值时，可以用“，”隔开。例如红色，L码）"
+              },
+              {
+                "ref": "J6",
+                "value": "选填（500 个字以内；同一仓库/门店和供应商下的留言必须一致，可只填写其中一行）。"
+              },
+              {
+                "ref": "K6",
+                "value": "选填（下拉选择，可选值为是/否，选择【是】则创建翱象采购单同时自动在外部采购渠道创建订单，选择【否】则仅创建翱象采购单，不填则默认为否"
+              },
+              {
+                "ref": "L6",
+                "value": "选填（若需要同步创建外部采购渠道订单，且当前仓有多个外部采购账号时，【必填】；若仅创建采购单，或当前仓只有1个外部采购账号时，可不填"
+              }
+            ]
+          }
+        ],
+        "sampleRows": [
+          {
+            "row": 8,
+            "isExample": true
+          },
+          {
+            "row": 9,
+            "isExample": true
+          }
+        ],
+        "validations": [
+          {
+            "type": "list",
+            "sqref": "K2:K3001",
+            "allowBlank": "true",
+            "errorStyle": "stop",
+            "showDropDown": "false",
+            "showErrorMessage": "true",
+            "formula1": "hidden_sheet1_col_10",
+            "formula2": ""
+          }
+        ]
+      },
+      {
+        "name": "hidden_sheet1_col_10",
+        "state": "hidden",
+        "rows": [
+          {
+            "row": 3001,
+            "cells": [
+              {
+                "ref": "K3001",
+                "value": "是"
+              }
+            ]
+          },
+          {
+            "row": 3002,
+            "cells": [
+              {
+                "ref": "K3002",
+                "value": "否"
+              }
+            ]
+          }
+        ],
+        "validations": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "machine.binding design contract 2.0",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "2.0"
+    },
+    "exampleOnly": {
+      "type": "boolean"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "machineBindingId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "edgeChannel": {
+      "const": "stable"
+    },
+    "edgeExecutable": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "edgeVersion": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "userDataRoot": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "profileDirectory": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "actualProfilePath": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "outputRoot": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "identityVerifiedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "compatibilityResult": {
+      "enum": [
+        "UNVERIFIED",
+        "PASSED",
+        "BLOCKED"
+      ]
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "exampleOnly",
+    "enabled",
+    "machineBindingId",
+    "edgeChannel",
+    "edgeExecutable",
+    "edgeVersion",
+    "userDataRoot",
+    "profileDirectory",
+    "actualProfilePath",
+    "outputRoot",
+    "identityVerifiedAt",
+    "compatibilityResult"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "enabled": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "exampleOnly": {
+            "const": false
+          },
+          "compatibilityResult": {
+            "const": "PASSED"
+          },
+          "edgeExecutable": {
+            "type": "string",
+            "minLength": 1
+          },
+          "edgeVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "userDataRoot": {
+            "type": "string",
+            "minLength": 1
+          },
+          "profileDirectory": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actualProfilePath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "outputRoot": {
+            "type": "string",
+            "minLength": 1
+          },
+          "identityVerifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  ]
+}

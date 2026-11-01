@@ -6,3 +6,5 @@
 *.txt diff
 *.ps1 diff
 *.ico binary
+# Received component retains original CRLF bytes; still check actual trailing spaces.
+components/aoxiang/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

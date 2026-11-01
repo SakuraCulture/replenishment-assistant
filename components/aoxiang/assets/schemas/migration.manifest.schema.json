@@ -1,0 +1,353 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "migration.manifest implementation contract 2.0, frozen-query extension",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "enum": ["2.0", "2.1"]
+    },
+    "exampleOnly": {
+      "type": "boolean"
+    },
+    "migrationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sourceStateGeneration": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "handoffStatus": {
+      "enum": [
+        "EXAMPLE_NOT_A_HANDOFF",
+        "SOURCE_STOPPED",
+        "CONFIG_ONLY_SNAPSHOT"
+      ]
+    },
+    "tenantBinding": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "merchantCode": {
+          "type": "string",
+          "minLength": 1
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "accountId",
+        "merchantCode",
+        "displayName"
+      ],
+      "additionalProperties": false
+    },
+    "unresolvedRecords": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceRunId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceAttemptId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "accountId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "merchantCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "buyerWarehouseCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scopeHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "state": {
+            "enum": [
+              "INTENT_RECORDED",
+              "SUBMITTING",
+              "SUBMISSION_UNKNOWN",
+              "ACCEPTED",
+              "RUNNING",
+              "FINISHED",
+              "DOWNLOADED",
+              "VALIDATED",
+              "PUBLISHING",
+              "WRONG_SCOPE_ACCEPTED"
+            ]
+          },
+          "taskId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evidenceRelativePaths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "semanticVersion": {
+            "enum": [
+              "D13-all-info-1",
+              "D13-all-info-2"
+            ]
+          },
+          "acquisitionDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "runMode": {
+            "enum": [
+              "normal",
+              "rerun"
+            ]
+          },
+          "querySnapshot": {
+            "type": "object",
+            "properties": {
+              "warehouseCode": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "observedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "warehouseCode",
+              "name",
+              "total",
+              "observedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "recordId",
+          "sourceRunId",
+          "sourceAttemptId",
+          "accountId",
+          "merchantCode",
+          "buyerWarehouseCode",
+          "scopeHash",
+          "state",
+          "taskId",
+          "createdAt",
+          "evidenceRelativePaths"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "relativePath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "relativePath",
+          "bytes",
+          "sha256"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "optionalAssets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "merchantCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "buyerWarehouseCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "acquisitionDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "scopeHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "semanticVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "file": {
+            "type": "object",
+            "properties": {
+              "relativePath": {
+                "type": "string",
+                "minLength": 1
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "relativePath",
+              "bytes",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "columns": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "collectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "contractId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "accountId",
+          "merchantCode",
+          "buyerWarehouseCode",
+          "acquisitionDate",
+          "scopeHash",
+          "semanticVersion",
+          "taskId",
+          "file",
+          "rows",
+          "columns",
+          "collectedAt",
+          "contractId"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "$schema": {
+      "type": "string"
+    },
+    "pendingRecordCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "purchaseRecords": {"type":"array","items":{"type":"object"}},
+    "purchaseRecordCount": {"type":"integer","minimum":0},
+    "purchaseRecordsSha256": {"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "purchaseAssets": {"type":"array","items":{"type":"object"}},
+    "pendingRecordsSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "exampleOnly",
+    "migrationId",
+    "createdAt",
+    "sourceStateGeneration",
+    "handoffStatus",
+    "tenantBinding",
+    "unresolvedRecords",
+    "files",
+    "optionalAssets",
+    "pendingRecordCount",
+    "pendingRecordsSha256"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {"if":{"properties":{"schemaVersion":{"const":"2.1"}}},"then":{"required":["purchaseRecords","purchaseRecordCount","purchaseRecordsSha256","purchaseAssets"]}},
+    {
+      "if": {
+        "properties": {
+          "exampleOnly": {
+            "const": false
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "handoffStatus": {
+            "enum": [
+              "SOURCE_STOPPED",
+              "CONFIG_ONLY_SNAPSHOT"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

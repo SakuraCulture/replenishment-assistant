@@ -23,3 +23,9 @@ workbench.sqlite3*
 !.env.example
 .DS_Store
 Thumbs.db
+# Bundled automation runtime and local component state (source and locks are tracked)
+/components/aoxiang/node_modules/
+/components/aoxiang/runtime/
+/components/aoxiang/dist/
+/components/aoxiang/dev-evidence/
+/components/aoxiang/.state/

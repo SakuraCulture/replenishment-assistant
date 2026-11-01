@@ -1,0 +1,45 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {nativeFixture} from './fixture.mjs';
+import {StateStore} from '../src/state.mjs';
+import {freshConfig,fieldContract} from '../src/config.mjs';
+import {businessDate,scopeHash,now,readJson} from '../src/common.mjs';
+import {validateWorkbook} from '../src/workbook-validator.mjs';
+import {publishAsset} from '../src/publisher.mjs';
+import {exportMigration,previewMigration,applyMigration,importMigrationAssets} from '../src/migration.mjs';
+import {checkOutput,assertHandoff} from '../src/preflight.mjs';
+import {DatabaseSync} from 'node:sqlite';
+const identity={accountId:'100',merchantCode:'merchant',displayName:'测试商家'};
+const target={buyerWarehouseCode:'WH',displayName:'测试仓店',operatingStores:[],mappingSource:'native-selector',mappingVerifiedAt:now()};
+const config=()=>freshConfig(identity,[target]);
+test('随迁结果在不同输出根核验后复用，重复导入不改变文件',async()=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'ax-assetmove-')),source=await StateStore.open(path.join(root,'source-state'));
+  const file=await nativeFixture(path.join(root,'native.xlsx')),v=await validateWorkbook(file,{contract:await fieldContract(),warehouseCode:'WH',expectedRows:1});
+  const asset={...identity,buyerWarehouseCode:'WH',acquisitionDate:businessDate(),scopeHash:scopeHash('WH'),semanticVersion:'D13-all-info-2',taskId:'123',contractId:'D13-V2-observed-20261101-54cols',rows:v.rows,columns:v.columns,sha256:v.sha256,bytes:v.bytes,collectedAt:now(),relativePath:'商家/当日/仓店.xlsx'};
+  const sourceOutput=path.join(root,'source-output');await publishAsset({state:source,outputRoot:sourceOutput,sourceFile:file,asset});
+  const zip=path.join(root,'with-results.zip');await exportMigration({state:source,config:config(),output:zip,sourceStopped:true,includeResults:true,outputRoot:sourceOutput});
+  const destination=await StateStore.open(path.join(root,'other-user-state')),preview=await previewMigration(zip);await applyMigration(preview,{state:destination,stateRoot:destination.root});
+  assert.equal(destination.rows('assets').length,0);
+  const output=path.join(root,'other-disk-output');assert.equal((await importMigrationAssets(zip,{state:destination,outputRoot:output})).saved,1);
+  assert.equal((await importMigrationAssets(zip,{state:destination,outputRoot:output})).conflicts.length,0);
+  assert.deepEqual(await fs.readFile(path.join(output,asset.relativePath)),await fs.readFile(file));assert.equal(destination.rows('assets').length,1);source.close();destination.close();
+});
+test('已知迁入任务冻结原日期和查询，未知记录不能采用已知路径',async()=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'ax-adopt-')),source=await StateStore.open(path.join(root,'source'));
+  source.putRun({id:'r1',mode:'rerun'});source.putAttempt({id:'a1',runId:'r1',itemId:'i1',...identity,buyerWarehouseCode:'WH',scopeHash:scopeHash('WH'),semanticVersion:'D13-all-info-2',acquisitionDate:'2026-10-30',stage:'ACCEPTED',taskId:'777',query:{name:target.displayName,total:19,observedAt:'2026-10-30T10:00:00Z'},createdAt:'2026-10-30T10:00:01Z'});
+  const zip=path.join(root,'pending.zip');await exportMigration({state:source,config:config(),output:zip,sourceStopped:true});
+  const dest=await StateStore.open(path.join(root,'dest')),p=await previewMigration(zip);await applyMigration(p,{state:dest,stateRoot:dest.root});
+  const adopted=dest.adoptImported('a1',config());assert.equal(adopted.day,'2026-10-30');assert.equal(adopted.mode,'rerun');const a=dest.rows('attempts')[0];assert.equal(a.taskId,'777');assert.equal(a.query.total,19);assert.equal(dest.rows('imported_pending').length,0);
+  assert.throws(()=>dest.adoptImported('a1',config()),{code:'MIGRATED_RECORD_NOT_UNIQUE'});source.close();dest.close();
+});
+test('状态缺失或版本过新不重建空库；长数字ID与低磁盘保护',async()=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'ax-failclosed-')),s=await StateStore.open(path.join(root,'state'));s.close();await fs.unlink(path.join(root,'state/state.sqlite'));
+  await assert.rejects(()=>StateStore.open(path.join(root,'state')),{code:'STATE_MISSING'});
+  const future=await StateStore.open(path.join(root,'future'));future.db.prepare("UPDATE metadata SET value='999' WHERE key='schemaVersion'").run();future.close();
+  await assert.rejects(()=>StateStore.open(path.join(root,'future')),{code:'STATE_VERSION'});const db=new DatabaseSync(path.join(root,'future/state.sqlite'),{readOnly:true});assert.equal(db.prepare("SELECT value FROM metadata WHERE key='schemaVersion'").get().value,'999');db.close();
+  const file=await nativeFixture(path.join(root,'unsafe.xlsx'),{numericSku:true}),contract=await fieldContract();await assert.rejects(()=>validateWorkbook(file,{contract}),{code:'UNSAFE_NATIVE_ID'});
+  await assert.rejects(()=>checkOutput(path.join(root,'output'),{minimumFreeBytes:Number.MAX_SAFE_INTEGER}),{code:'LOW_DISK_SPACE'});
+});

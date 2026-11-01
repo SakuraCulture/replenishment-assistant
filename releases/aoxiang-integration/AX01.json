@@ -1,0 +1,117 @@
+{
+  "passed": true,
+  "task": "AX01",
+  "baseline_commit": "cbaeecad190a2fea54fed8576ab2437341da00ce",
+  "checks": [
+    {
+      "group": "component_source_sha256",
+      "files": 57
+    },
+    {
+      "group": "component_runtime_sha256",
+      "files": 808
+    },
+    {
+      "group": "input_sha256",
+      "files": 33
+    },
+    {
+      "group": "core_sha256",
+      "files": 5
+    },
+    {
+      "group": "protected",
+      "files": 6
+    }
+  ],
+  "python_tests": {
+    "passed": 363,
+    "seconds": 33.751
+  },
+  "component_tests": {
+    "passed": 52
+  },
+  "capture_cases": [
+    "single_intake",
+    "single_loaded",
+    "single_results",
+    "nonoverlap_intake",
+    "nonoverlap_loaded",
+    "nonoverlap_results",
+    "overlap_intake",
+    "overlap_blocked",
+    "overlap_loaded",
+    "overlap_results",
+    "reversed_intake",
+    "reversed_blocked",
+    "reversed_loaded",
+    "reversed_results",
+    "path_dedup_intake",
+    "path_dedup_blocked",
+    "path_dedup_loaded",
+    "path_dedup_results",
+    "mixed_error_intake",
+    "mixed_error_loaded",
+    "mixed_error_results",
+    "all_error",
+    "warehouse_intake",
+    "warehouse_loaded",
+    "warehouse_results",
+    "real_loaded",
+    "real_None_True",
+    "real_0_True",
+    "real_3000_True",
+    "real_5000_True",
+    "real_10000_True",
+    "real_None_False",
+    "real_custom"
+  ],
+  "capture_files": {
+    "all_error.pklz": "3af82ce16326088102ad83e4b8d6e115c6ce6d20718d2109037d2f704e9e4ff4",
+    "capture.json": "edad4b0acf13f38d06ccbbecb6126d273ff905279426c9589acbeb01716f7f23",
+    "filtered.xlsx": "09563e6784eb41809f9b47e56e2918c4455b6b91c89316715cbf7c00422dc2a9",
+    "mixed_error_intake.pklz": "03dcea7f56efe6894e6aefdd0b1db647041380da55378bfc815ed395be2b3876",
+    "mixed_error_loaded.pklz": "a974eeeddb5a3760e07c62bb5bb8c3331e827be99d02e8fd04130f419a78bffc",
+    "mixed_error_results.pklz": "5f9cc86e2215a4d12b7bf0366e6a1d9949c7beafcec70349aa49f1c287d6758a",
+    "nonoverlap_intake.pklz": "ff97f45ff65759dd185535cea4d9c9ea0d6a68421b15ff3c9b904ad95a01b868",
+    "nonoverlap_loaded.pklz": "824cbeec27f9871d087528c208fd07eb26363eb8af347a1e21565acabdfde1cb",
+    "nonoverlap_results.pklz": "5194f70ab8aaca599d8cdc381a7c32f305d8d8457d6aa183cc3c7ba490a34b1f",
+    "overlap.xlsx": "08beaaa206adecca3cf100497756af75291010a2678415f14274aacd803ac6cc",
+    "overlap_blocked.pklz": "52acfa2eb3edb7afd8240e2788a6bcb8527d6041ed9a886848e94e0cc409be3e",
+    "overlap_intake.pklz": "ada9629d255d64d29e7fd54f8ec7205be236a01603327cb550ba024f04546944",
+    "overlap_loaded.pklz": "3395cdb9938e8d69d3add3c140d949d7f3a34e2bdc0c13df571a6e937fd93189",
+    "overlap_results.pklz": "c6bf348d19d5499eb883c408f87b70a041a749c83c8d05a832519616761b245c",
+    "path_dedup_blocked.pklz": "5dbf3811afc4323756c059137d2b559805e7ff56152c598ee115145fb94ebd47",
+    "path_dedup_intake.pklz": "95b1a37b060fa8ab58328853392a548a34ce668c4f9c14fcb4f7bfa7ed1d1ea1",
+    "path_dedup_loaded.pklz": "4fcdcb34893499c4ec40c2718388ee7cd0dcc8d1615cfb52d3e6d302e6af994b",
+    "path_dedup_results.pklz": "126b29410db801804e01db210149b702ff4850efe3fae237d583a70389bfe3f1",
+    "real.xlsx": "ecc8a8403d824f9e167781304e335e5228cd93d3743d14f9ee4aebcd12021e53",
+    "real_0_True.pklz": "770ea68304cd8a63d0502b9a5cf8e02c8343bd930d8ad9f4eaa3492993a857de",
+    "real_10000_True.pklz": "354fb15c9cf80725c2b741e5b4f1c5af80ec368ae5f76b382c7df725b3b5ac69",
+    "real_3000_True.pklz": "53da684cc49cfa3b65e305c6e24644c5106c54861d285ca207a1d2f8e51d7a9c",
+    "real_5000_True.pklz": "860c24b8cafbf2c700bc1976ce81019b85d4456c2e325514dbba59eaaaefd7ba",
+    "real_custom.pklz": "8f55687c1d31abdbadcf50f7b76e0350e5ccabe6e0fb874a8f9cad0bdd3e78b3",
+    "real_loaded.pklz": "f687b69ae609cc4ba6b1cd80f8608edf93736eb6f9763ece0bba009d0f52e746",
+    "real_None_False.pklz": "f4a2778f9205f4279fbe450f8e0a2f9a5529bc4e7a5b970b9c686211a476c7dd",
+    "real_None_True.pklz": "673cad27b12e34dcf30148f26f23bfa47fe5a0d353adb8260d8304ec283000a7",
+    "reversed.xlsx": "89e7dd33c583135ac3b7ba6434a62d9d4f553ff4052542e6777c2764824eaccb",
+    "reversed_blocked.pklz": "5b4d9efa4863a20b23a9eeb4e9b7290338d5a8202ee21cd9e883f72dcb21b6d1",
+    "reversed_intake.pklz": "3f9cfc4a8f9d072ce0b9d4a6fbcd1249ec3b6fbdfdd97961c86511411cae73ac",
+    "reversed_loaded.pklz": "bcccbf85b7b2d5c81f12e57e505ce25e3db8f7127e3ce8cf7e86fcbbab9b27e9",
+    "reversed_results.pklz": "29e5a15ce72fe374ae6ba6b0a01fae6b01178f3ee3949fa43c3bde70044331b6",
+    "single_intake.pklz": "1ab797284ca4e6374f908eac3f0b3b3f9af4add85da18a7e8e58647d5a32cda8",
+    "single_loaded.pklz": "0986a14a014e45dfc8223b2f3bce6ace834a927373729f0d08e1bbe37a486a30",
+    "single_results.pklz": "72ed20a8b62d5312f1bf38e1404db9258efc842a198087465d9ca9de320f6018",
+    "warehouse.xlsx": "d04691ba96fb06bbbb4aa563da50f1939d65c45b1394a67dfad4797af4d3b7e0",
+    "warehouse_intake.pklz": "3934c3d6480db18247e2390bb7477511929810b0ae4005e5731d3cc2aa7a3745",
+    "warehouse_loaded.pklz": "0c0e8c172f6ee624da3a4a9871f7cc89f0c50fa87017b7284d0d608b9d00b482",
+    "warehouse_results.pklz": "01232f55df9e3e9f7774b7514524ca2b15cd078ee3a86f00d922be48225b9d3c"
+  },
+  "logs": {
+    "baseline-component-tests.txt": "bc2430ed695456c1328efb461d68261ad6dd9e553f807c89813c72dabd9cb005",
+    "baseline-python-tests.txt": "c4c1c1290d6b6fd02c82107666826a7d48b9cbed2d3f3098bb10796bc6011504",
+    "baseline-capture.txt": "d95e946fcd26e6560ce54d7e6994dc2acba5762d5b2395a69af1e25e11aaefc7"
+  },
+  "qa_path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101",
+  "scope": "Baseline freezing and existing isolated tests only; no candidate business equivalence or live-platform/EXE acceptance yet."
+}
