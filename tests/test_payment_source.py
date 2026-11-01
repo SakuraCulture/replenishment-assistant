@@ -28,13 +28,15 @@ class PaymentSources(unittest.TestCase):
         read=batch.read([p]);self.assertFalse(read['issues'])
         return p,batch.prepare(self.path,read['documents'])
     def test_four_column_roundtrip_same_business_and_no_fake_external_id(self):
-        gid=self.generate();direct=j.payment_plan(self.path,gid);_,file=self.fileplan(gid)
+        gid=self.generate();direct=j.payment_plan(self.path,gid);source_path,file=self.fileplan(gid)
         for a,b in zip(direct['plans'][0]['payload']['rows'],file['plans'][0]['payload']['rows']):
             for field in ('sku','base_quantity','amount','currency','document_number','price','upstream_quantity','difference'):
                 self.assertEqual(a.get(field),b.get(field),field)
         self.assertFalse(file['plans'][0]['payload']['rows'][0]['document_number'])
         before=self.stock();lc.commit(self.path,file);self.assertEqual(before,self.stock());self.assertEqual(self.f.view()['next'],'receipt')
-        self.assertFalse(lc.commit(self.path,batch.prepare(self.path,batch.read([self.fileplan(gid)[0]])['documents']))[0]['changed'])
+        # Reuse the exact original. Re-exporting creates a different ZIP timestamp
+        # and therefore legitimately retains another immutable source attachment.
+        self.assertFalse(lc.commit(self.path,batch.prepare(self.path,batch.read([source_path])['documents']))[0]['changed'])
     def test_column_order_blank_and_zero(self):
         p=self.f.root/'reordered.xlsx';b=openpyxl.Workbook();s=b.active;s.append(['数量','订单号','单价','商品编码'])
         s.append([None,self.h['number'],None,'0001']);b.save(p);b.close()
@@ -78,5 +80,13 @@ class PaymentSources(unittest.TestCase):
         p=self.f.plan(self.f.scan('return',[{'门店确认数量':72}]));before=tasks.pending(self.path);e=threading.Event();e.set()
         with self.assertRaises(Cancelled):lc.commit(self.path,p,cancel=e)
         self.assertEqual(tasks.pending(self.path),before)
+    def test_same_second_task_order_uses_existing_business_tiebreaker(self):
+        import work_repository as wr
+        with closing(sqlite3.connect(self.path)) as db,db:
+            db.execute('DELETE FROM jst_tasks')
+            for number in ('BH-Z','BH-A','BH-M'):
+                h={**self.h,'number':number}
+                db.execute('INSERT INTO jst_tasks VALUES(?,?,?,?,?,?,?)',(number,'2026-11-01T10:00:00+08:00',wr.dumps(h),'{}','pending',None,''))
+        self.assertEqual([r[0] for r in tasks.pending(self.path)],['BH-A','BH-M','BH-Z'])
 
 if __name__=='__main__':unittest.main()

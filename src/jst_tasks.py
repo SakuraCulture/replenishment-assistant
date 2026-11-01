@@ -20,14 +20,15 @@ def enqueue(db, head, token):
     schema(db)
     h={k:v for k,v in head.items() if k!='products'}
     identity=j.digest([lc.key(h),token])
+    row=db.execute("SELECT saved FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage='return' AND version=?",(*lc.key(h),token['version'])).fetchone()
     db.execute('INSERT OR IGNORE INTO jst_tasks VALUES(?,?,?,?,?,?,?)',
-               (identity,wr.now(),wr.dumps(h),wr.dumps(token),'pending',None,'等待生成'))
+               (identity,row[0] if row else wr.now(),wr.dumps(h),wr.dumps(token),'pending',None,'等待生成'))
 
 
 def pending(path):
     with closing(sqlite3.connect(path)) as db:
         if not db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_tasks'").fetchone():return []
-        return db.execute("SELECT task,head,token,plan FROM jst_tasks WHERE status IN ('pending','prepared') ORDER BY created,rowid LIMIT 100").fetchall()
+        return db.execute("SELECT task,head,token,plan FROM jst_tasks WHERE status IN ('pending','prepared') ORDER BY created,json_extract(head,'$.day'),json_extract(head,'$.number'),rowid LIMIT 100").fetchall()
 
 
 def mark(path,task,status,message):
