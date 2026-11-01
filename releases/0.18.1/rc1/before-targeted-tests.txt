@@ -1,0 +1,28 @@
+test_existing_secondary_zero_and_disabled_still_secondary (test_warehouse_fallback.WarehouseFallbackTests.test_existing_secondary_zero_and_disabled_still_secondary) ... ok
+test_invalid_code_is_not_manufactured_into_a_match (test_warehouse_fallback.WarehouseFallbackTests.test_invalid_code_is_not_manufactured_into_a_match) ... ok
+test_missing_secondary_preserves_entire_primary_pair_and_order (test_warehouse_fallback.WarehouseFallbackTests.test_missing_secondary_preserves_entire_primary_pair_and_order) ... FAIL
+test_primary_fields_cycles_calculation_and_exclusion (test_warehouse_fallback.WarehouseFallbackTests.test_primary_fields_cycles_calculation_and_exclusion) ... FAIL
+
+======================================================================
+FAIL: test_missing_secondary_preserves_entire_primary_pair_and_order (test_warehouse_fallback.WarehouseFallbackTests.test_missing_secondary_preserves_entire_primary_pair_and_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_warehouse_fallback.py", line 39, in test_missing_secondary_preserves_entire_primary_pair_and_order
+    self.assertEqual(d,loaded['warehouse_rows'][primary][i][0])
+AssertionError: {'A':[207 chars]U': 'ɽ����', 'AV': 'δ�ṩ', 'O': None, 'V': None, [71 chars]�����'} != {'A':[207 chars]U': '�ӱ���', 'AV': None, 'U': '����', 'AB': 0.4, '[80 chars]��ƥ��'}
+Diff is 650 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_primary_fields_cycles_calculation_and_exclusion (test_warehouse_fallback.WarehouseFallbackTests.test_primary_fields_cycles_calculation_and_exclusion)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_warehouse_fallback.py", line 61, in test_primary_fields_cycles_calculation_and_exclusion
+    self.assertEqual(a,b);self.assertEqual((a['AG'],a['AH'],a['V'],a['BD']),(9,4,2,6))
+    ^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'A':[207 chars]U': 'ɽ����', 'AV': 'δ�ṩ', 'O': None, 'V': None, [1401 chars]'����'} != {'A':[207 chars]U': '�ӱ���', 'AV': None, 'U': '����', 'AB': 0.4, '[1349 chars]: 72}
+Diff is 4315 characters long. Set self.maxDiff to None to see it.
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.022s
+
+FAILED (failures=2)
