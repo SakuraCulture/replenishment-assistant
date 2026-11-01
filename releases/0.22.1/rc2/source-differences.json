@@ -1,0 +1,28 @@
+{
+  "baseline_commit": "5323db2e4961563b858c8169c2c2bc2f3d5f53f1",
+  "baseline_archive_sha256": "2e8ab773bbac15cea4a0dde53f8bf17e79e15750ca1d98b9d762f225b8744ff0",
+  "differences": {
+    "jst_review.py": {
+      "old": null,
+      "new": "6395d5eb7284132fd3670292225cc242b1933695f40cca7293e6dfa295e7407f"
+    },
+    "jst_review_ui.py": {
+      "old": null,
+      "new": "cd723a3a7cc5cf543a562f7e56d03172211fb63423dc4ee504654dafbc528ca6"
+    },
+    "jst_smoke.py": {
+      "old": "970073664092fbb040bd9d4ea9007d771cbc45c9c2134091e33bcc2bab6a4197",
+      "new": "9d5a78c3ba707af50507e79f14b668369ab7c3498b68791fcb06488d35f61da8"
+    },
+    "jst_ui.py": {
+      "old": "66e8b18c7a8c1d16b194fa170c612e7bb9e9ff73d250d93afc6aceac6aa671eb",
+      "new": "3e4ee748b82b55d257053b113daf16f6266ad0680fa069c6b26bf6332e12a45f"
+    },
+    "version.json": {
+      "old": "9800da6d26f72ad03e3b1c09fa42e0ab690e6de286ae811c71c2e011fa9a4a09",
+      "new": "fbd9719dcd8f524f89a093aff830fe9626cab2e410464782f1b1d45c295bf7a9"
+    }
+  },
+  "other_source_files_unchanged": 139,
+  "comparison": "bytewise SHA256 for every src file; no business core exceptions"
+}

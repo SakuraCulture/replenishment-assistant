@@ -1,0 +1,6 @@
+{
+  "old_release_files": 200,
+  "changed": [],
+  "daily_database_used": false,
+  "qa_data": "isolated synthetic fixtures; no daily database comparison claimed"
+}
