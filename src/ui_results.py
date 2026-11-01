@@ -17,6 +17,9 @@ from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBo
 import result_semantics as semantics
 import review_amounts
 from ui_review_amounts import ReviewAmounts
+from ui_review_filters import ReviewFilters
+import new_product_focus
+import review_filters
 import engine
 import priority_list
 from version_info import VERSION
@@ -43,13 +46,15 @@ class ResultsView:
         v.addLayout(metrics)
         self.detail_review_amounts=ReviewAmounts();v.addWidget(self.detail_review_amounts)
         self.budget_caption=label('','muted');v.addWidget(self.budget_caption)
-        tools=QHBoxLayout();self.mode=QComboBox();self.mode.addItems(['全部商品','建议补货','必卖商品','预算未满足','最低持有缺口','已排除','商品资料禁用','补货建议停采','资料匹配','一箱例外','地采商品','待处理','重点关注']);tools.addWidget(self.mode)
+        self.result_facets=ReviewFilters();v.addWidget(self.result_facets)
+        tools=QHBoxLayout();self.mode=QComboBox();self.mode.setToolTip('快捷条件；仍与上方组合筛选同时生效');self.mode.addItems(['全部商品','建议补货','必卖商品','预算未满足','最低持有缺口','资料匹配','一箱例外','地采商品','待处理','重点关注']);tools.addWidget(self.mode)
         self.warehouse_filter=QComboBox();self.warehouse_filter.addItem('全部仓');tools.addWidget(self.warehouse_filter)
         self.mode.addItems(['人工改量商品','签发单新品'])
         self.category_filter=QComboBox();self.category_filter.addItem('全部分类');tools.addWidget(self.category_filter)
         self.search=QLineEdit();self.search.setPlaceholderText('搜索商品名称 / 编码 / 条码');self.search.setClearButtonEnabled(True);tools.addWidget(self.search,1)
         self.export_all=button('导出补货清单与明细',lambda:self.export(False),True);tools.addWidget(self.export_all)
         self.export_filtered=button('导出当前筛选',lambda:self.export(True));tools.addWidget(self.export_filtered);v.addLayout(tools)
+        tools.addWidget(button('查看排除商品',self.show_excluded));tools.addWidget(button('重置筛选',self.reset_result_filters))
         self.filtered_caption=label('','muted');v.addWidget(self.filtered_caption)
         splitter=QSplitter();self.model=GoodsModel();self.proxy=FilterModel();self.proxy.setSourceModel(self.model)
         self.table=QTableView();self.table.setModel(self.proxy);self.table.setSortingEnabled(True);self.table.setAlternatingRowColors(True);self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection);self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.table.verticalHeader().setDefaultSectionSize(38);self.table.verticalHeader().hide()
@@ -64,12 +69,15 @@ class ResultsView:
         self.filter_timer=QTimer(self.search);self.filter_timer.setSingleShot(True);self.filter_timer.setInterval(275);self.filter_timer.timeout.connect(self.filter_changed)
         self.search.textChanged.connect(lambda _:self.filter_timer.start());self.search.returnPressed.connect(self.filter_changed)
         self.filter_generation=0;self.summary_task=None;self.summary_pending=None
+        self.result_facets.changed.connect(self.filter_changed)
+        self.result_facets.fields['group'].currentIndexChanged.connect(lambda *_:self.mode.setCurrentText('全部商品'))
         QApplication.instance().aboutToQuit.connect(self.stop_filtered_summary)
         self.pages.addWidget(page)
 
     def set_rows(self,rows,calculated):
         self.filter_timer.stop();sort_column=self.proxy.sortColumn();sort_order=self.proxy.sortOrder();self.proxy.sort(-1)
-        blockers=[QSignalBlocker(w) for w in (self.search,self.warehouse_filter,self.category_filter,self.mode)]
+        blockers=[QSignalBlocker(w) for w in (self.search,self.warehouse_filter,self.category_filter,self.mode,self.result_facets)]
+        self.result_facets.reset()
         self.model.set_rows(rows);self.detail_panel.hide();self.search.clear()
         self.warehouse_filter.clear();self.warehouse_filter.addItems(['全部仓']+sorted({str(d.get('AU','')) for d in rows}))
         self.category_filter.clear();self.category_filter.addItems(['全部分类']+sorted({str(d.get('_category') or '未分类') for d in rows}))
@@ -101,14 +109,29 @@ class ResultsView:
 
     def filter_changed(self,*a):
         self.filter_timer.stop();self.filter_generation+=1;self.summary_pending=None
-        self.proxy.beginFilterChange();self.proxy.mode=self.mode.currentText();self.proxy.warehouse=self.warehouse_filter.currentText() or '全部仓';self.proxy.category=self.category_filter.currentText() or '全部分类';self.proxy.search=self.search.text().strip().lower();self.proxy.endFilterChange(QSortFilterProxyModel.Direction.Rows)
+        self.proxy.beginFilterChange();self.proxy.mode=self.mode.currentText();self.proxy.warehouse=self.warehouse_filter.currentText() or '全部仓';self.proxy.category=self.category_filter.currentText() or '全部分类';self.proxy.search=self.search.text().strip().lower();self.proxy.facets=self.result_facets.values();self.proxy.focused=new_product_focus.members(getattr(self,'new_focus',None));self.proxy.focus_known=getattr(self,'new_focus',None) is not None;self.proxy.endFilterChange(QSortFilterProxyModel.Direction.Rows)
         if hasattr(self,'_pending_sort'):
             self.proxy.sort(*self._pending_sort);del self._pending_sort
         rows=self.visible_rows()
+        self.result_facets.set_counts(review_filters.facet_counts((d for d in self.model.rows if self.proxy.accepts(d,True)),self.proxy.facets,self.proxy.focused,self.proxy.focus_known))
         if hasattr(self,'sections'):self.export_filtered.setText(f'导出筛选内部明细（{len(rows)}行）');self.export_all.setToolTip('当前门店完整内部报告；不采用页面的仓、分类或商品筛选')
         if len(rows)<500:self.set_filtered_summary(semantics.summarize(rows))
         else:
             self.filtered_caption.setText(f'当前筛选 {len(rows):,} 行 · 统计中…');self.summary_pending=(self.filter_generation,rows);self.start_filtered_summary()
+
+    def reset_result_filters(self):
+        locks=[QSignalBlocker(w) for w in (self.search,self.warehouse_filter,self.category_filter,self.mode,self.result_facets)]
+        self.search.clear();self.warehouse_filter.setCurrentIndex(0);self.category_filter.setCurrentIndex(0);self.mode.setCurrentText('全部商品');self.result_facets.reset();del locks;self.filter_changed()
+
+    def show_excluded(self):
+        d=QDialog(self);d.setWindowTitle('排除商品 · 只读，不参与签发');d.resize(1050,650);v=QVBoxLayout(d)
+        v.addWidget(label('仅核对禁用／停采原因；查看不会恢复补货资格，不改变工作清单和导出。','muted'))
+        tools=QHBoxLayout();scope=QComboBox();scope.addItems(['已排除','商品资料禁用','补货建议停采']);search=QLineEdit();search.setPlaceholderText('商品名称 / 编码 / 条码');tools.addWidget(scope);tools.addWidget(search,1);v.addLayout(tools)
+        model=GoodsModel();model.set_rows(self.model.rows);proxy=FilterModel();proxy.include_excluded=True;proxy.setSourceModel(model)
+        table=QTableView();table.setModel(proxy);table.setSortingEnabled(True);table.setEditTriggers(QTableView.EditTrigger.NoEditTriggers);table.setAlternatingRowColors(True);v.addWidget(table,1);count=label('');v.addWidget(count)
+        def refresh(*_):
+            proxy.mode=scope.currentText();proxy.search=search.text().strip();proxy.invalidateFilter();count.setText(f'排除商品 {proxy.rowCount()} 款；原结果不变。')
+        scope.currentIndexChanged.connect(refresh);search.textChanged.connect(refresh);refresh();v.addWidget(button('关闭',d.accept));d.exec()
 
     def stop_filtered_summary(self):
         self.summary_pending=None
@@ -166,6 +189,7 @@ class ResultsView:
         if not path:return
         if not path.lower().endswith('.xlsx'):path+='.xlsx'
         scope=f'当前筛选：{self.mode.currentText()}；{self.warehouse_filter.currentText()}；{self.category_filter.currentText()}；搜索={self.search.text()}；共{len(rows)}行' if filtered else '本次全部结果'
+        if filtered and any(c.currentIndex()>0 for c in self.result_facets.fields.values()):scope+='；'+self.result_facets.condition.text()
         self.job(engine.export_xlsx,(self.result,path,rows,scope),self.export_ok)
 
     def export_ok(self,path):

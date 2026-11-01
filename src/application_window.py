@@ -67,9 +67,10 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         from business_scenes import install as install_scenes
         install_scenes(self,hv)
         self.final_list_btn=button('最终清单 / 改量',self.open_final_list,True)
-        self.overview_page.layout().addWidget(self.final_list_btn)
+        actions.insertWidget(0,self.final_list_btn)
         self.final_detail_btn=button('编辑本店最终清单',lambda:self.open_final_list(True),True)
-        self.pages.widget(4).layout().insertWidget(1,self.final_detail_btn)
+        detail_layout=self.pages.widget(4).layout();back=detail_layout.itemAt(0).widget();detail_layout.removeWidget(back);detail_layout.removeWidget(self.detail_new_btn)
+        detail_actions=QHBoxLayout();detail_actions.addWidget(back);detail_actions.addWidget(self.final_detail_btn);detail_actions.addWidget(self.detail_new_btn);detail_layout.insertLayout(0,detail_actions)
         self.auto_check=QTimer(self);self.auto_check.setSingleShot(True);self.auto_check.setInterval(400);self.auto_check.timeout.connect(self.check_added_files);self.sales.changed.connect(self.auto_check.start)
 
     def check_added_files(self):

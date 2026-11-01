@@ -6,7 +6,7 @@ sys.path[:0]=[str(ROOT/'src'),str(ROOT/'tools'),str(ROOT/'tests'),str(ROOT/'qa/e
 import psutil
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--exe',type=Path);ap.add_argument('--output',type=Path,required=True);a=ap.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=False)
+    ap=argparse.ArgumentParser();ap.add_argument('--exe',type=Path);ap.add_argument('--native-source',action='store_true');ap.add_argument('--output',type=Path,required=True);a=ap.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=False)
     import warehouse_catalog as wc,work_repository as wr,parameter_schema as ps,store_defaults,new_product_focus,export_settings
     (out/'exports').mkdir();repo=wr.Repository(out/'settings');export_settings.save(out/'settings/export_settings.json',str(out/'exports'))
     source=ROOT/'qa/preissue_0180/inputs'
@@ -32,7 +32,7 @@ def main():
     env=os.environ.copy()
     for k in ('PYTHONPATH','PYTHONHOME','QT_PLUGIN_PATH','QT_QPA_PLATFORM'):env.pop(k,None)
     env.update(REPLENISHMENT_DATA_DIR=str(out/'settings'),PATH=env['WINDIR']+';'+str(Path(env['WINDIR'])/'System32'),PYTHONIOENCODING='utf-8')
-    if not a.exe:env['QT_QPA_PLATFORM']='offscreen'
+    if not a.exe and not a.native_source:env['QT_QPA_PLATFORM']='offscreen'
     reports=[]
     for phase in ('exercise','reopen'):
         cmd=[str(a.exe.resolve())] if a.exe else [sys.executable,str(ROOT/'src/app.py')]

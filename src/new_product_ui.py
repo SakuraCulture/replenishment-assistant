@@ -6,6 +6,7 @@ from ui_controls import label,button
 import new_products as np
 import new_product_focus as focus
 import result_semantics as sem
+import review_filters as filters
 
 HEADERS=['选择','商品','编码','必卖','分类','归属仓','库存单位','最小单位','首铺数量（双击）','估算金额','资格 / 提示']
 
@@ -85,9 +86,9 @@ class NewProductModel(QAbstractTableModel):
 class QuantityEditor(QStyledItemDelegate):
     def __init__(self,dialog):super().__init__(dialog.table);self.dialog=dialog
     def createEditor(self,parent,option,index):
-        editor=NumberInput(parent);editor.setDecimals(8);editor.setRange(0,1e9);editor.setSingleStep(self.dialog.rows[self.dialog.model.visible[index.row()]]['BD']);return editor
+        editor=NumberInput(parent);editor.source_row=self.dialog.model.visible[index.row()];editor.setDecimals(8);editor.setRange(0,1e9);editor.setSingleStep(self.dialog.rows[editor.source_row]['BD']);return editor
     def setEditorData(self,editor,index):editor.setValue(index.data(Qt.ItemDataRole.UserRole))
-    def setModelData(self,editor,model,index):model.setData(index,editor.value(),Qt.ItemDataRole.UserRole)
+    def setModelData(self,editor,model,index):model.change(editor.source_row,8,editor.value())
 
 
 class NewProductDialog(QDialog):
@@ -95,13 +96,17 @@ class NewProductDialog(QDialog):
         super().__init__(parent);self.setObjectName('newProductDialog');self.setWindowTitle('新品首铺 · '+base['store_name']);self.resize(1180,740)
         self.focused=focus.members(new_focus);self.focus_known=new_focus is not None
         self.rows=[d for d in base['rows'] if np.is_new(d) and sem.work_eligible(d)];self.current=current
-        self.cur={d['E']:d for d in current['rows']};self.needles=[(d['E']+' '+str(d.get('D',''))).lower() for d in self.rows]
+        self.cur={d['E']:d for d in current['rows']};self.needles=[filters.search_text(d) for d in self.rows]
         selected=current.get('new_products',{}).get('selection',{});v=QVBoxLayout(self)
         v.addWidget(label('月销、可用、在途均为0，缺货天数为0或空白。空白按0识别并保留原值；默认不选，预览应用后生效。禁用/停采商品已筛除。','muted'))
-        tools=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('商品 / 编码');tools.addWidget(self.search,1)
-        self.scope=QComboBox();self.scope.addItems(['全部新品','可选','本月新品','往期新品','必卖','已选','未获预算']);self.scope.setCurrentText('可选');tools.addWidget(self.scope)
+        tools=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('商品名称 / 编码 / 条码；空格分词');self.search.setClearButtonEnabled(True);tools.addWidget(self.search,1)
+        self.scope=QComboBox();self.scope.addItems(['全部新品','可选','资料待核']);self.scope.setCurrentText('可选');tools.addWidget(self.scope)
         self.warehouse=QComboBox();self.warehouse.addItems(['全部仓']+sorted({str(d.get('AU','')) for d in self.rows}));tools.addWidget(self.warehouse)
         self.category=QComboBox();self.category.addItems(['全部分类']+sorted({str(d.get('_category') or '未分类') for d in self.rows}));tools.addWidget(self.category);v.addLayout(tools)
+        selectors=QHBoxLayout();self.group=QComboBox();self.group.addItems(['全部新品','本月新品','往期新品','新品归期待核']);selectors.addWidget(label('分组'));selectors.addWidget(self.group)
+        self.selection_filter=QComboBox();self.selection_filter.addItems(['全部选择状态','已选','未选']);selectors.addWidget(self.selection_filter)
+        self.priority_filter=QComboBox();self.priority_filter.addItems(['全部优先级','仅必卖']);selectors.addWidget(self.priority_filter)
+        self.budget_filter=QComboBox();self.budget_filter.addItems(['全部预算状态','无预算缺口','部分安排','预算暂缓','未启用预算']);selectors.addWidget(self.budget_filter);selectors.addWidget(button('重置筛选',self.reset_filters));selectors.addStretch();v.addLayout(selectors)
         self.model=NewProductModel(self.rows,selected,self);self.widgets=[(RowSelection(self.model,i),RowQuantity(self.model,i)) for i in range(len(self.rows))]
         self.table=QTableView();self.table.setModel(self.model);self.table.setEditTriggers(QTableView.EditTrigger.DoubleClicked|QTableView.EditTrigger.EditKeyPressed);self.table.setItemDelegateForColumn(8,QuantityEditor(self));v.addWidget(self.table,1)
         for j,width in enumerate([45,160,130,42,65,72,65,66,95,80,260]):self.table.setColumnWidth(j,width)
@@ -109,21 +114,31 @@ class NewProductDialog(QDialog):
         row=QHBoxLayout();row.addWidget(button('选中当前筛选可选商品',lambda:self.bulk(True)));row.addWidget(button('清空当前筛选选择',lambda:self.bulk(False)));row.addStretch();self.clear_btn=button('清空全店选择',self.clear_all);self.clear_btn.setStyleSheet('color:#A52A2A;');row.addWidget(self.clear_btn);self.undo_selection=None;self.undo_btn=button('撤销上次批量选择',self.undo_bulk);self.undo_btn.setEnabled(False);row.addWidget(self.undo_btn);self.preview_btn=button('预览预算变化',self.accept,True);row.addWidget(self.preview_btn);row.addWidget(button('取消',self.reject));v.addLayout(row)
         self.filter_timer=QTimer(self);self.filter_timer.setSingleShot(True);self.filter_timer.setInterval(275);self.filter_timer.timeout.connect(self.refresh)
         self.search.textChanged.connect(lambda _:self.filter_timer.start());self.search.returnPressed.connect(self.refresh)
-        for w in [self.scope,self.warehouse,self.category]:w.currentTextChanged.connect(self.refresh)
-        self.model.changed=self.refresh;self.refresh()
+        for w in [self.scope,self.warehouse,self.category,self.group,self.selection_filter,self.priority_filter,self.budget_filter]:w.currentTextChanged.connect(self.refresh)
+        self.model.changed=lambda:self.filter_timer.start(0);self.refresh()
+
+    def reset_filters(self):
+        from PySide6.QtCore import QSignalBlocker
+        controls=[self.scope,self.warehouse,self.category,self.group,self.selection_filter,self.priority_filter,self.budget_filter,self.search];locks=[QSignalBlocker(c) for c in controls]
+        for c in controls[:-1]:c.setCurrentIndex(0)
+        self.scope.setCurrentText('可选');self.search.clear();del locks;self.refresh()
 
     def refresh(self,*_):
+        if hasattr(self,'table') and self.table.state()==QTableView.State.EditingState:self.filter_timer.start(50);return
         self.filter_timer.stop();scope=self.scope.currentText();needle=self.search.text().lower();warehouse=self.warehouse.currentText();category=self.category.currentText()
         indices=[];hidden=0;count=0;total=0
         for i,d in enumerate(self.rows):
             chosen=self.model.selected[i]
-            visible=(not needle or needle in self.needles[i]) and warehouse in ('全部仓',str(d.get('AU',''))) and category in ('全部分类',str(d.get('_category') or '未分类'))
-            visible=visible and (scope=='全部新品' or scope=='本月新品' and self.focus_known and d['E'] in self.focused or scope=='往期新品' and self.focus_known and d['E'] not in self.focused or scope=='可选' and not self.model.reasons[i] or scope=='必卖' and bool(d.get('_must_sell')) or scope=='已选' and chosen or scope=='未获预算' and bool(self.cur[d['E']].get('_budget_gap',0)))
+            visible=filters.matches(self.needles[i],needle) and warehouse in ('全部仓',str(d.get('AU',''))) and category in ('全部分类',str(d.get('_category') or '未分类'))
+            visible=visible and (scope=='全部新品' or scope=='可选' and not self.model.reasons[i] or scope=='资料待核' and bool(self.model.reasons[i]))
+            visible=visible and (self.group.currentIndex()==0 or filters.group(self.cur[d['E']],self.focused,self.focus_known)==self.group.currentText())
+            visible=visible and (self.selection_filter.currentIndex()==0 or chosen==(self.selection_filter.currentText()=='已选'))
+            visible=visible and filters.accepts(self.cur[d['E']],{'budget':self.budget_filter.currentText(),'must':self.priority_filter.currentText()})
             if visible:indices.append(i)
             if chosen:count+=1;hidden+=not visible;total+=self.model.cost(i) or 0
         self.model.filter(indices)
         self.clear_btn.setText(f'清空全店选择（{count}款）')
-        self.note.setText(f'全店已选 {count} 款 · 首铺候选 ¥{total:,.2f} · 筛选外已选 {hidden} 款。新品与动销共同分配总预算；必卖新品优先于普通动销。')
+        self.note.setText(f'当前筛选 {len(indices)} 款 · 全店已选 {count} 款 · 首铺候选 ¥{total:,.2f}（预算前） · 筛选外已选 {hidden} 款。预算状态为当前已应用结果；本次选择须预览后生效。')
 
     def bulk(self,on):
         self.refresh();indices=[i for i in self.model.visible if not self.model.reasons[i]]

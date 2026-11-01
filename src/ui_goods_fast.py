@@ -9,6 +9,7 @@ from display_fields import COLUMNS
 import result_semantics as sem
 import new_products
 import review_amounts
+import review_filters
 
 RANK_ROLES=(int(Qt.ItemDataRole.UserRole)+10,int(Qt.ItemDataRole.UserRole)+11)
 PASS_ROLE=int(Qt.ItemDataRole.UserRole)+12
@@ -52,6 +53,7 @@ class GoodsModel(QStandardItemModel):
 class FilterModel(QSortFilterProxyModel):
     def __init__(self):
         super().__init__();self.mode='全部商品';self.search='';self.warehouse='全部仓';self.category='全部分类';self.column=-1;self.rank_role=0
+        self.facets={};self.focused=set();self.focus_known=False;self.include_excluded=False
         self.setDynamicSortFilter(True);self.setFilterKeyColumn(0);self.setFilterRole(PASS_ROLE);self.setFilterFixedString('1');self.setSortRole(RANK_ROLES[0])
     def data(self,index,role=Qt.ItemDataRole.DisplayRole):
         if self.sourceModel() is not None:return self.sourceModel().business_data(self.mapToSource(index),role)
@@ -60,11 +62,12 @@ class FilterModel(QSortFilterProxyModel):
         if model is not None:model.modelReset.connect(self.source_reset)
     def source_reset(self):
         if self.column>=0:self.sort(self.column,self.sortOrder())
-    def accepts(self,d):
-        if not sem.work_eligible(d):return False
+    def accepts(self,d,ignore_facets=False):
+        if not sem.work_eligible(d) and not self.include_excluded:return False
         if self.warehouse!='全部仓' and d.get('AU')!=self.warehouse:return False
         if self.category!='全部分类' and str(d.get('_category') or '未分类')!=self.category:return False
-        if self.search and self.search not in (' '.join(str(d.get(k,'')) for k in ['D','E','F'])).lower():return False
+        if not review_filters.matches(review_filters.search_text(d),self.search):return False
+        if not ignore_facets and not review_filters.accepts(d,self.facets,self.focused,self.focus_known):return False
         if self.mode in ('动销补货','新品候选','新品推荐','缺货恢复及其他'):return new_products.is_new(d) if self.mode=='新品候选' else new_products.category(d)==self.mode
         if self.mode=='建议补货':return sem.orderable(d)
         if self.mode=='人工改量商品':return review_amounts.is_manual(d)
@@ -75,7 +78,8 @@ class FilterModel(QSortFilterProxyModel):
         if self.mode=='必卖未补足':return bool(d.get('_must_sell')) and d.get('_budget_gap',0)>0
         if self.mode=='其他预算暂缓':return not d.get('_must_sell') and d.get('_budget_gap',0)>0
         if self.mode=='最低持有缺口':return bool(d.get('_holding_gap'))
-        if self.mode in ('已排除','商品资料禁用','补货建议停采'):return False
+        if self.mode in ('已排除','商品资料禁用','补货建议停采'):
+            return self.include_excluded and bool(sem.exclusion_reason(d)) and (self.mode=='已排除' or self.mode in sem.exclusion_reason(d))
         if self.mode=='资料匹配':return d['_source']=='资料匹配'
         if self.mode=='一箱例外':return bool(d.get('_audit',{}).get('applied'))
         if self.mode=='地采商品':return d['_source']=='地采商品'

@@ -34,8 +34,8 @@ class BatchWindow(WarehouseUi,SessionWindow):
         try:self.profile=self.repository.profile()
         except Exception as exc:self.config_warning=str(exc)
         self.setWindowTitle(f'补货助手 {VERSION} · 多店工作台');self.resize(1380,900);self.setMinimumSize(1080,720)
-        root=QWidget();self.setCentralWidget(root);v=QVBoxLayout(root);v.setContentsMargins(24,18,24,16);v.setSpacing(12)
-        head=QHBoxLayout();titles=QVBoxLayout();titles.addWidget(label('补货助手','title'));subtitle=label('多店一起算，预算各店用 · 必卖优先 · 全程本地处理','muted');subtitle.setWordWrap(False);titles.addWidget(subtitle);head.addLayout(titles);head.addStretch();head.addWidget(button('版本信息',self.about));v.addLayout(head)
+        root=QWidget();self.setCentralWidget(root);v=QVBoxLayout(root);v.setContentsMargins(16,10,16,10);v.setSpacing(6)
+        head=QHBoxLayout();head.addWidget(label('补货出单','section'));subtitle=label('多店独立预算 · 必卖优先','muted');subtitle.setWordWrap(False);head.addWidget(subtitle);head.addStretch();head.addWidget(button('版本信息',self.about));v.addLayout(head)
         nav=QHBoxLayout();self.nav=[]
         for i,text in enumerate(['① 准备数据','② 门店与预算','③ 计算进度','④ 查看与导出']):
             b=button(text,lambda checked=False,n=i:self.navigate(n));self.nav.append(b);nav.addWidget(b)
@@ -80,10 +80,10 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.task_table=QTableWidget(0,4);self.task_table.setHorizontalHeaderLabels(['门店','状态','安排金额','提示']);self.task_table.horizontalHeader().setSectionResizeMode(3,QHeaderView.ResizeMode.Stretch);self.task_table.setColumnWidth(0,280);self.task_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);v.addWidget(self.task_table,1)
         row=QHBoxLayout();self.stop_btn=button('停止剩余任务',self.cancel_work);row.addWidget(self.stop_btn);self.retry_btn=button('重试失败门店',self.retry_failed);row.addWidget(self.retry_btn);row.addStretch();row.addWidget(button('查看已完成结果',lambda:self.navigate(3),True));v.addLayout(row)
     def make_overview(self):
-        self.overview_page,v=self.page();v.addWidget(label('本次投入多少，还有哪些需求没满足？','section'));self.overview_note=label('计算完成后显示。','muted');v.addWidget(self.overview_note)
+        self.overview_page,v=self.page();v.setSpacing(5);self.overview_note=label('计算完成后显示。','muted');v.addWidget(self.overview_note)
         row=QHBoxLayout();self.metrics=[]
         for title in ['预算前可补需求（元）','本次安排金额（元）','未满足需求（元）']:
-            c=QFrame();c.setObjectName('card');cv=QVBoxLayout(c);cv.addWidget(label(title,'muted'));x=label('—','metric');cv.addWidget(x);row.addWidget(c);self.metrics.append(x)
+            c=QFrame();c.setObjectName('card');cv=QHBoxLayout(c);cv.setContentsMargins(10,6,10,6);cv.addWidget(label(title,'muted'));x=label('—','metric');x.setStyleSheet('font-size:22px;font-weight:600;color:#12665C;');cv.addWidget(x);row.addWidget(c);self.metrics.append(x)
         v.addLayout(row);v.addWidget(label('金额只统计有效完成门店；地采及缺价单列，不视为零成本。点击门店或缺口列查看商品。','muted'))
         self.review_amounts=ReviewAmounts();v.addWidget(self.review_amounts)
         self.overview=QTableWidget(0,14);self.overview.setHorizontalHeaderLabels(['门店','状态','预算','可补需求','本次安排','必卖金额','其他金额','未满足需求','剩余预算','最低持有缺口','地采 / 已排除','提示','人工改量金额','新品金额'])
@@ -93,7 +93,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.overview.setColumnWidth(12,210);self.overview.setColumnWidth(13,140)
         self.overview.horizontalHeaderItem(12).setToolTip(review_amounts.MANUAL_HELP)
         self.overview.horizontalHeaderItem(13).setToolTip(review_amounts.NEW_HELP)
-        self.overview.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.overview.setAlternatingRowColors(True);self.overview.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);self.overview.setColumnWidth(0,250);self.overview.setColumnWidth(11,330);self.overview.cellClicked.connect(self.open_overview);v.addWidget(self.overview,1)
+        self.overview.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.overview.setAlternatingRowColors(True);self.overview.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);self.overview.setColumnWidth(0,250);self.overview.setColumnWidth(11,330);self.overview.cellClicked.connect(self.open_overview);self.overview.setMinimumHeight(180);v.addWidget(self.overview,1)
         row=QHBoxLayout();row.addWidget(button('返回门店设置',lambda:self.navigate(1)));row.addStretch();self.batch_export=button('导出本次补货结果',self.export_dialog,True);row.addWidget(self.batch_export);v.addLayout(row)
     def about(self):
         text=json.dumps(diagnostic(),ensure_ascii=False,indent=2);box=QMessageBox(self);box.setWindowTitle('版本信息');box.setText(f'补货助手 {VERSION}\n模型 {MODEL_VERSION}\n多文件、多店独立预算、并发计算。');box.setDetailedText(text)

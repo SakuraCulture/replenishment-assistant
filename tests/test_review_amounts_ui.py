@@ -62,6 +62,24 @@ class ReviewMoneyUiTests(unittest.TestCase):
         self.assertEqual(w.detail_review_amounts.values['manual'].text(),'10.00')
         w.set_rows(w.result['rows'],False)
         self.assertEqual(w.detail_review_amounts.values['manual'].text(),'—')
+    def test_excluded_view_is_explicit_read_only_and_work_scope_unchanged(self):
+        from ui_goods_fast import FilterModel
+        w=self.win;d=dict(row(),S='禁用');p=FilterModel();p.mode='已排除'
+        self.assertFalse(p.accepts(d));p.include_excluded=True;self.assertTrue(p.accepts(d))
+        p.mode='补货建议停采';self.assertFalse(p.accepts(d))
+        stopped=dict(row(),_meta={'notes':[],'blocking':[],'export_status':'停采'});self.assertTrue(p.accepts(stopped))
+        self.assertEqual(w.mode.findText('已排除'),-1)
+    def test_new_selection_combines_month_selection_budget_and_barcode(self):
+        from new_product_ui import NewProductDialog
+        import new_product_focus as focus
+        import shiboken6
+        drow=dict(new_row(),F='001234',_budget_active=True,_allocated_qty=1,_allocated_amount=2,_budget_gap=2)
+        r=result([drow]);d=NewProductDialog(self.win,r,r,focus.empty('2026-11'))
+        try:
+            d.group.setCurrentText('往期新品');d.budget_filter.setCurrentText('部分安排');d.search.setText('001234');d.refresh();self.assertEqual(d.model.rowCount(),1)
+            d.budget_filter.setCurrentText('预算暂缓');self.assertEqual(d.model.rowCount(),0)
+            d.reset_filters();self.assertEqual(d.model.rowCount(),1)
+        finally:shiboken6.delete(d)
 
 
 if __name__=='__main__':unittest.main()

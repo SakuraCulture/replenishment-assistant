@@ -57,6 +57,16 @@ class FinalUiTests(unittest.TestCase):
     def test_filter_hidden_selection_stays(self):
         d=self.create();d.check_visible(True);d.search.setText('合成商品a');d.filter()
         self.assertEqual(d.proxy.rowCount(),1);self.assertEqual(len(d.model.checked),2);self.assertIn('筛选外1',d.metrics.text())
+        self.assertEqual(d.chosen(),[0]);d.selection_scope.setCurrentIndex(1);self.assertEqual(d.chosen(),[0,1])
+    def test_live_money_scope_new_and_manual_overlap(self):
+        from decimal import Decimal
+        from PySide6.QtCore import Qt
+        self.host.results['S1']=result([row(),dict(row('new',0,1,2),H=0,I=0,J=0,K=0,L=0,N=0)])
+        before=copy.deepcopy(self.host.results);d=self.create();d.model.reason='经营判断';d.model.setData(d.model.index(1,9),5)
+        self.assertEqual(d.money_table.item(0,1).text(),'34.00');self.assertEqual(d.money_table.item(0,2).text(),'10.00');self.assertEqual(d.money_table.item(0,4).text(),'10.00')
+        d.facets.fields['adjustment'].setCurrentText('人工改量');self.app.processEvents();self.assertEqual(d.proxy.rowCount(),1)
+        d.search.setText('不会找到');d.filter();self.assertEqual(d.proxy.rowCount(),0);self.assertEqual(d.money_table.item(0,1).text(),'34.00')
+        self.assertEqual(self.host.results,before)
     def test_zero_risk_requires_checkbox(self):
         d=self.create();d.model.reason='暂不补货';d.model.setData(d.model.index(0,9),0);d.preview();self.wait_task()
         self.assertIsNotNone(d.prepared);self.assertFalse(d.apply_btn.isEnabled());self.assertGreater(d.review.rowCount(),0)

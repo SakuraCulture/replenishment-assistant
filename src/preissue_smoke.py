@@ -133,6 +133,12 @@ def start_smoke(app,win,args):
             eligible=[d for d in r['rows'] if not rules.blocked(d) and sem.order_quantity(d)>0 and d['K']==0 and d['L']==0]
             if not eligible:raise AssertionError('fixture lacks dual zero')
             sku=eligible[0]['E'];state.update(store=s,sku=sku,mode='cancel');win.current_store=s
+            from final_review_smoke import exercise as review_exercise
+            timer.stop()
+            try:
+                review=review_exercise(win,s,sku,out,wait);(out/'final-review.json').write_text(json.dumps(review,ensure_ascii=False,indent=2),encoding='utf-8')
+                checks.append('30 actual delegate edits: Tab/mouse/Enter, both sort orders, source identity, live money, stale risk and hidden selection scope')
+            finally:timer.start()
             win.open_final_list(True)
             if win.results!=base:raise AssertionError('cancel changed results')
             state['mode']='draft';win.open_final_list(True)

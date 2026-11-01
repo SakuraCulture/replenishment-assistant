@@ -12,7 +12,7 @@ class ReviewAmounts(QWidget):
         for key,title,help_text in [('manual','人工改量商品最终金额（元）',money.MANUAL_HELP),('new','新品商品最终金额（元）',money.NEW_HELP)]:
             card = QFrame();card.setObjectName('card');card.setToolTip(help_text)
             body = QVBoxLayout(card);body.setContentsMargins(12,6,12,6);body.setSpacing(2)
-            line = QHBoxLayout();line.addWidget(label(title,'muted'));line.addStretch()
+            line = QHBoxLayout();caption=label(title,'muted');caption.setWordWrap(False);line.addWidget(caption);line.addStretch()
             value = label('—');value.setStyleSheet('font-size:22px;font-weight:600;color:#176C63;');line.addWidget(value)
             body.addLayout(line);detail = label('尚无有效结果','muted');body.addWidget(detail)
             self.values[key] = value;self.details[key] = detail;row.addWidget(card,1)
