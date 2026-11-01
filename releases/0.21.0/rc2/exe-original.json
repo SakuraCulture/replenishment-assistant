@@ -1,0 +1,93 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "phase": "exercise",
+      "checks": [
+        "actual spawn: secondary missing retains primary catalog, price, carton and demand; disabled/stopped/local boundaries preserved",
+        "money-new-applied: amount columns, manual delta, zero-quantity drilldown, new export grouping and nonmutation",
+        "30 actual delegate edits: Tab/mouse/Enter, both sort orders, source identity, live money, stale risk and hidden selection scope",
+        "actual final-list cancel, pending draft saved, signing pending rejected, zero risk checkbox and atomic apply; original result exactly restorable",
+        "money-manual-applied: amount columns, manual delta, zero-quantity drilldown, new export grouping and nonmutation",
+        "reordered-header list drag/drop, explicit mapping, reusable save, target gap fill, manual zero protected, unselected rows/stores unchanged",
+        "actual search/select keeps hidden checks, cancels without side effects, direct preview creates temporary list without Excel or mandatory save",
+        "query append preserves file targets, saves V2, applies existing carton/budget/risk preview and keeps original model/other store intact",
+        "actual split-warehouse signed Excel includes restored product only under Hebei",
+        "actual spawn work I/O confirms/signs split-warehouse Excel and stores final quantity plus original audit"
+      ],
+      "timings": {
+        "check_seconds": 0.537981999994372,
+        "calculate_seconds": 0.8739698999997927,
+        "manual_preview_apply_seconds": 0.28307580000546295,
+        "sign_export_seconds": 1.1586034999927506
+      },
+      "max_ui_gap_seconds": 5.268924799995148,
+      "ui_ticks": 132,
+      "version": {
+        "app": "补货助手",
+        "version": "0.21.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.1",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "e2bfd19d85bfd37149078c87abc151f6bf6bc03a",
+        "build_id": "rc2",
+        "built_at": "2026-11-01T18:22:45.630150+08:00",
+        "source_archive_sha256": "a2c234be07754cd5753cee82d98baf76024f1b85d698cd0ad902d366aab15b8e",
+        "source_mode": "immutable git archive; no working-tree overlay"
+      },
+      "synthetic": true,
+      "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 13.640999999988708,
+      "peak_tree_mib": 385.953125,
+      "sample_ms": 50,
+      "exe_sha256": "95ad7bd1c2d69dc9a86aa23799602aa8434f0b9ead121e7081ff894fec61bb82"
+    },
+    {
+      "passed": true,
+      "error": null,
+      "phase": "reopen",
+      "checks": [
+        "fresh process restored final edits, reusable list and historical adjustment business form",
+        "query-selected SKU, catalog revision and source rows visible after packaged restart",
+        "money-restored: amount columns, manual delta, zero-quantity drilldown, new export grouping and nonmutation"
+      ],
+      "timings": {},
+      "max_ui_gap_seconds": 0.2940519000112545,
+      "ui_ticks": 53,
+      "version": {
+        "app": "补货助手",
+        "version": "0.21.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.1",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "e2bfd19d85bfd37149078c87abc151f6bf6bc03a",
+        "build_id": "rc2",
+        "built_at": "2026-11-01T18:22:45.630150+08:00",
+        "source_archive_sha256": "a2c234be07754cd5753cee82d98baf76024f1b85d698cd0ad902d366aab15b8e",
+        "source_mode": "immutable git archive; no working-tree overlay"
+      },
+      "synthetic": true,
+      "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 3.5,
+      "peak_tree_mib": 246.97265625,
+      "sample_ms": 50,
+      "exe_sha256": "95ad7bd1c2d69dc9a86aa23799602aa8434f0b9ead121e7081ff894fec61bb82"
+    }
+  ]
+}

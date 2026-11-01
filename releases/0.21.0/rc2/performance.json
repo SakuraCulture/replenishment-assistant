@@ -1,0 +1,660 @@
+{
+  "synthetic": true,
+  "common_operations": "same signed/return fixture, sequential alternating runs; cold means first projection in fresh process, OS file cache not flushed",
+  "new_operations": "no baseline counterpart, report absolute times only",
+  "runs": [
+    {
+      "stores": 3,
+      "orders": 6,
+      "repeat": 0,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 0.9336767999920994,
+      "peak_tree_mib": 49.08984375,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.03045219999330584,
+      "query_warm": 0.007505699992179871,
+      "original_export": 0.12702610000269488
+    },
+    {
+      "stores": 3,
+      "orders": 6,
+      "repeat": 0,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 0.9701665000029607,
+      "peak_tree_mib": 49.33203125,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.03107810000074096,
+      "query_warm": 0.0075954999920213595,
+      "original_export": 0.06107700000575278,
+      "catalog_prepare_save": 0.03266219999932218,
+      "allocation_preview": 0.0028368999919621274,
+      "generation_save": 0.02501270000357181,
+      "jst_export": 0.08571549999760464,
+      "daily_query": 0.011536200006958097,
+      "generated": 4,
+      "amount": "480.0"
+    },
+    {
+      "stores": 3,
+      "orders": 6,
+      "repeat": 1,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 0.9176120000047376,
+      "peak_tree_mib": 49.4609375,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.030858800004352815,
+      "query_warm": 0.009152999991783872,
+      "original_export": 0.05586949999269564,
+      "catalog_prepare_save": 0.01567069999873638,
+      "allocation_preview": 0.0032078999938676134,
+      "generation_save": 0.031967000002623536,
+      "jst_export": 0.07265960000222549,
+      "daily_query": 0.010467100000823848,
+      "generated": 4,
+      "amount": "480.0"
+    },
+    {
+      "stores": 3,
+      "orders": 6,
+      "repeat": 1,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 0.7948646000004373,
+      "peak_tree_mib": 49.1796875,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.038855899998452514,
+      "query_warm": 0.007833299998310395,
+      "original_export": 0.05484890000661835
+    },
+    {
+      "stores": 3,
+      "orders": 6,
+      "repeat": 2,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 0.858570199998212,
+      "peak_tree_mib": 49.07421875,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.03902799999923445,
+      "query_warm": 0.007733099992037751,
+      "original_export": 0.05724669998744503
+    },
+    {
+      "stores": 3,
+      "orders": 6,
+      "repeat": 2,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 0.9762353999976767,
+      "peak_tree_mib": 49.47265625,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.03651610000815708,
+      "query_warm": 0.007602900004712865,
+      "original_export": 0.05824149999534711,
+      "catalog_prepare_save": 0.015578799997456372,
+      "allocation_preview": 0.0035549000022001565,
+      "generation_save": 0.030727900011697784,
+      "jst_export": 0.07308929999999236,
+      "daily_query": 0.01025870000012219,
+      "generated": 4,
+      "amount": "480.0"
+    },
+    {
+      "stores": 10,
+      "orders": 20,
+      "repeat": 0,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 1.2726917999971192,
+      "peak_tree_mib": 49.55859375,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.09164360001159366,
+      "query_warm": 0.017549900003359653,
+      "original_export": 0.3737969000067096
+    },
+    {
+      "stores": 10,
+      "orders": 20,
+      "repeat": 0,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 1.5260736999916844,
+      "peak_tree_mib": 50.3671875,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.09621219999098685,
+      "query_warm": 0.01611520000733435,
+      "original_export": 0.18800300000293646,
+      "catalog_prepare_save": 0.03419130000111181,
+      "allocation_preview": 0.0059822000039275736,
+      "generation_save": 0.09977679999428801,
+      "jst_export": 0.285297399997944,
+      "daily_query": 0.022499400001834147,
+      "generated": 16,
+      "amount": "1800.0"
+    },
+    {
+      "stores": 10,
+      "orders": 20,
+      "repeat": 1,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 1.5213688000076218,
+      "peak_tree_mib": 50.390625,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.10098980000475422,
+      "query_warm": 0.016428900009486824,
+      "original_export": 0.18088469999202061,
+      "catalog_prepare_save": 0.015212400001473725,
+      "allocation_preview": 0.0050220000121043995,
+      "generation_save": 0.09531810000771657,
+      "jst_export": 0.2628015999944182,
+      "daily_query": 0.025753800000529736,
+      "generated": 16,
+      "amount": "1800.0"
+    },
+    {
+      "stores": 10,
+      "orders": 20,
+      "repeat": 1,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 1.041885100014042,
+      "peak_tree_mib": 49.40625,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.092298400006257,
+      "query_warm": 0.01638739999907557,
+      "original_export": 0.17320650001056492
+    },
+    {
+      "stores": 10,
+      "orders": 20,
+      "repeat": 2,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 1.0341546999989077,
+      "peak_tree_mib": 49.5078125,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.09126900001137983,
+      "query_warm": 0.015959399999701418,
+      "original_export": 0.17555290000746027
+    },
+    {
+      "stores": 10,
+      "orders": 20,
+      "repeat": 2,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 1.3968748999905074,
+      "peak_tree_mib": 50.109375,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.09220830000413116,
+      "query_warm": 0.01629160001175478,
+      "original_export": 0.1717402999929618,
+      "catalog_prepare_save": 0.01691969999228604,
+      "allocation_preview": 0.00504999999247957,
+      "generation_save": 0.1022398999921279,
+      "jst_export": 0.25911939999787137,
+      "daily_query": 0.023170400003436953,
+      "generated": 16,
+      "amount": "1800.0"
+    },
+    {
+      "stores": 50,
+      "orders": 100,
+      "repeat": 0,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 3.30533450000803,
+      "peak_tree_mib": 51.01953125,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.5094581000012113,
+      "query_warm": 0.06817779999983031,
+      "original_export": 1.9337398000061512
+    },
+    {
+      "stores": 50,
+      "orders": 100,
+      "repeat": 0,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 3.9695806999952765,
+      "peak_tree_mib": 52.22265625,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.4549184000061359,
+      "query_warm": 0.06668480001098942,
+      "original_export": 0.9320715999929234,
+      "catalog_prepare_save": 0.03443650000554044,
+      "allocation_preview": 0.01943780000146944,
+      "generation_save": 0.509904499995173,
+      "jst_export": 1.040364900007262,
+      "daily_query": 0.09647930000210181,
+      "generated": 76,
+      "amount": "9000.0"
+    },
+    {
+      "stores": 50,
+      "orders": 100,
+      "repeat": 1,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 4.162540100005572,
+      "peak_tree_mib": 52.2421875,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.45823800000653137,
+      "query_warm": 0.06595010000455659,
+      "original_export": 1.0363645000034012,
+      "catalog_prepare_save": 0.016967199990176596,
+      "allocation_preview": 0.018478800004231744,
+      "generation_save": 0.5280413000000408,
+      "jst_export": 1.1373429000086617,
+      "daily_query": 0.0941162999952212,
+      "generated": 76,
+      "amount": "9000.0"
+    },
+    {
+      "stores": 50,
+      "orders": 100,
+      "repeat": 1,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 2.326610399992205,
+      "peak_tree_mib": 51.31640625,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.4666938000009395,
+      "query_warm": 0.06789050000952557,
+      "original_export": 0.9805598999955691
+    },
+    {
+      "stores": 50,
+      "orders": 100,
+      "repeat": 2,
+      "mode": "old",
+      "exit_code": 0,
+      "elapsed": 2.201037199993152,
+      "peak_tree_mib": 51.26953125,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.47052240000630263,
+      "query_warm": 0.0673916000087047,
+      "original_export": 0.9087056999997003
+    },
+    {
+      "stores": 50,
+      "orders": 100,
+      "repeat": 2,
+      "mode": "new",
+      "exit_code": 0,
+      "elapsed": 4.044564199997694,
+      "peak_tree_mib": 52.890625,
+      "sample_ms": 50,
+      "remaining_children": [],
+      "query_cold": 0.46586609999940265,
+      "query_warm": 0.06837670000095386,
+      "original_export": 0.9596012999973027,
+      "catalog_prepare_save": 0.015938399999868125,
+      "allocation_preview": 0.020002000004751608,
+      "generation_save": 0.5255665000004228,
+      "jst_export": 1.091820599991479,
+      "daily_query": 0.09711149999930058,
+      "generated": 76,
+      "amount": "9000.0"
+    }
+  ],
+  "summary": [
+    {
+      "stores": 3,
+      "mode": "old",
+      "metrics": {
+        "exit_code": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "elapsed": {
+          "median": 0.858570199998212,
+          "min": 0.7948646000004373,
+          "max": 0.9336767999920994
+        },
+        "peak_tree_mib": {
+          "median": 49.08984375,
+          "min": 49.07421875,
+          "max": 49.1796875
+        },
+        "sample_ms": {
+          "median": 50,
+          "min": 50,
+          "max": 50
+        },
+        "query_cold": {
+          "median": 0.038855899998452514,
+          "min": 0.03045219999330584,
+          "max": 0.03902799999923445
+        },
+        "query_warm": {
+          "median": 0.007733099992037751,
+          "min": 0.007505699992179871,
+          "max": 0.007833299998310395
+        },
+        "original_export": {
+          "median": 0.05724669998744503,
+          "min": 0.05484890000661835,
+          "max": 0.12702610000269488
+        }
+      }
+    },
+    {
+      "stores": 3,
+      "mode": "new",
+      "metrics": {
+        "exit_code": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "elapsed": {
+          "median": 0.9701665000029607,
+          "min": 0.9176120000047376,
+          "max": 0.9762353999976767
+        },
+        "peak_tree_mib": {
+          "median": 49.4609375,
+          "min": 49.33203125,
+          "max": 49.47265625
+        },
+        "sample_ms": {
+          "median": 50,
+          "min": 50,
+          "max": 50
+        },
+        "query_cold": {
+          "median": 0.03107810000074096,
+          "min": 0.030858800004352815,
+          "max": 0.03651610000815708
+        },
+        "query_warm": {
+          "median": 0.007602900004712865,
+          "min": 0.0075954999920213595,
+          "max": 0.009152999991783872
+        },
+        "original_export": {
+          "median": 0.05824149999534711,
+          "min": 0.05586949999269564,
+          "max": 0.06107700000575278
+        },
+        "catalog_prepare_save": {
+          "median": 0.01567069999873638,
+          "min": 0.015578799997456372,
+          "max": 0.03266219999932218
+        },
+        "allocation_preview": {
+          "median": 0.0032078999938676134,
+          "min": 0.0028368999919621274,
+          "max": 0.0035549000022001565
+        },
+        "generation_save": {
+          "median": 0.030727900011697784,
+          "min": 0.02501270000357181,
+          "max": 0.031967000002623536
+        },
+        "jst_export": {
+          "median": 0.07308929999999236,
+          "min": 0.07265960000222549,
+          "max": 0.08571549999760464
+        },
+        "daily_query": {
+          "median": 0.010467100000823848,
+          "min": 0.01025870000012219,
+          "max": 0.011536200006958097
+        },
+        "generated": {
+          "median": 4,
+          "min": 4,
+          "max": 4
+        }
+      }
+    },
+    {
+      "stores": 10,
+      "mode": "old",
+      "metrics": {
+        "exit_code": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "elapsed": {
+          "median": 1.041885100014042,
+          "min": 1.0341546999989077,
+          "max": 1.2726917999971192
+        },
+        "peak_tree_mib": {
+          "median": 49.5078125,
+          "min": 49.40625,
+          "max": 49.55859375
+        },
+        "sample_ms": {
+          "median": 50,
+          "min": 50,
+          "max": 50
+        },
+        "query_cold": {
+          "median": 0.09164360001159366,
+          "min": 0.09126900001137983,
+          "max": 0.092298400006257
+        },
+        "query_warm": {
+          "median": 0.01638739999907557,
+          "min": 0.015959399999701418,
+          "max": 0.017549900003359653
+        },
+        "original_export": {
+          "median": 0.17555290000746027,
+          "min": 0.17320650001056492,
+          "max": 0.3737969000067096
+        }
+      }
+    },
+    {
+      "stores": 10,
+      "mode": "new",
+      "metrics": {
+        "exit_code": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "elapsed": {
+          "median": 1.5213688000076218,
+          "min": 1.3968748999905074,
+          "max": 1.5260736999916844
+        },
+        "peak_tree_mib": {
+          "median": 50.3671875,
+          "min": 50.109375,
+          "max": 50.390625
+        },
+        "sample_ms": {
+          "median": 50,
+          "min": 50,
+          "max": 50
+        },
+        "query_cold": {
+          "median": 0.09621219999098685,
+          "min": 0.09220830000413116,
+          "max": 0.10098980000475422
+        },
+        "query_warm": {
+          "median": 0.01629160001175478,
+          "min": 0.01611520000733435,
+          "max": 0.016428900009486824
+        },
+        "original_export": {
+          "median": 0.18088469999202061,
+          "min": 0.1717402999929618,
+          "max": 0.18800300000293646
+        },
+        "catalog_prepare_save": {
+          "median": 0.01691969999228604,
+          "min": 0.015212400001473725,
+          "max": 0.03419130000111181
+        },
+        "allocation_preview": {
+          "median": 0.00504999999247957,
+          "min": 0.0050220000121043995,
+          "max": 0.0059822000039275736
+        },
+        "generation_save": {
+          "median": 0.09977679999428801,
+          "min": 0.09531810000771657,
+          "max": 0.1022398999921279
+        },
+        "jst_export": {
+          "median": 0.2628015999944182,
+          "min": 0.25911939999787137,
+          "max": 0.285297399997944
+        },
+        "daily_query": {
+          "median": 0.023170400003436953,
+          "min": 0.022499400001834147,
+          "max": 0.025753800000529736
+        },
+        "generated": {
+          "median": 16,
+          "min": 16,
+          "max": 16
+        }
+      }
+    },
+    {
+      "stores": 50,
+      "mode": "old",
+      "metrics": {
+        "exit_code": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "elapsed": {
+          "median": 2.326610399992205,
+          "min": 2.201037199993152,
+          "max": 3.30533450000803
+        },
+        "peak_tree_mib": {
+          "median": 51.26953125,
+          "min": 51.01953125,
+          "max": 51.31640625
+        },
+        "sample_ms": {
+          "median": 50,
+          "min": 50,
+          "max": 50
+        },
+        "query_cold": {
+          "median": 0.47052240000630263,
+          "min": 0.4666938000009395,
+          "max": 0.5094581000012113
+        },
+        "query_warm": {
+          "median": 0.06789050000952557,
+          "min": 0.0673916000087047,
+          "max": 0.06817779999983031
+        },
+        "original_export": {
+          "median": 0.9805598999955691,
+          "min": 0.9087056999997003,
+          "max": 1.9337398000061512
+        }
+      }
+    },
+    {
+      "stores": 50,
+      "mode": "new",
+      "metrics": {
+        "exit_code": {
+          "median": 0,
+          "min": 0,
+          "max": 0
+        },
+        "elapsed": {
+          "median": 4.044564199997694,
+          "min": 3.9695806999952765,
+          "max": 4.162540100005572
+        },
+        "peak_tree_mib": {
+          "median": 52.2421875,
+          "min": 52.22265625,
+          "max": 52.890625
+        },
+        "sample_ms": {
+          "median": 50,
+          "min": 50,
+          "max": 50
+        },
+        "query_cold": {
+          "median": 0.45823800000653137,
+          "min": 0.4549184000061359,
+          "max": 0.46586609999940265
+        },
+        "query_warm": {
+          "median": 0.06668480001098942,
+          "min": 0.06595010000455659,
+          "max": 0.06837670000095386
+        },
+        "original_export": {
+          "median": 0.9596012999973027,
+          "min": 0.9320715999929234,
+          "max": 1.0363645000034012
+        },
+        "catalog_prepare_save": {
+          "median": 0.016967199990176596,
+          "min": 0.015938399999868125,
+          "max": 0.03443650000554044
+        },
+        "allocation_preview": {
+          "median": 0.01943780000146944,
+          "min": 0.018478800004231744,
+          "max": 0.020002000004751608
+        },
+        "generation_save": {
+          "median": 0.5255665000004228,
+          "min": 0.509904499995173,
+          "max": 0.5280413000000408
+        },
+        "jst_export": {
+          "median": 1.091820599991479,
+          "min": 1.040364900007262,
+          "max": 1.1373429000086617
+        },
+        "daily_query": {
+          "median": 0.09647930000210181,
+          "min": 0.0941162999952212,
+          "max": 0.09711149999930058
+        },
+        "generated": {
+          "median": 76,
+          "min": 76,
+          "max": 76
+        }
+      }
+    }
+  ]
+}

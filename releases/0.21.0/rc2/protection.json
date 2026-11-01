@@ -1,0 +1,56 @@
+{
+  "checked": 454,
+  "changed": [],
+  "core": {
+    "model.py": {
+      "baseline_sha256": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "current_sha256": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "unchanged": true
+    },
+    "one_box_exception.py": {
+      "baseline_sha256": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "current_sha256": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "unchanged": true
+    },
+    "allocation.py": {
+      "baseline_sha256": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "current_sha256": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "unchanged": true
+    },
+    "default_config.json": {
+      "baseline_sha256": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "current_sha256": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "unchanged": true
+    },
+    "default_must_sell.json": {
+      "baseline_sha256": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "current_sha256": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "unchanged": true
+    },
+    "quantity_contract.py": {
+      "baseline_sha256": "930bd6fd709ba4684479dcea37bfc1e57663c4b3ce0241f879f96754eac0d334",
+      "current_sha256": "930bd6fd709ba4684479dcea37bfc1e57663c4b3ce0241f879f96754eac0d334",
+      "unchanged": true
+    },
+    "input_adapter.py": {
+      "baseline_sha256": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+      "current_sha256": "d7c4f1258ed797e283960baf4d5c59be01f12faba8be222cad1d269180da8700",
+      "unchanged": true
+    },
+    "warehouse_catalog.py": {
+      "baseline_sha256": "4836ad59df55658f6a5951e0243dcee0ec7bb764ba6180b068a9a3c09202186e",
+      "current_sha256": "4836ad59df55658f6a5951e0243dcee0ec7bb764ba6180b068a9a3c09202186e",
+      "unchanged": true
+    },
+    "parameter_schema.py": {
+      "baseline_sha256": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+      "current_sha256": "1e8f8f84996b457f5502a0fb4974d36d693a39ed84908b5c38534dfaaf001b85",
+      "unchanged": true
+    },
+    "new_products.py": {
+      "baseline_sha256": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232",
+      "current_sha256": "54e3979012dad2ea30dc118bf740e63e19c1c774ac328f85d11959c7ede5c232",
+      "unchanged": true
+    }
+  }
+}
