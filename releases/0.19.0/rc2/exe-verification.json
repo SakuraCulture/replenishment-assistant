@@ -1,0 +1,85 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "phase": "exercise",
+      "checks": [
+        "actual spawn: secondary missing retains primary catalog, price, carton and demand; disabled/stopped/local boundaries preserved",
+        "actual final-list cancel, pending draft saved, signing pending rejected, zero risk checkbox and atomic apply; original result exactly restorable",
+        "reordered-header list drag/drop, explicit mapping, reusable save, target gap fill, manual zero protected, unselected rows/stores unchanged",
+        "actual search/select keeps hidden checks, cancels without side effects, direct preview creates temporary list without Excel or mandatory save",
+        "query append preserves file targets, saves V2, applies existing carton/budget/risk preview and keeps original model/other store intact",
+        "actual split-warehouse signed Excel includes restored product only under Hebei",
+        "actual spawn work I/O confirms/signs split-warehouse Excel and stores final quantity plus original audit"
+      ],
+      "timings": {
+        "check_seconds": 0.4718334000062896,
+        "calculate_seconds": 0.509495499994955,
+        "manual_preview_apply_seconds": 0.22909199999412522,
+        "sign_export_seconds": 0.9494606000080239
+      },
+      "max_ui_gap_seconds": 0.24916179999127053,
+      "ui_ticks": 119,
+      "version": {
+        "app": "补货助手",
+        "version": "0.19.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.1",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "build_id": "rc2",
+        "built_at": "2026-11-01T14:35:51.4918717+08:00",
+        "source_commit": "29ec84aa1c5f28e3005418ef4158eafaeda62df5"
+      },
+      "synthetic": true,
+      "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 6.375,
+      "peak_tree_mib": 358.45703125,
+      "sample_ms": 50,
+      "exe_sha256": "a624bca55872646415a33d5b9f121495beba2664c4533e1c7e922bc1ad872a46"
+    },
+    {
+      "passed": true,
+      "error": null,
+      "phase": "reopen",
+      "checks": [
+        "fresh process restored final edits, reusable list and historical adjustment business form",
+        "query-selected SKU, catalog revision and source rows visible after packaged restart"
+      ],
+      "timings": {},
+      "max_ui_gap_seconds": 0.3593332000018563,
+      "ui_ticks": 58,
+      "version": {
+        "app": "补货助手",
+        "version": "0.19.0",
+        "parameter_schema_version": 1,
+        "job_schema_version": 1,
+        "routing_version": "0.5.1",
+        "model_version": "0.3.3-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "build_id": "rc2",
+        "built_at": "2026-11-01T14:35:51.4918717+08:00",
+        "source_commit": "29ec84aa1c5f28e3005418ef4158eafaeda62df5"
+      },
+      "synthetic": true,
+      "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 3.5310000000026776,
+      "peak_tree_mib": 240.04296875,
+      "sample_ms": 50,
+      "exe_sha256": "a624bca55872646415a33d5b9f121495beba2664c4533e1c7e922bc1ad872a46"
+    }
+  ]
+}

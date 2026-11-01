@@ -1,0 +1,83 @@
+{
+  "catalog_rows": 13639,
+  "unique_skus": 9943,
+  "runs": [
+    {
+      "index_seconds": 0.022660900009213947,
+      "queries": [
+        {
+          "query": "汽水",
+          "matches": 131,
+          "seconds": 0.012725499997031875
+        },
+        {
+          "query": "纸巾",
+          "matches": 44,
+          "seconds": 0.01284769999620039
+        },
+        {
+          "query": "169",
+          "matches": 626,
+          "seconds": 0.013724200005526654
+        },
+        {
+          "query": "不存在的选品测试",
+          "matches": 0,
+          "seconds": 0.013492099998984486
+        }
+      ]
+    },
+    {
+      "index_seconds": 0.029640599997946993,
+      "queries": [
+        {
+          "query": "汽水",
+          "matches": 131,
+          "seconds": 0.012819700001273304
+        },
+        {
+          "query": "纸巾",
+          "matches": 44,
+          "seconds": 0.013052800000878051
+        },
+        {
+          "query": "169",
+          "matches": 626,
+          "seconds": 0.01341379999939818
+        },
+        {
+          "query": "不存在的选品测试",
+          "matches": 0,
+          "seconds": 0.013106099999276921
+        }
+      ]
+    },
+    {
+      "index_seconds": 0.03417780000017956,
+      "queries": [
+        {
+          "query": "汽水",
+          "matches": 131,
+          "seconds": 0.012999200000194833
+        },
+        {
+          "query": "纸巾",
+          "matches": 44,
+          "seconds": 0.01251199998660013
+        },
+        {
+          "query": "169",
+          "matches": 626,
+          "seconds": 0.013521899993065745
+        },
+        {
+          "query": "不存在的选品测试",
+          "matches": 0,
+          "seconds": 0.013460700007271953
+        }
+      ]
+    }
+  ],
+  "median_index_seconds": 0.029640599997946993,
+  "scope": "Source-only cached catalog JSON projection and Python filtering. Three sequential warm runs; no Excel IO, Qt painting or full check-file timing. No comparison speedup claimed."
+}

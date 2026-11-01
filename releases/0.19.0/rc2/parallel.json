@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "reverse_completion": false,
+      "raw_result_differences": [],
+      "export_differences": []
+    },
+    {
+      "reverse_completion": true,
+      "raw_result_differences": [],
+      "export_differences": []
+    }
+  ],
+  "whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "scope": "Two real processes with QA-only controlled completion delivery; both original store order and reverse. Values/types/events/result dictionary order and full exported cells/styles strictly compared. No production code changed and no product sorting."
+}
