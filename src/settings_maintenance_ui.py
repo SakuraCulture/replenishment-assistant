@@ -1,11 +1,20 @@
 """Business-readable future-default maintenance, separate from current work."""
 import copy,re
-from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QLineEdit,QMessageBox,QCheckBox
+from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QLineEdit,QMessageBox,QCheckBox,QHeaderView
 from ui_controls import button,label
 from business_ui import grid
 from parameter_view import flatten,display_path
 import settings_history as history
 import work_repository as wr
+
+def fit_diff_grid(table):
+    # Keep both values visible at the default dialog width, including high DPI.
+    # Long parameter paths wrap instead of pushing values out of the viewport.
+    for column,width in ((0,145),(2,150),(3,150)):table.setColumnWidth(column,width)
+    table.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeMode.Stretch)
+    table.setWordWrap(True)
+    table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+
 
 def diffs(plan):
     rows=[]
@@ -33,7 +42,7 @@ def confirm_plan(parent,host,plan):
     v.addWidget(label(f"影响 {len(plan['values'])} 家门店的后续默认。当前作业和已签发历史均不改变。",'section'))
     if plan['conflicts']:v.addWidget(label('以下门店后来又修改过，本次不撤销：'+'、'.join(plan['conflicts'])))
     search=QLineEdit();search.setPlaceholderText('搜索门店或参数');v.addWidget(search)
-    table,model=grid(d,['门店编码','设置项','现有默认','修改后默认'],diffs(plan));table.setColumnWidth(0,150);table.setColumnWidth(1,420);search.textChanged.connect(model.filter);v.addWidget(table,1)
+    table,model=grid(d,['门店编码','设置项','现有默认','修改后默认'],diffs(plan));fit_diff_grid(table);search.textChanged.connect(model.filter);v.addWidget(table,1)
     row=QHBoxLayout();row.addWidget(button('取消',d.reject));go=button('确认保存默认',d.accept,True);go.setEnabled(bool(plan['values']));row.addWidget(go);v.addLayout(row)
     if d.exec()!=QDialog.DialogCode.Accepted:return False
     try:history.apply(host.work_repository,plan)
@@ -48,7 +57,7 @@ def open_history(parent,host):
     d=QDialog(parent);d.setWindowTitle('默认设置变更记录');d.resize(900,620);v=QVBoxLayout(d)
     v.addWidget(label('撤销只还原未被后续修改的门店；恢复旧配置会先比较当前值。升级前未留存的旧值不能恢复。'))
     choices=QComboBox();v.addWidget(choices)
-    table,model=grid(d,['门店编码','设置项','变更前','变更后']);table.setColumnWidth(0,150);table.setColumnWidth(1,420);v.addWidget(table,1)
+    table,model=grid(d,['门店编码','设置项','变更前','变更后']);fit_diff_grid(table);v.addWidget(table,1)
     def load():
         choices.clear()
         for e in history.history(host.work_repository):choices.addItem(f"{e['at']} · {re.sub(r'[0-9a-f]{32}',lambda m:m[0][:8],e['action'])} · {len(e['after'])}店 · {e['id'][:8]}",e)
