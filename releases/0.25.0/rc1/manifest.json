@@ -1,0 +1,12 @@
+{
+  "version": "0.25.0",
+  "build_commit": "cb2dbbf9dfc5ae289e287828bd7eea3be94599b4",
+  "baseline_commit": "be82ffd7d1510be91550c3eb5fc7658fc614c443",
+  "exe_sha256": "ecb034791e4423f9d3843bf5a5bf4e5ae0ff9cdd768402c3863556e5a391a20e",
+  "zip_sha256": "882548e2efd243fb3b7ffa74687e28ead2edba60a074f30727d12485780fe8a1",
+  "zip_bytes": 88177136,
+  "delivery_files": 1086,
+  "zip_path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.25.0_rc1\\补货助手_0.25.0_rc1_签发单隐藏单号与批量调参.zip",
+  "delivery_path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.25.0_rc1\\补货助手",
+  "remote_actions": []
+}

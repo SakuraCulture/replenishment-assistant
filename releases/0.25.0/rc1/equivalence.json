@@ -1,0 +1,221 @@
+{
+  "baseline_commit": "be82ffd7d1510be91550c3eb5fc7658fc614c443",
+  "strict_order_and_types": true,
+  "whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "signed_whitelist": [
+    "docProps/core.xml created/modified timestamps",
+    "exact U-column hidden attribute; no values/types/styles/headers/order/linkage excluded"
+  ],
+  "cases": [
+    {
+      "case": "single_intake",
+      "differences": []
+    },
+    {
+      "case": "single_loaded",
+      "differences": []
+    },
+    {
+      "case": "single_results",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_intake",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_loaded",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_results",
+      "differences": []
+    },
+    {
+      "case": "overlap_intake",
+      "differences": []
+    },
+    {
+      "case": "overlap_blocked",
+      "differences": []
+    },
+    {
+      "case": "overlap_loaded",
+      "differences": []
+    },
+    {
+      "case": "overlap_results",
+      "differences": []
+    },
+    {
+      "case": "reversed_intake",
+      "differences": []
+    },
+    {
+      "case": "reversed_blocked",
+      "differences": []
+    },
+    {
+      "case": "reversed_loaded",
+      "differences": []
+    },
+    {
+      "case": "reversed_results",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_intake",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_blocked",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_loaded",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_results",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_intake",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_loaded",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_results",
+      "differences": []
+    },
+    {
+      "case": "all_error",
+      "differences": []
+    },
+    {
+      "case": "warehouse_intake",
+      "differences": []
+    },
+    {
+      "case": "warehouse_loaded",
+      "differences": []
+    },
+    {
+      "case": "warehouse_results",
+      "differences": []
+    },
+    {
+      "case": "real_loaded",
+      "differences": []
+    },
+    {
+      "case": "real_None_True",
+      "differences": []
+    },
+    {
+      "case": "real_0_True",
+      "differences": []
+    },
+    {
+      "case": "real_3000_True",
+      "differences": []
+    },
+    {
+      "case": "real_5000_True",
+      "differences": []
+    },
+    {
+      "case": "real_10000_True",
+      "differences": []
+    },
+    {
+      "case": "real_None_False",
+      "differences": []
+    },
+    {
+      "case": "real_custom",
+      "differences": []
+    },
+    {
+      "case": "filtered.xlsx",
+      "differences": []
+    },
+    {
+      "case": "overlap.xlsx",
+      "differences": []
+    },
+    {
+      "case": "real.xlsx",
+      "differences": []
+    },
+    {
+      "case": "reversed.xlsx",
+      "differences": []
+    },
+    {
+      "case": "warehouse.xlsx",
+      "differences": []
+    }
+  ],
+  "signed": [
+    {
+      "file": "兼容总单.xlsx",
+      "allowed": [
+        "xl/worksheets/sheet1.xml/cols/col[min=21,max=21]/@hidden: absent -> 1",
+        "xl/worksheets/sheet2.xml/cols/col[min=21,max=21]/@hidden: absent -> 1",
+        "xl/worksheets/sheet3.xml/cols/col[min=21,max=21]/@hidden: absent -> 1"
+      ],
+      "unexpected_differences": []
+    },
+    {
+      "file": "山东仓.xlsx",
+      "allowed": [
+        "xl/worksheets/sheet1.xml/cols/col[min=21,max=21]/@hidden: absent -> 1",
+        "xl/worksheets/sheet2.xml/cols/col[min=21,max=21]/@hidden: absent -> 1",
+        "xl/worksheets/sheet3.xml/cols/col[min=21,max=21]/@hidden: absent -> 1"
+      ],
+      "unexpected_differences": []
+    },
+    {
+      "file": "河北仓.xlsx",
+      "allowed": [
+        "xl/worksheets/sheet1.xml/cols/col[min=21,max=21]/@hidden: absent -> 1",
+        "xl/worksheets/sheet2.xml/cols/col[min=21,max=21]/@hidden: absent -> 1",
+        "xl/worksheets/sheet3.xml/cols/col[min=21,max=21]/@hidden: absent -> 1"
+      ],
+      "unexpected_differences": []
+    }
+  ],
+  "core": {
+    "model.py": {
+      "before": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "after": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584"
+    },
+    "one_box_exception.py": {
+      "before": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "after": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "allocation.py": {
+      "before": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "after": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "default_config.json": {
+      "before": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "after": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "before": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "after": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    }
+  },
+  "passed": true
+}
