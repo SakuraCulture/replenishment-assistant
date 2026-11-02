@@ -55,6 +55,8 @@ def start_smoke(app, win, args):
             win._discard_close = True
             win.jst_generator.cancel()
             wait(lambda:win.jst_generator.worker is None)
+            from aoxiang_setup_smoke import exercise_setup
+            exercise_setup(win,output,wait,active,checks)
             for index in range(0 if business else 2):
                 dialog = FetchDialog(win, win.repository.folder, win.job_day)
                 active['dialog'] = dialog

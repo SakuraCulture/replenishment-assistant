@@ -38,6 +38,47 @@ test('浏览器任务严格串行，单店普通失败保留原顺序并继续�
   assert.equal(done.result.succeeded,2);assert.equal(done.result.failed,1);
 });
 
+test('先提交全部门店，慢首店不阻塞后店完成；结果保留所选顺序',async t=>{
+  const seen=[],polls=new Map();let submits=0;
+  const c=await context(t,async({item,phase,onProgress})=>{
+    seen.push(phase+':'+item.warehouse_code);
+    if(phase==='submit'){submits++;onProgress({stage:'ACCEPTED',taskId:'task-'+item.warehouse_code});return {pending:true};}
+    assert.equal(submits,3);
+    const count=(polls.get(item.index)||0)+1;polls.set(item.index,count);
+    if(item.index===0&&count===1)return {pending:true};
+    return {file:item.warehouse_code+'.xlsx'};
+  },{pipeline:true});
+  await c.reserve();const r=c.commands.get('job-1');r.config_snapshot.resourceLimits.pollIntervalMs=1;
+  c.commands.db.prepare('UPDATE machine_commands SET payload=? WHERE id=?').run(JSON.stringify(r),r.id);
+  c.runtime.kick();await c.runtime.idle();
+  assert.deepEqual(seen,['submit:W2','submit:W1','submit:W3','collect:W2','collect:W1','collect:W3','collect:W2']);
+  const done=c.commands.get('job-1');assert.equal(done.state,'SUCCEEDED');
+  assert.deepEqual(done.items.map(i=>i.result.file),['W2.xlsx','W1.xlsx','W3.xlsx']);
+  assert.deepEqual(done.items.map(i=>i.task_id),['task-W2','task-W1','task-W3']);
+});
+
+test('流水线未知受理立即停后续提交，不因已受理数量相等就取最新任务',async t=>{
+  const seen=[];
+  const c=await context(t,async({item})=>{seen.push(item.warehouse_code);if(item.index===1)throw new AppError('SUBMISSION_UNKNOWN','受理不明');return {pending:true};},{pipeline:true});
+  await c.reserve();c.runtime.kick();await c.runtime.idle();
+  assert.deepEqual(seen,['W2','W1']);assert.equal(c.commands.get('job-1').state,'NEEDS_REVIEW');
+  assert.throws(()=>c.runtime.resume('job-1'),{code:'COMMAND_TRANSITION'});
+});
+
+test('流水线等待可立即暂停，继续保持run和task身份',async t=>{
+  const reached=deferred(),seen=[];let ready=false;
+  const c=await context(t,async({item,phase,onProgress})=>{
+    seen.push([item.run_id,phase]);
+    if(phase==='submit'){onProgress({stage:'ACCEPTED',taskId:'task-'+item.warehouse_code});return {pending:true};}
+    if(item.index===2)reached.resolve();return ready?{file:item.warehouse_code}:{pending:true};
+  },{pipeline:true});
+  await c.reserve();c.runtime.kick();await reached.promise;c.runtime.pause('job-1');await c.runtime.idle();
+  assert.equal(c.commands.get('job-1').state,'PAUSED');const original=c.commands.get('job-1').items;
+  ready=true;c.runtime.resume('job-1');c.runtime.kick();await c.runtime.idle();
+  assert.equal(c.commands.get('job-1').state,'SUCCEEDED');
+  assert.deepEqual(c.commands.get('job-1').items.map(i=>[i.run_id,i.task_id]),original.map(i=>[i.run_id,i.task_id]));
+});
+
 test('读取中暂停响应立即返回，等待当前动作安全结束，继续只执行剩余店',async t=>{
   const started=deferred(),release=deferred(),seen=[];
   const c=await context(t,async({item,signal})=>{

@@ -36,8 +36,8 @@ export async function saveConfiguration(root,expectedHash,desired){
 }
 
 export class MachineSetup{
-  constructor({root,Client=BrowserClient,discoverEnvironment=discover,checkOutputRoot=checkOutput}){
-    Object.assign(this,{root,Client,discoverEnvironment,checkOutputRoot});this.job=null;this.promise=null;this.client=null;
+  constructor({root,Client=BrowserClient,discoverEnvironment=discover,checkOutputRoot=checkOutput,stepTimeoutMs}){
+    Object.assign(this,{root,Client,discoverEnvironment,checkOutputRoot,stepTimeoutMs});this.job=null;this.promise=null;this.client=null;
   }
   get busy(){return !!this.promise||['READY','COMMITTING'].includes(this.job?.state);}
   async discover(){
@@ -53,14 +53,33 @@ export class MachineSetup{
     this.promise=this.run(structuredClone(params)).catch(error=>{
       this.job={...this.job,state:this.control.signal.aborted?'CANCELLED':'FAILED',error:errorInfo(error),updated_at:now()};
     }).finally(async()=>{
-      try{await this.closeClient();}
+      this.job.cleanup_pending=true;
+      try{
+        await this.closeClient();
+        if(this.control.signal.aborted){this.preview=null;this.job.state='CANCELLED';this.job.stage='核验已停止，未保存新配置';}
+        else if(this.preview&&this.job.state==='RUNNING'){this.job.state='READY';this.job.stage='核验完成，等待保存';}
+      }
       catch(error){this.job={...this.job,state:'FAILED',error:errorInfo(error),updated_at:now()};}
-      finally{this.promise=null;}
+      finally{this.job.cleanup_pending=false;this.promise=null;}
     });
     return this.status(this.job.id);
   }
   status(id){if(this.job?.id!==id)fail('SETUP_NOT_FOUND','当前连接核验已失效，请重新核验');return structuredClone(this.job);}
   check(){if(this.control.signal.aborted)fail('PAUSED','配置核验已停止，未保存新配置');}
+  async readStep(operation,timeoutMs=30000){
+    this.check();
+    const signal=this.control.signal,limit=this.stepTimeoutMs??timeoutMs;
+    this.job.stage_started_at=now();this.job.operation_timeout_ms=limit;
+    let timer,abort;
+    try{
+      return await Promise.race([Promise.resolve().then(operation),new Promise((_,reject)=>{
+        const rejectAs=(code,message)=>{try{fail(code,message);}catch(e){reject(e);}};
+        abort=()=>rejectAs('PAUSED','核验已停止；正在释放本次只读连接，未保存配置');
+        timer=setTimeout(()=>rejectAs('SETUP_STEP_TIMEOUT','当前核验步骤超时；未保存配置。请检查 Edge 授权、登录和网络后重新核验'),limit);
+        signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();
+      })]);
+    }finally{clearTimeout(timer);signal.removeEventListener('abort',abort);}
+  }
   async closeClient(){await this.client?.stop();this.client=null;}
   async cancel(id){
     this.status(id);this.control.abort();this.job.cancel_requested=true;this.job.updated_at=now();
@@ -69,30 +88,33 @@ export class MachineSetup{
   }
   async close(){if(this.job)this.control.abort();await this.promise;await this.closeClient();this.preview=null;if(this.job?.state==='READY')this.job.state='CANCELLED';}
   async run(params){
-    const old=await readConfiguration(this.root),env=await this.discoverEnvironment();this.check();
+    const old=await this.readStep(()=>readConfiguration(this.root)),env=await this.readStep(()=>this.discoverEnvironment());this.check();
     const profile=env.profiles.find(p=>p.actualProfilePath.toLowerCase()===params.candidate.actual_profile_path.toLowerCase());
     const edge=env.installations.find(e=>e.executable.toLowerCase()===params.candidate.edge_executable.toLowerCase());
     if(!profile||!edge)fail('MACHINE_REBIND_REQUIRED','所选浏览器或已有用户配置未在本机发现，不能执行任意路径');
-    const output=await this.checkOutputRoot(params.output_root);this.check();
-    this.client=new this.Client({onPhase:stage=>{this.job.stage=stage;this.job.updated_at=now();}});
+    const output=await this.readStep(()=>this.checkOutputRoot(params.output_root));this.check();
+    const job=this.job;
+    this.client=new this.Client({onPhase:stage=>{if(this.job.id===job.id&&!this.control.signal.aborted){this.job.stage=stage;this.job.updated_at=now();}}});
     this.job.stage='核验登录与商家';
-    const result=await this.client.connect({candidate:{...profile,edgeExecutable:edge.executable},expectedIdentity:old.config?.tenantBinding,
+    const result=await this.readStep(()=>this.client.connect({candidate:{...profile,edgeExecutable:edge.executable},expectedIdentity:old.config?.tenantBinding,
       stateRoot:this.root,timeout:old.config?.resourceLimits.connectTimeoutMs||60000,pageTimeoutMs:old.config?.resourceLimits.pageTimeoutMs||30000,
-      mode:'background_tab',source:'D13'});this.check();
+      mode:'background_tab',source:'D13'}),(old.config?.resourceLimits.connectTimeoutMs||60000)+(old.config?.resourceLimits.pageTimeoutMs||30000)*2);this.check();
     if(old.config&&!sameIdentity(old.config.tenantBinding,result.identity))fail('WRONG_IDENTITY','当前商家与已保存账号不同；原配置保持不变');
     this.job.identity={account_id:result.identity.accountId,merchant_code:result.identity.merchantCode,display_name:result.identity.displayName};
     const verified=[];
     for(const item of this.job.targets){
       this.check();item.state='RUNNING';this.job.stage='核对门店 '+(item.index+1)+'/'+this.job.total+' · '+item.name;
       try{
-        const query=await this.client.querySingle(item.code,item.name);this.check();
+        const query=await this.readStep(()=>this.client.querySingle(item.code,item.name),Math.max(60000,(old.config?.resourceLimits.pageTimeoutMs||30000)*2));this.check();
         if(!sameIdentity(query.identity,result.identity))fail('WRONG_IDENTITY','核验期间商家身份变化');
         if(query.warehouseCode!==item.code)fail('TARGET_CODE_MISMATCH','查询中的实际接收编码与目录不一致');
         item.state='VERIFIED';item.rows=query.total;
         verified.push({buyerWarehouseCode:item.code,displayName:item.name,operatingStores:[],mappingSource:'门店目录与补货建议原生单店查询精确编码核对',mappingVerifiedAt:query.observedAt});
       }catch(error){
         item.state='FAILED';item.error=errorInfo(error);
-        if(this.control.signal.aborted||['WRONG_IDENTITY','WAIT_LOGIN','BROWSER_DISCONNECTED','WORKER_RESPONSE_UNKNOWN'].includes(error.code))throw error;
+        // Only proven store-local mismatches may continue. Browser/login/network/UI
+        // failures must not repeat the same timeout for every selected store.
+        if(this.control.signal.aborted||!['TARGET_CODE_MISMATCH','AMBIGUOUS_TARGET','TARGET_NAME_MISSING'].includes(error.code))throw error;
       }
       this.job.current=item.index+1;this.job.updated_at=now();
     }
@@ -108,7 +130,7 @@ export class MachineSetup{
       actualProfilePath:result.facts.actualProfilePath,outputRoot:output.root,identityVerifiedAt:now(),compatibilityResult:'PASSED'};
     await validateConfig('portable.config',config);await validateConfig('machine.binding',binding);
     this.preview={expectedHash:configurationHash(old),desired:{config,binding}};
-    this.job={...this.job,state:'READY',stage:'核验完成，等待保存',verified:verified.length,failed:this.job.targets.length-verified.length,
+    this.job={...this.job,state:'RUNNING',stage:'核验完成，正在释放只读连接',verified:verified.length,failed:this.job.targets.length-verified.length,
       store_mapping_version:mappingVersion(config),output_root:binding.outputRoot,updated_at:now()};
   }
   async commit(id){

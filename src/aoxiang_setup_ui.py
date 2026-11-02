@@ -1,6 +1,7 @@
 """Business-facing AX configuration; all filesystem/browser work stays off the UI thread."""
 from pathlib import Path
 import sys
+import time
 
 from PySide6.QtCore import Qt, QThread, Signal, QTimer
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QComboBox,
@@ -32,11 +33,19 @@ class SetupDialog(ComponentDialog):
         self._can_close = False
         self._close_done = False
         self.cancel_pending = False
+        self.transport_failed = False
+        self.reconnecting = False
+        self.detect_pending = False
+        self.last_status = None
+        self.status_received = time.monotonic()
         self.data = None
         self.checks = []
         self.poll = QTimer(self)
         self.poll.setInterval(600)
         self.poll.timeout.connect(self.refresh_setup)
+        self.clock = QTimer(self)
+        self.clock.setInterval(1000)
+        self.clock.timeout.connect(self.render_status)
         layout = QVBoxLayout(self)
         layout.addWidget(label('先维护门店目录，再核验登录和所选门店，最后保存。此处只查询，不创建导出或采购单。', 'section'))
         self.note = label('门店按编码关联，名称用于辅助定位。未核验的目录不作为已验证平台绑定。', 'muted')
@@ -93,13 +102,15 @@ class SetupDialog(ComponentDialog):
         self.progress.setValue(0)
         layout.addWidget(self.progress)
         self.status = label('尚未连接。请导入目录，勾选本次门店，再检测浏览器。', 'muted')
+        self.status.setWordWrap(True)
         layout.addWidget(self.status)
         actions = QHBoxLayout()
         self.verify_btn = button('核验登录与所选门店', self.verify, True)
         self.stop_btn = button('停止本次核验', self.stop_setup)
+        self.reconnect_btn = button('异常后重新连接', self.reconnect)
         self.save_btn = button('保存已核验连接与门店', self.save_setup, True)
         self.close_btn = button('关闭', self.close)
-        for widget in [self.verify_btn, self.stop_btn, self.save_btn, self.close_btn]:
+        for widget in [self.verify_btn, self.stop_btn, self.reconnect_btn, self.save_btn, self.close_btn]:
             actions.addWidget(widget)
         layout.addLayout(actions)
         self.update_buttons()
@@ -115,6 +126,10 @@ class SetupDialog(ComponentDialog):
         self.fill_directory()
 
     def on_idle(self):
+        if self.detect_pending:
+            self.detect_pending = False
+            self.detect()
+            return
         if self.cancel_pending:
             self.cancel_pending = False
             self.stop_setup()
@@ -192,8 +207,9 @@ class SetupDialog(ComponentDialog):
             if old and old['displayName'] == item['name']:
                 self.table.item(row, 3).setText('已保存核验 · ' + old['mappingVerifiedAt'])
         self.progress.setRange(0, 1)
-        self.progress.setValue(1)
-        self.status.setText('请选择已登录翱象的浏览器配置。核验时可能需要你在 Edge 允许调试连接。')
+        self.progress.setValue(0)
+        self.progress.setFormat('浏览器检测完成；门店核验尚未开始')
+        self.status.setText('请先勾选门店，再核验登录。已找到浏览器不代表已经连接或登录；Edge 弹出调试连接请求时需允许。')
 
     def verify(self):
         targets = self.selected()
@@ -202,10 +218,16 @@ class SetupDialog(ComponentDialog):
         params = {'candidate': {'edge_executable': self.edge.currentData(), 'actual_profile_path': self.profile.currentData()},
                   'output_root': self.output.text().strip(), 'targets': targets}
         self.status.setText(f'准备核验 {len(targets)} 家门店…')
+        self.transport_failed = False
+        self.last_status = None
+        self.progress.setFormat('%v / %m 家已处理')
         self.progress.setRange(0, 0)
         self.run(lambda _: self.client.request('setup.start', **params), self.setup_updated)
 
     def setup_updated(self, data):
+        self.transport_failed = False
+        self.last_status = data
+        self.status_received = time.monotonic()
         self.setup_id, self.setup_state = data['id'], data['state']
         self.setup_cancel_requested = data.get('cancel_requested', False)
         states = {'PENDING': '等待核验', 'RUNNING': '正在核验', 'VERIFIED': '编码一致', 'FAILED': '核验未通过'}
@@ -220,14 +242,56 @@ class SetupDialog(ComponentDialog):
         phase = {'CONNECTING': '正在连接 Edge，必要时请允许调试连接', 'PROFILE_VERIFIED': '已核对浏览器用户配置'}.get(data['stage'], data['stage'])
         if self.setup_cancel_requested and data['state'] == 'RUNNING':
             phase = '已请求停止，等待当前网页查询安全结束；未保存新配置'
-        self.status.setText((identity.get('display_name', '') + ' ' + identity.get('merchant_code', '') + ' · ' if identity else '') + phase + (' · ' + data['error']['message'] if data.get('error') else ''))
-        if data['state'] == 'RUNNING':
+        self.base_status = (identity.get('display_name', '') + ' ' + identity.get('merchant_code', '') + ' · ' if identity else '') + phase + (' · ' + data['error']['code'] + '：' + data['error']['message'] if data.get('error') else '')
+        self.status.setText(self.base_status)
+        if data['state'] == 'RUNNING' or data.get('cleanup_pending'):
             self.poll.start()
+            self.clock.start()
         else:
             self.poll.stop()
+            self.clock.stop()
         if data['state'] == 'READY':
             self.status.setText(self.status.text() + f'；通过 {data["verified"]} 家，失败 {data["failed"]} 家。只保存通过项。')
         self.update_buttons()
+
+    def render_status(self):
+        if self._closing or self.transport_failed or not self.last_status or self.last_status['state'] != 'RUNNING':
+            return
+        from datetime import datetime, timezone
+        started = self.last_status.get('stage_started_at')
+        elapsed = max(0, int((datetime.now(timezone.utc) - datetime.fromisoformat(started.replace('Z', '+00:00'))).total_seconds())) if started else 0
+        limit = self.last_status.get('operation_timeout_ms', 0) // 1000
+        self.status.setText(self.base_status + (f' · 当前步骤 {elapsed} 秒 / 最长 {limit} 秒' if limit else '') +
+                            (' · 状态应答等待中，可停止或关闭' if time.monotonic() - self.status_received > 5 else ''))
+
+    def failure(self, text):
+        # A failed status request must not open a new modal every 600 ms.
+        self.poll.stop()
+        self.clock.stop()
+        self.transport_failed = True
+        self.progress.setRange(0, 1)
+        self.progress.setValue(0)
+        self.progress.setFormat('核验未完成')
+        super().failure(text + '\n可点击“异常后重新连接”结束本次只读核验，再重新开始；不会保存未通过配置。')
+
+    def reconnect(self):
+        if self.worker or self._closing:
+            return
+        self.reconnecting = True
+        self.poll.stop()
+        self.clock.stop()
+        self.status.setText('正在结束原只读核验并释放连接；保留已保存配置，不关闭你的 Edge。')
+        def finished(done):
+            if not done:
+                QTimer.singleShot(600, self.reconnect)
+                return
+            self.client = self.client_factory(component_root(), self.folder / 'component-state')
+            self.started = False
+            self.setup_id = self.setup_state = self.last_status = None
+            self.setup_cancel_requested = self.cancel_pending = False
+            self.transport_failed = self.reconnecting = False
+            self.detect_pending = True
+        self.run(lambda _: self.client.close(timeout=.5), finished)
 
     def refresh_setup(self):
         if self.worker or self._closing or not self.setup_id:
@@ -256,13 +320,14 @@ class SetupDialog(ComponentDialog):
         self.run(lambda _: self.directory.save_suppliers(values), lambda _: self.status.setText('两仓供应商对应已保存；不会改变历史订单。'))
 
     def update_buttons(self, *_):
-        available = self.worker is None and not self._closing
-        setting = self.setup_state in ('RUNNING', 'READY', 'COMMITTING')
+        available = self.worker is None and not self._closing and not self.reconnecting
+        setting = self.setup_state in ('RUNNING', 'READY', 'COMMITTING') or bool((self.last_status or {}).get('cleanup_pending'))
         self.selection_count.setText(f'已选 {len(self.selected())} 家')
         for widget in [self.import_btn, self.template_btn, self.detect_btn, self.edge, self.profile, self.output, self.supplier_btn, self.table, self.all_btn, self.none_btn, *self.supplier_edits.values()]:
             widget.setEnabled(available and not setting)
         self.verify_btn.setEnabled(available and not setting and bool(self.selected()) and bool(self.edge.currentData()) and bool(self.profile.currentData()))
-        self.save_btn.setEnabled(available and self.setup_state == 'READY')
+        self.save_btn.setEnabled(available and self.setup_state == 'READY' and not self.transport_failed and not (self.last_status or {}).get('cleanup_pending'))
+        self.reconnect_btn.setEnabled(available and self.transport_failed)
         self.stop_btn.setEnabled(not self._closing and not self.setup_cancel_requested and self.setup_state in ('RUNNING', 'READY'))
         self.close_btn.setEnabled(not self._closing)
 

@@ -119,6 +119,55 @@ class SetupUiTests(unittest.TestCase):
         self.assertTrue(d.verify_btn.isEnabled())
         self.assertFalse(any(action == 'setup.commit' for action, _ in d.client.calls))
 
+    def test_discovery_is_not_full_verification_progress(self):
+        d = self.dialog
+        d.detect()
+        self.wait(lambda: d.worker is None)
+        self.assertEqual(d.progress.value(), 0)
+        self.assertIn('核验尚未开始', d.progress.format())
+        self.assertFalse(d.verify_btn.isEnabled())
+        d.select_visible(True)
+        self.assertTrue(d.verify_btn.isEnabled())
+
+    def test_poll_failure_stops_repeated_dialogs_and_reconnect_recovers(self):
+        from aoxiang_client import ComponentError
+        from PySide6.QtTest import QTest
+        d = self.dialog
+        d.select_visible(True)
+        d.detect()
+        self.wait(lambda: d.worker is None)
+        original = d.client.request
+        def request(action, **values):
+            if action == 'setup.status':
+                raise ComponentError('RESPONSE_UNKNOWN', '模拟状态请求超时')
+            return original(action, **values)
+        d.client.request = request
+        d.verify()
+        self.wait(lambda: d.transport_failed and d.worker is None)
+        self.assertFalse(d.poll.isActive())
+        self.assertFalse(d.clock.isActive())
+        self.assertTrue(d.reconnect_btn.isEnabled())
+        self.assertFalse(d.save_btn.isEnabled())
+        self.assertEqual(len(self.errors), 1)
+        QTest.qWait(700)
+        self.assertEqual(len(self.errors), 1)
+        old = d.client
+        d.reconnect()
+        self.wait(lambda: d.client is not old and not d.worker and not d.detect_pending)
+        self.assertEqual(old.close_attempts, 1)
+        self.assertIsNone(d.setup_id)
+        self.assertTrue(d.verify_btn.isEnabled())
+        d.verify()
+        self.wait(lambda: d.setup_state == 'READY' and d.worker is None)
+
+    def test_setup_failure_enables_retry_and_shows_code(self):
+        d = self.dialog
+        d.setup_updated({'id': 'failed', 'state': 'FAILED', 'stage': '核验门店', 'current': 0, 'total': 2,
+                         'targets': [], 'error': {'code': 'SETUP_STEP_TIMEOUT', 'message': '步骤超时'}})
+        self.assertFalse(d.poll.isActive())
+        self.assertIn('SETUP_STEP_TIMEOUT', d.status.text())
+        self.assertFalse(d.save_btn.isEnabled())
+
     def test_close_waits_for_live_worker_keeps_event_loop_responsive(self):
         d = self.dialog
         release, started = threading.Event(), threading.Event()

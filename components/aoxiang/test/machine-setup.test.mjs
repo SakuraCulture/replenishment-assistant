@@ -19,7 +19,7 @@ async function context(t,behavior={}){
     async querySingle(code,name){calls.push(code);if(behavior.query)return behavior.query(code,name);return {identity,warehouseCode:code,name,total:1,observedAt:'2026-11-01T00:00:00Z'};}
     async stop(){calls.push('stop');}
   }
-  const setup=new MachineSetup({root,Client,discoverEnvironment:async()=>({profiles:[{actualProfilePath:'C:/EdgeData/Profile1',userDataRoot:'C:/EdgeData',profileDirectory:'Profile1'}],installations:[{executable:'C:/Edge/msedge.exe'}]}),checkOutputRoot:async root=>({root})});
+  const setup=new MachineSetup({root,Client,stepTimeoutMs:behavior.timeout,discoverEnvironment:async()=>({profiles:[{actualProfilePath:'C:/EdgeData/Profile1',userDataRoot:'C:/EdgeData',profileDirectory:'Profile1'}],installations:[{executable:'C:/Edge/msedge.exe'}]}),checkOutputRoot:async root=>({root})});
   t.after(()=>setup.close());return {root,setup,calls};
 }
 test('配置动作严格校验编码、列表与已发现浏览器路径，不允许未知字段',async t=>{
@@ -49,12 +49,36 @@ test('换商家阻断查询和保存，旧参数保持',async t=>{
   assert.equal(c.setup.job.state,'FAILED');assert.equal(c.setup.job.error.code,'WRONG_IDENTITY');assert.deepEqual(c.calls,['new','connect','stop']);
   assert.deepEqual((await readConfiguration(c.root)).config,old);
 });
-test('停止和关闭等待当前查询结束，不再核验下一店，不保存半成品',async t=>{
+
+test('身份超时和未分类浏览器异常停止整次核验，不逐店重复等待',async t=>{
+  for(const error of [new AppError('IDENTITY_RESPONSE_TIMEOUT','身份超时'),new Error('页面异常')]){
+    const c=await context(t,{query:async()=>{throw error;}});
+    c.setup.begin(params(c.root));await c.setup.promise;
+    assert.equal(c.setup.job.state,'FAILED');assert.deepEqual(c.calls,['new','connect','W2','stop']);
+    assert.equal(c.setup.job.targets[1].state,'PENDING');assert.equal(c.setup.busy,false);
+    assert.deepEqual(await readConfiguration(c.root),{config:null,binding:null});
+  }
+});
+test('停止只读核验立即释放执行器，不再等挂起查询或核验下一店，不保存半成品',async t=>{
   let release,started;const gate=new Promise(r=>{release=r;}),begun=new Promise(r=>{started=r;});
   const c=await context(t,{query:async(code,name)=>{started();await gate;return {identity,warehouseCode:code,name,total:1,observedAt:'2026-11-01T00:00:00Z'};}});
   const job=c.setup.begin(params(c.root));await begun;await c.setup.cancel(job.id);let closed=false;const ending=c.setup.close().then(()=>{closed=true;});
-  await Promise.resolve();assert.equal(closed,false);assert.equal(c.calls.includes('stop'),false);
-  release();await ending;assert.equal(c.setup.job.state,'CANCELLED');assert.deepEqual(c.calls,['new','connect','W2','stop']);assert.deepEqual(await readConfiguration(c.root),{config:null,binding:null});
+  await ending;assert.equal(closed,true);assert.equal(c.setup.job.state,'CANCELLED');assert.deepEqual(c.calls,['new','connect','W2','stop']);assert.deepEqual(await readConfiguration(c.root),{config:null,binding:null});
+  release();await Promise.resolve();assert.equal(c.setup.job.state,'CANCELLED');
+});
+
+test('挂起查询到达步骤上限后失败退出、释放连接，重试不被旧结果污染',async t=>{
+  let release,hung=true;
+  const c=await context(t,{timeout:40,query:async(code,name)=>{
+    if(hung)return new Promise(r=>{release=r;});
+    return {identity,warehouseCode:code,name,total:1,observedAt:new Date().toISOString()};
+  }});
+  const first=c.setup.begin(params(c.root));await c.setup.promise;
+  assert.equal(c.setup.job.state,'FAILED');assert.equal(c.setup.job.error.code,'SETUP_STEP_TIMEOUT');assert.equal(c.setup.busy,false);
+  assert.deepEqual(await readConfiguration(c.root),{config:null,binding:null});
+  hung=false;c.setup.begin(params(c.root));await c.setup.promise;assert.equal(c.setup.job.state,'READY');
+  release({identity,warehouseCode:'WRONG',total:999});await Promise.resolve();
+  assert.notEqual(c.setup.job.id,first.id);assert.equal(c.setup.job.state,'READY');assert.equal(c.setup.job.verified,2);
 });
 test('核验后被其他操作更新时拒绝覆盖；重试不受旧取消状态影响',async t=>{
   const c=await context(t);let job=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.cancel(job.id);

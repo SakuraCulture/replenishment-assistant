@@ -35,6 +35,20 @@ test('完整作业只提交一次；当日再次正常运行复用合格资产',
   const c=await context();const first=await new Coordinator(c.args).run();assert.equal(first.status,'SUCCEEDED');assert.deepEqual(c.counts(),{submits:1,downloads:1});
   const second=await new Coordinator(c.args).run();assert.equal(second.status,'SUCCEEDED');assert.deepEqual(c.counts(),{submits:1,downloads:1});assert.equal(c.state.getItems(second.id)[0].stage,'REUSED');c.state.close();
 });
+
+test('提交阶段不等待或下载，轮询未完成立即返回；恢复只取原任务且文件字节一致',async()=>{
+  const c=await context(),coordinator=new Coordinator(c.args);let ready=false,lookups=0;
+  const original=c.adapter.findTask;
+  c.adapter.findTask=async id=>{lookups++;assert.equal(id,'task123');const t=await original();return {...t,taskStatus:ready?'FINISHED':'RUNNING'};};
+  const submitted=await coordinator.run({phase:'submit'});
+  assert.equal(submitted.pending,true);assert.equal(lookups,0);assert.deepEqual(c.counts(),{submits:1,downloads:0});
+  const polled=await coordinator.run({runId:submitted.id,phase:'collect'});
+  assert.equal(polled.pending,true);assert.equal(lookups,1);
+  await coordinator.run({runId:submitted.id,phase:'submit'});assert.deepEqual(c.counts(),{submits:1,downloads:0});
+  ready=true;const done=await coordinator.run({runId:submitted.id,phase:'collect'});
+  assert.equal(done.status,'SUCCEEDED');assert.deepEqual(c.counts(),{submits:1,downloads:1});
+  const asset=c.state.rows('assets')[0];assert.deepEqual(await fs.readFile(path.join(c.args.binding.outputRoot,asset.relativePath)),await fs.readFile(path.join(c.root,'native.xlsx')));c.state.close();
+});
 test('提交结果未知不可重放；正面受理已记录时可恢复同任务',async()=>{
   const c=await context();let calls=0;
   c.adapter.submitOnce=async()=>{calls++;throw new AppError('WORKER_RESPONSE_UNKNOWN','模拟已发送但响应丢失');};

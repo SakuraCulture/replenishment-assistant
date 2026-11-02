@@ -30,7 +30,8 @@ export class Coordinator{
     const contract=await fieldContract(asset.semanticVersion==='D13-all-info-1'?'v1':'current');
     await validateWorkbook(file,{warehouseCode:asset.buyerWarehouseCode,expectedRows:asset.rows,contract,maxCompressedBytes:this.config.resourceLimits.maxCompressedFileBytes});return file;
   }
-  async run({mode='normal',batchId='default',warehouseCode,runId}={}){
+  async run({mode='normal',batchId='default',warehouseCode,runId,phase='complete'}={}){
+    if(!['complete','submit','collect'].includes(phase))fail('INVALID_PHASE','未知采集阶段');
     await validateConfig('portable.config',this.config);
     if(!this.config.enabled||!this.binding.outputRoot)fail('SETUP_REQUIRED','请先完成本机配置');
     await checkOutput(this.binding.outputRoot);
@@ -60,6 +61,7 @@ export class Coordinator{
         if(unresolved.length)fail('UNRESOLVED_TASK','该仓点存在其他未决提交，先继续原作业或核对迁移记录',{warehouseCode:target.buyerWarehouseCode,taskIds:unresolved.map(a=>a.taskId||null)});
         if(attempt&&['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED'].includes(attempt.stage))fail('SUBMISSION_UNKNOWN','原提交仍未消歧，不能再点导出',{attemptId:attempt.id,taskId:attempt.taskId});
         if(!attempt){
+          if(phase==='collect')fail('MISSING_SUBMISSION','尚未提交的门店不能在下载阶段创建导出');
           if(run.day!==businessDate())fail('NEW_DAY_REQUIRED','未提交项已跨日，请先结束旧作业，再建立当日批次');
           const query=await this.adapter.querySingle(target.buyerWarehouseCode,target.displayName);
           if(!sameIdentity(query.identity,identity))fail('WRONG_IDENTITY','当前查询的账号/商家与作业不符');
@@ -103,6 +105,8 @@ export class Coordinator{
         }
         this.stopped();
         if(attempt.stage==='SUCCEEDED'){item={...item,stage:'SUCCEEDED',assetSnapshot:item.assetSnapshot||existing};this.state.putItem(item);continue;}
+        // Retain the exact accepted task; the platform can generate it while later stores submit.
+        if(phase==='submit')continue;
         let downloaded=attempt.downloaded;
         if(!downloaded||!await exists(downloaded.file)||await fileHash(downloaded.file)!==downloaded.sha256){
           if(!attempt.taskId)fail('SUBMISSION_UNKNOWN','未取得明确任务ID');
@@ -111,6 +115,7 @@ export class Coordinator{
             this.stopped();task=await this.adapter.findTask(attempt.taskId);
             if(task.taskStatus==='FINISHED')break;
             attempt={...attempt,stage:'RUNNING'};this.state.putAttempt(attempt);await this.progress('WAIT_TASK',{warehouseCode:target.buyerWarehouseCode,taskId:attempt.taskId});
+            if(phase==='collect')return {...run,pending:true};
             if(Date.now()>=until)fail('TASK_PENDING','任务仍待完成；继续时跟踪原任务');
             await this.abortableWait(this.config.resourceLimits.pollIntervalMs);
           }while(true);
@@ -138,6 +143,7 @@ export class Coordinator{
         attempt={...attempt,stage:'SUCCEEDED',assetKey:saved.assetKey,completedAt:now()};this.state.putAttempt(attempt);
         item={...item,stage:'SUCCEEDED',assetKey:saved.assetKey,assetSnapshot:saved};this.state.putItem(item);await this.progress('SAVED',{warehouseCode:target.buyerWarehouseCode,taskId:attempt.taskId,file:path.join(this.binding.outputRoot,saved.relativePath),rows:validation.rows});
       }
+      if(phase==='submit'&&this.state.getItems(run.id).some(i=>!DONE.has(i.stage)))return {...run,pending:true};
       const {errorCode,...cleanRun}=run;run={...cleanRun,status:'SUCCEEDED',completedAt:now()};this.state.putRun(run);await writeRunReport(this.state,run,this.binding);await this.progress('COMPLETE',{runId:run.id});return run;
     }catch(e){run={...run,status:this.signal?.aborted?'PAUSED':'NEEDS_ATTENTION',errorCode:e.code||'FAILED',updatedAt:now()};this.state.putRun(run);await writeRunReport(this.state,run,this.binding);throw e;}
   }

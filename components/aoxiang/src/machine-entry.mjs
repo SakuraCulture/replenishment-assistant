@@ -44,16 +44,17 @@ async function main(){
   const bindingService=new PurchaseBindingService({state,creates:purchases,creationService:purchaseService,progress:stage=>bindingCheck?.progress(stage)});
   bindingCheck=new MachinePurchaseBinding({creates:purchases,service:bindingService,onFatal:error=>{void fatal(error);}});
   const recovered=commands.recoverInterrupted();
-  runtime=new MachineRuntime({commands,onFatal:error=>{void fatal(error);},
+  runtime=new MachineRuntime({commands,pipeline:true,onFatal:error=>{void fatal(error);},
     needsReview:item=>state.getItems(item.run_id).some(i=>['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED'].includes(state.getAttempt(i.attemptId)?.stage)),
-    executeItem:async({record,item,signal,onProgress})=>{
+    executeItem:async({record,item,phase,signal,onProgress})=>{
       const current=await loadConfig(root),config=record.config_snapshot;
       if(!current.enabled||!sameIdentity(current.tenantBinding,config.tenantBinding))fail('WRONG_IDENTITY','当前配置身份变化，不能执行原命令');
       await assertHandoff(root,config.tenantBinding);
       if(!await exists(path.join(root,'config/machine.binding.json')))fail('SETUP_REQUIRED','请先完成本机浏览器绑定');
       const binding=await validateConfig('machine.binding',await readJson(path.join(root,'config/machine.binding.json')));
       const browser=await browsers.acquire({state,config,binding,signal,onProgress});
-      await new Coordinator({state,config,binding,adapter:browser.adapter,signal,onProgress}).run({runId:item.run_id});
+      const result=await new Coordinator({state,config,binding,adapter:browser.adapter,signal,onProgress}).run({runId:item.run_id,phase});
+      if(result.pending)return {pending:true};
       return await freezeRunAsset({state,binding,commandId:record.id,item});
     }
   });

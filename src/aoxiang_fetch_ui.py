@@ -212,14 +212,17 @@ class FetchDialog(ComponentDialog):
             self.details.setRowHeight(row, 48)
             result, error = item.get('result') or {}, item.get('error') or {}
             values = [names[item['warehouse_code']] + '\n' + item['warehouse_code'], STATES[item['state']],
-                      result.get('rows', '—'), ('今日复用' if result.get('reused') else '本次下载') if result else '—', error.get('message', '')]
+                      result.get('rows', '—'), ('今日复用' if result.get('reused') else '本次下载') if result else '—',
+                      error.get('message', '') or (PHASES.get(item.get('phase'), '') + (' · 任务 ' + item['task_id'] if item.get('task_id') else ''))]
             for column, value in enumerate(values):
                 self.details.setItem(row, column, QTableWidgetItem(str(value)))
         finished = sum(i['state'] in {'SUCCEEDED', 'FAILED'} for i in items)
         self.progress.setRange(0, max(len(items), 1))
         self.progress.setValue(finished)
         error = job.get('last_error') or record.get('error') or {}
-        self.status.setText(f'{STATES[job["state"]]} · 已处理 {finished}/{len(items)} 家 · {self.last_phase}' +
+        accepted = sum(bool(i.get('task_id')) for i in items)
+        self.progress.setFormat('%v / %m 家已处理')
+        self.status.setText(f'{STATES[job["state"]]} · 已受理导出 {accepted} 家 · 已处理 {finished}/{len(items)} 家 · {self.last_phase}' +
                             (f' · 本窗口已等待 {int(time.monotonic() - self.began)} 秒' if job['state'] in ACTIVE else '') +
                             (f' · {error.get("code", "")}：{error.get("message", "")}' if error else ''))
         if job['state'] in ACTIVE:
