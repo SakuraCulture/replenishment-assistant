@@ -28,7 +28,7 @@ class ParameterDialog(QDialog):
         fixed=QTextBrowser();fixed.setPlainText(schema.FIXED);self.tabs.addTab(fixed,'固定规则')
         self.effective=QTableWidget(0,7);self.effective.setHorizontalHeaderLabels(['参数路径','标准默认','方案值','打开时门店值','当前编辑值','差异所在层','实际用途']);self.effective.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.effective.setColumnWidth(0,300);self.effective.setColumnWidth(5,200);self.effective.setColumnWidth(6,300);self.tabs.addTab(self.effective,'生效核对')
-        self.tabs.currentChanged.connect(lambda i:self.refresh_effective() if self.tabs.widget(i) is self.effective else None)
+        self.tabs.currentChanged.connect(self.tab_changed)
         self.help=QTextBrowser();self.help.setMaximumHeight(115);v.addWidget(self.help)
         self.param_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText(schema.HELP[list(schema.HELP)[r]][2]) if r>=0 else None)
         self.weight_table.currentCellChanged.connect(lambda r,c,*_:self.help.setPlainText(schema.WEIGHT_HELP.get(['','alpha','w1','w2',''][c], 'w3=1-w1-w2，无分类自动跟随快销；缺货时还按有效有货天数修正。')) if c>=0 else None)
@@ -49,9 +49,10 @@ class ParameterDialog(QDialog):
         if preset.get('import_source'):
             info=preset['import_source'];entries=[['来源','文件',info.get('file','')]]
             for item in info.get('rows',[]):
-                entries.extend([[f"{item.get('sheet','')} / 第{item.get('row','')}行",key,str(value) if value is not None else '空白'] for key,value in item['values'].items()])
+                entries.extend([[f"{item.get('sheet','')} / 第{item.get('row','')}行",key,str(item['values'].get(key)) if item['values'].get(key) is not None else '空白'] for key in info.get('headers',list(item['values']))])
             entries.extend([['处理依据','说明',text] for text in info.get('decisions',[])])
             source=QTableWidget(len(entries),3);source.setHorizontalHeaderLabels(['来源行','原表字段','原值']);source.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);source.setColumnWidth(0,200);source.setColumnWidth(1,260);source.horizontalHeader().setSectionResizeMode(2,QHeaderView.ResizeMode.Stretch)
+            source.setObjectName('parameterImportSource')
             for i,row in enumerate(entries):
                 for j,value in enumerate(row):source.setItem(i,j,QTableWidgetItem(value))
             self.tabs.addTab(source,'导入来源（原表留档）')
@@ -60,6 +61,13 @@ class ParameterDialog(QDialog):
             for table in (self.param_table,self.weight_table,self.profile_table,self.mapping,self.warehouses):
                 table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
                 for w in table.findChildren(QDoubleSpinBox)+table.findChildren(QComboBox)+table.findChildren(QCheckBox):w.setEnabled(False)
+    def tab_changed(self,index):
+        current=self.tabs.widget(index)
+        if current is self.effective:self.refresh_effective()
+        elif current is self.profile_table and hasattr(self,'profile_rows'):
+            row=max(0,self.profile_table.currentRow());key=self.profile_rows[row][1]
+            self.help.setPlainText('分类值优先于门店通用值；快销/日百各一套，两仓共用，无分类跟随快销。未勾选则沿用门店值。\n'+schema.HELP[key][2])
+        elif current.objectName()=='parameterImportSource':self.help.setPlainText('这里保留当时完整注入的原表字段和处理依据。后续编辑不会回写此来源；当前实际值请在“生效核对”中查看。')
     def is_edited(self):
         try:return self.value()!=self.editor_baseline
         except ValueError:return True
