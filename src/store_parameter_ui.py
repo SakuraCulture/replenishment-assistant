@@ -44,7 +44,7 @@ def verify_sources(data, progress=lambda _: None, cancel=None):
 def save_values(repository, values, expected, progress=lambda _: None, cancel=None):
     spi.checkpoint(cancel)
     progress('正在保存门店默认参数；整批提交…')
-    repository.save_stores(values, expected=expected)
+    repository.save_stores(values, expected=expected,action='批量导入门店参数')
 
 
 def commit(host, data, snapshot, scope, prepared, persist=None):
@@ -76,7 +76,7 @@ def commit(host, data, snapshot, scope, prepared, persist=None):
         if persist:
             persist(saved, expected)
         else:
-            host.work_repository.save_stores(saved, expected=expected)
+            host.work_repository.save_stores(saved, expected=expected,action='批量导入门店参数')
         host.saved_store_defaults = {**getattr(host, 'saved_store_defaults', {}), **saved}
     if scope != 'defaults' and codes:
         hydrating, initializing = host._hydrating, host.initializing

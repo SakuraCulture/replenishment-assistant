@@ -53,7 +53,19 @@ class Repository:
                 result[wh]=data
         return result
     def save(self,data):
-        validate(data);atomic_json(self.folder/'warehouse_catalogs'/(data['warehouse']+'.json'),data)
+        validate(data)
+        # Retain immutable prior snapshots before changing the current pointer file.
+        old=self.catalogs().get(data['warehouse'])
+        for item in [old,data]:
+            if item:
+                key=hashlib.sha256(json.dumps(item,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
+                p=self.folder/'warehouse_catalogs'/'history'/data['warehouse']/(key+'.json')
+                if not p.exists():atomic_json(p,item)
+        atomic_json(self.folder/'warehouse_catalogs'/(data['warehouse']+'.json'),data)
+    def history(self,warehouse):
+        if warehouse not in WAREHOUSES:raise ValueError('未知仓库')
+        folder=self.folder/'warehouse_catalogs'/'history'/warehouse
+        return [validate(json.loads(p.read_text('utf-8'))) for p in sorted(folder.glob('*.json'),key=lambda p:p.stat().st_mtime_ns,reverse=True)]
     def routes(self):
         p=self.folder/'store_supply.json'
         if not p.exists():return {}

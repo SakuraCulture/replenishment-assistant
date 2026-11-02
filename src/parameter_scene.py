@@ -32,6 +32,10 @@ class ParameterScene(QWidget):
         row = QHBoxLayout()
         row.addWidget(button('批量导入门店参数', self.import_parameters, True))
         row.addWidget(button('导出勾选门店默认参数', self.export_parameters))
+        from settings_maintenance_ui import open_history,reset_defaults,restore_presets
+        row.addWidget(button('默认变更记录 / 撤销',lambda:(open_history(self,host),self.refresh())))
+        row.addWidget(button('重置勾选门店默认',lambda:(reset_defaults(self,host,self.require()),self.refresh())))
+        row.addWidget(button('恢复停用方案',lambda:restore_presets(self,host)))
         row.addStretch()
         v.addLayout(row)
         self.table = QTableWidget(0, 7)

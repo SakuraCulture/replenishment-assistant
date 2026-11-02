@@ -140,7 +140,7 @@ class ParameterDialog(QDialog):
         p=self.choices.currentData()
         if not self.managing or not p or p['id']=='standard':return
         from interaction_ui import confirm
-        if not confirm(self,'停用参数方案',f"停用 {p['name']} v{p['version']}？\n仅从可选方案中停用，已绑定门店和历史快照保留。此处不提供自动恢复。"):return
+        if not confirm(self,'停用参数方案',f"停用 {p['name']} v{p['version']}？\n仅从可选方案中停用，已绑定门店和历史快照保留。可在参数设置中恢复停用方案。"):return
         try:self.repository.archive_preset(p['id'],p['version'])
         except Exception as exc:QMessageBox.warning(self,'未归档',str(exc));return
         self.choices.removeItem(self.choices.currentIndex());self.note.setText('已从方案选择列表归档；已绑定的门店和历史快照仍保留该版本。')

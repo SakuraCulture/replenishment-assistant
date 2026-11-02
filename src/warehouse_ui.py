@@ -15,6 +15,7 @@ class WarehouseUi:
             row=QHBoxLayout();row.addWidget(label(wh,'section'));row.addStretch();pick=button('导入'+wh+'资料',lambda checked=False,w=wh:self.choose_catalog(w));self.catalog_buttons[wh]=pick;row.addWidget(pick);row.addWidget(button('查看'+wh+'资料',lambda checked=False,w=wh:self.show_catalog(w)));v.addLayout(row)
             text=label('尚未导入','muted');self.catalog_labels[wh]=text;v.addWidget(text)
         v.addWidget(label('仓库由导入入口指定，不从表内猜测。保存后跨批次复用；可用数是导入时的库存快照，更新库存需重新导入。','muted'))
+        v.addWidget(button('恢复以前保存的仓资料',self.restore_catalog))
         self.master_legacy=QCheckBox('兼容0.4混合资料（不启用主从仓）');v.addWidget(self.master_legacy)
         self.products=FileCard('旧版混合商品资料','仅用于兼容已有“仓归属”资料');self.products.hide();v.addWidget(self.products)
         self.master_legacy.toggled.connect(self.products.setVisible);self.master_legacy.toggled.connect(self.file_changed);self.products.changed.connect(self.file_changed)
@@ -29,6 +30,14 @@ class WarehouseUi:
         from import_ui import choose
         paths=choose(self,'catalog','导入到'+warehouse+'（完整更新该仓快照）');path=paths[0] if paths else None
         if path:self.import_catalog_path(path,warehouse)
+    def restore_catalog(self):
+        if self.worker or self.readonly:return
+        d=QDialog(self);d.setWindowTitle('恢复仓商品资料');v=QVBoxLayout(d);choices=QComboBox();v.addWidget(choices)
+        v.addWidget(label('恢复当时保留的完整仓资料。历史签发不变；本次需重新检查。旧库存仅是历史快照，不代表当前可用库存，也不调整聚水潭库存分配账。'))
+        for wh in warehouse_catalog.WAREHOUSES:
+            for c in self.catalog_repository.history(wh):choices.addItem(f"{wh} · {c['imported_at']} · {len(c['items'])}款 · {c['revision']}",c)
+        row=QHBoxLayout();row.addWidget(button('取消',d.reject));go=button('下一步：核对恢复范围',d.accept);go.setEnabled(choices.count()>0);row.addWidget(go);v.addLayout(row)
+        if d.exec()==QDialog.DialogCode.Accepted:self.catalog_imported(choices.currentData())
     def import_catalog_path(self,path,warehouse):self.job(warehouse_catalog.import_catalog,(path,warehouse),self.catalog_imported)
     def catalog_imported(self,catalog):
         from interaction_ui import confirm

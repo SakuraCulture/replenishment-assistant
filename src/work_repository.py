@@ -35,10 +35,10 @@ class Repository:
             db.executescript('CREATE TABLE IF NOT EXISTS jobs(day TEXT PRIMARY KEY, revision TEXT NOT NULL, digest TEXT NOT NULL, saved TEXT NOT NULL, summary TEXT NOT NULL, payload BLOB NOT NULL); CREATE TABLE IF NOT EXISTS presets(id TEXT NOT NULL, version INTEGER NOT NULL, name TEXT NOT NULL, config TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(id,version)); CREATE TABLE IF NOT EXISTS stores(code TEXT PRIMARY KEY,data TEXT NOT NULL);')
     def connect(self):
         db=sqlite3.connect(self.path,timeout=10);db.execute('PRAGMA synchronous=FULL');return db
-    def presets(self,all_versions=True):
+    def presets(self,all_versions=True,*,include_archived=False):
         builtin={'id':'standard','version':1,'name':'标准补货','config':schema.standard(),'builtin':True}
-        with closing(self.connect()) as db:rows=db.execute('SELECT id,version,name,config FROM presets WHERE archived=0 ORDER BY name,version DESC').fetchall()
-        return [builtin]+[{'id':i,'version':v,'name':n,'config':loads(c),'builtin':False} for i,v,n,c in rows]
+        with closing(self.connect()) as db:rows=db.execute('SELECT id,version,name,config,archived FROM presets '+('' if include_archived else 'WHERE archived=0 ')+'ORDER BY name,version DESC').fetchall()
+        return [builtin]+[{'id':i,'version':v,'name':n,'config':loads(c),'builtin':False,**({'archived':bool(a)} if include_archived else {})} for i,v,n,c,a in rows]
     def save_preset(self,name,config,preset_id=None):
         schema.validate(config);name=name.strip()
         if not name or len(name)>60:raise ValueError('方案名称须为1～60字')
@@ -53,15 +53,27 @@ class Repository:
         with closing(self.connect()) as db,db:db.execute('UPDATE presets SET archived=1 WHERE id=? AND version=?',(pid,version))
     def stores(self):
         with closing(self.connect()) as db:return {k:loads(v) for k,v in db.execute('SELECT code,data FROM stores')}
-    def save_stores(self,values,*,expected=None):
-        for val in values.values():schema.validate(val['preset']['config'])
+    def restore_preset(self,pid,version):
         with closing(self.connect()) as db,db:
+            if db.execute('UPDATE presets SET archived=0 WHERE id=? AND version=?',(pid,version)).rowcount!=1:raise ValueError('方案已不存在，请刷新')
+    def save_stores(self,values,*,expected=None,action='保存门店默认'):
+        from settings_history import record
+        for val in values.values():
+            if val is not None:schema.validate(val['preset']['config'])
+        with closing(self.connect()) as db,db:
+            db.execute('BEGIN IMMEDIATE')
+            before={}
+            for code in values:
+                row=db.execute('SELECT data FROM stores WHERE code=?',(code,)).fetchone()
+                before[code]=loads(row[0]) if row else None
             if expected is not None:
-                db.execute('BEGIN IMMEDIATE')
                 for code,old in expected.items():
                     row=db.execute('SELECT data FROM stores WHERE code=?',(code,)).fetchone()
                     if (loads(row[0]) if row else None)!=old:raise Conflict('门店默认在核对后变化，请刷新后重新核对：'+code)
-            for key,val in values.items():db.execute('INSERT INTO stores VALUES(?,?) ON CONFLICT(code) DO UPDATE SET data=excluded.data',(key,dumps(val)))
+            for key,val in values.items():
+                if val is None:db.execute('DELETE FROM stores WHERE code=?',(key,))
+                else:db.execute('INSERT INTO stores VALUES(?,?) ON CONFLICT(code) DO UPDATE SET data=excluded.data',(key,dumps(val)))
+            return record(db,before,values,action)
     def list_jobs(self):
         with closing(self.connect()) as db:return [{'day':d,'revision':r,'digest':h,'saved':t,'summary':loads(s)} for d,r,h,t,s in db.execute('SELECT day,revision,digest,saved,summary FROM jobs ORDER BY day DESC')]
     def get_job(self,day,*,paths=None,progress=lambda _:None):
