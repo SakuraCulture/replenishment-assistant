@@ -5,12 +5,12 @@ from PySide6.QtWidgets import QHBoxLayout,QMessageBox,QDialog,QVBoxLayout,QTable
 from ui_controls import label,button
 from batch_app import BatchWindow
 from parameter_ui import ParameterUi
-import engine,parameter_schema as schema,work_repository as wr
+import engine,parameter_schema as schema,work_repository as wr,store_defaults
 from version_info import MODEL_VERSION,VERSION
 
 class Workbench(ParameterUi,BatchWindow):
     def __init__(self):
-        self._hydrating=True;self._restoring=False;self.readonly=False;self.job_dirty=False;self.job_day=wr.today();self.saved_time='';self.store_presets={};self.explicit_defaults=True;self.export_log=[];self._discard_close=False
+        self._hydrating=True;self._restoring=False;self.readonly=False;self.job_dirty=False;self.job_day=wr.today();self.saved_time='';self.store_presets={};self.explicit_defaults=True;self.export_log=[];self._discard_close=False;self._store_parameter_origins={}
         super().__init__();self.work_repository=wr.Repository(self.repository.folder)
         row=QHBoxLayout();self.job_label=label('','muted');row.addWidget(self.job_label,1)
         self.history_btn=button('作业记录',self.history);row.addWidget(self.history_btn)
@@ -57,24 +57,39 @@ class Workbench(ParameterUi,BatchWindow):
                 if s in saved:
                     p=copy.deepcopy(saved[s]['preset']);schema.validate(p['config']);self.store_presets[s]=p;self.overrides[s]=copy.deepcopy(p['config']['warehouses']);self.set_store_ui(s,saved[s]['ui'])
                 self.refresh_parameter_label(s)
+            self._store_parameter_origins={} if self._restoring else {s:self.current_parameter_record(s) for s in self.store_widgets}
         finally:self.initializing=False;self._hydrating=previous
         self.selection_changed()
     def loaded_ok(self,loaded):
-        existing={'store_presets':{s:self.preset_for(s) for s in self.store_widgets},'store_ui':{s:self.store_ui(s) for s in self.store_widgets}}
+        existing={s:self.current_parameter_record(s) for s in self.store_widgets}
+        origins=self._store_parameter_origins
+        previous_defaults=getattr(self,'saved_store_defaults',{})
         previously_blocked=(self.loaded or {}).get('blocked',{})
-        for s,ui in existing['store_ui'].items():
-            if previously_blocked.get(s) and not loaded['blocked'].get(s):ui['selected']=True
+        for s,record in existing.items():
+            if previously_blocked.get(s) and not loaded['blocked'].get(s):record['ui']['selected']=True
         self.store_presets={};super().loaded_ok(loaded)
-        pending=getattr(self,'pending_copy',None) or existing
+        pending=getattr(self,'pending_copy',None)
         if pending:
+            # Explicit "use this job's configuration" remains a snapshot choice.
+            existing={s:{'preset':p,'ui':pending['store_ui'][s]} for s,p in pending['store_presets'].items()};origins={}
+        if existing:
             self._hydrating=True;self.initializing=True
             try:
                 for s in self.store_widgets:
-                    if s in pending['store_presets']:
-                        p=copy.deepcopy(pending['store_presets'][s]);schema.validate(p['config']);self.store_presets[s]=p;self.overrides[s]=copy.deepcopy(p['config']['warehouses']);self.set_store_ui(s,pending['store_ui'][s]);self.refresh_parameter_label(s)
+                    if s in existing:
+                        value=store_defaults.reload_record(existing[s],origins.get(s),previous_defaults.get(s),self.current_parameter_record(s))
+                        p=value['preset'];schema.validate(p['config']);self.store_presets[s]=p;self.overrides[s]=copy.deepcopy(p['config']['warehouses']);self.set_store_ui(s,value['ui']);self.refresh_parameter_label(s)
+                        if s not in origins:self._store_parameter_origins.pop(s,None)
             finally:self.initializing=False;self._hydrating=False
             self.pending_copy=None;self.selection_changed()
+        saved=getattr(self,'saved_store_defaults',{})
+        inherited=sum(store_defaults.matches(saved.get(s),self.preset_for(s),self.config_for(s),self.store_ui(s)) for s in self.store_widgets)
+        missing=sum(s not in saved for s in self.store_widgets)
+        self.import_note.setText(self.import_note.text()+f' 参数：{inherited} 店采用已保存默认；{len(self.store_widgets)-inherited-missing} 店保留本次调整/快照；{missing} 店尚无门店默认。可在“查看生效参数”核对。')
         self.touch()
+    def current_parameter_record(self,s):
+        p=self.preset_for(s);p['config']=self.config_for(s)
+        return {'preset':p,'ui':self.store_ui(s)}
     def selected_settings(self,s):
         result=super().selected_settings(s);c=self.config_for(s);schema.validate(c)
         result.update(parameter_config=c,warehouses=copy.deepcopy(c['warehouses']),exception=c['exception'],preset={k:v for k,v in self.preset_for(s).items() if k!='config'},parameter_signature=schema.signature(c));return result
@@ -147,6 +162,7 @@ class Workbench(ParameterUi,BatchWindow):
         self.reset_job()
     def reset_job(self):
         self._hydrating=True;self.initializing=True
+        self._store_parameter_origins={}
         try:
             self.readonly=False;self.job_day=wr.today();self.saved_time='';self.loaded=None;self.results={};self.states={};self.store_widgets={};self.store_presets={};self.overrides={};self.default_by_store={};self.run_codes=[];self.current_store=None;self.result=None;self.input_dirty=True;self.dirty=True;self.export_log=[];self.pending_copy=None
             self.sales.paths=[];self.sales.refresh();self.catalogs=self.catalog_repository.catalogs();self.profile=self.repository.profile();self.refresh_catalog_labels();self.refresh_profile_label();self.store_table.setRowCount(0);self.file_report.setRowCount(0);self.refresh_tables();self.navigate(0)

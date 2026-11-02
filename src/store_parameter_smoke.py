@@ -148,6 +148,39 @@ def start_smoke(app, win, args):
             if not scan['rows'] or any(r['signed_number'] != order['number'] for r in scan['rows']):
                 raise AssertionError('Hidden number not retained for feedback linkage')
             checks.append('running application export: all three signed sheets hide U, preserve values and feedback order linkage')
+            # Reproduce the real checked-file callback, not populate_stores alone.
+            win.reset_job();win.catalogs=catalogs;win.profile=profile
+            win.loaded_ok(copy.deepcopy(loaded))
+            updated=copy.deepcopy(win.work_repository.stores()[a])
+            updated['preset']['config']['warehouses']['山东仓']=[11,3.5]
+            updated['preset']['config']['profile_parameters']['快销']['probability']=.93
+            updated['ui'].update(mode=1,amount='',primary='河北仓',secondary='山东仓')
+            win.work_repository.save_stores({a:updated})
+            win.sales.paths=[str(fixture/'sales.xlsx')];win.sales.refresh();win.start_load()
+            import time
+            deadline=time.monotonic()+30
+            while win.worker is not None and time.monotonic()<deadline:
+                app.processEvents();QTest.qWait(20)
+            if win.worker is not None:raise AssertionError('Checked-file reload did not finish')
+            if win.config_for(a)!=updated['preset']['config']:raise AssertionError('Recheck replaced new defaults with old UI values')
+            actual=win.selected_settings(a)
+            if actual['supply_route']!={'primary':'河北仓','secondary':'山东仓'} or actual['budget'] is not None:
+                raise AssertionError('Reload did not refresh inherited route/budget')
+            got=batch_service.calculate_store(win.loaded,a,actual,profile)
+            manual={**actual,'parameter_config':copy.deepcopy(updated['preset']['config']),
+                    'warehouses':copy.deepcopy(updated['preset']['config']['warehouses'])}
+            expected=batch_service.calculate_store(win.loaded,a,manual,profile)
+            if got['rows']!=expected['rows'] or got['summary']!=expected['summary']:
+                raise AssertionError('Reloaded defaults did not reach per-SKU calculation')
+            win.navigate(1);win.show_section(1);app.processEvents();win.grab().save(str(out/'07_重新检查带入最新默认.png'))
+            checks.append('actual background check-file reload adopts changed durable defaults; effective settings, per-SKU rows and summary equal explicit expected configuration')
+            own=win.config_for(a);own['parameters']['cap_days']=18
+            win.apply_parameters([a],own,win.preset_for(a))
+            win.set_store_ui(a,{**win.store_ui(a),'mode':2,'amount':'0'})
+            win.loaded_ok(copy.deepcopy(loaded))
+            if win.config_for(a)!=own or win.selected_settings(a)['budget']!=0:
+                raise AssertionError('Recheck discarded explicit current-job parameters/budget')
+            checks.append('explicit current-job parameter and zero-budget edits survive recheck')
             if len(args)>2:
                 plan=json.loads(Path(args[2]).read_text(encoding='utf-8'));records=plan['records']
                 if not plan['complete']:raise ValueError('Real parameter plan is incomplete')
@@ -161,6 +194,25 @@ def start_smoke(app, win, args):
                 if editor.value()!=rec['preset']['config']:raise AssertionError('Actual parameters altered by form')
                 editor.grab().save(str(out/'05_实际参数分类表单.png'));editor.tabs.setCurrentIndex(editor.tabs.count()-1);app.processEvents();editor.grab().save(str(out/'06_原表依据表单.png'));editor.reject()
                 checks.append(f'isolated application: {len(records)} real store configurations saved and reloaded exactly; category/source forms')
+                # Exercise every injected code through the UI -> worker-settings boundary.
+                # These are synthetic rows, not additional real sales records.
+                sample=copy.deepcopy(loaded)
+                seed=next((d,m) for d,m in sample['normalized'] if d['B']==a)
+                sample['stores']={code:value.get('name',code) for code,value in records.items()}
+                sample['normalized']=[];sample['blocked']={}
+                for code,name in sample['stores'].items():
+                    d,m=copy.deepcopy(seed);d.update(A=name,B=code);sample['normalized'].append((d,m))
+                win.reset_job();win.catalogs=catalogs;win.loaded_ok(sample)
+                for code,value in records.items():
+                    if win.store_ui(code)['mode']!=value['ui'].get('mode',0):raise AssertionError('Saved budget mode changed: '+code)
+                    # Source sheet intentionally has no budget for new stores.
+                    if win.store_ui(code)['mode']==0:win.set_store_ui(code,{**win.store_ui(code),'mode':1})
+                    settings=win.selected_settings(code)
+                    if settings['parameter_config']!=value['preset']['config'] or settings['warehouses']!=value['preset']['config']['warehouses']:
+                        raise AssertionError('Injected store defaults not passed to task: '+code)
+                    route={k:value['ui'].get(k) for k in ('primary','secondary')}
+                    if settings['supply_route']!=route:raise AssertionError('Injected warehouse route differs: '+code)
+                checks.append(f'{len(records)} injected codes: fresh import callback, all config values, warehouse cycles and route match worker settings; synthetic row shells')
             result = {'passed': True, 'frozen_exe': bool(getattr(sys, 'frozen', False)), 'checks': checks, **diagnostic()}
         except Exception:
             result = {'passed': False, 'checks': checks, 'error': traceback.format_exc(), **diagnostic()}
