@@ -1,0 +1,92 @@
+244 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.9
+244 INFO: Python: 3.12.14
+296 INFO: Platform: Windows-11-10.0.26200-SP0
+296 INFO: Python environment: D:\优团工作文件夹\outputs\replenishment_mvp_20261029\.venv
+297 INFO: wrote D:\优团工作文件夹\outputs\replenishment_mvp_20261029\build_0.27.0_rc2\补货助手.spec
+300 INFO: Removing temporary files and cleaning cache in C:\Users\lenovo\AppData\Local\pyinstaller
+308 INFO: Module search paths (PYTHONPATH):
+['D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.27.0_rc2\\source',
+ 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python312.zip',
+ 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\DLLs',
+ 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib',
+ 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python',
+ 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv',
+ 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages',
+ 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages',
+ 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.27.0_rc2\\source\\src']
+1067 INFO: Appending 'datas' from .spec
+1068 INFO: checking Analysis
+1068 INFO: Building Analysis because Analysis-00.toc is non existent
+1068 INFO: Looking for Python shared library...
+1068 INFO: Using Python shared library: C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python312.dll
+1068 INFO: Running Analysis Analysis-00.toc
+1068 INFO: Target bytecode optimization level: 0
+1068 INFO: Initializing module dependency graph...
+1071 INFO: Initializing module graph hook caches...
+1084 INFO: Analyzing modules for base_library.zip ...
+2866 INFO: Processing standard module hook 'hook-heapq.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2928 INFO: Processing standard module hook 'hook-encodings.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4312 INFO: Processing standard module hook 'hook-math.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4488 INFO: Processing standard module hook 'hook-pickle.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5547 INFO: Caching module dependency graph...
+5580 INFO: Analyzing D:\优团工作文件夹\outputs\replenishment_mvp_20261029\build_0.27.0_rc2\source\src\app.py
+5600 INFO: Processing standard module hook 'hook-PySide6.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+6021 INFO: Processing standard module hook 'hook-shiboken6.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+6144 INFO: Processing standard module hook 'hook-PySide6.QtNetwork.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+7803 INFO: Processing standard module hook 'hook-PySide6.QtCore.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9951 INFO: Processing standard module hook 'hook-PySide6.QtGui.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+19041 INFO: Processing standard module hook 'hook-PySide6.QtWidgets.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+20894 INFO: Processing standard module hook 'hook-openpyxl.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+21393 INFO: Processing standard module hook 'hook-xml.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+21409 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+21720 INFO: Processing standard module hook 'hook-PIL.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+21790 INFO: Processing standard module hook 'hook-PIL.Image.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+22481 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+23185 INFO: Processing standard module hook 'hook-platform.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+23599 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+23864 INFO: Processing standard module hook 'hook-_ctypes.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+23956 INFO: Processing standard module hook 'hook-sqlite3.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+26754 INFO: Processing standard module hook 'hook-PySide6.QtTest.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+27338 INFO: Processing standard module hook 'hook-difflib.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+28125 INFO: Processing module hooks (post-graph stage)...
+28313 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+28367 INFO: Performing binary vs. data reclassification (126 entries)
+28452 INFO: Looking for ctypes DLLs
+28458 INFO: Analyzing run-time hooks ...
+28460 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+28461 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+28464 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+28466 INFO: Including run-time hook 'pyi_rth_pyside6.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+28467 INFO: Processing pre-find-module-path hook 'hook-_pyi_rth_utils.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+28470 INFO: Processing standard module hook 'hook-_pyi_rth_utils.py' from 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+28480 INFO: Creating base_library.zip...
+28495 INFO: Looking for dynamic libraries
+29580 INFO: Extra DLL search directories (AddDllDirectory): ['D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\shiboken6', 'C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\site-packages\\numpy.libs']
+29580 INFO: Extra DLL search directories (PATH): ['D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Lib\\site-packages\\PySide6']
+30701 INFO: Warnings written to D:\优团工作文件夹\outputs\replenishment_mvp_20261029\build_0.27.0_rc2\work\补货助手\warn-补货助手.txt
+30743 INFO: Graph cross-reference written to D:\优团工作文件夹\outputs\replenishment_mvp_20261029\build_0.27.0_rc2\work\补货助手\xref-补货助手.html
+30771 INFO: checking PYZ
+30771 INFO: Building PYZ because PYZ-00.toc is non existent
+30771 INFO: Building PYZ (ZlibArchive) D:\优团工作文件夹\outputs\replenishment_mvp_20261029\build_0.27.0_rc2\work\补货助手\PYZ-00.pyz
+31142 INFO: Building PYZ (ZlibArchive) D:\优团工作文件夹\outputs\replenishment_mvp_20261029\build_0.27.0_rc2\work\补货助手\PYZ-00.pyz completed successfully.
+31152 INFO: checking PKG
+31152 INFO: Building PKG because PKG-00.toc is non existent
+31152 INFO: Building PKG (CArchive) 补货助手.pkg
+31184 INFO: Building PKG (CArchive) 补货助手.pkg completed successfully.
+31185 INFO: Bootloader D:\优团工作文件夹\outputs\replenishment_mvp_20261029\.venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+31185 INFO: checking EXE
+31185 INFO: Building EXE because EXE-00.toc is non existent
+31185 INFO: Building EXE from EXE-00.toc
+31185 INFO: Copying bootloader EXE to D:\优团工作文件夹\outputs\replenishment_mvp_20261029\build_0.27.0_rc2\work\补货助手\补货助手.exe
+31263 INFO: Copying icon to EXE
+31296 INFO: Copying 0 resources to EXE
+31297 INFO: Embedding manifest in EXE
+31368 INFO: Appending PKG archive to EXE
+31470 INFO: Fixing EXE headers
+31862 INFO: Building EXE from EXE-00.toc completed successfully.
+31863 INFO: checking COLLECT
+31864 INFO: Building COLLECT because COLLECT-00.toc is non existent
+31864 INFO: Building COLLECT COLLECT-00.toc
+32397 INFO: Building COLLECT COLLECT-00.toc completed successfully.
+32402 INFO: Build complete! The results are available in: D:\优团工作文件夹\outputs\replenishment_mvp_20261029\交付_0.27.0_rc2
+{"PySide6-Essentials": "6.12.0", "shiboken6": "6.12.0", "openpyxl": "3.1.5", "et-xmlfile": "2.0.0", "pillow": "12.3.0", "PyInstaller": "6.22.3"}

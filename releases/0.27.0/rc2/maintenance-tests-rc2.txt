@@ -1,0 +1,26 @@
+test_cancellation_rolls_back_no_recycle_bin (test_data_maintenance.DeleteOrders.test_cancellation_rolls_back_no_recycle_bin) ... ok
+test_cross_database_failure_rolls_back_both (test_data_maintenance.DeleteOrders.test_cross_database_failure_rolls_back_both) ... ok
+test_late_change_rejects_entire_delete (test_data_maintenance.DeleteOrders.test_late_change_rejects_entire_delete) ... ok
+test_old_recycle_records_can_be_permanently_removed (test_data_maintenance.DeleteOrders.test_old_recycle_records_can_be_permanently_removed) ... ok
+test_other_store_unchanged_and_shared_source_kept (test_data_maintenance.DeleteOrders.test_other_store_unchanged_and_shared_source_kept) ... ok
+test_pending_generation_task_is_deleted_even_without_inventory_tables (test_data_maintenance.DeleteOrders.test_pending_generation_task_is_deleted_even_without_inventory_tables) ... ok
+test_preview_expands_parent_and_delete_reclaims_unowned_chunks (test_data_maintenance.DeleteOrders.test_preview_expands_parent_and_delete_reclaims_unowned_chunks) ... ok
+test_stale_cache_cannot_reopen_removed_order (test_data_maintenance.DeleteOrders.test_stale_cache_cannot_reopen_removed_order) ... ok
+test_locked_does_not_add_stock_and_fresh_catalog_does_not_double_deduct (test_data_maintenance.StockDeletion.test_locked_does_not_add_stock_and_fresh_catalog_does_not_double_deduct) ... ok
+test_unplaced_releases_stock (test_data_maintenance.StockDeletion.test_unplaced_releases_stock) ... ok
+test_catalog_history_restores_exact_snapshot (test_settings_maintenance.SettingsMaintenance.test_catalog_history_restores_exact_snapshot) ... ok
+test_diff_readable_and_null_distinct (test_settings_maintenance.SettingsMaintenance.test_diff_readable_and_null_distinct) ... ok
+test_first_import_undo_and_explicit_restore (test_settings_maintenance.SettingsMaintenance.test_first_import_undo_and_explicit_restore) ... ok
+test_optimistic_conflict_rolls_back_all (test_settings_maintenance.SettingsMaintenance.test_optimistic_conflict_rolls_back_all) ... ok
+test_restore_preset_does_not_apply (test_settings_maintenance.SettingsMaintenance.test_restore_preset_does_not_apply) ... ok
+test_undo_import_preserves_later_change (test_settings_maintenance.SettingsMaintenance.test_undo_import_preserves_later_change) ... ok
+test_finish_new_only_failed_and_reuses_package (test_task_maintenance.TaskMaintenance.test_finish_new_only_failed_and_reuses_package) ... ok
+test_retry_keeps_identity_order_success_and_prevents_double_click (test_task_maintenance.TaskMaintenance.test_retry_keeps_identity_order_success_and_prevents_double_click) ... ok
+test_retry_running_siblings_continue (test_task_maintenance.TaskMaintenance.test_retry_running_siblings_continue) ... ok
+test_unknown_cannot_transfer (test_task_maintenance.TaskMaintenance.test_unknown_cannot_transfer) ... ok
+test_unknown_upload_queries_only_never_start (test_task_maintenance.TaskMaintenance.test_unknown_upload_queries_only_never_start) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 1.277s
+
+OK

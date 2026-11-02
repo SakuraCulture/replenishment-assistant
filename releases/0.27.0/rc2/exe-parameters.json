@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "real Qt drag/drop, background read, template, preview and Esc cancel",
+    "category thresholds: saved defaults, editor roundtrip, Chinese form and full Excel reimport",
+    "confirm both; atomic save; next store population reloads defaults; only affected result expires",
+    "imported effective configuration matches manual calculation rows and summary exactly",
+    "running application export: all three signed sheets hide U, preserve values and feedback order linkage",
+    "actual background check-file reload adopts changed durable defaults; effective settings, per-SKU rows and summary equal explicit expected configuration",
+    "explicit current-job parameter and zero-budget edits survive recheck"
+  ],
+  "app": "补货助手",
+  "version": "0.27.0",
+  "parameter_schema_version": 2,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.3-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "8274e282b1aa7d788774c384397484e044739b45",
+  "build_id": "rc2",
+  "built_at": "2026-11-02T18:28:48.704295+08:00",
+  "source_archive_sha256": "efaa2968b4f9d7cdb5345abd4f2b4c66fc4e80c1bd06bb2c339180e559497a9a",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "8274e282b1aa7d788774c384397484e044739b45",
+    "files": 866,
+    "manifest_sha256": "6d5d44c7f2a2381f5a713ff5b1d6c59db8afa56ab001030f4caff74feeca908a",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "exit_code": 0,
+  "exe_sha256": "f76c8bdc70e064392c9030581d7924fbe9290097fb8e8e8664a57b989bda7af9"
+}

@@ -1,0 +1,13 @@
+{
+  "baseline": "06ea3253c5f0b9e0f35d250cdf88c661294755e9",
+  "protected": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\model.py": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.26.1_rc1\\补货助手\\补货助手.exe": "6358c1558d1db442b9f587a5de3e3577d4b6faa8a550d5916da70ac54f4b2e27",
+    "C:\\Users\\lenovo\\Desktop\\参数.xlsx": "24f351bb3857a9630884738bcfda257162586ba0492c8bc48a6fef7fef803849"
+  },
+  "inputs": {}
+}
