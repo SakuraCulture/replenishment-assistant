@@ -19,6 +19,7 @@ class Workbench(ParameterUi,BatchWindow):
         self.save_job_btn=button('保存作业',self.save_current,True);row.addWidget(self.save_job_btn)
         self.centralWidget().layout().insertLayout(1,row)
         row=QHBoxLayout();self.defaults_btn=button('保存主从仓与参数为门店默认',self.save_default_dialog);row.addWidget(self.defaults_btn);self.fresh_btn=button('换用最新资料并重新检查',self.use_current_data);row.addWidget(self.fresh_btn);row.addStretch();self.store_page.layout().insertLayout(2,row)
+        row=QHBoxLayout();self.parameter_import_btn=button('批量导入门店参数',self.import_store_parameters);self.parameter_export_btn=button('导出勾选门店本次参数',self.export_store_parameters);row.addWidget(self.parameter_import_btn);row.addWidget(self.parameter_export_btn);row.addStretch();self.store_page.layout().insertLayout(3,row)
         self.exception.hide();self.store_table.setColumnWidth(7,400);self.nav[1].setText('② 门店与参数')
         self._hydrating=False;self.update_controls()
         if any(r['day']==wr.today() for r in self.work_repository.list_jobs()):self.status.setText('今天已有保存的作业，可从“作业记录”继续；新建内容不会自动覆盖。')
@@ -37,6 +38,15 @@ class Workbench(ParameterUi,BatchWindow):
         if self.readonly:
             self.import_page.setEnabled(False);self.store_page.setEnabled(False);self.calculate_btn.setEnabled(False);self.retry_btn.setEnabled(False)
         self.refresh_job_label()
+        if hasattr(self,'parameter_import_btn'):
+            self.parameter_import_btn.setEnabled(not busy and not self.readonly and bool(self.store_widgets))
+            self.parameter_export_btn.setEnabled(not busy and bool(self.store_widgets))
+    def import_store_parameters(self):
+        from store_parameter_ui import import_parameters
+        import_parameters(self,self,'current')
+    def export_store_parameters(self):
+        from store_parameter_ui import export_parameters
+        export_parameters(self,self,self.selected_codes(),current=True)
     def populate_stores(self):
         super().populate_stores()
         if not hasattr(self,'work_repository'):return

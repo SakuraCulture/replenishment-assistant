@@ -29,6 +29,11 @@ class ParameterScene(QWidget):
         row.addWidget(button('刷新门店设置', self.refresh))
         row.addStretch()
         v.addLayout(row)
+        row = QHBoxLayout()
+        row.addWidget(button('批量导入门店参数', self.import_parameters, True))
+        row.addWidget(button('导出勾选门店默认参数', self.export_parameters))
+        row.addStretch()
+        v.addLayout(row)
         self.table = QTableWidget(0, 7)
         self.table.setHorizontalHeaderLabels(['选择', '门店', '默认主仓', '默认从仓', '默认参数方案', '默认预算', '本次作业'])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -64,7 +69,7 @@ class ParameterScene(QWidget):
             self.table.setItem(i, 0, item)
             mode = ui.get('mode', 0)
             budget = str(ui.get('amount', '')) if mode == 2 else '不限预算' if mode == 1 else '未指定'
-            name = self.host.states.get(code, {}).get('name', code)
+            name = self.host.states.get(code, {}).get('name') or saved.get('name') or code
             values = [f'{name}（{code}）' if name != code else code, ui.get('primary') or '未指定',
                       ui.get('secondary') or '无', p.get('name', '未保存默认'), budget,
                       '已载入，可编辑本次参数' if code in self.host.store_widgets else '本次未载入']
@@ -72,7 +77,15 @@ class ParameterScene(QWidget):
                 self.table.setItem(i, j, QTableWidgetItem(str(value)))
         self.filter()
         self.note.setText('保存门店默认只供后续作业带入；当前作业需明确应用。' if self.codes else
-                          '尚无门店记录。可先管理参数方案；导入补货文件识别门店后，即可保存其主从仓和完整参数。')
+                          '尚无门店记录。可批量导入门店参数预存默认，或先导入补货文件识别门店。')
+
+    def import_parameters(self):
+        from store_parameter_ui import import_parameters
+        import_parameters(self, self.host)
+
+    def export_parameters(self):
+        from store_parameter_ui import export_parameters
+        export_parameters(self, self.host, self.selected())
 
     def filter(self, *_):
         words = self.search.text().lower().split()

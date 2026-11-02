@@ -5,6 +5,7 @@ from openpyxl.styles import Font,PatternFill
 import os,tempfile
 
 TEMPLATES={
+ 'store_parameters':('门店参数','门店参数',['门店编码'],['门店名称','主仓','从仓','预算方式','预算金额']),
  'aoxiang_stores':('翱象门店目录','门店目录',['门店编码','门店名称'],[]),
  'stocking':('铺货清单','铺货清单',['商品编码'],['商品名称','目标持有量','备注','关注']),
  'sales':('补货建议','商品补货建议',['仓库/门店编码','商品编码','日销','周销','月销','可用库存','在途库存','缺货天数（天）'],['仓库/门店名称','商品名称','单位类型','补货状态']),
@@ -17,6 +18,9 @@ TEMPLATES={
 def write(kind,path,progress=lambda _:None,cancel=None):
     title,sheet,required,optional=TEMPLATES[kind];target=Path(path)
     if target.exists():raise FileExistsError('模板目标已存在，请另存为新文件')
+    if kind=='store_parameters':
+        from store_parameter_import import write as write_parameters
+        return write_parameters(path,progress=progress,cancel=cancel)
     wb=Workbook();ws=wb.active;ws.title=sheet;ws.append(required+optional);ws.freeze_panes='A2'
     for i,c in enumerate(ws[1]):
         c.font=Font(bold=True,color='FFFFFF');c.fill=PatternFill('solid',fgColor='126C63' if i<len(required) else '657B83');ws.column_dimensions[c.column_letter].width=22

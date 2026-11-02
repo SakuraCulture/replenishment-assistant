@@ -110,6 +110,8 @@ def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None):
         # Original A:T layout retained, with explicit price/status presentation.
         ws.column_dimensions['P'].width=12;ws.column_dimensions['R'].width=14
         ws.column_dimensions['U'].width=38;ws.column_dimensions['V'].width=14
+        # Keep the exact linkage values for feedback import; hide only presentation.
+        ws.column_dimensions['U'].hidden=True
         ws.print_options.horizontalCentered=False
     progress('数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…');path.parent.mkdir(parents=True,exist_ok=True)
     fd,temp=tempfile.mkstemp(prefix='.normal-',suffix='.xlsx',dir=path.parent);os.close(fd)

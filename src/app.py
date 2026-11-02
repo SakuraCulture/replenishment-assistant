@@ -23,6 +23,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--store-parameters-smoke' in sys.argv:
+        from store_parameter_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--store-parameters-smoke')+1:])
     if '--aoxiang-smoke' in sys.argv:
         from aoxiang_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--aoxiang-smoke')+1:])
