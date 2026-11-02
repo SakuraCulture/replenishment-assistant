@@ -165,8 +165,14 @@ def execute(path,cache,request,cancel,progress):
             if not any(r[2]==request['sha'] for r in history_forms.attachments(repo,order)):raise ValueError('原文件不属于此签发快照')
             with closing(repo.work.connect()) as db:return source_archive.export(db,request['sha'],request['path'],cancel)
         if head.get('warehouse'):order={**order,'warehouse':head['warehouse']}
-        rows=history_forms.form(repo,order,request['scope'],request.get('sku',''),cancel)
-        if kind=='form_export':return business_excel.write(request['path'],[(request['scope'],['核对项目','当时值','类型'],rows)],cancel)
+        if request.get('business_view'):
+            import business_presenter as presenter
+            rows=presenter.historical(repo,order,request['scope'],request.get('sku',''),cancel)
+            headers=presenter.HEADERS
+        else:
+            rows=history_forms.form(repo,order,request['scope'],request.get('sku',''),cancel)
+            headers=['核对项目','当时值','类型']
+        if kind=='form_export':return business_excel.write(request['path'],[(request['scope'],headers,rows)],cancel)
         return rows
     if kind=='audit':
         field=request.get('field','概要')

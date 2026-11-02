@@ -89,7 +89,7 @@ class ArchiveDialog(QDialog):
         i=self.table.currentIndex().row();sku=self.model.rows[self.model.indices[i]][0] if i>=0 else ''
         self.initial_sku=sku;self.tabs.setCurrentIndex(2);self.load_tab(2)
         d=self.children_views.get(2)
-        if d and sku:d.sku.setText(sku);d.scope.setCurrentText('商品建议与销量库存');d.load()
+        if d and sku:d.sku.setText(sku);d.scope.setCurrentText('决策总览');d.load()
     def clear_tabs(self):
         for d in self.children_views.values():
             if hasattr(d,'dispose'):d.dispose()
@@ -119,13 +119,13 @@ class AuditDialog(QDialog):
         from history_tasks import HistoryReader
         from business_ui import grid
         self.reader=HistoryReader(host.work_repository.path,host.history_reader.cache,self)
-        v.addWidget(label(head['number']+f" · V{head['revision']:03d} · {head['day']}",'section'))
-        v.addWidget(label('左侧搜商品并点选，右侧切换当时参数、销量库存或商品资料。所有数据来自本次签发，不使用今天的资料补填。','muted'))
+        v.addWidget(label(str(head.get('name') or head.get('store_name') or head['store'])+' · '+str(head.get('warehouse',''))+' · '+head['day'],'section'));number_label=label('补货单号：'+head['number'],'muted');number_label.setToolTip(f"内部修订 V{head['revision']:03d}");v.addWidget(number_label)
+        v.addWidget(label('先选商品看结果；再查看数量形成过程、当时参数或原始资料。所有依据来自当时签发。','muted'))
         splitter=QSplitter();left=QWidget();lv=QVBoxLayout(left);self.product_search=QLineEdit();self.product_search.setPlaceholderText('搜索本单商品名称 / 编码，空格分词');self.product_search.setClearButtonEnabled(True);lv.addWidget(self.product_search)
         self.products,self.product_model=grid(left,['商品编码','商品名称']);self.products.setColumnWidth(0,170);self.products.setColumnWidth(1,270);lv.addWidget(self.products,1);self.product_count=label('');lv.addWidget(self.product_count);splitter.addWidget(left)
-        right=QWidget();rv=QVBoxLayout(right);row=QHBoxLayout();self.scope=QComboBox();self.scope.addItems(['单据概况','当时参数','商品建议与销量库存','当时商品资料快照','商品完整计算依据','决策总览','签发前调整']);self.scope.setCurrentText('决策总览');row.addWidget(self.scope);self.sku=QLineEdit(sku);self.sku.setPlaceholderText('也可输入精确商品编码后回车');row.addWidget(self.sku);self.load_btn=button('重新读取当前依据',self.load);row.addWidget(self.load_btn);rv.addLayout(row)
-        self.note=label('');rv.addWidget(self.note);self.bar=QProgressBar();self.bar.setRange(0,0);rv.addWidget(self.bar);self.search=QLineEdit();self.search.setPlaceholderText('筛选本表单字段 / 数值；导出仍包含完整表单');self.search.setClearButtonEnabled(True);rv.addWidget(self.search);self.table,self.model=grid(right,['核对项目','当时值','类型']);self.table.setColumnWidth(0,330);self.table.setColumnWidth(1,430);self.table.setColumnWidth(2,65);rv.addWidget(self.table,1);self.search.textChanged.connect(self.filter_fields)
-        self.export_hint=label('','muted');rv.addWidget(self.export_hint);row=QHBoxLayout();self.export_btn=button('导出此核对表单（非原表）',self.export);self.export_btn.setEnabled(False);row.addWidget(self.export_btn);self.original_btn=button('下载商品资料原表',lambda:self.host.export_archive(self.head,'original'));self.original_btn.setEnabled(not head.get('deleted'));row.addWidget(self.original_btn);row.addWidget(button('查看原始附件',self.sources));row.addWidget(button('关闭',self.reject));rv.addLayout(row);splitter.addWidget(right);splitter.setSizes([360,860]);v.addWidget(splitter,1)
+        right=QWidget();rv=QVBoxLayout(right);row=QHBoxLayout();self.scope=QComboBox();self.scope.addItems(['决策总览','数量形成过程','当时参数','商品建议与销量库存','签发前调整','当时商品资料快照','商品完整计算依据','完整参数与技术资料','单据概况']);self.scope.setCurrentText('决策总览');row.addWidget(self.scope);self.sku=QLineEdit(sku);self.sku.setPlaceholderText('也可输入精确商品编码后回车');row.addWidget(self.sku);self.load_btn=button('重新读取当前依据',self.load);row.addWidget(self.load_btn);rv.addLayout(row)
+        self.note=label('');rv.addWidget(self.note);self.bar=QProgressBar();self.bar.setRange(0,0);rv.addWidget(self.bar);self.search=QLineEdit();self.search.setPlaceholderText('筛选本表单字段 / 数值；导出仍包含完整表单');self.search.setClearButtonEnabled(True);rv.addWidget(self.search);self.table,self.model=grid(right,['项目','当时值','单位','用途 / 变化说明']);self.table.setColumnWidth(0,210);self.table.setColumnWidth(1,180);self.table.setColumnWidth(2,75);self.table.setColumnWidth(3,460);rv.addWidget(self.table,1);self.search.textChanged.connect(self.filter_fields)
+        self.export_hint=label('','muted');rv.addWidget(self.export_hint);row=QHBoxLayout();self.export_btn=button('导出当前补货依据',self.export);self.export_btn.setEnabled(False);row.addWidget(self.export_btn);self.original_btn=button('下载商品资料原表',lambda:self.host.export_archive(self.head,'original'));self.original_btn.setEnabled(not head.get('deleted'));row.addWidget(self.original_btn);row.addWidget(button('查看本单原始附件',self.sources));row.addWidget(button('关闭',self.reject));rv.addLayout(row);splitter.addWidget(right);splitter.setSizes([360,860]);v.addWidget(splitter,1)
         self.problem=QComboBox();self.problem.addItems(['全部商品','签发大于0','签发为0','预算后减少']);lv.insertWidget(1,self.problem);self.problem.currentIndexChanged.connect(self.filter_products)
         self.product_search.textChanged.connect(self.filter_products);self.products.clicked.connect(self.select_product);self.scope.currentIndexChanged.connect(self.load);self.sku.returnPressed.connect(self.load)
         self.search_shortcut=QShortcut(QKeySequence('Ctrl+F'),self);self.search_shortcut.activated.connect(self.product_search.setFocus)
@@ -152,17 +152,18 @@ class AuditDialog(QDialog):
         self.product_count.setText(f'找到 {self.product_model.rowCount()} / {len(self.product_model.rows)} 个商品；点击一行查看')
     def select_product(self,index):
         self.sku.setText(self.product_model.rows[self.product_model.indices[index.row()]][0])
-        if self.scope.currentText() in ('单据概况','当时参数'):self.scope.setCurrentText('决策总览')
+        if self.scope.currentText() in ('单据概况','完整参数与技术资料'):self.scope.setCurrentText('决策总览')
         else:self.load()
     def filter_fields(self,*_):
-        self.model.filter(self.search.text())
+        from business_presenter import title
+        self.model.filter(' '.join(title(t) for t in self.search.text().split()))
         if self.loaded_key:self.note.setText(f'已读取 {len(self.model.rows)} 项 · 当前显示 {self.model.rowCount()} 项；签发 V{self.head["revision"]:03d} 只读')
     def load(self):
         if self.disposed:return
         self.load_btn.setEnabled(False);self.load_btn.setText('正在读取依据…');self.loaded_key=None;self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在读取并校验当时快照…（可关闭取消，不必重复点击）');self.model.replace([])
-        scope=self.scope.currentText();sku=self.sku.text().strip();self.export_hint.setText(f'导出范围：本单 V{self.head["revision"]:03d} · {scope}'+(f' · 商品 {sku}' if scope not in ('单据概况','当时参数') else '')+' · 完整字段；不是签发单。')
-        if scope not in ('单据概况','当时参数') and not any(r[0]==sku for r in self.product_model.rows):self.failed('请从左侧选择本单商品，或输入本单精确商品编码');return
-        self.reader.request({'kind':'form','head':self.head,'scope':scope,'sku':sku},lambda value:self.ready(value,(scope,sku)),self.failed)
+        scope=self.scope.currentText();sku=self.sku.text().strip();self.export_hint.setText(f'导出范围：本单 V{self.head["revision"]:03d} · {scope}'+(f' · 商品 {sku}' if scope not in ('单据概况','完整参数与技术资料') else '')+' · 完整字段；不是签发单。')
+        if scope not in ('单据概况','完整参数与技术资料') and not any(r[0]==sku for r in self.product_model.rows):self.failed('请从左侧选择本单商品，或输入本单精确商品编码');return
+        self.reader.request({'kind':'form','head':self.head,'scope':scope,'sku':sku,'business_view':True},lambda value:self.ready(value,(scope,sku)),self.failed)
     def ready(self,value,key=None):
         if self.disposed:return
         self.loaded_key=key or (self.scope.currentText(),self.sku.text().strip());self.bar.setRange(0,1);self.bar.setValue(1);self.model.replace(value);self.filter_fields();self.export_btn.setEnabled(bool(value))
@@ -175,11 +176,11 @@ class AuditDialog(QDialog):
         if self.scope.currentText()=='当时商品资料快照':return
         key=(self.scope.currentText(),self.sku.text().strip())
         if self.loaded_key!=key:self.load();return
-        scope,sku=key;name=self.head['number']+f'-V{self.head["revision"]:03d}-'+scope+('' if scope in ('单据概况','当时参数') else '-'+sku)+'.xlsx'
+        scope,sku=key;name=self.head['number']+f'-V{self.head["revision"]:03d}-'+scope+('' if scope in ('单据概况','完整参数与技术资料') else '-'+sku)+'.xlsx'
         path,_=export_locations.save_file(self,'导出已显示的完整表单（不是门店确认单）',name,'Excel (*.xlsx)')
         if path:
             self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在导出所选修订完整表单…')
-            self.reader.request({'kind':'form_export','head':self.head,'scope':scope,'sku':sku,'path':path},self.exported,self.failed)
+            self.reader.request({'kind':'form_export','head':self.head,'scope':scope,'sku':sku,'path':path,'business_view':True},self.exported,self.failed)
     def exported(self,path):
         if not self.disposed:self.bar.setRange(0,1);self.bar.setValue(1);self.export_btn.setEnabled(True);self.note.setText('已保存完整表单：'+path)
     def sources(self):
@@ -231,7 +232,8 @@ class EventsDialog(QDialog):
         if not row:return
         head=dict(zip(('day','store','number','revision'),row));head['warehouse']=record.get('warehouse');head['number']=record.get('child_number',head['number']);d=ArchiveDialog(host,head);d.rev.setCurrentIndex(record['revision']-1);d.exec();d.deleteLater()
     def filter(self,*_):
-        self.model.filter(self.search.text());self.model.beginResetModel();self.model.indices=[i for i in self.model.indices if (not self.day.currentData() or self.rows[i][0].startswith(self.day.currentData())) and (not self.action.currentData() or self.rows[i][4]==self.action.currentData())];self.model.endResetModel();self.matches=[self.records[i] for i in self.model.indices];self.note.setText(f'匹配 {len(self.matches)} / {len(self.records)} 条；双击回溯当时签发修订，打开当前记录关联单据后，可导出其确切仓单修订。');self.selection_changed()
+        from business_presenter import title
+        self.model.filter(' '.join(title(t) for t in self.search.text().split()));self.model.beginResetModel();self.model.indices=[i for i in self.model.indices if (not self.day.currentData() or self.rows[i][0].startswith(self.day.currentData())) and (not self.action.currentData() or self.rows[i][4]==self.action.currentData())];self.model.endResetModel();self.matches=[self.records[i] for i in self.model.indices];self.note.setText(f'匹配 {len(self.matches)} / {len(self.records)} 条；双击回溯当时签发修订，打开当前记录关联单据后，可导出其确切仓单修订。');self.selection_changed()
     def export(self,kind='calculation'):
         i=self.table.currentIndex().row()
         if i<0:
