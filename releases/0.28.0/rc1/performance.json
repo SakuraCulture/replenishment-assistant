@@ -1,0 +1,341 @@
+{
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "os": "Windows-11-10.0.26200-SP0"
+  },
+  "database_sha256": "050d8ddf8f97b659db6b52c66b28357a593bf6d7abb1a5d74cffed5901d86867",
+  "database_unchanged": true,
+  "raw": [
+    {
+      "round": 1,
+      "version": "old",
+      "values": {
+        "决策总览": {
+          "read_seconds": 0.06258749999688007,
+          "projection_seconds": 0.02305360001628287,
+          "grid_seconds": 0.010828600003151223,
+          "total_seconds": 0.09646970001631416,
+          "rows": 47
+        },
+        "当时参数": {
+          "read_seconds": 0.0641755000106059,
+          "projection_seconds": 0.00026229998911730945,
+          "grid_seconds": 0.008040100015932694,
+          "total_seconds": 0.0724779000156559,
+          "rows": 251
+        },
+        "商品完整计算依据": {
+          "read_seconds": 0.061845899996114895,
+          "projection_seconds": 0.00016920000780373812,
+          "grid_seconds": 0.007203999994089827,
+          "total_seconds": 0.06921909999800846,
+          "rows": 119
+        }
+      }
+    },
+    {
+      "round": 1,
+      "version": "new",
+      "values": {
+        "决策总览": {
+          "read_seconds": 0.08347079998929985,
+          "projection_seconds": 0.009770800010301173,
+          "grid_seconds": 0.006608399999095127,
+          "total_seconds": 0.09984999999869615,
+          "rows": 12
+        },
+        "当时参数": {
+          "read_seconds": 0.0720512000261806,
+          "projection_seconds": 0.00029189998167566955,
+          "grid_seconds": 0.007663199998205528,
+          "total_seconds": 0.08000630000606179,
+          "rows": 23
+        },
+        "商品完整计算依据": {
+          "read_seconds": 0.0749346999800764,
+          "projection_seconds": 0.0003944000054616481,
+          "grid_seconds": 0.007055599999148399,
+          "total_seconds": 0.08238469998468645,
+          "rows": 119
+        }
+      }
+    },
+    {
+      "round": 2,
+      "version": "new",
+      "values": {
+        "决策总览": {
+          "read_seconds": 0.082481799996458,
+          "projection_seconds": 0.012621500005479902,
+          "grid_seconds": 0.005773299984866753,
+          "total_seconds": 0.10087659998680465,
+          "rows": 12
+        },
+        "当时参数": {
+          "read_seconds": 0.07477780000772327,
+          "projection_seconds": 0.0003291000030003488,
+          "grid_seconds": 0.009063500008778647,
+          "total_seconds": 0.08417040001950227,
+          "rows": 23
+        },
+        "商品完整计算依据": {
+          "read_seconds": 0.10237730000517331,
+          "projection_seconds": 0.00040599997737444937,
+          "grid_seconds": 0.009476900013396516,
+          "total_seconds": 0.11226019999594428,
+          "rows": 119
+        }
+      }
+    },
+    {
+      "round": 2,
+      "version": "old",
+      "values": {
+        "决策总览": {
+          "read_seconds": 0.0743374000012409,
+          "projection_seconds": 0.022632199979852885,
+          "grid_seconds": 0.0081044000107795,
+          "total_seconds": 0.10507399999187328,
+          "rows": 47
+        },
+        "当时参数": {
+          "read_seconds": 0.0655591000104323,
+          "projection_seconds": 0.0002454000059515238,
+          "grid_seconds": 0.006636799982516095,
+          "total_seconds": 0.07244129999889992,
+          "rows": 251
+        },
+        "商品完整计算依据": {
+          "read_seconds": 0.07801100000506267,
+          "projection_seconds": 0.00017830001888796687,
+          "grid_seconds": 0.00583299997379072,
+          "total_seconds": 0.08402229999774136,
+          "rows": 119
+        }
+      }
+    },
+    {
+      "round": 3,
+      "version": "old",
+      "values": {
+        "决策总览": {
+          "read_seconds": 0.08391129999654368,
+          "projection_seconds": 0.023508100013714284,
+          "grid_seconds": 0.01403980000759475,
+          "total_seconds": 0.12145920001785271,
+          "rows": 47
+        },
+        "当时参数": {
+          "read_seconds": 0.09031989998766221,
+          "projection_seconds": 0.0002982000005431473,
+          "grid_seconds": 0.010300399997504428,
+          "total_seconds": 0.10091849998570979,
+          "rows": 251
+        },
+        "商品完整计算依据": {
+          "read_seconds": 0.08756169999833219,
+          "projection_seconds": 0.00025599999935366213,
+          "grid_seconds": 0.0069592999934684485,
+          "total_seconds": 0.0947769999911543,
+          "rows": 119
+        }
+      }
+    },
+    {
+      "round": 3,
+      "version": "new",
+      "values": {
+        "决策总览": {
+          "read_seconds": 0.060357100010151044,
+          "projection_seconds": 0.007996800006367266,
+          "grid_seconds": 0.004911700001684949,
+          "total_seconds": 0.07326560001820326,
+          "rows": 12
+        },
+        "当时参数": {
+          "read_seconds": 0.058035399997606874,
+          "projection_seconds": 0.00029230001382529736,
+          "grid_seconds": 0.007722400012426078,
+          "total_seconds": 0.06605010002385825,
+          "rows": 23
+        },
+        "商品完整计算依据": {
+          "read_seconds": 0.057592099998146296,
+          "projection_seconds": 0.0003425999893806875,
+          "grid_seconds": 0.006658500002231449,
+          "total_seconds": 0.06459319998975843,
+          "rows": 119
+        }
+      }
+    }
+  ],
+  "summary": {
+    "old": {
+      "决策总览": {
+        "read_seconds": {
+          "median": 0.0743374000012409,
+          "min": 0.06258749999688007,
+          "max": 0.08391129999654368
+        },
+        "projection_seconds": {
+          "median": 0.02305360001628287,
+          "min": 0.022632199979852885,
+          "max": 0.023508100013714284
+        },
+        "grid_seconds": {
+          "median": 0.010828600003151223,
+          "min": 0.0081044000107795,
+          "max": 0.01403980000759475
+        },
+        "total_seconds": {
+          "median": 0.10507399999187328,
+          "min": 0.09646970001631416,
+          "max": 0.12145920001785271
+        },
+        "rows": {
+          "median": 47,
+          "min": 47,
+          "max": 47
+        }
+      },
+      "当时参数": {
+        "read_seconds": {
+          "median": 0.0655591000104323,
+          "min": 0.0641755000106059,
+          "max": 0.09031989998766221
+        },
+        "projection_seconds": {
+          "median": 0.00026229998911730945,
+          "min": 0.0002454000059515238,
+          "max": 0.0002982000005431473
+        },
+        "grid_seconds": {
+          "median": 0.008040100015932694,
+          "min": 0.006636799982516095,
+          "max": 0.010300399997504428
+        },
+        "total_seconds": {
+          "median": 0.0724779000156559,
+          "min": 0.07244129999889992,
+          "max": 0.10091849998570979
+        },
+        "rows": {
+          "median": 251,
+          "min": 251,
+          "max": 251
+        }
+      },
+      "商品完整计算依据": {
+        "read_seconds": {
+          "median": 0.07801100000506267,
+          "min": 0.061845899996114895,
+          "max": 0.08756169999833219
+        },
+        "projection_seconds": {
+          "median": 0.00017830001888796687,
+          "min": 0.00016920000780373812,
+          "max": 0.00025599999935366213
+        },
+        "grid_seconds": {
+          "median": 0.0069592999934684485,
+          "min": 0.00583299997379072,
+          "max": 0.007203999994089827
+        },
+        "total_seconds": {
+          "median": 0.08402229999774136,
+          "min": 0.06921909999800846,
+          "max": 0.0947769999911543
+        },
+        "rows": {
+          "median": 119,
+          "min": 119,
+          "max": 119
+        }
+      }
+    },
+    "new": {
+      "决策总览": {
+        "read_seconds": {
+          "median": 0.082481799996458,
+          "min": 0.060357100010151044,
+          "max": 0.08347079998929985
+        },
+        "projection_seconds": {
+          "median": 0.009770800010301173,
+          "min": 0.007996800006367266,
+          "max": 0.012621500005479902
+        },
+        "grid_seconds": {
+          "median": 0.005773299984866753,
+          "min": 0.004911700001684949,
+          "max": 0.006608399999095127
+        },
+        "total_seconds": {
+          "median": 0.09984999999869615,
+          "min": 0.07326560001820326,
+          "max": 0.10087659998680465
+        },
+        "rows": {
+          "median": 12,
+          "min": 12,
+          "max": 12
+        }
+      },
+      "当时参数": {
+        "read_seconds": {
+          "median": 0.0720512000261806,
+          "min": 0.058035399997606874,
+          "max": 0.07477780000772327
+        },
+        "projection_seconds": {
+          "median": 0.00029230001382529736,
+          "min": 0.00029189998167566955,
+          "max": 0.0003291000030003488
+        },
+        "grid_seconds": {
+          "median": 0.007722400012426078,
+          "min": 0.007663199998205528,
+          "max": 0.009063500008778647
+        },
+        "total_seconds": {
+          "median": 0.08000630000606179,
+          "min": 0.06605010002385825,
+          "max": 0.08417040001950227
+        },
+        "rows": {
+          "median": 23,
+          "min": 23,
+          "max": 23
+        }
+      },
+      "商品完整计算依据": {
+        "read_seconds": {
+          "median": 0.0749346999800764,
+          "min": 0.057592099998146296,
+          "max": 0.10237730000517331
+        },
+        "projection_seconds": {
+          "median": 0.0003944000054616481,
+          "min": 0.0003425999893806875,
+          "max": 0.00040599997737444937
+        },
+        "grid_seconds": {
+          "median": 0.007055599999148399,
+          "min": 0.006658500002231449,
+          "max": 0.009476900013396516
+        },
+        "total_seconds": {
+          "median": 0.08238469998468645,
+          "min": 0.06459319998975843,
+          "max": 0.11226019999594428
+        },
+        "rows": {
+          "median": 119,
+          "min": 119,
+          "max": 119
+        }
+      }
+    }
+  },
+  "boundary": "Same synthetic two-store archive, OS file cache not flushed, sequential AB/BA/AB. Timed snapshot read + projection + offscreen grid paint. Imports before first read mostly excluded. No process-start, real-user full-page, cold-index, memory or large-history throughput claim."
+}

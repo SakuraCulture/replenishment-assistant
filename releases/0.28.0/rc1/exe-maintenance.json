@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "live Qt timer: lock busy keeps UI responsive; unlock recovers; read/write maintenance gates release; no platform dispatch",
+    "Windows spawn in running app: two-store calculation then single-store retry; exact rows and successful sibling unchanged",
+    "persisted import history and undo; current calculation unchanged",
+    "real history dialog displayed field differences and closed without applying",
+    "actual permanent-delete preview: cancel keeps data; confirm removes all selected store warehouse children, other store/signing unchanged",
+    "18 auxiliary controls use standard icons and accessible names"
+  ],
+  "app": "补货助手",
+  "version": "0.28.0",
+  "parameter_schema_version": 2,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.3-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "02ea7996b5dd361a647e6dec6626108c2261b935",
+  "build_id": "rc1",
+  "built_at": "2026-11-02T23:00:56.136857+08:00",
+  "source_archive_sha256": "b01e07b7786fb9e3fde246754684f6040911fc49a300510337b8c7ffb0b8780a",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "02ea7996b5dd361a647e6dec6626108c2261b935",
+    "files": 866,
+    "manifest_sha256": "c697a141ffca0e4faa2968d6837a93fc58337316f6e6aadcd5b8462e3d60e7bd",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "process_exit": 0,
+  "exe_sha256": "53eea830f353d8996381cbc3d2e295b98772d4a37ef20fa74d8db2cc36f14837",
+  "seconds": 4.908674700011034
+}
