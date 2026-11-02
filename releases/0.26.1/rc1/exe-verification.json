@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "real Qt drag/drop, background read, template, preview and Esc cancel",
+    "category thresholds: saved defaults, editor roundtrip, Chinese form and full Excel reimport",
+    "confirm both; atomic save; next store population reloads defaults; only affected result expires",
+    "imported effective configuration matches manual calculation rows and summary exactly",
+    "running application export: all three signed sheets hide U, preserve values and feedback order linkage",
+    "actual background check-file reload adopts changed durable defaults; effective settings, per-SKU rows and summary equal explicit expected configuration",
+    "explicit current-job parameter and zero-budget edits survive recheck",
+    "isolated application: 88 real store configurations saved and reloaded exactly; category/source forms",
+    "88 injected codes: fresh import callback, all config values, warehouse cycles and route match worker settings; synthetic row shells"
+  ],
+  "app": "补货助手",
+  "version": "0.26.1",
+  "parameter_schema_version": 2,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.3-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "dad0a687c20955e520936a16b093996562200bf1",
+  "build_id": "rc1",
+  "built_at": "2026-11-02T16:45:29.645506+08:00",
+  "source_archive_sha256": "5829257fea77587b718eb813c415b49eac822f8726941b9d375e800fcf276a53",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "dad0a687c20955e520936a16b093996562200bf1",
+    "files": 866,
+    "manifest_sha256": "753a96bd2a50143365441bb3f5f3e43091886236ed5dfa0cc551ce397e518afb",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "exit_code": 0,
+  "exe_sha256": "6358c1558d1db442b9f587a5de3e3577d4b6faa8a550d5916da70ac54f4b2e27"
+}

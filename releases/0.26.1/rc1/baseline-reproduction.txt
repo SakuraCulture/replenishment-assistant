@@ -1,0 +1,78 @@
+test_explicit_copied_snapshot_survives_repeated_checks (test_parameter_reload.ParameterReloadTests.test_explicit_copied_snapshot_survives_repeated_checks) ... ok
+test_explicit_current_parameter_edits_survive (test_parameter_reload.ParameterReloadTests.test_explicit_current_parameter_edits_survive) ... FAIL
+test_explicit_route_and_parameter_edits_are_independent (test_parameter_reload.ParameterReloadTests.test_explicit_route_and_parameter_edits_are_independent) ... FAIL
+test_fresh_import_and_worker_settings_use_saved_values (test_parameter_reload.ParameterReloadTests.test_fresh_import_and_worker_settings_use_saved_values) ... ok
+test_injection_after_initial_check_takes_effect_on_recheck (test_parameter_reload.ParameterReloadTests.test_injection_after_initial_check_takes_effect_on_recheck) ... FAIL
+test_resolving_conflict_restores_selection_but_not_other_selection (test_parameter_reload.ParameterReloadTests.test_resolving_conflict_restores_selection_but_not_other_selection) ... ok
+test_restored_snapshot_kept_and_new_job_loads_latest (test_parameter_reload.ParameterReloadTests.test_restored_snapshot_kept_and_new_job_loads_latest) ... ok
+test_saving_current_as_default_then_external_update_refreshes (test_parameter_reload.ParameterReloadTests.test_saving_current_as_default_then_external_update_refreshes) ... FAIL
+test_updated_default_refreshes_inherited_config_but_keeps_local_budget_selection (test_parameter_reload.ParameterReloadTests.test_updated_default_refreshes_inherited_config_but_keeps_local_budget_selection) ... FAIL
+
+======================================================================
+FAIL: test_explicit_current_parameter_edits_survive (test_parameter_reload.ParameterReloadTests.test_explicit_current_parameter_edits_survive)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\default_reload_0261\baseline\tests\test_parameter_reload.py", line 90, in test_explicit_current_parameter_edits_survive
+    self.assertIn('保留本次调整', self.win.import_note.text())
+AssertionError: '保留本次调整' not found in '识别 2 家门店；一致重复已去重 0 行；冲突 0 组；失败文件 0 个。未处理冲突的门店不能计算，其他门店可继续。'
+
+======================================================================
+FAIL: test_explicit_route_and_parameter_edits_are_independent (test_parameter_reload.ParameterReloadTests.test_explicit_route_and_parameter_edits_are_independent)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\default_reload_0261\baseline\tests\test_parameter_reload.py", line 98, in test_explicit_route_and_parameter_edits_are_independent
+    self.assertEqual(self.win.config_for('A')['warehouses']['山东仓'], [9, 3.5])
+AssertionError: Lists differ: [6, 3.5] != [9, 3.5]
+
+First differing element 0:
+6
+9
+
+- [6, 3.5]
+?  ^
+
++ [9, 3.5]
+?  ^
+
+
+======================================================================
+FAIL: test_injection_after_initial_check_takes_effect_on_recheck (test_parameter_reload.ParameterReloadTests.test_injection_after_initial_check_takes_effect_on_recheck)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\default_reload_0261\baseline\tests\test_parameter_reload.py", line 71, in test_injection_after_initial_check_takes_effect_on_recheck
+    self.assertEqual(self.win.config_for('A'), value['preset']['config'])
+AssertionError: {'par[369 chars]': 0.4, 'w1': 0.6, 'w2': 0.2}, '日百': {'alpha':[592 chars]True} != {'par[369 chars]': 0.5, 'w1': 0.7, 'w2': 0.2}, '日百': {'alpha':[735 chars].9}}}
+Diff is 2780 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_saving_current_as_default_then_external_update_refreshes (test_parameter_reload.ParameterReloadTests.test_saving_current_as_default_then_external_update_refreshes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\default_reload_0261\baseline\tests\test_parameter_reload.py", line 105, in test_saving_current_as_default_then_external_update_refreshes
+    self.assertEqual(self.win.config_for('A'), record(9)['preset']['config'])
+AssertionError: {'par[977 chars]仓': [6, 3.5]}, 'exception': True, 'profile_par[127 chars].9}}} != {'par[977 chars]仓': [9, 3.5]}, 'exception': True, 'profile_par[127 chars].9}}}
+Diff is 2549 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_updated_default_refreshes_inherited_config_but_keeps_local_budget_selection (test_parameter_reload.ParameterReloadTests.test_updated_default_refreshes_inherited_config_but_keeps_local_budget_selection)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\default_reload_0261\baseline\tests\test_parameter_reload.py", line 81, in test_updated_default_refreshes_inherited_config_but_keeps_local_budget_selection
+    self.assertEqual(self.win.config_for('A')['warehouses']['山东仓'], [9, 3.5])
+AssertionError: Lists differ: [6, 3.5] != [9, 3.5]
+
+First differing element 0:
+6
+9
+
+- [6, 3.5]
+?  ^
+
++ [9, 3.5]
+?  ^
+
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.842s
+
+FAILED (failures=5)

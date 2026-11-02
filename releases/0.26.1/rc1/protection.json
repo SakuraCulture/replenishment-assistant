@@ -1,0 +1,15 @@
+{
+  "files_unchanged": {
+    "src\\model.py": true,
+    "src\\one_box_exception.py": true,
+    "src\\allocation.py": true,
+    "src\\default_config.json": true,
+    "src\\default_must_sell.json": true,
+    "C:\\Users\\lenovo\\Desktop\\参数.xlsx": true,
+    "交付_0.26.0_rc2\\补货助手\\补货助手.exe": true
+  },
+  "saved_default_count": 93,
+  "saved_defaults_unchanged": true,
+  "production_access": "read-only sqlite URI; all test writes used isolated QA settings",
+  "historical_scope": "no user jobs/orders read with a writable repository, migrated or rewritten"
+}
