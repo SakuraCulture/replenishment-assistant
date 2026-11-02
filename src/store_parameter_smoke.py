@@ -52,8 +52,8 @@ def start_smoke(app, win, args):
             file = out / '门店参数试验.xlsx'
             book = openpyxl.Workbook()
             ws = book.active
-            ws.append(['预算金额', '门店编码', '山东仓备货天数', '库存目标分位概率'])
-            ws.append([0, a, 10, .8])
+            ws.append(['预算金额', '门店编码', '山东仓备货天数', '库存目标分位概率','分类参数/快销/常规资格周转阈值','分类参数/快销/低月销基本售价门槛','分类参数/日百/常规资格周转阈值','分类参数/日百/低月销基本售价门槛','分类参数/快销/库存目标分位概率','分类参数/日百/库存目标分位概率'])
+            ws.append([0, a, 10, .8,7,10,12,6,.95,.9])
             book.save(file)
             book.close()
             picker = ImportDialog(win, 'store_parameters', multiple=True)
@@ -99,6 +99,17 @@ def start_smoke(app, win, args):
             win.populate_stores()
             if win.config_for(a)['warehouses']['山东仓'][0] != 10 or win.store_ui(a)['amount'] != '0':
                 raise AssertionError('Next populate did not load saved defaults')
+            overrides={'快销':{'moq_days':7,'moq_price':10,'probability':.95},'日百':{'moq_days':12,'moq_price':6,'probability':.9}}
+            if win.config_for(a).get('profile_parameters')!=overrides:raise AssertionError('Category overrides did not reload')
+            from parameter_ui import ParameterDialog
+            editor=ParameterDialog(win,win.config_for(a),win.preset_for(a),scope='所选门店')
+            editor.show();app.processEvents()
+            if editor.value()!=win.config_for(a):raise AssertionError('Opening editor altered category configuration')
+            editor.tabs.setCurrentWidget(editor.profile_table);app.processEvents();editor.grab().save(str(out/'03_分类超参.png'));editor.reject()
+            spi.write(out/'完整参数回导.xlsx',{a:saved[a]})
+            roundtrip=spi.plan(spi.read([out/'完整参数回导.xlsx']),{a:saved[a]})
+            if roundtrip['errors'] or roundtrip['changed']:raise AssertionError('Full category export roundtrip changed configuration')
+            checks.append('category thresholds: saved defaults, editor roundtrip, Chinese form and full Excel reimport')
             win.show_section(4)
             win.parameter_scene.refresh()
             win.grab().save(str(out / '02_参数设置.png'))
@@ -109,6 +120,7 @@ def start_smoke(app, win, args):
             manual['parameter_config']['warehouses']['山东仓'] = [10, manual['parameter_config']['warehouses']['山东仓'][1]]
             manual['warehouses'] = copy.deepcopy(manual['parameter_config']['warehouses'])
             manual['parameter_config']['parameters']['probability'] = .8
+            manual['parameter_config']['profile_parameters']=overrides
             expected = batch_service.calculate_store(loaded, a, manual, profile)
             if imported['rows'] != expected['rows'] or imported['summary'] != expected['summary']:
                 raise AssertionError('Imported and manually configured calculation differ')
@@ -136,6 +148,19 @@ def start_smoke(app, win, args):
             if not scan['rows'] or any(r['signed_number'] != order['number'] for r in scan['rows']):
                 raise AssertionError('Hidden number not retained for feedback linkage')
             checks.append('running application export: all three signed sheets hide U, preserve values and feedback order linkage')
+            if len(args)>2:
+                plan=json.loads(Path(args[2]).read_text(encoding='utf-8'));records=plan['records']
+                if not plan['complete']:raise ValueError('Real parameter plan is incomplete')
+                old=win.work_repository.stores();win.work_repository.save_stores(records,expected={code:old.get(code) for code in records})
+                readback=win.work_repository.stores()
+                if any(readback.get(code)!=value for code,value in records.items()):raise AssertionError('88-store EXE readback mismatch')
+                win.parameter_scene.refresh();win.show_section(4);app.processEvents();win.grab().save(str(out/'04_88店参数.png'))
+                code=next(iter(records));rec=readback[code]
+                editor=ParameterDialog(win,rec['preset']['config'],rec['preset'],scope='所选门店 '+rec['name'],readonly=True)
+                editor.show();editor.tabs.setCurrentWidget(editor.profile_table);app.processEvents()
+                if editor.value()!=rec['preset']['config']:raise AssertionError('Actual parameters altered by form')
+                editor.grab().save(str(out/'05_实际参数分类表单.png'));editor.tabs.setCurrentIndex(editor.tabs.count()-1);app.processEvents();editor.grab().save(str(out/'06_原表依据表单.png'));editor.reject()
+                checks.append(f'isolated application: {len(records)} real store configurations saved and reloaded exactly; category/source forms')
             result = {'passed': True, 'frozen_exe': bool(getattr(sys, 'frozen', False)), 'checks': checks, **diagnostic()}
         except Exception:
             result = {'passed': False, 'checks': checks, 'error': traceback.format_exc(), **diagnostic()}

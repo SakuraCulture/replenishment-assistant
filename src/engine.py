@@ -146,6 +146,8 @@ def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabl
     rows=[copy.deepcopy(x) for x in loaded['normalized'] if x[0]['B']==store]
     if not rows:raise ValueError('所选门店没有商品。')
     p=model.Rules(**loaded['config']['parameters']);result=[];baseline=[]
+    profile_parameters=loaded['config'].get('profile_parameters',{})
+    profile_rules={name:model.Rules(**{**loaded['config']['parameters'],**values}) for name,values in profile_parameters.items()}
     for i,(d,m) in enumerate(rows):
         checkpoint(cancel)
         if i%300==0:progress(f'正在计算 {i:,} / {len(rows):,} 件商品…')
@@ -153,7 +155,10 @@ def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabl
             depth,lead=warehouses.get(d['AU'],(-1,-1))
             if depth<0 or lead<0 or depth+lead<=0:m['blocking'].append('所属仓的备货/到货天数未配置')
             else:d.update(AG=depth,AH=lead)
-        try:b=adapter.execute_one(d,m,p)
+        name='快销' if d.get('U')=='无分类' else d.get('U')
+        row_rules=profile_rules.get(name,p) if d['_source']=='资料匹配' else p
+        if d['_source']=='资料匹配' and 'probability' in profile_parameters.get(name,{}):d['_effective_probability']=row_rules.probability
+        try:b=adapter.execute_one(d,m,row_rules)
         except Exception as exc:
             raise RuntimeError(f"商品 {d.get('E')} / {d.get('D')}；来源 {m.get('export_file','')} / {m.get('export_sheet','')} / 行 {m.get('export_row','')}：{exc}") from exc
         x,a=apply_one_box_exception(b,m,enabled=enabled)

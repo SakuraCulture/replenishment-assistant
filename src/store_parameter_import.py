@@ -6,7 +6,7 @@ import os
 import tempfile
 from pathlib import Path
 from openpyxl import load_workbook, Workbook
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Font, PatternFill, Alignment
 import parameter_schema as schema
 import store_defaults
 from app_defaults import WAREHOUSES
@@ -53,6 +53,10 @@ def field(header):
             return ('weight_profiles', name, key)
     if text.startswith('分类映射/') and text[5:]:
         return ('category_profiles', text[5:])
+    if text.startswith('分类参数/') and '/' in text[5:]:
+        name,label=text[5:].rsplit('/',1)
+        key=next((k for k in schema.PROFILE_KEYS if label in (k,schema.HELP[k][0])),None)
+        if key:return ('profile_parameters',name,key)
     raise ValueError('无法识别表头：' + text + '；请使用模板字段说明中的名称')
 
 
@@ -198,6 +202,17 @@ def patch(row, original):
                 c[f[0]].pop(f[1], None)
             else:
                 c[f[0]][f[1]] = raw
+        elif f[0] == 'profile_parameters':
+            if f[1] not in c['weight_profiles']:raise ValueError('门店方案没有此分类方案：'+f[1])
+            if raw=='沿用门店':
+                group=c.get('profile_parameters',{}).get(f[1],{})
+                group.pop(f[2],None)
+                if not group:c.get('profile_parameters',{}).pop(f[1],None)
+                if not c.get('profile_parameters'):c.pop('profile_parameters',None)
+            else:
+                n=number(raw)
+                group=c.setdefault('profile_parameters',{}).setdefault(f[1],{})
+                if group.get(f[2])!=n:group[f[2]]=n
     if ('预算金额',) in row['values'] and ('预算方式',) in row['values'] and ui['mode'] != 2:
         raise ValueError('填写预算金额时，预算方式须为限定预算；不限预算/未指定请留空金额')
     if ui.get('mode') == 2:
@@ -268,11 +283,18 @@ def write(path, records=None, progress=lambda _: None, cancel=None):
     """Template or editable export, using the existing application's Excel library."""
     records = records or {}
     headers = list(MINIMUM)
-    for key in schema.HELP if records else ():
+    for key in schema.HELP:
         if key not in FIXED:
             headers.append(schema.HELP[key][0])
-    configs = [r['preset']['config'] for r in records.values()]
+    configs = [r['preset']['config'] for r in records.values()] if records else [schema.standard()]
+    if not records:
+        for name in schema.standard()['weight_profiles']:
+            for key in schema.PROFILE_KEYS:headers.append('分类参数/'+name+'/'+schema.HELP[key][0])
     for config in configs:
+        for name,values in config.get('profile_parameters',{}).items():
+            for key in values:
+                h='分类参数/'+name+'/'+schema.HELP[key][0]
+                if h not in headers:headers.append(h)
         for name in config['weight_profiles']:
             for label in WEIGHTS.values():
                 h = '权重/' + name + '/' + label
@@ -306,7 +328,9 @@ def write(path, records=None, progress=lambda _: None, cancel=None):
     for cell in ws[1]:
         cell.font = Font(bold=True, color='FFFFFF')
         cell.fill = PatternFill('solid', fgColor='126C63')
+        cell.alignment = Alignment(wrap_text=True,vertical='center')
         ws.column_dimensions[cell.column_letter].width = 24
+    ws.row_dimensions[1].height=72
     for row in ws:
         for cell in row:
             if isinstance(cell.value, str):
@@ -314,12 +338,13 @@ def write(path, records=None, progress=lambda _: None, cancel=None):
     for rn in range(2, max(ws.max_row + 1, 202)):
         ws.cell(rn, 1).number_format = '@'
     note = wb.create_sheet('填写说明')
-    for pair in [('事项', '说明'), ('必填', '门店编码；其他字段选填。按表头识别，可换列顺序或删除不修改的列。'),
+    for pair in [('事项', '说明'), ('必填', '门店编码；其他字段选填。完整模板列出全部可编辑项，可删除不修改的列。按表头识别，可换列顺序。'),
                  ('空白与0', '空白保持原值；0是实际值。每店只能出现一行，多文件重复编码整批阻止。'),
                  ('生效范围', '预览后选择仅保存默认、仅应用本次、或应用并保存。历史签发不变。'),
                  ('预算', '填写预算金额自动选择限定预算；0元就是不安排。不限预算或未指定时金额留空。'),
                  ('主从仓', '主仓/从仓填河北仓或山东仓；清除从仓填无从仓；空白不清除。'),
                  ('权重', '权重/组名/趋势敏感度、最近7天权重、此前7天权重；w3自动计算，w1+w2不能超过1。'),
+                 ('分类参数', '分类参数/组名/参数名：分类值优先于门店通用值，两仓共用。空白保持，填沿用门店清除该分类覆盖。无分类跟随快销。'),
                  ('分类映射', '分类映射/分类名：填方案中已有的权重组，填清空删除映射；空白保持原值。'),
                  ('固定项', '通用备货深度/到货时间不可导入修改，请设置各仓周期；极端缺货边界固定30。'),
                  ('数字与编码', '编码按文本保存以保留前导零及长编码；参数填非负数字，概率填0.50～0.99。禁止公式。'),
@@ -328,6 +353,8 @@ def write(path, records=None, progress=lambda _: None, cancel=None):
     for key, (name, unit, help_text) in schema.HELP.items():
         if key not in FIXED:
             note.append((name + '（' + unit + '）', help_text))
+    for name in schema.standard()['weight_profiles']:
+        for key in schema.PROFILE_KEYS:note.append(('分类参数/'+name+'/'+schema.HELP[key][0],schema.HELP[key][2]+' 分类覆盖优先于门店通用值；两仓共用。'))
     note.column_dimensions['A'].width = 35
     note.column_dimensions['B'].width = 110
     path = Path(path)

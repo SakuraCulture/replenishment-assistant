@@ -95,7 +95,7 @@ def exe(args):
     env.pop('QT_QPA_PLATFORM', None)
     env['PYTHONUTF8'] = '1'
     with (out / 'console.txt').open('w', encoding='utf-8') as log:
-        process = subprocess.run([str(executable), '--store-parameters-smoke', str(Path(args.fixture).resolve()), str(out)],
+        process = subprocess.run([str(executable), '--store-parameters-smoke', str(Path(args.fixture).resolve()), str(out)]+([str(Path(args.plan).resolve())] if args.plan else []),
                                  env=env, stdout=log, stderr=log, timeout=120)
     result = json.loads((out / 'exe-report.json').read_text(encoding='utf-8'))
     result['exit_code'] = process.returncode
@@ -109,7 +109,7 @@ def exe(args):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('mode', choices=['compare', 'signed', 'exe'])
-    for name in ('baseline', 'before', 'after', 'output', 'source', 'result', 'exe', 'fixture'):
+    for name in ('baseline', 'before', 'after', 'output', 'source', 'result', 'exe', 'fixture','plan'):
         p.add_argument('--' + name)
     a = p.parse_args()
     if a.mode == 'compare':compare(a)

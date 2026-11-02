@@ -24,6 +24,7 @@ HELP={
 WEIGHT_HELP={'alpha':'趋势敏感度：调高通常更响应近期涨跌，调低更稳；仍受趋势支撑与限幅影响，0不等于关闭全部趋势条件。',
  'w1':'最近7天权重：调高更重视最新涨跌，需要减少其他段权重；缺货时按有效有货天数修正。',
  'w2':'此前7天权重：调高更重视中间一周，变化方向取决于该段销量。w3=1-w1-w2自动计算。'}
+PROFILE_KEYS=('moq_days','moq_price','probability')
 FIXED='固定规则：7/14/30天窗口；低月销资格≤5；周转在途折算0.7；趋势中间限幅0.3～2及增长支撑上限2；不是最终AM绝对范围。AF=1.28不参与当前安全库存；AK/CV为诊断量。未增加安全余量天数上限；无分类跟随快销，缺失箱规补1，禁用/停采排除、必卖优先及无货仍保留从仓需求保持不变。'
 
 def standard() -> ParameterConfig:
@@ -33,7 +34,8 @@ def standard() -> ParameterConfig:
 def signature(config):return hashlib.sha256(json.dumps(config,sort_keys=True,ensure_ascii=False,allow_nan=False).encode()).hexdigest()
 
 def validate(config):
-    if not isinstance(config,dict) or set(config)!=set(standard()):raise ValueError('参数方案必须包含完整模型、权重、分类映射、仓周期和一箱例外设置')
+    required=set(standard())
+    if not isinstance(config,dict) or not required<=set(config) or set(config)-required-{'profile_parameters'}:raise ValueError('参数方案必须包含完整模型、权重、分类映射、仓周期和一箱例外设置')
     p=config['parameters']
     if not isinstance(p,dict) or set(p)!=set(HELP):raise ValueError('模型参数不完整')
     if not model.Rules(**p).valid() or p['moq_days']<0 or p['moq_price']<0:raise ValueError('参数无效：概率0.50～0.99、参考值为正、退出月销>严格月销、极端缺货固定30、资格阈值非负')
@@ -42,6 +44,12 @@ def validate(config):
     for name,w in profiles.items():
         if not isinstance(name,str) or not name.strip() or name=='无分类' or not isinstance(w,dict) or set(w)!=set(WEIGHT_HELP):raise ValueError('权重格式错误；无分类自动跟随快销')
         if not all(model.number(x) and x>=0 for x in w.values()) or w['w1']+w['w2']>1:raise ValueError(name+'：alpha、w1、w2须非负，w1+w2不能超过1')
+    overrides=config.get('profile_parameters',{})
+    if not isinstance(overrides,dict):raise ValueError('分类参数必须按分类方案保存')
+    for name,values in overrides.items():
+        if name not in profiles or not isinstance(values,dict) or set(values)-set(PROFILE_KEYS):raise ValueError('分类参数须引用已有分类方案及受支持参数')
+        if not all(model.number(v) and v>=0 for v in values.values()):raise ValueError('分类参数须为有限的非负数字')
+        if 'probability' in values and not .5<=values['probability']<=.99:raise ValueError('分类库存目标分位概率须为0.50～0.99')
     mapping=config['category_profiles']
     if not isinstance(mapping,dict) or any(not isinstance(k,str) or not k.strip() or v not in profiles for k,v in mapping.items()):raise ValueError('分类映射必须指向存在的权重方案')
     if not isinstance(config['warehouses'],dict) or not config['warehouses']:raise ValueError('至少配置一个仓的周期')
@@ -54,6 +62,8 @@ def apply(loaded:InputBatch,config:ParameterConfig) -> InputBatch:
     """Rebind normalized weights per store AFTER routing; no cross-store mutations."""
     validate(config);out={**loaded,'config':copy.deepcopy(loaded['config']),'normalized':copy.deepcopy(loaded['normalized'])}
     for key in ['parameters','weight_profiles','category_profiles']:out['config'][key]=copy.deepcopy(config[key])
+    if config.get('profile_parameters'):out['config']['profile_parameters']=copy.deepcopy(config['profile_parameters'])
+    else:out['config'].pop('profile_parameters',None)
     out['config']['parameter_labels']={k:HELP[k][0]+'（'+HELP[k][1]+'）' for k in HELP}
     weights=out['config']['weight_profiles'];weights['无分类']=copy.deepcopy(weights['快销'])
     for d,m in out['normalized']:
@@ -65,5 +75,11 @@ def apply(loaded:InputBatch,config:ParameterConfig) -> InputBatch:
         if name in weights:
             w=weights[name];d.update(AB=w['alpha'],AC=w['w1'],AD=w['w2'])
         else:d.update(AB=None,AC=None,AD=None);m['blocking'].append('未配置的商品分类：'+name)
-        d.update(AI=config['parameters']['moq_days'],AJ=config['parameters']['moq_price'])
+        effective=profile_values(config,name)
+        d.update(AI=effective['moq_days'],AJ=effective['moq_price'])
     return out
+
+def profile_values(config,name):
+    """A store owns one set per category; warehouse cycles are independent."""
+    if name=='无分类':name='快销'
+    return {**config['parameters'],**config.get('profile_parameters',{}).get(name,{})}

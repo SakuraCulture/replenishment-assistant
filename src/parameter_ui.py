@@ -22,6 +22,7 @@ class ParameterDialog(QDialog):
         self.tabs=QTabWidget();v.addWidget(self.tabs,1)
         self.param_table=QTableWidget(0,4);self.param_table.setHorizontalHeaderLabels(['参数','当前值','单位','方案默认值']);self.param_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.param_table.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.param_table,'模型超参')
         self.weight_table=QTableWidget(0,5);self.weight_table.setHorizontalHeaderLabels(['分类方案','趋势α','最近7天w1','此前7天w2','此前16天w3（自动）']);self.tabs.addTab(self.weight_table,'预测权重')
+        self.profile_table=QTableWidget(0,4);self.profile_table.setHorizontalHeaderLabels(['分类方案','参数','分类值','使用分类值']);self.profile_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.profile_table.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.profile_table,'分类超参')
         self.mapping=QTableWidget(0,2);self.mapping.setHorizontalHeaderLabels(['商品分类（可编辑，可在末行新增）','权重方案']);self.mapping.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.mapping,'分类映射')
         self.warehouses=QTableWidget(0,3);self.warehouses.setHorizontalHeaderLabels(['仓','备货天数','到货天数']);self.warehouses.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.warehouses.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.warehouses,'各仓周期')
         fixed=QTextBrowser();fixed.setPlainText(schema.FIXED);self.tabs.addTab(fixed,'固定规则')
@@ -31,6 +32,7 @@ class ParameterDialog(QDialog):
         self.help=QTextBrowser();self.help.setMaximumHeight(115);v.addWidget(self.help)
         self.param_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText(schema.HELP[list(schema.HELP)[r]][2]) if r>=0 else None)
         self.weight_table.currentCellChanged.connect(lambda r,c,*_:self.help.setPlainText(schema.WEIGHT_HELP.get(['','alpha','w1','w2',''][c], 'w3=1-w1-w2，无分类自动跟随快销；缺货时还按有效有货天数修正。')) if c>=0 else None)
+        self.profile_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText('勾选时使用分类值，未勾选沿用模型超参。快销/日百各一套，两仓共用；无分类跟随快销。\n'+schema.HELP[self.profile_rows[r][1]][2]) if r>=0 and hasattr(self,'profile_rows') else None)
         self.warehouses.currentCellChanged.connect(lambda *_:self.help.setPlainText('各仓周期优先于通用depth/lead；按门店实际补货与到货周期维护。修改只在点击应用后生效。'))
         self.exception=QCheckBox('启用一箱例外（仍受禁用/停采与门店总预算约束）');v.addWidget(self.exception)
         self.note=label('','muted');v.addWidget(self.note)
@@ -44,11 +46,20 @@ class ParameterDialog(QDialog):
                 row.addWidget(button('应用到本次作业',lambda:self.finish('temporary')))
                 row.addWidget(button('应用并保存为门店默认',lambda:self.finish('default'),True))
         v.addLayout(row);self.fill(config)
+        if preset.get('import_source'):
+            info=preset['import_source'];entries=[['来源','文件',info.get('file','')]]
+            for item in info.get('rows',[]):
+                entries.extend([[f"{item.get('sheet','')} / 第{item.get('row','')}行",key,str(value) if value is not None else '空白'] for key,value in item['values'].items()])
+            entries.extend([['处理依据','说明',text] for text in info.get('decisions',[])])
+            source=QTableWidget(len(entries),3);source.setHorizontalHeaderLabels(['来源行','原表字段','原值']);source.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);source.setColumnWidth(0,200);source.setColumnWidth(1,260);source.horizontalHeader().setSectionResizeMode(2,QHeaderView.ResizeMode.Stretch)
+            for i,row in enumerate(entries):
+                for j,value in enumerate(row):source.setItem(i,j,QTableWidgetItem(value))
+            self.tabs.addTab(source,'导入来源（原表留档）')
         if readonly:
             self.exception.setEnabled(False)
-            for table in (self.param_table,self.weight_table,self.mapping,self.warehouses):
+            for table in (self.param_table,self.weight_table,self.profile_table,self.mapping,self.warehouses):
                 table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-                for w in table.findChildren(QDoubleSpinBox)+table.findChildren(QComboBox):w.setEnabled(False)
+                for w in table.findChildren(QDoubleSpinBox)+table.findChildren(QComboBox)+table.findChildren(QCheckBox):w.setEnabled(False)
     def is_edited(self):
         try:return self.value()!=self.editor_baseline
         except ValueError:return True
@@ -79,6 +90,14 @@ class ParameterDialog(QDialog):
                 w=self.spin(weights[key],1 if key!='alpha' else 100);self.weight_table.setCellWidget(i,j,w);w.valueChanged.connect(self.weight_changed)
             derived=QTableWidgetItem('');derived.setFlags(derived.flags()&~Qt.ItemFlag.ItemIsEditable);self.weight_table.setItem(i,4,derived)
         self.weight_changed();mapping=list(config['category_profiles'].items());self.mapping.setRowCount(len(mapping)+1)
+        self.profile_rows=[(name,key) for name in config['weight_profiles'] for key in schema.PROFILE_KEYS]
+        self.profile_table.setRowCount(len(self.profile_rows))
+        for i,(name,key) in enumerate(self.profile_rows):
+            values=config.get('profile_parameters',{}).get(name,{})
+            self.profile_table.setItem(i,0,QTableWidgetItem(name));self.profile_table.setItem(i,1,QTableWidgetItem(schema.HELP[key][0]))
+            w=self.spin(values.get(key,config['parameters'][key]),1 if key=='probability' else 1000000000);w.setEnabled(key in values);self.profile_table.setCellWidget(i,2,w)
+            if key=='probability':w.setMinimum(.5);w.setMaximum(.99);w.setSingleStep(.01)
+            check=QCheckBox('启用');check.setChecked(key in values);check.toggled.connect(w.setEnabled);self.profile_table.setCellWidget(i,3,check)
         for i in range(len(mapping)+1):
             self.mapping.setItem(i,0,QTableWidgetItem(mapping[i][0] if i<len(mapping) else ''));combo=QComboBox();combo.addItems(list(config['weight_profiles']));combo.setCurrentText(mapping[i][1] if i<len(mapping) else '快销');self.mapping.setCellWidget(i,1,combo)
         self.warehouses.setRowCount(len(config['warehouses']))
@@ -93,6 +112,11 @@ class ParameterDialog(QDialog):
     def value(self):
         c=copy.deepcopy(self.config);c['parameters']={k:self.param_table.cellWidget(i,1).value() for i,k in enumerate(schema.HELP)}
         c['weight_profiles']={self.weight_table.item(i,0).text():{key:self.weight_table.cellWidget(i,j).value() for j,key in enumerate(['alpha','w1','w2'],1)} for i in range(self.weight_table.rowCount())}
+        overrides={}
+        for i,(name,key) in enumerate(self.profile_rows):
+            if self.profile_table.cellWidget(i,3).isChecked():overrides.setdefault(name,{})[key]=self.profile_table.cellWidget(i,2).value()
+        if overrides:c['profile_parameters']=overrides
+        else:c.pop('profile_parameters',None)
         c['category_profiles']={}
         for i in range(self.mapping.rowCount()):
             name=self.mapping.item(i,0).text().strip()

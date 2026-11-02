@@ -35,12 +35,15 @@ class RowMetadata(_RowMetadataRequired,total=False):
 
 NormalizedRecord:TypeAlias=tuple[ModelRow,RowMetadata]
 
-class ParameterConfig(TypedDict):
+class _ParameterConfigRequired(TypedDict):
     parameters:dict[str,int|float]
     weight_profiles:dict[str,dict[str,int|float]]
     category_profiles:dict[str,str]
     warehouses:WarehouseCycles
     exception:bool
+
+class ParameterConfig(_ParameterConfigRequired,total=False):
+    profile_parameters:dict[str,dict[str,int|float]]
 
 class _ParameterPresetRequired(TypedDict):
     id:str
