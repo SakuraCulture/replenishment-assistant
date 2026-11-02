@@ -107,6 +107,7 @@ class FetchDialog(ComponentDialog):
         actions = QHBoxLayout()
         self.pause_btn = button('停止后续取数', self.pause_fetch)
         self.resume_btn = button('继续原采集任务', self.resume_fetch)
+        self.retry_items_btn=button('重跑全部失败门店',self.retry_items);actions.addWidget(self.retry_items_btn)
         self.cancel_request_btn = button('取消未受理请求', self.cancel_request)
         self.adopt_btn = button('采用已验收文件并检查', self.select_adoption, True)
         self.close_btn = button('关闭', self.close)
@@ -215,6 +216,10 @@ class FetchDialog(ComponentDialog):
                       error.get('message', '') or (PHASES.get(item.get('phase'), '') + (' · 任务 ' + item['task_id'] if item.get('task_id') else ''))]
             for column, value in enumerate(values):
                 self.details.setItem(row, column, QTableWidgetItem(str(value)))
+            if self.details.columnCount()<6:self.details.setColumnCount(6);self.details.setHorizontalHeaderItem(5,QTableWidgetItem('单项操作'))
+            if item['state']=='FAILED':
+                b=button('重跑此任务',lambda checked=False,index=row:self.retry_items([index]));b.setEnabled(job['state'] in {'PAUSED','INTERRUPTED','COMPLETED_WITH_ERRORS'} and not self.worker);self.details.setCellWidget(row,5,b)
+            else:self.details.removeCellWidget(row,5)
         finished = sum(i['state'] in {'SUCCEEDED', 'FAILED'} for i in items)
         self.progress.setRange(0, max(len(items), 1))
         self.progress.setValue(finished)
@@ -279,6 +284,15 @@ class FetchDialog(ComponentDialog):
             return self.jobs.get(command_id)
         self.run(operation, self.show_job)
 
+    def retry_items(self,indices=None):
+        if not self.current or self.worker:return
+        current=self.current;record=current.get('record') or {}
+        if indices is None or isinstance(indices,bool):indices=[i['index'] for i in record.get('items',[]) if i['state']=='FAILED']
+        def operation(progress):
+            self.jobs.observe(current['id'],self.client.request('retry',command_id=current['id'],indices=indices,sequence=record['sequence']))
+            return self.jobs.get(current['id'])
+        self.run(operation,self.show_job)
+
     def select_adoption(self):
         if not self.current:
             return
@@ -321,6 +335,7 @@ class FetchDialog(ComponentDialog):
         self.refresh_btn.setEnabled(available and bool(self.current))
         self.pause_btn.setEnabled(not self._closing and state in {'QUEUED', 'RUNNING'} and not self.pause_pending)
         self.resume_btn.setEnabled(available and state in RESUMABLE | {'PREPARED'})
+        self.retry_items_btn.setEnabled(available and state in {'PAUSED','INTERRUPTED','COMPLETED_WITH_ERRORS'} and any(i['state']=='FAILED' for i in ((self.current or {}).get('record') or {}).get('items',[])))
         self.cancel_request_btn.setEnabled(available and state == 'PREPARED')
         successes = any(i['state'] == 'SUCCEEDED' for i in (self.current or {}).get('record', {}).get('items', [])) if self.current and self.current.get('record') else False
         self.adopt_btn.setEnabled(available and not active and successes)

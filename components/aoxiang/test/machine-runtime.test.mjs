@@ -23,6 +23,29 @@ async function context(t,executeItem,options={}){
   return {root,state,commands,runtime,reserve};
 }
 
+test('显式单项重跑保留成功文件和原任务号，旧预览与重复点击被拒绝',async t=>{
+  let failed=true;const visited=[];
+  const c=await context(t,async({item,onProgress})=>{
+    visited.push(item.index);onProgress({taskId:'task-'+item.index});
+    if(item.index===1&&failed)throw new AppError('EMPTY_UNVERIFIED','fixture');
+    return {file:item.warehouse_code+'.xlsx'};
+  });
+  await c.reserve();c.runtime.kick();await c.runtime.idle();
+  const before=c.commands.get('job-1');assert.equal(before.state,'COMPLETED_WITH_ERRORS');
+  failed=false;c.runtime.retry('job-1',[1],before.sequence);
+  assert.throws(()=>c.runtime.retry('job-1',[1],before.sequence));
+  c.runtime.kick();await c.runtime.idle();const after=c.commands.get('job-1');
+  assert.equal(after.state,'SUCCEEDED');assert.deepEqual(visited,[0,1,2,1]);
+  assert.deepEqual(after.items[0],before.items[0]);assert.deepEqual(after.items[2],before.items[2]);
+  assert.equal(after.items[1].run_id,before.items[1].run_id);assert.equal(after.items[1].task_id,before.items[1].task_id);
+});
+
+test('平台受理不明不可用重跑绕过核对',async t=>{
+  const c=await context(t,async()=>{throw new AppError('SUBMISSION_UNKNOWN','fixture');});
+  await c.reserve();c.runtime.kick();await c.runtime.idle();const r=c.commands.get('job-1');
+  assert.equal(r.state,'NEEDS_REVIEW');assert.throws(()=>c.runtime.retry(r.id,[0],r.sequence));assert.throws(()=>c.runtime.resume(r.id));
+});
+
 test('浏览器任务严格串行，单店普通失败保留原顺序并继续其他店',async t=>{
   const visited=[];let busy=0,maxBusy=0;
   const c=await context(t,async({record,item,onProgress})=>{

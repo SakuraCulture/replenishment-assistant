@@ -179,6 +179,7 @@ class QueueDialog(QDialog):
         v.addWidget(self.summary)
         self.table = QTableWidget(0, 8)
         self.table.setHorizontalHeaderLabels(['选择', '门店', '仓', '补货单号', '本项状态', '款数 / 付款金额', '平台采购单', '提示'])
+        self.table.setColumnCount(9);self.table.setHorizontalHeaderItem(8,QTableWidgetItem('单项操作'))
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.cellDoubleClicked.connect(lambda *_:self.details())
         v.addWidget(self.table, 1)
@@ -193,6 +194,8 @@ class QueueDialog(QDialog):
         row = QHBoxLayout()
         row.addWidget(button('查看 / 配置批量收货同步', lambda: open_receipt_selection(self, manager.host)))
         row.addWidget(button('关闭（已排队作业继续）', self.accept))
+        self.retry_btn=button('重跑全部失败项',self.retry_all);row.addWidget(self.retry_btn)
+        self.new_batch_btn=button('结束本批并新建',self.finish_new);row.addWidget(self.new_batch_btn)
         v.addLayout(row)
         self.bar = QProgressBar();v.addWidget(self.bar)
         self.note = label('');self.note.setWordWrap(True);v.addWidget(self.note)
@@ -217,6 +220,8 @@ class QueueDialog(QDialog):
             active = bool(self.manager.worker and self.manager.worker.job['id'] == selected)
             self.note.setText(self.manager.message)
             self.stop_btn.setEnabled(active)
+            self.retry_btn.setEnabled(bool(job and job['state']!='CANCELLED' and any(i['state']=='FAILED' for i in job['items'])))
+            self.new_batch_btn.setEnabled(bool(job and job['state']!='RUNNING' and any(i['state'] in ('PENDING','FAILED') for i in job['items'])))
             self.resume_btn.setEnabled(bool(job and job['state'] in ('PAUSED', 'FAILED')) and not active)
             self.cancel_btn.setEnabled(bool(job and job['state'] in ('QUEUED', 'PAUSED', 'YIELDED', 'FAILED')) and not active)
             self.upload_btn.setEnabled(bool(job and job['kind'] == 'prepare' and job['state'] in ('READY', 'COMPLETED_WITH_ERRORS', 'CANCELLED') and any(i['state']=='PREPARED' for i in job['items'])))
@@ -245,6 +250,10 @@ class QueueDialog(QDialog):
                           (i.get('error') or {}).get('message', '')]
                 for c, x in enumerate(values, 1):
                     item = QTableWidgetItem(str(x));item.setToolTip(str(x));self.table.setItem(n, c, item)
+                if i['state'] in ('FAILED','REVIEW'):
+                    b=button('核对原任务并继续' if i['state']=='REVIEW' else '重跑此任务',lambda checked=False,pos=n:self.retry([pos]))
+                    b.setEnabled(job['state']!='CANCELLED');self.table.setCellWidget(n,8,b)
+                else:self.table.removeCellWidget(n,8)
             for c, width in enumerate((50, 140, 70, 235, 160, 120, 170, 240)):self.table.setColumnWidth(c, width)
         except Exception as exc:
             self.note.setText('读取队列失败：' + str(exc))
@@ -289,6 +298,21 @@ class QueueDialog(QDialog):
             job = self.manager.store.upload(prepared_id, positions, expected_sequence)
             self.id = job['id'];self.current = None;self.manager.tick();self.refresh()
         except Exception as exc:QMessageBox.warning(self, '未开始上传', str(exc))
+
+    def retry(self,positions):
+        try:
+            self.manager.ensure_owner();self.manager.store.retry_items(self.id,positions,self.current['sequence']);self.manager.tick();self.refresh()
+        except Exception as exc:QMessageBox.warning(self,'未排入重跑',str(exc))
+
+    def retry_all(self):
+        if self.current:self.retry([i['position'] for i in self.current['items'] if i['state']=='FAILED'])
+
+    def finish_new(self):
+        if not self.current:return
+        if QMessageBox.question(self,'结束并新建执行批次','保留成功项，将原失败及未开始项移入新批。采购仍使用原任务号，不重建采购单。继续？',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return
+        try:
+            self.manager.ensure_owner();job=self.manager.store.finish_and_new(self.id,self.current['sequence']);self.id=job['id'];self.current=None;self.manager.tick();self.refresh()
+        except Exception as exc:QMessageBox.warning(self,'未新建批次',str(exc))
 
     def resume(self):
         try:self.manager.ensure_owner();self.manager.store.resume(self.id);self.manager.tick();self.refresh()

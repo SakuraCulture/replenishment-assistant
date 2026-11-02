@@ -70,6 +70,8 @@ class Runner:
         record = self.client.request('purchase.status', purchase_id=p['id'])
         if record['state'] == 'BOUND':
             return 'BOUND', {'binding': record['binding']}
+        if record['uploadAttempted'] and not record.get('receipt'):
+            raise ComponentError('SUBMISSION_UNKNOWN','原上传结果尚未核实，没有唯一受理任务号。请在原采购页核对关联；禁止重新上传。')
         if not record['uploadAttempted']:
             validate_for_upload(self.business_path, p, configuration, suppliers, cancel=self.cancel)
         checkpoint(self.cancel)
@@ -113,7 +115,8 @@ class Runner:
         suppliers = Directory(self.store.folder).suppliers()
         if job['kind'] == 'prepare' and any(i['state'] not in DONE_ITEM and not i.get('package') for i in job['items']):
             self.template(job)
-        for item in job['items']:
+        for position in range(len(job['items'])):
+            item=self.store.get(id)['items'][position]
             if item['state'] in DONE_ITEM:
                 continue
             checkpoint(self.cancel)
@@ -151,5 +154,7 @@ class Runner:
                     raise
                 self.store.update(id, position=position, changes={'state': 'FAILED' if code in RETRYABLE else 'REVIEW', 'error': error})
         current = self.store.get(id)
+        if any(i['state']=='PENDING' for i in current['items']):
+            return self.store.update(id,state='QUEUED',message='继续处理本批中新排入的失败重跑项')
         bad = sum(i['state'] in ('FAILED', 'REVIEW') for i in current['items'])
         return self.store.update(id, state='COMPLETED_WITH_ERRORS' if bad else 'READY' if job['kind'] == 'prepare' else 'COMPLETED', message=f'已处理 {len(job["items"])} 单；待核/失败 {bad} 单')

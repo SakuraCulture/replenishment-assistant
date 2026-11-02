@@ -42,7 +42,19 @@ export class MachineRuntime{
   }
   resume(id){
     if(this.closing)fail('SHUTTING_DOWN','组件正在安全退出');
+    const record=this.commands.get(id);
+    if(!['PAUSED','INTERRUPTED'].includes(record?.state))fail('COMMAND_TRANSITION','请使用重跑失败项，不能直接重派终态作业');
     return this.change(id,'QUEUED',{error:null});
+  }
+  retry(id,indices,sequence){
+    if(this.closing)fail('SHUTTING_DOWN','组件正在安全退出');
+    const record=this.commands.get(id);
+    if(!record||record.sequence!==sequence)fail('COMMAND_CONFLICT','作业已变化，请刷新');
+    if(!['PAUSED','INTERRUPTED','COMPLETED_WITH_ERRORS'].includes(record.state))fail('COMMAND_TRANSITION','先安全停止当前取数，再重跑原失败项');
+    if(!Array.isArray(indices)||!indices.length||new Set(indices).size!==indices.length||indices.some(i=>!Number.isInteger(i)||!record.items[i]||record.items[i].state!=='FAILED'))fail('COMMAND_RETRY_SCOPE','仅可选择失败项；结果待核项不能重新提交');
+    const items=structuredClone(record.items);
+    for(const i of indices){items[i].previous_error=items[i].error;items[i].error=null;items[i].state='PENDING';}
+    return this.change(id,'QUEUED',{kind:'RETRY_ORIGINAL_ITEMS',detail:{indices},items,error:null});
   }
   kick(){
     if(this.pumping||this.closing)return;

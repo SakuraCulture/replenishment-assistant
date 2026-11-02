@@ -8,7 +8,7 @@ const idPattern=/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 // A valid envelope can receive a correlated validation error without dispatching its body.
 export const correlationId=value=>value?.protocol_version===1&&typeof value.request_id==='string'&&idPattern.test(value.request_id)?value.request_id:null;
 const fields={ping:[],'session.release':[],'session.status':[],configuration:[],list:['offset','limit'],reserve:['command'],status:['command_id'],
-  events:['command_id','after','limit'],pause:['command_id'],resume:['command_id'],shutdown:[],
+  events:['command_id','after','limit'],pause:['command_id'],resume:['command_id'],retry:['command_id','indices','sequence'],shutdown:[],
   discover:[],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
   'setup.cancel':['setup_id'],'setup.commit':['setup_id'],
   'template.start':[],'template.status':['template_id'],'template.cancel':['template_id'],
@@ -22,6 +22,7 @@ export function validateRequest(value){
   if(!value||typeof value!=='object'||Array.isArray(value)||value.protocol_version!==1||
     typeof value.request_id!=='string'||!idPattern.test(value.request_id)||!Object.hasOwn(fields,value.action))fail('REQUEST_SCHEMA','机器请求版本、编号或动作无效');
   const allowed=['protocol_version','request_id','action',...fields[value.action]];
+  if(value.action==='retry'&&(!Number.isInteger(value.sequence)||value.sequence<1||!Array.isArray(value.indices)||!value.indices.length||value.indices.length>256||value.indices.some(i=>!Number.isInteger(i)||i<0)||new Set(value.indices).size!==value.indices.length))fail('REQUEST_SCHEMA','重跑序号与范围无效');
   if(Object.keys(value).some(k=>!allowed.includes(k)))fail('REQUEST_SCHEMA','机器请求包含未知字段');
   if(fields[value.action].includes('command_id')&&(typeof value.command_id!=='string'||!idPattern.test(value.command_id)))fail('REQUEST_SCHEMA','命令编号不能为空且必须符合契约');
   if(value.action==='reserve'&&!value.command)fail('REQUEST_SCHEMA','缺少待派发命令');

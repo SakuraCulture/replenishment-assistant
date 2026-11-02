@@ -133,6 +133,7 @@ async function main(){
         case 'events':result={events:commands.events(request.command_id,request.after||0,request.limit||50)};break;
         case 'pause':result=publicRecord(runtime.pause(request.command_id));break;
         case 'resume':if(setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取');result=publicRecord(runtime.resume(request.command_id));kick=true;break;
+        case 'retry':if(setup.busy||template.busy||purchase.busy||receiptSync.busy||bindingCheck.busy)fail('COMPONENT_BUSY','先完成或停止当前平台动作');result=publicRecord(runtime.retry(request.command_id,request.indices,request.sequence));kick=true;break;
         case 'shutdown':{
           runtime.closing=true;
           if(purchase.busy)purchase.pause(purchase.job.id);

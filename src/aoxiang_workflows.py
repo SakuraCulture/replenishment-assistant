@@ -167,6 +167,37 @@ class Workflows:
                 job.update(state='YIELDED' if job.get('automatic') else 'PAUSED', message='上次中断；保留确切采购及下载任务，继续前读取原状态')
                 self._save(db, job, 'RECOVERED_WITHOUT_REPLAY')
 
+    def retry_items(self, id, positions, expected_sequence):
+        """Re-arm original items; keep package IDs and successful siblings intact."""
+        with self.db(True) as db:
+            job=self._get(db,id)
+            if job['sequence']!=expected_sequence:raise ValueError('批次状态已变化，请刷新后重试')
+            if not positions or len(set(positions))!=len(positions):raise ValueError('请选择失败或待核任务')
+            if job['state']=='CANCELLED':raise ValueError('本批已结束，请使用后续新批次')
+            for n in positions:
+                if n<0 or n>=len(job['items']) or job['items'][n]['state'] not in ('FAILED','REVIEW'):raise ValueError('仅可重跑失败或核对待核项')
+            for n in positions:
+                item=job['items'][n];item['attempts']=item.get('attempts',0)+1
+                item['previous_error']=item.get('error');item['state']='PENDING';item['error']=None
+            if job['state']!='RUNNING':job['state']='QUEUED'
+            job['message']='原任务已排入重跑；成功项保持，采购仍核对原任务号'
+            return self._save(db,job,'RETRY_ORIGINAL_ITEMS')
+
+    def finish_and_new(self,id,expected_sequence):
+        """New execution batch, same immutable external task identities."""
+        with self.db(True) as db:
+            job=self._get(db,id)
+            if job['sequence']!=expected_sequence:raise ValueError('批次已变化，请重新核对')
+            if job['state']=='RUNNING':raise ValueError('请先停止，等待当前安全阶段退出')
+            if job.get('successor'):return self._get(db,job['successor'])
+            items=[i for i in job['items'] if i['state'] in ('PENDING','FAILED')]
+            if any(i['state'] in ('RUNNING','REVIEW') for i in job['items']):raise ValueError('仍有正在执行或结果待核项，请先核对原任务再新建')
+            if not items:raise ValueError('没有未开始或失败项需要转入新批次')
+            job['state']='CANCELLED';self._save(db,job,'ENDED_KEEP_SUCCESS')
+            new=self._new(db,job['kind'],items,predecessor=id,**{k:job[k] for k in ('prepared_id','confirmed_sequence','template_receipt') if k in job})
+            job=self._get(db,id);job['successor']=new['id'];self._save(db,job,'LINKED_SUCCESSOR')
+            return new
+
     def schedules(self):
         with self.db() as db:
             return [json.loads(r[0]) for r in db.execute('SELECT payload FROM ax_schedules ORDER BY rowid')]
