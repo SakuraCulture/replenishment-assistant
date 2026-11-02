@@ -14,3 +14,5 @@ releases/0.24.0/ax_rc2/*.json whitespace=blank-at-eol,blank-at-eof,space-before-
 releases/0.24.0/ax_rc2/*.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 releases/0.24.0/ax_rc3/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 releases/0.24.0/ax_rc3/*.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.24.0/ax_rc4/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.24.0/ax_rc4/*.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

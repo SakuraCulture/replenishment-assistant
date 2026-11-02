@@ -1,0 +1,11 @@
+{
+  "build_commit": "12f22776aab3455ba29b0aabfe0359cd517fc276",
+  "exe_sha256": "8de6c5f4b33b4e4bbe0792a91309844c9ed9c7ebb5f49ef522638ac35c21154c",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.24.0_ax_rc4\\补货助手_0.24.0_ax_rc4_本地候选.zip",
+  "zip_sha256": "185f2ac324cf97396cfeec34ec9bd139d74ee83b64783f32a9e0efe014623b81",
+  "zip_bytes": 88135204,
+  "delivery_files": 1085,
+  "zip_members_byte_verified": true,
+  "postbuild_documents_only": true,
+  "component_manifest_sha256": "ecd6811fdeb4042fb07e7ff782ca8bbd87e9715326befdf4dbc50dfc73d057ca"
+}

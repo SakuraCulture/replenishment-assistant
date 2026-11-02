@@ -12,13 +12,15 @@ import {freshConfig,fieldContract} from '../components/aoxiang/src/config.mjs';
 import {freezeRunAsset} from '../components/aoxiang/src/machine-assets.mjs';
 import {createArchive} from '../components/aoxiang/src/zip.mjs';
 import {sha256,wait} from '../components/aoxiang/src/common.mjs';
-import {Coordinator} from '../components/aoxiang/src/coordinator.mjs';
-import {MachineRuntime} from '../components/aoxiang/src/machine-runtime.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const args=process.argv.slice(2),outArg=args.indexOf('--output'),baseArg=args.indexOf('--baseline');
 if(outArg<0||baseArg<0)throw Error('Required: --output NEW_DIRECTORY --baseline FIXED_COMMIT');
 const output=path.resolve(args[outArg+1]),baseline=execFileSync('git',['rev-parse',args[baseArg+1]+'^{commit}'],{cwd:root,encoding:'utf8'}).trim();
+const candidateArg=args.indexOf('--candidate');
+const candidate=candidateArg<0?path.join(root,'components/aoxiang'):path.resolve(args[candidateArg+1]);
+const {Coordinator}=await import(pathToFileURL(path.join(candidate,'src/coordinator.mjs')));
+const {MachineRuntime}=await import(pathToFileURL(path.join(candidate,'src/machine-runtime.mjs')));
 await fs.mkdir(output,{recursive:false});
 const oldRoot=path.join(root,'components/aoxiang/dev-evidence','pipeline-'+Date.now());
 const names=execFileSync('git',['ls-tree','-r','--name-only',baseline,'components/aoxiang/src','components/aoxiang/assets'],{cwd:root,encoding:'utf8'}).trim().split('\n');
@@ -103,7 +105,7 @@ for(const count of [1,3,5]){
   }
   summary.median_reduction_percent=100*(1-summary.candidate.median_ms/summary.baseline.median_ms);summaries.push(summary);
 }
-const report={passed:true,live_platform:false,baseline_commit:baseline,excluded_result_fields:['run_id (random per execution)','file (isolated QA absolute path)'],
+const report={passed:true,live_platform:false,baseline_commit:baseline,candidate_component:candidate,excluded_result_fields:['run_id (random per execution)','file (isolated QA absolute path)'],
   method:'Same native fixture bytes; actual state/coordinator/runtime/validation/publication/immutable files. Sequential alternating runs, 3 each. Synthetic query 20ms, first task 700ms, others 400ms; unrelated newest task must never be used.',
   limitations:'Synthetic scheduling evidence only. No live AX latency, server concurrency limit, production speedup, or memory benchmark is claimed.',differences:0,summaries,raw};
 await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));

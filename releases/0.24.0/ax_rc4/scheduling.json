@@ -1,0 +1,1967 @@
+{
+  "passed": true,
+  "live_platform": false,
+  "baseline_commit": "4092a1c4328b6218b0dac8115ca3452624a53ae3",
+  "candidate_component": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.24.0_ax_rc4\\补货助手\\_internal\\components\\aoxiang",
+  "excluded_result_fields": [
+    "run_id (random per execution)",
+    "file (isolated QA absolute path)"
+  ],
+  "method": "Same native fixture bytes; actual state/coordinator/runtime/validation/publication/immutable files. Sequential alternating runs, 3 each. Synthetic query 20ms, first task 700ms, others 400ms; unrelated newest task must never be used.",
+  "limitations": "Synthetic scheduling evidence only. No live AX latency, server concurrency limit, production speedup, or memory benchmark is claimed.",
+  "differences": 0,
+  "summaries": [
+    {
+      "stores": 1,
+      "baseline": {
+        "min_ms": 782.9633999999996,
+        "median_ms": 787.4306999999999,
+        "max_ms": 899.7031000000002
+      },
+      "candidate": {
+        "min_ms": 806.3635999999997,
+        "median_ms": 812.4829000000009,
+        "max_ms": 846.0865999999996
+      },
+      "median_reduction_percent": -3.181511719063157
+    },
+    {
+      "stores": 3,
+      "baseline": {
+        "min_ms": 1754.2891000000018,
+        "median_ms": 1763.9789,
+        "max_ms": 1797.526899999999
+      },
+      "candidate": {
+        "min_ms": 795.8697999999986,
+        "median_ms": 796.8303999999989,
+        "max_ms": 802.6625999999997
+      },
+      "median_reduction_percent": 54.827668290136636
+    },
+    {
+      "stores": 5,
+      "baseline": {
+        "min_ms": 2770.1887000000024,
+        "median_ms": 2782.7903000000006,
+        "max_ms": 2827.6320000000014
+      },
+      "candidate": {
+        "min_ms": 790.8068999999996,
+        "median_ms": 792.8122999999978,
+        "max_ms": 850.6631000000016
+      },
+      "median_reduction_percent": 71.51016733097
+    }
+  ],
+  "raw": [
+    {
+      "count": 1,
+      "version": "baseline",
+      "round": 0,
+      "milliseconds": 899.7031000000002,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 111.1574999999998
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 838.2220000000002
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "version": "candidate",
+      "round": 0,
+      "milliseconds": 846.0865999999996,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 79.82139999999981
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 808.7422999999999
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "version": "candidate",
+      "round": 1,
+      "milliseconds": 806.3635999999997,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 44.037999999999556
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 775.1844999999994
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "version": "baseline",
+      "round": 1,
+      "milliseconds": 787.4306999999999,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 46.04950000000008
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 757.7094999999999
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "version": "baseline",
+      "round": 2,
+      "milliseconds": 782.9633999999996,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 37.05479999999989
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 748.4851999999992
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "version": "candidate",
+      "round": 2,
+      "milliseconds": 812.4829000000009,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 44.42950000000019
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 775.4339999999993
+        }
+      ]
+    },
+    {
+      "count": 3,
+      "version": "baseline",
+      "round": 0,
+      "milliseconds": 1754.2891000000018,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 41.36070000000109
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 752.2466000000004
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 816.5057000000015
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 1220.1980000000003
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1300.3218000000015
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1704.810300000001
+        }
+      ]
+    },
+    {
+      "count": 3,
+      "version": "candidate",
+      "round": 0,
+      "milliseconds": 796.8303999999989,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 47.07749999999942
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 92.47759999999835
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 138.47729999999865
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 513.5547999999999
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 557.5797999999995
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 760.473899999999
+        }
+      ]
+    },
+    {
+      "count": 3,
+      "version": "candidate",
+      "round": 1,
+      "milliseconds": 802.6625999999997,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 40.794200000000274
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 85.58319999999912
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 116.52109999999993
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 493.7597000000005
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 530.5923000000003
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 766.6772000000001
+        }
+      ]
+    },
+    {
+      "count": 3,
+      "version": "baseline",
+      "round": 1,
+      "milliseconds": 1797.526899999999,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 41.64749999999913
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 755.3005999999987
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 820.8871999999992
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 1253.3770999999997
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1333.9134999999987
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1763.2134999999998
+        }
+      ]
+    },
+    {
+      "count": 3,
+      "version": "baseline",
+      "round": 2,
+      "milliseconds": 1763.9789,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 31.849500000000262
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 743.4953000000005
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 810.6009999999987
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 1228.6275000000005
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1293.1499999999996
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1726.7296999999999
+        }
+      ]
+    },
+    {
+      "count": 3,
+      "version": "candidate",
+      "round": 2,
+      "milliseconds": 795.8697999999986,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 43.018199999998615
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 90.47949999999946
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 131.91449999999895
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 507.35639999999876
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 550.2007999999987
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 767.3909999999978
+        }
+      ]
+    },
+    {
+      "count": 5,
+      "version": "baseline",
+      "round": 0,
+      "milliseconds": 2782.7903000000006,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 3,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W2",
+            "task_id": "task-W2",
+            "sha256": "30a7b65df64256de4d7e4d2eda780f037ca759ee6578d891a94365b7e509def6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 4,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W4",
+            "task_id": "task-W4",
+            "sha256": "c6651c4f8c75b2eaf417cb6efeee5409e5020a3d2fe137e2eb11f14a1f41e5a6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 32.02649999999994
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 745.0938999999998
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 823.4311000000016
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 1249.8323999999993
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1317.9193000000014
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1723.9527000000016
+        },
+        {
+          "action": "submit",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 1802.3960000000006
+        },
+        {
+          "action": "download",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 2234.637300000002
+        },
+        {
+          "action": "submit",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 2314.7449000000015
+        },
+        {
+          "action": "download",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 2729.0355999999992
+        }
+      ]
+    },
+    {
+      "count": 5,
+      "version": "candidate",
+      "round": 0,
+      "milliseconds": 792.8122999999978,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 3,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W2",
+            "task_id": "task-W2",
+            "sha256": "30a7b65df64256de4d7e4d2eda780f037ca759ee6578d891a94365b7e509def6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 4,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W4",
+            "task_id": "task-W4",
+            "sha256": "c6651c4f8c75b2eaf417cb6efeee5409e5020a3d2fe137e2eb11f14a1f41e5a6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 51.31399999999849
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 95.98949999999968
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 126.5766999999978
+        },
+        {
+          "action": "submit",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 160.53769999999713
+        },
+        {
+          "action": "submit",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 205.30569999999716
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 508.842099999998
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 544.420299999998
+        },
+        {
+          "action": "download",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 583.3247999999985
+        },
+        {
+          "action": "download",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 618.4027999999998
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 767.0484999999971
+        }
+      ]
+    },
+    {
+      "count": 5,
+      "version": "candidate",
+      "round": 1,
+      "milliseconds": 790.8068999999996,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 3,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W2",
+            "task_id": "task-W2",
+            "sha256": "30a7b65df64256de4d7e4d2eda780f037ca759ee6578d891a94365b7e509def6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 4,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W4",
+            "task_id": "task-W4",
+            "sha256": "c6651c4f8c75b2eaf417cb6efeee5409e5020a3d2fe137e2eb11f14a1f41e5a6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 36.735899999999674
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 82.12769999999728
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 112.96949999999924
+        },
+        {
+          "action": "submit",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 144.24209999999948
+        },
+        {
+          "action": "submit",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 189.99549999999726
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 490.4457999999977
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 522.4475999999995
+        },
+        {
+          "action": "download",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 554.9055999999982
+        },
+        {
+          "action": "download",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 630.592099999998
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 750.3980999999985
+        }
+      ]
+    },
+    {
+      "count": 5,
+      "version": "baseline",
+      "round": 1,
+      "milliseconds": 2770.1887000000024,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 3,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W2",
+            "task_id": "task-W2",
+            "sha256": "30a7b65df64256de4d7e4d2eda780f037ca759ee6578d891a94365b7e509def6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 4,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W4",
+            "task_id": "task-W4",
+            "sha256": "c6651c4f8c75b2eaf417cb6efeee5409e5020a3d2fe137e2eb11f14a1f41e5a6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 33.982300000003306
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 747.4613000000027
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 809.9326000000001
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 1243.3127000000022
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1308.3304000000026
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1741.4880000000012
+        },
+        {
+          "action": "submit",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 1807.2925000000032
+        },
+        {
+          "action": "download",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 2240.067900000002
+        },
+        {
+          "action": "submit",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 2305.792800000003
+        },
+        {
+          "action": "download",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 2736.694300000003
+        }
+      ]
+    },
+    {
+      "count": 5,
+      "version": "baseline",
+      "round": 2,
+      "milliseconds": 2827.6320000000014,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 3,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W2",
+            "task_id": "task-W2",
+            "sha256": "30a7b65df64256de4d7e4d2eda780f037ca759ee6578d891a94365b7e509def6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 4,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W4",
+            "task_id": "task-W4",
+            "sha256": "c6651c4f8c75b2eaf417cb6efeee5409e5020a3d2fe137e2eb11f14a1f41e5a6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 46.59540000000197
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 756.0800000000017
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 834.2273000000023
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 1265.9939999999988
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1331.1674999999996
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 1763.983400000001
+        },
+        {
+          "action": "submit",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 1851.9465000000018
+        },
+        {
+          "action": "download",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 2265.297200000001
+        },
+        {
+          "action": "submit",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 2365.2253999999994
+        },
+        {
+          "action": "download",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 2777.2677000000003
+        }
+      ]
+    },
+    {
+      "count": 5,
+      "version": "candidate",
+      "round": 2,
+      "milliseconds": 850.6631000000016,
+      "results": [
+        {
+          "index": 0,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W3",
+            "task_id": "task-W3",
+            "sha256": "910824503241a6921b397bf296dc8de28ce21cd118c6de9d7c35921a45f4817f",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 1,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W1",
+            "task_id": "task-W1",
+            "sha256": "a39d8305d972efaf7df898c6df34bdfafe6052113e037fd55a9e37ecff15eb5b",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 2,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W5",
+            "task_id": "task-W5",
+            "sha256": "ef0efdc29c389cf0cf64add383adaf481f2da7f5a3bfc89364629930da8b42b6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1608,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 3,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W2",
+            "task_id": "task-W2",
+            "sha256": "30a7b65df64256de4d7e4d2eda780f037ca759ee6578d891a94365b7e509def6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        },
+        {
+          "index": 4,
+          "state": "SUCCEEDED",
+          "result": {
+            "warehouse_code": "W4",
+            "task_id": "task-W4",
+            "sha256": "c6651c4f8c75b2eaf417cb6efeee5409e5020a3d2fe137e2eb11f14a1f41e5a6",
+            "rows": 1,
+            "columns": 54,
+            "bytes": 1607,
+            "collected_at": "2026-11-02T00:00:00.000Z",
+            "acquisition_date": "2026-11-02",
+            "semantic_version": "D13-all-info-2",
+            "account_binding": {
+              "account_id": "qa-offline",
+              "merchant_code": "QA"
+            },
+            "reused": false
+          }
+        }
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 56.16149999999834
+        },
+        {
+          "action": "submit",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 118.31390000000101
+        },
+        {
+          "action": "submit",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 175.34660000000076
+        },
+        {
+          "action": "submit",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 222.428100000001
+        },
+        {
+          "action": "submit",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 270.2459999999992
+        },
+        {
+          "action": "download",
+          "code": "W1",
+          "task_id": "task-W1",
+          "ms": 555.9000999999989
+        },
+        {
+          "action": "download",
+          "code": "W5",
+          "task_id": "task-W5",
+          "ms": 610.4350000000013
+        },
+        {
+          "action": "download",
+          "code": "W2",
+          "task_id": "task-W2",
+          "ms": 667.2288999999982
+        },
+        {
+          "action": "download",
+          "code": "W4",
+          "task_id": "task-W4",
+          "ms": 721.0570000000007
+        },
+        {
+          "action": "download",
+          "code": "W3",
+          "task_id": "task-W3",
+          "ms": 801.1461999999992
+        }
+      ]
+    }
+  ]
+}
