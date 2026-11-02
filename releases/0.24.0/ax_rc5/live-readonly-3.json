@@ -1,0 +1,24 @@
+{
+  "passed": false,
+  "live_platform": true,
+  "store": "TBBLHZ20261028",
+  "steps": [],
+  "export_submissions": 0,
+  "purchase_uploads": 0,
+  "phases": [
+    "发现浏览器",
+    "核验登录与商家",
+    "CONNECTING",
+    "PROFILE_VERIFIED",
+    "核对门店 1/1 · 淘宝便利店（会展中心店）"
+  ],
+  "error": {
+    "code": "IDENTITY_RESPONSE_TIMEOUT",
+    "message": "本次身份查询没有取得响应"
+  },
+  "configuration_unchanged": {
+    "portable.config.json": true,
+    "machine.binding.json": true
+  },
+  "finished_at": "2026-11-02T03:48:58.673Z"
+}

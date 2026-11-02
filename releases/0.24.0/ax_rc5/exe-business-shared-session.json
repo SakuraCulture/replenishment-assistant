@@ -1,0 +1,19 @@
+{
+  "host_pids": [
+    28652,
+    28652,
+    28652,
+    28652,
+    28652
+  ],
+  "windows": [
+    "setup",
+    "fetch",
+    "receipt",
+    "purchase",
+    "fetch-again"
+  ],
+  "local_only": true,
+  "live_edge": false,
+  "retained_until_application_close": true
+}

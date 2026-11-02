@@ -1,0 +1,18 @@
+{
+  "passed": false,
+  "live_platform": true,
+  "store": "TBBLHZ20261028",
+  "steps": [],
+  "export_submissions": 0,
+  "purchase_uploads": 0,
+  "phases": [],
+  "error": {
+    "code": "STATE_MISSING",
+    "message": "本机作业状态库缺失，不能作为全新状态重复提交；请恢复状态备份"
+  },
+  "configuration_unchanged": {
+    "portable.config.json": true,
+    "machine.binding.json": true
+  },
+  "finished_at": "2026-11-02T03:45:31.352Z"
+}

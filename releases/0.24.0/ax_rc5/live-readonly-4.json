@@ -1,0 +1,22 @@
+{
+  "passed": false,
+  "live_platform": true,
+  "store": "TBBLHZ20261028",
+  "steps": [],
+  "export_submissions": 0,
+  "purchase_uploads": 0,
+  "phases": [
+    "发现浏览器",
+    "核验登录与商家",
+    "CONNECTING"
+  ],
+  "error": {
+    "code": "CONNECTION_NOT_ESTABLISHED",
+    "message": "Edge连接未建立；请检查浏览器是否弹出允许连接提示后再继续"
+  },
+  "configuration_unchanged": {
+    "portable.config.json": true,
+    "machine.binding.json": true
+  },
+  "finished_at": "2026-11-02T03:50:55.054Z"
+}

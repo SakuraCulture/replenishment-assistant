@@ -1,0 +1,37 @@
+{
+  "passed": false,
+  "live_platform": true,
+  "store": "TBBLHZ20261028",
+  "steps": [
+    {
+      "module": "setup",
+      "worker_pid": 31608,
+      "rows": 14451
+    },
+    {
+      "module": "D13",
+      "worker_pid": 31608,
+      "rows": 14451,
+      "seconds": 4.592369100000002
+    }
+  ],
+  "export_submissions": 0,
+  "purchase_uploads": 0,
+  "phases": [
+    "发现浏览器",
+    "核验登录与商家",
+    "CONNECTING",
+    "PROFILE_VERIFIED",
+    "核对门店 1/1 · 淘宝便利店（会展中心店）"
+  ],
+  "worker_pid": 31608,
+  "error": {
+    "code": "BROWSER_OPERATION_FAILED",
+    "message": "response.text: Protocol error (Network.getResponseBody): No resource with given identifier found\nResponse body is not available for a response that was navigated away from. Read response.body() before triggering any navigation."
+  },
+  "configuration_unchanged": {
+    "portable.config.json": true,
+    "machine.binding.json": true
+  },
+  "finished_at": "2026-11-02T03:46:41.022Z"
+}

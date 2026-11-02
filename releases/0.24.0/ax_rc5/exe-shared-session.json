@@ -1,0 +1,17 @@
+{
+  "host_pids": [
+    55780,
+    55780,
+    55780,
+    55780
+  ],
+  "windows": [
+    "setup",
+    "fetch",
+    "receipt",
+    "fetch-again"
+  ],
+  "local_only": true,
+  "live_edge": false,
+  "retained_until_application_close": true
+}

@@ -1,0 +1,44 @@
+{
+  "checked": 1130,
+  "changed": [],
+  "core": {
+    "src/model.py": {
+      "sha256": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "unchanged": true
+    },
+    "src/one_box_exception.py": {
+      "sha256": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "unchanged": true
+    },
+    "src/allocation.py": {
+      "sha256": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "unchanged": true
+    },
+    "src/default_config.json": {
+      "sha256": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "unchanged": true
+    },
+    "src/default_must_sell.json": {
+      "sha256": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "unchanged": true
+    },
+    "src/version.json": {
+      "sha256": "1e04ccd728c99fb0d6053ca2738bb8050aeb52650f3a038e575e8748bc23e212",
+      "unchanged": true
+    },
+    "components/aoxiang/src/coordinator.mjs": {
+      "sha256": "f9cd5fb328d95a8ed971d933e7ae90d95b8f980db62a714d74e96bd37b77985b",
+      "unchanged": true
+    },
+    "components/aoxiang/src/machine-runtime.mjs": {
+      "sha256": "080358c7e30e2db5528302a0d0ea015f702a92ff7f80f5dc469208bf08b7120a",
+      "unchanged": true
+    },
+    "components/aoxiang/src/state.mjs": {
+      "sha256": "02305f7b58ce48c9ec59fbf5d0d1ee8fab2774e8affb68588e6cb109ff865b77",
+      "unchanged": true
+    }
+  },
+  "old_delivery": "ax_rc4",
+  "passed": true
+}

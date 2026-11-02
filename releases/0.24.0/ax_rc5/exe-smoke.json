@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "actual_exe": true,
+  "live_platform": false,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.24.0_ax_rc5\\补货助手\\补货助手.exe",
+  "exe_sha256": "cbbdcdb073dd68be0cb6a22a1088d678329d3d0797cde45044cdb526dd86a3ae",
+  "build_commit": "599bf0cfc869cda685d17d8d22a69d907208dd0a",
+  "component_manifest_sha256": "ab5864c9ce77a0e0a4f285c7c16940ae48c495d1e570f5ca7a686599cec67e8c",
+  "runs": [
+    {
+      "passed": true,
+      "actual_exe": true,
+      "live_platform": false,
+      "checks": [
+        "实际EXE核验窗口：模拟检测非100%、勾选启用、状态异常单次提示与停止轮询、重新连接后可核验；未连接平台或保存配置",
+        "真实固定Node进程启动并读取本地未配置状态，第1次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "真实固定Node进程启动并读取本地未配置状态，第2次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "真实窗口跨模块复用同一Node进程，正常关闭只释放操作权，重开取数不重启组件；不连接Edge",
+        "本地批次队列打开、空状态与关闭；未创建周期计划"
+      ],
+      "heartbeat_samples": 125,
+      "max_heartbeat_gap": 0.08215440000640228,
+      "source_commit": "599bf0cfc869cda685d17d8d22a69d907208dd0a",
+      "exit_code": 0,
+      "remaining_children": [],
+      "sampled_descendants": 3,
+      "elapsed_seconds": 9.8232655999891,
+      "peak_tree_rss_bytes": 313733120
+    }
+  ],
+  "upgrade_fixture": null,
+  "historical_tables": {},
+  "historical_table_differences": [],
+  "business_comparison": null,
+  "added_tables": [],
+  "original_fixture_unchanged": false,
+  "memory_method": "50 ms samples; sum of RSS of app and observed descendants; shared pages may be counted more than once",
+  "limitations": [
+    "No live platform query/upload/receipt; business fixtures are explicitly synthetic",
+    "Local EXE operations do not prove the real platform end-to-end chain"
+  ]
+}
