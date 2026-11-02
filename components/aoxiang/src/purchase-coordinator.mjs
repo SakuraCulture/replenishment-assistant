@@ -2,20 +2,19 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {constants} from 'node:fs';
 import {uid,now,fail,sameIdentity,canonical,exists,writeJson,safeName,countValue,AppError,wait} from './common.mjs';
-import {purchaseScopeHash,purchaseScope,checkPurchaseReceipt,purchaseContract,dateBounds,PURCHASE_CODES,PURCHASE_LABELS} from './purchase-contract.mjs';
+import {purchaseScopeHash,purchaseScope,checkPurchaseReceipt,purchaseContract,dateBounds,PURCHASE_CODES,PURCHASE_LABELS,purchaseSkuCount} from './purchase-contract.mjs';
 import {validateWorkbook,fileHash} from './workbook-validator.mjs';
 import {outputPath} from './publisher.mjs';
 import {checkOutput,assertHandoff} from './preflight.mjs';
 
 const BAD=new Set(['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED']);
-const cellCount=value=>{if(!/^\d+(?:\.0+)?$/.test(String(value)))fail('PURCHASE_SKU_COUNT','原生主单商品种数无效');return countValue(String(value).split('.')[0]);};
 function dateCell(value){
   if(/^\d+(?:\.\d+)?$/.test(value))return Math.round((Number(value)-25569)*86400000)-28800000;
   if(!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value))fail('PURCHASE_FILE_DATE','采购明细时间列格式变化或为空');return Date.parse(value.replace(' ','T')+'+08:00');
 }
 export function validatePurchasePair(run,main,detail){
   const expected=new Set(run.query.orderIds),parents=new Map();
-  for(const r of main.capturedRows){if(parents.has(r.orderId))fail('PURCHASE_PARENT_DUPLICATE','主单文件包含重复采购单号');if(!expected.has(r.orderId))fail('PURCHASE_PARENT_COVERAGE','主单文件包含查询范围之外的采购单');parents.set(r.orderId,cellCount(r.skuCount));}
+  for(const r of main.capturedRows){if(parents.has(r.orderId))fail('PURCHASE_PARENT_DUPLICATE','主单文件包含重复采购单号');if(!expected.has(r.orderId))fail('PURCHASE_PARENT_COVERAGE','主单文件包含查询范围之外的采购单');parents.set(r.orderId,purchaseSkuCount(r.skuCount));}
   if(parents.size!==expected.size||main.rows!==run.query.total)fail('PURCHASE_PARENT_COVERAGE','主单文件没有完整覆盖本次查询单号');
   const childSku=new Map(),bounds=dateBounds(run.from,run.to),field=run.dateBasis==='updated'?'updatedAt':'createdAt';
   for(const r of detail.capturedRows){

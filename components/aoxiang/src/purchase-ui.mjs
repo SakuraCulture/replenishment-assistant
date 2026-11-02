@@ -41,6 +41,17 @@ export class PurchaseUI extends AoxiangUI{
     const sent=this.page.waitForRequest(r=>this.isBusinessResponse(r,QUERY),{timeout:this.timeoutMs});sent.catch(()=>{});await action();
     const request=await sent,response=await bounded(request.response(),this.timeoutMs,'PURCHASE_QUERY_TIMEOUT','采购查询未取得响应');if(!response)fail('PURCHASE_QUERY_FAILED','采购查询失败');
     const j=parseResponse(await bounded(response.text(),this.timeoutMs,'PURCHASE_QUERY_TIMEOUT','采购查询响应读取超时'));
+    // Live AX uses null/null for a successful empty purchase list. Do not turn
+    // arbitrary missing values into zero: require both success flags, HTTP and
+    // the corresponding visible empty table + zero total before accepting it.
+    if(j.success===true&&j.status===true&&j.data===null&&j.total===null&&response.status()===200){
+      const empty=this.page.getByText('暂无数据',{exact:true}).filter({visible:true});
+      const zero=this.page.getByText(/^共\s*0\s*条$/).filter({visible:true});
+      await empty.waitFor({state:'visible',timeout:this.timeoutMs});
+      await zero.waitFor({state:'visible',timeout:this.timeoutMs});
+      if(await empty.count()!==1||await zero.count()!==1)fail('PURCHASE_QUERY_FAILED','空采购列表与页面计数未唯一对应');
+      return {request:parseResponse(request.postData()||'{}'),rows:[],total:0,emptyProof:'success_null_pair_and_visible_empty_zero'};
+    }
     if((j.success!==true&&j.status!==true)||!Array.isArray(j.data))fail('PURCHASE_QUERY_FAILED','采购页未返回有效单据列表');
     return {request:parseResponse(request.postData()||'{}'),rows:j.data,total:countValue(j.total)};
   }
@@ -67,7 +78,7 @@ export class PurchaseUI extends AoxiangUI{
       if(orderIds.length===first.total)break;if(!current.rows.length||orderIds.length>first.total||pages>=1000)fail('PURCHASE_PAGINATION','采购列表分页覆盖不完整');
       current=await this.queryAction(()=>this.click(this.page.getByRole('button',{name:/^下一页/}).filter({visible:true})));
     }
-    this.lastQuery={warehouseCode:input.buyerWarehouseCode,name:input.name,total:first.total,pages,request:first.request,orderIds,orderSkuCounts,filterState:await this.readFilterState(),observedAt:now(),identity:{...this.identity}};return this.lastQuery;
+    this.lastQuery={warehouseCode:input.buyerWarehouseCode,name:input.name,total:first.total,pages,request:first.request,orderIds,orderSkuCounts,filterState:await this.readFilterState(),observedAt:now(),identity:{...this.identity},...(first.emptyProof?{emptyProof:first.emptyProof}:{})};return this.lastQuery;
   }
   async preflightScope(query){
     if(!sameIdentity(query.identity,this.identity)||!this.lastQuery||canonical(this.lastQuery.orderIds)!==canonical(query.orderIds)||canonical(exportScope(this.lastQuery.request))!==canonical(exportScope(query.request)))fail('PURCHASE_QUERY_REQUIRED','采购导出必须使用当前页面已核对的查询');

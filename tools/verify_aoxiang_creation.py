@@ -95,7 +95,7 @@ def main():
                                    'per-SKU native main/detail amount checks including null vs zero and equal-total swaps',
                                    'isolated Edge native file input and confirm with locally fulfilled response; external traffic denied',
                                    'Qt preview/recovery buttons, default cancel, old task state protection and safe close'],
-              'limitations': ['Real AX integration explicitly deferred by user; no real export or purchase submitted in this run.',
+              'limitations': ['This local regression run makes no platform calls; live integration evidence is recorded separately.',
                               'Live multi-SKU import task counts, supplier behaviour, marker preservation and main/detail checks still require acceptance.',
                               'No EXE or live receipt acceptance claimed. Batch scheduling, periodic monitoring, manual proof-assisted binding and integration packaging remain subsequent work.',
                               'Suite durations are test execution times, not platform performance measurements.']}

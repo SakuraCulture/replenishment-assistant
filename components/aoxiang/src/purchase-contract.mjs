@@ -1,4 +1,11 @@
-import {canonical,sha256,fail,idValue,businessDate} from './common.mjs';
+import {canonical,sha256,fail,idValue,businessDate,countValue} from './common.mjs';
+
+// Native XLSX numeric cells may encode an integer SKU count as "1.0".
+// Shared by pair validation and binding; raw evidence stays unchanged.
+export function purchaseSkuCount(value){
+  if(!/^\d+(?:\.0+)?$/.test(String(value)))fail('PURCHASE_SKU_COUNT','原生主单商品种数无效');
+  return countValue(String(value).split('.')[0]);
+}
 
 export const PURCHASE_CODES={D16:'SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT',D17:'SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT'};
 export const PURCHASE_LABELS={D16:'采购主单',D17:'采购商品明细'};

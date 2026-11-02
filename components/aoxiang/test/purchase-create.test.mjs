@@ -115,3 +115,18 @@ test('immediate close before preparation microtask pauses without upload or lost
   const f=await fixture(t),p=reserve(f),c=new MachinePurchaseCreate({ledger:f.ledger,adapter:{prepare:()=>assert.fail('must not start'),upload:()=>assert.fail('must not upload')},onFatal:e=>assert.fail(e)});
   c.start(p.id);await c.close();assert.equal(f.ledger.get(p.id).state,'PAUSED');assert.equal(f.ledger.get(p.id).uploadAttempted,false);
 });
+
+test('native Excel whole-valued decimal SKU count binds without weakening quantity or amount checks',()=>{
+  const p=intent(),r=receipt(p);
+  for(const count of ['2','2.0','2.00']){
+    const e=evidence(p);e.main.skuCount=count;
+    assert.equal(checkCreatedPurchase(p,r,e).orderId,'PO-1');
+    assert.equal(e.main.skuCount,count); // Preserve raw native evidence.
+  }
+  for(const count of [null,'','2.1','2e0','-2','1.0','3.0','9007199254740992.0']){
+    const e=evidence(p);e.main.skuCount=count;assert.throws(()=>checkCreatedPurchase(p,r,e));
+  }
+  for(const field of ['amount','quantity']){
+    const e=evidence(p);e.main.skuCount='2.0';e.rows[0][field]='0';assert.throws(()=>checkCreatedPurchase(p,r,e));
+  }
+});

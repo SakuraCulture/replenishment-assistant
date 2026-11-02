@@ -1,4 +1,4 @@
-import {dateBounds} from './purchase-contract.mjs';
+import {dateBounds,purchaseSkuCount} from './purchase-contract.mjs';
 import {canonical,sha256,fail,countValue,businessDate} from './common.mjs';
 
 export const IMPORT_CODE='SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-IMPORT-V2';
@@ -53,7 +53,7 @@ export function checkNativePurchase(p,e,{status,requireNote}){
   if(!Array.isArray(e.candidates)||e.candidates.length!==1)fail('PURCHASE_NOT_UNIQUE','未唯一定位新采购单；意外多单或缺单只待核，不重传');
   const m=e.main,id=e.candidates[0];
   if(!text(id)||!m||m.orderId!==id||m.store!==p.basis.store||m.supplier!==p.supplierCode||m.status!==status||m.externalOrderId!=='')fail('PURCHASE_CREATED_MISMATCH','采购单身份、状态或外部订单不符合核对范围');
-  if((requireNote&&m.marker!==p.note)||decimal(m.quantity)!==decimal(p.totalQuantity)||decimal(m.amount)!==decimal(p.totalAmount)||countValue(m.skuCount)!==p.rows.length)fail('PURCHASE_CREATED_MISMATCH','采购主单来源、数量或金额与付款依据不符');
+  if((requireNote&&m.marker!==p.note)||decimal(m.quantity)!==decimal(p.totalQuantity)||decimal(m.amount)!==decimal(p.totalAmount)||purchaseSkuCount(m.skuCount)!==p.rows.length)fail('PURCHASE_CREATED_MISMATCH','采购主单来源、数量或金额与付款依据不符');
   if(!Array.isArray(e.rows)||e.rows.length!==p.rows.length)fail('PURCHASE_DETAIL_MISMATCH','采购商品明细覆盖不完整');
   const expected=new Map(p.rows.map(r=>[r.sku,r])),seen=new Set();
   for(const r of e.rows){
