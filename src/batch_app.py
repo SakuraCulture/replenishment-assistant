@@ -78,6 +78,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.run_page,v=self.page();v.addWidget(label('各店独立计算，完成一家即可查看','section'));self.run_note=label('尚未开始','muted');v.addWidget(self.run_note)
         self.run_progress=QProgressBar();self.run_progress.setRange(0,1);self.run_progress.setValue(0);v.addWidget(self.run_progress)
         self.task_table=QTableWidget(0,4);self.task_table.setHorizontalHeaderLabels(['门店','状态','安排金额','提示']);self.task_table.horizontalHeader().setSectionResizeMode(3,QHeaderView.ResizeMode.Stretch);self.task_table.setColumnWidth(0,280);self.task_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);v.addWidget(self.task_table,1)
+        self.task_table.setColumnCount(5);self.task_table.setHorizontalHeaderItem(4,QTableWidgetItem('单项操作'));self.task_table.setColumnWidth(4,170)
         row=QHBoxLayout();self.stop_btn=button('停止剩余任务',self.cancel_work);row.addWidget(self.stop_btn);self.retry_btn=button('重试失败门店',self.retry_failed);row.addWidget(self.retry_btn);row.addStretch();row.addWidget(button('查看已完成结果',lambda:self.navigate(3),True));v.addLayout(row)
     def make_overview(self):
         self.overview_page,v=self.page();v.setSpacing(5);self.overview_note=label('计算完成后显示。','muted');v.addWidget(self.overview_note)
@@ -270,13 +271,16 @@ class BatchWindow(WarehouseUi,SessionWindow):
         if dialog.exec()==QDialog.DialogCode.Accepted:
             for c,combo in zip(conflicts,combos):c['choice']=combo.currentData()
             self.job(batch_service.prepare,(data,),self.loaded_ok)
-    def start_calculation(self,codes=None):
+    def start_calculation(self,codes=None,*,retry=False):
         if self.worker or self.input_dirty or not self.loaded:return
         codes=self.selected_codes() if codes is None or isinstance(codes,bool) else codes
-        try:jobs={s:self.selected_settings(s) for s in codes}
+        try:jobs={s:copy.deepcopy(self._calculation_settings[s]) if retry and s in getattr(self,'_calculation_settings',{}) else self.selected_settings(s) for s in codes}
         except ValueError as exc:self.failed(str(exc));return
         if not jobs:return
-        self.run_codes=list(jobs)
+        if not retry:self.run_codes=list(jobs)
+        else:self.run_codes=list(dict.fromkeys([*self.run_codes,*jobs]))
+        self.__dict__.setdefault('_calculation_settings',{}).update(copy.deepcopy(jobs))
+        if not retry:self._calculation_input=self.loaded;self._calculation_profile=copy.deepcopy(self.profile)
         for s,settings in jobs.items():
             self.states[s].update(state='排队中',error='');self.results.pop(s,None)
             if s==self.current_store:self.dirty=True;self.result=None
@@ -285,7 +289,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
                     self.repository.save_budget(s,settings['budget'] is not None,settings['budget'] or 0)
                     if settings.get('supply_route'):self.catalog_repository.save_route(s,settings['supply_route'])
             except Exception as exc:self.states[s]['error']='本次设置未能保存：'+str(exc)
-        worker=BatchWorker(self.loaded,jobs,self.profile,self.concurrency.value(),self);self.worker=worker
+        worker=BatchWorker((getattr(self,'_calculation_input',None) or self.loaded) if retry else self.loaded,jobs,getattr(self,'_calculation_profile',self.profile) if retry else self.profile,self.concurrency.value(),self);self.worker=worker
         worker.changed.connect(self.task_changed);worker.failed.connect(self.batch_failed);worker.finished.connect(self.job_finished)
         self.pages.setCurrentIndex(2);self.refresh_tables();self.update_controls();worker.start()
     def task_changed(self,store,state,result,error):
@@ -296,15 +300,30 @@ class BatchWindow(WarehouseUi,SessionWindow):
         for s,state in self.states.items():
             if state['state'] in {'排队中','计算中'}:state.update(state='计算失败',error=error)
         self.status.setText('批次遇到问题，已完成结果保留：'+error);self.refresh_tables()
-    def retry_failed(self):self.start_calculation([s for s,state in self.states.items() if state['state']=='计算失败'])
+    def retry_failed(self):self.retry_stores([s for s,state in self.states.items() if state['state']=='计算失败'])
+    def retry_stores(self,codes):
+        if self.input_dirty or getattr(self,'readonly',False):return
+        codes=[s for s in codes if self.states[s]['state'] in ('计算失败','已停止')]
+        if isinstance(self.worker,BatchWorker):
+            if self.worker.cancel.is_set():return
+            pending=self.__dict__.setdefault('_queued_retries',[])
+            for s in codes:
+                if s not in pending:pending.append(s)
+            self.status.setText('原批次继续；失败项已加入重跑，现有运行项结束后自动继续。');self.refresh_tables()
+        elif not self.worker:self.start_calculation(codes,retry=True)
     def cancel_work(self):
         if self.worker:
+            self._queued_retries=[]
             self.worker.cancel.set();self.status.setText('已停止启动后续任务，正在计算的门店完成后结束。' if isinstance(self.worker,BatchWorker) else '正在取消文件操作…')
             self.refresh_tables();self.update_controls()
     def job_finished(self):
         batch=isinstance(self.worker,BatchWorker);BackgroundJobs.job_finished(self)
         if batch:self.status.setText('本轮任务结束。可查看结果，或调整设置后只重算需要的门店。')
         self.refresh_tables()
+        queued=getattr(self,'_queued_retries',[]);self._queued_retries=[]
+        if batch and queued and not self.closing:self.start_calculation(queued,retry=True)
+        elif getattr(self,'_new_after_stop',False) and not self.closing:
+            self._new_after_stop=False;self.new_job()
     def refresh_tables(self):
         if not hasattr(self,'overview'):return
         counts=Counter(self.states[s]['state'] for s in self.run_codes);task_total=len(self.run_codes)
@@ -316,6 +335,9 @@ class BatchWindow(WarehouseUi,SessionWindow):
         for i,s in enumerate(self.run_codes):
             state=self.states[s];r=self.results.get(s) if state['state']=='已完成' else None
             for j,val in enumerate([state['name'],state['state'],f"¥{r['summary']['amount']:,.2f}" if r else '—',state['error']]):self.task_table.setItem(i,j,QTableWidgetItem(val))
+            if state['state'] in ('计算失败','已停止'):
+                b=button('重跑此任务',lambda checked=False,code=s:self.retry_stores([code]));b.setEnabled(s not in getattr(self,'_queued_retries',[]) and not self.input_dirty and not (self.worker and self.worker.cancel.is_set()));self.task_table.setCellWidget(i,4,b)
+            else:self.task_table.removeCellWidget(i,4)
         self.overview_codes=sorted(keys,key=lambda s:(0 if self.states[s]['state'] in {'计算失败','待重算'} else 1 if self.results.get(s,{}).get('summary',{}).get('holding_gaps',0) else 2,s));self.overview.setRowCount(len(keys))
         totals=[0,0,0];unpriced=0;review_totals=[]
         self._risk_counts={s:v for s,v in getattr(self,'_risk_counts',{}).items() if self.results.get(s) is v[0]}

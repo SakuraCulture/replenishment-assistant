@@ -34,6 +34,8 @@ class LifecycleWidget(QWidget):
                 if key!='jst':row.addWidget(button('进入'+title,lambda checked=False,k=key:self.open_stage(k)))
             row.addWidget(button('聚水潭导入单',lambda:self.open_stage('jst')))
             v.addLayout(row);row=QHBoxLayout();row.addWidget(button('批次作业日志',self.logs));row.addWidget(button('导出勾选签发单',self.export_signed));row.addWidget(button('批量导入混合环节单据',lambda:self.import_stage(None)));v.addLayout(row)
+            from data_maintenance_ui import remove
+            row.addWidget(button('彻底删除勾选订单',lambda:remove(self,self.host,list(self.checked.values()))))
             self.actions.hide()
             v.addWidget(label('总览只看进度；按环节进入工作页。勾选后带入所选订单；聚水潭导入单默认本日全部，不继承筛选。其他环节沿用日期、仓和搜索。','muted'))
         else:

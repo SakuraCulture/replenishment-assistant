@@ -189,6 +189,11 @@ def reservations(db, wh, included, exclude=()):
         if gid in included or gid in exclude:
             continue
         values[sku] = values.get(sku, Decimal(0)) + Decimal(qty)
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='retired_stock'").fetchone():
+        current=state(db,wh)
+        if current:
+            for sku,qty in db.execute('SELECT sku,quantity FROM retired_stock WHERE warehouse=? AND bid=?',(wh,current[0])):
+                values[sku]=values.get(sku,Decimal(0))+Decimal(qty)
     return values
 
 

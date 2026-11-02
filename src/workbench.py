@@ -15,6 +15,7 @@ class Workbench(ParameterUi,BatchWindow):
         row=QHBoxLayout();self.job_label=label('','muted');row.addWidget(self.job_label,1)
         self.history_btn=button('作业记录',self.history);row.addWidget(self.history_btn)
         self.new_job_btn=button('新建今日草稿',self.new_job);row.addWidget(self.new_job_btn)
+        self.end_batch_btn=button('结束本批并新建',self.end_batch);row.addWidget(self.end_batch_btn)
         self.presets_btn=button('管理参数方案',self.open_preset_library);row.addWidget(self.presets_btn)
         self.save_job_btn=button('保存作业',self.save_current,True);row.addWidget(self.save_job_btn)
         self.centralWidget().layout().insertLayout(1,row)
@@ -110,9 +111,9 @@ class Workbench(ParameterUi,BatchWindow):
                 p=self.preset_for(s);p['config']['exception']=self.exception.isChecked();self.store_presets[s]=p;self.refresh_parameter_label(s)
         super().mark_dirty(*args)
     def task_changed(self,*args):super().task_changed(*args);self.touch()
-    def start_calculation(self,codes=None):
+    def start_calculation(self,codes=None,*,retry=False):
         if self.readonly:return
-        super().start_calculation(codes);self.touch()
+        super().start_calculation(codes,retry=retry);self.touch()
     def snapshot(self):
         loaded=None
         if self.loaded:
@@ -160,9 +161,15 @@ class Workbench(ParameterUi,BatchWindow):
     def new_job(self):
         if self.worker or not self.leave_current('新建今日草稿'):return
         self.reset_job()
+    def end_batch(self):
+        from interaction_ui import confirm
+        if not confirm(self,'结束当前执行批次','已签发的单据保留。停止剩余任务，等待当前安全阶段退出，然后可保存当前草稿并新建；新建不会自动覆盖今日草稿或正常单。'):return
+        if self.worker:self._new_after_stop=True;self.cancel_work()
+        else:self.new_job()
     def reset_job(self):
         self._hydrating=True;self.initializing=True
         self._store_parameter_origins={}
+        self._calculation_settings={};self._calculation_input=None;self._queued_retries=[]
         try:
             self.readonly=False;self.job_day=wr.today();self.saved_time='';self.loaded=None;self.results={};self.states={};self.store_widgets={};self.store_presets={};self.overrides={};self.default_by_store={};self.run_codes=[];self.current_store=None;self.result=None;self.input_dirty=True;self.dirty=True;self.export_log=[];self.pending_copy=None
             self.sales.paths=[];self.sales.refresh();self.catalogs=self.catalog_repository.catalogs();self.profile=self.repository.profile();self.refresh_catalog_labels();self.refresh_profile_label();self.store_table.setRowCount(0);self.file_report.setRowCount(0);self.refresh_tables();self.navigate(0)
@@ -170,6 +177,7 @@ class Workbench(ParameterUi,BatchWindow):
     def restore_job(self,record,owned=False):
         # UI reader transfers an exclusively owned tree; external callers retain copy semantics.
         clone=(lambda value:value) if owned else copy.deepcopy
+        self._calculation_settings={};self._calculation_input=None;self._queued_retries=[]
         p=record['payload']
         if p.get('schema')!=1:raise ValueError('不支持的作业格式')
         self._hydrating=True;self._restoring=True;self.initializing=True
@@ -199,10 +207,15 @@ class Workbench(ParameterUi,BatchWindow):
         def choose(value):
             if table.currentRow()>=0 and not table.isRowHidden(table.currentRow()):action['value']=value;dialog.accept()
         row=QHBoxLayout();open_btn=button('查看历史草稿（只读）',lambda:choose('open'),True);row.addWidget(open_btn);copy_btn=button('用此配置新建今日草稿',lambda:choose('copy'));row.addWidget(copy_btn)
+        delete_btn=button('彻底删除选定草稿',lambda:choose('delete'));delete_btn.setStyleSheet('color:#A52A2A;');row.addWidget(delete_btn)
         def update_open(*_):
             i=table.currentRow();valid=i>=0 and not table.isRowHidden(i);open_btn.setEnabled(valid);copy_btn.setEnabled(valid);editable=valid and records[i]['day']==wr.today() and records[i]['summary'].get('model_version')==MODEL_VERSION;open_btn.setText('继续今日草稿' if editable else '查看历史草稿（只读）');open_btn.setToolTip('当日同模型，可继续编辑' if editable else '历史日期或模型版本不同，仅查看当时快照')
         table.itemSelectionChanged.connect(update_open);search.textChanged.connect(update_open);update_open();row.addWidget(button('关闭',dialog.reject));v.addLayout(row)
-        if dialog.exec()!=QDialog.DialogCode.Accepted or not self.leave_current():return
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return
+        if action['value']=='delete':
+            from data_maintenance_ui import remove_job
+            remove_job(self,records[table.currentRow()]);return
+        if not self.leave_current():return
         from ui_work_io import read_job
         from runtime_support import Cancelled
         try:record=read_job(self,self.work_repository.path,records[table.currentRow()]['day'],action['value']!='open')

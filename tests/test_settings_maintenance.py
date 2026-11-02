@@ -34,6 +34,12 @@ class SettingsMaintenance(unittest.TestCase):
     def test_diff_readable_and_null_distinct(self):
         from settings_maintenance_ui import diffs
         rows=diffs({'values':{'A':{'ui':{'amount':0}}},'expected':{'A':{'ui':{'amount':None}}}})
-        self.assertEqual(rows,[['A','ui / amount',None,0]])
+        self.assertEqual(rows,[['A','门店设置 / 预算金额',None,0]])
+    def test_catalog_history_restores_exact_snapshot(self):
+        import warehouse_catalog as c
+        from test_jst import catalog
+        r=c.Repository(Path(self.tmp.name));first=catalog(stock=11);second=catalog(stock=22)
+        r.save(first);r.save(second);self.assertEqual(len(r.history('河北仓')),2)
+        r.save(first);self.assertEqual(r.catalogs()['河北仓'],first)
 
 if __name__=='__main__':unittest.main()

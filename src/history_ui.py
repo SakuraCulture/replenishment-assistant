@@ -60,7 +60,7 @@ class ArchiveDialog(QDialog):
         except Exception as exc:self.failed(str(exc))
     def ready(self,view):
         if self.disposed:return
-        self.selected=view['head'];s=view['summary'];self.note.setText(f"确认 {self.selected['saved']} · 签发 ¥{s['amount']:,.2f} · {s['positive']} 款 · {self.selected.get('warehouse','')} · {'回收站（可查看，恢复后导出）' if self.selected.get('deleted') else '原签发只读；回传独立保存'}")
+        self.selected=view['head'];s=view['summary'];self.note.setText(f"确认 {self.selected['saved']} · 签发 ¥{s['amount']:,.2f} · {s['positive']} 款 · {self.selected.get('warehouse','')} · {'旧版已移除记录（恢复后导出）' if self.selected.get('deleted') else '原签发只读；回传独立保存'}")
         self.selected['name']=self.record.get('name',self.record['store'])
         self.model.replace(view);self.filter();self.export_btn.setEnabled(not self.selected.get('deleted'));self.archive_export_btn.setEnabled(not self.selected.get('deleted'));self.audit_btn.setEnabled(True)
         for b in self.archive_export_buttons:b.setEnabled(not self.selected.get('deleted'))
@@ -190,7 +190,7 @@ class AuditDialog(QDialog):
         from business_ui import grid
         table,model=grid(d,['资料类型','原路径','SHA256','留存状态'],rows);v.addWidget(table,1);note=label('未留存的历史原文件无法下载；不会读取同路径下今天的新文件。');v.addWidget(note)
         def save():
-            if self.head.get('deleted'):note.setText('此仓单在回收站，请先恢复再下载');return
+            if self.head.get('deleted'):note.setText('此仓单为旧版已移除记录，请先恢复再下载');return
             i=table.currentIndex().row()
             if i<0:return
             item=model.rows[model.indices[i]]

@@ -33,7 +33,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             b=button(title,lambda checked=False,n=i:self.show_section(n));self.top_nav.append(b);nav.addWidget(b)
         nav.addStretch();nav.addWidget(button('导出设置',lambda:export_locations.ExportSettingsDialog(self).exec()));v.addLayout(nav);self.sections=QStackedWidget();v.addWidget(self.sections,1);self.setCentralWidget(root)
         home=QWidget();hv=QVBoxLayout(home);hv.setContentsMargins(36,26,36,26);hv.addWidget(label('今天的补货，从这里开始','title'));self.home_status=label('','section');hv.addWidget(self.home_status)
-        hr=QHBoxLayout();hr.addWidget(button('进入工作页',lambda:self.show_section(1),True));hr.addWidget(button('继续已保存的今日草稿',self.resume_today));hr.addWidget(button('查询历史正常单',lambda:self.show_section(2)));hr.addWidget(button('数据维护',self.storage_copy));hv.addLayout(hr)
+        from data_maintenance_ui import hub
+        hr=QHBoxLayout();hr.addWidget(button('进入工作页',lambda:self.show_section(1),True));hr.addWidget(button('继续已保存的今日草稿',self.resume_today));hr.addWidget(button('查询历史正常单',lambda:self.show_section(2)));hr.addWidget(button('数据与任务维护',lambda:hub(self)));hv.addLayout(hr)
         hv.addWidget(label('计算后确认归档即签发；门店确认单按仓导出。回传、付款、实际收货在订单生命周期中独立留存。','muted'))
         self.recent=QTableWidget();self.recent.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.recent.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.recent_orders[i]));hv.addWidget(self.recent,1)
         self.recent.hide();hv.removeWidget(self.recent)
@@ -43,7 +44,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('决策复查 · 查当时事实与数量变化','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
         filters=QHBoxLayout();self.archive_day=QComboBox();self.archive_day.addItem('全部日期','');self.archive_store=QComboBox();self.archive_store.addItem('全部门店','');filters.addWidget(label('业务日期'));filters.addWidget(self.archive_day);filters.addWidget(label('门店'));filters.addWidget(self.archive_store,1);filters.addWidget(button('清空条件',self.clear_archive_filters));av.addLayout(filters)
         self.archive_warehouse=QComboBox();self.archive_warehouse.addItem('全部仓','');self.archive_warehouse.addItems(['河北仓','山东仓','旧版未标仓']);filters.addWidget(self.archive_warehouse);self.archive_warehouse.currentIndexChanged.connect(self.filter_archive)
-        self.archive_trash=QComboBox();self.archive_trash.addItems(['正常归档','回收站']);filters.addWidget(self.archive_trash);self.archive_trash.currentIndexChanged.connect(self.filter_archive)
+        self.archive_trash=QComboBox();self.archive_trash.addItems(['正常归档','旧版已移除记录（一次性整理）']);filters.addWidget(self.archive_trash);self.archive_trash.currentIndexChanged.connect(self.filter_archive)
         self.archive_day.currentIndexChanged.connect(self.filter_archive);self.archive_store.currentIndexChanged.connect(self.filter_archive)
         dates=QHBoxLayout();dates.addWidget(label('日期范围（可留空）'));self.archive_from=QLineEdit();self.archive_to=QLineEdit()
         for field in (self.archive_from,self.archive_to):field.setPlaceholderText('YYYY-MM-DD');field.setMaximumWidth(145);field.textChanged.connect(self.filter_archive)
@@ -298,7 +299,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if result:self.new_bases.pop(store,None)
         super().task_changed(store,state,result,error)
 
-    def start_calculation(self,codes=None):
+    def start_calculation(self,codes=None,*,retry=False):
         targets=codes if isinstance(codes,list) else self.selected_codes()
         chosen=[s for s in targets if self.results.get(s,{}).get('new_products')]
         if chosen and not self.worker:
@@ -307,7 +308,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         originals={s:self.results[s] for s in targets if s in self.results and self.results[s].get('preissue')}
         if originals and not self.worker:
             if QMessageBox.question(self,'重新计算与最终调整', '重新计算会生成新的自动结果，原人工调整保留为待核对草稿，确认风险需重新核对。已签发历史不变。\n'+'、'.join(originals),QMessageBox.StandardButton.Ok|QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)!=QMessageBox.StandardButton.Ok:return
-        super().start_calculation(codes)
+        super().start_calculation(codes,retry=retry)
         if self.worker:
             for s,r in originals.items():self.preissue_drafts[s]={'edits':copy.deepcopy(r['preissue']['edits']),'lists':copy.deepcopy(r['preissue'].get('lists',{})),'day':self.job_day,'status':'重算后待复核'}
 
@@ -503,6 +504,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         else:QMessageBox.information(self,'请选择仓单','先点选一条仓单，再导出。')
 
     def change_archive_visibility(self,deleted=None):
+        if deleted is not False:
+            self.permanent_delete();return
         from archive_orders import change_many
         from business_ui import run
         if deleted is None:deleted=not bool(self.archive_trash.currentIndex())

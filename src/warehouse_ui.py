@@ -31,7 +31,7 @@ class WarehouseUi:
         paths=choose(self,'catalog','导入到'+warehouse+'（完整更新该仓快照）');path=paths[0] if paths else None
         if path:self.import_catalog_path(path,warehouse)
     def restore_catalog(self):
-        if self.worker or self.readonly:return
+        if self.worker or getattr(self,'readonly',False):return
         d=QDialog(self);d.setWindowTitle('恢复仓商品资料');v=QVBoxLayout(d);choices=QComboBox();v.addWidget(choices)
         v.addWidget(label('恢复当时保留的完整仓资料。历史签发不变；本次需重新检查。旧库存仅是历史快照，不代表当前可用库存，也不调整聚水潭库存分配账。'))
         for wh in warehouse_catalog.WAREHOUSES:

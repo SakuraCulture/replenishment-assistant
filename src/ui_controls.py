@@ -1,7 +1,7 @@
 """Shared styling and file selection controls; no application import."""
 from pathlib import Path
-from PySide6.QtCore import Qt,Signal
-from PySide6.QtWidgets import QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QFileDialog,QListWidget,QAbstractItemView
+from PySide6.QtCore import Qt,Signal,QSize
+from PySide6.QtWidgets import QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QFileDialog,QListWidget,QAbstractItemView,QStyle
 
 STYLE='''
 QWidget {font-family:"Microsoft YaHei UI";font-size:10pt;color:#22383C;}
@@ -17,6 +17,9 @@ QPushButton:disabled {background:#EDF1F2;color:#9CAEB2;border-color:#E2E8EA;}
 QPushButton#primary {background:#176C63;color:white;border:none;font-weight:600;}
 QPushButton#primary:hover {background:#12574F;}
 QPushButton#primary:disabled {background:#A3C0BC;color:#F8FCFB;}
+QPushButton#auxiliary {background:transparent;border:1px solid transparent;padding:5px 9px;}
+QPushButton#auxiliary:hover {background:#E3EEEE;border-color:#B6CFCE;}
+QPushButton#auxiliary:disabled {color:#9CAEB2;}
 QLineEdit,QComboBox,QDoubleSpinBox {background:white;border:1px solid #CBDADD;border-radius:5px;padding:6px;min-height:20px;}
 QCheckBox {spacing:8px;} QCheckBox::indicator {width:18px;height:18px;}
 QTableView,QTableWidget {background:white;alternate-background-color:#F7FAFA;border:1px solid #DFE7E9;gridline-color:#EDF1F2;selection-background-color:#DDEFEA;selection-color:#153C43;}
@@ -34,8 +37,25 @@ def label(text,name=None):
 
 def button(text,fn,primary=False):
     x=QPushButton(text);x.setAutoDefault(False);x.clicked.connect(fn)
-    if primary:x.setObjectName('primary')
+    action=auxiliary_action(text)
+    if action:
+        x.setObjectName('auxiliary');x.setProperty('auxiliaryAction',action)
+        icon={'previous':QStyle.StandardPixmap.SP_ArrowBack,'next':QStyle.StandardPixmap.SP_ArrowForward,
+              'retry':QStyle.StandardPixmap.SP_DialogResetButton,'refresh':QStyle.StandardPixmap.SP_BrowserReload,
+              'close':QStyle.StandardPixmap.SP_TitleBarCloseButton,'stop':QStyle.StandardPixmap.SP_MediaStop}[action]
+        x.setIcon(x.style().standardIcon(icon));x.setIconSize(QSize(18,18));x.setMinimumSize(36,34)
+        x.setAccessibleName(text);x.setToolTip(text);x.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        if text in ('上一页','下一页','关闭'):x.setText('')
+    elif primary:x.setObjectName('primary')
     return x
+
+
+def auxiliary_action(text):
+    """Only control verbs, never infer deletion or business confirmation actions."""
+    for action,prefixes in [('previous',('上一页','上一步','返回','← 返回')),('next',('下一页','下一步')),
+            ('retry',('重试','重跑','核对原任务并继续')),('refresh',('刷新',)),('close',('关闭',)),('stop',('停止',))]:
+        if text.startswith(prefixes):return action
+    return None
 
 
 class FileCard(QFrame):

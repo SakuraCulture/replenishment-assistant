@@ -77,6 +77,10 @@ class Index:
 
 
 def cached(path,cache,head,detail=False,cancel=None):
+    # A stale cache is never authority for a permanently removed order.
+    with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as check:
+        source=check.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
+        if not source or source[0]!=head['digest']:raise ValueError('归档已删除或变化，请刷新')
     idx=Index(cache);k=key(path,head);hit=idx.get(k,detail)
     if hit is not None:return hit
     before=identity(path);order=repository(path).get(head['day'],head['store'],head['revision'],view='export')

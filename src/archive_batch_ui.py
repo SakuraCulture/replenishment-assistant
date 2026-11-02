@@ -53,7 +53,7 @@ def show_result(parent,path,plan,result):
 
 def export(parent,path,heads,kind,mode=None):
     if not heads:QMessageBox.information(parent,'请勾选仓单','请勾选要导出的仓单，可跨页选择或勾选全部查询结果。');return
-    if any(h.get('deleted') for h in heads):QMessageBox.information(parent,'请先恢复','回收站单据恢复后才能导出。');return
+    if any(h.get('deleted') for h in heads):QMessageBox.information(parent,'请先恢复旧记录','旧版已移除的记录须先恢复，再导出。');return
     prefs=Path(path).parent/'archive_export_ui.json'
     if mode is None:
         try:mode=json.loads(prefs.read_text(encoding='utf-8')).get(kind,'separate')
@@ -93,7 +93,7 @@ class ArchiveBatchActions:
             b=button(title,lambda checked=False,k=kind:self.export_lifecycle_batch(k));actions.addWidget(b);self.archive_export_buttons.append(b)
         aux.addWidget(lifecycle)
         extras=QHBoxLayout();self.reference_btn=button('导出商品资料核对表（加工）',lambda:self.export_archive_batch('reference'));extras.addWidget(self.reference_btn);extras.addStretch();aux.addLayout(extras)
-        maintenance=QGroupBox('维护管理');actions=QHBoxLayout(maintenance);self.trash_btn=button('移入回收站',lambda:self.change_archive_visibility(True));self.restore_btn=button('恢复归档',lambda:self.change_archive_visibility(False));self.restore_btn.hide();actions.addWidget(self.trash_btn);actions.addWidget(self.restore_btn);actions.addStretch();aux.addWidget(maintenance)
+        maintenance=QGroupBox('数据维护');actions=QHBoxLayout(maintenance);self.trash_btn=button('彻底删除所选订单',self.permanent_delete);self.restore_btn=button('恢复旧版已移除记录',lambda:self.change_archive_visibility(False));self.restore_btn.hide();actions.addWidget(self.trash_btn);actions.addWidget(self.restore_btn);actions.addStretch();aux.addWidget(maintenance)
         self.archive_selection_note=label('已选 0 张仓单','muted');layout.addWidget(self.archive_selection_note)
         row=QHBoxLayout()
         for title,action in [('勾选本页',lambda:self.check_archive(self.archive_orders)),('勾选全部查询结果',lambda:self.check_archive([h for h,m in zip(self.archive_all,self.archive_matches) if m])),('清空全部勾选',self.clear_archive_selection),('已选明细',self.show_archive_selection)]:row.addWidget(button(title,action))
@@ -118,10 +118,13 @@ class ArchiveBatchActions:
         hs=list(self.archive_checked.values());self.archive_selection_note.setText(f'已选 {len(hs)} 张仓单 · {len({h["store"] for h in hs})} 家店 · {len({h["day"] for h in hs})} 个业务日期；导出前核对订单范围与文件数')
         pending=getattr(self,'archive_query_pending',False);trash=bool(self.archive_trash.currentIndex())
         for b in [*self.archive_export_buttons,self.reference_btn]:b.setEnabled(bool(hs) and not trash and not pending)
-        self.trash_btn.setVisible(not trash);self.restore_btn.setVisible(trash)
-        for b,text in [(self.trash_btn,'移入回收站'),(self.restore_btn,'恢复归档')]:
+        self.trash_btn.setVisible(True);self.restore_btn.setVisible(trash)
+        for b,text in [(self.trash_btn,'彻底删除订单'),(self.restore_btn,'恢复旧版记录')]:
             b.setText(f'{text}（{len(hs)}张）');b.setEnabled(bool(hs) and not pending)
         self.trash_btn.setStyleSheet('color:#A52A2A;')
+    def permanent_delete(self):
+        from data_maintenance_ui import remove
+        remove(self,self,list(self.archive_checked.values()))
     def check_archive(self,heads):
         if getattr(self,'archive_query_pending',False):return
         for h in heads:self.archive_checked[batch.key(h)]=dict(h)
