@@ -122,6 +122,12 @@ class Review(QDialog):
         self.overview.setMaximumHeight(min(150,36+len(orders)*32));v.addWidget(self.overview)
         disclosure=QCheckBox('查看完整读取范围与0 / 空白 / 缺行统计');v.addWidget(disclosure)
         details=QPlainTextEdit();details.setReadOnly(True);details.setPlainText('\n'.join(summary));details.setMaximumHeight(150);details.hide();v.addWidget(details);disclosure.toggled.connect(details.setVisible)
+        stats=[]
+        for entry in plan['plans']:
+            payload=entry['payload'];origins=[r['quantity_origin'] for r in payload['rows']]
+            stats.append([entry['head']['number'],io.TITLES[entry['stage']],len(payload['rows']),origins.count('zero'),origins.count('blank'),origins.count('missing'),len(payload['extra']),entry['duplicates'],'上游未就绪，仅留存待核' if payload['pending'] else '可核对'])
+        self.stats,self.stats_model=grid(self,['补货单号','环节','商品款数','明确0','空白按0','缺行按0','清单外','重复行','状态'],stats);self.stats.setMaximumHeight(150);v.addWidget(self.stats)
+        self.stats.clicked.connect(self.select_stat)
         self.search=QLineEdit();self.search.setPlaceholderText('搜索单号 / 商品编码 / 名称 / 处理说明');self.category=QComboBox();self.category.addItems(['全部','数量变化','明确填0','空白按0','缺行按0','清单外商品']);self.stage_filter=QComboBox();self.stage_filter.addItems(['全部环节',*[io.TITLES[s] for s in io.STAGES]]);filters=QHBoxLayout();filters.addWidget(self.stage_filter);filters.addWidget(self.category);filters.addWidget(self.search);v.addLayout(filters)
         self.all_rows=rows;self.table,self.model=grid(self,['补货单号','环节','商品编码','商品名称','上环节数量（自动）','本环节数量','差额（自动）','处理说明','上次保存数量（自动）','源单商品金额'],self.display_rows(rows));v.addWidget(self.table,1);self.category.currentTextChanged.connect(self.filter_rows);self.stage_filter.currentTextChanged.connect(self.filter_rows);self.search.textChanged.connect(self.filter_rows);self.overview.clicked.connect(self.select_order)
         self.table.setColumnWidth(1,120)
@@ -134,6 +140,9 @@ class Review(QDialog):
         self.extra_ack=QCheckBox('清单外商品已逐项核对，确属所选门店和仓单；完全匹配不上时已重新核对订单。');self.extra_ack.setVisible(any(p['payload']['extra'] for p in plan['plans']));self.extra_ack.setChecked(not any(p['payload']['extra'] for p in plan['plans']));v.addWidget(self.extra_ack)
         v.addWidget(label('数量与推荐不同不阻止环节完成。确认后独立留存新版本和原件，不修改签发、计算或其它环节。','muted'))
         row=QHBoxLayout(); cancel=button('取消',self.reject); cancel.setDefault(True); row.addWidget(cancel); self.save=button('确认保存完整单据',self.accept,True); self.save.setEnabled(False); self.save.setAutoDefault(False);self.complete.toggled.connect(self.allow_save);self.extra_ack.toggled.connect(self.allow_save);row.addWidget(self.save);v.addLayout(row)
+    def select_stat(self,index):
+        row=self.stats_model.rows[self.stats_model.indices[index.row()]];self.search.setText(row[0]);self.stage_filter.setCurrentText(row[1])
+        self.category.setCurrentText({3:'明确填0',4:'空白按0',5:'缺行按0',6:'清单外商品'}.get(index.column(),'全部'))
     def allow_save(self):self.save.setEnabled(self.complete.isChecked() and self.extra_ack.isChecked())
     @staticmethod
     def display_rows(rows):return [[r[0],r[-1],*r[2:-1]] for r in rows]

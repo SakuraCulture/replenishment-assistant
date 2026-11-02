@@ -337,7 +337,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
 
     def preview_new(self,s,base,current,result):
         if self.closing or (self.worker and self.worker.cancel.is_set()):return
-        diffs=new_products.changes(current,result);box=QMessageBox(self);box.setObjectName('newBudgetPreview');box.setWindowTitle('预览预算变化 · '+result['store_name']);box.setText(f"调整 {len(diffs)} 款；本店安排 ¥{current['summary']['amount']:,.2f} → ¥{result['summary']['amount']:,.2f}\n最低持有缺口 {current['summary']['holding_gaps']} → {result['summary']['holding_gaps']}\n必卖新品可占用普通动销的预算。取消保持原方案；应用后需重新确认归档。");box.setDetailedText(json.dumps(diffs,ensure_ascii=False,indent=2));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);apply=box.addButton('应用到本店草稿',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.exec()
+        diffs=new_products.changes(current,result);box=QMessageBox(self);box.setObjectName('newBudgetPreview');box.setWindowTitle('预览预算变化 · '+result['store_name']);box.setText(f"调整 {len(diffs)} 款；本店安排 ¥{current['summary']['amount']:,.2f} → ¥{result['summary']['amount']:,.2f}\n最低持有缺口 {current['summary']['holding_gaps']} → {result['summary']['holding_gaps']}\n必卖新品可占用普通动销的预算。取消保持原方案；应用后需重新确认归档。");__import__('readable_ui').review_table(box,['商品编码','商品名称','候选原量','候选新量','自动原量','拟安排量','原金额','新金额'],[[d.get(k) for k in ('sku','name','before_candidate','after_candidate','before_qty','after_qty','before_amount','after_amount')] for d in diffs]);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);apply=box.addButton('应用到本店草稿',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.exec()
         if box.clickedButton() is not apply:return
         # Published result trees are replaced, never mutated; apply() copies its input.
         if result.get('new_products'):self.new_bases[s]=base
@@ -392,7 +392,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             with Session(self.work_repository.path) as session:
                 prepared=request(self,session,'prepare_normal',[self.snapshot(),codes])
                 box=QMessageBox(self);box.setObjectName('normalConfirm');box.setWindowTitle('确认归档本次补货建议');box.setText('内部签发确认；不代表加盟商确认或已下单。\n同时保存当前完整草稿；只更新下列门店正常单，其他门店历史单保留。')
-                box.setInformativeText('\n'.join(prepared['lines']));box.setDetailedText(prepared['detail_text']+('\n…差异较多，此处显示前200条。点击“导出完整差异”查看全部内容，未删减任何归档数据。' if prepared['truncated'] else ''))
+                box.setInformativeText('\n'.join(prepared['lines']));__import__('readable_ui').review_table(box,__import__('order_review').HEADERS,__import__('business_presenter').readable_changes(prepared['rows']),total=prepared['total'])
                 cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton(f'确认归档 {len(codes)} 家店',QMessageBox.ButtonRole.AcceptRole);review=box.addButton('导出完整差异',QMessageBox.ButtonRole.ActionRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
                 while True:
                     box.exec()
@@ -437,7 +437,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                         detail['同日草稿覆盖']={'原保存时间':prepared['head']['saved'],'原门店状态':prepared['head']['summary'],'本次门店状态':prepared['summary']};box.setInformativeText('同时覆盖当天完整草稿；未选门店正常单不变。展开详情查看草稿覆盖范围。')
                     from history_forms import fields
                     draft_text='\n'.join(k+'：'+v for k,v,t in fields(detail))
-                    box.setDetailedText(prepared['detail_text']+'\n\n草稿覆盖范围：\n'+draft_text);box.setInformativeText('确认时同时保存完整草稿；未选门店正常单不变。按所选门店顺序列出商品、参数和来源变化。'+('明细已截断，请导出完整差异Excel。' if prepared['truncated'] else '展开详情核对；可导出完整差异Excel。'));save_diff=box.addButton('导出完整差异Excel',QMessageBox.ButtonRole.ActionRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认签发并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
+                    __import__('readable_ui').review_table(box,__import__('order_review').HEADERS,list(__import__('business_presenter').readable_changes(prepared['rows']))+[['','草稿覆盖','',__import__('business_presenter').path_title(k),'',v,''] for k,v,t in fields(detail)],total=prepared['total']);box.setInformativeText('确认时同时保存完整草稿；未选门店正常单不变。按所选门店顺序列出商品、参数和来源变化。'+('明细已截断，请导出完整差异Excel。' if prepared['truncated'] else '展开详情核对；可导出完整差异Excel。'));save_diff=box.addButton('导出完整差异Excel',QMessageBox.ButtonRole.ActionRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认签发并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
                     while True:
                         box.exec()
                         if box.clickedButton() is not save_diff:break

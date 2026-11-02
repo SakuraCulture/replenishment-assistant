@@ -1,5 +1,8 @@
 """Complete parameter editor with explanations, versioned presets and per-store use."""
 import copy,json
+from decimal import Decimal,InvalidOperation
+from PySide6.QtGui import QValidator
+from business_presenter import value_text,path_title,business_help
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QTabWidget,QTableWidget,QTableWidgetItem,QDoubleSpinBox,QComboBox,QCheckBox,QLineEdit,QTextBrowser,QMessageBox,QHeaderView,QInputDialog
 from ui_controls import label,button
@@ -7,6 +10,18 @@ import parameter_schema as schema
 
 class NumberInput(QDoubleSpinBox):
     def textFromValue(self,value):return f'{value:.8f}'.rstrip('0').rstrip('.') or '0'
+
+class PercentInput(NumberInput):
+    """Internal value/range/precision stay fractional; only the editor uses percent."""
+    def textFromValue(self,value):
+        return format(Decimal(str(value))*100,'f').rstrip('0').rstrip('.') if Decimal(str(value))*100%1 else str(int(Decimal(str(value))*100))
+    def valueFromText(self,text):return float(Decimal(text.strip().rstrip('%').strip())/100)
+    def validate(self,text,pos):
+        try:
+            value=Decimal(text.strip().rstrip('%').strip())/100
+            state=QValidator.State.Acceptable if value.is_finite() and Decimal(str(self.minimum()))<=value<=Decimal(str(self.maximum())) else QValidator.State.Intermediate
+        except InvalidOperation:state=QValidator.State.Intermediate
+        return state,text,pos
 
 class ParameterDialog(QDialog):
     def __init__(self,parent,config,preset,trial=None,scope='',readonly=False,store_configs=None,intent='current'):
@@ -21,19 +36,20 @@ class ParameterDialog(QDialog):
         self.choices.currentIndexChanged.connect(lambda:self.retire_btn.setEnabled(bool(self.choices.currentData()) and self.choices.currentData()['id']!='standard'));self.retire_btn.setEnabled(bool(self.choices.currentData()) and self.choices.currentData()['id']!='standard')
         self.tabs=QTabWidget();v.addWidget(self.tabs,1)
         self.param_table=QTableWidget(0,4);self.param_table.setHorizontalHeaderLabels(['参数','当前值','单位','方案默认值']);self.param_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.param_table.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.param_table,'模型超参')
-        self.weight_table=QTableWidget(0,5);self.weight_table.setHorizontalHeaderLabels(['分类方案','趋势α','最近7天w1','此前7天w2','此前16天w3（自动）']);self.tabs.addTab(self.weight_table,'预测权重')
+        self.weight_table=QTableWidget(0,5);self.weight_table.setHorizontalHeaderLabels(['分类方案','趋势敏感度','最近7天权重','此前7天权重','此前16天权重（自动）']);self.tabs.addTab(self.weight_table,'预测权重')
         self.profile_table=QTableWidget(0,4);self.profile_table.setHorizontalHeaderLabels(['分类方案','参数','分类值','使用分类值']);self.profile_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.profile_table.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.profile_table,'分类超参')
         self.mapping=QTableWidget(0,2);self.mapping.setHorizontalHeaderLabels(['商品分类（可编辑，可在末行新增）','权重方案']);self.mapping.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.mapping,'分类映射')
         self.warehouses=QTableWidget(0,3);self.warehouses.setHorizontalHeaderLabels(['仓','备货天数','到货天数']);self.warehouses.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.warehouses.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.warehouses,'各仓周期')
-        fixed=QTextBrowser();fixed.setPlainText(schema.FIXED);self.tabs.addTab(fixed,'固定规则')
+        fixed=QTextBrowser();fixed.setPlainText(business_help(schema.FIXED));self.tabs.addTab(fixed,'固定规则')
         self.effective=QTableWidget(0,7);self.effective.setHorizontalHeaderLabels(['参数路径','标准默认','方案值','打开时门店值','当前编辑值','差异所在层','实际用途']);self.effective.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.effective.setColumnWidth(0,300);self.effective.setColumnWidth(5,200);self.effective.setColumnWidth(6,300);self.tabs.addTab(self.effective,'生效核对')
+        self.effective.setColumnWidth(0,300);self.effective.setColumnWidth(5,200);self.effective.setColumnWidth(6,300);self.tabs.addTab(self.effective,'查看覆盖关系')
+        self.effective_now=QTableWidget(0,4);self.effective_now.setHorizontalHeaderLabels(['参数','本次表单值（应用后）','适用范围','取值说明']);self.effective_now.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.effective_now.setColumnWidth(0,260);self.effective_now.setColumnWidth(1,160);self.effective_now.setColumnWidth(2,160);self.effective_now.horizontalHeader().setStretchLastSection(True);self.tabs.insertTab(0,self.effective_now,'有效值与适用范围')
         self.tabs.currentChanged.connect(self.tab_changed)
         self.help=QTextBrowser();self.help.setMaximumHeight(115);v.addWidget(self.help)
-        self.param_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText(schema.HELP[list(schema.HELP)[r]][2]) if r>=0 else None)
-        self.weight_table.currentCellChanged.connect(lambda r,c,*_:self.help.setPlainText(schema.WEIGHT_HELP.get(['','alpha','w1','w2',''][c], 'w3=1-w1-w2，无分类自动跟随快销；缺货时还按有效有货天数修正。')) if c>=0 else None)
+        self.param_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText(business_help(schema.HELP[list(schema.HELP)[r]][2])) if r>=0 else None)
+        self.weight_table.currentCellChanged.connect(lambda r,c,*_:self.help.setPlainText(schema.WEIGHT_HELP.get(['','alpha','w1','w2',''][c], '此前16天权重=100%－最近7天权重－此前7天权重，无分类自动跟随快销；缺货时还按有效有货天数修正。')) if c>=0 else None)
         self.profile_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText('勾选时使用分类值，未勾选沿用模型超参。快销/日百各一套，两仓共用；无分类跟随快销。\n'+schema.HELP[self.profile_rows[r][1]][2]) if r>=0 and hasattr(self,'profile_rows') else None)
-        self.warehouses.currentCellChanged.connect(lambda *_:self.help.setPlainText('各仓周期优先于通用depth/lead；按门店实际补货与到货周期维护。修改只在点击应用后生效。'))
+        self.warehouses.currentCellChanged.connect(lambda *_:self.help.setPlainText('各仓备货、到货天数优先于通用值；按门店实际补货与到货周期维护。修改只在点击应用后生效。'))
         self.exception=QCheckBox('启用一箱例外（仍受禁用/停采与门店总预算约束）');v.addWidget(self.exception)
         self.note=label('','muted');v.addWidget(self.note)
         if self.managing:
@@ -63,7 +79,7 @@ class ParameterDialog(QDialog):
                 for w in table.findChildren(QDoubleSpinBox)+table.findChildren(QComboBox)+table.findChildren(QCheckBox):w.setEnabled(False)
     def tab_changed(self,index):
         current=self.tabs.widget(index)
-        if current is self.effective:self.refresh_effective()
+        if current in (self.effective,self.effective_now):self.refresh_effective()
         elif current is self.profile_table and hasattr(self,'profile_rows'):
             row=max(0,self.profile_table.currentRow());key=self.profile_rows[row][1]
             self.help.setPlainText('分类值优先于门店通用值；快销/日百各一套，两仓共用，无分类跟随快销。未勾选则沿用门店值。\n'+schema.HELP[key][2])
@@ -75,27 +91,38 @@ class ParameterDialog(QDialog):
         from interaction_ui import confirm
         if not self.readonly and self.is_edited() and not confirm(self,'放弃未应用编辑','只丢弃当前未应用的表单编辑。已单独保存的方案版本仍保留。'):return
         super().reject()
-    def spin(self,value,maximum=1000000000):
-        w=NumberInput();w.setDecimals(8);w.setRange(0,maximum);w.setSingleStep(.1);w.setValue(value);return w
+    def spin(self,value,maximum=1000000000,percent=False):
+        w=PercentInput() if percent else NumberInput();w.setDecimals(8);w.setRange(0,maximum);w.setSingleStep(.01 if percent else .1);w.setValue(value)
+        if percent:w.setSuffix('%')
+        return w
     def refresh_effective(self):
         from parameter_view import comparison,display_path
         try:rows=comparison(schema.standard(),self.preset.get('base_config',self.preset['config']),self.initial_config,self.value())
         except ValueError as exc:self.note.setText('当前参数无效，不能应用：'+str(exc));self.effective.setRowCount(0);return
-        self.effective.setRowCount(len(rows))
-        for i,row in enumerate(rows):
+        expanded=[]
+        for row in rows:
+            if row[0].startswith('warehouses / '):
+                for n,part in enumerate(('备货天数','到货天数')):expanded.append([row[0]+' / '+part,*[x[n] if isinstance(x,(list,tuple)) and len(x)>n else x for x in row[1:5]],*row[5:]])
+            else:expanded.append(row)
+        self.effective.setRowCount(len(expanded));self.effective_now.setRowCount(len(expanded))
+        for i,row in enumerate(expanded):
+            key=row[0].split(' / ')[-1]
             for j,value in enumerate(row):
-                item=QTableWidgetItem(display_path(value) if j==0 else str(value));item.setToolTip(str(value));item.setData(Qt.ItemDataRole.UserRole,value);self.effective.setItem(i,j,item)
+                item=QTableWidgetItem(display_path(value) if j==0 else value_text(value,key));item.setToolTip(str(value));item.setData(Qt.ItemDataRole.UserRole,value);self.effective.setItem(i,j,item)
+            scope=' / '.join(display_path(row[0]).split(' / ')[:-1])
+            for j,value in enumerate([display_path(row[0]).split(' / ')[-1],value_text(row[4],key),scope,row[6]]):self.effective_now.setItem(i,j,QTableWidgetItem(value))
         self.note.setText('按当前值比较覆盖层，不推断历史操作人。各仓周期优先；分类权重在主从仓归属后重新应用。未点击应用不会修改门店。')
     def fill(self,config):
         self.config=copy.deepcopy(config);base=self.preset.get('base_config',self.preset['config']);self.param_table.setRowCount(len(schema.HELP))
         for i,(key,(name,unit,helptext)) in enumerate(schema.HELP.items()):
-            self.param_table.setItem(i,0,QTableWidgetItem(name+' · '+key+('（在各仓周期页维护）' if key in {'depth','lead'} else '')));w=self.spin(config['parameters'][key]);w.setEnabled(key not in {'extreme_days','depth','lead'});self.param_table.setCellWidget(i,1,w);self.param_table.setItem(i,2,QTableWidgetItem(unit));self.param_table.setItem(i,3,QTableWidgetItem(str(base['parameters'][key])));self.param_table.item(i,0).setToolTip(helptext)
+            helptext=business_help(helptext)
+            self.param_table.setItem(i,0,QTableWidgetItem(name+('（在各仓周期页维护）' if key in {'depth','lead'} else '')));w=self.spin(config['parameters'][key],percent=key=='probability');w.setEnabled(key not in {'extreme_days','depth','lead'});self.param_table.setCellWidget(i,1,w);self.param_table.setItem(i,2,QTableWidgetItem('%' if key=='probability' else '库存单位' if key in ('strict_monthly','exit_monthly') else unit));self.param_table.setItem(i,3,QTableWidgetItem(value_text(base['parameters'][key],key)));self.param_table.item(i,0).setToolTip(helptext+'\n原字段：'+key)
             w.valueChanged.connect(lambda _,text=helptext:self.help.setPlainText(text))
         self.weight_table.setRowCount(len(config['weight_profiles']))
         for i,(name,weights) in enumerate(config['weight_profiles'].items()):
             item=QTableWidgetItem(name);item.setFlags(item.flags()&~Qt.ItemFlag.ItemIsEditable);self.weight_table.setItem(i,0,item)
             for j,key in enumerate(['alpha','w1','w2'],1):
-                w=self.spin(weights[key],1 if key!='alpha' else 100);self.weight_table.setCellWidget(i,j,w);w.valueChanged.connect(self.weight_changed)
+                w=self.spin(weights[key],1 if key!='alpha' else 100,percent=key!='alpha');self.weight_table.setCellWidget(i,j,w);w.valueChanged.connect(self.weight_changed)
             derived=QTableWidgetItem('');derived.setFlags(derived.flags()&~Qt.ItemFlag.ItemIsEditable);self.weight_table.setItem(i,4,derived)
         self.weight_changed();mapping=list(config['category_profiles'].items());self.mapping.setRowCount(len(mapping)+1)
         self.profile_rows=[(name,key) for name in config['weight_profiles'] for key in schema.PROFILE_KEYS]
@@ -103,7 +130,7 @@ class ParameterDialog(QDialog):
         for i,(name,key) in enumerate(self.profile_rows):
             values=config.get('profile_parameters',{}).get(name,{})
             self.profile_table.setItem(i,0,QTableWidgetItem(name));self.profile_table.setItem(i,1,QTableWidgetItem(schema.HELP[key][0]))
-            w=self.spin(values.get(key,config['parameters'][key]),1 if key=='probability' else 1000000000);w.setEnabled(key in values);self.profile_table.setCellWidget(i,2,w)
+            w=self.spin(values.get(key,config['parameters'][key]),1 if key=='probability' else 1000000000,percent=key=='probability');w.setEnabled(key in values);self.profile_table.setCellWidget(i,2,w)
             if key=='probability':w.setMinimum(.5);w.setMaximum(.99);w.setSingleStep(.01)
             check=QCheckBox('启用');check.setChecked(key in values);check.toggled.connect(w.setEnabled);self.profile_table.setCellWidget(i,3,check)
         for i in range(len(mapping)+1):
@@ -113,10 +140,10 @@ class ParameterDialog(QDialog):
             self.warehouses.setItem(i,0,QTableWidgetItem(wh))
             for j,value in enumerate(values,1):self.warehouses.setCellWidget(i,j,self.spin(max(value,0),365))
         self.exception.setChecked(config['exception']);self.note.setText(f"来源：{self.preset['name']} v{self.preset['version']}。分类映射空白行不保存。")
-        self.param_table.setCurrentCell(0,0);self.editor_baseline=copy.deepcopy(self.value())
+        self.param_table.setCurrentCell(0,0);self.editor_baseline=copy.deepcopy(self.value());self.refresh_effective();self.tabs.setCurrentWidget(self.effective_now);self.effective_now.setHorizontalHeaderLabels(['参数','当时值' if self.readonly else '本次表单值（应用后）','适用范围','取值说明'])
     def weight_changed(self):
         for i in range(self.weight_table.rowCount()):
-            if self.weight_table.cellWidget(i,2) and self.weight_table.cellWidget(i,3) and self.weight_table.item(i,4):self.weight_table.item(i,4).setText(f"{1-self.weight_table.cellWidget(i,2).value()-self.weight_table.cellWidget(i,3).value():.8g}")
+            if self.weight_table.cellWidget(i,2) and self.weight_table.cellWidget(i,3) and self.weight_table.item(i,4):self.weight_table.item(i,4).setText(value_text(round(1-self.weight_table.cellWidget(i,2).value()-self.weight_table.cellWidget(i,3).value(),8),'w3'))
     def value(self):
         c=copy.deepcopy(self.config);c['parameters']={k:self.param_table.cellWidget(i,1).value() for i,k in enumerate(schema.HELP)}
         c['weight_profiles']={self.weight_table.item(i,0).text():{key:self.weight_table.cellWidget(i,j).value() for j,key in enumerate(['alpha','w1','w2'],1)} for i in range(self.weight_table.rowCount())}

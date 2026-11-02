@@ -130,7 +130,7 @@ class Workbench(ParameterUi,BatchWindow):
         previous=old['payload'];changed=[s for s in oldstores.keys()&newstores.keys() if wr.dumps(previous.get('store_presets',{}).get(s))!=wr.dumps(new.get('store_presets',{}).get(s)) or previous.get('store_ui',{}).get(s)!=new.get('store_ui',{}).get(s)]
         def versions(payload):return {'输入':(payload.get('loaded') or {}).get('hashes',{}),'仓资料':{w:c.get('revision') for w,c in payload.get('catalogs',{}).items()},'必卖':(payload.get('profile') or {}).get('revision')}
         details={'减少门店':[s+' '+oldstores[s]['name'] for s in sorted(removed)],'新增门店':[s+' '+newstores[s]['name'] for s in sorted(added)],'原已完成现失效':lost,'设置变化门店':changed,'原门店状态':oldstores,'新门店状态':newstores,'原数据版本':versions(previous),'新数据版本':versions(new)}
-        box.setDetailedText(json.dumps(details,ensure_ascii=False,indent=2));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('覆盖当天记录',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
+        __import__('readable_ui').review_table(box,['核对项目','当时值','单位','说明'],__import__('business_presenter').flat_rows(details));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('覆盖当天记录',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
         for b in box.findChildren(QPushButton):
             if b not in [cancel,accept]:b.setText('查看差异明细')
         box.exec();return box.clickedButton() is accept

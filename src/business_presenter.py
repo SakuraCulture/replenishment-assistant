@@ -61,6 +61,9 @@ def title(key):
 def path_title(path):
     return ' / '.join(title(p) for p in str(path).split(' / '))
 
+def business_help(text):
+    return re.sub(r'\b(?:BH|BN|AM|AF|AK|CV|V|SKU|w1|w2|w3)\b',lambda m:'商品' if m[0]=='SKU' else title(m[0]),str(text)).replace('min(此值,最小出库单位)','本值与最小出库数量中的较小值')
+
 def value_text(value, key='', *, unit='', missing='未提供'):
     if value is None:return '不限预算' if key=='budget' else missing
     if value is True:return '是'
