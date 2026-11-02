@@ -13,6 +13,9 @@ def goods():
             '_source':'资料匹配','_meta':{'blocking':[]},'_audit':{'applied':True,'reason':'一箱恢复'}}
 
 class ReadabilityTests(unittest.TestCase):
+    def test_inline_chinese_help_replaces_model_symbols(self):
+        self.assertNotIn('BH',view.business_help('单段BH分母；按BH/BN额度，AM绝对范围'))
+        self.assertIn('库存上限参考日均',view.business_help('按BH/BN'))
     def test_all_model_columns_have_business_names(self):
         from archive_exports import LETTER_LABELS
         for key in LETTER_LABELS:self.assertNotEqual(view.title(key),key)

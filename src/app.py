@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--readability-smoke' in sys.argv:
+        from readability_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--readability-smoke')+1:])
     if '--maintenance-smoke' in sys.argv:
         from maintenance_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--maintenance-smoke')+1:])

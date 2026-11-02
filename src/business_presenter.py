@@ -46,7 +46,7 @@ PERCENT={'AC','AD','AE','w1','w2','w3','probability','_effective_probability'}
 DAYS={'AG','AH','N','BA','M','P','AX','AY','AZ','depth','lead','cap_days','extreme_days','historical_reference_days','growth_reference_days','moq_days'}
 QUANTITIES=set('I J K L O AL AO AP AQ AR AS BD BF BJ BK BO BP BQ BR BS BU BX'.split())|{'_base_qty','_candidate_qty','_allocated_qty','_execution_qty','_budget_gap','_new_requested'}
 RATES=set('H W X Y Z AA AN BC BH BN'.split())
-MONEY={'V','BV','BT','_base_amount','_candidate_amount','_allocated_amount','_execution_amount','monthly_extra_money','weak_extra_money','moq_price'}
+MONEY={'V','BV','BT','amount','before_amount','after_amount','_base_amount','_candidate_amount','_allocated_amount','_execution_amount','monthly_extra_money','weak_extra_money','moq_price'}
 
 @lru_cache(maxsize=1)
 def names():
@@ -62,7 +62,7 @@ def path_title(path):
     return ' / '.join(title(p) for p in str(path).split(' / '))
 
 def business_help(text):
-    return re.sub(r'\b(?:BH|BN|AM|AF|AK|CV|V|SKU|w1|w2|w3)\b',lambda m:'商品' if m[0]=='SKU' else title(m[0]),str(text)).replace('min(此值,最小出库单位)','本值与最小出库数量中的较小值')
+    return re.sub(r'(?<![A-Za-z0-9_])(?:BH|BN|AM|AF|AK|CV|V|SKU|w1|w2|w3)(?![A-Za-z0-9_])',lambda m:'商品' if m[0]=='SKU' else title(m[0]),str(text)).replace('min(此值,最小出库单位)','本值与最小出库数量中的较小值').replace('固定30；当前核心同时有硬编码30，仅展示。改变需单独修改模型并验收。','目前固定为30天，仅供查看；不能通过此表单修改。')
 
 def value_text(value, key='', *, unit='', missing='未提供'):
     if value is None:return '不限预算' if key=='budget' else missing
@@ -105,7 +105,7 @@ def flat_rows(value,prefix='',technical=False):
     walk(value,[prefix] if prefix else [])
     return out
 
-def stage_rows(d):
+def stage_rows(d,final_label='最终签发量'):
     """Show persisted stages, not a counterfactual rerun of any rule."""
     unit=str(d.get('G') or '库存单位');adjust=d.get('_preissue') or {}
     original=adjust.get('original_fields',{})
@@ -118,7 +118,7 @@ def stage_rows(d):
             ('一箱例外后',d.get('AS'),(d.get('_audit') or {}).get('reason','历史未留存例外判断')),
             ('预算前候选量',candidate,'包含执行排除及已选择的新品；按当时保存值'),
             ('自动安排量',automatic,'预算与排除后的自动安排；不含签发前人工调整'),
-            ('最终签发量',sem.order_quantity(d),adjust.get('reason') or sem.explanation(d))]
+            (final_label,sem.order_quantity(d),adjust.get('reason') or sem.explanation(d))]
     out=[];previous=None
     for label,v,why in stages:
         delta='；较上一阶段 '+format(Decimal(str(v))-Decimal(str(previous)),'+f')+unit if sem.numeric(v) and sem.numeric(previous) else ''

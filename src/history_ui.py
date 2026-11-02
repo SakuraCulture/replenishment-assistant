@@ -224,9 +224,11 @@ class EventsDialog(QDialog):
         from business_log_views import summary
         shown=[[r[0],r[1],records[i].get('display_name',r[2]),records[i].get('warehouse',''),r[4],summary(records[i]['detail'])] for i,r in enumerate(self.rows)]
         self.table,self.model=grid(self,['时间','补货单号','门店','仓','操作','结果摘要'],shown);self.table.setColumnWidth(5,350)
+        for col,width in enumerate((180,245,190,85,110,280)):self.table.setColumnWidth(col,width)
         self.model.tokens=[a+' '+' '.join(str(x) for x in original).lower() for a,original in zip(self.model.tokens,self.rows)]
         v.addWidget(self.table,1);self.search.textChanged.connect(self.filter)
         from PySide6.QtWidgets import QCheckBox
+        v.addWidget(label('下方是该事件的原记录范围，汇总可能包含同店两仓；逐仓商品数量请打开关联单据。','muted'))
         self.technical=QCheckBox('展开完整技术字段');v.addWidget(self.technical)
         from business_presenter import HEADERS
         self.detail,self.detail_model=grid(self,HEADERS);self.detail.setColumnWidth(0,330);self.detail.setColumnWidth(3,430);v.addWidget(self.detail,1);self.technical.toggled.connect(self.selection_changed)

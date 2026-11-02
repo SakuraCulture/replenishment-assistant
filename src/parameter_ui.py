@@ -110,7 +110,10 @@ class ParameterDialog(QDialog):
             for j,value in enumerate(row):
                 item=QTableWidgetItem(display_path(value) if j==0 else value_text(value,key));item.setToolTip(str(value));item.setData(Qt.ItemDataRole.UserRole,value);self.effective.setItem(i,j,item)
             scope=' / '.join(display_path(row[0]).split(' / ')[:-1])
-            for j,value in enumerate([display_path(row[0]).split(' / ')[-1],value_text(row[4],key),scope,row[6]]):self.effective_now.setItem(i,j,QTableWidgetItem(value))
+            from business_presenter import field_unit,PERCENT
+            unit='天' if key in ('备货天数','到货天数') else field_unit(key)
+            shown=value_text(row[4],key)+((' '+unit) if unit and key not in PERCENT and isinstance(row[4],(int,float)) and not isinstance(row[4],bool) else '')
+            for j,value in enumerate([display_path(row[0]).split(' / ')[-1],shown,scope,row[6]]):self.effective_now.setItem(i,j,QTableWidgetItem(value))
         self.note.setText('按当前值比较覆盖层，不推断历史操作人。各仓周期优先；分类权重在主从仓归属后重新应用。未点击应用不会修改门店。')
     def fill(self,config):
         self.config=copy.deepcopy(config);base=self.preset.get('base_config',self.preset['config']);self.param_table.setRowCount(len(schema.HELP))

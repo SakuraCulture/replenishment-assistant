@@ -120,7 +120,7 @@ if version['version']=='0.21.0':
     import_templates.write('stocking',templates/'铺货清单最低模板.xlsx')
     business_excel.write(templates/'仓商品资料最低模板.xlsx',[('商品资料',warehouse_catalog.FIELDS,[])])
 
-if version['version'] in {'0.23.0','0.24.0','0.25.0','0.26.0','0.26.1','0.27.0','0.27.1'}:
+if version['version'] in {'0.23.0','0.24.0','0.25.0','0.26.0','0.26.1','0.27.0','0.27.1','0.28.0'}:
     (dest/'docs').mkdir(exist_ok=True)
     for name in ['0.17.0四场景与批量单据.md','0.20.0最终清单与筛选.md','0.22.0付款来源与自动生成.md','0.22.1聚水潭门店汇总.md','0.23.0聚水潭结果与导出.md','商品资料保存链路_0.16.0.md']:
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
@@ -133,32 +133,37 @@ if version['version'] in {'0.23.0','0.24.0','0.25.0','0.26.0','0.26.1','0.27.0',
     import_templates.write('stocking',templates/'铺货清单最低模板.xlsx')
     business_excel.write(templates/'仓商品资料最低模板.xlsx',[('商品资料',warehouse_catalog.FIELDS,[])])
 
-if version['version'] in {'0.24.0','0.25.0','0.26.0','0.26.1','0.27.0','0.27.1'}:
+if version['version'] in {'0.24.0','0.25.0','0.26.0','0.26.1','0.27.0','0.27.1','0.28.0'}:
     for name in ['0.24.0翱象本地候选.md','翱象采购上传与关联.md','翱象收货同步与终态恢复.md','翱象批次作业与周期同步.md']:
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
     (dest/'使用说明.txt').write_bytes((root/'docs/0.24.0翱象本地候选.md').read_bytes())
     import_templates.write('aoxiang_stores',dest/'导入模板/翱象门店目录最低模板.xlsx')
 
-if version['version'] in {'0.25.0','0.26.0','0.26.1','0.27.0','0.27.1'}:
+if version['version'] in {'0.25.0','0.26.0','0.26.1','0.27.0','0.27.1','0.28.0'}:
     name='0.25.0签发单隐藏单号与批量调参.md'
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     (dest/'使用说明.txt').write_bytes((root/'docs'/name).read_bytes())
     import_templates.write('store_parameters',dest/'导入模板/门店参数最低模板.xlsx')
-if version['version'] in {'0.26.0','0.26.1','0.27.0','0.27.1'}:
+if version['version'] in {'0.26.0','0.26.1','0.27.0','0.27.1','0.28.0'}:
     name='0.26.0完整门店参数.md'
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     (dest/'使用说明.txt').write_bytes((root/'docs'/name).read_bytes())
     (dest/'导入模板/门店参数最低模板.xlsx').rename(dest/'导入模板/门店参数完整模板.xlsx')
-if version['version'] in {'0.26.1','0.27.0','0.27.1'}:
+if version['version'] in {'0.26.1','0.27.0','0.27.1','0.28.0'}:
     name='0.26.1门店默认重新载入.md'
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     (dest/'使用说明.txt').write_bytes((root/'docs'/name).read_bytes())
-if version['version'] in {'0.27.0','0.27.1'}:
+if version['version'] in {'0.27.0','0.27.1','0.28.0'}:
     name='0.27.0数据与任务维护.md'
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     (dest/'使用说明.txt').write_bytes((root/'docs'/name).read_bytes())
 
-if version['version']=='0.27.1':
+if version['version'] in {'0.27.1','0.28.0'}:
     name='0.27.1后台锁恢复修复.md'
+    shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    shutil.copy2(root/'docs'/name,dest/'使用说明.txt')
+
+if version['version']=='0.28.0':
+    name='0.28.0业务可读性.md'
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'docs'/name,dest/'使用说明.txt')

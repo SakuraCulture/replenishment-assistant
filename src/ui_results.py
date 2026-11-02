@@ -81,7 +81,7 @@ class ResultsView:
         self.filter_timer.stop();sort_column=self.proxy.sortColumn();sort_order=self.proxy.sortOrder();self.proxy.sort(-1)
         blockers=[QSignalBlocker(w) for w in (self.search,self.warehouse_filter,self.category_filter,self.mode,self.result_facets)]
         self.result_facets.reset()
-        self.model.set_rows(rows);self.detail_panel.hide();self.search.clear()
+        self.model.set_rows(rows);self.apply_column_group();self.detail_panel.hide();self.search.clear()
         self.warehouse_filter.clear();self.warehouse_filter.addItems(['全部仓']+sorted({str(d.get('AU','')) for d in rows}))
         self.category_filter.clear();self.category_filter.addItems(['全部分类']+sorted({str(d.get('_category') or '未分类') for d in rows}))
         self.mode.setCurrentText('建议补货' if calculated else '全部商品');del blockers;self._pending_sort=(sort_column,sort_order);self.filter_changed()
@@ -115,7 +115,7 @@ class ResultsView:
     def condition_buttons(self):
         while self.active_conditions.count():
             item=self.active_conditions.takeAt(0)
-            if item.widget():item.widget().deleteLater()
+            if item.widget():item.widget().hide();item.widget().deleteLater()
         items=[label('当前条件：','muted')]
         controls=[self.mode,self.warehouse_filter,self.category_filter,*self.result_facets.fields.values()]
         for c in controls:
@@ -176,7 +176,7 @@ class ResultsView:
             return '<table width="100%">'+''.join('<tr>'+''.join('<td style="padding:5px">'+html.escape(str(x))+'</td>' for x in row)+'</tr>' for row in rows)+'</table>'
         content='<h2>'+html.escape(str(d.get('D','')))+'</h2><p>'+html.escape(str(d.get('AU','')))+' · '+html.escape(str(d.get('E','')))+'</p>'
         content+='<h3>最终安排</h3>'+table([['数量',semantics.order_quantity(d),d.get('G') or '库存单位'],['金额',semantics.order_amount(d),'元']])
-        content+='<p>'+html.escape(semantics.explanation(d))+'</p><h3>数量形成过程</h3>'+table(stage_rows(d))
+        content+='<p>'+html.escape(semantics.explanation(d))+'</p><h3>数量形成过程</h3>'+table(stage_rows(d,final_label='最终安排量（待签发）'))
         content+='<h3>销量与库存</h3>'+table([field_row(d,k) for k in ('H','I','J','K','L','AG','AH','BD')])
         content+='<p><a href="parameters">查看实际参数</a> · <a href="technical">查看完整技术依据</a></p>'
         self.details.setOpenLinks(False)
