@@ -57,7 +57,7 @@ class PurchaseUiTests(unittest.TestCase):
         from aoxiang_purchase_ui import PurchaseDialog
         self.temp = tempfile.TemporaryDirectory()
         self.errors = []
-        self.warning = patch('aoxiang_ui_common.QMessageBox.warning', side_effect=lambda *args: self.errors.append(args[-1]))
+        self.warning = patch('readable_ui.failure', side_effect=lambda *args: self.errors.append(args[-1]))
         self.warning.start()
         host = SimpleNamespace(repository=SimpleNamespace(folder=Path(self.temp.name)), work_repository=SimpleNamespace(path=Path(self.temp.name) / 'unused.sqlite'))
         head = {'number': 'BH-1', 'name': '测试店', 'warehouse': '河北仓', 'store': 'T'}

@@ -48,7 +48,7 @@ class ParameterDialog(QDialog):
         self.help=QTextBrowser();self.help.setMaximumHeight(115);v.addWidget(self.help)
         self.param_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText(business_help(schema.HELP[list(schema.HELP)[r]][2])) if r>=0 else None)
         self.weight_table.currentCellChanged.connect(lambda r,c,*_:self.help.setPlainText(schema.WEIGHT_HELP.get(['','alpha','w1','w2',''][c], '此前16天权重=100%－最近7天权重－此前7天权重，无分类自动跟随快销；缺货时还按有效有货天数修正。')) if c>=0 else None)
-        self.profile_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText('勾选时使用分类值，未勾选沿用模型超参。快销/日百各一套，两仓共用；无分类跟随快销。\n'+schema.HELP[self.profile_rows[r][1]][2]) if r>=0 and hasattr(self,'profile_rows') else None)
+        self.profile_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText('勾选时使用分类值，未勾选沿用模型超参。快销/日百各一套，两仓共用；无分类跟随快销。\n'+business_help(schema.HELP[self.profile_rows[r][1]][2])) if r>=0 and hasattr(self,'profile_rows') else None)
         self.warehouses.currentCellChanged.connect(lambda *_:self.help.setPlainText('各仓备货、到货天数优先于通用值；按门店实际补货与到货周期维护。修改只在点击应用后生效。'))
         self.exception=QCheckBox('启用一箱例外（仍受禁用/停采与门店总预算约束）');v.addWidget(self.exception)
         self.note=label('','muted');v.addWidget(self.note)
@@ -82,7 +82,7 @@ class ParameterDialog(QDialog):
         if current in (self.effective,self.effective_now):self.refresh_effective()
         elif current is self.profile_table and hasattr(self,'profile_rows'):
             row=max(0,self.profile_table.currentRow());key=self.profile_rows[row][1]
-            self.help.setPlainText('分类值优先于门店通用值；快销/日百各一套，两仓共用，无分类跟随快销。未勾选则沿用门店值。\n'+schema.HELP[key][2])
+            self.help.setPlainText('分类值优先于门店通用值；快销/日百各一套，两仓共用，无分类跟随快销。未勾选则沿用门店值。\n'+business_help(schema.HELP[key][2]))
         elif current.objectName()=='parameterImportSource':self.help.setPlainText('这里保留当时完整注入的原表字段和处理依据。后续编辑不会回写此来源；当前实际值请在“生效核对”中查看。')
     def is_edited(self):
         try:return self.value()!=self.editor_baseline

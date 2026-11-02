@@ -70,9 +70,10 @@ class ComponentDialog(QDialog):
         pass
 
     def failure(self, text):
-        self.status.setText('未完成：' + text)
+        from readable_ui import failure_message,failure
+        self.status.setText('未完成：' + failure_message(text));self.status.setToolTip(text)
         if not self._closing:
-            QMessageBox.warning(self, '翱象操作未完成', text)
+            failure(self, '翱象操作未完成', text)
 
     def ensure_client(self):
         from aoxiang_session import SessionLease

@@ -25,7 +25,7 @@ class WarehouseUi:
             c=self.catalogs.get(wh)
             self.catalog_buttons[wh].setText(('更新' if c else '导入')+wh+'资料')
             if not c:text.setText('尚未导入；表内不需要仓库标识');continue
-            text.setText(f"{len(c['items']):,}款 · 版本 {c['revision']}\n{Path(c['source_path']).name} · 导入 {c['imported_at']}")
+            text.setToolTip('资料版本：'+c['revision']);text.setText(f"{len(c['items']):,}款\n{Path(c['source_path']).name} · 导入 {c['imported_at']}")
     def choose_catalog(self,warehouse):
         from import_ui import choose
         paths=choose(self,'catalog','导入到'+warehouse+'（完整更新该仓快照）');path=paths[0] if paths else None
@@ -53,8 +53,8 @@ class WarehouseUi:
         catalog=self.catalogs.get(warehouse)
         if not catalog:QMessageBox.information(self,'尚未导入',warehouse+'尚无保存的商品资料。');return
         dialog=QDialog(self);dialog.setWindowTitle(warehouse+' · 已保存资料');dialog.resize(1040,650);v=QVBoxLayout(dialog)
-        counts=Counter(str(r.get('商品状态')) for r in catalog['items'].values());v.addWidget(label(f"{warehouse} · {len(catalog['items']):,}款 · {dict(counts)}",'section'))
-        v.addWidget(label(f"来源：{catalog['source_path']}\n导入：{catalog['imported_at']} · 版本：{catalog['revision']}。此处库存不因计算而扣减。",'muted'))
+        counts=Counter(str(r.get('商品状态')) for r in catalog['items'].values());v.addWidget(label(f"{warehouse} · {len(catalog['items']):,}款 · {' · '.join(k+' '+str(n)+'款' for k,n in counts.items())}",'section'))
+        v.addWidget(label(f"文件：{Path(catalog['source_path']).name} · 导入：{catalog['imported_at']}。库存为导入时快照。",'muted'));toggle,technical=__import__('readable_ui').technical(dialog,'原位置：'+catalog['source_path']+'\n资料版本：'+catalog['revision']);v.addWidget(toggle);v.addWidget(technical)
         search=QLineEdit();search.setPlaceholderText('搜索商品名称 / 编码');v.addWidget(search)
         rows=list(catalog['items'].values());fields=['商品编码','商品名称','商品状态','可用数','基本售价','出库箱规','分类']
         table=QTableWidget(len(rows),len(fields));table.setHorizontalHeaderLabels(fields);table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);table.setColumnWidth(0,180);table.setColumnWidth(1,320);v.addWidget(table,1)

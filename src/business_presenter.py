@@ -127,7 +127,7 @@ def stage_rows(d):
 
 def parameter_rows(result,d):
     from parameter_schema import HELP
-    cfg=result.get('effective_settings',{}).get('parameter_config') or result.get('config') or {}
+    cfg=(result.get('effective_settings') or {}).get('parameter_config') or result.get('config') or {}
     params=cfg.get('parameters',{});profile='快销' if d.get('U')=='无分类' else d.get('U')
     overrides=cfg.get('profile_parameters',{}).get(profile,{})
     rows=[field_row(d,k,'商品当时实际取值') for k in ('AU','U','AG','AH','AB','AC','AD','AE')]
@@ -135,7 +135,7 @@ def parameter_rows(result,d):
         if k in ('depth','lead'):continue
         val=overrides.get(k,params.get(k));why='分类覆盖：'+str(profile) if k in overrides else '当时门店通用值'
         if k=='probability' and '_effective_probability' in d:val=d['_effective_probability'];why='商品留存的实际值'
-        rows.append([name,value_text(val,k,missing=MISSING),field_unit(k,d),why+'；'+helptext])
+        rows.append([name,value_text(val,k,missing=MISSING),field_unit(k,d),why+'；'+business_help(helptext)])
     effective=result.get('effective_settings') or {}
     budget=effective['budget'] if 'budget' in effective else result['budget'].get('limit') if 'budget' in result else MISSING
     rows.extend([['门店预算',value_text(budget,'budget'),'元','门店共用预算，不是单仓预算'],['一箱例外',value_text(result.get('enabled'),missing=MISSING),'','当时开关']])

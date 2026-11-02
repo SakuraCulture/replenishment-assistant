@@ -200,7 +200,8 @@ def export_selected(parent,host,heads,kind='comparison'):
     if not folder:return
     try:
         result=run(parent,service.export,(host.work_repository.path,heads,folder,kind,'separate' if mode.startswith('每店') else 'combined'),'导出生命周期资料')
-        QMessageBox.information(parent,'导出结果',f"完成 {len(result['files'])} 个文件"+('；已取消剩余项' if result['cancelled'] else '')+('；失败：'+result['error'] if result['error'] else '')+'\n'+'\n'.join(result['files']))
+        from readable_ui import file_results
+        file_results(parent,result['files'],'导出结果',('已取消剩余项。' if result['cancelled'] else '')+('失败：'+result['error'] if result['error'] else ''))
         return result
     except Exception as exc:warn(parent,exc)
 

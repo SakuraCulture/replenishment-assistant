@@ -30,7 +30,7 @@ class AllocationReview(QWidget):
         self.pages=QStackedWidget();v.addWidget(self.pages,1)
         overview=QWidget();ov=QVBoxLayout(overview);ov.setContentsMargins(0,0,0,0)
         ov.addWidget(label('点击门店查看商品；仅查看，不改变分配顺序或数量。','muted'))
-        self.store_table,self.store_model=grid(self,['门店','仓单数','回传需求（元）','已分配（元）','减少（元）','金额满足率','涉及SKU','减量SKU','金额待核SKU'])
+        self.store_table,self.store_model=grid(self,['门店','仓单数','回传需求（元）','已分配（元）','减少（元）','金额满足率','涉及商品款数','减量款数','金额待核款数'])
         for i,w in enumerate((210,65,115,115,115,95,80,80,100)):self.store_table.setColumnWidth(i,w)
         ov.addWidget(self.store_table,1);self.pages.addWidget(overview);self.store_table.clicked.connect(self.open_store)
         detail=QWidget();dv=QVBoxLayout(detail);dv.setContentsMargins(0,0,0,0);dv.addWidget(button('← 返回门店汇总',lambda:self.pages.setCurrentIndex(0)))

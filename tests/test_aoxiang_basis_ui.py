@@ -27,7 +27,7 @@ class BasisUiTests(unittest.TestCase):
         self.host=SimpleNamespace(repository=SimpleNamespace(folder=self.f.f.root),work_repository=SimpleNamespace(path=self.f.f.path))
         atomic_json(self.f.root/'purchase-packages'/self.package['id']/'本地任务索引.json',self.package)
         self.errors=[]
-        self.warning=patch('aoxiang_ui_common.QMessageBox.warning',side_effect=lambda *a:self.errors.append(a[-1]));self.warning.start()
+        self.warning=patch('readable_ui.failure',side_effect=lambda *a:self.errors.append(a[-1]));self.warning.start()
 
     def wait(self,condition):
         from PySide6.QtTest import QTest

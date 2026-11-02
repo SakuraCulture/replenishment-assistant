@@ -52,7 +52,7 @@ class ReceiptUiTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         self.errors = []
-        self.warning = patch('aoxiang_ui_common.QMessageBox.warning', side_effect=lambda *args: self.errors.append(args[-1]))
+        self.warning = patch('readable_ui.failure', side_effect=lambda *args: self.errors.append(args[-1]))
         self.warning.start()
         host = SimpleNamespace(repository=SimpleNamespace(folder=self.root), work_repository=SimpleNamespace(path=self.root / 'unused.db'))
         head = {'number': 'BH-1', 'name': '测试店', 'warehouse': '河北仓', 'store': 'T'}

@@ -98,6 +98,8 @@ class FetchDialog(ComponentDialog):
         self.details.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         self.details.setColumnWidth(0, 220)
         self.details.setColumnWidth(1, 180)
+        self.details.cellDoubleClicked.connect(self.show_task_detail)
+        self.details.setToolTip('双击门店记录可复制完整错误与平台任务编号；不会重新提交任务。')
         layout.addWidget(self.details, 1)
         self.progress = QProgressBar()
         layout.addWidget(self.progress)
@@ -200,6 +202,7 @@ class FetchDialog(ComponentDialog):
         self.run(lambda _: self.jobs.get(command_id), self.show_job)
 
     def show_job(self, job):
+        from readable_ui import failure_message
         self.current = job
         history_index = self.history.findData(job['id'])
         if history_index >= 0:
@@ -213,9 +216,10 @@ class FetchDialog(ComponentDialog):
             result, error = item.get('result') or {}, item.get('error') or {}
             values = [names[item['warehouse_code']] + '\n' + item['warehouse_code'], STATES[item['state']],
                       result.get('rows', '—'), ('今日复用' if result.get('reused') else '本次下载') if result else '—',
-                      error.get('message', '') or (PHASES.get(item.get('phase'), '') + (' · 任务 ' + item['task_id'] if item.get('task_id') else ''))]
+                      failure_message(str(error.get('code',''))+'：'+str(error.get('message',''))) if error else PHASES.get(item.get('phase'), '')]
             for column, value in enumerate(values):
                 self.details.setItem(row, column, QTableWidgetItem(str(value)))
+            self.details.item(row,4).setToolTip(str(error) if error else '平台任务编号：'+str(item.get('task_id','尚未取得')))
             if self.details.columnCount()<6:self.details.setColumnCount(6);self.details.setHorizontalHeaderItem(5,QTableWidgetItem('单项操作'))
             if item['state']=='FAILED':
                 b=button('重跑此任务',lambda checked=False,index=row:self.retry_items([index]));b.setEnabled(job['state'] in {'PAUSED','INTERRUPTED','COMPLETED_WITH_ERRORS'} and not self.worker);self.details.setCellWidget(row,5,b)
@@ -228,12 +232,22 @@ class FetchDialog(ComponentDialog):
         self.progress.setFormat('%v / %m 家已处理')
         self.status.setText(f'{STATES[job["state"]]} · 已受理导出 {accepted} 家 · 已处理 {finished}/{len(items)} 家 · {self.last_phase}' +
                             (f' · 本窗口已等待 {int(time.monotonic() - self.began)} 秒' if job['state'] in ACTIVE else '') +
-                            (f' · {error.get("code", "")}：{error.get("message", "")}' if error else ''))
+                            (' · '+failure_message(str(error.get('code',''))+'：'+str(error.get('message',''))) if error else ''))
+        self.status.setToolTip(str(error) if error else '')
         if job['state'] in ACTIVE:
             self.poll.start()
         else:
             self.poll.stop()
         self.update_buttons()
+
+    def show_task_detail(self,row,column):
+        import json
+        from readable_ui import failure
+        items=((self.current or {}).get('record') or {}).get('items',[])
+        if 0<=row<len(items):
+            item=items[row]
+            raw={'平台任务编号':item.get('task_id'),'状态':STATES.get(item['state'],item['state']),'错误':item.get('error')}
+            failure(self,'门店任务详情 · 只读',json.dumps(raw,ensure_ascii=False,indent=2))
 
     def refresh_job(self):
         if self.worker or self._closing or not self.current:

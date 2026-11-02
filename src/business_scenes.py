@@ -99,9 +99,11 @@ def issue_result(host, receipt):
     layout.addWidget(label(f'已生成 {len(paths)} 份签发单文件', 'section'))
     layout.addWidget(label('已签发内容独立保留；下次导出已有签发请进入订单跟踪。'))
     from business_ui import grid
-    table, _ = grid(dialog, ['文件'], [[str(p)] for p in paths])
+    table, _ = grid(dialog, ['文件名（含门店、仓及用途）'], [[Path(p).name] for p in paths])
     table.setColumnWidth(0, 690)
     layout.addWidget(table, 1)
+    location=label('选择文件可查看保存位置','muted');layout.addWidget(location)
+    table.clicked.connect(lambda i:location.setText(str(paths[i.row()])))
     row = QHBoxLayout()
     if paths:
         row.addWidget(button('打开导出目录', lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(Path(paths[0]).parent)))))

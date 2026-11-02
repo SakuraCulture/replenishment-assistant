@@ -63,7 +63,7 @@ class SetupUiTests(unittest.TestCase):
         from aoxiang_setup_ui import SetupDialog
         self.temp = tempfile.TemporaryDirectory()
         self.errors = []
-        self.warning = patch('aoxiang_setup_ui.QMessageBox.warning', side_effect=lambda *args: self.errors.append(args[-1]))
+        self.warning = patch('readable_ui.failure', side_effect=lambda *args: self.errors.append(args[-1]))
         self.warning.start()
         self.dialog = SetupDialog(None, self.temp.name, client_factory=FakeClient)
         self.dialog.show()

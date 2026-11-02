@@ -13,14 +13,15 @@ def add_bulk_choices(dialog,layout,table,conflicts,combos):
     row.addWidget(source);replace=QCheckBox('包含已经选择的组');row.addWidget(replace)
     undo=[];note=label('只对当前可见冲突提出选择；同文件有多条候选时仍需逐条核对。','muted')
     def filter_rows(text):
-        for i,c in enumerate(conflicts):table.setRowHidden(i,not all(t.casefold() in (c['store']+' '+c['sku']+' '+table.item(i,1).text()).casefold() for t in text.split()))
+        for i,c in enumerate(conflicts):table.setRowHidden(i,not all(t.casefold() in (table.item(i,0).text()+' '+table.item(i,1).text()).casefold() for t in text.split()))
     search.textChanged.connect(filter_rows)
     def propose():
         choices=[c.currentData() for c in combos];changes=proposals(conflicts,choices,source.currentData(),{i for i in range(len(conflicts)) if not table.isRowHidden(i)},replace.isChecked())
         if not changes:note.setText('没有可批量选择的组；同一来源多条候选的组请逐条选择。');return
-        message=f'拟将当前可见的 {len(changes)} 组选择为：\n{source.currentData()}\n仅更新窗口中的选择，最终仍需点击“应用选择并重新检查”。'
+        message=f'拟将当前可见的 {len(changes)} 组选择为：\n{Path(source.currentData()).name}\n仅更新窗口中的选择，最终仍需点击“应用选择并重新检查”。'
         box=QMessageBox(QMessageBox.Icon.Question,'核对批量来源选择',message,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,dialog);box.setDefaultButton(QMessageBox.StandardButton.No)
-        box.setDetailedText('\n'.join(f"{conflicts[i]['store']} / {conflicts[i]['sku']}：{choices[i]} → 候选 {n+1}" for i,n in changes))
+        from readable_ui import review_table
+        review_table(box,['门店 / 商品','原选择','新选择'],[[table.item(i,0).text(),'未选择' if choices[i] is None else f'候选{choices[i]+1}',f'候选{n+1}'] for i,n in changes])
         if box.exec()!=QMessageBox.StandardButton.Yes:return
         undo.append(choices)
         for i,n in changes:combos[i].setCurrentIndex(n+1)

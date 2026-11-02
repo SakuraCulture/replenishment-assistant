@@ -265,25 +265,24 @@ class Logs(QDialog):
         self.search=QLineEdit();self.search.setPlaceholderText('门店 / 补货单号 / 仓 / 动作 / 结果');v.addWidget(self.search)
         row=QHBoxLayout();row.addWidget(button('查询',self.query));row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));row.addWidget(button('导出当前查询日志',self.export));v.addLayout(row)
         self.table,self.model=grid(self,['业务日期','操作时间','门店','仓','单号','环节','动作']);v.addWidget(self.table,1)
-        self.detail,self.detail_model=grid(self,['核对项目','当时值']);v.addWidget(self.detail,1);self.table.clicked.connect(self.show_detail);self.search.returnPressed.connect(self.query);QTimer.singleShot(0,self.query)
+        from PySide6.QtWidgets import QCheckBox
+        from business_presenter import HEADERS
+        self.technical=QCheckBox('展开完整技术字段');v.addWidget(self.technical);self.technical.toggled.connect(lambda *_:self.show_detail(self.table.currentIndex()))
+        self.detail,self.detail_model=grid(self,HEADERS);v.addWidget(self.detail,1);self.table.clicked.connect(self.show_detail);self.search.returnPressed.connect(self.query);QTimer.singleShot(0,self.query)
+        self.search.setPlaceholderText('门店编码 / 补货单号 / 仓 / 动作 / 结果（与日志导出同一查询范围）')
     def turn(self,delta):self.page=max(0,self.page+delta);self.query(keep_page=True)
     def query(self,*_,keep_page=False):
         try:
             if not keep_page:self.page=0
-            result=run(self,daily_batch.log_page,(self.host.work_repository.path,self.start,self.end,self.search.text(),self.page),'查询批次日志');self.records=result['rows'];self.page=result['page']
-            self.model.replace([[r[k] for k in ('day','at','store','warehouse','number','group','action')] for r in self.records])
+            from business_log_views import log_page
+            result=run(self,log_page,(self.host.work_repository.path,self.start,self.end,self.search.text(),self.page),'查询批次日志');self.records=result['rows'];self.page=result['page']
+            self.model.replace([[r.get('display_name',r['store']) if k=='store' else r[k] for k in ('day','at','store','warehouse','number','group','action')] for r in self.records]);self.detail_model.replace([])
             self.setWindowTitle(f"日批次作业日志 · 共{result['count']}条 · 第{self.page+1}页，每页50条；导出包含全部查询结果")
         except Exception as exc:warn(self,exc)
     def show_detail(self,index):
-        r=self.records[self.model.indices[index.row()]];rows=[]
-        labels={'gid':'生成记录','bid':'库存基准','summary':'数量金额','quantity':'数量','amount':'金额','positive':'安排款数','shortages':'缺口款数','issues':'待核款数','old':'原生成记录','sha256':'文件校验值','path':'文件位置','reason':'原因','source':'资料来源'}
-        def flatten(v,prefix=''):
-            if isinstance(v,dict):
-                for k,x in v.items():flatten(x,(prefix+' / ' if prefix else '')+labels.get(k,k))
-            elif isinstance(v,list):
-                for i,x in enumerate(v):flatten(x,prefix+' 第'+str(i+1)+'项')
-            else:rows.append([prefix,'未记录' if v is None else v])
-        flatten(r['detail']);self.detail_model.replace(rows)
+        if not index.isValid():return
+        from business_log_views import detail_rows
+        r=self.records[self.model.indices[index.row()]];self.detail_model.replace(detail_rows(r['detail'],self.technical.isChecked()))
     def export(self):
         p,_=export_locations.save_file(self,'导出批次作业日志','批次作业日志.xlsx','Excel (*.xlsx)')
         if p:

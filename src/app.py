@@ -15,7 +15,9 @@ def main():
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
     logs=Path(os.environ.get('REPLENISHMENT_DATA_DIR') or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation));logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=logs/'app.log',level=logging.INFO,encoding='utf-8')
     def unexpected(t,v,tb):
-        logging.error('界面异常',exc_info=(t,v,tb));QMessageBox.critical(None,'操作未完成',f'{v}\n日志位置：{logs}')
+        logging.error('界面异常',exc_info=(t,v,tb))
+        from readable_ui import failure
+        failure(None,'操作未完成',f'{t.__name__}: {v}\n日志位置：{logs}')
     sys.excepthook=unexpected
     from workbench import Workbench
     if any(flag in sys.argv for flag in ['--batch-smoke','--warehouse-smoke','--work-smoke','--intake-smoke']):win=Workbench()

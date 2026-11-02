@@ -182,19 +182,26 @@ class AuditDialog(QDialog):
             self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在导出所选修订完整表单…')
             self.reader.request({'kind':'form_export','head':self.head,'scope':scope,'sku':sku,'path':path,'business_view':True},self.exported,self.failed)
     def exported(self,path):
-        if not self.disposed:self.bar.setRange(0,1);self.bar.setValue(1);self.export_btn.setEnabled(True);self.note.setText('已保存完整表单：'+path)
+        from business_presenter import file_name
+        if not self.disposed:self.bar.setRange(0,1);self.bar.setValue(1);self.export_btn.setEnabled(True);self.note.setText('已保存完整表单：'+file_name(path));self.note.setToolTip(path)
     def sources(self):
         self.reader.request({'kind':'attachments','head':self.head},self.show_sources,self.failed)
     def show_sources(self,rows):
         if self.disposed:return
         d=QDialog(self);d.setWindowTitle('当时的原文件');d.resize(1050,560);v=QVBoxLayout(d)
         from business_ui import grid
-        table,model=grid(d,['资料类型','原路径','SHA256','留存状态'],rows);v.addWidget(table,1);note=label('未留存的历史原文件无法下载；不会读取同路径下今天的新文件。');v.addWidget(note)
+        from business_presenter import file_name
+        table,model=grid(d,['资料类型 / 仓','原文件名','留存状态'],[[r[0],file_name(r[1]),r[3]] for r in rows]);table.setColumnWidth(1,520);v.addWidget(table,1);note=label('未留存的历史原文件无法下载；不会读取同路径下今天的新文件。');v.addWidget(note)
+        from readable_ui import technical
+        toggle,body=technical(d,'','查看文件位置与校验值');v.addWidget(toggle);v.addWidget(body)
+        def details(index):
+            item=rows[model.indices[index.row()]];body.setPlainText('原位置：'+str(item[1])+'\nSHA256：'+str(item[2]))
+        table.clicked.connect(details)
         def save():
             if self.head.get('deleted'):note.setText('此仓单为旧版已移除记录，请先恢复再下载');return
             i=table.currentIndex().row()
             if i<0:return
-            item=model.rows[model.indices[i]]
+            item=rows[model.indices[i]]
             if item[3]!='已留存':note.setText('历史原文件未留存');return
             from pathlib import Path
             path,_=export_locations.save_file(d,'保存原文件副本',Path(item[1]).name,'原文件 (*)')
@@ -214,7 +221,16 @@ class EventsDialog(QDialog):
         for day in dict.fromkeys(r[0][:10] for r in self.rows):self.day.addItem(day,day)
         for action in dict.fromkeys(r[4] for r in self.rows):self.action.addItem(action,action)
         filters.addWidget(self.day);filters.addWidget(self.action);filters.addWidget(label('本页查询操作过程；商品资料和清单请打开对应签发单。','muted'),1);v.addLayout(filters)
-        self.table,self.model=grid(self,['时间','补货单号','门店','签发修订','操作','明细'],self.rows);self.table.setColumnWidth(5,540);v.addWidget(self.table,1);self.search.textChanged.connect(self.filter);row=QHBoxLayout()
+        from business_log_views import summary
+        shown=[[r[0],r[1],records[i].get('display_name',r[2]),records[i].get('warehouse',''),r[4],summary(records[i]['detail'])] for i,r in enumerate(self.rows)]
+        self.table,self.model=grid(self,['时间','补货单号','门店','仓','操作','结果摘要'],shown);self.table.setColumnWidth(5,350)
+        self.model.tokens=[a+' '+' '.join(str(x) for x in original).lower() for a,original in zip(self.model.tokens,self.rows)]
+        v.addWidget(self.table,1);self.search.textChanged.connect(self.filter)
+        from PySide6.QtWidgets import QCheckBox
+        self.technical=QCheckBox('展开完整技术字段');v.addWidget(self.technical)
+        from business_presenter import HEADERS
+        self.detail,self.detail_model=grid(self,HEADERS);self.detail.setColumnWidth(0,330);self.detail.setColumnWidth(3,430);v.addWidget(self.detail,1);self.technical.toggled.connect(self.selection_changed)
+        row=QHBoxLayout()
         row.addWidget(label('当前记录关联单据：先查看确切修订，再使用独立导出入口。','muted'));self.open_btn=button('查看当前记录关联单据',lambda:self.open_order(self.table.currentIndex()));row.addWidget(self.open_btn)
         row.addWidget(button('关闭',self.accept));v.addLayout(row);self.filter();self.table.selectionModel().currentRowChanged.connect(self.selection_changed)
         self.table.doubleClicked.connect(self.open_order)
@@ -224,6 +240,9 @@ class EventsDialog(QDialog):
         i=self.table.currentIndex().row();valid=0<=i<len(self.model.indices);self.open_btn.setEnabled(valid)
         if valid:
             r=self.records[self.model.indices[i]];self.open_btn.setToolTip(str(r.get('child_number') or r.get('oid'))+f" · V{r['revision']:03d}")
+            from business_log_views import detail_rows
+            self.detail_model.replace(detail_rows(r['detail'],self.technical.isChecked()))
+        else:self.detail_model.replace([])
     def open_order(self,index):
         if not index.isValid():return
         record=self.records[self.model.indices[index.row()]];host=self.parentWidget()

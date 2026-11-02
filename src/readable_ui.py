@@ -53,7 +53,7 @@ def file_results(parent,paths,title='导出完成',note=''):
     if paths:table.selectRow(0)
     d.exec()
 
-def failure(parent,title,exc):
+def failure_message(exc):
     raw=str(exc)
     if 'UNRESOLVED_TASK' in raw or 'SUBMISSION_UNKNOWN' in raw:
         message='平台是否已受理尚未核实。请核对原任务，不要重复提交。'
@@ -61,4 +61,8 @@ def failure(parent,title,exc):
     elif isinstance(exc,PermissionError) or 'PermissionError' in raw:message='文件暂不能写入。请关闭占用文件的Excel，或选择有写入权限的位置后重试。'
     elif 'KeyError' in raw or 'Traceback' in raw:message='处理数据时遇到异常，当前操作未完成。请复制技术详情用于排查。'
     else:message=raw if len(raw)<180 and not ('\\' in raw or ' / ' in raw) else '当前操作未完成。请查看下方原因并核对输入或任务状态后再处理。'
-    box=QMessageBox(parent);box.setIcon(QMessageBox.Icon.Warning);box.setWindowTitle(title);box.setText(message);box.setDetailedText(raw);box.setStandardButtons(QMessageBox.StandardButton.Ok);box.exec()
+    return message
+
+
+def failure(parent,title,exc):
+    box=QMessageBox(parent);box.setIcon(QMessageBox.Icon.Warning);box.setWindowTitle(title);box.setText(failure_message(exc));box.setDetailedText(str(exc));box.setStandardButtons(QMessageBox.StandardButton.Ok);box.exec()

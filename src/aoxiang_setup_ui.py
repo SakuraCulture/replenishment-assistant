@@ -197,7 +197,7 @@ class SetupDialog(ComponentDialog):
         self.edge.clear()
         self.profile.clear()
         for item in found['installations']:
-            self.edge.addItem(item['executable'] + ' · ' + item['version'], item['executable'])
+            self.edge.addItem('Microsoft Edge · ' + item['version'], item['executable']);self.edge.setItemData(self.edge.count()-1,item['executable'],Qt.ItemDataRole.ToolTipRole)
         for item in found['profiles']:
             self.profile.addItem(item['displayName'] + ' · ' + item['profileDirectory'], item['actualProfilePath'])
         verified = {item['buyerWarehouseCode']: item for item in configured.get('targets', [])}

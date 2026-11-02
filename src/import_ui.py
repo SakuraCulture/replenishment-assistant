@@ -18,7 +18,7 @@ class ImportDialog(QDialog):
         v=QVBoxLayout(self);v.addWidget(label('拖入文件，或点击选择。读取校验后再进入后续核对；原文件不修改。','section'));self.list=QListWidget();v.addWidget(self.list);row=QHBoxLayout();row.addWidget(button('选择文件',self.choose));row.addWidget(button('下载完整门店参数模板' if kind=='store_parameters' else '下载'+import_templates.TEMPLATES[kind][0]+'模板',lambda:download(self,kind)));v.addLayout(row);row=QHBoxLayout();self.go=button('读取并校验',self.accept,True);self.go.setEnabled(False);row.addWidget(self.go);row.addWidget(button('取消',self.reject));v.addLayout(row)
     def set_paths(self,paths):
         if not paths or (not self.multiple and len(paths)!=1) or any(Path(p).suffix.lower() not in self.extensions for p in paths):return
-        self.paths=list(dict.fromkeys(str(Path(p).resolve()) for p in paths));self.list.clear();self.list.addItems(self.paths);self.go.setEnabled(True)
+        self.paths=list(dict.fromkeys(str(Path(p).resolve()) for p in paths));self.list.clear();self.list.addItems([Path(p).name for p in self.paths]);[self.list.item(i).setToolTip(p) for i,p in enumerate(self.paths)];self.go.setEnabled(True)
     def choose(self):
         filt='支持的文件 ('+' '.join('*'+x for x in self.extensions)+')'
         if self.multiple:paths,_=QFileDialog.getOpenFileNames(self,'选择文件','',filt)

@@ -260,11 +260,18 @@ class BatchWindow(WarehouseUi,SessionWindow):
         dialog=QDialog(self);dialog.setWindowTitle('处理重复冲突 · 选择保留来源');dialog.resize(1060,650);v=QVBoxLayout(dialog);v.addWidget(label('同店同商品内容不同，不叠加。查看字段差异后选择保留哪条；未选择的门店暂不能计算。','muted'))
         table=QTableWidget(len(conflicts),3);table.setHorizontalHeaderLabels(['门店 / 商品','差异及来源','保留记录']);table.setColumnWidth(0,200);table.setColumnWidth(1,560);table.setColumnWidth(2,250);table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);v.addWidget(table,1);combos=[]
         for i,c in enumerate(conflicts):
-            table.setItem(i,0,QTableWidgetItem(c['store']+'\n'+c['sku']));variants=c['variants'];fields=set().union(*(r['values'] for r in variants));different=[k for k in sorted(fields) if len({str(r['values'].get(k)) for r in variants})>1]
+            variants=c['variants'];values=variants[0]['values'];store_name=values.get('仓库/门店名称') or values.get('门店名称') or c['store'];sku_name=values.get('商品名称') or c['sku']
+            table.setItem(i,0,QTableWidgetItem(str(store_name)+'\n'+str(sku_name)+'\n'+c['store']+' / '+c['sku']));fields=set().union(*(r['values'] for r in variants));different=[k for k in sorted(fields) if len({str(r['values'].get(k)) for r in variants})>1]
             lines=[];combo=QComboBox();combo.addItem('暂不处理',None)
             for n,r in enumerate(variants):
                 source=f"{n+1}. {Path(r['path']).name} 第{r['row']}行";combo.addItem(source,n);lines.append(source+'：'+ '；'.join(k+'='+str(r['values'].get(k)) for k in different))
             table.setItem(i,1,QTableWidgetItem('\n'.join(lines)));table.item(i,1).setToolTip('\n'.join(lines));combo.setCurrentIndex(c['choice']+1 if c['choice'] is not None else 0);table.setCellWidget(i,2,combo);table.setRowHeight(i,100);combos.append(combo)
+            from interaction_ui import show_rows
+            from business_presenter import value_text
+            compare_rows=[[field,*[value_text(r['values'].get(field)) if field in r['values'] else '字段缺失' for r in variants]] for field in different]
+            headers=['变化字段',*[f"候选{n+1} · {Path(r['path']).name} · 第{r['row']}行" for n,r in enumerate(variants)]]
+            b=button(f'查看 {len(different)} 个差异字段 · {len(variants)} 个来源',lambda checked=False,h=headers,r=compare_rows:show_rows(dialog,'逐来源核对差异',h,r,'显示原值；空白、0、缺失分别保留。关闭此窗口不会替你选择来源。'))
+            table.setCellWidget(i,1,b)
         from conflict_ui import add_bulk_choices
         add_bulk_choices(dialog,v,table,conflicts,combos)
         v.addWidget(button('应用选择并重新检查',dialog.accept,True));v.addWidget(button('取消',dialog.reject))

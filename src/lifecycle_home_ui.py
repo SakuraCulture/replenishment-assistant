@@ -123,7 +123,8 @@ class LifecycleWidget(QWidget):
         if not confirm(self,'导出签发单','每店每仓一份原签发文件，同名文件直接覆盖，不重新签发。\n'+'\n'.join(h['number'] for h in heads)+'\n导出位置：'+folder):return
         try:
             files=run(self,lifecycle_batch.export_signed,(self.host.work_repository.path,heads,folder),'导出签发单')
-            QMessageBox.information(self,'签发单已导出','\n'.join(files))
+            from readable_ui import file_results
+            file_results(self,files,'签发单已导出')
         except Exception as exc:warn(self,exc)
     def query(self,*_,keep_page=False):
         if self.host.closing:return

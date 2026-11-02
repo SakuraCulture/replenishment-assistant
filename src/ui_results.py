@@ -13,7 +13,7 @@ from PySide6.QtCore import Qt,Signal,QThread,QAbstractTableModel,QSortFilterProx
 from PySide6.QtGui import QColor,QFont,QDesktopServices,QIcon,QPalette
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QFrame,
     QFileDialog,QComboBox,QCheckBox,QDoubleSpinBox,QTableWidget,QTableWidgetItem,QHeaderView,QTableView,QLineEdit,
-    QStackedWidget,QSplitter,QTextBrowser,QMessageBox,QDialog,QProgressBar,QAbstractItemView,QScrollArea)
+    QStackedWidget,QSplitter,QTextBrowser,QMessageBox,QDialog,QProgressBar,QAbstractItemView,QScrollArea,QGridLayout)
 import result_semantics as semantics
 import review_amounts
 from ui_review_amounts import ReviewAmounts
@@ -69,6 +69,9 @@ class ResultsView:
         self.filter_timer=QTimer(self.search);self.filter_timer.setSingleShot(True);self.filter_timer.setInterval(275);self.filter_timer.timeout.connect(self.filter_changed)
         self.search.textChanged.connect(lambda _:self.filter_timer.start());self.search.returnPressed.connect(self.filter_changed)
         self.filter_generation=0;self.summary_task=None;self.summary_pending=None
+        self.active_conditions=QGridLayout();v.insertLayout(4,self.active_conditions)
+        self.column_choice=QComboBox();self.column_choice.addItems(['主要结果','预算与调整','仓归属与资料','全部字段']);tools.insertWidget(0,self.column_choice)
+        self.column_choice.currentTextChanged.connect(self.apply_column_group);self.apply_column_group()
         self.result_facets.changed.connect(self.filter_changed)
         self.result_facets.fields['group'].currentIndexChanged.connect(lambda *_:self.mode.setCurrentText('全部商品'))
         QApplication.instance().aboutToQuit.connect(self.stop_filtered_summary)
@@ -105,10 +108,26 @@ class ResultsView:
         if calculated and self.result.get('must_list'):
             ml=self.result['must_list'];self.budget_caption.setText(self.budget_caption.text()+f"\n必卖清单 {ml['total']} 款，本店命中 {ml['matched']} 款，{ml['missing']} 款未出现在本店导出；不自动新增补货。")
 
+    def apply_column_group(self,*_):
+        group=self.column_choice.currentText()
+        visible={'主要结果':{0,1,3,5,6,7,8,9,10,13,15},'预算与调整':{0,1,3,9,10,13,18,19,20,21,22,23,24},'仓归属与资料':{0,1,2,3,13,14,*range(25,34)}}.get(group,set(range(len(COLUMNS))))
+        for col in range(len(COLUMNS)):self.table.setColumnHidden(col,col not in visible)
+    def condition_buttons(self):
+        while self.active_conditions.count():
+            item=self.active_conditions.takeAt(0)
+            if item.widget():item.widget().deleteLater()
+        items=[label('当前条件：','muted')]
+        controls=[self.mode,self.warehouse_filter,self.category_filter,*self.result_facets.fields.values()]
+        for c in controls:
+            if c.currentIndex()>0:items.append(button(c.currentText()+' ×',lambda checked=False,w=c:w.setCurrentIndex(0)))
+        if self.search.text():
+            b=button('搜索：'+self.search.text()[:30]+' ×',self.search.clear);b.setToolTip(self.search.text());items.append(b)
+        items.append(button('清除全部条件',self.reset_result_filters))
+        for i,w in enumerate(items):self.active_conditions.addWidget(w,i//4,i%4)
     def visible_rows(self):return [self.model.rows[self.proxy.mapToSource(self.proxy.index(i,0)).row()] for i in range(self.proxy.rowCount())]
 
     def filter_changed(self,*a):
-        self.filter_timer.stop();self.filter_generation+=1;self.summary_pending=None
+        self.filter_timer.stop();self.filter_generation+=1;self.summary_pending=None;self.condition_buttons()
         self.proxy.beginFilterChange();self.proxy.mode=self.mode.currentText();self.proxy.warehouse=self.warehouse_filter.currentText() or '全部仓';self.proxy.category=self.category_filter.currentText() or '全部分类';self.proxy.search=self.search.text().strip().lower();self.proxy.facets=self.result_facets.values();self.proxy.focused=new_product_focus.members(getattr(self,'new_focus',None));self.proxy.focus_known=getattr(self,'new_focus',None) is not None;self.proxy.endFilterChange(QSortFilterProxyModel.Direction.Rows)
         if hasattr(self,'_pending_sort'):
             self.proxy.sort(*self._pending_sort);del self._pending_sort
@@ -151,7 +170,25 @@ class ResultsView:
         self.filtered_caption.setText(f"当前筛选 {s['rows']:,} 行  ·  执行金额 {s['amount']:,.2f} 元  ·  计算金额 {s['calculated_amount']:,.2f} 元  ·  已排除 {s['excluded']:,} 行  ·  数据异常 {s['issues']:,} 行")
 
     def show_detail(self,index):
-        d=self.model.rows[self.proxy.mapToSource(index).row()];esc=lambda x:html.escape(semantics.fmt(x))
+        from business_presenter import stage_rows,field_row,parameter_rows
+        d=self.model.rows[self.proxy.mapToSource(index).row()];result=self.result or {}
+        def table(rows):
+            return '<table width="100%">'+''.join('<tr>'+''.join('<td style="padding:5px">'+html.escape(str(x))+'</td>' for x in row)+'</tr>' for row in rows)+'</table>'
+        content='<h2>'+html.escape(str(d.get('D','')))+'</h2><p>'+html.escape(str(d.get('AU','')))+' · '+html.escape(str(d.get('E','')))+'</p>'
+        content+='<h3>最终安排</h3>'+table([['数量',semantics.order_quantity(d),d.get('G') or '库存单位'],['金额',semantics.order_amount(d),'元']])
+        content+='<p>'+html.escape(semantics.explanation(d))+'</p><h3>数量形成过程</h3>'+table(stage_rows(d))
+        content+='<h3>销量与库存</h3>'+table([field_row(d,k) for k in ('H','I','J','K','L','AG','AH','BD')])
+        content+='<p><a href="parameters">查看实际参数</a> · <a href="technical">查看完整技术依据</a></p>'
+        self.details.setOpenLinks(False)
+        try:self.details.anchorClicked.disconnect()
+        except RuntimeError:pass
+        def follow(url):
+            if url.toString()=='technical':self.show_technical_detail(d)
+            elif url.toString()=='parameters':self.details.setHtml('<h3>本商品实际参数</h3>'+table(parameter_rows(result,d))+'<p><a href="back">返回数量说明</a></p>')
+            else:self.details.setHtml(content)
+        self.details.anchorClicked.connect(follow);self.details.setHtml(content);self.detail_panel.show()
+    def show_technical_detail(self,d):
+        esc=lambda x:html.escape(semantics.fmt(x))
         def group(title,items):return '<h3>'+title+'</h3><table width="100%">'+''.join(f'<tr><td style="color:#60777D;padding:5px 0">{html.escape(k)}</td><td align="right">{esc(v)}</td></tr>' for k,v in items)+'</table>'
         content=f'<h2>{esc(d.get("D"))}</h2><p>{esc(d.get("E"))} · {d["_source"]}</p>'
         content+='<p><b>'+esc(semantics.order_status(d))+'</b> '+esc(semantics.exclusion_reason(d))+'</p>'
@@ -176,7 +213,7 @@ class ResultsView:
             a=d.get('_audit',{});content+='<h3>一箱例外</h3><p>'+esc(a.get('reason','未执行'))+'</p>'
             if a.get('applied'):content+=group('放行依据',[('原拦截',a.get('blocked_by')),('新增金额',a.get('incremental_amount'))])
         content+='<h3>结果说明</h3><p>'+esc(semantics.explanation(d))+'</p><p>'+esc('；'.join(d['_meta']['notes']))+'</p>'
-        self.details.setHtml(content);self.detail_panel.show()
+        self.details.setHtml(content+'<p><a href="back">返回数量说明</a></p>');self.detail_panel.show()
 
     def export(self,filtered):
         if not self.result or self.dirty:return
@@ -193,8 +230,8 @@ class ResultsView:
         self.job(engine.export_xlsx,(self.result,path,rows,scope),self.export_ok)
 
     def export_ok(self,path):
-        self.last_export=path;self.status.setText('导出成功：'+path)
-        box=QMessageBox(self);box.setWindowTitle('导出完成');box.setText('已保存本次结果。');box.setInformativeText(path)
+        self.last_export=path;self.status.setText('导出成功：'+Path(path).name);self.status.setToolTip(path)
+        box=QMessageBox(self);box.setWindowTitle('导出完成');box.setText('已保存本次结果。');box.setInformativeText(Path(path).name);box.setDetailedText('保存位置：'+path)
         open_file=box.addButton('打开文件',QMessageBox.ButtonRole.ActionRole);open_dir=box.addButton('打开文件夹',QMessageBox.ButtonRole.ActionRole);box.addButton('完成',QMessageBox.ButtonRole.AcceptRole);box.exec()
         if box.clickedButton()==open_file:QDesktopServices.openUrl(QUrl.fromLocalFile(path))
         elif box.clickedButton()==open_dir:QDesktopServices.openUrl(QUrl.fromLocalFile(str(Path(path).parent)))

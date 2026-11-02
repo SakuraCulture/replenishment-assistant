@@ -538,7 +538,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
     def show_events(self,oid=None,warehouse=None):
         from history_ui import EventsDialog
         from business_ui import run
-        from history_forms import events
+        from business_log_views import events
         from runtime_support import Cancelled
         # QPushButton.clicked's bool is not an order id.
         try:data=run(self,events,(self.work_repository.path,None if isinstance(oid,bool) else oid,warehouse),'查询归档日志')
