@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "stores": 88,
+  "synthetic_sku_checks": 360,
+  "committed": true,
+  "before_stores": 17,
+  "after_stores": 93,
+  "updated": 12,
+  "created": 76,
+  "unrelated_stores_unchanged": 5,
+  "readback_exact": true,
+  "non_store_tables_unchanged": 25,
+  "real_store_source_rows_not_in_git": true,
+  "backup_available": true
+}

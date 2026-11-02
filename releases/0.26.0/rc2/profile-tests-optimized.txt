@@ -1,0 +1,12 @@
+test_category_values_warehouse_independence_and_no_source_mutation (test_profile_parameters.ProfileParametersTests.test_category_values_warehouse_independence_and_no_source_mutation) ... ok
+test_full_template_exposes_every_editable_parameter (test_profile_parameters.ProfileParametersTests.test_full_template_exposes_every_editable_parameter) ... ok
+test_import_export_persistence_and_clear (test_profile_parameters.ProfileParametersTests.test_import_export_persistence_and_clear) ... ok
+test_old_config_has_no_new_field_and_retains_effective_values (test_profile_parameters.ProfileParametersTests.test_old_config_has_no_new_field_and_retains_effective_values) ... ok
+test_probability_uses_existing_formula_per_category_and_store (test_profile_parameters.ProfileParametersTests.test_probability_uses_existing_formula_per_category_and_store) ... ok
+test_threshold_changes_actual_eligibility (test_profile_parameters.ProfileParametersTests.test_threshold_changes_actual_eligibility) ... ok
+test_validation_fail_closed (test_profile_parameters.ProfileParametersTests.test_validation_fail_closed) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.167s
+
+OK

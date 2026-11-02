@@ -1,0 +1,365 @@
+{
+  "baseline_commit": "2721aa34aec0691e83f713844a1d601f6f59a572",
+  "strict_values_types_order": true,
+  "existing_dynamic_whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "allowed_schema_metadata_changes": [
+    {
+      "case": "single_results",
+      "path": "$.EDGE.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "nonoverlap_results",
+      "path": "$.LQD2025.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "overlap_results",
+      "path": "$.EDGE.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "overlap_results",
+      "path": "$.OTHER.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "reversed_results",
+      "path": "$.EDGE.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "reversed_results",
+      "path": "$.OTHER.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "path_dedup_results",
+      "path": "$.EDGE.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "mixed_error_results",
+      "path": "$.EDGE.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "warehouse_results",
+      "path": "$.QA_A.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "warehouse_results",
+      "path": "$.QA_B.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "warehouse_results",
+      "path": "$.EDGE.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "warehouse_results",
+      "path": "$.OTHER.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "real_None_True",
+      "path": "$.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "real_0_True",
+      "path": "$.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "real_3000_True",
+      "path": "$.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "real_5000_True",
+      "path": "$.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "real_10000_True",
+      "path": "$.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "real_None_False",
+      "path": "$.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "real_custom",
+      "path": "$.version.parameter_schema_version",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "filtered.xlsx",
+      "path": "sheets[0].cells.B4",
+      "before": "schema 1",
+      "after": "schema 2"
+    },
+    {
+      "case": "overlap.xlsx",
+      "path": "sheets[8].cells.B8",
+      "before": "schema 1",
+      "after": "schema 2"
+    },
+    {
+      "case": "overlap.xlsx",
+      "path": "sheets[8].cells.B25",
+      "before": "schema 1",
+      "after": "schema 2"
+    },
+    {
+      "case": "real.xlsx",
+      "path": "sheets[0].cells.B4",
+      "before": "schema 1",
+      "after": "schema 2"
+    },
+    {
+      "case": "reversed.xlsx",
+      "path": "sheets[8].cells.B8",
+      "before": "schema 1",
+      "after": "schema 2"
+    },
+    {
+      "case": "reversed.xlsx",
+      "path": "sheets[8].cells.B25",
+      "before": "schema 1",
+      "after": "schema 2"
+    },
+    {
+      "case": "warehouse.xlsx",
+      "path": "sheets[9].cells.B8",
+      "before": "schema 1",
+      "after": "schema 2"
+    },
+    {
+      "case": "warehouse.xlsx",
+      "path": "sheets[9].cells.B28",
+      "before": "schema 1",
+      "after": "schema 2"
+    },
+    {
+      "case": "warehouse.xlsx",
+      "path": "sheets[9].cells.B48",
+      "before": "schema 1",
+      "after": "schema 2"
+    },
+    {
+      "case": "warehouse.xlsx",
+      "path": "sheets[9].cells.B68",
+      "before": "schema 1",
+      "after": "schema 2"
+    }
+  ],
+  "cases": [
+    {
+      "case": "single_intake",
+      "differences": []
+    },
+    {
+      "case": "single_loaded",
+      "differences": []
+    },
+    {
+      "case": "single_results",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_intake",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_loaded",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_results",
+      "differences": []
+    },
+    {
+      "case": "overlap_intake",
+      "differences": []
+    },
+    {
+      "case": "overlap_blocked",
+      "differences": []
+    },
+    {
+      "case": "overlap_loaded",
+      "differences": []
+    },
+    {
+      "case": "overlap_results",
+      "differences": []
+    },
+    {
+      "case": "reversed_intake",
+      "differences": []
+    },
+    {
+      "case": "reversed_blocked",
+      "differences": []
+    },
+    {
+      "case": "reversed_loaded",
+      "differences": []
+    },
+    {
+      "case": "reversed_results",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_intake",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_blocked",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_loaded",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_results",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_intake",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_loaded",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_results",
+      "differences": []
+    },
+    {
+      "case": "all_error",
+      "differences": []
+    },
+    {
+      "case": "warehouse_intake",
+      "differences": []
+    },
+    {
+      "case": "warehouse_loaded",
+      "differences": []
+    },
+    {
+      "case": "warehouse_results",
+      "differences": []
+    },
+    {
+      "case": "real_loaded",
+      "differences": []
+    },
+    {
+      "case": "real_None_True",
+      "differences": []
+    },
+    {
+      "case": "real_0_True",
+      "differences": []
+    },
+    {
+      "case": "real_3000_True",
+      "differences": []
+    },
+    {
+      "case": "real_5000_True",
+      "differences": []
+    },
+    {
+      "case": "real_10000_True",
+      "differences": []
+    },
+    {
+      "case": "real_None_False",
+      "differences": []
+    },
+    {
+      "case": "real_custom",
+      "differences": []
+    },
+    {
+      "case": "filtered.xlsx",
+      "differences": []
+    },
+    {
+      "case": "overlap.xlsx",
+      "differences": []
+    },
+    {
+      "case": "real.xlsx",
+      "differences": []
+    },
+    {
+      "case": "reversed.xlsx",
+      "differences": []
+    },
+    {
+      "case": "warehouse.xlsx",
+      "differences": []
+    }
+  ],
+  "core": {
+    "model.py": {
+      "before": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584",
+      "after": "24643d3e3169a38d86032916c48d2121952d59819e5e2ac6081946ccbb316584"
+    },
+    "one_box_exception.py": {
+      "before": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "after": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "allocation.py": {
+      "before": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "after": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "default_config.json": {
+      "before": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "after": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "before": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "after": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    }
+  },
+  "unexpected_differences": 0,
+  "passed": true
+}
