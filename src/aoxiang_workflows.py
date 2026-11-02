@@ -21,9 +21,9 @@ class Workflows:
         self.clock = clock
 
     @contextmanager
-    def db(self, write=False):
+    def db(self, write=False, *, timeout=10):
         self.folder.mkdir(parents=True, exist_ok=True)
-        db = sqlite3.connect(self.path, timeout=10)
+        db = sqlite3.connect(self.path, timeout=timeout)
         db.row_factory = sqlite3.Row
         try:
             db.execute('PRAGMA foreign_keys=ON')
@@ -71,8 +71,8 @@ class Workflows:
         with self.db() as db:
             return [json.loads(r[0]) for r in db.execute('SELECT payload FROM ax_workflows WHERE rowid IN (SELECT rowid FROM ax_workflows ORDER BY rowid DESC LIMIT ?) OR state IN (?,?,?,?) ORDER BY rowid', (limit, *ACTIVE))]
 
-    def next_queued(self):
-        with self.db() as db:
+    def next_queued(self, *, timeout=10):
+        with self.db(timeout=timeout) as db:
             row=db.execute("SELECT payload FROM ax_workflows WHERE state IN ('QUEUED','YIELDED') ORDER BY rowid LIMIT 1").fetchone()
             return json.loads(row[0]) if row else None
 
@@ -160,8 +160,8 @@ class Workflows:
             job['state'] = 'CANCELLED'
             return self._save(db, job, 'CANCELLED_REMAINDER_ONLY')
 
-    def recover(self):
-        with self.db(True) as db:
+    def recover(self, *, timeout=10):
+        with self.db(True,timeout=timeout) as db:
             for row in db.execute("SELECT payload FROM ax_workflows WHERE state='RUNNING'").fetchall():
                 job = json.loads(row[0])
                 job.update(state='YIELDED' if job.get('automatic') else 'PAUSED', message='上次中断；保留确切采购及下载任务，继续前读取原状态')
@@ -219,20 +219,24 @@ class Workflows:
                 s.update(enabled=bool(enabled), automation_paused=not enabled, display_name=r.get('target', {}).get('displayName'), interval_seconds=minutes * 60, next_at=self.clock(), updated_at=self.clock())
                 db.execute('INSERT INTO ax_schedules VALUES(?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload', (r['id'], encoded(s)))
 
-    def enqueue_due(self):
-        with self.db(True) as db:
-            due = []
-            for row in db.execute("SELECT payload FROM ax_schedules WHERE json_extract(payload,'$.enabled')=1 OR json_extract(payload,'$.final_pending')=1 ORDER BY rowid").fetchall():
-                s = json.loads(row[0])
-                if s.get('active_job'):
-                    job = self._get(db, s['active_job'])
-                    if job['state'] in ('PAUSED', 'FAILED'):
-                        continue  # interrupted actions require an explicit resume, not a new request
-                    if job['state'] in ACTIVE:
-                        continue
-                    s['active_job'] = None
-                if not s.get('automation_paused') and (s.get('enabled') and not s['terminal'] or s.get('final_pending')) and s.get('next_at', 0) <= self.clock() and not s.get('needs_review'):
-                    due.append(s)
+    def _due(self, db):
+        due=[]
+        for row in db.execute("SELECT payload FROM ax_schedules WHERE json_extract(payload,'$.enabled')=1 OR json_extract(payload,'$.final_pending')=1 ORDER BY rowid").fetchall():
+            s=json.loads(row[0])
+            if s.get('active_job'):
+                job=self._get(db,s['active_job'])
+                if job['state'] in ('PAUSED','FAILED') or job['state'] in ACTIVE:continue
+                s['active_job']=None
+            if not s.get('automation_paused') and (s.get('enabled') and not s['terminal'] or s.get('final_pending')) and s.get('next_at',0)<=self.clock() and not s.get('needs_review'):due.append(s)
+        return due
+
+    def enqueue_due(self, *, timeout=10):
+        # Idle polling takes no write lock. Recheck everything inside the write
+        # transaction, so a concurrent pause/change never uses a stale read plan.
+        with self.db(timeout=timeout) as db:
+            if not self._due(db):return None
+        with self.db(True,timeout=timeout) as db:
+            due=self._due(db)
             if not due:
                 return None
             # Existing manual batches take precedence; do not duplicate their selected orders.

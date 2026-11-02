@@ -53,7 +53,7 @@ def button(text,fn,primary=False):
 def auxiliary_action(text):
     """Only control verbs, never infer deletion or business confirmation actions."""
     for action,prefixes in [('previous',('上一页','上一步','返回','← 返回')),('next',('下一页','下一步')),
-            ('retry',('重试','重跑','核对原任务并继续')),('refresh',('刷新',)),('close',('关闭',)),('stop',('停止',))]:
+            ('retry',('重试','重跑','核对原任务并继续')),('refresh',('刷新','重新检查后台')),('close',('关闭',)),('stop',('停止',))]:
         if text.startswith(prefixes):return action
     return None
 

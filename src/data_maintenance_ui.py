@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QCheckBox,QMessage
 from ui_controls import label,button
 from business_ui import run,grid
 from runtime_support import Cancelled
+from contextlib import nullcontext
 import data_maintenance as maintenance
 
 def hub(host):
@@ -19,6 +20,18 @@ def hub(host):
     v.addWidget(button('关闭',d.reject));d.exec()
 
 def remove_job(host,record):
+    return guarded(host,host,lambda:_remove_job(host,record))
+
+def guarded(parent,host,operation):
+    generator=getattr(host,'jst_generator',None);manager=getattr(host,'aoxiang_workflows',None)
+    if host.worker or (generator and generator.worker) or (manager and manager.worker) or getattr(host,'_aoxiang_dialog',None):
+        QMessageBox.information(parent,'请先停止任务','请先停止当前计算、生成或平台任务，等待安全退出后再维护数据。');return
+    try:
+        with manager.maintenance() if manager else nullcontext():return operation()
+    except Cancelled:return
+    except Exception as exc:QMessageBox.warning(parent,'未完成维护',str(exc))
+
+def _remove_job(host,record):
     from interaction_ui import confirm
     if not confirm(host,'彻底删除每日草稿',record['day']+' 的草稿将永久删除；已签发订单与签发时快照保留，门店默认不变。'):return
     try:
@@ -29,12 +42,14 @@ def remove_job(host,record):
     except Exception as exc:QMessageBox.warning(host,'未删除草稿',str(exc))
 
 def remove(parent,host,heads):
+    return guarded(parent,host,lambda:_remove(parent,host,heads))
+
+def _remove(parent,host,heads):
     if not heads:QMessageBox.information(parent,'请选择订单','先勾选需要清理的订单。');return
     generator=getattr(host,'jst_generator',None);manager=getattr(host,'aoxiang_workflows',None)
     if host.worker or (generator and generator.worker) or (manager and manager.worker) or getattr(host,'_aoxiang_dialog',None):
         QMessageBox.information(parent,'请先停止任务','请先停止当前计算、生成或平台任务，等待安全退出后再删除，避免旧任务继续写回。');return
     try:
-        if manager:manager.ensure_owner()
         plan=run(parent,maintenance.prepare,(host.work_repository.path,heads),'核对彻底删除范围')
         d=QDialog(parent);d.setWindowTitle('彻底删除订单及关联数据');d.resize(1050,650);v=QVBoxLayout(d)
         v.addWidget(label('永久删除，不进入回收站。请核对完整关联范围。','section'))

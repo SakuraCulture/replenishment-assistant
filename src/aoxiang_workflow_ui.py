@@ -1,6 +1,8 @@
 """Application-lifetime queue owner and business-facing batch status. No model changes."""
 import time
 import sqlite3
+import logging
+from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -20,6 +22,10 @@ KINDS = {'prepare': '采购预览', 'upload': '确认上传采购', 'receipt': '
 STATES = {'QUEUED': '排队', 'RUNNING': '正在处理', 'YIELDED': '等待人工操作结束', 'PAUSED': '已停止，可继续原任务',
           'FAILED': '批次未完成', 'READY': '预览完成，尚未上传', 'COMPLETED': '完成', 'COMPLETED_WITH_ERRORS': '已处理，有待核项', 'CANCELLED': '剩余任务已取消',
           'PENDING': '未处理', 'PREPARED': '预览就绪，未上传', 'BOUND': '已关联采购单', 'OBSERVED': '已观察，尚未完成', 'SYNCED': '正式实收已保存', 'REVIEW': '待核，不自动重试', 'SKIPPED': '周期已停止，本次跳过'}
+
+
+def database_busy(exc):
+    return isinstance(exc,sqlite3.OperationalError) and (getattr(exc,'sqlite_errorcode',0)&255 in (sqlite3.SQLITE_BUSY,sqlite3.SQLITE_LOCKED) or str(exc).lower() in ('database is locked','database table is locked','database schema is locked'))
 
 
 class QueueWorker(QThread):
@@ -64,20 +70,33 @@ class Manager(QObject):
         self.stopping = self.explicit_stop = self.close_requested = False
         self.message = '翱象队列空闲；周期同步默认未启用'
         self.owner = None
+        self.maintenance_depth=0
+        self.queue_error=''
+        self.busy=False
+        self.recovering=True
         try:
             self.store.folder.mkdir(parents=True, exist_ok=True)
             self.owner = sqlite3.connect(self.store.folder / 'scheduler.lock.sqlite3', timeout=0)
             self.owner.execute('CREATE TABLE IF NOT EXISTS owner_lock(id INTEGER PRIMARY KEY)')
             self.owner.execute('BEGIN IMMEDIATE')
-            self.store.recover()
         except Exception as exc:
             if self.owner:self.owner.close()
             self.owner = None;self.stopping = True
-            self.message = '翱象后台队列未启动（可能有另一个实例）：' + str(exc)
+            self.queue_error='后台调度权被另一实例占用' if database_busy(exc) else '后台调度锁初始化失败：'+str(exc)
+            self.message=self.queue_error+'；其他实例退出后可点击“重新检查后台”。'
+            logging.warning('翱象调度锁初始化失败: %s',self.store.folder,exc_info=True)
         self.timer = QTimer(self)
         self.timer.setInterval(2000)
         self.timer.timeout.connect(self.tick)
         self.timer.start()
+        if self.owner:
+            try:self.store.recover(timeout=0);self.recovering=False
+            except Exception as exc:
+                if database_busy(exc):
+                    self.busy=True;self.message='后台队列库暂时繁忙，2秒后重新检查原状态'
+                else:
+                    self.stopping=True;self.queue_error=str(exc);self.message='后台队列恢复失败：'+str(exc)
+                    logging.exception('翱象队列启动恢复失败: %s',self.store.path)
         # Embedded/test hosts can destroy an idle window without sending closeEvent.
         host.destroyed.connect(self.shutdown)
 
@@ -86,11 +105,15 @@ class Manager(QObject):
         self.changed.emit()
 
     def tick(self):
-        if self.worker or self.stopping or self.gate.yielding or getattr(self.host, 'closing', False):
+        if self.owner is None or self.worker or self.stopping or self.maintenance_depth or self.gate.yielding or getattr(self.host, 'closing', False) or getattr(self.host,'_large_io_dialog',None):
             return
         try:
-            self.store.enqueue_due()
-            job = self.store.next_queued()
+            if self.recovering:
+                self.store.recover(timeout=0);self.recovering=False
+            self.store.enqueue_due(timeout=0)
+            job = self.store.next_queued(timeout=0)
+            if self.busy:
+                self.busy=False;self.status('数据库已恢复可用，后台队列继续检查原任务')
             if not job:
                 return
             token = self.gate.claim_background()
@@ -104,8 +127,44 @@ class Manager(QObject):
             self.status(KINDS[job['kind']] + ' · 正在开始本批作业')
             self.worker.start()
         except Exception as exc:
+            if database_busy(exc):
+                if not self.busy:logging.warning('翱象队列数据库繁忙，将重查原任务: %s',self.store.path,exc_info=True)
+                self.busy=True
+                self.status('数据库正被其他操作使用，2秒后自动重新检查；原任务保留，不重复提交')
+                return
             self.stopping = True
+            self.queue_error=str(exc)
+            logging.exception('翱象队列故障: %s',self.store.path)
             self.status('翱象队列停止，原记录保留：' + str(exc))
+
+    def retry_queue(self):
+        if self.close_requested or getattr(self.host,'closing',False) or self.maintenance_depth:return
+        if self.worker:self.status('当前任务尚在运行，请等待安全结束');return
+        try:
+            if self.owner is None:
+                owner=sqlite3.connect(self.store.folder/'scheduler.lock.sqlite3',timeout=0)
+                try:
+                    owner.execute('CREATE TABLE IF NOT EXISTS owner_lock(id INTEGER PRIMARY KEY)');owner.execute('BEGIN IMMEDIATE')
+                except Exception:owner.close();raise
+                self.owner=owner
+            self.stopping=False;self.queue_error='';self.recovering=True
+            self.status('正在重新检查后台及原任务状态…');self.tick()
+        except Exception as exc:
+            self.queue_error='后台调度权仍被另一实例占用' if database_busy(exc) else str(exc)
+            self.status(self.queue_error+'；未启动新任务')
+
+    @contextmanager
+    def maintenance(self):
+        self.ensure_owner(for_maintenance=True)
+        if self.worker or self.gate.yielding:raise ValueError('平台任务尚未安全退出，请先停止或关闭平台操作窗口')
+        self.maintenance_depth+=1
+        previous=self.message
+        self.status('正在维护本地数据，后台轮询暂缓；结束后自动恢复检查')
+        try:yield
+        finally:
+            self.maintenance_depth-=1
+            self.status(previous)
+            if not self.maintenance_depth and not self.close_requested:QTimer.singleShot(0,self.tick)
 
     def finished(self):
         previous, self.worker = self.worker, None
@@ -144,7 +203,7 @@ class Manager(QObject):
         return False
 
     def resume_after_cancelled_close(self):
-        self.stopping = self.owner is None
+        self.stopping = self.owner is None or bool(self.queue_error)
         self.close_requested = False
 
     def shutdown(self):
@@ -158,9 +217,10 @@ class Manager(QObject):
     def open_queue(self, id=None):
         QueueDialog(self.host, self, id).exec()
 
-    def ensure_owner(self):
-        if self.owner is None or self.stopping:
-            raise ValueError('本窗口没有后台调度权或正在关闭；请先处理另一实例或队列错误')
+    def ensure_owner(self, *, for_maintenance=False):
+        if self.close_requested or getattr(self.host,'closing',False):raise ValueError('程序正在安全关闭，请等待关闭完成后重新打开')
+        if self.owner is None:raise ValueError('本窗口未持有后台调度权：'+(self.queue_error or '锁已释放')+'。请在首页点击“重新检查后台”')
+        if not for_maintenance and self.stopping:raise ValueError('后台队列已停止：'+self.queue_error+'。请在首页点击“重新检查后台”')
 
 
 class QueueDialog(QDialog):
@@ -431,5 +491,5 @@ def prepare_selected(parent, host, heads):
 
 def install(host, layout):
     host.aoxiang_workflows=Manager(host)
-    row=QHBoxLayout();text=label(host.aoxiang_workflows.message,'muted');row.addWidget(text,1);row.addWidget(button('查看翱象批次作业',host.aoxiang_workflows.open_queue));layout.addLayout(row)
+    row=QHBoxLayout();text=label(host.aoxiang_workflows.message,'muted');row.addWidget(text,1);row.addWidget(button('重新检查后台',host.aoxiang_workflows.retry_queue));row.addWidget(button('查看翱象批次作业',host.aoxiang_workflows.open_queue));layout.addLayout(row)
     host.aoxiang_workflows.changed.connect(lambda:text.setText(host.aoxiang_workflows.message))

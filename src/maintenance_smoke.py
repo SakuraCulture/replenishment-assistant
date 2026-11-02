@@ -19,7 +19,10 @@ def start_smoke(app,win,args):
         result={}
         try:
             if Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve()!=out/'settings':raise ValueError('Requires isolated QA directory')
-            out.mkdir(parents=True,exist_ok=True);win.jst_generator.timer.stop();win.jst_generator.stopped=True;win.aoxiang_workflows.timer.stop()
+            out.mkdir(parents=True,exist_ok=True);win.jst_generator.timer.stop();win.jst_generator.stopped=True
+            win.aoxiang_workflows.timer.setInterval(50)
+            from queue_lock_probe import exercise
+            checks.extend(exercise(app,win.aoxiang_workflows,out))
             catalogs={w:warehouse_catalog.import_catalog(fixture/(w+'.xlsx'),w) for w in warehouse_catalog.WAREHOUSES}
             data=batch_service.load([fixture/'sales.xlsx'],catalogs);win.loaded_ok(data)
             win.profile=json.loads((fixture/'must.json').read_text('utf-8'));win.new_focus=new_product_focus.empty(wr.today()[:7])
