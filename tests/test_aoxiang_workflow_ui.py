@@ -160,7 +160,7 @@ class WorkflowUiTests(unittest.TestCase):
         d = self.selection()
         self.assertEqual([r['id'] for r in d.records], ['p2','p1'])
         self.assertEqual(self.m.store.schedules(), [])
-        self.assertEqual([a for a,_ in d.client.calls], ['purchase.list','receipt.list'])
+        self.assertEqual([a for a,_ in self.m.session.client.calls], ['purchase.list','receipt.list'])
         d.select_visible()
         with patch('aoxiang_workflow_ui.QMessageBox.question', return_value=QMessageBox.StandardButton.No) as ask:
             d.configure(True);self.assertEqual(ask.call_args.args[-1], QMessageBox.StandardButton.No)
@@ -180,7 +180,8 @@ class WorkflowUiTests(unittest.TestCase):
             else:QTimer.singleShot(15, finish_when_loaded)
         QTimer.singleShot(100, release);QTimer.singleShot(120, finish_when_loaded)
         self.assertTrue(show_modal(self.host, d))
-        self.assertEqual(observations, [False]);self.assertFalse(self.m.gate.yielding)
+        # Ownership is now reserved before the dialog's initial worker can start.
+        self.assertEqual(observations, [True]);self.assertFalse(self.m.gate.yielding)
         self.assertEqual(self.m.store.get(job['id'])['state'], 'YIELDED')
 
 

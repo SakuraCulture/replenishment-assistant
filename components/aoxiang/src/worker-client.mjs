@@ -4,12 +4,13 @@ import {uid,AppError} from './common.mjs';
 
 export class BrowserClient{
   constructor({onPhase=()=>{},onAccepted=()=>{},onImportReceipt=()=>{}}={}){
+    this.onImportReceipt=onImportReceipt;
     this.pending=new Map();this.onPhase=onPhase;this.onReceipt=onAccepted;this.child=fork(fileURLToPath(new URL('./browser-worker.mjs',import.meta.url)),[],{stdio:['ignore','ignore','pipe','ipc'],windowsHide:true,execPath:process.execPath});
     this.child.stderr.on('data',()=>{});
     this.child.on('message',m=>{
       if(m.event==='phase'){this.onPhase(m.phase);return;}
       if(m.event==='purchase_import_receipt'){
-        try{onImportReceipt(m.receipt);}catch(e){for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new AppError('IMPORT_RECEIPT_WRITE_FAILED','采购受理记录保存失败；保留上传意图，禁止重传'));}this.pending.clear();void this.stop();}return;
+        try{this.onImportReceipt?.(m.receipt);}catch(e){for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new AppError('IMPORT_RECEIPT_WRITE_FAILED','采购受理记录保存失败；保留上传意图，禁止重传'));}this.pending.clear();void this.stop();}return;
       }
       if(m.event==='accepted'){
         try{this.onReceipt?.(m.receipt);}catch(e){for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new AppError('RECEIPT_STATE_WRITE_FAILED','受理信息写入失败；保留未决状态并停止连接'));}this.pending.clear();void this.stop();}return;

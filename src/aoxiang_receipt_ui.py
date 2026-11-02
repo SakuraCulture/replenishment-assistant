@@ -39,8 +39,7 @@ class ReceiptDialog(ComponentDialog):
         super().__init__(parent)
         self.host, self.head = host, head
         self.folder = Path(host.repository.folder) / 'aoxiang'
-        self.client_factory = client_factory
-        self.client = client_factory(component_root(), self.folder / 'component-state')
+        self.init_client(host, client_factory)
         self.started = False
         self.worker = None
         self._closing = self._can_close = self._close_done = False

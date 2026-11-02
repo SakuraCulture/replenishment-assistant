@@ -64,8 +64,14 @@ export class AoxiangUI {
   waitResponse(p,timeout=this.timeoutMs){const w=this.page.waitForResponse(r=>this.isBusinessResponse(r,p),{timeout});w.catch(()=>{});return w;}
   async identityAfter(action){
     const sent=this.page.waitForRequest(r=>this.isBusinessResponse(r,LOGIN),{timeout:this.timeoutMs});sent.catch(()=>{});
-    await action();const request=await sent,response=await bounded(request.response(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份查询没有取得响应');
-    if(!response)fail('IDENTITY_RESPONSE_TIMEOUT','本次身份查询失败');return identityFrom(parseResponse(await bounded(response.text(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份响应未读取完成')));
+    // Consume the exact observed response immediately, before the navigation/action
+    // completes: Chromium can discard its body on a subsequent redirect/reload.
+    const identity=sent.then(async request=>{
+      const response=await bounded(request.response(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份查询没有取得响应');
+      if(!response)fail('IDENTITY_RESPONSE_TIMEOUT','本次身份查询失败');
+      return identityFrom(parseResponse(await bounded(response.text(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份响应未读取完成')));
+    });identity.catch(()=>{});
+    await action();return identity;
   }
   async open(expected){
     await this.activate();

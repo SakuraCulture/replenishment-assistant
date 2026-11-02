@@ -7,6 +7,7 @@ import {canonical,sha256,now,uid,exists,readJson,writeJson,fail,sameIdentity} fr
 import {checkOutput} from './preflight.mjs';
 import {mappingVersion} from './machine-commands.mjs';
 import {errorInfo} from './machine-runtime.mjs';
+import {invokeBoundRead} from './bound-browser.mjs';
 
 const configFiles={config:'config/portable.config.json',binding:'config/machine.binding.json'};
 const journalName='recovery/configuration.pending.json';
@@ -36,8 +37,8 @@ export async function saveConfiguration(root,expectedHash,desired){
 }
 
 export class MachineSetup{
-  constructor({root,Client=BrowserClient,discoverEnvironment=discover,checkOutputRoot=checkOutput,stepTimeoutMs}){
-    Object.assign(this,{root,Client,discoverEnvironment,checkOutputRoot,stepTimeoutMs});this.job=null;this.promise=null;this.client=null;
+  constructor({root,Client=BrowserClient,discoverEnvironment=discover,checkOutputRoot=checkOutput,stepTimeoutMs,browsers,state}){
+    Object.assign(this,{root,Client,discoverEnvironment,checkOutputRoot,stepTimeoutMs,browsers,state});this.job=null;this.promise=null;this.client=null;
   }
   get busy(){return !!this.promise||['READY','COMMITTING'].includes(this.job?.state);}
   async discover(){
@@ -55,7 +56,7 @@ export class MachineSetup{
     }).finally(async()=>{
       this.job.cleanup_pending=true;
       try{
-        await this.closeClient();
+        if(!this.browsers||!this.preview||this.control.signal.aborted)await this.closeClient();
         if(this.control.signal.aborted){this.preview=null;this.job.state='CANCELLED';this.job.stage='核验已停止，未保存新配置';}
         else if(this.preview&&this.job.state==='RUNNING'){this.job.state='READY';this.job.stage='核验完成，等待保存';}
       }
@@ -80,13 +81,16 @@ export class MachineSetup{
       })]);
     }finally{clearTimeout(timer);signal.removeEventListener('abort',abort);}
   }
-  async closeClient(){await this.client?.stop();this.client=null;}
+  async closeClient({healthy=false}={}){
+    if(!(healthy&&this.borrowed))await this.client?.stop();
+    this.client=null;this.borrowed=false;
+  }
   async cancel(id){
     this.status(id);this.control.abort();this.job.cancel_requested=true;this.job.updated_at=now();
-    if(this.job.state==='READY'){this.preview=null;this.job.state='CANCELLED';}
+    if(this.job.state==='READY'){await this.closeClient({healthy:true});this.preview=null;this.job.state='CANCELLED';}
     return this.status(id);
   }
-  async close(){if(this.job)this.control.abort();await this.promise;await this.closeClient();this.preview=null;if(this.job?.state==='READY')this.job.state='CANCELLED';}
+  async close(){if(this.job)this.control.abort();await this.promise;await this.closeClient({healthy:this.job?.state==='READY'});this.preview=null;if(this.job?.state==='READY')this.job.state='CANCELLED';}
   async run(params){
     const old=await this.readStep(()=>readConfiguration(this.root)),env=await this.readStep(()=>this.discoverEnvironment());this.check();
     const profile=env.profiles.find(p=>p.actualProfilePath.toLowerCase()===params.candidate.actual_profile_path.toLowerCase());
@@ -94,18 +98,24 @@ export class MachineSetup{
     if(!profile||!edge)fail('MACHINE_REBIND_REQUIRED','所选浏览器或已有用户配置未在本机发现，不能执行任意路径');
     const output=await this.readStep(()=>this.checkOutputRoot(params.output_root));this.check();
     const job=this.job;
-    this.client=new this.Client({onPhase:stage=>{if(this.job.id===job.id&&!this.control.signal.aborted){this.job.stage=stage;this.job.updated_at=now();}}});
+    const onPhase=stage=>{if(this.job.id===job.id&&!this.control.signal.aborted){this.job.stage=stage;this.job.updated_at=now();}};
+    this.client=await this.browsers?.forSetup(params.candidate,old,onPhase);
+    this.borrowed=!!this.client;
+    if(!this.client)this.client=new this.Client({onPhase});
     this.job.stage='核验登录与商家';
-    const result=await this.readStep(()=>this.client.connect({candidate:{...profile,edgeExecutable:edge.executable},expectedIdentity:old.config?.tenantBinding,
+    const result=await this.readStep(()=>this.borrowed?this.client.recheckLogin(old.config.tenantBinding):this.client.connect({candidate:{...profile,edgeExecutable:edge.executable},expectedIdentity:old.config?.tenantBinding,
       stateRoot:this.root,timeout:old.config?.resourceLimits.connectTimeoutMs||60000,pageTimeoutMs:old.config?.resourceLimits.pageTimeoutMs||30000,
       mode:'background_tab',source:'D13'}),(old.config?.resourceLimits.connectTimeoutMs||60000)+(old.config?.resourceLimits.pageTimeoutMs||30000)*2);this.check();
+    this.connected=result;
     if(old.config&&!sameIdentity(old.config.tenantBinding,result.identity))fail('WRONG_IDENTITY','当前商家与已保存账号不同；原配置保持不变');
     this.job.identity={account_id:result.identity.accountId,merchant_code:result.identity.merchantCode,display_name:result.identity.displayName};
     const verified=[];
     for(const item of this.job.targets){
       this.check();item.state='RUNNING';this.job.stage='核对门店 '+(item.index+1)+'/'+this.job.total+' · '+item.name;
       try{
-        const query=await this.readStep(()=>this.client.querySingle(item.code,item.name),Math.max(60000,(old.config?.resourceLimits.pageTimeoutMs||30000)*2));this.check();
+        const query=await this.readStep(()=>this.browsers?invokeBoundRead({client:this.client,config:{tenantBinding:result.identity},
+          check:()=>this.check(),onProgress:e=>onPhase(e.stage)},'querySingle',[item.code,item.name]):this.client.querySingle(item.code,item.name),
+          Math.max(this.browsers?120000:60000,(old.config?.resourceLimits.pageTimeoutMs||30000)*(this.browsers?4:2)));this.check();
         if(!sameIdentity(query.identity,result.identity))fail('WRONG_IDENTITY','核验期间商家身份变化');
         if(query.warehouseCode!==item.code)fail('TARGET_CODE_MISMATCH','查询中的实际接收编码与目录不一致');
         item.state='VERIFIED';item.rows=query.total;
@@ -136,8 +146,12 @@ export class MachineSetup{
   async commit(id){
     this.status(id);if(this.job.state!=='READY'||!this.preview)fail('SETUP_NOT_READY','请先完成连接和门店核验');
     await this.promise;this.job.state='COMMITTING';
-    try{await saveConfiguration(this.root,this.preview.expectedHash,this.preview.desired);this.job.state='SAVED';this.job.stage='连接与已核验门店已保存';this.preview=null;}
-    catch(error){this.job.state='FAILED';this.job.error=errorInfo(error);throw error;}
+    try{
+      await saveConfiguration(this.root,this.preview.expectedHash,this.preview.desired);
+      if(this.browsers){this.browsers.adopt({...this.preview.desired,state:this.state},this.client,this.connected);this.client=null;this.borrowed=false;}
+      this.job.state='SAVED';this.job.stage='连接与已核验门店已保存，共享会话可继续使用';this.preview=null;
+    }
+    catch(error){await this.closeClient();this.job.state='FAILED';this.job.error=errorInfo(error);throw error;}
     return this.status(id);
   }
 }

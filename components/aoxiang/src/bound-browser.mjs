@@ -3,6 +3,18 @@ import {discover} from './environment.mjs';
 import {BrowserClient} from './worker-client.mjs';
 import {fail,sameIdentity,now,writeJson,canonical} from './common.mjs';
 
+const recoverableReads=new Set(['verifyIdentity','querySingle','warehouseOptions','queryPurchase','queryCreateOrders']);
+export async function invokeBoundRead(browser,method,args){
+  try{return await browser.client[method](...args);}
+  catch(error){
+    if(!recoverableReads.has(method)||error.code!=='IDENTITY_RESPONSE_TIMEOUT'||browser.client.closed)throw error;
+    browser.check();browser.onProgress({stage:'身份响应超时：保留原连接，重新核验后只重试本次查询一次'});
+    const verified=await browser.client.recheckLogin(browser.config.tenantBinding);
+    if(!sameIdentity(verified.identity,browser.config.tenantBinding))fail('WRONG_IDENTITY','共享连接恢复时身份发生变化');
+    browser.check();return browser.client[method](...args);
+  }
+}
+
 // Uses the component's existing browser worker and selectors. Never opens a new profile.
 export class BoundBrowser{
   constructor({state,config,binding,signal,onProgress=()=>{},Client=BrowserClient,discoverEnvironment=discover}){
@@ -10,11 +22,16 @@ export class BoundBrowser{
     this.client=null;this.adapter={onReceipt:null};
     for(const method of ['verifyIdentity','querySingle','warehouseOptions','prepareExport','submitOnce','findTask','downloadPurchaseTemplate','preparePurchaseCreate','uploadPurchaseOnce','purchaseImportTask','queryCreateOrders','queryPurchase','preparePurchase','submitPurchase','purchaseTask','downloadPurchase']){
       this.adapter[method]=async(...args)=>{
-        this.check();await this.ensure();this.check();return this.client[method](...args);
+        this.check();await this.ensure();this.check();return invokeBoundRead(this,method,args);
       };
     }
   }
   check(){if(this.signal?.aborted)fail('PAUSED','已请求暂停；未开始新的平台动作');}
+  attachCallbacks(){
+    this.client.onPhase=stage=>this.onProgress({stage});
+    this.client.onReceipt=receipt=>{if(!this.state.recordReceipt(receipt))this.state.recordPurchaseReceipt(receipt);this.adapter.onReceipt?.(receipt);};
+    this.client.onImportReceipt=receipt=>this.adapter.onImportReceipt?.(receipt);
+  }
   async ensure(){
     if(this.client&&!this.client.closed&&this.connected)return;
     if(!this.binding?.enabled)fail('SETUP_REQUIRED','请先配置本机翱象连接');
@@ -44,16 +61,35 @@ export class BoundBrowser{
 
 export class BoundBrowserPool{
   constructor(Browser=BoundBrowser){this.Browser=Browser;this.browser=null;this.key=null;}
-  async acquire(args){
-    const {binding,config}=args;
-    const key=canonical({identity:config.tenantBinding,profile:binding.actualProfilePath,
+  keyFor({binding,config}){
+    return canonical({identity:config.tenantBinding,profile:binding.actualProfilePath,
       edge:binding.edgeExecutable,userDataRoot:binding.userDataRoot,profileDirectory:binding.profileDirectory,
       mode:config.browserInteraction?.mode||'background_tab',
       pageTimeoutMs:config.resourceLimits.pageTimeoutMs,connectTimeoutMs:config.resourceLimits.connectTimeoutMs});
+  }
+  async acquire(args){
+    const key=this.keyFor(args);
     if(this.browser&&this.key!==key)await this.close();
     if(!this.browser){this.browser=new this.Browser(args);this.key=key;}
     else Object.assign(this.browser,args);
+    if(this.browser.client)this.browser.attachCallbacks();
     return this.browser;
   }
+  async forSetup(candidate,old,onPhase){
+    const b=this.browser;
+    if(b?.client&&!b.client.closed&&b.connected&&old.config&&old.binding&&this.key===this.keyFor(old)&&
+      old.binding.actualProfilePath.toLowerCase()===candidate.actual_profile_path.toLowerCase()&&
+      old.binding.edgeExecutable.toLowerCase()===candidate.edge_executable.toLowerCase()){
+      b.client.onPhase=onPhase;return b.client;
+    }
+    await this.close();return null;
+  }
+  adopt(args,client,connected){
+    // Setup has exclusive operation ownership and already released any different profile.
+    if(this.browser?.client&&this.browser.client!==client)fail('SESSION_CONFLICT','不能覆盖仍存活的浏览器连接');
+    this.browser=new this.Browser(args);this.key=this.keyFor(args);
+    Object.assign(this.browser,{client,connected});this.browser.attachCallbacks();
+  }
+  status(){return {worker_pid:this.browser?.client?.child?.pid||null,connected:!!(this.browser?.connected&&!this.browser.client?.closed)};}
   async close(){await this.browser?.close();this.browser=null;this.key=null;}
 }

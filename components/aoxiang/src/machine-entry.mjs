@@ -20,6 +20,7 @@ import {PurchaseReceipts} from './purchase-receipt-ledger.mjs';
 import {PurchaseReceiptService} from './purchase-receipt-service.mjs';
 import {MachinePurchaseReceipt} from './machine-purchase-receipt.mjs';
 import {PurchaseBindingService,MachinePurchaseBinding} from './purchase-binding.mjs';
+import {releaseSession} from './machine-session.mjs';
 
 let lock,state,runtime,setup,template,purchase,receiptSync,bindingCheck,outputFailed=false;
 const browsers=new BoundBrowserPool();
@@ -31,7 +32,7 @@ async function main(){
   await verifyInstallation();const root=path.resolve(rootArg[1]);
   lock=await ExclusiveLock.acquire(path.join(root,'coordinator.lock.sqlite'));
   state=await StateStore.open(root);const commands=new MachineCommands(state);
-  const configurationRecovered=await recoverConfiguration(root);setup=new MachineSetup({root});
+  const configurationRecovered=await recoverConfiguration(root);setup=new MachineSetup({root,browsers,state});
   template=new MachineTemplate({root,state,browsers});
   const purchases=await PurchaseCreates.open(state);purchases.recover();
   const purchaseService=new PurchaseCreateService({root,state,ledger:purchases,browsers,progress:stage=>{
@@ -69,7 +70,7 @@ async function main(){
       if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
       switch(request.action){
         case 'discover':result=await setup.discover();break;
-        case 'setup.start':await browsers.close();result=setup.begin(request);break;
+        case 'setup.start':result=setup.begin(request);break;
         case 'setup.status':result=setup.status(request.setup_id);break;
         case 'setup.cancel':result=await setup.cancel(request.setup_id);break;
         case 'setup.commit':result=await setup.commit(request.setup_id);break;
@@ -117,6 +118,8 @@ async function main(){
           result={configured:true,enabled:config.enabled,account_binding:{account_id:config.tenantBinding.accountId,merchant_code:config.tenantBinding.merchantCode},
             display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.targets};break;
         }
+        case 'session.release':result=await releaseSession({runtime,commands,setup,template,purchase,receiptSync,bindingCheck});break;
+        case 'session.status':result={host_pid:process.pid,...browsers.status()};break;
         case 'ping':result={closing:runtime.closing,active_command_id:runtime.active?.id||null,active_purchase_id:purchase.busy?purchase.job.id:null,active_receipt_id:receiptSync.busy?receiptSync.job.id:null,active_binding_id:bindingCheck.busy?bindingCheck.job.id:null};break;
         case 'list':{const records=commands.list(),offset=request.offset||0,limit=request.limit||50;result={total:records.length,items:records.slice(offset,offset+limit).map(publicRecord)};break;}
         case 'reserve':{

@@ -37,8 +37,7 @@ class FetchDialog(ComponentDialog):
         self.resize(1040, 760)
         self.folder = Path(folder) / 'aoxiang'
         self.day = day
-        self.client_factory = client_factory
-        self.client = client_factory(component_root(), self.folder / 'component-state')
+        self.init_client(parent, client_factory)
         self.started = False
         self.worker = None
         self._closing = self._can_close = self._close_done = False

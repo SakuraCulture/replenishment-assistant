@@ -7,7 +7,7 @@ import {bindingRequest} from './purchase-create-contract.mjs';
 const idPattern=/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 // A valid envelope can receive a correlated validation error without dispatching its body.
 export const correlationId=value=>value?.protocol_version===1&&typeof value.request_id==='string'&&idPattern.test(value.request_id)?value.request_id:null;
-const fields={ping:[],configuration:[],list:['offset','limit'],reserve:['command'],status:['command_id'],
+const fields={ping:[],'session.release':[],'session.status':[],configuration:[],list:['offset','limit'],reserve:['command'],status:['command_id'],
   events:['command_id','after','limit'],pause:['command_id'],resume:['command_id'],shutdown:[],
   discover:[],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
   'setup.cancel':['setup_id'],'setup.commit':['setup_id'],

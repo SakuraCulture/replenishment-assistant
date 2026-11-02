@@ -9,11 +9,11 @@ from PySide6.QtCore import QObject, QThread, Signal, QTimer, Qt, QSignalBlocker
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QProgressBar,
                              QTableWidget, QTableWidgetItem, QMessageBox, QSpinBox, QLineEdit)
 from ui_controls import button, label
-from aoxiang_session import SessionGate
+from aoxiang_session import SessionGate, SessionOwner
 from aoxiang_workflows import Workflows, DONE_ITEM
 from aoxiang_workflow_runner import Runner
 from aoxiang_client import ProcessClient
-from aoxiang_ui_common import ComponentDialog, component_root, show_modal
+from aoxiang_ui_common import ComponentDialog, Call, component_root, show_modal
 from runtime_support import Cancelled
 
 KINDS = {'prepare': '采购预览', 'upload': '确认上传采购', 'receipt': '收货同步'}
@@ -34,7 +34,7 @@ class QueueWorker(QThread):
         try:
             if self.token.is_set():
                 raise Cancelled('任务尚未开始，已请求停止')
-            client = m.client_factory(component_root(), m.store.folder / 'component-state')
+            client = m.session.lease()
             client.start()
             Runner(m.store, client, component_root(), m.host.work_repository.path, cancel=self.token, progress=self.progress.emit).run(self.job['id'])
         except Exception as exc:
@@ -44,7 +44,7 @@ class QueueWorker(QThread):
             except Exception as failed:
                 self.progress.emit('队列状态保存失败，请保留原记录：' + str(failed))
         finally:
-            # Keep the gate until the actual child process has exited, including slow shutdown.
+            # Keep the gate until all asynchronous platform actions have settled.
             while client is not None and not client.close(timeout=.5):
                 self.progress.emit('等待当前翱象动作安全结束；不会强杀正在提交的任务。')
                 time.sleep(.2)
@@ -58,6 +58,8 @@ class Manager(QObject):
         self.host, self.client_factory = host, client_factory
         self.store = Workflows(Path(host.repository.folder) / 'aoxiang')
         self.gate = SessionGate()
+        self.session = SessionOwner(lambda: self.client_factory(component_root(), self.store.folder / 'component-state'))
+        self.session_closer = None
         self.worker = self.token = None
         self.stopping = self.explicit_stop = self.close_requested = False
         self.message = '翱象队列空闲；周期同步默认未启用'
@@ -125,7 +127,21 @@ class Manager(QObject):
         self.stopping = True
         self.close_requested = True
         self.stop()
-        return self.worker is None
+        if self.worker is not None or self.session_closer is not None:
+            return False
+        if self.session.client is None:
+            return True
+        task = Call(lambda _: self.session.close(timeout=.5), self)
+        self.session_closer = task
+        task.failed.connect(lambda text: self.status('共享连接尚未退出：' + text))
+        def finished():
+            self.session_closer = None
+            task.deleteLater()
+            if self.close_requested:
+                QTimer.singleShot(200, self.host.close)
+        task.finished.connect(finished)
+        task.start()
+        return False
 
     def resume_after_cancelled_close(self):
         self.stopping = self.owner is None
@@ -133,6 +149,9 @@ class Manager(QObject):
 
     def shutdown(self):
         self.timer.stop()
+        # Normal application close has already drained this off the GUI thread.
+        if self.session.client is not None and self.worker is None and self.session_closer is None:
+            self.session.close(timeout=.5)
         if self.owner:
             self.owner.rollback();self.owner.close();self.owner=None
 
@@ -288,7 +307,7 @@ class ReceiptSelection(ComponentDialog):
         super().__init__(parent)
         self.host, self.heads = host, heads
         self.folder = Path(host.repository.folder) / 'aoxiang'
-        self.client_factory = client_factory;self.client = client_factory(component_root(), self.folder / 'component-state')
+        self.init_client(host, client_factory)
         self.started = False;self.worker = None;self._closing = self._can_close = self._close_done = False
         self.records = [];self.created_job = None
         self.poll = QTimer(self)

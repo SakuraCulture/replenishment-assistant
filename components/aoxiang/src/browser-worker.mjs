@@ -5,13 +5,14 @@ import {PurchaseUI} from './purchase-ui.mjs';
 import {PurchaseCreateUI,installPurchaseWriteFence} from './purchase-create-ui.mjs';
 import {ExclusiveLock} from './state.mjs';
 import {redact} from './common.mjs';
+import {ModuleSession} from './module-session.mjs';
 
-const bridge=new EdgeBridge();let ui=null,uiSource='D13',lock=null,busy=false,closing=false;
-async function sourceUI(source){if(uiSource===source)return;const identity=ui.identity,options={timeoutMs:ui.timeoutMs};await ui.dispose();const Adapter=source==='purchase_create'?PurchaseCreateUI:source==='purchase'?PurchaseUI:AoxiangUI;ui=new Adapter(bridge.page,options);uiSource=source;ui.onReceipt=receipt=>send({event:'accepted',receipt});ui.onImportReceipt=receipt=>send({event:'purchase_import_receipt',receipt});await ui.open(identity);}
+const bridge=new EdgeBridge();let ui=null,modules=null,lock=null,busy=false,closing=false;
+async function sourceUI(source){ui=await modules.open(source);}
 function send(message){if(process.connected)process.send(message);}
 async function close(){
   if(closing)return;closing=true;
-  try{await ui?.dispose();await bridge.close();}finally{try{lock?.release();}catch{}process.exit(0);}
+  try{await modules?.dispose();await bridge.close();}finally{try{lock?.release();}catch{}process.exit(0);}
 }
 process.on('disconnect',()=>void close());process.on('SIGTERM',()=>void close());process.on('SIGINT',()=>void close());
 process.on('message',async message=>{
@@ -22,20 +23,22 @@ process.on('message',async message=>{
   try{
     let result;
     if(method==='connect'){
-      if(ui){await sourceUI(params.source==='purchase'?'purchase':'D13');result={facts:bridge.facts,identity:await ui.open(params.expectedIdentity)};send({id,result});return;}
+      if(modules){ui=await modules.open(params.source==='purchase'?'purchase':'D13',params.expectedIdentity,{force:true});result={facts:bridge.facts,identity:modules.identity};send({id,result});return;}
       if(!lock)lock=await ExclusiveLock.acquire(path.join(params.stateRoot,'runner.lock.sqlite'));
       const facts=await bridge.bind(params.candidate,{timeout:params.timeout||60000,mode:params.mode||'background_tab',onPhase:phase=>send({event:'phase',phase})});
       await installPurchaseWriteFence(bridge.page);
-      uiSource=params.source==='purchase'?'purchase':'D13';const Adapter=uiSource==='purchase'?PurchaseUI:AoxiangUI;ui=new Adapter(bridge.page,{timeoutMs:params.pageTimeoutMs||30000,focusSession:bridge.takeFocusSession()});
-      ui.onReceipt=receipt=>send({event:'accepted',receipt});
-      const identity=await ui.open(params.expectedIdentity);result={facts,identity};
+      modules=new ModuleSession({page:bridge.page,adapters:{D13:AoxiangUI,purchase:PurchaseUI,purchase_create:PurchaseCreateUI},
+        timeoutMs:params.pageTimeoutMs||30000,focusSession:bridge.takeFocusSession(),
+        onReceipt:receipt=>send({event:'accepted',receipt}),onImportReceipt:receipt=>send({event:'purchase_import_receipt',receipt}),onPhase:phase=>send({event:'phase',phase})});
+      ui=await modules.open(params.source==='purchase'?'purchase':'D13',params.expectedIdentity);
+      result={facts,identity:modules.identity};
     }else{
-      if(!ui)throw Object.assign(new Error('尚未连接浏览器'),{code:'SETUP_REQUIRED'});
+      if(!modules)throw Object.assign(new Error('尚未连接浏览器'),{code:'SETUP_REQUIRED'});
       if(['queryPurchase','preparePurchase','submitPurchase','purchaseTask','downloadPurchase','downloadPurchaseTemplate'].includes(method))await sourceUI('purchase');
       else if(['preparePurchaseCreate','uploadPurchaseOnce','purchaseImportTask','queryCreateOrders'].includes(method))await sourceUI('purchase_create');
       else if(['querySingle','warehouseOptions','prepareExport','submitOnce','findTask'].includes(method))await sourceUI('D13');
-      if(method==='recheckLogin')result={facts:bridge.facts,identity:await ui.open(params.expectedIdentity)};
-      else if(method==='verifyIdentity')result=await ui.verifyIdentity(params.expected);
+      if(method==='recheckLogin'){ui=await modules.open(modules.source||'D13',params.expectedIdentity,{force:true});result={facts:bridge.facts,identity:modules.identity};}
+      else if(method==='verifyIdentity'){ui=await modules.open(modules.source||'D13',params.expected);result=await ui.verifyIdentity(params.expected);}
       else if(method==='querySingle')result=await ui.querySingle(params.code??null,params.name);
       else if(method==='warehouseOptions')result=await ui.warehouseOptions(params.term);
       else if(method==='inspect')result={...await ui.inspect(),selectorTitles:await ui.page.locator('.ant-select-tree-title').allTextContents(),observations:ui.observations.slice(-12)};

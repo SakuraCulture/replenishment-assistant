@@ -7,6 +7,7 @@ import {MachineSetup,readConfiguration,recoverConfiguration,saveConfiguration,co
 import {freshConfig} from '../src/config.mjs';
 import {validateRequest} from '../src/machine-protocol.mjs';
 import {writeJson,exists,AppError} from '../src/common.mjs';
+import {BoundBrowserPool} from '../src/bound-browser.mjs';
 
 const identity={accountId:'001',merchantCode:'M',displayName:'测试商家'};
 const target=code=>({buyerWarehouseCode:code,displayName:code,operatingStores:[],mappingSource:'fixture',mappingVerifiedAt:'2026-11-01T00:00:00Z'});
@@ -17,11 +18,45 @@ async function context(t,behavior={}){
     constructor(){calls.push('new');}
     async connect(){calls.push('connect');return {identity:behavior.identity||identity,facts:{edgeVersion:'test',actualProfilePath:'C:/EdgeData/Profile1'}};}
     async querySingle(code,name){calls.push(code);if(behavior.query)return behavior.query(code,name);return {identity,warehouseCode:code,name,total:1,observedAt:'2026-11-01T00:00:00Z'};}
-    async stop(){calls.push('stop');}
+    async stop(){calls.push('stop');this.closed=true;}
+    async recheckLogin(){calls.push('recheck');return {identity,facts:{edgeVersion:'test',actualProfilePath:'C:/EdgeData/Profile1'}};}
   }
   const setup=new MachineSetup({root,Client,stepTimeoutMs:behavior.timeout,discoverEnvironment:async()=>({profiles:[{actualProfilePath:'C:/EdgeData/Profile1',userDataRoot:'C:/EdgeData',profileDirectory:'Profile1'}],installations:[{executable:'C:/Edge/msedge.exe'}]}),checkOutputRoot:async root=>({root})});
   t.after(()=>setup.close());return {root,setup,calls};
 }
+test('shared setup keeps verified worker until explicit save, then reuses it for subsequent setup',async t=>{
+  const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};
+  t.after(()=>c.setup.browsers.close());
+  const first=c.setup.begin(params(c.root));await c.setup.promise;
+  const client=c.setup.client;assert.deepEqual(c.calls,['new','connect','W2','W1']);
+  await c.setup.commit(first.id);assert.equal(c.setup.client,null);assert.equal(c.setup.browsers.browser.client,client);
+  await c.setup.close();assert.equal(client.closed,undefined);
+  const next=c.setup.begin(params(c.root));await c.setup.promise;assert.equal(c.setup.client,client);
+  assert.deepEqual(c.calls,['new','connect','W2','W1','recheck','W2','W1']);
+  await c.setup.cancel(next.id);assert.equal(client.closed,undefined);assert.equal(c.setup.busy,false);
+  const pair=await readConfiguration(c.root);assert.equal(pair.config.targets.length,2);
+});
+test('uncommitted new setup releases connection on cancel; failed borrowed setup stops unsafe worker',async t=>{
+  const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};
+  t.after(()=>c.setup.browsers.close());
+  let job=c.setup.begin(params(c.root));await c.setup.promise;const pending=c.setup.client;
+  await c.setup.cancel(job.id);assert.equal(pending.closed,true);assert.deepEqual(await readConfiguration(c.root),{config:null,binding:null});
+  job=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(job.id);
+  const borrowed=c.setup.browsers.browser.client;borrowed.querySingle=async()=>{throw new AppError('WRONG_IDENTITY','changed');};
+  c.setup.begin(params(c.root));await c.setup.promise;assert.equal(c.setup.job.state,'FAILED');assert.equal(borrowed.closed,true);
+  assert.equal((await readConfiguration(c.root)).config.tenantBinding.merchantCode,identity.merchantCode);
+});
+test('shared setup recovers one query identity timeout on same worker without starting another connection',async t=>{
+  let attempts=0;
+  const c=await context(t,{query:async(code,name)=>{
+    if(attempts++===0)throw new AppError('IDENTITY_RESPONSE_TIMEOUT','fixture');
+    return {identity,warehouseCode:code,name,total:1,observedAt:'2026-11-01T00:00:00Z'};
+  }});
+  c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};t.after(()=>c.setup.browsers.close());
+  const job=c.setup.begin(params(c.root));await c.setup.promise;
+  assert.equal(c.setup.job.state,'READY');assert.deepEqual(c.calls,['new','connect','W2','recheck','W2','W1']);
+  assert.deepEqual(await readConfiguration(c.root),{config:null,binding:null});await c.setup.cancel(job.id);
+});
 test('配置动作严格校验编码、列表与已发现浏览器路径，不允许未知字段',async t=>{
   const c=await context(t),good={protocol_version:1,request_id:'r1',action:'setup.start',...params(c.root)};validateRequest(good);
   for(const bad of [{...good,targets:[{code:1,name:'n'}]},{...good,targets:[{code:'W',name:'n'},{code:'W',name:'n'}]},{...good,candidate:{...good.candidate,password:'x'}},{...good,targets:[]}])assert.throws(()=>validateRequest(bad),{code:'REQUEST_SCHEMA'});

@@ -22,8 +22,7 @@ class SetupDialog(ComponentDialog):
         self.resize(980, 720)
         self.folder = Path(folder) / 'aoxiang'
         self.directory = Directory(self.folder)
-        self.client_factory = client_factory
-        self.client = client_factory(component_root(), self.folder / 'component-state')
+        self.init_client(parent, client_factory)
         self.started = False
         self.worker = None
         self.setup_id = None
@@ -285,13 +284,14 @@ class SetupDialog(ComponentDialog):
             if not done:
                 QTimer.singleShot(600, self.reconnect)
                 return
-            self.client = self.client_factory(component_root(), self.folder / 'component-state')
+            if not hasattr(self.client, 'reset'):
+                self.client = self.client_factory(component_root(), self.folder / 'component-state')
             self.started = False
             self.setup_id = self.setup_state = self.last_status = None
             self.setup_cancel_requested = self.cancel_pending = False
             self.transport_failed = self.reconnecting = False
             self.detect_pending = True
-        self.run(lambda _: self.client.close(timeout=.5), finished)
+        self.run(lambda _: getattr(self.client, 'reset', self.client.close)(timeout=.5), finished)
 
     def refresh_setup(self):
         if self.worker or self._closing or not self.setup_id:

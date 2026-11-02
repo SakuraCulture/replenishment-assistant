@@ -28,6 +28,15 @@ class Call(QThread):
 
 
 class ComponentDialog(QDialog):
+    def init_client(self, host, client_factory):
+        self.client_factory = client_factory
+        manager = getattr(host, 'aoxiang_workflows', None)
+        self._session_ticket = manager.gate.request_foreground() if manager else None
+        if manager and client_factory is manager.client_factory:
+            self.client = manager.session.lease(self._session_ticket, lambda: self._closing)
+        else:
+            self.client = client_factory(component_root(), self.folder / 'component-state')
+
     def run(self, operation, success):
         if self.worker:
             return
@@ -46,6 +55,9 @@ class ComponentDialog(QDialog):
         self.update_buttons()
         if self._closing:
             if self._close_done:
+                ticket = getattr(self, '_session_ticket', None)
+                if ticket:
+                    ticket.release()
                 self._can_close = True
                 self._closing = False
                 self.close()
@@ -63,6 +75,13 @@ class ComponentDialog(QDialog):
             QMessageBox.warning(self, '翱象操作未完成', text)
 
     def ensure_client(self):
+        from aoxiang_session import SessionLease
+        if isinstance(self.client, SessionLease):
+            if self.worker:
+                self.worker.progress.emit('正在复用共享连接；有后台动作时等待安全交接，不会重复连接或强杀上传。')
+            self.client.start()
+            self.started = True
+            return
         ticket = getattr(self, '_session_ticket', None)
         if ticket is not None:
             if self.worker:
@@ -91,7 +110,7 @@ class ComponentDialog(QDialog):
         event.ignore()
         self._closing = True
         self.poll.stop()
-        self.status.setText('正在安全关闭连接，等待当前网页动作结束；不会关闭你的 Edge。')
+        self.status.setText('正在停止本窗口任务并安全交接；保留共享连接，不会关闭你的 Edge。')
         self.update_buttons()
         self.finish_close()
 
@@ -105,7 +124,9 @@ class ComponentDialog(QDialog):
 
 def show_modal(host, dialog):
     manager = getattr(host, 'aoxiang_workflows', None)
-    ticket = manager.gate.request_foreground() if manager else None
+    ticket = getattr(dialog, '_session_ticket', None)
+    if manager and ticket is None:
+        ticket = manager.gate.request_foreground()
     dialog._session_ticket = ticket
     host._aoxiang_dialog = dialog
     try:

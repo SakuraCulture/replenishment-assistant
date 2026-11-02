@@ -89,6 +89,8 @@ def start_smoke(app, win, args):
             if business:
                 from aoxiang_business_smoke import exercise
                 exercise(win,output,wait,active,checks)
+            from aoxiang_shared_smoke import exercise_shared
+            exercise_shared(win,output,wait,active,checks,business)
             queue = QueueDialog(win, win.aoxiang_workflows)
             queue.show()
             QTest.qWait(80)
@@ -114,6 +116,7 @@ def start_smoke(app, win, args):
             win.job_dirty = False
             win._discard_close = True
             win.close()
+            wait(lambda: win.aoxiang_workflows.session.client is None and win.aoxiang_workflows.session_closer is None and win.aoxiang_workflows.owner is None)
             QTimer.singleShot(100, lambda:app.exit(0 if report['passed'] else 1))
 
     QTimer.singleShot(200, execute)
