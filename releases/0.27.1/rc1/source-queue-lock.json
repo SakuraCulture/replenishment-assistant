@@ -1,0 +1,13 @@
+{
+  "blocked_poll_seconds": 0.0026746000221464783,
+  "busy_observed": true,
+  "heartbeats_while_busy": 27,
+  "busy_wait_seconds": 0.2674027000030037,
+  "owner_retained": true,
+  "stopped": false,
+  "automatic_recovery": true,
+  "read_maintenance_heartbeats": 26,
+  "write_maintenance_heartbeats": 27,
+  "no_platform_task_dispatched": true,
+  "passed": true
+}

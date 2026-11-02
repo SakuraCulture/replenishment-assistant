@@ -1,0 +1,81 @@
+{
+  "commit": "f4d8d3cc025342e4efd3e0d0c038c208f47487f3",
+  "live_ui_observation": "翱象队列停止，原记录保留：database is locked",
+  "source_changed": false,
+  "live_business_writes": false,
+  "cases": [
+    {
+      "kind": "preview_read_lock",
+      "tick_seconds": 10.073309700004756,
+      "heartbeat_callbacks_during_tick": 0,
+      "message": "翱象队列停止，原记录保留：database is locked",
+      "owner_present": true,
+      "owner_transaction_active": true,
+      "stopping": true,
+      "close_requested": false,
+      "host_closing": false,
+      "sql_trace": [
+        "PRAGMA foreign_keys=ON",
+        "BEGIN IMMEDIATE",
+        "SELECT name FROM sqlite_master WHERE type='table'",
+        "SELECT version FROM ax_workflow_meta",
+        "SELECT payload FROM ax_schedules WHERE json_extract(payload,'$.enabled')=1 OR json_extract(payload,'$.final_pending')=1 ORDER BY rowid",
+        "COMMIT",
+        "ROLLBACK"
+      ],
+      "maintenance_outcome": {
+        "released": true
+      },
+      "after_unlock_direct_poll_seconds": 0.0010848999954760075,
+      "after_unlock_direct_poll_ok": true,
+      "manager_poll_calls_after_unlock": 0,
+      "delete_gate": "本窗口没有后台调度权或正在关闭；请先处理另一实例或队列错误",
+      "remaining_synthetic_orders": 1
+    },
+    {
+      "kind": "actual_delete_write_lock",
+      "tick_seconds": 10.104536700004246,
+      "heartbeat_callbacks_during_tick": 0,
+      "message": "翱象队列停止，原记录保留：database is locked",
+      "owner_present": true,
+      "owner_transaction_active": true,
+      "stopping": true,
+      "close_requested": false,
+      "host_closing": false,
+      "sql_trace": [
+        "PRAGMA foreign_keys=ON",
+        "BEGIN IMMEDIATE"
+      ],
+      "maintenance_outcome": {
+        "result": {
+          "deleted": 1,
+          "orders": [
+            "BH-T-ZC"
+          ]
+        }
+      },
+      "after_unlock_direct_poll_seconds": 0.0011181000154465437,
+      "after_unlock_direct_poll_ok": true,
+      "manager_poll_calls_after_unlock": 0,
+      "delete_gate": "本窗口没有后台调度权或正在关闭；请先处理另一实例或队列错误",
+      "remaining_synthetic_orders": 0
+    }
+  ],
+  "live_workflow_readonly": {
+    "integrity": "ok",
+    "states": [
+      [
+        "COMPLETED_WITH_ERRORS",
+        1
+      ]
+    ],
+    "schedules": 0,
+    "copy_recover_and_poll_ok": true,
+    "copy_poll_seconds": 0.002341199986403808,
+    "copy_due_created": false,
+    "copy_queued": false,
+    "live_workflows_sha256_before": "573d28708848a32adb23017e29f9354235806c8fd296533a3ba5f7ac78470e1f",
+    "live_workflows_sha256_after": "573d28708848a32adb23017e29f9354235806c8fd296533a3ba5f7ac78470e1f"
+  },
+  "reproduced": true
+}
