@@ -1,0 +1,27 @@
+{
+  "checked_at": "2026-11-02T09:15:06.732614+08:00",
+  "source_commit": "c3c038d497b1b64914e09425af7a148e246046a1",
+  "scope": "read-only local diagnosis; no browser connection or platform request in this audit",
+  "command_id": "rep-dde384b54a9a4cdaaca2916fb67f010f",
+  "run_id": "e77590b7-8345-4329-850e-386dc219fd9f",
+  "latest_state": "INTERRUPTED",
+  "item_count": 1,
+  "item_stages": [
+    {
+      "stage": "PLANNED",
+      "attempt_id": null
+    }
+  ],
+  "export_attempt_count": 0,
+  "export_attempts": [],
+  "observed_failure": "IDENTITY_RESPONSE_TIMEOUT at bounded(request.response())",
+  "interpretation": "Identity request observed; response not received before timeout. Does not establish login state or network/root cause.",
+  "browser_check": "Computer Use terminated page inspection because it could not determine current browser URL reliably; no alternative browser control used after termination.",
+  "next_requirement": "User confirms the existing Aoxiang business page loads; then resume same command after supported browser access is available.",
+  "evidence_sha256": {
+    "qa\\aoxiang_integration_20261101\\ax04-live-resume-20261102_091106\\latest.json": "1147c14957eac788d41b0cc38fdec72903cd4f2515427c46aec439320721811c",
+    "qa\\aoxiang_integration_20261101\\ax04-live-resume-20261102_091106\\failure.json": "cbcb89b7539db2fdec6323b69ef92137607a6dcfd873bfa6fec378d0eb6df562",
+    "qa\\aoxiang_integration_20261101\\ax04-live-resume-20261102_091106\\events.jsonl": "b4d2009c1cc6d0523ca8cabde2f64ee6e4d6c0d591d3f0266c794b08d6602fa7",
+    "components\\aoxiang\\src\\aoxiang-ui.mjs": "dffff146278db6bc791142b0d28c5cf11d23ad4ff075ce9b4471ef807b1c43f6"
+  }
+}
