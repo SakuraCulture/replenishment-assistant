@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "actual_exe": true,
+  "live_platform": false,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.24.0_ax_rc3\\补货助手\\补货助手.exe",
+  "exe_sha256": "560b54ffe6d49900b9142edd1c1e4960ba1b8d4f2e9ef40de96008680ab34540",
+  "build_commit": "4cbc1060c58d60c1243d15fac32b944d8202bb99",
+  "component_manifest_sha256": "49f9414f445b4674ba722793e7c40cb3f34bc0b3db26da70033c8ce0a86194e7",
+  "runs": [
+    {
+      "passed": true,
+      "actual_exe": true,
+      "live_platform": false,
+      "checks": [
+        "真实固定Node进程启动并读取本地未配置状态，第1次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "真实固定Node进程启动并读取本地未配置状态，第2次",
+        "字段错误后同进程可用，安全关闭后原状态可重开",
+        "本地批次队列打开、空状态与关闭；未创建周期计划"
+      ],
+      "heartbeat_samples": 61,
+      "max_heartbeat_gap": 0.0625243000104092,
+      "source_commit": "4cbc1060c58d60c1243d15fac32b944d8202bb99",
+      "exit_code": 0,
+      "remaining_children": [],
+      "sampled_descendants": 5,
+      "elapsed_seconds": 3.23484260000987,
+      "peak_tree_rss_bytes": 284995584
+    }
+  ],
+  "upgrade_fixture": null,
+  "historical_tables": {},
+  "historical_table_differences": [],
+  "business_comparison": null,
+  "added_tables": [],
+  "original_fixture_unchanged": false,
+  "memory_method": "50 ms samples; sum of RSS of app and observed descendants; shared pages may be counted more than once",
+  "limitations": [
+    "No live platform query/upload/receipt; business fixtures are explicitly synthetic",
+    "Local EXE operations do not prove the real platform end-to-end chain"
+  ]
+}

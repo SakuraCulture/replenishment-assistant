@@ -12,3 +12,5 @@ components/aoxiang/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-a
 releases/0.24.0/ax_rc1/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 releases/0.24.0/ax_rc2/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 releases/0.24.0/ax_rc2/*.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.24.0/ax_rc3/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.24.0/ax_rc3/*.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

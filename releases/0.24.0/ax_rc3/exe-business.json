@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "actual_exe": true,
+  "live_platform": false,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.24.0_ax_rc3\\补货助手\\补货助手.exe",
+  "exe_sha256": "560b54ffe6d49900b9142edd1c1e4960ba1b8d4f2e9ef40de96008680ab34540",
+  "build_commit": "4cbc1060c58d60c1243d15fac32b944d8202bb99",
+  "component_manifest_sha256": "49f9414f445b4674ba722793e7c40cb3f34bc0b3db26da70033c8ce0a86194e7",
+  "runs": [
+    {
+      "passed": true,
+      "actual_exe": true,
+      "live_platform": false,
+      "checks": [
+        "合成两店文件经原检查Worker与Windows spawn采用，门店顺序W2/W1保持",
+        "两店分别按30元/不限预算计算并导出；由外部脚本与源码同输入逐字段及Excel对照",
+        "真实固定Node登记采购任务，付款7件/0.99元保持；窗口重开恢复原预览与唯一任务，未上传",
+        "合成完成单实收5件按原生命周期落库，重复同步不新增修订；付款7件及回传5件原事实保持",
+        "当前付款更新为8件/1.23元后，旧采购预览明确待核且禁用上传；仍展示原7件/0.99元，查询无业务写入",
+        "本地批次队列打开、空状态与关闭；未创建周期计划"
+      ],
+      "heartbeat_samples": 138,
+      "max_heartbeat_gap": 0.7838363999908324,
+      "source_commit": "4cbc1060c58d60c1243d15fac32b944d8202bb99",
+      "exit_code": 0,
+      "remaining_children": [],
+      "sampled_descendants": 11,
+      "elapsed_seconds": 9.5876706999843,
+      "peak_tree_rss_bytes": 289648640
+    }
+  ],
+  "upgrade_fixture": null,
+  "historical_tables": {},
+  "historical_table_differences": [],
+  "business_comparison": {
+    "differences": [],
+    "excel_differences": [],
+    "whitelist": {
+      "loaded.loaded_at": "wall clock",
+      "result.created": "wall clock",
+      "result.task.pid/started/finished": "process/timing",
+      "result.version.version/source_commit/build_id/built_at": "application build metadata",
+      "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+    },
+    "reference_commit": "4cbc1060c58d60c1243d15fac32b944d8202bb99",
+    "reference_source_archive_sha256": "eff42fe3b2d13533c2f43b92a1e00a2084e1e0328262d5e431d082f6a8b7521c",
+    "build_metadata_sha256": "9fe73b39d47a1fcfb5aa2abe7d2d48efbeb69f90832e9eb324b5783a6f0cc355",
+    "scope": "Frozen application vs same source, identical synthetic inputs; baseline rules verified separately"
+  },
+  "added_tables": [],
+  "original_fixture_unchanged": false,
+  "memory_method": "50 ms samples; sum of RSS of app and observed descendants; shared pages may be counted more than once",
+  "limitations": [
+    "No live platform query/upload/receipt; business fixtures are explicitly synthetic",
+    "Local EXE operations do not prove the real platform end-to-end chain"
+  ]
+}

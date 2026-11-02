@@ -1,0 +1,26 @@
+✖ observed success null/null requires visible empty table AND exact zero total (1.0636ms)
+✔ ordinary list and explicit [] zero preserve response types/order (1.3421ms)
+✔ null is not an unconditional zero; failed, partial, missing and mismatching results rejected (0.6006ms)
+✔ UI proof absent, nonzero, ambiguous or unsuccessful HTTP rejected (0.3976ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 126.3002
+
+✖ failing tests:
+
+test at components\aoxiang\test\purchase-empty-query.test.mjs:16:1
+✖ observed success null/null requires visible empty table AND exact zero total (1.0636ms)
+  Error: 采购页未返回有效单据列表
+      at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)
+      at Object.queryAction (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-ui.mjs:44:68)
+      at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/purchase-empty-query.test.mjs:18:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    code: 'PURCHASE_QUERY_FAILED',
+    details: {}
+  }

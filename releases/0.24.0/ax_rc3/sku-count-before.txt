@@ -1,0 +1,41 @@
+✔ decimal facts retain precision and reject null/number/exponent/negative (1.2528ms)
+✔ reserve idempotent; changed payment and different ID cannot duplicate an order (30.8847ms)
+✔ pre-upload cancel releases reservation; post-boundary cancel cannot release it (26.0763ms)
+✔ crash before upload pauses; crash after boundary needs review and never retries (41.5245ms)
+✔ pause during preparation never uploads; retry uses original intent safely (29.1195ms)
+✔ pause in upload persists returned receipt; next start only observes it (27.3387ms)
+✔ timeout no receipt forbids replay; late exact receipt can recover (86.17ms)
+✔ strict per-SKU proof catches equal-total swaps, wrong scope, null, split, status and external order (0.6698ms)
+✔ receipt identity cannot change; conflicting task retained for review (26.4354ms)
+✔ recovered verification repeats read-only observation and protects unique platform order (35.3512ms)
+✔ missing durable table or duplicate protection index fails closed and keeps backup (24.7119ms)
+✔ legacy component migration cannot silently omit a reserved or submitted creation identity (25.6435ms)
+✔ immediate close before preparation microtask pauses without upload or lost task (25.9779ms)
+✖ native Excel whole-valued decimal SKU count binds without weakening quantity or amount checks (0.3558ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 13
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 574.9416
+
+✖ failing tests:
+
+test at components\aoxiang\test\purchase-create.test.mjs:119:1
+✖ native Excel whole-valued decimal SKU count binds without weakening quantity or amount checks (0.3558ms)
+  Error: 计数缺失或无效
+      at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)
+      at countValue (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:25:66)
+      at checkNativePurchase (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-contract.mjs:56:132)
+      at checkCreatedPurchase (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-contract.mjs:46:3)
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/purchase-create.test.mjs:123:18)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12) {
+    code: 'INVALID_COUNT',
+    details: {}
+  }

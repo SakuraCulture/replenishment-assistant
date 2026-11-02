@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "scope": "offline actual D16/D17 exact-file replay; no platform call",
+  "order": "PO202611020938424570",
+  "status": "待提交",
+  "rows": [
+    {
+      "orderId": "PO202611020938424570",
+      "status": "待提交",
+      "store": "TSD20251211",
+      "supplier": "2078246",
+      "sku": "1941340102056726530",
+      "quantity": "1",
+      "amount": "0.40",
+      "note": "AX_CREATE:purchase-071bf158ff554ad0826b4eaa977d4d63 本地单:BH-20261102-TSD20251211-ZC-HB"
+    }
+  ],
+  "main": {
+    "orderId": "PO202611020938424570",
+    "status": "待提交",
+    "store": "TSD20251211",
+    "supplier": "2078246",
+    "skuCount": "1.0",
+    "quantity": "1.0",
+    "amount": "0.40",
+    "externalOrderId": "",
+    "marker": "AX_CREATE:purchase-071bf158ff554ad0826b4eaa977d4d63 本地单:BH-20261102-TSD20251211-ZC-HB"
+  },
+  "file_sha256": {
+    "D16": {
+      "source": "D16",
+      "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101\\ax03-live-setup-retry\\downloads\\采购单\\LY_TT_QQD\\TSD20251211\\2026-11-02_created\\977417e2-8f8c-4f23-8d70-e66180382093\\泰盛店【搬品用】_2026-11-02_采购主单.xlsx",
+      "sha256": "8e49ee86c2cd8ae60970ad7ab5d9b0eebd04f478a3b881da7152cdc22511f316"
+    },
+    "D17": {
+      "source": "D17",
+      "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\aoxiang_integration_20261101\\ax03-live-setup-retry\\downloads\\采购单\\LY_TT_QQD\\TSD20251211\\2026-11-02_created\\977417e2-8f8c-4f23-8d70-e66180382093\\泰盛店【搬品用】_2026-11-02_采购商品明细.xlsx",
+      "sha256": "c677839140ae9e53a467d08b58fa085786d4a1c627d6c1e6f59cd768076b97b9"
+    }
+  },
+  "runtime_source_sha256": {
+    "purchase-ui.mjs": "3225ca0a449b516664a315cde9d941403e28e71afd1a2c5f2a9064013cd0a8b5",
+    "purchase-contract.mjs": "fc99bb8fea88bdc28bd8ececb571cb2f3183a5a5c3af9e7272c2384df4051796",
+    "purchase-coordinator.mjs": "3f03c49fc0aad3a73e9191523c9568b311a6d748483fdc4741aebf11c77fa0c1",
+    "purchase-create-contract.mjs": "a3f3c7d20910e17c771c27729fb28e720b1840364d3823add56059cd2dfe0d0a"
+  }
+}

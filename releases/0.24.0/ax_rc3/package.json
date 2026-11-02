@@ -1,0 +1,21 @@
+{
+  "channel": "local candidate; real one-item draft purchase verified; final receipt pending",
+  "build_commit": "4cbc1060c58d60c1243d15fac32b944d8202bb99",
+  "exe_sha256": "560b54ffe6d49900b9142edd1c1e4960ba1b8d4f2e9ef40de96008680ab34540",
+  "component_manifest_sha256": "49f9414f445b4674ba722793e7c40cb3f34bc0b3db26da70033c8ce0a86194e7",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.24.0_ax_rc3\\补货助手_0.24.0_ax_rc3_本地候选.zip",
+  "zip_bytes": 88122753,
+  "zip_sha256": "6e263505eff291b3c3a7a2eb55e550546867c04a06d2e75527c5b0eed04dc994",
+  "delivery_files": 1084,
+  "delivery_inventory_sha256": "40788c60a89bcab36646d344be0ef203dcba12a5b8ee59439168b0abe0c95a2d",
+  "zip_members_byte_verified": true,
+  "postbuild_documents_only": [
+    "docs/翱象真实联调_20261102.md",
+    "docs/0.24.0_ax_rc3本地候选验收.md"
+  ],
+  "old_version_protection": {
+    "old_rc2_file_count": 1083,
+    "changed_files": [],
+    "old_zip_sha256_unchanged": true
+  }
+}
