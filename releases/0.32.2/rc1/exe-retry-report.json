@@ -1,0 +1,53 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "scenario": {
+    "task_a": {
+      "A": 10.0,
+      "B": 0.0
+    },
+    "expected": {
+      "A": 0.0,
+      "B": 10.0
+    },
+    "actual": {
+      "A": 0.0,
+      "B": 10.0
+    },
+    "displayed_profile": "a5f9836ad19c",
+    "used_profile": "a5f9836ad19c",
+    "amount": 10.0,
+    "sibling_preserved": true,
+    "queue_cleared": true
+  },
+  "heartbeat_ticks": 90,
+  "app": "补货助手",
+  "version": "0.32.2",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "84a81076fe2ac817df668da172d1b6615260895e",
+  "build_id": "rc1",
+  "built_at": "2026-11-03T23:33:53.370683+08:00",
+  "source_archive_sha256": "7c466aa909752f036c78d222861d534a090aae0746864c615333561b0d302f5a",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "84a81076fe2ac817df668da172d1b6615260895e",
+    "files": 866,
+    "manifest_sha256": "15852dd5d5c91fdb787b69ce1639155891f3c431f8a83ff675c90609d49aaf36",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "c49c6af8475680ebf9f5199590e7cfbf48f37bfe085b62ab37f14e4802fac523",
+    "files": 8,
+    "source_commit": "84a81076fe2ac817df668da172d1b6615260895e",
+    "contains_user_state": false
+  }
+}

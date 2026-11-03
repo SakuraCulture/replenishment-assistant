@@ -1,0 +1,67 @@
+test_copy_restore_path (test_retry_profile.RetryProfile.test_copy_restore_path) ... FAIL
+test_reset_removes_all_old_calculation_parts (test_retry_profile.RetryProfile.test_reset_removes_all_old_calculation_parts) ... FAIL
+test_restored_no_profile_unlimited_does_not_reuse_A (test_retry_profile.RetryProfile.test_restored_no_profile_unlimited_does_not_reuse_A) ... FAIL
+test_restored_zero_budget (test_retry_profile.RetryProfile.test_restored_zero_budget) ... FAIL
+test_same_batch_retry_keeps_frozen_input_settings_and_profile (test_retry_profile.RetryProfile.test_same_batch_retry_keeps_frozen_input_settings_and_profile) ... ok
+test_saved_B_retry_budget_10 (test_retry_profile.RetryProfile.test_saved_B_retry_budget_10) ... FAIL
+
+======================================================================
+FAIL: test_copy_restore_path (test_retry_profile.RetryProfile.test_copy_restore_path)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_retry_profile.py", line 22, in test_copy_restore_path
+    def test_copy_restore_path(self):self.assertEqual(exercise(self.win,owned=False)['actual'],{'A':0.,'B':10.})
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\retry_profile_smoke.py", line 45, in exercise
+    if report['actual']!=report['expected'] or report['used_profile']!=report['displayed_profile']:raise AssertionError(report)
+                                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'task_a': {'A': 10.0, 'B': 0.0}, 'expected': {'A': 0.0, 'B': 10.0}, 'actual': {'A': 10.0, 'B': 0.0}, 'displayed_profile': 'a5f9836ad19c', 'used_profile': '5a4b25958b88', 'amount': 10.0, 'sibling_preserved': True, 'queue_cleared': True}
+
+======================================================================
+FAIL: test_reset_removes_all_old_calculation_parts (test_retry_profile.RetryProfile.test_reset_removes_all_old_calculation_parts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_retry_profile.py", line 32, in test_reset_removes_all_old_calculation_parts
+    self.assertFalse(hasattr(self.win,'_calculation_profile'))
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_restored_no_profile_unlimited_does_not_reuse_A (test_retry_profile.RetryProfile.test_restored_no_profile_unlimited_does_not_reuse_A)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_retry_profile.py", line 23, in test_restored_no_profile_unlimited_does_not_reuse_A
+    def test_restored_no_profile_unlimited_does_not_reuse_A(self):self.assertIsNone(exercise(self.win,budget=None,restored_profile=None)['used_profile'])
+                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\retry_profile_smoke.py", line 45, in exercise
+    if report['actual']!=report['expected'] or report['used_profile']!=report['displayed_profile']:raise AssertionError(report)
+                                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'task_a': {'A': 10.0, 'B': 0.0}, 'expected': {'A': 33.0, 'B': 33.0}, 'actual': {'A': 33.0, 'B': 33.0}, 'displayed_profile': None, 'used_profile': '5a4b25958b88', 'amount': 66.0, 'sibling_preserved': True, 'queue_cleared': True}
+
+======================================================================
+FAIL: test_restored_zero_budget (test_retry_profile.RetryProfile.test_restored_zero_budget)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_retry_profile.py", line 24, in test_restored_zero_budget
+    def test_restored_zero_budget(self):self.assertEqual(exercise(self.win,budget='0')['actual'],{'A':0.,'B':0.})
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\retry_profile_smoke.py", line 45, in exercise
+    if report['actual']!=report['expected'] or report['used_profile']!=report['displayed_profile']:raise AssertionError(report)
+                                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'task_a': {'A': 10.0, 'B': 0.0}, 'expected': {'A': 0.0, 'B': 0.0}, 'actual': {'A': 0.0, 'B': 0.0}, 'displayed_profile': 'a5f9836ad19c', 'used_profile': '5a4b25958b88', 'amount': 0.0, 'sibling_preserved': True, 'queue_cleared': True}
+
+======================================================================
+FAIL: test_saved_B_retry_budget_10 (test_retry_profile.RetryProfile.test_saved_B_retry_budget_10)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_retry_profile.py", line 21, in test_saved_B_retry_budget_10
+    r=exercise(self.win);self.assertEqual(r['task_a'],{'A':10.,'B':0.});self.assertEqual(r['actual'],{'A':0.,'B':10.});self.assertEqual(r['amount'],10.)
+      ^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\retry_profile_smoke.py", line 45, in exercise
+    if report['actual']!=report['expected'] or report['used_profile']!=report['displayed_profile']:raise AssertionError(report)
+                                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'task_a': {'A': 10.0, 'B': 0.0}, 'expected': {'A': 0.0, 'B': 10.0}, 'actual': {'A': 10.0, 'B': 0.0}, 'displayed_profile': 'a5f9836ad19c', 'used_profile': '5a4b25958b88', 'amount': 10.0, 'sibling_preserved': True, 'queue_cleared': True}
+
+----------------------------------------------------------------------
+Ran 6 tests in 36.546s
+
+FAILED (failures=5)

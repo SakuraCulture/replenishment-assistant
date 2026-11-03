@@ -1,0 +1,72 @@
+test_carton_boundaries (test_jst.Allocation.test_carton_boundaries) ... ok
+test_decimal_price_and_exact_identifier (test_jst.Allocation.test_decimal_price_and_exact_identifier) ... ok
+test_invalid_return_never_rounds (test_jst.Allocation.test_invalid_return_never_rounds) ... ok
+test_reserved_balance_not_source_stock (test_jst.Allocation.test_reserved_balance_not_source_stock) ... ok
+test_unknowns_disabled_and_no_price_not_zero (test_jst.Allocation.test_unknowns_disabled_and_no_price_not_zero) ... ok
+test_cancel_after_first_keeps_first_and_retry_no_old_cancel (test_jst.Service.test_cancel_after_first_keeps_first_and_retry_no_old_cancel) ... ok
+test_cancel_before_commit_and_boundary (test_jst.Service.test_cancel_before_commit_and_boundary) ... ok
+test_cancel_unused_generation_releases_only_local_reservation (test_jst.Service.test_cancel_unused_generation_releases_only_local_reservation) ... ok
+test_correction_is_atomic_and_export_exact_old_generation (test_jst.Service.test_correction_is_atomic_and_export_exact_old_generation) ... ok
+test_daily_projection_and_logs_do_not_promote_draft (test_jst.Service.test_daily_projection_and_logs_do_not_promote_draft) ... ok
+test_failure_second_order_retains_first_then_retry_requires_repreview (test_jst.Service.test_failure_second_order_retains_first_then_retry_requires_repreview) ... ok
+test_focused_stage_queries_are_disjoint_and_do_not_mutate_facts (test_jst.Service.test_focused_stage_queries_are_disjoint_and_do_not_mutate_facts) ... ok
+test_generation_draft_is_not_actual_payment (test_jst.Service.test_generation_draft_is_not_actual_payment) ... ok
+test_legacy_return_preserves_original_signed_dependency (test_jst.Service.test_legacy_return_preserves_original_signed_dependency) ... ok
+test_locked_fresh_stock_no_double_deduction (test_jst.Service.test_locked_fresh_stock_no_double_deduction) ... ok
+test_locked_return_update_and_resign_guard (test_jst.Service.test_locked_return_update_and_resign_guard) ... ok
+test_multi_order_priority_manual_order_and_lock_while_running (test_jst.Service.test_multi_order_priority_manual_order_and_lock_while_running) ... ok
+test_original_catalog_is_exact_bytes_and_missing_never_substituted (test_jst.Service.test_original_catalog_is_exact_bytes_and_missing_never_substituted) ... ok
+test_payment_preview_bound_to_generation_and_failures_are_journaled (test_jst.Service.test_payment_preview_bound_to_generation_and_failures_are_journaled) ... ok
+test_refresh_lock_race_rejected (test_jst.Service.test_refresh_lock_race_rejected) ... ok
+test_refresh_retry_and_tamper (test_jst.Service.test_refresh_retry_and_tamper) ... ok
+test_retry_and_exports_do_not_reserve_twice (test_jst.Service.test_retry_and_exports_do_not_reserve_twice) ... ok
+test_stale_return_and_baseline_rejected (test_jst.Service.test_stale_return_and_baseline_rejected) ... ok
+test_unlocked_reservation_survives_refresh_and_late_lock (test_jst.Service.test_unlocked_reservation_survives_refresh_and_late_lock) ... ok
+test_waiting_write_lock_cancelled_no_generation (test_jst.Service.test_waiting_write_lock_cancelled_no_generation) ... ERROR:root:数据库忙，未能保存停止／失败日志：database is locked
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\jst_orders.py", line 361, in commit
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+test_written_file_is_not_reported_missing_when_journal_fails (test_jst.Service.test_written_file_is_not_reported_missing_when_journal_fails) ... ok
+test_zero_allocation_no_fake_order_and_retry (test_jst.Service.test_zero_allocation_no_fake_order_and_retry) ... ok
+test_changed_file_before_final_commit_rolls_back (test_jst_current_basis.CurrentBasis.test_changed_file_before_final_commit_rolls_back) ... ok
+test_current_medical_tag_cannot_be_replaced_by_old_stock (test_jst_current_basis.CurrentBasis.test_current_medical_tag_cannot_be_replaced_by_old_stock) ... ok
+test_current_tags_do_not_replace_frozen_stock_or_price (test_jst_current_basis.CurrentBasis.test_current_tags_do_not_replace_frozen_stock_or_price) ... ok
+test_default_changes_between_orders_reject_remaining (test_jst_current_basis.CurrentBasis.test_default_changes_between_orders_reject_remaining) ... ok
+test_downloaded_template_blank_tags_are_known (test_jst_current_basis.CurrentBasis.test_downloaded_template_blank_tags_are_known) ... ok
+test_explicit_history_export_keeps_quantity_and_marks_filename (test_jst_current_basis.CurrentBasis.test_explicit_history_export_keeps_quantity_and_marks_filename) ... ok
+test_missing_tag_header_stays_unknown_with_early_warning (test_jst_current_basis.CurrentBasis.test_missing_tag_header_stays_unknown_with_early_warning) ... ok
+test_ordinary_generation_panel_export_rejects_old_stock (test_jst_current_basis.CurrentBasis.test_ordinary_generation_panel_export_rejects_old_stock) ... ok
+test_other_current_warehouse_medical_tag_blocks (test_jst_current_basis.CurrentBasis.test_other_current_warehouse_medical_tag_blocks) ... ok
+test_supported_catalog_update_waits_until_safe_commit_boundary (test_jst_current_basis.CurrentBasis.test_supported_catalog_update_waits_until_safe_commit_boundary) ... ok
+test_two_orders_validate_whole_catalog_once (test_jst_current_basis.CurrentBasis.test_two_orders_validate_whole_catalog_once) ... ok
+test_without_default_uses_explicit_stock_catalog (test_jst_current_basis.CurrentBasis.test_without_default_uses_explicit_stock_catalog) ... ok
+test_62_orders_no_page_cutoff_grouped_stores_keep_generation_order (test_jst_results.BatchResults.test_62_orders_no_page_cutoff_grouped_stores_keep_generation_order) ... ok
+test_partial_failure_and_cancel_retry_exact_original_ids (test_jst_results.BatchResults.test_partial_failure_and_cancel_retry_exact_original_ids) ... ok
+test_change_after_export_starts_keeps_frozen_generation (test_jst_results.Results.test_change_after_export_starts_keeps_frozen_generation) ... ok
+test_inventory_refresh_requires_review_only_unlocked (test_jst_results.Results.test_inventory_refresh_requires_review_only_unlocked) ... ok
+test_legacy_return_and_paid_history_can_export (test_jst_results.Results.test_legacy_return_and_paid_history_can_export) ... ok
+test_locked_paid_received_orders_remain_exportable (test_jst_results.Results.test_locked_paid_received_orders_remain_exportable) ... ok
+test_repeat_exact_export_keeps_business_facts_and_ready_rows (test_jst_results.Results.test_repeat_exact_export_keeps_business_facts_and_ready_rows) ... ok
+test_scope_and_cancel_do_not_create_exports (test_jst_results.Results.test_scope_and_cancel_do_not_create_exports) ... ok
+test_stale_return_refresh_and_explicit_old_export (test_jst_results.Results.test_stale_return_refresh_and_explicit_old_export) ... ok
+test_warm_projection_does_not_decode_generation_and_tamper_rebuilt (test_jst_results.Results.test_warm_projection_does_not_decode_generation_and_tamper_rebuilt) ... ok
+test_zero_result_and_return_zero_stay_visible (test_jst_results.Results.test_zero_result_and_return_zero_stay_visible) ... ok
+test_empty_scope_and_precision (test_jst_review.StoreReview.test_empty_scope_and_precision) ... ok
+test_two_warehouses_group_store_and_exact_metric_identity (test_jst_review.StoreReview.test_two_warehouses_group_store_and_exact_metric_identity) ... ok
+test_unpriced_not_zero_and_zero_price_not_missing (test_jst_review.StoreReview.test_unpriced_not_zero_and_zero_price_not_missing) ... ok
+test_default_store_then_warehouse_and_reduction_filter (test_jst_review.StoreReviewUI.test_default_store_then_warehouse_and_reduction_filter) ... ok
+test_cancelled_batch_summary_only_counts_committed_orders (test_jst_ui.JstUI.test_cancelled_batch_summary_only_counts_committed_orders) ... ok
+test_close_requested_during_commit_stops_at_next_safe_boundary (test_jst_ui.JstUI.test_close_requested_during_commit_stops_at_next_safe_boundary) ... ok
+test_commit_boundary_disables_stop (test_jst_ui.JstUI.test_commit_boundary_disables_stop) ... ok
+test_generation_ready_and_old_callback_do_not_mark_paid (test_jst_ui.JstUI.test_generation_ready_and_old_callback_do_not_mark_paid) ... ok
+test_generator_has_distinct_qt_finished_signal_and_worker_callback (test_jst_ui.JstUI.test_generator_has_distinct_qt_finished_signal_and_worker_callback) ... ok
+test_overview_has_progress_entries_and_no_execution_toolbar (test_jst_ui.JstUI.test_overview_has_progress_entries_and_no_execution_toolbar) ... ok
+test_result_page_does_not_inherit_lifecycle_or_hidden_filters (test_jst_ui.JstUI.test_result_page_does_not_inherit_lifecycle_or_hidden_filters) ... ok
+test_stage_workspace_has_only_its_own_actions_and_keeps_overview (test_jst_ui.JstUI.test_stage_workspace_has_only_its_own_actions_and_keeps_overview) ... ok
+
+----------------------------------------------------------------------
+Ran 62 tests in 8.395s
+
+OK

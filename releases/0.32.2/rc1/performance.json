@@ -1,0 +1,897 @@
+{
+  "passed": true,
+  "baseline": "9f302f241c5979c1e23dc40d4ab55f96a5020d19",
+  "synthetic": true,
+  "sku_per_warehouse": 10000,
+  "rounds": 3,
+  "execution": "serial AB/BA/AB; same Python; OS cache not cleared; not cold-disk or real store performance",
+  "timing_scope": "commit including backup; excludes plan preparation and export; no GUI responsiveness claim",
+  "business_differences": 0,
+  "excel_differences": 0,
+  "summary": [
+    {
+      "orders": 1,
+      "mode": "old",
+      "median": 0.09219619998475537,
+      "min": 0.08443240000633523,
+      "max": 0.12169080000603572,
+      "catalog_reads": [
+        1,
+        1,
+        1
+      ],
+      "reads_in_write_transaction": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "orders": 1,
+      "mode": "new",
+      "median": 0.08626240002922714,
+      "min": 0.08580410003196448,
+      "max": 0.10263089998625219,
+      "catalog_reads": [
+        1,
+        1,
+        1
+      ],
+      "reads_in_write_transaction": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "orders": 10,
+      "mode": "old",
+      "median": 0.5298411000403576,
+      "min": 0.5154903999646194,
+      "max": 0.6975792999728583,
+      "catalog_reads": [
+        10,
+        10,
+        10
+      ],
+      "reads_in_write_transaction": [
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "orders": 10,
+      "mode": "new",
+      "median": 0.18827829998917878,
+      "min": 0.15523450000910088,
+      "max": 0.22960830002557486,
+      "catalog_reads": [
+        1,
+        1,
+        1
+      ],
+      "reads_in_write_transaction": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "orders": 30,
+      "mode": "old",
+      "median": 1.403957000002265,
+      "min": 1.3635713000549003,
+      "max": 1.4167445999919437,
+      "catalog_reads": [
+        30,
+        30,
+        30
+      ],
+      "reads_in_write_transaction": [
+        30,
+        30,
+        30
+      ]
+    },
+    {
+      "orders": 30,
+      "mode": "new",
+      "median": 0.28401410003425553,
+      "min": 0.28160980000393465,
+      "max": 0.28805269999429584,
+      "catalog_reads": [
+        1,
+        1,
+        1
+      ],
+      "reads_in_write_transaction": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "seconds": 0.12169080000603572,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.06195670005399734,
+      "reads_in_write_transaction": 1,
+      "raw_reads": [
+        {
+          "seconds": 0.06195670005399734,
+          "inside_write_transaction": true
+        }
+      ],
+      "business_sha256": "3e443f3f4a4a800fc1270d68a42f97083de7bf428b399e98d45e25740ea51420",
+      "excel_sha256": "896e0c403fc52e6565012cb6d5abaebbb24cb189b59a4709955193666c7aa6a7",
+      "generated": 1,
+      "orders": 1,
+      "round": 1,
+      "mode": "old"
+    },
+    {
+      "seconds": 0.08580410003196448,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.05025779997231439,
+      "reads_in_write_transaction": 0,
+      "raw_reads": [
+        {
+          "seconds": 0.05025779997231439,
+          "inside_write_transaction": false
+        }
+      ],
+      "business_sha256": "3e443f3f4a4a800fc1270d68a42f97083de7bf428b399e98d45e25740ea51420",
+      "excel_sha256": "896e0c403fc52e6565012cb6d5abaebbb24cb189b59a4709955193666c7aa6a7",
+      "generated": 1,
+      "orders": 1,
+      "round": 1,
+      "mode": "new"
+    },
+    {
+      "seconds": 0.10263089998625219,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.070938799995929,
+      "reads_in_write_transaction": 0,
+      "raw_reads": [
+        {
+          "seconds": 0.070938799995929,
+          "inside_write_transaction": false
+        }
+      ],
+      "business_sha256": "3e443f3f4a4a800fc1270d68a42f97083de7bf428b399e98d45e25740ea51420",
+      "excel_sha256": "896e0c403fc52e6565012cb6d5abaebbb24cb189b59a4709955193666c7aa6a7",
+      "generated": 1,
+      "orders": 1,
+      "round": 2,
+      "mode": "new"
+    },
+    {
+      "seconds": 0.08443240000633523,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.051071499998215586,
+      "reads_in_write_transaction": 1,
+      "raw_reads": [
+        {
+          "seconds": 0.051071499998215586,
+          "inside_write_transaction": true
+        }
+      ],
+      "business_sha256": "3e443f3f4a4a800fc1270d68a42f97083de7bf428b399e98d45e25740ea51420",
+      "excel_sha256": "896e0c403fc52e6565012cb6d5abaebbb24cb189b59a4709955193666c7aa6a7",
+      "generated": 1,
+      "orders": 1,
+      "round": 2,
+      "mode": "old"
+    },
+    {
+      "seconds": 0.09219619998475537,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.05342820001533255,
+      "reads_in_write_transaction": 1,
+      "raw_reads": [
+        {
+          "seconds": 0.05342820001533255,
+          "inside_write_transaction": true
+        }
+      ],
+      "business_sha256": "3e443f3f4a4a800fc1270d68a42f97083de7bf428b399e98d45e25740ea51420",
+      "excel_sha256": "896e0c403fc52e6565012cb6d5abaebbb24cb189b59a4709955193666c7aa6a7",
+      "generated": 1,
+      "orders": 1,
+      "round": 3,
+      "mode": "old"
+    },
+    {
+      "seconds": 0.08626240002922714,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.054571300046518445,
+      "reads_in_write_transaction": 0,
+      "raw_reads": [
+        {
+          "seconds": 0.054571300046518445,
+          "inside_write_transaction": false
+        }
+      ],
+      "business_sha256": "3e443f3f4a4a800fc1270d68a42f97083de7bf428b399e98d45e25740ea51420",
+      "excel_sha256": "896e0c403fc52e6565012cb6d5abaebbb24cb189b59a4709955193666c7aa6a7",
+      "generated": 1,
+      "orders": 1,
+      "round": 3,
+      "mode": "new"
+    },
+    {
+      "seconds": 0.6975792999728583,
+      "catalog_reads": 10,
+      "catalog_read_seconds": 0.5116389999748208,
+      "reads_in_write_transaction": 10,
+      "raw_reads": [
+        {
+          "seconds": 0.059143199992831796,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038115000003017485,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.041454699996393174,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.05739999999059364,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.06042240001261234,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.04556380002759397,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.05240429996047169,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03754779999144375,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.05072010000003502,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.06886769999982789,
+          "inside_write_transaction": true
+        }
+      ],
+      "business_sha256": "a1aa7566c7cf0fd9eb70ad0b9531816bf3cb368a4c7a2e50f0d295f717bd5b86",
+      "excel_sha256": "c5672ed9a9e24ae964a02dd08c72c3e09d12d4ac64ef507ef151f4b1e22f1f9f",
+      "generated": 10,
+      "orders": 10,
+      "round": 1,
+      "mode": "old"
+    },
+    {
+      "seconds": 0.15523450000910088,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.050308399950154126,
+      "reads_in_write_transaction": 0,
+      "raw_reads": [
+        {
+          "seconds": 0.050308399950154126,
+          "inside_write_transaction": false
+        }
+      ],
+      "business_sha256": "a1aa7566c7cf0fd9eb70ad0b9531816bf3cb368a4c7a2e50f0d295f717bd5b86",
+      "excel_sha256": "c5672ed9a9e24ae964a02dd08c72c3e09d12d4ac64ef507ef151f4b1e22f1f9f",
+      "generated": 10,
+      "orders": 10,
+      "round": 1,
+      "mode": "new"
+    },
+    {
+      "seconds": 0.22960830002557486,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.09536120004486293,
+      "reads_in_write_transaction": 0,
+      "raw_reads": [
+        {
+          "seconds": 0.09536120004486293,
+          "inside_write_transaction": false
+        }
+      ],
+      "business_sha256": "a1aa7566c7cf0fd9eb70ad0b9531816bf3cb368a4c7a2e50f0d295f717bd5b86",
+      "excel_sha256": "c5672ed9a9e24ae964a02dd08c72c3e09d12d4ac64ef507ef151f4b1e22f1f9f",
+      "generated": 10,
+      "orders": 10,
+      "round": 2,
+      "mode": "new"
+    },
+    {
+      "seconds": 0.5298411000403576,
+      "catalog_reads": 10,
+      "catalog_read_seconds": 0.43426750018261373,
+      "reads_in_write_transaction": 10,
+      "raw_reads": [
+        {
+          "seconds": 0.05373800004599616,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038790900027379394,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03850070002954453,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.04042580001987517,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038438000017777085,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.053163699980359524,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.05620660004206002,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038815800042357296,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03800579998642206,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03818219999084249,
+          "inside_write_transaction": true
+        }
+      ],
+      "business_sha256": "a1aa7566c7cf0fd9eb70ad0b9531816bf3cb368a4c7a2e50f0d295f717bd5b86",
+      "excel_sha256": "c5672ed9a9e24ae964a02dd08c72c3e09d12d4ac64ef507ef151f4b1e22f1f9f",
+      "generated": 10,
+      "orders": 10,
+      "round": 2,
+      "mode": "old"
+    },
+    {
+      "seconds": 0.5154903999646194,
+      "catalog_reads": 10,
+      "catalog_read_seconds": 0.41769949992885813,
+      "reads_in_write_transaction": 10,
+      "raw_reads": [
+        {
+          "seconds": 0.05135669995797798,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.049009500013198704,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.04637530003674328,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03878679999615997,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03818669996690005,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.040614300000015646,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03764409996801987,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037126899987924844,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03773520002141595,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.04086399998050183,
+          "inside_write_transaction": true
+        }
+      ],
+      "business_sha256": "a1aa7566c7cf0fd9eb70ad0b9531816bf3cb368a4c7a2e50f0d295f717bd5b86",
+      "excel_sha256": "c5672ed9a9e24ae964a02dd08c72c3e09d12d4ac64ef507ef151f4b1e22f1f9f",
+      "generated": 10,
+      "orders": 10,
+      "round": 3,
+      "mode": "old"
+    },
+    {
+      "seconds": 0.18827829998917878,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.07724209997104481,
+      "reads_in_write_transaction": 0,
+      "raw_reads": [
+        {
+          "seconds": 0.07724209997104481,
+          "inside_write_transaction": false
+        }
+      ],
+      "business_sha256": "a1aa7566c7cf0fd9eb70ad0b9531816bf3cb368a4c7a2e50f0d295f717bd5b86",
+      "excel_sha256": "c5672ed9a9e24ae964a02dd08c72c3e09d12d4ac64ef507ef151f4b1e22f1f9f",
+      "generated": 10,
+      "orders": 10,
+      "round": 3,
+      "mode": "new"
+    },
+    {
+      "seconds": 1.3635713000549003,
+      "catalog_reads": 30,
+      "catalog_read_seconds": 1.1411814000457525,
+      "reads_in_write_transaction": 30,
+      "raw_reads": [
+        {
+          "seconds": 0.05098830000497401,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038405200000852346,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03823830001056194,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037452599965035915,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.0370464000152424,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03689749998738989,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03712200000882149,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.036614199983887374,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03712600003927946,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03720929997507483,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03758960001869127,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03746980003779754,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037836600036825985,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03783089999342337,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037384699971880764,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03708119998918846,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.036528299970086664,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037593299988657236,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037510699999984354,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03720179997617379,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03642690001288429,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03677240002434701,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037968299991916865,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03899139998247847,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.04205099999671802,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037300000025425106,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03840600000694394,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03795750002609566,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03722090000519529,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03696029999991879,
+          "inside_write_transaction": true
+        }
+      ],
+      "business_sha256": "f85f74920ce2ddaf46a31ea3aa7347ec6d9fdbcfb6a6cbeb7c8c66bd5a730445",
+      "excel_sha256": "c13cb57ef868551ef3e8eea8149bfabd29d3ba16a105d83b55060794230fa98c",
+      "generated": 30,
+      "orders": 30,
+      "round": 1,
+      "mode": "old"
+    },
+    {
+      "seconds": 0.28805269999429584,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.05068710003979504,
+      "reads_in_write_transaction": 0,
+      "raw_reads": [
+        {
+          "seconds": 0.05068710003979504,
+          "inside_write_transaction": false
+        }
+      ],
+      "business_sha256": "f85f74920ce2ddaf46a31ea3aa7347ec6d9fdbcfb6a6cbeb7c8c66bd5a730445",
+      "excel_sha256": "c13cb57ef868551ef3e8eea8149bfabd29d3ba16a105d83b55060794230fa98c",
+      "generated": 30,
+      "orders": 30,
+      "round": 1,
+      "mode": "new"
+    },
+    {
+      "seconds": 0.28160980000393465,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.05062250001356006,
+      "reads_in_write_transaction": 0,
+      "raw_reads": [
+        {
+          "seconds": 0.05062250001356006,
+          "inside_write_transaction": false
+        }
+      ],
+      "business_sha256": "f85f74920ce2ddaf46a31ea3aa7347ec6d9fdbcfb6a6cbeb7c8c66bd5a730445",
+      "excel_sha256": "c13cb57ef868551ef3e8eea8149bfabd29d3ba16a105d83b55060794230fa98c",
+      "generated": 30,
+      "orders": 30,
+      "round": 2,
+      "mode": "new"
+    },
+    {
+      "seconds": 1.403957000002265,
+      "catalog_reads": 30,
+      "catalog_read_seconds": 1.161818600143306,
+      "reads_in_write_transaction": 30,
+      "raw_reads": [
+        {
+          "seconds": 0.0450690999859944,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.04010460001882166,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038981700025033206,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03825359995244071,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03845069999806583,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038420099997892976,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.04514569998718798,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03773609997006133,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.0383927000220865,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037937500048428774,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037232099974062294,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03843850002158433,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03744469996308908,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037768600042909384,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03809470002306625,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03730540000833571,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03792800003429875,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03684940002858639,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038178800023160875,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03987879998749122,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03783559997100383,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038731600041501224,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038694499991834164,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037797800032421947,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.04268780001439154,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03774990001693368,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03772449999814853,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037689699965994805,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03781660000095144,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03747979999752715,
+          "inside_write_transaction": true
+        }
+      ],
+      "business_sha256": "f85f74920ce2ddaf46a31ea3aa7347ec6d9fdbcfb6a6cbeb7c8c66bd5a730445",
+      "excel_sha256": "c13cb57ef868551ef3e8eea8149bfabd29d3ba16a105d83b55060794230fa98c",
+      "generated": 30,
+      "orders": 30,
+      "round": 2,
+      "mode": "old"
+    },
+    {
+      "seconds": 1.4167445999919437,
+      "catalog_reads": 30,
+      "catalog_read_seconds": 1.1929588000639342,
+      "reads_in_write_transaction": 30,
+      "raw_reads": [
+        {
+          "seconds": 0.0543337999843061,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.040014499973040074,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03863100003218278,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.039735800004564226,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.039666299999225885,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03860609995899722,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038523899973370135,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03881200001342222,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03761499997926876,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03898240003036335,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038655700045637786,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037777300050947815,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.041630799998529255,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03781250002793968,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.0376282999641262,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.04508999997051433,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.037171400035731494,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03782339999452233,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.0377526999800466,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03824040002655238,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03801010001916438,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03882980003254488,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03822230000514537,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.040198400034569204,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.04202379996422678,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03777190000982955,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.044103900028858334,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.03783539996948093,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.038702999998349696,
+          "inside_write_transaction": true
+        },
+        {
+          "seconds": 0.042756899958476424,
+          "inside_write_transaction": true
+        }
+      ],
+      "business_sha256": "f85f74920ce2ddaf46a31ea3aa7347ec6d9fdbcfb6a6cbeb7c8c66bd5a730445",
+      "excel_sha256": "c13cb57ef868551ef3e8eea8149bfabd29d3ba16a105d83b55060794230fa98c",
+      "generated": 30,
+      "orders": 30,
+      "round": 3,
+      "mode": "old"
+    },
+    {
+      "seconds": 0.28401410003425553,
+      "catalog_reads": 1,
+      "catalog_read_seconds": 0.05722260003676638,
+      "reads_in_write_transaction": 0,
+      "raw_reads": [
+        {
+          "seconds": 0.05722260003676638,
+          "inside_write_transaction": false
+        }
+      ],
+      "business_sha256": "f85f74920ce2ddaf46a31ea3aa7347ec6d9fdbcfb6a6cbeb7c8c66bd5a730445",
+      "excel_sha256": "c13cb57ef868551ef3e8eea8149bfabd29d3ba16a105d83b55060794230fa98c",
+      "generated": 30,
+      "orders": 30,
+      "round": 3,
+      "mode": "new"
+    }
+  ]
+}

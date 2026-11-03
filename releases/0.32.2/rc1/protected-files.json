@@ -1,0 +1,34 @@
+{
+  "baseline": "9f302f241c5979c1e23dc40d4ab55f96a5020d19",
+  "build_commit": "84a81076fe2ac817df668da172d1b6615260895e",
+  "core": [
+    {
+      "path": "src/model.py",
+      "baseline": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "current": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595"
+    },
+    {
+      "path": "src/one_box_exception.py",
+      "baseline": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "current": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    {
+      "path": "src/allocation.py",
+      "baseline": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "current": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    {
+      "path": "src/default_config.json",
+      "baseline": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "current": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    {
+      "path": "src/jst_allocation.py",
+      "baseline": "ba22c8f4ef9486cd5bbe9b1f8f96e224622e205d098c6e109c8cad7c7855d892",
+      "current": "ba22c8f4ef9486cd5bbe9b1f8f96e224622e205d098c6e109c8cad7c7855d892"
+    }
+  ],
+  "old_exe_sha256": "2c63c25e314ec6d1d901578439d4878bae7887ad979e1250e60fd247712bf889",
+  "old_exe_unchanged": true,
+  "passed": true
+}

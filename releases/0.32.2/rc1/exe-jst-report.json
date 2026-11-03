@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "实际预览/勾选/确认生成：旧库存100、当前医疗标签及待核验资质，执行0且无库存预留",
+    "实际生成面板有效单导出40件；库存更新后同按钮拒绝，原文件不变；结果页普通范围也排除；明确旧结果服务另名输出原40件",
+    "实际模板入口（QA注入保存路径）包含标签列；空标签保留；实际导入缺列文件时提前提示"
+  ],
+  "messages": [
+    {
+      "title": "确认生成聚水潭订单",
+      "text": "将按预览顺序生成1单，保存库存预留与待核对付款草稿；并不表示已经付款。\nBH-T-ZC-HB：0元"
+    },
+    {
+      "title": "确认生成聚水潭订单",
+      "text": "将按预览顺序生成1单，保存库存预留与待核对付款草稿；并不表示已经付款。\nBH-T-ZC-HB：80元"
+    },
+    {
+      "title": "未完成",
+      "text": "生成结果或仓资料已更新，请到分配结果页核对；需要当时文件时明确选择“导出旧结果”：BH-T-ZC-HB"
+    },
+    {
+      "title": "资料已读取，执行字段待补",
+      "text": "1款缺少“商品标签”字段，不能作新的正数执行安排；请补齐标签列。列存在且内容为空表示无标签，缺列不能视为空标签。"
+    }
+  ],
+  "heartbeat_ticks": 89,
+  "max_tick_gap": 0.3279999999795109,
+  "app": "补货助手",
+  "version": "0.32.2",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "84a81076fe2ac817df668da172d1b6615260895e",
+  "build_id": "rc1",
+  "built_at": "2026-11-03T23:33:53.370683+08:00",
+  "source_archive_sha256": "7c466aa909752f036c78d222861d534a090aae0746864c615333561b0d302f5a",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "84a81076fe2ac817df668da172d1b6615260895e",
+    "files": 866,
+    "manifest_sha256": "15852dd5d5c91fdb787b69ce1639155891f3c431f8a83ff675c90609d49aaf36",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "c49c6af8475680ebf9f5199590e7cfbf48f37bfe085b62ab37f14e4802fac523",
+    "files": 8,
+    "source_commit": "84a81076fe2ac817df668da172d1b6615260895e",
+    "contains_user_state": false
+  }
+}

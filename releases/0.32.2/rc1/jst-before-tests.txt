@@ -1,0 +1,109 @@
+test_current_medical_tag_cannot_be_replaced_by_old_stock (test_jst_current_basis.CurrentBasis.test_current_medical_tag_cannot_be_replaced_by_old_stock) ... FAIL
+test_current_tags_do_not_replace_frozen_stock_or_price (test_jst_current_basis.CurrentBasis.test_current_tags_do_not_replace_frozen_stock_or_price) ... ok
+test_default_changes_between_orders_reject_remaining (test_jst_current_basis.CurrentBasis.test_default_changes_between_orders_reject_remaining) ... ok
+test_downloaded_template_blank_tags_are_known (test_jst_current_basis.CurrentBasis.test_downloaded_template_blank_tags_are_known) ... FAIL
+test_explicit_history_export_keeps_quantity_and_marks_filename (test_jst_current_basis.CurrentBasis.test_explicit_history_export_keeps_quantity_and_marks_filename) ... FAIL
+test_missing_tag_header_stays_unknown_with_early_warning (test_jst_current_basis.CurrentBasis.test_missing_tag_header_stays_unknown_with_early_warning) ... FAIL
+test_ordinary_generation_panel_export_rejects_old_stock (test_jst_current_basis.CurrentBasis.test_ordinary_generation_panel_export_rejects_old_stock) ... FAIL
+test_other_current_warehouse_medical_tag_blocks (test_jst_current_basis.CurrentBasis.test_other_current_warehouse_medical_tag_blocks) ... ok
+test_two_orders_validate_whole_catalog_once (test_jst_current_basis.CurrentBasis.test_two_orders_validate_whole_catalog_once) ... FAIL
+test_without_default_uses_explicit_stock_catalog (test_jst_current_basis.CurrentBasis.test_without_default_uses_explicit_stock_catalog) ... ok
+test_cancel_after_first_keeps_first_and_retry_no_old_cancel (test_jst.Service.test_cancel_after_first_keeps_first_and_retry_no_old_cancel) ... ok
+test_cancel_before_commit_and_boundary (test_jst.Service.test_cancel_before_commit_and_boundary) ... ok
+test_cancel_unused_generation_releases_only_local_reservation (test_jst.Service.test_cancel_unused_generation_releases_only_local_reservation) ... ok
+test_correction_is_atomic_and_export_exact_old_generation (test_jst.Service.test_correction_is_atomic_and_export_exact_old_generation) ... ok
+test_daily_projection_and_logs_do_not_promote_draft (test_jst.Service.test_daily_projection_and_logs_do_not_promote_draft) ... ok
+test_failure_second_order_retains_first_then_retry_requires_repreview (test_jst.Service.test_failure_second_order_retains_first_then_retry_requires_repreview) ... ok
+test_focused_stage_queries_are_disjoint_and_do_not_mutate_facts (test_jst.Service.test_focused_stage_queries_are_disjoint_and_do_not_mutate_facts) ... ok
+test_generation_draft_is_not_actual_payment (test_jst.Service.test_generation_draft_is_not_actual_payment) ... ok
+test_legacy_return_preserves_original_signed_dependency (test_jst.Service.test_legacy_return_preserves_original_signed_dependency) ... ok
+test_locked_fresh_stock_no_double_deduction (test_jst.Service.test_locked_fresh_stock_no_double_deduction) ... ok
+test_locked_return_update_and_resign_guard (test_jst.Service.test_locked_return_update_and_resign_guard) ... ok
+test_multi_order_priority_manual_order_and_lock_while_running (test_jst.Service.test_multi_order_priority_manual_order_and_lock_while_running) ... ok
+test_original_catalog_is_exact_bytes_and_missing_never_substituted (test_jst.Service.test_original_catalog_is_exact_bytes_and_missing_never_substituted) ... ok
+test_payment_preview_bound_to_generation_and_failures_are_journaled (test_jst.Service.test_payment_preview_bound_to_generation_and_failures_are_journaled) ... ok
+test_refresh_lock_race_rejected (test_jst.Service.test_refresh_lock_race_rejected) ... ok
+test_refresh_retry_and_tamper (test_jst.Service.test_refresh_retry_and_tamper) ... ok
+test_retry_and_exports_do_not_reserve_twice (test_jst.Service.test_retry_and_exports_do_not_reserve_twice) ... ok
+test_stale_return_and_baseline_rejected (test_jst.Service.test_stale_return_and_baseline_rejected) ... ok
+test_unlocked_reservation_survives_refresh_and_late_lock (test_jst.Service.test_unlocked_reservation_survives_refresh_and_late_lock) ... ok
+test_waiting_write_lock_cancelled_no_generation (test_jst.Service.test_waiting_write_lock_cancelled_no_generation) ... ERROR:root:数据库忙，未能保存停止／失败日志：database is locked
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\jst_orders.py", line 353, in commit
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+test_written_file_is_not_reported_missing_when_journal_fails (test_jst.Service.test_written_file_is_not_reported_missing_when_journal_fails) ... ok
+test_zero_allocation_no_fake_order_and_retry (test_jst.Service.test_zero_allocation_no_fake_order_and_retry) ... ok
+
+======================================================================
+FAIL: test_current_medical_tag_cannot_be_replaced_by_old_stock (test_jst_current_basis.CurrentBasis.test_current_medical_tag_cannot_be_replaced_by_old_stock)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_current_basis.py", line 21, in test_current_medical_tag_cannot_be_replaced_by_old_stock
+    self.assertEqual(v['rows'][0]['quantity'],'0');self.assertIn('二类医疗',v['rows'][0]['reason'])
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '40' != '0'
+- 40
+? -
++ 0
+
+
+======================================================================
+FAIL: test_downloaded_template_blank_tags_are_known (test_jst_current_basis.CurrentBasis.test_downloaded_template_blank_tags_are_known)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_current_basis.py", line 58, in test_downloaded_template_blank_tags_are_known
+    b=openpyxl.load_workbook(path);s=b.worksheets[0];heads=[c.value for c in s[1]];self.assertIn('商品标签',heads)
+                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '商品标签' not found in ['商品编码', '分类', '基本售价', '出库箱规', '商品状态', '可用数', '商品名称', '商品等级', '补货模型分类']
+
+======================================================================
+FAIL: test_explicit_history_export_keeps_quantity_and_marks_filename (test_jst_current_basis.CurrentBasis.test_explicit_history_export_keeps_quantity_and_marks_filename)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_current_basis.py", line 43, in test_explicit_history_export_keeps_quantity_and_marks_filename
+    file=Path(r['files'][0]['path']);self.assertIn('旧版本',file.name);self.assertIn(gid[:12],file.name)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '旧版本' not found in '2026-11-03_测试店_河北仓_BH-T-ZC-HB_聚水潭订单_001.xlsx'
+
+======================================================================
+FAIL: test_missing_tag_header_stays_unknown_with_early_warning (test_jst_current_basis.CurrentBasis.test_missing_tag_header_stays_unknown_with_early_warning)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_current_basis.py", line 64, in test_missing_tag_header_stays_unknown_with_early_warning
+    warning=getattr(wc,'execution_warning',lambda _: '')(c);self.assertIn('商品标签',warning)
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '商品标签' not found in ''
+
+======================================================================
+FAIL: test_ordinary_generation_panel_export_rejects_old_stock (test_jst_current_basis.CurrentBasis.test_ordinary_generation_panel_export_rejects_old_stock)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_current_basis.py", line 39, in test_ordinary_generation_panel_export_rejects_old_stock
+    else:self.assertEqual(r['files'],[],'普通入口错误导出了旧40件')
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [{'gid': '1efbdec76ae04c9992ce458b79f7c09d[196 chars]05'}] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+{'gid': '1efbdec76ae04c9992ce458b79f7c09d', 'path': 'C:\\Users\\lenovo\\AppData\\Local\\Temp\\tmpjge9dj_w\\ordinary\\2026-11-03_测试店_河北仓_BH-T-ZC-HB_聚水潭订单_001.xlsx', 'sha256': 'f9ad674b36be12e7dd6011b2c8ecc22266677aaae719de18fbf69459d64ee705'}
+
++ []
+- [{'gid': '1efbdec76ae04c9992ce458b79f7c09d',
+-   'path': 'C:\\Users\\lenovo\\AppData\\Local\\Temp\\tmpjge9dj_w\\ordinary\\2026-11-03_测试店_河北仓_BH-T-ZC-HB_聚水潭订单_001.xlsx',
+-   'sha256': 'f9ad674b36be12e7dd6011b2c8ecc22266677aaae719de18fbf69459d64ee705'}] : 普通入口错误导出了旧40件
+
+======================================================================
+FAIL: test_two_orders_validate_whole_catalog_once (test_jst_current_basis.CurrentBasis.test_two_orders_validate_whole_catalog_once)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_current_basis.py", line 49, in test_two_orders_validate_whole_catalog_once
+    self.assertFalse(r['errors']);self.assertEqual(len(r['generated']),2);self.assertEqual(len(calls),1)
+                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1
+
+----------------------------------------------------------------------
+Ran 32 tests in 4.306s
+
+FAILED (failures=6)

@@ -1,0 +1,15 @@
+test_current_medical_tag_cannot_be_replaced_by_old_stock (test_jst_current_basis.CurrentBasis.test_current_medical_tag_cannot_be_replaced_by_old_stock) ... ok
+test_current_tags_do_not_replace_frozen_stock_or_price (test_jst_current_basis.CurrentBasis.test_current_tags_do_not_replace_frozen_stock_or_price) ... ok
+test_default_changes_between_orders_reject_remaining (test_jst_current_basis.CurrentBasis.test_default_changes_between_orders_reject_remaining) ... ok
+test_downloaded_template_blank_tags_are_known (test_jst_current_basis.CurrentBasis.test_downloaded_template_blank_tags_are_known) ... ok
+test_explicit_history_export_keeps_quantity_and_marks_filename (test_jst_current_basis.CurrentBasis.test_explicit_history_export_keeps_quantity_and_marks_filename) ... ok
+test_missing_tag_header_stays_unknown_with_early_warning (test_jst_current_basis.CurrentBasis.test_missing_tag_header_stays_unknown_with_early_warning) ... ok
+test_ordinary_generation_panel_export_rejects_old_stock (test_jst_current_basis.CurrentBasis.test_ordinary_generation_panel_export_rejects_old_stock) ... ok
+test_other_current_warehouse_medical_tag_blocks (test_jst_current_basis.CurrentBasis.test_other_current_warehouse_medical_tag_blocks) ... ok
+test_two_orders_validate_whole_catalog_once (test_jst_current_basis.CurrentBasis.test_two_orders_validate_whole_catalog_once) ... ok
+test_without_default_uses_explicit_stock_catalog (test_jst_current_basis.CurrentBasis.test_without_default_uses_explicit_stock_catalog) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 1.445s
+
+OK

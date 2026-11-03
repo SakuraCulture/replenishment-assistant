@@ -1,0 +1,11 @@
+test_copy_restore_path (test_retry_profile.RetryProfile.test_copy_restore_path) ... ok
+test_reset_removes_all_old_calculation_parts (test_retry_profile.RetryProfile.test_reset_removes_all_old_calculation_parts) ... ok
+test_restored_no_profile_unlimited_does_not_reuse_A (test_retry_profile.RetryProfile.test_restored_no_profile_unlimited_does_not_reuse_A) ... ok
+test_restored_zero_budget (test_retry_profile.RetryProfile.test_restored_zero_budget) ... ok
+test_same_batch_retry_keeps_frozen_input_settings_and_profile (test_retry_profile.RetryProfile.test_same_batch_retry_keeps_frozen_input_settings_and_profile) ... ok
+test_saved_B_retry_budget_10 (test_retry_profile.RetryProfile.test_saved_B_retry_budget_10) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 31.213s
+
+OK

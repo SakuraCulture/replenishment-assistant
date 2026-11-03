@@ -1,0 +1,12 @@
+{
+  "passed": false,
+  "frozen_exe": false,
+  "checks": [],
+  "messages": [
+    {
+      "title": "确认生成聚水潭订单",
+      "text": "将按预览顺序生成1单，保存库存预留与待核对付款草稿；并不表示已经付款。\nBH-T-ZC-HB：0元"
+    }
+  ],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\jst_basis_smoke.py\", line 43, in execute\n    dialog.accept_issues.setChecked(True);QTest.mouseClick(dialog.generate_btn,Qt.MouseButton.LeftButton);wait(lambda:dialog.worker is None and dialog.receipt is not None)\n                                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\jst_basis_smoke.py\", line 22, in wait\n    if not fn():raise AssertionError('QA界面任务未安全结束')\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: QA界面任务未安全结束\n"
+}
