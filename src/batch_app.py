@@ -117,6 +117,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
             self.input_dirty=True;self.mark_dirty()
             self.job(batch_service.load,(self.sales.paths,products),self.loaded_ok)
     def loaded_ok(self,loaded):
+        self.reset_calculation_snapshot()
         self.loaded=loaded;self.input_dirty=False;self.results={};self.result=None;self.current_store=None;self.overrides={};self.dirty=True;self.run_codes=[]
         self.default_by_store={s:{w:DEFAULT_WAREHOUSES[w] for w in loaded.get('catalogs',{})} for s in loaded['stores']}
         for d,m in loaded['normalized']:
@@ -278,16 +279,23 @@ class BatchWindow(WarehouseUi,SessionWindow):
         if dialog.exec()==QDialog.DialogCode.Accepted:
             for c,combo in zip(conflicts,combos):c['choice']=combo.currentData()
             self.job(batch_service.prepare,(data,),self.loaded_ok)
+    def reset_calculation_snapshot(self):
+        """Input, settings and priority list form one task snapshot, never a partial cache."""
+        self._calculation_settings={};self._calculation_input=None;self._queued_retries=[]
+        self.__dict__.pop('_calculation_profile',None)
     def start_calculation(self,codes=None,*,retry=False):
         if self.worker or self.input_dirty or not self.loaded:return
         codes=self.selected_codes() if codes is None or isinstance(codes,bool) else codes
-        try:jobs={s:copy.deepcopy(self._calculation_settings[s]) if retry and s in getattr(self,'_calculation_settings',{}) else self.selected_settings(s) for s in codes}
+        reuse=retry and getattr(self,'_calculation_input',None) is not None and '_calculation_profile' in self.__dict__
+        try:jobs={s:copy.deepcopy(self._calculation_settings[s]) if reuse and s in getattr(self,'_calculation_settings',{}) else self.selected_settings(s) for s in codes}
         except ValueError as exc:self.failed(str(exc));return
         if not jobs:return
         if not retry:self.run_codes=list(jobs)
         else:self.run_codes=list(dict.fromkeys([*self.run_codes,*jobs]))
-        self.__dict__.setdefault('_calculation_settings',{}).update(copy.deepcopy(jobs))
-        if not retry:self._calculation_input=self.loaded;self._calculation_profile=copy.deepcopy(self.profile)
+        if not reuse:
+            self.reset_calculation_snapshot()
+            self._calculation_input=self.loaded;self._calculation_profile=copy.deepcopy(self.profile)
+        self._calculation_settings.update(copy.deepcopy(jobs))
         for s,settings in jobs.items():
             self.states[s].update(state='排队中',error='');self.results.pop(s,None)
             if s==self.current_store:self.dirty=True;self.result=None
@@ -296,7 +304,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
                     self.repository.save_budget(s,settings['budget'] is not None,settings['budget'] or 0)
                     if settings.get('supply_route'):self.catalog_repository.save_route(s,settings['supply_route'])
             except Exception as exc:self.states[s]['error']='本次设置未能保存：'+str(exc)
-        worker=BatchWorker((getattr(self,'_calculation_input',None) or self.loaded) if retry else self.loaded,jobs,getattr(self,'_calculation_profile',self.profile) if retry else self.profile,self.concurrency.value(),self);self.worker=worker
+        worker=BatchWorker(self._calculation_input,jobs,self._calculation_profile,self.concurrency.value(),self);self.worker=worker
         worker.changed.connect(self.task_changed);worker.failed.connect(self.batch_failed);worker.finished.connect(self.job_finished)
         self.pages.setCurrentIndex(2);self.refresh_tables();self.update_controls();worker.start()
     def task_changed(self,store,state,result,error):

@@ -83,7 +83,7 @@ def _remove(parent,host,heads):
             p=run(parent,maintenance.strip_current,(current,codes),'更新当前工作区',cancellable=False)
             for key in fields:setattr(host,key,p.get(key))
             host.new_bases=p['new_product_bases'];host.pending_copy=None
-            host._calculation_settings={};host._calculation_input=None;host._queued_retries=[]
+            host.reset_calculation_snapshot()
             host.run_codes=[s for s in host.run_codes if s not in codes]
             previous=host.initializing;host.initializing=True
             try:

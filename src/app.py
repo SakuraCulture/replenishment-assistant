@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--retry-profile-smoke' in sys.argv:
+        from retry_profile_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--retry-profile-smoke')+1:])
     if '--deletion-smoke' in sys.argv:
         from deletion_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--deletion-smoke')+1:])

@@ -197,7 +197,7 @@ class Workbench(ParameterUi,BatchWindow):
         self._hydrating=True;self.initializing=True
         self.active_plan=None
         self._store_parameter_origins={}
-        self._calculation_settings={};self._calculation_input=None;self._queued_retries=[]
+        self.reset_calculation_snapshot()
         try:
             self.readonly=False;self.job_day=wr.today();self.saved_time='';self.loaded=None;self.results={};self.states={};self.store_widgets={};self.store_presets={};self.overrides={};self.default_by_store={};self.run_codes=[];self.current_store=None;self.result=None;self.input_dirty=True;self.dirty=True;self.export_log=[];self.pending_copy=None
             self.sales.paths=[];self.sales.refresh();self.catalogs=self.catalog_repository.catalogs();self.profile=self.repository.profile();self.refresh_catalog_labels();self.refresh_profile_label();self.store_table.setRowCount(0);self.file_report.setRowCount(0);self.refresh_tables();self.navigate(0)
@@ -206,10 +206,10 @@ class Workbench(ParameterUi,BatchWindow):
     def restore_job(self,record,owned=False):
         # UI reader transfers an exclusively owned tree; external callers retain copy semantics.
         clone=(lambda value:value) if owned else copy.deepcopy
-        self._calculation_settings={};self._calculation_input=None;self._queued_retries=[]
         p=record['payload']
-        self.active_plan=clone(p.get('active_plan'))
         if p.get('schema')!=1:raise ValueError('不支持的作业格式')
+        self.reset_calculation_snapshot()
+        self.active_plan=clone(p.get('active_plan'))
         self._hydrating=True;self._restoring=True;self.initializing=True
         try:
             self.job_day=record['day'];self.saved_time=record['saved'];self.readonly=self.job_day!=wr.today() or p['model_version']!=MODEL_VERSION
