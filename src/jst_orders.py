@@ -197,10 +197,11 @@ def reservations(db, wh, included, exclude=()):
     return values
 
 
-def prepare_checked(path,heads,manual_order=False,correction=False,progress=lambda _:None,cancel=None):
-    return prepare(path,heads,manual_order,correction,progress,cancel,enforce_admission=True)
+def prepare_checked(path,heads,manual_order=False,correction=False,progress=lambda _:None,cancel=None,*,batch=None):
+    return prepare(path,heads,manual_order,correction,progress,cancel,enforce_admission=True,batch=batch)
 
-def prepare(path, heads, manual_order=False, correction=False, progress=lambda _: None, cancel=None,*,enforce_admission=False):
+def prepare(path, heads, manual_order=False, correction=False, progress=lambda _: None, cancel=None,*,enforce_admission=False,batch=None):
+    import jst_batches
     runid = uuid.uuid4().hex; orders = []; skipped = []; states = {}; bases = {}; seen = set()
     with closing(sqlite3.connect(path)) as db:
         db.execute('BEGIN')
@@ -215,14 +216,16 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
             if not any(Decimal(r['base_quantity']) > 0 for r in rows):
                 skipped.append({'head': supplied, 'reason': '无要货，无需生成'}); continue
             wh = h['warehouse']
-            if wh not in bases:bases[wh]=baseline(db,wh)
+            if batch and old and jst_batches.generation_batch(db,old)!=batch['batch_id']:
+                raise wr.Conflict('所选生成单不属于本批，请进入原批次')
+            if wh not in bases:bases[wh]=batch['stocks'].get(wh) if batch else baseline(db,wh)
             b=bases[wh]
             if b is None:
                 raise ValueError(wh + '尚未建立库存基准，请导入或采用默认仓资料')
-            states[wh] = state(db, wh)
+            states[wh] = batch['states'][wh] if batch else state(db, wh)
             compact = {k:v for k,v in h.items() if k != 'products'}
             orders.append({'head': compact, 'basis': basis, 'rows': rows, 'saved': saved, 'old': old, 'signed_products':signed_products})
-        if correction:
+        if correction and not batch:
             # A correction changes subsequent balances; include ALL unlocked active orders in each affected warehouse.
             chosen = {o['old'] for o in orders if o['old']}
             for wh in states:
@@ -233,7 +236,8 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
             orders.sort(key=lambda o: (o['saved'], o['head']['day'], o['head']['number']))
         balances = {}; reserved = {}
         for wh, b in bases.items():
-            used = reservations(db, wh, set(b['included']), {o['old'] for o in orders if correction and o['old']})
+            exclude={o['old'] for o in orders if correction and o['old']}
+            used = jst_batches.reservations(db,batch['batch_id'],wh,exclude) if batch else reservations(db, wh, set(b['included']), exclude)
             reserved[wh] = {s:allocation.text(q) for s,q in used.items()}; balances[wh] = {}
             for sku, item in b['catalog']['items'].items():
                 try: balances[wh][sku] = allocation.number(item.get('可用数'), '可用库存') - used.get(sku, Decimal(0))
@@ -263,15 +267,25 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                      'head': o['head'], 'basis': o['basis'], 'bid': b['bid'], 'old': o['old'],
                      'rows': rows, 'summary': allocation.totals(rows), 'saved': wr.now(), 'position': i+1,
                      'catalog': warehouse_catalog.metadata(b['catalog']), 'draft_status': '待核对付款单'}
+            if batch:
+                value.update(batch_id=batch['batch_id'],batch_epoch=batch['epoch'])
+                if not batch.get('new'):
+                    member=next((m for m in batch['members'] if (m['head']['oid'],m['head']['warehouse'])==(o['head']['oid'],wh)),None)
+                    if not member or member['status']=='cancelled':raise wr.Conflict('订单不在本批有效范围')
+                    value['position']=member['position']
             if o['signed_products'] is not None:value['signed_products']=o['signed_products']
             if evidence is not None:value['admission']=evidence
             plans.append(value); progress(RowProgress(f'预览分配 {i+1}/{len(orders)}：'+o['head']['number'],i+1,len(orders)))
     result = {'runid': runid, 'states': states, 'plans': plans, 'skipped': skipped, 'correction': correction, 'reserved': reserved}
+    if batch:result.update(batch_id=batch['batch_id'],batch_epoch=batch['epoch'])
     return {'payload': result, 'digest': digest(result)}
 
 
 def validate_plan(db, p, catalog_revisions=None):
     h = p['head']
+    if p.get('batch_id'):
+        import jst_batches
+        jst_batches.validate_member(db,p)
     if p.get('admission'):
         from admission import snapshot
         if snapshot('',h['store'],db=db)!=p['admission']['context']:raise wr.Conflict('门店准入已变化，请重新分配：'+h['number'])
@@ -299,6 +313,7 @@ def put_generation(db, p):
 
 
 def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None):
+    import jst_batches
     checkpoint(cancel); v=plan['payload']
     if digest(v) != plan['digest']:raise ValueError('分配预览被修改，请重新预览')
     if any(p['summary']['issues'] for p in v['plans']) and not accept_issues:raise ValueError('请明确核对并排除待核商品后生成')
@@ -321,13 +336,16 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                 lc.begin(db,cancel);schema(db)
                 existing=[db.execute('SELECT result FROM jst_steps WHERE operation=?',(p['operation'],)).fetchone() for p in group]
                 if all(existing):
+                    if v.get('batch_id'):
+                        for p in group:jst_batches.validate_member(db,p,replay=True)
                     for r in existing:
                         saved=wr.loads(r[0]);result['generated' if saved['gid'] else 'zero'].append(saved['gid'] or saved['number'])
                     for w in whs:expected[w]=(expected[w][0],expected[w][1]+1)
                     continue
                 if any(existing):raise wr.Conflict('更正操作记录不完整，请核对')
                 for w in whs:
-                    if state(db,w)!=expected[w]:raise wr.Conflict(w+'库存基准或预留已变化，请重新预览')
+                    actual=jst_batches.state(db,v['batch_id'],w) if v.get('batch_id') else state(db,w)
+                    if actual!=expected[w]:raise wr.Conflict(w+'库存基准或预留已变化，请重新预览')
                 for p in group:checkpoint(cancel);validate_plan(db,p,catalog_revisions)
                 for p in group:
                     if p['summary']['positive']:
@@ -336,7 +354,10 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                         if v['correction'] and p['old']:db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(p['head']['oid'],p['head']['warehouse']))
                         event(db,p['head'],'库存不足未生成',{'rows':p['rows'],'runid':v['runid']})
                     db.execute('INSERT INTO jst_steps VALUES(?,?,?)',(p['operation'],v['runid'],wr.dumps({'gid':p['gid'] if p['summary']['positive'] else None,'number':p['head']['number']})))
-                for w in whs:db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(w,))
+                    jst_batches.record(db,p)
+                for w in whs:
+                    if v.get('batch_id'):db.execute('UPDATE jst_batch_stock SET serial=serial+1 WHERE batch_id=? AND warehouse=?',(v['batch_id'],w))
+                    else:db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(w,))
                 db.execute('INSERT OR IGNORE INTO jst_runs VALUES(?,?,?,?)',(v['runid'],wr.now(),run_raw,plan['digest']))
                 if catalog_revisions is not None:catalog_check.verify()
                 checkpoint(cancel);progress(CommitProgress(True));db.commit()
@@ -412,6 +433,7 @@ def guard_payment(db, p):
 
 
 def cancel_generated(path,gids,reason,progress=lambda _:None,cancel=None):
+    import jst_batches
     if not reason.strip():raise ValueError('撤销生成单须填写原因')
     orders=[get(path,g,cancel=cancel) for g in gids]
     storage_chunks.backup_before_write(Path(path),progress);checkpoint(cancel)
@@ -423,7 +445,8 @@ def cancel_generated(path,gids,reason,progress=lambda _:None,cancel=None):
             if locked(db,h) or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):raise ValueError('已锁或已有付款／收货，不可作为未下单生成单撤销')
         for p in orders:
             h=p['head'];db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(h['oid'],h['warehouse']))
-            db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(h['warehouse'],))
+            jst_batches.cancel_member(db,h,p['gid'])
+            if not p.get('batch_id'):db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(h['warehouse'],))
             event(db,h,'撤销未下单生成单',{'gid':p['gid'],'reason':reason})
         checkpoint(cancel);progress(CommitProgress(True));db.commit()
     progress(CommitProgress(False));return gids

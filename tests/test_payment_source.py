@@ -58,20 +58,25 @@ class PaymentSources(unittest.TestCase):
         corrected=lc.prepare_numbered(self.path,actual);self.assertTrue(corrected['plans'][0]['calibration']);lc.commit(self.path,corrected)
         self.assertEqual(self.stock(),before);view=self.f.view();self.assertEqual(view['rows'][0][4:6],[24,24]);self.assertEqual(view['next'],'receipt')
         self.assertEqual(len(lc.history(self.path,self.h,'payment')),2)
-    def test_task_generation_retry_and_restart_exact_operation(self):
-        real=tasks.mark
-        def crash(path,task,status,message):
-            if status=='done':raise Cancelled('simulate exit after COMMIT')
-            return real(path,task,status,message)
-        with patch.object(tasks,'mark',crash):
-            with self.assertRaises(Cancelled):tasks.drain(self.path,self.f.root)
-        before=self.stock();tasks.drain(self.path,self.f.root);self.assertEqual(before,self.stock());self.assertFalse(tasks.pending(self.path))
+    def test_explicit_batch_generation_retry_and_restart_exact_operation(self):
+        import jst_batches as batches
+        p=batches.preview_new(self.path,[self.h],{'河北仓':catalog(stock=100,step=24,price=2.5)})
+        prepared=batches.register(self.path,p)
+        # Simulate termination after DB commit, before coordinator readback.
+        result=j.commit(self.path,prepared);self.assertEqual(len(result['generated']),1)
+        before=self.stock();again=batches.execute(self.path,p)
+        self.assertEqual(again['generated'],result['generated']);self.assertEqual(before,self.stock());self.assertFalse(tasks.pending(self.path))
         self.assertIsNone(self.f.view()['documents']['payment'])
     def test_task_cancel_failure_retry_and_upstream_change(self):
+        import jst_batches as batches
         e=threading.Event();e.set()
         with self.assertRaises(Cancelled):tasks.drain(self.path,self.f.root,cancel=e)
-        self.f.save('return',[{'门店确认数量':25}]);r=tasks.drain(self.path,self.f.root);self.assertTrue(r[-1]['error'])
-        self.f.save('return',[{'门店确认数量':24}]);tasks.drain(self.path,self.f.root)
+        self.f.save('return',[{'门店确认数量':25}])
+        p=batches.preview_new(self.path,[self.h],{'河北仓':catalog(stock=100,step=24,price=2.5)})
+        with self.assertRaisesRegex(ValueError,'待核'):batches.execute(self.path,p)
+        self.f.save('return',[{'门店确认数量':24}])
+        p=batches.preview_new(self.path,[self.h],{'河北仓':catalog(stock=100,step=24,price=2.5)})
+        result=batches.execute(self.path,p);self.assertFalse(result['errors'])
         with closing(sqlite3.connect(self.path)) as db:gid=j.active(db,self.h)
         self.assertEqual(j.get(self.path,gid)['rows'][0]['quantity'],'24')
     def test_payment_in_same_commit_skips_automatic_allocation(self):

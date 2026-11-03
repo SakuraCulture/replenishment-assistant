@@ -65,7 +65,7 @@ def snapshot(db,oids,cancel=None,progress=lambda _:None):
                 linked.update(link['head']['oid'] for r in wr.loads(raw).get('rows',[]) for link in r.get('links',[]))
             if linked-set(oids):raise ValueError('存在跨订单共享的旧版采购资料，请一并选择全部关联正常单再删除')
             evidence.extend(['purchase_versions',list(r)] for r in db.execute('SELECT * FROM purchase_versions WHERE docid=? ORDER BY version',(did,)))
-    for table in ('jst_tasks','jst_warehouses','jst_runs'):
+    for table in ('jst_tasks','jst_warehouses','jst_runs','jst_batches','jst_batch_stock','jst_generation_batches','jst_batch_retired'):
         if table in available:evidence.extend([table,list(r)] for r in db.execute(f'SELECT * FROM {table} ORDER BY rowid'))
     for day in dict.fromkeys(h['day'] for h in parents):
         evidence.extend(['jobs',list(r)] for r in db.execute('SELECT day,revision,digest FROM jobs WHERE day=?',(day,)))
@@ -304,10 +304,12 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
             # Locked external orders must not release stock in the currently selected baseline.
             if 'jst_active' in available:
                 import jst_orders as jst
+                import jst_batches
                 db.execute('CREATE TABLE IF NOT EXISTS retired_stock(warehouse TEXT,bid TEXT,sku TEXT,quantity TEXT,PRIMARY KEY(warehouse,bid,sku))')
                 for oid in oids:
                     for wh,gid in db.execute('SELECT warehouse,gid FROM jst_active WHERE oid=?',(oid,)).fetchall():
-                        st=jst.state(db,wh)
+                        batch_id=jst_batches.generation_batch(db,gid)
+                        st=None if batch_id else jst.state(db,wh)
                         if jst.locked(db,{'oid':oid,'warehouse':wh}) and st:
                             base=wr.loads(db.execute('SELECT payload FROM jst_baselines WHERE bid=?',(st[0],)).fetchone()[0])
                             if gid not in base.get('included',[]):
@@ -315,7 +317,8 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
                                     old=db.execute('SELECT quantity FROM retired_stock WHERE warehouse=? AND bid=? AND sku=?',(wh,st[0],sku)).fetchone()
                                     total=Decimal(qty)+(Decimal(old[0]) if old else 0)
                                     db.execute('INSERT OR REPLACE INTO retired_stock VALUES(?,?,?,?)',(wh,st[0],sku,str(total)))
-                        db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(wh,))
+                        if not batch_id:db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(wh,))
+                    jst_batches.deleting_order(db,oid)
                 gids=[gid for oid in oids for gid, in db.execute('SELECT gid FROM jst_generations WHERE oid=?',(oid,))]
                 for gid in gids:
                     for table in ('jst_headers','jst_reservations'):db.execute(f'DELETE FROM {table} WHERE gid=?',(gid,))
