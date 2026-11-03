@@ -62,6 +62,7 @@ class ParameterDialog(QDialog):
         row=QHBoxLayout();cancel=button('关闭' if self.managing or readonly else '放弃未应用编辑',self.reject);cancel.setDefault(True);row.addWidget(cancel);row.addStretch()
         if not self.managing and not readonly:
             if intent=='defaults':row.addWidget(button('保存为门店默认',lambda:self.finish('default'),True))
+            elif intent=='plan':row.addWidget(button('采用到计划表单',lambda:self.finish('plan'),True))
             else:
                 row.addWidget(button('应用并保存为门店默认',lambda:self.finish('default')))
                 row.addWidget(button('应用到本次作业',lambda:self.finish('temporary'),True))

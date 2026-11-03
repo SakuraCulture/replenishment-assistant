@@ -11,7 +11,10 @@ from version_info import MODEL_VERSION,VERSION
 class Workbench(ParameterUi,BatchWindow):
     def __init__(self):
         self._hydrating=True;self._restoring=False;self.readonly=False;self.job_dirty=False;self.job_day=wr.today();self.saved_time='';self.store_presets={};self.explicit_defaults=True;self.export_log=[];self._discard_close=False;self._store_parameter_origins={}
+        self.active_plan=None
         super().__init__();self.work_repository=wr.Repository(self.repository.folder)
+        from replenishment_plan_ui import open_library
+        row=QHBoxLayout();self.plan_btn=button('选择补货计划',lambda:open_library(self,True));row.addWidget(self.plan_btn);row.addWidget(button('维护补货计划',lambda:open_library(self)));self.plan_note=label('未采用补货计划；可直接导入本次文件。','muted');row.addWidget(self.plan_note,1);self.import_page.layout().insertLayout(0,row)
         row=QHBoxLayout();self.job_label=label('','muted');row.addWidget(self.job_label,1)
         self.history_btn=button('作业记录',self.history);row.addWidget(self.history_btn)
         self.new_job_btn=button('新建今日草稿',self.new_job);row.addWidget(self.new_job_btn)
@@ -35,6 +38,7 @@ class Workbench(ParameterUi,BatchWindow):
         super().update_controls()
         if not hasattr(self,'save_job_btn'):return
         busy=self.worker is not None
+        self.plan_btn.setEnabled(not busy and not self.readonly)
         for b in [self.new_job_btn,self.history_btn,self.presets_btn]:b.setEnabled(not busy)
         self.save_job_btn.setEnabled(not busy and not self.readonly and bool(self.sales.paths or self.loaded));self.defaults_btn.setEnabled(not busy and not self.readonly and bool(self.store_widgets));self.fresh_btn.setEnabled(not busy and not self.readonly and bool(self.loaded))
         if self.readonly:
@@ -68,6 +72,9 @@ class Workbench(ParameterUi,BatchWindow):
         self.selection_changed()
     def loaded_ok(self,loaded):
         existing={s:self.current_parameter_record(s) for s in self.store_widgets}
+        if self.active_plan:
+            from replenishment_plans import ordered
+            loaded={**loaded,'stores':ordered(loaded['stores'],self.active_plan)}
         origins=self._store_parameter_origins
         previous_defaults=getattr(self,'saved_store_defaults',{})
         previously_blocked=(self.loaded or {}).get('blocked',{})
@@ -77,6 +84,7 @@ class Workbench(ParameterUi,BatchWindow):
         pending=getattr(self,'pending_copy',None)
         if pending:
             # Explicit "use this job's configuration" remains a snapshot choice.
+            self.active_plan=copy.deepcopy(pending.get('active_plan'))
             existing={s:{'preset':p,'ui':pending['store_ui'][s]} for s,p in pending['store_presets'].items()};origins={}
         if existing:
             self._hydrating=True;self.initializing=True
@@ -88,6 +96,12 @@ class Workbench(ParameterUi,BatchWindow):
                         if s not in origins:self._store_parameter_origins.pop(s,None)
             finally:self.initializing=False;self._hydrating=False
             self.pending_copy=None;self.selection_changed()
+        if self.active_plan:
+            import replenishment_plans as plans
+            self.initializing=True
+            try:plans.install(self,set(existing));plans.refresh(self)
+            finally:self.initializing=False
+            self.selection_changed()
         saved=getattr(self,'saved_store_defaults',{})
         inherited=sum(store_defaults.matches(saved.get(s),self.preset_for(s),self.config_for(s),self.store_ui(s)) for s in self.store_widgets)
         missing=sum(s not in saved for s in self.store_widgets)
@@ -125,7 +139,7 @@ class Workbench(ParameterUi,BatchWindow):
         loaded=None
         if self.loaded:
             loaded={**self.loaded,'intake':{k:v for k,v in self.loaded['intake'].items() if k!='frozen'}}
-        return {'schema':1,'day':self.job_day,'app_version':VERSION,'model_version':MODEL_VERSION,'loaded':loaded,'states':self.states,'results':self.results,'catalogs':self.catalogs,'profile':self.profile,'input_dirty':self.input_dirty,'store_presets':{s:self.preset_for(s) for s in self.store_widgets},'overrides':self.overrides,'default_by_store':self.default_by_store,'store_ui':{s:self.store_ui(s) for s in self.store_widgets},'sales':self.sales.paths,'products':self.products.path,'legacy':self.master_legacy.isChecked(),'concurrency':self.concurrency.value(),'exception':self.exception.isChecked(),'export_log':self.export_log,'pending_copy':getattr(self,'pending_copy',None)}
+        return {'active_plan':copy.deepcopy(self.active_plan),'schema':1,'day':self.job_day,'app_version':VERSION,'model_version':MODEL_VERSION,'loaded':loaded,'states':self.states,'results':self.results,'catalogs':self.catalogs,'profile':self.profile,'input_dirty':self.input_dirty,'store_presets':{s:self.preset_for(s) for s in self.store_widgets},'overrides':self.overrides,'default_by_store':self.default_by_store,'store_ui':{s:self.store_ui(s) for s in self.store_widgets},'sales':self.sales.paths,'products':self.products.path,'legacy':self.master_legacy.isChecked(),'concurrency':self.concurrency.value(),'exception':self.exception.isChecked(),'export_log':self.export_log,'pending_copy':getattr(self,'pending_copy',None)}
     def confirm_overwrite(self,old,new):
         a=old['summary'];b=wr.summary(new);oldstores=a['stores'];newstores=b['stores']
         removed=set(oldstores)-set(newstores);added=set(newstores)-set(oldstores);lost=[s for s in oldstores.keys()&newstores.keys() if oldstores[s]['state']=='已完成' and newstores[s]['state']!='已完成']
@@ -175,17 +189,20 @@ class Workbench(ParameterUi,BatchWindow):
         else:self.new_job()
     def reset_job(self):
         self._hydrating=True;self.initializing=True
+        self.active_plan=None
         self._store_parameter_origins={}
         self._calculation_settings={};self._calculation_input=None;self._queued_retries=[]
         try:
             self.readonly=False;self.job_day=wr.today();self.saved_time='';self.loaded=None;self.results={};self.states={};self.store_widgets={};self.store_presets={};self.overrides={};self.default_by_store={};self.run_codes=[];self.current_store=None;self.result=None;self.input_dirty=True;self.dirty=True;self.export_log=[];self.pending_copy=None
             self.sales.paths=[];self.sales.refresh();self.catalogs=self.catalog_repository.catalogs();self.profile=self.repository.profile();self.refresh_catalog_labels();self.refresh_profile_label();self.store_table.setRowCount(0);self.file_report.setRowCount(0);self.refresh_tables();self.navigate(0)
         finally:self.initializing=False;self._hydrating=False;self.job_dirty=False;self.update_controls()
+        __import__('replenishment_plans').refresh(self)
     def restore_job(self,record,owned=False):
         # UI reader transfers an exclusively owned tree; external callers retain copy semantics.
         clone=(lambda value:value) if owned else copy.deepcopy
         self._calculation_settings={};self._calculation_input=None;self._queued_retries=[]
         p=record['payload']
+        self.active_plan=clone(p.get('active_plan'))
         if p.get('schema')!=1:raise ValueError('不支持的作业格式')
         self._hydrating=True;self._restoring=True;self.initializing=True
         try:
@@ -200,6 +217,7 @@ class Workbench(ParameterUi,BatchWindow):
             else:self.store_widgets={};self.store_table.setRowCount(0)
             self.file_report.setRowCount(0);self.import_note.setText('已恢复当时数据快照；不会自动换成当前资料。若输入尚未检查，原文件仍需可访问。');self.refresh_tables();self.navigate(3 if self.states else 0)
         finally:self.initializing=False;self._restoring=False;self.selection_changed();self._hydrating=False;self.job_dirty=False;self.update_controls()
+        __import__('replenishment_plans').refresh(self)
         self.status.setText('已打开 '+record['day']+(' 历史只读记录。' if self.readonly else '；可继续今日作业，保存更新前仍需确认覆盖。'))
     def history(self):
         if self.worker:return
@@ -231,7 +249,7 @@ class Workbench(ParameterUi,BatchWindow):
         if record is None:self.failed('该作业记录已不存在，请刷新后重试。');return
         if action['value']=='open':self.restore_job(record,owned=True)
         else:
-            self.reset_job();self.pending_copy=record;self.status.setText('已复制所选作业门店配置到本次内存；请导入今天数据。未保存为门店默认。');self.touch()
+            self.reset_job();self.pending_copy=record;self.active_plan=copy.deepcopy(record.get('active_plan'));__import__('replenishment_plans').refresh(self);self.status.setText('已复制所选作业门店配置到本次内存；请导入今天数据。未保存为门店默认。');self.touch()
     def use_current_data(self):
         if self.worker or self.readonly:return
         catalogs=self.catalog_repository.catalogs();profile=self.repository.profile()

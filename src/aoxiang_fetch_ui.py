@@ -43,6 +43,7 @@ class FetchDialog(ComponentDialog):
         self._closing = self._can_close = self._close_done = False
         self.jobs = None
         self.configuration = None
+        self.plan_stores=[i['code'] for i in (getattr(parent,'active_plan',None) or {}).get('stores',[])]
         self.current = None
         self.checks = []
         self.adoption = None
@@ -128,7 +129,8 @@ class FetchDialog(ComponentDialog):
         self.configuration, history = data
         if self.configuration.get('configured'):
             self.identity.setText(self.configuration['display_name'] + ' · ' + self.configuration['account_binding']['merchant_code'])
-            targets = self.configuration['targets']
+            original=self.configuration['targets'];by_code={t['buyerWarehouseCode']:t for t in original}
+            targets=[by_code[c] for c in dict.fromkeys([*self.plan_stores,*by_code]) if c in by_code]
             self.stores.setRowCount(len(targets))
             for row, target in enumerate(targets):
                 check = QCheckBox()
@@ -137,6 +139,9 @@ class FetchDialog(ComponentDialog):
                 self.stores.setCellWidget(row, 0, check)
                 self.stores.setItem(row, 1, QTableWidgetItem(target['displayName']))
                 self.stores.setItem(row, 2, QTableWidgetItem(target['buyerWarehouseCode']))
+                check.setChecked(target['buyerWarehouseCode'] in self.plan_stores)
+            missing=[s for s in self.plan_stores if s not in by_code]
+            if missing:self.identity.setText(self.identity.text()+'；计划门店未核验：'+'、'.join(missing)+'，请补充门店核验。')
         else:
             self.identity.setText('尚未配置。请关闭本窗口，先完成“翱象连接与门店配置”。')
         self.fill_history(history)

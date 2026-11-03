@@ -132,8 +132,8 @@ def serve(connection,path,cancel):
                     from storage_maintenance import convert
                     result=convert(path,arguments['destination'],arguments['mode'],progress,cancel)
                 elif op in ('load','copy_config'):
-                    with stage('读取并校验作业快照',progress):result=ro.get_job(arguments,paths=[('store_presets',),('store_ui',)] if op=='copy_config' else None,progress=progress)
-                    if op=='copy_config' and result:result={k:result['payload'][(k,)] for k in ('store_presets','store_ui')}
+                    with stage('读取并校验作业快照',progress):result=ro.get_job(arguments,paths=[('store_presets',),('store_ui',),('active_plan',)] if op=='copy_config' else None,progress=progress)
+                    if op=='copy_config' and result:result={k:result['payload'].get((k,)) for k in ('store_presets','store_ui','active_plan')}
                 else:raise ValueError('未知作业操作')
                 if not writing:checkpoint(cancel)
                 connection.send(('success',None));send_tree(connection,result,None if writing else cancel,consume=op in ('load','copy_config'));result=None

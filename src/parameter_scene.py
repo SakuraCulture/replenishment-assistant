@@ -24,6 +24,7 @@ class ParameterScene(QWidget):
         v.addWidget(self.search)
         row = QHBoxLayout()
         row.addWidget(button('管理参数方案', host.open_preset_library))
+        row.addWidget(button('维护补货计划',lambda:__import__('replenishment_plan_ui').open_library(host)))
         row.addWidget(button('管理商品资料与清单', lambda: (host.show_section(1), host.navigate(0))))
         row.addWidget(button('管理铺货清单',host.open_stocking_library))
         row.addWidget(button('刷新门店设置', self.refresh))
