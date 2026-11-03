@@ -1,0 +1,69 @@
+{
+  "passed": true,
+  "scope": "Real fresh dual-warehouse catalog + frozen real sales; synthetic lifecycle documents in private QA DB",
+  "checks": [
+    "Both real originals retained exactly; manual parser values/types/order equal",
+    "Real sales compute, daily save/restore, sign and both warehouse exports succeeded",
+    "Synthetic return/payment/receipt import by warehouse order number; issued facts unchanged",
+    "Default replacement leaves inventory baseline and signed snapshots fixed; original exports byte-identical",
+    "Real-file replay of allocation-specific adoption retains its raw originals and does not replace defaults"
+  ],
+  "sources": {
+    "河北仓": {
+      "rows": 4497,
+      "sha256": "1bfacd75842306d0185f9a028cb6ef316456f2a74d54e45863c9f49b5b400a92",
+      "revision": "f1d2395d59b1d998"
+    },
+    "山东仓": {
+      "rows": 9207,
+      "sha256": "1a6469d50cca7d14ba0a63ff1bb7df7614d305da59ab25a8597f9cedda02c1ac",
+      "revision": "1f4b62b37c259969"
+    }
+  },
+  "stores": {
+    "LQD2025": {
+      "rows": 14244,
+      "summary": {
+        "rows": 14244,
+        "local": 5160,
+        "issues": 1,
+        "calculable": 9084,
+        "positive": 498,
+        "amount": 12833.51,
+        "calculated_positive": 1046,
+        "calculated_amount": 22463.67,
+        "excluded": 3200,
+        "excluded_positive": 548,
+        "excluded_amount": 9630.16,
+        "unpriced": 0,
+        "candidate_amount": 12833.51,
+        "must_amount": 7216.37,
+        "must_candidate_amount": 7216.37,
+        "budget_deferred": 0,
+        "holding_gaps": 0,
+        "exception": 8,
+        "extra": 378.02
+      }
+    }
+  },
+  "lifecycle_status": {
+    "return": [
+      "待付款",
+      "待付款"
+    ],
+    "payment": [
+      "待收货",
+      "待收货"
+    ],
+    "receipt": [
+      "已收齐",
+      "已收齐"
+    ]
+  },
+  "seconds": {
+    "prepare_and_compute": 11.436716299998807,
+    "save_and_sign": 13.929330900020432,
+    "synthetic_lifecycle_imports": 17.62568889997783
+  },
+  "db": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\catalog_full_20261103\\chain-final\\settings\\workbench.sqlite3"
+}

@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "files": 1097,
+  "changed": [],
+  "scope": "rc3 files and user current JSON/DB/catalog files; snapshot taken after isolated live run, before build"
+}

@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "warehouse": "河北仓",
+  "rows": 4497,
+  "business_values_types_and_order_equal": true,
+  "qt_imported": false,
+  "exit_code": 0,
+  "seconds": 1.134848100016825,
+  "exe_sha256": "faf290524c4e1f6977230fbc1d181f4e56738826b02436e6fc07085183e7e193",
+  "source_sha256": "1bfacd75842306d0185f9a028cb6ef316456f2a74d54e45863c9f49b5b400a92"
+}

@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "warehouse": "山东仓",
+  "rows": 9207,
+  "business_values_types_and_order_equal": true,
+  "qt_imported": false,
+  "exit_code": 0,
+  "seconds": 1.645646199991461,
+  "exe_sha256": "faf290524c4e1f6977230fbc1d181f4e56738826b02436e6fc07085183e7e193",
+  "source_sha256": "1a6469d50cca7d14ba0a63ff1bb7df7614d305da59ab25a8597f9cedda02c1ac"
+}

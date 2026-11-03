@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "checks": 8,
+  "elapsed_ms": 166,
+  "scope": "isolated headless Edge; requestAnimationFrame disabled; nonselected page; native focus and hover menu; no live platform or login"
+}

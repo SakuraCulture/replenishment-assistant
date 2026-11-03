@@ -1,0 +1,69 @@
+{
+  "passed": true,
+  "checks": [
+    "原下载任务可恢复",
+    "未核验不能保存账号",
+    "空闲不能停止",
+    "后台任务在限制时间内结束",
+    "立即停止保留下载任务，不采用资料",
+    "真实按钮启动后台任务",
+    "运行时禁止重复提交",
+    "后台任务在限制时间内结束",
+    "两仓真实下载文件由 EXE 校验及采用",
+    "账号公司随所选仓正确显示：河北仓",
+    "真实行数及仓标签一致：河北仓",
+    "原件由实际程序完整落库：河北仓",
+    "账号公司随所选仓正确显示：山东仓",
+    "真实行数及仓标签一致：山东仓",
+    "原件由实际程序完整落库：山东仓",
+    "两仓采用状态准确",
+    "成功采用令当前输入需要重查",
+    "最终采用/错误回执刷新实际完成进度为100%",
+    "Qt持续响应",
+    "关闭组件退出，无残留 Node",
+    "重开读取已采用记录",
+    "后台任务在限制时间内结束",
+    "再次继续不会重放成功仓",
+    "重试后安全关闭"
+  ],
+  "screenshots": [
+    "before.png",
+    "after.png"
+  ],
+  "scope": "real downloaded files replayed through UI; no new browser/platform operation; actual Node and EXE validator",
+  "heartbeat_count": 250,
+  "version": {
+    "app": "补货助手",
+    "version": "0.31.0",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.1",
+    "model_version": "0.3.4-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "4f6fa42767a3b9f5ff67603230462dd2d5372400",
+    "build_id": "rc5",
+    "built_at": "2026-11-03T16:54:00.201782+08:00",
+    "source_archive_sha256": "5b67fc9044378c1dfcb611ae8eb705c6243612ee02837f18465b37f8ecbfd10e",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "4f6fa42767a3b9f5ff67603230462dd2d5372400",
+      "files": 866,
+      "manifest_sha256": "53077a29cb8c465bacb76218c0794562f0a8a3fc1346bbaec52a27124980e5c1",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "d87fa14150b140f5b4e1361739e1dd4c9bcf7a1e24dee5947821ba279f9e65d5",
+      "files": 8,
+      "source_commit": "4f6fa42767a3b9f5ff67603230462dd2d5372400",
+      "contains_user_state": false
+    }
+  },
+  "frozen": true,
+  "exit_code": 0,
+  "exe_sha256": "faf290524c4e1f6977230fbc1d181f4e56738826b02436e6fc07085183e7e193"
+}

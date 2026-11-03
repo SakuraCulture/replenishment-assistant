@@ -1,0 +1,41 @@
+✔ ambiguous controls are never activated (1.6ms)
+✔ hidden or disabled controls are not dispatched (0.4362ms)
+✔ dispatch errors are not retried as another possible export (0.4072ms)
+✔ not-ready controls cannot record a dispatched export attempt (0.219ms)
+✔ restart keeps selected dedicated profile and exposes only an ephemeral loopback endpoint (1.7279ms)
+✔ ordinary browser bindings cannot use dedicated startup (0.7052ms)
+✔ native download callback must identify exactly the original task and action (0.8863ms)
+✔ callback requires native success and the allowlisted XLSX address (0.6614ms)
+✔ native five-minute limit is a recoverable wait, not a new export (0.117ms)
+✔ native pending row may have no count; completed original row must match (1.1283ms)
+✔ completed mismatched count/type and failed native tasks remain failures (0.8714ms)
+✔ captured native all-status all-data request passes (0.6865ms)
+✔ enabled-only request is blocked before transmission (0.0977ms)
+✔ selected-row range is blocked (0.0851ms)
+✔ foreign company is blocked (0.0755ms)
+✔ additional supplier restriction is blocked (0.1027ms)
+✔ unknown export options are blocked (0.0717ms)
+✔ order mutation is not exposed by the integrated catalog-only service (0.7656ms)
+✔ normal browser root and sibling profile cannot become dedicated JST (8.8225ms)
+✔ two warehouses cannot use sibling profiles in one instance root (3.7049ms)
+✔ exact task without unique bound native link never takes recent downloads (1.1539ms)
+✔ same driver handles both accounts in user order and repeated intent never resubmits (204.2611ms)
+✔ login required only pauses one account; resume does not export successful account again (201.1732ms)
+✔ accepted download failure resumes the original task number (200.1196ms)
+✔ legacy accepted task with zero submission counter still blocks a new export (126.6041ms)
+✔ unknown acceptance blocks new intent and resume; other account still completes (184.3907ms)
+✔ stop responds while work waits, starts no additional accounts, later resume works (277.844ms)
+✔ observation token and adopted hash cannot target another item (196.5164ms)
+✔ concurrent starts cannot launch two browser workers (202.2551ms)
+✔ task IDs and download paths are strict; URLs with secrets are not task IDs (0.4316ms)
+✔ native route matches the same path with query parameters (0.5074ms)
+✔ accepted native response retains one durable attempt without relying on route hook (6.2209ms)
+✔ lost response or mismatched observed scope remains unresolved, never zero attempts (3.7961ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1777.767
