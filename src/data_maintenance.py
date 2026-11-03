@@ -207,7 +207,15 @@ def prepare_rewrites(db,plan,scratch,progress,cancel):
     for i,(table,key,blob,expected,day,codes) in enumerate(records,1):
         checkpoint(cancel);progress(RowProgress('准备当天作业清理',i-1,len(records)))
         pack=editor.rewrite(blob,codes,lambda p,c:strip_work(p,c,owned=True,cancel=cancel),expected)
-        info=editor.job_summary(pack.tree) if table=='jobs' else None
+        info=None
+        if table=='jobs':
+            states=editor.get(pack.tree,('states',),{})
+            if states:
+                from datetime import date
+                if date.fromisoformat(day).isoformat()!=day:raise ValueError('日期须为YYYY-MM-DD')
+                if editor.get(pack.tree,('schema',))!=1 or editor.get(pack.tree,('day',))!=day:raise ValueError('作业快照与日期不一致')
+                info=editor.job_summary(pack.tree)
+            else:info={'stores':{}}
         prepared.append((table,key,blob,pack,info))
         progress(RowProgress('准备当天作业清理',i,len(records)))
     # Reusable cache is staged on disk. It is published only with successful deletion.

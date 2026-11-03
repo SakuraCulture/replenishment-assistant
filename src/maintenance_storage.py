@@ -292,5 +292,7 @@ class Editor:
         for code in states:
             value=self.get(tree,('results',code,'summary'))
             if value is not None:results[code]={'summary':value}
-        return wr.summary({'states':states,'results':results,'model_version':self.get(tree,('model_version',)),
+        missing=object();model_version=self.get(tree,('model_version',),missing)
+        if model_version is missing:raise KeyError('model_version')
+        return wr.summary({'states':states,'results':results,'model_version':model_version,
                            'input_dirty':self.get(tree,('input_dirty',),True)})

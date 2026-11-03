@@ -112,6 +112,22 @@ class ReferenceScan(unittest.TestCase):
 
 class DeletionRaces(unittest.TestCase):
     setUp=legacy_tests.DeleteOrders.setUp
+    def test_surviving_job_exact(self):
+        states={s:{'name':s,'state':'待计算'} for s in ('T','U')}
+        payload={'schema':1,'day':wr.today(),'model_version':'0.3.4-rules','states':states,'input_dirty':True,'results':{},'store_ui':{'T':{'n':1},'U':{'n':2}}}
+        self.w.save_job(wr.today(),payload,None)
+        plan=m.prepare(self.path,self.heads);m.execute(self.path,plan)
+        with closing(sqlite3.connect(self.path)) as db:
+            summary,blob=db.execute('SELECT summary,payload FROM jobs').fetchone();actual=c.load(blob,db)
+        expected=m.strip_work(payload,{'T'})
+        self.assertEqual(wr.dumps(actual),wr.dumps(expected));self.assertEqual(wr.loads(summary),wr.summary(expected))
+    def test_invalid_surviving_job_day_rejected(self):
+        payload={'schema':1,'day':'2000-01-01','model_version':'0.3.4-rules','states':{'U':{'name':'U','state':'待计算'}}}
+        with closing(sqlite3.connect(self.path)) as db,db:
+            prepared=c.prepare(payload);db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?)',(wr.today(),'r',prepared.digest,wr.now(),'{}',c.put(db,prepared)))
+        plan=m.prepare(self.path,self.heads)
+        with self.assertRaisesRegex(ValueError,'日期不一致'):m.execute(self.path,plan)
+        self.assertEqual(len(self.r.headers()),1)
     def test_waiting_write_lock_can_cancel_then_retry(self):
         plan=m.prepare(self.path,self.heads);event=threading.Event();writer=sqlite3.connect(self.path)
         try:
