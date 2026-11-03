@@ -1,0 +1,52 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "实际导入槽读取合成Excel供本批选择；预览确认前不写全局库存",
+    "实际预览/确认/停止：按回传顺序预览40/60；第一单保存后停止，原批暂停且40件保留",
+    "关闭并重新进入原批，库存全局改为1000后仍补第二店60；原批资料控件禁用",
+    "实际结果页spawn读取、继承门店/仓筛选；1份重复导出严格一致；清空筛选2份；空筛选禁用导出；读取完成收起进度",
+    "导出运行时关闭页面：安全取消剩余文件，等待线程结束再关闭；已有生成单仍可再次导出"
+  ],
+  "messages": [
+    {
+      "title": "确认生成聚水潭订单",
+      "text": "将按预览顺序生成2单，保存库存预留与待核对付款草稿；并不表示已经付款。\nBH-T-ZC-HB：80元\nBH-U-ZC-HB：120元"
+    },
+    {
+      "title": "确认生成聚水潭订单",
+      "text": "将按预览顺序生成1单，保存库存预留与待核对付款草稿；并不表示已经付款。\nBH-U-ZC-HB：120元"
+    }
+  ],
+  "heartbeat_ticks": 228,
+  "max_tick_gap": 0.28200000000651926,
+  "app": "补货助手",
+  "version": "0.33.0",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "d9709efb77399a34489f26294c63548698eb6424",
+  "build_id": "rc1",
+  "built_at": "2026-11-04T00:54:12.705588+08:00",
+  "source_archive_sha256": "350362c5eadf4729471f9ad616d0a7adb22d48374cacbb425dc6d5c9a32a54f8",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "d9709efb77399a34489f26294c63548698eb6424",
+    "files": 866,
+    "manifest_sha256": "ac6a0e45307363c642abfba52905a0af885b43fc64cb97afdacecedd0ca9cd55",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "fa082723c6623ce698e9016f36be7259325212b7e4b47dcd6aaa66d814379022",
+    "files": 8,
+    "source_commit": "d9709efb77399a34489f26294c63548698eb6424",
+    "contains_user_state": false
+  }
+}

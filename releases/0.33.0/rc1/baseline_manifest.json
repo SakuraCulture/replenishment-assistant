@@ -1,0 +1,13 @@
+{
+  "commit": "3a061518b4e75e40aeecc967527e52cab85b71be",
+  "archive_sha256": "283ae4cca0d1946df7452a1975d38721d4ea9693da1b5d6b0ea09d6242e46b88",
+  "protected": {
+    "src/model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "src/allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "src/one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "src/jst_allocation.py": "ba22c8f4ef9486cd5bbe9b1f8f96e224622e205d098c6e109c8cad7c7855d892",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "src/order_lifecycle.py": "d7822f337da5e5bb1e608dad193f2da16f1a91c58a4eadb112cfbd322150db8f"
+  }
+}

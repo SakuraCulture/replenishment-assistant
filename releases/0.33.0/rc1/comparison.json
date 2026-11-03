@@ -1,0 +1,108 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "orders": 10,
+  "warehouse_sku": 10000,
+  "business_differences": 0,
+  "excel_differences": 0,
+  "whitelist": [
+    "generation.gid",
+    "generation.operation",
+    "generation.bid",
+    "generation.saved",
+    "generation.batch_id (new audit)",
+    "generation.batch_epoch (new audit)"
+  ],
+  "scope": "All remaining generation fields, ordered records; Excel filename, sheet/row/column order, values, types, number formats, styles; no sorting or numeric tolerance.",
+  "raw_seconds": [
+    {
+      "old": {
+        "prepare": 0.11431390000507236,
+        "save": 0.13009660004172474,
+        "export": 0.3317978999693878,
+        "total": 0.5762084000161849
+      },
+      "new": {
+        "prepare": 0.2074321999680251,
+        "save": 0.25870050000958145,
+        "export": 0.2726710000424646,
+        "total": 0.7388037000200711
+      }
+    },
+    {
+      "old": {
+        "prepare": 0.11317339999368414,
+        "save": 0.12868799996795133,
+        "export": 0.3164340000366792,
+        "total": 0.5582953999983147
+      },
+      "new": {
+        "prepare": 0.19511659996351227,
+        "save": 0.24964240001281723,
+        "export": 0.257264900021255,
+        "total": 0.7020238999975845
+      }
+    },
+    {
+      "old": {
+        "prepare": 0.11805210000602528,
+        "save": 0.13380289997439831,
+        "export": 0.2731653000228107,
+        "total": 0.5250203000032343
+      },
+      "new": {
+        "prepare": 0.20805469999322668,
+        "save": 0.2684642000240274,
+        "export": 0.29507160000503063,
+        "total": 0.7715905000222847
+      }
+    }
+  ],
+  "summary": {
+    "old": {
+      "prepare": {
+        "median": 0.11431390000507236,
+        "min": 0.11317339999368414,
+        "max": 0.11805210000602528
+      },
+      "save": {
+        "median": 0.13009660004172474,
+        "min": 0.12868799996795133,
+        "max": 0.13380289997439831
+      },
+      "export": {
+        "median": 0.3164340000366792,
+        "min": 0.2731653000228107,
+        "max": 0.3317978999693878
+      },
+      "total": {
+        "median": 0.5582953999983147,
+        "min": 0.5250203000032343,
+        "max": 0.5762084000161849
+      }
+    },
+    "new": {
+      "prepare": {
+        "median": 0.2074321999680251,
+        "min": 0.19511659996351227,
+        "max": 0.20805469999322668
+      },
+      "save": {
+        "median": 0.25870050000958145,
+        "min": 0.24964240001281723,
+        "max": 0.2684642000240274
+      },
+      "export": {
+        "median": 0.2726710000424646,
+        "min": 0.257264900021255,
+        "max": 0.29507160000503063
+      },
+      "total": {
+        "median": 0.7388037000200711,
+        "min": 0.7020238999975845,
+        "max": 0.7715905000222847
+      }
+    }
+  },
+  "limits": "Warm OS cache; synthetic 10 orders/10000 warehouse SKU; no real platform operations or peak memory benchmark. Single-batch equivalence only; new-batch non-inheritance is a deliberate tested change."
+}

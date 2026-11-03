@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "frozen_exe": false,
+  "checks": [
+    "实际导入槽读取合成Excel供本批选择；预览确认前不写全局库存",
+    "实际预览/确认/停止：按回传顺序预览40/60；第一单保存后停止，原批暂停且40件保留",
+    "关闭并重新进入原批，库存全局改为1000后仍补第二店60；原批资料控件禁用",
+    "实际结果页spawn读取、继承门店/仓筛选；1份重复导出严格一致；清空筛选2份；空筛选禁用导出；读取完成收起进度",
+    "导出运行时关闭页面：安全取消剩余文件，等待线程结束再关闭；已有生成单仍可再次导出"
+  ],
+  "messages": [
+    {
+      "title": "确认生成聚水潭订单",
+      "text": "将按预览顺序生成2单，保存库存预留与待核对付款草稿；并不表示已经付款。\nBH-T-ZC-HB：80元\nBH-U-ZC-HB：120元"
+    },
+    {
+      "title": "确认生成聚水潭订单",
+      "text": "将按预览顺序生成1单，保存库存预留与待核对付款草稿；并不表示已经付款。\nBH-U-ZC-HB：120元"
+    }
+  ],
+  "heartbeat_ticks": 219,
+  "max_tick_gap": 0.1720000000204891,
+  "app": "补货助手",
+  "version": "0.33.0",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "源码运行",
+  "build_id": "未打包"
+}
