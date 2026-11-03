@@ -240,8 +240,9 @@ class Editor:
                     token=next(events)
                     if token[0]=='end_array':break
                     batch.append(item(token))
-                    if len(batch)==chunks.BLOCK_ROWS:parts.append(self.block(batch));batch=[];count+=1
-                    if count and count%32==0:self.progress(f'逐段整理旧格式作业：已写入 {count:,} 块');checkpoint(self.cancel)
+                    if len(batch)==chunks.BLOCK_ROWS:
+                        parts.append(self.block(batch));batch=[];count+=1
+                        if count%32==0:self.progress(f'逐段整理旧格式作业：已写入 {count:,} 块');checkpoint(self.cancel)
                 if batch:parts.append(self.block(batch))
                 return ['array',parts]
             return self.block(item(first))
