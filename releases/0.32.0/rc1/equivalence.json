@@ -1,0 +1,168 @@
+{
+  "cases": [
+    {
+      "name": "all_error.pklz",
+      "differences": []
+    },
+    {
+      "name": "mixed_error_intake.pklz",
+      "differences": []
+    },
+    {
+      "name": "mixed_error_loaded.pklz",
+      "differences": []
+    },
+    {
+      "name": "mixed_error_results.pklz",
+      "differences": []
+    },
+    {
+      "name": "nonoverlap_intake.pklz",
+      "differences": []
+    },
+    {
+      "name": "nonoverlap_loaded.pklz",
+      "differences": []
+    },
+    {
+      "name": "nonoverlap_results.pklz",
+      "differences": []
+    },
+    {
+      "name": "overlap_blocked.pklz",
+      "differences": []
+    },
+    {
+      "name": "overlap_intake.pklz",
+      "differences": []
+    },
+    {
+      "name": "overlap_loaded.pklz",
+      "differences": []
+    },
+    {
+      "name": "overlap_results.pklz",
+      "differences": []
+    },
+    {
+      "name": "path_dedup_blocked.pklz",
+      "differences": []
+    },
+    {
+      "name": "path_dedup_intake.pklz",
+      "differences": []
+    },
+    {
+      "name": "path_dedup_loaded.pklz",
+      "differences": []
+    },
+    {
+      "name": "path_dedup_results.pklz",
+      "differences": []
+    },
+    {
+      "name": "real_0_True.pklz",
+      "differences": []
+    },
+    {
+      "name": "real_10000_True.pklz",
+      "differences": []
+    },
+    {
+      "name": "real_3000_True.pklz",
+      "differences": []
+    },
+    {
+      "name": "real_5000_True.pklz",
+      "differences": []
+    },
+    {
+      "name": "real_custom.pklz",
+      "differences": []
+    },
+    {
+      "name": "real_loaded.pklz",
+      "differences": []
+    },
+    {
+      "name": "real_None_False.pklz",
+      "differences": []
+    },
+    {
+      "name": "real_None_True.pklz",
+      "differences": []
+    },
+    {
+      "name": "reversed_blocked.pklz",
+      "differences": []
+    },
+    {
+      "name": "reversed_intake.pklz",
+      "differences": []
+    },
+    {
+      "name": "reversed_loaded.pklz",
+      "differences": []
+    },
+    {
+      "name": "reversed_results.pklz",
+      "differences": []
+    },
+    {
+      "name": "single_intake.pklz",
+      "differences": []
+    },
+    {
+      "name": "single_loaded.pklz",
+      "differences": []
+    },
+    {
+      "name": "single_results.pklz",
+      "differences": []
+    },
+    {
+      "name": "warehouse_intake.pklz",
+      "differences": []
+    },
+    {
+      "name": "warehouse_loaded.pklz",
+      "differences": []
+    },
+    {
+      "name": "warehouse_results.pklz",
+      "differences": []
+    },
+    {
+      "name": "filtered.xlsx",
+      "differences": []
+    },
+    {
+      "name": "overlap.xlsx",
+      "differences": []
+    },
+    {
+      "name": "real.xlsx",
+      "differences": []
+    },
+    {
+      "name": "reversed.xlsx",
+      "differences": []
+    },
+    {
+      "name": "warehouse.xlsx",
+      "differences": []
+    }
+  ],
+  "whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "authorized_additions_count": 326988,
+  "authorized_additions": "Only product_tags/product_tags_known/medical_sources newly added inside original row provenance; each path and value recorded in sibling JSONL. No original field excluded.",
+  "protected_changed": [],
+  "core_changed": [],
+  "passed": true
+}

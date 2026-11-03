@@ -1,0 +1,406 @@
+{
+  "passed": true,
+  "baseline_commit": "1f074962b2eba514bfa847854e3493621fdf3671",
+  "candidate_commit": "ca918acf77ca700f08624d8ea6566a894c85e05a",
+  "records": [
+    {
+      "label": "baseline",
+      "round": 1,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\governance_032\\baseline",
+      "times": {
+        "calculation": 2.4136376999667846,
+        "prepare": 2.107196400000248,
+        "archive": 5.352089199994225,
+        "export": 1.897633999993559,
+        "unchanged_preview": 3.25591180002084
+      },
+      "rows": 14244,
+      "summary": {
+        "rows": 14244,
+        "local": 5161,
+        "issues": 1,
+        "calculable": 9083,
+        "positive": 430,
+        "amount": 12268.87,
+        "calculated_positive": 1046,
+        "calculated_amount": 23833.55,
+        "excluded": 3269,
+        "excluded_positive": 616,
+        "excluded_amount": 11564.68,
+        "unpriced": 0,
+        "candidate_amount": 12268.87,
+        "must_amount": 6899.18,
+        "must_candidate_amount": 6899.18,
+        "budget_deferred": 0,
+        "holding_gaps": 0,
+        "exception": 8,
+        "extra": 378.8
+      },
+      "rss_peak_bytes": 903835648,
+      "rss_initial_bytes": 145203200,
+      "memory_sample_seconds": 0.05,
+      "warehouses": [
+        "河北仓",
+        "山东仓"
+      ]
+    },
+    {
+      "label": "candidate",
+      "round": 1,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+      "times": {
+        "calculation": 2.370461900020018,
+        "prepare": 2.044847099983599,
+        "archive": 5.435488099989016,
+        "export": 1.822856100043282,
+        "unchanged_preview": 3.3236974999890663,
+        "admission_guard_synthetic_tags": 0.48930590000236407
+      },
+      "rows": 14244,
+      "summary": {
+        "rows": 14244,
+        "local": 5161,
+        "issues": 1,
+        "calculable": 9083,
+        "positive": 430,
+        "amount": 12268.87,
+        "calculated_positive": 1046,
+        "calculated_amount": 23833.55,
+        "excluded": 3269,
+        "excluded_positive": 616,
+        "excluded_amount": 11564.68,
+        "unpriced": 0,
+        "candidate_amount": 12268.87,
+        "must_amount": 6899.18,
+        "must_candidate_amount": 6899.18,
+        "budget_deferred": 0,
+        "holding_gaps": 0,
+        "exception": 8,
+        "extra": 378.8
+      },
+      "rss_peak_bytes": 893313024,
+      "rss_initial_bytes": 145235968,
+      "memory_sample_seconds": 0.05,
+      "warehouses": [
+        "河北仓",
+        "山东仓"
+      ]
+    },
+    {
+      "label": "candidate",
+      "round": 2,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+      "times": {
+        "calculation": 2.339715800015256,
+        "prepare": 2.1321980000357144,
+        "archive": 5.41503209999064,
+        "export": 1.798203199985437,
+        "unchanged_preview": 3.189518900006078,
+        "admission_guard_synthetic_tags": 0.5280498000211082
+      },
+      "rows": 14244,
+      "summary": {
+        "rows": 14244,
+        "local": 5161,
+        "issues": 1,
+        "calculable": 9083,
+        "positive": 430,
+        "amount": 12268.87,
+        "calculated_positive": 1046,
+        "calculated_amount": 23833.55,
+        "excluded": 3269,
+        "excluded_positive": 616,
+        "excluded_amount": 11564.68,
+        "unpriced": 0,
+        "candidate_amount": 12268.87,
+        "must_amount": 6899.18,
+        "must_candidate_amount": 6899.18,
+        "budget_deferred": 0,
+        "holding_gaps": 0,
+        "exception": 8,
+        "extra": 378.8
+      },
+      "rss_peak_bytes": 898535424,
+      "rss_initial_bytes": 145612800,
+      "memory_sample_seconds": 0.05,
+      "warehouses": [
+        "河北仓",
+        "山东仓"
+      ]
+    },
+    {
+      "label": "baseline",
+      "round": 2,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\governance_032\\baseline",
+      "times": {
+        "calculation": 2.356788300035987,
+        "prepare": 2.3948807999840938,
+        "archive": 5.690449699992314,
+        "export": 1.8355457999859937,
+        "unchanged_preview": 3.157971800013911
+      },
+      "rows": 14244,
+      "summary": {
+        "rows": 14244,
+        "local": 5161,
+        "issues": 1,
+        "calculable": 9083,
+        "positive": 430,
+        "amount": 12268.87,
+        "calculated_positive": 1046,
+        "calculated_amount": 23833.55,
+        "excluded": 3269,
+        "excluded_positive": 616,
+        "excluded_amount": 11564.68,
+        "unpriced": 0,
+        "candidate_amount": 12268.87,
+        "must_amount": 6899.18,
+        "must_candidate_amount": 6899.18,
+        "budget_deferred": 0,
+        "holding_gaps": 0,
+        "exception": 8,
+        "extra": 378.8
+      },
+      "rss_peak_bytes": 908333056,
+      "rss_initial_bytes": 145346560,
+      "memory_sample_seconds": 0.05,
+      "warehouses": [
+        "河北仓",
+        "山东仓"
+      ]
+    },
+    {
+      "label": "baseline",
+      "round": 3,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\governance_032\\baseline",
+      "times": {
+        "calculation": 2.328415900003165,
+        "prepare": 2.1245078000356443,
+        "archive": 5.758823800017126,
+        "export": 1.8526068999781273,
+        "unchanged_preview": 3.1633408999769017
+      },
+      "rows": 14244,
+      "summary": {
+        "rows": 14244,
+        "local": 5161,
+        "issues": 1,
+        "calculable": 9083,
+        "positive": 430,
+        "amount": 12268.87,
+        "calculated_positive": 1046,
+        "calculated_amount": 23833.55,
+        "excluded": 3269,
+        "excluded_positive": 616,
+        "excluded_amount": 11564.68,
+        "unpriced": 0,
+        "candidate_amount": 12268.87,
+        "must_amount": 6899.18,
+        "must_candidate_amount": 6899.18,
+        "budget_deferred": 0,
+        "holding_gaps": 0,
+        "exception": 8,
+        "extra": 378.8
+      },
+      "rss_peak_bytes": 906362880,
+      "rss_initial_bytes": 145133568,
+      "memory_sample_seconds": 0.05,
+      "warehouses": [
+        "河北仓",
+        "山东仓"
+      ]
+    },
+    {
+      "label": "candidate",
+      "round": 3,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+      "times": {
+        "calculation": 2.8980981999775395,
+        "prepare": 2.2653669999563135,
+        "archive": 6.448067700024694,
+        "export": 2.203422699996736,
+        "unchanged_preview": 3.525808500009589,
+        "admission_guard_synthetic_tags": 0.5874086999683641
+      },
+      "rows": 14244,
+      "summary": {
+        "rows": 14244,
+        "local": 5161,
+        "issues": 1,
+        "calculable": 9083,
+        "positive": 430,
+        "amount": 12268.87,
+        "calculated_positive": 1046,
+        "calculated_amount": 23833.55,
+        "excluded": 3269,
+        "excluded_positive": 616,
+        "excluded_amount": 11564.68,
+        "unpriced": 0,
+        "candidate_amount": 12268.87,
+        "must_amount": 6899.18,
+        "must_candidate_amount": 6899.18,
+        "budget_deferred": 0,
+        "holding_gaps": 0,
+        "exception": 8,
+        "extra": 378.8
+      },
+      "rss_peak_bytes": 911097856,
+      "rss_initial_bytes": 145231872,
+      "memory_sample_seconds": 0.05,
+      "warehouses": [
+        "河北仓",
+        "山东仓"
+      ]
+    }
+  ],
+  "table": {
+    "baseline": {
+      "calculation": {
+        "all": [
+          2.4136376999667846,
+          2.356788300035987,
+          2.328415900003165
+        ],
+        "median": 2.356788300035987,
+        "min": 2.328415900003165,
+        "max": 2.4136376999667846
+      },
+      "prepare": {
+        "all": [
+          2.107196400000248,
+          2.3948807999840938,
+          2.1245078000356443
+        ],
+        "median": 2.1245078000356443,
+        "min": 2.107196400000248,
+        "max": 2.3948807999840938
+      },
+      "archive": {
+        "all": [
+          5.352089199994225,
+          5.690449699992314,
+          5.758823800017126
+        ],
+        "median": 5.690449699992314,
+        "min": 5.352089199994225,
+        "max": 5.758823800017126
+      },
+      "export": {
+        "all": [
+          1.897633999993559,
+          1.8355457999859937,
+          1.8526068999781273
+        ],
+        "median": 1.8526068999781273,
+        "min": 1.8355457999859937,
+        "max": 1.897633999993559
+      },
+      "unchanged_preview": {
+        "all": [
+          3.25591180002084,
+          3.157971800013911,
+          3.1633408999769017
+        ],
+        "median": 3.1633408999769017,
+        "min": 3.157971800013911,
+        "max": 3.25591180002084
+      },
+      "rss_peak_bytes": {
+        "all": [
+          903835648,
+          908333056,
+          906362880
+        ],
+        "median": 906362880,
+        "min": 903835648,
+        "max": 908333056
+      }
+    },
+    "candidate": {
+      "calculation": {
+        "all": [
+          2.370461900020018,
+          2.339715800015256,
+          2.8980981999775395
+        ],
+        "median": 2.370461900020018,
+        "min": 2.339715800015256,
+        "max": 2.8980981999775395
+      },
+      "prepare": {
+        "all": [
+          2.044847099983599,
+          2.1321980000357144,
+          2.2653669999563135
+        ],
+        "median": 2.1321980000357144,
+        "min": 2.044847099983599,
+        "max": 2.2653669999563135
+      },
+      "archive": {
+        "all": [
+          5.435488099989016,
+          5.41503209999064,
+          6.448067700024694
+        ],
+        "median": 5.435488099989016,
+        "min": 5.41503209999064,
+        "max": 6.448067700024694
+      },
+      "export": {
+        "all": [
+          1.822856100043282,
+          1.798203199985437,
+          2.203422699996736
+        ],
+        "median": 1.822856100043282,
+        "min": 1.798203199985437,
+        "max": 2.203422699996736
+      },
+      "unchanged_preview": {
+        "all": [
+          3.3236974999890663,
+          3.189518900006078,
+          3.525808500009589
+        ],
+        "median": 3.3236974999890663,
+        "min": 3.189518900006078,
+        "max": 3.525808500009589
+      },
+      "admission_guard_synthetic_tags": {
+        "all": [
+          0.48930590000236407,
+          0.5280498000211082,
+          0.5874086999683641
+        ],
+        "median": 0.5280498000211082,
+        "min": 0.48930590000236407,
+        "max": 0.5874086999683641
+      },
+      "rss_peak_bytes": {
+        "all": [
+          893313024,
+          898535424,
+          911097856
+        ],
+        "median": 898535424,
+        "min": 893313024,
+        "max": 911097856
+      }
+    }
+  },
+  "differences": [],
+  "allowed_changes": [
+    "merchant visible order-number column U removed; previous decision V now U",
+    "new veryHidden identity worksheet and workbook structure protection; deterministic identity metadata",
+    "existing internal/warehouse exports not projected in this comparison; separate strict 38-case report"
+  ],
+  "comparison": "All cells A:T and old V -> new U: strict value/Python type/Excel type/styles/comments, sheet and row order; original A:T widths plus row dimensions and print settings. No row sorting. Original reference number/digest/time fixed identically only in private export descriptor.",
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "win32",
+    "memory": "Parent plus recursive children RSS sum every 50ms, shared pages may double-count; excludes Python imports and fixture decode before measurement. Archive and export included.",
+    "cache": "No cache flush. Alternating serial order, same interpreter/dependencies/machine; warm OS file cache, not cold-start claim.",
+    "data": "14244-row frozen real sales/master; calculation/prepare/archive/export isolated. Separate admission-only timing uses copied rows with synthetic blank nonmedical tags; not real qualification assertion."
+  }
+}

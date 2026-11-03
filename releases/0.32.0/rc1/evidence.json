@@ -1,0 +1,33 @@
+{
+  "baseline_commit": "1f074962b2eba514bfa847854e3493621fdf3671",
+  "build_commit": "d05459ec395b4c7ed3804584f9f3f397cb8f1a17",
+  "core": {
+    "model.py": {
+      "baseline": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "candidate": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595"
+    },
+    "one_box_exception.py": {
+      "baseline": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "candidate": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "allocation.py": {
+      "baseline": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "candidate": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "default_config.json": {
+      "baseline": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "candidate": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    }
+  },
+  "protected_file_count": 1225,
+  "protected_changed": [],
+  "local_evidence": {
+    "qa\\governance_032\\baseline.json": "e3575c4aad45b612f7bbe4dc1c2a17b74875a06b7c6ecb768753f354cc315bbc",
+    "qa\\governance_032\\baseline.zip": "496037f98197cedac67e8b0e59856a744715e920d5629f0d3227962697ecdacb",
+    "qa\\governance_032\\final-authorized-additions.jsonl": "efae3e83289a3cd55323d2cdf0bc6e0e220900ffa95dfc945de4b3f4beae2306",
+    "qa\\governance_032\\final\\capture.json": "00c1d213000a75b2770a8255a724aabe395e063e00f20419a038af733e888d03",
+    "qa\\governance_032\\delivery-final-r3\\report.json": "b5a0d73b5a69d36bb6b57c869ef517276fa506c1389e72b3f5ea45002a9087cc",
+    "qa\\governance_032\\exe-rc1\\exe-report.json": "9e921859b8abb84a0538aa04e17256e809947ab86b6619e45ba4b04e91f1ea3b"
+  },
+  "scope": "Only local QA, no user settings/input/old delivery writes, no remote publish or live procurement. Screenshot/UI setup synthetic; independent human usability walkthrough not performed."
+}
