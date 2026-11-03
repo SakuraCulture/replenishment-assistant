@@ -26,7 +26,12 @@ class LifecycleWidget(QWidget):
         self.table=QTableWidget();self.table.setColumnCount(12);self.table.setHorizontalHeaderLabels(['勾选','单据详情','下一步','业务日期','门店','仓','补货单号','当前进度','门店回传','门店付款','实际收货','资料提示']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
         if stage:
             for column in (8,9,10):self.table.setColumnHidden(column,True)
-        row=QHBoxLayout();row.addWidget(button('勾选本页',lambda:self.select_page(True)));row.addWidget(button('清空勾选',lambda:self.select_page(False)));self.export_btn=button('导出勾选单生命周期对照',self.export);row.addWidget(self.export_btn);row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));self.selected_label=label('');row.addWidget(self.selected_label);v.addLayout(row)
+        row=QHBoxLayout();row.addWidget(button('勾选本页',lambda:self.select_page(True)));row.addWidget(button('清空勾选',lambda:self.select_page(False)));row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));self.selected_label=label('');row.addWidget(self.selected_label);v.addLayout(row)
+        from lifecycle_comparison_ui import open_export
+        row=QHBoxLayout();row.addWidget(label('生命周期对比'))
+        self.order_compare_btn=button('导出订单级对比',lambda:open_export(self,'order'));row.addWidget(self.order_compare_btn)
+        self.store_compare_btn=button('导出门店级对比',lambda:open_export(self,'store'));row.addWidget(self.store_compare_btn)
+        self.export_btn=button('导出勾选单商品级明细',self.export);row.addWidget(self.export_btn);v.addLayout(row)
         self.actions=QTabWidget();self.primary_actions=[]
         if stage is None:
             row=QHBoxLayout()
@@ -130,7 +135,11 @@ class LifecycleWidget(QWidget):
         if self.host.closing:return
         if not keep_page:self.page=0;self.checked.clear()
         self.selection_label();self.table.setEnabled(False);self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在查询单据进度…可继续使用工作页。')
-        self.reader.request({'kind':'daily_batch','from':self.start.text().strip(),'to':self.end.text().strip(),'search':self.search.text().strip(),'status':'' if self.stage or self.status.currentIndex()==0 else self.status.currentText(),'stage_view':self.stage,'stage_filter':self.status.currentText() if self.stage else None,'scope':[[h['oid'],h['warehouse']] for h in self.fixed_scope] if self.fixed_scope is not None else None,'warehouse':'' if self.warehouse_filter.currentIndex()==0 else self.warehouse_filter.currentText(),'lock':'' if self.lock_filter.currentIndex()==0 else self.lock_filter.currentText(),'page':self.page},self.ready,self.failed,self.progress)
+        self.order_compare_btn.setEnabled(False);self.store_compare_btn.setEnabled(False)
+        request={'kind':'daily_batch','from':self.start.text().strip(),'to':self.end.text().strip(),'search':self.search.text().strip(),'status':'' if self.stage or self.status.currentIndex()==0 else self.status.currentText(),'stage_view':self.stage,'stage_filter':self.status.currentText() if self.stage else None,'scope':[[h['oid'],h['warehouse']] for h in self.fixed_scope] if self.fixed_scope is not None else None,'warehouse':'' if self.warehouse_filter.currentIndex()==0 else self.warehouse_filter.currentText(),'lock':'' if self.lock_filter.currentIndex()==0 else self.lock_filter.currentText(),'page':self.page}
+        self.reader.request(request,lambda data,r=request:self.query_ready(data,r),self.failed,self.progress)
+    def query_ready(self,data,request):
+        self.applied_request=dict(request);self.ready(data)
     def progress(self,p):self.bar.setRange(0,max(1,p['total']));self.bar.setValue(p['done']);self.note.setText(f"读取归档 {p['done']} / {p['total']}")
     def ready(self,data):
         self.records=data['records'];self.page=data['page'];self.count=data['count'];self.bar.setRange(0,1);self.bar.setValue(1);self.table.setEnabled(True);self.note.setText(f"查询范围 {data['scope']} 单 · 当前筛选 {data['count']} 单 · 第 {self.page+1}/{max(1,(data['count']+49)//50)} 页；每页50单，阶段计数不重复。")
@@ -160,14 +169,17 @@ class LifecycleWidget(QWidget):
         del blocker
         for i,width in enumerate([45,110,165,100,185,70,250,155,90,90,90,260]):self.table.setColumnWidth(i,width)
         self.selection_label()
-    def failed(self,message):self.records=[];self.table.setRowCount(0);self.bar.setRange(0,1);self.bar.setValue(0);self.note.setText('查询失败：'+message+'；可重新查询');self.table.setEnabled(True)
+    def failed(self,message):self.records=[];self.table.setRowCount(0);self.bar.setRange(0,1);self.bar.setValue(0);self.note.setText('查询失败：'+message+'；可重新查询');self.table.setEnabled(True);self.applied_request=None;self.order_compare_btn.setEnabled(False);self.store_compare_btn.setEnabled(False)
     def check(self,item):
         if item.column()!=0 or item.row()>=len(self.records):return
         h=self.records[item.row()]
         if item.checkState()==Qt.CheckState.Checked:self.checked[service.key(h)]=h
         else:self.checked.pop(service.key(h),None)
         self.selection_label()
-    def selection_label(self):self.selected_label.setText(f'已勾选 {len(self.checked)} 单');self.export_btn.setEnabled(bool(self.checked))
+    def selection_label(self):
+        self.selected_label.setText(f'已勾选 {len(self.checked)} 单');self.export_btn.setEnabled(bool(self.checked))
+        enabled=bool(self.checked) or bool(getattr(self,'count',0) and getattr(self,'applied_request',None))
+        self.order_compare_btn.setEnabled(enabled);self.store_compare_btn.setEnabled(enabled)
     def select_page(self,on):
         if not on:self.checked.clear()
         for i in range(self.table.rowCount()):self.table.item(i,0).setCheckState(Qt.CheckState.Checked if on else Qt.CheckState.Unchecked)

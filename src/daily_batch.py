@@ -49,6 +49,7 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
         pending=r['next'] in ('payment','jst_payment') if view=='payment' else r['next']==view
         return pending if kind=='待处理' else pending or r['present'].get(view,False)
     matched=[r for r in records if in_stage(r) and (not stage or stage==r['status'] or stage=='全部未完成' and r['next']) and (not wh or r['warehouse']==wh) and (not lock or r['locked']==(lock=='已锁'))]
+    if request.get('all_matched'):return {'records':matched,'count':len(matched),'counts':counts,'scope':len(records)}
     page=min(max(0,int(request.get('page',0))),max(0,(len(matched)-1)//50))
     return {'records':matched[page*50:(page+1)*50],'count':len(matched),'page':page,'counts':counts,'scope':len(records)}
 

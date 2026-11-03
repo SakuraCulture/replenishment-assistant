@@ -336,11 +336,11 @@ def legacy_return(db, head, products):
     complete = bool(supplied) and all(s in supplied for s in required)
     return {'version': old['version'], 'saved': old['saved'], 'complete': complete, 'values': supplied, 'legacy': True,'digest':hashlib.sha256(wr.dumps(supplied).encode()).hexdigest()}
 
-def snapshot(path, head, progress=lambda _: None, cancel=None, db=None):
+def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order=None):
     if db is None:
         with closing(purchases.connect(path)) as connection:
-            connection.execute('BEGIN'); return snapshot(path, head, progress, cancel, connection)
-    order = repository(path).get(head['day'], head['store'], head['revision'], view='export')
+            connection.execute('BEGIN'); return snapshot(path, head, progress, cancel, connection, order=order)
+    if order is None:order = repository(path).get(head['day'], head['store'], head['revision'], view='export')
     if order['digest'] != head['digest']: raise wr.Conflict('签发快照不一致')
     eligible = {d['E']: {'sku': d['E'], 'name': d.get('D'), 'quantity': normal_exports.sem.order_quantity(d)} for rs in normal_exports.groups(order['payload']['result'], order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d) == head['warehouse']}
     docs = {s: current(db, head, s) for s in STAGES}; legacy = legacy_return(db, head, eligible)
