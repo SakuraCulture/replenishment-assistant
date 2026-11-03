@@ -1,12 +1,12 @@
 """Application entrypoint: Qt setup, logging, exceptions and window creation."""
 import sys,os,logging
 from pathlib import Path
-from PySide6.QtCore import QStandardPaths
-from PySide6.QtGui import QColor,QIcon,QPalette
-from PySide6.QtWidgets import QApplication,QMessageBox
-from ui_controls import STYLE
 
 def main():
+    from PySide6.QtCore import QStandardPaths
+    from PySide6.QtGui import QColor,QIcon,QPalette
+    from PySide6.QtWidgets import QApplication,QMessageBox
+    from ui_controls import STYLE
     app=QApplication(sys.argv);app.setApplicationName('补货助手');app.setOrganizationName('YoutuanTools');app.setStyle('Fusion')
     palette=app.style().standardPalette()
     for role,color in [(QPalette.ColorRole.Window,'#F3F6F7'),(QPalette.ColorRole.WindowText,'#22383C'),(QPalette.ColorRole.Base,'#FFFFFF'),(QPalette.ColorRole.AlternateBase,'#F7FAFA'),(QPalette.ColorRole.Text,'#22383C'),(QPalette.ColorRole.Button,'#FFFFFF'),(QPalette.ColorRole.ButtonText,'#22383C'),(QPalette.ColorRole.Highlight,'#DDEFEA'),(QPalette.ColorRole.HighlightedText,'#153C43')]:palette.setColor(role,QColor(color))
@@ -131,6 +131,9 @@ def __getattr__(name):
 if __name__=="__main__":
     import multiprocessing
     multiprocessing.freeze_support()
+    if '--catalog-validate' in sys.argv:
+        from catalog_sync_validation import cli
+        sys.exit(cli(sys.argv[sys.argv.index('--catalog-validate')+1:]))
     if '--storage-copy' in sys.argv:
         from storage_maintenance import cli
         sys.exit(cli(sys.argv[sys.argv.index('--storage-copy')+1:]))

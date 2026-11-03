@@ -1,0 +1,9 @@
+{
+  "version": "0.2.0-dev",
+  "zip_sha256": "bc8625f92d64118456db13ed23cd54109da0d59838de9e7d673bab7deaad841b",
+  "files": {
+    "src/product-export.mjs": "6fb8d80922471689d09ea3aec01b31d2e0284f3b02c24c0799985a88a546c965",
+    "src/job-store.mjs": "2402216e287f00bf461056a196162a9116ffd59fb156866c410681638f1a1791",
+    "test/export-scope.test.mjs": "8e46e391447c4b3a036a0331ac593d249451ed7150c0b97b74b7d1e2efc4d3ce"
+  }
+}

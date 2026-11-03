@@ -1,0 +1,12 @@
+{
+  "name": "replenishment-jst-catalog",
+  "version": "0.31.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15 <25"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}
