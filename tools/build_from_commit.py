@@ -36,6 +36,7 @@ def main():
     (build/'build_info.json').write_text(json.dumps(info,ensure_ascii=False,indent=2),encoding='utf-8')
     env=os.environ.copy();env['PATH']=os.environ['WINDIR']+';'+str(Path(os.environ['WINDIR'])/'System32')+';'+str(Path(sys.executable).parent)
     cmd=[sys.executable,'-m','PyInstaller','--clean','--windowed','--onedir','--noupx','--name','补货助手','--icon',str(source/'src/app.ico')]
+    if jst_source.exists():cmd+=['--runtime-hook',str(source/'tools/catalog_validate_rthook.py')]
     for path in [source/'src/default_config.json',source/'src/default_must_sell.json',source/'src/version.json',build/'build_info.json',source/'src/app.ico']:cmd+=['--add-data',str(path)+';.']
     for name in ['numpy','pandas','matplotlib','scipy','IPython','lxml','tkinter']:cmd+=['--exclude-module',name]
     cmd+=['--distpath',str(dist),'--workpath',str(build/'work'),'--specpath',str(build),str(source/'src/app.py')]
