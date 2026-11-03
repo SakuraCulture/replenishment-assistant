@@ -4,7 +4,7 @@ from decimal import Decimal,InvalidOperation
 from PySide6.QtGui import QValidator
 from business_presenter import value_text,path_title,business_help
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QTabWidget,QTableWidget,QTableWidgetItem,QDoubleSpinBox,QComboBox,QCheckBox,QLineEdit,QTextBrowser,QMessageBox,QHeaderView,QInputDialog
+from PySide6.QtWidgets import QWidget,QDialog,QVBoxLayout,QHBoxLayout,QTabWidget,QTableWidget,QTableWidgetItem,QDoubleSpinBox,QComboBox,QCheckBox,QLineEdit,QTextBrowser,QMessageBox,QHeaderView,QInputDialog
 from ui_controls import label,button
 import parameter_schema as schema
 import restock_policy as policy
@@ -35,6 +35,7 @@ class ParameterDialog(QDialog):
         for p in self.presets:self.choices.addItem(f"{p['name']} v{p['version']}"+(' · 内置已验收基线' if p['builtin'] else ' · 自定义，效果需试算'),p)
         row.addWidget(self.choices,1);self.load_btn=button('用此方案填充表单',self.load_selected);row.addWidget(self.load_btn);self.retire_btn=button('停用此方案版本',self.archive_selected);row.addWidget(self.retire_btn);self.retire_btn.setVisible(self.managing);self.load_btn.setVisible(not readonly);self.choices.setVisible(not readonly);v.addLayout(row)
         self.choices.currentIndexChanged.connect(lambda:self.retire_btn.setEnabled(bool(self.choices.currentData()) and self.choices.currentData()['id']!='standard'));self.retire_btn.setEnabled(bool(self.choices.currentData()) and self.choices.currentData()['id']!='standard')
+        self.source_note=label('','muted');self.source_note.setWordWrap(True);v.addWidget(self.source_note)
         self.tabs=QTabWidget();v.addWidget(self.tabs,1)
         self.param_table=QTableWidget(0,4);self.param_table.setHorizontalHeaderLabels(['参数','当前值','单位','方案默认值']);self.param_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.param_table.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch);self.tabs.addTab(self.param_table,'模型超参')
         self.weight_table=QTableWidget(0,5);self.weight_table.setHorizontalHeaderLabels(['分类方案','趋势敏感度','最近7天权重','此前7天权重','此前16天权重（自动）']);self.tabs.addTab(self.weight_table,'预测权重')
@@ -51,10 +52,12 @@ class ParameterDialog(QDialog):
         self.weight_table.currentCellChanged.connect(lambda r,c,*_:self.help.setPlainText(schema.WEIGHT_HELP.get(['','alpha','w1','w2',''][c], '此前16天权重=100%－最近7天权重－此前7天权重，无分类自动跟随快销；缺货时还按有效有货天数修正。')) if c>=0 else None)
         self.profile_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText('勾选时使用分类值，未勾选沿用模型超参。快销/日百各一套，两仓共用；无分类跟随快销。\n'+business_help(schema.HELP[self.profile_rows[r][1]][2])) if r>=0 and hasattr(self,'profile_rows') else None)
         self.warehouses.currentCellChanged.connect(lambda *_:self.help.setPlainText('各仓备货、到货天数优先于通用值；按门店实际补货与到货周期维护。修改只在点击应用后生效。'))
-        self.exception=QCheckBox('启用一箱例外（仍受禁用/停采与门店总预算约束）');v.addWidget(self.exception)
+        policy_page=QWidget();policy_layout=QVBoxLayout(policy_page);policy_layout.addWidget(label('只维护补货策略开关；资质、拒收、禁用、停采仍是硬排除，不能在这里关闭。','muted'));self.tabs.addTab(policy_page,'补货策略')
+        self.exception=QCheckBox('启用一箱例外（仍受准入与门店总预算约束）');policy_layout.addWidget(self.exception)
         self.policy_boxes={}
         for key,name in policy.LABELS.items():
-            w=QCheckBox(name);w.setToolTip(policy.HELP[key]);self.policy_boxes[key]=w;v.addWidget(w)
+            w=QCheckBox(name);w.setToolTip(policy.HELP[key]);self.policy_boxes[key]=w;policy_layout.addWidget(w)
+        policy_layout.addStretch()
         self.note=label('','muted');v.addWidget(self.note)
         if self.managing:
             row=QHBoxLayout();row.addWidget(button('复制另存方案',lambda:self.save_preset(False)));row.addWidget(button('保存方案新版本',lambda:self.save_preset(True)));v.addLayout(row)
@@ -141,6 +144,10 @@ class ParameterDialog(QDialog):
         from parameter_view import comparison,display_path
         try:rows=comparison(schema.standard(),self.preset.get('base_config',self.preset['config']),self.initial_config,self.value())
         except ValueError as exc:self.note.setText('当前参数无效，不能应用：'+str(exc));self.effective.setRowCount(0);return
+        source=self.preset.get('plan_source')
+        title='补货计划：'+source['name'] if source else '参数依据：'+self.preset.get('name','系统标准')
+        changed=sum(row[3]!=row[4] for row in rows)
+        self.source_note.setText(title+' · '+('当时保存的完整值，只读' if self.readonly else f'本次表单修改 {changed} 项；点击应用后才生效')+'。分类超参两仓共用，周期按仓设置；预算和供货关系分别维护。')
         expanded=[]
         for row in rows:
             if row[0].startswith('warehouses / '):
@@ -160,6 +167,7 @@ class ParameterDialog(QDialog):
     def fill(self,config):
         self.config=copy.deepcopy(config);base=self.preset.get('base_config',self.preset['config']);self.param_table.setRowCount(len(schema.HELP))
         for i,(key,(name,unit,helptext)) in enumerate(schema.HELP.items()):
+            self.param_table.setRowHidden(i,key in {'depth','lead','extreme_days'})
             helptext=business_help(helptext)
             self.param_table.setItem(i,0,QTableWidgetItem(name+('（在各仓周期页维护）' if key in {'depth','lead'} else '')));w=self.spin(config['parameters'][key],percent=key=='probability');w.setEnabled(key not in {'extreme_days','depth','lead'});self.param_table.setCellWidget(i,1,w);self.param_table.setItem(i,2,QTableWidgetItem('%' if key=='probability' else '库存单位' if key in ('strict_monthly','exit_monthly') else unit));self.param_table.setItem(i,3,QTableWidgetItem(value_text(base['parameters'][key],key)));self.param_table.item(i,0).setToolTip(helptext+'\n原字段：'+key)
             w.valueChanged.connect(lambda _,text=helptext:self.help.setPlainText(text))

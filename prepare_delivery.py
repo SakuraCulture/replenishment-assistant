@@ -167,3 +167,16 @@ if version['version']=='0.28.0':
     name='0.28.0业务可读性.md'
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'docs'/name,dest/'使用说明.txt')
+
+if version['version']=='0.32.0':
+    (dest/'docs').mkdir(exist_ok=True)
+    for name in ['0.32.0使用与结构.md','0.32.0实施记录.md','聚水潭双仓完整验证_20261103.md']:
+        shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    shutil.copy2(root/'docs/0.32.0使用与结构.md',dest/'使用说明.txt')
+    shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
+    sys.path.insert(0,str(root/'src'))
+    import parameter_tables,import_templates,lifecycle_io
+    templates=dest/'导入模板';templates.mkdir(exist_ok=True)
+    for kind in ['warehouse_cycles','classified_parameters','store_policy','store_routes','store_budget','store_qualification','store_refusals']:
+        import_templates.write(kind,templates/(import_templates.TEMPLATES[kind][0]+'模板.xlsx'))
+    for stage in lifecycle_io.STAGES:lifecycle_io.template(stage,templates/(lifecycle_io.TITLES[stage]+'模板.xlsx'))

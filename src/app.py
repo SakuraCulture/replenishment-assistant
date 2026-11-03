@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--governance-smoke' in sys.argv:
+        from governance_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--governance-smoke')+1:])
     if '--catalog-sync-smoke' in sys.argv:
         from catalog_sync_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--catalog-sync-smoke')+1:])
