@@ -13,7 +13,7 @@ class Session:
         self.context=multiprocessing.get_context('spawn');self.cancel=self.context.Event();self.connection,child=self.context.Pipe()
         self.process=self.context.Process(target=serve,args=(child,str(path),self.cancel));self.process.start();child.close();self.writing=False
     def call(self,operation,value,progress):
-        self.writing=operation in ('save','confirm_normal','delivery_execute','review_export');self.connection.send(operation)
+        self.writing=operation in ('save','confirm_normal','delivery_execute','review_export','delete_orders','delete_job');self.connection.send(operation)
         progress('传输本次操作所需数据…')
         send_tree(self.connection,value,None if self.writing else self.cancel,lambda n:progress(f'正在传输数据：已发送 {n:,} 个数据块（总量未预扫描）'))
         while True:
@@ -75,9 +75,11 @@ class Progress(QDialog):
         super().__init__(parent);self.session=session;self.operation=operation;self._completed=False;self.setWindowTitle({'prepare_save':'核对保存','save':'保存作业','prepare_normal':'核对归档','confirm_normal':'确认归档','delivery_prepare':'核对导出','delivery_execute':'导出确认单','review_export':'保存完整差异','copy_config':'复制配置','storage_copy':'创建兼容存储副本'}.get(operation,'读取作业'));self.setMinimumWidth(510)
         self.started=time.monotonic();self.last_progress=self.started;self.cancelling=False;self.committing=False;self.cancel_after_commit=False;self.committed=False;self.exporting=False
         self.setWindowTitle({'delivery_probe':'核对导出','delivery_expand':'准备完整签发草稿'}.get(operation,self.windowTitle()))
+        self.setWindowTitle({'delete_preview':'核对彻底删除范围','delete_orders':'彻底删除关联数据','delete_job':'删除每日草稿'}.get(operation,self.windowTitle()))
         v=QVBoxLayout(self);self.note=label('正在准备，请稍候…','muted');v.addWidget(self.note);self.bar=QProgressBar();self.bar.setRange(0,0);v.addWidget(self.bar)
         self.health=label('','muted');v.addWidget(self.health)
         self.cancel_btn=button('正在保存，暂不能取消' if operation in ('save','review_export') else '取消准备',self.reject);self.cancel_btn.setEnabled(operation not in ('save','review_export'));v.addWidget(self.cancel_btn)
+        if operation in ('delete_orders','delete_job'):self.cancel_btn.setText('取消删除')
         self.task=Request(session,operation,value,self);self.task.commit.connect(self.commit_state);self.task.progress.connect(self.update_stage);self.task.rows.connect(self.update_count);self.task.finished.connect(self.completed)
         self.clock=QTimer(self);self.clock.setInterval(500);self.clock.timeout.connect(self.update_health);self.clock.start();self.update_health()
     def commit_state(self,active):
@@ -85,6 +87,7 @@ class Progress(QDialog):
         if not active and self.cancel_after_commit:self.reject()
     def update_stage(self,text):
         self.last_progress=time.monotonic()
+        if self.operation in ('delete_orders','delete_job') and text=='归档已提交；可取消后续导出':text='正在核对删除结果…'
         if self.operation=='delivery_execute' and '写出确认单' in text:
             self.exporting=True;self.cancel_btn.setText('停止剩余导出')
         if not self.cancelling:self.note.setText(text)
@@ -102,6 +105,7 @@ class Progress(QDialog):
         if self.committing:self.cancel_after_commit=True;self.note.setText('最终提交已开始，完成后停止后续操作。');return
         if self.operation in ('save','review_export'):self.note.setText('正在完成本次提交，结束后可关闭；不会中途终止写入。');return
         self.cancelling=True;self.session.cancel.set();self.cancel_btn.setEnabled(False);self.cancel_btn.setText('正在停止…');self.note.setText('正在停止后续导出；原签发修订及已完成文件保留，未完成项可从历史按原修订重试。' if self.committed or self.exporting else '正在取消准备；提交前会回滚。备份或缓存可能已产生，原正式记录保留。')
+        if self.operation in ('delete_orders','delete_job'):self.note.setText('删除已经提交，正在接收完成结果。' if self.committed else '正在取消删除，已进入事务的变更会整体回滚；请等待安全结束。')
     def closeEvent(self,event):
         if self._completed:event.accept()
         else:self.reject();event.ignore()

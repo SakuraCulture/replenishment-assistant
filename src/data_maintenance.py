@@ -4,7 +4,7 @@ Warehouse children share a signed parent: selection is explicitly expanded to
 that parent before confirmation. Shared immutable source snapshots are retained
 only while another live order references them. This is not forensic disk wiping.
 """
-import copy, hashlib, sqlite3, uuid, re, zlib
+import copy, hashlib, sqlite3, uuid, re, zlib, tempfile, time
 from pathlib import Path
 from contextlib import closing
 from decimal import Decimal
@@ -13,11 +13,13 @@ import storage_chunks as chunks
 import normal_orders as orders
 import archive_orders as archive
 from runtime_support import checkpoint,CommitProgress
+from export_progress import RowProgress
+import maintenance_storage as storage
 
 def tables(db):return {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 def digest(value):return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
 
-def snapshot(db,oids,cancel=None):
+def snapshot(db,oids,cancel=None,progress=lambda _:None):
     available=tables(db);parents=[];versions=[];evidence=[];external=[];related_docs=set()
     for oid in oids:
         checkpoint(cancel)
@@ -25,8 +27,24 @@ def snapshot(db,oids,cancel=None):
         if not row:raise wr.Conflict('订单已删除或变化，请刷新')
         day,store,number,current=row
         raw=db.execute('SELECT digest,payload FROM normal_revisions WHERE oid=? AND revision=?',(oid,current)).fetchone()
-        payload=chunks.load(raw[1],db,binding=raw[0]);whs=archive.scopes(payload['result']['rows'])
-        parents.append(dict(oid=oid,day=day,store=store,number=number,revision=current,digest=raw[0],warehouses=whs,name=payload['result'].get('store_name',store)))
+        with closing(sqlite3.connect(':memory:')) as scratch:
+            editor=storage.Editor(db,scratch,progress,cancel);manifest=chunks.manifest(raw[1])
+            if manifest:
+                if manifest.get('binding')!=raw[0] or editor.checksum(manifest['tree'])!=(manifest['digest'],manifest['size']):raise ValueError('归档快照校验失败')
+                tree=manifest['tree']
+            else:
+                tree=editor.legacy_tree(raw[1])
+            found=set()
+            def rows(node):
+                for part in node[1] if node[0]=='array' else [node]:
+                    checkpoint(cancel)
+                    for item in editor.value(part):found.add(archive.warehouse(item))
+                return node
+            editor.update(tree,('result','rows'),rows)
+            whs=[w for w in (*archive.WAREHOUSES,archive.LEGACY) if w in found]
+            name=editor.get(tree,('result','store_name'),store)
+        parents.append(dict(oid=oid,day=day,store=store,number=number,revision=current,digest=raw[0],warehouses=whs,name=name))
+        progress(RowProgress('核对订单范围',len(parents),len(oids)))
         for table in sorted(available):
             if table.startswith('sqlite_'):continue
             columns=[r[1] for r in db.execute(f'PRAGMA table_info("{table}")')]
@@ -75,18 +93,23 @@ def prepare(path,heads,progress=lambda _:None,cancel=None):
     if not oids:raise ValueError('请勾选要彻底删除的订单')
     progress('读取订单与关联数据，核对删除范围…')
     with closing(connect(path)) as db:
-        db.execute('BEGIN');plan=snapshot(db,oids,cancel)
+        db.execute('BEGIN');plan=snapshot(db,oids,cancel,progress)
         for h in heads:
             p=next(p for p in plan['parents'] if p['oid']==h['oid'])
             if h['revision']!=p['revision'] or h['digest']!=p['digest']:raise wr.Conflict('原签发已变化，请刷新再删除')
         plan['oids']=oids
     return plan
 
-def strip_work(value,codes):
-    p=copy.deepcopy(value)
+def strip_work(value,codes,*,owned=False,progress=lambda _:None,cancel=None):
+    checkpoint(cancel)
+    p=dict(value) if owned else copy.deepcopy(value)
     for k in ('states','results','store_presets','store_ui','overrides','default_by_store','preissue_drafts','new_product_bases','_calculation_settings'):
         if isinstance(p.get(k),dict):p[k]={s:v for s,v in p[k].items() if s not in codes}
     loaded=p.get('loaded')
+    if loaded and owned:
+        loaded=dict(loaded);p['loaded']=loaded
+        if loaded.get('warehouse_rows') is not None:loaded['warehouse_rows']=dict(loaded['warehouse_rows'])
+        if loaded.get('intake'):loaded['intake']=dict(loaded['intake'])
     if loaded:
         for k in ('stores','blocked'):
             if k in loaded:loaded[k]={s:v for s,v in loaded[k].items() if s not in codes}
@@ -105,7 +128,12 @@ def strip_work(value,codes):
         return False
     p['export_log']=[e for e in p.get('export_log',[]) if not affected(e)]
     p['pending_copy']=None
+    checkpoint(cancel)
     return p
+
+def strip_current(value,codes,progress=lambda _:None,cancel=None):
+    progress('仅移除受影响门店，保留其他门店参数与结果…')
+    return strip_work(value,codes,owned=True,progress=progress,cancel=cancel)
 
 def references(node):
     if node[0]=='ref':yield node[1]
@@ -114,53 +142,155 @@ def references(node):
     elif node[0] in ('array','map'):
         for child in node[1]:yield from references(child)
 
-def collect_shared(db,folder,cancel=None):
+def collect_shared(db,folder,cancel=None,progress=lambda _:None):
     """Reclaim unreferenced blocks and files; validate every live manifest first."""
-    live=set();work_ids=set();texts=[];available=tables(db)
+    live=set();work_ids=set();hashes=set();legacy_live=set();available=tables(db);storage.cache_schema(db)
+    progress('核对存活订单及共享资料引用…')
     if 'normal_revisions' in available:
         for raw, in db.execute('SELECT payload FROM normal_revisions'):
-            checkpoint(cancel);part=chunks.load(raw,db,paths=[('work_revision',)])
-            if part.get(('work_revision',)):work_ids.add(part[('work_revision',)])
+            checkpoint(cancel)
+            if chunks.manifest(raw):revision=chunks.load(raw,db,paths=[('work_revision',)],progress=lambda s:checkpoint(cancel)).get(('work_revision',))
+            else:revision=storage.legacy_info(db,raw,cancel,progress)['work_revision']
+            if revision:work_ids.add(revision)
     for rev, in db.execute('SELECT revision FROM normal_work_revisions').fetchall():
         if rev not in work_ids:db.execute('DELETE FROM normal_work_revisions WHERE revision=?',(rev,))
     for table in ('normal_revisions','normal_work_revisions','jobs'):
         for raw, in db.execute(f'SELECT payload FROM {table}'):
             checkpoint(cancel);m=chunks.manifest(raw)
             if m:live.update(references(m['tree']))
-            else:texts.append(wr.dumps(chunks.load(raw,db)))
+            else:
+                legacy_live.add(hashlib.sha256(raw).hexdigest());hashes.update(storage.legacy_info(db,raw,cancel,progress)['refs'])
     if 'snapshot_chunks' in available:
         for h, in db.execute('SELECT hash FROM snapshot_chunks').fetchall():
+            checkpoint(cancel)
             if h not in live:db.execute('DELETE FROM snapshot_chunks WHERE hash=?',(h,))
     # Shared raw imports may also be used by saved catalogs, presets, and other stores.
     # Reclaim lifecycle attachments only after all surviving documents are inspected.
     for table in ('lifecycle_versions','purchase_versions','merchant_feedback'):
-        if table in available:texts.extend(r[0] for r in db.execute(f'SELECT payload FROM {table}'))
+        if table in available:
+            for raw, in db.execute(f'SELECT payload FROM {table}'):hashes.update(storage.hashes(raw,cancel))
     if 'snapshot_chunks' in available:
-        for raw, in db.execute('SELECT data FROM snapshot_chunks'):texts.append(zlib.decompress(raw).decode('utf-8'))
+        storage.cache_schema(db);total=db.execute('SELECT COUNT(*) FROM snapshot_chunks').fetchone()[0]
+        for i,(h,size,raw) in enumerate(db.execute('SELECT hash,size,data FROM snapshot_chunks'),1):
+            checkpoint(cancel);hashes.update(storage.references_for(db,h,size,raw,cancel))
+            if i%32==0 or i==total:progress(RowProgress('核对共享附件引用',i,total))
+        db.execute('DELETE FROM maintenance_chunk_refs WHERE hash NOT IN (SELECT hash FROM snapshot_chunks)')
     for table in ('jst_baselines','jst_generations','stocking_lists'):
         if table in available:
             col='data' if table=='stocking_lists' else 'payload'
-            texts.extend(r[0] for r in db.execute(f'SELECT {col} FROM {table}'))
+            for raw, in db.execute(f'SELECT {col} FROM {table}'):hashes.update(storage.hashes(raw,cancel))
     # Maintained catalogs/lists (including explicit version history) are live owners.
     for name in ('warehouse_catalogs','must_sell.json','new_product_focus.json'):
         p=Path(folder)/name
         for f in p.rglob('*.json') if p.is_dir() else ([p] if p.exists() else []):
-            texts.append(f.read_text('utf-8'))
-    hashes=set()
-    for text in texts:hashes.update(re.findall(r'(?<![0-9a-f])[0-9a-f]{64}(?![0-9a-f])',text))
+            checkpoint(cancel);hashes.update(storage.hashes(f.read_bytes(),cancel))
     for table in ('lifecycle_files','purchase_files','source_files','jst_files'):
         if table in available:
             for sha, in db.execute(f'SELECT sha FROM {table}').fetchall():
+                checkpoint(cancel)
                 if sha not in hashes:db.execute(f'DELETE FROM {table} WHERE sha=?',(sha,))
+    for key, in db.execute('SELECT hash FROM maintenance_legacy_refs').fetchall():
+        if key not in legacy_live:db.execute('DELETE FROM maintenance_legacy_refs WHERE hash=?',(key,))
+    checkpoint(cancel)
+
+
+def prepare_rewrites(db,plan,scratch,progress,cancel):
+    """Prepare outside the writer lock. Recheck exact source blobs before use."""
+    editor=storage.Editor(db,scratch,progress,cancel);prepared=[]
+    records=[]
+    for day in dict.fromkeys(h['day'] for h in plan['parents']):
+        codes={h['store'] for h in plan['parents'] if h['day']==day}
+        for rev,blob in db.execute('SELECT revision,payload FROM normal_work_revisions WHERE day=?',(day,)):
+            records.append(('normal_work_revisions',rev,blob,None,day,codes))
+        for digest,blob in db.execute('SELECT digest,payload FROM jobs WHERE day=?',(day,)):
+            records.append(('jobs',day,blob,digest,day,codes))
+    for i,(table,key,blob,expected,day,codes) in enumerate(records,1):
+        checkpoint(cancel);progress(RowProgress('准备当天作业清理',i-1,len(records)))
+        pack=editor.rewrite(blob,codes,lambda p,c:strip_work(p,c,owned=True,cancel=cancel),expected)
+        info=editor.job_summary(pack.tree) if table=='jobs' else None
+        prepared.append((table,key,blob,pack,info))
+        progress(RowProgress('准备当天作业清理',i,len(records)))
+    # Reusable cache is staged on disk. It is published only with successful deletion.
+    if 'maintenance_chunk_refs' in tables(db):
+        scratch.executemany('INSERT OR REPLACE INTO maintenance_chunk_refs VALUES(?,?,?,?)',db.execute('SELECT * FROM maintenance_chunk_refs'))
+    if 'maintenance_legacy_refs' in tables(db):
+        scratch.executemany('INSERT OR REPLACE INTO maintenance_legacy_refs VALUES(?,?,?)',db.execute('SELECT * FROM maintenance_legacy_refs'))
+    if 'snapshot_chunks' in tables(db):
+        total=db.execute('SELECT COUNT(*) FROM snapshot_chunks').fetchone()[0]
+        for i,(h,size,data) in enumerate(db.execute('SELECT hash,size,data FROM snapshot_chunks'),1):
+            storage.references_for(scratch,h,size,data,cancel)
+            if i%32==0 or i==total:progress(RowProgress('准备共享附件引用（首次需核对历史块）',i,total))
+    for table in ('normal_revisions','normal_work_revisions','jobs'):
+        for blob, in db.execute(f'SELECT payload FROM {table}'):
+            if not chunks.manifest(blob):storage.legacy_info(scratch,blob,cancel,progress)
+    scratch.commit();return prepared
+
+
+def apply_rewrites(db,scratch,prepared,days,progress,cancel):
+    chunks.schema(db)
+    expected={(table,key):old for table,key,old,_,_ in prepared};current={}
+    for day in days:
+        current.update({('normal_work_revisions',rev):blob for rev,blob in db.execute('SELECT revision,payload FROM normal_work_revisions WHERE day=?',(day,))})
+        current.update({('jobs',day):blob for blob, in db.execute('SELECT payload FROM jobs WHERE day=?',(day,))})
+    if current!=expected:raise wr.Conflict('当天共享作业在准备后变化，请重新核对删除范围')
+    for table,key,old,pack,info in prepared:
+        col='day' if table=='jobs' else 'revision'
+        row=db.execute(f'SELECT payload FROM {table} WHERE {col}=?',(key,)).fetchone()
+        if row is None or row[0]!=old:raise wr.Conflict('当天共享作业在准备后变化，请重新核对删除范围')
+    for h,size,raw in scratch.execute('SELECT hash,size,data FROM snapshot_chunks'):
+        checkpoint(cancel);db.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',(h,size,raw))
+    for table,key,old,pack,info in prepared:
+        checkpoint(cancel)
+        if table=='jobs':
+            if not info['stores']:db.execute('DELETE FROM jobs WHERE day=?',(key,))
+            else:db.execute('UPDATE jobs SET revision=?,digest=?,saved=?,summary=?,payload=? WHERE day=?',(uuid.uuid4().hex,pack.digest,wr.now(),wr.dumps(info),chunks.put(db,pack,cancel=cancel),key))
+        else:
+            # Preserve no-change legacy records byte-for-byte, as before.
+            original=chunks.manifest(old)
+            if original:original_digest=original['digest']
+            else:
+                stream=storage.Inflated(old,cancel,progress)
+                while stream.read():pass
+                original_digest=stream.sha.hexdigest()
+            if pack.digest!=original_digest:db.execute('UPDATE normal_work_revisions SET payload=? WHERE revision=?',(chunks.put(db,pack,cancel=cancel),key))
+    storage.cache_schema(db)
+    db.executemany('INSERT OR REPLACE INTO maintenance_chunk_refs VALUES(?,?,?,?)',scratch.execute('SELECT * FROM maintenance_chunk_refs'))
+    db.executemany('INSERT OR REPLACE INTO maintenance_legacy_refs VALUES(?,?,?)',scratch.execute('SELECT * FROM maintenance_legacy_refs'))
+    progress('当天作业清理已写入事务，继续核对共享引用…')
+
+
+def clear_indexes(db,oids,progress,cancel):
+    """One streaming pass per index; match exactly the former substring rule."""
+    needles=[wr.dumps(oid) for oid in oids]
+    for _,name,_ in db.execute('PRAGMA database_list').fetchall():
+        if not name.startswith('cache'):continue
+        for table, in db.execute(f"SELECT name FROM {name}.sqlite_master WHERE type='table' AND name IN ('views','lifecycle_projection','jst_result_projection')").fetchall():
+            col='projection' if table=='views' else 'payload';total=db.execute(f'SELECT COUNT(*) FROM {name}.{table}').fetchone()[0]
+            # Only keys are read for the common case. Exceptional cross-order payload
+            # references retain the old substring semantics, but scan each row once.
+            for i,(key,) in enumerate(db.execute(f'SELECT k FROM {name}.{table}').fetchall(),1):
+                checkpoint(cancel);remove=any(n in key for n in needles)
+                if not remove:
+                    raw=db.execute(f'SELECT {col} FROM {name}.{table} WHERE k=?',(key,)).fetchone()[0]
+                    remove=any(n in raw for n in needles);del raw
+                if remove:db.execute(f'DELETE FROM {name}.{table} WHERE k=?',(key,))
+                if i%16==0 or i==total:progress(RowProgress('清理订单索引',i,total))
 
 def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
     checkpoint(cancel)
     if plan['external'] and not ack_external:raise ValueError('请明确核对外部采购/已下单影响；此操作不撤销外部订单')
-    with closing(connect(path)) as db:
-        import order_lifecycle as lc
-        lc.begin(db,cancel)
+    with tempfile.TemporaryDirectory(prefix='yt-order-delete-') as temporary,closing(connect(path)) as db,closing(sqlite3.connect(Path(temporary)/'prepared.sqlite3')) as scratch:
+        prepared=prepare_rewrites(db,plan,scratch,progress,cancel)
+        progress('准备完成，正在取得删除写锁…');started=time.monotonic()
+        while True:
+            checkpoint(cancel)
+            try:db.execute('BEGIN IMMEDIATE');break
+            except sqlite3.OperationalError as exc:
+                if 'locked' not in str(exc).lower() or time.monotonic()-started>10:raise
+                progress(f'等待其他操作释放数据库：{time.monotonic()-started:.1f} 秒（可取消）')
+        db.set_progress_handler(lambda:int(cancel is not None and cancel.is_set()),10000)
         try:
-            latest=snapshot(db,plan['oids'],cancel)
+            latest=snapshot(db,plan['oids'],cancel,progress)
             if latest!= {k:plan[k] for k in latest}:raise wr.Conflict('关联数据在预览后变化，请重新核对删除范围')
             available=tables(db);oids=set(plan['oids']);progress('正在删除关联单据，提交前仍可取消…')
             # Locked external orders must not release stock in the currently selected baseline.
@@ -197,18 +327,7 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
             for table in ('lifecycle_versions','lifecycle_events','merchant_feedback','followup_notes','archive_visibility','normal_events','normal_revisions','normal_orders','jst_active','jst_generations','jst_locks','jst_events'):
                 if table in available:
                     for oid in oids:db.execute(f'DELETE FROM {table} WHERE oid=?',(oid,))
-            for day in dict.fromkeys(h['day'] for h in plan['parents']):
-                codes={h['store'] for h in plan['parents'] if h['day']==day}
-                for rev,blob in db.execute('SELECT revision,payload FROM normal_work_revisions WHERE day=?',(day,)).fetchall():
-                    old=chunks.load(blob,db);p=strip_work(old,codes)
-                    if p!=old:db.execute('UPDATE normal_work_revisions SET payload=? WHERE revision=?',(chunks.put(db,chunks.prepare(p,chunks.known(db))),rev))
-                raw=db.execute('SELECT payload FROM jobs WHERE day=?',(day,)).fetchone()
-                if raw:
-                    codes={h['store'] for h in plan['parents'] if h['day']==day};p=strip_work(chunks.load(raw[0],db),codes)
-                    if not p.get('states'):db.execute('DELETE FROM jobs WHERE day=?',(day,))
-                    else:
-                        info,pack,sha=wr.prepare_job(day,p,progress,known=chunks.known(db))
-                        db.execute('UPDATE jobs SET revision=?,digest=?,saved=?,summary=?,payload=? WHERE day=?',(uuid.uuid4().hex,sha,wr.now(),wr.dumps(info),chunks.put(db,pack),day))
+            apply_rewrites(db,scratch,prepared,dict.fromkeys(h['day'] for h in plan['parents']),progress,cancel)
             for id,raw in plan['ax']:
                 p=wr.loads(raw);p['items']=[i for i in p['items'] if (i.get('head') or i.get('basis') or {}).get('oid') not in oids]
                 db.execute('DELETE FROM ax.ax_workflow_events WHERE id=?',(id,))
@@ -220,13 +339,11 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
             if 'ax' in [r[1] for r in db.execute('PRAGMA database_list')]:
                 for id,raw in db.execute('SELECT id,payload FROM ax.ax_schedules').fetchall():
                     if wr.loads(raw).get('basis',{}).get('oid') in oids:db.execute('DELETE FROM ax.ax_schedules WHERE id=?',(id,))
-            collect_shared(db,Path(path).parent,cancel)
-            for _,name,_ in db.execute('PRAGMA database_list').fetchall():
-                if name.startswith('cache'):
-                    for table, in db.execute(f"SELECT name FROM {name}.sqlite_master WHERE type='table' AND name IN ('views','lifecycle_projection','jst_result_projection')").fetchall():
-                        for oid in oids:db.execute(f'DELETE FROM {name}.{table} WHERE instr(k,?)>0 OR instr(payload,?)>0' if table!='views' else f'DELETE FROM {name}.{table} WHERE instr(k,?)>0 OR instr(projection,?)>0',(wr.dumps(oid),wr.dumps(oid)))
-            checkpoint(cancel);progress(CommitProgress(True));db.commit()
-        except BaseException:db.rollback();raise
+            collect_shared(db,Path(path).parent,cancel,progress)
+            clear_indexes(db,oids,progress,cancel)
+            checkpoint(cancel);progress(CommitProgress(True));db.set_progress_handler(None,0);db.commit()
+        except BaseException:
+            db.set_progress_handler(None,0);db.rollback();checkpoint(cancel);raise
         finally:progress(CommitProgress(False))
     return {'deleted':len(plan['parents']),'orders':[h['number'] for h in plan['parents']]}
 
@@ -238,7 +355,7 @@ def delete_job(path,day,revision,progress=lambda _:None,cancel=None):
             row=db.execute('SELECT revision FROM jobs WHERE day=?',(day,)).fetchone()
             if not row or row[0]!=revision:raise wr.Conflict('草稿已变化，请重新查看后删除')
             db.execute('DELETE FROM jobs WHERE day=?',(day,))
-            if 'normal_orders' in tables(db):collect_shared(db,Path(path).parent,cancel)
+            if 'normal_orders' in tables(db):collect_shared(db,Path(path).parent,cancel,progress)
             checkpoint(cancel);progress(CommitProgress(True));db.commit()
         except BaseException:db.rollback();raise
         finally:progress(CommitProgress(False))

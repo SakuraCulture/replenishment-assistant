@@ -37,7 +37,7 @@ def serve(connection,path,cancel):
             if command is None:return
             try:
                 op=command;arguments,_=receive_tree(connection,cancel)
-                checkpoint(cancel);writing=op in ('save','confirm_normal','delivery_execute','review_export','storage_copy')
+                checkpoint(cancel);writing=op in ('save','confirm_normal','delivery_execute','review_export','storage_copy','delete_orders','delete_job')
                 if op=='prepare_save':
                     encoded_job=None;payload=arguments;progress('正在校验完整作业并核对同日记录…')
                     save_day=payload['day'];encoded_job=wr.prepare_job(save_day,payload,progress,known=ro.known_chunks());digest=encoded_job[2]
@@ -128,6 +128,11 @@ def serve(connection,path,cancel):
                     if not batch.get('complete') and any(not p['same'] for p in batch['plans']):raise ValueError('完整签发草稿尚未准备，不能归档')
                     repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=work
                     result=normal_delivery.execute_batch(repository,batch,arguments,progress=progress,cancel=cancel)
+                elif op in ('delete_preview','delete_orders','delete_job'):
+                    import data_maintenance as maintenance
+                    if op=='delete_preview':result=maintenance.prepare(path,arguments,progress,cancel)
+                    elif op=='delete_orders':result=maintenance.execute(path,arguments['plan'],arguments['ack'],progress,cancel)
+                    else:result=maintenance.delete_job(path,arguments['day'],arguments['revision'],progress,cancel)
                 elif op=='storage_copy':
                     from storage_maintenance import convert
                     result=convert(path,arguments['destination'],arguments['mode'],progress,cancel)

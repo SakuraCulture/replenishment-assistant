@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--deletion-smoke' in sys.argv:
+        from deletion_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--deletion-smoke')+1:])
     if '--governance-smoke' in sys.argv:
         from governance_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--governance-smoke')+1:])

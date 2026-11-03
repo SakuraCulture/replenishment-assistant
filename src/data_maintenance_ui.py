@@ -4,6 +4,8 @@ from ui_controls import label,button
 from business_ui import run,grid
 from runtime_support import Cancelled
 from contextlib import nullcontext
+from ui_work_io import Session,request
+import logging
 import data_maintenance as maintenance
 
 def hub(host):
@@ -35,7 +37,7 @@ def _remove_job(host,record):
     from interaction_ui import confirm
     if not confirm(host,'彻底删除每日草稿',record['day']+' 的草稿将永久删除；已签发订单与签发时快照保留，门店默认不变。'):return
     try:
-        run(host,maintenance.delete_job,(host.work_repository.path,record['day'],record['revision']),'删除每日草稿')
+        with Session(host.work_repository.path) as session:request(host,session,'delete_job',record)
         if host.job_day==record['day']:host.saved_time='';host.job_dirty=True;host.refresh_job_label()
         host.status.setText('选定草稿已删除；当前未保存内容仍在内存，如不再需要可新建今日草稿。')
     except Cancelled:return
@@ -50,7 +52,7 @@ def _remove(parent,host,heads):
     if host.worker or (generator and generator.worker) or (manager and manager.worker) or getattr(host,'_aoxiang_dialog',None):
         QMessageBox.information(parent,'请先停止任务','请先停止当前计算、生成或平台任务，等待安全退出后再删除，避免旧任务继续写回。');return
     try:
-        plan=run(parent,maintenance.prepare,(host.work_repository.path,heads),'核对彻底删除范围')
+        with Session(host.work_repository.path) as session:plan=request(parent,session,'delete_preview',heads)
         d=QDialog(parent);d.setWindowTitle('彻底删除订单及关联数据');d.resize(1050,650);v=QVBoxLayout(d)
         v.addWidget(label('永久删除，不进入回收站。请核对完整关联范围。','section'))
         v.addWidget(label('同一门店当天两仓共享原始计算快照，因此本次按门店当天整单删除，包含下列全部仓单、回传、付款、收货、生成结果和相关草稿数据。未选择的其他门店保留。'))
@@ -69,13 +71,33 @@ def _remove(parent,host,heads):
         for widget in host.findChildren(type(host.followup)):
             if hasattr(widget,'reader'):readers.append(widget.reader)
         for reader in readers:reader.shutdown()
-        result=run(parent,maintenance.execute,(host.work_repository.path,plan,ack.isChecked()),'彻底删除关联数据')
+        with Session(host.work_repository.path) as session:result=request(parent,session,'delete_orders',{'plan':plan,'ack':ack.isChecked()})
+    except Cancelled:return
+    except Exception as exc:QMessageBox.warning(parent,'未完成删除',str(exc));return
+    # Commit is complete. Refresh failure must never claim the deletion rolled back.
+    try:
         codes={h['store'] for h in plan['parents'] if h['day']==host.job_day}
         if codes:
-            p=maintenance.strip_work(host.snapshot(),codes)
+            fields=('loaded','states','results','store_presets','overrides','default_by_store','preissue_drafts','export_log')
+            current={key:getattr(host,key,None) for key in fields};current['new_product_bases']=host.new_bases
+            p=run(parent,maintenance.strip_current,(current,codes),'更新当前工作区',cancellable=False)
+            for key in fields:setattr(host,key,p.get(key))
+            host.new_bases=p['new_product_bases'];host.pending_copy=None
             host._calculation_settings={};host._calculation_input=None;host._queued_retries=[]
-            host.restore_job({'day':host.job_day,'saved':'','payload':p},owned=True);host.touch()
+            host.run_codes=[s for s in host.run_codes if s not in codes]
+            previous=host.initializing;host.initializing=True
+            try:
+                for code in sorted(codes,key=lambda s:host.store_widgets.get(s,{}).get('row',-1),reverse=True):
+                    widget=host.store_widgets.pop(code,None)
+                    if widget:host.store_table.removeRow(widget['row'])
+                    host._store_parameter_origins.pop(code,None)
+                for row,widget in enumerate(host.store_widgets.values()):widget['row']=row
+            finally:host.initializing=previous
+            if host.current_store in codes:host.current_store=None;host.result=None;host.dirty=True;host.navigate(3)
+            host.saved_time='';host.touch();host.refresh_tables();host.selection_changed();host.update_controls()
         host.archive_checked.clear();host.refresh_archive();host.followup.query(keep_page=True)
         QMessageBox.information(parent,'已彻底删除',f"已删除 {result['deleted']} 个门店当天正常单及关联业务记录。没有移入回收站。")
-    except Cancelled:return
-    except Exception as exc:QMessageBox.warning(parent,'未完成删除',str(exc))
+    except Exception as exc:
+        logging.exception('删除已提交，但界面刷新失败')
+        host.input_dirty=True;host.update_controls()
+        QMessageBox.warning(parent,'订单已删除，页面未完成刷新','删除已提交，不要重复删除。请重新查询；当前作业请重新打开后继续。\n'+str(exc))

@@ -86,7 +86,7 @@ if version['version'] in {'0.19.1','0.20.0'}:
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     (dest/'使用说明.txt').write_bytes((root/'docs'/name).read_bytes()+b'\n\n'+(dest/'使用说明.txt').read_bytes())
 versions={}
-for name in ['PySide6-Essentials','shiboken6','openpyxl','et-xmlfile','pillow','PyInstaller']:
+for name in ['PySide6-Essentials','shiboken6','openpyxl','et-xmlfile','pillow','PyInstaller','ijson']:
     dist=md.distribution(name);versions[name]=dist.version
     (licenses/name).mkdir(exist_ok=True)
     (licenses/name/'package-metadata.txt').write_text(dist.read_text('METADATA') or '',encoding='utf-8')
@@ -168,7 +168,7 @@ if version['version']=='0.28.0':
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'docs'/name,dest/'使用说明.txt')
 
-if version['version']=='0.32.0':
+if version['version'] in {'0.32.0','0.32.1'}:
     (dest/'docs').mkdir(exist_ok=True)
     for name in ['0.32.0使用与结构.md','0.32.0实施记录.md','聚水潭双仓完整验证_20261103.md']:
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
@@ -180,3 +180,7 @@ if version['version']=='0.32.0':
     for kind in ['warehouse_cycles','classified_parameters','store_policy','store_routes','store_budget','store_qualification','store_refusals']:
         import_templates.write(kind,templates/(import_templates.TEMPLATES[kind][0]+'模板.xlsx'))
     for stage in lifecycle_io.STAGES:lifecycle_io.template(stage,templates/(lifecycle_io.TITLES[stage]+'模板.xlsx'))
+
+if version['version']=='0.32.1':
+    shutil.copy2(root/'docs/0.32.1彻底删除性能修复.md',dest/'docs/0.32.1彻底删除性能修复.md')
+    shutil.copy2(root/'docs/0.32.1彻底删除性能修复.md',dest/'使用说明.txt')
