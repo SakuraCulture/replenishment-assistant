@@ -8,11 +8,14 @@ def display_path(path):
     import parameter_schema as schema
     labels={'parameters':'模型超参','weight_profiles':'分类权重','profile_parameters':'分类超参','category_profiles':'分类映射','warehouses':'各仓周期','exception':'启用一箱例外','alpha':'趋势敏感度','w1':'最近7天权重','w2':'此前7天权重'}
     labels.update({k:v[0] for k,v in schema.HELP.items()})
+    from restock_policy import LABELS,KEY
+    labels.update(LABELS);labels[KEY]='补货策略'
     return ' / '.join(labels.get(k,k) for k in path.split(' / '))
 
 def comparison(standard,preset,current,edited):
     import parameter_schema as schema
-    maps=[dict(flatten(c)) for c in (standard,preset,current,edited)];rows=[]
+    from restock_policy import KEY,values
+    maps=[dict(flatten({**c,KEY:values(c)})) for c in (standard,preset,current,edited)];rows=[]
     for key in dict.fromkeys(k for m in maps for k in m):
         values=[m.get(key,'未设置') for m in maps]
         origin='本次编辑' if values[3]!=values[2] else '门店当前配置与方案不同' if values[2]!=values[1] else '方案值'

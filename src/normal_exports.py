@@ -52,7 +52,7 @@ def decision(d):
         if d.get('_new_requested',0)>0:return '必卖首铺' if d.get('_must_sell') else '新品首铺'
         return '新品未选'
     if d.get('_audit',{}).get('applied'):return '一箱恢复'
-    if d.get('AW')=='极端缺货自动拉回':return '极端缺货恢复'
+    if d.get('AW')=='极端缺货自动拉回':return '极端恢复已关闭' if d.get('_extreme_restore',{}).get('enabled') is False else '极端缺货恢复'
     # Counterfactual quantity without the holding floor, from persisted model
     # intermediates. Do not re-run prediction or infer from AS == BQ alone.
     keys=('AR','BI','BP','BQ','BR','BU','AS')

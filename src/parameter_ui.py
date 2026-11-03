@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QTabWidget,QTableWidget,QTableWidgetItem,QDoubleSpinBox,QComboBox,QCheckBox,QLineEdit,QTextBrowser,QMessageBox,QHeaderView,QInputDialog
 from ui_controls import label,button
 import parameter_schema as schema
+import restock_policy as policy
 
 class NumberInput(QDoubleSpinBox):
     def textFromValue(self,value):return f'{value:.8f}'.rstrip('0').rstrip('.') or '0'
@@ -51,6 +52,9 @@ class ParameterDialog(QDialog):
         self.profile_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText('勾选时使用分类值，未勾选沿用模型超参。快销/日百各一套，两仓共用；无分类跟随快销。\n'+business_help(schema.HELP[self.profile_rows[r][1]][2])) if r>=0 and hasattr(self,'profile_rows') else None)
         self.warehouses.currentCellChanged.connect(lambda *_:self.help.setPlainText('各仓备货、到货天数优先于通用值；按门店实际补货与到货周期维护。修改只在点击应用后生效。'))
         self.exception=QCheckBox('启用一箱例外（仍受禁用/停采与门店总预算约束）');v.addWidget(self.exception)
+        self.policy_boxes={}
+        for key,name in policy.LABELS.items():
+            w=QCheckBox(name);w.setToolTip(policy.HELP[key]);self.policy_boxes[key]=w;v.addWidget(w)
         self.note=label('','muted');v.addWidget(self.note)
         if self.managing:
             row=QHBoxLayout();row.addWidget(button('复制另存方案',lambda:self.save_preset(False)));row.addWidget(button('保存方案新版本',lambda:self.save_preset(True)));v.addLayout(row)
@@ -74,6 +78,7 @@ class ParameterDialog(QDialog):
             self.tabs.addTab(source,'导入来源（原表留档）')
         if readonly:
             self.exception.setEnabled(False)
+            for w in self.policy_boxes.values():w.setEnabled(False)
             for table in (self.param_table,self.weight_table,self.profile_table,self.mapping,self.warehouses):
                 table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
                 for w in table.findChildren(QDoubleSpinBox)+table.findChildren(QComboBox)+table.findChildren(QCheckBox):w.setEnabled(False)
@@ -143,6 +148,7 @@ class ParameterDialog(QDialog):
             self.warehouses.setItem(i,0,QTableWidgetItem(wh))
             for j,value in enumerate(values,1):self.warehouses.setCellWidget(i,j,self.spin(max(value,0),365))
         self.exception.setChecked(config['exception']);self.note.setText(f"来源：{self.preset['name']} v{self.preset['version']}。分类映射空白行不保存。")
+        for key,value in policy.values(config).items():self.policy_boxes[key].setChecked(value)
         self.param_table.setCurrentCell(0,0);self.editor_baseline=copy.deepcopy(self.value());self.refresh_effective();self.tabs.setCurrentWidget(self.effective_now);self.effective_now.setHorizontalHeaderLabels(['参数','当时值' if self.readonly else '本次表单值（应用后）','适用范围','取值说明'])
     def weight_changed(self):
         for i in range(self.weight_table.rowCount()):
@@ -161,7 +167,8 @@ class ParameterDialog(QDialog):
             if name:
                 if name in c['category_profiles']:raise ValueError('分类重复：'+name)
                 c['category_profiles'][name]=self.mapping.cellWidget(i,1).currentText()
-        c['warehouses']={self.warehouses.item(i,0).text():[self.warehouses.cellWidget(i,j).value() for j in [1,2]] for i in range(self.warehouses.rowCount())};c['exception']=self.exception.isChecked();return schema.validate(c)
+        c['warehouses']={self.warehouses.item(i,0).text():[self.warehouses.cellWidget(i,j).value() for j in [1,2]] for i in range(self.warehouses.rowCount())};c['exception']=self.exception.isChecked()
+        return schema.validate(policy.patch(c,{k:w.isChecked() for k,w in self.policy_boxes.items()}))
     def load_selected(self):
         from interaction_ui import confirm
         if self.is_edited() and not confirm(self,'替换当前表单编辑','将用所选方案替换未应用的编辑；不会立即应用到门店。'):return
@@ -229,7 +236,7 @@ class ParameterUi:
         import store_defaults
         saved=getattr(self,'saved_store_defaults',{}).get(s)
         state='历史快照' if self.readonly or getattr(self,'_restoring',False) else '已保存默认' if store_defaults.matches(saved,p,self.config_for(s),self.store_ui(s)) else '本次与已保存默认不同' if saved else '仅本次 · 尚无门店默认'
-        text=f"{p['name']} v{p['version']}"+(' · 本店调整' if changed else '')+' · '+state
+        text=f"{p['name']} v{p['version']}"+(' · 本店调整' if changed else '')+' · '+state+'\n'+policy.summary(self.config_for(s))
         w=self.store_widgets[s];w['params'].setText('编辑参数');w['params'].setToolTip('编辑此店完整参数；不自动保存每日草稿')
         if 'param_status' in w:w['param_status'].setText(text);w['param_status'].setToolTip(text)
     def view_parameters(self,store):

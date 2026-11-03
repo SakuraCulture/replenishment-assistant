@@ -143,6 +143,8 @@ def preview(loaded,store):
     return rows
 
 def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabled:bool,budget=None,profile=None,progress=lambda s:None,cancel=None) -> CalculationResult:
+    from restock_policy import values
+    extreme_restore=values(loaded['config'])['extreme_restore']
     rows=[copy.deepcopy(x) for x in loaded['normalized'] if x[0]['B']==store]
     if not rows:raise ValueError('所选门店没有商品。')
     p=model.Rules(**loaded['config']['parameters']);result=[];baseline=[]
@@ -158,7 +160,7 @@ def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabl
         name='快销' if d.get('U')=='无分类' else d.get('U')
         row_rules=profile_rules.get(name,p) if d['_source']=='资料匹配' else p
         if d['_source']=='资料匹配' and 'probability' in profile_parameters.get(name,{}):d['_effective_probability']=row_rules.probability
-        try:b=adapter.execute_one(d,m,row_rules)
+        try:b=adapter.execute_one(d,m,row_rules,extreme_restore=extreme_restore)
         except Exception as exc:
             raise RuntimeError(f"商品 {d.get('E')} / {d.get('D')}；来源 {m.get('export_file','')} / {m.get('export_sheet','')} / 行 {m.get('export_row','')}：{exc}") from exc
         x,a=apply_one_box_exception(b,m,enabled=enabled)
@@ -173,7 +175,7 @@ def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabl
         x.update(_audit=a,_base_qty=b['AS'],_base_amount=b['BV'],_preview=False)
         result.append(x)
     checkpoint(cancel);progress('正在核对数量、金额与例外隔离…')
-    checks=adapter.business_checks(result,p)
+    checks=adapter.business_checks(result,p,extreme_restore=extreme_restore)
     if checks['failures']:raise RuntimeError('结果核验失败：'+str(checks['failures'][:3]))
     if not any(numeric(d['AS']) for d in result) and not loaded.get('catalogs'):raise ValueError('没有可计算商品，请检查商品资料与仓参数。')
     report={'rows':result,'baseline':baseline,'store':store,'store_name':loaded['stores'][store],

@@ -71,9 +71,11 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.jst_generator=Generator(self,self.followup.layout())
         self.final_list_btn=button('最终清单 / 改量',self.open_final_list,True)
         actions.insertWidget(0,self.final_list_btn)
+        self.issue_policy_btn=button('调整补货策略',self.choose_restock_policy);actions.insertWidget(0,self.issue_policy_btn)
         self.final_detail_btn=button('编辑本店最终清单',lambda:self.open_final_list(True),True)
         detail_layout=self.pages.widget(4).layout();back=detail_layout.itemAt(0).widget();detail_layout.removeWidget(back);detail_layout.removeWidget(self.detail_new_btn)
         detail_actions=QHBoxLayout();detail_actions.addWidget(back);detail_actions.addWidget(self.final_detail_btn);detail_actions.addWidget(self.detail_new_btn);detail_layout.insertLayout(0,detail_actions)
+        self.detail_policy_btn=button('调整本店补货策略',lambda:self.choose_restock_policy(True));detail_actions.addWidget(self.detail_policy_btn)
         self.auto_check=QTimer(self);self.auto_check.setSingleShot(True);self.auto_check.setInterval(400);self.auto_check.timeout.connect(self.check_added_files);self.sales.changed.connect(self.auto_check.start)
         axrow=QHBoxLayout();self.aoxiang_setup_btn=button('翱象连接与门店配置',self.open_aoxiang_setup);axrow.addWidget(self.aoxiang_setup_btn);axrow.addWidget(label('维护平台门店目录与两仓供应商对应；核验登录后保存复用。','muted'),1);self.import_page.layout().addLayout(axrow)
         self.aoxiang_fetch_btn=button('获取翱象补货建议',self.open_aoxiang_fetch,True);axrow.insertWidget(0,self.aoxiang_fetch_btn)
@@ -272,6 +274,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if hasattr(self,'final_list_btn'):
             self.final_list_btn.setEnabled(ready and self.job_day==wr.today() and any(x['state']=='已完成' for x in self.states.values()))
             self.final_detail_btn.setEnabled(ready and self.job_day==wr.today() and self.states.get(self.current_store,{}).get('state')=='已完成')
+        if hasattr(self,'detail_policy_btn'):
+            self.issue_policy_btn.setEnabled(ready and self.job_day==wr.today() and any(x['state']=='已完成' for x in self.states.values()))
+            self.detail_policy_btn.setEnabled(ready and self.job_day==wr.today() and self.states.get(self.current_store,{}).get('state')=='已完成')
 
     def snapshot(self):
         p=super().snapshot()
@@ -323,6 +328,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if self.worker or self.readonly or self.input_dirty:return
         s=self.pick_store(use_current)
         if not s:return
+        from restock_policy import result_values
+        if not result_values(self.results[s])['new_stocking']:
+            self.failed('本店新品铺设已关闭，请先点击“调整补货策略”开启。');return
         if self.results[s].get('preissue') or s in self.preissue_drafts:
             self.failed('本店已进入最终清单调整，请在“编辑本店最终清单”继续；如需重新自动分配新品预算，请明确重新计算并复核已有调整。');return
         current=self.results[s];base=self.new_bases.get(s,current)
@@ -334,6 +342,11 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         dialog.deleteLater()
         if not accepted:return
         self.job(new_products.apply,(base,selections),lambda result:self.preview_new(s,base,current,result))
+
+    def choose_restock_policy(self,use_current=False):
+        from interaction_ui import choose_stores
+        codes=[self.current_store] if use_current is True else choose_stores(self,'选择调整策略的门店',self.states,self.selected_codes())
+        if codes:self.edit_restock_policy(codes,post=True)
 
     def preview_new(self,s,base,current,result):
         if self.closing or (self.worker and self.worker.cancel.is_set()):return

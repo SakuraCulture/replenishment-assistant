@@ -34,8 +34,10 @@ def standard() -> ParameterConfig:
 def signature(config):return hashlib.sha256(json.dumps(config,sort_keys=True,ensure_ascii=False,allow_nan=False).encode()).hexdigest()
 
 def validate(config):
+    import restock_policy as policy
     required=set(standard())
-    if not isinstance(config,dict) or not required<=set(config) or set(config)-required-{'profile_parameters'}:raise ValueError('参数方案必须包含完整模型、权重、分类映射、仓周期和一箱例外设置')
+    if not isinstance(config,dict) or not required<=set(config) or set(config)-required-{'profile_parameters',policy.KEY}:raise ValueError('参数方案必须包含完整模型、权重、分类映射、仓周期和一箱例外设置')
+    policy.values(config)
     p=config['parameters']
     if not isinstance(p,dict) or set(p)!=set(HELP):raise ValueError('模型参数不完整')
     if not model.Rules(**p).valid() or p['moq_days']<0 or p['moq_price']<0:raise ValueError('参数无效：概率0.50～0.99、参考值为正、退出月销>严格月销、极端缺货固定30、资格阈值非负')
@@ -62,6 +64,9 @@ def apply(loaded:InputBatch,config:ParameterConfig) -> InputBatch:
     """Rebind normalized weights per store AFTER routing; no cross-store mutations."""
     validate(config);out={**loaded,'config':copy.deepcopy(loaded['config']),'normalized':copy.deepcopy(loaded['normalized'])}
     for key in ['parameters','weight_profiles','category_profiles']:out['config'][key]=copy.deepcopy(config[key])
+    from restock_policy import KEY
+    if KEY in config:out['config'][KEY]=copy.deepcopy(config[KEY])
+    else:out['config'].pop(KEY,None)
     if config.get('profile_parameters'):out['config']['profile_parameters']=copy.deepcopy(config['profile_parameters'])
     else:out['config'].pop('profile_parameters',None)
     out['config']['parameter_labels']={k:HELP[k][0]+'（'+HELP[k][1]+'）' for k in HELP}

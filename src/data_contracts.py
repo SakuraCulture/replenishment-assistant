@@ -44,6 +44,7 @@ class _ParameterConfigRequired(TypedDict):
 
 class ParameterConfig(_ParameterConfigRequired,total=False):
     profile_parameters:dict[str,dict[str,int|float]]
+    restock_switches:dict[str,bool]
 
 class _ParameterPresetRequired(TypedDict):
     id:str

@@ -190,10 +190,13 @@ def preview(result, edits, day, *, lists=None, expected=None, cancel=None, progr
         if error:raise ValueError(d['E']+'：'+error)
         kind=e.get('kind','manual')
         if kind not in KINDS:raise ValueError('未知调整类型')
+        from restock_policy import guard_new
+        guard_new(base,d,kind,q)
         ref=e.get('list_revision')
         if kind!='manual' or ref:
             if ref not in members or d['E'] not in members[ref]:
                 raise ValueError(d['E']+'：缺少该商品的铺货清单快照依据')
+            if lists[ref]['kind']=='new':guard_new(base,d,'new',q)
         reason=str(e.get('reason','')).strip()
         if not reason or len(reason)>200:raise ValueError(d['E']+'：请填写1～200字调整原因')
         before=sem.order_quantity(d); changed_qty=decimal(q)!=decimal(before)
@@ -278,6 +281,9 @@ def finalize(prepared, confirmed=(), *, current=None):
 
 
 def validate_result(result, day, *, cancel=None):
+    from restock_policy import guard_new
+    for row in result['rows']:
+        if row.get('_new_requested',0)>0:guard_new(result)
     state=result.get('preissue')
     if not state:
         if any('_preissue' in d for d in result['rows']):raise ValueError('调整行缺少整店校验依据')
@@ -310,6 +316,9 @@ def list_edits(result, listing, strategy, target=None, scopes=('zero',), *, repl
         t=item.get('target') if item.get('target') is not None else target
         current=out[sku]['quantity'] if sku in out else sem.order_quantity(d)
         q=max(decimal(current),decimal(target_quantity(d,strategy,t)))
+        from restock_policy import guard_new
+        try:guard_new(result,d,listing['kind'],q)
+        except ValueError as exc:pending.append({'sku':sku,'reason':str(exc)});continue
         out[sku]={'quantity':scalar(q),'reason':KINDS[listing['kind']],'kind':listing['kind'],'target':t,'strategy':strategy,
                   'warehouse':d['AU'],'sequence':sequence,'edited_at':wr.now(),'list_revision':listing['revision'],
                   'source':{k:copy.deepcopy(listing.get(k)) for k in ('name','kind','revision','sources')}}

@@ -96,6 +96,9 @@ class ResultsView:
         self.detail_review_amounts.setToolTip('本店完整结果的金额；不随下方仓库、分类或搜索筛选变化。'+review_amounts.NOTE)
         name=self.loaded['stores'].get(self.selected_store(),'') if self.loaded else ''
         self.result_caption.setText(f'{name} · '+('计算完成' if calculated else '导入预览 · 尚未计算')+ (f" · {s['unpriced']}款补货未计价" if s['unpriced'] else ''))
+        if calculated and self.result:
+            from restock_policy import summary
+            self.result_caption.setText(self.result_caption.text()+'\n'+summary(self.result.get('config',{})))
         if calculated:
             risk_count=sum(bool(semantics.inbound_risk(d)) for d in rows)
             if risk_count:self.result_caption.setText(self.result_caption.text()+f' · 在途衔接风险 {risk_count} 条（筛选查看，不自动补回）')

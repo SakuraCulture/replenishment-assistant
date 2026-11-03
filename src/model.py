@@ -169,14 +169,16 @@ def diagnostics(d: dict) -> dict:
     return {"CV": v, "诊断销售状态": d["BL"], "三段日均极差率": v}
 
 
-def calculate(inputs: dict, rules: Rules | None = None) -> dict:
+def calculate(inputs: dict, rules: Rules | None = None, *, extreme_restore: bool = True) -> dict:
     """Calculate one normalized SKU. Inputs use Excel column keys A:V/AB:AJ.
 
     AB/AC/AD are supplied constants; AE is automatically 1-AC-AD. Row AG/AH,
     AI/AJ overrides support reproducible workbook comparisons. No external I/O.
     """
+    if type(extreme_restore) is not bool:raise ValueError('极端缺货恢复须为开关值')
     p = rules or Rules()
     d = dict(inputs)
+    d.pop('_extreme_restore',None)
     d.pop('_inbound_cap',None)  # Recalculation must not retain a prior cap decision.
     for c in "H I J K L N O P S V AB AC AD".split():
         d.setdefault(c, None)
@@ -297,6 +299,9 @@ def calculate(inputs: dict, rules: Rules | None = None) -> dict:
     d["BO"] = ""
     if aw == "极端缺货自动拉回":
         d["BO"] = step if text(step) else step if k<=0 and max(l,0)<min(p.minimum_reference_units,step) else 0
+        if not extreme_restore:
+            d['_extreme_restore']={'enabled':False,'suppressed_quantity':d['BO']}
+            if number(d['BO']):d['BO']=0
         d["AQ"] = d["BO"]
     aq = d["AQ"]
     d["BJ"] = aq if text(aq) else step if text(step) else 0 if aq==0 else ceil(xround(aq/step,10))*step
@@ -432,7 +437,7 @@ def explanation(d: dict, p: Rules) -> str:
     if text(q):
         return prefix+out+("非中心仓资金规则待定（最终数量未定）" if noncentral else q)
     if d["AW"]=="极端缺货自动拉回":
-        out += "恢复一个出库单位；首铺价档数量不作为永久持有下限" if q>0 else "已有最低覆盖，不重复恢复"
+        out += "极端恢复已关闭，不自动补货" if d.get('_extreme_restore',{}).get('enabled') is False else "恢复一个出库单位；首铺价档数量不作为永久持有下限" if q>0 else "已有最低覆盖，不重复恢复"
     elif br==0:
         out += "在途已有最低覆盖，常规候选为0" if k<=0 and max(l,0)>=min(p.minimum_reference_units,step) else "常规候选为0"
     elif j>=p.exit_monthly:

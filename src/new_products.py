@@ -34,6 +34,9 @@ def apply(base, selections, cancel=None, progress=lambda s:None):
     """Always start from the unmodified calculation. Empty selection is exact identity."""
     from engine import checkpoint
     if base.get('new_products'):raise ValueError('必须从原计算结果重新分配，不能叠加新品')
+    if selections:
+        from restock_policy import guard_new
+        guard_new(base)
     result=copy.deepcopy(base)
     if not selections:return result
     by_code={d['E']:d for d in result['rows']}

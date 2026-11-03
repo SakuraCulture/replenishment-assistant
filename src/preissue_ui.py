@@ -109,7 +109,12 @@ class FinalModel(QAbstractTableModel):
             else:self.checked.discard(key)
             self.changed_keys.add(key);self.dataChanged.emit(index,index);self.changed(False);return True
         if self.blocks[i] or index.column() not in (9,13):return False
-        try:q=rules.quantity(value,d['BD']) if index.column()==9 else self.qty(i)
+        try:
+            q=rules.quantity(value,d['BD']) if index.column()==9 else self.qty(i)
+            from restock_policy import guard_new
+            guard_new(self.results[s],d,'manual',q)
+            ref=self.edits[s].get(d['E'],{}).get('list_revision')
+            if self.lists[s].get(ref,{}).get('kind')=='new':guard_new(self.results[s],d,'new',q)
         except ValueError as exc:
             self.invalid[key]=str(exc);self.dataChanged.emit(self.index(i,9),self.index(i,14));self.changed(True);return False
         prev=self.edits[s].get(d['E'],{});reason=str(value).strip() if index.column()==13 else prev.get('reason') or self.reason
@@ -281,6 +286,10 @@ class FinalListDialog(AsyncDialog):
                 s,row=self.model.entries[i]
                 if self.model.blocks[i]:raise ValueError(row['E']+'：'+self.model.blocks[i])
                 q=rules.quantity(rules.decimal(value)*rules.decimal(row['BD']) if mode.currentIndex()==0 else value,row['BD'])
+                from restock_policy import guard_new
+                guard_new(self.results[s],row,'manual',q)
+                ref=updates[s].get(row['E'],{}).get('list_revision')
+                if self.model.lists[s].get(ref,{}).get('kind')=='new':guard_new(self.results[s],row,'new',q)
                 updates[s][row['E']]={**updates[s].get(row['E'],{}),'quantity':q,'kind':'manual','reason':self.model.reason,'warehouse':row['AU'],'sequence':self.model.sequence,'edited_at':wr.now()};self.model.sequence+=1
             text=self.selection_scope.currentText()+'；门店：'+'、'.join(dict.fromkeys(self.results[self.model.entries[i][0]]['store_name'] for i in indices))+'\n'+'\n'.join(f'{self.model.entries[i][0]} / {self.model.entries[i][1]["E"]}：{sem.fmt(self.model.qty(i))} → {updates[self.model.entries[i][0]][self.model.entries[i][1]["E"]]["quantity"]}' for i in indices[:20])
             if QMessageBox.question(self,'确认批量填数',text+(f'\n共{len(indices)}行，仅展示前20行；填入后可按已修改筛选逐行核对。' if len(indices)>20 else ''),QMessageBox.StandardButton.Ok|QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)!=QMessageBox.StandardButton.Ok:return

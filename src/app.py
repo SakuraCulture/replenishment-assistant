@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--restock-smoke' in sys.argv:
+        from restock_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--restock-smoke')+1:])
     if '--readability-smoke' in sys.argv:
         from readability_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--readability-smoke')+1:])

@@ -9,13 +9,14 @@ from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 import parameter_schema as schema
 import store_defaults
+import restock_policy as policy
 from app_defaults import WAREHOUSES
 from runtime_support import Cancelled
 from parameter_view import flatten, display_path
 
 FIXED = {'depth', 'lead', 'extreme_days'}
 WEIGHTS = {'alpha': '趋势敏感度', 'w1': '最近7天权重', 'w2': '此前7天权重'}
-COMMON = ['门店编码', '门店名称', '主仓', '从仓', '预算方式', '预算金额', '启用一箱例外']
+COMMON = ['门店编码', '门店名称', '主仓', '从仓', '预算方式', '预算金额', '启用一箱例外']+list(policy.LABELS.values())
 MINIMUM = COMMON + [w + n for w in WAREHOUSES for n in ('备货天数', '到货天数')]
 
 
@@ -179,6 +180,10 @@ def patch(row, original):
             if raw not in (True, False, 1, 0, '是', '否', '启用', '停用', '1', '0'):
                 raise ValueError('启用一箱例外须为是/否或1/0')
             c['exception'] = raw in (True, 1, '是', '启用', '1')
+        elif f[0] in policy.LABELS.values():
+            if raw not in ('开启','关闭','是','否','启用','停用',True,False,1,0,'1','0'):raise ValueError(f[0]+'须填写开启或关闭')
+            key=next(k for k,v in policy.LABELS.items() if v==f[0])
+            c=policy.patch(c,{key:raw in ('开启','是','启用',True,1,'1')});value['preset']['config']=c
         elif f[0] == 'parameters':
             if f[1] in FIXED:
                 raise ValueError(schema.HELP[f[1]][0] + '不支持导入修改；周期请填各仓备货/到货天数，极端缺货边界固定30')
@@ -237,6 +242,7 @@ def changes(before, after):
     for value in (before, after):
         comparable_value = comparable(value)
         comparable_value['config'] = copy.deepcopy(comparable_value['config'])
+        comparable_value['config'][policy.KEY]=policy.values(comparable_value['config'])
         comparable_value['config']['warehouses'] = {wh: {'备货天数': cycle[0], '到货天数': cycle[1]}
             for wh, cycle in comparable_value['config']['warehouses'].items()}
         maps.append(dict(flatten(comparable_value)))
@@ -251,6 +257,7 @@ def changes(before, after):
             label = {'ui / mode': '预算方式', 'ui / amount': '预算金额', 'ui / primary': '主仓', 'ui / secondary': '从仓'}.get(label, label)
             if key == 'ui / mode':
                 a, b = [('未指定', '不限预算', '限定预算')[x] for x in (a, b)]
+            if key.startswith('config / '+policy.KEY+' / '):a,b=['开启' if x else '关闭' for x in (a,b)]
             yield label, a, b
 
 
@@ -315,6 +322,7 @@ def write(path, records=None, progress=lambda _: None, cancel=None):
         mapping = {'门店编码': code, '门店名称': record.get('name', ''), '主仓': ui.get('primary') or '未指定',
                    '从仓': ui.get('secondary') or '无从仓', '预算方式': ('未指定', '不限预算', '限定预算')[ui.get('mode', 0)],
                    '预算金额': number(ui.get('amount')) if ui.get('mode') == 2 else None, '启用一箱例外': '是' if c['exception'] else '否'}
+        mapping.update({policy.LABELS[k]:'开启' if v else '关闭' for k,v in policy.values(c).items()})
         for h in headers[len(COMMON):]:
             f = field(h)
             v = c
@@ -340,6 +348,7 @@ def write(path, records=None, progress=lambda _: None, cancel=None):
     note = wb.create_sheet('填写说明')
     for pair in [('事项', '说明'), ('必填', '门店编码；其他字段选填。完整模板列出全部可编辑项，可删除不修改的列。按表头识别，可换列顺序。'),
                  ('空白与0', '空白保持原值；0是实际值。每店只能出现一行，多文件重复编码整批阻止。'),
+                 ('补货策略', '极端缺货自动恢复、新品铺设填开启/关闭；空白保留，旧配置默认为开启。两仓共用；新品开启仍须选品。'),
                  ('生效范围', '预览后选择仅保存默认、仅应用本次、或应用并保存。历史签发不变。'),
                  ('预算', '填写预算金额自动选择限定预算；0元就是不安排。不限预算或未指定时金额留空。'),
                  ('主从仓', '主仓/从仓填河北仓或山东仓；清除从仓填无从仓；空白不清除。'),

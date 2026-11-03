@@ -31,6 +31,7 @@ class ParameterScene(QWidget):
         v.addLayout(row)
         row = QHBoxLayout()
         row.addWidget(button('批量导入门店参数', self.import_parameters, True))
+        row.addWidget(button('批量设置默认补货策略',self.edit_switches))
         row.addWidget(button('导出勾选门店默认参数', self.export_parameters))
         from settings_maintenance_ui import open_history,reset_defaults,restore_presets
         row.addWidget(button('默认变更记录 / 撤销',lambda:(open_history(self,host),self.refresh())))
@@ -79,6 +80,9 @@ class ParameterScene(QWidget):
                       '已载入，可编辑本次参数' if code in self.host.store_widgets else '本次未载入']
             for j, value in enumerate(values, 1):
                 self.table.setItem(i, j, QTableWidgetItem(str(value)))
+            from restock_policy import summary
+            self.table.item(i,4).setText(str(values[3])+'\n'+summary(p.get('config',{})))
+        self.table.resizeRowsToContents()
         self.filter()
         self.note.setText('保存门店默认只供后续作业带入；当前作业需明确应用。' if self.codes else
                           '尚无门店记录。可批量导入门店参数预存默认，或先导入补货文件识别门店。')
@@ -86,6 +90,9 @@ class ParameterScene(QWidget):
     def import_parameters(self):
         from store_parameter_ui import import_parameters
         import_parameters(self, self.host)
+    def edit_switches(self):
+        from restock_policy_ui import open_policy
+        open_policy(self,self.host,self.require(),scope='defaults');self.refresh()
 
     def export_parameters(self):
         from store_parameter_ui import export_parameters

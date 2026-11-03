@@ -100,13 +100,14 @@ def load(paths,products,progress=lambda s:None,cancel=None):
     if not data['selected'] and data['conflicts']:return {'intake':data,'stores':data['stores'],'normalized':[],'blocked':{s:1 for s in data['stores']},'warehouses':[],'config':engine.config(),'hashes':data['hashes'],'catalogs':{w:warehouse_catalog.metadata(c) for w,c in (data.get('catalogs') or {}).items()}}
     return prepare(data,progress,cancel)
 
-def calculate_store(loaded:InputBatch,store:str,settings:StoreSettings,profile) -> CalculationResult:
+def calculate_store(loaded:InputBatch,store:str,settings:StoreSettings,profile,progress=lambda _:None,cancel=None) -> CalculationResult:
+    engine.checkpoint(cancel)
     started=time.time()
     if loaded.get('catalogs'):loaded=warehouse_catalog.route_store(loaded,store,settings.get('supply_route'))
     if settings.get('parameter_config'):
         import parameter_schema
         loaded=parameter_schema.apply(loaded,settings['parameter_config'])
-    result=engine.run_calculation(loaded,store,settings['warehouses'],settings['exception'],settings['budget'],profile)
+    result=engine.run_calculation(loaded,store,settings['warehouses'],settings['exception'],settings['budget'],profile,progress,cancel)
     if loaded.get('catalogs'):result.update(catalogs=loaded['catalogs'],supply_route=loaded['supply_route'])
     result['version']=diagnostic();result['task']={'pid':os.getpid(),'started':started,'finished':time.time()}
     result['effective_settings']=copy.deepcopy(settings)

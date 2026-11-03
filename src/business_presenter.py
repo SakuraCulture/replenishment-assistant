@@ -10,6 +10,8 @@ import result_semantics as sem
 
 MISSING = '历史未留存'
 NAMES = {
+    'restock_switches':'补货策略','extreme_restore':'极端缺货自动恢复','new_stocking':'新品铺设',
+    '_extreme_restore':'极端恢复开关依据','suppressed_quantity':'关闭前符合规则的恢复数量',
     'AB':'趋势敏感度','AC':'最近7天权重','AD':'此前7天权重','AE':'此前16天权重',
     'AF':'旧安全系数（当前未使用）','AN':'校正综合日均','AM':'趋势修正系数',
     'AS':'例外后计算建议量','_base_qty':'原模型建议量','_base_amount':'原模型建议金额',
@@ -65,6 +67,7 @@ def business_help(text):
     return re.sub(r'(?<![A-Za-z0-9_])(?:BH|BN|AM|AF|AK|CV|V|SKU|w1|w2|w3)(?![A-Za-z0-9_])',lambda m:'商品' if m[0]=='SKU' else title(m[0]),str(text)).replace('min(此值,最小出库单位)','本值与最小出库数量中的较小值').replace('固定30；当前核心同时有硬编码30，仅展示。改变需单独修改模型并验收。','目前固定为30天，仅供查看；不能通过此表单修改。')
 
 def value_text(value, key='', *, unit='', missing='未提供'):
+    if key in ('extreme_restore','new_stocking') and type(value) is bool:return '开启' if value else '关闭'
     if value is None:return '不限预算' if key=='budget' else missing
     if value is True:return '是'
     if value is False:return '否'
@@ -89,6 +92,8 @@ def field_unit(key,d=None):
     return '库存单位' if key in ('strict_monthly','exit_monthly') else HELP.get(key,('','',''))[1]
 
 def field_row(d,key,why=''):
+    if key in ('AW','BL') and d.get('_extreme_restore',{}).get('enabled') is False:
+        return [title(key),'极端缺货（自动恢复已关闭）',field_unit(key,d),why]
     return [title(key),value_text(d.get(key),key,missing=MISSING) if key in d else MISSING,field_unit(key,d),why]
 
 def flat_rows(value,prefix='',technical=False):
@@ -139,6 +144,8 @@ def parameter_rows(result,d):
     effective=result.get('effective_settings') or {}
     budget=effective['budget'] if 'budget' in effective else result['budget'].get('limit') if 'budget' in result else MISSING
     rows.extend([['门店预算',value_text(budget,'budget'),'元','门店共用预算，不是单仓预算'],['一箱例外',value_text(result.get('enabled'),missing=MISSING),'','当时开关']])
+    from restock_policy import values,LABELS,HELP,KEY
+    for k,v in values(cfg).items():rows.append([LABELS[k],'开启' if v else '关闭','','旧版未记录开关，沿用开启规则' if KEY not in cfg else HELP[k]])
     return rows
 
 HEADERS=['项目','当时值','单位','用途 / 变化说明']

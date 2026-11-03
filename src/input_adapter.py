@@ -173,14 +173,14 @@ def prepare_records(sr,sinfo,pr,pinfo,config):
                        'duplicate_sales_keys':[list(k) for k,n in keycounts.items() if n>1]}
 
 
-def execute_one(inp,meta,rules):
+def execute_one(inp,meta,rules,*,extreme_restore=True):
     if meta['blocking']:
         # Report all SKU rows; the interface does not manufacture data to force zero.
-        d=calculate(inp,rules)
+        d=calculate(inp,rules,extreme_restore=extreme_restore)
         d.update(AS='待补商品资料' if '待补商品资料' in meta['blocking'] else '输入待核',
                  BM='；'.join(meta['blocking']),BV='数量未定',BW='；'.join(meta['blocking']))
     else:
-        try:d=calculate(inp,rules)
+        try:d=calculate(inp,rules,extreme_restore=extreme_restore)
         except (ArithmeticError,ValueError,OverflowError) as exc:
             # Unexpected arithmetic cannot become a healthy 0 or disappear.
             from diagnostics import failure
@@ -195,7 +195,7 @@ def execute(normalized,rules):
     return [execute_one(inp,meta,rules) for inp,meta in normalized]
 
 
-def business_checks(results,rules):
+def business_checks(results,rules,*,extreme_restore=True):
     checks=Counter();failures=[]
     for d in results:
         q=d.get('AS');step=d.get('BD');rn=d['_meta']['export_row']
@@ -208,9 +208,12 @@ def business_checks(results,rules):
             except ValueError:failures.append([rn,'未满足出库倍数',q,step])
         if number(d.get('BQ')) and q<d['BQ']:failures.append([rn,'最低恢复量未兑现',q,d['BQ']])
         inbound_capped=bool(d.get('_inbound_cap') and number(d.get('L')) and d['L']>0)
+        extreme_disabled=(not extreme_restore and d.get('AW')=='极端缺货自动拉回' and number(d.get('BA')) and d['BA']>=30)
+        if extreme_disabled and number(d.get('BO')) and (d['BO']!=0 or q!=0):failures.append([rn,'极端恢复关闭仍自动补货',q])
         if inbound_capped and number(d.get('BK')) and q>d['BK']:failures.append([rn,'已有在途追加突破库存额度',q,d['BK']])
         if (all(number(d.get(c)) for c in ['H','I','J','K','L']) and number(step)
             and not inbound_capped
+            and not extreme_disabled
             and d['K']<=0 and max(d['L'],0)<min(rules.minimum_reference_units,step)
             and (max(d['H'],d['I'],d['J'])>0 or d['J']==0 and number(d['N']) and d['N']>0)):
             checks['应最低恢复行数']+=1
