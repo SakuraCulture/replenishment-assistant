@@ -4,7 +4,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt,QDate,QTimer,QSignalBlocker,QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QDateEdit,QLineEdit,QComboBox,
-    QTreeWidget,QTreeWidgetItem,QProgressBar,QDialog,QMessageBox)
+    QTreeWidget,QTreeWidgetItem,QProgressBar,QDialog,QMessageBox,QInputDialog)
 from ui_controls import label,button
 from ui_tasks import Worker
 from history_tasks import HistoryReader
@@ -13,6 +13,7 @@ from interaction_ui import confirm
 from jst_review_ui import SummaryLabel,AllocationReview
 import jst_review as review
 import jst_results as service
+import jst_batches as batches
 import export_locations
 import work_repository as wr
 
@@ -24,22 +25,28 @@ class ResultsPage(QWidget):
     def __init__(self,host,scope=None,parent=None):
         super().__init__(parent);self.host=host;self.path=host.work_repository.path;self.scope=scope
         self.data=None;self.records=[];self.count=0;self.worker=None;self.reading=False;self.closing=False
-        self.close_pending=None;self.last_plan=None;self.remaining=[];self.chosen=set();self.building=False
+        self.batch_id=None;self.close_pending=None;self.last_plan=None;self.remaining=[];self.chosen=set();self.building=False
         self.reader=HistoryReader(self.path,host.repository.folder/'jst_result_index.sqlite3',self)
         v=QVBoxLayout(self);v.setContentsMargins(0,0,0,0)
         v.addWidget(label('聚水潭导入单 · 看分配结果，随时导出','section'))
         row=QHBoxLayout();row.addWidget(label('业务日期'));self.day=QDateEdit();self.day.setCalendarPopup(True);self.day.setDisplayFormat('yyyy-MM-dd')
-        self.day.setDate(QDate.fromString(max(h['day'] for h in scope) if scope else wr.today(),'yyyy-MM-dd'));row.addWidget(self.day)
-        self.refresh_btn=button('刷新结果',self.refresh);row.addWidget(self.refresh_btn)
-        self.scope_btn=button('查看当日全部',self.clear_scope);row.addWidget(self.scope_btn);self.scope_btn.setVisible(scope is not None)
-        row.addStretch();self.prepare_btn=button('更新资料与重算',self.prepare);row.addWidget(self.prepare_btn);v.addLayout(row)
+        self.day.setDate(QDate.fromString(min(h['day'] for h in scope) if scope else wr.today(),'yyyy-MM-dd'));row.addWidget(self.day)
+        self.end=QDateEdit();self.end.setCalendarPopup(True);self.end.setDisplayFormat('yyyy-MM-dd');self.end.setDate(QDate.fromString(max(h['day'] for h in scope) if scope else wr.today(),'yyyy-MM-dd'));row.addWidget(label('至'));row.addWidget(self.end)
+        self.refresh_btn=button('刷新列表',self.refresh);row.addWidget(self.refresh_btn)
+        self.scope_btn=button('解除所选单限制',self.clear_scope);row.addWidget(self.scope_btn);self.scope_btn.setVisible(scope is not None)
+        row.addStretch();self.prepare_btn=button('准备新分配批次',self.prepare);row.addWidget(self.prepare_btn);v.addLayout(row)
         self.scope_note=label('','muted');v.addWidget(self.scope_note)
+        row=QHBoxLayout();self.batch_btn=button('选择分配批次',self.choose_batch);row.addWidget(self.batch_btn)
+        self.all_batches_btn=button('返回日期范围',self.clear_batch);row.addWidget(self.all_batches_btn)
+        self.continue_btn=button('继续原批未完成任务',self.continue_batch);row.addWidget(self.continue_btn)
+        self.reallocate_btn=button('重新分配本批勾选单',self.reallocate);row.addWidget(self.reallocate_btn);v.addLayout(row)
         self.total=SummaryLabel('正在读取已保存结果…');v.addWidget(self.total)
         self.counts=label('','muted');v.addWidget(self.counts)
         row=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('搜索门店 / 仓 / 补货单号');self.search.setClearButtonEnabled(True);row.addWidget(self.search,1)
         self.warehouse=QComboBox();self.warehouse.addItems(['全部仓','河北仓','山东仓']);row.addWidget(self.warehouse)
+        self.lock_filter=QComboBox();self.lock_filter.addItems(['全部锁状态','已锁','未锁']);row.addWidget(self.lock_filter)
         row.addWidget(button('勾选筛选结果',self.select_visible));row.addWidget(button('清空勾选',self.clear_selection));v.addLayout(row)
-        v.addWidget(label('展开门店可单选仓单；双击查看商品。搜索只帮助找单，“本批全部”包含当前搜索未显示的结果。','muted'))
+        v.addWidget(label('展开门店可单选仓单；双击查看商品。导出和新建批次只处理当前筛选中的订单，数量在按钮上显示。','muted'))
         self.table=QTreeWidget();self.table.setColumnCount(8);self.table.setHeaderLabels(['门店 / 仓单','准备情况','需求金额','已分配金额','减少金额','减量SKU','最近导出','下单锁定'])
         self.table.setAlternatingRowColors(True);self.table.setUniformRowHeights(True);self.table.setSortingEnabled(False)
         for i,width in enumerate((320,200,110,110,110,85,160,120)):self.table.setColumnWidth(i,width)
@@ -53,26 +60,30 @@ class ResultsPage(QWidget):
         self.open_btn=button('打开导出文件夹',self.open_folder);row.addWidget(self.all_btn);row.addWidget(self.selected_btn);row.addWidget(self.open_btn);v.addLayout(row)
         row=QHBoxLayout();self.retry_btn=button('重试未完成导出',self.retry);self.stop_btn=button('停止本次导出',self.stop)
         row.addWidget(self.retry_btn);row.addWidget(self.stop_btn);self.tools_btn=button('其他订单操作',self.tools);row.addWidget(self.tools_btn);v.addLayout(row)
-        self.day.dateChanged.connect(self.day_changed);self.search.textChanged.connect(self.filter_changed);self.warehouse.currentIndexChanged.connect(self.filter_changed)
+        self.day.dateChanged.connect(self.day_changed);self.end.dateChanged.connect(self.day_changed);self.lock_filter.currentIndexChanged.connect(self.filter_changed);self.search.textChanged.connect(self.filter_changed);self.warehouse.currentIndexChanged.connect(self.filter_changed)
         self.timer=QTimer(self);self.timer.setInterval(3000);self.timer.timeout.connect(self.poll);self.timer.start()
         self.controls();QTimer.singleShot(0,self.refresh)
 
     def controls(self):
         busy=self.worker is not None;ready=self.data is not None and not self.closing
-        n=len(service.export_plan(self.data)['entries']) if self.data else 0
+        n=len(service.export_plan(self.data,{service.key(r['head']) for r in self.visible_records()})['entries']) if self.data else 0
         m=len(service.export_plan(self.data,self.chosen)['entries']) if self.data else 0
-        self.all_btn.setText(f'导出本批全部（{n}份）');self.selected_btn.setText(f'导出勾选（{m}份）')
+        self.all_btn.setText(f'导出当前筛选（{n}份）');self.selected_btn.setText(f'导出勾选（{m}份）')
         self.all_btn.setEnabled(ready and not busy and n>0);self.selected_btn.setEnabled(ready and not busy and m>0)
         self.selection.setText(f'已勾选 {len(self.chosen)} 单，可导出 {m} 份；已导出、锁单、付款和收货不会移除已有结果。')
-        for b in (self.day,self.refresh_btn,self.scope_btn,self.folder_btn,self.prepare_btn,self.tools_btn):b.setEnabled(not busy and not self.closing)
+        for b in (self.day,self.end,self.refresh_btn,self.scope_btn,self.folder_btn,self.prepare_btn,self.tools_btn,self.batch_btn,self.all_batches_btn):b.setEnabled(not busy and not self.closing)
+        self.day.setEnabled(not busy and not self.batch_id);self.end.setEnabled(not busy and not self.batch_id)
+        self.continue_btn.setEnabled(ready and not busy and bool(self.batch_id) and bool(self.data.get('batch_pending')));self.reallocate_btn.setEnabled(ready and not busy and bool(self.batch_id) and bool(self.chosen))
+        self.continue_btn.setToolTip('先选择分配批次；继续使用其冻结库存和原顺序')
+        if not n:self.all_btn.setToolTip('当前筛选没有有效生成单；请准备批次或核对待处理原因')
         self.stop_btn.setEnabled(busy and not self.worker.cancel.is_set());self.retry_btn.setEnabled(bool(self.remaining) and not busy and not self.closing)
 
     def refresh(self):
         if self.closing or self.worker:return
         self.reading=True;self.controls()
-        self.scope_note.setText(self.day.text()+(' · 本日全部订单' if self.scope is None else f' · 限定所选 {len(self.scope)} 单中的当日订单；其他日期请切换业务日期'))
-        if self.data is None:self.progress.setRange(0,0)
-        self.reader.request({'kind':'jst_results','day':self.day.text(),'scope':[list(service.key(h)) for h in self.scope] if self.scope is not None else None},self.ready,self.failed_read,self.read_progress)
+        self.scope_note.setText(('分配批次 '+self.batch_id[:8]+' · 冻结库存、原分配顺序' if self.batch_id else self.day.text()+' 至 '+self.end.text()+' · 日期范围（可包含多个分配批次）')+(' · 限定所选 '+str(len(self.scope))+' 单' if self.scope is not None else ''))
+        if self.data is None:self.progress.show();self.progress.setRange(0,0)
+        self.reader.request({'kind':'jst_results','day':self.day.text(),'date_end':self.end.text(),'batch_id':self.batch_id,'scope':[list(service.key(h)) for h in self.scope] if self.scope is not None else None},self.ready,self.failed_read,self.read_progress)
     def poll(self):
         if self.isVisible() and not self.worker and not self.reading and not self.closing:self.refresh()
     def read_progress(self,p):
@@ -83,26 +94,34 @@ class ResultsPage(QWidget):
         if self.closing:return
         changed=data!=self.data;old={r['gid'] for r in self.records if r['state']=='ready'};new={r['gid'] for r in data['records'] if r['state']=='ready'}
         self.reading=False;self.data=data;self.records=data['records'];self.count=len(self.records)
+        if data.get('batch_label'):self.scope_note.setText('分配批次 '+data['batch_label']+' · 冻结库存、原分配顺序')
         self.chosen.intersection_update(service.key(r['head']) for r in self.records)
-        self.total.setText(review.caption(data['metrics']));c=data['counts']
-        self.counts.setText(f"{len(data['groups'])} 家门店 / {len(self.records)} 张仓单 · 可导出 {c['ready']} · 零分配/无要货 {c['zero']} · 待生成 {c['pending']} · 待处理 {c['waiting']} · 需核对 {c['stale']}。金额只计有效分配，缺价单列待核。")
+        c=data['counts']
         if changed:self.render()
         if self.last_plan and new-old:self.status.setText(f'新增 {len(new-old)} 份可导出结果；不会加入已开始的导出，可再次导出。')
-        elif self.last_plan is None:self.status.setText('结果已就绪；可先导出已完成单。重复导出同名覆盖，不重新分配库存。')
-        self.progress.setRange(0,1);self.progress.setValue(1);self.controls()
+        elif self.last_plan is None:self.status.setText('查询完成；业务进度见各单状态。可重复导出有效结果，不重新分配。' if c['ready'] else '当前范围没有可导出结果：尚未回传请先确认回传；已回传请准备分配批次，或选择原批继续。')
+        self.progress.hide();self.controls()
     def day_changed(self,*_):
         self.reader.cancel();self.data=None;self.records=[];self.table.clear();self.clear_selection();self.remaining=[];self.last_plan=None;self.refresh()
     def clear_scope(self):self.scope=None;self.scope_btn.hide();self.day_changed()
     def clear_selection(self):self.chosen.clear();self.render();self.controls()
-    def filter_changed(self,*_):self.chosen.clear();self.render();self.controls();self.status.setText('查询条件变化，已清空勾选；“本批全部”的范围不受搜索影响。')
+    def filter_changed(self,*_):self.chosen.clear();self.render();self.controls();self.status.setText('筛选已更新并清空勾选；导出和新建批次只处理当前可见范围。')
+
+    def visible_records(self):
+        terms=self.search.text().lower().split();wh=self.warehouse.currentText() if self.warehouse.currentIndex() else ''
+        lock=self.lock_filter.currentText()
+        return [r for r in self.records if (not wh or r['head']['warehouse']==wh) and (lock=='全部锁状态' or bool(r['locked'])==(lock=='已锁')) and all(t in ' '.join(str(r['head'][k]) for k in ('name','store','warehouse','number')).lower() for t in terms)]
 
     def render(self):
         if self.data is None:return
+        visible_rows=self.visible_records()
+        self.total.setText('当前筛选：'+review.caption(service.aggregate([r for r in visible_rows if r['state'] in ('ready','zero')])))
+        self.counts.setText(f"查询范围 {len(self.records)} 单；当前筛选 {len(visible_rows)} 单 / {len({r['head']['store'] for r in visible_rows})} 店 · 可导出 {sum(r['state']=='ready' for r in visible_rows)} 份；金额只计有效分配，缺价单列待核。")
         expanded={self.table.topLevelItem(i).data(0,ROLE) for i in range(self.table.topLevelItemCount()) if self.table.topLevelItem(i).isExpanded()}
         scroll=self.table.verticalScrollBar().value();block=QSignalBlocker(self.table);self.table.clear();self.building=True
-        terms=self.search.text().lower().split();wh=self.warehouse.currentText() if self.warehouse.currentIndex() else ''
+        visible={service.key(r['head']) for r in self.visible_records()}
         for g in self.data['groups']:
-            rs=[r for r in g['records'] if (not wh or r['head']['warehouse']==wh) and all(t in ' '.join(str(r['head'][k]) for k in ('name','store','warehouse','number')).lower() for t in terms)]
+            rs=[r for r in g['records'] if service.key(r['head']) in visible]
             if not rs:continue
             m=service.aggregate([r for r in rs if r['state'] in ('ready','zero')]);n=sum(r['state']=='ready' for r in rs)
             top=QTreeWidgetItem([g['name']+'（'+g['store']+'）',f'{n}/{len(rs)} 仓单可导出',*[review.amount_text(m,k) if any(r['projection'] and r['state'] in ('ready','zero') for r in rs) else '待处理' for k in ('demand','allocated','reduced')],str(m['reduced_sku']),max((r['last_export'] for r in rs if r['last_export'] not in ('—','未导出')),default='未导出'),f"已锁 {sum(r['locked'] for r in rs)}/{len(rs)}"])
@@ -138,7 +157,7 @@ class ResultsPage(QWidget):
         except Exception as exc:self.status.setText(str(exc))
 
     def export_all(self):
-        if self.data:self.begin(service.export_plan(self.data))
+        if self.data:self.begin(service.export_plan(self.data,{service.key(r['head']) for r in self.visible_records()}))
     def export_selected(self):
         if self.data:self.begin(service.export_plan(self.data,self.chosen))
     def begin(self,plan):
@@ -147,7 +166,7 @@ class ResultsPage(QWidget):
         w=Worker(service.export,(self.path,self.last_plan,self.last_folder),self);self.worker=w
         w.status.connect(self.status.setText);w.row_progress.connect(self.export_progress);w.success.connect(self.export_done);w.failed.connect(self.export_failed);w.cancelled.connect(lambda:self.export_failed('导出已取消，尚未完成的原结果可重试'))
         w.finished.connect(self.export_finished);self.progress.setRange(0,len(plan['entries']));self.progress.setValue(0);self.status.setText(f"正在导出 {len(plan['entries'])} 份；范围已固定。")
-        self.controls();w.start()
+        self.progress.show();self.controls();w.start()
     def export_progress(self,n,total):self.progress.setRange(0,max(1,total));self.progress.setValue(n)
     def export_done(self,r):
         self.remaining=r['remaining'];self.receipt=r
@@ -173,11 +192,33 @@ class ResultsPage(QWidget):
         p=Path(self.folder.text())
         if p.is_dir():QDesktopServices.openUrl(QUrl.fromLocalFile(str(p)))
         else:self.status.setText('目录尚未创建；导出时自动创建。')
+    def choose_batch(self):
+        try:
+            rows=run(self,batches.listing,(self.path,),'读取分配批次')
+            if not rows:QMessageBox.information(self,'尚无分配批次','回传确认后，先点击“准备新分配批次”。');return
+            titles=[r['label']+' · '+{'active':'进行中','paused':'已暂停','complete':'已处理'}.get(r['status'],r['status'])+' · '+r['batch_id'][:8] for r in rows]
+            choice,ok=QInputDialog.getItem(self,'选择原分配批次','选择后查看该批全部订单，替代当前日期及勾选限制；继续、重分配均沿用原库存。',titles,0,False)
+            if ok:self.batch_id=rows[titles.index(choice)]['batch_id'];self.scope=None;self.scope_btn.hide();self.day_changed()
+        except Exception as exc:self.status.setText(str(exc))
+    def clear_batch(self):self.batch_id=None;self.day_changed()
+    def continue_batch(self):self.open_existing(False)
+    def reallocate(self):self.open_existing(True)
+    def open_existing(self,correction):
+        if not self.batch_id or self.worker:return
+        import jst_ui
+        try:
+            import sqlite3
+            from contextlib import closing
+            with closing(sqlite3.connect(self.path)) as db:c=batches.context(db,self.batch_id,load_stock=False)
+            heads=[m['head'] for m in c['members'] if service.key(m['head']) in self.chosen and m['status']=='done'] if correction else [m['head'] for m in c['members'] if m['status'] in ('pending','failed')]
+            if not heads:QMessageBox.information(self,'没有适用任务','本批没有未完成任务，或没有勾选可重新分配的已生成单。已生成单可直接导出。');return
+            jst_ui.generate(self,self.host,heads,self.batch_id,correction);self.refresh()
+        except Exception as exc:self.status.setText(str(exc))
     def prepare(self):
         if not self.data or self.worker:return
         import jst_ui
-        rows=[r for r in self.records if not self.chosen or service.key(r['head']) in self.chosen]
-        if not rows:return
+        rows=[r for r in self.visible_records() if (not self.chosen or service.key(r['head']) in self.chosen) and not r['gid'] and not r['locked']]
+        if not rows:QMessageBox.information(self,'没有可加入新批的订单','当前筛选没有待分配单。已生成单可直接导出；需要改量请选择原批重分配。');return
         jst_ui.generate(self,self.host,[r['head'] for r in rows]);self.refresh()
     def tools(self):
         if not self.data or self.worker:return
@@ -193,6 +234,13 @@ class ResultsPage(QWidget):
             if not p['entries']:return
             if confirm(d,'明确导出旧结果','以下结果依据已变化；仅导出当时保存的数量，不更新或重新分配：\n'+'\n'.join(r['head']['number']+'：'+r['reason'] for r in p['entries'])):d.accept();self.begin(p)
         v.addWidget(button('导出勾选旧结果（需核对）',old_export))
+        def cancel_pending():
+            if not self.batch_id:QMessageBox.information(d,'请选择批次','返回结果页，先选择要撤销未完成任务的批次。');return
+            reason,ok=QInputDialog.getText(d,'撤销本批未完成任务','只撤销尚未生成的任务，已生成单保留；填写原因：')
+            if ok and reason.strip() and confirm(d,'撤销本批未完成任务','撤销后不会自动恢复；已生成单和已锁单保留。'):
+                try:run(d,batches.cancel_unfinished,(self.path,self.batch_id,reason),'撤销未完成任务');d.accept()
+                except Exception as exc:self.status.setText(str(exc))
+        v.addWidget(button('撤销本批未完成任务',cancel_pending))
         def logs():
             log=jst_ui.Logs(d,self.host,self.day.text(),self.day.text());log.exec();log.deleteLater()
         v.addWidget(button('批次作业日志',logs));v.addWidget(button('返回结果页',d.reject));d.exec();d.deleteLater();self.refresh()

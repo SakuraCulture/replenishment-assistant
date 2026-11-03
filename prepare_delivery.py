@@ -168,7 +168,7 @@ if version['version']=='0.28.0':
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'docs'/name,dest/'使用说明.txt')
 
-if version['version'] in {'0.32.0','0.32.1','0.32.2'}:
+if version['version'] in {'0.32.0','0.32.1','0.32.2','0.33.0'}:
     (dest/'docs').mkdir(exist_ok=True)
     for name in ['0.32.0使用与结构.md','0.32.0实施记录.md','聚水潭双仓完整验证_20261103.md']:
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
@@ -188,3 +188,9 @@ if version['version'] in {'0.32.1','0.32.2'}:
 if version['version']=='0.32.2':
     shutil.copy2(root/'docs/0.32.2任务快照与聚水潭依据修复.md',dest/'docs/0.32.2任务快照与聚水潭依据修复.md')
     shutil.copy2(root/'docs/0.32.2任务快照与聚水潭依据修复.md',dest/'使用说明.txt')
+
+if version['version']=='0.33.0':
+    name='0.33.0批次库存与处理范围.md'
+    shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    shutil.copy2(root/'docs'/name,dest/'使用说明.txt')
+    import_templates.write('catalog',templates/'仓商品资料最低模板.xlsx')

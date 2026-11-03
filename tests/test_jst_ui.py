@@ -38,20 +38,20 @@ class JstUI(unittest.TestCase):
                 self.assertEqual(p.start.text(),'2026-10-30');self.assertEqual(p.search.text(),'门店A')
                 p.search.setText('本环节独立筛选');d.reject();d.deleteLater();self.app.processEvents()
                 self.assertEqual(w.search.text(),'门店A');self.assertEqual(w.checked,{'sentinel':1})
-    def test_result_page_does_not_inherit_lifecycle_or_hidden_filters(self):
+    def test_result_page_inherits_explicit_overview_scope(self):
         from lifecycle_home_ui import StageDialog
         import work_repository as wr
         w=self.win.followup;w.start.setText('2026-10-30');w.search.setText('门店A');w.warehouse_filter.setCurrentText('河北仓');w.lock_filter.setCurrentText('已锁')
         d=StageDialog(w,'jst');self.app.processEvents();p=d.panel
-        self.assertEqual(p.day.text(),wr.today());self.assertEqual(p.search.text(),'');self.assertEqual(p.warehouse.currentText(),'全部仓')
-        self.assertIsNone(p.scope);self.assertEqual(p.all_btn.text(),'导出本批全部（0份）');self.assertTrue(d.property('jstResults'))
+        self.assertEqual(p.day.text(),'2026-10-30');self.assertEqual(p.end.text(),w.end.text());self.assertEqual(p.search.text(),'门店A');self.assertEqual(p.warehouse.currentText(),'河北仓');self.assertEqual(p.lock_filter.currentText(),'已锁')
+        self.assertIsNone(p.scope);self.assertEqual(p.all_btn.text(),'导出当前筛选（0份）');self.assertTrue(d.property('jstResults'))
         self.assertEqual(self.reader_mock.call_args.args[0]['kind'],'jst_results')
         d.reject();d.deleteLater();self.app.processEvents();self.assertEqual(w.search.text(),'门店A')
         from PySide6.QtWidgets import QPushButton
         w.checked={'unrelated':{'day':'2026-10-30'}}
         with patch.object(w,'open_stage') as opened:
             next(b for b in self.win.findChildren(QPushButton) if b.text()=='查看分配结果').click()
-            opened.assert_called_once_with('jst',use_selection=False)
+            opened.assert_called_once_with('jst')
     def test_generator_has_distinct_qt_finished_signal_and_worker_callback(self):
         from jst_ui import GenerationDialog
         with patch.object(GenerationDialog,'load_catalogs'):

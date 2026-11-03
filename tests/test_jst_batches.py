@@ -137,5 +137,17 @@ class Batches(unittest.TestCase):
             self.assertEqual(len(b.context(db,r['batch_id'])['members']),1)
         self.assertEqual(self.balance(r['batch_id']),0)
 
+    def test_return_zero_does_not_leave_active_queue_loop(self):
+        p=self.new();b.register(self.path,p)
+        self.f.f.save('return',[{'门店确认数量':0}])
+        receipt=b.drain(self.path)
+        self.assertIn('无要货',receipt[0]['error']);self.assertEqual(b.listing(self.path)[0]['status'],'paused')
+
+    def test_current_admission_still_blocks_new_batch(self):
+        import warehouse_catalog as wc
+        c=fixture.catalog();c['items']['0001']['商品标签']='二类医疗';c['revision']=wc.revision(c['items']);wc.Repository(self.path.parent).save(c)
+        plan=self.new();self.assertEqual(plan['payload']['plans'][0]['summary']['quantity'],'0')
+        result=b.execute(self.path,plan,True);self.assertFalse(result['generated']);self.assertEqual(self.balance(result['batch_id']),100)
+
 
 if __name__=='__main__':unittest.main()

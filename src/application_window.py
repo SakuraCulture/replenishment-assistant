@@ -69,7 +69,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         install_scenes(self,hv)
         from jst_task_ui import Generator
         self.jst_generator=Generator(self,self.followup.layout())
-        self.final_list_btn=button('最终清单 / 改量',self.open_final_list,True)
+        self.final_list_btn=button('最终清单 / 改量',self.open_final_list)
         actions.insertWidget(0,self.final_list_btn)
         self.issue_policy_btn=button('调整补货策略',self.choose_restock_policy);actions.insertWidget(0,self.issue_policy_btn)
         self.final_detail_btn=button('编辑本店最终清单',lambda:self.open_final_list(True),True)
@@ -78,7 +78,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.detail_policy_btn=button('调整本店补货策略',lambda:self.choose_restock_policy(True));detail_actions.addWidget(self.detail_policy_btn)
         self.auto_check=QTimer(self);self.auto_check.setSingleShot(True);self.auto_check.setInterval(400);self.auto_check.timeout.connect(self.check_added_files);self.sales.changed.connect(self.auto_check.start)
         axrow=QHBoxLayout();self.aoxiang_setup_btn=button('翱象连接与门店配置',self.open_aoxiang_setup);axrow.addWidget(self.aoxiang_setup_btn);axrow.addWidget(label('维护平台门店目录与两仓供应商对应；核验登录后保存复用。','muted'),1);self.import_page.layout().addLayout(axrow)
-        self.aoxiang_fetch_btn=button('获取翱象补货建议',self.open_aoxiang_fetch,True);axrow.insertWidget(0,self.aoxiang_fetch_btn)
+        self.aoxiang_fetch_btn=button('获取翱象补货建议',self.open_aoxiang_fetch,True)
+        daily=QHBoxLayout();daily.addWidget(self.aoxiang_fetch_btn);daily.addWidget(label('先选择门店获取数据，也可在下方拖入补货建议文件。','muted'),1);self.import_page.layout().insertLayout(1,daily)
+        self.batch_export.setObjectName('');self.batch_export.style().unpolish(self.batch_export);self.batch_export.style().polish(self.batch_export)
         from aoxiang_workflow_ui import install as install_aoxiang_workflows
         install_aoxiang_workflows(self,hv)
 

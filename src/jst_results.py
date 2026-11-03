@@ -149,7 +149,9 @@ def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=N
     for r in records:
         h=r['head'];g=grouped.setdefault(h['store'],{'store':h['store'],'name':h['name'],'records':[]});g['records'].append(r)
     for g in grouped.values():g['metrics']=aggregate([r for r in g['records'] if r['state'] in ('ready','zero')])
-    return {'day':day,'date_end':date_end,'batch_id':batch_id,'scope':scope,'records':records,'groups':list(grouped.values()),
+    return {'day':day,'date_end':date_end,'batch_id':batch_id,'batch_label':batch_context['label'] if batch_id else None,
+            'batch_pending':sum(m['status'] in ('pending','failed') for m in batch_context['members']) if batch_id else 0,
+            'scope':scope,'records':records,'groups':list(grouped.values()),
             'metrics':aggregate([r for r in records if r['state'] in ('ready','zero')]),
             'counts':{s:sum(r['state']==s for r in records) for s in ('ready','zero','pending','waiting','stale')}}
 

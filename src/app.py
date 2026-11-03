@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--jst-batch-smoke' in sys.argv:
+        from jst_batch_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--jst-batch-smoke')+1:])
     if '--jst-basis-smoke' in sys.argv:
         from jst_basis_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--jst-basis-smoke')+1:])
