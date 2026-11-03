@@ -59,6 +59,9 @@ export async function queryAll(page,options={}){
     if(r.request().method()!=='POST'||new URL(r.url()).pathname!=='/webapi/ItemApi/ItemSku/GetPageListV2')return false;
     try{const request=r.request().postDataJSON();return request.page?.pageAction===2&&String(request.data?.enabled).split(',').sort().join(',')==='-1,0,1';}catch{return false;}
   },{timeout:60000});
+  // If the click fails or the page closes first, its pending response must not
+  // become an unhandled rejection that terminates an otherwise recoverable service.
+  responsePending.catch(()=>{});
   await frame.getByRole('button',{name:'搜 索',exact:true}).click();
   const response=await responsePending,json=await response.json(),request=response.request().postDataJSON();
   if(!response.ok()||json.code!==0||json.act!==0)throw Error('全量商品查询未获原生成功响应');
