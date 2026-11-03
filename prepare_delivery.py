@@ -168,7 +168,7 @@ if version['version']=='0.28.0':
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'docs'/name,dest/'使用说明.txt')
 
-if version['version'] in {'0.32.0','0.32.1'}:
+if version['version'] in {'0.32.0','0.32.1','0.32.2'}:
     (dest/'docs').mkdir(exist_ok=True)
     for name in ['0.32.0使用与结构.md','0.32.0实施记录.md','聚水潭双仓完整验证_20261103.md']:
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
@@ -181,6 +181,10 @@ if version['version'] in {'0.32.0','0.32.1'}:
         import_templates.write(kind,templates/(import_templates.TEMPLATES[kind][0]+'模板.xlsx'))
     for stage in lifecycle_io.STAGES:lifecycle_io.template(stage,templates/(lifecycle_io.TITLES[stage]+'模板.xlsx'))
 
-if version['version']=='0.32.1':
+if version['version'] in {'0.32.1','0.32.2'}:
     shutil.copy2(root/'docs/0.32.1彻底删除性能修复.md',dest/'docs/0.32.1彻底删除性能修复.md')
     shutil.copy2(root/'docs/0.32.1彻底删除性能修复.md',dest/'使用说明.txt')
+
+if version['version']=='0.32.2':
+    shutil.copy2(root/'docs/0.32.2任务快照与聚水潭依据修复.md',dest/'docs/0.32.2任务快照与聚水潭依据修复.md')
+    shutil.copy2(root/'docs/0.32.2任务快照与聚水潭依据修复.md',dest/'使用说明.txt')

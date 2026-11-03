@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--jst-basis-smoke' in sys.argv:
+        from jst_basis_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--jst-basis-smoke')+1:])
     if '--retry-profile-smoke' in sys.argv:
         from retry_profile_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--retry-profile-smoke')+1:])

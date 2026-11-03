@@ -35,7 +35,7 @@ def export_orders(parent,host,heads):
         if not gids:QMessageBox.information(parent,'尚未生成','所选订单没有可导出的聚水潭生成记录。');return
         folder=export_locations.initial_directory(parent)
         if not confirm(parent,'导出聚水潭导入单',f'所选{len(heads)}单，可导出{len(gids)}单；其余未生成将跳过。商品编码、单价、数量、订单号四列，每店每仓一份，同名安全覆盖。\n'+folder):return
-        r=run(parent,jst_exports.export,(host.work_repository.path,gids,folder),'导出聚水潭订单')
+        r=run(parent,jst_exports.export_checked,(host.work_repository.path,gids,folder),'导出聚水潭订单')
         QMessageBox.information(parent,'导出结果',f"成功{len(r['files'])}份，失败{len(r['failed'])}份，取消：{r['cancelled']}\n"+'\n'.join([*(x['error'] for x in r['failed']),*r.get('warnings',[])]))
     except Exception as exc:warn(parent,exc)
 
@@ -88,7 +88,7 @@ class GenerationDialog(QDialog):
     def describe(self):
         c=self.catalogs.get(self.warehouse.currentText())
         if not c:self.source.setText('该仓未提供资料；请更新或维护默认仓资料。');return
-        x=c['catalog'];self.source.setText(f"{x['warehouse']} · {x.get('source_path','')} · 导入 {x.get('imported_at','')} · {len(x['items'])}款 · "+('当前库存基准，可直接预览' if c['bid'] else '默认资料尚未建立库存基准，请点击采用'))
+        x=c['catalog'];self.source.setText(f"{x['warehouse']} · {x.get('source_path','')} · 导入 {x.get('imported_at','')} · {len(x['items'])}款 · "+('当前库存基准，可直接预览' if c['bid'] else '默认资料尚未建立库存基准，请点击采用')+'\n'+warehouse_catalog.execution_warning(x))
     def invalidate(self,*_):
         self.plan=None;self.generate_btn.setEnabled(False);self.summary.setText('资料或顺序变化，请重新预览。')
         self.review.replace([],'原预览已失效，请重新预览')
@@ -100,6 +100,8 @@ class GenerationDialog(QDialog):
         if self.worker: return
         try:
             p=run(self,service.prepare_refresh,(self.path,self.warehouse.currentText(),path,catalog),'读取仓资料并校验')
+            warning=warehouse_catalog.execution_warning(p['payload']['catalog'])
+            if warning:QMessageBox.warning(self,'资料已读取，执行字段待补',warning)
             run(self,service.commit_refresh,(self.path,p),'更新库存基准')
             self.invalidate();self.load_catalogs()
         except Exception as exc:warn(self,exc)
@@ -114,10 +116,10 @@ class GenerationDialog(QDialog):
             try:warehouse_catalog.Repository(self.host.repository.folder).save(c['catalog'])
             except Exception as exc:warn(self,exc)
     def template(self):
-        import business_excel
+        import import_templates
         p,_=export_locations.save_file(self,'下载仓资料最低模板','仓商品资料模板.xlsx','Excel (*.xlsx)')
         if p:
-            try:business_excel.write(p,[('商品资料',warehouse_catalog.FIELDS,[])])
+            try:import_templates.write('catalog',p)
             except Exception as exc:warn(self,exc)
     def dragEnterEvent(self,event):
         u=event.mimeData().urls()
@@ -160,7 +162,7 @@ class GenerationDialog(QDialog):
         if self.auto_export.isChecked() and not self.stop_requested:self.export_queue.append(gid);self.dispatch_export()
     def dispatch_export(self):
         if self.export_worker or not self.export_queue:return
-        gid=self.export_queue.pop(0);w=Worker(jst_exports.export,(self.path,[gid],self.folder),self);self.export_worker=w
+        gid=self.export_queue.pop(0);w=Worker(jst_exports.export_checked,(self.path,[gid],self.folder),self);self.export_worker=w
         w.success.connect(self.export_done);w.failed.connect(lambda s:warn(self,RuntimeError(s)));w.finished.connect(self.export_finished);w.start()
     def export_done(self,r):
         for f in r['files']:

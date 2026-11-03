@@ -4,6 +4,7 @@ import copy,hashlib,json
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+from contextlib import contextmanager,ExitStack
 import openpyxl
 from openpyxl.cell import WriteOnlyCell
 import engine
@@ -42,6 +43,47 @@ def import_catalog(path,warehouse,progress=lambda s:None,cancel=None):
     return validate(data)
 
 def metadata(catalog):return {k:v for k,v in catalog.items() if k!='items'}|{'count':len(catalog['items'])}
+
+def execution_warning(catalog):
+    missing=sum('商品标签' not in row for row in catalog['items'].values())
+    return f'{missing:,}款缺少“商品标签”字段，不能作新的正数执行安排；请补齐标签列。列存在且内容为空表示无标签，缺列不能视为空标签。' if missing else ''
+
+
+class CatalogRevisionCheck:
+    """One validated read per commit; short OS locks + file identities per order.
+
+    All supported catalog writers replace files under the same warehouse locks.
+    Identity checks also reject normal out-of-band replacements/in-place edits.
+    No SKU tree or persisted cache is retained after this commit call.
+    """
+    def __init__(self,folder):
+        self.repository=Repository(folder);self.tokens=None;self.revisions=None
+    def identities(self):
+        values={}
+        for wh in WAREHOUSES:
+            p=self.repository.folder/'warehouse_catalogs'/(wh+'.json')
+            try:s=p.stat();values[wh]=(s.st_dev,s.st_ino,s.st_size,s.st_mtime_ns,s.st_ctime_ns)
+            except FileNotFoundError:values[wh]=None
+        return values
+    def verify(self):
+        if self.identities()!=self.tokens:
+            from work_repository import Conflict
+            raise Conflict('仓资料标签依据已更新，请重新预览分配')
+    @contextmanager
+    def guard(self,required,cancel=None):
+        if not required:yield None;return
+        from catalog_write_lock import acquire
+        with ExitStack() as locks:
+            for wh in WAREHOUSES:locks.enter_context(acquire(self.repository.folder,wh,cancel))
+            if self.tokens is None:
+                tokens=self.identities()
+                revisions={w:c['revision'] for w,c in self.repository.catalogs().items()}
+                if self.identities()!=tokens:
+                    from work_repository import Conflict
+                    raise Conflict('读取期间仓资料已变化，请重新预览分配')
+                self.tokens=tokens;self.revisions=revisions
+            self.verify()
+            yield self.revisions
 
 class Repository:
     def __init__(self,folder):self.folder=Path(folder)

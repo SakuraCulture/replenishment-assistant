@@ -47,12 +47,14 @@ class WarehouseUi:
         from interaction_ui import confirm
         old=self.catalogs.get(catalog['warehouse'])
         message=catalog['warehouse']+f"：{len(old['items']) if old else 0} → {len(catalog['items'])} 款\n原版本：{old['revision'] if old else '未导入'}\n新版本：{catalog['revision']}\n将完整更新并保存，跨批次复用；本次须重新检查，历史快照不变。"
+        warning=warehouse_catalog.execution_warning(catalog)
+        if warning:message+='\n\n'+warning
         if not confirm(self,'确认更新并保存仓资料',message):return
         try:self.catalog_repository.save(catalog)
         except Exception as exc:self.failed('仓资料保存失败，原资料保留：'+str(exc));return
         self.catalogs[catalog['warehouse']]=catalog;self.refresh_catalog_labels()
         if not self.master_legacy.isChecked():self.file_changed()
-        self.status.setText(catalog['warehouse']+f"资料已保存 {len(catalog['items']):,} 款；请重新检查本次补货建议。")
+        self.status.setText(catalog['warehouse']+f"资料已保存 {len(catalog['items']):,} 款；请重新检查本次补货建议。"+warning)
     def show_catalog(self,warehouse):
         catalog=self.catalogs.get(warehouse)
         if not catalog:QMessageBox.information(self,'尚未导入',warehouse+'尚无保存的商品资料。');return

@@ -20,13 +20,25 @@ def filename(p):
     return re.sub(r'[<>:"/\\|?*]', '_', name)
 
 
-def export(path, gids, folder, progress=lambda _:None, cancel=None):
+def export_checked(path,gids,folder,progress=lambda _:None,cancel=None):
+    """Ordinary UI entry. Validate once, then export those exact immutable gids."""
+    import jst_results
+    plan=jst_results.prepare_export_ids(path,gids,cancel=cancel)
+    return jst_results.export(path,plan,folder,progress,cancel)
+
+
+def export(path, gids, folder, progress=lambda _:None, cancel=None,*,historical=False):
+    """Frozen writer for validated scopes and explicit historical re-exports.
+
+    Ordinary UI callers must use export_checked or jst_results.export.
+    """
     folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
     result={'files':[], 'failed':[], 'cancelled':False,'warnings':[]}
     for i,gid in enumerate(gids):
         tmp=None
         try:
             checkpoint(cancel);p=orders.get(path,gid,cancel=cancel);target=folder/filename(p)
+            if historical:target=target.with_stem(target.stem+'_旧版本_'+p['gid'][:12])
             fd,tmp=tempfile.mkstemp(suffix='.xlsx',prefix='.jst-',dir=folder);os.close(fd)
             book=openpyxl.Workbook(write_only=True);sheet=book.create_sheet('订单明细')
             sheet.column_dimensions['A'].width=28;sheet.column_dimensions['B'].width=16;sheet.column_dimensions['C'].width=16
@@ -51,7 +63,7 @@ def export(path, gids, folder, progress=lambda _:None, cancel=None):
             try:
                 with closing(sqlite3.connect(path,timeout=.1)) as db,db:
                     # File is already written: record that fact even if cancellation just arrived.
-                    orders.lc.begin(db,None);orders.event(db,p['head'],'导出聚水潭订单',{'gid':gid,'path':str(target),'sha256':sha})
+                    orders.lc.begin(db,None);orders.event(db,p['head'],'导出聚水潭订单',{'gid':gid,'path':str(target),'sha256':sha,**({'historical':True} if historical else {})})
             except sqlite3.Error as exc:
                 import logging
                 message=f'文件已完成，但导出日志未保存：{target}；{exc}'

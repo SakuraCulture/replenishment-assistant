@@ -241,15 +241,22 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
         plans = []
         if enforce_admission:
             from admission import execution_evidence
-            catalogs=warehouse_catalog.Repository(Path(path).parent).catalogs()
-            defaults={w:c['revision'] for w,c in catalogs.items()}
-            catalogs.update({w:base['catalog'] for w,base in bases.items()})
+            current_catalogs=warehouse_catalog.Repository(Path(path).parent).catalogs()
+            defaults={w:c['revision'] for w,c in current_catalogs.items()}
+            # Stock/price/carton remain frozen in b. Current maintained tags must
+            # never be overwritten by that older inventory snapshot.
+            catalogs={w:base['catalog'] for w,base in bases.items()}
+            catalogs.update(current_catalogs)
+            admission_sources={w:{'kind':'current_default' if w in current_catalogs else 'explicit_stock_baseline',
+                                  'revision':c['revision'],'bid':None if w in current_catalogs else bases[w]['bid']}
+                               for w,c in catalogs.items()}
         for i, o in enumerate(orders):
             checkpoint(cancel); wh=o['head']['warehouse']; b=bases[wh]
             evidence=None
             if enforce_admission:
                 evidence=execution_evidence(path,o['head']['store'],wh,[r['sku'] for r in o['rows']],catalogs=catalogs,db=db)
                 evidence['default_catalog_revisions']=defaults
+                evidence['catalog_sources']=admission_sources
                 o['rows']=[{**r,'_admission_error':'；'.join(evidence['items'][r['sku']]['reasons'])} for r in o['rows']]
             rows = allocation.allocate(o['rows'], b['catalog']['items'], balances[wh])
             value = {'gid': uuid.uuid4().hex, 'operation': runid+':'+str(i), 'rule': allocation.RULE,
@@ -300,6 +307,7 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
     groups=[v['plans']] if v['correction'] else [[p] for p in v['plans']]
     run_raw=wr.dumps(v)
     blocked=set()
+    catalog_check=warehouse_catalog.CatalogRevisionCheck(Path(path).parent)
     for group in groups:
         if not group:continue
         whs={p['head']['warehouse'] for p in group}
@@ -307,7 +315,9 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
             result['errors'].append({'orders':[p['head']['number'] for p in group],'error':'前序提交失败，该仓剩余任务未提交'});continue
         try:
             checkpoint(cancel)
-            with closing(sqlite3.connect(path,timeout=.1)) as db,db:
+            # Catalog locks precede the DB lock, matching warehouse maintenance.
+            # Parse/validate at most once, before opening the write transaction.
+            with catalog_check.guard(any(p.get('admission') for p in group),cancel) as catalog_revisions, closing(sqlite3.connect(path,timeout=.1)) as db,db:
                 lc.begin(db,cancel);schema(db)
                 existing=[db.execute('SELECT result FROM jst_steps WHERE operation=?',(p['operation'],)).fetchone() for p in group]
                 if all(existing):
@@ -318,9 +328,6 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                 if any(existing):raise wr.Conflict('更正操作记录不完整，请核对')
                 for w in whs:
                     if state(db,w)!=expected[w]:raise wr.Conflict(w+'库存基准或预留已变化，请重新预览')
-                catalog_revisions=None
-                if any(p.get('admission') for p in group):
-                    catalog_revisions={w:c['revision'] for w,c in warehouse_catalog.Repository(Path(path).parent).catalogs().items()}
                 for p in group:checkpoint(cancel);validate_plan(db,p,catalog_revisions)
                 for p in group:
                     if p['summary']['positive']:
@@ -331,6 +338,7 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                     db.execute('INSERT INTO jst_steps VALUES(?,?,?)',(p['operation'],v['runid'],wr.dumps({'gid':p['gid'] if p['summary']['positive'] else None,'number':p['head']['number']})))
                 for w in whs:db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(w,))
                 db.execute('INSERT OR IGNORE INTO jst_runs VALUES(?,?,?,?)',(v['runid'],wr.now(),run_raw,plan['digest']))
+                if catalog_revisions is not None:catalog_check.verify()
                 checkpoint(cancel);progress(CommitProgress(True));db.commit()
                 # Advance only our own transaction; never adopt a concurrent refresh after COMMIT.
                 for w in whs:expected[w]=(expected[w][0],expected[w][1]+1)

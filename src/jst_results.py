@@ -161,6 +161,27 @@ def validate_export(db,plan,cancel=None):
         if r['state']!='ready' and not plan['allow_old']:raise ValueError('需核对的结果不能混入普通导出')
 
 
+def prepare_export_ids(path,gids,progress=lambda _:None,cancel=None):
+    """Generation-panel export uses the same captured validity contract as results."""
+    entries=[]
+    with closing(connect(path)) as db:
+        db.execute('BEGIN')
+        for gid in gids:
+            checkpoint(cancel)
+            raw=db.execute('SELECT payload,digest FROM jst_generations WHERE gid=?',(gid,)).fetchone()
+            p=orders.decode(raw)
+            if p is None or p['gid']!=gid:raise ValueError('生成单不存在或标识不一致')
+            h=p['head'];purchases.validate_head(db,h)
+            current=orders.state(db,h['warehouse']);lock=orders.locked(db,h)==gid
+            basis=lc.upstream(db,{**h,'products':p.get('signed_products',p['basis']['products'])},'payment')
+            if orders.active(db,h)!=gid or basis!=p['basis'] or not current or (current[0]!=p['bid'] and not lock):
+                raise wr.Conflict('生成结果或仓资料已更新，请到分配结果页核对；需要当时文件时明确选择“导出旧结果”：'+h['number'])
+            projection={'signed_products':p.get('signed_products')}
+            entries.append({'gid':gid,'head':h,'generation_digest':raw[1],'projection':projection,'state':'ready',
+                            'return_token':return_token(db,h,projection),'locked':lock,'current_bid':current[0]})
+    return {'entries':entries,'allow_old':False}
+
+
 def export(path,plan,folder,progress=lambda _:None,cancel=None):
     checkpoint(cancel)
     with closing(connect(path)) as db:
@@ -168,7 +189,7 @@ def export(path,plan,folder,progress=lambda _:None,cancel=None):
     # From this boundary onward only these immutable gids are used, even if a
     # different window later changes the active results. No source recalculation.
     gids=[r['gid'] for r in plan['entries']]
-    receipt=jst_exports.export(path,gids,folder,progress,cancel)
+    receipt=jst_exports.export(path,gids,folder,progress,cancel,historical=plan['allow_old'])
     done={f['gid'] for f in receipt['files']};receipt['remaining']=[g for g in gids if g not in done]
     receipt['total']=len(gids);return receipt
 
