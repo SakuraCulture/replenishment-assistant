@@ -11,6 +11,7 @@ import engine,warehouse_catalog
 class WarehouseUi:
     def make_warehouse_panel(self):
         panel=QFrame();panel.setObjectName('card');v=QVBoxLayout(panel);v.addWidget(label('分仓商品资料 · 分别维护','section'));self.catalog_labels={};self.catalog_buttons={}
+        self.catalog_sync_btn=button('聚水潭连接设置 / 刷新仓资料',self.open_catalog_sync);v.addWidget(self.catalog_sync_btn)
         for wh in warehouse_catalog.WAREHOUSES:
             row=QHBoxLayout();row.addWidget(label(wh,'section'));row.addStretch();pick=button('导入'+wh+'资料',lambda checked=False,w=wh:self.choose_catalog(w));self.catalog_buttons[wh]=pick;row.addWidget(pick);row.addWidget(button('查看'+wh+'资料',lambda checked=False,w=wh:self.show_catalog(w)));v.addLayout(row)
             text=label('尚未导入','muted');self.catalog_labels[wh]=text;v.addWidget(text)
@@ -20,6 +21,9 @@ class WarehouseUi:
         self.products=FileCard('旧版混合商品资料','仅用于兼容已有“仓归属”资料');self.products.hide();v.addWidget(self.products)
         self.master_legacy.toggled.connect(self.products.setVisible);self.master_legacy.toggled.connect(self.file_changed);self.products.changed.connect(self.file_changed)
         self.refresh_catalog_labels();return panel
+    def open_catalog_sync(self):
+        from catalog_sync_ui import open_sync
+        open_sync(self)
     def refresh_catalog_labels(self):
         for wh,text in self.catalog_labels.items():
             c=self.catalogs.get(wh)

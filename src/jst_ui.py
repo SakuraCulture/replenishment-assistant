@@ -60,6 +60,7 @@ class GenerationDialog(QDialog):
         v=QVBoxLayout(self);v.addWidget(label('选单和仓资料 → 核对分配 → 保存并导出；已锁单跳过，库存不足一箱分配0。','section'))
         top=QHBoxLayout();self.warehouse=QComboBox();self.warehouse.addItems(warehouse_catalog.WAREHOUSES);top.addWidget(self.warehouse)
         self.update_btn=button('更新本次仓资料',self.choose);top.addWidget(self.update_btn);self.default_btn=button('采用已保存仓资料',self.defaults);top.addWidget(self.default_btn);top.addWidget(button('下载仓资料模板',self.template));self.save_default_btn=button('保存为该仓默认资料',self.save_default);top.addWidget(self.save_default_btn);v.addLayout(top)
+        v.addWidget(button('从聚水潭刷新并用于本次分配',self.sync_catalog))
         self.source=label('正在读取仓资料…','muted');self.source.setWordWrap(True);v.addWidget(self.source)
         self.order_list=QListWidget();self.order_list.setMaximumHeight(90);self.order_list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         for h in heads:
@@ -77,6 +78,10 @@ class GenerationDialog(QDialog):
         self.completed.hide()
         actions=QHBoxLayout();actions.addWidget(button('导出所选已生成单',self.export_saved));actions.addWidget(button('确认所选已下单并锁定',self.lock_saved));v.addLayout(actions)
         self.warehouse.currentIndexChanged.connect(self.describe);QTimer.singleShot(0,self.load_catalogs)
+    def sync_catalog(self):
+        if self.worker or self.export_worker:return
+        from catalog_sync_ui import open_sync
+        if open_sync(self.host,[self.warehouse.currentText()],'allocation_baseline',self):self.invalidate();self.load_catalogs()
     def load_catalogs(self):
         try:self.catalogs=run(self,service.catalogs,(self.path,self.host.repository.folder),'读取仓资料');self.describe()
         except Exception as exc:warn(self,exc)

@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--catalog-sync-smoke' in sys.argv:
+        from catalog_sync_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--catalog-sync-smoke')+1:])
     if '--lifecycle-comparison-smoke' in sys.argv:
         from lifecycle_comparison_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-comparison-smoke')+1:])

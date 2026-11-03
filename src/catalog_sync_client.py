@@ -40,8 +40,13 @@ class Client:
             from catalog_sync_bundle import verify_component
             verify_component(jst,ax)
         validator={'executable':sys.executable,'prefix':['--catalog-validate'] if getattr(sys,'frozen',False) else [str(Path(__file__).parent/'app.py'),'--catalog-validate']}
+        ax_binding=self.folder.parent/'aoxiang/config/machine.binding.json'
+        forbidden=list(self.forbidden_roots)
+        if ax_binding.exists():
+            binding=json.loads(ax_binding.read_text('utf-8'))
+            if binding.get('userDataRoot'):forbidden.append(binding['userDataRoot'])
         options={'stateRoot':str(self.folder),'bridgeRoot':str(ax),'lockRoot':str(self.folder.parent/'jst_catalog_browser_locks'),
-                 'forbiddenRoots':self.forbidden_roots,'validator':validator}
+                 'forbiddenRoots':forbidden,'validator':validator}
         opts=self.folder/'runtime-options.json';atomic_json(opts,options)
         self.process=subprocess.Popen([str(node),str(entry),'--options',str(opts)],cwd=jst,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
         self.reader=threading.Thread(target=self._read,daemon=True,name='jst-catalog-protocol');self.reader.start()

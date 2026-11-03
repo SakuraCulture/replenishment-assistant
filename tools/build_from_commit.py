@@ -28,6 +28,11 @@ def main():
         import aoxiang_bundle
         staged=build/'aoxiang-component'
         info['aoxiang']=aoxiang_bundle.stage(component,ROOT/'components/aoxiang',staged,source_commit=commit,app_version=version)
+    jst_source=source/'components/jst_catalog'
+    if jst_source.exists():
+        import jst_catalog_bundle
+        jst_staged=build/'jst-catalog-component'
+        info['jst_catalog']=jst_catalog_bundle.stage(jst_source,staged,jst_staged,source_commit=commit,app_version=version)
     (build/'build_info.json').write_text(json.dumps(info,ensure_ascii=False,indent=2),encoding='utf-8')
     env=os.environ.copy();env['PATH']=os.environ['WINDIR']+';'+str(Path(os.environ['WINDIR'])/'System32')+';'+str(Path(sys.executable).parent)
     cmd=[sys.executable,'-m','PyInstaller','--clean','--windowed','--onedir','--noupx','--name','补货助手','--icon',str(source/'src/app.ico')]
@@ -41,6 +46,8 @@ def main():
             target=dist/'补货助手/_internal/components/aoxiang'
             shutil.copytree(staged,target)
             aoxiang_bundle.verify(target)
+        if jst_source.exists():
+            shutil.copytree(jst_staged,dist/'补货助手/_internal/components/jst_catalog')
         subprocess.run([sys.executable,str(source/'prepare_delivery.py'),'--delivery',str(dist/'补货助手')],cwd=source,env=env,stdout=log,stderr=log,check=True)
     print(json.dumps({'delivery':str(dist),'source_commit':commit,'log':str(build/'build.log')},ensure_ascii=False))
 

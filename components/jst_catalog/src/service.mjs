@@ -57,11 +57,15 @@ export class CatalogService {
       if(i.observation&&canonical(i.observation)!==canonical(c.observation))throw Error('同一查询不能替换库存观察');
       await this.patch(c.batch_id,c.item_id,{observation:c.observation});return {accepted:true};
     }
+    if(action==='sync.record_adoption_error'){
+      const i=this.current(c.batch_id,c.item_id);if(!i?.receipt||i.adoption)throw Error('该项不可记录采用错误');
+      await this.patch(c.batch_id,c.item_id,{adoption_error:String(c.message).slice(0,2000)});return {accepted:true};
+    }
     if(action==='sync.acknowledge_adoption'){
       const i=this.current(c.batch_id,c.item_id);
       if(!i?.receipt||i.receipt.source_sha256!==c.receipt?.source_sha256||i.account.warehouse!==c.receipt?.warehouse)throw Error('采用回执与原文件/仓不符');
       if(i.adoption&&canonical(i.adoption)!==canonical(c.receipt))throw Error('原采用回执不能覆盖');
-      await this.patch(c.batch_id,c.item_id,{adoption:c.receipt,stage:'APPLIED',error:null});return {accepted:true};
+      await this.patch(c.batch_id,c.item_id,{adoption:c.receipt,stage:'APPLIED',error:null,adoption_error:null});return {accepted:true};
     }
     if(this.shuttingDown)throw new CatalogError('CLOSING','采集服务正在安全关闭');
     if(action==='accounts.bind'||action==='accounts.set_enabled'){
@@ -113,7 +117,11 @@ export class CatalogService {
       const data=this.store.read(),a=data.accounts?.[c.warehouse];let binding,result;
       try{
         if(c.action==='accounts.probe')binding=await this.driver.binding(c,Object.values(data.accounts||{}).filter(x=>x.warehouse!==c.warehouse));
-        else{if(!a)throw Error('该仓尚未绑定');binding=a.binding;}
+        else{
+          const probe=data.operations?.[c.probe_id];
+          if(c.action==='accounts.open_login'&&probe?.warehouse===c.warehouse&&probe.binding)binding=probe.binding;
+          else{if(!a)throw Error('该仓尚未绑定，请先核验专用浏览器');binding=a.binding;}
+        }
         if(c.action==='accounts.open_login'){await this.driver.page({binding},signal,{loginOnly:true});result={opened:true};}
         else{
           const scope=await this.driver.inspect(binding,c.company||a?.expectedCompany,signal);

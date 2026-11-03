@@ -26,7 +26,7 @@ export class AccountSessions {
   }
   async binding(input,others=[]){
     await this.initialize();const {env}=this.components;
-    const profile=await fs.realpath(input.profilePath);
+    const profile=await fs.realpath(input.profilePath).catch(()=>{throw new CatalogError('PROFILE_MISSING','专用浏览器目录不存在，请在连接设置中重新选择；未连接其他浏览器');});
     const directory=path.basename(profile),root=await fs.realpath(path.dirname(profile));
     if(!/^(Default|Profile \d+)$/.test(directory))throw new CatalogError('PROFILE_INVALID','请选择专用浏览器的Default或Profile目录');
     for(const forbidden of [env.defaultEdgeRoot(),...this.forbiddenRoots]){
@@ -88,6 +88,7 @@ export class AccountSessions {
     const bridge=await this.connect(account,signal);check(signal);
     await bridge.page.goto('https://www.erp321.com/epaas',{waitUntil:'domcontentloaded',timeout:60000});check(signal);
     if(loginOnly){await bridge.page.bringToFront();return bridge.page;}
+    await bridge.page.waitForFunction(()=>document.querySelector('a[class^=menuItem]')||document.querySelector('input[type=password]')||/扫码登录|密码登录|账号登录/.test(document.body?.innerText||''),null,{timeout:30000});check(signal);
     const login=await bridge.page.evaluate(()=>[...document.querySelectorAll('input[type=password]')].some(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0;})||/扫码登录|密码登录|账号登录/.test(document.body?.innerText||''));
     if(login)throw new CatalogError('LOGIN_REQUIRED','该仓需要正常登录；登录完成后继续本仓，另一仓可以继续');
     return bridge.page;

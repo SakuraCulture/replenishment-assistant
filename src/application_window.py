@@ -262,7 +262,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
 
     def update_controls(self):
         super().update_controls()
-        for name in ['aoxiang_setup_btn','aoxiang_fetch_btn']:
+        for name in ['aoxiang_setup_btn','aoxiang_fetch_btn','catalog_sync_btn']:
             if hasattr(self,name):getattr(self,name).setEnabled(not self.worker and not self.readonly and not self.closing)
         if not hasattr(self,'issue_btn'):return
         ready=not self.worker and not self.readonly and not self.input_dirty

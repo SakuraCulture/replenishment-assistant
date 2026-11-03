@@ -11,6 +11,7 @@ from priority_list import atomic_json
 
 from app_defaults import WAREHOUSES
 from data_contracts import InputBatch
+_UNSET=object()
 REQUIRED=['商品编码','分类','基本售价','出库箱规','商品状态','可用数']
 FIELDS=REQUIRED+['商品名称','商品等级','补货模型分类','实际库存数','采购在途数','订单占有数']
 
@@ -52,8 +53,21 @@ class Repository:
                 if data['warehouse']!=wh:raise ValueError('仓资料标签与保存位置不一致')
                 result[wh]=data
         return result
-    def save(self,data):
+    def current_digest(self,warehouse):
+        if warehouse not in WAREHOUSES:raise ValueError('未知仓库')
+        p=self.folder/'warehouse_catalogs'/(warehouse+'.json')
+        return hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None
+    def save(self,data,*,expected_digest=_UNSET,cancel=None):
+        from catalog_write_lock import acquire
         validate(data)
+        with acquire(self.folder,data['warehouse'],cancel):
+            return self.save_locked(data,expected_digest=expected_digest,cancel=cancel)
+    def save_locked(self,data,*,expected_digest=_UNSET,cancel=None):
+        """Caller owns the per-warehouse lock; one shared persistence implementation."""
+        validate(data)
+        engine.checkpoint(cancel)
+        if expected_digest is not _UNSET and self.current_digest(data['warehouse'])!=expected_digest:
+            raise ValueError('采集期间仓资料已被更新，未覆盖其他窗口的新资料')
         # Retain immutable prior snapshots before changing the current pointer file.
         old=self.catalogs().get(data['warehouse'])
         for item in [old,data]:
@@ -61,6 +75,7 @@ class Repository:
                 key=hashlib.sha256(json.dumps(item,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
                 p=self.folder/'warehouse_catalogs'/'history'/data['warehouse']/(key+'.json')
                 if not p.exists():atomic_json(p,item)
+        engine.checkpoint(cancel)
         atomic_json(self.folder/'warehouse_catalogs'/(data['warehouse']+'.json'),data)
     def history(self,warehouse):
         if warehouse not in WAREHOUSES:raise ValueError('未知仓库')
