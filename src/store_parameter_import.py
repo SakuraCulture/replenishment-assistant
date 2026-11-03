@@ -87,14 +87,19 @@ def code_value(cell):
 
 
 def read(paths, progress=lambda _: None, cancel=None):
+    from parameter_tables import read as read_classified
+    return read_classified(paths,progress,cancel)
+
+
+def read_legacy(paths, progress=lambda _: None, cancel=None, *, _book=None, _before=None):
     """Read once, preserve file/sheet/row order, reject ambiguous patches atomically."""
     result = {'rows': [], 'sources': {}}
     seen = {}
     for path in dict.fromkeys(str(Path(p).resolve()) for p in paths):
         checkpoint(cancel)
-        before = digest(path)
+        before = _before if _before is not None else digest(path)
         progress('读取门店参数：' + Path(path).name)
-        wb = load_workbook(path, read_only=True, data_only=False)
+        wb = _book if _book is not None else load_workbook(path, read_only=True, data_only=False)
         found = False
         try:
             for ws in wb:

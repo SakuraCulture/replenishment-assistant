@@ -63,9 +63,16 @@ class ParameterDialog(QDialog):
         if not self.managing and not readonly:
             if intent=='defaults':row.addWidget(button('保存为门店默认',lambda:self.finish('default'),True))
             else:
-                row.addWidget(button('应用到本次作业',lambda:self.finish('temporary')))
-                row.addWidget(button('应用并保存为门店默认',lambda:self.finish('default'),True))
-        v.addLayout(row);self.fill(config)
+                row.addWidget(button('应用并保存为门店默认',lambda:self.finish('default')))
+                row.addWidget(button('应用到本次作业',lambda:self.finish('temporary'),True))
+        v.addLayout(row)
+        if not readonly:
+            restore_row=QHBoxLayout()
+            restore_row.addWidget(button('恢复选中项系统默认',lambda:self.restore_standard(False)))
+            restore_row.addWidget(button('恢复当前组系统默认',lambda:self.restore_standard(True)))
+            restore_row.addWidget(button('撤销本次表单修改',self.undo_form))
+            v.addLayout(restore_row)
+        self.fill(config)
         if preset.get('import_source'):
             info=preset['import_source'];entries=[['来源','文件',info.get('file','')]]
             for item in info.get('rows',[]):
@@ -89,6 +96,35 @@ class ParameterDialog(QDialog):
             row=max(0,self.profile_table.currentRow());key=self.profile_rows[row][1]
             self.help.setPlainText('分类值优先于门店通用值；快销/日百各一套，两仓共用，无分类跟随快销。未勾选则沿用门店值。\n'+business_help(schema.HELP[key][2]))
         elif current.objectName()=='parameterImportSource':self.help.setPlainText('这里保留当时完整注入的原表字段和处理依据。后续编辑不会回写此来源；当前实际值请在“生效核对”中查看。')
+    def undo_form(self):
+        from interaction_ui import confirm
+        if confirm(self,'撤销本次表单修改','恢复打开编辑器时的值；不保存门店默认或修改计划。'):
+            self.fill(self.initial_config)
+    def restore_standard(self,whole):
+        from system_standard import restore,VERSION
+        from interaction_ui import review_rows
+        from interaction_rules import configuration_changes
+        current=self.tabs.currentWidget()
+        groups={self.param_table:'parameters',self.weight_table:'weight_profiles',self.profile_table:'profile_parameters',self.mapping:'category_profiles',self.warehouses:'warehouses'}
+        group=groups.get(current)
+        if not group:QMessageBox.information(self,'请选择参数分组','请进入通用参数、分类权重、分类超参、分类映射或各仓周期页。');return
+        try:
+            before=self.value();key=None;r=current.currentRow()
+            if not whole:
+                if r<0:raise ValueError('请先选择要恢复的参数行')
+                if group=='parameters':key=list(schema.HELP)[r]
+                elif group=='profile_parameters':key=self.profile_rows[r]
+                elif group=='weight_profiles':
+                    col=current.currentColumn()
+                    if col not in (1,2,3):raise ValueError('请选择趋势敏感度或可编辑的权重列')
+                    key=(current.item(r,0).text(),('alpha','w1','w2')[col-1])
+                else:key=current.item(r,0).text().strip()
+            after=restore(before,group,key);schema.validate(after)
+            rows=configuration_changes({'当前表单':before},after)
+            if review_rows(self,'恢复系统默认',['范围','参数','原值','新值'],rows,'系统标准 '+VERSION+'；仅修改当前表单，应用或保存前不影响其他位置。','恢复到表单'):
+                index=self.tabs.currentIndex();self.fill(after);self.tabs.setCurrentIndex(index)
+                self.editor_baseline=copy.deepcopy(self.initial_config)
+        except ValueError as exc:QMessageBox.warning(self,'未恢复',str(exc))
     def is_edited(self):
         try:return self.value()!=self.editor_baseline
         except ValueError:return True
@@ -236,7 +272,7 @@ class ParameterUi:
         import store_defaults
         saved=getattr(self,'saved_store_defaults',{}).get(s)
         state='历史快照' if self.readonly or getattr(self,'_restoring',False) else '已保存默认' if store_defaults.matches(saved,p,self.config_for(s),self.store_ui(s)) else '本次与已保存默认不同' if saved else '仅本次 · 尚无门店默认'
-        text=f"{p['name']} v{p['version']}"+(' · 本店调整' if changed else '')+' · '+state+'\n'+policy.summary(self.config_for(s))
+        text=f"本次采用：{p['name']}"+(' · 本店调整' if changed else '')+' · '+state+'\n'+policy.summary(self.config_for(s))
         w=self.store_widgets[s];w['params'].setText('编辑参数');w['params'].setToolTip('编辑此店完整参数；不自动保存每日草稿')
         if 'param_status' in w:w['param_status'].setText(text);w['param_status'].setToolTip(text)
     def view_parameters(self,store):

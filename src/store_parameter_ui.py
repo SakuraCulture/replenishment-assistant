@@ -106,7 +106,7 @@ class Preview(QDialog):
         self.resize(1120, 700)
         self.host, self.data, self.snapshot = host, data, snapshot
         v = QVBoxLayout(self)
-        v.addWidget(label('一店一行；空白保持原值，0按实际值处理。全部校验通过后才可应用。', 'section'))
+        v.addWidget(label('；'.join(data.get('formats', ['旧模板：空白保持原值']))+'。0按实际值处理；全部校验通过后才可应用。', 'section'))
         self.scope = QComboBox()
         for text, key in SCOPES:
             self.scope.addItem(text, key)
@@ -145,15 +145,16 @@ class Preview(QDialog):
             errors.append('当前正在计算或为历史只读作业；请改为仅保存默认，或结束计算后再导入。')
         self.model.replace(self.prepared['rows'] + [['校验错误', '', message, '', '', ''] for message in errors])
         target = '保存的默认参数；未保存门店从标准方案开始' if scope == 'defaults' else '本次门店实际生效参数'
-        self.note.setText(f'以{target}为原值。共{len(self.data["rows"])}店，{len(self.prepared["changed"])}店有变更/新增。\n'
+        resets=sum(len(r.get('reset_fields',[])) for r in self.data['rows'])
+        self.note.setText(f'以{target}为原值。共{len(self.data["rows"])}店，{len(self.prepared["changed"])}店有变更/新增；空白默认/继承项 {resets} 项，请逐项核对。\n'
                           + ('本次作业及已有结果不改变。' if scope == 'defaults' else '仅变化门店的结果失效，重算后生效。') + '历史签发不变。')
         self.error.setText(f'{len(errors)}项错误，整批不能应用；完整错误在上表中，可搜索“校验错误”。' if errors else '校验通过；请核对生效范围和逐店差异。')
         self.go.setText({'defaults': '确认保存门店默认', 'current': '确认应用本次作业', 'both': '确认应用并保存默认'}[scope])
         self.go.setEnabled(not errors and bool(self.prepared['changed']))
 
 
-def import_parameters(parent, host, scope='defaults'):
-    dialog = ImportDialog(parent, 'store_parameters', multiple=True)
+def import_parameters(parent, host, scope='defaults',kind='warehouse_cycles'):
+    dialog = ImportDialog(parent, kind, title='导入门店设置（兼容旧模板）', multiple=True)
     if dialog.exec() != QDialog.DialogCode.Accepted:
         return
     try:

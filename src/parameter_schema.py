@@ -28,8 +28,8 @@ PROFILE_KEYS=('moq_days','moq_price','probability')
 FIXED='固定规则：7/14/30天窗口；低月销资格≤5；周转在途折算0.7；趋势中间限幅0.3～2及增长支撑上限2；不是最终AM绝对范围。AF=1.28不参与当前安全库存；AK/CV为诊断量。未增加安全余量天数上限；无分类跟随快销，缺失箱规补1，禁用/停采排除、必卖优先及无货仍保留从仓需求保持不变。'
 
 def standard() -> ParameterConfig:
-    c=engine.config()
-    return {'parameters':c['parameters'],'weight_profiles':c['weight_profiles'],'category_profiles':c['category_profiles'],'warehouses':copy.deepcopy(DEFAULT_WAREHOUSES),'exception':True}
+    from system_standard import standard as fixed_standard
+    return fixed_standard()
 
 def signature(config):return hashlib.sha256(json.dumps(config,sort_keys=True,ensure_ascii=False,allow_nan=False).encode()).hexdigest()
 

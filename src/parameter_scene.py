@@ -2,7 +2,7 @@
 import copy
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
-    QTableWidgetItem, QLineEdit, QDialog, QFormLayout, QComboBox, QCheckBox, QMessageBox)
+    QTableWidgetItem, QLineEdit, QDialog, QFormLayout, QComboBox, QCheckBox, QMessageBox, QToolButton, QMenu)
 from ui_controls import label, button
 from parameter_ui import ParameterDialog
 import parameter_schema as schema
@@ -30,7 +30,14 @@ class ParameterScene(QWidget):
         row.addStretch()
         v.addLayout(row)
         row = QHBoxLayout()
-        row.addWidget(button('批量导入门店参数', self.import_parameters, True))
+        row.addWidget(button('导入分仓周期', self.import_parameters, True))
+        more=QToolButton();more.setText('其他设置导入 / 模板');more.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup);menu=QMenu(more)
+        from store_parameter_ui import import_parameters
+        from import_ui import download
+        for name,kind in [('完整补货参数','classified_parameters'),('补货策略','store_policy'),('供货关系','store_routes'),('门店预算','store_budget'),('旧版混合参数','store_parameters')]:
+            menu.addAction('导入'+name,lambda checked=False,k=kind:import_parameters(self,host,kind=k))
+            menu.addAction('下载'+name+'模板',lambda checked=False,k=kind:download(self,k))
+        more.setMenu(menu);row.addWidget(more)
         row.addWidget(button('批量设置默认补货策略',self.edit_switches))
         row.addWidget(button('导出勾选门店默认参数', self.export_parameters))
         from settings_maintenance_ui import open_history,reset_defaults,restore_presets
