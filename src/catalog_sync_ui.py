@@ -128,6 +128,10 @@ class Dialog(QDialog):
     def commit_state(self,active):self.committing=active;self.controls()
     def success(self,result):
         self.state['batches']=[result['batch']];self.show_record()
+        # The last status event can precede the host adoption acknowledgement.
+        # Use the final returned batch for progress, just as for the result table.
+        items=result['batch']['items'];done=sum(bool(i.get('adoption') or i.get('error') or i.get('adoption_error')) for i in items)
+        self.bar.setRange(0,len(items));self.bar.setValue(done)
         self.phase=f"本轮已采用 {result['adopted']} 仓；未完成项可按原记录继续";self.note.setText(self.phase)
     def worker_finished(self):
         self.clock.stop();w=self.worker;self.worker=None;w.deleteLater();self.controls()

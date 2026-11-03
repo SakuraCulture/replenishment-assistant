@@ -40,6 +40,7 @@ def start_smoke(app,win,args):
     require(len(d.adopted)==1,'真实 Node → 当前程序子进程校验 → 采用完成');require('山东仓' in win.catalogs and len(win.catalogs['山东仓']['items'])==2,'界面刷新本仓资料')
     require(d.model.rows[0][2]=='已采用','采用结果显示准确');require(not d.model.rows[1][2]=='已采用','失败仓没有冒充成功');require('河北仓' not in win.catalogs,'失败不写另一仓')
    require(win.input_dirty,'成功采用令当前输入需要重查')
+   require(d.bar.maximum()==2 and d.bar.value()==2,'最终采用/错误回执刷新实际完成进度为100%')
    d.grab().save(str(out/'after.png'));screens.append('after.png');require(len(ticks)>5,'Qt持续响应');d.reject();require(not d.client.running,'关闭组件退出，无残留 Node');d.deleteLater();d=None
    d=Dialog(win);d.show();require(d.model.rows[0][2]=='已采用','重开读取已采用记录');d.resume_btn.click();wait(lambda:d.worker is None);require(len(d.adopted)==0,'再次继续不会重放成功仓');d.reject();require(not d.client.running,'重试后安全关闭');d.deleteLater();d=None
    report={'passed':True,'checks':checks,'screenshots':screens,'scope':'real downloaded files replayed through UI; no new browser/platform operation; actual Node and EXE validator' if real else 'synthetic saved platform task; no real browser or platform; real Node and no-Qt validator; frozen flag distinguishes EXE/source','heartbeat_count':len(ticks),'version':diagnostic(),'frozen':bool(getattr(sys,'frozen',False))}
