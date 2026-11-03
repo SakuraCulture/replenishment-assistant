@@ -13,7 +13,7 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 // Background tabs may not produce animation frames. Poll state using timers and
 // dispatch one native DOM event; do not require pointer focus or foregrounding.
 // A timeout never retries a click (especially an export submission).
-export async function activateControl(locator,{timeout=30000,pointer=false}={}){
+export async function activateControl(locator,{timeout=30000,pointer=false,event='click',beforeDispatch=async()=>{}}={}){
   const until=Date.now()+timeout;
   for(;;){
     const count=await locator.count();
@@ -21,17 +21,24 @@ export async function activateControl(locator,{timeout=30000,pointer=false}={}){
     if(count===1&&await locator.isVisible()){
       const disabled=await locator.evaluate(e=>e.matches(':disabled')||!!e.closest('[aria-disabled="true"]'));
       if(!disabled){
+        await beforeDispatch();
         // The status input opens on native focus/mouse handling, not click alone.
         // Force skips only pointer actionability/animation waits; our explicit
         // uniqueness, visibility and disabled checks still precede the action.
         if(pointer)await locator.click({force:true,timeout});
-        else await locator.dispatchEvent('click',{bubbles:true,cancelable:true});
+        else await locator.dispatchEvent(event,{bubbles:true,cancelable:true});
         return;
       }
     }
     if(Date.now()>=until)throw new CatalogError('CONTROL_NOT_READY','网页控件未就绪，未执行操作');
     await wait(100);
   }
+}
+export async function openExportMenu(frame){
+  // This native dropdown is hover-triggered. Clicking its label does not open
+  // the menu on a new account/tab. Do not dispatch the actual export here.
+  const trigger=frame.locator('button').filter({has:frame.getByText('导出',{exact:true})});
+  await activateControl(trigger,{event:'mouseover'});
 }
 export async function openProducts(page,{reload=false,expectedCompany=COMPANY}={}){
   if(reload||!page.url().startsWith('https://www.erp321.com/epaas'))await page.goto('https://www.erp321.com/epaas',{waitUntil:'domcontentloaded',timeout:60000});
@@ -170,6 +177,15 @@ async function boundDownloadUrl(page,history,row,recordId){
   }catch(e){await release();throw e;}
   finally{pending.dispose();}
 }
+export function exportRowReady(text,expectedRows){
+  // A visible row is not a completed export: progress/count cells can still be
+  // blank or zero while the native task is generating or the table is rendering.
+  if(/失败|已取消/.test(text))throw new CatalogError('PLATFORM_FAILED','原导出任务失败，请核对平台记录');
+  if(!text.includes('下载完成'))return false;
+  if(!text.split(/\s+/).includes('商品资料')||!text.split(/\s+/).includes(String(expectedRows)))
+    throw new CatalogError('FILE_IDENTITY','原任务已完成，但类型或条数与查询不符；未下载其他任务');
+  return true;
+}
 export async function receiveKnownExport(page,{recordId,expectedRows,output,expectedPath,signal,onProgress=()=>{},timeout=120000}){
   recordId=nativeTaskId(recordId);if(!Number.isSafeInteger(expectedRows)||expectedRows<1)throw Error('原任务缺少已核对行数');
   check(signal);const history=await openHistory(page);const until=Date.now()+timeout;let row;
@@ -178,9 +194,7 @@ export async function receiveKnownExport(page,{recordId,expectedRows,output,expe
     const count=await row.count();if(count>1)throw Error('同任务号出现多条记录，未下载');
     if(count===1){
       const text=await row.innerText();
-      if(!text.includes('商品资料')||!text.split(/\s+/).includes(String(expectedRows)))throw Error('原任务的类型或条数不符');
-      if(text.includes('下载完成'))break;
-      if(/失败|已取消/.test(text))throw new CatalogError('PLATFORM_FAILED','原导出任务失败，请核对平台记录');
+      if(exportRowReady(text,expectedRows))break;
     }
     if(Date.now()>=until)throw new CatalogError('TASK_PENDING','原导出任务尚未完成，请继续原任务；未重新提交');
     onProgress('WAIT_EXPORT','等待原任务 '+recordId+' 完成');await sleep(1500);check(signal);
@@ -269,12 +283,13 @@ export async function exportAll(page,{output,onManifest,signal,onProgress=()=>{}
     observation=observe(page,'response',r=>nativeExportEndpoint(new URL(r.url()))&&r.request().method()==='POST',60000);
     await page.route(endpoint,guard);installed=true;
     onProgress('SUBMITTING','正在提交一次导出；此时停止将等待受理结果');
-    await activateControl(found.frame.getByText('导出',{exact:true}));check(signal);
-    // Persist the attempt before the native button can send anything, even when
-    // a browser service worker does not pass through Playwright's route hook.
-    await save({stage:'SUBMITTING',submissions:1});
-    if(signal?.aborted){await save({stage:'CANCELLED_BEFORE_SUBMIT',submissions:0});check(signal);}
-    await activateControl(found.frame.getByText('导出商品',{exact:true}));
+    await openExportMenu(found.frame);check(signal);
+    // Readiness failures precede the durable attempt. Once dispatch may have
+    // happened, missing response remains unknown and must never be replayed.
+    await activateControl(found.frame.getByText('导出商品',{exact:true}),{beforeDispatch:async()=>{
+      check(signal);await save({stage:'SUBMITTING',submissions:1});
+      if(signal?.aborted){await save({stage:'CANCELLED_BEFORE_SUBMIT',submissions:0});check(signal);}
+    }});
     const response=await observation.promise,json=await response.json();
     let actualScope;try{actualScope=response.request().postDataJSON();}catch{}
     if(!exportScopeValid(actualScope,scope))throw new CatalogError('SUBMISSION_UNKNOWN','平台已响应，但实际导出范围无法核验，保留原提交待核；未重新提交');

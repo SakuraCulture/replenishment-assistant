@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
-import {activateControl} from '../components/jst_catalog/src/product-export.mjs';
+import {activateControl,openExportMenu} from '../components/jst_catalog/src/product-export.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const require=createRequire(path.join(root,'components/aoxiang/package.json'));
 const {chromium}=require('playwright-core');
@@ -28,5 +28,15 @@ try{
   await assert.rejects(activateControl(page.locator('#disabled'),{timeout:0}),{code:'CONTROL_NOT_READY'});
   await assert.rejects(activateControl(page.locator('#hidden'),{timeout:0}),{code:'CONTROL_NOT_READY'});
   assert.equal(await page.evaluate(()=>window.clicks),1);
-  console.log(JSON.stringify({passed:true,checks:5,elapsed_ms:Date.now()-began,scope:'isolated headless Edge; requestAnimationFrame disabled; nonselected page; native input focus; no live platform or login'},null,2));
+  await page.evaluate(()=>{
+    const trigger=document.createElement('button');trigger.innerHTML='<span>导出</span>';document.body.append(trigger);
+    const item=document.createElement('div');item.innerText='导出商品';item.style.display='none';document.body.append(item);
+    trigger.onmouseover=()=>item.style.display='block';item.onclick=()=>window.clicks++;
+  });
+  await openExportMenu(page);
+  assert.equal(await page.getByText('导出商品',{exact:true}).isVisible(),true);
+  assert.equal(await page.evaluate(()=>window.clicks),1);
+  await activateControl(page.getByText('导出商品',{exact:true}));
+  assert.equal(await page.evaluate(()=>window.clicks),2);
+  console.log(JSON.stringify({passed:true,checks:8,elapsed_ms:Date.now()-began,scope:'isolated headless Edge; requestAnimationFrame disabled; nonselected page; native focus and hover menu; no live platform or login'},null,2));
 }finally{await browser.close();}

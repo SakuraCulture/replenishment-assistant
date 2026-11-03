@@ -19,7 +19,7 @@ async function attempt(t,{wrong=false,lost=false}={}){
   const request={method:()=> 'POST',postDataJSON:()=>body};
   const response={url:()=> 'https://www.erp321.com/erp/webapi/ItemApi/Export/ItemSkuAndInventory?requestId=test',request:()=>request,ok:()=>true,json:async()=>({code:0,act:0,data:'123'})};
   let clicks=0;
-  const frame={getByText:label=>({count:async()=>1,isVisible:async()=>true,evaluate:async()=>false,
+  const frame={locator:()=>({filter:()=>({count:async()=>1,isVisible:async()=>true,evaluate:async()=>false,dispatchEvent:async event=>assert.equal(event,'mouseover')})}),getByText:label=>({count:async()=>1,isVisible:async()=>true,evaluate:async()=>false,
     dispatchEvent:async()=>{
       if(label!=='导出商品')return;
       clicks++;assert.equal(snapshots.at(-1).stage,'SUBMITTING');assert.equal(snapshots.at(-1).submissions,1);

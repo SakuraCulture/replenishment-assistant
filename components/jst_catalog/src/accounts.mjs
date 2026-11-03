@@ -6,6 +6,11 @@ import {CatalogError,check,sleep,sha,canonical,inside,samePath} from './common.m
 import {queryAll} from './product-export.mjs';
 
 export const accountId=wh=>({'山东仓':'sd','河北仓':'hb'})[wh];
+export function dedicatedLaunchArgs(binding){
+  if(binding.backend!=='jst_dedicated')throw new CatalogError('BROWSER_ISOLATION','只能启动已核验的聚水潭专用浏览器');
+  return [`--user-data-dir=${binding.userDataRoot}`,`--profile-directory=${binding.profileDirectory}`,
+    '--remote-debugging-address=127.0.0.1','--remote-debugging-port=0','about:blank'];
+}
 export function validateIdentity(a){
   if(!accountId(a.warehouse)||a.id!==accountId(a.warehouse)||!a.expectedCompany||
       !/^[1-9]\d*$/.test(a.expectedCoid)||!/^[1-9]\d*$/.test(a.expectedUid)||a.mappingVerified!==true)
@@ -47,8 +52,10 @@ export class AccountSessions {
     let endpoint=await env.discoverEndpoint(binding.userDataRoot).catch(()=>null);
     if(!endpoint){
       this.phase('OPENING_BROWSER','正在打开该仓专用浏览器');
-      // Reuse its normal persisted startup settings. Never add a fresh login profile or AX flags.
-      const child=spawn(binding.edgeExecutable,[`--user-data-dir=${binding.userDataRoot}`,`--profile-directory=${binding.profileDirectory}`,'about:blank'],{shell:false,windowsHide:true,stdio:'ignore'});
+      // Reopen only this previously verified dedicated profile, retaining login.
+      // Publish an ephemeral loopback endpoint again after browser restart.
+      // Existing AX/default-browser processes and their startup flags are untouched.
+      const child=spawn(binding.edgeExecutable,dedicatedLaunchArgs(binding),{shell:false,windowsHide:true,stdio:'ignore'});
       let failure;child.once('error',e=>{failure=e;});child.unref();
       const until=Date.now()+20000;
       while(!endpoint&&Date.now()<until){check(signal);if(failure)throw failure;await sleep(300);endpoint=await env.discoverEndpoint(binding.userDataRoot).catch(()=>null);}

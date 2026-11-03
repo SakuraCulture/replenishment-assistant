@@ -7,6 +7,7 @@ from version_info import diagnostic
 
 def start_smoke(app,win,args):
  out=Path(args[0]);out.mkdir(parents=True,exist_ok=True);checks=[];screens=[]
+ real=json.loads((out/'real_catalogs.json').read_text('utf-8')) if (out/'real_catalogs.json').exists() else None
  def require(ok,message):
   if not ok:raise AssertionError(message)
   checks.append(message)
@@ -23,11 +24,25 @@ def start_smoke(app,win,args):
    win.jst_generator.timer.stop();win.jst_generator.stopped=True;win.aoxiang_workflows.timer.stop()
    d=Dialog(win);d.show();require(d.resume_btn.isEnabled(),'原下载任务可恢复');require(not d.bind_btn.isEnabled(),'未核验不能保存账号');require(not d.stop.isEnabled(),'空闲不能停止')
    d.grab().save(str(out/'before.png'));screens.append('before.png');d.resume_btn.click();d.stop.click();wait(lambda:d.worker is None);require(not d.adopted,'立即停止保留下载任务，不采用资料');d.resume_btn.click();require(d.worker is not None,'真实按钮启动后台任务');require(not d.fetch.isEnabled(),'运行时禁止重复提交');wait(lambda:d.worker is None)
-   require(len(d.adopted)==1,'真实 Node → 当前程序子进程校验 → 采用完成');require('山东仓' in win.catalogs and len(win.catalogs['山东仓']['items'])==2,'界面刷新本仓资料');require(win.input_dirty,'成功采用令当前输入需要重查')
-   require(d.model.rows[0][2]=='已采用','采用结果显示准确');require(not d.model.rows[1][2]=='已采用','失败仓没有冒充成功');require('河北仓' not in win.catalogs,'失败不写另一仓')
+   if real:
+    require(len(d.adopted)==2,'两仓真实下载文件由 EXE 校验及采用')
+    from source_archive import read
+    from contextlib import closing
+    import hashlib
+    for wh,expected in real.items():
+     d.warehouse.setCurrentText(wh)
+     require(d.company.text()==expected['company'],'账号公司随所选仓正确显示：'+wh)
+     require(len(win.catalogs[wh]['items'])==expected['rows'],'真实行数及仓标签一致：'+wh)
+     with closing(win.work_repository.connect()) as db:stored=read(db,expected['sha256'])
+     require(stored is not None and hashlib.sha256(stored[1]).hexdigest()==expected['sha256'],'原件由实际程序完整落库：'+wh)
+    require(all(row[2]=='已采用' for row in d.model.rows),'两仓采用状态准确')
+   else:
+    require(len(d.adopted)==1,'真实 Node → 当前程序子进程校验 → 采用完成');require('山东仓' in win.catalogs and len(win.catalogs['山东仓']['items'])==2,'界面刷新本仓资料')
+    require(d.model.rows[0][2]=='已采用','采用结果显示准确');require(not d.model.rows[1][2]=='已采用','失败仓没有冒充成功');require('河北仓' not in win.catalogs,'失败不写另一仓')
+   require(win.input_dirty,'成功采用令当前输入需要重查')
    d.grab().save(str(out/'after.png'));screens.append('after.png');require(len(ticks)>5,'Qt持续响应');d.reject();require(not d.client.running,'关闭组件退出，无残留 Node');d.deleteLater();d=None
    d=Dialog(win);d.show();require(d.model.rows[0][2]=='已采用','重开读取已采用记录');d.resume_btn.click();wait(lambda:d.worker is None);require(len(d.adopted)==0,'再次继续不会重放成功仓');d.reject();require(not d.client.running,'重试后安全关闭');d.deleteLater();d=None
-   report={'passed':True,'checks':checks,'screenshots':screens,'scope':'synthetic saved platform task; no real browser or platform; real Node and no-Qt validator; frozen flag distinguishes EXE/source','heartbeat_count':len(ticks),'version':diagnostic(),'frozen':bool(getattr(sys,'frozen',False))}
+   report={'passed':True,'checks':checks,'screenshots':screens,'scope':'real downloaded files replayed through UI; no new browser/platform operation; actual Node and EXE validator' if real else 'synthetic saved platform task; no real browser or platform; real Node and no-Qt validator; frozen flag distinguishes EXE/source','heartbeat_count':len(ticks),'version':diagnostic(),'frozen':bool(getattr(sys,'frozen',False))}
   except Exception:
    report={'passed':False,'checks':checks,'error':traceback.format_exc(),'frozen':bool(getattr(sys,'frozen',False))}
   finally:
