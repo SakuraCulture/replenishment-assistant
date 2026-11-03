@@ -17,9 +17,9 @@ test('two warehouses cannot use sibling profiles in one instance root',async()=>
  try{await assert.rejects(s.binding({profilePath:path.join(temp,'Default')},[{binding:{userDataRoot:temp}}]),{code:'ACCOUNT_ISOLATION'});}finally{await fs.rm(temp,{recursive:true});}
 });
 function mockPage(attributes){
- let downloads=0;const row={count:async()=>1,innerText:async()=>'123 商品资料 2 下载完成',locator:()=>({evaluateAll:async()=>attributes})};
+ let downloads=0;const row={count:async()=>1,innerText:async()=>'123 商品资料 2 下载完成',locator:()=>({evaluateAll:async()=>attributes,filter:()=>({count:async()=>0})})};
  const history={url:()=>'/app/common/export/export_log.aspx',getByText:()=>({}),locator:selector=>selector==='#_jt_body_list'?{count:async()=>1,waitFor:async()=>{}}:{filter:()=>row}};
- return {page:{locator:()=>({click:async()=>{}}),frames:()=>[history],context:()=>({request:{get:async()=>{downloads++;throw Error('must never download');}}})},count:()=>downloads};
+ return {page:{locator:()=>({count:async()=>1,isVisible:async()=>true,evaluate:async()=>false,dispatchEvent:async()=>{}}),frames:()=>[history],context:()=>({request:{get:async()=>{downloads++;throw Error('must never download');}}})},count:()=>downloads};
 }
 test('exact task without unique bound native link never takes recent downloads',async()=>{
  for(const attributes of [[],['https://jstzbstatic.erp321.com/export/aaa.xlsx','https://jstzbstatic.erp321.com/export/bbb.xlsx']]){

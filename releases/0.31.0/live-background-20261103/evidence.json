@@ -1,0 +1,70 @@
+{
+  "baseline_commit": "b798cfc00f6bdc1feb911b0ff8e1cd1ccadb1365",
+  "company": "团团甄选供应链（临沂）有限公司",
+  "physical_warehouse_mapping_confirmed": false,
+  "second_account_tested": false,
+  "production_default_adopted": false,
+  "qa_adopted": 1,
+  "native_task_id": "206012724",
+  "rows": 9207,
+  "states": {
+    "启用": 6024,
+    "备用": 822,
+    "禁用": 2361
+  },
+  "raw_file_sha256": "4d2d5ec7e343026e3138d614f7d084741f8af4ba1190929c3f06a124dd9a5966",
+  "raw_file_bytes": 2161737,
+  "artifact": "qa\\catalog_sync_0310\\live-one\\automatic-recovery\\聚水潭商品资料_206012724_4d2d5ec7e343.xlsx",
+  "automatic_background_recovery": {
+    "passed": true,
+    "mode": "background_tab",
+    "milliseconds": 18964,
+    "new_export_submitted": false,
+    "file_identity": "native_task_callback"
+  },
+  "manual_parser_and_rc3_exe_validator": {
+    "passed": true,
+    "rows": 9207,
+    "business_values_types_and_order_equal": true,
+    "qt_imported": false,
+    "exit_code": 0,
+    "seconds": 2.2228531999862753,
+    "exe_sha256": "98e027a137772358bc8c6985cb8e42fedb21cf8216c4fdc838eed375f5a6bff4",
+    "source_sha256": "4d2d5ec7e343026e3138d614f7d084741f8af4ba1190929c3f06a124dd9a5966"
+  },
+  "unchanged_core": {
+    "src/model.py": {
+      "sha256": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "unchanged": true
+    },
+    "src/allocation.py": {
+      "sha256": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "unchanged": true
+    },
+    "src/one_box_exception.py": {
+      "sha256": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "unchanged": true
+    },
+    "src/default_config.json": {
+      "sha256": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "unchanged": true
+    },
+    "src/default_must_sell.json": {
+      "sha256": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "unchanged": true
+    }
+  },
+  "aoxiang_source_unchanged": true,
+  "tests": {
+    "node": 28,
+    "python_focused": 13,
+    "headless_controls": 5
+  },
+  "limits": [
+    "Only original accepted task recovery verified with current background code; post-fix new-export submission guard tested offline, not another live export.",
+    "This source patch is not in rc3; no new EXE packaged in this live test.",
+    "Initial successful QA adoption used the exact callback captured during debugging; subsequent current-source recovery separately passed without that override.",
+    "Connection authorization timeout was extended to 600 seconds by QA wrapper; production timeout remains 60 seconds.",
+    "Second account and physical warehouse mapping remain unverified."
+  ]
+}

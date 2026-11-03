@@ -7,7 +7,7 @@ import * as native from './product-export.mjs';
 import {CatalogError,check,now,sha,canonical,safeError,WAREHOUSES} from './common.mjs';
 
 const businessAccount=a=>({id:a.id,warehouse:a.warehouse,expectedCompany:a.expectedCompany,expectedCoid:a.expectedCoid,expectedUid:a.expectedUid,mappingVerified:a.mappingVerified,bindingVersion:a.bindingVersion,binding:a.binding});
-const unresolved=i=>i.native?.submissions>0&&!['FAILED_CONFIRMED','DOWNLOADED'].includes(i.native.stage)&&!i.adoption;
+const unresolved=i=>(i.native?.submissions>0||i.native?.nativeTaskRef)&&!['FAILED_CONFIRMED','DOWNLOADED'].includes(i.native.stage)&&!i.adoption;
 
 export class CatalogService {
   static async open(options){return new CatalogService({...options,store:await JobStore.open(options.stateRoot)});}

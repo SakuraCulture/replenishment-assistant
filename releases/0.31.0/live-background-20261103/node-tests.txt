@@ -1,0 +1,36 @@
+✔ ambiguous controls are never activated (0.9908ms)
+✔ hidden or disabled controls are not dispatched (0.1908ms)
+✔ dispatch errors are not retried as another possible export (0.1618ms)
+✔ native download callback must identify exactly the original task and action (0.8519ms)
+✔ callback requires native success and the allowlisted XLSX address (0.6314ms)
+✔ native five-minute limit is a recoverable wait, not a new export (0.1125ms)
+✔ captured native all-status all-data request passes (0.6188ms)
+✔ enabled-only request is blocked before transmission (0.1429ms)
+✔ selected-row range is blocked (0.1276ms)
+✔ foreign company is blocked (0.1143ms)
+✔ additional supplier restriction is blocked (0.1583ms)
+✔ unknown export options are blocked (0.0839ms)
+✔ order mutation is not exposed by the integrated catalog-only service (0.7152ms)
+✔ normal browser root and sibling profile cannot become dedicated JST (7.4699ms)
+✔ two warehouses cannot use sibling profiles in one instance root (3.4531ms)
+✔ exact task without unique bound native link never takes recent downloads (1.0533ms)
+✔ same driver handles both accounts in user order and repeated intent never resubmits (207.6818ms)
+✔ login required only pauses one account; resume does not export successful account again (184.4013ms)
+✔ accepted download failure resumes the original task number (186.121ms)
+✔ legacy accepted task with zero submission counter still blocks a new export (123.8968ms)
+✔ unknown acceptance blocks new intent and resume; other account still completes (174.9952ms)
+✔ stop responds while work waits, starts no additional accounts, later resume works (260.8188ms)
+✔ observation token and adopted hash cannot target another item (171.041ms)
+✔ concurrent starts cannot launch two browser workers (173.396ms)
+✔ task IDs and download paths are strict; URLs with secrets are not task IDs (0.4394ms)
+✔ native route matches the same path with query parameters (0.5261ms)
+✔ accepted native response retains one durable attempt without relying on route hook (7.6265ms)
+✔ lost response or mismatched observed scope remains unresolved, never zero attempts (3.9146ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1627.3654

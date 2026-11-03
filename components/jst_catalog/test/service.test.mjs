@@ -58,6 +58,14 @@ test('accepted download failure resumes the original task number',async t=>{
   delete failure['山东仓'];await s.command({action:'sync.resume',batch_id,item_ids:[b.items[0].id]});b=await finish(s,batch_id);
   assert.deepEqual(counts.exports,warehouses);assert.deepEqual(counts.recovers,[['山东仓',id]]);assert.equal(b.items[0].native.nativeTaskRef,id);
 });
+test('legacy accepted task with zero submission counter still blocks a new export',async t=>{
+  const {service:s,counts,failure}=await fixture(t);failure['山东仓']='download';
+  const {batch_id}=await s.command(request('legacy_1',['山东仓']));let b=await finish(s,batch_id);
+  await s.store.write(d=>{d.batches[batch_id].items[0].native.submissions=0;});
+  await assert.rejects(s.command(request('legacy_2',['山东仓'])),/未决/);
+  delete failure['山东仓'];await s.command({action:'sync.resume',batch_id});b=await finish(s,batch_id);
+  assert.deepEqual(counts.exports,['山东仓']);assert.equal(counts.recovers.length,1);assert.ok(b.items[0].receipt);
+});
 test('unknown acceptance blocks new intent and resume; other account still completes',async t=>{
   const {service:s,counts,failure}=await fixture(t);failure['山东仓']='unknown';const {batch_id}=await s.command(request());let b=await finish(s,batch_id);
   assert.equal(b.items[0].stage,'SUBMISSION_UNKNOWN');assert.ok(b.items[1].receipt);

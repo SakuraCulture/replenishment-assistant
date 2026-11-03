@@ -10,30 +10,56 @@ export const COMPANY=null;
 const label='商品及库存管理(普通商品资料)';
 const clean=s=>String(s).replace(/\s+/g,'');
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+// Background tabs may not produce animation frames. Poll state using timers and
+// dispatch one native DOM event; do not require pointer focus or foregrounding.
+// A timeout never retries a click (especially an export submission).
+export async function activateControl(locator,{timeout=30000,pointer=false}={}){
+  const until=Date.now()+timeout;
+  for(;;){
+    const count=await locator.count();
+    if(count>1)throw new CatalogError('CONTROL_AMBIGUOUS','网页控件不唯一，未执行操作');
+    if(count===1&&await locator.isVisible()){
+      const disabled=await locator.evaluate(e=>e.matches(':disabled')||!!e.closest('[aria-disabled="true"]'));
+      if(!disabled){
+        // The status input opens on native focus/mouse handling, not click alone.
+        // Force skips only pointer actionability/animation waits; our explicit
+        // uniqueness, visibility and disabled checks still precede the action.
+        if(pointer)await locator.click({force:true,timeout});
+        else await locator.dispatchEvent('click',{bubbles:true,cancelable:true});
+        return;
+      }
+    }
+    if(Date.now()>=until)throw new CatalogError('CONTROL_NOT_READY','网页控件未就绪，未执行操作');
+    await wait(100);
+  }
+}
 export async function openProducts(page,{reload=false,expectedCompany=COMPANY}={}){
   if(reload||!page.url().startsWith('https://www.erp321.com/epaas'))await page.goto('https://www.erp321.com/epaas',{waitUntil:'domcontentloaded',timeout:60000});
   await page.locator('a[class^="menuItem"]').filter({hasText:/^商品$/}).waitFor({timeout:60000});
-  await page.waitForFunction(expected=>document.querySelector('#root')?.innerText.replace(/\s+/g,'').includes(expected),clean(expectedCompany),{timeout:30000});
+  await page.waitForFunction(expected=>document.querySelector('#root')?.innerText.replace(/\s+/g,'').includes(expected),clean(expectedCompany),{timeout:30000,polling:100});
   const body=clean(await page.locator('#root').innerText());
   if(!body.includes(clean(expectedCompany)))throw Error('聚水潭公司与配置不一致，未切换账号或执行导出');
   const tabs=page.getByRole('tab').filter({hasText:label});
-  if(await tabs.count()===1)await tabs.click();
+  if(await tabs.count()===1)await activateControl(tabs);
   else{
-    await page.locator('a[class^="menuItem"]').filter({hasText:/^商品$/}).click();
+    await activateControl(page.locator('a[class^="menuItem"]').filter({hasText:/^商品$/}));
     const entries=page.locator('div[class^="title"]').filter({hasText:new RegExp('^'+label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'$')}).filter({visible:true});
     const n=await entries.count();if(n!==2)throw Error('商品原生入口结构发生变化');
-    await entries.nth(1).click();
+    await activateControl(entries.nth(1));
   }
-  await page.locator('#iframe-10').waitFor({state:'visible',timeout:60000});
+  const productFrame=page.locator('iframe[src*="/erp-scm-goods/goodsInventoryManagement"]');
+  await productFrame.waitFor({state:'attached',timeout:60000});
+  if(await productFrame.count()!==1)throw Error('商品业务页不唯一，未继续');
   let frame;for(let n=0;n<150;n++){
-    frame=page.frames().find(f=>f.url().includes('/erp-scm-goods/goodsInventoryManagement'));
+    frame=await (await productFrame.elementHandle())?.contentFrame();
     if(frame&&await frame.getByPlaceholder('商品编码',{exact:true}).count())break;
     await wait(200);
   }
   if(!frame)throw Error('商品业务页未就绪');
   await frame.getByPlaceholder('商品编码',{exact:true}).waitFor({timeout:60000});
-  await page.getByRole('tab').filter({hasText:label}).click();
-  await page.waitForFunction(()=>document.querySelector('#iframe-10')?.closest('[class*="tabContent"]')?.className.includes('current'),null,{timeout:15000});
+  await activateControl(page.getByRole('tab').filter({hasText:label}));
+  await page.waitForFunction(text=>[...document.querySelectorAll('[role="tab"]')].some(e=>e.textContent.includes(text)&&e.getAttribute('aria-selected')==='true'),label,{timeout:15000,polling:100});
+  if(!await productFrame.isVisible())throw Error('商品业务页未激活，未继续');
   return frame;
 }
 function countsIn(json){
@@ -46,13 +72,13 @@ function countsIn(json){
 }
 export async function queryAll(page,options={}){
   const frame=await openProducts(page,options);
-  await frame.getByText('重 置',{exact:true}).click();
+  await activateControl(frame.getByText('重 置',{exact:true}));
   let selected=(await frame.getByPlaceholder('商品状态',{exact:true}).inputValue()).split(',').sort();
   if(JSON.stringify(selected)!==JSON.stringify(['启用','备用','禁用'].sort())){
-    await frame.getByPlaceholder('商品状态',{exact:true}).click();
-    await frame.getByText('全选',{exact:true}).click();
+    await activateControl(frame.getByPlaceholder('商品状态',{exact:true}),{pointer:true});
+    await activateControl(frame.getByText('全选',{exact:true}).filter({visible:true}));
   }
-  await frame.waitForFunction(()=>JSON.stringify(document.querySelector('input[placeholder="商品状态"]')?.value.split(',').map(x=>x.trim()).sort())===JSON.stringify(['启用','备用','禁用'].sort()),null,{timeout:10000});
+  await frame.waitForFunction(()=>JSON.stringify(document.querySelector('input[placeholder="商品状态"]')?.value.split(',').map(x=>x.trim()).sort())===JSON.stringify(['启用','备用','禁用'].sort()),null,{timeout:10000,polling:100});
   selected=(await frame.getByPlaceholder('商品状态',{exact:true}).inputValue()).split(',').map(x=>x.trim()).sort();
   if(JSON.stringify(selected)!==JSON.stringify(['启用','备用','禁用'].sort()))throw Error('未选中全部三种商品状态，未查询或导出');
   const responsePending=page.waitForResponse(r=>{
@@ -62,7 +88,7 @@ export async function queryAll(page,options={}){
   // If the click fails or the page closes first, its pending response must not
   // become an unhandled rejection that terminates an otherwise recoverable service.
   responsePending.catch(()=>{});
-  await frame.getByRole('button',{name:'搜 索',exact:true}).click();
+  await activateControl(frame.getByRole('button',{name:'搜 索',exact:true}));
   const response=await responsePending,json=await response.json(),request=response.request().postDataJSON();
   if(!response.ok()||json.code!==0||json.act!==0)throw Error('全量商品查询未获原生成功响应');
   const counts=countsIn(json);if(counts.length!==1||counts[0]<1){
@@ -77,7 +103,7 @@ export async function queryAll(page,options={}){
   return {frame,scope};
 }
 export async function openHistory(page){
-  await page.locator('div[class^="item"]:has(use[*|href="#icon-download-line"])').click();
+  await activateControl(page.locator('div[class^="item"]:has(use[*|href="#icon-download-line"])'));
   let frame;for(let n=0;n<100;n++){
     frame=page.frames().find(f=>f.url().includes('/app/common/export/export_log.aspx'));
     if(frame&&await frame.locator('#_jt_body_list').count())break;
@@ -100,6 +126,50 @@ export function nativeFileUrl(value){
   try{const u=new URL(value);if(u.protocol==='https:'&&u.hostname==='jstzbstatic.erp321.com'&&/^\/export\/[a-f0-9]+\.xlsx$/.test(u.pathname))return u;}catch{}
   throw new CatalogError('FILE_IDENTITY','任务未提供可核验的原生文件地址，未改取其他文件');
 }
+export function downloadRequestMatches(request,historyUrl,recordId){
+  try{
+    const actual=new URL(request.url()),expected=new URL(historyUrl);
+    if(request.method()!=='POST'||actual.origin!==expected.origin||actual.pathname!==expected.pathname)return false;
+    const form=new URLSearchParams(request.postData()||'');
+    const callback=JSON.parse(form.get('__CALLBACKPARAM'));
+    return form.get('__CALLBACKID')==='JTable1'&&callback.Method==='CheckAndGetExportData'&&
+      callback.CallControl==='{page}'&&Array.isArray(callback.Args)&&callback.Args.length===1&&
+      String(callback.Args[0])===String(recordId);
+  }catch{return false;}
+}
+export function downloadResponseUrl(body){
+  let data;try{if(!body.startsWith('0|'))throw Error();data=JSON.parse(body.slice(2));}catch{
+    throw new CatalogError('FILE_IDENTITY','原任务下载响应格式无法核验');
+  }
+  if(data.IsSuccess===true&&data.ReturnValue===null&&String(data.Message||'').includes('5分钟'))
+    throw new CatalogError('DOWNLOAD_RATE_LIMIT','聚水潭限制同一文件频繁获取下载地址，请5分钟后继续原任务；未重新提交导出');
+  if(data.IsSuccess!==true||data.GotoLogin||data.ExceptionMessage||data.ExceptionText||typeof data.ReturnValue!=='string')
+    throw new CatalogError('FILE_IDENTITY','原任务没有返回成功的文件地址');
+  return nativeFileUrl(data.ReturnValue);
+}
+const downloadAddresses=new WeakMap();
+async function boundDownloadUrl(page,history,row,recordId){
+  const cached=downloadAddresses.get(page)?.get(recordId);
+  if(cached)return {url:cached,release:async()=>{}};
+  const button=row.locator('span.downLoad').filter({hasText:/^下载$/});
+  if(await button.count()!==1)throw new CatalogError('FILE_IDENTITY','原任务没有唯一下载入口，未使用其他下载');
+  const pending=observe(page,'response',r=>downloadRequestMatches(r.request(),history.url(),recordId)&&r.request().frame()===history,30000);
+  // The native callback also clicks a temporary link. Suppress that browser copy
+  // on this owned page; receive the exact response-bound bytes into the job folder.
+  const pattern='https://jstzbstatic.erp321.com/export/**',block=route=>route.abort('blockedbyclient');
+  await page.route(pattern,block);
+  const release=()=>page.unroute(pattern,block);
+  try{
+    await activateControl(button);
+    const response=await pending.promise;
+    if(!response.ok())throw new CatalogError('FILE_IDENTITY','原任务下载地址查询失败');
+    const url=downloadResponseUrl(await response.text());
+    if(!downloadAddresses.has(page))downloadAddresses.set(page,new Map());
+    downloadAddresses.get(page).set(recordId,url); // signed URL remains in memory only
+    return {url,release};
+  }catch(e){await release();throw e;}
+  finally{pending.dispose();}
+}
 export async function receiveKnownExport(page,{recordId,expectedRows,output,expectedPath,signal,onProgress=()=>{},timeout=120000}){
   recordId=nativeTaskId(recordId);if(!Number.isSafeInteger(expectedRows)||expectedRows<1)throw Error('原任务缺少已核对行数');
   check(signal);const history=await openHistory(page);const until=Date.now()+timeout;let row;
@@ -120,12 +190,26 @@ export async function receiveKnownExport(page,{recordId,expectedRows,output,expe
   // A same-sized background download must never become our input.
   const attributes=await row.locator('[href],[onclick],[data-url]').evaluateAll(nodes=>nodes.flatMap(e=>['href','onclick','data-url'].map(k=>e.getAttribute(k)||'')));
   const urls=[...new Set(attributes.flatMap(s=>s.match(/https:\/\/jstzbstatic\.erp321\.com\/export\/[a-f0-9]+\.xlsx[^\s"'<>)]*/g)||[]))];
-  if(urls.length!==1)throw new CatalogError('FILE_IDENTITY','原任务行未提供唯一文件链接，保留任务待核；未使用最近下载');
-  const url=nativeFileUrl(urls[0].replaceAll('&amp;','&'));
+  if(urls.length>1)throw new CatalogError('FILE_IDENTITY','原任务行存在多个文件链接，未使用最近下载');
+  let url,release=async()=>{};
+  if(urls.length===1)url=nativeFileUrl(urls[0].replaceAll('&amp;','&'));
+  else ({url,release}=await boundDownloadUrl(page,history,row,recordId));
+  try{
+    return {...await receiveBoundFile(page,url,{recordId,expectedRows,expectedPath,output,signal,onProgress}),
+      fileIdentity:urls.length?'native_row_link':'native_task_callback'};
+  }finally{await release();}
+}
+// Both first download and retry use the same byte validation and immutable save.
+// Callers must have bound the URL to the original native task first.
+export async function receiveBoundFile(page,address,{recordId,expectedRows,expectedPath,output,signal,onProgress=()=>{}}){
+  const url=nativeFileUrl(String(address));recordId=nativeTaskId(recordId);
   if(expectedPath&&url.pathname!==expectedPath)throw new CatalogError('FILE_IDENTITY','原任务文件身份已变化');
   check(signal);onProgress('DOWNLOADING','正在接收原任务文件');
   const response=await page.context().request.get(url.href,{timeout:60000,maxRedirects:0});
-  if(!response.ok())throw Error('原生文件接收 HTTP '+response.status());
+  if(!response.ok()){
+    if([401,403,404].includes(response.status()))downloadAddresses.get(page)?.delete(recordId);
+    throw Error('原生文件接收 HTTP '+response.status());
+  }
   const bytes=await response.body();check(signal);
   if(bytes.length<100||bytes.length>60*1024*1024||bytes.subarray(0,4).toString('hex')!=='504b0304')throw Error('下载不是受支持的XLSX');
   const sha256=crypto.createHash('sha256').update(bytes).digest('hex');await fs.mkdir(output,{recursive:true});
@@ -150,6 +234,7 @@ export function exportScopeValid(body,scope){
   const ignore=new Set(['sku_type','enabled','queryFlds','orderBy']);
   return Object.entries(s).every(([k,v])=>ignore.has(k)||v===null||v===undefined||v===''||(Array.isArray(v)&&!v.length));
 }
+export const nativeExportEndpoint=url=>url.pathname==='/erp/webapi/ItemApi/Export/ItemSkuAndInventory';
 export async function validateProductFile(file,{validator,expectedRows,warehouse,output,signal}){
   check(signal);if(!validator?.executable||!Array.isArray(validator.prefix))throw Error('缺少包内文件校验入口');
   const id=crypto.randomUUID(),request=path.join(output,'validate-'+id+'.request.json'),result=path.join(output,'validate-'+id+'.result.json');
@@ -166,26 +251,33 @@ export async function exportAll(page,{output,onManifest,signal,onProgress=()=>{}
   await fs.mkdir(output,{recursive:true});
   let manifest={schema:1,stage:'QUEUED',submissions:0,createdAt:new Date().toISOString()};
   const save=async patch=>{manifest={...manifest,...patch};await onManifest(structuredClone(manifest));};
-  const endpoint='**/erp/webapi/ItemApi/Export/ItemSkuAndInventory';let scope,installed=false,observation;
+  const endpoint=nativeExportEndpoint;let scope,installed=false,observation,transmissions=0;
   const guard=async route=>{
     const request=route.request();let body;try{body=request.postDataJSON();}catch{}
     if(signal?.aborted){await save({stage:'CANCELLED_BEFORE_SUBMIT',submissions:0});await route.abort('blockedbyclient');return;}
-    if(manifest.submissions||request.method()!=='POST'||!exportScopeValid(body,scope)){
-      await save({stage:manifest.submissions?'SUBMISSION_UNKNOWN':'NOT_SUBMITTED_SCOPE_MISMATCH'});await route.abort('blockedbyclient');return;
+    if(transmissions||request.method()!=='POST'||!exportScopeValid(body,scope)){
+      await save({stage:transmissions?'SUBMISSION_UNKNOWN':'NOT_SUBMITTED_SCOPE_MISMATCH',submissions:transmissions?1:0});await route.abort('blockedbyclient');return;
     }
     await save({stage:'SUBMITTING',submissions:1,nativeExportScope:body.data});
+    transmissions++;
     // The durable intent precedes dispatch. Stop is acknowledged but never kills this boundary.
     await route.continue();
   };
   try{
     check(signal);const found=queried||await queryAll(page,options);scope=found.scope;
     await save({stage:'INTENT_RECORDED',scope});check(signal);
-    observation=observe(page,'response',r=>new URL(r.url()).pathname==='/erp/webapi/ItemApi/Export/ItemSkuAndInventory'&&r.request().method()==='POST',60000);
+    observation=observe(page,'response',r=>nativeExportEndpoint(new URL(r.url()))&&r.request().method()==='POST',60000);
     await page.route(endpoint,guard);installed=true;
     onProgress('SUBMITTING','正在提交一次导出；此时停止将等待受理结果');
-    await found.frame.getByText('导出',{exact:true}).click();check(signal);
-    await found.frame.getByText('导出商品',{exact:true}).click();
+    await activateControl(found.frame.getByText('导出',{exact:true}));check(signal);
+    // Persist the attempt before the native button can send anything, even when
+    // a browser service worker does not pass through Playwright's route hook.
+    await save({stage:'SUBMITTING',submissions:1});
+    if(signal?.aborted){await save({stage:'CANCELLED_BEFORE_SUBMIT',submissions:0});check(signal);}
+    await activateControl(found.frame.getByText('导出商品',{exact:true}));
     const response=await observation.promise,json=await response.json();
+    let actualScope;try{actualScope=response.request().postDataJSON();}catch{}
+    if(!exportScopeValid(actualScope,scope))throw new CatalogError('SUBMISSION_UNKNOWN','平台已响应，但实际导出范围无法核验，保留原提交待核；未重新提交');
     if(!response.ok()||json.code!==0||json.act!==0){await save({stage:'FAILED_CONFIRMED'});throw new CatalogError('PLATFORM_REJECTED','平台明确拒绝本次导出');}
     const task=nativeTaskId(json.data);await save({stage:'ACCEPTED',nativeTaskRef:task,acceptedAt:new Date().toISOString()});check(signal);
     const received=await receiveKnownExport(page,{recordId:task,expectedRows:scope.expectedRows,output,signal,onProgress});
