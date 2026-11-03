@@ -13,6 +13,7 @@ from io_stages import stage
 
 HEADERS=['仓库/门店名称','仓库/门店编码','供应商编码','商品名称','商品编码','商品条码','基础单位','日销','周销','月销','可用库存','在途库存','在途库存天数','缺货天数（天）','箱规','中心仓价格','补货数量','黑名单状态','所属仓','商品等级']
 AUDIT_HEADERS=['补货单号','决策理由']
+MERCHANT_AUDIT_HEADERS=['决策理由']
 SHEETS=['往期新品','本月新品','中心仓动销补货清单']
 TEMPLATE_SHA256='1cc7a8e9f99fec764d17286c6b0a028a7ea79416add7178a64e91512f311f7c6'
 
@@ -87,7 +88,7 @@ def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None):
     if warehouse:
         for key,value in [('门店正常单号',parent_number),('供货仓',warehouse)]:wb.custom_doc_props.append(StringProperty(name=key,value=value))
     for name,rows in grouped.items():
-        ep.rows(progress,name,0,len(rows));ws=wb.create_sheet(name);ws.sheet_format.defaultColWidth=9;ws.sheet_format.defaultRowHeight=13.5;ws.append(HEADERS+AUDIT_HEADERS)
+        ep.rows(progress,name,0,len(rows));ws=wb.create_sheet(name);ws.sheet_format.defaultColWidth=9;ws.sheet_format.defaultRowHeight=13.5;ws.append(HEADERS+MERCHANT_AUDIT_HEADERS)
         ws.oddHeader.center.text=order['number']+' '+rev+(' 历史修订' if historical else '')
         ws['A1'].comment=Comment(order['number']+' '+rev+'；业务日期 '+order['day']+'；'+('历史修订' if historical else '当前修订'),'补货助手')
         ws['Q1'].comment=Comment('签发执行数量（库存单位）；未选择或预算未安排的新品为0。门店可修改本列，原签发建议保存在应用历史归档。箱规品请填写箱规倍数。','补货助手')
@@ -98,7 +99,7 @@ def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None):
             if status=='未提供（不作为数量拦截）':status='未提供'
             visible=[d.get(k) for k in 'A B C D E F G H I J K L M N'.split()]+[d.get('BD'),d.get('V'),qty,status,d.get('AU'),d.get('AV')]
             explanation=sem.explanation(d)
-            audit=[order['number'],decision(d)]
+            audit=[decision(d)]
             ws.append(visible+audit)
             ws.cell(rn,16).number_format='0.00'
             ws.cell(rn,18).number_format='@'
@@ -112,10 +113,10 @@ def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None):
                 if isinstance(cell.value,str):cell.data_type='s'
         # Original A:T layout retained, with explicit price/status presentation.
         ws.column_dimensions['P'].width=12;ws.column_dimensions['R'].width=14
-        ws.column_dimensions['U'].width=38;ws.column_dimensions['V'].width=14
-        # Keep the exact linkage values for feedback import; hide only presentation.
-        ws.column_dimensions['U'].hidden=True
+        ws.column_dimensions['U'].width=14
         ws.print_options.horizontalCentered=False
+    import order_identity
+    order_identity.write(wb,[order_identity.entry(order,warehouse,name) for name in grouped])
     progress('数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…');path.parent.mkdir(parents=True,exist_ok=True)
     fd,temp=tempfile.mkstemp(prefix='.normal-',suffix='.xlsx',dir=path.parent);os.close(fd)
     try:

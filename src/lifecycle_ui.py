@@ -41,7 +41,7 @@ class Mapping(QDialog):
             if f in ('门店编码','供货仓','数量单位','币种'):
                 e=QLineEdit(); e.setPlaceholderText('未映射时使用此明确固定值'); self.defaults[f]=e; row.addWidget(e)
                 if f=='数量单位': e.setText('库存单位')
-            form.addRow(f+('（批量必填；单张可带入）' if f=='补货单号' else '（必填）' if f in io.required(stage) else '（选填）'),row)
+            form.addRow(f+('（可空；随后选择签发单）' if f=='补货单号' else '（必填）' if f in io.required(stage) else '（选填）'),row)
         scroll.setWidget(body); v.addWidget(scroll,1); self.sample,self.sample_model=grid(self,[]); self.sample.setMaximumHeight(130); v.addWidget(self.sample)
         row=QHBoxLayout(); row.addWidget(button('下一步：核对整单',self.accept,True)); row.addWidget(button('取消',self.reject)); v.addLayout(row); self.sheet.currentIndexChanged.connect(self.populate); self.populate()
     def populate(self):

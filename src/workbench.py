@@ -30,6 +30,12 @@ class Workbench(ParameterUi,BatchWindow):
         if any(r['day']==wr.today() for r in self.work_repository.list_jobs()):self.status.setText('今天已有保存的作业，可从“作业记录”继续；新建内容不会自动覆盖。')
     def touch(self):
         if not self._hydrating and not self.readonly:self.job_dirty=True;self.refresh_job_label()
+    def refresh_tables(self):
+        super().refresh_tables()
+        plan=getattr(self,'active_plan',None)
+        if plan and hasattr(self,'overview_note'):
+            missing=[i['name'] for i in plan['stores'] if i['code'] not in self.states]
+            if missing:self.overview_note.setText(self.overview_note.text().replace('全部门店结果就绪。','已载入门店结果就绪。')+' 计划尚缺 '+str(len(missing))+' 店文件：'+'、'.join(missing)+'；未计入本次金额。')
     def refresh_job_label(self):
         if not hasattr(self,'job_label'):return
         state='历史记录 · 只读' if self.readonly else '有未保存变更' if self.job_dirty else '已保存 '+self.saved_time if self.saved_time else '未保存'
@@ -139,7 +145,7 @@ class Workbench(ParameterUi,BatchWindow):
         loaded=None
         if self.loaded:
             loaded={**self.loaded,'intake':{k:v for k,v in self.loaded['intake'].items() if k!='frozen'}}
-        return {'active_plan':copy.deepcopy(self.active_plan),'schema':1,'day':self.job_day,'app_version':VERSION,'model_version':MODEL_VERSION,'loaded':loaded,'states':self.states,'results':self.results,'catalogs':self.catalogs,'profile':self.profile,'input_dirty':self.input_dirty,'store_presets':{s:self.preset_for(s) for s in self.store_widgets},'overrides':self.overrides,'default_by_store':self.default_by_store,'store_ui':{s:self.store_ui(s) for s in self.store_widgets},'sales':self.sales.paths,'products':self.products.path,'legacy':self.master_legacy.isChecked(),'concurrency':self.concurrency.value(),'exception':self.exception.isChecked(),'export_log':self.export_log,'pending_copy':getattr(self,'pending_copy',None)}
+        return {'admission_required':True,'active_plan':copy.deepcopy(self.active_plan),'schema':1,'day':self.job_day,'app_version':VERSION,'model_version':MODEL_VERSION,'loaded':loaded,'states':self.states,'results':self.results,'catalogs':self.catalogs,'profile':self.profile,'input_dirty':self.input_dirty,'store_presets':{s:self.preset_for(s) for s in self.store_widgets},'overrides':self.overrides,'default_by_store':self.default_by_store,'store_ui':{s:self.store_ui(s) for s in self.store_widgets},'sales':self.sales.paths,'products':self.products.path,'legacy':self.master_legacy.isChecked(),'concurrency':self.concurrency.value(),'exception':self.exception.isChecked(),'export_log':self.export_log,'pending_copy':getattr(self,'pending_copy',None)}
     def confirm_overwrite(self,old,new):
         a=old['summary'];b=wr.summary(new);oldstores=a['stores'];newstores=b['stores']
         removed=set(oldstores)-set(newstores);added=set(newstores)-set(oldstores);lost=[s for s in oldstores.keys()&newstores.keys() if oldstores[s]['state']=='已完成' and newstores[s]['state']!='已完成']

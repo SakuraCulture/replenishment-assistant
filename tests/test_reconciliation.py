@@ -103,7 +103,10 @@ class ReconciliationTests(unittest.TestCase):
         result=lc.export(f.path,[h,f.h],f.root,'return','combined');self.assertIsNone(result['error']);self.assertEqual(len(result['files']),2)
         for name,wh in zip(result['files'],['山东仓','河北仓']):
             b=openpyxl.load_workbook(name)
-            try:self.assertEqual({r[18] for ws in b for r in list(ws.values)[1:]},{wh})
+            try:
+                import normal_exports,order_identity
+                self.assertEqual({r[18] for ws in b if ws.title in normal_exports.SHEETS for r in list(ws.values)[1:]},{wh})
+                self.assertEqual({r['warehouse'] for r in order_identity.read(b)},{wh})
             finally:b.close()
     def test_missing_zero_in_payment_export_keeps_unknown_amount(self):
         f=self.f;f.save('return',[{}, {'商品编码':'X','门店确认数量':2}]);f.save('payment')

@@ -77,9 +77,11 @@ def apply(loaded,store,context):
             m['admission']=check(context,d['E'],m)
             d['AT']='门店拒收' if any(x.startswith('门店拒收') for x in m['admission']['reasons']) else '无有效拒收记录'
     return out
-def verify_result(db,result):
+def verify_result(db,result,*,required=False):
     context=result.get('effective_settings',{}).get('admission')
-    if context is None:return  # Historical/internal calculation contract; never fabricate old evidence.
+    if context is None:
+        if required:raise ValueError('本次结果没有门店准入依据，请重新计算后签发：'+result['store'])
+        return  # Legacy/internal contract. New UI signatures explicitly require evidence.
     latest=snapshot('',result['store'],db=db)
     if latest!=context:raise ValueError('门店资质、拒收记录或核验日期已变化，请重新计算并核对：'+result['store'])
     from result_semantics import order_quantity,numeric

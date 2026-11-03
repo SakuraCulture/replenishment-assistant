@@ -24,6 +24,10 @@ class _RowMetadataRequired(TypedDict):
     export_updated:Cell
 
 class RowMetadata(_RowMetadataRequired,total=False):
+    product_tags:Cell
+    product_tags_known:bool
+    medical_sources:list[dict[str,Any]]
+    admission:dict[str,Any]
     profile_override:Cell
     export_file:str
     export_sheet:str
@@ -55,6 +59,7 @@ class _ParameterPresetRequired(TypedDict):
 
 class ParameterPreset(_ParameterPresetRequired,total=False):
     base_config:ParameterConfig
+    plan_source:dict[str,Any]
 
 class _StoreSettingsRequired(TypedDict):
     warehouses:WarehouseCycles
@@ -62,6 +67,7 @@ class _StoreSettingsRequired(TypedDict):
     budget:float|int|None
 
 class StoreSettings(_StoreSettingsRequired,total=False):
+    admission:dict[str,Any]
     supply_route:dict[str,str|None]
     parameter_config:ParameterConfig
     preset:dict[str,Any]

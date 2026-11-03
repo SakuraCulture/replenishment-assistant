@@ -32,7 +32,7 @@ def field_key(value):
     return text
 
 def auto_mapping(stage, headers):
-    aliases={'门店确认数量':['补货数量'],'供货仓':['所属仓','仓']}
+    aliases={'门店确认数量':['补货数量'],'供货仓':['所属仓','仓'],'门店编码':['仓库/门店编码']}
     headers=[field_key(h) for h in headers]
     result={}
     for field in fields(stage):
@@ -63,7 +63,13 @@ def inspect(paths, progress=lambda _: None, cancel=None):
         raw = Path(f['path']).read_bytes()
         if base.digest(raw) != f['sha']: raise ValueError('文件在读取期间变化')
         wb = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, keep_links=False)
-        try: f['properties'] = {p.name: p.value for p in wb.custom_doc_props}
+        try:
+            import order_identity
+            f['properties'] = {p.name: p.value for p in wb.custom_doc_props}
+            f['identity']=order_identity.read(wb)
+            f['sheets']=[s for s in f['sheets'] if s['sheet']!=order_identity.SHEET]
+            if f['properties'].get('补货助手最低模板') in STAGES:
+                f['sheets']=[s for s in f['sheets'] if not (s['sheet']=='填写说明' and s['headers']==['项目','说明'])]
         finally: wb.close()
     return infos
 
@@ -82,6 +88,7 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
         if base.digest(raw) != spec['sha']: raise ValueError('映射后文件变化，请重新读取：' + p.name)
         files.append({k: spec[k] for k in ('path', 'name', 'sha')})
         mapping = dict(spec['mapping']); defaults = spec.get('defaults', {})
+        revision_column=mapping.get('签发修订')
         number_only=spec.get('order_number_only',False)
         if number_only:mapping['签发修订']=None
         columns = [v for v in mapping.values() if v is not None]
@@ -91,6 +98,8 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
             if mapping.get(key) is None and defaults.get(key) in (None, ''): raise ValueError('缺少字段映射：' + key)
         book = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=False, keep_links=False); cached = None
         try:
+            import order_identity
+            identities=order_identity.read(book)
             ws = book[spec['sheet']]; ws.reset_dimensions(); iterator = ws.values
             if list(next(iterator, ())) != spec['headers']: raise ValueError('表头已变化')
             for n, cells in enumerate(iterator, 2):
@@ -98,7 +107,7 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
                 if not any(v not in (None, '') for v in cells): continue
                 try:
                     d = {f: cells[c] if c is not None and c < len(cells) else defaults.get(f) for f in names for c in [mapping.get(f)]}
-                    if number_only:d['签发修订']=None
+                    if number_only:d['签发修订']=(cells[revision_column] if identities and revision_column is not None and revision_column<len(cells) else None)
                     price_column=spec.get('price_column') if spec.get('adapter')=='jst_import_return' else None
                     if price_column is not None:d['_price']=cells[price_column] if price_column<len(cells) else None
                     if any(isinstance(v, str) and v.startswith('=') for v in d.values()):
@@ -134,6 +143,13 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
                     doc = base.code(d[DOCNUM[stage]], stage == 'return' or generated)
                     props = spec.get('properties', {}); signed = base.code(d['补货单号'], True)
                     rev = revision(d['签发修订'])
+                    # Resolve from stable sheet/store/warehouse evidence, never SKU or row position.
+                    ref,candidates=order_identity.resolve(identities,spec['sheet'],signed,base.code(d['门店编码'],True),str(d['供货仓'] or '').strip())
+                    if ref:
+                        if rev is not None and rev!=ref['revision']:raise ValueError('行修订与隐藏页签发引用冲突')
+                        signed=ref['number'];rev=ref['revision'];d['门店编码']=ref['store'];d['供货仓']=ref['warehouse'] or d['供货仓']
+                    if not identities and not signed and props.get('补货单号'):signed=base.code(props['补货单号'])
+                    if props.get('补货单号') and signed!=props['补货单号']:raise ValueError('单号与文件属性冲突')
                     if props.get('签发修订索引') and not number_only:
                         import json
                         index=json.loads(props['签发修订索引']);embedded=revision(index.get(signed))
@@ -141,7 +157,7 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
                         rev=embedded
                     if props.get('修订'):
                         if props.get('补货单号') != signed: raise ValueError('单号与导出文件修订标识不一致')
-                        if not number_only:
+                        if not number_only or ref:
                             embedded = revision(props['修订'])
                             if rev is not None and rev != embedded: raise ValueError('行修订与文件修订不一致')
                             rev = embedded
@@ -150,6 +166,8 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
                     currency = str(d.get('币种') or '').strip()
                     rows.append({'sku': base.code(d['商品编码']), 'name': str(d['商品名称'] or ''), 'signed_number': signed, 'revision': rev, 'store': base.code(d['门店编码'], True), 'warehouse': wh, 'document_number': doc, 'document_date': day, 'quantity': qty, 'unit': unit, 'factor': factor, 'conversion_basis': basis, 'base_quantity': converted, 'amount': base.number(d.get('实际金额'), stage != 'payment'), 'currency': currency, 'note': d['备注'], 'source': {'sha': spec['sha'], 'file': p.name, 'sheet': ws.title, 'row': n}, 'raw_headers': spec['headers'], 'raw_values': list(cells)})
                     rows[-1]['quantity_origin']='blank' if blank else 'zero' if Decimal(qty)==0 else 'value'
+                    if ref:rows[-1]['identity_reference']={k:ref[k] for k in ('number','store','warehouse','day','revision','digest')}
+                    if candidates:rows[-1]['identity_candidates']=[{k:e[k] for k in ('number','store','warehouse','day','revision','digest')} for e in candidates]
                     if generated:
                         if not signed:raise ValueError('聚水潭导入单缺少订单号，不能猜测关联')
                         rows[-1].update(adapter='jst_import_return',price=price,amount_basis='数量×单价',external_order_number=None)
@@ -172,11 +190,13 @@ def template(stage, path):
     from openpyxl.comments import Comment
     target=Path(path)
     if target.exists():raise FileExistsError('目标文件已存在，不覆盖')
-    columns=PAYMENT_HEADERS if stage=='payment' else input_fields(stage)
-    mandatory={'补货单号','商品编码',QUANTITIES[stage]} | ({DOCNUM[stage],DOCDATE[stage]} if stage=='receipt' else set())
+    columns=PAYMENT_HEADERS if stage=='payment' else [f for f in input_fields(stage) if f!='补货单号']
+    mandatory={'商品编码',QUANTITIES[stage]} | ({DOCNUM[stage],DOCDATE[stage]} if stage=='receipt' else set())
     if stage=='payment':mandatory={'内部订单号','商品编码','数量','商品金额'}
     labels=columns if stage=='payment' else [f+('（必填）' if f in mandatory else '（选填）') for f in columns]
     book=openpyxl.Workbook();ws=book.active;ws.title=TITLES[stage];ws.append(labels);ws.freeze_panes='A2'
+    from openpyxl.packaging.custom import StringProperty
+    book.custom_doc_props.append(StringProperty(name='补货助手最低模板',value=stage))
     for field,cell in zip(columns,ws[1]):
         cell.font=Font(bold=True,color='FFFFFF');cell.fill=PatternFill('solid',fgColor='126C63' if field in mandatory else '657B83');ws.column_dimensions[cell.column_letter].width=28
         cell.comment=Comment(('必填字段。' if field in mandatory else '选填字段。')+('数量列须存在；空白/缺行在整单核对确认后按0。' if field in (QUANTITIES[stage],'数量') else '单张订单详情导入时可由系统带入；批量须填写。' if field=='补货单号' else ''),'补货助手')
@@ -185,6 +205,7 @@ def template(stage, path):
             if '编码' in field or '单号' in field or field in ('内部订单号','线上订单号','买家账号','辅助码'):ws.cell(n,i).number_format='@'
     notes=[('关联','仅用补货单号关联当前有效签发。签发修订、门店和仓库由系统维护；不填、不选择。'),('只填本环节','上一环节数量、签发建议、差额由系统读取计算，无需抄写。回传也可直接修改原签发单的补货数量。'),('必填与选填','绿底为必填，灰底为选填；付款沿用原表，不需补填原表缺少的选填信息。'),('补货单号','单张订单详情导入时可以不填，由所选订单带入；批量导入须提供每行补货单号。原签发单已带号，不用重填。'),('数量','数量列必须存在；明确0、空白和缺行在确认完整单据后均按0，处理来源分别保留。未导入整单不是0。'),('单位','与签发/回传相同的库存单位，不乘箱规，无需填写单位、折算系数。'),('来源单据','回传无需另编回传单号或填回传日期。付款保留内部订单号及商品金额；收货单号/收货日期是实际业务信息，仍须提供。'),('编码','商品编码及补货单号按文本填写，保留前导零；每仓单每商品一行。'),('上游变化','导入时关联当前签发；预览后订单变化则拒绝保存，重新核对。历史事实不删除。')]
     help_sheet=book.create_sheet('填写说明');help_sheet.append(['项目','说明'])
+    notes=[(k,('优先读取原签发单隐藏关联页；无单号可在导入中搜索并选择对应签发单，按来源订单分组，不必回Excel补填。' if k in ('关联','补货单号') else v)) for k,v in notes]
     for row in notes:help_sheet.append(row)
     for f in columns:help_sheet.append((f,'必填；数量空白可确认按0' if f in (QUANTITIES[stage],'数量') else '必填；单订单详情可由系统带入' if f=='补货单号' else '必填' if f in mandatory else '选填'))
     help_sheet.column_dimensions['A'].width=28;help_sheet.column_dimensions['B'].width=110

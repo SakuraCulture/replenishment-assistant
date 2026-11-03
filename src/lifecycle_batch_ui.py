@@ -2,7 +2,7 @@
 from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog,QVBoxLayout,QHBoxLayout,QStackedWidget,QWidget,
-    QTableWidget,QTableWidgetItem,QComboBox,QFileDialog,QMessageBox,QPushButton)
+    QTableWidget,QTableWidgetItem,QComboBox,QFileDialog,QMessageBox,QPushButton,QCompleter)
 from ui_controls import button,label
 from business_ui import run
 from runtime_support import Cancelled
@@ -26,6 +26,7 @@ class BatchImport(QDialog):
         self.table=QTableWidget(0,6);self.table.setHorizontalHeaderLabels(['纳入','来源文件 / 来源订单','环节','商品行数','补货单号（整单关联）','读取范围']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         for i,w in enumerate([50,270,130,85,380,260]):self.table.setColumnWidth(i,w)
         v.addWidget(self.table,1)
+        v.addWidget(button('划分选中来源组并绑定签发单',self.split_selected))
         self.issue_note=label('需要处理');v.addWidget(self.issue_note)
         self.issue_table=QTableWidget(0,4);self.issue_table.setHorizontalHeaderLabels(['问题文件 / 原因','环节','修正映射','本次不纳入']);self.issue_table.setColumnWidth(0,600);self.issue_table.setMaximumHeight(180);self.issue_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);v.addWidget(self.issue_table)
         self.note=label('同单同环节有多份文件时只能选择一份，不按到达时间覆盖，也不累加。','muted');v.addWidget(self.note)
@@ -61,8 +62,10 @@ class BatchImport(QDialog):
             title=r['source']['file']+(' / '+str(source.get('店铺名称'))+' / '+str(source.get('内部订单号')) if source else ' / '+str(r.get('signed_number') or r.get('document_number') or '缺单号'))
             for j,text in ((1,title),(2,io.TITLES[d['scan']['stage']]),(3,str(len(rows))),(5,'、'.join(dict.fromkeys(x['source']['sheet'] for x in rows)))):self.table.setItem(i,j,QTableWidgetItem(text))
             combo=QComboBox();combo.setMinimumWidth(350);combo.addItem('请选择完整来源单对应的补货单号',None)
-            number=r.get('signed_number');choices=[h for h in self.heads if not number or h['number']==number]
-            for h in choices:combo.addItem(f"{h['number']} · {h.get('name',h['store'])} · {h['warehouse']} · {h['day']}",h)
+            number=r.get('signed_number');candidates=r.get('identity_candidates');allowed={e['number'] for e in candidates} if candidates else None
+            choices=[h for h in self.heads if (not number or h['number']==number) and (allowed is None or h['number'] in allowed) and (not r.get('store') or h['store']==r['store']) and (not r.get('warehouse') or h['warehouse']==r['warehouse'])]
+            for h in choices:combo.addItem(f"{h['day']} · {h.get('name',h['store'])} · {h['warehouse']} · {h['number']}",h)
+            combo.setEditable(True);combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert);combo.completer().setFilterMode(Qt.MatchFlag.MatchContains);combo.completer().setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
             if len(choices)==1 and (number or self.scope is not None and len(self.scope)==1):combo.setCurrentIndex(1)
             if d.get('target'):
                 index=next((n+1 for n,h in enumerate(choices) if h['number']==d['target']['number']),0);combo.setCurrentIndex(index)
@@ -77,6 +80,25 @@ class BatchImport(QDialog):
             self.issue_table.setCellWidget(i,3,button('本次不读取未识别部分',lambda checked=False,n=i:self.exclude_issue(n)))
         self.issue_note.setVisible(bool(self.issues));self.issue_table.setVisible(bool(self.issues))
         self.note.setText(f'已识别 {len(self.documents)} 份完整来源单；待处理 {len(self.issues)} 项。选择范围将在下一步完整核对。')
+    def split_selected(self):
+        i=self.table.currentRow()
+        if i<0 or i>=len(self.documents):self.note.setText('请先选择需要划分的来源组。');return
+        self.capture();document=self.documents[i];rows=document['scan']['rows'];d=QDialog(self);d.setWindowTitle('选择记录范围与目标签发单');d.resize(1000,600);v=QVBoxLayout(d)
+        v.addWidget(label('勾选属于同一完整订单的记录，再选择签发单。余下记录保留待绑定；不按商品、时间或行位置猜归属。','muted'))
+        table=QTableWidget(len(rows),6);table.setHorizontalHeaderLabels(['纳入该订单','原表 / 行','商品编码','商品名称','本环节数量','门店 / 仓']);table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);v.addWidget(table,1)
+        for n,r in enumerate(rows):
+            item=QTableWidgetItem();item.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);item.setCheckState(Qt.CheckState.Unchecked);table.setItem(n,0,item)
+            for j,value in enumerate([r['source']['sheet']+' / '+str(r['source']['row']),r['sku'],r['name'],r['quantity'],r.get('store','')+' / '+r.get('warehouse','')],1):table.setItem(n,j,QTableWidgetItem('空白' if value is None else str(value)))
+        target=QComboBox();target.addItem('请选择签发单',None)
+        for h in self.heads:target.addItem(f"{h['day']} · {h.get('name',h['store'])} · {h['warehouse']} · {h['number']}",h)
+        target.setEditable(True);target.setInsertPolicy(QComboBox.InsertPolicy.NoInsert);target.completer().setFilterMode(Qt.MatchFlag.MatchContains);v.addWidget(target)
+        row=QHBoxLayout();row.addWidget(button('取消',d.reject));row.addWidget(button('划分并绑定选中记录',d.accept,True));v.addLayout(row)
+        if d.exec()!=QDialog.DialogCode.Accepted:return
+        try:
+            if not target.currentData():raise ValueError('请选择明确的签发单')
+            parts=batch.split_document(document,[n for n in range(len(rows)) if table.item(n,0).checkState()==Qt.CheckState.Checked],target.currentData())
+            self.documents[i:i+1]=parts;self.populate()
+        except Exception as exc:self.note.setText('未划分：'+str(exc))
     def capture(self):
         for i,d in enumerate(self.documents):d['selected']=self.table.item(i,0).checkState()==Qt.CheckState.Checked;d['target']=self.targets[i].currentData()
     def exclude_issue(self,index):

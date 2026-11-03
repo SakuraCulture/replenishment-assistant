@@ -57,7 +57,7 @@ class ArchiveAdjustmentTests(unittest.TestCase):
         self.assertEqual(ne.decision(a['rows'][1]),'新品补足');path=self.root/'signed.xlsx';ne.export(order,path,warehouse='河北仓')
         import openpyxl
         with path.open('rb') as f:
-            book=openpyxl.load_workbook(f);self.assertEqual(book.sheetnames,ne.SHEETS);self.assertEqual(book['本月新品']['Q2'].value,24);self.assertEqual(book['本月新品']['V2'].value,'新品补足');book.close()
+            book=openpyxl.load_workbook(f);self.assertEqual(book.sheetnames,[*ne.SHEETS,'系统关联信息']);self.assertEqual(book['本月新品']['Q2'].value,24);self.assertEqual(book['本月新品']['U2'].value,'新品补足');book.close()
         import order_lifecycle
         h={**order,'warehouse':'河北仓'};h.pop('payload')
         snapshot=order_lifecycle.snapshot(self.work.path,h)

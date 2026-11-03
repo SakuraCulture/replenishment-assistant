@@ -41,6 +41,22 @@ def group_scan(scanned):
         groups.setdefault(wr.dumps(identity),[]).append(row)
     return [{'scan':{**scanned,'rows':rows},'target':None,'selected':True} for rows in groups.values()]
 
+def split_document(document,indices,target):
+    """User-selected rows only; no positional inference. Preserve row order."""
+    rows=document['scan']['rows'];selected=set(indices)
+    if not selected or any(type(i) is not int or i<0 or i>=len(rows) for i in selected):raise ValueError('请选择要划入该订单的记录')
+    for i in selected:
+        r=rows[i]
+        if r.get('signed_number') and r['signed_number']!=target['number']:raise ValueError('记录已有明确单号，不能改绑其他订单')
+        refs=r.get('identity_candidates')
+        if refs and target['number'] not in {e['number'] for e in refs}:raise ValueError('目标订单不在隐藏页候选范围')
+        if r.get('store') and r['store']!=target['store'] or r.get('warehouse') and r['warehouse']!=target['warehouse']:raise ValueError('记录的门店或仓与目标订单不一致')
+    groups=[]
+    for include in (True,False):
+        positions=[i for i in range(len(rows)) if (i in selected)==include]
+        if positions:groups.append((positions[0],{**document,'scan':{**document['scan'],'rows':[rows[i] for i in positions]},'target':copy.deepcopy(target) if include else None}))
+    return [d for _,d in sorted(groups,key=lambda item:item[0])]
+
 
 def read(paths, stage=None, progress=lambda _:None, cancel=None):
     """Return successes and explicit unresolved files; caller must resolve/exclude."""

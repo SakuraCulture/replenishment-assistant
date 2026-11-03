@@ -81,6 +81,16 @@ class AdmissionTests(unittest.TestCase):
         import jst_allocation as alloc
         balances={};rows=alloc.allocate([{'sku':'0001','base_quantity':'24','_admission_error':'门店拒收'}],catalog()['items'],balances)
         self.assertEqual(rows[0]['quantity'],'0');self.assertEqual(balances,{})
+    def test_legacy_draft_cannot_be_new_signature_without_evidence(self):
+        r=self.calculation();p={'schema':1,'day':wr.today(),'model_version':no.MODEL_VERSION,'admission_required':True,'input_dirty':False,'results':{'T':r},'states':{'T':{'state':'已完成','name':'合成'}}}
+        with self.assertRaisesRegex(ValueError,'没有门店准入依据'):self.repo.confirm(p,['T'],None,{'T':None})
+        self.assertEqual(self.repo.headers(),[])
+        p.pop('admission_required');old=self.repo.confirm(p,['T'],None,{'T':None})[0]
+        import normal_delivery
+        p['admission_required']=True
+        review=normal_delivery.prepare_batch(self.repo,p,['T'])
+        self.assertTrue(review['plans'][0]['same'])
+        self.assertEqual(self.repo.get(wr.today(),'T',1)['digest'],old['digest'])
     def test_backup_and_metadata_are_recorded_side_effects(self):
         a.save(self.work.path,{'T':self.qualified()},{'T':{}})
         with closing(sqlite3.connect(self.work.path)) as db:self.assertEqual(db.execute('SELECT COUNT(*) FROM admission_events').fetchone()[0],1)

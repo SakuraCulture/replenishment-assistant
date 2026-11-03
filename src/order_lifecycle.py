@@ -105,7 +105,7 @@ def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=N
             if scope:row['signed_number']=scope['number']
             else:raise ValueError('缺少补货单号：批量导入须填写；单张订单可从该订单详情进入，由系统带入')
         if scope and row['signed_number']!=scope['number']:raise ValueError('补货单号与所选订单不一致')
-        row['revision']=None
+        if not row.get('identity_reference'):row['revision']=None
     heads=[h for h in available(path,scanned,progress,cancel) if h['revision']==h['current_revision']]
     bindings={}
     for row in scanned['rows']:
@@ -113,6 +113,14 @@ def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=N
         choices=[h for h in heads if h['number']==row['signed_number']]
         if len(choices)!=1:raise ValueError('补货单号未对应唯一有效仓单：'+row['signed_number']+'；请使用分仓补货单号')
         h=choices[0]
+        reference=row.get('identity_reference')
+        candidates=row.get('identity_candidates')
+        if candidates:
+            refs=[r for r in candidates if r['number']==h['number']]
+            if len(refs)!=1:raise ValueError('所选订单不在隐藏页的候选范围内')
+            reference=refs[0];row['identity_reference']=reference
+        if reference and any(reference[k]!=h[k] for k in ('number','store','day','revision','digest')):raise wr.Conflict('原签发已变化，不能把旧文件静默关联到新签发：'+h['number'])
+        if reference and reference['warehouse'] and reference['warehouse']!=h['warehouse']:raise ValueError('隐藏页供货仓与目标订单不一致')
         if not matching(row,[h]):raise ValueError('源表门店或仓库与补货单号不一致：'+row['signed_number'])
         row['revision']=h['revision']
         bindings[binding_key(row)]=h

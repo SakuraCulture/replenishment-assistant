@@ -43,7 +43,8 @@ class Editor(QDialog):
         try:
             value={'name':self.name.text().strip(),'note':self.note.text().strip(),'stores':[self.stores.item(i).data(Qt.ItemDataRole.UserRole) for i in range(self.stores.count()) if self.stores.item(i).checkState()==Qt.CheckState.Checked],'config':self.config}
             plans.validate(value)
-            self.saved=plans.Repository(self.host.work_repository.path).save(value,self.expected);self.accept()
+            from business_ui import run
+            self.saved=run(self,plans.persist,(self.host.work_repository.path,value,self.expected),'保存补货计划',cancellable=False);self.accept()
         except Exception as exc:QMessageBox.warning(self,'计划未保存',str(exc))
 
 class Library(QDialog):
@@ -70,7 +71,9 @@ class Library(QDialog):
     def remove(self):
         p=self.current()
         if not p or not confirm(self,'删除补货计划','删除 '+p['name']+'；已经采用的作业与历史签发保留当时副本。'):return
-        try:self.repo.delete(p);self.refresh()
+        try:
+            from business_ui import run
+            run(self,plans.remove,(self.host.work_repository.path,p),'删除补货计划',cancellable=False);self.refresh()
         except Exception as exc:QMessageBox.warning(self,'未删除',str(exc))
     def adopt(self):
         p=self.current()

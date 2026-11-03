@@ -17,8 +17,10 @@ class SimpleImportTests(unittest.TestCase):
         return io.scan(stage,[{**f,**t,'mapping':io.auto_mapping(stage,t['headers']),'defaults':{'数量单位':'库存单位'},'order_number_only':True}])
     def test_minimum_template_explicit_labels_and_no_internal_columns(self):
         p=self.f.root/'template.xlsx';io.template('return',p);b=openpyxl.load_workbook(p)
-        self.assertEqual(list(next(b.active.values)),['补货单号（必填）','商品编码（必填）','门店确认数量（必填）','商品名称（选填）','备注（选填）'])
-        self.assertIn('空白',b.active['C1'].comment.text);b.close()
+        # 0.32 authorized presentation change: identity belongs to hidden metadata
+        # or import-time binding, not a manually required detail column.
+        self.assertEqual(list(next(b.active.values)),['商品编码（必填）','门店确认数量（必填）','商品名称（选填）','备注（选填）'])
+        self.assertIn('空白',b.active['B1'].comment.text);b.close()
     def test_minimal_number_code_quantity_no_upstream_retyping(self):
         f=self.f;before=f.old_tables();scan=self.scan([[f.h['number'],'0001',6]])
         plan=lc.prepare_numbered(f.path,scan);r=plan['plans'][0]['payload']['rows'][0]

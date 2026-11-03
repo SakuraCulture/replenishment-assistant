@@ -43,6 +43,9 @@ def prepare_owned_batch(repository,payload,codes,progress=lambda s:None,cancel=N
         old=repository.get(frozen['day'],store,head_order['revision'],view='export' if same else None,progress=progress) if head_order else None
         if not same:
             if frozen['day']!=wr.today():raise ValueError('历史只读，请从历史页导出已签发修订')
+            if frozen.get('admission_required'):
+                from admission import verify_result
+                with closing(repository.work.connect()) as db:verify_result(db,result,required=True)
             focus.require_for(frozen.get('new_focus'),frozen['day'],[result])
         from warehouse_orders import summaries
         available=summaries(result,frozen.get('new_focus'))

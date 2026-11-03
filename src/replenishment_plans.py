@@ -111,5 +111,15 @@ def refresh(host):
     missing=[i['name'] for i in plan['stores'] if i['code'] not in host.store_widgets]
     saved=host.work_repository.stores();unset=[i['name'] for i in plan['stores'] if not (host.store_ui(i['code']) if i['code'] in host.store_widgets else saved.get(i['code'],{}).get('ui',{})).get('primary')]
     cycle='；'.join(w+f' 备货{v[0]:g}天/到货{v[1]:g}天' for w,v in plan['config']['warehouses'].items())
-    host.plan_note.setText(f"计划：{plan['name']} · {len(plan['stores'])} 店 · {cycle}\n"+
+    names='、'.join(i['name'] for i in plan['stores'][:6])+(' 等'+str(len(plan['stores']))+'店（悬停看完整顺序）' if len(plan['stores'])>6 else '')
+    host.plan_note.setToolTip('\n'.join(f"{n+1}. {i['name']} · {i['code']}" for n,i in enumerate(plan['stores'])))
+    host.plan_note.setText(f"计划：{plan['name']} · {len(plan['stores'])} 店 · {cycle}\n"+names+'\n'+
         ('缺少补货文件：'+'、'.join(missing) if missing else '计划门店文件齐全')+('；供货关系待设：'+'、'.join(unset) if unset else ''))
+
+def persist(path,value,expected=None,progress=lambda _:None,cancel=None):
+    from runtime_support import checkpoint
+    checkpoint(cancel);progress('备份并保存补货计划…');return Repository(path).save(value,expected)
+
+def remove(path,value,progress=lambda _:None,cancel=None):
+    from runtime_support import checkpoint
+    checkpoint(cancel);progress('备份并删除所选计划，保留历史快照…');Repository(path).delete(value)

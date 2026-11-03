@@ -25,9 +25,12 @@ def scan(paths,progress=lambda _:None,cancel=None):
         wb=openpyxl.load_workbook(io.BytesIO(content),read_only=True,data_only=False,keep_links=False)
         props={p.name:p.value for p in wb.custom_doc_props};found=False
         try:
+            import order_identity
+            identity=order_identity.read(wb)
             for ws in wb:
+                if ws.title==order_identity.SHEET:continue
                 checkpoint(cancel);ws.reset_dimensions();iterator=ws.values;headers=list(next(iterator,()));qfield='门店确认数量' if '门店确认数量' in headers else '补货数量'
-                required=['补货单号','商品编码',qfield]
+                required=([] if identity else ['补货单号'])+['商品编码',qfield]
                 if not all(k in headers for k in required):continue
                 found=True
                 if any(headers.count(k)!=1 for k in required):raise ValueError(path+'：回传必需表头重复')
@@ -35,8 +38,11 @@ def scan(paths,progress=lambda _:None,cancel=None):
                     checkpoint(cancel)
                     if not any(v is not None and v!='' for v in values):continue
                     d=dict(zip(headers,values));number=d.get('补货单号');sku,error=adapter.identifier(d.get('商品编码'))
+                    reference,candidates=order_identity.resolve(identity,ws.title,number or '',d.get('仓库/门店编码') or '',d.get('所属仓') or '')
+                    if candidates:raise ValueError('多订单关联有歧义，请使用生命周期批量导入划分记录并选择订单')
+                    if reference:number=reference['number']
                     if not isinstance(number,str) or not number.strip() or error:raise ValueError(f'{Path(path).name} / {ws.title} 第{n}行：单号或商品编码无效')
-                    rev=None
+                    rev=reference['revision'] if reference else None
                     if props.get('修订'):
                         if props.get('补货单号')!=number:raise ValueError('回传单号与原导出修订信息不一致')
                         text=str(props['修订'])
@@ -50,6 +56,7 @@ def scan(paths,progress=lambda _:None,cancel=None):
                     orders.setdefault(number,[])
                     if rev not in orders[number]:orders[number].append(rev)
                     records.append({'number':number,'revision':rev,'sku':sku,'quantity':qty,'note':d.get('备注'),'source':{'sha':sha,'file':Path(path).name,'sheet':ws.title,'row':n}})
+                    if reference:records[-1]['identity_digest']=reference['digest']
         finally:wb.close()
         if not found:raise ValueError(Path(path).name+'：缺少补货单号、商品编码、门店确认数量（或补货数量）')
         if adapter.digest(path)!=sha:raise ValueError('读取期间回传文件变化')
@@ -90,6 +97,7 @@ def prepare(path,scanned,bindings,progress=lambda _:None,cancel=None):
             row=db.execute('SELECT day,store FROM normal_orders WHERE number=?',(number,)).fetchone()
         if not row:raise ValueError('本机未找到补货单号：'+number+'；不得按名称或相近日期猜测')
         order=repo.get(*row,revision,view='export');r=order['payload']['result'];eligible={d['E']:d for rows in normal_exports.groups(r,order['payload'].get('new_focus')).values() for d in rows}
+        if any(i.get('identity_digest',order['digest'])!=order['digest'] for i in items):raise ValueError('隐藏页原签发摘要与存档不一致')
         with closing(connect(path)) as db:
             old=current(db,order['oid'],revision)
             from archive_orders import require_active

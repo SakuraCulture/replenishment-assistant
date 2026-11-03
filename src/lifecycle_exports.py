@@ -6,6 +6,7 @@ import openpyxl
 from openpyxl.comments import Comment
 from openpyxl.packaging.custom import StringProperty
 import normal_exports as ne
+import order_identity as identity
 from history_read import repository
 from runtime_support import checkpoint,Cancelled
 from export_progress import RowProgress
@@ -17,6 +18,7 @@ def returned_book(path,view,folder,progress,cancel):
     b=openpyxl.load_workbook(original);rows={r['sku']:r for r in doc['payload']['rows']};raw_rows={r['sku']:r for r in doc['payload'].get('raw_rows',doc['payload']['rows'])};seen=set()
     try:
         for ws in b:
+            if ws.title==identity.SHEET:continue
             ws['Q1'].comment=Comment('补货数量为本版门店确认数；原签发建议独立保留在应用中。','补货助手')
             for n in range(2,ws.max_row+1):
                 checkpoint(cancel);sku=str(ws.cell(n,5).value);r=rows.get(sku);seen.add(sku)
@@ -25,8 +27,8 @@ def returned_book(path,view,folder,progress,cancel):
         for r in doc['payload']['rows']:
             if r['sku'] in seen:continue
             checkpoint(cancel);source_sheet=next((s['sheet'] for s in r['sources'] if s['sheet'] in ne.SHEETS),ne.SHEETS[-1]);ws=b[source_sheet]
-            source=raw_rows.get(r['sku'],r);raw={k:v for k,v in zip(source.get('raw_headers',[]),source.get('raw_values',[]))};values=[raw.get(k) for k in ne.HEADERS+ne.AUDIT_HEADERS]
-            values[0]=order['payload']['result']['store_name'];values[1]=h['store'];values[3]=r['name'];values[4]=r['sku'];values[16]=float(Decimal(r['base_quantity']));values[18]=h['warehouse'];values[20]=h['number'];values[21]='门店追加'
+            source=raw_rows.get(r['sku'],r);raw={k:v for k,v in zip(source.get('raw_headers',[]),source.get('raw_values',[]))};values=[raw.get(k) for k in ne.HEADERS+ne.MERCHANT_AUDIT_HEADERS]
+            values[0]=order['payload']['result']['store_name'];values[1]=h['store'];values[3]=r['name'];values[4]=r['sku'];values[16]=float(Decimal(r['base_quantity']));values[18]=h['warehouse'];values[20]='门店追加'
             ws.append(values)
             for i,c in enumerate(ws[ws.max_row],1):
                 c._style=copy.copy(ws.cell(2 if ws.max_row>2 else 1,i)._style)
@@ -47,13 +49,15 @@ def export_returns(path,views,folder,mode,progress,cancel):
                 if h['number'] in numbers:raise ValueError('同一仓单多个修订不能合并为门店表，请分别导出，避免回传关联歧义')
                 numbers[h['number']]=h['revision']
             with tempfile.TemporaryDirectory(prefix='.returned-',dir=folder) as temp:
-                book=None
+                book=None;identities=[]
                 try:
                     for v in group:
                         part=returned_book(path,v,temp,progress,cancel)
+                        identities.extend(identity.read(part))
                         if book is None:book=part;continue
                         try:
                             for source in part:
+                                if source.title==identity.SHEET:continue
                                 dest=book[source.title]
                                 for source_row in source.iter_rows(min_row=2):
                                     checkpoint(cancel);dest.append([c.value for c in source_row])
@@ -64,7 +68,10 @@ def export_returns(path,views,folder,mode,progress,cancel):
                         for name in ('补货单号','修订','门店正常单号','门店回传版本'):
                             if name in book.custom_doc_props.names:del book.custom_doc_props[name]
                         book.custom_doc_props.append(StringProperty(name='签发修订索引',value=json.dumps(numbers,ensure_ascii=False)))
-                        for ws in book:ws.oddHeader.center.text=group[0]['head']['warehouse']+' 多订单门店回传单';ws['A1'].comment=Comment('每行补货单号独立关联；签发修订保存在文件属性。','补货助手')
+                        for ws in book:
+                            if ws.title==identity.SHEET:continue
+                            ws.oddHeader.center.text=group[0]['head']['warehouse']+' 多订单门店回传单';ws['A1'].comment=Comment('按隐藏页、门店编码和仓关联；同店同仓跨日有歧义时，请在导入中划分记录并选择订单，不按行号猜测。','补货助手')
+                    identity.write(book,identities)
                     name='门店回传单-'+group[0]['head']['warehouse']+'-'+(group[0]['head']['number'] if mode=='separate' else '多订单')+'-'+uuid.uuid4().hex[:8]+'.xlsx';target=Path(folder)/name
                     temp_file=Path(temp)/'returned.xlsx';progress('压缩保存门店回传单，完成后响应取消…');book.save(temp_file);checkpoint(cancel);os.link(temp_file,target);completed.append(str(target))
                 finally:
