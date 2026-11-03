@@ -71,7 +71,7 @@ def drain(path, folder, progress=lambda _:None,cancel=None):
                     c=catalogs.get(h['warehouse'])
                     if not c:raise ValueError(h['warehouse']+'缺少商品资料，请在聚水潭导入单面板更新后重试')
                     j.commit_refresh(path,j.prepare_refresh(path,h['warehouse'],catalog=c['catalog'],cancel=cancel),progress,cancel)
-                plan=j.prepare(path,[h],progress=progress,cancel=cancel)
+                plan=j.prepare_checked(path,[h],progress=progress,cancel=cancel)
                 if any(p['summary']['issues'] for p in plan['payload']['plans']):
                     reasons=list(dict.fromkeys(r['reason'] for p in plan['payload']['plans'] for r in p['rows'] if r['issue']))
                     raise ValueError('待核商品：'+'；'.join(reasons)+'；请在生成面板核对')

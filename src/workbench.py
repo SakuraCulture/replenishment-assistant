@@ -98,6 +98,8 @@ class Workbench(ParameterUi,BatchWindow):
         return {'preset':p,'ui':self.store_ui(s)}
     def selected_settings(self,s):
         result=super().selected_settings(s);c=self.config_for(s);schema.validate(c)
+        import admission
+        result['admission']=admission.snapshot(self.work_repository.path,s)
         result.update(parameter_config=c,warehouses=copy.deepcopy(c['warehouses']),exception=c['exception'],preset={k:v for k,v in self.preset_for(s).items() if k!='config'},parameter_signature=schema.signature(c));return result
     def store_ui(self,s):
         w=self.store_widgets[s]

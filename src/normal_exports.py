@@ -39,6 +39,9 @@ def groups(result,profile):
 def decision(d):
     """Short explanation of existing decisions only; never changes quantity."""
     excluded=sem.exclusion_reason(d)
+    if '二类医疗资质' in excluded:return '资质不符'
+    if '商品标签资料不完整' in excluded:return '资料待核'
+    if '门店拒收' in excluded:return '门店拒收'
     if excluded:return '禁用不补' if '禁用' in excluded else '停采不补'
     if sem.issue_text(d):return '资料待核'
     adjustment=d.get('_preissue',{})

@@ -133,7 +133,7 @@ class GenerationDialog(QDialog):
                     p=run(self,service.prepare_refresh,(self.path,wh,None,c['catalog']),'采用默认仓资料')
                     run(self,service.commit_refresh,(self.path,p),'建立库存基准');c['bid']=p['payload']['bid']
             self.describe()
-            self.plan=run(self,service.prepare,(self.path,heads,self.manual.isChecked(),self.correction.isChecked()),'预览库存分配')
+            self.plan=run(self,service.prepare_checked,(self.path,heads,self.manual.isChecked(),self.correction.isChecked()),'预览库存分配')
             v=self.plan['payload'];self.review.replace(v['plans'])
             self.summary.setText(f"本次预览 {len(v['plans'])} 张仓单；跳过 {len(v['skipped'])} 张（不计入本次汇总）。"+'；'.join(s['head']['number']+'：'+s['reason'] for s in v['skipped']))
             self.generate_btn.setEnabled(bool(v['plans']));self.accept_issues.setChecked(False)

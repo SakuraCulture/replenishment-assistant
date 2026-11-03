@@ -25,6 +25,11 @@ class PurchaseTaskTests(unittest.TestCase):
         self.f.setUp()
         self.f.save('return')
         self.f.save('payment', [{'付款单商品数量': 7, '实际金额': .99}])
+        # New procurement requires a complete current label source. This fixture
+        # explicitly declares a non-medical item; existing quantity/order assertions stay.
+        from test_jst import catalog
+        from warehouse_catalog import Repository
+        Repository(self.f.path.parent).save(catalog())
         self.root = self.f.root / 'aoxiang'
         self.suppliers = {'河北仓': '2078246', '山东仓': 'ZXC2025'}
         script = """import {StateStore} from './src/state.mjs';import {freshConfig,saveConfig} from './src/config.mjs';
@@ -56,6 +61,13 @@ const root=process.argv[1],s=await StateStore.open(root);await saveConfig(root,f
 
     def package(self):
         return prepare(self.f.path, self.f.h, self.config, self.suppliers, self.receipt, self.root / 'packages', CONTRACT)
+
+    def test_new_refusal_after_preview_prevents_upload_without_changing_payment(self):
+        import admission
+        package=self.package();before=self.f.view()
+        admission.save(self.f.path,{'T':{'refusals':{'0001':{'reason':'本店拒收','active':True}}}},{'T':{}})
+        with self.assertRaisesRegex(ValueError,'拒收|准入'):validate_for_upload(self.f.path,package,self.config,self.suppliers)
+        self.assertEqual(self.f.view(),before)
 
     def reserve(self, p):
         return self.client.request('purchase.reserve', package_file=p['package_file'], package_sha256=p['package_sha256'])

@@ -166,6 +166,8 @@ def prepare_records(sr,sinfo,pr,pinfo,config):
               'category':record.get(pf['category']) if record else None,
               'export_status':raw.get(sf.get('replenishment_status')),
               'export_updated':raw.get(sf.get('updated'))}
+        if record and '商品标签' in record:
+            meta.update(product_tags=record['商品标签'],product_tags_known=True)
         normalized.append((d,meta));counts[match]+=1
     return normalized,{'sales':sinfo,'products':pinfo,'matching':dict(counts),
                        'invalid_master_codes':master_issues,

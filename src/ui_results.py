@@ -40,6 +40,7 @@ class ResultsView:
     def make_results(self):
         page=QWidget();v=QVBoxLayout(page);v.setContentsMargins(0,0,0,0);v.setSpacing(12)
         self.result_caption=label('尚未计算','section');v.addWidget(self.result_caption)
+        self.admission_btn=button('查看本店准入问题 / 就地维护',self.review_admission);v.addWidget(self.admission_btn)
         metrics=QHBoxLayout();self.metric_values=[]
         for title in ['执行补货金额（元）','执行补货商品','一箱例外候选 / 候选金额','地采 / 已排除']:
             c=QFrame();c.setObjectName('card');cv=QVBoxLayout(c);cv.setContentsMargins(16,12,16,12);cv.addWidget(label(title,'muted'));x=label('—','metric');cv.addWidget(x);metrics.addWidget(c);self.metric_values.append(x)
@@ -77,7 +78,18 @@ class ResultsView:
         QApplication.instance().aboutToQuit.connect(self.stop_filtered_summary)
         self.pages.addWidget(page)
 
+    def review_admission(self):
+        from admission_ui import open_editor
+        if not hasattr(self,'work_repository'):return
+        from business_ui import grid
+        d=QDialog(self);d.setWindowTitle('本店准入问题');d.resize(950,620);v=QVBoxLayout(d)
+        rows=[[r['E'],r.get('D'),r.get('AU'),r['_meta'].get('product_tags'),'；'.join(r['_meta'].get('admission',{}).get('reasons',[]))] for r in (self.result or {}).get('rows',[]) if r['_meta'].get('admission',{}).get('reasons')]
+        v.addWidget(label(f'{len(rows)}款未安排；原计算建议保留。保存准入变更后需重算本店。','section'))
+        table,model=grid(d,['商品编码','商品名称','仓库','标签原文','原因'],rows);v.addWidget(table,1)
+        v.addWidget(button('维护本店资质 / 拒收',lambda:(d.accept(),open_editor(self,self,self.selected_store())),True));v.addWidget(button('关闭',d.reject));d.exec()
+
     def set_rows(self,rows,calculated):
+        self.admission_btn.setVisible(any(r.get('_meta',{}).get('admission',{}).get('reasons') for r in rows))
         self.filter_timer.stop();sort_column=self.proxy.sortColumn();sort_order=self.proxy.sortOrder();self.proxy.sort(-1)
         blockers=[QSignalBlocker(w) for w in (self.search,self.warehouse_filter,self.category_filter,self.mode,self.result_facets)]
         self.result_facets.reset()
@@ -180,6 +192,8 @@ class ResultsView:
         content='<h2>'+html.escape(str(d.get('D','')))+'</h2><p>'+html.escape(str(d.get('AU','')))+' · '+html.escape(str(d.get('E','')))+'</p>'
         content+='<h3>最终安排</h3>'+table([['数量',semantics.order_quantity(d),d.get('G') or '库存单位'],['金额',semantics.order_amount(d),'元']])
         content+='<p>'+html.escape(semantics.explanation(d))+'</p><h3>数量形成过程</h3>'+table(stage_rows(d,final_label='最终安排量（待签发）'))
+        if d['_meta'].get('product_tags_known'):
+            content+='<h3>商品标签</h3><p>'+html.escape(str(d['_meta'].get('product_tags') or '未标记标签'))+'</p>'
         content+='<h3>销量与库存</h3>'+table([field_row(d,k) for k in ('H','I','J','K','L','AG','AH','BD')])
         content+='<p><a href="parameters">查看实际参数</a> · <a href="technical">查看完整技术依据</a></p>'
         self.details.setOpenLinks(False)

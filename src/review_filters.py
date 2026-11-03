@@ -6,7 +6,7 @@ GROUPS=['全部工作商品','动销补货','本月新品','往期新品','其�
 KINDS={'manual':'人工改量','new':'新品补足','plan':'计划补足','promotion':'活动补足'}
 
 def search_text(d,extra=''):
-    return ' '.join(str(d.get(k) or '') for k in ('D','E','F')).lower()+' '+extra.lower()
+    return ' '.join(str(d.get(k) or '') for k in ('D','E','F')).lower()+' '+str(d.get('_meta',{}).get('product_tags') or '').lower()+' '+extra.lower()
 
 def matches(text,needle):return all(word in text for word in needle.lower().split())
 

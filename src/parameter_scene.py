@@ -38,6 +38,13 @@ class ParameterScene(QWidget):
             menu.addAction('导入'+name,lambda checked=False,k=kind:import_parameters(self,host,kind=k))
             menu.addAction('下载'+name+'模板',lambda checked=False,k=kind:download(self,k))
         more.setMenu(menu);row.addWidget(more)
+        from admission_ui import open_editor,import_records
+        admission_menu=QMenu(self);admission_button=QToolButton();admission_button.setText('门店资质 / 拒收');admission_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        admission_menu.addAction('查看或维护门店准入',lambda:open_editor(self,host,self.selected()[0] if len(self.selected())==1 else None))
+        for name,kind in [('二类医疗资质','store_qualification'),('门店拒收清单','store_refusals')]:
+            admission_menu.addAction('导入'+name,lambda checked=False,k=kind:import_records(self,host,k))
+            admission_menu.addAction('下载'+name+'模板',lambda checked=False,k=kind:download(self,k))
+        admission_button.setMenu(admission_menu);row.addWidget(admission_button)
         row.addWidget(button('批量设置默认补货策略',self.edit_switches))
         row.addWidget(button('导出勾选门店默认参数', self.export_parameters))
         from settings_maintenance_ui import open_history,reset_defaults,restore_presets

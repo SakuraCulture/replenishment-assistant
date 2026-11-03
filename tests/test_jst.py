@@ -22,7 +22,9 @@ from runtime_support import Cancelled,CommitProgress
 
 
 def catalog(warehouse='河北仓', stock=100, step=1, price=2):
-    items={'0001':{'商品编码':'0001','分类':'测试','基本售价':price,'出库箱规':step,'商品状态':'启用','可用数':stock,'商品名称':'测试','_row':2}}
+    # A valid new execution fixture explicitly supplies an empty tag field.
+    # Missing-field blocking is covered separately in test_admission.
+    items={'0001':{'商品编码':'0001','分类':'测试','基本售价':price,'出库箱规':step,'商品状态':'启用','可用数':stock,'商品名称':'测试','_row':2,'商品标签':''}}
     return {'schema':1,'warehouse':warehouse,'items':items,'revision':cat.revision(items),'imported_at':'2026-11-01T10:00:00','source_path':'synthetic-not-a-real-file.xlsx','source_sha256':'synthetic','sheet':'商品资料'}
 
 

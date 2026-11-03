@@ -134,6 +134,8 @@ class Repository:
         # again inside BEGIN IMMEDIATE before publishing any prepared content.
         with closing(self.work.connect()) as db:
             planned_job=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
+            from admission import verify_result
+            for s in codes:verify_result(db,payload['results'][s])
             planned={}
             for s in codes:
                 planned[s]=db.execute("SELECT o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE o.day=? AND o.store=? AND o.kind='normal_model'",(day,s)).fetchone()
@@ -173,6 +175,7 @@ class Repository:
                     if 'locked' not in str(exc).lower() or time.monotonic()>=deadline:raise
             progress('已取得写锁，校验修订并准备事务内容（可取消）…')
             checkpoint(cancel)
+            for s in codes:verify_result(db,payload['results'][s])
             old=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
             if (old[0] if old else None)!=expected_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')
             if old!=planned_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')

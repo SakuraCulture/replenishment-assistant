@@ -197,7 +197,10 @@ def reservations(db, wh, included, exclude=()):
     return values
 
 
-def prepare(path, heads, manual_order=False, correction=False, progress=lambda _: None, cancel=None):
+def prepare_checked(path,heads,manual_order=False,correction=False,progress=lambda _:None,cancel=None):
+    return prepare(path,heads,manual_order,correction,progress,cancel,enforce_admission=True)
+
+def prepare(path, heads, manual_order=False, correction=False, progress=lambda _: None, cancel=None,*,enforce_admission=False):
     runid = uuid.uuid4().hex; orders = []; skipped = []; states = {}; bases = {}; seen = set()
     with closing(sqlite3.connect(path)) as db:
         db.execute('BEGIN')
@@ -236,21 +239,38 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                 try: balances[wh][sku] = allocation.number(item.get('可用数'), '可用库存') - used.get(sku, Decimal(0))
                 except ValueError: pass
         plans = []
+        if enforce_admission:
+            from admission import execution_evidence
+            catalogs=warehouse_catalog.Repository(Path(path).parent).catalogs()
+            defaults={w:c['revision'] for w,c in catalogs.items()}
+            catalogs.update({w:base['catalog'] for w,base in bases.items()})
         for i, o in enumerate(orders):
             checkpoint(cancel); wh=o['head']['warehouse']; b=bases[wh]
+            evidence=None
+            if enforce_admission:
+                evidence=execution_evidence(path,o['head']['store'],wh,[r['sku'] for r in o['rows']],catalogs=catalogs,db=db)
+                evidence['default_catalog_revisions']=defaults
+                o['rows']=[{**r,'_admission_error':'；'.join(evidence['items'][r['sku']]['reasons'])} for r in o['rows']]
             rows = allocation.allocate(o['rows'], b['catalog']['items'], balances[wh])
             value = {'gid': uuid.uuid4().hex, 'operation': runid+':'+str(i), 'rule': allocation.RULE,
                      'head': o['head'], 'basis': o['basis'], 'bid': b['bid'], 'old': o['old'],
                      'rows': rows, 'summary': allocation.totals(rows), 'saved': wr.now(), 'position': i+1,
                      'catalog': warehouse_catalog.metadata(b['catalog']), 'draft_status': '待核对付款单'}
             if o['signed_products'] is not None:value['signed_products']=o['signed_products']
+            if evidence is not None:value['admission']=evidence
             plans.append(value); progress(RowProgress(f'预览分配 {i+1}/{len(orders)}：'+o['head']['number'],i+1,len(orders)))
     result = {'runid': runid, 'states': states, 'plans': plans, 'skipped': skipped, 'correction': correction, 'reserved': reserved}
     return {'payload': result, 'digest': digest(result)}
 
 
-def validate_plan(db, p):
+def validate_plan(db, p, catalog_revisions=None):
     h = p['head']
+    if p.get('admission'):
+        from admission import snapshot
+        if snapshot('',h['store'],db=db)!=p['admission']['context']:raise wr.Conflict('门店准入已变化，请重新分配：'+h['number'])
+        folder=Path(db.execute('PRAGMA database_list').fetchone()[2]).parent
+        latest=catalog_revisions if catalog_revisions is not None else {w:c['revision'] for w,c in warehouse_catalog.Repository(folder).catalogs().items()}
+        if latest!=p['admission']['default_catalog_revisions']:raise wr.Conflict('仓资料标签依据已更新，请重新分配：'+h['number'])
     purchases.validate_head(db, h)
     if locked(db,h) or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):
         raise wr.Conflict('订单已锁或已有付款／收货，请重新核对：'+h['number'])
@@ -298,7 +318,10 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                 if any(existing):raise wr.Conflict('更正操作记录不完整，请核对')
                 for w in whs:
                     if state(db,w)!=expected[w]:raise wr.Conflict(w+'库存基准或预留已变化，请重新预览')
-                for p in group:checkpoint(cancel);validate_plan(db,p)
+                catalog_revisions=None
+                if any(p.get('admission') for p in group):
+                    catalog_revisions={w:c['revision'] for w,c in warehouse_catalog.Repository(Path(path).parent).catalogs().items()}
+                for p in group:checkpoint(cancel);validate_plan(db,p,catalog_revisions)
                 for p in group:
                     if p['summary']['positive']:
                         put_generation(db,p)

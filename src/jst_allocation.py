@@ -34,6 +34,7 @@ def allocate(rows, items, balances):
                'missing': text(demand), 'reason': '', 'issue': False,
                'return_sources': row.get('sources', []), 'catalog_row': (item or {}).get('_row')}
         try:
+            if row.get('_admission_error'):raise ValueError(row['_admission_error'])
             if item is None:
                 raise ValueError('该仓资料无商品条目')
             state = str(item.get('商品状态') or '').strip()

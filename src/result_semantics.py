@@ -17,7 +17,7 @@ def issue_text(d):
 
 
 def exclusion_reason(d):
-    reasons=[]
+    reasons=list(d.get('_meta',{}).get('admission',{}).get('reasons',[]))
     if str(d.get('S') or '').strip()=='禁用':reasons.append('商品资料禁用')
     if str(d.get('_meta',{}).get('export_status') or '').strip()=='停采':reasons.append('补货建议停采')
     return '；'.join(reasons)

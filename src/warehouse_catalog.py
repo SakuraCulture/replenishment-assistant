@@ -29,13 +29,14 @@ def import_catalog(path,warehouse,progress=lambda s:None,cancel=None):
     if warehouse not in WAREHOUSES:raise ValueError('请明确选择河北仓或山东仓')
     path=Path(path).resolve();before=engine.adapter.digest(path)
     progress('读取'+warehouse+'商品资料…');sheet,heads,rows,info=engine.read_identified(path,'products',REQUIRED)
-    if set(FIELDS)&set(info['duplicate_unused_headers']):raise ValueError('商品资料存在重复业务表头')
+    if (set(FIELDS)|{'商品标签'})&set(info['duplicate_unused_headers']):raise ValueError('商品资料存在重复业务表头')
     items={}
     for raw in rows:
         engine.checkpoint(cancel);sku,error=engine.adapter.identifier(raw.get('商品编码'))
         if error:raise ValueError(f"第{raw['_row']}行商品编码待核：{error}；未更新旧资料")
         if sku in items:raise ValueError(f"本仓商品编码重复：{sku}，第{items[sku]['_row']}和{raw['_row']}行；请处理后导入")
         row={k:raw.get(k) for k in FIELDS};row.update(商品编码=sku,_row=raw['_row']);items[sku]=row
+        if '商品标签' in heads:row['商品标签']=raw.get('商品标签')
     if before!=engine.adapter.digest(path):raise ValueError('读取期间文件发生变化，请重新导入')
     data={'schema':1,'warehouse':warehouse,'source_path':str(path),'source_sha256':before,'sheet':sheet,'imported_at':datetime.now().isoformat(timespec='seconds'),'items':items,'revision':revision(items)}
     return validate(data)
@@ -137,6 +138,9 @@ def _prepare_catalogs(catalogs,load):
             m.update(product_file=catalog['source_path'],product_sheet=catalog['sheet'],product_revision=catalog['revision'])
             if row:
                 m.update(product_row=row['_row'],warehouse_available=engine.adapter.numeric(row.get('可用数')))
+                if any('商品标签' in c['items'].get(d['E'],{}) for c in catalogs.values()):
+                    from admission import catalog_meta
+                    m.update(catalog_meta(catalogs,wh,d['E']))
             if d['_source']=='资料匹配':d['AU']=wh
         results[wh]=loaded['normalized']
         if base is None:base=loaded
