@@ -43,8 +43,8 @@ class BlockEdits(unittest.TestCase):
         import zlib
         messages=[];editor=ms.Editor(self.db,self.scratch,messages.append)
         tree=editor.legacy_tree(zlib.compress(wr.dumps(list(range(9000))).encode()))
-        self.assertEqual(editor.value(tree),list(range(9000)))
         self.assertEqual(len(messages),1)
+        self.assertEqual(editor.value(tree),list(range(9000)))
     def test_empty_and_missing_optional_fields(self):
         for p in ({'catalogs':{}},{'loaded':None},{'loaded':{'stores':{'T':'T'}}},{'loaded':{'intake':{'frozen':True}}}):
             with self.subTest(p=p):self.compare(p)
