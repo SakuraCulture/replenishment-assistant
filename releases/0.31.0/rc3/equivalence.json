@@ -1,0 +1,389 @@
+{
+  "passed": true,
+  "baseline": "c061932b583dfb31d6284b09eaed93c0ad4cc51d",
+  "cases": [
+    {
+      "case": "single_intake",
+      "differences": []
+    },
+    {
+      "case": "single_loaded",
+      "differences": []
+    },
+    {
+      "case": "single_results",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_intake",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_loaded",
+      "differences": []
+    },
+    {
+      "case": "nonoverlap_results",
+      "differences": []
+    },
+    {
+      "case": "overlap_intake",
+      "differences": []
+    },
+    {
+      "case": "overlap_blocked",
+      "differences": []
+    },
+    {
+      "case": "overlap_loaded",
+      "differences": []
+    },
+    {
+      "case": "overlap_results",
+      "differences": []
+    },
+    {
+      "case": "reversed_intake",
+      "differences": []
+    },
+    {
+      "case": "reversed_blocked",
+      "differences": []
+    },
+    {
+      "case": "reversed_loaded",
+      "differences": []
+    },
+    {
+      "case": "reversed_results",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_intake",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_blocked",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_loaded",
+      "differences": []
+    },
+    {
+      "case": "path_dedup_results",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_intake",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_loaded",
+      "differences": []
+    },
+    {
+      "case": "mixed_error_results",
+      "differences": []
+    },
+    {
+      "case": "all_error",
+      "differences": []
+    },
+    {
+      "case": "warehouse_intake",
+      "differences": []
+    },
+    {
+      "case": "warehouse_loaded",
+      "differences": []
+    },
+    {
+      "case": "warehouse_results",
+      "differences": []
+    },
+    {
+      "case": "real_loaded",
+      "differences": []
+    },
+    {
+      "case": "real_None_True",
+      "differences": []
+    },
+    {
+      "case": "real_0_True",
+      "differences": []
+    },
+    {
+      "case": "real_3000_True",
+      "differences": []
+    },
+    {
+      "case": "real_5000_True",
+      "differences": []
+    },
+    {
+      "case": "real_10000_True",
+      "differences": []
+    },
+    {
+      "case": "real_None_False",
+      "differences": []
+    },
+    {
+      "case": "real_custom",
+      "differences": []
+    },
+    {
+      "case": "filtered.xlsx",
+      "differences": []
+    },
+    {
+      "case": "overlap.xlsx",
+      "differences": []
+    },
+    {
+      "case": "real.xlsx",
+      "differences": []
+    },
+    {
+      "case": "reversed.xlsx",
+      "differences": []
+    },
+    {
+      "case": "warehouse.xlsx",
+      "differences": []
+    }
+  ],
+  "differences": 0,
+  "whitelist": {
+    "loaded.loaded_at": "wall clock",
+    "result.created": "wall clock",
+    "result.task.pid/started/finished": "process/timing",
+    "result.version.version/source_commit/build_id/built_at": "application build metadata",
+    "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+  },
+  "protected_count": 1100,
+  "changed_protected": [],
+  "core": {
+    "model.py": {
+      "before": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "after": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595"
+    },
+    "one_box_exception.py": {
+      "before": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "after": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "allocation.py": {
+      "before": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "after": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "default_config.json": {
+      "before": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "after": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "before": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "after": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    }
+  },
+  "source_hashes": {
+    "src\\allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "src\\aoxiang_acquisition.py": "69646c9352e6e1ae118d0d52ac88818018503d649d19c7ffc73ec8c5fd614177",
+    "src\\aoxiang_binding_ui.py": "185326b13db02367feedc96a14a0d40fd7a55d4e0a2c0fe4a03f7d1ed0c59a3f",
+    "src\\aoxiang_business_smoke.py": "d29f1cc269e51ca5dd8f11d8f3c5048a5ec51bfb6b37449c2935d9201a9469ec",
+    "src\\aoxiang_client.py": "cff80f1c4cf7338cc9801891b4974788af8643ab7b1b42ae3ead74ef18e126ad",
+    "src\\aoxiang_directory.py": "3e96052fa65f27f74c422ac963d1388aa9e4fc792351c5643fdfa6f471739200",
+    "src\\aoxiang_fetch_ui.py": "8fb231004a9fab93a0849a0e07edce262584c8fef151c7bafdfa0372fba77da4",
+    "src\\aoxiang_input_ui.py": "4306f16e9732943c280be1125e0a12b389f15de61f377c7f78417983cbef69c4",
+    "src\\aoxiang_jobs.py": "e35d1b60ddca8d89fc18e547fad129806a748823083cf097ad78f7126df51299",
+    "src\\aoxiang_purchase.py": "76e0048b7f1b42faf30f646b22cd67bf24f1643b874e80d2731287903bfdcb6e",
+    "src\\aoxiang_purchase_excel.py": "fdb3f234db577ee5e5ba7df5581262429d10827981d654be62e0ed3ab70fa7c1",
+    "src\\aoxiang_purchase_tasks.py": "1d852ab0c1aa775d5a372faabd0c76b885f4355b3ffbfa09f41c6ad877dd8c99",
+    "src\\aoxiang_purchase_ui.py": "03724c49d6739fcfe156f6c67b4ea51645c92c9f707a6a2e19ff1fe1e56a6a29",
+    "src\\aoxiang_receipt_ui.py": "3dfff7d88e88542cbd1878e503604c0b350bf0db4677d2bc06fff93186deef8b",
+    "src\\aoxiang_receipts.py": "12deb2c38c4cef3a8552fee89fc353f954425ae0af9757253f5f7b87782083ae",
+    "src\\aoxiang_session.py": "bab95f393706eab1b5f205925d06b125b06902411fbddf32da161f700bf9e0da",
+    "src\\aoxiang_setup_smoke.py": "7f78774be46c629844ecc5e2b65d7cabc9b4447964e6a9a64726cb0540dca8d2",
+    "src\\aoxiang_setup_ui.py": "02db122fee259c6cd123e7dbaa2f737705823543a966dc8446ae3e4baa405ca3",
+    "src\\aoxiang_shared_smoke.py": "1738627e6b80c5cde7c064667a03ee5f8341439359376b9bb24910c6075d4050",
+    "src\\aoxiang_smoke.py": "f6aadefb526361fd9882cbf63b7123fcc8690305d1c2cf4905463f1b7d07e6ec",
+    "src\\aoxiang_ui_common.py": "72debffd982b905c10b53f1e8dcb7f1288d45821018a359c4568d3d65dfd46a3",
+    "src\\aoxiang_workflow_runner.py": "421b8669959a9ed5d2f10c26cce4ccc808f04df2bc261485508608bc984e733d",
+    "src\\aoxiang_workflow_ui.py": "925204e875df585b3752da53a26f34dcfe991d87f7a72a4fdf6771112d714671",
+    "src\\aoxiang_workflows.py": "79a08648bbb4687d14e03e9b3e8d8eff598a6ac3fbc27f4ebe523b88ccb0f09e",
+    "src\\app.ico": "43f1cca8dfed05f941a207266aa5308ebf8633a140aa4448a49acfac7c4ce7ed",
+    "src\\app.py": "cf62908c255b100627cdc1a99cb48bad2196959d50ee5677c91ecdca0a348106",
+    "src\\app_defaults.py": "fe9b7a4b1e5ec32719f945b07dfeacd1ecfd83318228c0dbd9998a4469b1e795",
+    "src\\application_window.py": "428c366a8cc80e5812598959b7df3325c89fe6a35a3293034c6cbd4b2780e43c",
+    "src\\archive_batch.py": "bf3f77feff7b8f7e662dfe10fc12d02fb8325cabaad50231db02a5c325d59d6a",
+    "src\\archive_batch_smoke.py": "a9eda5cbe973b0db37ffffde1bca30f305fee9d2c97f24576dc98a6595cd4af7",
+    "src\\archive_batch_ui.py": "f54052fe0e213d33980a469fb7ea0157b3edbcd5773fb5003af945d543462e82",
+    "src\\archive_exports.py": "6f1b76b0bf6fcaa0edb973b2b97954c084aa5f0c4306e28f526b17d6dfafc43c",
+    "src\\archive_orders.py": "3e44f5d2ead875cce1b64a5cdc6189838b736a656732d653880fc0f3cf672f54",
+    "src\\archive_smoke.py": "c6feee5fa0cf14d772ca71b05fd5496977a585eacb3967a7d99c872205c80816",
+    "src\\batch_app.py": "caf3802a6106ef1318ea5e8e9b1ff75e4f5e4812f9ab30e4c94ca219d8307253",
+    "src\\batch_service.py": "4b4618c5e2ac319ffadd4f7970a58c6a73b99b2d49922207523d571055d06ad7",
+    "src\\batch_smoke.py": "b1818e7d5f774fa720254b9ffed9c5c3b39f94907623d439a82db12676e32a78",
+    "src\\business_excel.py": "23a4c8b580e4e267ba8806cb8c08d48a822b877c9b08991dc66a5ef2a376b61e",
+    "src\\business_flows_smoke.py": "cd15e1b6ca0f646edbb4fd33758ad4e991c35818d34a36bde63e5cd50a00a9a8",
+    "src\\business_log_views.py": "d3a29ee234d1c5eac7f369bbab7eb9f34101a2018069e646126739c9baffda6e",
+    "src\\business_presenter.py": "4311610950e140b80c17bb4b51f2d88278a838182ad897c0925ec07e78367927",
+    "src\\business_scenes.py": "33650f6e82e110aa123ecd72857390a3d12b3d134166e58e990a4c1f5e176b08",
+    "src\\business_smoke.py": "c3d4f118755c453cb1c5823aeedf6b3539236d2af6bb31c401583a8448f3c16d",
+    "src\\business_ui.py": "4bc5f27097b057d01afb103374792b83aac49b52b21735ff9f3f39cf9ca9f688",
+    "src\\catalog_sync.py": "e86d5a66495f7b219846c6fbc86b115bc453fda3607ff27f18fd89f57cf30348",
+    "src\\catalog_sync_bundle.py": "a347c17dafe0b95f446d76d01cf577562bdd6d2e6d8b1257862af737ebd56874",
+    "src\\catalog_sync_client.py": "a8b2783286e5a424b0fb0390b38320cb8a75ac32af31a9c2c9e7edbb6c63c9a6",
+    "src\\catalog_sync_smoke.py": "9ef6ea11096004c79de3dd8e05f4d11672c1fb704d21ebdd707166618f5eb751",
+    "src\\catalog_sync_ui.py": "213d6f3b204fca29119133d324f5c5ccd68f5f372d167ef52a356153b7abea9c",
+    "src\\catalog_sync_validation.py": "e87e3371b2dd94eb4e96980b87ed29a4d5e4307bb454334c453bd09208312fe2",
+    "src\\catalog_write_lock.py": "c704489168c5df38be1d61a3a8df1e2f0a59a86710f8dbfd92df86b0f450598a",
+    "src\\conflict_choices.py": "3b72279c6424695d8cc49c7368d627dbe97b67025b63c90b7ebcdf984722e66b",
+    "src\\conflict_ui.py": "c3fbbec8fea826446f67a271f6430a085c4981497576675d7ba05a9ed51daae8",
+    "src\\daily_batch.py": "644396810157517116caab8db776b78c29d46f3a09f7a1c27ca42693d1909254",
+    "src\\data_contracts.py": "38ceb1d7926ba2f6b790c7a3afbc29f0815953dcf3277a6135ced8585a09ec2b",
+    "src\\data_maintenance.py": "393ab404aff6f8441abbdaca47b9b1f890d00c8289b13282ead8a1f1dee3f174",
+    "src\\data_maintenance_ui.py": "98d6f57efe8e2f090d45649180c45e83e510f55bf72f8da92ba509ca20d34669",
+    "src\\default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src\\default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "src\\delivery_smoke.py": "5af01da887f91271e44e9f757211799ad000c43afd2fe86bf186325d5872d791",
+    "src\\diagnostics.py": "2cdb6a011944756409df9d9a2399b27f3c7b685132ab16531b7d8507d93a9734",
+    "src\\display_fields.py": "ab56cb79ad94e08b644499f888fc4489d3845dd8bfbaa1d90f11448156385d8c",
+    "src\\draft_review.py": "c4785b6903490fe3480bdfd6b67c9e98cc63601b1e31763a59443d33d2e31eed",
+    "src\\engine.py": "a2c5005367550167019f4cd07bd0dcfe572346ebbef0b11a84166ea0905d2525",
+    "src\\export_location_smoke.py": "79c0f8a6800a726053f8217c5822295cb4a21d9fcf0ec65e3a829e88660da09e",
+    "src\\export_locations.py": "fbf7c4734648e4555e74378a9140e9cb2c6eddb6de46bcecb5cc6d9d7f7a3ae2",
+    "src\\export_progress.py": "6b78f6f3109993e1775bd0763494f16181a9ed1954fe9c1fa705d854f3cc2141",
+    "src\\export_settings.py": "b1862d1c57fc27b506ae5c6c1b4f99d9b0343b645b3a81b8a3749da205e42b9d",
+    "src\\feedback_ui.py": "20e6b5e0c8b2d884d3c127bdc62aebd1bc27c969195cedba64a59a8b36f91922",
+    "src\\file_intake.py": "a6ea67c6d27bc8d48251eb670cdfea10d4ac1570d930a2e3c9538583afbb6fc4",
+    "src\\final_review_smoke.py": "27170fe6ee7a0c9045a9fa4514bd8a7b4ba8891e2603760d16bdcd5bdad11e66",
+    "src\\fixes_smoke.py": "726d117b08afdcae06a5aebd3ad5053cadc72ea5ca7a69eb1b60c7cbf1ce6a18",
+    "src\\followup.py": "afba1bca2187649ae79a991c631a1840642d7ae5b44638ed4d4e1f4598598b0f",
+    "src\\followup_smoke.py": "1d18625e5d79495bf41e2b80c5075d2a65dc037d4fbf8694df310bd7f02b3e28",
+    "src\\followup_ui.py": "7bcd61e150ec3fdf02d36c5adc46510165e2d98362debd56887a23fb34e61236",
+    "src\\history_forms.py": "3f338157619ed11fecbb691a266c1239554a89610f5e1586023c14b43a2c74e4",
+    "src\\history_read.py": "95f87368ac9ccc79835991bbf89e7fc40f5821f5ce410bbed9fcdc426b3070b1",
+    "src\\history_smoke.py": "995403bb97a7416397f0458c315499b91254063df3ca6d3130abbf86b076b98d",
+    "src\\history_tasks.py": "67658fc964cb5c77fe1f5c9bc88f2283e2a9bc666b6f9c7b7e1fd3927d8a4bfd",
+    "src\\history_ui.py": "cbb4863466e029b16d7b4fb23ea7bbb100142a1c6d1baf2b96b28c2bc5f60ee9",
+    "src\\import_templates.py": "94e919d6f808aaa10febe0f2eb00fe0eec2e770bd56a946d0478369b457ea920",
+    "src\\import_ui.py": "0af30191b08d0280cab3a5e3c6039db75180ef9999b0dedbd61425f47e25eb81",
+    "src\\inbound_smoke.py": "0b104e0b00c71c63b5d564320fbf6f311e7087a4f8b4a8b4efa6d510aed39831",
+    "src\\input_adapter.py": "64716c817330361a8d2d1f838118bc4365cd7b30124f0412ad665fa1baf21e9c",
+    "src\\intake_probe.py": "4ffa104f73af01b0da44642c9ca3c6f89c5f39568cfee9186c3c8923ac54505c",
+    "src\\intake_smoke.py": "0a3fba139496606fc94a80eceaa5620fe5adddc51ee9085e28081ed293f61cf1",
+    "src\\interaction_rules.py": "8538a9d3a7500b0f9e062203d691c31f9b1e529c8a3690de533ad46f73c15866",
+    "src\\interaction_smoke.py": "796ed7fd295a639d8ebbe8a3fe7f90bb52827f103b832b45c5f9635efcebe370",
+    "src\\interaction_ui.py": "9fdbbbc3c705be1ec256554a65177c7561479b8573e5da2444e827bf5ebd2109",
+    "src\\io_stages.py": "9507aa20df8d3794339910f6514ec382753c03b2f46182ff0876f3215f6d22f9",
+    "src\\jst_allocation.py": "9908e6595ea4e5bd6af9cbc222b7cc2d94d76f90b8616da65060df1b54294164",
+    "src\\jst_exports.py": "e01847f0aed37670930e1e755204a677aa62f85ed3a02cec56b8e4f5cabc4458",
+    "src\\jst_orders.py": "3d1970f59c01c917a75badfc31a57e62e6983f18184ab07703cf3341545475cb",
+    "src\\jst_results.py": "453ccd23e212dd65c6bff27f3e3f6e022a1c212072b1f71f8eee5214db179e04",
+    "src\\jst_results_smoke.py": "f08d3977849aa4ba3f8f13895998a53e0ec251fe7335f0bfa067cf987982f037",
+    "src\\jst_results_ui.py": "5b2774b53e0ae773f6b447e27ed0505574de71cefc06470db36b17a3e60d4e21",
+    "src\\jst_review.py": "6395d5eb7284132fd3670292225cc242b1933695f40cca7293e6dfa295e7407f",
+    "src\\jst_review_ui.py": "e3bed353dab25a69037edf964a8fbd1c737ba90347a3b1871e034abb145671a0",
+    "src\\jst_smoke.py": "b38c99552d82c132fcd7941f7af00e75844d8235f760a9f7aaa5add173a0b082",
+    "src\\jst_task_ui.py": "04045d33d1d038d41f3d4d4726a2299aab17c243b120d7db698dc370dd55d2e5",
+    "src\\jst_tasks.py": "ec2c6463c168586ccb4a544adb76a8e31083ebd2a62e5ce43882a250e02c8d0c",
+    "src\\jst_ui.py": "45a80f51348ac00c96395dcba18eff274f1a6a8b8c268c136321172a01062f97",
+    "src\\legacy_window.py": "3799e92d932c194f389c9458690d94be0f7f1183e72303004f6439cd94d58245",
+    "src\\lifecycle_batch.py": "1f4f5b90339c5cc9b0301bbd3b75a1bb23ace2e29d27a48d98062fefa16f0650",
+    "src\\lifecycle_batch_ui.py": "0ba62ca43294f5cff49c5eed037b5f886c9e6a0e35c3f21b1ae9135aa31384eb",
+    "src\\lifecycle_comparison.py": "9be52d6e9a1b2b89b5ed341c55096f94b4cec4f573f77513629d7c0595263ebf",
+    "src\\lifecycle_comparison_smoke.py": "9e0d06f88573860b1a8e47e90a707447106e3ecb12668f71e6b983803aebaee9",
+    "src\\lifecycle_comparison_ui.py": "72f48cac06b1808c9d3e30ca05b66b79614f82e14b39cd610c75001a93448bf7",
+    "src\\lifecycle_exports.py": "ff8b62e8e578dda6eb7fe3077751b0c80a6f86468d8975bc28efc488c861e3d7",
+    "src\\lifecycle_home.py": "777d118b24f2570d7ca635927453d11dc8a03efaf5fd478e57f2038bf9f8953d",
+    "src\\lifecycle_home_ui.py": "bacdd7206f8a35781f26d07db29789b65b50a9c6d373db5e6ffc5c10f5bbe4f8",
+    "src\\lifecycle_io.py": "8297157126880a40e99611a7e8d1f7b91cdeb432252902eb2ffd71d64cff00d6",
+    "src\\lifecycle_rules.py": "db165d3f585e3dc6ede4726d5acd774322f8eb733772dc985e7e35cf6ae8813d",
+    "src\\lifecycle_smoke.py": "c8bbe33a91134f6e651d8dc63818d45d617eabf6cac097eb2e39bfbf656bab2a",
+    "src\\lifecycle_ui.py": "0c434d0a872a832584b374a42cd46d957d09825885d3dda3293066e52e1879dd",
+    "src\\maintenance_smoke.py": "d9069ea3de67aca45811352d05a166ebdd66094aec98e6cc5096c6f980e0c1f9",
+    "src\\merchant_feedback.py": "5c3a51ff266068a42c6a6df6fb65d3f8a3b1a396afa6c23155967695347563eb",
+    "src\\merchant_selection.py": "686193eb6172ac6ee80121b998a817a7ac417c0116cf0167ffa528c417c2e8cf",
+    "src\\model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "src\\new_product_focus.py": "9e3a65cfa6646b30a4ef07a9cd2bac4973230576a8345da749ff47873b8667ca",
+    "src\\new_product_focus_ui.py": "cbccb81689eda69355b853bb560696600687a224490ce4fa7f09f92a4c6f31dc",
+    "src\\new_product_ui.py": "2f09f9aa0b5c07709eebf902b13ba51de66bc0a37a0a6d9c94fc35d2cf661cd3",
+    "src\\new_products.py": "2264dc0c9362e4225f6ff179db2f5afdb97d1c63a92330cc25f37da6b2909947",
+    "src\\normal_delivery.py": "5bae4d764cd0cd5cbc5a6fc211acf555e9242a6df6bfd6f8b95bbd5f10df07bf",
+    "src\\normal_exports.py": "b7710941cf5c1b803f1e38479bf1aa12573deaa57fd71552f3f7d8f1ed043cc6",
+    "src\\normal_orders.py": "48044b1298d170c4bfa62c31375b33726c9ad6a4c090e6ca4f872878165d9bc2",
+    "src\\normal_smoke.py": "ea46a253789cfab416f4ffcb2aa780b1285108b0a35f38cff15ab6fc8bda0071",
+    "src\\one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "src\\order_lifecycle.py": "be402c71383178abfba140d94ea3681bde05bf315e0312ee5be9bfa5728e1f4f",
+    "src\\order_review.py": "7999faed838a9860b631d586feb3587322ab70c75b07a8395cce01894aeab1af",
+    "src\\parameter_scene.py": "263e0886882a1f9fb1be30f0a89aaca2a4dd88ecad83ff30b271999043eca8ec",
+    "src\\parameter_schema.py": "acf88afc8af1efab88b412456cc65b0a68cda9f23ff5bc21af927247139c268a",
+    "src\\parameter_trial.py": "1f7489a4fa5d000d3ae2448ed2efd764e93755f0b69cc4ae33af625d4c43eba4",
+    "src\\parameter_ui.py": "60c630d4d5ef44035e4ae4d691c6dcb61ce92c85e6b487daa353dbe3f134a7d4",
+    "src\\parameter_view.py": "cd5c7619c58bc0ff49ba71b6bc0b9f6aa91bb7ceec9b39e29e616f9ef08ff150",
+    "src\\payment_source_smoke.py": "14c1b9ab79d42b37bed11a39f7fd79eac8c80dc6e9bdb138e5d1b0c23744dbce",
+    "src\\preissue.py": "ded4da791b42070340c4cd2111213deef990dfa793f87962f28c2f8b3a201987",
+    "src\\preissue_smoke.py": "64b616b93a6b8f1d3ff6b4ead0f9f10565d0be0d484b3dffbc422901c8ee7160",
+    "src\\preissue_ui.py": "6280b0b154ceb31ba2d84f6303fce1c591816620924873b42c424541fc7e1b5f",
+    "src\\priority_list.py": "9229f9cdabd66c4eaaa1d31ad90038cb054f833c4b0cb53ccdbb75f594943450",
+    "src\\purchase_io.py": "296c8185182b67bee6b36a09e19ae628d3b6b41ad9cb155f4d29dc49386f313c",
+    "src\\purchase_ui.py": "5fb2f4010f8c374a23f4cfd862ae8ce91da8443a6efff90ab90ae1b7b6276b07",
+    "src\\purchases.py": "964b8dbc8ebcd8c740c8c2dc69195e6bb2e755700e54467f37044efe9669a5f8",
+    "src\\quantity_contract.py": "930bd6fd709ba4684479dcea37bfc1e57663c4b3ce0241f879f96754eac0d334",
+    "src\\queue_lock_probe.py": "b14d671df49d20ab27dd7b824d4820230bfe943c663de6d00c854da34d80d0b5",
+    "src\\readability_smoke.py": "af0cb6ccacd4f3bc9cf03bd9fa3749f1bad676fd20ecc84558838d4b536e2428",
+    "src\\readable_ui.py": "330cb8337d3b922b8ad2324fa7e55381382c288773129205cc500365c265b765",
+    "src\\reconciliation_smoke.py": "4b8ee10ca61eabdf91d5af46aa7cd0b66eb173dff1d1491c7efbfbdeaf5ec3d5",
+    "src\\restock_policy.py": "3e6a9eeb415bde935adc7cb8650b8e8d804e387c857f8a13bfdbdf9c0ddfd537",
+    "src\\restock_policy_ui.py": "39f931076b8b95c647709529211898a8d8aa1feb9b75cea381677e85da1b6d4f",
+    "src\\restock_smoke.py": "9c03a8d2e9e4679233dada5db80cd1ee5c900f6ebdd520f76d1086a7736dbe97",
+    "src\\restock_trial.py": "c629f1e02c390fb2f549df60f07427197278c966f58fa67093ec4cd872deb3f4",
+    "src\\result_semantics.py": "01b45e5acfe37709d4db92765212b752378cb9f99454db4f0a09f34d53d97272",
+    "src\\review_amounts.py": "e94189d3e46ee6c0d8cbf1b359daf8cf5023ff0e4167ac8ea4f70a15a0aa22ea",
+    "src\\review_filters.py": "65a7a046a9d30c354a1696a57c59a8d21aade66670beab231995513299fc22b7",
+    "src\\review_smoke.py": "37749cd8875cf67da753979b6e503eacfc59424113146ae2de777d9e1cb80c67",
+    "src\\runtime_support.py": "1b0f358bb298a7d5be1a943389535afa0b6a8e6768e7a73ccdc4b812641c33fd",
+    "src\\settings_history.py": "2b4f0502c4030db3b3e154141e40330d1bbd38d5257141db672e7be10be90192",
+    "src\\settings_maintenance_ui.py": "76706981b9101dabb7de08108d5e4845dd7c6f289858196c36c5d85e4f98ac1a",
+    "src\\smoke.py": "1b8ebf35cb94eb6e96f96b14b009aceb33df66f61912af4e52421ca7e561a524",
+    "src\\source_archive.py": "2a5b6dbace2c08eb5ea3517b51b08b41ece1649383731b3cf603a7b601bb111a",
+    "src\\source_binding.py": "68c976fe4323c36a719b59736fc9ec19db1ae5c0c3af8d7bfc8cc85d8fa408df",
+    "src\\stocking_lists.py": "69985a2574e5834bbc5a9d825f337a950d64c20c772b22506d5f8f30dba3f34b",
+    "src\\stocking_selection.py": "60494c92a819b3f8941c008f7fdb6529af3233bfd693d67637d93247c56bdcde",
+    "src\\stocking_ui.py": "d4b372afceec4d67384208ba84a6c7ecfd02c96614c4d427f73291fc29411139",
+    "src\\storage_chunks.py": "ca86a3355e74e175d71a06bb350d24a1ed622fcfb453a5cbd3eb3bbccb23f0f8",
+    "src\\storage_maintenance.py": "156a0d9f89d301ee56ae6e4119a274cb1f2bd951f7c1605c02ac21c6aef7640c",
+    "src\\storage_smoke.py": "c624236c25a8c0a430a0d87653062317cc2beac0032240a3cf957570feb19767",
+    "src\\store_defaults.py": "8fee543cbd8036877f99aeec873b62d4bb320441967670d0dbddaab885604974",
+    "src\\store_parameter_import.py": "0e294cd72d2bc6ada0aa922a74acc9e36db7c44dc217406abeabf082402ee4d9",
+    "src\\store_parameter_smoke.py": "bbe38ca88e79ad13a6ffd5b6c228c74c38d411c53e3414af24f34b277cd2d77e",
+    "src\\store_parameter_ui.py": "d381f639bcf4a030385ddc305a08b7082127cd7e3aa8490c128597de28fccee4",
+    "src\\table_records.py": "267489aca45843d6d282c1987e377a0a289d08005429fc2812718063cc44f84c",
+    "src\\ui_controls.py": "29a4d8a41748d7f32335e490c665b85f8d8eb4a89fa50b8598fa4d7be67f5ece",
+    "src\\ui_goods_fast.py": "7cd533c7c1e091df94084433bb44c6a632aa4c325c51a6e050101198dbf24e45",
+    "src\\ui_results.py": "a073fd4eee2163217cf6d895d6e7978c544836d214dc474ff4c3a2dd1d3ce18d",
+    "src\\ui_review_amounts.py": "8ad2dd90574b259e8146d4ee0abafc77c0c91a5a5e59bbae4d1cdce440314c05",
+    "src\\ui_review_filters.py": "d1f9570a4a671e4ba616199f22107c8d0af88059c9e7a56f67d957feece2825c",
+    "src\\ui_session.py": "c53940a08df2ac34ff9c561a0882a56727cfd5163d6e80236211ee1d7314d5e0",
+    "src\\ui_tasks.py": "2edbf92b2ad6e63a62573d938d76cd56980bfc95bc51311c9593bf6d1332578d",
+    "src\\ui_work_io.py": "7bee0f6a6868624d68aac0cc9e23dd5cf370632da1810dc2cc391287e74b07a2",
+    "src\\usability.py": "46925a039956614780b4c4bee9f622fe77dfb63748d2cc4b6b3f2d1861b0d8bc",
+    "src\\version.json": "db62df02fa4918b45370ab8befe2ebad3d9554f2cb19ac565af7ff835b5c713b",
+    "src\\version_info.py": "6e9fe25bd61d7059758d5dc4484001ed7a24d6f624f3206a3230f7e1e4680b48",
+    "src\\warehouse_catalog.py": "8ad378ee03e90d72026c49abf1ae5ca721d215b2c85f41ccc6aa65a5372d8617",
+    "src\\warehouse_delivery_smoke.py": "eee8fa29dc55c18cd51eded68107076543bfee648eaff647024479c9272ccde8",
+    "src\\warehouse_orders.py": "5f86073f3a717d196f07b1432e251544f7345776d7da8c37be64415a8cee5bff",
+    "src\\warehouse_smoke.py": "197a93dafbbaf927c9c014210ffdc07285b6e4ca09195b72eb7735830b7a20a9",
+    "src\\warehouse_ui.py": "9c634e094bac76a5fc729a28dfe26a960c6258007c7e876ecd5dd98657ecdf74",
+    "src\\work_io_process.py": "bbc8388b8ea2b91205c3c03e0ec42f23515c7c013fd1c3eed210a0e00c503254",
+    "src\\work_io_smoke.py": "74743a206c89eda236546a07bf4a41c39a55113e6435d1c8fa94c580662331b2",
+    "src\\work_repository.py": "eb64a6155f5d05edad6c54f99be5c56b053279f182d29aaf91cbd8b8780067b1",
+    "src\\work_smoke.py": "4ebecd50d49eb27ed98d2ab8e49e6311cd8cf2154199c7234de7e15183127922",
+    "src\\work_transfer.py": "ce0ed8b5d6d4e02e373d890719d0c177c8ab93c241d3c27063a66eeefacf8c11",
+    "src\\workbench.py": "9a8364be12fe63098b45867c739b476fa58154e70acc3f2c6a096c9f07faebc4",
+    "src\\workflow_smoke.py": "c83ec3b9d5babf039edca53c62da275b407149d55cb4a1b9f4152a1ccf31f4f4",
+    "src\\xlsx_exports.py": "ce07a425e57039fe2e5b509db4f5416377d490dfa9d6d258654ba2bdf7986b45"
+  }
+}

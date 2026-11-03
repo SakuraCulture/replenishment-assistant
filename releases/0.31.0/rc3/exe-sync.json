@@ -1,0 +1,65 @@
+{
+  "passed": true,
+  "checks": [
+    "原下载任务可恢复",
+    "未核验不能保存账号",
+    "空闲不能停止",
+    "后台任务在限制时间内结束",
+    "立即停止保留下载任务，不采用资料",
+    "真实按钮启动后台任务",
+    "运行时禁止重复提交",
+    "后台任务在限制时间内结束",
+    "真实 Node → 当前程序子进程校验 → 采用完成",
+    "界面刷新本仓资料",
+    "成功采用令当前输入需要重查",
+    "采用结果显示准确",
+    "失败仓没有冒充成功",
+    "失败不写另一仓",
+    "Qt持续响应",
+    "关闭组件退出，无残留 Node",
+    "重开读取已采用记录",
+    "后台任务在限制时间内结束",
+    "再次继续不会重放成功仓",
+    "重试后安全关闭"
+  ],
+  "screenshots": [
+    "before.png",
+    "after.png"
+  ],
+  "scope": "synthetic saved platform task; no real browser or platform; real Node and no-Qt validator; frozen flag distinguishes EXE/source",
+  "heartbeat_count": 217,
+  "version": {
+    "app": "补货助手",
+    "version": "0.31.0",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.1",
+    "model_version": "0.3.4-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "cbcad54c3ddc0950ca2b6bb6399e0ace0cc32c98",
+    "build_id": "rc3",
+    "built_at": "2026-11-03T12:50:07.705445+08:00",
+    "source_archive_sha256": "85351fbb2f7ee2ac4ef743fb56bb73e63c5755acb14e05bf61053220e04c7339",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "cbcad54c3ddc0950ca2b6bb6399e0ace0cc32c98",
+      "files": 866,
+      "manifest_sha256": "b61eefd8c527762a0736f9e42cac0b5ece80b8589cfd70942311a1d83846caf2",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "fbafc0a849030df3c90a38d35de5c1b790ef41524b75e6a4f57ee17ca58fd1f4",
+      "files": 8,
+      "source_commit": "cbcad54c3ddc0950ca2b6bb6399e0ace0cc32c98",
+      "contains_user_state": false
+    }
+  },
+  "frozen": true,
+  "process_exit": 0,
+  "exe_sha256": "98e027a137772358bc8c6985cb8e42fedb21cf8216c4fdc838eed375f5a6bff4"
+}

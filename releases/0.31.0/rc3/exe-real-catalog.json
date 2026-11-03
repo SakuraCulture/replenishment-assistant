@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "rows": 9207,
+  "business_values_types_and_order_equal": true,
+  "qt_imported": false,
+  "exit_code": 0,
+  "seconds": 2.4998481000075117,
+  "exe_sha256": "98e027a137772358bc8c6985cb8e42fedb21cf8216c4fdc838eed375f5a6bff4",
+  "source_sha256": "8ae5bba82de876632d355afed0896dd4422f98f9eaed900dd1f2cf9bb7e9deaa"
+}

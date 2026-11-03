@@ -1,0 +1,59 @@
+{
+  "scope": "real frozen 9207-row file; local read+original preservation+adoption, excludes browser/query/download; auto includes staging copy; same machine/Python, serial AB BA AB, warm OS cache not purged",
+  "raw": {
+    "manual": [
+      {
+        "seconds": 1.388427199999569,
+        "rows": 9207,
+        "ordered_items_sha256": "e33037589db6f513aff1e54d4a4d2b9315b965eabb7e485252f0d5a51c7537ce",
+        "source_sha256": "8ae5bba82de876632d355afed0896dd4422f98f9eaed900dd1f2cf9bb7e9deaa"
+      },
+      {
+        "seconds": 1.471346000005724,
+        "rows": 9207,
+        "ordered_items_sha256": "e33037589db6f513aff1e54d4a4d2b9315b965eabb7e485252f0d5a51c7537ce",
+        "source_sha256": "8ae5bba82de876632d355afed0896dd4422f98f9eaed900dd1f2cf9bb7e9deaa"
+      },
+      {
+        "seconds": 1.440337499981979,
+        "rows": 9207,
+        "ordered_items_sha256": "e33037589db6f513aff1e54d4a4d2b9315b965eabb7e485252f0d5a51c7537ce",
+        "source_sha256": "8ae5bba82de876632d355afed0896dd4422f98f9eaed900dd1f2cf9bb7e9deaa"
+      }
+    ],
+    "auto": [
+      {
+        "seconds": 1.819043600000441,
+        "rows": 9207,
+        "ordered_items_sha256": "e33037589db6f513aff1e54d4a4d2b9315b965eabb7e485252f0d5a51c7537ce",
+        "source_sha256": "8ae5bba82de876632d355afed0896dd4422f98f9eaed900dd1f2cf9bb7e9deaa"
+      },
+      {
+        "seconds": 1.7671779999800492,
+        "rows": 9207,
+        "ordered_items_sha256": "e33037589db6f513aff1e54d4a4d2b9315b965eabb7e485252f0d5a51c7537ce",
+        "source_sha256": "8ae5bba82de876632d355afed0896dd4422f98f9eaed900dd1f2cf9bb7e9deaa"
+      },
+      {
+        "seconds": 1.6897189999872353,
+        "rows": 9207,
+        "ordered_items_sha256": "e33037589db6f513aff1e54d4a4d2b9315b965eabb7e485252f0d5a51c7537ce",
+        "source_sha256": "8ae5bba82de876632d355afed0896dd4422f98f9eaed900dd1f2cf9bb7e9deaa"
+      }
+    ]
+  },
+  "summary": {
+    "manual": {
+      "min": 1.388427199999569,
+      "median": 1.440337499981979,
+      "max": 1.471346000005724
+    },
+    "auto": {
+      "min": 1.6897189999872353,
+      "median": 1.7671779999800492,
+      "max": 1.819043600000441
+    }
+  },
+  "ordered_items_equal": true,
+  "originals_equal": true
+}
