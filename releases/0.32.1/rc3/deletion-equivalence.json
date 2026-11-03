@@ -1,0 +1,19 @@
+{
+  "small_business_table_signature_equal": true,
+  "small_records": 6,
+  "large_survivors": {
+    "deleted_parents": 1,
+    "remaining_orders": 38,
+    "parent_changes": [],
+    "signed_changes": []
+  },
+  "warm_cold_final_signature_equal": true,
+  "exclusions": [
+    "jobs.revision: regenerated CAS token",
+    "jobs.saved: operation wall clock",
+    "snapshot_chunks: representation/content-addressed packing",
+    "snapshot_storage_meta: storage metadata",
+    "maintenance_chunk_refs and maintenance_legacy_refs: derived reference caches"
+  ],
+  "method": "SQL column order, rowid sequence, scalar types and values hashed; snapshot payloads compared by canonical JSON SHA preserving numeric/null/string distinctions and arrays. All surviving large signed payloads compared byte-for-byte. Large old full deletion could not complete; no claimed full old/new large outcome comparison."
+}

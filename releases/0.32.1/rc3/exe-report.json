@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "two-store Windows spawn calculation, draft save and atomic signature",
+    "actual deletion preview cancelled without mutation",
+    "close deletion progress: safe cancellation and original order retained",
+    "retry after cancellation; legacy ijson parser in work process; exact sibling signed/current result retained; current table refreshed",
+    "repeat removed target rejected; process error returned without blocking"
+  ],
+  "heartbeat_ticks": 226,
+  "max_gap_seconds": 0.40700000000651926,
+  "scope": "whole scripted walk, including synchronous fixture checks/screenshots",
+  "app": "补货助手",
+  "version": "0.32.1",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "016a1924299f5fc4a57dfec00d2ef9443ca323f3",
+  "build_id": "rc3",
+  "built_at": "2026-11-03T22:46:55.989347+08:00",
+  "source_archive_sha256": "8f27b1cb0dfbd166b1fd56155c8bfc8f5e9a87fe353878da7eb54166aa78b9e2",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "016a1924299f5fc4a57dfec00d2ef9443ca323f3",
+    "files": 866,
+    "manifest_sha256": "7de386ebd677d31ec9c81b73fe49dc28c2a49658fdaf4e94d9b1dff566c20bd5",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "41794d0990b29b5d092c9791b6179efb50eefa8989f92c40b21692ae50f00da2",
+    "files": 8,
+    "source_commit": "016a1924299f5fc4a57dfec00d2ef9443ca323f3",
+    "contains_user_state": false
+  }
+}

@@ -1,0 +1,25 @@
+test_cancellation_during_streamed_read (test_deletion_bounded.BlockEdits.test_cancellation_during_streamed_read) ... ok
+test_chunked_types_order_dates_and_shared_fields (test_deletion_bounded.BlockEdits.test_chunked_types_order_dates_and_shared_fields) ... ok
+test_editor_avoids_full_loaded_decode (test_deletion_bounded.BlockEdits.test_editor_avoids_full_loaded_decode) ... ok
+test_empty_and_missing_optional_fields (test_deletion_bounded.BlockEdits.test_empty_and_missing_optional_fields) ... ok
+test_legacy_equivalent (test_deletion_bounded.BlockEdits.test_legacy_equivalent) ... ok
+test_legacy_progress_is_bounded_per_block_not_per_row (test_deletion_bounded.BlockEdits.test_legacy_progress_is_bounded_per_block_not_per_row) ... ok
+test_many_store_map_blocks (test_deletion_bounded.BlockEdits.test_many_store_map_blocks) ... ok
+test_original_manifest_and_block_corruption_rejected (test_deletion_bounded.BlockEdits.test_original_manifest_and_block_corruption_rejected) ... ok
+test_owned_filter_does_not_mutate_other_inputs (test_deletion_bounded.BlockEdits.test_owned_filter_does_not_mutate_other_inputs) ... ok
+test_cancel_before_lock_leaves_no_business_or_cache_writes (test_deletion_bounded.DeletionRaces.test_cancel_before_lock_leaves_no_business_or_cache_writes) ... ok
+test_commit_boundary_finishes_despite_late_cancel (test_deletion_bounded.DeletionRaces.test_commit_boundary_finishes_despite_late_cancel) ... ok
+test_invalid_surviving_job_day_rejected (test_deletion_bounded.DeletionRaces.test_invalid_surviving_job_day_rejected) ... ok
+test_new_shared_work_added_after_prepare_rejected (test_deletion_bounded.DeletionRaces.test_new_shared_work_added_after_prepare_rejected) ... ok
+test_surviving_job_exact (test_deletion_bounded.DeletionRaces.test_surviving_job_exact) ... ok
+test_waiting_write_lock_can_cancel_then_retry (test_deletion_bounded.DeletionRaces.test_waiting_write_lock_can_cancel_then_retry) ... ok
+test_cached_refs_validate_content_and_checksum (test_deletion_bounded.ReferenceScan.test_cached_refs_validate_content_and_checksum) ... ok
+test_cancel_gc_rolls_back (test_deletion_bounded.ReferenceScan.test_cancel_gc_rolls_back) ... ok
+test_exact_legacy_regex_including_utf8_and_window_edges (test_deletion_bounded.ReferenceScan.test_exact_legacy_regex_including_utf8_and_window_edges) ... ok
+test_legacy_stream_refs_and_last_duplicate_key (test_deletion_bounded.ReferenceScan.test_legacy_stream_refs_and_last_duplicate_key) ... ok
+test_legacy_tree_never_calls_full_load (test_deletion_bounded.ReferenceScan.test_legacy_tree_never_calls_full_load) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 1.347s
+
+OK
