@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "differences": [],
+  "cases": [
+    "comparison/separate",
+    "comparison/combined",
+    "return/separate",
+    "return/combined",
+    "payment/separate",
+    "payment/combined",
+    "receipt/separate",
+    "receipt/combined"
+  ],
+  "database_unchanged": true,
+  "comparison": "ordered cells, types, worksheet order, format/style; original per-SKU lifecycle exports, four kinds x two modes; random filenames excluded only",
+  "times": {
+    "old": {
+      "comparison/separate": 0.08155689999694005,
+      "comparison/combined": 0.04425880001508631,
+      "return/separate": 0.08629239999572746,
+      "return/combined": 0.05487100000027567,
+      "payment/separate": 0.023067399975843728,
+      "payment/combined": 0.009945400001015514,
+      "receipt/separate": 0.019566900009522215,
+      "receipt/combined": 0.010840700007975101
+    },
+    "new": {
+      "comparison/separate": 0.04176539997570217,
+      "comparison/combined": 0.024301900004502386,
+      "return/separate": 0.05435550000402145,
+      "return/combined": 0.0508562000177335,
+      "payment/separate": 0.009806499991100281,
+      "payment/combined": 0.01263670000480488,
+      "receipt/separate": 0.010456999996677041,
+      "receipt/combined": 0.010014599974965677
+    }
+  }
+}

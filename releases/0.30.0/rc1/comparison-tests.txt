@@ -1,0 +1,19 @@
+test_absent_and_confirmed_zero_not_confused (test_lifecycle_comparison.ComparisonTests.test_absent_and_confirmed_zero_not_confused) ... ok
+test_all_filtered_cross_page_same_conditions_and_order (test_lifecycle_comparison.ComparisonTests.test_all_filtered_cross_page_same_conditions_and_order) ... ok
+test_cancel_during_read_or_write_and_retry_no_partial_file (test_lifecycle_comparison.ComparisonTests.test_cancel_during_read_or_write_and_retry_no_partial_file) ... ok
+test_currency_never_merged_and_unmarked_not_defaulted (test_lifecycle_comparison.ComparisonTests.test_currency_never_merged_and_unmarked_not_defaulted) ... ok
+test_duplicate_heads_dedup_order_and_old_revision_rejected (test_lifecycle_comparison.ComparisonTests.test_duplicate_heads_dedup_order_and_old_revision_rejected) ... ok
+test_excel_columns_types_styles_scope_and_readonly (test_lifecycle_comparison.ComparisonTests.test_excel_columns_types_styles_scope_and_readonly) ... ok
+test_fixed_signed_price_and_source_payment_independent (test_lifecycle_comparison.ComparisonTests.test_fixed_signed_price_and_source_payment_independent) ... ok
+test_legacy_partial_return_stays_unconfirmed (test_lifecycle_comparison.ComparisonTests.test_legacy_partial_return_stays_unconfirmed) ... ok
+test_modern_missing_line_zero_but_extra_without_price_not_invented (test_lifecycle_comparison.ComparisonTests.test_modern_missing_line_zero_but_extra_without_price_not_invented) ... ok
+test_one_signed_read_for_two_warehouse_orders (test_lifecycle_comparison.ComparisonTests.test_one_signed_read_for_two_warehouse_orders) ... ok
+test_partial_store_scope_denominators_and_per_warehouse (test_lifecycle_comparison.ComparisonTests.test_partial_store_scope_denominators_and_per_warehouse) ... ok
+test_same_code_across_days_warehouses_skus_dedup_amounts_add (test_lifecycle_comparison.ComparisonTests.test_same_code_across_days_warehouses_skus_dedup_amounts_add) ... ok
+test_same_snapshot_api_with_cached_order_exactly_equivalent (test_lifecycle_comparison.ComparisonTests.test_same_snapshot_api_with_cached_order_exactly_equivalent) ... ok
+test_stale_downstream_facts_kept_but_excluded_from_comparable_totals (test_lifecycle_comparison.ComparisonTests.test_stale_downstream_facts_kept_but_excluded_from_comparable_totals) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 2.132s
+
+OK
