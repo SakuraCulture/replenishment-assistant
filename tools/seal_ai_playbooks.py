@@ -14,7 +14,13 @@ def sha(path):
 
 
 def read(path): return json.loads(path.read_text('utf-8'))
-def save(path, data): path.write_text(json.dumps(data, ensure_ascii=False, indent=2), 'utf-8')
+def save(path, data): path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+
+
+def copy_evidence(origin, target):
+    if origin.suffix.lower() in {'.json', '.txt', '.log'}:
+        target.write_bytes(origin.read_bytes().replace(b'\r\n', b'\n'))
+    else: shutil.copy2(origin, target)
 
 
 def main():
@@ -47,8 +53,8 @@ def main():
                          (qa/'automation-final.log', 'automation-tests.txt'), (ui/'automation-report.json', 'exe-report.json'),
                          (ui/'playbook-report.json', 'business-cases.json'), (ui/'codex-client/report.json', 'codex-client.json'),
                          (ui/'delivery-evidence.json', 'build-evidence.json'), (ui/'AI常用业务.png', 'AI常用业务.png')]:
-        shutil.copy2(origin, out/name)
-    for prompt in ui.glob('prompt-*.txt'): shutil.copy2(prompt, out/prompt.name)
+        copy_evidence(origin, out/name)
+    for prompt in ui.glob('prompt-*.txt'): copy_evidence(prompt, out/prompt.name)
     manifest = {str(p.relative_to(delivery)): sha(p) for p in sorted(delivery.rglob('*')) if p.is_file()}
     save(out/'files.json', manifest)
     archive = delivery.parent / ('补货助手_' + build['version'] + '_' + build['build_id'] + '_AI常用业务.zip')
