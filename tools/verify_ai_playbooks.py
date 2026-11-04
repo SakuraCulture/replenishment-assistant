@@ -4,6 +4,7 @@ import verify_parameter_workspaces as verification
 
 verification.BASE = '3ca57141ed7b35f3c6e61708b01eaad54ec469f7'
 original_freeze = verification.freeze
+original_compare = verification.compare
 
 
 def freeze(q):
@@ -17,4 +18,15 @@ def freeze(q):
 
 
 verification.freeze = freeze
+
+
+def compare(q, after_name='after'):
+    a = json.loads((q/'before/capture.json').read_text('utf-8'))
+    b = json.loads((q/after_name/'capture.json').read_text('utf-8'))
+    if a.get('PYTHONHASHSEED') != '0' or b.get('PYTHONHASHSEED') != '0':
+        raise ValueError('Use the before/after commands so both processes run with PYTHONHASHSEED=0')
+    return original_compare(q, after_name)
+
+
+verification.compare = compare
 if __name__ == '__main__': verification.main()

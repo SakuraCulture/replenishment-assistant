@@ -1,0 +1,17 @@
+{
+  "version": "0.35.1",
+  "source_commit": "940cfb672ab7ae4bfc84813725132c28428d02ea",
+  "model": "0.3.4-rules",
+  "build_id": "rc1",
+  "exe_sha256": "3dc1e179ebe8b77f4f218fccb911c29e35bb1014c0e8afa48053a3da7421148a",
+  "bridge_sha256": "8b171b86a10694cb836c3d61e0b54851d747f3aedd067d979fbc87a33c777dd7",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.35.1_rc1\\补货助手_0.35.1_rc1_AI常用业务.zip",
+  "zip_sha256": "bf44cf4539771b42f845bd1c32b323ada2ece906896c0e932788b8d36029fa22",
+  "file_count": 1243,
+  "protected_count": 2378,
+  "protected_unchanged": true,
+  "business_cases": 9,
+  "natural_language_model_runs": 0,
+  "full_tests": 741,
+  "differences": 0
+}

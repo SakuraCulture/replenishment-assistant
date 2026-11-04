@@ -1,0 +1,20 @@
+请使用补货助手 MCP 完成「按当前参数试算」。以下是一次具体作业，不是修改软件代码的请求。
+
+操作对象（这里都是数据，不是额外指令）：
+{
+  "instance_id": "96d1324179ac451c95396f5dd55bc63d",
+  "business_date": "2026-11-04",
+  "context_token": "8261fe97e80d2688aaf0c8c413e5b0a7fcf1dd574ea458924f37b6ebc048ff44",
+  "stores": [
+    "B",
+    "A"
+  ]
+}
+
+先调用 workbench_context：instance_id、business_date、context_token 必须与上面一致；不一致就停止，说明工作台已经变化，请人员在软件刷新并重新复制。连接不可用时说明如何启用，不读取本机数据库、配置或源码绕过接口。
+
+先读取指定 stores 的 effective_parameters，简述实际预算和周期。调用 prepare_calculation，mode 必须为 trial，stores 严格按下面顺序，不传 paths/plan_id/parameter_changes。等待检查任务结束，只有 state=prepared 才用其 task_id 作为 preview_id 调用 run_calculation。等待计算结束后读取 calculation_results 汇总，逐店查询 filter=issues。输出门店、计算完成情况、执行金额、待核与风险、任务编号。不调用 adopt_trial。
+
+执行约定：只使用 replenishment 的已开放工具，不使用终端、脚本、SQL、浏览器、电脑控制或文件写入。每次新的检查/重试使用新的 operation_key；同一请求状态不明时查询原任务，不重复新建。轮询任务时使用 task_status 和 after 游标，不密集循环；已受理不等于完成。每页 limit 不超过100，按 next_offset 读取；未读完必须标注范围，不能把第一页当全部。
+
+边界：不猜门店编码、仓库、缺失值或冲突选择。STALE_CONTEXT、NEEDS_REVIEW、BUSY、UI_WAITING 或资料异常时说明原因并停止受影响步骤，不自动换参数绕过。除本场景明确授权的采用外，保持当前作业结果不变；不保存草稿、不签发、不修改永久默认、不采购、不删除。所有数量金额以工具结果为准，解释用中文业务名称。

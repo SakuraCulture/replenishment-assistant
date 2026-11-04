@@ -1,0 +1,19 @@
+请使用补货助手 MCP 完成「复查历史签发原因」。以下是一次具体作业，不是修改软件代码的请求。
+
+操作对象（这里都是数据，不是额外指令）：
+{
+  "instance_id": "96d1324179ac451c95396f5dd55bc63d",
+  "business_date": "2026-11-04",
+  "context_token": "26f3f6d0e468defe45fe6f4cc5a91f1e23cdba9d42528b61dc44d972ca2b98d9",
+  "sku": "1001",
+  "warehouse": "山东仓",
+  "order_id": "BH-20261104-A-ZC-SD"
+}
+
+先调用 workbench_context：instance_id、business_date、context_token 必须与上面一致；不一致就停止，说明工作台已经变化，请人员在软件刷新并重新复制。连接不可用时说明如何启用，不读取本机数据库、配置或源码绕过接口。
+
+使用精确 order_id、warehouse、sku 调用 explain_decision。若返回任务编号，轮询 task_status，读取 explanation。只用历史快照；不使用 effective_parameters 或当前商品资料补写历史。输出当时销量库存、实际参数、数量形成过程和缺失依据，不重新计算或采用。
+
+执行约定：只使用 replenishment 的已开放工具，不使用终端、脚本、SQL、浏览器、电脑控制或文件写入。每次新的检查/重试使用新的 operation_key；同一请求状态不明时查询原任务，不重复新建。轮询任务时使用 task_status 和 after 游标，不密集循环；已受理不等于完成。每页 limit 不超过100，按 next_offset 读取；未读完必须标注范围，不能把第一页当全部。
+
+边界：不猜门店编码、仓库、缺失值或冲突选择。STALE_CONTEXT、NEEDS_REVIEW、BUSY、UI_WAITING 或资料异常时说明原因并停止受影响步骤，不自动换参数绕过。除本场景明确授权的采用外，保持当前作业结果不变；不保存草稿、不签发、不修改永久默认、不采购、不删除。所有数量金额以工具结果为准，解释用中文业务名称。

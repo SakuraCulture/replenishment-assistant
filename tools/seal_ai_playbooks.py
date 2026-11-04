@@ -3,7 +3,6 @@ import argparse
 import hashlib
 import json
 import shutil
-import subprocess
 import zipfile
 from pathlib import Path
 
@@ -21,6 +20,7 @@ def save(path, data): path.write_text(json.dumps(data, ensure_ascii=False, inden
 def main():
     parser = argparse.ArgumentParser()
     for key in ('qa', 'ui', 'delivery', 'out'): parser.add_argument('--' + key, type=Path, required=True)
+    parser.add_argument('--candidate', default='after')
     args = parser.parse_args(); qa, ui, delivery, out = (getattr(args, k).resolve() for k in ('qa', 'ui', 'delivery', 'out'))
     if out.exists(): raise FileExistsError('Release evidence directory must be new')
     build = read(delivery / '_internal/build_info.json')
@@ -32,7 +32,9 @@ def main():
     from structure_oracle import source_hashes
     source = ROOT / ('build_' + build['version'] + '_' + build['build_id']) / 'source'
     if source_hashes(source) != source_hashes(ROOT): raise ValueError('Current sources differ from built sources')
-    capture = read(qa / 'after-complete/capture.json')
+    capture = read(qa / args.candidate / 'capture.json')
+    if capture['PYTHONHASHSEED'] != read(qa / 'before/capture.json')['PYTHONHASHSEED']:
+        raise ValueError('Comparison processes must use the same hash seed')
     if capture['source_hashes'] != source_hashes(ROOT): raise ValueError('Comparison is for different source files')
     if any(sha(Path(p)) != digest for p, digest in evidence['hashes'].items()): raise ValueError('Verified executable changed')
     baseline = read(qa / 'baseline.json')
@@ -41,8 +43,8 @@ def main():
     if 'Ran 741 tests' not in (qa / 'full-tests.log').read_text('utf-8') or not (qa / 'full-tests.log').read_text('utf-8').rstrip().endswith('OK'):
         raise ValueError('Missing full regression pass')
     out.mkdir(parents=True)
-    for origin, name in [(qa/'equivalence.json', 'equivalence.json'), (qa/'full-tests.log', 'full-tests.log'),
-                         (qa/'automation-final.log', 'automation-tests.log'), (ui/'automation-report.json', 'exe-report.json'),
+    for origin, name in [(qa/'equivalence.json', 'equivalence.json'), (qa/'full-tests.log', 'full-tests.txt'),
+                         (qa/'automation-final.log', 'automation-tests.txt'), (ui/'automation-report.json', 'exe-report.json'),
                          (ui/'playbook-report.json', 'business-cases.json'), (ui/'codex-client/report.json', 'codex-client.json'),
                          (ui/'delivery-evidence.json', 'build-evidence.json'), (ui/'AI常用业务.png', 'AI常用业务.png')]:
         shutil.copy2(origin, out/name)

@@ -1,0 +1,928 @@
+{
+  "passed": true,
+  "client": "installed Codex app-server",
+  "exe": "C:\\Users\\lenovo\\AppData\\Local\\OpenAI\\Codex\\bin\\a159911ff70742e9\\codex.exe",
+  "model_turns": 0,
+  "initialize": {
+    "userAgent": "Codex Desktop/0.166.0-alpha.6 (Windows 10.0.26200; x86_64) dumb (replenishment_acceptance; 1)",
+    "codexHome": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\v0351-exe-1\\codex-client\\codex-home",
+    "platformFamily": "windows",
+    "platformOs": "windows"
+  },
+  "inventory": {
+    "data": [
+      {
+        "name": "replenishment",
+        "runtimeStatus": null,
+        "pluginId": null,
+        "httpOrigin": null,
+        "serverInfo": {
+          "name": "replenishment-workbench",
+          "title": null,
+          "version": "0.35.0",
+          "description": null,
+          "icons": null,
+          "websiteUrl": null
+        },
+        "serverCapabilities": {
+          "tools": {
+            "listChanged": false
+          }
+        },
+        "toolListMeta": null,
+        "tools": {
+          "open_workbench_view": {
+            "name": "open_workbench_view",
+            "description": "定位原业务页面，不触发保存、签发或导入确认。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "home",
+                    "work",
+                    "progress",
+                    "results",
+                    "tracking",
+                    "review",
+                    "parameters"
+                  ]
+                },
+                "store": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                }
+              },
+              "required": [
+                "view"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "adopt_trial": {
+            "name": "adopt_trial",
+            "description": "将试算结果采用到仍未变化的当前作业；不保存、不签发。若影响新品或人工调整，须在原界面核对。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "context_token": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                }
+              },
+              "required": [
+                "task_id",
+                "context_token"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "explain_decision": {
+            "name": "explain_decision",
+            "description": "查询某商品的原参数、销量库存和已计算过程。历史缺项不推测。任务与历史单二选一。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "order_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "store": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "warehouse": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "sku": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                }
+              },
+              "required": [
+                "sku"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "find_resources": {
+            "name": "find_resources",
+            "description": "查询应用登记的门店、预案、文件、仓资料、历史订单或本机 AI 任务；编码精确使用，不按名称猜。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "stores",
+                    "plans",
+                    "files",
+                    "catalogs",
+                    "orders",
+                    "tasks"
+                  ]
+                },
+                "search": {
+                  "type": "string"
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "prepare_calculation": {
+            "name": "prepare_calculation",
+            "description": "检查指定本地文件或当前已检查数据。形成预览，不签发、不保存默认。mode=trial 试算；current 明确采用到本次工作台。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "context_token": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "operation_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "stores": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "maxItems": 500,
+                  "uniqueItems": true
+                },
+                "paths": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "maxItems": 500,
+                  "uniqueItems": true
+                },
+                "plan_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "trial",
+                    "current"
+                  ]
+                },
+                "parameter_changes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "store": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096
+                      },
+                      "path": {
+                        "type": "array",
+                        "items": {
+                          "type": [
+                            "string",
+                            "integer"
+                          ]
+                        },
+                        "minItems": 2,
+                        "maxItems": 3
+                      },
+                      "value": {
+                        "type": [
+                          "number",
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "store",
+                      "path",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "maxItems": 500
+                }
+              },
+              "required": [
+                "context_token",
+                "operation_key",
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "effective_parameters": {
+            "name": "effective_parameters",
+            "description": "读取当前门店的实际参数及来源，不保存修改。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "stores": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "maxItems": 500,
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "stores"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "calculation_results": {
+            "name": "calculation_results",
+            "description": "分页读取结果。数量使用库存单位，金额来自原计算，非 AI 估计。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "store": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "warehouse": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "search": {
+                  "type": "string"
+                },
+                "filter": {
+                  "type": "string",
+                  "enum": [
+                    "all",
+                    "positive",
+                    "issues"
+                  ]
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "task_id"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "retry_failed": {
+            "name": "retry_failed",
+            "description": "仅重试选中的失败或已停止门店，沿用原输入、参数和必卖快照。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "stores": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "maxItems": 500,
+                  "uniqueItems": true
+                },
+                "operation_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                }
+              },
+              "required": [
+                "task_id",
+                "stores",
+                "operation_key"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "run_calculation": {
+            "name": "run_calculation",
+            "description": "执行已就绪预览，按冻结门店顺序计算；重复调用同预览返回原任务。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "preview_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                }
+              },
+              "required": [
+                "preview_id"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "workbench_context": {
+            "name": "workbench_context",
+            "description": "查看当前工作台、已启用范围、业务日期和任务。先调用以取得 context_token。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "task_status": {
+            "name": "task_status",
+            "description": "读取任务进度和新增事件；断线后查询原任务，不重新发起。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "after": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "task_id"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          },
+          "stop_remaining": {
+            "name": "stop_remaining",
+            "description": "停止原任务的后续步骤。正在计算的门店安全结束，已完成结果保留。",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                }
+              },
+              "required": [
+                "task_id"
+              ],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "openWorldHint": false
+            }
+          }
+        },
+        "toolsError": null,
+        "resources": [],
+        "resourceTemplates": [],
+        "authStatus": "unsupported"
+      }
+    ],
+    "nextCursor": null
+  },
+  "context": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"instance_id\": \"96d1324179ac451c95396f5dd55bc63d\", \"workspace_id\": \"efe2a60976f550069d8bd43e\", \"context_token\": \"21ab4c3ddd5dd0f5e7510cc72f54769784a56d3c84301be168dc09561431f948\", \"business_date\": \"2026-11-04\", \"application\": \"0.35.1\", \"model\": \"0.3.4-rules\", \"readonly\": false, \"input_dirty\": false, \"unsaved_changes\": true, \"selected_stores\": [\"B\", \"A\"], \"active_task\": null, \"busy\": false, \"enabled\": true, \"scope\": \"查询、已有文件检查、预案计算和试算；不保存默认、不签发、不采购、不删除\", \"summary\": [{\"store\": \"B\", \"name\": \"测试B\", \"state\": \"已完成\"}, {\"store\": \"A\", \"name\": \"测试A\", \"state\": \"已完成\"}]}"
+      }
+    ],
+    "structuredContent": {
+      "instance_id": "96d1324179ac451c95396f5dd55bc63d",
+      "workspace_id": "efe2a60976f550069d8bd43e",
+      "context_token": "21ab4c3ddd5dd0f5e7510cc72f54769784a56d3c84301be168dc09561431f948",
+      "business_date": "2026-11-04",
+      "application": "0.35.1",
+      "model": "0.3.4-rules",
+      "readonly": false,
+      "input_dirty": false,
+      "unsaved_changes": true,
+      "selected_stores": [
+        "B",
+        "A"
+      ],
+      "active_task": null,
+      "busy": false,
+      "enabled": true,
+      "scope": "查询、已有文件检查、预案计算和试算；不保存默认、不签发、不采购、不删除",
+      "summary": [
+        {
+          "store": "B",
+          "name": "测试B",
+          "state": "已完成"
+        },
+        {
+          "store": "A",
+          "name": "测试A",
+          "state": "已完成"
+        }
+      ]
+    },
+    "isError": false
+  },
+  "resources": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"total\": 12, \"offset\": 0, \"items\": [{\"task_id\": \"510115e278ea438f93b2c2dd8bbafbca\", \"kind\": \"calculate\", \"state\": \"completed\", \"created\": \"2026-11-04T05:08:32.760781+00:00\", \"message\": \"结果已采用到当前作业；尚未保存或签发\", \"scope\": \"未保存结果仅在当前工作台会话有效\", \"parent_task\": null, \"stores\": [{\"code\": \"B\", \"name\": \"测试B\", \"state\": \"已完成\", \"error\": \"\"}, {\"code\": \"A\", \"name\": \"测试A\", \"state\": \"已完成\", \"error\": \"\"}], \"updated\": \"2026-11-04T05:08:33.493568+00:00\", \"progress\": {\"completed\": 2, \"total\": 2}, \"result_ref\": \"510115e278ea438f93b2c2dd8bbafbca\", \"adopted\": true}, {\"task_id\": \"3b22f3392b744d63a7178f12d3c9891c\", \"kind\": \"prepare\", \"state\": \"prepared\", \"created\": \"2026-11-04T05:08:32.258696+00:00\", \"message\": \"检查完成，可以计算\", \"scope\": \"未保存结果仅在当前工作台会话有效\", \"updated\": \"2026-11-04T05:08:32.710483+00:00\", \"preview_id\": \"3b22f3392b744d63a7178f12d3c9891c\", \"preview\": {\"ready\": true, \"stores\": [{\"code\": \"B\", \"name\": \"测试B\", \"budget\": null, \"route\": null}, {\"code\": \"A\", \"name\": \"测试A\", \"budget\": null, \"route\": null}], \"issues\": [], \"mode\": \"current\", \"files\": [{\"path\": \"合成补货建议.xlsx\", \"rows\": 2, \"stores\": 2, \"error\": \"\"}], \"duplicates\": 0, \"conflicts\": 0, \"plan\": null, \"note\": \"只应用本次；不保存门店默认、不签发。\"}}], \"next_offset\": 2}"
+      }
+    ],
+    "structuredContent": {
+      "total": 12,
+      "offset": 0,
+      "items": [
+        {
+          "task_id": "510115e278ea438f93b2c2dd8bbafbca",
+          "kind": "calculate",
+          "state": "completed",
+          "created": "2026-11-04T05:08:32.760781+00:00",
+          "message": "结果已采用到当前作业；尚未保存或签发",
+          "scope": "未保存结果仅在当前工作台会话有效",
+          "parent_task": null,
+          "stores": [
+            {
+              "code": "B",
+              "name": "测试B",
+              "state": "已完成",
+              "error": ""
+            },
+            {
+              "code": "A",
+              "name": "测试A",
+              "state": "已完成",
+              "error": ""
+            }
+          ],
+          "updated": "2026-11-04T05:08:33.493568+00:00",
+          "progress": {
+            "completed": 2,
+            "total": 2
+          },
+          "result_ref": "510115e278ea438f93b2c2dd8bbafbca",
+          "adopted": true
+        },
+        {
+          "task_id": "3b22f3392b744d63a7178f12d3c9891c",
+          "kind": "prepare",
+          "state": "prepared",
+          "created": "2026-11-04T05:08:32.258696+00:00",
+          "message": "检查完成，可以计算",
+          "scope": "未保存结果仅在当前工作台会话有效",
+          "updated": "2026-11-04T05:08:32.710483+00:00",
+          "preview_id": "3b22f3392b744d63a7178f12d3c9891c",
+          "preview": {
+            "ready": true,
+            "stores": [
+              {
+                "code": "B",
+                "name": "测试B",
+                "budget": null,
+                "route": null
+              },
+              {
+                "code": "A",
+                "name": "测试A",
+                "budget": null,
+                "route": null
+              }
+            ],
+            "issues": [],
+            "mode": "current",
+            "files": [
+              {
+                "path": "合成补货建议.xlsx",
+                "rows": 2,
+                "stores": 2,
+                "error": ""
+              }
+            ],
+            "duplicates": 0,
+            "conflicts": 0,
+            "plan": null,
+            "note": "只应用本次；不保存门店默认、不签发。"
+          }
+        }
+      ],
+      "next_offset": 2
+    },
+    "isError": false
+  },
+  "invalid_argument": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"code\": \"INVALID_ARGUMENT\", \"message\": \"参数.limit数值超出范围\", \"details\": {}}"
+      }
+    ],
+    "structuredContent": {
+      "code": "INVALID_ARGUMENT",
+      "message": "参数.limit数值超出范围",
+      "details": {}
+    },
+    "isError": true
+  },
+  "calculation": {
+    "prepare": {
+      "task_id": "91ede7c026294ef2ae34c81e359e7b95",
+      "kind": "prepare",
+      "state": "prepared",
+      "created": "2026-11-04T05:08:35.323739+00:00",
+      "message": "检查完成，可以计算",
+      "scope": "未保存结果仅在当前工作台会话有效",
+      "preview_id": "91ede7c026294ef2ae34c81e359e7b95",
+      "preview": {
+        "ready": true,
+        "stores": [
+          {
+            "code": "B",
+            "name": "测试B",
+            "budget": null,
+            "route": null
+          },
+          {
+            "code": "A",
+            "name": "测试A",
+            "budget": null,
+            "route": null
+          }
+        ],
+        "issues": [],
+        "mode": "trial",
+        "files": [
+          {
+            "path": "合成补货建议.xlsx",
+            "rows": 2,
+            "stores": 2,
+            "error": ""
+          }
+        ],
+        "duplicates": 0,
+        "conflicts": 0,
+        "plan": null,
+        "note": "只应用本次；不保存门店默认、不签发。"
+      },
+      "updated": "2026-11-04T05:08:35.439894+00:00",
+      "events": [
+        {
+          "cursor": 37,
+          "at": "2026-11-04T05:08:35.439894+00:00",
+          "state": "prepared",
+          "message": "检查完成，可以计算",
+          "preview_id": "91ede7c026294ef2ae34c81e359e7b95",
+          "preview": {
+            "ready": true,
+            "stores": [
+              {
+                "code": "B",
+                "name": "测试B",
+                "budget": null,
+                "route": null
+              },
+              {
+                "code": "A",
+                "name": "测试A",
+                "budget": null,
+                "route": null
+              }
+            ],
+            "issues": [],
+            "mode": "trial",
+            "files": [
+              {
+                "path": "合成补货建议.xlsx",
+                "rows": 2,
+                "stores": 2,
+                "error": ""
+              }
+            ],
+            "duplicates": 0,
+            "conflicts": 0,
+            "plan": null,
+            "note": "只应用本次；不保存门店默认、不签发。"
+          }
+        }
+      ],
+      "cursor": 37,
+      "in_current_session": true
+    },
+    "task": {
+      "task_id": "ac0aefce90ed45319be123fe5426925b",
+      "kind": "calculate",
+      "state": "completed",
+      "created": "2026-11-04T05:08:35.571376+00:00",
+      "message": "计算结束；未保存、未签发",
+      "scope": "未保存结果仅在当前工作台会话有效",
+      "parent_task": null,
+      "stores": [
+        {
+          "code": "B",
+          "name": "测试B",
+          "state": "已完成",
+          "error": ""
+        },
+        {
+          "code": "A",
+          "name": "测试A",
+          "state": "已完成",
+          "error": ""
+        }
+      ],
+      "progress": {
+        "completed": 2,
+        "total": 2
+      },
+      "updated": "2026-11-04T05:08:36.123227+00:00",
+      "result_ref": "ac0aefce90ed45319be123fe5426925b",
+      "events": [
+        {
+          "cursor": 39,
+          "at": "2026-11-04T05:08:35.584682+00:00",
+          "stores": [
+            {
+              "code": "B",
+              "name": "测试B",
+              "state": "计算中",
+              "error": ""
+            },
+            {
+              "code": "A",
+              "name": "测试A",
+              "state": "排队中",
+              "error": ""
+            }
+          ],
+          "progress": {
+            "completed": 0,
+            "total": 2
+          },
+          "message": "计算进度 0/2 家"
+        },
+        {
+          "cursor": 40,
+          "at": "2026-11-04T05:08:36.070940+00:00",
+          "stores": [
+            {
+              "code": "B",
+              "name": "测试B",
+              "state": "已完成",
+              "error": ""
+            },
+            {
+              "code": "A",
+              "name": "测试A",
+              "state": "排队中",
+              "error": ""
+            }
+          ],
+          "progress": {
+            "completed": 1,
+            "total": 2
+          },
+          "message": "计算进度 1/2 家"
+        },
+        {
+          "cursor": 41,
+          "at": "2026-11-04T05:08:36.075948+00:00",
+          "stores": [
+            {
+              "code": "B",
+              "name": "测试B",
+              "state": "已完成",
+              "error": ""
+            },
+            {
+              "code": "A",
+              "name": "测试A",
+              "state": "计算中",
+              "error": ""
+            }
+          ],
+          "progress": {
+            "completed": 1,
+            "total": 2
+          },
+          "message": "计算进度 1/2 家"
+        },
+        {
+          "cursor": 42,
+          "at": "2026-11-04T05:08:36.080960+00:00",
+          "stores": [
+            {
+              "code": "B",
+              "name": "测试B",
+              "state": "已完成",
+              "error": ""
+            },
+            {
+              "code": "A",
+              "name": "测试A",
+              "state": "已完成",
+              "error": ""
+            }
+          ],
+          "progress": {
+            "completed": 2,
+            "total": 2
+          },
+          "message": "计算进度 2/2 家"
+        },
+        {
+          "cursor": 43,
+          "at": "2026-11-04T05:08:36.123227+00:00",
+          "state": "completed",
+          "message": "计算结束；未保存、未签发",
+          "result_ref": "ac0aefce90ed45319be123fe5426925b"
+        }
+      ],
+      "cursor": 43,
+      "in_current_session": true
+    },
+    "result": {
+      "stores": [
+        {
+          "store": "B",
+          "name": "测试B",
+          "state": "已完成",
+          "summary": {
+            "rows": 1,
+            "local": 0,
+            "issues": 0,
+            "calculable": 1,
+            "positive": 1,
+            "amount": 240.0,
+            "calculated_positive": 1,
+            "calculated_amount": 240.0,
+            "excluded": 0,
+            "excluded_positive": 0,
+            "excluded_amount": 0.0,
+            "unpriced": 0,
+            "candidate_amount": 240.0,
+            "must_amount": 0.0,
+            "must_candidate_amount": 0.0,
+            "budget_deferred": 0,
+            "holding_gaps": 0,
+            "exception": 0,
+            "extra": 0
+          }
+        },
+        {
+          "store": "A",
+          "name": "测试A",
+          "state": "已完成",
+          "summary": {
+            "rows": 1,
+            "local": 0,
+            "issues": 0,
+            "calculable": 1,
+            "positive": 1,
+            "amount": 240.0,
+            "calculated_positive": 1,
+            "calculated_amount": 240.0,
+            "excluded": 0,
+            "excluded_positive": 0,
+            "excluded_amount": 0.0,
+            "unpriced": 0,
+            "candidate_amount": 240.0,
+            "must_amount": 0.0,
+            "must_candidate_amount": 0.0,
+            "budget_deferred": 0,
+            "holding_gaps": 0,
+            "exception": 0,
+            "extra": 0
+          }
+        }
+      ],
+      "total": 0,
+      "offset": 0,
+      "items": [],
+      "next_offset": null,
+      "note": "未选择门店时仅返回汇总；进一步按门店查询商品。"
+    },
+    "opened": {
+      "opened": "results",
+      "message": "已打开原业务页面，未执行保存或签发"
+    }
+  },
+  "events": [
+    "remoteControl/status/changed",
+    "thread/started",
+    "mcpServer/startupStatus/updated",
+    "mcpServer/startupStatus/updated"
+  ]
+}
