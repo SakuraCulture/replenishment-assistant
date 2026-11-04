@@ -91,6 +91,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         install_automation(self)
         from browser_status_ui import BrowserStatus
         self.browser_status=BrowserStatus(self)
+        from scheduled_ui import Manager as ScheduledManager
+        self.scheduled=ScheduledManager(self,hv)
         self.home_tasks.refresh_timer.start(0)
 
     def open_aoxiang_fetch(self):
@@ -235,6 +237,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         return bool(cached and cached[0] is self.results.get(s) and cached[1] is self.new_focus)
 
     def closeEvent(self,event):
+        scheduled=getattr(self,'scheduled',None)
+        if scheduled and not scheduled.prepare_close():event.ignore();return
         indicator=getattr(self,'browser_status',None)
         if indicator and not indicator.prepare_close():event.ignore();return
         pending=getattr(self,'_large_io_dialog',None)
@@ -252,6 +256,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             self.closing=True;generator.cancel();event.ignore();return
         super().closeEvent(event)
         if event.isAccepted():
+            if scheduled:scheduled.shutdown()
             # Accepted close must also block already-queued timer callbacks.
             # Otherwise an idle generator can start a thread after close, just
             # before its parent window is destroyed.
@@ -267,6 +272,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             if self.status_hash_task:
                 self.status_hash_task.requestInterruption();self.status_hash_task.wait()
         elif axmanager:
+            if scheduled:scheduled.resume_after_cancelled_close()
             axmanager.resume_after_cancelled_close()
             if indicator:indicator.resume()
 
@@ -327,6 +333,10 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         super().task_changed(store,state,result,error)
 
     def start_calculation(self,codes=None,*,retry=False):
+        scheduled=getattr(self,'scheduled',None)
+        if scheduled and scheduled.worker:
+            QMessageBox.information(self,'定时补货正在执行','请先在“定时补货”中暂停本次任务，再开始人工计算。已完成结果会保留。')
+            return
         targets=codes if isinstance(codes,list) else self.selected_codes()
         from workbench_actions import recalculation_impact
         impact=recalculation_impact(self.results,targets);chosen=impact['new_products']

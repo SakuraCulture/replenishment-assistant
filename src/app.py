@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--scheduled-smoke' in sys.argv:
+        from scheduled_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--scheduled-smoke')+1:])
     if '--business-flow-acceptance' in sys.argv:
         from business_flow_acceptance import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--business-flow-acceptance')+1:])

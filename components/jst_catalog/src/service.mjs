@@ -149,7 +149,7 @@ export class CatalogService {
     });return {operation_id:id};
   }
   async start(c){
-    if(!/^[a-zA-Z0-9_-]{8,100}$/.test(c.operation_id||'')||!['default_catalog','allocation_baseline'].includes(c.purpose))throw Error('同步意图缺少稳定编号或用途');
+    if(!/^[a-zA-Z0-9_-]{8,100}$/.test(c.operation_id||'')||!['default_catalog','allocation_baseline','scheduled_replenishment'].includes(c.purpose))throw Error('同步意图缺少稳定编号或用途');
     if(!Array.isArray(c.items)||!c.items.length||c.items.length>2||new Set(c.items.map(i=>i.warehouse)).size!==c.items.length)throw Error('请选择一仓或两仓，不可重复');
     const data=this.store.read(),fingerprint=sha(canonical({operation_id:c.operation_id,purpose:c.purpose,items:c.items}));
     const existing=Object.values(data.batches).find(b=>b.operation_id===c.operation_id);

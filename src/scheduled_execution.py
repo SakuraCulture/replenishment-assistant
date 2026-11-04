@@ -25,7 +25,10 @@ def freeze(folder, schedule, day):
     if mapping['conflict']:raise ValueError('全局分类映射待核对，请在参数设置保存后再试')
     priority=priority_list.Repository(folder);master=warehouse_catalog.Repository(folder)
     defaults=work.stores();routes=master.routes();profile=priority.profile();budgets=priority.budgets()
-    catalogs=master.catalogs();records={};settings={};warehouses=[]
+    # Only route names are needed before fresh catalogs arrive. Do not parse/copy
+    # both full previous masters just to validate membership in the warehouse list.
+    from app_defaults import WAREHOUSES
+    catalogs=dict.fromkeys(WAREHOUSES);records={};settings={};warehouses=[]
     with closing(sqlite3.connect(path)) as db:
         db.execute('BEGIN')
         for item in plan['stores']:
@@ -34,7 +37,8 @@ def freeze(folder, schedule, day):
                 record=spi.base();record['ui'].update(routes.get(s,{}))
                 if s in budgets:record['ui'].update(mode=2 if budgets[s]['enabled'] else 1,amount=str(budgets[s]['amount']))
             record=plan_record(plan,record,mapping);records[s]=record
-            settings[s]=record_settings(record,profile,catalogs,admission.snapshot(path,s,db=db,day=day))
+            try:settings[s]=record_settings(record,profile,catalogs,admission.snapshot(path,s,db=db,day=day))
+            except ValueError as exc:raise ValueError(item['name']+'（'+s+'）：'+str(exc)) from exc
             for w in (record['ui'].get('primary'),record['ui'].get('secondary')):
                 if w and w not in warehouses:warehouses.append(w)
     if not warehouses:raise ValueError('预案门店尚未设置供货仓')
@@ -153,7 +157,8 @@ def workbench_record(repo,rid):
     if not basis or not loaded:raise ValueError('尚无通过检查的数据，请先处理失败原因')
     results={s['code']:repo.value(rid,'result:'+s['code']) for s in run['stores'] if s['state']=='READY'}
     if not results:raise ValueError('尚无计算完成的门店')
-    records=basis['records'];codes=list(loaded['stores'])
+    records=basis['records'];codes=[s['code'] for s in run['stores'] if s['code'] in loaded['stores']]
+    loaded['stores']={s:loaded['stores'][s] for s in codes}
     payload={'schema':1,'day':run['day'],'app_version':VERSION,'model_version':basis['model_version'],
         'active_plan':basis['plan'],'admission_required':True,'loaded':loaded,'catalogs':repo.value(rid,'catalogs'),
         'profile':basis['profile'],'new_focus':basis.get('new_focus'),'results':results,
@@ -163,3 +168,32 @@ def workbench_record(repo,rid):
         'products':'','legacy':False,'concurrency':basis['workers'],'exception':True,'export_log':[],
         'scheduled_run':rid}
     return {'day':run['day'],'saved':run['updated'],'payload':payload},basis
+
+
+def publish_catalogs(repo,rid,folder):
+    """Publish only verified task masters, with all warehouse version checks first.
+
+    Called by the GUI coordinator only while the workbench is idle. The task snapshot
+    remains authoritative for its calculation even if a default publication is refused.
+    Per-warehouse receipts permit safe local retry after a partial filesystem failure.
+    """
+    from warehouse_catalog import Repository
+    from catalog_write_lock import acquire
+    from contextlib import ExitStack
+    run=repo.get(rid)
+    if run['state'] not in ('COMPLETE','REVIEW','PAUSED'):raise ValueError('请等待本次计算安全结束后采用资料')
+    basis=repo.value(rid,'basis');catalogs=repo.value(rid,'catalogs',{})
+    if not basis or not catalogs:raise ValueError('没有可采用的资料')
+    master=Repository(folder);done=dict(run.get('publication',{}).get('digests',{}))
+    with ExitStack() as locks:
+        for wh in sorted(catalogs):locks.enter_context(acquire(folder,wh,None))
+        for wh in catalogs:
+            current=master.current_digest(wh)
+            if current!=done.get(wh,basis['catalog_digests'][wh]):
+                raise ValueError(wh+'默认资料已变化，请从资料维护核对，本次未覆盖')
+        for wh,data in catalogs.items():
+            if wh not in done:
+                master.save_locked(data,expected_digest=basis['catalog_digests'][wh]);done[wh]=master.current_digest(wh)
+                repo.change(rid,publication={'state':'PUBLISHING','digests':done})
+    repo.change(rid,publication={'state':'PUBLISHED','digests':done},message='本次仓资料已更新为默认；计算结果等待人工核对')
+    return '、'.join(catalogs)+'已更新默认',master.catalogs()

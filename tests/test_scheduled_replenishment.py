@@ -131,5 +131,25 @@ class ExecutionTests(unittest.TestCase):
         self.assertEqual(self.repo.get(r['id'])['state'],'COMPLETE');self.assertEqual(self.repo.value(r['id'],'basis'),original)
     def test_same_day_overlap_not_overwrite(self):
         first=self.run_one();second=self.run_one();self.assertEqual(first['state'],'COMPLETE');self.assertEqual(second['state'],'REVIEW');self.assertIn('同日',second['message'])
+    def test_non_alphabetical_plan_order_survives_chunks_and_restore(self):
+        old=plans.Repository(self.work.path).list()[0];new=copy.deepcopy(old);new['stores'].reverse();plans.Repository(self.work.path).save(new,old)
+        self.s['stores'].reverse();self.s['check_signature']=se.check_signature(se.freeze(self.root,self.s,'2026-11-04'))
+        self.manifest['files'].reverse();r=self.run_one();self.assertEqual(r['state'],'COMPLETE')
+        record,basis=se.workbench_record(self.repo,r['id']);self.assertEqual(list(record['payload']['loaded']['stores']),['B','A']);self.assertEqual(list(record['payload']['results']),['B','A'])
+
+    def test_publication_version_checks_before_any_write(self):
+        r=self.run_one();before={w:wc.Repository(self.root).current_digest(w) for w in self.catalogs}
+        changed=copy.deepcopy(self.catalogs['河北仓']);changed['source_path']+='-changed';wc.Repository(self.root).save(changed)
+        with self.assertRaisesRegex(ValueError,'默认资料已变化'):se.publish_catalogs(self.repo,r['id'],self.root)
+        self.assertEqual(wc.Repository(self.root).current_digest('山东仓'),before['山东仓'])
+        self.assertEqual(self.repo.get(r['id'])['state'],'COMPLETE')
+
+    def test_publication_idempotent_and_results_immutable(self):
+        r=self.run_one();before=self.repo.value(r['id'],'result:A')
+        se.publish_catalogs(self.repo,r['id'],self.root)
+        with patch.object(wc.Repository,'save_locked',side_effect=AssertionError('must not republish')):
+            se.publish_catalogs(self.repo,r['id'],self.root)
+        self.assertEqual(self.repo.get(r['id'])['publication']['state'],'PUBLISHED')
+        self.assertEqual(self.repo.value(r['id'],'result:A'),before)
 
 if __name__=='__main__':unittest.main()

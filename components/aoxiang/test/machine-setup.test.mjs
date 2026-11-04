@@ -12,6 +12,15 @@ import {BoundBrowserPool} from '../src/bound-browser.mjs';
 const identity={accountId:'001',merchantCode:'M',displayName:'测试商家'};
 const target=code=>({buyerWarehouseCode:code,displayName:code,operatingStores:[],mappingSource:'fixture',mappingVerifiedAt:'2026-11-01T00:00:00Z'});
 const params=root=>({candidate:{edge_executable:'C:/Edge/msedge.exe',actual_profile_path:'C:/EdgeData/Profile1'},output_root:path.join(root,'output'),targets:[{code:'W2',name:'门店2'},{code:'W1',name:'门店1'}]});
+test('scheduled preflight reads saved binding and cancels preview without modifying configuration',async t=>{
+  const c=await context(t);let job=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(job.id);
+  const before=await readConfiguration(c.root);
+  validateRequest({protocol_version:1,request_id:'scheduled',action:'setup.verify_saved',codes:['W1']});
+  job=await c.setup.verifySaved(['W1']);await c.setup.promise;
+  assert.equal(c.setup.status(job.id).state,'VERIFIED');assert.deepEqual(c.setup.status(job.id).targets.map(x=>x.code),['W1']);
+  await c.setup.cancel(job.id);assert.deepEqual(await readConfiguration(c.root),before);
+  await assert.rejects(c.setup.verifySaved(['missing']),/预案门店尚未核验/);
+});
 async function context(t,behavior={}){
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'ax-setup-')),calls=[];
   class Client{

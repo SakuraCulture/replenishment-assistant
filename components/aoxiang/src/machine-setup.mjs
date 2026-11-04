@@ -58,12 +58,30 @@ export class MachineSetup{
       try{
         if(!this.browsers||!this.preview||this.control.signal.aborted)await this.closeClient();
         if(this.control.signal.aborted){this.preview=null;this.job.state='CANCELLED';this.job.stage='核验已停止，未保存新配置';}
-        else if(this.preview&&this.job.state==='RUNNING'){this.job.state='READY';this.job.stage='核验完成，等待保存';}
+        else if(this.preview&&this.job.state==='RUNNING'){
+          if(params.verificationOnly){
+            if(configurationHash(await readConfiguration(this.root))!==configurationHash(params.saved))fail('STALE_CONFIGURATION','核验期间连接配置已变化');
+            if(this.browsers){this.browsers.adopt({...params.saved,state:this.state},this.client,this.connected);this.client=null;this.borrowed=false;}
+            else await this.closeClient();
+            this.preview=null;this.job.state='VERIFIED';this.job.stage='原配置只读核验通过，共享连接保留';
+          }else{this.job.state='READY';this.job.stage='核验完成，等待保存';}
+        }
       }
       catch(error){this.job={...this.job,state:'FAILED',error:errorInfo(error),updated_at:now()};}
       finally{this.job.cleanup_pending=false;this.promise=null;}
     });
     return this.status(this.job.id);
+  }
+  async verifySaved(codes){
+    const old=await readConfiguration(this.root);
+    if(!old.config?.enabled||!old.binding?.enabled)fail('NOT_CONFIGURED','请先核验并保存翱象连接');
+    const targets=codes.map(code=>{
+      const t=old.config.targets.find(t=>t.buyerWarehouseCode===code);
+      if(!t)fail('TARGET_UNVERIFIED','预案门店尚未核验');
+      return {code,name:t.displayName};
+    });
+    // Read-only verification. The caller cancels the READY preview; never commits it.
+    return this.begin({candidate:{edge_executable:old.binding.edgeExecutable,actual_profile_path:old.binding.actualProfilePath},output_root:old.binding.outputRoot,targets,verificationOnly:true,saved:old});
   }
   status(id){if(this.job?.id!==id)fail('SETUP_NOT_FOUND','当前连接核验已失效，请重新核验');return structuredClone(this.job);}
   check(){if(this.control.signal.aborted)fail('PAUSED','配置核验已停止，未保存新配置');}

@@ -31,6 +31,13 @@ async function fixture(t){
   t.after(async()=>{await service.close();await fs.rm(root,{recursive:true,force:true});});return {service,counts,failure,root};
 }
 const request=(operation='operation_1',order=warehouses)=>({action:'sync.start',operation_id:operation,purpose:'default_catalog',items:order.map(warehouse=>({warehouse,expected_catalog_digest:null}))});
+test('scheduled catalogs have separate adoption scope and durable replay',async t=>{
+  const {service:s,counts}=await fixture(t),r={...request('scheduled_1'),purpose:'scheduled_replenishment'};
+  const x=await s.command(r);const b=await finish(s,x.batch_id);
+  assert.equal(b.purpose,'scheduled_replenishment');assert.deepEqual(counts.exports,warehouses);
+  const i=b.items[0];await s.command({action:'sync.acknowledge_adoption',batch_id:b.id,item_id:i.id,receipt:{warehouse:i.account.warehouse,source_sha256:i.receipt.source_sha256,purpose:r.purpose,run_id:'local_run'}});
+  assert.equal((await s.command(r)).batch_id,b.id);assert.equal(counts.exports.length,2);
+});
 async function finish(s,bid){
   const until=Date.now()+4000;
   while(s.active){
