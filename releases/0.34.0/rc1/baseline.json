@@ -1,0 +1,47 @@
+{
+  "commit": "c125e4b4d06e61131c351e62be2bef0fabf2163b",
+  "archive_sha256": "ccdfd1a23f8167e6df731fa3306b758c5f1d77eec307391c8470684ba0777942",
+  "protected_file_count": 1131,
+  "protected_changed": [],
+  "external_document_changes": [
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\README.md",
+      "before": "2492cd5db795dd1174b664ef6dbfc5f1a4c806c796f0722b4ecf00a76a313146",
+      "after": "66e83da7c9fccec3753d7027605f11218d9005aaa02181931258acba11d9ea45"
+    }
+  ],
+  "core": {
+    "model.py": {
+      "before": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "after": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595"
+    },
+    "allocation.py": {
+      "before": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "after": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "one_box_exception.py": {
+      "before": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "after": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f"
+    },
+    "default_config.json": {
+      "before": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "after": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "default_must_sell.json": {
+      "before": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "after": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    },
+    "normal_orders.py": {
+      "before": "07855d0c51ff43cb22f73fa9f83f3d8c4a9c37efda871506fd39fea7d2014842",
+      "after": "07855d0c51ff43cb22f73fa9f83f3d8c4a9c37efda871506fd39fea7d2014842"
+    },
+    "normal_exports.py": {
+      "before": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4",
+      "after": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4"
+    },
+    "order_lifecycle.py": {
+      "before": "d7822f337da5e5bb1e608dad193f2da16f1a91c58a4eadb112cfbd322150db8f",
+      "after": "d7822f337da5e5bb1e608dad193f2da16f1a91c58a4eadb112cfbd322150db8f"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "批量设置预览取消，未改配置",
+    "实际勾选两店，只改河北备货天数，同时保存默认和应用本次；各店差异保留",
+    "单店通用参数独立恢复默认，其他门店和保存默认不变",
+    "新完整模板实际读取、差异预览、保存默认；当前参数不被隐式改写",
+    "全局映射独立保存、明确应用本次；两店共用映射，分类权重仍独立",
+    "预案保存、重新读取并采用，仅应用勾选字段",
+    "恢复旧作业保留快照；新建重新检查带入新映射和已保存门店默认",
+    "实际双店后台计算及 Windows spawn 使用组装后的门店参数，全部完成"
+  ],
+  "build_commit": "9762b12a7ec18295b90b5e4a3208d5c666592248",
+  "calculation_summary": {
+    "rows": 1,
+    "local": 0,
+    "issues": 0,
+    "calculable": 1,
+    "positive": 1,
+    "amount": 256.0,
+    "calculated_positive": 1,
+    "calculated_amount": 256.0,
+    "excluded": 0,
+    "excluded_positive": 0,
+    "excluded_amount": 0.0,
+    "unpriced": 0,
+    "candidate_amount": 256.0,
+    "must_amount": 0.0,
+    "must_candidate_amount": 0.0,
+    "budget_deferred": 0,
+    "holding_gaps": 0,
+    "exception": 0,
+    "extra": 0
+  },
+  "heartbeat_ticks": 33,
+  "max_heartbeat_gap_seconds": 0.9679999999934807,
+  "process_exit_code": 0,
+  "accepted": true
+}
