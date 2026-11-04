@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "checks": [
+    "界面后台观察在限定时间内返回",
+    "启动状态灯不创建组件或浏览器连接",
+    "初始三个连接均为灰色未连接",
+    "主业务页面底部始终可见：0",
+    "主业务页面底部始终可见：1",
+    "主业务页面底部始终可见：2",
+    "主业务页面底部始终可见：3",
+    "主业务页面底部始终可见：4",
+    "界面后台观察在限定时间内返回",
+    "三灯分别显示绿绿红，异常仓不影响另一仓",
+    "较窄窗口三个名称与状态完整显示",
+    "界面后台观察在限定时间内返回",
+    "连接期间显示黄色连接中",
+    "界面后台观察在限定时间内返回",
+    "观察超时显示待确认，无授权弹窗、无业务重试",
+    "状态灯仅发送轻量只读观察",
+    "状态灯仅发送轻量只读观察",
+    "后台观察期间Qt持续响应",
+    "界面后台观察在限定时间内返回"
+  ],
+  "frozen": false,
+  "version": {
+    "app": "补货助手",
+    "version": "0.36.2",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.1",
+    "model_version": "0.3.4-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "源码运行",
+    "build_id": "未打包"
+  },
+  "heartbeat_count": 30,
+  "scope": "actual Qt and frozen flag; simulated transport states; no platform/login actions"
+}

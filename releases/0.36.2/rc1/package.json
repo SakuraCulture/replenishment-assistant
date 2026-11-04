@@ -1,0 +1,22 @@
+{
+  "version": "0.36.2",
+  "model_version": "0.3.4-rules",
+  "baseline": "b6a64a97bb96a29ec9248c3292ba2837c4c1f5d2",
+  "build_commit": "36a2d444842aea51b374824595e72f8b1f031e73",
+  "exe_sha256": "7f0fe8821d0867e50b04ed1fde4768f3c15b8336a9152562b356e4c80473448d",
+  "zip_sha256": "41b37b23aa8b03c702b0295f78c3eb88f28a48752cc6c97f131875ea582750bd",
+  "archive": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.36.2_rc1\\补货助手_0.36.2_rc1_底部连接状态.zip",
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.36.2_rc1\\补货助手",
+  "files": 1226,
+  "python_tests": 774,
+  "aoxiang_tests": 167,
+  "jst_tests": 40,
+  "business_differences": 0,
+  "cases_including_excel": 38,
+  "protected_unchanged": true,
+  "production_permission_prompt_tested": false,
+  "website_login_validity_monitored": false,
+  "overnight_tested": false,
+  "pushed": false,
+  "merged": false
+}

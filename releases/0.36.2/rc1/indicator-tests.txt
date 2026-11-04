@@ -1,0 +1,15 @@
+test_dead_process_clears_green_without_request (test_browser_status.Indicators.test_dead_process_clears_green_without_request) ... ok
+test_failed_observation_is_unknown_and_does_not_restart_or_stop (test_browser_status.Indicators.test_failed_observation_is_unknown_and_does_not_restart_or_stop) ... ok
+test_idle_does_not_create_component_or_connection (test_browser_status.Indicators.test_idle_does_not_create_component_or_connection) ... ok
+test_no_false_green_on_unknown_or_duplicate_payload (test_browser_status.Indicators.test_no_false_green_on_unknown_or_duplicate_payload) ... ok
+test_old_process_reply_cannot_color_new_process_green (test_browser_status.Indicators.test_old_process_reply_cannot_color_new_process_green) ... ok
+test_shutdown_drains_observation_without_touching_business_process (test_browser_status.Indicators.test_shutdown_drains_observation_without_touching_business_process) ... ok
+test_slow_ax_does_not_block_jst_or_add_more_tasks (test_browser_status.Indicators.test_slow_ax_does_not_block_jst_or_add_more_tasks) ... ok
+test_starting_transport_does_not_claim_browser_is_connected (test_browser_status.Indicators.test_starting_transport_does_not_claim_browser_is_connected) ... ok
+test_status_has_text_and_explains_connection_scope (test_browser_status.Indicators.test_status_has_text_and_explains_connection_scope) ... ok
+test_three_connections_are_independent_and_read_only (test_browser_status.Indicators.test_three_connections_are_independent_and_read_only) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.285s
+
+OK

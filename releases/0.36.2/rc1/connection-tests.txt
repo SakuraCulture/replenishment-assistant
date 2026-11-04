@@ -1,0 +1,19 @@
+✔ connection observer follows actual page/socket, without browser commands (1.0159ms)
+✔ host does not mistake an old successful connection for live browser state (0.1488ms)
+✔ status protocol is strictly read-only with no extra command fields (0.4476ms)
+✔ real idle worker remains unconnected; closing is observed without probe (430.6438ms)
+✔ two warehouses retain independent bridges across repeated operations (6.0346ms)
+✔ explicit reconnect affects only selected warehouse and not task store (0.337ms)
+✔ disconnected socket is not advertised or reused as healthy (0.2117ms)
+✔ closing owned page recreates only its own session (0.223ms)
+✔ service release aborts current operation but retains browser pool and task records (0.4506ms)
+✔ reset is refused during active work; cannot touch another platform (0.4686ms)
+✔ lightweight health does not read full jobs or queue behind mutations (1.1757ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 710.1527
