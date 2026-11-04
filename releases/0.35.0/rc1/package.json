@@ -1,0 +1,14 @@
+{
+  "source_commit": "24f1c94b815476df8f36a65d15aa3b1503e1beb2",
+  "version": "0.35.0",
+  "model": "0.3.4-rules",
+  "build_id": "rc1",
+  "file_count": 1242,
+  "exe_sha256": "39a4092f4001218f433e0c3c89c30fd811fc8602bcaf80a559eacc28fb43031b",
+  "bridge_sha256": "f814a0e46894bec19de7a99651b07f69c0f73ac0d982c399cd84607e688eb0f8",
+  "zip_sha256": "b731f28e502a858306d35c5baab384a2a27ffec053f04331dfe776f3f8ea9910",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.35.0_rc1\\补货助手_0.35.0_rc1_AI协助.zip",
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.35.0_rc1\\补货助手",
+  "crc_and_per_file_sha256": "passed",
+  "protected_baseline_unchanged": true
+}

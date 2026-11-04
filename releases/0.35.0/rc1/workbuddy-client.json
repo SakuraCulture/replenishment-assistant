@@ -1,0 +1,13 @@
+{
+  "client": "WorkBuddy",
+  "version": "5.9.3",
+  "trust": "confirmed by user",
+  "connected": true,
+  "tools_enabled": 12,
+  "tools_expected": 12,
+  "bridge": "candidate packaged console EXE",
+  "workspace": "isolated synthetic source host",
+  "natural_language_execution_verified": false,
+  "temporary_config_removed": true,
+  "production_data_used": false
+}

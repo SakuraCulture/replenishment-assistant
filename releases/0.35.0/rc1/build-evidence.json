@@ -1,0 +1,30 @@
+{
+  "build": {
+    "source_commit": "24f1c94b815476df8f36a65d15aa3b1503e1beb2",
+    "build_id": "rc1",
+    "version": "0.35.0",
+    "built_at": "2026-11-04T12:25:23.806483+08:00",
+    "source_archive_sha256": "102acf6ae8791ce3892a1bb12e9fa0d2075f90b0491e555af3ef2e2dae795a02",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "24f1c94b815476df8f36a65d15aa3b1503e1beb2",
+      "files": 867,
+      "manifest_sha256": "0e40b9f46553796fd85d93a4cd6780316f24627ddeda481ef11ee3a7dfce5b49",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "32dac40787f7fe7701caf7e1f5271392e11322cd0d1090574071a49f8fcbbb41",
+      "files": 8,
+      "source_commit": "24f1c94b815476df8f36a65d15aa3b1503e1beb2",
+      "contains_user_state": false
+    }
+  },
+  "hashes": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.35.0_rc1\\补货助手\\补货助手.exe": "39a4092f4001218f433e0c3c89c30fd811fc8602bcaf80a559eacc28fb43031b",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.35.0_rc1\\补货助手\\AI接口\\补货助手AI接口.exe": "f814a0e46894bec19de7a99651b07f69c0f73ac0d982c399cd84607e688eb0f8"
+  },
+  "unchanged": true
+}

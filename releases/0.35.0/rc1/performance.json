@@ -1,0 +1,196 @@
+{
+  "records": [
+    {
+      "mode": "service",
+      "repeat": 1,
+      "total_seconds": 47.247567699989304,
+      "prepare_seconds": 42.57684309995966,
+      "calculate_seconds": 4.670724600029644,
+      "accept_seconds": null,
+      "peak_tree_rss_bytes": 638836736,
+      "difference_count": 0,
+      "isolated_startup_seconds": 0.13498640002217144
+    },
+    {
+      "mode": "gateway",
+      "repeat": 1,
+      "total_seconds": 47.20533050002996,
+      "prepare_seconds": 42.653801599983126,
+      "calculate_seconds": 4.551528900046833,
+      "accept_seconds": 0.22523029998410493,
+      "peak_tree_rss_bytes": 593657856,
+      "difference_count": 0,
+      "isolated_startup_seconds": 0.12737440003547817
+    },
+    {
+      "mode": "gateway",
+      "repeat": 2,
+      "total_seconds": 47.73557390004862,
+      "prepare_seconds": 43.28219229995739,
+      "calculate_seconds": 4.453381600091234,
+      "accept_seconds": 0.22102309996262193,
+      "peak_tree_rss_bytes": 593846272,
+      "difference_count": 0,
+      "isolated_startup_seconds": 0.1356169999926351
+    },
+    {
+      "mode": "service",
+      "repeat": 2,
+      "total_seconds": 47.4673164000269,
+      "prepare_seconds": 42.89485290000448,
+      "calculate_seconds": 4.5724635000224225,
+      "accept_seconds": null,
+      "peak_tree_rss_bytes": 582230016,
+      "difference_count": 0,
+      "isolated_startup_seconds": 0.13757990003796294
+    },
+    {
+      "mode": "service",
+      "repeat": 3,
+      "total_seconds": 46.87112700002035,
+      "prepare_seconds": 42.225295900017954,
+      "calculate_seconds": 4.645831100002397,
+      "accept_seconds": null,
+      "peak_tree_rss_bytes": 698036224,
+      "difference_count": 0,
+      "isolated_startup_seconds": 0.1286419999669306
+    },
+    {
+      "mode": "gateway",
+      "repeat": 3,
+      "total_seconds": 48.366763600031845,
+      "prepare_seconds": 43.775114899966866,
+      "calculate_seconds": 4.5916487000649795,
+      "accept_seconds": 0.229863699991256,
+      "peak_tree_rss_bytes": 593702912,
+      "difference_count": 0,
+      "isolated_startup_seconds": 0.13431130000390112
+    }
+  ],
+  "summary": {
+    "service": {
+      "total_seconds": {
+        "median": 47.247567699989304,
+        "min": 46.87112700002035,
+        "max": 47.4673164000269
+      },
+      "prepare_seconds": {
+        "median": 42.57684309995966,
+        "min": 42.225295900017954,
+        "max": 42.89485290000448
+      },
+      "calculate_seconds": {
+        "median": 4.645831100002397,
+        "min": 4.5724635000224225,
+        "max": 4.670724600029644
+      },
+      "peak_tree_rss_bytes": {
+        "median": 638836736,
+        "min": 582230016,
+        "max": 698036224
+      },
+      "isolated_startup_seconds": {
+        "median": 0.13498640002217144,
+        "min": 0.1286419999669306,
+        "max": 0.13757990003796294
+      }
+    },
+    "gateway": {
+      "total_seconds": {
+        "median": 47.73557390004862,
+        "min": 47.20533050002996,
+        "max": 48.366763600031845
+      },
+      "prepare_seconds": {
+        "median": 43.28219229995739,
+        "min": 42.653801599983126,
+        "max": 43.775114899966866
+      },
+      "calculate_seconds": {
+        "median": 4.551528900046833,
+        "min": 4.453381600091234,
+        "max": 4.5916487000649795
+      },
+      "peak_tree_rss_bytes": {
+        "median": 593702912,
+        "min": 593657856,
+        "max": 593846272
+      },
+      "isolated_startup_seconds": {
+        "median": 0.13431130000390112,
+        "min": 0.12737440003547817,
+        "max": 0.1356169999926351
+      }
+    }
+  },
+  "status_latency_seconds": [
+    0.0258822999894619,
+    0.02255009999498725,
+    0.03150959999766201,
+    0.015550199954304844,
+    0.019442800024989992,
+    0.022198599996045232,
+    0.01615509996190667,
+    0.015165899996645749,
+    0.00838600000133738,
+    0.03130189998773858,
+    0.010300400026608258,
+    0.047164799994789064,
+    0.030703699972946197,
+    0.02496489998884499,
+    0.03098929999396205,
+    0.02226550003979355,
+    0.013353600050322711,
+    0.021429700020235032,
+    0.014883099996950477,
+    0.03032399999210611,
+    0.01809309999225661,
+    0.023900299973320216,
+    0.018717499973718077,
+    0.015634600014891475,
+    0.014572300016880035,
+    0.024246999993920326,
+    0.018173599964939058,
+    0.03457359998719767,
+    0.03638500004308298,
+    0.03125840000575408,
+    0.015023900021333247,
+    0.028389399987645447,
+    0.024355500005185604,
+    0.04405269998824224,
+    0.023508200014475733,
+    0.01753779995488003,
+    0.016294400033075362,
+    0.025448499945923686,
+    0.027764700003899634,
+    0.008562900009565055,
+    0.038092900009360164,
+    0.013968200015369803,
+    0.022215500008314848,
+    0.0031484999926760793,
+    0.021186399972066283,
+    0.013387300015892833,
+    0.03876429999945685,
+    0.027650000003632158,
+    0.031024299969431013,
+    0.023614200006704777,
+    0.030084599973633885,
+    0.026893500005826354,
+    0.031103799992706627,
+    0.015961700002662838,
+    0.012392400007229298,
+    0.03166199999395758,
+    0.030529099982231855,
+    0.030549900024197996,
+    0.00997849996201694,
+    0.03669540002010763
+  ],
+  "status_p95": 0.038092900009360164,
+  "passed": true,
+  "rows": 14244,
+  "stores": [
+    "LQD2025"
+  ],
+  "source": "Frozen real 14244-row input and original master, unlimited budget; same Python/dependencies",
+  "method": "Alternating serial runs, both original shared preparation/calculation; gateway additionally named-pipe JSON roundtrip/task journal. Warm Windows file cache, no cache flushing. Peak sum RSS of this process and descendants sampled every 20ms; includes shared pages per process. Latency probes excluded from total; cold app startup excluded. Each measurement uses a fresh process/workspace; previous trial caches cannot affect next peak. Same frozen checked input preloaded from QA pickle outside measured check/calculate interval. Initial Qt/new empty workspace startup reported separately, not production history cold-index performance."
+}
