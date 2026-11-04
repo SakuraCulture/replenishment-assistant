@@ -68,4 +68,15 @@ class GatewayRegression(unittest.TestCase):
         self.assertEqual(len([r for r in self.g.calculations.values() if isinstance(r,dict)]),3)
         self.assertEqual(self.win.results['retained'],{'rows':[],'summary':{}})
 
+    def test_human_takeover_prevents_automatic_current_adoption(self):
+        install(self.win,'B');pid=self.prepare('takeover',mode='current',stores=['S1'])
+        def calculate(p,codes,notify,cancel):
+            for s in codes:notify(s,'已完成',{'rows':[],'summary':{}},'')
+        with patch.object(automation_jobs,'calculate',calculate),patch.object(self.g,'apply_result') as apply:
+            t=self.g.run_calculation({'preview_id':pid})
+            self.g.journal.update(t['task_id'],human_takeover=True)
+            self.wait();apply.assert_not_called()
+        self.assertEqual(self.g.journal.get(t['task_id'])['state'],'completed')
+        self.assertIn('S1',self.g.require_result(t['task_id'])['results'])
+
 if __name__=='__main__':unittest.main()

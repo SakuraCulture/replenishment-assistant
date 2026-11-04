@@ -6,8 +6,27 @@ sys.path[:0]=[str(ROOT/'src'),str(ROOT/'tools')]
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--out',type=Path,required=True);a=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--out',type=Path,required=True)
+    parser.add_argument('--single',choices=['service','gateway']);parser.add_argument('--repeat',type=int,default=1);a=parser.parse_args()
     out=a.out.resolve();out.mkdir(parents=True,exist_ok=False)
+    if not a.single:
+        from parallel_qa import read,clean,diff
+        records=[];latencies=[];oracle=None
+        for repeat in range(1,4):
+            for mode in (['service','gateway'] if repeat%2 else ['gateway','service']):
+                folder=out/f'{repeat}-{mode}'
+                subprocess.run([sys.executable,__file__,'--out',str(folder),'--single',mode,'--repeat',str(repeat)],check=True)
+                child=json.loads((folder/'performance.json').read_text('utf-8'));record=child['records'][0]
+                actual=read(folder/'result.pklz')
+                if oracle is None:oracle=actual
+                differences=diff(clean(oracle),clean(actual))
+                if differences:raise AssertionError(differences[:10])
+                record['difference_count']=len(differences);record['isolated_startup_seconds']=child['isolated_startup_seconds'];records.append(record);latencies.extend(child['status_latency_seconds'])
+        summary={m:{k:{'median':statistics.median(v),'min':min(v),'max':max(v)} for k in ('total_seconds','prepare_seconds','calculate_seconds','peak_tree_rss_bytes','isolated_startup_seconds') for v in [[r[k] for r in records if r['mode']==m]]} for m in ('service','gateway')}
+        report={'records':records,'summary':summary,'status_latency_seconds':latencies,'status_p95':sorted(latencies)[int(len(latencies)*.95)-1],
+            'passed':True,'rows':child['rows'],'stores':child['stores'],'source':child['source'],
+            'method':child['method']+' Each measurement uses a fresh process/workspace; previous trial caches cannot affect next peak. Same frozen checked input preloaded from QA pickle outside measured check/calculate interval. Initial Qt/new empty workspace startup reported separately, not production history cold-index performance.'}
+        (out/'performance.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8');return
     os.environ['REPLENISHMENT_DATA_DIR']=str(out/'settings')
     os.environ['QT_QPA_PLATFORM']='offscreen'
     from PySide6.QtWidgets import QApplication
@@ -17,11 +36,11 @@ def main():
     from automation_bridge import Client
     import batch_service,automation_jobs
     from windows_process_metrics import sample_tree
-    from parallel_qa import clean,diff
-    app=QApplication([]);win=Workbench()
+    from parallel_qa import clean,diff,read,dump
+    startup=time.perf_counter();app=QApplication([]);win=Workbench();startup=time.perf_counter()-startup
     inp=ROOT/'qa/v0350/inputs';sales=inp/'补货建议导出服务.xlsx';master=inp/'混合仓商品资料.xlsx'
     win.master_legacy.setChecked(True);win.products.path=str(master);win.sales.paths=[str(sales)]
-    win.loaded_ok(batch_service.load([str(sales)],str(master)))
+    win.loaded_ok(read(ROOT/'qa/v0350/before/real_loaded.pklz'))
     codes=list(win.loaded['stores']);win.concurrency.setValue(2)
     for s in codes:win.store_widgets[s]['mode'].setCurrentIndex(1)
     win.input_dirty=False;g=Gateway(win);g.enable()
@@ -52,8 +71,8 @@ def main():
             peak[0]=max(peak[0],total)
     sampler=threading.Thread(target=sample);sampler.start()
     try:
-        for repeat in range(3):
-            for mode in (['service','gateway'] if repeat%2==0 else ['gateway','service']):
+        for repeat in [a.repeat-1]:
+            for mode in [a.single]:
                 peak[0]=0;start=time.perf_counter();phases={};actual={}
                 if mode=='service':
                     snapshot=g.snapshot({});ready=[];errors=[]
@@ -85,8 +104,8 @@ def main():
                     'calculate_seconds':elapsed-phases['prepared'],'accept_seconds':phases.get('accepted'),
                     'peak_tree_rss_bytes':peak[0],'difference_count':len(differences)})
                 print(json.dumps(records[-1]),flush=True)
-        summary={mode:{key:{'median':statistics.median(v), 'min':min(v),'max':max(v)} for key in ('total_seconds','prepare_seconds','calculate_seconds','peak_tree_rss_bytes') for v in [[r[key] for r in records if r['mode']==mode]]} for mode in ('service','gateway')}
-        report={'records':records,'summary':summary,'status_latency_seconds':latencies,'status_p95':sorted(latencies)[int(len(latencies)*.95)-1],
+        dump(out/'result.pklz',actual)
+        report={'records':records,'status_latency_seconds':latencies,'isolated_startup_seconds':startup,
             'rows':len(win.loaded['normalized']),'stores':codes,'passed':True,'source':'Frozen real 14244-row input and original master, unlimited budget; same Python/dependencies',
             'method':'Alternating serial runs, both original shared preparation/calculation; gateway additionally named-pipe JSON roundtrip/task journal. Warm Windows file cache, no cache flushing. Peak sum RSS of this process and descendants sampled every 20ms; includes shared pages per process. Latency probes excluded from total; cold app startup excluded.'}
         (out/'performance.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
