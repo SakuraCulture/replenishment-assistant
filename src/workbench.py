@@ -11,7 +11,7 @@ from version_info import MODEL_VERSION,VERSION
 class Workbench(ParameterUi,BatchWindow):
     def __init__(self):
         self._hydrating=True;self._restoring=False;self.readonly=False;self.job_dirty=False;self.job_day=wr.today();self.saved_time='';self.store_presets={};self.explicit_defaults=True;self.export_log=[];self._discard_close=False;self._store_parameter_origins={}
-        self.active_plan=None
+        self.active_plan=None;self._mapping_error=''
         super().__init__();self.work_repository=wr.Repository(self.repository.folder)
         from replenishment_plan_ui import open_library
         row=QHBoxLayout();self.plan_btn=button('选择补货计划',lambda:open_library(self,True));row.addWidget(self.plan_btn);row.addWidget(button('维护补货计划',lambda:open_library(self)));self.plan_note=label('未采用补货计划；可直接导入本次文件。','muted');row.addWidget(self.plan_note,1);self.import_page.layout().insertLayout(0,row)
@@ -25,6 +25,9 @@ class Workbench(ParameterUi,BatchWindow):
         row=QHBoxLayout();self.defaults_btn=button('保存主从仓与参数为门店默认',self.save_default_dialog);row.addWidget(self.defaults_btn);self.fresh_btn=button('换用最新资料并重新检查',self.use_current_data);row.addWidget(self.fresh_btn);row.addStretch();self.store_page.layout().insertLayout(2,row)
         row=QHBoxLayout();self.parameter_import_btn=button('批量导入门店参数',self.import_store_parameters);self.parameter_export_btn=button('导出勾选门店本次参数',self.export_store_parameters);row.addWidget(self.parameter_import_btn);row.addWidget(self.parameter_export_btn);row.addStretch();self.store_page.layout().insertLayout(3,row)
         self.policy_btn=button('批量调整补货策略',lambda:self.edit_restock_policy());row.insertWidget(0,self.policy_btn)
+        from parameter_maintenance_ui import edit_stores
+        row.addWidget(button('设置所选门店补货参数',lambda:self.edit_parameters(self.selected_codes())))
+        row.addWidget(button('设置所选门店通用参数',lambda:edit_stores(self,self,self.selected_codes(),'common','current')))
         self.exception.hide();self.store_table.setColumnWidth(7,400);self.nav[1].setText('② 门店与参数')
         self._hydrating=False;self.update_controls()
         if any(r['day']==wr.today() for r in self.work_repository.list_jobs()):self.status.setText('今天已有保存的作业，可从“作业记录”继续；新建内容不会自动覆盖。')
@@ -69,9 +72,15 @@ class Workbench(ParameterUi,BatchWindow):
         previous=self._hydrating;self._hydrating=True;self.initializing=True
         try:
             saved={} if self._restoring else self.work_repository.stores();self.saved_store_defaults=saved
+            import parameter_maintenance as pm
+            mapping=None if self._restoring else pm.mapping_snapshot(self.work_repository.path)
+            self._mapping_error='各店旧分类映射不同，请到参数设置的全局分类映射核对后应用本次。' if mapping and mapping['conflict'] else ''
             for s in self.store_widgets:
                 if s in saved:
                     p=copy.deepcopy(saved[s]['preset']);schema.validate(p['config']);self.store_presets[s]=p;self.overrides[s]=copy.deepcopy(p['config']['warehouses']);self.set_store_ui(s,saved[s]['ui'])
+                if mapping and not mapping['conflict']:
+                    try:self.store_presets[s]=pm.bind(self.preset_for(s),mapping)
+                    except ValueError as exc:self._mapping_error=str(exc)
                 self.refresh_parameter_label(s)
             self._store_parameter_origins={} if self._restoring else {s:self.current_parameter_record(s) for s in self.store_widgets}
         finally:self.initializing=False;self._hydrating=previous
@@ -117,6 +126,7 @@ class Workbench(ParameterUi,BatchWindow):
         p=self.preset_for(s);p['config']=self.config_for(s)
         return {'preset':p,'ui':self.store_ui(s)}
     def selected_settings(self,s):
+        if self._mapping_error:raise ValueError(self._mapping_error)
         result=super().selected_settings(s);c=self.config_for(s);schema.validate(c)
         import admission
         result['admission']=admission.snapshot(self.work_repository.path,s)
@@ -140,6 +150,8 @@ class Workbench(ParameterUi,BatchWindow):
     def task_changed(self,*args):super().task_changed(*args);self.touch()
     def start_calculation(self,codes=None,*,retry=False):
         if self.readonly:return
+        if self._mapping_error:
+            QMessageBox.warning(self,'请先统一分类映射',self._mapping_error);return
         super().start_calculation(codes,retry=retry);self.touch()
     def snapshot(self):
         loaded=None

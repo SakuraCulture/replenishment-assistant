@@ -77,6 +77,8 @@ class ParameterDialog(QDialog):
             restore_row.addWidget(button('撤销本次表单修改',self.undo_form))
             v.addLayout(restore_row)
         self.fill(config)
+        if not readonly:
+            self.tabs.setTabVisible(self.tabs.indexOf(self.mapping),False)
         if preset.get('import_source'):
             info=preset['import_source'];entries=[['来源','文件',info.get('file','')]]
             for item in info.get('rows',[]):
@@ -266,10 +268,8 @@ class ParameterUi:
         dialog=ParameterDialog(self,schema.standard(),self.preset_for('__default__'),scope='方案库 · 查看、复制和保存版本')
         dialog.exec()
     def edit_parameters(self,codes):
-        if not codes or self.readonly:return
-        preset=self.preset_for(codes[0]);dialog=ParameterDialog(self,self.config_for(codes[0]),preset,trial=lambda c,d:self.trial_parameters(codes,c,d),scope=f'所选 {len(codes)} 家门店',store_configs={s:self.config_for(s) for s in codes})
-        if dialog.exec()!=QDialog.DialogCode.Accepted:return
-        self.apply_parameters(codes,dialog.config,dialog.preset,dialog.action=='default')
+        from parameter_maintenance_ui import edit_stores
+        if codes and not self.readonly:edit_stores(self,self,codes,scope='current')
     def apply_parameters(self,codes,config,preset,persist=False):
         schema.validate(config)
         for s in codes:
@@ -281,7 +281,9 @@ class ParameterUi:
         import store_defaults
         saved=getattr(self,'saved_store_defaults',{}).get(s)
         state='历史快照' if self.readonly or getattr(self,'_restoring',False) else '已保存默认' if store_defaults.matches(saved,p,self.config_for(s),self.store_ui(s)) else '本次与已保存默认不同' if saved else '仅本次 · 尚无门店默认'
-        text=f"本次采用：{p['name']}"+(' · 本店调整' if changed else '')+' · '+state+'\n'+policy.summary(self.config_for(s))
+        from parameter_maintenance import common_is_default
+        common='默认通用方案' if common_is_default(self.config_for(s)) else '门店自定义通用参数'
+        text=f"本次采用：{p['name']}"+(' · 本店调整' if changed else '')+' · '+state+'\n'+common+'；'+policy.summary(self.config_for(s))
         w=self.store_widgets[s];w['params'].setText('编辑参数');w['params'].setToolTip('编辑此店完整参数；不自动保存每日草稿')
         if 'param_status' in w:w['param_status'].setText(text);w['param_status'].setToolTip(text)
     def view_parameters(self,store):

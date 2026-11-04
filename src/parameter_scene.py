@@ -22,41 +22,43 @@ class ParameterScene(QWidget):
         self.search.setPlaceholderText('搜索门店名称或编码')
         self.search.textChanged.connect(self.filter)
         v.addWidget(self.search)
-        row = QHBoxLayout()
-        row.addWidget(button('管理参数方案', host.open_preset_library))
-        row.addWidget(button('维护补货计划',lambda:__import__('replenishment_plan_ui').open_library(host)))
-        row.addWidget(button('管理商品资料与清单', lambda: (host.show_section(1), host.navigate(0))))
-        row.addWidget(button('管理铺货清单',host.open_stocking_library))
-        row.addWidget(button('刷新门店设置', self.refresh))
-        row.addStretch()
-        v.addLayout(row)
-        row = QHBoxLayout()
-        row.addWidget(button('导入分仓周期', self.import_parameters, True))
-        more=QToolButton();more.setText('其他设置导入 / 模板');more.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup);menu=QMenu(more)
+        from parameter_maintenance_ui import open_mapping
         from store_parameter_ui import import_parameters
         from import_ui import download
-        for name,kind in [('完整补货参数','classified_parameters'),('补货策略','store_policy'),('供货关系','store_routes'),('门店预算','store_budget'),('旧版混合参数','store_parameters')]:
+        row=QHBoxLayout()
+        row.addWidget(button('全局分类映射',lambda:open_mapping(self,host)))
+        row.addWidget(button('补货预案',lambda:__import__('replenishment_plan_ui').open_library(host)))
+        row.addWidget(button('导入完整门店参数',lambda:import_parameters(self,host,kind='classified_parameters'),True))
+        row.addWidget(button('下载完整门店参数模板',lambda:download(self,'classified_parameters')))
+        row.addWidget(button('刷新',self.refresh));row.addStretch();v.addLayout(row)
+        row=QHBoxLayout()
+        more=QToolButton();more.setText('通用参数 / 分组导入导出');more.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup);menu=QMenu(more)
+        for name,kind in [('分仓周期','warehouse_cycles'),('门店通用参数','common_parameters'),('旧版混合参数','store_parameters')]:
             menu.addAction('导入'+name,lambda checked=False,k=kind:import_parameters(self,host,kind=k))
             menu.addAction('下载'+name+'模板',lambda checked=False,k=kind:download(self,k))
+        menu.addAction('导出勾选门店补货参数',self.export_parameters)
+        menu.addAction('导出勾选门店通用参数',self.export_common)
         more.setMenu(menu);row.addWidget(more)
+        other=QToolButton();other.setText('其他门店设置');other.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup);menu=QMenu(other)
+        menu.addAction('设置补货策略',self.edit_switches);menu.addAction('设置主从仓与预算',self.edit_routes)
+        for name,kind in [('补货策略','store_policy'),('供货关系','store_routes'),('门店预算','store_budget')]:
+            menu.addAction('导入'+name,lambda checked=False,k=kind:import_parameters(self,host,kind=k));menu.addAction('下载'+name+'模板',lambda checked=False,k=kind:download(self,k))
         from admission_ui import open_editor,import_records
-        admission_menu=QMenu(self);admission_button=QToolButton();admission_button.setText('门店资质 / 拒收');admission_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        admission_menu.addAction('查看或维护门店准入',lambda:open_editor(self,host,self.selected()[0] if len(self.selected())==1 else None))
+        menu.addAction('门店资质 / 拒收',lambda:open_editor(self,host,self.selected()[0] if len(self.selected())==1 else None))
         for name,kind in [('二类医疗资质','store_qualification'),('门店拒收清单','store_refusals')]:
-            admission_menu.addAction('导入'+name,lambda checked=False,k=kind:import_records(self,host,k))
-            admission_menu.addAction('下载'+name+'模板',lambda checked=False,k=kind:download(self,k))
-        admission_button.setMenu(admission_menu);row.addWidget(admission_button)
-        row.addWidget(button('批量设置默认补货策略',self.edit_switches))
-        row.addWidget(button('导出勾选门店默认参数', self.export_parameters))
+            menu.addAction('导入'+name,lambda checked=False,k=kind:import_records(self,host,k));menu.addAction('下载'+name+'模板',lambda checked=False,k=kind:download(self,k))
+        other.setMenu(menu);row.addWidget(other)
+        history=QToolButton();history.setText('变更记录 / 恢复');history.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup);menu=QMenu(history)
         from settings_maintenance_ui import open_history,reset_defaults,restore_presets
-        row.addWidget(button('默认变更记录 / 撤销',lambda:(open_history(self,host),self.refresh())))
-        row.addWidget(button('重置勾选门店默认',lambda:(reset_defaults(self,host,self.require()),self.refresh())))
-        row.addWidget(button('恢复停用方案',lambda:restore_presets(self,host)))
-        row.addStretch()
-        v.addLayout(row)
+        menu.addAction('默认变更记录 / 撤销',lambda:(open_history(self,host),self.refresh()))
+        menu.addAction('重置勾选门店默认',lambda:(reset_defaults(self,host,self.require()),self.refresh()))
+        menu.addAction('恢复停用方案',lambda:restore_presets(self,host));menu.addAction('旧完整参数方案库',host.open_preset_library)
+        history.setMenu(menu);row.addWidget(history);row.addStretch()
+        row.addWidget(button('勾选当前筛选',lambda:self.check_visible(True)));row.addWidget(button('清空全部勾选',lambda:self.check_visible(False)));v.addLayout(row)
         self.table = QTableWidget(0, 7)
-        self.table.setHorizontalHeaderLabels(['选择', '门店', '默认主仓', '默认从仓', '默认参数方案', '默认预算', '本次作业'])
+        self.table.setHorizontalHeaderLabels(['选择', '门店', '默认主仓', '默认从仓', '参数依据 / 通用参数', '默认预算', '本次作业'])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.cellDoubleClicked.connect(lambda row,col:self.edit_one(row))
         for i, width in enumerate([48, 235, 100, 100, 250, 135, 170]):
             self.table.setColumnWidth(i, width)
         v.addWidget(self.table, 1)
@@ -64,8 +66,8 @@ class ParameterScene(QWidget):
         v.addWidget(self.note)
         row = QHBoxLayout()
         row.addWidget(button('查看保存的默认参数', self.view_defaults))
-        row.addWidget(button('编辑并保存门店默认参数', self.edit_defaults))
-        row.addWidget(button('保存门店默认主从仓与预算', self.edit_routes))
+        row.addWidget(button('设置所选门店补货参数', self.edit_defaults))
+        row.addWidget(button('设置所选门店通用参数', self.edit_common))
         row.addWidget(button('编辑本次作业参数', self.edit_current, True))
         v.addLayout(row)
         self.codes = []
@@ -96,7 +98,9 @@ class ParameterScene(QWidget):
             for j, value in enumerate(values, 1):
                 self.table.setItem(i, j, QTableWidgetItem(str(value)))
             from restock_policy import summary
-            self.table.item(i,4).setText(str(values[3])+'\n'+summary(p.get('config',{})))
+            from parameter_maintenance import common_is_default
+            common='默认通用方案' if common_is_default(p.get('config') or schema.standard()) else '自定义通用参数'
+            self.table.item(i,4).setText(str(values[3])+'\n'+common)
         self.table.resizeRowsToContents()
         self.filter()
         self.note.setText('保存门店默认只供后续作业带入；当前作业需明确应用。' if self.codes else
@@ -137,31 +141,8 @@ class ParameterScene(QWidget):
         ParameterDialog(self.host, p['config'], p, scope=title + codes[0], readonly=True).exec()
 
     def edit_defaults(self):
-        codes = self.require()
-        if not codes:
-            return
-        p = self.preset(codes[0])
-        d = ParameterDialog(self.host, p['config'], p, scope=f'所选 {len(codes)} 店默认',
-                            store_configs={s: self.preset(s)['config'] for s in codes}, intent='defaults')
-        if d.exec() != QDialog.DialogCode.Accepted:
-            return
-        old = self.host.work_repository.stores()
-        # Detect changes made while the editor was open instead of overwriting them.
-        if any(old.get(s) != self.saved.get(s) for s in codes):
-            QMessageBox.warning(self, '默认设置已变化', '请刷新后重新核对。')
-            return
-        values = {}
-        for code in codes:
-            ui = old.get(code, {}).get('ui') or (self.host.store_ui(code) if code in self.host.store_widgets else {})
-            values[code] = store_defaults.record(d.preset, d.config, ui, old.get(code), saved=wr.now())
-        try:self.host.work_repository.save_stores(values,expected={s:old.get(s) for s in codes})
-        except Exception as exc:QMessageBox.warning(self,'默认参数未保存',str(exc));return
-        self.host.saved_store_defaults = {**old, **values}
-        for code in codes:
-            if code in self.host.store_widgets:self.host.refresh_parameter_label(code)
-        self.refresh()
-        self.note.setText(f'已保存 {len(codes)} 店默认参数。当前作业和历史签发未改变。')
-
+        from parameter_maintenance_ui import edit_stores
+        edit_stores(self,self.host,self.require());return
     def edit_current(self):
         codes = self.require()
         if not codes:
@@ -171,6 +152,22 @@ class ParameterScene(QWidget):
             return
         self.host.edit_parameters(codes)
         self.refresh()
+
+    def edit_common(self):
+        from parameter_maintenance_ui import edit_stores
+        edit_stores(self,self.host,self.require(),'common')
+
+    def edit_one(self,row):
+        from parameter_maintenance_ui import edit_stores
+        if 0<=row<len(self.codes):edit_stores(self,self.host,[self.codes[row]])
+
+    def check_visible(self,checked):
+        for i in range(self.table.rowCount()):
+            if not checked or not self.table.isRowHidden(i):self.table.item(i,0).setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
+
+    def export_common(self):
+        from store_parameter_ui import export_parameters
+        export_parameters(self,self.host,self.require(),kind='common_parameters')
 
     def edit_routes(self):
         codes = self.require()

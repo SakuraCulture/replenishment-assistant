@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--parameter-workspace-smoke' in sys.argv:
+        from parameter_workspace_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--parameter-workspace-smoke')+1:])
     if '--collection-maintenance-smoke' in sys.argv:
         from collection_maintenance_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--collection-maintenance-smoke')+1:])

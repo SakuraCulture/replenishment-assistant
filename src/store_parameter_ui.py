@@ -30,7 +30,14 @@ def capture(host, data):
 
 def preview(data, snapshot, scope):
     bases = snapshot['current'] if scope != 'defaults' else snapshot['saved']
-    return spi.plan(data, bases, current=scope != 'defaults', names=snapshot['names'])
+    result=spi.plan(data, bases, current=scope != 'defaults', names=snapshot['names'])
+    if data.get('scoped') and scope=='both':
+        saved=spi.plan(data,snapshot['saved'],names=snapshot['names'])
+        result['current_changed']=result['changed'][:];result['saved_plan']=saved
+        result['changed']=list(dict.fromkeys([*result['changed'],*saved['changed']]))
+        result['errors']+=saved['errors']
+        result['rows']=[[r[0],r[1],'本次 / '+r[2],*r[3:]] for r in result['rows']]+[[r[0],r[1],'默认 / '+r[2],*r[3:]] for r in saved['rows']]
+    return result
 
 
 def verify_sources(data, progress=lambda _: None, cancel=None):
@@ -65,24 +72,26 @@ def commit(host, data, snapshot, scope, prepared, persist=None):
     saved = {}
     if scope != 'current':
         row_names = {r['code']: r['name'] for r in data['rows']}
-        for code in codes:
-            v = values[code]
+        save_plan=prepared.get('saved_plan',prepared)
+        for code in save_plan['changed']:
+            v = save_plan['values'][code]
             saved[code] = store_defaults.record(v['preset'], v['preset']['config'], v['ui'],
                 snapshot['saved'].get(code), include_budget=True, saved=wr.now())
             name = row_names.get(code) or snapshot['names'].get(code)
             if name:
                 saved[code]['name'] = name
-        expected = {c: snapshot['saved'].get(c) for c in codes}
+        expected = {c: snapshot['saved'].get(c) for c in save_plan['changed']}
         if persist:
             persist(saved, expected)
         else:
             host.work_repository.save_stores(saved, expected=expected,action='批量导入门店参数')
         host.saved_store_defaults = {**getattr(host, 'saved_store_defaults', {}), **saved}
-    if scope != 'defaults' and codes:
+    current_codes=prepared.get('current_changed',codes)
+    if scope != 'defaults' and current_codes:
         hydrating, initializing = host._hydrating, host.initializing
         host._hydrating = host.initializing = True
         try:
-            for code in codes:
+            for code in current_codes:
                 v = values[code]
                 host.store_presets[code] = copy.deepcopy(v['preset'])
                 host.overrides[code] = copy.deepcopy(v['preset']['config']['warehouses'])
@@ -91,7 +100,7 @@ def commit(host, data, snapshot, scope, prepared, persist=None):
                     host.store_widgets[code]['saved'] = False
         finally:
             host._hydrating, host.initializing = hydrating, initializing
-        host.invalidate(codes)
+        host.invalidate(current_codes)
         host.selection_changed()
     for code in codes:
         if code in host.store_widgets:
@@ -159,6 +168,8 @@ def import_parameters(parent, host, scope='defaults',kind='warehouse_cycles'):
         return
     try:
         data = run(parent, spi.read, (dialog.paths,), '读取并校验门店参数')
+        if any(f[0]=='category_profiles' for row in data['rows'] for f in row['values']):
+            raise ValueError('旧表含门店分类映射。本版映射全局共用，请删除这些导入列/工作表，并在“全局分类映射”单独核对维护；本次未改任何参数。')
         snapshot = capture(host, data)
         check = Preview(parent, host, data, snapshot, scope)
         if check.exec() != QDialog.DialogCode.Accepted:
@@ -176,7 +187,7 @@ def import_parameters(parent, host, scope='defaults',kind='warehouse_cycles'):
         QMessageBox.warning(parent, '门店参数未应用', str(exc))
 
 
-def export_parameters(parent, host, codes, *, current=False):
+def export_parameters(parent, host, codes, *, current=False,kind='classified_parameters'):
     if not codes:
         QMessageBox.information(parent, '请选择门店', '请先勾选要导出的门店。')
         return
@@ -197,9 +208,14 @@ def export_parameters(parent, host, codes, *, current=False):
         if path:
             if not path.lower().endswith('.xlsx'):
                 path += '.xlsx'
-            run(parent, spi.write, (path, records), '导出门店参数')
+            run(parent, export_scoped, (path, kind, records), '导出门店参数')
             QMessageBox.information(parent, '门店参数已导出', path + '\n可修改数值后使用“批量导入门店参数”回导；没有保存默认的门店导出标准参考值。')
     except Cancelled:
         return
     except Exception as exc:
         QMessageBox.warning(parent, '门店参数未导出', str(exc))
+
+
+def export_scoped(path,kind,records,progress=lambda _:None,cancel=None):
+    from parameter_tables import write
+    return write(path,kind,records,progress,cancel,scoped=True)

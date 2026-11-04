@@ -7,6 +7,8 @@ import os,tempfile
 TEMPLATES={
  'warehouse_cycles':('分仓周期','分仓周期',['门店编码','属仓'],['门店名称','备货天数','到货天数']),
  'classified_parameters':('分类维护完整参数','分仓周期',['门店编码','属仓'],[]),
+ 'common_parameters':('门店通用参数','门店通用参数',['门店编码'],[]),
+ 'global_category_mapping':('全局分类映射','全局分类映射',['商品分类','目标分类组'],[]),
  'store_policy':('补货策略','补货策略',['门店编码'],[]),
  'store_routes':('供货关系','供货关系',['门店编码'],[]),
  'store_budget':('门店预算','门店预算',['门店编码'],[]),
@@ -26,7 +28,10 @@ def write(kind,path,progress=lambda _:None,cancel=None):
     title,sheet,required,optional=TEMPLATES[kind];target=Path(path)
     if target.exists():raise FileExistsError('模板目标已存在，请另存为新文件')
     from parameter_tables import KINDS,write as write_classified
-    if kind in KINDS:return write_classified(path,kind,progress=progress,cancel=cancel)
+    if kind in KINDS:return write_classified(path,kind,progress=progress,cancel=cancel,scoped=True)
+    if kind=='global_category_mapping':
+        from global_mapping_io import write
+        return write(path,progress=progress,cancel=cancel)
     if kind=='store_parameters':
         from store_parameter_import import write as write_parameters
         return write_parameters(path,progress=progress,cancel=cancel)

@@ -23,7 +23,13 @@ def validate(value):
         if item['code'] in seen:raise ValueError('计划门店重复：'+item['code'])
         if not isinstance(item.get('name'),str) or not item['name'].strip():raise ValueError('计划门店名称不能为空')
         seen.add(item['code'])
-    schema.validate(value['config']);return value
+    schema.validate(value['config'])
+    if 'parameter_fields' in value:
+        import parameter_maintenance as pm
+        allowed=set(pm.fields([value['config']])+pm.fields([value['config']],'common'))
+        chosen=[tuple(f) for f in value['parameter_fields']]
+        if len(chosen)!=len(set(chosen)) or set(chosen)-allowed:raise ValueError('预案包含不支持的参数范围')
+    return value
 
 class Repository:
     def __init__(self,path):self.path=path
@@ -79,7 +85,14 @@ def available(host):
 
 def apply(host,plan):
     """Explicit adoption only. Routes and budgets survive; no file fetching."""
-    validate(plan);host.active_plan=copy.deepcopy(plan)
+    validate(plan)
+    import parameter_maintenance as pm
+    mapping=pm.mapping_snapshot(host.work_repository.path)
+    if mapping['conflict']:raise ValueError('请先核对并保存全局分类映射，再采用预案')
+    for s in host.store_widgets:
+        if s in {i['code'] for i in plan['stores']}:
+            c=pm.plan_config(plan,host.config_for(s));pm.bind({**preset(plan),'config':c},mapping)
+    host.active_plan=copy.deepcopy(plan)
     if host.loaded:
         old={s:host.current_parameter_record(s) for s in host.store_widgets}
         host.loaded={**host.loaded,'stores':ordered(host.loaded['stores'],plan)}
@@ -96,10 +109,20 @@ def apply(host,plan):
 def install(host,previous,replace=False):
     plan=getattr(host,'active_plan',None)
     if not plan:return
+    import parameter_maintenance as pm
+    mapping=pm.mapping_snapshot(host.work_repository.path)
+    if mapping['conflict']:host._mapping_error='请先在全局分类映射核对旧门店差异';return
     codes={i['code'] for i in plan['stores']}
+    prepared={}
+    try:
+        for s in host.store_widgets:
+            if s in codes and (replace or s not in previous):
+                p=preset(plan);p['config']=pm.plan_config(plan,host.config_for(s));prepared[s]=pm.bind(p,mapping)
+    except ValueError as exc:host._mapping_error='预案参数待核对：'+str(exc);return
     for s in host.store_widgets:
         if s in codes and (replace or s not in previous):
-            p=preset(plan);host.store_presets[s]=p;host.overrides[s]=copy.deepcopy(p['config']['warehouses'])
+            p=prepared[s]
+            host.store_presets[s]=p;host.overrides[s]=copy.deepcopy(p['config']['warehouses'])
             host._store_parameter_origins.pop(s,None)
         if replace or s not in previous:host.store_widgets[s]['check'].setChecked(s in codes and not host.loaded['blocked'].get(s))
         host.refresh_parameter_label(s)
@@ -111,6 +134,7 @@ def refresh(host):
     missing=[i['name'] for i in plan['stores'] if i['code'] not in host.store_widgets]
     saved=host.work_repository.stores();unset=[i['name'] for i in plan['stores'] if not (host.store_ui(i['code']) if i['code'] in host.store_widgets else saved.get(i['code'],{}).get('ui',{})).get('primary')]
     cycle='；'.join(w+f' 备货{v[0]:g}天/到货{v[1]:g}天' for w,v in plan['config']['warehouses'].items())
+    if 'parameter_fields' in plan:cycle=f"采用 {len(plan['parameter_fields'])} 项勾选参数；其他保留各店原值"
     names='、'.join(i['name'] for i in plan['stores'][:6])+(' 等'+str(len(plan['stores']))+'店（悬停看完整顺序）' if len(plan['stores'])>6 else '')
     host.plan_note.setToolTip('\n'.join(f"{n+1}. {i['name']} · {i['code']}" for n,i in enumerate(plan['stores'])))
     host.plan_note.setText(f"计划：{plan['name']} · {len(plan['stores'])} 店 · {cycle}\n"+names+'\n'+
