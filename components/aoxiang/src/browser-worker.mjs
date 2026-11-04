@@ -6,12 +6,14 @@ import {PurchaseCreateUI,installPurchaseWriteFence} from './purchase-create-ui.m
 import {ExclusiveLock} from './state.mjs';
 import {redact} from './common.mjs';
 import {ModuleSession} from './module-session.mjs';
+import {browserConnectionState,watchBrowserConnection} from './browser-connection.mjs';
 
-const bridge=new EdgeBridge();let ui=null,modules=null,lock=null,busy=false,closing=false;
+const bridge=new EdgeBridge();let ui=null,modules=null,lock=null,busy=false,closing=false,unwatch=null;
 async function sourceUI(source){ui=await modules.open(source);}
 function send(message){if(process.connected)process.send(message);}
 async function close(){
   if(closing)return;closing=true;
+  unwatch?.();send({event:'connection',state:'DISCONNECTED'});
   try{await modules?.dispose();await bridge.close();}finally{try{lock?.release();}catch{}process.exit(0);}
 }
 process.on('disconnect',()=>void close());process.on('SIGTERM',()=>void close());process.on('SIGINT',()=>void close());
@@ -24,8 +26,10 @@ process.on('message',async message=>{
     let result;
     if(method==='connect'){
       if(modules){ui=await modules.open(params.source==='purchase'?'purchase':'D13',params.expectedIdentity,{force:true});result={facts:bridge.facts,identity:modules.identity};send({id,result});return;}
+      send({event:'connection',state:'CONNECTING'});
       if(!lock)lock=await ExclusiveLock.acquire(path.join(params.stateRoot,'runner.lock.sqlite'));
       const facts=await bridge.bind(params.candidate,{timeout:params.timeout||60000,mode:params.mode||'background_tab',onPhase:phase=>send({event:'phase',phase})});
+      unwatch=watchBrowserConnection(bridge,state=>send({event:'connection',state}));
       await installPurchaseWriteFence(bridge.page);
       modules=new ModuleSession({page:bridge.page,adapters:{D13:AoxiangUI,purchase:PurchaseUI,purchase_create:PurchaseCreateUI},
         timeoutMs:params.pageTimeoutMs||30000,focusSession:bridge.takeFocusSession(),
@@ -59,6 +63,6 @@ process.on('message',async message=>{
       }else throw Object.assign(new Error('未允许的浏览器操作'),{code:'UNKNOWN_WORKER_METHOD'});
     }
     send({id,result});
-  }catch(e){send({id,error:redact({code:e.code||'BROWSER_OPERATION_FAILED',message:e.message,details:e.details})});}
+  }catch(e){send({event:'connection',state:browserConnectionState(bridge)});send({id,error:redact({code:e.code||'BROWSER_OPERATION_FAILED',message:e.message,details:e.details})});}
   finally{busy=false;}
 });

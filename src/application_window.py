@@ -89,6 +89,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         install_aoxiang_workflows(self,hv)
         from automation_ui import install as install_automation
         install_automation(self)
+        from browser_status_ui import BrowserStatus
+        self.browser_status=BrowserStatus(self)
         self.home_tasks.refresh_timer.start(0)
 
     def open_aoxiang_fetch(self):
@@ -233,6 +235,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         return bool(cached and cached[0] is self.results.get(s) and cached[1] is self.new_focus)
 
     def closeEvent(self,event):
+        indicator=getattr(self,'browser_status',None)
+        if indicator and not indicator.prepare_close():event.ignore();return
         pending=getattr(self,'_large_io_dialog',None)
         if getattr(self,'catalog_sessions',None) and self.catalog_sessions.session.lease is not None and pending is not None and not pending._completed:
             self.closing=True;pending.reject();event.ignore();return
@@ -264,6 +268,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                 self.status_hash_task.requestInterruption();self.status_hash_task.wait()
         elif axmanager:
             axmanager.resume_after_cancelled_close()
+            if indicator:indicator.resume()
 
     def resume_today(self):
         if self.worker:return

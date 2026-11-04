@@ -22,6 +22,7 @@ import {MachinePurchaseReceipt} from './machine-purchase-receipt.mjs';
 import {PurchaseBindingService,MachinePurchaseBinding} from './purchase-binding.mjs';
 import {releaseSession} from './machine-session.mjs';
 import {CollectionMaintenance} from './machine-maintenance.mjs';
+import {clientConnectionState} from './browser-connection.mjs';
 
 let lock,state,runtime,setup,template,purchase,receiptSync,bindingCheck,outputFailed=false;
 const browsers=new BoundBrowserPool();
@@ -122,6 +123,7 @@ async function main(){
         }
         case 'session.release':result=await releaseSession({runtime,commands,setup,template,purchase,receiptSync,bindingCheck});break;
         case 'session.status':result={host_pid:process.pid,...browsers.status()};break;
+        case 'session.health':result={state:clientConnectionState(setup.client||browsers.browser?.client)};break;
         case 'ping':result={closing:runtime.closing,active_command_id:runtime.active?.id||null,active_purchase_id:purchase.busy?purchase.job.id:null,active_receipt_id:receiptSync.busy?receiptSync.job.id:null,active_binding_id:bindingCheck.busy?bindingCheck.job.id:null};break;
         case 'list':{const records=commands.list(),offset=request.offset||0,limit=request.limit||50;result={total:records.length,items:records.slice(offset,offset+limit).map(publicRecord)};break;}
         case 'reserve':{

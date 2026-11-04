@@ -11,6 +11,7 @@ const components=path.resolve(process.argv[4]||path.join(root,'components'));
 const require=createRequire(path.join(components,'aoxiang/package.json'));
 const {chromium}=require('playwright-core');
 const {AccountSessions}=await import(pathToFileURL(path.join(components,'jst_catalog/src/accounts.mjs')));
+const {watchBrowserConnection}=await import(pathToFileURL(path.join(components,'aoxiang/src/browser-connection.mjs')));
 await fs.mkdir(out);const contexts=[],accounts=[],checks=[],binds=[];
 const sessions=new AccountSessions({bridgeRoot:path.join(components,'aoxiang'),stateRoot:out,lockRoot:path.join(out,'locks')});
 let report;
@@ -29,6 +30,8 @@ try{
   await sessions.initialize();const Native=sessions.components.EdgeBridge;
   sessions.components.EdgeBridge=class extends Native{async bind(...args){binds.push(args[0].actualProfilePath);return super.bind(...args);}};
   const first=await sessions.connect(accounts[0]),second=await sessions.connect(accounts[1]);
+  const observed=[];const stopWatching=watchBrowserConnection(first,state=>observed.push(state));
+  assert.deepEqual(observed,['CONNECTED']);
   for(let n=0;n<3;n++){
     assert.equal(await sessions.connect(accounts[0]),first);assert.equal(await sessions.connect(accounts[1]),second);
     assert(first.facts.profilePathVerified);assert(await first.page.title());
@@ -36,6 +39,8 @@ try{
   }
   assert.equal(binds.length,2);checks.push('two real Edge profiles; three repeated operations per warehouse; only two initial CDP bindings');
   await sessions.disconnect(accounts[0].binding);assert.equal(sessions.status(accounts)[0].state,'DISCONNECTED');
+  assert.equal(observed.at(-1),'DISCONNECTED');stopWatching();
+  checks.push('AX connection observer receives actual Edge page/socket close events; no platform query');
   assert.equal(await sessions.connect(accounts[1]),second);assert.equal(binds.length,2);
   const replacement=await sessions.connect(accounts[0]);assert.notEqual(replacement,first);assert.equal(binds.length,3);
   checks.push('explicit SD reconnect opens exactly one new connection; HB connection retained');

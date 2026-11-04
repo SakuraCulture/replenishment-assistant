@@ -70,6 +70,9 @@ def main():
     if '--store-parameters-smoke' in sys.argv:
         from store_parameter_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--store-parameters-smoke')+1:])
+    if '--browser-status-smoke' in sys.argv:
+        from browser_status_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--browser-status-smoke')+1:])
     if '--aoxiang-smoke' in sys.argv:
         from aoxiang_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--aoxiang-smoke')+1:])

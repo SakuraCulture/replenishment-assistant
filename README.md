@@ -6,12 +6,12 @@
 
 ## 当前版本
 
-2026-11-04：0.36.0 已推送并合入 main（`2487601d9a3d5830704f4dbab8e6dc56961a1fd4`）。本地候选 **0.36.1** 在独立分支 `fix/browser-session-retention-0.36.1` 调整聚水潭连接生命周期；关闭业务窗口继续复用连接，退出主软件安全断开。当前候选未推送、未合并，旧 0.36.0 交付保留。构建与实际 EXE 结果以[本轮交付报告](releases/0.36.1/rc2/交付报告.md)为准。
+2026-11-04：0.36.0 已推送并合入 main（`2487601d9a3d5830704f4dbab8e6dc56961a1fd4`）。本地候选 **0.36.2** 在独立分支 `feat/browser-connection-indicators-0.36.2` 增加主窗口底部的翱象、山东仓、河北仓连接状态灯，沿用 0.36.1 的跨窗口连接保留。当前候选未推送、未合并，旧包保留。构建与实际 EXE 结果以[本轮交付报告](releases/0.36.2/rc1/交付报告.md)为准。
 
 | 对象 | 版本 / 状态 | 查阅入口 |
 | --- | --- | --- |
-| 候选 / 旧版 | **0.36.1 rc2 / 0.36.0 rc1**；目录分开，旧包保留；rc1 未完成验收，不交付 | [候选报告](releases/0.36.1/rc2/交付报告.md)、[旧版报告](releases/0.36.0/rc1/交付报告.md) |
-| 当前源码 | **0.36.1**；聚水潭连接跨窗口保留、连接状态与按仓重连；翱象仍用原共享连接 | [本轮说明](docs/0.36.1浏览器连接保留.md) |
+| 候选 / 旧版 | **0.36.2 rc1 / 0.36.1 rc2**；目录分开，旧包保留 | [候选报告](releases/0.36.2/rc1/交付报告.md)、[旧版报告](releases/0.36.1/rc2/交付报告.md) |
+| 当前源码 | **0.36.2**；全局三项连接状态，只观察已有连接，不触发授权或重连 | [本轮说明](docs/0.36.2底部连接状态.md) |
 | 计算模型 / 仓归属 | **0.3.4-rules / 0.5.1**；未因 AI 功能升级而改变 | [版本信息](src/version.json) |
 | 参数 / 作业 / 存储格式 | **3 / 1 / 2** | [版本信息](src/version.json) |
 
@@ -21,7 +21,7 @@
 
 0.33.0 引入明确分配批次：选定订单、顺序和每仓资料后冻结库存，本批按序分配，新批不继承旧批预留；支持继续原批、重试、撤销和按筛选导出。详见[批次库存与处理范围](docs/0.33.0批次库存与处理范围.md)。
 
-历史验收只证明对应版本。本轮重新冻结 0.36.0 源码、输入及旧包，并执行独立对照，不借用旧报告当新验证。构建提交、证据标签和主线提交分别定位不同材料，不能混称。
+历史验收只证明对应版本。本轮重新冻结 0.36.1 源码、输入及旧包，并执行独立对照，不借用旧报告当新验证。构建提交、证据标签和主线提交分别定位不同材料，不能混称。
 
 ## 业务流程
 
@@ -52,7 +52,7 @@
 
 ## 开始使用
 
-**业务使用**：候选位于 `交付_0.36.0_rc1/补货助手/补货助手.exe`，旧版位于 `交付_0.35.1_rc1/补货助手/补货助手.exe`。完整解压对应 ZIP；保留 `_internal`、`AI接口` 等整个目录。发行包与业务资料不随 Git 下载，源码仓库不等于完整运行包。两版复用相同用户资料时请逐个运行，勿同时处理同一订单。
+**业务使用**：候选位于 `交付_0.36.2_rc1/补货助手/补货助手.exe`，旧版位于 `交付_0.36.1_rc2/补货助手/补货助手.exe`。完整解压对应 ZIP；保留 `_internal`、`AI接口` 等整个目录。发行包与业务资料不随 Git 下载，源码仓库不等于完整运行包。两版复用相同用户资料时请逐个运行，勿同时处理同一订单。
 
 **AI 使用**：保持补货助手打开，在顶部“AI 协助”启用本机连接并配置 Codex / WorkBuddy，再从“AI 常用业务”选择场景，复制提示词到客户端发送。复制本身不执行任务；采用试算需明确确认。其他电脑需要自己的应用、资料和客户端连接配置；移动程序目录后应更新配置。详见 [AI 接入](docs/0.35.0AI协助使用与结构.md)和[九个业务案例](docs/0.35.1AI常用业务与提示词.md)。
 
@@ -81,6 +81,7 @@
 | 聚水潭批次、分配与导出 | `src/jst_batches.py`、`src/jst_orders.py`、`src/jst_allocation.py`、`src/jst_results.py` |
 | 作业持久化与历史格式 | `src/work_repository.py`、`src/storage_chunks.py`、`src/storage_maintenance.py` |
 | 浏览器执行组件 | `components/aoxiang/`、`components/jst_catalog/` |
+| 底部连接状态与观察 | `src/browser_status_ui.py`、`components/aoxiang/src/browser-connection.mjs` |
 | AI 接口与原业务衔接 | `src/automation_bridge.py`、`src/automation_protocol.py`、`src/automation_gateway.py`、`src/automation_jobs.py`、`src/workbench_actions.py` |
 | AI 常用业务表单与提示词 | `src/automation_ui.py`、`src/automation_playbooks.py`、`src/automation_playbook_ui.py` |
 | 当前构建与发行证据 | `src/version.json`、`tools/build_from_commit.py`、`prepare_delivery.py`、`releases/` |

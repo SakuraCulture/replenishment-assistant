@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {AccountSessions} from '../src/accounts.mjs';
 import {CatalogService} from '../src/service.mjs';
 import {sha,canonical} from '../src/common.mjs';
+import {JobStore} from '../src/job-store.mjs';
 
 function fixture(){
   const s=new AccountSessions({bridgeRoot:'unused',stateRoot:'isolated',lockRoot:'isolated'}),events=[];
@@ -48,4 +49,15 @@ test('reset is refused during active work; cannot touch another platform',async(
   const s=new CatalogService({store:{read:()=>({accounts:{}})},driver:{}});s.active={controller:new AbortController()};
   await assert.rejects(s.command({action:'session.reset',warehouse:'山东仓'}),{code:'BUSY'});
   s.active=null;await assert.rejects(s.command({action:'session.reset',warehouse:'翱象'}),{code:'ACCOUNT_UNVERIFIED'});
+});
+
+test('lightweight health does not read full jobs or queue behind mutations',async()=>{
+  const data={accounts:{sd:{warehouse:'山东仓',binding:{}}}};
+  Object.defineProperty(data,'batches',{get:()=>{throw Error('must not read jobs');},enumerable:true});
+  const store=new JobStore('unused',data,null),s=new CatalogService({store,driver:{}});
+  s.sessions={status:accounts=>accounts.map(a=>({warehouse:a.warehouse,state:'CONNECTED'}))};
+  s.controlTail=new Promise(()=>{});
+  const reply=await s.command({action:'session.health'});
+  assert.deepEqual(reply,{connections:[{warehouse:'山东仓',state:'CONNECTED'}]});
+  assert.equal(Object.keys(reply).length,1);
 });

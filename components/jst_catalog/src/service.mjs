@@ -40,13 +40,14 @@ export class CatalogService {
       batches:batchId?[this.store.batch(batchId)]:Object.values(data.batches).slice(-50).reverse()};
   }
   command(c){
-    if(['capabilities','sync.status','sync.stop','shutdown'].includes(c.action))return this.dispatch(c);
+    if(['capabilities','sync.status','session.health','sync.stop','shutdown'].includes(c.action))return this.dispatch(c);
     const op=this.controlTail.catch(()=>{}).then(()=>this.dispatch(c));this.controlTail=op;return op;
   }
   async dispatch(c){
     const action=c.action;
     if(action==='capabilities')return {protocol:'jst.catalog.v1',component_version:'0.31.0',dedicated_browser:true,password_login:false};
     if(action==='sync.status')return this.status(c.batch_id);
+    if(action==='session.health')return {connections:this.sessions?.status(this.store.accounts())||[]};
     if(action==='session.release'){
       this.active?.controller.abort();
       return {idle:!this.active};

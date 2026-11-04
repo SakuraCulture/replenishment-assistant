@@ -1,13 +1,16 @@
 import {fork} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {uid,AppError} from './common.mjs';
+import {CONNECTION_STATES} from './browser-connection.mjs';
 
 export class BrowserClient{
   constructor({onPhase=()=>{},onAccepted=()=>{},onImportReceipt=()=>{}}={}){
+    this.connectionState='NOT_CONNECTED';
     this.onImportReceipt=onImportReceipt;
     this.pending=new Map();this.onPhase=onPhase;this.onReceipt=onAccepted;this.child=fork(fileURLToPath(new URL('./browser-worker.mjs',import.meta.url)),[],{stdio:['ignore','ignore','pipe','ipc'],windowsHide:true,execPath:process.execPath});
     this.child.stderr.on('data',()=>{});
     this.child.on('message',m=>{
+      if(m.event==='connection'){this.connectionState=CONNECTION_STATES.has(m.state)?m.state:'UNKNOWN';return;}
       if(m.event==='phase'){this.onPhase(m.phase);return;}
       if(m.event==='purchase_import_receipt'){
         try{this.onImportReceipt?.(m.receipt);}catch(e){for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new AppError('IMPORT_RECEIPT_WRITE_FAILED','采购受理记录保存失败；保留上传意图，禁止重传'));}this.pending.clear();void this.stop();}return;

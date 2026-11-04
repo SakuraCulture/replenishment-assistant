@@ -16,8 +16,14 @@ test('真实独立worker持锁；父IPC断开后退出并释放锁',async()=>{
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'ax-orphan-'));
   const worker=fork(fileURLToPath(new URL('../src/browser-worker.mjs',import.meta.url)),[],{stdio:['ignore','ignore','pipe','ipc'],windowsHide:true,execPath:process.execPath});
   try{
-    const response=once(worker,'message');worker.send({id:'1',method:'connect',params:{stateRoot:root,candidate:{actualProfilePath:path.join(root,'nonexistent-profile'),edgeExecutable:process.execPath,userDataRoot:root,profileDirectory:'Profile'}}});
-    const [m]=await response;assert.ok(m.error);
+    const events=[];
+    const response=new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>{worker.off('message',receive);reject(Error('connect response timeout'));},5000);
+      function receive(m){if(m.event){events.push(m);return;}if(m.id==='1'){clearTimeout(timer);worker.off('message',receive);resolve(m);}}
+      worker.on('message',receive);
+    });
+    worker.send({id:'1',method:'connect',params:{stateRoot:root,candidate:{actualProfilePath:path.join(root,'nonexistent-profile'),edgeExecutable:process.execPath,userDataRoot:root,profileDirectory:'Profile'}}});
+    const m=await response;assert.ok(m.error);assert.deepEqual(events.filter(m=>m.event==='connection').map(m=>m.state),['CONNECTING','DISCONNECTED']);
     await assert.rejects(()=>ExclusiveLock.acquire(path.join(root,'runner.lock.sqlite')),{code:'APP_BUSY'});
     const exit=once(worker,'exit');worker.disconnect();await exit;
     const lock=await ExclusiveLock.acquire(path.join(root,'runner.lock.sqlite'));lock.release();

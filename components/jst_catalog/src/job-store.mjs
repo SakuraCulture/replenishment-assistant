@@ -25,6 +25,7 @@ export class JobStore {
   }
   constructor(file,data,guard){this.file=file;this.data=data;this.guard=guard;this.tail=Promise.resolve();this.closed=false;}
   read(){return structuredClone(this.data);}
+  accounts(){return structuredClone(Object.values(this.data.accounts||{}));}
   batch(id){const b=this.data.batches[id];if(!b)throw Error('批次不存在：'+id);return structuredClone(b);}
   write(fn){
     const op=this.tail.catch(()=>{}).then(async()=>{

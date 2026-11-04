@@ -222,3 +222,10 @@ if version['version']=='0.36.1':
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
     (dest/'使用说明.txt').write_text((root/'docs/0.36.1浏览器连接保留.md').read_text('utf-8')+'\n\n'+(root/'docs/0.36.0业务待办与核对.md').read_text('utf-8'),encoding='utf-8')
+
+if version['version']=='0.36.2':
+    (dest/'docs').mkdir(exist_ok=True)
+    names=['0.36.2底部连接状态.md','0.36.1浏览器连接保留.md','0.36.0业务待办与核对.md']
+    for name in names:shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
+    (dest/'使用说明.txt').write_text('\n\n'.join((root/'docs'/name).read_text('utf-8') for name in names),encoding='utf-8')
