@@ -20,6 +20,7 @@ def convert(source,destination,mode,progress=lambda _:None,cancel=None):
             src.backup(target,pages=1024,progress=lambda status,left,total:report(RowProgress('复制数据库至独立临时文件',total-left,total)))
             if target.execute('PRAGMA quick_check').fetchone()[0]!='ok':raise ValueError('数据库副本完整性检查失败')
             tables={r[0] for r in target.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            if 'scheduled_values' in tables:counts['scheduled_values']=0
             existing=chunks.known(target)
             with target:
                 if mode=='upgrade':chunks.schema(target)
@@ -30,7 +31,7 @@ def convert(source,destination,mode,progress=lambda _:None,cancel=None):
                         report(RowProgress('转换 '+table,i,len(ids)))
                         fields='payload'+(',digest' if table!='normal_work_revisions' else '')
                         record=target.execute('SELECT '+fields+' FROM '+table+' WHERE rowid=?',(rowid,)).fetchone()
-                        expected=record[1] if table=='jobs' else None
+                        expected=record[1] if table in ('jobs','scheduled_values') else None
                         binding=record[1] if table=='normal_revisions' else None
                         value=chunks.load(record[0],target,expected=expected,binding=binding,progress=report)
                         if binding:

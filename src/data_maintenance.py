@@ -154,7 +154,8 @@ def collect_shared(db,folder,cancel=None,progress=lambda _:None):
             if revision:work_ids.add(revision)
     for rev, in db.execute('SELECT revision FROM normal_work_revisions').fetchall():
         if rev not in work_ids:db.execute('DELETE FROM normal_work_revisions WHERE revision=?',(rev,))
-    for table in ('normal_revisions','normal_work_revisions','jobs'):
+    for table in ('normal_revisions','normal_work_revisions','jobs','scheduled_values'):
+        if table not in available:continue
         for raw, in db.execute(f'SELECT payload FROM {table}'):
             checkpoint(cancel);m=chunks.manifest(raw)
             if m:live.update(references(m['tree']))
