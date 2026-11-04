@@ -43,6 +43,11 @@ def main():
     (build/'command.json').write_text(json.dumps(cmd,ensure_ascii=False,indent=2),encoding='utf-8')
     with (build/'build.log').open('w',encoding='utf-8') as log:
         subprocess.run(cmd,cwd=source,env=env,stdout=log,stderr=log,check=True)
+        if (source/'src/automation_bridge.py').exists():
+            bridge=[sys.executable,'-m','PyInstaller','--clean','--console','--onedir','--noupx','--name','补货助手AI接口',
+                    '--distpath',str(build/'bridge-dist'),'--workpath',str(build/'bridge-work'),'--specpath',str(build),str(source/'src/automation_bridge.py')]
+            subprocess.run(bridge,cwd=source,env=env,stdout=log,stderr=log,check=True)
+            shutil.copytree(build/'bridge-dist/补货助手AI接口',dist/'补货助手/AI接口')
         if component.exists():
             target=dist/'补货助手/_internal/components/aoxiang'
             shutil.copytree(staged,target)

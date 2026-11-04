@@ -157,16 +157,8 @@ class BatchWindow(WarehouseUi,SessionWindow):
     def selected_codes(self):return [s for s,w in self.store_widgets.items() if w['check'].isChecked()]
     def selected_settings(self,s):
         w=self.store_widgets[s];mode=w['mode'].currentIndex()
-        if mode==0:raise ValueError('请选择预算方式')
-        budget=None
-        if mode==2:
-            try:
-                raw=w['amount'].text().strip()
-                if not raw:raise ValueError('请填写本次预算')
-                value=Decimal(raw)
-                if not value.is_finite() or value<0 or value>1000000000 or value!=value.quantize(Decimal('.01')):raise ValueError('预算须为0至10亿元，最多两位小数')
-                budget=float(value)
-            except InvalidOperation:raise ValueError('请输入有效预算金额')
+        from workbench_actions import budget_value
+        budget=budget_value(mode,w['amount'].text(),self.profile)
         warehouses=self.overrides.get(s,self.default_settings(s))
         if any(d<0 or l<0 or d+l<=0 for d,l in warehouses.values()):raise ValueError('请填写未知仓的备货和到货天数')
         if budget is not None and not self.profile:raise ValueError('限额补货需要有效必卖清单')

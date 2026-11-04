@@ -1,0 +1,110 @@
+"""Small, versioned public command contract. JSON only; no executable payloads."""
+import hashlib
+import json
+import math
+
+VERSION = 'replenishment.tools.v1'
+MAX_FRAME = 2 * 1024 * 1024
+MAX_PAGE = 100
+
+
+class CommandError(ValueError):
+    def __init__(self, code, message, details=None):
+        super().__init__(message)
+        self.code, self.details = code, details or {}
+
+
+def digest(value):
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True,
+        separators=(',', ':'), allow_nan=False, default=str).encode()).hexdigest()
+
+
+def obj(properties=None, required=()):
+    return {'type': 'object', 'properties': properties or {}, 'required': list(required), 'additionalProperties': False}
+
+
+TEXT = {'type': 'string', 'minLength': 1, 'maxLength': 4096}
+LIST = {'type': 'array', 'items': TEXT, 'maxItems': 500, 'uniqueItems': True}
+PAGE = {'offset': {'type': 'integer', 'minimum': 0}, 'limit': {'type': 'integer', 'minimum': 1, 'maximum': MAX_PAGE}}
+TASK = {'task_id': TEXT}
+CHANGE = obj({'store': TEXT, 'path': {'type': 'array', 'items': {'type': ['string', 'integer']}, 'minItems': 2, 'maxItems': 3},
+              'value': {'type': ['number', 'string']}}, ['store', 'path', 'value'])
+TOOLS = [
+    ('workbench_context', '查看当前工作台、已启用范围、业务日期和任务。先调用以取得 context_token。', obj()),
+    ('find_resources', '查询应用登记的门店、预案、文件、仓资料、历史订单或本机 AI 任务；编码精确使用，不按名称猜。',
+     obj({'kind': {'type': 'string', 'enum': ['stores', 'plans', 'files', 'catalogs', 'orders', 'tasks']}, 'search': {'type': 'string'}, **PAGE}, ['kind'])),
+    ('effective_parameters', '读取当前门店的实际参数及来源，不保存修改。', obj({'stores': LIST}, ['stores'])),
+    ('prepare_calculation', '检查指定本地文件或当前已检查数据。形成预览，不签发、不保存默认。mode=trial 试算；current 明确采用到本次工作台。',
+     obj({'context_token': TEXT, 'operation_key': TEXT, 'stores': LIST, 'paths': LIST, 'plan_id': TEXT,
+          'mode': {'type': 'string', 'enum': ['trial', 'current']}, 'parameter_changes': {'type': 'array', 'items': CHANGE, 'maxItems': 500}},
+         ['context_token', 'operation_key', 'mode'])),
+    ('run_calculation', '执行已就绪预览，按冻结门店顺序计算；重复调用同预览返回原任务。', obj({'preview_id': TEXT}, ['preview_id'])),
+    ('task_status', '读取任务进度和新增事件；断线后查询原任务，不重新发起。', obj({**TASK, 'after': {'type': 'integer', 'minimum': 0}}, ['task_id'])),
+    ('stop_remaining', '停止原任务的后续步骤。正在计算的门店安全结束，已完成结果保留。', obj(TASK, ['task_id'])),
+    ('retry_failed', '仅重试选中的失败或已停止门店，沿用原输入、参数和必卖快照。', obj({**TASK, 'stores': LIST, 'operation_key': TEXT}, ['task_id', 'stores', 'operation_key'])),
+    ('calculation_results', '分页读取结果。数量使用库存单位，金额来自原计算，非 AI 估计。',
+     obj({**TASK, 'store': TEXT, 'warehouse': TEXT, 'search': {'type': 'string'},
+          'filter': {'type': 'string', 'enum': ['all', 'positive', 'issues']}, **PAGE}, ['task_id'])),
+    ('explain_decision', '查询某商品的原参数、销量库存和已计算过程。历史缺项不推测。任务与历史单二选一。',
+     obj({'task_id': TEXT, 'order_id': TEXT, 'store': TEXT, 'warehouse': TEXT, 'sku': TEXT}, ['sku'])),
+    ('adopt_trial', '将试算结果采用到仍未变化的当前作业；不保存、不签发。若影响新品或人工调整，须在原界面核对。',
+     obj({**TASK, 'context_token': TEXT}, ['task_id', 'context_token'])),
+    ('open_workbench_view', '定位原业务页面，不触发保存、签发或导入确认。',
+     obj({'view': {'type': 'string', 'enum': ['home', 'work', 'progress', 'results', 'tracking', 'review', 'parameters']}, 'store': TEXT}, ['view'])),
+]
+SCHEMAS = {name: schema for name, _, schema in TOOLS}
+
+
+def validate(value, schema, path='参数'):
+    kinds = schema.get('type'); kinds = [kinds] if isinstance(kinds, str) else kinds or []
+    kind = 'null' if value is None else 'boolean' if isinstance(value, bool) else 'integer' if isinstance(value, int) else 'number' if isinstance(value, float) else 'string' if isinstance(value, str) else 'array' if isinstance(value, list) else 'object' if isinstance(value, dict) else 'invalid'
+    if kinds and kind not in kinds and not (kind == 'integer' and 'number' in kinds):
+        raise CommandError('INVALID_ARGUMENT', path + '类型不正确')
+    if 'enum' in schema and value not in schema['enum']: raise CommandError('INVALID_ARGUMENT', path + '取值无效')
+    if kind == 'object':
+        props = schema.get('properties', {})
+        missing = set(schema.get('required', [])) - value.keys()
+        if missing: raise CommandError('INVALID_ARGUMENT', path + '缺少字段：' + ', '.join(sorted(missing)))
+        if schema.get('additionalProperties') is False and value.keys() - props.keys():
+            raise CommandError('INVALID_ARGUMENT', path + '包含未开放字段')
+        for k, v in value.items():
+            if k in props: validate(v, props[k], path + '.' + k)
+    elif kind == 'array':
+        if len(value) < schema.get('minItems', 0) or len(value) > schema.get('maxItems', MAX_PAGE * 100):
+            raise CommandError('INVALID_ARGUMENT', path + '数量超出范围')
+        if schema.get('uniqueItems') and len({digest(x) for x in value}) != len(value):
+            raise CommandError('INVALID_ARGUMENT', path + '不能重复')
+        for v in value: validate(v, schema.get('items', {}), path + '[]')
+    elif kind == 'string':
+        if len(value) < schema.get('minLength', 0) or len(value) > schema.get('maxLength', 4096) or '\0' in value:
+            raise CommandError('INVALID_ARGUMENT', path + '文本长度或内容无效')
+    elif kind in ('integer', 'number'):
+        if not math.isfinite(value) or value < schema.get('minimum', -math.inf) or value > schema.get('maximum', math.inf):
+            raise CommandError('INVALID_ARGUMENT', path + '数值超出范围')
+
+
+def validate_call(name, arguments):
+    if name not in SCHEMAS: raise CommandError('NOT_AVAILABLE', '首期未开放这个操作')
+    validate(arguments, SCHEMAS[name])
+    return arguments
+
+
+def public_tools():
+    readonly = {'workbench_context', 'find_resources', 'effective_parameters', 'task_status', 'calculation_results', 'explain_decision'}
+    return [{'name': n, 'description': d, 'inputSchema': s, 'annotations': {
+        'readOnlyHint': n in readonly, 'destructiveHint': False, 'openWorldHint': False}}
+        for n, d, s in TOOLS]
+
+
+def decode(line):
+    if len(line) > MAX_FRAME: raise CommandError('TOO_LARGE', '消息过大，请分页查询')
+    def duplicate(pairs):
+        out = {}
+        for key, value in pairs:
+            if key in out: raise ValueError('重复字段')
+            out[key] = value
+        return out
+    try:
+        return json.loads(line, object_pairs_hook=duplicate, parse_constant=lambda x: (_ for _ in ()).throw(ValueError('非有限数字')))
+    except (ValueError, UnicodeError, RecursionError) as exc:
+        raise CommandError('INVALID_JSON', '无法识别 JSON 消息') from exc

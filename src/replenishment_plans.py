@@ -117,7 +117,8 @@ def install(host,previous,replace=False):
     try:
         for s in host.store_widgets:
             if s in codes and (replace or s not in previous):
-                p=preset(plan);p['config']=pm.plan_config(plan,host.config_for(s));prepared[s]=pm.bind(p,mapping)
+                from workbench_actions import plan_record
+                prepared[s]=plan_record(plan,{'preset':{**host.preset_for(s),'config':host.config_for(s)},'ui':{}},mapping)['preset']
     except ValueError as exc:host._mapping_error='预案参数待核对：'+str(exc);return
     for s in host.store_widgets:
         if s in codes and (replace or s not in previous):

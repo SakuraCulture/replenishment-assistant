@@ -32,7 +32,8 @@ class Workbench(ParameterUi,BatchWindow):
         self._hydrating=False;self.update_controls()
         if any(r['day']==wr.today() for r in self.work_repository.list_jobs()):self.status.setText('今天已有保存的作业，可从“作业记录”继续；新建内容不会自动覆盖。')
     def touch(self):
-        if not self._hydrating and not self.readonly:self.job_dirty=True;self.refresh_job_label()
+        if not self._hydrating and not self.readonly:
+            self.job_dirty=True;self.refresh_job_label()
     def refresh_tables(self):
         super().refresh_tables()
         plan=getattr(self,'active_plan',None)
@@ -129,8 +130,8 @@ class Workbench(ParameterUi,BatchWindow):
         if self._mapping_error:raise ValueError(self._mapping_error)
         result=super().selected_settings(s);c=self.config_for(s);schema.validate(c)
         import admission
-        result['admission']=admission.snapshot(self.work_repository.path,s)
-        result.update(parameter_config=c,warehouses=copy.deepcopy(c['warehouses']),exception=c['exception'],preset={k:v for k,v in self.preset_for(s).items() if k!='config'},parameter_signature=schema.signature(c));return result
+        from workbench_actions import parameter_settings
+        return parameter_settings(result,c,self.preset_for(s),admission.snapshot(self.work_repository.path,s))
     def store_ui(self,s):
         w=self.store_widgets[s]
         return {'mode':w['mode'].currentIndex(),'amount':w['amount'].text(),'primary':w['primary'].currentData(),'secondary':w['secondary'].currentData(),'selected':w['check'].isChecked()}

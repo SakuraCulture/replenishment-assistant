@@ -83,6 +83,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.batch_export.setObjectName('');self.batch_export.style().unpolish(self.batch_export);self.batch_export.style().polish(self.batch_export)
         from aoxiang_workflow_ui import install as install_aoxiang_workflows
         install_aoxiang_workflows(self,hv)
+        from automation_ui import install as install_automation
+        install_automation(self)
 
     def open_aoxiang_fetch(self):
         from aoxiang_fetch_ui import open_fetch
@@ -239,6 +241,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             # Otherwise an idle generator can start a thread after close, just
             # before its parent window is destroyed.
             self.closing=True
+            if hasattr(self,'automation'):self.automation.disable()
             if generator:generator.timer.stop()
             if axmanager:axmanager.shutdown()
             self.archive_timer.stop();self.history_reader.shutdown()
@@ -308,11 +311,12 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
 
     def start_calculation(self,codes=None,*,retry=False):
         targets=codes if isinstance(codes,list) else self.selected_codes()
-        chosen=[s for s in targets if self.results.get(s,{}).get('new_products')]
+        from workbench_actions import recalculation_impact
+        impact=recalculation_impact(self.results,targets);chosen=impact['new_products']
         if chosen and not self.worker:
             box=QMessageBox(self);box.setObjectName('newSelectionReset');box.setWindowTitle('重新计算前确认新品选择');box.setText('以下门店重新计算后将清空本次新品选择，请按新数据和参数重新选品；已归档单据保持原修订。\n'+'、'.join(chosen));cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('重新计算并重选新品',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.exec()
             if box.clickedButton() is not accept:return
-        originals={s:self.results[s] for s in targets if s in self.results and self.results[s].get('preissue')}
+        originals=impact['manual']
         if originals and not self.worker:
             if QMessageBox.question(self,'重新计算与最终调整', '重新计算会生成新的自动结果，原人工调整保留为待核对草稿，确认风险需重新核对。已签发历史不变。\n'+'、'.join(originals),QMessageBox.StandardButton.Ok|QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)!=QMessageBox.StandardButton.Ok:return
         super().start_calculation(codes,retry=retry)

@@ -20,6 +20,10 @@ try {
         $env:PATH = "$env:WINDIR\System32;$env:WINDIR;$(Split-Path -Parent $taskPython)"
         & $taskPython -m PyInstaller --clean --windowed --onedir --noupx --name '补货助手' --icon "$taskRoot\src\app.ico" --add-data "$taskRoot\src\default_config.json;." --add-data "$taskRoot\src\default_must_sell.json;." --add-data "$taskRoot\src\version.json;." --add-data "$taskBuild\build_info.json;." --add-data "$taskRoot\src\app.ico;." --exclude-module numpy --exclude-module pandas --exclude-module matplotlib --exclude-module scipy --exclude-module IPython --exclude-module lxml --exclude-module tkinter --distpath $taskDist --workpath "$taskBuild\work" --specpath $taskBuild "$taskRoot\src\app.py"
         if ($LASTEXITCODE -ne 0) { throw '打包失败；保留目录供排查，重试请使用新编号。' }
+        # A console entry is required for MCP stdin/stdout; the windowed GUI cannot serve stdio.
+        & $taskPython -m PyInstaller --clean --console --onedir --noupx --name '补货助手AI接口' --exclude-module numpy --exclude-module pandas --exclude-module matplotlib --exclude-module scipy --exclude-module IPython --exclude-module lxml --exclude-module tkinter --distpath "$taskBuild\bridge-dist" --workpath "$taskBuild\bridge-work" --specpath $taskBuild "$taskRoot\src\automation_bridge.py"
+        if ($LASTEXITCODE -ne 0) { throw 'AI 接口打包失败；保留目录供排查。' }
+        Copy-Item -LiteralPath "$taskBuild\bridge-dist\补货助手AI接口" -Destination "$taskDist\补货助手\AI接口" -Recurse
     } finally { $env:PATH = $taskOldPath }
     & $taskPython "$taskRoot\prepare_delivery.py" --delivery "$taskDist\补货助手"
     if ($LASTEXITCODE -ne 0) { throw '交付文档整理失败' }
