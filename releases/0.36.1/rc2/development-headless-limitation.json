@@ -1,0 +1,7 @@
+{
+  "passed": false,
+  "checks": [],
+  "error": "Error: 无法唯一识别所选Edge配置的绑定标签，请在目标配置中重试\n    at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)\n    at sessions.components.EdgeBridge.bind (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/edge-bridge.mjs:59:32)\n    at async AccountSessions.connect (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/accounts.mjs:90:11)\n    at async file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/tools/verify_browser_connection_retention.mjs:31:15",
+  "code": "PROFILE_TARGET_NOT_FOUND",
+  "details": {}
+}

@@ -1,0 +1,17 @@
+{
+  "host_pids": [
+    36168,
+    36168,
+    36168,
+    36168
+  ],
+  "windows": [
+    "setup",
+    "fetch",
+    "receipt",
+    "fetch-again"
+  ],
+  "local_only": true,
+  "live_edge": false,
+  "retained_until_application_close": true
+}

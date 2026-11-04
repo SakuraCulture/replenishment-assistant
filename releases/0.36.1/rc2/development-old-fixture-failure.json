@@ -1,0 +1,7 @@
+{
+  "passed": false,
+  "actual_exe": true,
+  "live_platform": false,
+  "checks": [],
+  "error": "Traceback (most recent call last):\n  File \"aoxiang_setup_smoke.py\", line 62, in exercise_setup\n  File \"aoxiang_smoke.py\", line 42, in wait\nRuntimeError: 翱象操作未完成: RESPONSE_UNKNOWN：隔离模拟：组件状态应答超时\n可点击“异常后重新连接”结束本次只读核验，再重新开始；不会保存未通过配置。\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"aoxiang_smoke.py\", line 59, in execute\n  File \"aoxiang_setup_smoke.py\", line 78, in exercise_setup\n  File \"aoxiang_smoke.py\", line 42, in wait\nRuntimeError: 翱象操作未完成: RESPONSE_UNKNOWN：隔离模拟：组件状态应答超时\n可点击“异常后重新连接”结束本次只读核验，再重新开始；不会保存未通过配置。\n"
+}

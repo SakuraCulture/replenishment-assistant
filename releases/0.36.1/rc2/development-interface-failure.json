@@ -1,0 +1,17 @@
+{
+  "passed": false,
+  "checks": [
+    "原下载任务可恢复",
+    "未核验不能保存账号",
+    "空闲不能停止",
+    "后台任务在限制时间内结束",
+    "立即停止保留下载任务，不采用资料",
+    "真实按钮启动后台任务",
+    "运行时禁止重复提交",
+    "后台任务在限制时间内结束"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\catalog_sync_smoke.py\", line 41, in execute\n    require(len(d.adopted)==1,'真实 Node → 当前程序子进程校验 → 采用完成');require('山东仓' in win.catalogs and len(win.catalogs['山东仓']['items'])==2,'界面刷新本仓资料')\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\catalog_sync_smoke.py\", line 13, in require\n    if not ok:raise AssertionError(message)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 真实 Node → 当前程序子进程校验 → 采用完成\n",
+  "frozen": false,
+  "process_exit": 1,
+  "exe_sha256": null
+}

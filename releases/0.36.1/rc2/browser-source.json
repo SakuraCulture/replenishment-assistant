@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "checks": [
+    "two real Edge profiles; three repeated operations per warehouse; only two initial CDP bindings",
+    "explicit SD reconnect opens exactly one new connection; HB connection retained",
+    "closed SD job page detected; only SD recovers",
+    "application shutdown removes owned tabs and leaves both preexisting browser pages intact"
+  ],
+  "connection_count": 4,
+  "initial_connections": 2,
+  "reuse_rounds_per_warehouse": 3,
+  "components": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\components",
+  "edge_version": "Edg/156.0.4314.58",
+  "scope": "actual isolated Edge (start-minimized) + production AccountSessions and EdgeBridge; no production login/platform/export; does not test visible permission prompt or overnight stability"
+}

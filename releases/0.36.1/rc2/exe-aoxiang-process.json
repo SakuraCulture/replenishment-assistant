@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "actual_exe": true,
+  "live_platform": false,
+  "checks": [
+    "实际EXE核验窗口：模拟检测非100%、勾选启用、状态异常单次提示与停止轮询、重新连接后可核验；未连接平台或保存配置",
+    "真实固定Node进程启动并读取本地未配置状态，第1次",
+    "字段错误后同进程可用，安全关闭后原状态可重开",
+    "真实固定Node进程启动并读取本地未配置状态，第2次",
+    "字段错误后同进程可用，安全关闭后原状态可重开",
+    "真实窗口跨模块复用同一Node进程，正常关闭只释放操作权，重开取数不重启组件；不连接Edge",
+    "本地批次队列打开、空状态与关闭；未创建周期计划"
+  ],
+  "heartbeat_samples": 119,
+  "max_heartbeat_gap": 0.11479869997128844,
+  "source_commit": "f3a85360452099a42909f2e8748c605a39668172",
+  "exit_code": 0,
+  "remaining_children": [],
+  "sampled_descendants": 4,
+  "elapsed_seconds": 6.410925899981521,
+  "peak_tree_rss_bytes": 362819584
+}
