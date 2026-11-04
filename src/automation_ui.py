@@ -14,9 +14,11 @@ STATES = {'preparing': '检查中', 'prepared': '检查完成', 'running': '计�
 
 def install(host):
     from automation_gateway import Gateway
+    from automation_playbook_ui import show_playbooks
     host.automation = Gateway(host)
     row = QHBoxLayout(); note = label('AI 协助未连接', 'muted'); note.setWordWrap(False)
-    row.addWidget(button('AI 协助', lambda: settings(host))); row.addWidget(note, 1)
+    row.addWidget(button('AI 协助', lambda: settings(host)))
+    row.addWidget(button('AI 常用业务', lambda: show_playbooks(host))); row.addWidget(note, 1)
     details = button('查看进度', lambda: tasks(host)); stop = button('■ 停止后续', lambda: stop_current(host))
     take = button('接手处理', lambda: takeover(host)); row.addWidget(details); row.addWidget(stop); row.addWidget(take)
     host.centralWidget().layout().insertLayout(1, row)

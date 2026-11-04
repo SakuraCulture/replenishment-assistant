@@ -188,6 +188,10 @@ def start_smoke(app, win, args):
                     wait(lambda:child.poll() is not None,180)
                 require(child.returncode==0,(out/'codex-client.log').read_text('utf-8'))
                 report['checks'].append('Installed Codex app-server discovers 12 tools and calls current workbench, paged tasks and validation error; ephemeral protocol context, no model turn')
+            from automation_playbook_smoke import exercise
+            recipes = exercise(app, win, m2, out, wait, require)
+            require(recipes['passed'], 'Business recipes failed')
+            report['checks'].append('Nine business recipes replayed through actual MCP; modeless picker, scoped prompt copy and stale-context/explicit-adoption guards')
             win.grab().save(str(out / 'AI协助工作台.png'))
             report['passed'] = True
         except Exception: report['error'] = traceback.format_exc()
