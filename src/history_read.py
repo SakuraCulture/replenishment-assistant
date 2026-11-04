@@ -99,6 +99,9 @@ def cached(path,cache,head,detail=False,cancel=None):
 
 
 def execute(path,cache,request,cancel,progress):
+    if request.get('kind')=='business_home':
+        from business_flow import read_home
+        return read_home(path,cache,cancel,progress)
     if request.get('kind')=='jst_results':
         import jst_results
         return jst_results.read(path,cache,request['day'],request.get('scope'),lambda p:progress({'text':str(p),'done':p.current,'total':p.total}),cancel,request.get('batch_id'),request.get('date_end'))

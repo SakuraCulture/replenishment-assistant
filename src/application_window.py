@@ -77,7 +77,11 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         detail_actions=QHBoxLayout();detail_actions.addWidget(back);detail_actions.addWidget(self.final_detail_btn);detail_actions.addWidget(self.detail_new_btn);detail_layout.insertLayout(0,detail_actions)
         self.detail_policy_btn=button('调整本店补货策略',lambda:self.choose_restock_policy(True));detail_actions.addWidget(self.detail_policy_btn)
         self.auto_check=QTimer(self);self.auto_check.setSingleShot(True);self.auto_check.setInterval(400);self.auto_check.timeout.connect(self.check_added_files);self.sales.changed.connect(self.auto_check.start)
-        axrow=QHBoxLayout();self.aoxiang_setup_btn=button('翱象连接与门店配置',self.open_aoxiang_setup);axrow.addWidget(self.aoxiang_setup_btn);axrow.addWidget(label('维护平台门店目录与两仓供应商对应；核验登录后保存复用。','muted'),1);self.import_page.layout().addLayout(axrow)
+        from business_flow_ui import disclosure
+        toggle,maintenance,mv=disclosure('连接配置与维护（首次使用或配置变化时）',self.import_page)
+        self.import_page.layout().addWidget(toggle);self.import_page.layout().addWidget(maintenance)
+        self.connection_maintenance_toggle=toggle
+        axrow=QHBoxLayout();self.aoxiang_setup_btn=button('翱象连接与门店配置',self.open_aoxiang_setup);axrow.addWidget(self.aoxiang_setup_btn);axrow.addWidget(label('维护平台门店目录与两仓供应商对应；核验登录后保存复用。','muted'),1);mv.addLayout(axrow)
         self.aoxiang_fetch_btn=button('获取翱象补货建议',self.open_aoxiang_fetch,True)
         daily=QHBoxLayout();daily.addWidget(self.aoxiang_fetch_btn);daily.addWidget(label('先选择门店获取数据，也可在下方拖入补货建议文件。','muted'),1);self.import_page.layout().insertLayout(1,daily)
         self.batch_export.setObjectName('');self.batch_export.style().unpolish(self.batch_export);self.batch_export.style().polish(self.batch_export)
@@ -85,6 +89,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         install_aoxiang_workflows(self,hv)
         from automation_ui import install as install_automation
         install_automation(self)
+        self.home_tasks.refresh_timer.start(0)
 
     def open_aoxiang_fetch(self):
         from aoxiang_fetch_ui import open_fetch
@@ -153,6 +158,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
 
     def show_section(self,index):
         self.sections.setCurrentIndex(index)
+        if index==0 and hasattr(self,'home_tasks'):self.home_tasks.refresh()
         if index in (0,2) and not self.archive_all:self.refresh_archive()
         if index==3 and hasattr(self,'followup') and (not self.followup.records or getattr(self,'tracking_stale',False)):
             self.tracking_stale=False;self.followup.query(keep_page=True)
@@ -241,6 +247,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             # Otherwise an idle generator can start a thread after close, just
             # before its parent window is destroyed.
             self.closing=True
+            if hasattr(self,'home_tasks'):self.home_tasks.reader.shutdown()
             if hasattr(self,'automation'):self.automation.disable()
             if generator:generator.timer.stop()
             if axmanager:axmanager.shutdown()

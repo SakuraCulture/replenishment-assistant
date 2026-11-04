@@ -66,7 +66,12 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.store_page,v=self.page();v.addWidget(label('选择本次门店，分别设置可用资金','section'));v.addWidget(label('按设定预算优先保必卖；末尾最多补足一个最小出库单位，整店超支不超过5%。0元仍不补；不限预算按模型建议，各店资金独立。','muted'))
         row=QHBoxLayout();self.store_search=QLineEdit();self.store_search.setPlaceholderText('搜索门店名称或编码');self.store_search.textChanged.connect(self.filter_stores);row.addWidget(self.store_search,1)
         self.only_issues=QCheckBox('只看需处理');self.only_issues.toggled.connect(self.filter_stores);row.addWidget(self.only_issues);row.addWidget(button('全选当前筛选',lambda:self.select_all(True,True)));row.addWidget(button('全选本批可计算',lambda:self.select_all(True)));row.addWidget(button('清空全部勾选',lambda:self.select_all(False)));row.addWidget(button('查看已选门店',self.show_selected_stores));v.addLayout(row)
-        row=QHBoxLayout();row.addWidget(button('批量设置主从仓',self.bulk_routes));row.addWidget(button('批量设置每店预算',self.bulk_budget));row.addWidget(button('批量编辑完整参数',self.bulk_parameters));row.addStretch();row.addWidget(button('管理参数方案',self.show_parameters));v.addLayout(row)
+        row=QHBoxLayout();row.addWidget(button('批量设置主从仓',self.bulk_routes));row.addWidget(button('批量设置每店预算',self.bulk_budget));row.addStretch();v.addLayout(row)
+        from business_flow_ui import disclosure
+        toggle,advanced,av=disclosure('更多参数设置 · 仅在本次需要调整时展开',self.store_page)
+        self.store_parameters_toggle=toggle;v.addWidget(toggle);v.addWidget(advanced)
+        advanced_row=QHBoxLayout();advanced_row.addWidget(button('批量编辑本次完整参数',self.bulk_parameters));advanced_row.addWidget(button('管理参数方案',self.show_parameters));av.addLayout(advanced_row)
+        av.addWidget(label('当前表格的“参数”可逐店查看实际值。默认参数与预案在顶部“参数设置”维护；保存默认不会暗中修改本次作业。','muted'))
         self.store_table=QTableWidget(0,9);self.store_table.setHorizontalHeaderLabels(['选择','门店','数据检查','主仓','从仓','预算方式','本次预算（元）','参数','配置提示']);self.store_table.verticalHeader().hide();self.store_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.store_table.setAlternatingRowColors(True)
         for i,w in enumerate([50,235,165,140,140,140,145,110,190]):self.store_table.setColumnWidth(i,w)
         self.store_table.horizontalHeader().setSectionResizeMode(8,QHeaderView.ResizeMode.Stretch);v.addWidget(self.store_table,1)
@@ -370,6 +375,8 @@ class BatchWindow(WarehouseUi,SessionWindow):
         for widget,value in zip(self.metrics,totals):widget.setText(f'{value:,.2f}' if finished else '—')
         self.review_amounts.set_summary(review_amounts.combine(review_totals) if review_totals else None)
         self.overview_note.setText(f'有效完成 {finished} / {total} 家。'+('部分完成，未完成或过期门店不计入合计。' if finished<total else '全部门店结果就绪。')+f' 补货未计价 {unpriced} 款。')
+        from business_flow_ui import refresh_review
+        refresh_review(self)
     def open_overview(self,row,column):
         s=self.overview_codes[row]
         if s not in self.results:

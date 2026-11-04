@@ -16,9 +16,13 @@ class WarehouseUi:
             row=QHBoxLayout();row.addWidget(label(wh,'section'));row.addStretch();pick=button('导入'+wh+'资料',lambda checked=False,w=wh:self.choose_catalog(w));self.catalog_buttons[wh]=pick;row.addWidget(pick);row.addWidget(button('查看'+wh+'资料',lambda checked=False,w=wh:self.show_catalog(w)));v.addLayout(row)
             text=label('尚未导入','muted');self.catalog_labels[wh]=text;v.addWidget(text)
         v.addWidget(label('仓库由导入入口指定，不从表内猜测。保存后跨批次复用；可用数是导入时的库存快照，更新库存需重新导入。','muted'))
-        v.addWidget(button('恢复以前保存的仓资料',self.restore_catalog))
-        self.master_legacy=QCheckBox('兼容0.4混合资料（不启用主从仓）');v.addWidget(self.master_legacy)
-        self.products=FileCard('旧版混合商品资料','仅用于兼容已有“仓归属”资料');self.products.hide();v.addWidget(self.products)
+        from business_flow_ui import disclosure
+        toggle,maintenance,mv=disclosure('恢复与旧版资料兼容',panel);v.addWidget(toggle);v.addWidget(maintenance)
+        self.catalog_maintenance_toggle=toggle
+        mv.addWidget(button('恢复以前保存的仓资料',self.restore_catalog))
+        self.master_legacy=QCheckBox('兼容0.4混合资料（不启用主从仓）');mv.addWidget(self.master_legacy)
+        self.products=FileCard('旧版混合商品资料','仅用于兼容已有“仓归属”资料');self.products.hide();mv.addWidget(self.products)
+        self.master_legacy.toggled.connect(lambda checked:toggle.setChecked(True) if checked else None)
         self.master_legacy.toggled.connect(self.products.setVisible);self.master_legacy.toggled.connect(self.file_changed);self.products.changed.connect(self.file_changed)
         self.refresh_catalog_labels();return panel
     def open_catalog_sync(self):

@@ -43,6 +43,9 @@ def install(host, home_layout):
     clear_layout(home_layout, (host.home_status, host.recent))
     home_layout.addWidget(label('今天要完成什么？', 'title'))
     home_layout.addWidget(host.home_status)
+    from business_flow_ui import HomeTasks
+    host.home_tasks = HomeTasks(host)
+    home_layout.addWidget(host.home_tasks)
     cards = QGridLayout()
     descriptions = [
         ('准备门店数据，核对建议，取得分仓签发单。', '进入补货出单'),
@@ -69,6 +72,8 @@ def install(host, home_layout):
     host.issue_btn.setText('确认签发')
     host.merchant_btn.setText('确认签发并导出')
     host.overview_page.layout().addWidget(label('签发后自动归档；导出失败可按原签发重试。', 'muted'))
+    from business_flow_ui import install_review
+    install_review(host)
 
 
 def open_tracking(host, number='', pending=False):

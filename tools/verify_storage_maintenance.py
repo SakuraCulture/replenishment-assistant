@@ -19,7 +19,14 @@ def logical(path):
     if table in ('jobs','normal_revisions','normal_work_revisions'):record[-1]=ch.load(record[-1],db)
     rows.append(record)
    result[table]=rows
-  return wr.dumps(result)
+  # Original-file snapshots are SQLite BLOBs too. Preserve their bytes in the
+  # comparison instead of omitting the newer source_files table.
+  def encode(value):
+   if isinstance(value,bytes):return {'__qa_binary_hex__':value.hex()}
+   if isinstance(value,list):return [encode(v) for v in value]
+   if isinstance(value,dict):return {k:encode(v) for k,v in value.items()}
+   return value
+  return wr.dumps(encode(result))
 before=sha(source);expected=logical(source)
 legacy=out/'legacy.sqlite3';a=sm.convert(source,legacy,'legacy');assert logical(legacy)==expected
 with sqlite3.connect(legacy) as db:

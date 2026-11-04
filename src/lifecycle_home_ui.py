@@ -66,8 +66,18 @@ class LifecycleWidget(QWidget):
                 if stage=='return':row.addWidget(button('导出原签发单',self.export_signed))
                 if stage in ('return','payment'):row.addWidget(button('聚水潭导入单',lambda:self.open_stage('jst')))
                 v.addLayout(row)
-            self.actions.hide();v.addWidget(label('本页只处理'+self.STAGES[stage]+'。已完成后可切换“本环节全部”查看或更正；下一环节从总览进入。','muted'))
+            self.actions.hide();v.addWidget(label('本页只处理'+self.STAGES[stage]+'。已完成后可切换“本环节全部”查看或更正；进入下一环节继续沿用当前范围。','muted'))
+        self.empty_actions=QWidget();er=QHBoxLayout(self.empty_actions)
+        er.addWidget(button('清空日期与筛选',self.clear_filters))
+        if stage:er.addWidget(button('查看本环节全部',lambda:self.status.setCurrentText('本环节全部')))
+        er.addStretch();self.empty_actions.hide();v.insertWidget(5,self.empty_actions)
         self.selection_label();self.setAcceptDrops(True)
+
+    def clear_filters(self):
+        blockers=[QSignalBlocker(x) for x in (self.search,self.warehouse_filter,self.lock_filter)]
+        self.start.clear();self.end.clear();self.search.clear();self.warehouse_filter.setCurrentIndex(0);self.lock_filter.setCurrentIndex(0)
+        del blockers
+        self.query()
     def import_stage(self,stage):
         from lifecycle_batch_ui import import_batch
         if import_batch(self,self.host,stage,scope=list(self.checked.values()) or self.fixed_scope):self.imported()
@@ -87,7 +97,7 @@ class LifecycleWidget(QWidget):
         except Exception as exc:warn(self,exc)
     def open_stage(self,stage,heads=None,use_selection=True):
         if stage is None:return
-        d=StageDialog(self,stage,heads if heads is not None else (list(self.checked.values()) or None) if use_selection else None)
+        d=StageDialog(self,stage,heads if heads is not None else (list(self.checked.values()) or self.fixed_scope) if use_selection else None)
         previous=getattr(self.host,'_large_io_dialog',None)
         if stage=='jst':self.host._large_io_dialog=d
         try:d.exec()
@@ -144,7 +154,10 @@ class LifecycleWidget(QWidget):
     def progress(self,p):self.bar.setRange(0,max(1,p['total']));self.bar.setValue(p['done']);self.note.setText(f"读取归档 {p['done']} / {p['total']}")
     def ready(self,data):
         self.records=data['records'];self.page=data['page'];self.count=data['count'];self.bar.hide();self.table.setEnabled(True);self.note.setText(f"查询范围 {data['scope']} 单 · 当前筛选 {data['count']} 单 · 第 {self.page+1}/{max(1,(data['count']+49)//50)} 页；每页50单，阶段计数不重复。")
-        if not data['count']:self.note.setText('当前筛选没有'+('待付款核对订单；可返回总览核对回传，或切换“本环节全部”查看已有付款单。' if self.stage=='payment' else '适用订单；请检查日期、仓和搜索，或返回上一环节。'))
+        self.empty_actions.setVisible(not data['count'])
+        if not data['count']:
+            from business_flow import empty_message
+            self.note.setText(empty_message(self.stage,getattr(self,'applied_request',{}),data))
         for k,b in self.cards.items():b.setText(k+'\n'+str(data['counts'][k]))
         blocker=QSignalBlocker(self.table);self.table.setRowCount(len(self.records))
         for i,h in enumerate(self.records):
@@ -236,6 +249,9 @@ class StageDialog(QDialog):
             return
         v.addWidget(label('限定所选 '+str(len(scope))+' 单' if scope is not None else '沿用总览日期、仓及搜索；本页筛选不改总览。','muted'))
         self.panel=LifecycleWidget(overview.host,stage,scope);v.addWidget(self.panel,1)
+        next_stage={'return':'payment','payment':'receipt'}.get(stage)
+        if next_stage:
+            v.insertWidget(1,button('进入'+LifecycleWidget.STAGES[next_stage]+' →（沿用当前范围）',lambda:self.panel.open_stage(next_stage)))
         for target,source in ((self.panel.start,overview.start),(self.panel.end,overview.end),(self.panel.search,overview.search)):target.setText(source.text())
         for target,source in ((self.panel.warehouse_filter,overview.warehouse_filter),(self.panel.lock_filter,overview.lock_filter)):
             blocker=QSignalBlocker(target);target.setCurrentIndex(source.currentIndex());del blocker
