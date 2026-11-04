@@ -1,0 +1,16 @@
+{
+  "commit": "4e4a4ef9d6d19606b64c5c535b93de003c9c8c84",
+  "hashes": {
+    "src/model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "src/allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "src/one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/normal_orders.py": "07855d0c51ff43cb22f73fa9f83f3d8c4a9c37efda871506fd39fea7d2014842",
+    "src/normal_exports.py": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4",
+    "src/order_lifecycle.py": "d7822f337da5e5bb1e608dad193f2da16f1a91c58a4eadb112cfbd322150db8f",
+    "README.md": "2492cd5db795dd1174b664ef6dbfc5f1a4c806c796f0722b4ecf00a76a313146",
+    "docs/项目意图与实施进度.md": "ad33e4351ff982724bee2e8f21c06e208dc7c9ede42ea6e1b9a1c12516a4d722",
+    "docs/plans/业务使用体验优化与验收清单_20261104.md": "526b227201e83854e9af2f9d71850419277387e8f3d87ab31830705510daaada",
+    "交付_0.33.0_rc1/补货助手/补货助手.exe": "864a4c52fb648ea27138ffdd16e26338ec3b7ea693519c88d0757ab900f8ef19"
+  }
+}

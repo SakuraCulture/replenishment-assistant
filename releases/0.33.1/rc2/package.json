@@ -1,0 +1,13 @@
+{
+  "version": "0.33.1",
+  "model_version": "0.3.4-rules",
+  "build_commit": "65138a8b68b17fcfcfe3fe5e8fd2aeda92aef03a",
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.33.1_rc2\\补货助手",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.33.1_rc2\\补货助手_0.33.1_rc2_采集任务维护.zip",
+  "file_count": 1098,
+  "exe_sha256": "9b092b1ce0ba03f9c140b7c33549bf8d7fd7f688e70de71d1a6254c44325dbe4",
+  "zip_sha256": "d1a379bea77a121b5761cbc60b1457730b27b887a431879adaf6587570bae859",
+  "old_delivery_unchanged": true,
+  "user_files_modified": false,
+  "live_platform_export_tested": false
+}

@@ -1,0 +1,31 @@
+{
+  "baseline": "real local metadata copied read-only",
+  "live_platform": false,
+  "passed": true,
+  "ended_stores": [
+    "柴小囤便利超市（琅琊古城店）",
+    "优团生活·精品超市（乳山店）"
+  ],
+  "related_records": 1,
+  "new_task_prepared": true,
+  "deleted_record_absent": true,
+  "unrelated_pending": [
+    [
+      "CXTLSD251119",
+      "DOWNLOADED"
+    ],
+    [
+      "ZHD202511113",
+      "DOWNLOADED"
+    ]
+  ],
+  "source_logical_hash_before": {
+    "jobs.sqlite3": "e599e43d2db0d14e3d297899488f05175c912eb29fc03f2fa1b200743ed91512",
+    "component-state/state.sqlite": "38f5196725ad57bb13af725d8972455a7bc396c8047f7cfad03f08c7e8f3b4f6"
+  },
+  "source_logical_hash_after": {
+    "jobs.sqlite3": "e599e43d2db0d14e3d297899488f05175c912eb29fc03f2fa1b200743ed91512",
+    "component-state/state.sqlite": "38f5196725ad57bb13af725d8972455a7bc396c8047f7cfad03f08c7e8f3b4f6"
+  },
+  "original_metadata_unchanged": true
+}
