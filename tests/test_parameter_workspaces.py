@@ -110,6 +110,15 @@ class ParameterWorkspaces(unittest.TestCase):
         for chk,_,_ in d.controls.values():self.assertFalse(chk.isChecked())
         chk,mode,edit=d.controls[f];chk.setChecked(True);edit.setText('6');d.finish();self.assertEqual(d.changes,{f:6});d.deleteLater();app.processEvents()
 
+    def test_inherited_category_displays_effective_common_values(self):
+        from PySide6.QtWidgets import QApplication
+        from parameter_maintenance_ui import PatchDialog
+        app=QApplication.instance() or QApplication([])
+        d=PatchDialog(None,{'001':self.a['preset']['config'],'002':self.b['preset']['config']})
+        i=d.fields.index(('profile_parameters','快销','probability'));cell=d.table.item(i,2)
+        self.assertIn('多种值',cell.text());self.assertIn('95%',cell.toolTip());self.assertIn('90%',cell.toolTip());self.assertIn('沿用门店通用值',cell.toolTip())
+        d.deleteLater();app.processEvents()
+
 class ParameterSnapshotTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

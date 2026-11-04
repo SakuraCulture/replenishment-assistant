@@ -37,11 +37,19 @@ class PatchDialog(QDialog):
                 if x not in vals:vals.append(x)
             percent=f[-1] in ('w1','w2','probability')
             def fmt(x,p=percent):return f'{x*100:g}%' if p and isinstance(x,(int,float)) else value_text(x)
-            text=fmt(vals[0]) if len(vals)==1 else '多种值（各店保留）'
-            if len(vals)==1:
-                try:text+=' · 系统默认' if vals[0]==pm.default_value(f) else ' · 已自定义'
-                except KeyError:pass
-            item=QTableWidgetItem(text);item.setToolTip('\n'.join(fmt(x) for x in vals));self.table.setItem(i,2,item)
+            displays=[]
+            for c in configs.values():
+                try:x=pm.value(c,f)
+                except KeyError:x='本店未配置此分类'
+                if f[0]=='profile_parameters' and x=='沿用门店':
+                    shown=fmt(c['parameters'][f[2]])+' · 沿用门店通用值'
+                else:
+                    shown=fmt(x)
+                    try:shown+=' · 与系统默认一致' if x==pm.default_value(f) else ' · 当前设置'
+                    except KeyError:pass
+                if shown not in displays:displays.append(shown)
+            text=displays[0] if len(displays)==1 else '多种值（各店保留）'
+            item=QTableWidgetItem(text);item.setToolTip('\n'.join(displays));self.table.setItem(i,2,item)
             mode=QComboBox();mode.addItem('指定值','set');mode.addItem('恢复系统默认' if f[0]!='profile_parameters' else '沿用门店通用值','default')
             if len(vals)==1 and vals[0]=='沿用门店':mode.setCurrentIndex(1)
             edit=QLineEdit();edit.setPlaceholderText('填写百分比或小数' if percent else '填写非负数字')
@@ -49,8 +57,8 @@ class PatchDialog(QDialog):
             mode.currentIndexChanged.connect(lambda _,m=mode,e=edit,ch=check:e.setEnabled(ch.isChecked() and m.currentData()=='set'))
             check.toggled.connect(lambda on,m=mode,e=edit:(m.setEnabled(on),e.setEnabled(on and m.currentData()=='set')))
             mode.setEnabled(check.isChecked());edit.setEnabled(check.isChecked());self.table.setCellWidget(i,3,mode);self.table.setCellWidget(i,4,edit)
-            if f[0]=='parameters' or f[0]=='profile_parameters':item.setToolTip(schema.HELP[f[-1]][2])
-            elif f[0]=='weight_profiles':item.setToolTip(schema.WEIGHT_HELP[f[-1]])
+            if f[0]=='parameters' or f[0]=='profile_parameters':item.setToolTip(item.toolTip()+'\n'+schema.HELP[f[-1]][2])
+            elif f[0]=='weight_profiles':item.setToolTip(item.toolTip()+'\n'+schema.WEIGHT_HELP[f[-1]])
             self.controls[f]=(check,mode,edit)
         self.search.textChanged.connect(lambda t:[self.table.setRowHidden(i,t.lower() not in pm.title(f).lower()) for i,f in enumerate(self.fields)])
         row=QHBoxLayout();row.addWidget(button('清空勾选',self.clear))
