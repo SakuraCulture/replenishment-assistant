@@ -1,0 +1,16 @@
+{
+  "passed": false,
+  "actual_exe": true,
+  "live_platform": false,
+  "checks": [
+    "实际EXE核验窗口：模拟检测非100%、勾选启用、状态异常单次提示与停止轮询、重新连接后可核验；未连接平台或保存配置",
+    "合成两店文件经原检查Worker与Windows spawn采用，门店顺序W2/W1保持",
+    "两店分别按30元/不限预算计算并导出；由外部脚本与源码同输入逐字段及Excel对照"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"aoxiang_smoke.py\", line 91, in execute\n  File \"aoxiang_business_smoke.py\", line 86, in exercise\n  File \"aoxiang_smoke.py\", line 42, in wait\nRuntimeError: 翱象操作未完成: 采购准入未通过，原付款事实保留：\n0001：商品标签资料不完整，待补资料\n",
+  "exit_code": 1,
+  "remaining_children": [],
+  "sampled_descendants": 8,
+  "elapsed_seconds": 6.492860700003803,
+  "peak_tree_rss_bytes": 338317312
+}

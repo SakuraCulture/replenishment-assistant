@@ -21,6 +21,18 @@ def prepare(out, component):
 
     out, component = Path(out).resolve(), Path(component).resolve()
     work, _, _ = seed(out)
+    # Archive fixtures intentionally have incomplete old masters. Purchase preparation
+    # rechecks CURRENT admission evidence, so supply an explicit current empty-tag
+    # column through the normal importer; do not rewrite archived snapshots or bypass
+    # qualification checks. These files contain only synthetic product codes.
+    import warehouse_catalog as wc
+    for warehouse in ('河北仓','山东仓'):
+        current=out/('SYNTHETIC-current-'+warehouse+'.xlsx');wb=openpyxl.Workbook()
+        wb.active.append(wc.REQUIRED+['商品标签','商品名称'])
+        wb.active.append(['0001','饮品',2,1,'启用',100,'','合成商品'])
+        wb.active.append(['0002','饮品',3,6,'启用',100,'','合成箱规'])
+        wb.save(current);wb.close()
+        wc.Repository(work.path.parent).save(wc.import_catalog(current,warehouse))
     head = purchases.targets(work.path)[0]
     for stage, qty, amount in [('return',5,12), ('payment',7,.99)]:
         path = out/(stage+'.xlsx')

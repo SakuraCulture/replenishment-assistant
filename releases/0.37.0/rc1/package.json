@@ -1,0 +1,23 @@
+{
+  "version": "0.37.0",
+  "model_version": "0.3.4-rules",
+  "baseline": "6e24b697f0686bab73b2565f45170895c92c2a76",
+  "build_commit": "ec19cb9b829684251fec7b1c863a948a1849de79",
+  "exe_sha256": "766c13fb00988e4ed2fbde734b336d77dee31f921fbdd6d8f878d8e5898b646f",
+  "zip_sha256": "3dd1ee4f7e793f3313403209c34acb9c7f7a54c40ead0999a96381c6bcffbaae",
+  "archive": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.37.0_rc1\\补货助手_0.37.0_rc1_定时补货.zip",
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.37.0_rc1\\补货助手",
+  "files": 1226,
+  "python_tests": 791,
+  "aoxiang_tests": 168,
+  "jst_tests": 41,
+  "business_differences": 0,
+  "cases_including_excel": 38,
+  "protected_unchanged": true,
+  "real_pipeline_passed": false,
+  "overnight_tested": false,
+  "idle_cpu_5min_tested": false,
+  "pushed": false,
+  "merged": false,
+  "release_status": "local candidate; real platform integration blocked"
+}

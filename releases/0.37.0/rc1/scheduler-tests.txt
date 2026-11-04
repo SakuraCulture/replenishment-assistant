@@ -1,0 +1,36 @@
+test_actual_spawn_core_equivalence_and_restore (test_scheduled_replenishment.ExecutionTests.test_actual_spawn_core_equivalence_and_restore) ... ok
+test_non_alphabetical_plan_order_survives_chunks_and_restore (test_scheduled_replenishment.ExecutionTests.test_non_alphabetical_plan_order_survives_chunks_and_restore) ... ok
+test_pause_recovers_frozen_profile_and_no_daily_overwrite (test_scheduled_replenishment.ExecutionTests.test_pause_recovers_frozen_profile_and_no_daily_overwrite) ... ok
+test_publication_idempotent_and_results_immutable (test_scheduled_replenishment.ExecutionTests.test_publication_idempotent_and_results_immutable) ... ok
+test_publication_version_checks_before_any_write (test_scheduled_replenishment.ExecutionTests.test_publication_version_checks_before_any_write) ... ok
+test_same_day_overlap_not_overwrite (test_scheduled_replenishment.ExecutionTests.test_same_day_overlap_not_overwrite) ... ERROR:root:��ʱ��������δ��� 90eb3e2b322644ddb59f334ff9c0ad3e
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\scheduled_execution.py", line 93, in execute
+    codes=[i['code'] for i in frozen['plan']['stores']];overlap(self.repo,run,codes)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\scheduled_execution.py", line 69, in overlap
+    if selected.intersection(codes):raise ValueError('ͬ���ŵ������Զ��������Ⱥ˶Ի����ԭ����'+other['schedule']['name'])
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: ͬ���ŵ������Զ��������Ⱥ˶Ի����ԭ�������
+ok
+test_saved_defaults_change_requires_review (test_scheduled_replenishment.ExecutionTests.test_saved_defaults_change_requires_review) ... ERROR:root:��ʱ��������δ��� 3a98603a92d14a868e82390266bae709
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\scheduled_execution.py", line 92, in execute
+    raise ValueError('Ԥ����Ĭ�ϲ�����׼�������ѱ仯�������¼�������������½�����')
+ValueError: Ԥ����Ĭ�ϲ�����׼�������ѱ仯�������¼�������������½�����
+ok
+test_warehouse_failure_blocks_dependents_and_success_not_recalculated (test_scheduled_replenishment.ExecutionTests.test_warehouse_failure_blocks_dependents_and_success_not_recalculated) ... ok
+test_chunk_copy_and_garbage_collection_keep_run (test_scheduled_replenishment.ScheduleTests.test_chunk_copy_and_garbage_collection_keep_run) ... ok
+test_exact_60_second_grace (test_scheduled_replenishment.ScheduleTests.test_exact_60_second_grace) ... ok
+test_missed_once_and_weekly_no_backlog (test_scheduled_replenishment.ScheduleTests.test_missed_once_and_weekly_no_backlog) ... ok
+test_once_trigger_and_no_duplicate_after_restart (test_scheduled_replenishment.ScheduleTests.test_once_trigger_and_no_duplicate_after_restart) ... ok
+test_one_process_owner (test_scheduled_replenishment.ScheduleTests.test_one_process_owner) ... ok
+test_pages_and_once_expiry (test_scheduled_replenishment.ScheduleTests.test_pages_and_once_expiry) ... ok
+test_pause_disable_not_same_action (test_scheduled_replenishment.ScheduleTests.test_pause_disable_not_same_action) ... ok
+test_ready_result_late_epoch_and_delete_guards (test_scheduled_replenishment.ScheduleTests.test_ready_result_late_epoch_and_delete_guards) ... ok
+test_revision_and_epoch_guards (test_scheduled_replenishment.ScheduleTests.test_revision_and_epoch_guards) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 16.777s
+
+OK

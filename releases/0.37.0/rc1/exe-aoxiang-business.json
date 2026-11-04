@@ -1,0 +1,59 @@
+{
+  "passed": true,
+  "actual_exe": true,
+  "live_platform": false,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.37.0_rc1\\补货助手\\补货助手.exe",
+  "exe_sha256": "766c13fb00988e4ed2fbde734b336d77dee31f921fbdd6d8f878d8e5898b646f",
+  "build_commit": "ec19cb9b829684251fec7b1c863a948a1849de79",
+  "component_manifest_sha256": "175fc1caa3cae067bc62a40bdd6525e6677c1af59db28409ddc5f2cae73c2680",
+  "runs": [
+    {
+      "passed": true,
+      "actual_exe": true,
+      "live_platform": false,
+      "checks": [
+        "实际EXE核验窗口：模拟检测非100%、勾选启用、状态异常单次提示与停止轮询、重新连接后可核验；未连接平台或保存配置",
+        "合成两店文件经原检查Worker与Windows spawn采用，门店顺序W2/W1保持",
+        "两店分别按30元/不限预算计算并导出；由外部脚本与源码同输入逐字段及Excel对照",
+        "真实固定Node登记采购任务，付款7件/0.99元保持；窗口重开恢复原预览与唯一任务，未上传",
+        "合成完成单实收5件按原生命周期落库，重复同步不新增修订；付款7件及回传5件原事实保持",
+        "当前付款更新为8件/1.23元后，旧采购预览明确待核且禁用上传；仍展示原7件/0.99元，查询无业务写入",
+        "真实窗口跨模块复用同一Node进程，正常关闭只释放操作权，重开取数不重启组件；不连接Edge",
+        "本地批次队列打开、空状态与关闭；未创建周期计划"
+      ],
+      "heartbeat_samples": 254,
+      "max_heartbeat_gap": 0.7086138000013307,
+      "source_commit": "ec19cb9b829684251fec7b1c863a948a1849de79",
+      "exit_code": 0,
+      "remaining_children": [],
+      "sampled_descendants": 14,
+      "elapsed_seconds": 11.211771600006614,
+      "peak_tree_rss_bytes": 376619008
+    }
+  ],
+  "upgrade_fixture": null,
+  "historical_tables": {},
+  "historical_table_differences": [],
+  "business_comparison": {
+    "differences": [],
+    "excel_differences": [],
+    "whitelist": {
+      "loaded.loaded_at": "wall clock",
+      "result.created": "wall clock",
+      "result.task.pid/started/finished": "process/timing",
+      "result.version.version/source_commit/build_id/built_at": "application build metadata",
+      "Excel": "only the exact clock/build cells enumerated by structure_oracle.excel_snapshot; no cells sorted, dropped or reordered"
+    },
+    "reference_commit": "ec19cb9b829684251fec7b1c863a948a1849de79",
+    "reference_source_archive_sha256": "61fb73f40e4cdf9009afff454ca0fbe9bf764f34f7c29517358c3e52699a9113",
+    "build_metadata_sha256": "8c8f63d45fcc734e025abed5d697bc2ca16bdc51d3315f7eac4826c35d3c7698",
+    "scope": "Frozen application vs same source, identical synthetic inputs; baseline rules verified separately"
+  },
+  "added_tables": [],
+  "original_fixture_unchanged": false,
+  "memory_method": "50 ms samples; sum of RSS of app and observed descendants; shared pages may be counted more than once",
+  "limitations": [
+    "No live platform query/upload/receipt; business fixtures are explicitly synthetic",
+    "Local EXE operations do not prove the real platform end-to-end chain"
+  ]
+}

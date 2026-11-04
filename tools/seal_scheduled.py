@@ -39,6 +39,7 @@ def main():
     copies={'equivalence.json':'equivalence.json','python-tests.txt':'python-tests.txt','full-aoxiang2.txt':'aoxiang-tests.txt','full-jst.txt':'jst-tests.txt',
         'scheduled-final.txt':'scheduler-tests.txt','source-ui/report.json':'source-ui.json','exe-scheduled/report.json':'exe-scheduled.json',
         'exe-indicators/report.json':'exe-indicators.json','exe-catalog/report.json':'exe-catalog.json','exe-aoxiang/smoke.json':'exe-aoxiang.json',
+        'exe-aoxiang/report.json':'exe-aoxiang-business.json','exe-aoxiang-initial/smoke-1.json':'exe-aoxiang-fixture-failure.json',
         'exe-aoxiang/shared-session.json':'exe-aoxiang-shared.json','performance-final/report.json':'performance.json'}
     for source,target in copies.items():(release/target).write_bytes((qa/source).read_bytes().replace(b'\r\n',b'\n'))
     for name in ['01-执行安排.png','02-运行记录.png','03-核对与签发.png']:(release/name).write_bytes((qa/'exe-scheduled'/name).read_bytes())

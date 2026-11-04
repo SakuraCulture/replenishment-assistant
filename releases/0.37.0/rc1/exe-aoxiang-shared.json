@@ -1,0 +1,19 @@
+{
+  "host_pids": [
+    14160,
+    14160,
+    14160,
+    14160,
+    14160
+  ],
+  "windows": [
+    "setup",
+    "fetch",
+    "receipt",
+    "purchase",
+    "fetch-again"
+  ],
+  "local_only": true,
+  "live_edge": false,
+  "retained_until_application_close": true
+}

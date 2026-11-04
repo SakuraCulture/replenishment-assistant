@@ -1,0 +1,12 @@
+{
+  "plan": "青岛线",
+  "stores": 6,
+  "route": "山东仓单仓",
+  "budget": "不限预算",
+  "scope": "isolated QA only",
+  "passed": false,
+  "stage": "Edge connectOverCDP",
+  "observed": "Connection timed out after 180000 ms; no export run was created",
+  "native_exports_created": false,
+  "run_id_created": false
+}
