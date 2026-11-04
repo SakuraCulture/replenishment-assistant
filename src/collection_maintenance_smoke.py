@@ -63,6 +63,7 @@ def start_smoke(app,win,args):
             checks.append('同门店新建成功并进入调度；离线夹具无浏览器绑定，在连接前按预期停止')
             confirm(dialog.end_btn,True)
             dialog.close();wait(lambda:dialog._can_close and dialog.worker is None)
+            dialog.deleteLater()
             dialog=FetchDialog(win,win.repository.folder,win.job_day);dialog.show();wait(lambda:dialog.worker is None)
             if dialog.history.findData('blocked')>=0 or dialog.jobs.get(new_id)['state']!='ENDED':raise ValueError('State not durable')
             checks.append('关闭重开，结束和删除持久保存')
@@ -77,7 +78,13 @@ def start_smoke(app,win,args):
                 dialog.close()
                 try:wait(lambda:dialog._can_close and dialog.worker is None)
                 except Exception:report['passed']=False;report['close_error']=traceback.format_exc()
+                dialog.deleteLater()
+            win.job_dirty=False;win._discard_close=True;win.close()
+            try:
+                wait(lambda:win.aoxiang_workflows.session.client is None and win.aoxiang_workflows.session_closer is None and win.aoxiang_workflows.owner is None)
+                report['shared_component_closed']=True
+            except Exception:report['passed']=False;report['shutdown_error']=traceback.format_exc()
             timer.stop();report['heartbeat_ticks']=len(beats);report['max_heartbeat_gap_seconds']=max((b-a for a,b in zip(beats,beats[1:])),default=0)
             (out/'exe-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
-            win.job_dirty=False;win.close();app.exit(0 if report['passed'] else 1)
+            QTimer.singleShot(100,lambda:app.exit(0 if report['passed'] else 1))
     QTimer.singleShot(200,run)
