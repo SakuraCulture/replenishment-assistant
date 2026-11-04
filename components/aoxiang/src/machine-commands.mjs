@@ -74,6 +74,7 @@ export class MachineCommands{
     if(command.account_binding.account_id!==config.tenantBinding.accountId||command.account_binding.merchant_code!==config.tenantBinding.merchantCode)fail('WRONG_IDENTITY','自动化命令账号与组件绑定不同');
     const fingerprint=commandFingerprint(command);
     return this.state.write(()=>{
+      if(this.db.prepare("SELECT name FROM sqlite_master WHERE name='machine_retired'").get()&&this.db.prepare('SELECT id FROM machine_retired WHERE id=?').get(command.command_id))fail('COMMAND_RETIRED','该采集记录已删除，不能恢复或重发原命令');
       const existing=this.get(command.command_id);
       if(existing){
         if(existing.fingerprint!==fingerprint)fail('COMMAND_ID_CONFLICT','同一命令编号不能更改门店、来源或执行策略');

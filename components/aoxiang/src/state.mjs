@@ -16,7 +16,7 @@ export class ExclusiveLock{
 export const tenantKey = identity=>sha256(canonical({accountId:identity.accountId,merchantCode:identity.merchantCode}));
 export const assetKey = x=>sha256(canonical({accountId:x.accountId,merchantCode:x.merchantCode,buyerWarehouseCode:x.buyerWarehouseCode,acquisitionDate:x.acquisitionDate,scopeHash:x.scopeHash,semanticVersion:x.semanticVersion}));
 export const pendingKey = p=>sha256(canonical({accountId:p.accountId,merchantCode:p.merchantCode,sourceAttemptId:p.sourceAttemptId,buyerWarehouseCode:p.buyerWarehouseCode,scopeHash:p.scopeHash}));
-const TERMINAL=new Set(['SUCCEEDED','REUSED','FAILED_CONFIRMED','CANCELLED_BEFORE_SUBMIT']);
+const TERMINAL=new Set(['SUCCEEDED','REUSED','FAILED_CONFIRMED','CANCELLED_BEFORE_SUBMIT','ABANDONED']);
 
 export class StateStore{
   static async open(root){
@@ -104,7 +104,7 @@ export class StateStore{
     const expected=a.semanticVersion==='D13-all-info-1'?'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT':'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2',s=receipt.scope;
     const extras=s?.extraKeys||Object.keys(s||{}).filter(k=>k!=='buyerWarehouseCodeList');
     const correct=receipt.code===expected&&JSON.stringify(s?.buyerWarehouseCodeList)===JSON.stringify([a.buyerWarehouseCode])&&!extras.length;
-    this.putAttempt({...a,stage:a.stage==='SUCCEEDED'?'SUCCEEDED':correct?'ACCEPTED':'WRONG_SCOPE_ACCEPTED',taskId:receipt.taskId,receipt});return true;
+    this.putAttempt({...a,stage:['SUCCEEDED','ABANDONED'].includes(a.stage)?a.stage:correct?'ACCEPTED':'WRONG_SCOPE_ACCEPTED',taskId:receipt.taskId,receipt});return true;
   }
   pending(identity,warehouseCode,scope){
     const key=tenantKey(identity);

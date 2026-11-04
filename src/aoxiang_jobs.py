@@ -102,8 +102,15 @@ class Jobs:
 
     def unfinished(self) -> list[dict]:
         with closing(self.connect()) as db:
-            rows = db.execute("SELECT id,command,state FROM ax_jobs WHERE state NOT IN ('SUCCEEDED','COMPLETED_WITH_ERRORS','CANCELLED') ORDER BY rowid").fetchall()
-        return [{'id': row[0], 'command': json.loads(row[1]), 'state': row[2]} for row in rows]
+            rows = db.execute("SELECT id,command,state,record FROM ax_jobs WHERE state NOT IN ('SUCCEEDED','COMPLETED_WITH_ERRORS','CANCELLED','ENDED') ORDER BY rowid").fetchall()
+        result = []
+        for row in rows:
+            command = json.loads(row[1])
+            ended = {i['warehouse_code'] for i in json.loads(row[3] or '{}').get('items', []) if i['state'] == 'ENDED'}
+            command['scope']['warehouse_codes'] = [c for c in command['scope']['warehouse_codes'] if c not in ended]
+            if command['scope']['warehouse_codes']:
+                result.append({'id': row[0], 'command': command, 'state': row[2]})
+        return result
 
     def observe(self, command_id: str, record: dict) -> bool:
         with closing(self.connect()) as db, db:
@@ -126,7 +133,7 @@ class Jobs:
     def dispatch(self, client, command_id: str) -> dict:
         """Persisted intent precedes send. Same command replay uses the component's durable ID contract."""
         job = self.get(command_id)
-        if job['state'] == 'CANCELLED':
+        if job['state'] in {'CANCELLED', 'ENDED'}:
             raise ValueError('未受理请求已取消，不能再次派发原请求')
         try:
             receipt = client.request('reserve', command=job['command'])
@@ -161,3 +168,78 @@ class Jobs:
     def refresh(self, client, command_id: str) -> dict:
         self.observe(command_id, client.request('status', command_id=command_id))
         return self.get(command_id)
+
+    def maintenance_preview(self, client, command_id, operation):
+        if operation not in {'end', 'delete'}:
+            raise ValueError('未知采集维护动作')
+        job = self.get(command_id)
+        if job['state'] in {'PREPARED', 'CANCELLED'} and job['record'] is None:
+            try:
+                record = client.request('status', command_id=command_id)
+            except ComponentError as exc:
+                if exc.code != 'COMMAND_NOT_FOUND':
+                    raise
+                if operation == 'delete' and job['state'] != 'CANCELLED':
+                    raise ValueError('请先结束本次采集，再删除记录')
+                return {'id': command_id, 'action': operation, 'local': True,
+                        'token': hashlib.sha256(encoded(job).encode()).hexdigest(),
+                        'stores': [{'code': s['buyerWarehouseCode'], 'name': s['displayName']} for s in job['context']['stores']],
+                        'related': [], 'blocked': []}
+            else:
+                self.observe(command_id, record)
+        return client.request('collection.preview', command_id=command_id, operation=operation)
+
+    def maintenance_apply(self, client, plan):
+        command_id, operation = plan['id'], plan['action']
+        if plan.get('local'):
+            current = self.maintenance_preview(client, command_id, operation)
+            if current['token'] != plan['token']:
+                raise ValueError('采集记录已变化，请重新预览确认')
+            if operation == 'end':
+                return self.cancel_unaccepted(client, command_id)
+            self._delete_record(command_id, self.get(command_id)['fingerprint'])
+            return None
+        receipt = client.request('collection.apply', command_id=command_id, operation=operation, token=plan['token'])
+        if operation == 'delete':
+            if receipt.get('deleted') != command_id:
+                raise ValueError('删除回执与原采集不一致')
+            self._delete_record(command_id, receipt['fingerprint'])
+            return None
+        for record in receipt['records']:
+            with closing(self.connect()) as db:
+                known = db.execute('SELECT 1 FROM ax_jobs WHERE id=?', (record['id'],)).fetchone()
+            if known:
+                self.observe(record['id'], record)
+        return self.get(command_id)
+
+    def _delete_record(self, command_id, digest):
+        # Metadata only: never remove command files, adopted manifests, drafts or orders.
+        with closing(self.connect()) as db, db:
+            db.execute('BEGIN IMMEDIATE')
+            row = db.execute('SELECT fingerprint,state FROM ax_jobs WHERE id=?', (command_id,)).fetchone()
+            if row is None:
+                return
+            if row[0] != digest or row[1] not in {'SUCCEEDED', 'ENDED', 'CANCELLED'}:
+                raise ValueError('本机记录未结束或身份已变化，未删除')
+            db.execute('DELETE FROM ax_jobs WHERE id=?', (command_id,))
+
+    def synchronize(self, client):
+        """Recover a lost maintenance response; status queries never dispatch browser actions."""
+        for job in self.recent(include_unfinished=True):
+            if job['state'] == 'CANCELLED':
+                continue
+            try:
+                self.refresh(client, job['id'])
+            except ComponentError as exc:
+                if exc.code != 'COMMAND_NOT_FOUND':
+                    raise
+                if job['state'] == 'PREPARED':
+                    continue
+                try:
+                    plan = client.request('collection.preview', command_id=job['id'], operation='delete')
+                except ComponentError as missing:
+                    if missing.code == 'COMMAND_NOT_FOUND':
+                        continue
+                    raise
+                if plan.get('already_deleted'):
+                    self._delete_record(job['id'], plan['fingerprint'])

@@ -21,6 +21,7 @@ import {PurchaseReceiptService} from './purchase-receipt-service.mjs';
 import {MachinePurchaseReceipt} from './machine-purchase-receipt.mjs';
 import {PurchaseBindingService,MachinePurchaseBinding} from './purchase-binding.mjs';
 import {releaseSession} from './machine-session.mjs';
+import {CollectionMaintenance} from './machine-maintenance.mjs';
 
 let lock,state,runtime,setup,template,purchase,receiptSync,bindingCheck,outputFailed=false;
 const browsers=new BoundBrowserPool();
@@ -59,6 +60,7 @@ async function main(){
       return await freezeRunAsset({state,binding,commandId:record.id,item});
     }
   });
+  const maintenance=new CollectionMaintenance(state,commands,runtime);
   await send({type:'ready',operations:['replenishment.export'],recovered:recovered.map(r=>({command_id:r.id,state:r.state,sequence:r.sequence})),configuration_recovered:configurationRecovered,configured:await exists(path.join(root,'config/portable.config.json'))});
   for await(const raw of readFrames(process.stdin)){
     let request,result,stop=false,kick=false;
@@ -130,6 +132,8 @@ async function main(){
           result={created:accepted.created,record:publicRecord(accepted.record)};kick=true;break;
         }
         case 'status':result=publicRecord(commands.get(request.command_id));if(!result)fail('COMMAND_NOT_FOUND','未找到自动化作业');break;
+        case 'collection.preview':result=maintenance.preview(request.command_id,request.operation);break;
+        case 'collection.apply':result=maintenance.apply(request.command_id,request.operation,request.token);break;
         case 'events':result={events:commands.events(request.command_id,request.after||0,request.limit||50)};break;
         case 'pause':result=publicRecord(runtime.pause(request.command_id));break;
         case 'resume':if(setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取');result=publicRecord(runtime.resume(request.command_id));kick=true;break;

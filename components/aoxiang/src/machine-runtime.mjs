@@ -86,7 +86,7 @@ export class MachineRuntime{
       const deadline=Date.now()+this.commands.get(id).config_snapshot.resourceLimits.taskWaitBudgetMs;
       do{
       for(const initial of this.commands.get(id).items){
-        if(['SUCCEEDED','FAILED'].includes(initial.state))continue;
+        if(['SUCCEEDED','FAILED','ENDED'].includes(initial.state))continue;
         if(control.signal.aborted){this.change(id,'PAUSED');return;}
         this.updateItem(id,initial.index,{state:'RUNNING',error:null});
         try{
@@ -118,7 +118,7 @@ export class MachineRuntime{
         }
       }
       if(control.signal.aborted){this.change(id,'PAUSED');return;}
-      const pending=this.commands.get(id).items.some(i=>!['SUCCEEDED','FAILED'].includes(i.state));
+      const pending=this.commands.get(id).items.some(i=>!['SUCCEEDED','FAILED','ENDED'].includes(i.state));
       if(phase!=='collect'||!pending)break;
       if(Date.now()>=deadline){this.change(id,'INTERRUPTED',{error:{code:'TASK_PENDING',message:'平台仍在生成部分文件；已完成文件保留，请继续原采集任务',details:{}}});return;}
       // Sleep once per round, not per store. Pause wakes the wait immediately.
@@ -131,7 +131,7 @@ export class MachineRuntime{
       }while(true);
       }
       const items=this.commands.get(id).items;
-      this.change(id,items.some(i=>i.state==='FAILED')?'COMPLETED_WITH_ERRORS':'SUCCEEDED',{
+      this.change(id,items.some(i=>['FAILED','ENDED'].includes(i.state))?'COMPLETED_WITH_ERRORS':'SUCCEEDED',{
         result:{items,succeeded:items.filter(i=>i.state==='SUCCEEDED').length,failed:items.filter(i=>i.state==='FAILED').length}
       });
     }finally{this.active=null;}

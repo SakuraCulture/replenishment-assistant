@@ -40,6 +40,7 @@ export class Coordinator{
     for(const p of publication)if(p.attemptId){const a=this.state.getAttempt(p.attemptId);if(a)this.state.putAttempt({...a,stage:'SUCCEEDED',completedAt:now()});}
     let run=runId?this.state.getRun(runId):null;
     if(runId&&!run)fail('RUN_NOT_FOUND','未找到指定作业');
+    if(run?.status==='ENDED')fail('RUN_ENDED','本次采集已结束，请明确新建采集任务');
     if(!run){
       const plan=planReplenishmentRun(this.config,{mode,batchId,warehouseCode});
       this.state.write(()=>insertRunPlan(this.state.db,plan));run=plan.run;
