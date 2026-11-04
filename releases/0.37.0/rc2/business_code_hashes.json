@@ -1,0 +1,61 @@
+{
+  "old_build": "ec19cb9b829684251fec7b1c863a948a1849de79",
+  "new_build": "33d1fda75866fa233746110d3bc21bb4dfdc7ec1",
+  "files": {
+    "src/model.py": {
+      "rc1": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "rc2": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "unchanged": true
+    },
+    "src/allocation.py": {
+      "rc1": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "rc2": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "unchanged": true
+    },
+    "src/one_box_exception.py": {
+      "rc1": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "rc2": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "unchanged": true
+    },
+    "src/default_config.json": {
+      "rc1": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "rc2": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "unchanged": true
+    },
+    "src/default_must_sell.json": {
+      "rc1": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "rc2": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "unchanged": true
+    },
+    "src/normal_orders.py": {
+      "rc1": "07855d0c51ff43cb22f73fa9f83f3d8c4a9c37efda871506fd39fea7d2014842",
+      "rc2": "07855d0c51ff43cb22f73fa9f83f3d8c4a9c37efda871506fd39fea7d2014842",
+      "unchanged": true
+    },
+    "src/normal_exports.py": {
+      "rc1": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4",
+      "rc2": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4",
+      "unchanged": true
+    },
+    "src/order_lifecycle.py": {
+      "rc1": "d7822f337da5e5bb1e608dad193f2da16f1a91c58a4eadb112cfbd322150db8f",
+      "rc2": "d7822f337da5e5bb1e608dad193f2da16f1a91c58a4eadb112cfbd322150db8f",
+      "unchanged": true
+    },
+    "src/parameter_schema.py": {
+      "rc1": "e56631c53580168b00901356aef15732b34d8856243cff4c4c5538af1c0282f4",
+      "rc2": "e56631c53580168b00901356aef15732b34d8856243cff4c4c5538af1c0282f4",
+      "unchanged": true
+    },
+    "src/parameter_maintenance.py": {
+      "rc1": "173651fe196d44171f2b12cf5ceac5f537d2529c77a2555a649cbcf6789879a9",
+      "rc2": "173651fe196d44171f2b12cf5ceac5f537d2529c77a2555a649cbcf6789879a9",
+      "unchanged": true
+    },
+    "src/store_parameter_import.py": {
+      "rc1": "ac33b92ec1f51d3ef070546ccd76593daa4f67b521b5a83654553e1a14efc7dc",
+      "rc2": "ac33b92ec1f51d3ef070546ccd76593daa4f67b521b5a83654553e1a14efc7dc",
+      "unchanged": true
+    }
+  }
+}
