@@ -7,6 +7,7 @@ from aoxiang_jobs import Jobs
 from aoxiang_acquisition import prepare, manifest, ACTIVE
 import catalog_sync_validation as validation
 from source_archive import capture
+from catalog_sync import stock_observation
 
 
 class Platforms:
@@ -121,12 +122,24 @@ class Platforms:
         if response.get('reused') and not state['running']:
             ids=[i['id'] for i in state['batches'][0]['items'] if not i.get('adoption') and not i.get('receipt')]
             if ids:client.request('sync.resume',batch_id=bid,item_ids=ids)
-        sent_stop=False;deadline=time.monotonic()+1800
+        sent_stop=False;deadline=time.monotonic()+1800;observations=set()
         while True:
             state=client.request('sync.status',batch_id=bid);batch=state['batches'][0]
             if (self.cancel.is_set() or time.monotonic()>deadline) and not sent_stop:
                 client.request('sync.stop',batch_id=bid);sent_stop=True
-            if state['active']:runner.update('更新仓商品资料',state['active']['phase'].get('message','等待平台导出'))
+            waiting=False
+            for item in batch['items']:
+                if item['stage']=='WAIT_HOST' and not item.get('observation') and not sent_stop:
+                    waiting=True;wh=item['account']['warehouse']
+                    runner.update('更新仓商品资料','准备'+wh+'查询依据；尚未提交商品导出')
+                    token=item['observationRequest']
+                    if token not in observations:
+                        checkpoint(self.cancel)
+                        obs=stock_observation(self.path,wh)
+                        checkpoint(self.cancel)
+                        client.request('sync.provide_observation',batch_id=bid,item_id=item['id'],token=token,observation=obs)
+                        observations.add(token)
+            if state['active'] and not waiting:runner.update('更新仓商品资料',state['active']['phase'].get('message','等待平台导出'))
             if not state['running']:break
             time.sleep(.5)
         self.active_jst=None
