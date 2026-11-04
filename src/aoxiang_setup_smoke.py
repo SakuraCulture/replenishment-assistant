@@ -1,6 +1,6 @@
 """Opt-in local EXE check with an explicitly simulated read-only transport."""
 from copy import deepcopy
-from PySide6.QtWidgets import QMessageBox
+import readable_ui
 from PySide6.QtTest import QTest
 from aoxiang_setup_ui import SetupDialog
 from aoxiang_client import ComponentError
@@ -43,8 +43,12 @@ def exercise_setup(win, output, wait, active, checks):
             return True
 
     warnings = []
-    original = QMessageBox.warning
-    QMessageBox.warning = lambda *args: warnings.append(args[-1])
+    original = readable_ui.failure
+    def expected_failure(parent,title,error):
+        if '隔离模拟：组件状态应答超时' not in str(error):
+            return original(parent,title,error)
+        warnings.append(str(error))
+    readable_ui.failure = expected_failure
     dialog = SetupDialog(win, output/'setup-simulated', client_factory=SimulatedClient)
     active['dialog'] = dialog
     try:
@@ -73,7 +77,7 @@ def exercise_setup(win, output, wait, active, checks):
             raise ValueError('Read-only retry did not recover')
         checks.append('实际EXE核验窗口：模拟检测非100%、勾选启用、状态异常单次提示与停止轮询、重新连接后可核验；未连接平台或保存配置')
     finally:
-        QMessageBox.warning = original
+        readable_ui.failure = original
         dialog.close()
         wait(lambda:dialog._can_close and dialog.worker is None)
         dialog.deleteLater()
