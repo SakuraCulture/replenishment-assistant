@@ -1,0 +1,335 @@
+{
+  "passed": true,
+  "baseline": "35b33de022be33958ec57851f722130feb328d7a",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "fixture": {
+    "synthetic": true,
+    "stores": 60,
+    "signed_rows_per_store": 200,
+    "orders": 120,
+    "database": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\v0360\\performance\\fixture\\settings\\workbench.sqlite3",
+    "description": "合成店仓订单，日期/仓/四个生命周期状态/锁定/暂停批次；不是实际门店记录"
+  },
+  "database_sha256": "874e8d712989e8cd90445cdab7af6aac84591ff24f0f8b0cf9631f2e64ba6b1f",
+  "order": "AB/BA/AB, sequential workers, PYTHONHASHSEED=0",
+  "limits": [
+    "Synthetic 60 stores / 120 warehouse orders / 12000 signed rows; not production scale.",
+    "Cold means a fresh application index. Windows filesystem cache was not flushed.",
+    "PeakWorkingSetSize is Windows native peak for each service worker, includes imports; no GUI or other processes.",
+    "Home has no old UI counterpart; baseline measures equivalent old services, not old home startup. New automatic home query adds background work.",
+    "UI event-loop responsiveness is measured separately in the actual executable."
+  ],
+  "summary": {
+    "archive_cold": {
+      "baseline": {
+        "median": 1.4816110000247136,
+        "min": 1.3954072000342421,
+        "max": 1.511253799952101,
+        "raw": [
+          1.511253799952101,
+          1.3954072000342421,
+          1.4816110000247136
+        ]
+      },
+      "candidate": {
+        "median": 1.3533159000216983,
+        "min": 1.3520265000406653,
+        "max": 1.4134340999880806,
+        "raw": [
+          1.3520265000406653,
+          1.4134340999880806,
+          1.3533159000216983
+        ]
+      }
+    },
+    "archive_warm": {
+      "baseline": {
+        "median": 0.17656350001925603,
+        "min": 0.17573009995976463,
+        "max": 0.20635910000419244,
+        "raw": [
+          0.20635910000419244,
+          0.17656350001925603,
+          0.17573009995976463
+        ]
+      },
+      "candidate": {
+        "median": 0.17102380003780127,
+        "min": 0.16571970004588366,
+        "max": 0.17811759997857735,
+        "raw": [
+          0.17811759997857735,
+          0.16571970004588366,
+          0.17102380003780127
+        ]
+      }
+    },
+    "tracking_cold": {
+      "baseline": {
+        "median": 1.4956394000328146,
+        "min": 1.4443225999712013,
+        "max": 1.932617999962531,
+        "raw": [
+          1.932617999962531,
+          1.4956394000328146,
+          1.4443225999712013
+        ]
+      },
+      "candidate": {
+        "median": 1.5303916999837384,
+        "min": 1.433093999978155,
+        "max": 1.6554130000295117,
+        "raw": [
+          1.433093999978155,
+          1.5303916999837384,
+          1.6554130000295117
+        ]
+      }
+    },
+    "tracking_warm": {
+      "baseline": {
+        "median": 0.14177079999353737,
+        "min": 0.13121550000505522,
+        "max": 0.2302923999959603,
+        "raw": [
+          0.2302923999959603,
+          0.14177079999353737,
+          0.13121550000505522
+        ]
+      },
+      "candidate": {
+        "median": 0.15405159996589646,
+        "min": 0.13906859996495768,
+        "max": 0.20797220000531524,
+        "raw": [
+          0.13906859996495768,
+          0.15405159996589646,
+          0.20797220000531524
+        ]
+      }
+    },
+    "home_services_cold": {
+      "baseline": {
+        "median": 1.9506895000231452,
+        "min": 1.6124885000172071,
+        "max": 2.0253312999848276,
+        "raw": [
+          1.9506895000231452,
+          1.6124885000172071,
+          2.0253312999848276
+        ]
+      },
+      "candidate": {
+        "median": 1.7930635000229813,
+        "min": 1.7260897000087425,
+        "max": 2.025464700011071,
+        "raw": [
+          1.7260897000087425,
+          1.7930635000229813,
+          2.025464700011071
+        ]
+      }
+    },
+    "home_services_warm": {
+      "baseline": {
+        "median": 0.18601540004601702,
+        "min": 0.1240445000003092,
+        "max": 0.1990671000094153,
+        "raw": [
+          0.1990671000094153,
+          0.1240445000003092,
+          0.18601540004601702
+        ]
+      },
+      "candidate": {
+        "median": 0.15299219998996705,
+        "min": 0.13269190001301467,
+        "max": 0.20509549998678267,
+        "raw": [
+          0.15299219998996705,
+          0.20509549998678267,
+          0.13269190001301467
+        ]
+      }
+    },
+    "process_total_seconds": {
+      "baseline": {
+        "median": 6.222527700010687,
+        "min": 5.668794199998956,
+        "max": 7.120205199986231,
+        "raw": [
+          7.120205199986231,
+          5.668794199998956,
+          6.222527700010687
+        ]
+      },
+      "candidate": {
+        "median": 5.993859599984717,
+        "min": 5.756832300045062,
+        "max": 6.3145966999582015,
+        "raw": [
+          5.756832300045062,
+          5.993859599984717,
+          6.3145966999582015
+        ]
+      }
+    },
+    "peak_worker_working_set_mb": {
+      "baseline": {
+        "median": 40.08984375,
+        "min": 39.67578125,
+        "max": 41.16015625,
+        "raw": [
+          41.16015625,
+          39.67578125,
+          40.08984375
+        ]
+      },
+      "candidate": {
+        "median": 39.79296875,
+        "min": 39.71875,
+        "max": 40.3125,
+        "raw": [
+          39.71875,
+          40.3125,
+          39.79296875
+        ]
+      }
+    }
+  },
+  "runs": [
+    {
+      "timings_seconds": {
+        "archive_cold": 1.511253799952101,
+        "archive_warm": 0.20635910000419244,
+        "tracking_cold": 1.932617999962531,
+        "tracking_warm": 0.2302923999959603,
+        "home_services_cold": 1.9506895000231452,
+        "home_services_warm": 0.1990671000094153
+      },
+      "ordered_results_sha256": {
+        "archive_cold": "ce95950e1b66c8c12671cd83fce8438f3f2ed6dd8c92a9451c6a4f4dd6f16858",
+        "archive_warm": "2bb4bec432a0cf717c7aa7cac9e94d36d0bc91152195943c70848a71dc3eeba4",
+        "tracking_cold": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "tracking_warm": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "home_services_cold": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38",
+        "home_services_warm": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38"
+      },
+      "peak_worker_working_set_mb": 41.16015625,
+      "version": "baseline",
+      "round": 1,
+      "process_total_seconds": 7.120205199986231
+    },
+    {
+      "timings_seconds": {
+        "archive_cold": 1.3520265000406653,
+        "archive_warm": 0.17811759997857735,
+        "tracking_cold": 1.433093999978155,
+        "tracking_warm": 0.13906859996495768,
+        "home_services_cold": 1.7260897000087425,
+        "home_services_warm": 0.15299219998996705
+      },
+      "ordered_results_sha256": {
+        "archive_cold": "ce95950e1b66c8c12671cd83fce8438f3f2ed6dd8c92a9451c6a4f4dd6f16858",
+        "archive_warm": "2bb4bec432a0cf717c7aa7cac9e94d36d0bc91152195943c70848a71dc3eeba4",
+        "tracking_cold": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "tracking_warm": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "home_services_cold": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38",
+        "home_services_warm": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38"
+      },
+      "peak_worker_working_set_mb": 39.71875,
+      "version": "candidate",
+      "round": 1,
+      "process_total_seconds": 5.756832300045062
+    },
+    {
+      "timings_seconds": {
+        "archive_cold": 1.4134340999880806,
+        "archive_warm": 0.16571970004588366,
+        "tracking_cold": 1.5303916999837384,
+        "tracking_warm": 0.15405159996589646,
+        "home_services_cold": 1.7930635000229813,
+        "home_services_warm": 0.20509549998678267
+      },
+      "ordered_results_sha256": {
+        "archive_cold": "ce95950e1b66c8c12671cd83fce8438f3f2ed6dd8c92a9451c6a4f4dd6f16858",
+        "archive_warm": "2bb4bec432a0cf717c7aa7cac9e94d36d0bc91152195943c70848a71dc3eeba4",
+        "tracking_cold": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "tracking_warm": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "home_services_cold": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38",
+        "home_services_warm": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38"
+      },
+      "peak_worker_working_set_mb": 40.3125,
+      "version": "candidate",
+      "round": 2,
+      "process_total_seconds": 5.993859599984717
+    },
+    {
+      "timings_seconds": {
+        "archive_cold": 1.3954072000342421,
+        "archive_warm": 0.17656350001925603,
+        "tracking_cold": 1.4956394000328146,
+        "tracking_warm": 0.14177079999353737,
+        "home_services_cold": 1.6124885000172071,
+        "home_services_warm": 0.1240445000003092
+      },
+      "ordered_results_sha256": {
+        "archive_cold": "ce95950e1b66c8c12671cd83fce8438f3f2ed6dd8c92a9451c6a4f4dd6f16858",
+        "archive_warm": "2bb4bec432a0cf717c7aa7cac9e94d36d0bc91152195943c70848a71dc3eeba4",
+        "tracking_cold": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "tracking_warm": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "home_services_cold": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38",
+        "home_services_warm": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38"
+      },
+      "peak_worker_working_set_mb": 39.67578125,
+      "version": "baseline",
+      "round": 2,
+      "process_total_seconds": 5.668794199998956
+    },
+    {
+      "timings_seconds": {
+        "archive_cold": 1.4816110000247136,
+        "archive_warm": 0.17573009995976463,
+        "tracking_cold": 1.4443225999712013,
+        "tracking_warm": 0.13121550000505522,
+        "home_services_cold": 2.0253312999848276,
+        "home_services_warm": 0.18601540004601702
+      },
+      "ordered_results_sha256": {
+        "archive_cold": "ce95950e1b66c8c12671cd83fce8438f3f2ed6dd8c92a9451c6a4f4dd6f16858",
+        "archive_warm": "2bb4bec432a0cf717c7aa7cac9e94d36d0bc91152195943c70848a71dc3eeba4",
+        "tracking_cold": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "tracking_warm": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "home_services_cold": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38",
+        "home_services_warm": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38"
+      },
+      "peak_worker_working_set_mb": 40.08984375,
+      "version": "baseline",
+      "round": 3,
+      "process_total_seconds": 6.222527700010687
+    },
+    {
+      "timings_seconds": {
+        "archive_cold": 1.3533159000216983,
+        "archive_warm": 0.17102380003780127,
+        "tracking_cold": 1.6554130000295117,
+        "tracking_warm": 0.20797220000531524,
+        "home_services_cold": 2.025464700011071,
+        "home_services_warm": 0.13269190001301467
+      },
+      "ordered_results_sha256": {
+        "archive_cold": "ce95950e1b66c8c12671cd83fce8438f3f2ed6dd8c92a9451c6a4f4dd6f16858",
+        "archive_warm": "2bb4bec432a0cf717c7aa7cac9e94d36d0bc91152195943c70848a71dc3eeba4",
+        "tracking_cold": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "tracking_warm": "a96f562bb52a0fc57346efd6b681115ccfedcafaebd4aeacc92d708375bb9daa",
+        "home_services_cold": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38",
+        "home_services_warm": "66291ccf8fafb71631062b6aea65f978c260221c0b2175097d2673b64cb36e38"
+      },
+      "peak_worker_working_set_mb": 39.79296875,
+      "version": "candidate",
+      "round": 3,
+      "process_total_seconds": 6.3145966999582015
+    }
+  ]
+}

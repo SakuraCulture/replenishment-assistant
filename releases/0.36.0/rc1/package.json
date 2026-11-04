@@ -1,0 +1,20 @@
+{
+  "version": "0.36.0",
+  "model_version": "0.3.4-rules",
+  "baseline": "35b33de022be33958ec57851f722130feb328d7a",
+  "build_commit": "6d178bc751061010f7387d96c47bbffa10568a58",
+  "exe_sha256": "6e97b246a6464aad6fcd94c19f02ac78b35c6acd203abd1b73dde48417a1f0be",
+  "zip_sha256": "d3d44b396cea9333e772f5e19b51894a59b3beb2d9e0c54f0da66b4dc69360ec",
+  "archive": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.36.0_rc1\\补货助手_0.36.0_rc1_业务待办与核对.zip",
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.36.0_rc1\\补货助手",
+  "files": 1221,
+  "tests": 754,
+  "business_differences": 0,
+  "cases": 38,
+  "protected_unchanged": true,
+  "AI_client_acceptance": "deferred by user",
+  "live_receipt_sample_count": 1,
+  "historic_production_binding_verified": false,
+  "pushed": false,
+  "merged": false
+}

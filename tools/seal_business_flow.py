@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[1]
 def sha(p):
     with Path(p).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
 def read(p):return json.loads(p.read_text('utf-8'))
-def save(p,x):p.write_text(json.dumps(x,ensure_ascii=False,indent=2)+'\n','utf-8')
+def save(p,x):p.write_text(json.dumps(x,ensure_ascii=False,indent=2)+'\n','utf-8',newline='\n')
 def main():
     qa=ROOT/'qa/v0360';release=ROOT/'releases/0.36.0/rc1';delivery=ROOT/'交付_0.36.0_rc1/补货助手'
     build=read(delivery/'_internal/build_info.json');eq=read(qa/'equivalence.json')

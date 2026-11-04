@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "real_platform": {
+    "order": "PO202610311151281572",
+    "store": "YCD20251613",
+    "status": "已完成",
+    "purchase_skus": 259,
+    "purchase_quantity": "1836.0",
+    "purchase_amount": "6318.13",
+    "received_quantity": "1829.0",
+    "received_amount": "6238.89",
+    "short_skus": 6,
+    "export_tasks": {
+      "D16": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT@261104142524@6967",
+      "D17": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT@261104142614@4804"
+    },
+    "source_hashes": {
+      "D16": "f91d8ba313f80f896a8531ea9b5bb6e4896603f1523df7b7a542d5261cd13bd1",
+      "D17": "864df5e3b16153901936d05becdb3eeee31771d306ab2a3d198e3c65d7e2df6e"
+    }
+  },
+  "qa_replay": {
+    "upstream": "Explicitly source-derived synthetic signing/return/payment reference; not actual historic app records",
+    "formal_receipt_adapter": true,
+    "repeat_does_not_add_version": true,
+    "raw_files_retained": true,
+    "upstream_unchanged": true,
+    "exact_quantity_amount_and_order": true,
+    "completed_stops_polling_after_restart": true,
+    "platform_completed_at": null
+  },
+  "limits": [
+    "One supplied completed order verified, not all 28.",
+    "No platform submit/receipt/change; only two exact-scope native export tasks.",
+    "Does not prove an actual historic app signing/payment binding or continuous create-to-receive flow.",
+    "No invented receipt completion time."
+  ]
+}

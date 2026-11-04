@@ -1,0 +1,18 @@
+test_filter_does_not_reorder_or_change_export_inputs (test_business_flow.InterfaceTests.test_filter_does_not_reorder_or_change_export_inputs) ... ok
+test_fixed_columns_share_model_and_click_original_index (test_business_flow.InterfaceTests.test_fixed_columns_share_model_and_click_original_index) ... ok
+test_home_cancel_does_not_change_workbench (test_business_flow.InterfaceTests.test_home_cancel_does_not_change_workbench) ... ok
+test_legacy_mode_expands_existing_controls (test_business_flow.InterfaceTests.test_legacy_mode_expands_existing_controls) ... ok
+test_nested_stage_keeps_fixed_scope_and_filter_reset_keeps_scope (test_business_flow.InterfaceTests.test_nested_stage_keeps_fixed_scope_and_filter_reset_keeps_scope) ... ok
+test_budget_shortage_is_not_blocking (test_business_flow.ProjectionTests.test_budget_shortage_is_not_blocking) ... ok
+test_empty_scope_and_upstream_are_not_claimed_complete (test_business_flow.ProjectionTests.test_empty_scope_and_upstream_are_not_claimed_complete) ... ok
+test_newest_unfinished_batch_only (test_business_flow.ProjectionTests.test_newest_unfinished_batch_only) ... ok
+test_order_and_overlap_without_mutation (test_business_flow.ProjectionTests.test_order_and_overlap_without_mutation) ... ok
+test_real_lifecycle_projection_tracks_each_next_missing_document (test_business_flow.ProjectionTests.test_real_lifecycle_projection_tracks_each_next_missing_document) ... ok
+test_cancel_cold_index_then_retry_does_not_change_business_database (test_business_flow_scope.ScopeTests.test_cancel_cold_index_then_retry_does_not_change_business_database) ... ok
+test_date_warehouse_lock_search_stage_combinations_exact_order (test_business_flow_scope.ScopeTests.test_date_warehouse_lock_search_stage_combinations_exact_order) ... ok
+test_paging_scope_and_source_immutability (test_business_flow_scope.ScopeTests.test_paging_scope_and_source_immutability) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 25.378s
+
+OK
