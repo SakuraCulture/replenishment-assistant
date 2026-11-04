@@ -21,7 +21,7 @@ export function validateIdentity(a){
 export class AccountSessions {
   constructor({bridgeRoot,stateRoot,lockRoot,forbiddenRoots=[],phase=()=>{}}){
     Object.assign(this,{bridgeRoot,stateRoot,lockRoot,forbiddenRoots,phase});
-    this.sessions=new Map();this.instanceLocks=new Map();this.closed=false;
+    this.sessions=new Map();this.instanceLocks=new Map();this.connectionStates=new Map();this.closed=false;
   }
   async initialize(){
     if(this.components)return;
@@ -73,7 +73,7 @@ export class AccountSessions {
     const binding=await this.binding({profilePath:account.binding.actualProfilePath,edgeExecutable:account.binding.edgeExecutable});
     if(canonical(binding)!==canonical(account.binding))throw new CatalogError('BINDING_CHANGED','本机专用浏览器绑定已变化，请重新核验');
     const key=sha(canonical(binding));let cached=this.sessions.get(key);
-    if(cached&&!cached.page.isClosed())return cached;
+    if(cached&&this.healthy(cached))return cached;
     if(cached){await cached.close().catch(()=>{});this.sessions.delete(key);}
     if(!this.instanceLocks.has(key)){
       const file=path.join(this.lockRoot,sha(binding.userDataRoot.toLowerCase())+'.sqlite3');
@@ -85,11 +85,26 @@ export class AccountSessions {
       for(const [otherKey,b] of this.sessions)if(otherKey!==key&&b.catalogEndpoint===endpoint)
         throw new CatalogError('ACCOUNT_ISOLATION','两仓连接到了相同浏览器实例');
       const bridge=new this.components.EdgeBridge();
+      this.connectionStates.set(key,{state:'CONNECTING',reason:cached?'原连接已断开，正在重新连接':'首次连接或已主动重连'});
       this.phase('CONNECTING','正在连接专用浏览器；如有提示请允许调试');
       try{await bridge.bind(binding,{timeout:60000,mode:'background_tab',onPhase:()=>check(signal)});check(signal);}
-      catch(e){await bridge.close().catch(()=>{});throw e;}
-      bridge.catalogEndpoint=endpoint;this.sessions.set(key,bridge);return bridge;
+      catch(e){await bridge.close().catch(()=>{});this.connectionStates.set(key,{state:'DISCONNECTED',reason:'连接未建立，请检查授权提示或浏览器状态'});throw e;}
+      bridge.catalogEndpoint=endpoint;this.sessions.set(key,bridge);this.connectionStates.set(key,{state:'CONNECTED',reason:'关闭业务窗口后继续保留'});return bridge;
     }catch(e){if(!this.sessions.has(key)){this.instanceLocks.get(key)?.release();this.instanceLocks.delete(key);}throw e;}
+  }
+  healthy(bridge){return !!(bridge.page&&!bridge.page.isClosed()&&bridge.browser?.isConnected());}
+  status(accounts){
+    return accounts.map(a=>{
+      const key=sha(canonical(a.binding)),bridge=this.sessions.get(key),last=this.connectionStates.get(key);
+      const state=bridge?(this.healthy(bridge)?'CONNECTED':'DISCONNECTED'):(last?.state||'NOT_CONNECTED');
+      return {warehouse:a.warehouse,state,reason:bridge&&!this.healthy(bridge)?'浏览器连接或作业标签已关闭':last?.reason||''};
+    });
+  }
+  async disconnect(binding){
+    const key=sha(canonical(binding)),bridge=this.sessions.get(key);
+    if(bridge)await bridge.close();
+    this.sessions.delete(key);this.instanceLocks.get(key)?.release();this.instanceLocks.delete(key);
+    this.connectionStates.set(key,{state:'DISCONNECTED',reason:'已主动断开本仓；下次连接可能需要重新允许'});
   }
   async page(account,signal,{loginOnly=false}={}){
     const bridge=await this.connect(account,signal);check(signal);

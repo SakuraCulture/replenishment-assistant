@@ -36,6 +36,7 @@ export class CatalogService {
     const data=this.store.read();return {protocol:'jst.catalog.v1',running:!!this.active,
       active:this.active?{id:this.active.id,kind:this.active.kind,stopRequested:this.active.controller.signal.aborted,phase:this.active.phase}:null,
       accounts:Object.values(data.accounts||{}),operations:data.operations||{},
+      connections:this.sessions?.status(Object.values(data.accounts||{}))||[],
       batches:batchId?[this.store.batch(batchId)]:Object.values(data.batches).slice(-50).reverse()};
   }
   command(c){
@@ -46,6 +47,10 @@ export class CatalogService {
     const action=c.action;
     if(action==='capabilities')return {protocol:'jst.catalog.v1',component_version:'0.31.0',dedicated_browser:true,password_login:false};
     if(action==='sync.status')return this.status(c.batch_id);
+    if(action==='session.release'){
+      this.active?.controller.abort();
+      return {idle:!this.active};
+    }
     if(action==='sync.stop'||action==='shutdown'){
       if(action==='shutdown')this.shuttingDown=true;
       if(this.active&&(!c.batch_id||c.batch_id===this.active.id))this.active.controller.abort();
@@ -74,6 +79,13 @@ export class CatalogService {
     }
     if(action==='sync.start')return this.start(c);
     if(this.active)throw new CatalogError('BUSY','已有采集或账号核验在运行，可查看状态或停止');
+    if(action==='session.reset'){
+      const a=this.store.read().accounts?.[c.warehouse];
+      if(!a||!WAREHOUSES.includes(c.warehouse))throw new CatalogError('ACCOUNT_UNVERIFIED','请先保存本仓账号配置');
+      if(!this.sessions)throw new CatalogError('SESSION_UNAVAILABLE','当前连接不支持主动重连');
+      await this.sessions.disconnect(a.binding);
+      return {disconnected:true,warehouse:c.warehouse};
+    }
     if(['accounts.probe','accounts.verify','accounts.open_login'].includes(action))return this.accountOperation(c);
     if(action==='sync.resume'||action==='sync.retry_unsubmitted'){
       const b=this.store.batch(c.batch_id),ids=c.item_ids||b.items.filter(i=>!i.adoption).map(i=>i.id);
@@ -101,6 +113,7 @@ export class CatalogService {
           a.expectedCoid===next.expectedCoid&&a.expectedUid===next.expectedUid||canonical(a.binding)===canonical(next.binding)))throw Error('两个仓不能使用同一账号或浏览器绑定');
     }
     next.bindingVersion=(old?.bindingVersion||0)+1;
+    if(this.sessions&&old?.binding&&canonical(old.binding)!==canonical(next.binding))await this.sessions.disconnect(old.binding);
     await this.store.write(d=>{d.accounts||={};d.accounts[c.warehouse]=next;});return next;
   }
   launch(id,kind,fn){

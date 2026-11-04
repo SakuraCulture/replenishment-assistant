@@ -215,3 +215,10 @@ if version['version']=='0.35.1':
     name='0.35.1AI常用业务与提示词.md'
     shutil.copy2(root/'docs'/name,dest/'docs'/name)
     (dest/'使用说明.txt').write_text((root/'docs'/name).read_text('utf-8')+'\n\n'+(dest/'使用说明.txt').read_text('utf-8'),encoding='utf-8')
+
+if version['version']=='0.36.1':
+    (dest/'docs').mkdir(exist_ok=True)
+    for name in ['0.36.0业务待办与核对.md','0.36.1浏览器连接保留.md']:
+        shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
+    (dest/'使用说明.txt').write_text((root/'docs/0.36.1浏览器连接保留.md').read_text('utf-8')+'\n\n'+(root/'docs/0.36.0业务待办与核对.md').read_text('utf-8'),encoding='utf-8')

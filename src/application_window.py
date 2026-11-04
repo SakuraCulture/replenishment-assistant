@@ -233,11 +233,16 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         return bool(cached and cached[0] is self.results.get(s) and cached[1] is self.new_focus)
 
     def closeEvent(self,event):
+        pending=getattr(self,'_large_io_dialog',None)
+        if getattr(self,'catalog_sessions',None) and self.catalog_sessions.session.lease is not None and pending is not None and not pending._completed:
+            self.closing=True;pending.reject();event.ignore();return
         axdialog=getattr(self,'_aoxiang_dialog',None)
         if axdialog is not None:
             self._aoxiang_close_requested=True;axdialog.close();event.ignore();return
         axmanager=getattr(self,'aoxiang_workflows',None)
         if axmanager and not axmanager.prepare_close():event.ignore();return
+        catalogmanager=getattr(self,'catalog_sessions',None)
+        if catalogmanager and not catalogmanager.prepare_close():event.ignore();return
         generator=getattr(self,'jst_generator',None)
         if generator and generator.worker:
             self.closing=True;generator.cancel();event.ignore();return

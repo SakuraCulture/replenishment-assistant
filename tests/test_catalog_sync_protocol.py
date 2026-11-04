@@ -18,6 +18,9 @@ class CatalogProtocolTests(unittest.TestCase):
                 self.assertFalse(capabilities['password_login'])
                 with self.assertRaises(ComponentError):c.request('submitOrderImport')
                 self.assertFalse(c.request('sync.status')['running'])
+                self.assertEqual(c.request('session.release'),{'idle':True})
+                self.assertTrue(c.running)
+                self.assertEqual(c.request('sync.status')['connections'],[])
                 op=c.request('accounts.probe',warehouse='山东仓',profilePath=str(Path(folder)/'missing'/'Default'))['operation_id']
                 until=time.monotonic()+5
                 while True:
