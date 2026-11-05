@@ -237,6 +237,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         return bool(cached and cached[0] is self.results.get(s) and cached[1] is self.new_focus)
 
     def closeEvent(self,event):
+        analytics=getattr(self,'analytics',None)
+        if analytics and not analytics.prepare_close():event.ignore();return
         scheduled=getattr(self,'scheduled',None)
         if scheduled and not scheduled.prepare_close():event.ignore();return
         indicator=getattr(self,'browser_status',None)

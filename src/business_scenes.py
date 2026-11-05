@@ -1,6 +1,6 @@
 """Four outcome-oriented entrypoints; existing business services remain shared."""
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QGroupBox, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QGroupBox, QPushButton, QTabWidget
 from ui_controls import button, label
 
 SCENES = [('补货出单', 1), ('订单跟踪', 3), ('决策复查', 2), ('参数设置', 4)]
@@ -26,7 +26,12 @@ def install(host, home_layout):
     v = QVBoxLayout(orders)
     v.addWidget(label('订单跟踪', 'title'))
     v.addWidget(label('总览看各单进度；进入回传处理、聚水潭出单、付款核对或收货核对，完成当前动作。', 'muted'))
-    v.addWidget(host.followup, 1)
+    from order_analytics_ui import AnalyticsWidget, open_analytics
+    host.analytics = AnalyticsWidget(host)
+    host.tracking_tabs = QTabWidget()
+    host.tracking_tabs.addTab(host.followup,'流程处理')
+    host.tracking_tabs.addTab(host.analytics,'经营分析')
+    v.addWidget(host.tracking_tabs, 1)
     host.sections.addWidget(orders)  # 3
     from parameter_scene import ParameterScene
     host.parameter_scene = ParameterScene(host)
@@ -64,6 +69,7 @@ def install(host, home_layout):
     row = QHBoxLayout()
     row.addWidget(button('继续已保存的今日草稿', host.resume_today))
     row.addWidget(button('全部未收齐订单', lambda: open_tracking(host, pending=True)))
+    row.addWidget(button('经营分析与报表', lambda: open_analytics(host)))
     row.addStretch()
     row.addWidget(button('数据维护', host.storage_copy))
     home_layout.addLayout(row)
@@ -79,6 +85,7 @@ def install(host, home_layout):
 def open_tracking(host, number='', pending=False):
     from PySide6.QtCore import QSignalBlocker
     widget = host.followup
+    if hasattr(host,'tracking_tabs'):host.tracking_tabs.setCurrentIndex(0)
     if number or pending:
         widget.start.clear()
         widget.end.clear()
