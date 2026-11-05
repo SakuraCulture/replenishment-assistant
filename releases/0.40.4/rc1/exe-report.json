@@ -1,0 +1,70 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "app": "补货助手",
+  "version": "0.40.4",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "930baa707efeedc9c20b15128fd39abce5771941",
+  "build_id": "rc1",
+  "built_at": "2026-11-05T17:27:47.552936+08:00",
+  "source_archive_sha256": "811600e6ac433f40e4315412f83ce85b0e2b29d73b769fb6519ed9ff59f4b54c",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "930baa707efeedc9c20b15128fd39abce5771941",
+    "files": 868,
+    "manifest_sha256": "3e31f44359bc205014219f5454121e446620a6195765393b13182e001de78921",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "262f3ee5bb6caaa37de349e5435b1268c139426d6b2951a1e2d8c3f293b05238",
+    "files": 8,
+    "source_commit": "930baa707efeedc9c20b15128fd39abce5771941",
+    "contains_user_state": false
+  },
+  "rows": 6000,
+  "exports": [
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\compact_funnel_0404\\exe\\fixture\\actual-exe-report.xlsx",
+      "sha256": "1bba7cbf4427d275bad977a202791a2034b2b528b7c7dc69dd97bd8058596b76",
+      "snapshot_id": "741303a5abe27aba3200fb67b59ef677229edee6877aa61a5f2679e95c106e8a",
+      "rows": 5796,
+      "pending": 0,
+      "sheets": [
+        "门店经营对比",
+        "门店分仓对比",
+        "订单五段漏斗"
+      ]
+    }
+  ],
+  "candidate_count": 2,
+  "heartbeat_ticks": 308,
+  "maximum_heartbeat_gap_seconds": 0.4529999999795109,
+  "operations": [
+    "原生查询",
+    "店仓订单商品下钻",
+    "全量导出",
+    "停止和重试",
+    "双进程冻结试算",
+    "采用及审计",
+    "撤回",
+    "关闭诊断窗"
+  ],
+  "limits": "合成数据；未连接外部AI客户端或平台；自动Qt交互，不替代业务人员自然操作验收",
+  "workbook_sheets": [
+    "门店经营对比",
+    "门店分仓对比",
+    "订单五段漏斗"
+  ],
+  "columns_per_sheet": 37,
+  "exe_sha256": "1d75ba797cd528670105e62358d57100617affda54a32fcd3afe9f866b6799b2",
+  "process_exit": 0
+}

@@ -1,0 +1,10 @@
+test_excel_exact_sheets_types_formats_notes_no_extra_fields (test_funnel_compact.Compact.test_excel_exact_sheets_types_formats_notes_no_extra_fields) ... ok
+test_exclusions_groups_order_and_dedup (test_funnel_compact.Compact.test_exclusions_groups_order_and_dedup) ... ok
+test_missing_zero_unpriced_and_positive_sku (test_funnel_compact.Compact.test_missing_zero_unpriced_and_positive_sku) ... ok
+test_no_rounding_cap_and_ratios_do_not_require_price_for_counts (test_funnel_compact.Compact.test_no_rounding_cap_and_ratios_do_not_require_price_for_counts) ... ok
+test_thirty_seven_exact_columns_and_all_stage_metrics (test_funnel_compact.Compact.test_thirty_seven_exact_columns_and_all_stage_metrics) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.091s
+
+OK
