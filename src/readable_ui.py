@@ -1,6 +1,6 @@
 """Shared business tables and expandable technical evidence; display only."""
 from pathlib import Path
-from PySide6.QtCore import Qt,QUrl,QTimer
+from PySide6.QtCore import Qt,QUrl,QTimer,QObject,QEvent
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (QDialog,QVBoxLayout,QHBoxLayout,QLineEdit,QMessageBox,
     QDialogButtonBox,QLayout,QHeaderView,QPlainTextEdit,QCheckBox)
@@ -8,28 +8,51 @@ from business_ui import grid
 from ui_controls import label,button
 from business_presenter import value_text,path_title,file_name
 
+class ReviewLayout(QObject):
+    """QMessageBox rebuilds its private layout when text/buttons change."""
+    def __init__(self,box,widgets):
+        # Parent owns this observer; do not retain the parent/private layout in
+        # Python cycles that can be collected during another modal event loop.
+        super().__init__(box);self.widgets=widgets;self.pending=False
+        box.installEventFilter(self);self.schedule()
+    def schedule(self):
+        if not self.pending:
+            self.pending=True;QTimer.singleShot(0,self,self.attach)
+    def eventFilter(self,obj,event):
+        if event.type()==QEvent.Type.Show:self.schedule()
+        elif event.type()==QEvent.Type.LayoutRequest:
+            layout=obj.layout()
+            if layout is not None and any(layout.indexOf(w)<0 for w in self.widgets):self.schedule()
+        return False
+    def attach(self):
+        from shiboken6 import isValid
+        self.pending=False
+        box=self.parent()
+        if box is None or not isValid(box) or not all(isValid(w) for w in self.widgets):return
+        layout=box.layout()
+        if layout is None:return
+        buttons=box.findChild(QDialogButtonBox)
+        for widget in (*self.widgets,buttons):
+            if widget is not None:layout.removeWidget(widget)
+        at=max((layout.getItemPosition(i)[0]+layout.getItemPosition(i)[2] for i in range(layout.count())),default=0)
+        span=max(1,layout.columnCount())
+        for n,widget in enumerate(self.widgets):layout.addWidget(widget,at+n,0,1,span)
+        if buttons:layout.addWidget(buttons,at+len(self.widgets),0,1,span)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+
+
 def review_table(box,headers,rows,*,total=None):
     """Keep existing QMessageBox confirmation roles/default/escape behavior."""
-    rows=list(rows);box.setDetailedText('');layout=box.layout()
-    buttons=box.findChild(QDialogButtonBox)
-    if buttons:layout.removeWidget(buttons)
-    at=layout.rowCount();span=max(1,layout.columnCount())
-    search=QLineEdit();search.setPlaceholderText('搜索门店 / 商品 / 参数 / 变化项');search.setClearButtonEnabled(True)
+    rows=list(rows);box.setDetailedText('')
+    search=QLineEdit(box);search.setPlaceholderText('搜索门店 / 商品 / 参数 / 变化项');search.setClearButtonEnabled(True)
     table,model=grid(box,headers,rows);table.setObjectName('businessReviewTable');table.setMinimumSize(760,260)
     table.setWordWrap(True);table.verticalHeader().setDefaultSectionSize(48)
     table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
     for i in range(len(headers)):table.setColumnWidth(i,180 if i<2 else 150)
     caption=label(f'已载入 {len(rows)} 项'+(f' / 共 {total} 项；此处截断，请用原有完整差异导出查看全部。' if total and total>len(rows) else '；仅筛选显示，不改变确认范围。'),'muted')
-    search.textChanged.connect(model.filter)
-    layout.addWidget(caption,at,0,1,span);layout.addWidget(search,at+1,0,1,span);layout.addWidget(table,at+2,0,1,span)
-    if buttons:layout.addWidget(buttons,at+3,0,1,span)
-    layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint);box.setMinimumWidth(850)
+    caption.setParent(box);search.textChanged.connect(model.filter);box.setMinimumWidth(850)
     box.business_table=table;box.business_model=model;box.business_search=search
-    def settle():
-        # Some callers add their established buttons after attaching the table.
-        current=box.findChild(QDialogButtonBox)
-        if current:layout.removeWidget(current);layout.addWidget(current,at+3,0,1,span)
-    QTimer.singleShot(0,box,settle)
+    box.business_layout=ReviewLayout(box,(caption,search,table))
     return table,model
 
 def technical(parent,text,caption='查看技术详情'):

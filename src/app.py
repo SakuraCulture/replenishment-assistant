@@ -13,7 +13,7 @@ def main():
     app.setPalette(palette);app.setStyleSheet(STYLE)
     icon=Path(__file__).parent/'app.ico'
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
-    logs=Path(os.environ.get('REPLENISHMENT_DATA_DIR') or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation));logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=logs/'app.log',level=logging.INFO,encoding='utf-8')
+    logs=Path(os.environ.get('REPLENISHMENT_DATA_DIR') or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation));logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=logs/'app.log',level=logging.INFO,encoding='utf-8',force=True,format='%(asctime)s %(levelname)s %(message)s')
     def unexpected(t,v,tb):
         logging.error('界面异常',exc_info=(t,v,tb))
         from readable_ui import failure
@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--gui-maintenance-smoke' in sys.argv:
+        from gui_maintenance_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--gui-maintenance-smoke')+1:])
     if '--automation-portability-smoke' in sys.argv:
         from automation_portability_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--automation-portability-smoke')+1:])

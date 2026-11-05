@@ -50,18 +50,25 @@ class Manager(QObject):
     def busy(self):
         h=self.host
         pending=getattr(h,'_large_io_dialog',None)
+        maintenance=getattr(getattr(h,'aoxiang_workflows',None),'maintenance_depth',0)
         return bool(getattr(h,'worker',None) or pending is not None and not pending._completed or
+                    maintenance or
                     getattr(h,'_aoxiang_dialog',None) or h.catalog_sessions.session.lease or
                     h.jst_generator.worker or getattr(h,'closing',False))
 
     def poll(self):
         if self.reader or self.closing:return
-        if not self.repo.exists():return
+        pending=getattr(self.host,'_large_io_dialog',None)
+        manager=getattr(self.host,'aoxiang_workflows',None)
+        if (pending is not None and not pending._completed) or getattr(manager,'maintenance_depth',0):
+            self.status.setText('定时检查等待当前保存、签发或数据维护结束；不会启动新作业');return
         def read(_):
+            if not self.repo.exists():return None
             if self.owner:self.repo.due()
             return self.repo.schedules(),self.repo.list(limit=50)['items'],self.repo.next_queued()
         task=Call(read,self);self.reader=task
         def done(value):
+            if value is None:return
             self.schedules,self.recent,queued=value
             active=next((r for r in self.recent if r['state'] in ('RUNNING','PAUSING','REVIEW','COMPLETE') and not r['viewed']),None)
             future=[s['next_at'] for s in self.schedules if s['enabled'] and s.get('next_at')]
@@ -71,7 +78,11 @@ class Manager(QObject):
                 pending=next((r for r in reversed(self.recent) if r['state']=='COMPLETE' and not r.get('publication')),None)
                 if pending and not self.host.loaded and not self.host.job_dirty:self.publish(pending)
                 elif queued:self.start(queued)
-        task.succeeded.connect(done);task.failed.connect(lambda e:self.status.setText('定时任务检查未完成：'+e))
+        def failed(error):
+            if 'locked' in str(error).lower() or 'busy' in str(error).lower():
+                self.status.setText('定时检查等待数据库释放，稍后自动重查；未启动新作业')
+            else:self.status.setText('定时任务检查未完成：'+error)
+        task.succeeded.connect(done);task.failed.connect(failed)
         task.finished.connect(lambda:self.reader_done(task));task.start()
 
     def reader_done(self,task):self.reader=None;task.deleteLater()
