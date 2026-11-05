@@ -1,0 +1,87 @@
+{
+  "performance": {
+    "synthetic": true,
+    "store_count": 12,
+    "sku_per_store": 500,
+    "rows": 6000,
+    "limitation": "温文件缓存，同机串行，旧四段仅差异明细，新五段全量及历史核对；非同功能提速结论。GetProcessMemoryInfo每30ms采样本进程工作集，查询/导出无子进程，含解释器；可能遗漏瞬时峰值。未测计算子进程内存。",
+    "runs": {
+      "old_four_stage_query": [
+        {
+          "seconds": 0.33511149999685585,
+          "peak_sampled_rss_mb": 64.47265625
+        },
+        {
+          "seconds": 0.34909490001155064,
+          "peak_sampled_rss_mb": 116.91796875
+        },
+        {
+          "seconds": 0.33815289998892695,
+          "peak_sampled_rss_mb": 120.29296875
+        }
+      ],
+      "new_five_stage_query": [
+        {
+          "seconds": 0.5659164000535384,
+          "peak_sampled_rss_mb": 83.109375
+        },
+        {
+          "seconds": 0.5634261000086553,
+          "peak_sampled_rss_mb": 125.12109375
+        },
+        {
+          "seconds": 0.5855240999953821,
+          "peak_sampled_rss_mb": 126.12890625
+        }
+      ],
+      "new_complete_export": [
+        {
+          "seconds": 5.614655299985316,
+          "peak_sampled_rss_mb": 121.52734375
+        },
+        {
+          "seconds": 5.611598599993158,
+          "peak_sampled_rss_mb": 129.265625
+        },
+        {
+          "seconds": 5.575683000031859,
+          "peak_sampled_rss_mb": 131.20703125
+        }
+      ]
+    },
+    "summary": {
+      "old_four_stage_query": {
+        "median_seconds": 0.33815289998892695,
+        "min_seconds": 0.33511149999685585,
+        "max_seconds": 0.34909490001155064,
+        "max_rss_mb": 120.29296875
+      },
+      "new_five_stage_query": {
+        "median_seconds": 0.5659164000535384,
+        "min_seconds": 0.5634261000086553,
+        "max_seconds": 0.5855240999953821,
+        "max_rss_mb": 126.12890625
+      },
+      "new_complete_export": {
+        "median_seconds": 5.611598599993158,
+        "min_seconds": 5.575683000031859,
+        "max_seconds": 5.614655299985316,
+        "max_rss_mb": 131.20703125
+      }
+    },
+    "database_sha256_unchanged": "d3124b42f00049879aa99e73622f73fe03d3c46af14fa6ef49fdc711c00d6fef"
+  },
+  "equivalence": {
+    "baseline": "efb85bf2c532daa5e1ffed9ca6e0ec323009b359",
+    "input_sha256": "faaf9a65ceefaa65c311a43da66578853abb6e5bc642cd05febe6049e272ce84",
+    "excluded_top_level_fields": [
+      "created",
+      "task.pid",
+      "task.started",
+      "task.finished",
+      "version.version"
+    ],
+    "difference_count": 0,
+    "scope": "2店2商品合成，预算10元，双进程，全部结果递归严格比较值类型和顺序；不代替真实全量业务验收"
+  }
+}

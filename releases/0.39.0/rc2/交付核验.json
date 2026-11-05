@@ -1,0 +1,99 @@
+{
+  "version": "0.39.0",
+  "build": {
+    "source_commit": "702d01364035935c6b2abd5283d204b8e271ec57",
+    "build_id": "rc2",
+    "version": "0.39.0",
+    "built_at": "2026-11-05T12:26:29.409453+08:00",
+    "source_archive_sha256": "8dca62f8d4ac070ff5fa093a3eb6d363c45c1af6efe6f983c0936ba408dd08e9",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "702d01364035935c6b2abd5283d204b8e271ec57",
+      "files": 868,
+      "manifest_sha256": "57a57d5e75c773a86c0fc6316465e48e256ecde1daea926c6cb6d28a7411e2c0",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "a980da2961c7c06ba77920c0c98d54abd38bda9a5d0dac462322ea335bfb032a",
+      "files": 8,
+      "source_commit": "702d01364035935c6b2abd5283d204b8e271ec57",
+      "contains_user_state": false
+    }
+  },
+  "branch": "feat/business-analytics-0.39.0",
+  "baseline_commit": "efb85bf2c532daa5e1ffed9ca6e0ec323009b359",
+  "protected_files": [
+    {
+      "path": "src/model.py",
+      "baseline_sha256": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "candidate_sha256": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "unchanged": true
+    },
+    {
+      "path": "src/allocation.py",
+      "baseline_sha256": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "candidate_sha256": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "unchanged": true
+    },
+    {
+      "path": "src/one_box_exception.py",
+      "baseline_sha256": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "candidate_sha256": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "unchanged": true
+    },
+    {
+      "path": "src/default_config.json",
+      "baseline_sha256": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "candidate_sha256": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "unchanged": true
+    },
+    {
+      "path": "src/lifecycle_comparison.py",
+      "baseline_sha256": "9be52d6e9a1b2b89b5ed341c55096f94b4cec4f573f77513629d7c0595263ebf",
+      "candidate_sha256": "9be52d6e9a1b2b89b5ed341c55096f94b4cec4f573f77513629d7c0595263ebf",
+      "unchanged": true
+    },
+    {
+      "path": "src/normal_exports.py",
+      "baseline_sha256": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4",
+      "candidate_sha256": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4",
+      "unchanged": true
+    }
+  ],
+  "unit_tests": {
+    "count": 854,
+    "seconds": 283.278,
+    "passed": true,
+    "warning": "完整套件Qt控件清理期间有5条QLabel已销毁回调告警；已保留全日志。本轮实际EXE两个独立验收进程未出现该告警，不宣称本轮修复了这项遗留。"
+  },
+  "native_exe_passed": true,
+  "stdio_exe_passed": true,
+  "strict_difference_count": 0,
+  "exe_sha256": "f6494b35c3485123b83e4309e8ec50625478e66714803937429d6031e5e988e8",
+  "bridge_sha256": "8882291cdee48a370b4b906fc0ea1b3b953708d662e4a095cee8316e0119b61b",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.39.0_rc2\\补货助手_0.39.0_rc2.zip",
+  "zip_sha256": "2db1a8426393565e746cbb1e4a89b315cd243845365f96ebdddd09a3ee23ee8e",
+  "zip_bytes": 116717824,
+  "delivery_files": 1231,
+  "delivery_bytes": 302653323,
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "PySide6-Essentials": "6.12.0",
+      "openpyxl": "3.1.5",
+      "PyInstaller": "6.22.3"
+    }
+  },
+  "not_verified": [
+    "真实全量历史数据质量",
+    "外部AI客户端自然语言协作",
+    "新机器运行",
+    "冷盘缓存和长期规模",
+    "平台实际取数"
+  ],
+  "unchanged_boundary": "原模型、默认配置、旧四段服务及签发导出核心文件与基线SHA一致；所有验收使用隔离数据。没有写入日常配置/数据库、修改历史或覆盖旧包；未推送、未合并。"
+}

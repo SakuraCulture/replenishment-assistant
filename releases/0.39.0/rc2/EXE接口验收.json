@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "22-tool discovery, empty funnel through actual stdio, probability-only diagnosis through actual stdio; no implicit adoption",
+    "Actual SQLite commit lock: queryable failed task, metadata recovery after release, one event, no callback replay; fresh task continues",
+    "Actual stdio initialize/list/call, ordered two-store spawn calculation, duplicate request, trial isolation and exact rows/summary equality",
+    "Second client shares task and result; first client disconnection does not cancel; business explanation",
+    "Manual parameter change rejects stale result without overwrite",
+    "Custom parameter trial exact equality; browsing stable; explicit adoption updates current workbench only, not defaults/drafts/orders",
+    "Manual adjustments invalidate old requests and require original UI review before recalculation",
+    "Actual serial spawn cancellation stops queued stores; retry has fresh cancellation state and rejoins original ordered batch",
+    "Exact historical revision explanation uses original snapshot; task journal does not duplicate business rows",
+    "Second owner of same data environment rejected",
+    "Actual XLSX check, current-mode calculation, source retention and fresh workbench adoption preserve file/store/row order and exact business values",
+    "Actual result dialog shows Chinese business fields and generated rows; close does not mutate results",
+    "Ten business recipes replayed through actual MCP; modeless picker, scoped prompt copy and stale-context/explicit-adoption guards",
+    "CLI version/build and live doctor",
+    "CLI defaults vs MCP current parameters",
+    "shared UI/MCP/CLI parameter definitions and references",
+    "scheduler write rejected",
+    "schedule/run/store pagination and incremental events",
+    "queries leave DB bytes and current job unchanged"
+  ]
+}

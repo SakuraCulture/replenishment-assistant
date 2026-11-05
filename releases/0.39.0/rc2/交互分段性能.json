@@ -1,0 +1,254 @@
+{
+  "synthetic": true,
+  "scope": {
+    "history_stores": 12,
+    "history_rows": 6000,
+    "trial_stores": 2,
+    "trial_skus_per_store": 2
+  },
+  "limitations": "同机串行3次；新进程包含导入但未清理操作系统文件缓存，不等于冷盘。试算仅2店各2SKU，主要验证spawn与编排开销，不能外推大店吞吐。30ms抽样本进程及实时后代工作集相加，共享页可能重复计入，短命进程和瞬时峰值可能漏采；子进程含冷查询解释器/计算工作进程。Qt 25ms心跳仅在有事件处理的查询/试算内衡量响应；同步短操作无样本不代表零卡顿。",
+  "runs": {
+    "fresh_process_query_including_import": [
+      {
+        "seconds": 1.357271299988497,
+        "peak_process_tree_working_set_mb": 159.99609375,
+        "max_sampled_processes": 3,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      },
+      {
+        "seconds": 1.3158935999963433,
+        "peak_process_tree_working_set_mb": 179.58203125,
+        "max_sampled_processes": 3,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      },
+      {
+        "seconds": 1.3604796000290662,
+        "peak_process_tree_working_set_mb": 187.390625,
+        "max_sampled_processes": 3,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      }
+    ],
+    "native_query_until_ui_ready": [
+      {
+        "seconds": 4.224152299982961,
+        "peak_process_tree_working_set_mb": 107.72265625,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 132,
+        "maximum_heartbeat_gap_seconds": 0.09405900002457201
+      },
+      {
+        "seconds": 3.0372600999544375,
+        "peak_process_tree_working_set_mb": 109.45703125,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 92,
+        "maximum_heartbeat_gap_seconds": 0.09177090000594035
+      },
+      {
+        "seconds": 3.36516520002624,
+        "peak_process_tree_working_set_mb": 114.33984375,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 105,
+        "maximum_heartbeat_gap_seconds": 0.10530860000289977
+      }
+    ],
+    "same_report_history_projection": [
+      {
+        "seconds": 0.042844299983698875,
+        "peak_process_tree_working_set_mb": 113.71484375,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      },
+      {
+        "seconds": 0.04396390001056716,
+        "peak_process_tree_working_set_mb": 114.18359375,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      },
+      {
+        "seconds": 0.04008730000350624,
+        "peak_process_tree_working_set_mb": 114.60546875,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      }
+    ],
+    "three_level_drill_and_return": [
+      {
+        "seconds": 0.018910799990408123,
+        "peak_process_tree_working_set_mb": 113.75390625,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      },
+      {
+        "seconds": 0.015760800044517964,
+        "peak_process_tree_working_set_mb": 114.18359375,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      },
+      {
+        "seconds": 0.015744200034532696,
+        "peak_process_tree_working_set_mb": 114.60546875,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      }
+    ],
+    "filtered_query_until_ui_ready": [
+      {
+        "seconds": 3.139153800031636,
+        "peak_process_tree_working_set_mb": 104.71484375,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 96,
+        "maximum_heartbeat_gap_seconds": 0.05237190000480041
+      },
+      {
+        "seconds": 2.8675599999842234,
+        "peak_process_tree_working_set_mb": 110.98046875,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 88,
+        "maximum_heartbeat_gap_seconds": 0.06332670000847429
+      },
+      {
+        "seconds": 2.4320584000088274,
+        "peak_process_tree_working_set_mb": 111.3125,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 76,
+        "maximum_heartbeat_gap_seconds": 0.06232940003974363
+      }
+    ],
+    "two_store_baseline_plus_two_candidates": [
+      {
+        "seconds": 6.716773500025738,
+        "peak_process_tree_working_set_mb": 117.86328125,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 214,
+        "maximum_heartbeat_gap_seconds": 0.04742859996622428
+      },
+      {
+        "seconds": 6.186639399966225,
+        "peak_process_tree_working_set_mb": 161.43359375,
+        "max_sampled_processes": 2,
+        "heartbeat_ticks": 197,
+        "maximum_heartbeat_gap_seconds": 0.057158100011292845
+      },
+      {
+        "seconds": 5.971179400046822,
+        "peak_process_tree_working_set_mb": 204.59765625,
+        "max_sampled_processes": 3,
+        "heartbeat_ticks": 190,
+        "maximum_heartbeat_gap_seconds": 0.047386799997184426
+      }
+    ],
+    "adopt_complete_candidate": [
+      {
+        "seconds": 0.03230310004437342,
+        "peak_process_tree_working_set_mb": 117.81640625,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      },
+      {
+        "seconds": 0.029962100030388683,
+        "peak_process_tree_working_set_mb": 117.91796875,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      },
+      {
+        "seconds": 0.025122899969574064,
+        "peak_process_tree_working_set_mb": 117.92578125,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      }
+    ],
+    "undo_candidate": [
+      {
+        "seconds": 0.02318239997839555,
+        "peak_process_tree_working_set_mb": 117.81640625,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      },
+      {
+        "seconds": 0.02116160001605749,
+        "peak_process_tree_working_set_mb": 117.91796875,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      },
+      {
+        "seconds": 0.02210559998638928,
+        "peak_process_tree_working_set_mb": 117.92578125,
+        "max_sampled_processes": 1,
+        "heartbeat_ticks": 0,
+        "maximum_heartbeat_gap_seconds": null
+      }
+    ]
+  },
+  "summary": {
+    "fresh_process_query_including_import": {
+      "median_seconds": 1.357271299988497,
+      "min_seconds": 1.3158935999963433,
+      "max_seconds": 1.3604796000290662,
+      "peak_process_tree_working_set_mb": 187.390625,
+      "max_sampled_processes": 3
+    },
+    "native_query_until_ui_ready": {
+      "median_seconds": 3.36516520002624,
+      "min_seconds": 3.0372600999544375,
+      "max_seconds": 4.224152299982961,
+      "peak_process_tree_working_set_mb": 114.33984375,
+      "max_sampled_processes": 1
+    },
+    "same_report_history_projection": {
+      "median_seconds": 0.042844299983698875,
+      "min_seconds": 0.04008730000350624,
+      "max_seconds": 0.04396390001056716,
+      "peak_process_tree_working_set_mb": 114.60546875,
+      "max_sampled_processes": 1
+    },
+    "three_level_drill_and_return": {
+      "median_seconds": 0.015760800044517964,
+      "min_seconds": 0.015744200034532696,
+      "max_seconds": 0.018910799990408123,
+      "peak_process_tree_working_set_mb": 114.60546875,
+      "max_sampled_processes": 1
+    },
+    "filtered_query_until_ui_ready": {
+      "median_seconds": 2.8675599999842234,
+      "min_seconds": 2.4320584000088274,
+      "max_seconds": 3.139153800031636,
+      "peak_process_tree_working_set_mb": 111.3125,
+      "max_sampled_processes": 1
+    },
+    "two_store_baseline_plus_two_candidates": {
+      "median_seconds": 6.186639399966225,
+      "min_seconds": 5.971179400046822,
+      "max_seconds": 6.716773500025738,
+      "peak_process_tree_working_set_mb": 204.59765625,
+      "max_sampled_processes": 3
+    },
+    "adopt_complete_candidate": {
+      "median_seconds": 0.029962100030388683,
+      "min_seconds": 0.025122899969574064,
+      "max_seconds": 0.03230310004437342,
+      "peak_process_tree_working_set_mb": 117.92578125,
+      "max_sampled_processes": 1
+    },
+    "undo_candidate": {
+      "median_seconds": 0.02210559998638928,
+      "min_seconds": 0.02116160001605749,
+      "max_seconds": 0.02318239997839555,
+      "peak_process_tree_working_set_mb": 117.92578125,
+      "max_sampled_processes": 1
+    }
+  }
+}
