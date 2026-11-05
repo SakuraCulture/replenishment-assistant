@@ -83,7 +83,7 @@ class UiDeletion(unittest.TestCase):
         self.assertEqual(self.w.work_repository.stores(),before)
         with patch.object(ui,'review_rows',return_value=True):self.scene.delete_defaults()
         self.assertEqual(self.w.config_for('A'),current);self.assertEqual(self.w.work_repository.stores()['B'],before['B'])
-        self.assertEqual(self.scene.table.item(self.scene.codes.index('A'),4).text(),'未保存参数')
+        self.assertNotIn('A',self.w.work_repository.stores());self.assertNotIn('A',self.scene.codes)
         self.w.reset_job();self.w.loaded_ok(loaded());self.assertEqual(pp.signature(self.w.config_for('A')),pp.signature(schema.standard()))
         self.w.restore_job({'day':wr.today(),'saved':'test','payload':snap});self.assertEqual(self.w.config_for('A'),current)
     def test_builtin_hidden_library_picker_and_first_store_no_default_write(self):

@@ -96,6 +96,19 @@ def clear_defaults(repo,codes,expected):
         write_stores(db,before,after,'删除门店默认参数')
     return after
 
+def remove_store_configurations(repo,codes,expected):
+    """Delete complete saved store records, including route-only legacy leftovers."""
+    from storage_chunks import backup_before_write
+    from settings_history import record
+    backup_before_write(repo.path,lambda _:None)
+    with closing(repo.connect()) as db,db:
+        db.execute('BEGIN IMMEDIATE');data=read(db);check(data,expected)
+        before={s:data['stores'][s] for s in dict.fromkeys(codes) if s in data['stores']}
+        if before:preserve_mapping(db,data)
+        for s in before:db.execute('DELETE FROM stores WHERE code=?',(s,))
+        record(db,before,{s:None for s in before},'删除整条门店配置')
+    return list(before)
+
 def preserve_mapping(db,data):
     """Legacy shared mapping may only live in saved configs; retain it separately."""
     from store_defaults import has_parameters

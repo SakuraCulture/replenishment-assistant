@@ -104,22 +104,27 @@ def assign_defaults(scene):
 
 
 def delete_store_defaults(scene):
-    import store_defaults
     codes=scene.require()
     if not codes:return
     repo=scene.host.work_repository;data=pp.snapshot(repo)
-    codes=[s for s in codes if store_defaults.has_parameters(data['stores'].get(s))]
-    if not codes:QMessageBox.information(scene,'没有可删除的参数','所选门店均未保存默认参数。');return
-    rows=[[data['stores'][s].get('name') or s,data['stores'][s]['preset']['name'],'下次计算准备自动填写'] for s in codes]
-    if not review_rows(scene,'删除门店默认参数',['门店','将删除的默认参数','删除后'],rows,
-        '仅删除上述门店保存的参数及预案绑定。供货仓、预算、其他门店、当前作业与历史签发保留。跟随门店默认的补货预案下次采用时自动填充；明确指定其他预案的门店仍按指定预案。','确认删除默认参数'):return
+    codes=[s for s in codes if s in data['stores']]
+    if not codes:QMessageBox.information(scene,'没有可删除的配置','所选门店没有保存的配置；当前作业中的临时设置不在这里删除。');return
+    rows=[]
+    for s in codes:
+        r=data['stores'][s];u=r['ui'];budget=u.get('amount','') if u.get('mode')==2 else '不限预算' if u.get('mode')==1 else '未指定'
+        rows.append([r.get('name') or s,s,u.get('primary') or '未指定',u.get('secondary') or '无',budget,'整条删除'])
+    if not review_rows(scene,'删除整条门店配置',['门店','门店编码','主仓','从仓','预算','处理'],rows,
+        '删除所选门店整条已保存配置：补货参数、通用参数、策略、默认预案绑定、主从仓及预算。删除后从已保存配置列表移除。门店目录、独立资质/拒收记录、公共预案、当前作业及历史订单不变。新作业自动填写内置参数，供货仓和预算需重新核对；补货预案的门店名单及明确指定参数保留。','确认删除整条配置'):return
     try:
         from business_ui import run
         def remove(progress=lambda _:None,cancel=None):
-            progress('正在删除所选门店默认参数…');return pp.clear_defaults(repo,codes,data)
-        run(scene,remove,(),'删除默认参数',cancellable=False)
-        scene.refresh();scene.note.setText(f'已删除 {len(codes)} 家门店默认参数；当前作业未改变，下次计算准备自动填写。')
-    except Exception as exc:QMessageBox.warning(scene,'默认参数未删除',str(exc))
+            progress('正在删除所选门店整条配置…');return pp.remove_store_configurations(repo,codes,data)
+        removed=run(scene,remove,(),'删除门店配置',cancellable=False)
+        scene.host.saved_store_defaults=repo.stores()
+        for s in codes:
+            if s in scene.host.store_widgets:scene.host.refresh_parameter_label(s)
+        scene.scope.setCurrentIndex(0);scene.refresh();scene.note.setText(f'已删除 {len(removed)} 家门店整条配置；当前作业和历史订单未改变。')
+    except Exception as exc:QMessageBox.warning(scene,'门店配置未删除',str(exc))
 
 
 def copy_store_default(scene):

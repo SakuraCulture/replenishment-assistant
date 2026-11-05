@@ -73,12 +73,17 @@ class Workbench(ParameterUi,BatchWindow):
         previous=self._hydrating;self._hydrating=True;self.initializing=True
         try:
             saved={} if self._restoring else self.work_repository.stores();self.saved_store_defaults=saved
+            removed=set() if self._restoring else self.work_repository.removed_store_config_codes()
             import parameter_maintenance as pm
             mapping=None if self._restoring else pm.mapping_snapshot(self.work_repository.path)
             self._mapping_error='各店旧分类映射不同，请到参数设置的全局分类映射核对后应用本次。' if mapping and mapping['conflict'] else ''
             for s in self.store_widgets:
                 if s in saved:
                     p=copy.deepcopy(saved[s]['preset']);schema.validate(p['config']);self.store_presets[s]=p;self.overrides[s]=copy.deepcopy(p['config']['warehouses']);self.set_store_ui(s,saved[s]['ui'])
+                elif s in removed:
+                    # Old standalone budget/route JSON is compatibility history,
+                    # not a source for resurrecting an explicitly deleted row.
+                    ui=self.store_ui(s);ui.update(primary=None,secondary=None,mode=0,amount='');self.set_store_ui(s,ui)
                 if mapping and not mapping['conflict']:
                     try:self.store_presets[s]=pm.bind(self.preset_for(s),mapping)
                     except ValueError as exc:self._mapping_error=str(exc)

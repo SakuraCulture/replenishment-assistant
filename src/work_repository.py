@@ -52,6 +52,15 @@ class Repository:
     def stores(self):
         from store_defaults import decode
         with closing(self.connect()) as db:return {k:decode(loads(v)) for k,v in db.execute('SELECT code,data FROM stores')}
+    def removed_store_config_codes(self):
+        """Do not resurrect explicitly deleted settings from legacy JSON caches.
+
+        Use the existing deletion audit, not another configuration/recycle-bin
+        record. Explicitly re-saved store records always take precedence.
+        """
+        with closing(self.connect()) as db:
+            if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='settings_history'").fetchone():return set()
+            return {s for raw, in db.execute('SELECT after_data FROM settings_history WHERE action=?',('删除整条门店配置',)) for s,v in loads(raw).items() if v is None}
     def restore_preset(self,pid,version):
         with closing(self.connect()) as db,db:
             if db.execute('UPDATE presets SET archived=0 WHERE id=? AND version=?',(pid,version)).rowcount!=1:raise ValueError('方案已不存在，请刷新')

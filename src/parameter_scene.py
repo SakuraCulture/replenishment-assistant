@@ -51,10 +51,11 @@ class ParameterScene(QWidget):
             menu.addAction('导入'+name,lambda checked=False,k=kind:import_records(self,host,k));menu.addAction('下载'+name+'模板',lambda checked=False,k=kind:download(self,k))
         other.setMenu(menu);row.addWidget(other)
         history=QToolButton();history.setText('变更记录 / 恢复');history.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup);menu=QMenu(history)
-        from settings_maintenance_ui import open_history,reset_defaults,restore_presets
+        from settings_maintenance_ui import open_history,restore_presets
         menu.addAction('默认变更记录 / 撤销',lambda:(open_history(self,host),self.refresh()))
         menu.addAction('恢复停用方案',lambda:restore_presets(self,host));menu.addAction('旧完整参数方案库',host.open_preset_library)
         history.setMenu(menu);row.addWidget(history);row.addStretch()
+        self.scope=QComboBox();self.scope.addItems(['已保存门店配置','本次作业门店']);self.scope.setToolTip('已保存配置与本次临时参数分开查看；删除只移除已保存配置。');row.addWidget(self.scope)
         row.addWidget(button('勾选当前筛选',lambda:self.check_visible(True)));row.addWidget(button('清空全部勾选',lambda:self.check_visible(False)));v.addLayout(row)
         self.table = QTableWidget(0, 7)
         self.table.setHorizontalHeaderLabels(['选择', '门店', '默认主仓', '默认从仓', '参数依据 / 通用参数', '默认预算', '本次作业'])
@@ -65,7 +66,7 @@ class ParameterScene(QWidget):
         v.addWidget(self.table, 1)
         self.note = label('', 'muted')
         v.addWidget(self.note)
-        delete_row=QHBoxLayout();delete_row.addStretch();delete_row.addWidget(button('删除所选门店默认参数',self.delete_defaults));v.addLayout(delete_row)
+        delete_row=QHBoxLayout();delete_row.addStretch();delete_row.addWidget(button('删除所选门店配置',self.delete_defaults));v.addLayout(delete_row)
         row = QHBoxLayout()
         row.addWidget(button('查看保存的默认参数', self.view_defaults))
         row.addWidget(button('选择默认参数预案',lambda:__import__('parameter_preset_ui').assign_defaults(self)))
@@ -75,6 +76,7 @@ class ParameterScene(QWidget):
         v.addLayout(row)
         self.codes = []
         self.saved = {}
+        self.scope.currentIndexChanged.connect(self.refresh)
 
     def open_presets(self):
         from parameter_preset_ui import PresetLibrary
@@ -87,10 +89,10 @@ class ParameterScene(QWidget):
     def selected(self):
         return [code for i, code in enumerate(self.codes) if self.table.item(i, 0).checkState() == Qt.CheckState.Checked]
 
-    def refresh(self):
+    def refresh(self,*_):
         selected = set(self.selected())
         self.saved = self.host.work_repository.stores()
-        self.codes = list(dict.fromkeys([*self.saved, *self.host.store_widgets]))
+        self.codes = list(self.saved if self.scope.currentIndex()==0 else self.host.store_widgets)
         self.table.setRowCount(len(self.codes))
         for i, code in enumerate(self.codes):
             saved = self.saved.get(code, {})
@@ -114,11 +116,12 @@ class ParameterScene(QWidget):
             self.table.item(i,4).setText(str(values[3])+'\n'+common)
             if p.get('default_binding'):self.table.item(i,4).setText(('已保存参数（原有配置）' if p['id']=='standard' else p['name'])+' · 默认参数预案\n'+common)
             elif p:self.table.item(i,4).setText(str(values[3])+' · 门店自定义默认\n'+common)
-            if not store_defaults.has_parameters(saved):self.table.item(i,4).setText('未保存参数')
+            if not saved:self.table.item(i,4).setText('未保存配置 · 仅本次作业')
+            elif not store_defaults.has_parameters(saved):self.table.item(i,4).setText('未保存参数')
         self.table.resizeRowsToContents()
         self.filter()
         self.note.setText('选择默认预案可长期跟随；直接修改默认参数会转为门店自定义。当前作业需明确应用，历史不变。' if self.codes else
-                          '尚无门店记录。可批量导入门店参数预存默认，或先导入补货文件识别门店。')
+                          '暂无已保存配置。可导入门店参数，或切换“本次作业门店”设置并保存。' if self.scope.currentIndex()==0 else '本次作业尚未载入门店。请先在补货出单中检查文件。')
 
     def import_parameters(self):
         from store_parameter_ui import import_parameters
