@@ -140,27 +140,36 @@ class Gateway(QObject):
         if token != self.token(): raise CommandError('STALE_CONTEXT', '当前作业、参数或结果已变化，请重新检查；旧结果没有覆盖工作台')
 
     def idle(self):
-        if self.worker or self.host.worker: raise CommandError('BUSY', '当前已有任务运行，请查看进度或停止后续再操作')
+        scheduled = getattr(self.host, 'scheduled', None)
+        if self.worker or self.host.worker or (scheduled and (scheduled.worker or scheduled.publisher)):
+            raise CommandError('BUSY', '当前已有任务运行，请查看进度或等待当前步骤结束再操作')
         if self.host.closing: raise CommandError('CLOSED', '工作台正在关闭')
 
     def workbench_context(self, args):
-        from version_info import VERSION as APP_VERSION, MODEL_VERSION
+        from version_info import VERSION as APP_VERSION, MODEL_VERSION, BUILD
         h = self.host
+        scheduled = getattr(h, 'scheduled', None)
         return {'instance_id': self.instance, 'workspace_id': self.workspace, 'context_token': self.token(),
             'business_date': h.job_day, 'application': APP_VERSION, 'model': MODEL_VERSION,
+            'protocol': VERSION, 'build': {k: BUILD.get(k) for k in ('source_commit', 'build_id')},
+            'scheduled_access': 'read_only', 'checked_input_present': bool(h.loaded) and not h.input_dirty,
             'readonly': h.readonly, 'input_dirty': h.input_dirty, 'unsaved_changes': h.job_dirty,
             'selected_stores': h.selected_codes(), 'active_task': self.active,
-            'busy': bool(h.worker), 'enabled': self.enabled, 'scope': '查询、已有文件检查、预案计算和试算；不保存默认、不签发、不采购、不删除',
+            'busy': bool(h.worker or (scheduled and (scheduled.worker or scheduled.publisher))), 'enabled': self.enabled, 'scope': '查询、已有文件检查、预案计算和试算；定时任务只读；不触发平台取数、不保存默认、不签发、不采购、不删除',
             'summary': [{'store': s, 'name': v['name'], 'state': v['state']} for s, v in h.states.items()]}
 
     def find_resources(self, args):
         import replenishment_plans as plans
+        import automation_queries as queries
         h = self.host; kind = args['kind']; offset = args.get('offset', 0); limit = args.get('limit', 50)
+        if kind in ('schedules', 'scheduled_runs'): return queries.scheduled_resources(h.work_repository.path, args)
         if kind == 'stores':
             known = plans.available(h); rows = [{'code': c, 'name': n} for c, n in known.items()]
-        elif kind == 'plans': rows = [{k: p[k] for k in ('id', 'name', 'revision', 'stores')} for p in plans.Repository(h.work_repository.path).list()]
-        elif kind == 'files': rows = [{'path': p, 'name': Path(p).name} for p in h.sales.paths]
-        elif kind == 'catalogs': rows = [{k: c.get(k) for k in ('warehouse', 'revision', 'source_path', 'source_sha256')} for c in h.catalogs.values()]
+        elif kind == 'plans': rows = [{**{k: p[k] for k in ('id', 'name', 'revision', 'stores')},
+            'parameter_fields': p.get('parameter_fields'), 'note': 'parameter_fields为空列表表示不覆盖参数；null为旧版完整预案。实际覆盖值在准备预览中核对。'} for p in plans.Repository(h.work_repository.path).list()]
+        elif kind == 'files': rows = queries.file_resources(h)
+        elif kind == 'catalogs': rows = [{**{k: c.get(k) for k in ('warehouse', 'revision', 'source_path', 'source_sha256')},
+            'note': '已登记的仓资料；不代表本次输入已完成匹配或可计算。'} for c in h.catalogs.values()]
         elif kind == 'orders': rows = h.orders.headers()
         else: return self.journal.page(offset, limit, args.get('search', ''))
         search = args.get('search', '').casefold()
@@ -168,14 +177,17 @@ class Gateway(QObject):
         return {'total': len(rows), 'offset': offset, 'items': rows[offset:offset + limit], 'next_offset': offset + limit if offset + limit < len(rows) else None}
 
     def effective_parameters(self, args):
-        h = self.host; rows = []
-        for s in args['stores']:
-            if s not in h.store_widgets: raise CommandError('STORE_NOT_FOUND', '门店不在当前工作台：' + s)
-            record = h.current_parameter_record(s)
-            rows.append({'store': s, 'name': h.states[s]['name'], 'parameters': automation_jobs.parameters(record),
-                'route_and_budget': record['ui'], 'mapping': record['preset'].get('mapping_source'),
-                'note': '分类参数优先于门店通用值；仓周期按仓；此处为当前作业快照'})
-        return {'context_token': self.token(), 'stores': rows}
+        from automation_queries import parameter_result
+        preview = None
+        if args.get('scope') == 'preview':
+            if not args.get('preview_id'): raise CommandError('INVALID_ARGUMENT', '查询试算预览须提供 preview_id')
+            preview = self.require_prepared(args['preview_id'])
+        elif args.get('preview_id'): raise CommandError('INVALID_ARGUMENT', 'preview_id 只能用于 scope=preview')
+        return {'context_token': self.token(), **parameter_result(self.host, args, preview)}
+
+    def scheduled_run_status(self, args):
+        from automation_queries import scheduled_status
+        return scheduled_status(self.host.work_repository.path, args)
 
     def snapshot(self, arguments):
         import parameter_maintenance as pm

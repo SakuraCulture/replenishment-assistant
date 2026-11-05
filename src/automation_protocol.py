@@ -32,8 +32,10 @@ CHANGE = obj({'store': TEXT, 'path': {'type': 'array', 'items': {'type': ['strin
 TOOLS = [
     ('workbench_context', '查看当前工作台、已启用范围、业务日期和任务。先调用以取得 context_token。', obj()),
     ('find_resources', '查询应用登记的门店、预案、文件、仓资料、历史订单或本机 AI 任务；编码精确使用，不按名称猜。',
-     obj({'kind': {'type': 'string', 'enum': ['stores', 'plans', 'files', 'catalogs', 'orders', 'tasks']}, 'search': {'type': 'string'}, **PAGE}, ['kind'])),
-    ('effective_parameters', '读取当前门店的实际参数及来源，不保存修改。', obj({'stores': LIST}, ['stores'])),
+     obj({'kind': {'type': 'string', 'enum': ['stores', 'plans', 'files', 'catalogs', 'orders', 'tasks', 'schedules', 'scheduled_runs']}, 'search': {'type': 'string'}, **PAGE}, ['kind'])),
+    ('effective_parameters', '读取本次作业(current)、已保存默认(defaults)或试算预览(preview，须preview_id)的参数与来源；默认和试算不代表本次已采用。', obj({'stores': LIST, 'scope': {'type': 'string', 'enum': ['current', 'defaults', 'preview']}, 'preview_id': TEXT}, ['stores'])),
+    ('scheduled_run_status', '只读定时补货任务：分页门店进度、after之后的事件。不会启动、暂停、重试、取数或采用结果。',
+     obj({'run_id': TEXT, 'after': {'type': 'integer', 'minimum': 0}, **PAGE}, ['run_id'])),
     ('prepare_calculation', '检查指定本地文件或当前已检查数据。形成预览，不签发、不保存默认。mode=trial 试算；current 明确采用到本次工作台。',
      obj({'context_token': TEXT, 'operation_key': TEXT, 'stores': LIST, 'paths': LIST, 'plan_id': TEXT,
           'mode': {'type': 'string', 'enum': ['trial', 'current']}, 'parameter_changes': {'type': 'array', 'items': CHANGE, 'maxItems': 500}},
@@ -90,7 +92,7 @@ def validate_call(name, arguments):
 
 
 def public_tools():
-    readonly = {'workbench_context', 'find_resources', 'effective_parameters', 'task_status', 'calculation_results', 'explain_decision'}
+    readonly = {'workbench_context', 'find_resources', 'effective_parameters', 'task_status', 'scheduled_run_status', 'calculation_results', 'explain_decision'}
     return [{'name': n, 'description': d, 'inputSchema': s, 'annotations': {
         'readOnlyHint': n in readonly, 'destructiveHint': False, 'openWorldHint': False}}
         for n, d, s in TOOLS]

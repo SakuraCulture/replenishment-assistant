@@ -236,3 +236,10 @@ if version['version']=='0.37.0':
     for name in names:shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
     (dest/'使用说明.txt').write_text('\n\n'.join((root/'docs'/name).read_text('utf-8') for name in names),encoding='utf-8')
+
+if version['version']=='0.38.0':
+    (dest/'docs').mkdir(exist_ok=True)
+    names=['0.38.0AI与CLI查询试算.md','0.37.0定时补货.md','0.35.0AI协助使用与结构.md','0.35.1AI常用业务与提示词.md']
+    for name in names:shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
+    (dest/'使用说明.txt').write_text((root/'docs'/names[0]).read_text('utf-8'),encoding='utf-8')

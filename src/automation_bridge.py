@@ -6,6 +6,13 @@ import time
 import uuid
 from pathlib import Path
 from automation_protocol import VERSION, MAX_FRAME, CommandError, decode, public_tools, validate_call
+from version_info import diagnostic
+
+
+def version_details():
+    info = diagnostic()
+    return {k: info[k] for k in ('app', 'version', 'model_version', 'routing_version',
+            'parameter_schema_version', 'build_id', 'source_commit') if k in info} | {'protocol': VERSION}
 
 
 class Client:
@@ -18,6 +25,8 @@ class Client:
         app = QCoreApplication.instance() or QCoreApplication([])
         try: settings = json.loads(self.connection.read_text('utf-8'))
         except (OSError, ValueError): raise CommandError('NOT_CONNECTED', '请先打开补货助手，在 AI 协助中启用本机连接') from None
+        if not isinstance(settings, dict) or any(not isinstance(settings.get(k), str) or not settings[k] for k in ('protocol', 'server', 'token')):
+            raise CommandError('INVALID_CONNECTION', '连接配置不完整，请在对应工作台重新启用本机连接并生成客户端配置')
         if settings.get('protocol') != VERSION: raise CommandError('VERSION_MISMATCH', '接口版本不兼容，请使用与程序一起交付的 AI 接口')
         socket = QLocalSocket(); socket.connectToServer(settings['server'])
         try:
@@ -53,7 +62,7 @@ def response(request, client, initialized):
         version = requested if requested in ('2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25') else '2025-11-25'
         initialized[0] = True
         return {**out, 'result': {'protocolVersion': version, 'capabilities': {'tools': {'listChanged': False}},
-            'serverInfo': {'name': 'replenishment-workbench', 'version': '0.35.0'},
+            'serverInfo': {'name': 'replenishment-workbench', 'version': version_details()['version']},
             'instructions': '先查询 workbench_context，明确门店编码、预案和文件后准备。长任务立即返回编号，用 task_status 查询；重复调用不新开任务。首期不签发、不采购、不删除。中文解释使用工具返回的业务参数，不猜缺失数据。'}}
     if method == 'ping': return {**out, 'result': {}}
     if not initialized[0]: return {**out, 'error': {'code': -32002, 'message': 'Initialize first'}}
@@ -71,10 +80,52 @@ def response(request, client, initialized):
     return {**out, 'error': {'code': -32601, 'message': 'Method not found'}}
 
 
+def cli(args):
+    """Same named-pipe contract as MCP. No business DB access or implicit retries."""
+    try:
+        if args.command == 'version': result = version_details()
+        elif args.command == 'tools': result = {'protocol': VERSION, 'tools': public_tools()}
+        elif args.command == 'doctor':
+            context = Client(args.connection).call('workbench_context', {})
+            result = {'bridge': version_details(), 'workbench': context,
+                      'versions_match': context['application'] == version_details()['version'],
+                      'note': '连接诊断只查询；请关闭业务弹窗后再调用其他查询。'}
+        else:
+            raw = args.arguments or '{}'
+            if args.arguments_file:
+                with args.arguments_file.open('rb') as f: raw = f.read(MAX_FRAME + 1)
+                raw = raw.decode('utf-8-sig')
+            arguments = decode(raw.encode('utf-8'))
+            result = Client(args.connection).call(args.tool, arguments)
+        value, code = {'ok': True, 'result': result}, 0
+    except CommandError as exc:
+        value, code = {'ok': False, 'error': {'code': exc.code, 'message': str(exc), 'details': exc.details}}, 2
+    except (OSError, UnicodeError):
+        value, code = {'ok': False, 'error': {'code': 'INPUT_ERROR', 'message': '无法读取 UTF-8 参数文件，请检查文件和权限'}}, 2
+    except Exception:
+        value, code = {'ok': False, 'error': {'code': 'BRIDGE_ERROR', 'message': '接口未完成请求，请检查连接后查询原任务'}}, 3
+    sys.stdout.buffer.write(json.dumps(value, ensure_ascii=False, allow_nan=False, default=str).encode('utf-8') + b'\n')
+    sys.stdout.buffer.flush()
+    return code
+
+
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='补货助手本地 AI 接口（由 Codex / WorkBuddy 启动）')
-    parser.add_argument('--connection', required=True, type=Path)
-    args = parser.parse_args(argv); client = Client(args.connection); initialized = [False]
+    parser = argparse.ArgumentParser(description='补货助手 AI / CLI：无子命令时保持 MCP stdio；所有业务调用须连接已启用的工作台')
+    parser.add_argument('--connection', type=Path, help='工作台生成的 connection.json；放在子命令前')
+    commands = parser.add_subparsers(dest='command')
+    commands.add_parser('version', help='离线查看接口版本和构建提交')
+    commands.add_parser('tools', help='离线查看开放工具及参数契约')
+    commands.add_parser('doctor', help='只读检查本机连接和工作台版本')
+    call = commands.add_parser('call', help='调用开放工具，不直接访问业务数据库')
+    call.add_argument('tool')
+    parameters = call.add_mutually_exclusive_group()
+    parameters.add_argument('--arguments', help='JSON 对象，默认 {}')
+    parameters.add_argument('--arguments-file', type=Path, help='UTF-8 JSON 文件，避免命令行引号问题')
+    args = parser.parse_args(argv)
+    if args.command not in ('version', 'tools') and args.connection is None:
+        parser.error('MCP / doctor / call 需要 --connection；请从软件 AI 协助生成连接配置')
+    if args.command: return cli(args)
+    client = Client(args.connection); initialized = [False]
     # A separate console executable preserves inherited stdin/stdout in Windows.
     if sys.stdin is None or sys.stdout is None: raise RuntimeError('请使用 AI 接口控制台程序')
     while True:

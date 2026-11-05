@@ -77,7 +77,8 @@ def prepare(snapshot, arguments, progress=lambda _: None, cancel=None):
             issues.append({'store': s, 'message': str(exc)})
     files = (loaded.get('intake') or {}).get('files', [])
     report = {'ready': not issues, 'stores': [{'code': s, 'name': loaded['stores'][s],
-              'budget': jobs.get(s, {}).get('budget'), 'route': jobs.get(s, {}).get('supply_route')} for s in codes],
+              'budget': jobs.get(s, {}).get('budget'), 'route': jobs.get(s, {}).get('supply_route'),
+              'parameter_signature': jobs.get(s, {}).get('parameter_signature')} for s in codes],
               'issues': issues, 'mode': arguments['mode'],
               'files': [{**f, 'path': Path(f['path']).name} for f in files],
               'duplicates': (loaded.get('intake') or {}).get('duplicates', 0),
@@ -132,6 +133,7 @@ def parameters(record):
         value = pm.value(config, field); inherited = value == '沿用门店'
         effective = config['parameters'][field[2]] if inherited else value
         unit = '天' if field[0] == 'warehouses' else '权重' if field[0] == 'weight_profiles' else schema.HELP[field[-1]][1]
+        group = {'warehouses': '分仓周期', 'weight_profiles': '分类权重', 'profile_parameters': '分类参数', 'parameters': '门店通用参数'}[field[0]]
         rows.append({'parameter': pm.title(field), 'path': list(field), 'value': effective, 'unit': unit,
-                     'configured_value': value, 'source': '门店通用参数' if inherited else record['preset'].get('name', '标准补货')})
+                     'configured_value': value, 'group': group, 'source': '门店通用参数' if inherited else group})
     return rows

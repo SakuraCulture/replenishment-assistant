@@ -55,11 +55,14 @@ def start_smoke(app, win, args):
             win.loaded_ok(fixture())
             for code in ('A', 'B'): win.store_widgets[code]['mode'].setCurrentIndex(1)
             win.automation.enable(); m = MCP()
-            require(len(m.send('tools/list', {})['result']['tools']) == 12, 'Missing tools')
+            require(len(m.send('tools/list', {})['result']['tools']) == 13, 'Missing tools')
             original = copy.deepcopy(win.snapshot()); context = m.call('workbench_context')
             p = m.call('prepare_calculation', {'context_token': context['context_token'], 'operation_key': 'smoke-prepare', 'stores': ['B', 'A'], 'mode': 'trial'})
             wait(lambda: win.automation.worker is None)
             p = m.call('task_status', {'task_id': p['task_id']}); require(p['state'] == 'prepared', str(p))
+            parameters = m.call('effective_parameters', {'stores':['B','A'],'scope':'preview','preview_id':p['task_id']})
+            require([s['store'] for s in parameters['stores']] == ['B','A'], 'Preview parameters reordered')
+            require(parameters['stores'][0]['parameter_signature'] == win.automation.prepared[p['task_id']]['jobs']['B']['parameter_signature'], 'Preview signature mismatch')
             expected = {s: batch_service.calculate_store(win.loaded, s, win.selected_settings(s), win.profile) for s in ('B', 'A')}
             task = m.call('run_calculation', {'preview_id': p['task_id']})
             duplicate = m.call('run_calculation', {'preview_id': p['task_id']}); require(task['task_id'] == duplicate['task_id'], 'Duplicate launched task')
@@ -187,11 +190,15 @@ def start_smoke(app, win, args):
                     child=subprocess.Popen([client_python,str(runner),'--config',str(out/'clients.json'),'--out',str(out/'codex-client')],stdout=log,stderr=log,creationflags=subprocess.CREATE_NO_WINDOW)
                     wait(lambda:child.poll() is not None,180)
                 require(child.returncode==0,(out/'codex-client.log').read_text('utf-8'))
-                report['checks'].append('Installed Codex app-server discovers 12 tools and calls current workbench, paged tasks and validation error; ephemeral protocol context, no model turn')
+                report['checks'].append('Installed Codex app-server discovers current tools and calls current workbench, paged tasks and validation error; ephemeral protocol context, no model turn')
             from automation_playbook_smoke import exercise
             recipes = exercise(app, win, m2, out, wait, require)
             require(recipes['passed'], 'Business recipes failed')
-            report['checks'].append('Nine business recipes replayed through actual MCP; modeless picker, scoped prompt copy and stale-context/explicit-adoption guards')
+            report['checks'].append('Ten business recipes replayed through actual MCP; modeless picker, scoped prompt copy and stale-context/explicit-adoption guards')
+            from automation_refresh_smoke import exercise as refresh_exercise
+            refreshed = refresh_exercise(win, m2, out, wait, require)
+            require(refreshed['passed'], 'CLI and read-only query acceptance failed')
+            report['checks'].extend(refreshed['checks'])
             win.grab().save(str(out / 'AI协助工作台.png'))
             report['passed'] = True
         except Exception: report['error'] = traceback.format_exc()

@@ -17,7 +17,7 @@ import work_repository as wr
 class AutomationContractTests(unittest.TestCase):
     def test_public_surface_excludes_persistence_and_arbitrary_execution(self):
         names = {x['name'] for x in protocol.public_tools()}
-        self.assertEqual(len(names), 12)
+        self.assertEqual(len(names), 13)
         for name in ['execute_python', 'sql', 'confirm_normal', 'delete_orders', 'save_stores']:
             with self.assertRaises(protocol.CommandError): protocol.validate_call(name, {})
 
@@ -42,7 +42,7 @@ class AutomationContractTests(unittest.TestCase):
         def call(method, **params): return response({'jsonrpc': '2.0', 'id': 1, 'method': method, 'params': params}, c, ready)
         self.assertIn('error', call('tools/list'))
         self.assertEqual(call('initialize', protocolVersion='2025-11-25')['result']['protocolVersion'], '2025-11-25')
-        self.assertEqual(len(call('tools/list')['result']['tools']), 12)
+        self.assertEqual(len(call('tools/list')['result']['tools']), 13)
         self.assertEqual(call('tools/call', name='workbench_context')['result']['structuredContent']['amount'], 0)
         self.assertTrue(call('tools/call', name='save')['result']['isError'])
         self.assertIsNone(response({'jsonrpc': '2.0', 'method': 'tools/call', 'params': {'name': 'workbench_context'}}, c, ready))

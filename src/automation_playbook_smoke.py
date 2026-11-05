@@ -155,6 +155,13 @@ def exercise(app, win, client, out, wait, require):
         explained = finish(hist['task_id'])['explanation']
         require(explained['order']['revision'] == orders[0]['revision'], 'Wrong history revision')
         record('history', {'order_id': order_id, 'revision': explained['order']['revision']})
+        prompt('scheduled')
+        for kind in ('schedules', 'scheduled_runs'): call('find_resources', {'kind':kind, 'limit':100})
+        dialog = show_playbooks(win); app.processEvents(); dialog.cases.setCurrentRow(len(PLAYBOOKS)-1)
+        require(dialog.copy_button.isEnabled(), 'Read-only schedule recipe requires unrelated inputs')
+        dialog.copy_prompt(); require('scheduled_run_status' in QApplication.clipboard().text(), 'Schedule prompt missing tool')
+        dialog.grab().save(str(out / 'AI定时查询.png')); dialog.close(); app.processEvents()
+        record('scheduled', {'read_only':True, 'populated_run_validation':'refresh-report.json'})
         require({x['case'] for x in report['cases']} == {x[0] for x in PLAYBOOKS}, 'Case coverage incomplete')
         report['passed'] = True
     finally:

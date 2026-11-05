@@ -54,6 +54,24 @@ class GatewayRegression(unittest.TestCase):
         self.assertEqual(self.g.journal.get(pid)['state'],'prepared')
         self.assertEqual(self.g.workbench_context({})['selected_stores'],['S1','S2'])
 
+    def test_preview_parameters_are_frozen_and_scheduler_blocks_new_AI_work(self):
+        from types import SimpleNamespace
+        install(self.win,'B')
+        pid=self.prepare('preview-values',stores=['S1'],parameter_changes=[{'store':'S1','path':['warehouses','山东仓',0],'value':11}])
+        value=self.g.effective_parameters({'stores':['S1'],'scope':'preview','preview_id':pid})
+        field=next(f for f in value['stores'][0]['parameters'] if f['path']==['warehouses','山东仓',0])
+        self.assertEqual(field['value'],11)
+        self.assertNotEqual(self.win.config_for('S1')['warehouses']['山东仓'][0],11)
+        self.assertEqual(value['stores'][0]['parameter_signature'],self.g.prepared[pid]['jobs']['S1']['parameter_signature'])
+        for args in ({'stores':['S1'],'scope':'preview'}, {'stores':['S1'],'preview_id':pid}):
+            with self.assertRaises(CommandError):self.g.effective_parameters(args)
+        self.win.scheduled=SimpleNamespace(worker=object(),publisher=None)
+        try:
+            self.assertTrue(self.g.workbench_context({})['busy'])
+            with self.assertRaises(CommandError) as caught:self.g.prepare_calculation({'context_token':self.g.token(),'operation_key':'while-scheduled','mode':'trial'})
+            self.assertEqual(caught.exception.code,'BUSY')
+        finally:del self.win.scheduled
+
     def test_result_cache_is_bounded_and_adopted_results_survive(self):
         install(self.win,'B'); ids=[]
         def calculate(p,codes,notify,cancel):

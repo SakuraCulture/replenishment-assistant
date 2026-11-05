@@ -58,6 +58,27 @@ def connection_configs(host):
     return {'workbuddy': {'mcpServers': {'replenishment': entry}}, 'codex': toml}
 
 
+def cli_guide(host):
+    command, args = bridge_command()
+    def quote(value): return "'" + str(value).replace("'", "''") + "'"
+    executable = '& ' + ' '.join(quote(s) for s in [command, *args])
+    connected = executable + ' --connection ' + quote(host.automation.connection_file)
+    return '\n'.join([
+        '补货助手 CLI · 在 PowerShell 执行；与 MCP 共用工作台连接和权限。',
+        '先打开本交付包的补货助手，在 AI 协助启用本机连接，并关闭业务弹窗。',
+        '版本（不需要连接）：\n' + executable + ' version',
+        '连接诊断（只查询，不自动启用）：\n' + connected + ' doctor',
+        '开放工具与参数：\n' + executable + ' tools',
+        '当前工作台：\n' + connected + ' call workbench_context',
+        '复杂参数保存为 UTF-8 JSON 后调用，例如：\n' + connected + " call effective_parameters --arguments-file '.\\参数核对.json'",
+        '参数核对.json 内容示例：{"stores":["准确门店编码"],"scope":"current"}；defaults 为已保存默认，不代表本次已采用。',
+        '先核对 context_token 和门店编码再试算；新请求使用新 operation_key，状态不明查询原任务。',
+        '定时任务只读：find_resources 的 schedules / scheduled_runs，以及 scheduled_run_status。',
+        '不读取数据库绕过接口；不开放签发、采购、删除、永久设置或平台取数。',
+        '退出码 0=成功（任务已受理仍须查询完成），2=输入/连接/业务拒绝，3=接口未完成；输出 UTF-8 JSON。',
+        '更换程序目录或资料环境后，重新生成这份说明。不要发送 connection.json 的连接密钥。'])
+
+
 def settings(host):
     g = host.automation; d = QDialog(host); d.setWindowTitle('AI 协助 · Codex / WorkBuddy'); d.resize(700, 350)
     v = QVBoxLayout(d); v.addWidget(label('使用当前工作台，查询与计算；正式保存、签发和平台采购仍在原页面完成。'))
@@ -77,12 +98,13 @@ def settings(host):
         if not path: return
         try:
             data = connection_configs(host); folder = Path(path)
-            targets = {'Codex_补货助手_MCP.toml': data['codex'], 'WorkBuddy_补货助手_MCP.json': json.dumps(data['workbuddy'], ensure_ascii=False, indent=2)}
+            targets = {'Codex_补货助手_MCP.toml': data['codex'], 'WorkBuddy_补货助手_MCP.json': json.dumps(data['workbuddy'], ensure_ascii=False, indent=2),
+                       '补货助手_CLI使用说明.txt': cli_guide(host)}
             if any((folder / n).exists() for n in targets): raise ValueError('该目录已有同名配置，请选择新目录，避免覆盖已有配置')
             for name, body in targets.items(): (folder / name).write_text(body, encoding='utf-8')
-            QMessageBox.information(d, '配置已生成', '已生成两个客户端的连接配置片段。请在客户端添加，不要覆盖整份原配置。启用工作台连接后即可使用。')
+            QMessageBox.information(d, '配置已生成', '已生成客户端配置片段和 CLI 使用说明。请在客户端添加，不要覆盖整份原配置；启用连接后关闭此弹窗再使用。')
         except Exception as exc: QMessageBox.warning(d, '未导出配置', str(exc))
-    v.addWidget(button('生成 Codex 与 WorkBuddy 连接配置', export))
+    v.addWidget(button('生成连接配置与 CLI 使用说明', export))
     v.addWidget(button('查看本机 AI 任务', lambda: tasks(host)))
     v.addWidget(button('× 关闭', d.reject)); refresh(); d.exec()
 

@@ -13,6 +13,7 @@ PLAYBOOKS = (
     ('retry', '继续失败或停止的门店', '沿用原任务', '只重试原任务失败或停止的门店，保留原输入、参数和必卖清单。'),
     ('stop', '停止任务后续门店', '停止后续', '正在计算的门店安全结束；已完成结果保留。'),
     ('adopt', '采用已核对的试算', '修改本次作业', '明确采用指定试算；不会保存草稿、签发或修改永久默认。'),
+    ('scheduled', '查看定时补货进度', '只查询', '查看安排、运行阶段、门店进度和需处理事项，不启动或改变任务。'),
 )
 CATALOG = {p[0]: p for p in PLAYBOOKS}
 STORE_CASES = {'check', 'calculate', 'compare', 'explain'}
@@ -59,9 +60,10 @@ def render(case, context, values):
     if case == 'explain' and len(scope['stores']) != 1: raise ValueError('解释商品时，请只选择一家门店。')
     if case == 'adopt' and not values.get('reviewed'): raise ValueError('请先核对结果，再勾选允许采用到本次作业。')
     steps = {
-        'check': '依次调用 workbench_context、find_resources（files/catalogs，按 next_offset 翻页）、effective_parameters（指定 stores）。按门店解释预算、主从仓、备货/到货天数、分类与通用参数及接口提供的来源。只查询，不执行 prepare_calculation。区分已登记资料与已经检查通过；不能仅凭文件登记断言可计算。列出下一步操作，等待人员指示。',
-        'calculate': '先读取指定 stores 的 effective_parameters，简述实际预算和周期。调用 prepare_calculation，mode 必须为 trial，stores 严格按下面顺序，不传 paths/plan_id/parameter_changes。等待检查任务结束，只有 state=prepared 才用其 task_id 作为 preview_id 调用 run_calculation。等待计算结束后读取 calculation_results 汇总，逐店查询 filter=issues。输出门店、计算完成情况、执行金额、待核与风险、任务编号。不调用 adopt_trial。',
-        'compare': '先读取 effective_parameters，确认指定仓确实为该店供货仓，并核对现有参数路径。依次进行两次独立 trial；每次 prepare_calculation 只提交一个 parameter_changes：store 为指定门店，path=["warehouses", 指定仓, 0]，value 分别为 days 中两个数；其他参数和预算、必卖清单保持原值，不传预案或新文件。每次检查就绪后 run_calculation 并等待完成；在开始下一次前完整读取并保留第一次结果。使用 calculation_results 按该门店分页读取全部商品，以门店编码+仓+商品编码对应，比较执行数量和金额，区分新增、取消和改量。报两种天数的总金额、差额、变化商品数及金额差最大的前10项，截断处明确标注。附两个任务编号。不要采用任何一次结果。',
+        'check': '依次调用 workbench_context、find_resources（files/catalogs，按 next_offset 翻页）、effective_parameters（指定 stores，scope=current）。再用 scope=defaults 查询已保存默认，逐门店说明与本次快照的差异；没有保存默认时如实标注，不推测或自动采用。按门店解释预算、主从仓、备货/到货天数、分类与通用参数、补货策略、全局分类映射及接口提供的来源。方案名不代表每个字段的编辑来源。只查询，不执行 prepare_calculation。区分已登记资料与已经检查通过；不能仅凭文件登记断言可计算。列出下一步操作，等待人员指示。',
+        'scheduled': '依次调用 find_resources，kind=schedules 与 scheduled_runs，按 next_offset 读完。对运行中或需处理的任务用返回的准确 id 调用 scheduled_run_status，门店页按 stores.next_offset，事件按 next_after 继续；每页 limit<=100。报告安排名称、预案、启用状态、计划时间、当前阶段、门店完成数和异常；明确计算完成仍等待人工核对签发。不得调用 prepare_calculation、run_calculation、stop_remaining、retry_failed 或 adopt_trial，不启动、暂停、重试、刷新平台或采用定时结果。遇到问题仅说明人员应前往“定时补货”的运行记录处理。',
+        'calculate': '先读取指定 stores 的 effective_parameters，简述实际预算和周期。调用 prepare_calculation，mode 必须为 trial，stores 严格按下面顺序，不传 paths/plan_id/parameter_changes。等待检查任务结束，只有 state=prepared 才用其 task_id 作为 preview_id。先用 effective_parameters(scope=preview, preview_id=该编号, stores=指定门店) 核对实际冻结参数，再调用 run_calculation。等待计算结束后读取 calculation_results 汇总，逐店查询 filter=issues。输出门店、计算完成情况、执行金额、待核与风险、任务编号。不调用 adopt_trial。',
+        'compare': '先读取 effective_parameters，确认指定仓确实为该店供货仓，并核对现有参数路径。依次进行两次独立 trial；每次 prepare_calculation 只提交一个 parameter_changes：store 为指定门店，path=["warehouses", 指定仓, 0]，value 分别为 days 中两个数；其他参数和预算、必卖清单保持原值，不传预案或新文件。每次检查就绪后用 effective_parameters(scope=preview, preview_id=预览编号, stores=指定门店) 核对实际改动，再 run_calculation 并等待完成；在开始下一次前完整读取并保留第一次结果。使用 calculation_results 按该门店分页读取全部商品，以门店编码+仓+商品编码对应，比较执行数量和金额，区分新增、取消和改量。报两种天数的总金额、差额、变化商品数及金额差最大的前10项，截断处明确标注。附两个任务编号。不要采用任何一次结果。',
         'review': '先用 task_status 查询指定 task_id。若仍在运行，只报告真实进度。结束后 calculation_results 不传 store 取得门店汇总，再按返回门店顺序分别用 filter=issues 分页查询。金额使用接口实际值，缺价/待核不能视为0。输出各店执行金额、预算缺口（仅使用已返回字段）、异常和风险及需要人工处理的动作。不重新计算、不采用。',
         'explain': '先查询指定 task_id 的 task_status，再调用 explain_decision，使用 task_id、store=stores[0]、warehouse 和 sku 的精确值。用中文参数名解释原销量、可用与在途、箱规、预测、保底/例外、准入及预算对最终数量的作用，只引用已返回依据。缺少的过程明确说无法确定，不重复运行模型，不改量。',
         'history': '使用精确 order_id、warehouse、sku 调用 explain_decision。若返回任务编号，轮询 task_status，读取 explanation。只用历史快照；不使用 effective_parameters 或当前商品资料补写历史。输出当时销量库存、实际参数、数量形成过程和缺失依据，不重新计算或采用。',

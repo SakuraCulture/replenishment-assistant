@@ -45,6 +45,7 @@ def main():
         subprocess.run(cmd,cwd=source,env=env,stdout=log,stderr=log,check=True)
         if (source/'src/automation_bridge.py').exists():
             bridge=[sys.executable,'-m','PyInstaller','--clean','--console','--onedir','--noupx','--name','补货助手AI接口',
+                    '--add-data',str(source/'src/version.json')+';.', '--add-data',str(build/'build_info.json')+';.',
                     '--distpath',str(build/'bridge-dist'),'--workpath',str(build/'bridge-work'),'--specpath',str(build),str(source/'src/automation_bridge.py')]
             subprocess.run(bridge,cwd=source,env=env,stdout=log,stderr=log,check=True)
             shutil.copytree(build/'bridge-dist/补货助手AI接口',dist/'补货助手/AI接口')
