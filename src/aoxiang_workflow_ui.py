@@ -19,6 +19,7 @@ from aoxiang_ui_common import ComponentDialog, Call, component_root, show_modal
 from runtime_support import Cancelled
 
 KINDS = {'prepare': '采购预览', 'upload': '确认上传采购', 'receipt': '收货同步'}
+from aoxiang_workflow_state import can_end_local,local_preparation,summary as task_summary,counts
 STATES = {'QUEUED': '排队', 'RUNNING': '正在处理', 'YIELDED': '等待人工操作结束', 'PAUSED': '已停止，可继续原任务',
           'FAILED': '批次未完成', 'READY': '预览完成，尚未上传', 'COMPLETED': '完成', 'COMPLETED_WITH_ERRORS': '已处理，有待核项', 'CANCELLED': '剩余任务已取消',
           'PENDING': '未处理', 'PREPARED': '预览就绪，未上传', 'BOUND': '已关联采购单', 'OBSERVED': '已观察，尚未完成', 'SYNCED': '正式实收已保存', 'REVIEW': '待核，不自动重试', 'SKIPPED': '周期已停止，本次跳过'}
@@ -115,6 +116,8 @@ class Manager(QObject):
             if self.busy:
                 self.busy=False;self.status('数据库已恢复可用，后台队列继续检查原任务')
             if not job:
+                text='当前没有正在执行或排队的任务；历史待处理项可在批次作业中查看'
+                if self.message!=text:self.status(text)
                 return
             token = self.gate.claim_background()
             if token is None:
@@ -244,7 +247,9 @@ class QueueDialog(QDialog):
         self.table.cellDoubleClicked.connect(lambda *_:self.details())
         v.addWidget(self.table, 1)
         row = QHBoxLayout()
-        row.addWidget(button('查看所选订单采购明细', self.details))
+        self.preview_btn=button('查看采购预览', self.details);row.addWidget(self.preview_btn)
+        self.reason_btn=button('查看失败原因', self.failure_reason);row.addWidget(self.reason_btn)
+        self.table.itemSelectionChanged.connect(self.detail_controls)
         self.upload_btn = button('确认上传勾选的采购预览', self.upload, True)
         self.resume_btn = button('继续本批原未完任务', self.resume)
         self.stop_btn = button('停止本批剩余动作', lambda:manager.stop(self.id))
@@ -256,6 +261,7 @@ class QueueDialog(QDialog):
         row.addWidget(button('关闭（已排队作业继续）', self.accept))
         self.retry_btn=button('重跑全部失败项',self.retry_all);row.addWidget(self.retry_btn)
         self.new_batch_btn=button('结束本批并新建',self.finish_new);row.addWidget(self.new_batch_btn)
+        self.end_local_btn=button('结束所选本地准备',self.end_local);row.addWidget(self.end_local_btn)
         v.addLayout(row)
         self.bar = QProgressBar();v.addWidget(self.bar)
         self.note = label('');self.note.setWordWrap(True);v.addWidget(self.note)
@@ -268,7 +274,9 @@ class QueueDialog(QDialog):
     def refresh(self):
         try:
             jobs = self.manager.store.list()
-            if self.id and all(j['id']!=self.id for j in jobs):jobs.insert(0,self.manager.store.get(self.id))
+            if self.id and all(j['id']!=self.id for j in jobs):
+                try:jobs.insert(0,self.manager.store.get(self.id))
+                except ValueError:self.id=None;self.current=None
             selected = self.id or (jobs[-1]['id'] if jobs else None)
             with QSignalBlocker(self.jobs):
                 self.jobs.clear()
@@ -281,31 +289,34 @@ class QueueDialog(QDialog):
             self.note.setText(self.manager.message)
             self.stop_btn.setEnabled(active)
             self.retry_btn.setEnabled(bool(job and job['state']!='CANCELLED' and any(i['state']=='FAILED' for i in job['items'])))
-            self.new_batch_btn.setEnabled(bool(job and job['state']!='RUNNING' and any(i['state'] in ('PENDING','FAILED') for i in job['items'])))
+            self.new_batch_btn.setEnabled(bool(job and job['state']!='RUNNING' and not any(i['state'] in ('RUNNING','REVIEW') for i in job['items']) and any(i['state'] in ('PENDING','FAILED') for i in job['items'])))
             self.resume_btn.setEnabled(bool(job and job['state'] in ('PAUSED', 'FAILED')) and not active)
             self.cancel_btn.setEnabled(bool(job and job['state'] in ('QUEUED', 'PAUSED', 'YIELDED', 'FAILED')) and not active)
             self.upload_btn.setEnabled(bool(job and job['kind'] == 'prepare' and job['state'] in ('READY', 'COMPLETED_WITH_ERRORS', 'CANCELLED') and any(i['state']=='PREPARED' for i in job['items'])))
+            self.end_local_btn.setEnabled(bool(job and not active and any(can_end_local(job,i) for i in job['items'])))
             if not job:
+                self.current=None;self.preview_btn.setEnabled(False);self.reason_btn.setEnabled(False)
                 self.summary.setText('尚无批次。付款核对页可勾选订单后批量生成采购预览。')
                 self.table.setRowCount(0);return
             done = sum(i['state'] in DONE_ITEM for i in job['items'])
             self.bar.setRange(0, len(job['items']));self.bar.setValue(done)
-            self.bar.setFormat(f'已处理 {done} / {len(job["items"])} 单 · ' + STATES[job['state']])
-            self.summary.setText(STATES[job['state']] + ' · ' + str(job.get('message') or '') + '\n停止、取消只影响剩余动作；已经上传的采购单不会撤销。')
+            self.bar.setFormat(f'已检查 {done} / {len(job["items"])} 单 · 就绪/成功 {counts(job)["success"]} 单')
+            self.summary.setText(task_summary(job) + '\n停止、结束只影响本地后续动作；已经上传的采购单不会撤销。')
             if self.current and self.current['sequence'] == job['sequence']:
                 return
-            checked = {i for i in range(self.table.rowCount()) if getattr(self,'rendered_id',None)==job['id'] and self.table.item(i, 0) and self.table.item(i, 0).checkState() == Qt.CheckState.Checked}
+            checked = {self.current['items'][i]['key'] for i in range(self.table.rowCount()) if self.current and i<len(self.current['items']) and getattr(self,'rendered_id',None)==job['id'] and self.table.item(i, 0) and self.table.item(i, 0).checkState() == Qt.CheckState.Checked}
             self.rendered_id=job['id']
             self.current = job
             self.table.setRowCount(len(job['items']))
             for n, i in enumerate(job['items']):
                 h = i.get('head') or i.get('basis') or {}
                 check = QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
-                check.setCheckState(Qt.CheckState.Checked if n in checked else Qt.CheckState.Unchecked)
-                if i['state'] != 'PREPARED': check.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                check.setCheckState(Qt.CheckState.Checked if i['key'] in checked else Qt.CheckState.Unchecked)
+                if i['state'] != 'PREPARED' and not can_end_local(job,i): check.setFlags(Qt.ItemFlag.ItemIsEnabled)
                 self.table.setItem(n, 0, check)
                 summary = i.get('summary') or {}
-                values = [i.get('display_name') or h.get('name') or h.get('store'), h.get('warehouse'), h.get('number'), STATES.get(i['state'], i['state']),
+                state_text='本地准备未通过，未生成采购预览' if local_preparation(i,job['kind']) and i['state'] in ('FAILED','REVIEW') else '本地准备已结束' if i.get('ended_locally') else STATES.get(i['state'], i['state'])
+                values = [i.get('display_name') or h.get('name') or h.get('store'), h.get('warehouse'), h.get('number'), state_text,
                           f"{summary.get('sku_count', '—')} / {summary.get('amount', '—')}", (i.get('result') or {}).get('binding', {}).get('orderId') or i.get('order_id', '—'),
                           (i.get('error') or {}).get('message', '')]
                 for c, x in enumerate(values, 1):
@@ -315,8 +326,34 @@ class QueueDialog(QDialog):
                     b.setEnabled(job['state']!='CANCELLED');self.table.setCellWidget(n,8,b)
                 else:self.table.removeCellWidget(n,8)
             for c, width in enumerate((50, 140, 70, 235, 160, 120, 170, 240)):self.table.setColumnWidth(c, width)
+            self.detail_controls()
         except Exception as exc:
             self.note.setText('读取队列失败：' + str(exc))
+
+    def detail_controls(self):
+        n=self.table.currentRow()
+        item=self.current['items'][n] if self.current and 0<=n<len(self.current['items']) else None
+        self.preview_btn.setEnabled(bool(item and item.get('package')))
+        self.reason_btn.setEnabled(bool(item and item.get('error')))
+
+    def failure_reason(self):
+        n=self.table.currentRow()
+        if not self.current or not 0<=n<len(self.current['items']):return
+        item=self.current['items'][n];message=(item.get('error') or {}).get('message') or '本项没有失败记录。'
+        if local_preparation(item,self.current['kind']):message+='\n本次未生成采购预览，未进入上传。可核对付款后重跑，或结束本地准备；不必为删除订单而确认付款。'
+        else:message+='\n请核对原平台任务；本地停止不代表平台订单已撤销。'
+        QMessageBox.information(self,'任务原因',message)
+
+    def end_local(self):
+        if not self.current:return
+        items=[i for n,i in enumerate(self.current['items']) if self.table.item(n,0).checkState()==Qt.CheckState.Checked]
+        if not items or not all(can_end_local(self.current,i) for i in items):
+            QMessageBox.information(self,'选择本地准备','请只勾选未运行、未生成采购身份的本地准备项。');return
+        text='只结束以下本地准备，未选任务和业务订单保留，不操作平台：\n'+'\n'.join(i['key'] for i in items)
+        if QMessageBox.question(self,'结束所选本地准备',text,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return
+        try:
+            self.manager.ensure_owner();self.manager.store.end_local_items(self.id,[i['key'] for i in items],self.current['sequence']);self.current=None;self.refresh()
+        except Exception as exc:QMessageBox.warning(self,'未结束',str(exc))
 
     def details(self):
         n = self.table.currentRow()
@@ -324,7 +361,7 @@ class QueueDialog(QDialog):
             QMessageBox.information(self, '先选择订单', '请先点击要核对的订单行。');return
         p = self.current['items'][n].get('package')
         if not p:
-            QMessageBox.information(self, '采购明细', '此项没有采购预览；收货商品明细请在对应订单的翱象收货页核对。');return
+            self.failure_reason();return
         try:
             from business_ui import run, grid
             from aoxiang_receipts import checked_json
@@ -345,6 +382,8 @@ class QueueDialog(QDialog):
         if not self.current:return
         prepared_id, expected_sequence = self.current['id'], self.current['sequence']
         positions = [i for i in range(self.table.rowCount()) if self.table.item(i, 0).checkState() == Qt.CheckState.Checked and self.current['items'][i]['state'] == 'PREPARED']
+        if any(self.table.item(i,0).checkState()==Qt.CheckState.Checked and self.current['items'][i]['state']!='PREPARED' for i in range(self.table.rowCount())):
+            QMessageBox.information(self,'选择就绪预览','所选含未就绪任务；请只勾选成功的采购预览再上传。');return
         if not positions:
             QMessageBox.information(self, '先选择范围', '请勾选要上传的成功采购预览。');return
         items = [self.current['items'][i] for i in positions]

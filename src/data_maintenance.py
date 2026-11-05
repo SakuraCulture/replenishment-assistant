@@ -19,8 +19,8 @@ import maintenance_storage as storage
 def tables(db):return {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 def digest(value):return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
 
-def snapshot(db,oids,cancel=None,progress=lambda _:None):
-    available=tables(db);parents=[];versions=[];evidence=[];external=[];related_docs=set()
+def snapshot(db,oids,cancel=None,progress=lambda _:None,inspect=False):
+    available=tables(db);parents=[];versions=[];evidence=[];external=[];related_docs=set();blockers=[];tasks=[]
     for oid in oids:
         checkpoint(cancel)
         row=db.execute('SELECT day,store,number,current FROM normal_orders WHERE oid=?',(oid,)).fetchone()
@@ -74,10 +74,23 @@ def snapshot(db,oids,cancel=None,progress=lambda _:None):
         for id,state,raw in db.execute('SELECT id,state,payload FROM ax.ax_workflows ORDER BY rowid'):
             job=wr.loads(raw);matched=[i for i in job['items'] if (i.get('head') or i.get('basis') or {}).get('oid') in oids]
             if not matched:continue
-            if state in ('QUEUED','RUNNING','YIELDED','PAUSED') or any(i['state'] in ('RUNNING','REVIEW','PENDING') for i in matched):raise ValueError('所选订单仍有翱象运行、未完成或待核任务，请先安全结束/核对：'+id)
-            if any(i.get('package') for i in matched):external.append(id+' 含原平台采购身份；本地删除不会撤销平台采购')
-            ax.append([id,raw]);evidence.append(['ax',id,raw])
-    return {'parents':parents,'docs':sorted(related_docs),'external':external,'ax':ax,'token':digest(evidence)}
+            from aoxiang_workflow_state import deletion_issue,can_end_local
+            for i in matched:
+                issue=deletion_issue({**job,'state':state},i)
+                h=i.get('head') or i.get('basis') or {}
+                task={'id':id,'key':i['key'],'sequence':job['sequence'],'order':h.get('number') or i['key'],
+                      'name':h.get('name') or h.get('store'),'warehouse':h.get('warehouse'),
+                      'action':issue[0] if issue else '可随订单清理','reason':issue[1] if issue else '任务已停止；仅清理所选订单的关联记录',
+                      'can_end':can_end_local(job,i),'oid':h.get('oid')}
+                tasks.append(task)
+                if issue:blockers.append(task)
+            if any(i.get('package') or i.get('purchase_id') or i.get('order_id') or (i.get('result') or {}).get('binding') for i in matched):external.append(id+' 含原平台采购身份；本地删除不会撤销平台采购')
+            ax.append([id,raw]);evidence.append(['ax',id,state,raw])
+        for id,raw in db.execute('SELECT id,payload FROM ax.ax_schedules ORDER BY rowid'):
+            if wr.loads(raw).get('basis',{}).get('oid') in oids:evidence.append(['ax_schedule',id,raw])
+    if blockers and not inspect:
+        raise ValueError('所选订单仍有翱象任务需处理：\n'+'\n'.join(f"{b['order']}：{b['action']}；{b['reason']}（{b['id']}）" for b in blockers))
+    return {'parents':parents,'docs':sorted(related_docs),'external':external,'ax':ax,'token':digest(evidence),'blockers':blockers,'tasks':tasks}
 
 def connect(path):
     db=sqlite3.connect(path,timeout=.2);db.execute('PRAGMA secure_delete=ON')
@@ -88,17 +101,20 @@ def connect(path):
         if cache.exists():db.execute(f'ATTACH DATABASE ? AS cache{n}',(str(cache),))
     return db
 
-def prepare(path,heads,progress=lambda _:None,cancel=None):
+def prepare(path,heads,progress=lambda _:None,cancel=None,*,inspect=False):
     oids=list(dict.fromkeys(h['oid'] for h in heads))
     if not oids:raise ValueError('请勾选要彻底删除的订单')
     progress('读取订单与关联数据，核对删除范围…')
     with closing(connect(path)) as db:
-        db.execute('BEGIN');plan=snapshot(db,oids,cancel,progress)
+        db.execute('BEGIN');plan=snapshot(db,oids,cancel,progress,inspect=inspect)
         for h in heads:
             p=next(p for p in plan['parents'] if p['oid']==h['oid'])
             if h['revision']!=p['revision'] or h['digest']!=p['digest']:raise wr.Conflict('原签发已变化，请刷新再删除')
         plan['oids']=oids
     return plan
+
+def inspect_deletion(path,heads,progress=lambda _:None,cancel=None):
+    return prepare(path,heads,progress,cancel,inspect=True)
 
 def strip_work(value,codes,*,owned=False,progress=lambda _:None,cancel=None):
     checkpoint(cancel)
@@ -342,12 +358,15 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
             apply_rewrites(db,scratch,prepared,dict.fromkeys(h['day'] for h in plan['parents']),progress,cancel)
             for id,raw in plan['ax']:
                 p=wr.loads(raw);p['items']=[i for i in p['items'] if (i.get('head') or i.get('basis') or {}).get('oid') not in oids]
-                db.execute('DELETE FROM ax.ax_workflow_events WHERE id=?',(id,))
-                if not p['items']:db.execute('DELETE FROM ax.ax_workflows WHERE id=?',(id,))
+                if not p['items']:
+                    db.execute('DELETE FROM ax.ax_workflow_events WHERE id=?',(id,))
+                    db.execute('DELETE FROM ax.ax_workflows WHERE id=?',(id,))
                 else:
+                    from aoxiang_workflow_state import reconcile
                     for n,i in enumerate(p['items']):i['position']=n
-                    p['sequence']+=1;p['message']='关联订单经确认删除；其余项保留'
-                    db.execute('UPDATE ax.ax_workflows SET payload=? WHERE id=?',(wr.dumps(p),id))
+                    p=reconcile(p);p['sequence']+=1;p['updated_at']=time.time()
+                    db.execute('UPDATE ax.ax_workflows SET state=?,payload=? WHERE id=?',(p['state'],wr.dumps(p),id))
+                    db.execute('INSERT INTO ax.ax_workflow_events VALUES(?,?,?)',(id,p['sequence'],wr.dumps({'at':p['updated_at'],'event':'REMOVED_SELECTED_ORDER_ITEMS','state':p['state'],'message':p['message']})))
             if 'ax' in [r[1] for r in db.execute('PRAGMA database_list')]:
                 for id,raw in db.execute('SELECT id,payload FROM ax.ax_schedules').fetchall():
                     if wr.loads(raw).get('basis',{}).get('oid') in oids:db.execute('DELETE FROM ax.ax_schedules WHERE id=?',(id,))

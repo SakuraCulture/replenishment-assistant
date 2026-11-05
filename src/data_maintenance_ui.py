@@ -44,7 +44,38 @@ def _remove_job(host,record):
     except Exception as exc:QMessageBox.warning(host,'未删除草稿',str(exc))
 
 def remove(parent,host,heads):
-    return guarded(parent,host,lambda:_remove(parent,host,heads))
+    result=guarded(parent,host,lambda:_remove(parent,host,heads))
+    # Release the maintenance pause before opening a task that may need to run.
+    if isinstance(result,tuple) and result[0]=='open_task':host.aoxiang_workflows.open_queue(result[1])
+    return result
+
+def review_blockers(parent,host,plan):
+    """One complete list; never silently delete the unblocked subset."""
+    d=QDialog(parent);d.setWindowTitle('删除前处理关联任务');d.resize(1100,600);v=QVBoxLayout(d)
+    v.addWidget(label('当前尚未删除任何订单。处理后重新核对完整范围；不会自动跳过被拦截订单。','section'))
+    blocked=plan['blockers'];action=[]
+    table,model=grid(d,['订单','门店','仓','处理方式','原因'],[[b['order'],b['name'],b['warehouse'],b['action'],b['reason']] for b in blocked]);v.addWidget(table,1)
+    row=QHBoxLayout();row.addWidget(button('返回重新选择',d.reject))
+    local=[b for b in blocked if b['can_end']]
+    def end():
+        names='\n'.join(b['order'] for b in local)
+        if QMessageBox.question(d,'结束关联本地准备','仅结束下列未上传本地准备，不删除订单，不操作平台：\n'+names,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return
+        try:
+            manager=host.aoxiang_workflows;manager.ensure_owner(for_maintenance=True)
+            for id in dict.fromkeys(b['id'] for b in local):
+                group=[b for b in local if b['id']==id]
+                manager.store.end_local_items(id,[b['key'] for b in group],group[0]['sequence'])
+            d.accept()
+        except Exception as exc:
+            QMessageBox.warning(d,'请重新核对','部分本地准备可能已结束；订单尚未删除。重新核对当前状态。\n'+str(exc));d.accept()
+    end_btn=button('结束关联本地准备',end);end_btn.setEnabled(bool(local));row.addWidget(end_btn)
+    def open_task():
+        n=table.currentIndex().row()
+        if n<0:QMessageBox.information(d,'先选择任务','请点击要核对的订单任务。');return
+        action.append(('open_task',blocked[model.indices[n]]['id']));d.accept()
+    row.addWidget(button('查看并处理原任务',open_task));row.addWidget(button('重新核对删除范围',d.accept));v.addLayout(row)
+    accepted=d.exec()==QDialog.DialogCode.Accepted
+    return action[0] if action else accepted
 
 def _remove(parent,host,heads):
     if not heads:QMessageBox.information(parent,'请选择订单','先勾选需要清理的订单。');return
@@ -52,11 +83,17 @@ def _remove(parent,host,heads):
     if host.worker or (generator and generator.worker) or (manager and manager.worker) or getattr(host,'_aoxiang_dialog',None):
         QMessageBox.information(parent,'请先停止任务','请先停止当前计算、生成或平台任务，等待安全退出后再删除，避免旧任务继续写回。');return
     try:
-        with Session(host.work_repository.path) as session:plan=request(parent,session,'delete_preview',heads)
+        while True:
+            with Session(host.work_repository.path) as session:plan=request(parent,session,'delete_preview',heads)
+            if not plan.get('blockers'):break
+            follow=review_blockers(parent,host,plan)
+            if isinstance(follow,tuple):return follow
+            if not follow:return
         d=QDialog(parent);d.setWindowTitle('彻底删除订单及关联数据');d.resize(1050,650);v=QVBoxLayout(d)
         v.addWidget(label('永久删除，不进入回收站。请核对完整关联范围。','section'))
         v.addWidget(label('同一门店当天两仓共享原始计算快照，因此本次按门店当天整单删除，包含下列全部仓单、回传、付款、收货、生成结果和相关草稿数据。未选择的其他门店保留。'))
         table,model=grid(d,['日期','门店','补货父单号','包含的仓单'],[[h['day'],h['name'],h['number'],'、'.join(h['warehouses'])] for h in plan['parents']]);v.addWidget(table,1)
+        if plan.get('tasks'):v.addWidget(label(f"将同时清理 {len(plan['tasks'])} 条已停止的关联任务；同批未选订单的任务保持。"))
         v.addWidget(label('磁盘原Excel、已经导出的文件、旧备份与外部平台订单不删除。其他订单或当前资料维护仍在引用的原文件保留；外部采购身份防重复记录保留，不再列为本地业务订单。'))
         ack=QCheckBox('已核对外部订单：本地删除不代表外部作废，也不恢复实际仓库存')
         ack.setVisible(bool(plan['external']));v.addWidget(ack)
@@ -96,6 +133,7 @@ def _remove(parent,host,heads):
             if host.current_store in codes:host.current_store=None;host.result=None;host.dirty=True;host.navigate(3)
             host.saved_time='';host.touch();host.refresh_tables();host.selection_changed();host.update_controls()
         host.archive_checked.clear();host.refresh_archive();host.followup.query(keep_page=True)
+        if manager:manager.changed.emit()
         QMessageBox.information(parent,'已彻底删除',f"已删除 {result['deleted']} 个门店当天正常单及关联业务记录。没有移入回收站。")
     except Exception as exc:
         logging.exception('删除已提交，但界面刷新失败')

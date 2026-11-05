@@ -169,6 +169,42 @@ class WorkflowUiTests(unittest.TestCase):
         self.assertEqual([s['id'] for s in self.m.store.schedules()], ['p2','p1'])
         self.assertTrue(all(s['enabled'] for s in self.m.store.schedules()))
 
+    def test_local_failure_has_reason_not_fake_preview_and_can_end_selected(self):
+        j=self.m.store.prepare([head(1),head(2)])
+        for pos in (0,1):j=self.m.store.update(j['id'],position=pos,changes={'state':'REVIEW','error':{'code':'BUSINESS_REVIEW','message':'付款单尚未确认'}})
+        j=self.m.store.update(j['id'],state='COMPLETED_WITH_ERRORS')
+        d=QueueDialog(self.host,self.m,j['id']);d.timer.stop();d.table.setCurrentCell(0,1)
+        self.assertFalse(d.preview_btn.isEnabled());self.assertTrue(d.reason_btn.isEnabled())
+        self.assertIn('预览就绪0单',d.summary.text());self.assertIn('待处理2单',d.summary.text())
+        with patch('aoxiang_workflow_ui.QMessageBox.information') as info:
+            d.details();self.assertIn('未进入上传',info.call_args.args[-1]);self.assertNotIn('翱象收货页',info.call_args.args[-1])
+        d.table.item(0,0).setCheckState(Qt.CheckState.Checked)
+        with patch('aoxiang_workflow_ui.QMessageBox.question',return_value=QMessageBox.StandardButton.No) as ask:
+            d.end_local();self.assertEqual(ask.call_args.args[-1],QMessageBox.StandardButton.No)
+        self.assertEqual(self.m.store.get(j['id']),j)
+        with patch('aoxiang_workflow_ui.QMessageBox.question',return_value=QMessageBox.StandardButton.Yes):d.end_local()
+        kept=self.m.store.get(j['id']);self.assertEqual(kept['items'][0]['state'],'SKIPPED');self.assertEqual(kept['items'][1],j['items'][1])
+        self.assertEqual(Client.instances,[]);d.accept();d.deleteLater()
+
+    def test_refresh_keeps_checks_by_order_identity_not_old_row_number(self):
+        j=self.m.store.prepare([head(1),head(2),head(3)])
+        for n in range(3):self.m.store.update(j['id'],position=n,changes={'state':'PREPARED','package':{'id':'p'+str(n)}})
+        j=self.m.store.update(j['id'],state='READY');d=QueueDialog(self.host,self.m,j['id']);d.timer.stop()
+        d.table.item(1,0).setCheckState(Qt.CheckState.Checked)
+        self.m.store.update(j['id'],items=j['items'][1:]);d.refresh()
+        self.assertEqual(d.table.item(0,0).checkState(),Qt.CheckState.Checked)
+        self.assertEqual(d.table.item(1,0).checkState(),Qt.CheckState.Unchecked)
+        d.accept();d.deleteLater()
+
+    def test_idle_queue_message_finishes_and_delete_navigation_releases_maintenance(self):
+        self.m.message='正在重新检查后台及原任务状态…';self.m.tick()
+        self.assertIn('没有正在执行',self.m.message)
+        import data_maintenance_ui as ui
+        self.host.worker=None
+        with patch.object(ui,'_remove',return_value=('open_task','test-id')),patch.object(self.m,'open_queue') as opened:
+            opened.side_effect=lambda _:self.assertEqual(self.m.maintenance_depth,0)
+            ui.remove(self.host,self.host,[]);opened.assert_called_once_with('test-id')
+
     def test_show_modal_assigns_gate_before_queued_local_load(self):
         job, client = self.start_waiting();client.allow_close.clear()
         d = ReceiptSelection(self.host, self.host, client_factory=Client)

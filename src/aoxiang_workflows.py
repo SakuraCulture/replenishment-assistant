@@ -160,6 +160,24 @@ class Workflows:
             job['state'] = 'CANCELLED'
             return self._save(db, job, 'CANCELLED_REMAINDER_ONLY')
 
+    def end_local_items(self, id, keys, expected_sequence):
+        """Explicitly abandon selected, never-uploaded preparation only."""
+        from aoxiang_workflow_state import can_end_local, reconcile
+        with self.db(True) as db:
+            job=self._get(db,id)
+            if job['sequence']!=expected_sequence:raise ValueError('批次已变化，请刷新后重新核对')
+            selected=[i for i in job['items'] if i['key'] in keys]
+            if not keys or len(selected)!=len(set(keys)) or len(keys)!=len(set(keys)):
+                raise ValueError('所选本地任务范围已变化')
+            if not all(can_end_local(job,i) for i in selected):
+                raise ValueError('仅可结束未运行、未生成采购身份的本地准备；平台结果待核任务须核对原任务')
+            for i in selected:
+                i['state']='SKIPPED';i['ended_locally']=True
+            if not any(i['state']=='PENDING' for i in job['items']) and job['state'] in ACTIVE:
+                job['state']='COMPLETED'
+            job=reconcile(job)
+            return self._save(db,job,'ENDED_SELECTED_LOCAL_PREPARATION')
+
     def recover(self, *, timeout=10):
         with self.db(True,timeout=timeout) as db:
             for row in db.execute("SELECT payload FROM ax_workflows WHERE state='RUNNING'").fetchall():

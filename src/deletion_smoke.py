@@ -34,15 +34,36 @@ def start_smoke(app,win,args):
                 request(win,session,'prepare_save',win.snapshot());request(win,session,'save',None)
                 request(win,session,'prepare_normal',(win.snapshot(),codes));request(win,session,'confirm_normal',None)
             repo=no.Repository(win.work_repository);heads=purchases.targets(win.work_repository.path);chosen=[h for h in heads if h['store']==a];before=repo.get(win.job_day,b)
+            # Reproduce the real failure without touching a browser or platform.
+            from aoxiang_workflow_ui import QueueDialog
+            other=next(h for h in heads if h['store']==b);store=win.aoxiang_workflows.store
+            job=store.prepare([chosen[0],other])
+            for n in (0,1):store.update(job['id'],position=n,changes={'state':'REVIEW','error':{'code':'BUSINESS_REVIEW','message':'付款单尚未确认或对照依据已过期'}})
+            job=store.update(job['id'],state='COMPLETED_WITH_ERRORS');survivor=copy.deepcopy(job['items'][1]);survivor['position']=0
+            queue=QueueDialog(win,win.aoxiang_workflows,job['id']);queue.timer.stop();queue.show();queue.table.setCurrentCell(0,1);QTest.qWait(50)
+            require(not queue.preview_btn.isEnabled() and queue.reason_btn.isEnabled(),'failed local task still offers preview')
+            require('预览就绪0单' in queue.summary.text() and '待处理2单' in queue.summary.text(),'misleading completion summary')
+            queue.grab().save(str(out/'local-failure-queue.png'));queue.accept();queue.deleteLater()
+            checks.append('local failed preparation: no fake preview, failure reason enabled, zero-success summary; no browser involved')
+            queued=store.prepare([chosen[0],other]);queued_other=copy.deepcopy(queued['items'][1]);queued_other['position']=0
             # Exercise compressed legacy input through the real frozen worker.
             with closing(sqlite3.connect(win.work_repository.path)) as db,db:
                 db.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('deletion-smoke-legacy',win.job_day,no.encode({'states':{a:{},b:{}},'probe':list(range(800))})))
             checks.append('two-store Windows spawn calculation, draft save and atomic signature')
-            phase={'mode':'preview_cancel','saw':[]}
+            phase={'mode':'preview_cancel','saw':[],'last_modal':None}
             def click_dialog():
                 d=app.activeModalWidget()
                 if not d:return
-                if d.windowTitle()=='彻底删除订单及关联数据':
+                current=(phase['mode'],d.windowTitle())
+                if phase['last_modal']!=current:
+                    phase['last_modal']=current
+                    with (out/'ui-trace.jsonl').open('a',encoding='utf-8') as stream:stream.write(json.dumps(current,ensure_ascii=False)+'\n')
+                if d.windowTitle()=='删除前处理关联任务':
+                    d.grab().save(str(out/'task-blockers.png'))
+                    if phase['mode']=='preview_cancel':d.reject();phase['saw'].append('preview_cancel');return
+                    target=next(x for x in d.findChildren(QPushButton) if x.text()=='结束关联本地准备')
+                    QTimer.singleShot(0,target.click)
+                elif d.windowTitle()=='彻底删除订单及关联数据':
                     d.grab().save(str(out/'delete-preview.png'))
                     if phase['mode']=='preview_cancel':d.reject();phase['saw'].append('preview_cancel');return
                     for box in d.findChildren(QCheckBox):box.setChecked(True)
@@ -50,7 +71,9 @@ def start_smoke(app,win,args):
                 elif isinstance(d,Progress) and d.operation=='delete_orders' and phase['mode']=='close_cancel':
                     phase['saw'].append('close_cancel');phase['mode']='waiting_cancel';d.close()
                 elif isinstance(d,QMessageBox):
-                    phase['saw'].append(d.windowTitle());d.accept()
+                    phase['saw'].append(d.windowTitle())
+                    if d.windowTitle()=='结束关联本地准备':d.button(QMessageBox.StandardButton.Yes).click()
+                    else:d.accept()
             controller.timeout.connect(click_dialog);controller.start()
             ui.remove(win,win,[chosen[0]]);require(repo.get(win.job_day,a) is not None,'preview cancel deleted order')
             checks.append('actual deletion preview cancelled without mutation')
@@ -62,6 +85,12 @@ def start_smoke(app,win,args):
             require(repo.get(win.job_day,a) is None and repo.get(win.job_day,b)==before,'wrong deletion scope or sibling snapshot changed')
             require(a not in win.results and win.results[b]==original[b],'remaining current calculation changed')
             require(a not in win.store_widgets and b in win.store_widgets,'current table not refreshed')
+            remaining=store.get(job['id']);require(remaining['items']==[survivor],'unselected task changed')
+            require(remaining['state']=='COMPLETED_WITH_ERRORS' and '待处理1单' in remaining['message'],'remaining batch count stale')
+            remaining_queue=store.get(queued['id']);require(remaining_queue['items']==[queued_other] and remaining_queue['state']=='QUEUED','unselected queued task changed')
+            require('结束关联本地准备' in phase['saw'],'end local task confirmation missing')
+            checks.append('local preparation REVIEW no longer blocks deletion; unselected batch item and count preserved')
+            checks.append('actual blocker dialog: cancel, explicitly end only selected local preparation, retain unselected queued task; no platform submission')
             checks.append('retry after cancellation; legacy ijson parser in work process; exact sibling signed/current result retained; current table refreshed')
             win.show_section(2);win.followup.query();QTest.qWait(300);win.grab().save(str(out/'after-delete.png'))
             with Session(win.work_repository.path) as session:
