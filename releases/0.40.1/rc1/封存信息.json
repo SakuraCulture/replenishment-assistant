@@ -1,0 +1,9 @@
+{
+  "build_commit": "25d566a19ac3a43d9751cebafb2eb232fac5a4d0",
+  "build_id": "rc1",
+  "exe_sha256": "5491a1270558c495054e015f694305f7af598fa0c6ea67d654e262e4f0c9db8e",
+  "zip_sha256": "e02676c985bba307baee22ce429ff731869d10167e8c5b917319997284eac50b",
+  "zip_bytes": 124121022,
+  "files": 1226,
+  "zip_integrity_passed": true
+}

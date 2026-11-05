@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "baseline": "8078308394f527ffee27270eb61dbaf6980472be",
+  "synthetic": true,
+  "old_sheet_cells_compared": 1343,
+  "business_cell_differences": 0,
+  "allowed_presentation_changes": [
+    "新增6张监控表",
+    "统计口径新增监控样式版本",
+    "统计口径数量说明",
+    "导出类型中文名称"
+  ],
+  "dynamic_exclusions": [
+    "统计口径/生成时间"
+  ],
+  "protected_source_sha256": {
+    "src/model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "src/allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "src/one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "src/order_analytics.py": "56bb8e1dc8fddc89583e1f5ebb7d2949414eedca55f239663350fd8a64cd6be1",
+    "src/engine.py": "a2c5005367550167019f4cd07bd0dcfe572346ebbef0b11a84166ea0905d2525",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+  },
+  "database_unchanged": true,
+  "report_unchanged": true,
+  "template_sha256": "feed839f1338fb843baf6ef9376575c70dd2f091998c953efa4c216b7e605118",
+  "performance": {
+    "baseline": {
+      "runs_seconds": [
+        0.1701986999833025,
+        0.13275960000464693,
+        0.1303220999543555
+      ],
+      "median_seconds": 0.13275960000464693,
+      "min_seconds": 0.1303220999543555,
+      "max_seconds": 0.1701986999833025
+    },
+    "candidate": {
+      "runs_seconds": [
+        0.3490413000108674,
+        0.3007679999573156,
+        0.29326720000244677
+      ],
+      "median_seconds": 0.3007679999573156,
+      "min_seconds": 0.29326720000244677,
+      "max_seconds": 0.3490413000108674
+    }
+  },
+  "performance_limit": "同机同依赖、合成单店双仓2商品、温缓存、AB/BA/AB逐个运行；包含完整校验及Excel保存；不能代表真实大批量性能。新增版多6张监控表，不宣称提速。",
+  "example": "门店补货订单漏斗_合成样例.xlsx"
+}
