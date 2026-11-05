@@ -26,7 +26,7 @@ def install(host):
         g = host.automation
         if g.active:
             p = g.task_record(g.active); note.setText('AI 协助 · ' + p['message'])
-        else: note.setText('AI 协助已连接 · 查询与计算' if g.enabled else 'AI 协助未连接')
+        else: note.setText('AI 接口已启用 · 客户端需核对当前作业' if g.enabled else 'AI 协助未连接')
         details.setVisible(g.enabled); stop.setVisible(bool(g.active)); take.setVisible(bool(g.active))
     host.automation.changed.connect(refresh); refresh()
 
@@ -46,12 +46,7 @@ def takeover(host):
     host.status.setText('已停止启动后续步骤；当前门店安全结束后可人工编辑，已完成结果仍可查看。')
 
 
-def bridge_command():
-    if getattr(sys, 'frozen', False):
-        path = Path(sys.executable).parent / 'AI接口/补货助手AI接口.exe'
-        if not path.is_file(): raise ValueError('交付包缺少 AI 接口程序，请使用完整交付目录')
-        return str(path), []
-    return sys.executable, [str(Path(__file__).with_name('automation_bridge.py'))]
+from automation_connection import bridge_command
 
 
 def connection_configs(host):
@@ -80,39 +75,15 @@ def cli_guide(host):
         '定时任务只读：find_resources 的 schedules / scheduled_runs，以及 scheduled_run_status。',
         '五段经营分析：query_order_funnel → task_status → order_funnel_results（分页）；export_order_funnel导出同一查询快照，store_history_review查看多轮证据。',
         '安全库存诊断：start_stock_diagnosis → task_status → stock_diagnosis_results；steps如[-0.025,0.025]为上下2.5个百分点，仅概率可变。人员明确候选及原因后才adopt_stock_diagnosis；未再操作前可undo_stock_diagnosis。',
+        '候选完整参数：stock_diagnosis_parameters，提供诊断task_id、candidate及stores。risk_count只代表新增或加剧风险，原有缺口看risk_summary。历史差异按evidence_details中的日期和单号归属，当前参数不反证历史错误。',
         '不读取数据库绕过接口；不开放签发、采购、删除、永久设置或平台取数。',
         '退出码 0=成功（任务已受理仍须查询完成），2=输入/连接/业务拒绝，3=接口未完成；输出 UTF-8 JSON。',
         '更换程序目录或资料环境后，重新生成这份说明。不要发送 connection.json 的连接密钥。'])
 
 
 def settings(host):
-    g = host.automation; d = QDialog(host); d.setWindowTitle('AI 协助 · Codex / WorkBuddy'); d.resize(700, 350)
-    v = QVBoxLayout(d); v.addWidget(label('使用当前工作台，查询与计算；正式保存、签发和平台采购仍在原页面完成。'))
-    v.addWidget(label('输入原表保留在本机。工具返回的必要摘要可能进入你选择的 AI 服务；浏览器登录态和连接凭据不提供给模型。', 'muted'))
-    status = label(''); v.addWidget(status)
-    on = button('启用本机连接', lambda: change(True), True); off = button('关闭本机连接', lambda: change(False))
-    row = QHBoxLayout(); row.addWidget(on); row.addWidget(off); v.addLayout(row)
-    def refresh():
-        status.setText('已启用，可在 Codex / WorkBuddy 连接。关闭客户端不会自动取消工作台已受理任务。' if g.enabled else '尚未启用；只允许连接这个资料环境对应的工作台。')
-        on.setEnabled(not g.enabled); off.setEnabled(g.enabled)
-    def change(enabled):
-        try: g.enable() if enabled else g.disable()
-        except Exception as exc: QMessageBox.warning(d, '连接未完成', str(exc))
-        refresh()
-    def export():
-        path = QFileDialog.getExistingDirectory(d, '选择客户端配置说明保存位置')
-        if not path: return
-        try:
-            data = connection_configs(host); folder = Path(path)
-            targets = {'Codex_补货助手_MCP.toml': data['codex'], 'WorkBuddy_补货助手_MCP.json': json.dumps(data['workbuddy'], ensure_ascii=False, indent=2),
-                       '补货助手_CLI使用说明.txt': cli_guide(host)}
-            if any((folder / n).exists() for n in targets): raise ValueError('该目录已有同名配置，请选择新目录，避免覆盖已有配置')
-            for name, body in targets.items(): (folder / name).write_text(body, encoding='utf-8')
-            QMessageBox.information(d, '配置已生成', '已生成客户端配置片段和 CLI 使用说明。请在客户端添加，不要覆盖整份原配置；启用连接后关闭此弹窗再使用。')
-        except Exception as exc: QMessageBox.warning(d, '未导出配置', str(exc))
-    v.addWidget(button('生成连接配置与 CLI 使用说明', export))
-    v.addWidget(button('查看本机 AI 任务', lambda: tasks(host)))
-    v.addWidget(button('× 关闭', d.reject)); refresh(); d.exec()
+    from automation_connection_ui import show
+    show(host)
 
 
 def tasks(host):

@@ -56,7 +56,7 @@ def start_smoke(app, win, args):
             for code in ('A', 'B'): win.store_widgets[code]['mode'].setCurrentIndex(1)
             win.automation.enable(); m = MCP()
             names={t['name'] for t in m.send('tools/list', {})['result']['tools']}
-            require(len(names)==22 and {'query_order_funnel','export_order_funnel','start_stock_diagnosis','adopt_stock_diagnosis'}<=names,'Missing tools')
+            require(len(names)==23 and {'query_order_funnel','export_order_funnel','start_stock_diagnosis','adopt_stock_diagnosis','stock_diagnosis_parameters'}<=names,'Missing tools')
             import work_repository as wr
             q=m.call('query_order_funnel',{'context_token':m.call('workbench_context')['context_token'],'operation_key':'empty-funnel','query':{'from':wr.today(),'to':wr.today()}})
             wait(lambda:win.automation.worker is None)

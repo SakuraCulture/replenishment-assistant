@@ -64,7 +64,7 @@ def benchmark(out,path,spec):
             'limitation':'温文件缓存，同机串行，旧四段仅差异明细，新五段全量及历史核对；非同功能提速结论。GetProcessMemoryInfo每30ms采样本进程工作集，查询/导出无子进程，含解释器；可能遗漏瞬时峰值。未测计算子进程内存。',
             'runs':runs,'summary':{k:{'median_seconds':statistics.median(x['seconds'] for x in v),'min_seconds':min(x['seconds'] for x in v),'max_seconds':max(x['seconds'] for x in v),'max_rss_mb':max(x['peak_sampled_rss_mb'] for x in v)} for k,v in runs.items()},'database_sha256_unchanged':original}
 
-def equivalence(out):
+def equivalence(out,baseline='efb85bf2c532daa5e1ffed9ca6e0ec323009b359'):
     import test_automation_gateway as fixtures
     from retry_profile_smoke import install
     import automation_jobs
@@ -72,7 +72,7 @@ def equivalence(out):
     try:p=automation_jobs.prepare(f.g.snapshot({}),{'mode':'trial','stores':['S1','S2']},lambda _:None,None)
     finally:f.tearDown()
     frozen=out/'frozen-input.pkl';frozen.write_bytes(pickle.dumps(p))
-    baseline='efb85bf2c532daa5e1ffed9ca6e0ec323009b359';archive=out/'baseline.zip'
+    archive=out/'baseline.zip'
     subprocess.run(['git','archive','--format=zip','-o',str(archive),baseline],cwd=ROOT,check=True)
     with zipfile.ZipFile(archive) as z:z.extractall(out/'baseline')
     script=out/'compare_worker.py';script.write_text("""import sys,pickle

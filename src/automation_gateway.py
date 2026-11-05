@@ -11,7 +11,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, Signal, QThread, QLockFile, QTimer
 from PySide6.QtNetwork import QLocalServer
 from PySide6.QtWidgets import QApplication
-from automation_protocol import VERSION, MAX_FRAME, CommandError, digest, decode, validate_call
+from automation_protocol import VERSION, MAX_FRAME, CommandError, digest, decode, validate_call, wire_default
 from automation_tasks import Journal
 import automation_jobs
 
@@ -47,6 +47,7 @@ class Gateway(QObject):
         self.host = host; self.instance = uuid.uuid4().hex
         self.enabled = False; self.server = None; self.lock = None; self.journal = None
         self.secret = ''; self.buffers = {}; self.prepared = {}; self.calculations = {}
+        self.last_client = None
         self.active = None; self.worker = None; self.last_stage = 0; self.explanations = {}
         self.task_failures = {}; self.pending_failures = set()
         self.failure_timer = QTimer(self); self.failure_timer.setInterval(1000)
@@ -70,6 +71,8 @@ class Gateway(QObject):
             from priority_list import atomic_json
             atomic_json(self.connection_file, {'protocol': VERSION, 'server': name, 'token': self.secret,
                 'instance': self.instance, 'workspace': self.workspace, 'created': time.time()})
+            from automation_connection import refresh_registration
+            refresh_registration(self)
         except Exception:
             server.close(); server.deleteLater(); lock.unlock(); raise
         self.server, self.lock, self.journal = server, lock, journal
@@ -93,6 +96,7 @@ class Gateway(QObject):
         if self.lock: self.lock.unlock(); self.lock = None
         self.failure_timer.stop()
         self.enabled = False; self.secret = ''; self.changed.emit()
+        self.last_client = None
 
     def accept_connections(self):
         while self.server and self.server.hasPendingConnections():
@@ -117,9 +121,18 @@ class Gateway(QObject):
                 if not isinstance(request, dict) or request.get('protocol') != VERSION or not secrets.compare_digest(str(request.get('token', '')), self.secret):
                     raise CommandError('UNAUTHORIZED', '本机连接许可无效，请重新启用连接')
                 if not self.enabled or self.host.closing: raise CommandError('CLOSED', '工作台正在关闭或连接已停用')
+                from version_info import VERSION as APP_VERSION
+                if request.get('workspace') and request['workspace'] != self.workspace:
+                    raise CommandError('WORKSPACE_MISMATCH','资料环境不一致，未切换工作台，请重新配置连接')
+                if request.get('bridge_version') and request['bridge_version'] != APP_VERSION and request.get('action') != 'workbench_context':
+                    raise CommandError('VERSION_MISMATCH','接口程序与工作台版本不同，请在客户端重新加载补货助手连接')
                 if QApplication.activeModalWidget() is not None and request.get('action') not in {'workbench_context', 'task_status', 'stop_remaining'}:
                     raise CommandError('UI_WAITING', '工作台正在等待业务处理弹窗，请先完成或取消该操作')
                 value = self.dispatch(request.get('action'), request.get('arguments', {}))
+                if request.get('action')=='workbench_context':
+                    self.last_client={'name':str(request.get('client_name','旧版接口'))[:120], 'at':time.time(),
+                        'version_match':request.get('bridge_version')==APP_VERSION,'instance':self.instance}
+                    self.changed.emit()
                 response = {'id': request.get('id'), 'ok': True, 'result': value}
             except CommandError as exc:
                 response = {'id': request.get('id') if isinstance(request, dict) else None, 'ok': False,
@@ -129,7 +142,7 @@ class Gateway(QObject):
                 response = {'id': request.get('id') if isinstance(request, dict) else None, 'ok': False,
                             'error': {'code': 'BUSY' if database_busy(exc) else 'INTERNAL_ERROR',
                                       'message': '数据正在被其他操作使用，请稍后查询原任务状态，不要重复提交。' if database_busy(exc) else '操作未完成；已保留本地诊断，请核对原任务状态后再继续'}}
-            raw = json.dumps(response, ensure_ascii=False, allow_nan=False, default=str).encode() + b'\n'
+            raw = json.dumps(response, ensure_ascii=False, allow_nan=False, default=wire_default).encode() + b'\n'
             if len(raw) > MAX_FRAME:
                 raw = json.dumps({'id': request.get('id'), 'ok': False, 'error': {'code': 'TOO_LARGE', 'message': '结果过大，请缩小范围或分页读取'}}).encode() + b'\n'
             socket.write(raw); socket.flush()
@@ -238,6 +251,10 @@ class Gateway(QObject):
     def stock_diagnosis_results(self,args):
         from automation_diagnosis import results
         return results(self,args)
+
+    def stock_diagnosis_parameters(self,args):
+        from automation_diagnosis import parameters
+        return parameters(self,args)
 
     def adopt_stock_diagnosis(self,args):
         from automation_diagnosis import adopt

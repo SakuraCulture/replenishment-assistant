@@ -34,7 +34,7 @@ def review(report,rounds=8):
                 high=None if coverage is None or period is None else coverage>period+4
                 if high:high_days.add(row['day'])
                 if stockout:missing_days.add(row['day'])
-                evidence=[];limitations=['月销为滚动窗口，不能相减冒充期间销量；实收数量不证明准时到货。']
+                evidence=[];evidence_details=[];limitations=['月销为滚动窗口，不能相减冒充期间销量；实收数量不证明准时到货。']
                 if len(prior)>1 or len(day_groups[row['day']])>1:limitations.append('同日跨仓存在同商品记录，不累计门店库存；前后轮依据有歧义，停止数量归因。')
                 if previous:
                     if previous['day']==row['day']:
@@ -45,6 +45,12 @@ def review(report,rounds=8):
                         for a,b in analytics.PAIRS:
                             if previous['valid'][a] and previous['valid'][b]:
                                 before,after=previous['quantities'][a],previous['quantities'][b]
+                                if before != after:
+                                    evidence_details.append({'business_date':previous['day'],'order_number':previous.get('order'),
+                                        'warehouse':previous['warehouse'],'sku':sku,'unit':previous['unit'],
+                                        'from_stage':a,'from_name':analytics.NAMES[a],'to_stage':b,'to_name':analytics.NAMES[b],
+                                        'before':before,'after':after,'delta':after-before,
+                                        'relation':'上轮签发单的环节差异，不属于本轮'})
                                 if after<before:
                                     label=analytics.NAMES[a]+'→'+analytics.NAMES[b]+f'减少 {before-after:g}'
                                     if a=='model':
@@ -66,7 +72,14 @@ def review(report,rounds=8):
                     'signed':row['quantities']['signed'] if row['valid']['signed'] else None,
                     'receipt':row['quantities']['receipt'] if row['valid']['receipt'] else None,
                     'observed_stockout':stockout,'coverage':coverage,'period':period,'high_coverage':high,'previous_day':previous['day'] if previous else None,
-                    'evidence':evidence,'hypothesis':hypothesis,'limitations':list(dict.fromkeys(limitations))})
+                    'evidence':evidence,'evidence_details':evidence_details,
+                    'observation_basis':{'business_date':row['day'],'order_number':row.get('order'),
+                        'source':'本轮签发时冻结快照','quantities':dict(row['quantities']),'valid':dict(row['valid'])},
+                    'parameter_basis':{'business_date':row['day'],'order_number':row.get('order'),
+                        'source':'当时计算快照，不能用当前参数反证历史错误',
+                        'stock_days':depth,'lead_days':lead,'protection_days':period,
+                        'definition':'当时备货天数＋当时到货天数'},
+                    'hypothesis':hypothesis,'limitations':list(dict.fromkeys(limitations))})
             stockout_observations+=len(missing_days)
             repeated_high+=len(high_days)>=2
             if len(missing_days)>=2:

@@ -116,7 +116,8 @@ def main():
         save('response.json',{'id':request['id'],'case':case,'prompt':common+tasks[case], 'values':{'scope':scope,'query':spec},'state_before':state()})
         save('checkpoint.json',state())
     timer=QTimer(win);timer.setInterval(200);timer.timeout.connect(tick);timer.start()
-    save('ready.json',{'synthetic':True,'pid':os.getpid(),'backend':'0.39.0 source unchanged from rc2','bridge':'actual 0.39.0 rc2 EXE','bridge_sha256':hashlib.sha256(bridge.read_bytes()).hexdigest(),'query':spec,'context':win.automation.workbench_context({})})
+    from version_info import VERSION
+    save('ready.json',{'synthetic':True,'pid':os.getpid(),'backend':VERSION+' source workspace','bridge':'actual supplied packaged EXE','bridge_sha256':hashlib.sha256(bridge.read_bytes()).hexdigest(),'query':spec,'context':win.automation.workbench_context({})})
     app.exec()
 
 

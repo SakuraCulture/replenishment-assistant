@@ -17,9 +17,9 @@ import work_repository as wr
 class AutomationContractTests(unittest.TestCase):
     def test_public_surface_excludes_persistence_and_arbitrary_execution(self):
         names = {x['name'] for x in protocol.public_tools()}
-        self.assertEqual(len(names), 22)
+        self.assertEqual(len(names), 23)
         self.assertTrue({'query_order_funnel','order_funnel_results','export_order_funnel','store_history_review',
-                         'start_stock_diagnosis','stock_diagnosis_results','adopt_stock_diagnosis','undo_stock_diagnosis'}<=names)
+                         'stock_diagnosis_parameters','start_stock_diagnosis','stock_diagnosis_results','adopt_stock_diagnosis','undo_stock_diagnosis'}<=names)
         for name in ['execute_python', 'sql', 'confirm_normal', 'delete_orders', 'save_stores']:
             with self.assertRaises(protocol.CommandError): protocol.validate_call(name, {})
 
@@ -44,7 +44,7 @@ class AutomationContractTests(unittest.TestCase):
         def call(method, **params): return response({'jsonrpc': '2.0', 'id': 1, 'method': method, 'params': params}, c, ready)
         self.assertIn('error', call('tools/list'))
         self.assertEqual(call('initialize', protocolVersion='2025-11-25')['result']['protocolVersion'], '2025-11-25')
-        self.assertEqual(len(call('tools/list')['result']['tools']), 22)
+        self.assertEqual(len(call('tools/list')['result']['tools']), 23)
         self.assertEqual(call('tools/call', name='workbench_context')['result']['structuredContent']['amount'], 0)
         self.assertTrue(call('tools/call', name='save')['result']['isError'])
         self.assertIsNone(response({'jsonrpc': '2.0', 'method': 'tools/call', 'params': {'name': 'workbench_context'}}, c, ready))

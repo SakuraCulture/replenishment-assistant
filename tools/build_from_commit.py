@@ -49,6 +49,12 @@ def main():
                     '--distpath',str(build/'bridge-dist'),'--workpath',str(build/'bridge-work'),'--specpath',str(build),str(source/'src/automation_bridge.py')]
             subprocess.run(bridge,cwd=source,env=env,stdout=log,stderr=log,check=True)
             shutil.copytree(build/'bridge-dist/补货助手AI接口',dist/'补货助手/AI接口')
+        if (source/'src/automation_launcher.py').exists():
+            launcher=[sys.executable,'-m','PyInstaller','--clean','--console','--onefile','--noupx','--name','补货助手AI启动器',
+                '--distpath',str(build/'launcher-dist'),'--workpath',str(build/'launcher-work'),'--specpath',str(build),str(source/'src/automation_launcher.py')]
+            subprocess.run(launcher,cwd=source,env=env,stdout=log,stderr=log,check=True)
+            (dist/'补货助手/AI入口').mkdir()
+            shutil.copy2(build/'launcher-dist/补货助手AI启动器.exe',dist/'补货助手/AI入口/补货助手AI启动器.exe')
         if component.exists():
             target=dist/'补货助手/_internal/components/aoxiang'
             shutil.copytree(staged,target)

@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--automation-portability-smoke' in sys.argv:
+        from automation_portability_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--automation-portability-smoke')+1:])
     if '--analytics-smoke' in sys.argv:
         from analytics_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--analytics-smoke')+1:])
