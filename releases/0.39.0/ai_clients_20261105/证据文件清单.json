@@ -1,0 +1,145 @@
+{
+  "archive_sha256": "16d24c38b7a7c7ca4e9b5df5bfe11711c4f9ced881f223d9880532a2d46a865b",
+  "files": [
+    {
+      "file": "workspace\\ready.json",
+      "sha256": "ad323461bfcb25aa4fed8c53ba2f58cb02b18b37ae220197b2c6c36cb6c78adb",
+      "bytes": 1430
+    },
+    {
+      "file": "workspace\\oracle.json",
+      "sha256": "4ad951a5407f52c7d17c559c8d3c3add7387f3fbdf941e810051bfa86441bf86",
+      "bytes": 125058
+    },
+    {
+      "file": "workspace\\tool-calls.jsonl",
+      "sha256": "37bbd64d129a20cf21ec22b00ef73d4fdb5e05c5b132a3371693985fe8c64629",
+      "bytes": 188820
+    },
+    {
+      "file": "workspace\\final.json",
+      "sha256": "79106a0788712200c96fa88d7e478ec86261dbbd273ea58349fd8797965d5547",
+      "bytes": 4947
+    },
+    {
+      "file": "workspace\\settings\\workbench.sqlite3",
+      "sha256": "ef14c1a1b4f033ed41ab0ca1475cd1e96577b6ef80cf67eaa15154c8d29e77d1",
+      "bytes": 241664
+    },
+    {
+      "file": "workspace\\exports\\补货经营分析_20261105_132325_548261.xlsx",
+      "sha256": "2005adf6894ae06d8273e3c4fb009f9c57584acef5bca9e67add4fff1f1b918b",
+      "bytes": 13048
+    },
+    {
+      "file": "workspace_v2\\ready.json",
+      "sha256": "3427c53864702851d3cd229125dfbfe0111e39ac0d306626cbefc4e9ebf109bf",
+      "bytes": 1430
+    },
+    {
+      "file": "workspace_v2\\oracle.json",
+      "sha256": "6ed31b0c35b7689860db6ce4c2a256d5459c134bc20c6d67778d168bdc1ed80f",
+      "bytes": 125058
+    },
+    {
+      "file": "workspace_v2\\tool-calls.jsonl",
+      "sha256": "10e8780e09447aa41ddb8600d1c33d107d93170c1514a339d1155afa237648a9",
+      "bytes": 309777
+    },
+    {
+      "file": "workspace_v2\\final.json",
+      "sha256": "e42c70e31803870b5e0a78892276275c87a727cbad8ed271a36170f36cb192dc",
+      "bytes": 4838
+    },
+    {
+      "file": "workspace_v2\\settings\\workbench.sqlite3",
+      "sha256": "558406f8a29e552cd370c9a5e02154245c3d2f1d46cdf1a45ba28c1a69fc4b5c",
+      "bytes": 241664
+    },
+    {
+      "file": "workspace_v2\\exports\\补货经营分析_20261105_133805_166772.xlsx",
+      "sha256": "62adbfc2b04f13f3e4d89e7812de0b29486a9b539c3849e5d434ba46e081f9ea",
+      "bytes": 23914
+    },
+    {
+      "file": "codex\\report.json",
+      "sha256": "b3eec0b8f25728462513b729efd7fc7d36f5bd15f1539a6a45d49b7abc01ce96",
+      "bytes": 1801
+    },
+    {
+      "file": "codex\\diagnosis\\prompt.txt",
+      "sha256": "b0a17729ba71bae0d54fcc12afb7abf75538d581d066f28d87ea9073f923072f",
+      "bytes": 1059
+    },
+    {
+      "file": "codex\\diagnosis\\answer.txt",
+      "sha256": "412292b7e4568a4ee032fefe1e63b7701df9d64987befb5d40ffc1e658f15b2f",
+      "bytes": 2514
+    },
+    {
+      "file": "codex\\diagnosis\\events.jsonl",
+      "sha256": "4e9be4eec68c933fa32d2439cca7e1fd3a347a24ae46ea423c9ed33d02fef4ea",
+      "bytes": 149957
+    },
+    {
+      "file": "codex\\funnel\\prompt.txt",
+      "sha256": "0c6e9cd397ee55881ec538cb53732a39f38626d384460f5591f1072a6b7fb643",
+      "bytes": 1006
+    },
+    {
+      "file": "codex\\funnel\\answer.txt",
+      "sha256": "79f7eca8fec2e32bc6a8dd40ca7719af647e6282d1df8890008ed7cb8ee815ea",
+      "bytes": 2426
+    },
+    {
+      "file": "codex\\funnel\\events.jsonl",
+      "sha256": "312b368246613604a6db35bfc9613b7f74a10f69b8a0a79006515f44b9de9be8",
+      "bytes": 193109
+    },
+    {
+      "file": "codex\\history\\prompt.txt",
+      "sha256": "ddb49615339e08318420ea57d1e2fb353a4341ffbb31b8d92e2a3f15c370a0fd",
+      "bytes": 956
+    },
+    {
+      "file": "codex\\history\\answer.txt",
+      "sha256": "c6dd1009d9772e8d5301f5cf9e2d6fe33fe57b14fe0c03da3618b1eb67ea0549",
+      "bytes": 2380
+    },
+    {
+      "file": "codex\\history\\events.jsonl",
+      "sha256": "784496070c358f8ed1343cff9274c834289e6da8b8a2770a3d7c140dfdd03ba0",
+      "bytes": 58871
+    },
+    {
+      "file": "codex_v2\\report.json",
+      "sha256": "c6c693e7b034a936564fdb85cc2553058604573206563bb8bf7c482e6e19cdf6",
+      "bytes": 692
+    },
+    {
+      "file": "codex_v2\\diagnosis\\prompt.txt",
+      "sha256": "d7604d34de45d740524d4086b691cf0e8abed6de78b51aec1919aa1ef2878953",
+      "bytes": 1059
+    },
+    {
+      "file": "codex_v2\\diagnosis\\answer.txt",
+      "sha256": "663dcec13df84ce1e8f2e4ce38d9de2d5de1de5504c3dc3c1f3d16e0a71e9a63",
+      "bytes": 3988
+    },
+    {
+      "file": "codex_v2\\diagnosis\\events.jsonl",
+      "sha256": "8cecb32866fa2f4658364fdd7b67e300bbd3f7ee7869bcb9fc3e4acf5ffd1fca",
+      "bytes": 241926
+    },
+    {
+      "file": "artifacts_first_checked\\report.json",
+      "sha256": "2793d1b64cf53ff64b5d6af00ce31dd1e995898b643e018591f34fd20b8955fa",
+      "bytes": 1282
+    },
+    {
+      "file": "artifacts_v2\\report.json",
+      "sha256": "5182bbcac410e8e2eaec14747b0b926519509cf5fbbbe4b80abee08def0fa6fe",
+      "bytes": 2137
+    }
+  ]
+}

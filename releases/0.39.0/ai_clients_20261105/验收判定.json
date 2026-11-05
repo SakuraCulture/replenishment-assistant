@@ -1,0 +1,39 @@
+{
+  "overall": "partial; WorkBuddy business interpretation requires correction",
+  "production_code_changed": false,
+  "synthetic": true,
+  "real_client_test": true,
+  "codex": {
+    "funnel": true,
+    "history": true,
+    "diagnosis": true,
+    "automatic_adoption": false,
+    "notes": [
+      "One BUSY rejection during extra history query; no mutation",
+      "Initial synthetic baseline audit mismatch correctly blocked trial; test fixture corrected only"
+    ]
+  },
+  "workbuddy": {
+    "funnel_export": true,
+    "diagnosis_numbers": true,
+    "history_interpretation": false,
+    "risk_interpretation": false,
+    "full_candidate_parameters_obtained": false,
+    "automatic_adoption": false
+  },
+  "excel": {
+    "cells": 2830,
+    "business_value_type_style_order_differences": 0,
+    "dynamic_fields": [
+      "统计口径/数据截至/说明",
+      "统计口径/生成时间/说明"
+    ]
+  },
+  "formal_data_unchanged": true,
+  "current_work_unchanged": true,
+  "bridge_sha256": "8882291cdee48a370b4b906fc0ea1b3b953708d662e4a095cee8316e0119b61b",
+  "code_baseline": "06ee29f05aca37c84e4fb0587d0d379d51a3c01a",
+  "bridge_build_commit": "702d01364035935c6b2abd5283d204b8e271ec57",
+  "workbuddy_original_config_restored": true,
+  "workbuddy_original_config_bytes_restored": true
+}

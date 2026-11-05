@@ -1,0 +1,42 @@
+{
+  "workspace": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\ai_real_0390_20261105\\workspace",
+  "synthetic": true,
+  "fixture_rows_checked": 6,
+  "formal_unchanged": true,
+  "current_unchanged": true,
+  "calls": 29,
+  "tools": [
+    "effective_parameters",
+    "explain_decision",
+    "export_order_funnel",
+    "find_resources",
+    "order_funnel_results",
+    "query_order_funnel",
+    "start_stock_diagnosis",
+    "store_history_review",
+    "task_status",
+    "workbench_context"
+  ],
+  "artifacts": [
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\ai_real_0390_20261105\\workspace\\exports\\补货经营分析_20261105_132325_548261.xlsx",
+      "level": "detail",
+      "sheets": [
+        "全量商品五段",
+        "资料待核",
+        "原单实际付款",
+        "多轮证据复盘",
+        "统计口径"
+      ],
+      "sha256": "2005adf6894ae06d8273e3c4fb009f9c57584acef5bca9e67add4fff1f1b918b",
+      "cells_checked": 440,
+      "value_type_order_style_differences": [],
+      "dynamic_cell_whitelist": [
+        "统计口径/数据截至/说明",
+        "统计口径/生成时间/说明"
+      ]
+    }
+  ],
+  "exceptions": [],
+  "passed": true
+}

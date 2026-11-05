@@ -1,0 +1,80 @@
+{
+  "workspace": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\ai_real_0390_20261105\\workspace_v2",
+  "synthetic": true,
+  "fixture_rows_checked": 6,
+  "formal_unchanged": true,
+  "current_unchanged": true,
+  "calls": 35,
+  "tools": [
+    "effective_parameters",
+    "export_order_funnel",
+    "order_funnel_results",
+    "parameter_definitions",
+    "query_order_funnel",
+    "start_stock_diagnosis",
+    "stock_diagnosis_results",
+    "store_history_review",
+    "task_status",
+    "workbench_context"
+  ],
+  "artifacts": [
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\ai_real_0390_20261105\\workspace_v2\\exports\\补货经营分析_20261105_133805_166772.xlsx",
+      "level": "store",
+      "sheets": [
+        "门店经营对比",
+        "门店分仓对比",
+        "订单五段漏斗",
+        "全量商品五段",
+        "资料待核",
+        "原单实际付款",
+        "多轮证据复盘",
+        "统计口径"
+      ],
+      "sha256": "62adbfc2b04f13f3e4d89e7812de0b29486a9b539c3849e5d434ba46e081f9ea",
+      "cells_checked": 2390,
+      "value_type_order_style_differences": [],
+      "dynamic_cell_whitelist": [
+        "统计口径/数据截至/说明",
+        "统计口径/生成时间/说明"
+      ]
+    }
+  ],
+  "diagnosis_checks": [
+    {
+      "candidate": 1,
+      "rows": 4,
+      "two_store_execution": 20,
+      "saving": 0
+    },
+    {
+      "candidate": 2,
+      "rows": 4,
+      "two_store_execution": 20,
+      "saving": 0
+    },
+    {
+      "candidate": 1,
+      "rows": 4,
+      "two_store_execution": 20,
+      "saving": 0
+    },
+    {
+      "candidate": 2,
+      "rows": 4,
+      "two_store_execution": 20,
+      "saving": 0
+    }
+  ],
+  "exceptions": [
+    {
+      "tool": "query_order_funnel",
+      "error": "当前已有任务运行，请查看进度或等待当前步骤结束再操作"
+    },
+    {
+      "tool": "effective_parameters",
+      "error": "原预览快照不在当前会话，请重新检查"
+    }
+  ],
+  "passed": true
+}
