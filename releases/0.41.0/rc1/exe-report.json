@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "实际参数表编辑、保存预案成功",
+    "选择门店默认没有改动当前作业",
+    "批量选择门店默认预案成功",
+    "补货预案保存门店顺序",
+    "跟随门店默认正确应用",
+    "同预案另一店使用系统默认，未串店",
+    "删除后门店引用原子替换为系统默认",
+    "删除预案不改变当前作业参数",
+    "历史草稿恢复保留旧预案参数快照",
+    "恢复后计算装配仍使用历史冻结参数",
+    "本流程无未捕获Qt异常"
+  ],
+  "app": "补货助手",
+  "version": "0.41.0",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "88db1c8b4aff0ce3aaa6636365fd007a193f772d",
+  "build_id": "rc1",
+  "built_at": "2026-11-05T20:27:02.298435+08:00",
+  "source_archive_sha256": "37801e3ca3b4f1b512e69ea7f205bbc197c736909485f352b206726e90793662",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "88db1c8b4aff0ce3aaa6636365fd007a193f772d",
+    "files": 868,
+    "manifest_sha256": "3fb6e0fe2ee5e511b0ac9b039634bfa38ef1bb0bcdac7f137d9ac3420cdadf5b",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "9358902904e45c7611b96476769cd7a0ca499437769d30937403a6a417bc66fd",
+    "files": 8,
+    "source_commit": "88db1c8b4aff0ce3aaa6636365fd007a193f772d",
+    "contains_user_state": false
+  },
+  "exit_code": 0,
+  "exe_sha256": "b40e26432f7f185f31823b22a81a21c595da5214ab823d2ebacbf113932ba8d9"
+}
