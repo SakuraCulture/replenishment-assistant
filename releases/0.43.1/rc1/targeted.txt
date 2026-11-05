@@ -1,0 +1,16 @@
+test_cancel_prepare_and_commit_does_not_write (test_bulk_refusals.BulkTests.test_cancel_prepare_and_commit_does_not_write) ... ok
+test_commit_failure_rolls_back_all_rows_and_events (test_bulk_refusals.BulkTests.test_commit_failure_rolls_back_all_rows_and_events) ... ok
+test_conflict_rolls_back_entire_batch (test_bulk_refusals.BulkTests.test_conflict_rolls_back_entire_batch) ... ok
+test_exact_store_sku_only_and_preserved_evidence (test_bulk_refusals.BulkTests.test_exact_store_sku_only_and_preserved_evidence) ... ok
+test_expired_active_can_release_and_order_is_selection_order (test_bulk_refusals.BulkTests.test_expired_active_can_release_and_order_is_selection_order) ... ok
+test_missing_already_released_empty_are_rejected (test_bulk_refusals.BulkTests.test_missing_already_released_empty_are_rejected) ... ok
+test_cancel_preview_no_commit (test_bulk_refusals.BulkUiTests.test_cancel_preview_no_commit) ... ok
+test_changed_filter_clears_hidden_selection (test_bulk_refusals.BulkUiTests.test_changed_filter_clears_hidden_selection) ... ok
+test_checkbox_identity_and_all_filter (test_bulk_refusals.BulkUiTests.test_checkbox_identity_and_all_filter) ... ok
+test_readonly_cannot_check_or_commit (test_bulk_refusals.BulkUiTests.test_readonly_cannot_check_or_commit) ... ok
+test_same_filter_preserves_checks_for_action_and_clear_all (test_bulk_refusals.BulkUiTests.test_same_filter_preserves_checks_for_action_and_clear_all) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.452s
+
+OK

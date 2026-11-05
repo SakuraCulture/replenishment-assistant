@@ -1,0 +1,119 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "独立准入门店和本次门店均可查询",
+    "资质按到期状态筛选",
+    "无参数记录的门店资质仍可定位",
+    "详情只读",
+    "查询、详情和取消维护不修改准入记录",
+    "拒收清单默认只显示有效拒收",
+    "解除经确认保存并刷新",
+    "拒收维护保留原资质及来源",
+    "解除后不再显示在默认有效列表",
+    "可查已解除记录",
+    "复用拖拽导入",
+    "导入后只定位本次涉及记录：store_qualification",
+    "已到期导入记录也可立即看到：store_qualification",
+    "实际导出仅包含当前筛选：store_qualification",
+    "清除导入范围可回到全部：store_qualification",
+    "复用拖拽导入",
+    "导入后只定位本次涉及记录：store_refusals",
+    "已到期导入记录也可立即看到：store_refusals",
+    "实际导出仅包含当前筛选：store_refusals",
+    "清除导入范围可回到全部：store_refusals",
+    "未选门店准入不变",
+    "查看和准入维护不复活已删除门店参数配置",
+    "7000条店-SKU按门店商品展示",
+    "一键勾选当前筛选7000条",
+    "实际点击复选框仅取消该店该SKU",
+    "批量核对完整显示7000条，不截断",
+    "取消批量核对未解除",
+    "改变筛选清空旧勾选",
+    "筛选单店只勾选该店100条",
+    "批量核对完整显示7000条，不截断",
+    "批量解除后有效拒收筛选为空",
+    "7000条全部可在已解除中核对",
+    "70店全部核对：仅active改变，资质、原因和来源保留",
+    "未勾选的其他店拒收未解除",
+    "规模测试第1轮7000条保存成功",
+    "规模测试第2轮7000条保存成功",
+    "规模测试第3轮7000条保存成功",
+    "后台查询和保存期间Qt事件循环可运行",
+    "无未捕获Qt异常"
+  ],
+  "app": "补货助手",
+  "version": "0.43.1",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "16c0701e4a18cd51fca07ba941c97756a6860db5",
+  "build_id": "rc1",
+  "built_at": "2026-11-05T23:27:23.906480+08:00",
+  "source_archive_sha256": "816be9762221a1062f8162e01a2fa8eacc7dc9df42525f1ea9740617710e1265",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "16c0701e4a18cd51fca07ba941c97756a6860db5",
+    "files": 868,
+    "manifest_sha256": "27a0caaf0546a0418b29f0ce75440f3ed4b6ba5c9437847b139cb2146b384a2e",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "51b37b0fccf37b9787a7fb870815f5496bd90152af6b760eb46397c28fae0e18",
+    "files": 8,
+    "source_commit": "16c0701e4a18cd51fca07ba941c97756a6860db5",
+    "contains_user_state": false
+  },
+  "bulk_ui_query_seconds": 0.058067699952516705,
+  "bulk_select_seconds": 0.029621099994983524,
+  "bulk_ui_confirm_save_refresh_seconds": 0.3845103999483399,
+  "bulk_benchmark": {
+    "synthetic": true,
+    "stores": 70,
+    "store_sku_rows": 7000,
+    "seconds": [
+      {
+        "query": 0.05435839999699965,
+        "prepare": 0.0698905999888666,
+        "save": 0.07202189997769892
+      },
+      {
+        "query": 0.015178600035142154,
+        "prepare": 0.06458230002317578,
+        "save": 0.05916449998039752
+      },
+      {
+        "query": 0.01818950002780184,
+        "prepare": 0.06581549998372793,
+        "save": 0.0738071000087075
+      }
+    ],
+    "summary": {
+      "query": {
+        "median": 0.01818950002780184,
+        "min": 0.015178600035142154,
+        "max": 0.05435839999699965
+      },
+      "prepare": {
+        "median": 0.06581549998372793,
+        "min": 0.06458230002317578,
+        "max": 0.0698905999888666
+      },
+      "save": {
+        "median": 0.07202189997769892,
+        "min": 0.05916449998039752,
+        "max": 0.0738071000087075
+      }
+    },
+    "scope": "本机暖文件缓存；逐轮独立合成SQLite库，保存包含原备份/版本复核/事件/事务；不代表真实大库备份耗时"
+  },
+  "exit_code": 0,
+  "exe_sha256": "1392844ca1f2a16121217ae40f1b06fc99c75576a9ecf930ed5c050bf02caf1b"
+}
