@@ -1,0 +1,661 @@
+{
+  "passed": true,
+  "cli": [
+    {
+      "ok": true,
+      "result": {
+        "app": "补货助手",
+        "version": "0.38.0",
+        "model_version": "0.3.4-rules",
+        "routing_version": "0.5.1",
+        "parameter_schema_version": 3,
+        "build_id": "未打包",
+        "source_commit": "源码运行",
+        "protocol": "replenishment.tools.v1"
+      }
+    },
+    {
+      "ok": true,
+      "result": {
+        "bridge": {
+          "app": "补货助手",
+          "version": "0.38.0",
+          "model_version": "0.3.4-rules",
+          "routing_version": "0.5.1",
+          "parameter_schema_version": 3,
+          "build_id": "未打包",
+          "source_commit": "源码运行",
+          "protocol": "replenishment.tools.v1"
+        },
+        "workbench": {
+          "instance_id": "08f023786aa04f448459b6d9c73ac5dc",
+          "workspace_id": "39e8e40ee2a336aefaae8033",
+          "context_token": "71c93f49151ac55921c9531bcfd146ac4f68b8780c613c85c02f3963a6627e57",
+          "business_date": "2026-11-05",
+          "application": "0.38.0",
+          "model": "0.3.4-rules",
+          "protocol": "replenishment.tools.v1",
+          "build": {
+            "source_commit": "源码运行",
+            "build_id": "未打包"
+          },
+          "scheduled_access": "read_only",
+          "checked_input_present": true,
+          "readonly": false,
+          "input_dirty": false,
+          "unsaved_changes": true,
+          "selected_stores": [
+            "A",
+            "B"
+          ],
+          "active_task": null,
+          "busy": false,
+          "enabled": true,
+          "scope": "查询、已有文件检查、预案计算和试算；定时任务只读；不触发平台取数、不保存默认、不签发、不采购、不删除",
+          "summary": [
+            {
+              "store": "A",
+              "name": "测试A",
+              "state": "已完成"
+            },
+            {
+              "store": "B",
+              "name": "测试B",
+              "state": "已完成"
+            }
+          ]
+        },
+        "versions_match": true,
+        "note": "连接诊断只查询；请关闭业务弹窗后再调用其他查询。"
+      }
+    },
+    {
+      "ok": true,
+      "result": {
+        "context_token": "71c93f49151ac55921c9531bcfd146ac4f68b8780c613c85c02f3963a6627e57",
+        "scope": "defaults",
+        "stores": [
+          {
+            "store": "A",
+            "name": null,
+            "parameters": [
+              {
+                "parameter": "山东仓 / 备货天数",
+                "path": [
+                  "warehouses",
+                  "山东仓",
+                  0
+                ],
+                "value": 9,
+                "unit": "天",
+                "configured_value": 9,
+                "group": "分仓周期",
+                "source": "分仓周期",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "山东仓 / 到货天数",
+                "path": [
+                  "warehouses",
+                  "山东仓",
+                  1
+                ],
+                "value": 2,
+                "unit": "天",
+                "configured_value": 2,
+                "group": "分仓周期",
+                "source": "分仓周期",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "河北仓 / 备货天数",
+                "path": [
+                  "warehouses",
+                  "河北仓",
+                  0
+                ],
+                "value": 8.0,
+                "unit": "天",
+                "configured_value": 8.0,
+                "group": "分仓周期",
+                "source": "分仓周期",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "河北仓 / 到货天数",
+                "path": [
+                  "warehouses",
+                  "河北仓",
+                  1
+                ],
+                "value": 4.0,
+                "unit": "天",
+                "configured_value": 4.0,
+                "group": "分仓周期",
+                "source": "分仓周期",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "快销 / 趋势敏感度",
+                "path": [
+                  "weight_profiles",
+                  "快销",
+                  "alpha"
+                ],
+                "value": 0.4,
+                "unit": "权重",
+                "configured_value": 0.4,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "快销 / 最近7天权重",
+                "path": [
+                  "weight_profiles",
+                  "快销",
+                  "w1"
+                ],
+                "value": 0.6,
+                "unit": "权重",
+                "configured_value": 0.6,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "快销 / 此前7天权重",
+                "path": [
+                  "weight_profiles",
+                  "快销",
+                  "w2"
+                ],
+                "value": 0.2,
+                "unit": "权重",
+                "configured_value": 0.2,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "快销 / 常规资格周转阈值",
+                "path": [
+                  "profile_parameters",
+                  "快销",
+                  "moq_days"
+                ],
+                "value": 12,
+                "unit": "天",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "快销 / 低月销基本售价门槛",
+                "path": [
+                  "profile_parameters",
+                  "快销",
+                  "moq_price"
+                ],
+                "value": 6,
+                "unit": "元",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "快销 / 库存目标分位概率",
+                "path": [
+                  "profile_parameters",
+                  "快销",
+                  "probability"
+                ],
+                "value": 0.9,
+                "unit": "概率",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "日百 / 趋势敏感度",
+                "path": [
+                  "weight_profiles",
+                  "日百",
+                  "alpha"
+                ],
+                "value": 0.2,
+                "unit": "权重",
+                "configured_value": 0.2,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "日百 / 最近7天权重",
+                "path": [
+                  "weight_profiles",
+                  "日百",
+                  "w1"
+                ],
+                "value": 0.4,
+                "unit": "权重",
+                "configured_value": 0.4,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "日百 / 此前7天权重",
+                "path": [
+                  "weight_profiles",
+                  "日百",
+                  "w2"
+                ],
+                "value": 0.3,
+                "unit": "权重",
+                "configured_value": 0.3,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "日百 / 常规资格周转阈值",
+                "path": [
+                  "profile_parameters",
+                  "日百",
+                  "moq_days"
+                ],
+                "value": 12,
+                "unit": "天",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "日百 / 低月销基本售价门槛",
+                "path": [
+                  "profile_parameters",
+                  "日百",
+                  "moq_price"
+                ],
+                "value": 6,
+                "unit": "元",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "日百 / 库存目标分位概率",
+                "path": [
+                  "profile_parameters",
+                  "日百",
+                  "probability"
+                ],
+                "value": 0.9,
+                "unit": "概率",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "普通库存额度天数",
+                "path": [
+                  "parameters",
+                  "cap_days"
+                ],
+                "value": 21,
+                "unit": "天",
+                "configured_value": 21,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "库存目标分位概率",
+                "path": [
+                  "parameters",
+                  "probability"
+                ],
+                "value": 0.9,
+                "unit": "概率",
+                "configured_value": 0.9,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "单段样本预测倍数",
+                "path": [
+                  "parameters",
+                  "single_sample_multiple"
+                ],
+                "value": 1.5,
+                "unit": "倍",
+                "configured_value": 1.5,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "严格约束月销上界",
+                "path": [
+                  "parameters",
+                  "strict_monthly"
+                ],
+                "value": 3,
+                "unit": "个",
+                "configured_value": 3,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "完全退出约束月销",
+                "path": [
+                  "parameters",
+                  "exit_monthly"
+                ],
+                "value": 10,
+                "unit": "个",
+                "configured_value": 10,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "销量侧额外金额",
+                "path": [
+                  "parameters",
+                  "monthly_extra_money"
+                ],
+                "value": 6,
+                "unit": "元",
+                "configured_value": 6,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "弱证据额外金额",
+                "path": [
+                  "parameters",
+                  "weak_extra_money"
+                ],
+                "value": 30,
+                "unit": "元",
+                "configured_value": 30,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "单段额度参考天数",
+                "path": [
+                  "parameters",
+                  "historical_reference_days"
+                ],
+                "value": 13,
+                "unit": "天",
+                "configured_value": 13,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "最低覆盖判断量",
+                "path": [
+                  "parameters",
+                  "minimum_reference_units"
+                ],
+                "value": 1,
+                "unit": "库存单位",
+                "configured_value": 1,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "增长额度确认天数",
+                "path": [
+                  "parameters",
+                  "growth_reference_days"
+                ],
+                "value": 4,
+                "unit": "天",
+                "configured_value": 4,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "常规资格周转阈值",
+                "path": [
+                  "parameters",
+                  "moq_days"
+                ],
+                "value": 12,
+                "unit": "天",
+                "configured_value": 12,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              },
+              {
+                "parameter": "低月销基本售价门槛",
+                "path": [
+                  "parameters",
+                  "moq_price"
+                ],
+                "value": 6,
+                "unit": "元",
+                "configured_value": 6,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认"
+              }
+            ],
+            "route_and_budget": {
+              "amount": "",
+              "mode": 1,
+              "primary": "山东仓",
+              "secondary": null,
+              "selected": true
+            },
+            "budget": {
+              "mode": "不限预算",
+              "configured_amount": ""
+            },
+            "supply": {
+              "主仓": "山东仓",
+              "从仓": null
+            },
+            "policies": {
+              "一箱例外": true,
+              "极端缺货自动恢复": true,
+              "新品铺设": true
+            },
+            "mapping": {
+              "scope": "全局分类映射",
+              "revision": 0,
+              "digest": "678bf94d89bc51850c2946b44bb8740811ed3786e00e982db0712e78428fe5c3"
+            },
+            "category_mapping": {
+              "个人洗护": "日百",
+              "乳品": "快销",
+              "休闲食品": "快销",
+              "医疗器械": "日百",
+              "厨具餐具": "日百",
+              "学习/办公用品": "日百",
+              "宠物生活": "日百",
+              "家居日用": "日百",
+              "家庭清洁": "日百",
+              "家用电器": "日百",
+              "家纺布艺": "日百",
+              "家装建材": "日百",
+              "彩妆香水": "日百",
+              "快销": "快销",
+              "成人用品": "日百",
+              "手机通讯": "日百",
+              "手表眼镜": "日百",
+              "数码家电": "日百",
+              "日百": "日百",
+              "服饰鞋包": "日百",
+              "母婴用品": "日百",
+              "汽车用品": "日百",
+              "玩具乐器": "日百",
+              "电脑数码": "日百",
+              "粮油调味干货": "快销",
+              "美容护肤": "日百",
+              "节庆礼品": "日百",
+              "花卉园艺": "日百",
+              "营养保健": "快销",
+              "营养冲调": "快销",
+              "运动户外": "日百",
+              "速食/罐头": "快销",
+              "酒类": "快销",
+              "饮品": "快销"
+            },
+            "parameter_signature": "21e57f17efba6b4da3da2a18d6767d915d89e4148c20ad5bb86fd3bb14a7f267",
+            "preset": {
+              "id": "standard",
+              "name": "标准补货",
+              "version": 1
+            },
+            "note": "分类参数覆盖通用值，分仓只维护周期；方案名是快照标识，不代表每个字段的编辑来源。新作业可采用的已保存默认及当前全局映射，不代表本次已应用。"
+          }
+        ]
+      }
+    },
+    {
+      "ok": false,
+      "error": {
+        "code": "NOT_AVAILABLE",
+        "message": "首期未开放这个操作",
+        "details": {}
+      }
+    }
+  ],
+  "scheduled_first": {
+    "run": {
+      "id": "9c63ee9f64ac4d6eb906d8800bc99068",
+      "day": "2026-11-05",
+      "trigger": "manual",
+      "created": "2026-11-05T09:37:56.115995+08:00",
+      "updated": "2026-11-05T09:37:56.119969+08:00",
+      "state": "REVIEW",
+      "stage": "检查运行条件",
+      "revision": 2,
+      "message": "合成任务，请勿执行",
+      "state_name": "需处理",
+      "schedule": {
+        "id": "b7033489abbf4d04a6f86fc3990e5de9",
+        "name": "隔离查询验收",
+        "plan_id": "synthetic-only",
+        "revision": 1,
+        "kind": "once",
+        "time": "06:00",
+        "weekdays": null,
+        "date": "2099-01-01",
+        "enabled": false,
+        "next_at": null,
+        "workers": 2,
+        "timezone": "Asia/Shanghai"
+      },
+      "store_count": 2,
+      "ready_stores": 1,
+      "note": "完成表示计算完成等待核对，不表示已签发。仅查询，不会启动或改变任务。"
+    },
+    "stores": {
+      "total": 2,
+      "offset": 0,
+      "items": [
+        {
+          "code": "B",
+          "name": "B",
+          "state": "READY",
+          "message": "合成验收",
+          "state_name": "计算完成"
+        }
+      ],
+      "next_offset": 1
+    },
+    "events": [
+      {
+        "seq": 1,
+        "at": "2026-11-05T09:37:56.116996+08:00",
+        "message": "等待执行"
+      }
+    ],
+    "next_after": 1,
+    "has_more_events": true,
+    "note": "门店按 next_offset 翻页，事件按 next_after 续查；任务运行中可能继续产生进展。"
+  },
+  "scheduled_second": {
+    "run": {
+      "id": "9c63ee9f64ac4d6eb906d8800bc99068",
+      "day": "2026-11-05",
+      "trigger": "manual",
+      "created": "2026-11-05T09:37:56.115995+08:00",
+      "updated": "2026-11-05T09:37:56.119969+08:00",
+      "state": "REVIEW",
+      "stage": "检查运行条件",
+      "revision": 2,
+      "message": "合成任务，请勿执行",
+      "state_name": "需处理",
+      "schedule": {
+        "id": "b7033489abbf4d04a6f86fc3990e5de9",
+        "name": "隔离查询验收",
+        "plan_id": "synthetic-only",
+        "revision": 1,
+        "kind": "once",
+        "time": "06:00",
+        "weekdays": null,
+        "date": "2099-01-01",
+        "enabled": false,
+        "next_at": null,
+        "workers": 2,
+        "timezone": "Asia/Shanghai"
+      },
+      "store_count": 2,
+      "ready_stores": 1,
+      "note": "完成表示计算完成等待核对，不表示已签发。仅查询，不会启动或改变任务。"
+    },
+    "stores": {
+      "total": 2,
+      "offset": 1,
+      "items": [
+        {
+          "code": "A",
+          "name": "A",
+          "state": "FAILED",
+          "message": "合成验收",
+          "state_name": "未完成，需处理"
+        }
+      ],
+      "next_offset": null
+    },
+    "events": [
+      {
+        "seq": 2,
+        "at": "2026-11-05T09:37:56.119969+08:00",
+        "message": "合成任务，请勿执行"
+      }
+    ],
+    "next_after": 2,
+    "has_more_events": true,
+    "note": "门店按 next_offset 翻页，事件按 next_after 续查；任务运行中可能继续产生进展。"
+  },
+  "checks": [
+    "CLI version/build and live doctor",
+    "CLI defaults vs MCP current parameters",
+    "scheduler write rejected",
+    "schedule/run/store pagination and incremental events",
+    "queries leave DB bytes and current job unchanged"
+  ]
+}
