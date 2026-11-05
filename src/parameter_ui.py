@@ -32,7 +32,7 @@ class ParameterDialog(QDialog):
         v=QVBoxLayout(self);v.addWidget(label(scope+(' · 只读，不应用或保存。' if readonly else ' · 方案保存/停用立即生效，不应用到门店。' if self.managing else ' · 未应用的编辑仅在此窗口；应用整个表单，预算和主从仓保留。多店以第一家显示，应用前逐店核对差异。'),'muted'))
         if intent=='defaults':v.itemAt(0).widget().setText(scope+' · 仅保存后续作业使用的默认；当前作业和历史签发不变。多店以第一家显示，保存前逐店核对完整差异。')
         if len(self.store_configs)>1 and any(c!=config for c in self.store_configs.values()):v.addWidget(label('注意：所选门店参数不完全相同；应用将统一完整参数，请核对每店差异。','section'))
-        row=QHBoxLayout();self.choices=QComboBox();self.presets=self.repository.presets()
+        row=QHBoxLayout();self.choices=QComboBox();self.presets=[p for p in self.repository.presets() if not p.get('builtin')]
         for p in self.presets:self.choices.addItem(f"{p['name']} v{p['version']}"+(' · 内置已验收基线' if p['builtin'] else ' · 自定义，效果需试算'),p)
         row.addWidget(self.choices,1);self.load_btn=button('用此方案填充表单',self.load_selected);row.addWidget(self.load_btn);self.retire_btn=button('停用此方案版本',self.archive_selected);row.addWidget(self.retire_btn);self.retire_btn.setVisible(self.managing);self.load_btn.setVisible(not readonly);self.choices.setVisible(not readonly);v.addLayout(row)
         self.choices.currentIndexChanged.connect(lambda:self.retire_btn.setEnabled(bool(self.choices.currentData()) and self.choices.currentData()['id']!='standard'));self.retire_btn.setEnabled(bool(self.choices.currentData()) and self.choices.currentData()['id']!='standard')
@@ -282,7 +282,7 @@ class ParameterUi:
         p=self.preset_for(s);changed=json.loads(json.dumps(p['config']))!=json.loads(json.dumps(p.get('base_config',p['config'])))
         import store_defaults
         saved=getattr(self,'saved_store_defaults',{}).get(s)
-        state='历史快照' if self.readonly or getattr(self,'_restoring',False) else '已保存默认' if store_defaults.matches(saved,p,self.config_for(s),self.store_ui(s)) else '本次与已保存默认不同' if saved else '仅本次 · 尚无门店默认'
+        state='历史快照' if self.readonly or getattr(self,'_restoring',False) else '已保存默认' if store_defaults.matches(saved,p,self.config_for(s),self.store_ui(s)) else '本次与已保存默认不同' if store_defaults.has_parameters(saved) else '本次自动填写 / 调整 · 未保存门店参数'
         from parameter_maintenance import common_is_default
         common='默认通用方案' if common_is_default(self.config_for(s)) else '门店自定义通用参数'
         text=f"本次采用：{p['name']}"+(' · 本店调整' if changed else '')+' · '+state+'\n'+common+'；'+policy.summary(self.config_for(s))

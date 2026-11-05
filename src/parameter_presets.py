@@ -11,6 +11,7 @@ import parameter_schema as schema
 from work_repository import Conflict, dumps, loads, now
 
 MODE = 'per_store_presets'
+FOLLOW_DEFAULTS = '@follow_store_defaults'
 
 
 def signature(config):
@@ -33,9 +34,10 @@ def detach_if_changed(record):
 
 
 def read(db):
+    from store_defaults import decode
     presets=[{'id':i,'version':v,'name':n,'config':loads(c),'builtin':False,'archived':bool(a)}
              for i,v,n,c,a in db.execute('SELECT id,version,name,config,archived FROM presets ORDER BY id,version DESC')]
-    stores={s:loads(raw) for s,raw in db.execute('SELECT code,data FROM stores')}
+    stores={s:decode(loads(raw)) for s,raw in db.execute('SELECT code,data FROM stores')}
     exists=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='replenishment_plans'").fetchone()
     plans=[loads(r[0]) for r in db.execute('SELECT payload FROM replenishment_plans ORDER BY created,id')] if exists else []
     data={'presets':presets,'stores':stores,'plans':plans}
@@ -53,6 +55,9 @@ def latest(data):
     for p in data['presets']:
         if not p['archived'] and p['id'] not in values:values[p['id']]={k:copy.deepcopy(v) for k,v in p.items() if k!='archived'}
     return values
+
+def visible(data):
+    return {pid:p for pid,p in latest(data).items() if pid!='standard'}
 
 
 def resolve(data,pid):
@@ -72,8 +77,37 @@ def check(data,expected):
 
 def write_stores(db,before,after,action):
     from settings_history import record
-    for s,r in after.items():db.execute('INSERT INTO stores VALUES(?,?) ON CONFLICT(code) DO UPDATE SET data=excluded.data',(s,dumps(r)))
+    from store_defaults import encode
+    for s,r in after.items():db.execute('INSERT INTO stores VALUES(?,?) ON CONFLICT(code) DO UPDATE SET data=excluded.data',(s,dumps(encode(r))))
     record(db,before,after,action)
+
+
+def clear_defaults(repo,codes,expected):
+    """Remove only selected saved parameter payloads, keeping independent settings."""
+    from store_defaults import has_parameters,fallback_preset
+    from storage_chunks import backup_before_write
+    backup_before_write(repo.path,lambda _:None)
+    with closing(repo.connect()) as db,db:
+        db.execute('BEGIN IMMEDIATE');data=read(db);check(data,expected)
+        before={s:data['stores'][s] for s in codes if has_parameters(data['stores'].get(s))}
+        if before:preserve_mapping(db,data)
+        after=copy.deepcopy(before)
+        for r in after.values():r['preset']=fallback_preset();r['saved']=now()
+        write_stores(db,before,after,'删除门店默认参数')
+    return after
+
+def preserve_mapping(db,data):
+    """Legacy shared mapping may only live in saved configs; retain it separately."""
+    from store_defaults import has_parameters
+    exists=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='global_category_mapping'").fetchone()
+    if exists and db.execute('SELECT 1 FROM global_category_mapping WHERE id=1').fetchone():return
+    variants={dumps(r['preset']['config']['category_profiles']) for r in data['stores'].values() if has_parameters(r)}
+    if len(variants)!=1:return  # Existing conflicts still require explicit mapping review.
+    payload={'revision':1,'saved':now(),'mapping':loads(next(iter(variants)))}
+    db.execute('CREATE TABLE IF NOT EXISTS global_category_mapping(id INTEGER PRIMARY KEY,payload TEXT NOT NULL)')
+    db.execute('INSERT INTO global_category_mapping VALUES(1,?)',(dumps(payload),))
+    db.execute('CREATE TABLE IF NOT EXISTS global_category_mapping_events(id INTEGER PRIMARY KEY,at TEXT,before_value TEXT,after_value TEXT)')
+    db.execute('INSERT INTO global_category_mapping_events(at,before_value,after_value) VALUES(?,?,?)',(now(),dumps(None),dumps(payload)))
 
 
 def save(repo,name,config,pid=None,expected=None):
@@ -116,16 +150,22 @@ def delete(repo,pid,replacement,expected):
         db.execute('BEGIN IMMEDIATE');data=read(db);check(data,expected);resolve(data,pid)
         codes,refs=references(data,pid)
         if (codes or refs) and not replacement:raise ValueError('预案仍被门店或补货预案使用，请选择替换预案')
-        p=resolve(data,replacement) if replacement else None
+        clearing=replacement==FOLLOW_DEFAULTS
+        if clearing and codes:preserve_mapping(db,data)
+        p=resolve(data,replacement) if replacement and not clearing else None
         before={s:data['stores'][s] for s in codes};after=copy.deepcopy(before)
         for r in after.values():
-            mapping=r['preset']['config']['category_profiles'];r['preset']=bound(p);r['preset']['config']['category_profiles']=mapping;r['saved']=now()
+            if clearing:
+                from store_defaults import fallback_preset
+                r['preset']=fallback_preset();r['saved']=now()
+            else:
+                mapping=r['preset']['config']['category_profiles'];r['preset']=bound(p);r['preset']['config']['category_profiles']=mapping;r['saved']=now()
         write_stores(db,before,after,'删除参数预案并替换引用')
         for old in data['plans']:
             if not any(plan['id']==old['id'] for plan,_ in refs):continue
             new=copy.deepcopy(old)
             for item in new['stores']:
-                if item.get('preset_id')==pid:item['preset_id']=replacement
+                if item.get('preset_id')==pid:item['preset_id']=None if clearing else replacement
             new['revision']+=1;new['updated']=now()
             db.execute('UPDATE replenishment_plans SET payload=? WHERE id=?',(dumps(new),new['id']))
             Repository.event(db,'替换已删除参数预案',old,new)
@@ -141,7 +181,7 @@ def freeze(plan,repo,*,data=None):
     for item in p['stores']:
         s=item['code'];pid=item.get('preset_id')
         value=resolve(data,pid) if pid else copy.deepcopy((data['stores'].get(s) or base())['preset'])
-        value['parameter_source']={'kind':'补货预案指定' if pid else '门店默认','plan_name':plan['name'],'store':s,
+        value['parameter_source']={'kind':'补货预案指定' if pid else '自动填写' if value.get('implicit_default') or s not in data['stores'] else '门店默认','plan_name':plan['name'],'store':s,
                                    'preset_id':value['id'],'preset_name':value['name'],'preset_version':value['version']}
         resolved[s]=value
     p['_resolved_presets']=resolved

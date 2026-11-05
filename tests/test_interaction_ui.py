@@ -39,6 +39,9 @@ class UiContracts(unittest.TestCase):
         with patch('interaction_ui.confirm',return_value=True):d.archive_selected()
         self.assertFalse(any(p['id']==custom['id'] for p in self.parent.work_repository.presets()));self.assertFalse(d.retire_btn.isEnabled())
     def test_load_dirty_form_requires_confirmation(self):
+        # Built-in defaults are no longer selectable; use the same values in
+        # a saved user preset to retain the dirty-form confirmation contract.
+        self.parent.work_repository.save_preset('测试常规参数',self.config)
         d=self.dialog(scope='所选 1 家门店');w=d.param_table.cellWidget(2,1);w.setValue(22)
         with patch('interaction_ui.confirm',return_value=False):d.load_selected()
         self.assertEqual(w.value(),22)

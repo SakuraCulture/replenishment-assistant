@@ -84,9 +84,10 @@ def parameter_result(host, args, preview=None):
             try: record['preset'] = pm.bind(record['preset'], mapping)
             except ValueError as exc: raise CommandError('NEEDS_REVIEW', str(exc)) from None
         config = record['preset']['config']; ui = record['ui']
+        implicit=bool(record['preset'].get('implicit_default'))
         fields = automation_jobs.parameters(record)
         for field in fields:
-            field['scope'] = {'current':'当前作业快照', 'defaults':'已保存门店默认', 'preview':'试算冻结参数'}[scope]
+            field['scope'] = '无保存参数，准备时自动填写' if scope=='defaults' and implicit else {'current':'当前作业快照', 'defaults':'已保存门店默认', 'preview':'试算冻结参数'}[scope]
         rows.append({'store': code, 'name': name, 'parameters': fields, 'route_and_budget': copy.deepcopy(ui),
             'budget': {'mode': {0: '未设置', 1: '不限预算', 2: '限额补货'}.get(ui.get('mode'), '待核'), 'configured_amount': ui.get('amount')},
             'supply': {'主仓': ui.get('primary'), '从仓': ui.get('secondary')},
@@ -96,8 +97,9 @@ def parameter_result(host, args, preview=None):
             'preset': {k: record['preset'].get(k) for k in ('id', 'name', 'version')},
             'parameter_source':copy.deepcopy(record['preset'].get('parameter_source')),
             'default_preset_binding':copy.deepcopy(record['preset'].get('default_binding')),
+            'implicit_parameter_fallback':implicit,
             'note': '分类参数覆盖通用值，分仓只维护周期；方案名是快照标识，不代表每个字段的编辑来源。' +
-                    {'current':'当前作业快照，未保存默认。', 'defaults':'新作业可采用的已保存默认及当前全局映射，不代表本次已应用。',
+                    {'current':'当前作业快照，未保存默认。', 'defaults':('门店未保存默认参数，所列为准备时自动填充值及全局映射，不代表已保存或本次已采用。' if implicit else '新作业可采用的已保存默认及当前全局映射，不代表本次已应用。'),
                      'preview':'预案及本次试算修改装配后的冻结参数；不代表当前工作台已采用。'}[scope]})
     from parameter_guidance import referenced
     guidance = referenced(rows)

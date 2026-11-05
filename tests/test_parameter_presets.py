@@ -108,8 +108,9 @@ class WorkbenchPresets(unittest.TestCase):
         try:
             self.assertEqual([r['code'] for r in d.rows],['B','A']);self.assertEqual(d.table.cellWidget(1,2).currentData(),None)
             d.table.setCurrentCell(1,1);d.move(-1);self.assertEqual(d.rows[0]['code'],'A')
-            d.batch.setCurrentIndex(d.batch.findData('standard'));d.set_selected();d.collect()
-            self.assertTrue(all(r['preset_id']=='standard' for r in d.rows))
+            self.assertEqual(d.batch.findData('standard'),-1)
+            d.batch.setCurrentIndex(d.batch.findData(self.p['id']));d.set_selected();d.collect()
+            self.assertTrue(all(r['preset_id']==self.p['id'] for r in d.rows))
             d.check_visible(False);self.assertTrue(all(d.table.item(i,0).checkState()==Qt.CheckState.Unchecked for i in range(2)))
         finally:d.deleteLater()
 

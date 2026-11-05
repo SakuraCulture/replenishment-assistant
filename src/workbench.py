@@ -120,7 +120,7 @@ class Workbench(ParameterUi,BatchWindow):
             self.selection_changed()
         saved=getattr(self,'saved_store_defaults',{})
         inherited=sum(store_defaults.matches(saved.get(s),self.preset_for(s),self.config_for(s),self.store_ui(s)) for s in self.store_widgets)
-        missing=sum(s not in saved for s in self.store_widgets)
+        missing=sum(not store_defaults.has_parameters(saved.get(s)) for s in self.store_widgets)
         self.import_note.setText(self.import_note.text()+f' 参数：{inherited} 店采用已保存默认；{len(self.store_widgets)-inherited-missing} 店保留本次调整/快照；{missing} 店尚无门店默认。可在“查看生效参数”核对。')
         self.touch()
     def current_parameter_record(self,s):

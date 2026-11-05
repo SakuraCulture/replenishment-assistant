@@ -50,13 +50,15 @@ class Repository:
             if stores or plans:raise ValueError('预案仍被使用，请在参数预案管理中选择替换预案后删除')
             db.execute('UPDATE presets SET archived=1 WHERE id=? AND version=?',(pid,version))
     def stores(self):
-        with closing(self.connect()) as db:return {k:loads(v) for k,v in db.execute('SELECT code,data FROM stores')}
+        from store_defaults import decode
+        with closing(self.connect()) as db:return {k:decode(loads(v)) for k,v in db.execute('SELECT code,data FROM stores')}
     def restore_preset(self,pid,version):
         with closing(self.connect()) as db,db:
             if db.execute('UPDATE presets SET archived=0 WHERE id=? AND version=?',(pid,version)).rowcount!=1:raise ValueError('方案已不存在，请刷新')
     def save_stores(self,values,*,expected=None,action='保存门店默认'):
         from settings_history import record
         from parameter_presets import detach_if_changed
+        from store_defaults import decode,encode
         values={s:detach_if_changed(r) for s,r in values.items()}
         for val in values.values():
             if val is not None:schema.validate(val['preset']['config'])
@@ -65,11 +67,11 @@ class Repository:
             before={}
             for code in values:
                 row=db.execute('SELECT data FROM stores WHERE code=?',(code,)).fetchone()
-                before[code]=loads(row[0]) if row else None
+                before[code]=decode(loads(row[0])) if row else None
             if expected is not None:
                 for code,old in expected.items():
                     row=db.execute('SELECT data FROM stores WHERE code=?',(code,)).fetchone()
-                    if (loads(row[0]) if row else None)!=old:raise Conflict('门店默认在核对后变化，请刷新后重新核对：'+code)
+                    if (decode(loads(row[0])) if row else None)!=old:raise Conflict('门店默认在核对后变化，请刷新后重新核对：'+code)
             for key,val in values.items():
                 if val is not None and (binding:=val['preset'].get('default_binding')):
                     # Restoring an old defaults snapshot must not revive a live
@@ -77,7 +79,7 @@ class Repository:
                     current=(1,) if binding['id']=='standard' else db.execute('SELECT version FROM presets WHERE id=? AND archived=0 ORDER BY version DESC LIMIT 1',(binding['id'],)).fetchone()
                     if not current or current[0]!=binding['version']:val['preset'].pop('default_binding',None)
                 if val is None:db.execute('DELETE FROM stores WHERE code=?',(key,))
-                else:db.execute('INSERT INTO stores VALUES(?,?) ON CONFLICT(code) DO UPDATE SET data=excluded.data',(key,dumps(val)))
+                else:db.execute('INSERT INTO stores VALUES(?,?) ON CONFLICT(code) DO UPDATE SET data=excluded.data',(key,dumps(encode(val))))
             return record(db,before,values,action)
     def list_jobs(self):
         with closing(self.connect()) as db:return [{'day':d,'revision':r,'digest':h,'saved':t,'summary':loads(s)} for d,r,h,t,s in db.execute('SELECT day,revision,digest,saved,summary FROM jobs ORDER BY day DESC')]

@@ -10,6 +10,7 @@ import sqlite3
 from contextlib import closing
 import parameter_schema as schema
 import store_parameter_import as spi
+import store_defaults
 from work_repository import Conflict, dumps, now
 
 
@@ -70,9 +71,10 @@ def mapping_snapshot(path):
     with closing(sqlite3.connect(path)) as db:
         exists = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='global_category_mapping'").fetchone()
         row = db.execute('SELECT payload FROM global_category_mapping WHERE id=1').fetchone() if exists else None
-        stores = {c:json.loads(raw) for c,raw in db.execute('SELECT code,data FROM stores')}
+        stores = {c:store_defaults.decode(json.loads(raw)) for c,raw in db.execute('SELECT code,data FROM stores')}
     variants = {}
     for code, store in stores.items():
+        if not store_defaults.has_parameters(store):continue
         mapping = store['preset']['config']['category_profiles']
         key = dumps(mapping)
         variants.setdefault(key, {'mapping':mapping, 'stores':[]})['stores'].append(code)
@@ -106,7 +108,7 @@ def save_mapping(path, mapping, expected, progress=lambda _:None, cancel=None):
         # Second read uses the locked connection to avoid preview/commit races.
         present=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='global_category_mapping'").fetchone()
         raw=db.execute('SELECT payload FROM global_category_mapping WHERE id=1').fetchone() if present else None
-        stores={c:json.loads(s) for c,s in db.execute('SELECT code,data FROM stores')}
+        stores={c:store_defaults.decode(json.loads(s)) for c,s in db.execute('SELECT code,data FROM stores')}
         current=json.loads(raw[0]) if raw else None
         token=hashlib.sha256(dumps({'current':current,'stores':stores}).encode()).hexdigest()
         if token!=expected['token']: raise Conflict('全局映射或门店默认已变化，请重新核对')

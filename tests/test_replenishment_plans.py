@@ -55,10 +55,10 @@ class WorkbenchPlans(unittest.TestCase):
         p.apply(self.w,self.plan);self.load();snap=self.w.snapshot();p.Repository(self.w.work_repository.path).delete(self.plan)
         self.w.reset_job();self.assertIsNone(self.w.active_plan)
         self.w.restore_job({'day':wr.today(),'saved':'test','payload':snap});self.assertEqual(self.w.active_plan,self.plan);self.assertEqual(self.w.config_for('A'),self.plan['config'])
-    def test_different_current_configs_default_to_explicit_standard_source(self):
+    def test_legacy_editor_keeps_initial_values_without_exposing_builtin_choice(self):
         from replenishment_plan_ui import Editor
         self.load();d=Editor(self.w)
-        try:self.assertEqual(d.config,schema.standard());self.assertEqual(d.sources.currentIndex(),0);self.assertIn('系统标准',d.sources.currentText())
+        try:self.assertEqual(d.config,schema.standard());self.assertEqual(d.sources.currentIndex(),0);self.assertIsNone(d.sources.currentData());self.assertNotIn('系统标准',[d.sources.itemText(i) for i in range(d.sources.count())])
         finally:d.deleteLater()
 
 if __name__=='__main__':unittest.main()

@@ -26,9 +26,10 @@ class Editor(QDialog):
             from PySide6.QtWidgets import QListWidgetItem
             item=QListWidgetItem(n+' · '+s);item.setData(Qt.ItemDataRole.UserRole,{'code':s,'name':n});item.setFlags(item.flags()|Qt.ItemFlag.ItemIsUserCheckable);item.setCheckState(Qt.CheckState.Checked if s in selected else Qt.CheckState.Unchecked);self.stores.addItem(item)
         search.textChanged.connect(lambda text:[self.stores.item(i).setHidden(text.lower() not in self.stores.item(i).text().lower()) for i in range(self.stores.count())])
-        row=QHBoxLayout();self.sources=QComboBox();self.sources.addItem('系统标准参数',schema.standard())
+        row=QHBoxLayout();self.sources=QComboBox();self.sources.addItem('选择已保存或本次参数',None)
         for s in host.selected_codes():self.sources.addItem('本次：'+host.loaded['stores'][s],host.config_for(s))
-        for p in host.work_repository.presets():self.sources.addItem('已保存方案：'+p['name'],p['config'])
+        for p in host.work_repository.presets():
+            if not p.get('builtin'):self.sources.addItem('已保存方案：'+p['name'],p['config'])
         row.addWidget(self.sources,1);row.addWidget(button('用所选补货参数填充',self.use_source));row.addWidget(button('设置预案补货参数',self.edit));row.addWidget(button('设置预案通用参数',lambda:self.edit('common')));v.addLayout(row)
         self.summary=label('','muted');v.addWidget(self.summary);self.update_summary()
         row=QHBoxLayout();row.addWidget(button('取消，不保存',self.reject));row.addWidget(button('保存补货计划',self.save,True));v.addLayout(row)
@@ -38,6 +39,7 @@ class Editor(QDialog):
         self.summary.setToolTip('\n'.join(pm.title(tuple(f))+'：'+str(pm.value(self.config,tuple(f))) for f in self.parameter_fields))
     def use_source(self):
         value=self.sources.currentData()
+        if value is None:return
         if value!=self.config and not confirm(self,'替换计划表单参数','用“'+self.sources.currentText()+'”填充当前计划表单；不影响本次作业或门店默认。'):return
         import parameter_maintenance as pm
         selected=pm.fields([value]);self.config=pm.patch(self.config,{f:pm.value(value,f) for f in selected})

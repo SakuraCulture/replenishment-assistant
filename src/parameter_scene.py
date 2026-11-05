@@ -53,7 +53,6 @@ class ParameterScene(QWidget):
         history=QToolButton();history.setText('变更记录 / 恢复');history.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup);menu=QMenu(history)
         from settings_maintenance_ui import open_history,reset_defaults,restore_presets
         menu.addAction('默认变更记录 / 撤销',lambda:(open_history(self,host),self.refresh()))
-        menu.addAction('重置勾选门店默认',lambda:(reset_defaults(self,host,self.require()),self.refresh()))
         menu.addAction('恢复停用方案',lambda:restore_presets(self,host));menu.addAction('旧完整参数方案库',host.open_preset_library)
         history.setMenu(menu);row.addWidget(history);row.addStretch()
         row.addWidget(button('勾选当前筛选',lambda:self.check_visible(True)));row.addWidget(button('清空全部勾选',lambda:self.check_visible(False)));v.addLayout(row)
@@ -66,6 +65,7 @@ class ParameterScene(QWidget):
         v.addWidget(self.table, 1)
         self.note = label('', 'muted')
         v.addWidget(self.note)
+        delete_row=QHBoxLayout();delete_row.addStretch();delete_row.addWidget(button('删除所选门店默认参数',self.delete_defaults));v.addLayout(delete_row)
         row = QHBoxLayout()
         row.addWidget(button('查看保存的默认参数', self.view_defaults))
         row.addWidget(button('选择默认参数预案',lambda:__import__('parameter_preset_ui').assign_defaults(self)))
@@ -79,6 +79,10 @@ class ParameterScene(QWidget):
     def open_presets(self):
         from parameter_preset_ui import PresetLibrary
         PresetLibrary(self.host).exec();self.refresh()
+
+    def delete_defaults(self):
+        from parameter_preset_ui import delete_store_defaults
+        delete_store_defaults(self)
 
     def selected(self):
         return [code for i, code in enumerate(self.codes) if self.table.item(i, 0).checkState() == Qt.CheckState.Checked]
@@ -108,8 +112,9 @@ class ParameterScene(QWidget):
             from parameter_maintenance import common_is_default
             common='默认通用方案' if common_is_default(p.get('config') or schema.standard()) else '自定义通用参数'
             self.table.item(i,4).setText(str(values[3])+'\n'+common)
-            if p.get('default_binding'):self.table.item(i,4).setText(('系统默认参数' if p['id']=='standard' else p['name'])+' · 默认参数预案\n'+common)
+            if p.get('default_binding'):self.table.item(i,4).setText(('已保存参数（原有配置）' if p['id']=='standard' else p['name'])+' · 默认参数预案\n'+common)
             elif p:self.table.item(i,4).setText(str(values[3])+' · 门店自定义默认\n'+common)
+            if not store_defaults.has_parameters(saved):self.table.item(i,4).setText('未保存参数')
         self.table.resizeRowsToContents()
         self.filter()
         self.note.setText('选择默认预案可长期跟随；直接修改默认参数会转为门店自定义。当前作业需明确应用，历史不变。' if self.codes else
@@ -145,6 +150,8 @@ class ParameterScene(QWidget):
         codes = self.require()
         if not codes:
             return
+        if not store_defaults.has_parameters(self.saved.get(codes[0])):
+            QMessageBox.information(self,'未保存门店参数','进入计算准备时会自动填写参数；可在那里查看本次实际生效值。');return
         p = self.preset(codes[0])
         title='保存的门店默认 · ' if codes[0] in self.saved else '尚未保存默认，仅显示当前参考 · '
         ParameterDialog(self.host, p['config'], p, scope=title + codes[0], readonly=True).exec()
@@ -235,7 +242,7 @@ class ParameterScene(QWidget):
                 if budget.isChecked():
                     ui.update(mode=mode.currentIndex(), amount=amount.text().strip())
                 p = self.preset(code)
-                values[code] = store_defaults.record(p, p['config'], ui, old.get(code), include_budget=budget.isChecked(), saved=wr.now())
+                values[code] = store_defaults.record(p, p['config'], ui, old.get(code), include_budget=budget.isChecked(), saved=wr.now(),preserve_implicit=True)
                 for k in ('primary', 'secondary', 'mode', 'amount'):
                     if before.get(k) != values[code]['ui'].get(k):
                         differences.append([code, {'primary':'主仓','secondary':'从仓','mode':'预算方式（0未指定/1不限/2限额）','amount':'预算金额'}[k], before.get(k), values[code]['ui'].get(k)])

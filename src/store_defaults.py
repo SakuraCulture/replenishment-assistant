@@ -1,9 +1,34 @@
 """Durable store/warehouse parameters; daily budget persistence is explicit."""
 import copy
+import json
 from app_defaults import WAREHOUSES
 import parameter_schema as schema
 
-def record(preset,config,ui,old=None,*,include_budget=False,saved=''):
+def fallback_preset():
+    """Internal calculation fallback; never a selectable/persisted preset."""
+    return {'id':'standard','name':'自动填写参数','version':1,'builtin':True,
+            'implicit_default':True,'config':schema.standard()}
+
+def decode(value):
+    value=copy.deepcopy(value)
+    if value is not None and not value.get('preset'):value['preset']=json.loads(json.dumps(fallback_preset()))
+    return value
+
+def has_parameters(value):
+    return bool(value and value.get('preset') and not value['preset'].get('implicit_default'))
+
+def encode(value):
+    """Keep route/budget records but do not persist the implicit fallback config."""
+    value=copy.deepcopy(value)
+    if value is None:return None
+    p=value.get('preset')
+    if p and p.get('implicit_default'):
+        from parameter_presets import signature
+        if signature(p['config'])==signature(schema.standard()):value.pop('preset')
+        else:p.pop('implicit_default',None)
+    return value
+
+def record(preset,config,ui,old=None,*,include_budget=False,saved='',preserve_implicit=False):
     schema.validate(config)
     primary,secondary=ui.get('primary'),ui.get('secondary')
     if primary not in (None,*WAREHOUSES) or secondary not in (None,*WAREHOUSES) or secondary and (not primary or primary==secondary):raise ValueError('主从仓设置无效，请先调整')
@@ -12,11 +37,13 @@ def record(preset,config,ui,old=None,*,include_budget=False,saved=''):
     for key,default in [('mode',0),('amount','')]:durable[key]=ui.get(key,default) if include_budget else previous.get(key,default)
     # Inclusion in a batch is not a store default. Old records still load compatibly.
     durable['selected']=True
-    return {'preset':{**copy.deepcopy(preset),'config':copy.deepcopy(config)},'ui':durable,'saved':saved,
+    p={**copy.deepcopy(preset),'config':copy.deepcopy(config)}
+    if not preserve_implicit:p.pop('implicit_default',None)
+    return {'preset':p,'ui':durable,'saved':saved,
             **({'name':old['name']} if old and old.get('name') else {})}
 
 def matches(saved,preset,config,ui):
-    if not saved:return False
+    if not has_parameters(saved):return False
     return (saved['preset']['config']==config and
             all(saved['ui'].get(k)==ui.get(k) for k in ('primary','secondary')) and
             all(saved['preset'].get(k)==preset.get(k) for k in ('id','version')))

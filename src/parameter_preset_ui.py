@@ -22,10 +22,10 @@ class PresetLibrary(QDialog):
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows);self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch);v.addWidget(self.table,1)
         row=QHBoxLayout()
-        for text,fn in [('查看参数',self.view),('复制新建',lambda:self.edit(True)),('编辑预案',self.edit),('删除预案',self.remove),('关闭',self.accept)]:row.addWidget(button(text,fn))
+        for text,fn in [('新建参数预案',self.create),('查看参数',self.view),('复制新建',lambda:self.edit(True)),('编辑预案',self.edit),('删除预案',self.remove),('关闭',self.accept)]:row.addWidget(button(text,fn))
         v.addLayout(row);self.refresh()
     def refresh(self):
-        self.data=pp.snapshot(self.repo);self.values=list(pp.latest(self.data).values());self.table.setRowCount(len(self.values))
+        self.data=pp.snapshot(self.repo);self.values=list(pp.visible(self.data).values());self.table.setRowCount(len(self.values))
         for n,p in enumerate(self.values):
             stores,refs=pp.references(self.data,p['id'])
             for col,value in enumerate((title(p),p['version'],len(stores),len(refs))):self.table.setItem(n,col,QTableWidgetItem(str(value)))
@@ -37,6 +37,7 @@ class PresetLibrary(QDialog):
         if p:
             from parameter_ui import ParameterDialog
             ParameterDialog(self.host,p['config'],p,scope=title(p),readonly=True).exec()
+    def create(self):self.edit(True,preset={**pp.resolve(self.data,'standard'),'name':'新参数预案'})
     def edit(self,copying=False,preset=None):
         p=preset or self.current()
         if not p:return
@@ -68,6 +69,7 @@ class PresetLibrary(QDialog):
             for j,x in enumerate(row):table.setItem(i,j,QTableWidgetItem(x))
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch);v.addWidget(table)
         choices=QComboBox()
+        choices.addItem('取消引用，之后按门店默认或自动填充',pp.FOLLOW_DEFAULTS)
         for option in self.values:
             if option['id']!=p['id']:choices.addItem(title(option),option['id'])
         v.addWidget(label('将上述引用替换为：'));v.addWidget(choices)
@@ -84,7 +86,9 @@ def assign_defaults(scene):
     d=QDialog(scene);d.setWindowTitle('选择门店默认参数预案');v=QVBoxLayout(d)
     v.addWidget(label(f'为 {len(codes)} 家门店选择完整预案。预算、主从仓保留；当前作业不变。'))
     choices=QComboBox()
-    for p in pp.latest(data).values():choices.addItem(title(p),p['id'])
+    for p in pp.visible(data).values():choices.addItem(title(p),p['id'])
+    if not choices.count():
+        QMessageBox.information(scene,'尚无参数预案','请先在“参数预案”中新建。未保存门店参数时，计算准备会自动填写。');return
     v.addWidget(choices);row=QHBoxLayout();row.addWidget(button('取消',d.reject));row.addWidget(button('核对差异',d.accept,True));v.addLayout(row)
     if d.exec()!=QDialog.DialogCode.Accepted:return
     from interaction_rules import configuration_changes
@@ -97,6 +101,25 @@ def assign_defaults(scene):
     if not review_rows(scene,'核对门店默认',['门店','参数','原值','新值'],rows,'只影响后续采用；本次如需使用，请重新采用预案或显式应用参数。','保存默认选择'):return
     try:pp.assign(host.work_repository,codes,p['id'],data);scene.refresh()
     except Exception as exc:QMessageBox.warning(scene,'默认未保存',str(exc))
+
+
+def delete_store_defaults(scene):
+    import store_defaults
+    codes=scene.require()
+    if not codes:return
+    repo=scene.host.work_repository;data=pp.snapshot(repo)
+    codes=[s for s in codes if store_defaults.has_parameters(data['stores'].get(s))]
+    if not codes:QMessageBox.information(scene,'没有可删除的参数','所选门店均未保存默认参数。');return
+    rows=[[data['stores'][s].get('name') or s,data['stores'][s]['preset']['name'],'下次计算准备自动填写'] for s in codes]
+    if not review_rows(scene,'删除门店默认参数',['门店','将删除的默认参数','删除后'],rows,
+        '仅删除上述门店保存的参数及预案绑定。供货仓、预算、其他门店、当前作业与历史签发保留。跟随门店默认的补货预案下次采用时自动填充；明确指定其他预案的门店仍按指定预案。','确认删除默认参数'):return
+    try:
+        from business_ui import run
+        def remove(progress=lambda _:None,cancel=None):
+            progress('正在删除所选门店默认参数…');return pp.clear_defaults(repo,codes,data)
+        run(scene,remove,(),'删除默认参数',cancellable=False)
+        scene.refresh();scene.note.setText(f'已删除 {len(codes)} 家门店默认参数；当前作业未改变，下次计算准备自动填写。')
+    except Exception as exc:QMessageBox.warning(scene,'默认参数未删除',str(exc))
 
 
 def copy_store_default(scene):
@@ -113,7 +136,7 @@ class StorePlanEditor(QDialog):
     def __init__(self,host,value=None,copying=False):
         super().__init__(host);self.host=host;self.expected=None if copying else value
         self.setWindowTitle('补货预案 · 每店选择参数');self.resize(1050,700)
-        self.data=pp.snapshot(host.work_repository);self.options=pp.latest(self.data)
+        self.data=pp.snapshot(host.work_repository);self.options=pp.visible(self.data)
         v=QVBoxLayout(self);self.name=QLineEdit(value['name']+(' 副本' if copying else '') if value else '')
         self.name.setPlaceholderText('补货预案名称，例如青岛线');v.addWidget(self.name)
         self.note=QLineEdit(value.get('note','') if value else '');self.note.setPlaceholderText('备注（可选）');v.addWidget(self.note)
@@ -136,10 +159,12 @@ class StorePlanEditor(QDialog):
         for i,r in enumerate(self.rows):
             check=QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);check.setCheckState(Qt.CheckState.Checked if r['selected'] else Qt.CheckState.Unchecked);self.table.setItem(i,0,check)
             self.table.setItem(i,1,QTableWidgetItem(r['name']+' · '+r['code']))
-            box=QComboBox();default=self.data['stores'].get(r['code'],{}).get('preset',{}).get('name','系统默认参数');box.addItem('跟随门店默认 · '+default,None)
+            from store_defaults import has_parameters
+            saved=self.data['stores'].get(r['code']);default=saved['preset']['name'] if has_parameters(saved) else '未保存参数，准备时自动填写'
+            box=QComboBox();box.addItem('跟随门店默认 · '+default,None)
             for p in self.options.values():box.addItem(title(p),p['id'])
             index=box.findData(r['preset_id'])
-            if index<0:box.addItem('原预案已不可用，请重新选择',r['preset_id']);index=box.count()-1
+            if index<0:box.addItem('原有固定配置（兼容保留）' if r['preset_id']=='standard' else '原预案已不可用，请重新选择',r['preset_id']);index=box.count()-1
             box.setCurrentIndex(index);self.table.setCellWidget(i,2,box)
         self.filter()
     def collect(self):
