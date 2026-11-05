@@ -38,5 +38,11 @@ class HistoryTests(unittest.TestCase):
         original=report([row(f'2026-11-{i:02}') for i in range(1,11)]);before=copy.deepcopy(original)
         result=h.review(original,8);self.assertEqual(result['stores'][0]['rounds'],8)
         self.assertEqual(result['stores'][0]['days'][-1],'2026-11-03');self.assertEqual(original,before)
+    def test_high_coverage_and_same_day_ambiguity(self):
+        first=row('2026-11-01',observations=dict(K=20,L=10,J=30,AN=1,AM=1,AG=7,AH=3))
+        second=copy.deepcopy(first);second['day']='2026-11-04'
+        r=h.review(report([first,second]));self.assertEqual(r['stores'][0]['repeated_high_coverage_skus'],1);self.assertEqual(r['items'][-1]['coverage'],30)
+        duplicate=copy.deepcopy(first);duplicate['warehouse']='河北仓';r=h.review(report([first,duplicate,row('2026-11-04')]))
+        self.assertEqual(r['items'][-1]['evidence'],[]);self.assertIn('歧义',' '.join(r['items'][-1]['limitations']))
 
 if __name__=='__main__':unittest.main()

@@ -190,7 +190,9 @@ def build_facts(order, head, view, evidence, cancel=None):
 def aggregate(rows):
     """Ratios always use the same priced valid row cohort in both stages."""
     eligible=[r for r in rows if r['scope']=='纳入']
-    out={'rows':len(rows),'included':len(eligible),'excluded':sum(r['scope']=='排除' for r in rows),
+    out={'rows':len(rows),'included':len(eligible),'included_orders':len({r['order'] for r in eligible}),
+         'complete_orders':sum(all(all(r['valid'].values()) for r in eligible if r['order']==oid) for oid in {r['order'] for r in eligible}),
+         'complete_rows':sum(all(r['valid'].values()) for r in eligible),'excluded':sum(r['scope']=='排除' for r in rows),
          'pending':sum(r['scope']=='待核' for r in rows),'stages':{},'pairs':[]}
     for s in STAGES:
         valid=[r for r in eligible if r['valid'][s]]
@@ -247,15 +249,17 @@ def data_stamp(db,spec):
     return digest(values)
 
 
-def validate_basis(path,report):
+def validate_basis(path,report,progress=lambda _:None,cancel=None):
+    checkpoint(cancel)
     with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
         db.execute('BEGIN')
         if data_stamp(db,report['query'])!=report['data_stamp']:
             raise ValueError('订单或履约数据已更新，请重新查询；原报告数据未混入本次结果')
+    checkpoint(cancel)
 
 
 def collect(path, spec, progress=lambda _:None, cancel=None):
-    spec=query_spec(spec);path=Path(path).resolve();rows=[];tokens=[];heads=[]
+    spec=query_spec(spec);path=Path(path).resolve();rows=[];tokens=[];heads=[];payments=[]
     with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as db:
         db.execute('BEGIN')
         stamp=data_stamp(db,spec)
@@ -283,6 +287,16 @@ def collect(path, spec, progress=lambda _:None, cancel=None):
                 h={k:v for k,v in order.items() if k!='payload'}
                 h.update(number=child,parent_number=number,warehouse=wh,visibility_token=visibility.get((oid,wh),{}).get('token',0))
                 view=lifecycle.snapshot(path,h,db=db,order=order,cancel=cancel)
+                payment=view['documents']['payment']
+                if payment:
+                    totals={}
+                    for raw in payment['payload'].get('raw_rows',payment['payload']['rows']):
+                        currency=raw.get('currency') or '未标币种';entry=totals.setdefault(currency,{'amount':Decimal(0),'missing':0});value=num(raw.get('amount'))
+                        if value is None:entry['missing']+=1
+                        else:entry['amount']+=value
+                    from lifecycle_comparison import stage_state
+                    state,valid=stage_state(view,'payment')
+                    payments.extend({'order':child,'store':store,'warehouse':wh,'currency':c,**v,'state':state,'valid':valid} for c,v in totals.items())
                 tokens.append([h,[(s,d['version'],d['digest']) if d else [s,None] for s,d in view['documents'].items()],view.get('legacy_return')])
                 heads.append(h);seen_stores.add(store);seen_orders.add(child)
                 for row in build_facts(order,h,view,evidence,cancel):
@@ -295,7 +309,7 @@ def collect(path, spec, progress=lambda _:None, cancel=None):
         if set(spec['orders'])-seen_orders:raise ValueError('所选订单不存在、已删除或不在查询范围，请重新查询')
     checkpoint(cancel)
     report={'schema':VERSION,'query':spec,'as_of':datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds'),
-            'snapshot_id':digest([VERSION,spec,tokens,rows]),'data_stamp':stamp,'heads':heads,'rows':rows,
+            'snapshot_id':digest([VERSION,spec,tokens,rows,payments]),'data_stamp':stamp,'heads':heads,'rows':rows,'payments':payments,
             'metrics':aggregate(rows),'groups':{g:aggregate([r for r in rows if r['group']==g]) for g in GROUPS},
             'stores':summaries(rows,'store'),'warehouses':summaries(rows,'warehouse'),'orders':summaries(rows,'order')}
     from history_diagnostics import review

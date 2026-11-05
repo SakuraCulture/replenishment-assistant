@@ -25,6 +25,9 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    if '--analytics-smoke' in sys.argv:
+        from analytics_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--analytics-smoke')+1:])
     if '--scheduled-smoke' in sys.argv:
         from scheduled_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--scheduled-smoke')+1:])

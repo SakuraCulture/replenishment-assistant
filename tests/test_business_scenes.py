@@ -26,7 +26,9 @@ class BusinessScenes(unittest.TestCase):
         w=self.win
         self.assertEqual(w.sections.count(),5)
         self.assertEqual([b.text() for b in w.top_nav],['首页','补货出单','决策复查','订单跟踪','参数设置'])
-        self.assertIs(w.followup.parentWidget(),w.sections.widget(3))
+        self.assertTrue(w.sections.widget(3).isAncestorOf(w.followup))
+        self.assertIs(w.tracking_tabs.widget(0),w.followup)
+        self.assertIs(w.tracking_tabs.widget(1),w.analytics)
         w.followup.records=[{'number':'sentinel'}];w.followup.checked={'sentinel':1}
         w.show_section(3);w.show_section(4);w.show_section(3)
         self.assertEqual(w.followup.checked,{'sentinel':1})

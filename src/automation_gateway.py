@@ -151,6 +151,8 @@ class Gateway(QObject):
         if token != self.token(): raise CommandError('STALE_CONTEXT', '当前作业、参数或结果已变化，请重新检查；旧结果没有覆盖工作台')
 
     def idle(self):
+        dialog=getattr(self.host,'_large_io_dialog',None)
+        if dialog is not None and not getattr(dialog,'complete',getattr(dialog,'_completed',False)):raise CommandError('BUSY','当前有后台业务任务，等待完成后再操作')
         if self.pending_failures: raise CommandError('BUSY', 'AI 任务状态正在等待保存，请稍后查询原任务；不会重复计算或采用结果')
         scheduled = getattr(self.host, 'scheduled', None)
         if self.worker or self.host.worker or (scheduled and (scheduled.worker or scheduled.publisher)):
@@ -228,6 +230,22 @@ class Gateway(QObject):
     def scheduled_run_status(self, args):
         from automation_queries import scheduled_status
         return scheduled_status(self.host.work_repository.path, args)
+
+    def start_stock_diagnosis(self,args):
+        from automation_diagnosis import start
+        return start(self,args)
+
+    def stock_diagnosis_results(self,args):
+        from automation_diagnosis import results
+        return results(self,args)
+
+    def adopt_stock_diagnosis(self,args):
+        from automation_diagnosis import adopt
+        return adopt(self,args)
+
+    def undo_stock_diagnosis(self,args):
+        from automation_diagnosis import undo
+        return undo(self,args)
 
     def snapshot(self, arguments):
         import parameter_maintenance as pm

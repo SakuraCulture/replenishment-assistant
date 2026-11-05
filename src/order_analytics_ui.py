@@ -21,10 +21,9 @@ def formatted(v):
 
 class AnalyticsWidget(QWidget):
     def __init__(self,host):
-        super().__init__(host);self.host=host;self.worker=None;self.report=None;self.page=0;self.drill=None;self.selected=set();self.close_pending=False
+        super().__init__(host);self.host=host;self.worker=None;self.basis_worker=None;self.stale=False;self.report=None;self.page=0;self.drill=None;self.selected=set();self.close_pending=False
         self.views_path=Path(host.repository.folder)/'analytics_views.json'
-        v=QVBoxLayout(self);v.addWidget(label('经营分析 · 五段漏斗','section'))
-        v.addWidget(label('模型建议 → 签发 → 门店确认 → 实际下单 → 实际收货；按签发价比较，付款实际金额另列。','muted'))
+        v=QVBoxLayout(self);heading=label('五段经营分析 · 按签发价比较，付款实际金额另列','section');heading.setToolTip('模型建议 → 签发 → 门店确认 → 实际下单 → 实际收货；分析不改变历史。');v.addWidget(heading)
         f=QHBoxLayout();self.start=QLineEdit(date.today().isoformat());self.end=QLineEdit(date.today().isoformat())
         for title,edit in [('业务日期',self.start),('至',self.end)]:f.addWidget(label(title));edit.setMaximumWidth(130);f.addWidget(edit)
         for days,text in ((1,'今天'),(7,'近7天'),(30,'近30天'),(90,'多轮复盘·近90天')):f.addWidget(button(text,lambda checked=False,n=days:self.set_dates(n)))
@@ -35,13 +34,17 @@ class AnalyticsWidget(QWidget):
         self.group=QComboBox();self.group.addItems(['全部属性',*service.GROUPS]);f.addWidget(self.group)
         self.rounds=QSpinBox();self.rounds.setRange(1,30);self.rounds.setValue(8);self.rounds.setSuffix('轮复盘');f.addWidget(self.rounds);self.rounds.valueChanged.connect(self.dirty)
         self.query_btn=button('查询',self.query,True);f.addWidget(self.query_btn);v.addLayout(f)
+        self.more=QWidget();extra=QHBoxLayout(self.more);extra.setContentsMargins(0,0,0,0);extra.addWidget(button('按补货计划选择门店',self.choose_plan));self.category=QLineEdit();self.category.setPlaceholderText('分类组精确名称（选填，如快销）；留空全部');extra.addWidget(self.category,1);self.category.textChanged.connect(self.dirty);v.addWidget(self.more);self.more.hide()
+        toggle=button('更多筛选',lambda:self.more.setVisible(not self.more.isVisible()));f.insertWidget(f.count()-1,toggle)
         self.applied=label('先查询；无需计算本次补货，也无需启用 AI。','muted');v.addWidget(self.applied)
+        from stock_diagnosis_ui import open_diagnosis
+        extra.addWidget(button('诊断本次工作台',lambda:open_diagnosis(self.host)))
         for edit in (self.start,self.end,self.search,self.stores):edit.textChanged.connect(self.dirty);edit.returnPressed.connect(self.query)
         self.warehouse.currentIndexChanged.connect(self.dirty);self.group.currentIndexChanged.connect(self.dirty)
         self.bar=QProgressBar();self.bar.setRange(0,100);self.bar.setValue(0);self.bar.setMaximumHeight(16);v.addWidget(self.bar)
         self.note=label('未查询','muted');v.addWidget(self.note)
         self.funnel=QTableWidget(3,6);self.funnel.setHorizontalHeaderLabels(['必采属性',*[service.NAMES[s] for s in service.STAGES]])
-        self.funnel.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.funnel.setMaximumHeight(195)
+        self.funnel.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.funnel.setFixedHeight(136)
         self.funnel.verticalHeader().hide();self.funnel.horizontalHeader().setStretchLastSection(True)
         for i in range(6):self.funnel.setColumnWidth(i,185)
         v.addWidget(self.funnel)
@@ -61,13 +64,35 @@ class AnalyticsWidget(QWidget):
         self.selected_btn=button('导出所选订单',lambda:self.export(True));row.addWidget(self.selected_btn)
         row.addWidget(button('保存常用视图',self.save_view));row.addWidget(button('复制 AI 分析指令',self.copy_prompt));self.cancel_btn=button('■ 停止当前任务',self.cancel);row.addWidget(self.cancel_btn);v.addLayout(row)
         self.timer=QTimer(self);self.timer.setInterval(1000);self.timer.timeout.connect(self.heartbeat);self.ticks=0
+        self.update_timer=QTimer(self);self.update_timer.setInterval(30000);self.update_timer.timeout.connect(self.check_update);self.update_timer.start()
         self.load_views();self.controls()
+
+    def check_update(self):
+        if not self.isVisible() or not self.report or self.worker or self.basis_worker or self.close_pending:return
+        report=self.report;w=Worker(service.validate_basis,(self.host.work_repository.path,report),self);self.basis_worker=w
+        def failed(message):
+            if self.report is report and not self.close_pending:
+                self.stale=True;self.note.setText('数据有更新或核验未完成，请重新查询后导出。'+message);self.controls()
+        w.failed.connect(failed)
+        def finish():
+            self.basis_worker=None;w.deleteLater()
+            if self.close_pending:QTimer.singleShot(0,self.host.close)
+        w.finished.connect(finish);w.start()
 
     def spec(self):
         return service.query_spec({'from':self.start.text().strip(),'to':self.end.text().strip(),
             'stores':[s.strip() for s in self.stores.text().replace('，',',').split(',') if s.strip()],
             'warehouse':self.warehouse.currentText() if self.warehouse.currentIndex() else '',
-            'group':self.group.currentText() if self.group.currentIndex() else '', 'search':self.search.text().strip(),'rounds':self.rounds.value()})
+            'group':self.group.currentText() if self.group.currentIndex() else '', 'search':self.search.text().strip(),'category':self.category.text().strip(),'rounds':self.rounds.value()})
+
+    def choose_plan(self):
+        try:
+            from replenishment_plans import Repository
+            plans=Repository(self.host.work_repository.path).list()
+            if not plans:QMessageBox.information(self,'暂无计划','可直接填写门店编码，或到参数设置维护补货计划。');return
+            names=[p['name']+' · '+p['id'][:8] for p in plans];chosen,ok=QInputDialog.getItem(self,'选择查询门店','仅复制计划门店范围，不应用参数或修改历史',names,0,False)
+            if ok:self.stores.setText(','.join(s['code'] for s in plans[names.index(chosen)]['stores']))
+        except Exception as exc:QMessageBox.warning(self,'无法选择',str(exc))
 
     def set_dates(self,days):
         self.end.setText(date.today().isoformat());self.start.setText((date.today()-timedelta(days=days-1)).isoformat())
@@ -77,19 +102,19 @@ class AnalyticsWidget(QWidget):
 
     def controls(self):
         busy=self.worker is not None
-        self.query_btn.setEnabled(not busy);self.export_btn.setEnabled(not busy and self.report is not None)
-        self.selected_btn.setEnabled(not busy and bool(self.selected));self.cancel_btn.setEnabled(busy)
+        self.query_btn.setEnabled(not busy);self.export_btn.setEnabled(not busy and self.report is not None and not self.stale)
+        self.selected_btn.setEnabled(not busy and bool(self.selected) and not self.stale);self.cancel_btn.setEnabled(busy)
 
     def start_task(self,fn,args,done):
         if self.worker or self.host.closing:return
-        w=Worker(fn,args,self);self.worker=w;self.ticks=0;self.bar.setRange(0,0);self.controls();self.timer.start()
+        w=Worker(fn,args,self);self.worker=w;self.ticks=0;self.task_succeeded=False;self.bar.setRange(0,0);self.controls();self.timer.start()
         w.status.connect(self.note.setText);w.row_progress.connect(self.progress)
         def received(value):
-            if self.worker is w and not self.close_pending and (not w.cancel.is_set() or isinstance(value,dict) and 'path' in value):done(value)
+            if self.worker is w and not self.close_pending and (not w.cancel.is_set() or isinstance(value,dict) and 'path' in value):self.task_succeeded=True;done(value)
         w.success.connect(received);w.cancelled.connect(lambda:self.note.setText('已停止，保留上次成功结果。'))
         w.failed.connect(lambda message:QMessageBox.warning(self,'分析未完成',message) if not self.close_pending else None)
         def finish():
-            self.timer.stop();self.worker=None;w.deleteLater();self.controls();self.bar.setRange(0,100);self.bar.setValue(100)
+            self.timer.stop();self.worker=None;w.deleteLater();self.controls();self.bar.setRange(0,100);self.bar.setValue(100 if self.task_succeeded else 0)
             if self.close_pending:QTimer.singleShot(0,self.host.close)
         w.finished.connect(finish);w.start()
 
@@ -102,7 +127,10 @@ class AnalyticsWidget(QWidget):
         if self.worker:self.worker.cancel.set();self.note.setText('正在安全停止，当前读取步骤结束后返回…');self.cancel_btn.setEnabled(False)
 
     def prepare_close(self):
-        if self.worker:self.close_pending=True;self.cancel();return False
+        if self.worker or self.basis_worker:
+            self.close_pending=True;self.update_timer.stop();self.cancel()
+            if self.basis_worker:self.basis_worker.cancel.set()
+            return False
         return True
 
     def query(self):
@@ -111,10 +139,12 @@ class AnalyticsWidget(QWidget):
         self.start_task(service.collect,(self.host.work_repository.path,spec),self.show_report)
 
     def show_report(self,report):
-        self.report=report;self.drill=None;self.selected.clear();self.page=0
+        self.report=report;self.drill=None;self.selected.clear();self.page=0;self.stale=False
         self.applied.setText(f"已查询 {report['query']['from']} 至 {report['query']['to']} · 数据截至 {report['as_of']} · 按当时资料与清单")
-        m=report['metrics'];self.note.setText(f"{len(report['heads'])} 张店仓单；纳入 {m['included']} 条，排除 {m['excluded']} 条，资料待核 {m['pending']} 条。未导入不算0。")
-        for i,g in enumerate(service.GROUPS):
+        m=report['metrics'];self.note.setText(f"查询{len(report['heads'])}单，纳入{m['included_orders']}单，五段完整{m['complete_orders']}单；纳入 {m['included']} 条，排除 {m['excluded']} 条，待核 {m['pending']} 条。未导入不算0。")
+        groups=[g for g in service.GROUPS if g!='属性待核' or report['groups'][g]['included'] or report['groups'][g]['pending']]
+        self.funnel.setRowCount(len(groups));self.funnel.setFixedHeight(44+46*len(groups))
+        for i,g in enumerate(groups):
             self.funnel.setItem(i,0,QTableWidgetItem(g))
             for j,s in enumerate(service.STAGES,1):
                 metric=report['groups'][g]['stages'][s]
@@ -233,6 +263,7 @@ class AnalyticsWidget(QWidget):
         self.stores.setText(','.join(q.get('stores',[])));self.search.setText(q.get('search',''))
         self.warehouse.setCurrentText(q.get('warehouse') or '全部仓');self.group.setCurrentText(q.get('group') or '全部属性')
         self.rounds.setValue(q.get('rounds',8))
+        self.category.setText(q.get('category',''))
 
 
 def open_analytics(host):

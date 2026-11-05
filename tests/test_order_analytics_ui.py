@@ -39,5 +39,10 @@ class AnalyticsUiTests(unittest.TestCase):
     def test_detail_is_readonly(self):
         w=self.widget;w.show_report(self.f.report());w.tabs.setCurrentIndex(3)
         self.assertFalse(w.models['detail'].flags(w.models['detail'].index(0,0)) & __import__('PySide6.QtCore',fromlist=['Qt']).Qt.ItemFlag.ItemIsEditable)
+    def test_updated_data_does_not_replace_visible_snapshot(self):
+        w=self.widget;w.show_report(self.f.report());snapshot=w.report;self.host.show();w.show();self.app.processEvents();self.assertTrue(w.isVisible());self.f.f.save('return');w.check_update()
+        deadline=time.monotonic()+10
+        while w.basis_worker and time.monotonic()<deadline:self.app.processEvents();time.sleep(.005)
+        self.assertIsNone(w.basis_worker);self.assertIs(w.report,snapshot);self.assertTrue(w.stale);self.assertFalse(w.export_btn.isEnabled())
 
 if __name__=='__main__':unittest.main()

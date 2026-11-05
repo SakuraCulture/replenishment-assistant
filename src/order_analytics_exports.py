@@ -49,6 +49,8 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
                      ('门店分仓对比',SUMMARY_HEADERS,list(summary_rows(service.summaries(rows,'warehouse'))))])
     if level!='detail':tabs.append(('订单五段漏斗',SUMMARY_HEADERS,list(summary_rows(service.summaries(rows,'order')))))
     tabs.extend([('全量商品五段',DETAIL_HEADERS,list(detail_rows(included))),('资料待核',DETAIL_HEADERS,list(detail_rows(pending)))])
+    tabs.append(('原单实际付款', ['补货单号','门店编码','仓','币种','原单已知行金额合计','缺金额行数','资料状态','当前是否有效','范围说明'],
+                 [[p['order'],p['store'],p['warehouse'],p['currency'],p['amount'],p['missing'],p['state'],'是' if p['valid'] else '否','原付款单全部商品，未应用漏斗商品过滤；缺行金额未猜分'] for p in report.get('payments',[]) if not selected or p['order'] in selected]))
     from history_diagnostics import HEADERS,review,table
     tabs.append(('多轮证据复盘',HEADERS,table(review({**report,'rows':rows},report['query'].get('rounds',8)))))
     notes=[['分析口径版本',service.VERSION],['查询快照',report['snapshot_id']],['数据截至',report['as_of']],

@@ -32,6 +32,11 @@ CHANGE = obj({'store': TEXT, 'path': {'type': 'array', 'items': {'type': ['strin
 ANALYTICS_QUERY = obj({'from':TEXT,'to':TEXT,'stores':LIST,'orders':LIST,'warehouse':{'type':'string','enum':['','山东仓','河北仓']},
     'group':{'type':'string','enum':['','必采','非必采','属性待核']},'search':{'type':'string'},'category':TEXT,'rounds':{'type':'integer','minimum':1,'maximum':30}},['from','to'])
 TOOLS = [
+    ('start_stock_diagnosis','冻结当前已检查作业，基线加最多两个库存概率候选；仅所选门店分类组，整店重算预算。steps传概率增量，如-0.025表示降2.5个百分点；最大5个百分点，其他参数不变。不采用、不保存。先核对历史履约证据。异步等待task_status完成。',
+     obj({'context_token':TEXT,'operation_key':TEXT,'stores':{**LIST,'minItems':1},'categories':{**LIST,'minItems':1},'steps':{'type':'array','minItems':1,'maxItems':2,'items':{'type':'number','minimum':-0.05,'maximum':0.05}}},['context_token','operation_key','stores','categories'])),
+    ('stock_diagnosis_results','读取完整诊断候选的资金、缺货风险、箱规覆盖及分页商品差异。candidate从1开始；stale候选不能采用。库存位置含在途，不代表货架不断货。',obj({**TASK,'candidate':{'type':'integer','minimum':1,'maximum':2},**PAGE},['task_id'])),
+    ('adopt_stock_diagnosis','仅在人员明确选定完整候选及原因后采用到本次作业。关键待核不可绕过；增加软风险须明确accept_risks。不保存默认、不保存草稿、不签发。',obj({**TASK,'context_token':TEXT,'candidate':{'type':'integer','minimum':1,'maximum':2},'reason':TEXT,'accept_risks':{'type':'boolean'}},['task_id','context_token','candidate','reason'])),
+    ('undo_stock_diagnosis','明确撤回尚无后续编辑/保存/签发的本次诊断采用；恢复原参数和结果，不修改历史。',obj({**TASK,'context_token':TEXT},['task_id','context_token'])),
     ('store_history_review','只读复盘指定经营分析快照的连续多轮签发和履约证据。轮次按不同业务日期计数；缺货原因证据与参数假设分开。先query_order_funnel取得所需日期范围，不自动改参数。',
      obj({**TASK,'store':TEXT,**PAGE},['task_id'])),
     ('query_order_funnel','只读查询五段经营漏斗，按签发业务日期和精确门店/订单范围。异步返回task_id，task_status完成后用order_funnel_results分页。包含必采/非必采与资料待核，排除禁采/对应仓禁用/淘汰品。不执行计算。',
@@ -104,7 +109,7 @@ def validate_call(name, arguments):
 
 
 def public_tools():
-    readonly = {'workbench_context', 'parameter_definitions', 'find_resources', 'effective_parameters', 'task_status', 'scheduled_run_status', 'calculation_results', 'explain_decision', 'query_order_funnel', 'order_funnel_results', 'store_history_review'}
+    readonly = {'workbench_context', 'parameter_definitions', 'find_resources', 'effective_parameters', 'task_status', 'scheduled_run_status', 'calculation_results', 'explain_decision', 'query_order_funnel', 'order_funnel_results', 'store_history_review', 'stock_diagnosis_results'}
     return [{'name': n, 'description': d, 'inputSchema': s, 'annotations': {
         'readOnlyHint': n in readonly, 'destructiveHint': False, 'openWorldHint': False}}
         for n, d, s in TOOLS]

@@ -6,6 +6,8 @@
 
 ## 当前版本
 
+2026-11-05：**0.39.0 候选开发版**新增独立五段经营分析、门店/分仓/订单/商品下钻和全量导出；按当时必卖分组，统一排除禁采、对应仓禁用及已核实淘汰标签。多轮复盘区分执行证据与参数疑点。安全库存诊断仅在同一冻结输入上试算分类概率，完整重做预算，明确确认后采用到本次作业，可在无后续修改时撤回。模型仍为 `0.3.4-rules`；永久默认、原签发/生命周期与旧导出不变。见[使用指南](docs/0.39.0业务使用指南.md)、[开发与验证记录](docs/0.39.0经营分析开发记录.md)。独立包的构建提交和EXE结果以 `releases/0.39.0` 为准，未推送或合并。
+
 2026-11-05：**0.38.1** 将业务参数说明接入 UI / MCP / CLI：28 项定义、作用与调参方向、范围、依赖、比例传值和权限说明；门店参数返回共享字典引用。补上本轮隔离测试发现的 AI 任务状态写入锁异常，失败可查询，释放锁后只补记状态，不重放业务回调。模型仍为0.3.4-rules，旧包保留。见[使用与复跑说明](docs/0.38.1参数业务字典.md)。
 
 2026-11-05：**0.38.0** 同步 AI 与 CLI：动态版本、连接诊断、本次/默认/试算参数核对、资料检查状态、定时安排和进度只读查询。旧 MCP 调用方式保留，不增加平台取数或定时控制权限。见[使用说明与复跑入口](docs/0.38.0AI与CLI查询试算.md)。
@@ -56,6 +58,7 @@
 | 翱象自动化 | 建议采集、采购准备与任务恢复、采购观察及实收适配 | 局部真实验证不等于完整连续闭环验收；未知受理先核对原任务 |
 | 聚水潭自动化 | 两仓资料原生导出、下载和隔离采用已有真实验证记录 | 自动填地址下单、外部订单关联及实际配货回拉仍是后续主链工作 |
 | AI 协助 | Codex / WorkBuddy 本机连接；查询、独立试算、对比、解释、重试和明确采用 | 正式保存、签发、删除、采购和生命周期导入仍在原页面完成 |
+| 经营分析 | 独立五段看板、必采/非必采、多轮复盘、原生与AI同口径导出 | 签发业务日筛选；缺失不当0，缺历史依据待核，离散库存观察不等于连续回测 |
 
 本轮用一张真实已完成采购单补验主子单原件、实收解析和隔离库重复入账；隔离库上游依据由原件重建，不代表该历史订单已与正式付款关联。联合换机、创建至实收连续闭环及全链路真实规模性能仍未完成，详见[项目进度](docs/项目意图与实施进度.md)。
 
@@ -88,6 +91,8 @@
 | 参数维护、全局映射与预案 | `src/parameter_scene.py`、`src/parameter_maintenance.py`、`src/parameter_maintenance_ui.py`、`src/parameter_tables.py`、`src/global_mapping_io.py`、`src/replenishment_plans.py` |
 | 签发及生命周期界面 | `src/normal_orders.py`、`src/normal_exports.py`、`src/lifecycle_home_ui.py` |
 | 聚水潭批次、分配与导出 | `src/jst_batches.py`、`src/jst_orders.py`、`src/jst_allocation.py`、`src/jst_results.py` |
+| 五段经营分析与多轮证据 | `src/order_analytics.py`、`src/order_analytics_ui.py`、`src/order_analytics_exports.py`、`src/history_diagnostics.py` |
+| 安全库存试算及确认采用 | `src/stock_diagnosis.py`、`src/stock_diagnosis_ui.py`、`src/stock_diagnosis_adoption.py` |
 | 作业持久化与历史格式 | `src/work_repository.py`、`src/storage_chunks.py`、`src/storage_maintenance.py` |
 | 浏览器执行组件 | `components/aoxiang/`、`components/jst_catalog/` |
 | 底部连接状态与观察 | `src/browser_status_ui.py`、`components/aoxiang/src/browser-connection.mjs` |

@@ -70,6 +70,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         from jst_task_ui import Generator
         self.jst_generator=Generator(self,self.followup.layout())
         self.final_list_btn=button('最终清单 / 改量',self.open_final_list)
+        from stock_diagnosis_ui import open_diagnosis
+        self.diagnosis_btn=button('缺货与资金诊断',lambda:open_diagnosis(self))
+        actions.insertWidget(0,self.diagnosis_btn)
         actions.insertWidget(0,self.final_list_btn)
         self.issue_policy_btn=button('调整补货策略',self.choose_restock_policy);actions.insertWidget(0,self.issue_policy_btn)
         self.final_detail_btn=button('编辑本店最终清单',lambda:self.open_final_list(True),True)
