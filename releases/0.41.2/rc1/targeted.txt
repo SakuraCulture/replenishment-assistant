@@ -1,0 +1,19 @@
+test_existing_history_can_undo_explicitly (test_store_configuration_deletion.CompleteDeletion.test_existing_history_can_undo_explicitly) ... ok
+test_presets_plans_and_global_mapping_unchanged (test_store_configuration_deletion.CompleteDeletion.test_presets_plans_and_global_mapping_unchanged) ... ok
+test_route_only_leftover_is_removed_with_no_placeholder_after_reopen (test_store_configuration_deletion.CompleteDeletion.test_route_only_leftover_is_removed_with_no_placeholder_after_reopen) ... ok
+test_whole_batch_cas_and_failure_roll_back (test_store_configuration_deletion.CompleteDeletion.test_whole_batch_cas_and_failure_roll_back) ... ok
+test_saved_list_removal_current_scope_and_no_legacy_resurrection (test_store_configuration_deletion.UiCompleteDeletion.test_saved_list_removal_current_scope_and_no_legacy_resurrection) ... ok
+test_atomic_conflict_and_repeat_no_recreation (test_store_default_deletion.Deletion.test_atomic_conflict_and_repeat_no_recreation) ... ok
+test_delete_only_parameters_not_budget_route_or_other_store (test_store_default_deletion.Deletion.test_delete_only_parameters_not_budget_route_or_other_store) ... ok
+test_delete_preset_can_release_references_without_selecting_builtin (test_store_default_deletion.Deletion.test_delete_preset_can_release_references_without_selecting_builtin) ... ok
+test_follow_default_falls_back_but_explicit_plan_still_wins (test_store_default_deletion.Deletion.test_follow_default_falls_back_but_explicit_plan_still_wins) ... ok
+test_legacy_global_mapping_preserved_when_last_default_deleted (test_store_default_deletion.Deletion.test_legacy_global_mapping_preserved_when_last_default_deleted) ... ok
+test_route_only_update_keeps_absent_and_parameter_import_saves_again (test_store_default_deletion.Deletion.test_route_only_update_keeps_absent_and_parameter_import_saves_again) ... ok
+test_undo_and_restore_deleted_defaults (test_store_default_deletion.Deletion.test_undo_and_restore_deleted_defaults) ... ok
+test_builtin_hidden_library_picker_and_first_store_no_default_write (test_store_default_deletion.UiDeletion.test_builtin_hidden_library_picker_and_first_store_no_default_write) ... ok
+test_cancel_then_confirm_current_and_historical_values_survive_new_job_fills (test_store_default_deletion.UiDeletion.test_cancel_then_confirm_current_and_historical_values_survive_new_job_fills) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 2.783s
+
+OK
