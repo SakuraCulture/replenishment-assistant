@@ -1,0 +1,24 @@
+test_apply_and_save_preserves_separate_default_and_current_settings (test_parameter_quick_actions.QuickActions.test_apply_and_save_preserves_separate_default_and_current_settings) ... ok
+test_apply_defaults_only_not_current (test_parameter_quick_actions.QuickActions.test_apply_defaults_only_not_current) ... ok
+test_apply_existing_preset_current_keeps_routes_budget_mapping_defaults (test_parameter_quick_actions.QuickActions.test_apply_existing_preset_current_keeps_routes_budget_mapping_defaults) ... ok
+test_budget_conditional_blank_keeps_existing_but_missing_fails (test_parameter_quick_actions.QuickActions.test_budget_conditional_blank_keeps_existing_but_missing_fails) ... ok
+test_budget_conflict_and_nonfinite_rejected (test_parameter_quick_actions.QuickActions.test_budget_conflict_and_nonfinite_rejected) ... ok
+test_dialog_budget_requires_value_and_zero_is_real (test_parameter_quick_actions.QuickActions.test_dialog_budget_requires_value_and_zero_is_real) ... ok
+test_identical_config_updates_selection_without_invalidating_result (test_parameter_quick_actions.QuickActions.test_identical_config_updates_selection_without_invalidating_result) ... ok
+test_initial_no_change_and_no_first_store_copy (test_parameter_quick_actions.QuickActions.test_initial_no_change_and_no_first_store_copy) ... ok
+test_mapping_incompatible_blocks_before_any_default_or_current_write (test_parameter_quick_actions.QuickActions.test_mapping_incompatible_blocks_before_any_default_or_current_write) ... ok
+test_readonly_and_running_block_current (test_parameter_quick_actions.QuickActions.test_readonly_and_running_block_current) ... ok
+test_save_failure_does_not_apply_current (test_parameter_quick_actions.QuickActions.test_save_failure_does_not_apply_current) ... ok
+test_selected_only_current_budget_zero (test_parameter_quick_actions.QuickActions.test_selected_only_current_budget_zero) ... ok
+test_single_warehouse_clears_secondary_keeps_cycles (test_parameter_quick_actions.QuickActions.test_single_warehouse_clears_secondary_keeps_cycles) ... ok
+test_stale_current_and_preset_rejected_before_save (test_parameter_quick_actions.QuickActions.test_stale_current_and_preset_rejected_before_save) ... ok
+test_summary_exposes_actual_values (test_parameter_quick_actions.QuickActions.test_summary_exposes_actual_values) ... ok
+test_switch_only_keeps_differing_cycles_routes_budget (test_parameter_quick_actions.QuickActions.test_switch_only_keeps_differing_cycles_routes_budget) ... ok
+test_template_bad_paste_rejected_with_source (test_parameter_quick_actions.QuickActions.test_template_bad_paste_rejected_with_source) ... ok
+test_templates_dropdown_required_comments_and_parser_headers_unchanged (test_parameter_quick_actions.QuickActions.test_templates_dropdown_required_comments_and_parser_headers_unchanged) ... ok
+test_v3_blank_keeps_and_v2_blank_resets (test_parameter_quick_actions.QuickActions.test_v3_blank_keeps_and_v2_blank_resets) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 1.144s
+
+OK
