@@ -28,6 +28,9 @@ class ParameterScene(QWidget):
         row=QHBoxLayout()
         row.addWidget(button('批量设置开关 / 预算 / 供货仓',self.quick_settings,True))
         row.addWidget(button('应用参数方案',lambda:__import__('parameter_preset_ui').assign_defaults(self)))
+        from admission_overview_ui import open_overview
+        row.addWidget(button('二类医疗资质',lambda:open_overview(self,self.host,'qualification')))
+        row.addWidget(button('门店拒收清单',lambda:open_overview(self,self.host,'refusals')))
         row.addStretch();v.addLayout(row)
         row=QHBoxLayout()
         row.addWidget(button('全局分类映射',lambda:open_mapping(self,host)))

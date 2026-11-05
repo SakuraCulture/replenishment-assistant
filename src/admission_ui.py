@@ -22,10 +22,10 @@ def changes(before,after):
     return out
 
 class Editor(QDialog):
-    def __init__(self,parent,host,code):
-        super().__init__(parent);self.host=host;self.code=code;self.setWindowTitle('门店准入 · '+code);self.resize(950,650)
+    def __init__(self,parent,host,code,*,readonly=False,section=None,name='',sku=None):
+        super().__init__(parent);self.host=host;self.code=code;self.readonly=readonly;self.section=section;self.setWindowTitle(('查看' if readonly else '维护')+'门店准入 · '+(name or code));self.resize(950,650)
         self.before=service.snapshot(host.work_repository.path,code)['record'];self.value=copy.deepcopy(self.before)
-        v=QVBoxLayout(self);v.addWidget(label('维护本店二类医疗资质与拒收商品；保存后影响后续安排，两仓共用。','section'))
+        v=QVBoxLayout(self);v.addWidget(label(('只读查看，不修改资料。' if readonly else '保存后影响后续安排，两仓共用。')+' 门店编码：'+code,'section'))
         tabs=QTabWidget();v.addWidget(tabs,1)
         qpage=QWidget();qform=QFormLayout(qpage);q=self.value.get('qualification',{})
         self.state=QComboBox();self.state.addItems(service.STATES);self.state.setCurrentText(q.get('state','待核验'));qform.addRow('资质状态',self.state)
@@ -33,12 +33,23 @@ class Editor(QDialog):
         for key,title in [('reviewer','核验人（已核验必填）'),('verified_on','核验日期（已核验必填）'),('expires','到期日（可选）'),('note','备注（可选）')]:
             w=QLineEdit(str(q.get(key) or ''));self.qfields[key]=w;qform.addRow(title,w)
             if key in ('verified_on','expires'):w.setPlaceholderText('YYYY-MM-DD')
+        from admission_overview import qualification_state
+        qform.addRow('当前有效状态',label(qualification_state(q,service.today())+'（查询时状态；到期当天仍有效）'))
         tabs.addTab(qpage,'二类医疗资质')
         page=QWidget();pv=QVBoxLayout(page);pv.addWidget(label('到期当天仍有效；不填到期日则持续到手动解除。解除不会自动给旧结果加量。','muted'))
         self.search=QLineEdit();self.search.setPlaceholderText('搜索现有拒收商品名称或编码');pv.addWidget(self.search)
         self.table=QTableWidget(0,5);self.table.setHorizontalHeaderLabels(['商品编码','商品名称','拒收原因','到期日','当前状态']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.setColumnWidth(0,190);self.table.setColumnWidth(2,250);pv.addWidget(self.table,1)
-        self.search.textChanged.connect(self.filter);line=QHBoxLayout();line.addWidget(button('搜索并添加拒收商品',self.add));line.addWidget(button('解除选中商品拒收',self.release));pv.addLayout(line);tabs.addTab(page,'门店拒收清单');self.refresh()
-        row=QHBoxLayout();row.addWidget(button('取消，不保存',self.reject));row.addWidget(button('核对并保存本店准入',self.save,True));v.addLayout(row)
+        self.search.textChanged.connect(self.filter);line=QHBoxLayout();self.add_btn=button('搜索并添加拒收商品',self.add);self.release_btn=button('解除选中商品拒收',self.release);line.addWidget(self.add_btn);line.addWidget(self.release_btn);pv.addLayout(line);tabs.addTab(page,'门店拒收清单');self.refresh()
+        if section=='qualification':tabs.setTabVisible(1,False)
+        if section=='refusals':tabs.setCurrentIndex(1);tabs.setTabVisible(0,False)
+        if sku in self.skus:self.table.selectRow(self.skus.index(sku))
+        row=QHBoxLayout();row.addWidget(button('关闭' if readonly else '取消，不保存',self.reject))
+        if not readonly:row.addWidget(button('核对并保存本店准入',self.save,True))
+        else:
+            self.state.setEnabled(False)
+            for w in self.qfields.values():w.setReadOnly(True)
+            self.add_btn.setVisible(False);self.release_btn.setVisible(False)
+        v.addLayout(row)
     def refresh(self):
         self.skus=list(self.value.get('refusals',{}));self.table.setRowCount(len(self.skus))
         for i,sku in enumerate(self.skus):
@@ -49,6 +60,7 @@ class Editor(QDialog):
         words=self.search.text().lower().split()
         for i in range(self.table.rowCount()):self.table.setRowHidden(i,any(x not in ' '.join(self.table.item(i,j).text() for j in range(5)).lower() for x in words))
     def add(self):
+        if self.readonly:return
         from warehouse_catalog import Repository
         try:catalogs=Repository(self.host.work_repository.path.parent).catalogs()
         except Exception as exc:QMessageBox.warning(self,'未能读取商品',str(exc));return
@@ -68,12 +80,18 @@ class Editor(QDialog):
         except ValueError as exc:QMessageBox.warning(self,'未添加',str(exc));return
         self.value=candidate;self.refresh()
     def release(self):
+        if self.readonly:return
         r=self.table.currentRow()
         if r<0:return
         self.value['refusals'][self.skus[r]]['active']=False;self.refresh()
     def save(self):
+        if self.readonly:return
         try:
-            self.value['qualification']={'state':self.state.currentText(),**{k:(service.date_value(w.text()) if k in ('expires','verified_on') else w.text().strip()) for k,w in self.qfields.items()}}
+            if self.section!='refusals':
+                fields={'state':self.state.currentText(),**{k:(service.date_value(w.text()) if k in ('expires','verified_on') else w.text().strip()) for k,w in self.qfields.items()}}
+                original=self.before.get('qualification',{})
+                if any(fields[k]!=(original.get(k) or ('待核验' if k=='state' else None if k in ('expires','verified_on') else '')) for k in fields):
+                    self.value['qualification']={**original,**fields}
             service.validate(self.value);delta=changes(self.before,self.value)
             if not delta:self.accept();return
             if not review_rows(self,'核对本店准入变化',['项目','原值','新值'],delta,'只保存门店 '+self.code+'；受影响的本次结果需重算，历史事实保留。','保存本店准入'):return
@@ -85,16 +103,20 @@ def save_records(path,values,expected,progress=lambda _:None,cancel=None):
     from runtime_support import checkpoint
     checkpoint(cancel);progress('正在原子保存门店准入…');service.save(path,values,expected)
 
-def open_editor(parent,host,code=None):
+def open_editor(parent,host,code=None,*,section=None):
     if host.worker or host.readonly:QMessageBox.information(parent,'暂不能维护','请结束当前任务；历史记录只读。');return
     if not code:
-        saved=host.work_repository.stores();codes=list(dict.fromkeys([*host.store_widgets,*saved]))
-        if not codes:QMessageBox.information(parent,'尚无门店','请先导入门店补货文件或门店默认参数。');return
-        choices=[(host.states.get(c,{}).get('name') or saved.get(c,{}).get('name') or c)+' · '+c for c in codes]
+        from admission_overview import load
+        from admission_overview_ui import known_names
+        try:data=run(parent,load,(host.work_repository.path,known_names(host)),'查询可维护门店')
+        except Exception as exc:QMessageBox.warning(parent,'未能读取门店',str(exc));return
+        codes=list(data['names'])
+        if not codes:QMessageBox.information(parent,'尚无门店','请先导入门店目录、补货文件或门店准入资料。');return
+        choices=[(data['names'][c] or c)+' · '+c for c in codes]
         value,ok=QInputDialog.getItem(parent,'选择门店','维护哪家门店的准入',choices,0,False)
         if not ok:return
         code=codes[choices.index(value)]
-    Editor(parent,host,code).exec()
+    Editor(parent,host,code,section=section).exec()
 
 def read_import(path,kind,progress=lambda _:None,cancel=None):
     from openpyxl import load_workbook
@@ -132,7 +154,8 @@ def read_import(path,kind,progress=lambda _:None,cancel=None):
     if not result:raise ValueError('没有找到可导入的记录，请使用本功能模板')
     return {'path':path,'sha':before,'rows':result}
 
-def import_records(parent,host,kind):
+def import_records(parent,host,kind,*,show_saved=True):
+    if host.worker or host.readonly:QMessageBox.information(parent,'暂不能导入','请结束当前任务；历史记录只读。');return
     from import_ui import ImportDialog
     from store_parameter_import import digest
     d=ImportDialog(parent,kind)
@@ -148,4 +171,9 @@ def import_records(parent,host,kind):
         if not review_rows(parent,'核对准入导入',['门店','项目','原值','新值'],rows,'缺行不解除；仅更新所列记录，历史订单不变。','保存门店准入'):return
         if digest(data['path'])!=data['sha']:raise ValueError('预览后文件变化，请重新导入')
         run(parent,save_records,(host.work_repository.path,new,old),'保存门店准入',cancellable=False);invalidate(host,list(new))
-    except Exception as exc:QMessageBox.warning(parent,'未导入',str(exc))
+    except Exception as exc:QMessageBox.warning(parent,'未导入',str(exc));return
+    result={'stores':list(new),'keys':[(r['store'],r['sku']) for r in data['rows']]}
+    if show_saved:
+        from admission_overview_ui import open_overview
+        open_overview(parent,host,'qualification' if kind=='store_qualification' else 'refusals',set(result['keys']))
+    return result
