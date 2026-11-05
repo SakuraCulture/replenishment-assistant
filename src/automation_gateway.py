@@ -48,6 +48,7 @@ class Gateway(QObject):
         self.enabled = False; self.server = None; self.lock = None; self.journal = None
         self.secret = ''; self.buffers = {}; self.prepared = {}; self.calculations = {}
         self.last_client = None
+        self.registration_error = None
         self.active = None; self.worker = None; self.last_stage = 0; self.explanations = {}
         self.task_failures = {}; self.pending_failures = set()
         self.failure_timer = QTimer(self); self.failure_timer.setInterval(1000)
@@ -72,7 +73,12 @@ class Gateway(QObject):
             atomic_json(self.connection_file, {'protocol': VERSION, 'server': name, 'token': self.secret,
                 'instance': self.instance, 'workspace': self.workspace, 'created': time.time()})
             from automation_connection import refresh_registration
-            refresh_registration(self)
+            try:
+                refresh_registration(self);self.registration_error=None
+            except (OSError,ValueError):
+                # Optional client registration must remain repairable from this window.
+                self.registration_error='本机登记更新未完成，请点击配置/修复本机连接；当前工作台连接仍可使用。'
+                logging.warning(self.registration_error)
         except Exception:
             server.close(); server.deleteLater(); lock.unlock(); raise
         self.server, self.lock, self.journal = server, lock, journal

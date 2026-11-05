@@ -124,12 +124,15 @@ class LiveContractTests(unittest.TestCase):
         from PySide6.QtTest import QTest
         from PySide6.QtCore import Qt
         import time
+        c.install_entry(self.g);c.binding_path(self.g).write_text('{broken','utf-8');self.g.disable();self.g.enable()
+        self.assertTrue(self.g.enabled);self.assertIsNotNone(self.g.registration_error)
         d=create_dialog(self.f.win);d.client_pick.setCurrentIndex(1)
         path=Path(self.f.tmp.name)/'client/mcp.json';path.parent.mkdir();path.write_text('{"mcpServers":{"other":{"command":"keep"}}}','utf-8')
         d.config_path.setText(str(path));d.show();before=path.read_bytes()
         with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Cancel):d.configure_button.click()
         self.assertEqual(path.read_bytes(),before)
         with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Ok):d.configure_button.click()
+        self.assertIsNone(self.g.registration_error)
         self.assertEqual(json.loads(path.read_text('utf-8'))['mcpServers']['other']['command'],'keep')
         d.check_button.click();end=time.monotonic()+20
         while not d.check_button.isEnabled() and time.monotonic()<end:QTest.qWait(10)

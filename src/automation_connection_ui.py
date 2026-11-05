@@ -27,7 +27,8 @@ def create_dialog(host):
         status.setText('① 客户端配置：'+('已写入，需在客户端加载/信任' if registered[0] else '尚未在本窗口确认')+
             '\n② 工作台连接：'+('已启用' if g.enabled else '未启用')+
             '\n③ 资料环境与版本：'+('链路核对通过' if verified[0] and g.enabled else '待检查')+
-            '\n④ 客户端实际接入：'+('最近已核对当前工作台（不代表持续在线）' if recent else '待客户端调用核对'))
+            '\n④ 客户端实际接入：'+('最近已核对当前工作台（不代表持续在线）' if recent else '待客户端调用核对')+
+            ('\n'+g.registration_error if g.registration_error else ''))
         enable.setEnabled(not g.enabled);disable.setEnabled(g.enabled)
     def select():target.setText(str(connection.client_path(client.currentData())));registered[0]=False;verified[0]=False;refresh()
     def change(on):
@@ -41,7 +42,7 @@ def create_dialog(host):
             prompt='将此客户端的“补货助手”连接绑定到当前资料环境。\n其他连接与设置保留；原配置会先备份。\n如之前连接的是其他资料环境，本次会明确切换到当前环境。\n\n目标：'+str(plan['path'])
             if QMessageBox.question(d,'核对本机连接',prompt,QMessageBox.StandardButton.Ok|QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)!=QMessageBox.StandardButton.Ok:return
             if not g.enabled:g.enable()
-            connection.install_entry(g);receipt=connection.apply_config(plan);registered[0]=True;verified[0]=False
+            connection.install_entry(g);receipt=connection.apply_config(plan);registered[0]=True;verified[0]=False;g.registration_error=None
             result.setText('配置完成。请在 '+client.currentText()+' 重新加载补货助手连接；首次使用需信任。随后点击“检查本机连接”。')
             result.setToolTip('备份位置：'+str(receipt['backup'] or '首次配置，无旧文件'))
         except Exception as exc:QMessageBox.warning(d,'配置未完成',str(exc))
