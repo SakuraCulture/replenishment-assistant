@@ -26,10 +26,14 @@ class ParameterScene(QWidget):
         from store_parameter_ui import import_parameters
         from import_ui import download
         row=QHBoxLayout()
+        row.addWidget(button('批量设置开关 / 预算 / 供货仓',self.quick_settings,True))
+        row.addWidget(button('应用参数方案',lambda:__import__('parameter_preset_ui').assign_defaults(self)))
+        row.addStretch();v.addLayout(row)
+        row=QHBoxLayout()
         row.addWidget(button('全局分类映射',lambda:open_mapping(self,host)))
         row.addWidget(button('参数预案',lambda:self.open_presets()))
         row.addWidget(button('补货预案',lambda:__import__('replenishment_plan_ui').open_library(host)))
-        row.addWidget(button('导入完整门店参数',lambda:import_parameters(self,host,kind='classified_parameters'),True))
+        row.addWidget(button('导入完整门店参数',lambda:import_parameters(self,host,kind='classified_parameters')))
         row.addWidget(button('下载完整门店参数模板',lambda:download(self,'classified_parameters')))
         row.addWidget(button('刷新',self.refresh));row.addStretch();v.addLayout(row)
         row=QHBoxLayout()
@@ -69,7 +73,6 @@ class ParameterScene(QWidget):
         delete_row=QHBoxLayout();delete_row.addStretch();delete_row.addWidget(button('删除所选门店配置',self.delete_defaults));v.addLayout(delete_row)
         row = QHBoxLayout()
         row.addWidget(button('查看保存的默认参数', self.view_defaults))
-        row.addWidget(button('选择默认参数预案',lambda:__import__('parameter_preset_ui').assign_defaults(self)))
         row.addWidget(button('设置所选门店补货参数', self.edit_defaults))
         row.addWidget(button('设置所选门店通用参数', self.edit_common))
         row.addWidget(button('编辑本次作业参数', self.edit_current, True))
@@ -81,6 +84,10 @@ class ParameterScene(QWidget):
     def open_presets(self):
         from parameter_preset_ui import PresetLibrary
         PresetLibrary(self.host).exec();self.refresh()
+
+    def quick_settings(self):
+        from parameter_quick_ui import open_quick
+        open_quick(self,self.host,self.require());self.refresh()
 
     def delete_defaults(self):
         from parameter_preset_ui import delete_store_defaults

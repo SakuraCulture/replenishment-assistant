@@ -147,6 +147,8 @@ def write(path,kind='warehouse_cycles',records=None,progress=lambda _:None,cance
             for cell in row:
                 if isinstance(cell.value,str):cell.data_type='s'
         for rn in range(2,max(ws.max_row+1,102)):ws.cell(rn,1).number_format='@'
+        from parameter_template_help import decorate
+        decorate(ws,headers,scoped=scoped,groups=schema.standard()['weight_profiles'])
     info=wb.create_sheet('填写说明')
     for pair in [('事项','说明'),('必填','门店编码；分仓周期另填属仓，分类参数另填分类组，分类映射另填商品分类。其他字段选填。'),('空白参数','已有列的空白恢复系统默认；分类专用参数空白沿用门店通用值；缺列、缺行不修改。0是实际值。'),('其他设置','供货关系、预算、策略空白保持；这些设置使用独立模板，不随周期模板改变。'),('编码','按文本填写原始编码，不能使用公式；列顺序可调整。'),('概率和权重','可填90%或0.9。分类权重两仓共用；属仓只维护周期，不启用供货。'),('确认范围','核对差异后才应用；本次作业和长期默认分别选择。')]:info.append(pair)
     info.column_dimensions['A'].width=20;info.column_dimensions['B'].width=100
@@ -154,6 +156,8 @@ def write(path,kind='warehouse_cycles',records=None,progress=lambda _:None,cance
         info.cell(3,2,'空白、缺列、缺行保持原值；填写“系统默认”明确恢复。分类专用参数填“系统默认”表示沿用门店通用值；0是实际数值。')
         info.append(['模板范围','完整门店参数仅分仓周期和分类参数；门店通用参数另表维护；分类映射全局集中维护。'])
     marker=wb.create_sheet(MARKER);marker.append([FORMAT_SCOPED if scoped else FORMAT]);marker.sheet_state='hidden'
+    from parameter_template_help import instructions
+    instructions(info)
     fd,tmp=tempfile.mkstemp(dir=target.parent,suffix='.xlsx');os.close(fd)
     try:wb.save(tmp);legacy.checkpoint(cancel);os.link(tmp,target)
     finally:wb.close();Path(tmp).unlink(missing_ok=True)

@@ -227,6 +227,8 @@ def patch(row, original):
     if ('预算金额',) in row['values'] and ('预算方式',) in row['values'] and ui['mode'] != 2:
         raise ValueError('填写预算金额时，预算方式须为限定预算；不限预算/未指定请留空金额')
     if ui.get('mode') == 2:
+        if ui.get('amount') is None or str(ui.get('amount')).strip()=='':
+            raise ValueError('限定预算需要预算金额；请填写非负金额（0元表示不安排），或选择不限预算。空白只保留已有金额。')
         number(ui.get('amount'))
     elif ('预算方式',) in row['values']:
         ui['amount'] = ''

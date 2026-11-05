@@ -2,7 +2,7 @@
 import copy
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog,QVBoxLayout,QHBoxLayout,QLineEdit,QTableWidget,QTableWidgetItem,
-                              QComboBox,QMessageBox,QHeaderView)
+                              QComboBox,QMessageBox,QHeaderView,QCheckBox)
 from ui_controls import button,label
 from interaction_ui import confirm,review_rows
 import parameter_presets as pp
@@ -82,25 +82,93 @@ class PresetLibrary(QDialog):
 def assign_defaults(scene):
     codes=scene.require()
     if not codes:return
-    host=scene.host;data=pp.snapshot(host.work_repository)
-    d=QDialog(scene);d.setWindowTitle('选择门店默认参数预案');v=QVBoxLayout(d)
-    v.addWidget(label(f'为 {len(codes)} 家门店选择完整预案。预算、主从仓保留；当前作业不变。'))
+    choose_preset(scene,scene.host,codes,'defaults');scene.refresh()
+
+
+def preset_summary(p):
+    import parameter_schema as schema
+    import restock_policy as policy
+    c=p['config'];lines=[f'参数方案：{p["name"]}']
+    lines += [f'{w}：备货 {v[0]:g} 天，到货 {v[1]:g} 天' for w,v in c['warehouses'].items()]
+    for group,weight in c['weight_profiles'].items():
+        prob=schema.profile_values(c,group)['probability']
+        lines.append(f'{group}：最近7天权重 {weight["w1"]*100:g}%，此前7天 {weight["w2"]*100:g}%；库存目标分位概率 {prob*100:g}%')
+    lines += [f'一箱例外：'+('开启' if c['exception'] else '关闭'),policy.summary(c)]
+    return '\n'.join(lines)
+
+
+def commit_preset_selection(host,codes,p,data,scope,current,save_default=False):
+    """Freeze current values; validate preview before saving defaults or changing UI."""
+    import store_parameter_ui as imports
+    import parameter_schema as schema
+    from store_parameter_import import base
+    if scope not in ('defaults','current'):raise ValueError('应用范围无效')
+    if scope=='current':
+        if host.readonly or host.worker is not None:raise ValueError('历史只读或正在计算，不能应用本次参数')
+        latest=imports.capture(host,{'rows':[{'code':s} for s in codes]})['current']
+        if latest!=current:raise ValueError('本次门店设置在预览后变化，请重新核对')
+        if any(s not in current for s in codes):raise ValueError('本次尚未载入全部所选门店')
+    pp.check(pp.snapshot(host.work_repository),data)
+    # Preserving a store's mapping must not leave it referencing a missing group.
+    for bases in ([data['stores']] if scope=='defaults' else [current]+([data['stores']] if save_default else [])):
+        for s in codes:
+            target=copy.deepcopy(p['config']);target['category_profiles']=copy.deepcopy((bases.get(s) or base())['preset']['config']['category_profiles'])
+            try:schema.validate(target)
+            except ValueError as exc:raise ValueError(f'{s}：方案与保留的分类映射不兼容，未应用。{exc}') from exc
+    if scope=='defaults' or save_default:
+        saved=pp.assign(host.work_repository,codes,p['id'],data)
+        host.saved_store_defaults={**getattr(host,'saved_store_defaults',{}),**saved}
+    if scope=='current':
+        changed=[]
+        for s in codes:
+            config=copy.deepcopy(p['config']);config['category_profiles']=copy.deepcopy(current[s]['preset']['config']['category_profiles'])
+            if pp.signature(config)!=pp.signature(current[s]['preset']['config']):changed.append(s)
+            host.store_presets[s]={**copy.deepcopy(p),'config':config,'base_config':copy.deepcopy(config)}
+            host.overrides[s]=copy.deepcopy(config['warehouses'])
+        if changed:host.invalidate(changed)
+        host.selection_changed()
+        host.touch()
+    for s in codes:
+        if s in host.store_widgets:host.refresh_parameter_label(s)
+
+
+def choose_preset(parent,host,codes,scope='current'):
+    if not codes:
+        QMessageBox.information(parent,'请选择门店','请先勾选需要应用参数方案的门店。');return
+    if scope=='current' and (host.readonly or host.worker is not None or any(s not in host.store_widgets for s in codes)):
+        QMessageBox.information(parent,'当前不能应用','请先载入所选门店，结束当前计算；历史作业只读。');return
+    data=pp.snapshot(host.work_repository)
+    import store_parameter_ui as imports
+    current=imports.capture(host,{'rows':[{'code':s} for s in codes]})['current'] if scope=='current' else {}
+    d=QDialog(parent);d.setObjectName('applyParameterPreset');d.setWindowTitle('选择门店默认参数预案' if scope=='defaults' else '应用参数方案到本次作业');d.resize(720,470);v=QVBoxLayout(d)
+    v.addWidget(label(f'已选 {len(codes)} 家门店 · '+('保存以后默认，当前作业不变' if scope=='defaults' else '应用本次，变化门店需重算'),'section'))
+    v.addWidget(label('供货关系、预算、全局分类映射均保留原值。','muted'))
     choices=QComboBox()
     for p in pp.visible(data).values():choices.addItem(title(p),p['id'])
     if not choices.count():
-        QMessageBox.information(scene,'尚无参数预案','请先在“参数预案”中新建。未保存门店参数时，计算准备会自动填写。');return
-    v.addWidget(choices);row=QHBoxLayout();row.addWidget(button('取消',d.reject));row.addWidget(button('核对差异',d.accept,True));v.addLayout(row)
+        QMessageBox.information(parent,'尚无参数方案','请先在“参数预案”中新建。未保存门店参数时，计算准备会自动填写。');return
+    v.addWidget(choices)
+    summary=label('');summary.setWordWrap(True);v.addWidget(summary,1)
+    def refresh_summary():summary.setText(preset_summary(pp.resolve(data,choices.currentData())))
+    choices.currentIndexChanged.connect(refresh_summary);refresh_summary()
+    save=QCheckBox('同时保存为这些门店以后使用的默认方案');save.setVisible(scope=='current');v.addWidget(save)
+    row=QHBoxLayout();cancel=button('取消',d.reject);cancel.setDefault(True);row.addWidget(cancel);row.addWidget(button('核对差异',d.accept,True));v.addLayout(row)
     if d.exec()!=QDialog.DialogCode.Accepted:return
     from interaction_rules import configuration_changes
     from store_parameter_import import base
     p=pp.resolve(data,choices.currentData());rows=[]
     for s in codes:
-        old=(data['stores'].get(s) or base())['preset'];target=copy.deepcopy(p['config']);target['category_profiles']=old['config']['category_profiles']
-        rows.append([s,'默认参数预案',old['name'],title(p)])
+        old=((data['stores'].get(s) or base()) if scope=='defaults' else current[s])['preset'];target=copy.deepcopy(p['config']);target['category_profiles']=old['config']['category_profiles']
+        rows.append([s,'以后默认方案' if scope=='defaults' else '本次参数方案',old['name'],title(p)])
         rows+=configuration_changes({s:old['config']},target)
-    if not review_rows(scene,'核对门店默认',['门店','参数','原值','新值'],rows,'只影响后续采用；本次如需使用，请重新采用预案或显式应用参数。','保存默认选择'):return
-    try:pp.assign(host.work_repository,codes,p['id'],data);scene.refresh()
-    except Exception as exc:QMessageBox.warning(scene,'默认未保存',str(exc))
+        if scope=='current' and save.isChecked():
+            old=(data['stores'].get(s) or base())['preset'];target=copy.deepcopy(p['config']);target['category_profiles']=old['config']['category_profiles']
+            rows.append([s,'以后默认方案',old['name'],title(p)])
+            rows += [[r[0],'以后默认 / '+r[1],*r[2:]] for r in configuration_changes({s:old['config']},target)]
+    note='只保存以后默认；当前作业不变。' if scope=='defaults' else '应用到本次；变化门店结果失效，需要重算。'+('同时保存以后默认。' if save.isChecked() else '不修改以后默认。')
+    if not review_rows(parent,'核对参数方案',['门店','参数','原值','新值'],rows,note+'供货仓、预算、分类映射及历史签发不变。','保存默认选择' if scope=='defaults' else '确认应用本次'):return
+    try:commit_preset_selection(host,codes,p,data,scope,current,save.isChecked())
+    except Exception as exc:QMessageBox.warning(parent,'参数方案未应用',str(exc))
 
 
 def delete_store_defaults(scene):

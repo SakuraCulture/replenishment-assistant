@@ -25,7 +25,10 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
-    if '--parameter-presets-smoke' in sys.argv:
+    if '--parameter-quick-smoke' in sys.argv:
+        from parameter_quick_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--parameter-quick-smoke')+1:])
+    elif '--parameter-presets-smoke' in sys.argv:
         from parameter_preset_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--parameter-presets-smoke')+1:])
     if '--gui-maintenance-smoke' in sys.argv:

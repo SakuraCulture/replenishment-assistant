@@ -24,6 +24,10 @@ class Workbench(ParameterUi,BatchWindow):
         self.centralWidget().layout().insertLayout(1,row)
         row=QHBoxLayout();self.defaults_btn=button('保存主从仓与参数为门店默认',self.save_default_dialog);row.addWidget(self.defaults_btn);self.fresh_btn=button('换用最新资料并重新检查',self.use_current_data);row.addWidget(self.fresh_btn);row.addStretch();self.store_page.layout().insertLayout(2,row)
         row=QHBoxLayout();self.parameter_import_btn=button('批量导入门店参数',self.import_store_parameters);self.parameter_export_btn=button('导出勾选门店本次参数',self.export_store_parameters);row.addWidget(self.parameter_import_btn);row.addWidget(self.parameter_export_btn);row.addStretch();self.store_page.layout().insertLayout(3,row)
+        quick=QHBoxLayout()
+        quick.addWidget(button('批量设置开关 / 预算 / 供货仓',lambda:__import__('parameter_quick_ui').open_quick(self,self,self.selected_codes(),'current')))
+        quick.addWidget(button('应用参数方案到本次',lambda:__import__('parameter_preset_ui').choose_preset(self,self,self.selected_codes()),True))
+        quick.addStretch();self.store_page.layout().insertLayout(3,quick)
         self.policy_btn=button('批量调整补货策略',lambda:self.edit_restock_policy());row.insertWidget(0,self.policy_btn)
         from parameter_maintenance_ui import edit_stores
         row.addWidget(button('设置所选门店补货参数',lambda:self.edit_parameters(self.selected_codes())))
