@@ -23,6 +23,8 @@ def validate(value):
         if item['code'] in seen:raise ValueError('计划门店重复：'+item['code'])
         if not isinstance(item.get('name'),str) or not item['name'].strip():raise ValueError('计划门店名称不能为空')
         seen.add(item['code'])
+        if value.get('parameter_mode')=='per_store_presets' and item.get('preset_id') is not None and (not isinstance(item['preset_id'],str) or not item['preset_id']):raise ValueError('参数预案选择无效')
+    if value.get('parameter_mode') not in (None,'per_store_presets'):raise ValueError('不支持的预案参数模式')
     schema.validate(value['config'])
     if 'parameter_fields' in value:
         import parameter_maintenance as pm
@@ -40,12 +42,18 @@ class Repository:
     def save(self,value,expected=None):
         from storage_chunks import backup_before_write
         value=copy.deepcopy(value);value['config']=complete(value['config']);validate(value)
+        value.pop('_resolved_presets',None)
         value=json.loads(dumps(value))  # Same JSON containers as subsequent reloads.
         stamp=now();value.update(id=expected['id'] if expected else uuid.uuid4().hex,revision=expected['revision']+1 if expected else 1,
                                 updated=stamp,created=expected['created'] if expected else stamp,standard_version=system_standard.VERSION)
         backup_before_write(self.path,lambda _:None)
         with closing(sqlite3.connect(self.path,timeout=10)) as db,db:
             db.execute('BEGIN IMMEDIATE');self.schema(db)
+            if value.get('parameter_mode')=='per_store_presets':
+                from parameter_presets import read,resolve
+                data=read(db)
+                for item in value['stores']:
+                    if item.get('preset_id'):resolve(data,item['preset_id'])
             if expected is not None:self.check(db,expected)
             db.execute('INSERT INTO replenishment_plans VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload',(value['id'],value['created'],dumps(value)))
             self.event(db,'保存',expected,value)
@@ -86,12 +94,15 @@ def available(host):
 def apply(host,plan):
     """Explicit adoption only. Routes and budgets survive; no file fetching."""
     validate(plan)
+    from parameter_presets import freeze
+    plan=freeze(plan,host.work_repository)
     import parameter_maintenance as pm
     mapping=pm.mapping_snapshot(host.work_repository.path)
     if mapping['conflict']:raise ValueError('请先核对并保存全局分类映射，再采用预案')
     for s in host.store_widgets:
         if s in {i['code'] for i in plan['stores']}:
-            c=pm.plan_config(plan,host.config_for(s));pm.bind({**preset(plan),'config':c},mapping)
+            from workbench_actions import plan_record
+            plan_record(plan,{'preset':{**host.preset_for(s),'config':host.config_for(s)},'ui':{}},mapping,s)
     host.active_plan=copy.deepcopy(plan)
     if host.loaded:
         old={s:host.current_parameter_record(s) for s in host.store_widgets}
@@ -118,7 +129,7 @@ def install(host,previous,replace=False):
         for s in host.store_widgets:
             if s in codes and (replace or s not in previous):
                 from workbench_actions import plan_record
-                prepared[s]=plan_record(plan,{'preset':{**host.preset_for(s),'config':host.config_for(s)},'ui':{}},mapping)['preset']
+                prepared[s]=plan_record(plan,{'preset':{**host.preset_for(s),'config':host.config_for(s)},'ui':{}},mapping,s)['preset']
     except ValueError as exc:host._mapping_error='预案参数待核对：'+str(exc);return
     for s in host.store_widgets:
         if s in codes and (replace or s not in previous):
@@ -136,6 +147,7 @@ def refresh(host):
     saved=host.work_repository.stores();unset=[i['name'] for i in plan['stores'] if not (host.store_ui(i['code']) if i['code'] in host.store_widgets else saved.get(i['code'],{}).get('ui',{})).get('primary')]
     cycle='；'.join(w+f' 备货{v[0]:g}天/到货{v[1]:g}天' for w,v in plan['config']['warehouses'].items())
     if 'parameter_fields' in plan:cycle=f"采用 {len(plan['parameter_fields'])} 项勾选参数；其他保留各店原值"
+    if plan.get('parameter_mode')=='per_store_presets':cycle='各店采用独立参数预案；本次已冻结，调整需重新采用'
     names='、'.join(i['name'] for i in plan['stores'][:6])+(' 等'+str(len(plan['stores']))+'店（悬停看完整顺序）' if len(plan['stores'])>6 else '')
     host.plan_note.setToolTip('\n'.join(f"{n+1}. {i['name']} · {i['code']}" for n,i in enumerate(plan['stores'])))
     host.plan_note.setText(f"计划：{plan['name']} · {len(plan['stores'])} 店 · {cycle}\n"+names+'\n'+

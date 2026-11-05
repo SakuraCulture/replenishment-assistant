@@ -94,6 +94,8 @@ def parameter_result(host, args, preview=None):
             'mapping': record['preset'].get('mapping_source'), 'category_mapping': copy.deepcopy(config['category_profiles']),
             'parameter_signature': schema.signature(config),
             'preset': {k: record['preset'].get(k) for k in ('id', 'name', 'version')},
+            'parameter_source':copy.deepcopy(record['preset'].get('parameter_source')),
+            'default_preset_binding':copy.deepcopy(record['preset'].get('default_binding')),
             'note': '分类参数覆盖通用值，分仓只维护周期；方案名是快照标识，不代表每个字段的编辑来源。' +
                     {'current':'当前作业快照，未保存默认。', 'defaults':'新作业可采用的已保存默认及当前全局映射，不代表本次已应用。',
                      'preview':'预案及本次试算修改装配后的冻结参数；不代表当前工作台已采用。'}[scope]})

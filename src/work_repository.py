@@ -40,17 +40,15 @@ class Repository:
         with closing(self.connect()) as db:rows=db.execute('SELECT id,version,name,config,archived FROM presets '+('' if include_archived else 'WHERE archived=0 ')+'ORDER BY name,version DESC').fetchall()
         return [builtin]+[{'id':i,'version':v,'name':n,'config':loads(c),'builtin':False,**({'archived':bool(a)} if include_archived else {})} for i,v,n,c,a in rows]
     def save_preset(self,name,config,preset_id=None):
-        schema.validate(config);name=name.strip()
-        if not name or len(name)>60:raise ValueError('方案名称须为1～60字')
-        if preset_id=='standard':raise ValueError('内置标准方案只读，请复制另存')
-        pid=preset_id or uuid.uuid4().hex
-        with closing(self.connect()) as db,db:
-            db.execute('BEGIN IMMEDIATE');v=db.execute('SELECT COALESCE(MAX(version),0)+1 FROM presets WHERE id=?',(pid,)).fetchone()[0]
-            db.execute('INSERT INTO presets(id,version,name,config) VALUES(?,?,?,?)',(pid,v,name,dumps(config)))
-        return {'id':pid,'version':v,'name':name,'config':copy.deepcopy(config),'builtin':False}
+        from parameter_presets import save
+        return save(self,name,config,preset_id)
     def archive_preset(self,pid,version):
         if pid=='standard':raise ValueError('标准方案不可归档')
-        with closing(self.connect()) as db,db:db.execute('UPDATE presets SET archived=1 WHERE id=? AND version=?',(pid,version))
+        from parameter_presets import read,references
+        with closing(self.connect()) as db,db:
+            db.execute('BEGIN IMMEDIATE');stores,plans=references(read(db),pid)
+            if stores or plans:raise ValueError('预案仍被使用，请在参数预案管理中选择替换预案后删除')
+            db.execute('UPDATE presets SET archived=1 WHERE id=? AND version=?',(pid,version))
     def stores(self):
         with closing(self.connect()) as db:return {k:loads(v) for k,v in db.execute('SELECT code,data FROM stores')}
     def restore_preset(self,pid,version):
@@ -58,6 +56,8 @@ class Repository:
             if db.execute('UPDATE presets SET archived=0 WHERE id=? AND version=?',(pid,version)).rowcount!=1:raise ValueError('方案已不存在，请刷新')
     def save_stores(self,values,*,expected=None,action='保存门店默认'):
         from settings_history import record
+        from parameter_presets import detach_if_changed
+        values={s:detach_if_changed(r) for s,r in values.items()}
         for val in values.values():
             if val is not None:schema.validate(val['preset']['config'])
         with closing(self.connect()) as db,db:
@@ -71,6 +71,11 @@ class Repository:
                     row=db.execute('SELECT data FROM stores WHERE code=?',(code,)).fetchone()
                     if (loads(row[0]) if row else None)!=old:raise Conflict('门店默认在核对后变化，请刷新后重新核对：'+code)
             for key,val in values.items():
+                if val is not None and (binding:=val['preset'].get('default_binding')):
+                    # Restoring an old defaults snapshot must not revive a live
+                    # reference to a deleted or superseded preset version.
+                    current=(1,) if binding['id']=='standard' else db.execute('SELECT version FROM presets WHERE id=? AND archived=0 ORDER BY version DESC LIMIT 1',(binding['id'],)).fetchone()
+                    if not current or current[0]!=binding['version']:val['preset'].pop('default_binding',None)
                 if val is None:db.execute('DELETE FROM stores WHERE code=?',(key,))
                 else:db.execute('INSERT INTO stores VALUES(?,?) ON CONFLICT(code) DO UPDATE SET data=excluded.data',(key,dumps(val)))
             return record(db,before,values,action)

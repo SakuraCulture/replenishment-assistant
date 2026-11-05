@@ -62,9 +62,10 @@ class Editor(QDialog):
 class Library(QDialog):
     def __init__(self,host,select=False):
         super().__init__(host);self.host=host;self.select=select;self.repo=plans.Repository(host.work_repository.path);self.setWindowTitle('选择补货计划' if select else '维护补货计划');self.resize(950,600)
-        v=QVBoxLayout(self);v.addWidget(label('一份预案保存门店名单和勾选参数。采用只带入本次，不自动取数、计算或签发。','section'))
+        v=QVBoxLayout(self);v.addWidget(label('补货预案保存门店名单及各店的参数选择。采用后冻结本次配置，不自动取数、计算或签发。','section'))
         self.table=QTableWidget(0,4);self.table.setHorizontalHeaderLabels(['计划','门店数','更新时间','周期摘要']);self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows);self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.setColumnWidth(0,210);self.table.setColumnWidth(2,180);self.table.horizontalHeader().setStretchLastSection(True);v.addWidget(self.table,1)
         row=QHBoxLayout();row.addWidget(button('新建补货计划',lambda:self.edit(new=True)));row.addWidget(button('编辑选中计划',self.edit));row.addWidget(button('复制选中计划',lambda:self.edit(copying=True)));row.addWidget(button('删除选中计划',self.remove));v.addLayout(row)
+        v.addWidget(button('将旧预案改为逐店选择参数',self.convert))
         row=QHBoxLayout();row.addWidget(button('关闭',self.reject))
         if select:row.addWidget(button('采用到本次作业',self.adopt,True))
         v.addLayout(row);self.refresh()
@@ -72,13 +73,23 @@ class Library(QDialog):
         self.values=self.repo.list();self.table.setRowCount(len(self.values))
         for i,p in enumerate(self.values):
             for j,x in enumerate([p['name'],len(p['stores']),p['updated'],'；'.join(w+f' {v[0]:g}+{v[1]:g}天' for w,v in p['config']['warehouses'].items())]):self.table.setItem(i,j,QTableWidgetItem(str(x)))
+            self.table.item(i,3).setText('逐店选择参数预案' if p.get('parameter_mode')=='per_store_presets' else '旧预案 · 保持原勾选参数')
         if self.values:self.table.selectRow(0)
     def current(self):
         r=self.table.currentRow();return self.values[r] if 0<=r<len(self.values) else None
     def edit(self,*,new=False,copying=False):
         value=None if new else self.current()
         if not new and value is None:return
-        d=Editor(self.host,value,copying)
+        from parameter_preset_ui import StorePlanEditor
+        cls=StorePlanEditor if value is None or value.get('parameter_mode')=='per_store_presets' else Editor
+        d=cls(self.host,value,copying)
+        if d.exec()==QDialog.DialogCode.Accepted:self.refresh()
+    def convert(self):
+        p=self.current()
+        if not p or p.get('parameter_mode')=='per_store_presets':return
+        if not confirm(self,'转换旧补货预案','转换后逐店选择完整参数，原勾选字段不再叠加。先在编辑表核对各店选择，保存才生效；当前作业和历史不变。'):return
+        from parameter_preset_ui import StorePlanEditor
+        d=StorePlanEditor(self.host,p)
         if d.exec()==QDialog.DialogCode.Accepted:self.refresh()
     def remove(self):
         p=self.current()
@@ -91,6 +102,10 @@ class Library(QDialog):
         p=self.current()
         if not p:return
         if self.host.worker or self.host.readonly:QMessageBox.information(self,'暂不能采用','请结束当前任务；历史作业只读。');return
+        try:
+            from parameter_presets import freeze
+            p=freeze(p,self.host.work_repository)
+        except ValueError as exc:QMessageBox.warning(self,'预案未采用',str(exc));return
         if self.host.loaded or self.host.job_dirty:
             from interaction_rules import configuration_changes
             configs={s:self.host.config_for(s) for s in (i['code'] for i in p['stores']) if s in self.host.store_widgets}
@@ -99,9 +114,11 @@ class Library(QDialog):
             if mapping['conflict']:QMessageBox.warning(self,'预案未采用','请先统一分类映射');return
             rows=[]
             for s,c in configs.items():
-                target=pm.plan_config(p,c);target['category_profiles']=mapping['mapping'];rows+=configuration_changes({s:c},target)
+                from workbench_actions import plan_record
+                target=plan_record(p,{'preset':{'config':c},'ui':{}},mapping,s)['preset']['config'];rows+=configuration_changes({s:c},target)
             rows=[['本次名单','门店','当前已选 '+str(len(self.host.selected_codes()))+' 家','、'.join(i['name'] for i in p['stores'])],*rows]
-            if not review_rows(self,'采用预案并核对范围',['范围','项目','原值','新值'],rows,'采用预案勾选参数及全局映射；原本次结果失效，其他参数、预算和主从仓保留。','采用到本次作业'):return
+            note='采用各店选定的完整参数及全局映射；原本次结果失效，预算和主从仓保留。' if p.get('parameter_mode')=='per_store_presets' else '采用旧预案勾选参数及全局映射；原本次结果失效，其他参数、预算和主从仓保留。'
+            if not review_rows(self,'采用预案并核对范围',['范围','项目','原值','新值'],rows,note,'采用到本次作业'):return
         try:plans.apply(self.host,p);self.accept()
         except Exception as exc:QMessageBox.warning(self,'预案未采用',str(exc))
 

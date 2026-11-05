@@ -27,6 +27,7 @@ class ParameterScene(QWidget):
         from import_ui import download
         row=QHBoxLayout()
         row.addWidget(button('全局分类映射',lambda:open_mapping(self,host)))
+        row.addWidget(button('参数预案',lambda:self.open_presets()))
         row.addWidget(button('补货预案',lambda:__import__('replenishment_plan_ui').open_library(host)))
         row.addWidget(button('导入完整门店参数',lambda:import_parameters(self,host,kind='classified_parameters'),True))
         row.addWidget(button('下载完整门店参数模板',lambda:download(self,'classified_parameters')))
@@ -41,6 +42,7 @@ class ParameterScene(QWidget):
         more.setMenu(menu);row.addWidget(more)
         other=QToolButton();other.setText('其他门店设置');other.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup);menu=QMenu(other)
         menu.addAction('设置补货策略',self.edit_switches);menu.addAction('设置主从仓与预算',self.edit_routes)
+        menu.addAction('将单店默认另存参数预案',lambda:__import__('parameter_preset_ui').copy_store_default(self))
         for name,kind in [('补货策略','store_policy'),('供货关系','store_routes'),('门店预算','store_budget')]:
             menu.addAction('导入'+name,lambda checked=False,k=kind:import_parameters(self,host,kind=k));menu.addAction('下载'+name+'模板',lambda checked=False,k=kind:download(self,k))
         from admission_ui import open_editor,import_records
@@ -66,12 +68,17 @@ class ParameterScene(QWidget):
         v.addWidget(self.note)
         row = QHBoxLayout()
         row.addWidget(button('查看保存的默认参数', self.view_defaults))
+        row.addWidget(button('选择默认参数预案',lambda:__import__('parameter_preset_ui').assign_defaults(self)))
         row.addWidget(button('设置所选门店补货参数', self.edit_defaults))
         row.addWidget(button('设置所选门店通用参数', self.edit_common))
         row.addWidget(button('编辑本次作业参数', self.edit_current, True))
         v.addLayout(row)
         self.codes = []
         self.saved = {}
+
+    def open_presets(self):
+        from parameter_preset_ui import PresetLibrary
+        PresetLibrary(self.host).exec();self.refresh()
 
     def selected(self):
         return [code for i, code in enumerate(self.codes) if self.table.item(i, 0).checkState() == Qt.CheckState.Checked]
@@ -101,9 +108,11 @@ class ParameterScene(QWidget):
             from parameter_maintenance import common_is_default
             common='默认通用方案' if common_is_default(p.get('config') or schema.standard()) else '自定义通用参数'
             self.table.item(i,4).setText(str(values[3])+'\n'+common)
+            if p.get('default_binding'):self.table.item(i,4).setText(('系统默认参数' if p['id']=='standard' else p['name'])+' · 默认参数预案\n'+common)
+            elif p:self.table.item(i,4).setText(str(values[3])+' · 门店自定义默认\n'+common)
         self.table.resizeRowsToContents()
         self.filter()
-        self.note.setText('保存门店默认只供后续作业带入；当前作业需明确应用。' if self.codes else
+        self.note.setText('选择默认预案可长期跟随；直接修改默认参数会转为门店自定义。当前作业需明确应用，历史不变。' if self.codes else
                           '尚无门店记录。可批量导入门店参数预存默认，或先导入补货文件识别门店。')
 
     def import_parameters(self):

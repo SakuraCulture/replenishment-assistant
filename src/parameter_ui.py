@@ -266,7 +266,8 @@ class ParameterUi:
         self.open_preset_library()
     def open_preset_library(self):
         if self.worker:return
-        dialog=ParameterDialog(self,schema.standard(),self.preset_for('__default__'),scope='方案库 · 查看、复制和保存版本')
+        from parameter_preset_ui import PresetLibrary
+        dialog=PresetLibrary(self)
         dialog.exec()
     def edit_parameters(self,codes):
         from parameter_maintenance_ui import edit_stores
@@ -285,6 +286,8 @@ class ParameterUi:
         from parameter_maintenance import common_is_default
         common='默认通用方案' if common_is_default(self.config_for(s)) else '门店自定义通用参数'
         text=f"本次采用：{p['name']}"+(' · 本店调整' if changed else '')+' · '+state+'\n'+common+'；'+policy.summary(self.config_for(s))
+        source=p.get('parameter_source')
+        if source:text+='\n来源：'+source['kind']+' · '+source['plan_name']
         w=self.store_widgets[s];w['params'].setText('编辑参数');w['params'].setToolTip('编辑此店完整参数；不自动保存每日草稿')
         if 'param_status' in w:w['param_status'].setText(text);w['param_status'].setToolTip(text)
     def view_parameters(self,store):

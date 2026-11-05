@@ -39,12 +39,17 @@ def recalculation_impact(results, codes):
     }
 
 
-def plan_record(plan, original, mapping):
+def plan_record(plan, original, mapping, store=None):
     import parameter_maintenance as pm
     import replenishment_plans as plans
     value = copy.deepcopy(original)
-    p = plans.preset(plan)
-    p['config'] = pm.plan_config(plan, original['preset']['config'])
+    if plan.get('parameter_mode')=='per_store_presets':
+        if store not in plan.get('_resolved_presets',{}):raise ValueError('补货预案尚未冻结该店参数，请重新采用预案：'+str(store))
+        p=copy.deepcopy(plan['_resolved_presets'][store])
+        p['plan_source']={k:copy.deepcopy(plan[k]) for k in ('id','name','revision','updated','standard_version')}
+    else:
+        p = plans.preset(plan)
+        p['config'] = pm.plan_config(plan, original['preset']['config'])
     value['preset'] = pm.bind(p, mapping)
     return value
 

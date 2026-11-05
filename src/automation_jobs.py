@@ -68,7 +68,7 @@ def prepare(snapshot, arguments, progress=lambda _: None, cancel=None):
             if paths or s not in frozen['current_records'] or plan:
                 record['preset'] = pm.bind(record['preset'], frozen['mapping'])
             if plan and s in {i['code'] for i in plan['stores']}:
-                record = plan_record(plan, record, frozen['mapping'])
+                record = plan_record(plan, record, frozen['mapping'],s)
             chosen = {field: v for (store, field), v in changes.items() if store == s}
             if chosen: record['preset']['config'] = pm.patch(record['preset']['config'], chosen)
             records[s] = record

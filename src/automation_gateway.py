@@ -199,7 +199,8 @@ class Gateway(QObject):
         if kind == 'stores':
             known = plans.available(h); rows = [{'code': c, 'name': n} for c, n in known.items()]
         elif kind == 'plans': rows = [{**{k: p[k] for k in ('id', 'name', 'revision', 'stores')},
-            'parameter_fields': p.get('parameter_fields'), 'note': 'parameter_fields为空列表表示不覆盖参数；null为旧版完整预案。实际覆盖值在准备预览中核对。'} for p in plans.Repository(h.work_repository.path).list()]
+            'parameter_mode':p.get('parameter_mode','legacy_fields'),
+            'parameter_fields': p.get('parameter_fields'), 'note': ('逐店选择完整参数预案；stores.preset_id为空表示跟随门店默认，准备时冻结。预算和主从仓独立。' if p.get('parameter_mode')=='per_store_presets' else '旧预案：parameter_fields为空列表表示不覆盖参数；null为旧版完整预案。实际覆盖值在准备预览中核对。')} for p in plans.Repository(h.work_repository.path).list()]
         elif kind == 'files': rows = queries.file_resources(h)
         elif kind == 'catalogs': rows = [{**{k: c.get(k) for k in ('warehouse', 'revision', 'source_path', 'source_sha256')},
             'note': '已登记的仓资料；不代表本次输入已完成匹配或可计算。'} for c in h.catalogs.values()]
@@ -274,13 +275,16 @@ class Gateway(QObject):
         import parameter_maintenance as pm
         import replenishment_plans as plans
         h = self.host; plan = None
+        from parameter_presets import freeze,snapshot as parameter_snapshot
+        parameter_data=parameter_snapshot(h.work_repository)
         if arguments.get('plan_id'):
-            plan = next((p for p in plans.Repository(h.work_repository.path).list() if p['id'] == arguments['plan_id']), None)
+            plan = next((p for p in parameter_data['plans'] if p['id'] == arguments['plan_id']), None)
             if plan is None: raise CommandError('PLAN_NOT_FOUND', '所选预案已不存在，请重新查询')
+            plan=freeze(plan,h.work_repository,data=parameter_data)
         return {'loaded': h.loaded, 'input_dirty': h.input_dirty, 'selected': h.selected_codes(),
             'current_records': {s: h.current_parameter_record(s) for s in h.store_widgets},
             'origins': copy.deepcopy(h._store_parameter_origins), 'previous_defaults': copy.deepcopy(getattr(h, 'saved_store_defaults', {})),
-            'defaults': h.work_repository.stores(), 'budgets': h.repository.budgets(), 'routes': h.catalog_repository.routes(),
+            'defaults': parameter_data['stores'], 'budgets': h.repository.budgets(), 'routes': h.catalog_repository.routes(),
             'mapping': pm.mapping_snapshot(h.work_repository.path), 'catalogs': h.catalogs,
             'legacy': h.master_legacy.isChecked(), 'products': h.products.path,
             'profile': h.profile, 'plan': plan, 'active_plan': copy.deepcopy(h.active_plan), 'workers': h.concurrency.value(),

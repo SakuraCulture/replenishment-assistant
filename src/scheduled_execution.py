@@ -19,12 +19,15 @@ def freeze(folder, schedule, day):
     import admission, new_product_focus
     from workbench_actions import plan_record, record_settings
     work=wr.Repository(folder);path=work.path
-    plan=next((p for p in plans.Repository(path).list() if p['id']==schedule['plan_id']),None)
+    from parameter_presets import freeze as freeze_parameters,snapshot as parameter_snapshot
+    parameter_data=parameter_snapshot(work)
+    plan=next((p for p in parameter_data['plans'] if p['id']==schedule['plan_id']),None)
     if plan is None:raise ValueError('补货预案已删除，请重新选择')
+    plan=freeze_parameters(plan,work,data=parameter_data)
     mapping=pm.mapping_snapshot(path)
     if mapping['conflict']:raise ValueError('全局分类映射待核对，请在参数设置保存后再试')
     priority=priority_list.Repository(folder);master=warehouse_catalog.Repository(folder)
-    defaults=work.stores();routes=master.routes();profile=priority.profile();budgets=priority.budgets()
+    defaults=parameter_data['stores'];routes=master.routes();profile=priority.profile();budgets=priority.budgets()
     # Only route names are needed before fresh catalogs arrive. Do not parse/copy
     # both full previous masters just to validate membership in the warehouse list.
     from app_defaults import WAREHOUSES
@@ -36,7 +39,7 @@ def freeze(folder, schedule, day):
             if record is None:
                 record=spi.base();record['ui'].update(routes.get(s,{}))
                 if s in budgets:record['ui'].update(mode=2 if budgets[s]['enabled'] else 1,amount=str(budgets[s]['amount']))
-            record=plan_record(plan,record,mapping);records[s]=record
+            record=plan_record(plan,record,mapping,s);records[s]=record
             try:settings[s]=record_settings(record,profile,catalogs,admission.snapshot(path,s,db=db,day=day))
             except ValueError as exc:raise ValueError(item['name']+'（'+s+'）：'+str(exc)) from exc
             for w in (record['ui'].get('primary'),record['ui'].get('secondary')):
