@@ -1,0 +1,2074 @@
+{
+  "passed": true,
+  "cli": [
+    {
+      "ok": true,
+      "result": {
+        "app": "补货助手",
+        "version": "0.38.1",
+        "model_version": "0.3.4-rules",
+        "routing_version": "0.5.1",
+        "parameter_schema_version": 3,
+        "build_id": "未打包",
+        "source_commit": "源码运行",
+        "protocol": "replenishment.tools.v1"
+      }
+    },
+    {
+      "ok": true,
+      "result": {
+        "bridge": {
+          "app": "补货助手",
+          "version": "0.38.1",
+          "model_version": "0.3.4-rules",
+          "routing_version": "0.5.1",
+          "parameter_schema_version": 3,
+          "build_id": "未打包",
+          "source_commit": "源码运行",
+          "protocol": "replenishment.tools.v1"
+        },
+        "workbench": {
+          "instance_id": "c7d0e814ae8349caaec3d975f05b4914",
+          "workspace_id": "de38626e0092cbdb71303335",
+          "context_token": "de60ab90e398fb3070c1030e891fb1ae24e496d593fb13a53b2ee71913a9a583",
+          "business_date": "2026-11-05",
+          "application": "0.38.1",
+          "model": "0.3.4-rules",
+          "protocol": "replenishment.tools.v1",
+          "build": {
+            "source_commit": "源码运行",
+            "build_id": "未打包"
+          },
+          "scheduled_access": "read_only",
+          "checked_input_present": true,
+          "readonly": false,
+          "input_dirty": false,
+          "unsaved_changes": true,
+          "selected_stores": [
+            "A",
+            "B"
+          ],
+          "active_task": null,
+          "busy": false,
+          "enabled": true,
+          "scope": "查询、已有文件检查、预案计算和试算；定时任务只读；不触发平台取数、不保存默认、不签发、不采购、不删除",
+          "summary": [
+            {
+              "store": "A",
+              "name": "测试A",
+              "state": "已完成"
+            },
+            {
+              "store": "B",
+              "name": "测试B",
+              "state": "已完成"
+            }
+          ]
+        },
+        "versions_match": true,
+        "note": "连接诊断只查询；请关闭业务弹窗后再调用其他查询。"
+      }
+    },
+    {
+      "ok": true,
+      "result": {
+        "context_token": "de60ab90e398fb3070c1030e891fb1ae24e496d593fb13a53b2ee71913a9a583",
+        "scope": "defaults",
+        "stores": [
+          {
+            "store": "A",
+            "name": null,
+            "parameters": [
+              {
+                "parameter": "山东仓 / 备货天数",
+                "path": [
+                  "warehouses",
+                  "山东仓",
+                  0
+                ],
+                "value": 9,
+                "unit": "天",
+                "configured_value": 9,
+                "group": "分仓周期",
+                "source": "分仓周期",
+                "scope": "已保存门店默认",
+                "definition_id": "warehouses.depth"
+              },
+              {
+                "parameter": "山东仓 / 到货天数",
+                "path": [
+                  "warehouses",
+                  "山东仓",
+                  1
+                ],
+                "value": 2,
+                "unit": "天",
+                "configured_value": 2,
+                "group": "分仓周期",
+                "source": "分仓周期",
+                "scope": "已保存门店默认",
+                "definition_id": "warehouses.lead"
+              },
+              {
+                "parameter": "河北仓 / 备货天数",
+                "path": [
+                  "warehouses",
+                  "河北仓",
+                  0
+                ],
+                "value": 8.0,
+                "unit": "天",
+                "configured_value": 8.0,
+                "group": "分仓周期",
+                "source": "分仓周期",
+                "scope": "已保存门店默认",
+                "definition_id": "warehouses.depth"
+              },
+              {
+                "parameter": "河北仓 / 到货天数",
+                "path": [
+                  "warehouses",
+                  "河北仓",
+                  1
+                ],
+                "value": 4.0,
+                "unit": "天",
+                "configured_value": 4.0,
+                "group": "分仓周期",
+                "source": "分仓周期",
+                "scope": "已保存门店默认",
+                "definition_id": "warehouses.lead"
+              },
+              {
+                "parameter": "快销 / 趋势敏感度",
+                "path": [
+                  "weight_profiles",
+                  "快销",
+                  "alpha"
+                ],
+                "value": 0.4,
+                "unit": "权重",
+                "configured_value": 0.4,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认",
+                "definition_id": "weight_profiles.alpha"
+              },
+              {
+                "parameter": "快销 / 最近7天权重",
+                "path": [
+                  "weight_profiles",
+                  "快销",
+                  "w1"
+                ],
+                "value": 0.6,
+                "unit": "权重",
+                "configured_value": 0.6,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认",
+                "definition_id": "weight_profiles.w1"
+              },
+              {
+                "parameter": "快销 / 此前7天权重",
+                "path": [
+                  "weight_profiles",
+                  "快销",
+                  "w2"
+                ],
+                "value": 0.2,
+                "unit": "权重",
+                "configured_value": 0.2,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认",
+                "definition_id": "weight_profiles.w2"
+              },
+              {
+                "parameter": "快销 / 常规资格周转阈值",
+                "path": [
+                  "profile_parameters",
+                  "快销",
+                  "moq_days"
+                ],
+                "value": 12,
+                "unit": "天",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "profile_parameters.moq_days"
+              },
+              {
+                "parameter": "快销 / 低月销基本售价门槛",
+                "path": [
+                  "profile_parameters",
+                  "快销",
+                  "moq_price"
+                ],
+                "value": 6,
+                "unit": "元",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "profile_parameters.moq_price"
+              },
+              {
+                "parameter": "快销 / 库存目标分位概率",
+                "path": [
+                  "profile_parameters",
+                  "快销",
+                  "probability"
+                ],
+                "value": 0.9,
+                "unit": "概率",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "profile_parameters.probability"
+              },
+              {
+                "parameter": "日百 / 趋势敏感度",
+                "path": [
+                  "weight_profiles",
+                  "日百",
+                  "alpha"
+                ],
+                "value": 0.2,
+                "unit": "权重",
+                "configured_value": 0.2,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认",
+                "definition_id": "weight_profiles.alpha"
+              },
+              {
+                "parameter": "日百 / 最近7天权重",
+                "path": [
+                  "weight_profiles",
+                  "日百",
+                  "w1"
+                ],
+                "value": 0.4,
+                "unit": "权重",
+                "configured_value": 0.4,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认",
+                "definition_id": "weight_profiles.w1"
+              },
+              {
+                "parameter": "日百 / 此前7天权重",
+                "path": [
+                  "weight_profiles",
+                  "日百",
+                  "w2"
+                ],
+                "value": 0.3,
+                "unit": "权重",
+                "configured_value": 0.3,
+                "group": "分类权重",
+                "source": "分类权重",
+                "scope": "已保存门店默认",
+                "definition_id": "weight_profiles.w2"
+              },
+              {
+                "parameter": "日百 / 常规资格周转阈值",
+                "path": [
+                  "profile_parameters",
+                  "日百",
+                  "moq_days"
+                ],
+                "value": 12,
+                "unit": "天",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "profile_parameters.moq_days"
+              },
+              {
+                "parameter": "日百 / 低月销基本售价门槛",
+                "path": [
+                  "profile_parameters",
+                  "日百",
+                  "moq_price"
+                ],
+                "value": 6,
+                "unit": "元",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "profile_parameters.moq_price"
+              },
+              {
+                "parameter": "日百 / 库存目标分位概率",
+                "path": [
+                  "profile_parameters",
+                  "日百",
+                  "probability"
+                ],
+                "value": 0.9,
+                "unit": "概率",
+                "configured_value": "沿用门店",
+                "group": "分类参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "profile_parameters.probability"
+              },
+              {
+                "parameter": "普通库存额度天数",
+                "path": [
+                  "parameters",
+                  "cap_days"
+                ],
+                "value": 21,
+                "unit": "天",
+                "configured_value": 21,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.cap_days"
+              },
+              {
+                "parameter": "库存目标分位概率",
+                "path": [
+                  "parameters",
+                  "probability"
+                ],
+                "value": 0.9,
+                "unit": "概率",
+                "configured_value": 0.9,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.probability"
+              },
+              {
+                "parameter": "单段样本预测倍数",
+                "path": [
+                  "parameters",
+                  "single_sample_multiple"
+                ],
+                "value": 1.5,
+                "unit": "倍",
+                "configured_value": 1.5,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.single_sample_multiple"
+              },
+              {
+                "parameter": "严格约束月销上界",
+                "path": [
+                  "parameters",
+                  "strict_monthly"
+                ],
+                "value": 3,
+                "unit": "个",
+                "configured_value": 3,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.strict_monthly"
+              },
+              {
+                "parameter": "完全退出约束月销",
+                "path": [
+                  "parameters",
+                  "exit_monthly"
+                ],
+                "value": 10,
+                "unit": "个",
+                "configured_value": 10,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.exit_monthly"
+              },
+              {
+                "parameter": "销量侧额外金额",
+                "path": [
+                  "parameters",
+                  "monthly_extra_money"
+                ],
+                "value": 6,
+                "unit": "元",
+                "configured_value": 6,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.monthly_extra_money"
+              },
+              {
+                "parameter": "弱证据额外金额",
+                "path": [
+                  "parameters",
+                  "weak_extra_money"
+                ],
+                "value": 30,
+                "unit": "元",
+                "configured_value": 30,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.weak_extra_money"
+              },
+              {
+                "parameter": "单段额度参考天数",
+                "path": [
+                  "parameters",
+                  "historical_reference_days"
+                ],
+                "value": 13,
+                "unit": "天",
+                "configured_value": 13,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.historical_reference_days"
+              },
+              {
+                "parameter": "最低覆盖判断量",
+                "path": [
+                  "parameters",
+                  "minimum_reference_units"
+                ],
+                "value": 1,
+                "unit": "库存单位",
+                "configured_value": 1,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.minimum_reference_units"
+              },
+              {
+                "parameter": "增长额度确认天数",
+                "path": [
+                  "parameters",
+                  "growth_reference_days"
+                ],
+                "value": 4,
+                "unit": "天",
+                "configured_value": 4,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.growth_reference_days"
+              },
+              {
+                "parameter": "常规资格周转阈值",
+                "path": [
+                  "parameters",
+                  "moq_days"
+                ],
+                "value": 12,
+                "unit": "天",
+                "configured_value": 12,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.moq_days"
+              },
+              {
+                "parameter": "低月销基本售价门槛",
+                "path": [
+                  "parameters",
+                  "moq_price"
+                ],
+                "value": 6,
+                "unit": "元",
+                "configured_value": 6,
+                "group": "门店通用参数",
+                "source": "门店通用参数",
+                "scope": "已保存门店默认",
+                "definition_id": "parameters.moq_price"
+              }
+            ],
+            "route_and_budget": {
+              "amount": "",
+              "mode": 1,
+              "primary": "山东仓",
+              "secondary": null,
+              "selected": true
+            },
+            "budget": {
+              "mode": "不限预算",
+              "configured_amount": ""
+            },
+            "supply": {
+              "主仓": "山东仓",
+              "从仓": null
+            },
+            "policies": {
+              "一箱例外": true,
+              "极端缺货自动恢复": true,
+              "新品铺设": true
+            },
+            "mapping": {
+              "scope": "全局分类映射",
+              "revision": 0,
+              "digest": "678bf94d89bc51850c2946b44bb8740811ed3786e00e982db0712e78428fe5c3"
+            },
+            "category_mapping": {
+              "个人洗护": "日百",
+              "乳品": "快销",
+              "休闲食品": "快销",
+              "医疗器械": "日百",
+              "厨具餐具": "日百",
+              "学习/办公用品": "日百",
+              "宠物生活": "日百",
+              "家居日用": "日百",
+              "家庭清洁": "日百",
+              "家用电器": "日百",
+              "家纺布艺": "日百",
+              "家装建材": "日百",
+              "彩妆香水": "日百",
+              "快销": "快销",
+              "成人用品": "日百",
+              "手机通讯": "日百",
+              "手表眼镜": "日百",
+              "数码家电": "日百",
+              "日百": "日百",
+              "服饰鞋包": "日百",
+              "母婴用品": "日百",
+              "汽车用品": "日百",
+              "玩具乐器": "日百",
+              "电脑数码": "日百",
+              "粮油调味干货": "快销",
+              "美容护肤": "日百",
+              "节庆礼品": "日百",
+              "花卉园艺": "日百",
+              "营养保健": "快销",
+              "营养冲调": "快销",
+              "运动户外": "日百",
+              "速食/罐头": "快销",
+              "酒类": "快销",
+              "饮品": "快销"
+            },
+            "parameter_signature": "21e57f17efba6b4da3da2a18d6767d915d89e4148c20ad5bb86fd3bb14a7f267",
+            "preset": {
+              "id": "standard",
+              "name": "标准补货",
+              "version": 1
+            },
+            "note": "分类参数覆盖通用值，分仓只维护周期；方案名是快照标识，不代表每个字段的编辑来源。新作业可采用的已保存默认及当前全局映射，不代表本次已应用。"
+          }
+        ],
+        "guidance": {
+          "version": "parameter-guidance.v1",
+          "definitions": {
+            "warehouses.depth": {
+              "id": "warehouses.depth",
+              "group": "warehouses",
+              "group_name": "分仓周期",
+              "name": "备货天数",
+              "unit": "天",
+              "path_template": [
+                "warehouses",
+                "{仓库}",
+                0
+              ],
+              "explanation": "与到货天数组成保护期；调高通常增加需求和资金。按补货节奏维护，别重复加到货时间。仓设置优先于通用值。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [
+                "同一仓备货天数与到货天数之和必须大于0。",
+                "优先使用对应仓周期；两仓周期可不同。"
+              ],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "warehouses.lead": {
+              "id": "warehouses.lead",
+              "group": "warehouses",
+              "group_name": "分仓周期",
+              "name": "到货天数",
+              "unit": "天",
+              "path_template": [
+                "warehouses",
+                "{仓库}",
+                1
+              ],
+              "explanation": "影响保护期、一箱例外及预算紧急程度。调高可能增加需求与紧急商品，按实际到货周期维护。仓设置优先。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [
+                "同一仓备货天数与到货天数之和必须大于0。",
+                "优先使用对应仓周期；两仓周期可不同。"
+              ],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "weight_profiles.alpha": {
+              "id": "weight_profiles.alpha",
+              "group": "weight_profiles",
+              "group_name": "分类权重",
+              "name": "趋势敏感度",
+              "unit": "系数",
+              "path_template": [
+                "weight_profiles",
+                "{分类组}",
+                "alpha"
+              ],
+              "explanation": "趋势敏感度：调高通常更响应近期涨跌，调低更稳；仍受趋势支撑与限幅影响，0不等于关闭全部趋势条件。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [
+                "最近7天权重与此前7天权重均须非负，合计不能超过1；此前16天权重=1-两者之和。",
+                "商品按分类映射选取权重组；同店两仓共用，无分类使用快销。"
+              ],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.WEIGHT_HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "weight_profiles.w1": {
+              "id": "weight_profiles.w1",
+              "group": "weight_profiles",
+              "group_name": "分类权重",
+              "name": "最近7天权重",
+              "unit": "比例",
+              "path_template": [
+                "weight_profiles",
+                "{分类组}",
+                "w1"
+              ],
+              "explanation": "最近7天权重：调高更重视最新涨跌，需要减少其他段权重；缺货时按有效有货天数修正。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0,
+                "maximum": 1
+              },
+              "dependencies": [
+                "最近7天权重与此前7天权重均须非负，合计不能超过1；此前16天权重=1-两者之和。",
+                "商品按分类映射选取权重组；同店两仓共用，无分类使用快销。"
+              ],
+              "input_encoding": "接口用0到1小数表示比例，例如95%传0.95；不要传95或“95%”。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.WEIGHT_HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "weight_profiles.w2": {
+              "id": "weight_profiles.w2",
+              "group": "weight_profiles",
+              "group_name": "分类权重",
+              "name": "此前7天权重",
+              "unit": "比例",
+              "path_template": [
+                "weight_profiles",
+                "{分类组}",
+                "w2"
+              ],
+              "explanation": "此前7天权重：调高更重视中间一周，变化方向取决于该段销量。此前16天权重=1-最近7天权重-此前7天权重自动计算。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0,
+                "maximum": 1
+              },
+              "dependencies": [
+                "最近7天权重与此前7天权重均须非负，合计不能超过1；此前16天权重=1-两者之和。",
+                "商品按分类映射选取权重组；同店两仓共用，无分类使用快销。"
+              ],
+              "input_encoding": "接口用0到1小数表示比例，例如95%传0.95；不要传95或“95%”。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.WEIGHT_HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "profile_parameters.moq_days": {
+              "id": "profile_parameters.moq_days",
+              "group": "profile_parameters",
+              "group_name": "分类参数",
+              "name": "常规资格周转阈值",
+              "unit": "天",
+              "path_template": [
+                "profile_parameters",
+                "{分类组}",
+                "moq_days"
+              ],
+              "explanation": "周转不超过此值可过原资格之一；调高放宽、调低收紧。一箱例外也要求原资格；不是最小起订量。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [
+                "填写分类值时覆盖门店通用值；传“沿用门店”取消该分类覆盖。",
+                "同店两仓共用分类参数；无分类使用快销参数。"
+              ],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [
+                "沿用门店"
+              ],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "profile_parameters.moq_price": {
+              "id": "profile_parameters.moq_price",
+              "group": "profile_parameters",
+              "group_name": "分类参数",
+              "name": "低月销基本售价门槛",
+              "unit": "元",
+              "path_template": [
+                "profile_parameters",
+                "{分类组}",
+                "moq_price"
+              ],
+              "explanation": "月销≤5且基本售价基本售价严格小于此值可过另一资格；调高扩大范围。用基本售价，不是采购价。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [
+                "填写分类值时覆盖门店通用值；传“沿用门店”取消该分类覆盖。",
+                "同店两仓共用分类参数；无分类使用快销参数。"
+              ],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [
+                "沿用门店"
+              ],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "profile_parameters.probability": {
+              "id": "profile_parameters.probability",
+              "group": "profile_parameters",
+              "group_name": "分类参数",
+              "name": "库存目标分位概率",
+              "unit": "概率",
+              "path_template": [
+                "profile_parameters",
+                "{分类组}",
+                "probability"
+              ],
+              "explanation": "调高通常增加安全库存，调低减少；不是实际不断货率承诺，也不是固定安全天数。先试算再应用。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0.5,
+                "maximum": 0.99
+              },
+              "dependencies": [
+                "填写分类值时覆盖门店通用值；传“沿用门店”取消该分类覆盖。",
+                "同店两仓共用分类参数；无分类使用快销参数。"
+              ],
+              "input_encoding": "接口用0到1小数表示比例，例如95%传0.95；不要传95或“95%”。",
+              "alternatives": [
+                "沿用门店"
+              ],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.cap_days": {
+              "id": "parameters.cap_days",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "普通库存额度天数",
+              "unit": "天",
+              "path_template": [
+                "parameters",
+                "cap_days"
+              ],
+              "explanation": "调低收紧常规补货，调高放宽；0为关闭额度。按库存上限参考日均/增长额度参考日均额度日均计算，并非预测持有天数硬上限；恢复和一箱例外仍存在。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.probability": {
+              "id": "parameters.probability",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "库存目标分位概率",
+              "unit": "概率",
+              "path_template": [
+                "parameters",
+                "probability"
+              ],
+              "explanation": "调高通常增加安全库存，调低减少；不是实际不断货率承诺，也不是固定安全天数。先试算再应用。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0.5,
+                "maximum": 0.99
+              },
+              "dependencies": [
+                "该商品分类已设置专用值时，分类值优先，修改通用值可能不影响它。"
+              ],
+              "input_encoding": "接口用0到1小数表示比例，例如95%传0.95；不要传95或“95%”。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.single_sample_multiple": {
+              "id": "parameters.single_sample_multiple",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "单段样本预测倍数",
+              "unit": "倍",
+              "path_template": [
+                "parameters",
+                "single_sample_multiple"
+              ],
+              "explanation": "仅剩早期样本时调高放宽预测与部分额度，调低更保守。不是所有商品放大倍数；安全库存和整箱另计。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "exclusiveMinimum": 0
+              },
+              "dependencies": [],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.strict_monthly": {
+              "id": "parameters.strict_monthly",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "严格约束月销上界",
+              "unit": "库存单位",
+              "path_template": [
+                "parameters",
+                "strict_monthly"
+              ],
+              "explanation": "调高使更多低销量商品严格受单品资金约束；调低更早释放。必须小于退出月销，不替代门店预算。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [
+                "完全退出约束月销必须严格大于严格约束月销上界。"
+              ],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.exit_monthly": {
+              "id": "parameters.exit_monthly",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "完全退出约束月销",
+              "unit": "库存单位",
+              "path_template": [
+                "parameters",
+                "exit_monthly"
+              ],
+              "explanation": "达到此月销退出低销量资金层。调高延后退出，调低更早放宽；必须大于严格月销。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "exclusiveMinimum": 0
+              },
+              "dependencies": [
+                "完全退出约束月销必须严格大于严格约束月销上界。"
+              ],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.monthly_extra_money": {
+              "id": "parameters.monthly_extra_money",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "销量侧额外金额",
+              "unit": "元",
+              "path_template": [
+                "parameters",
+                "monthly_extra_money"
+              ],
+              "explanation": "单品基准中月销量×基本售价+此金额。调高可能放宽；若弱证据分支更小则无变化，不是每商品固定加钱。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.weak_extra_money": {
+              "id": "parameters.weak_extra_money",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "弱证据额外金额",
+              "unit": "元",
+              "path_template": [
+                "parameters",
+                "weak_extra_money"
+              ],
+              "explanation": "单品基准中扣掉最大一段的销量×基本售价+此金额。调高可能放宽，调低收紧；受另一分支及最低出库成本影响，也影响成本过高提示。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.historical_reference_days": {
+              "id": "parameters.historical_reference_days",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "单段额度参考天数",
+              "unit": "天",
+              "path_template": [
+                "parameters",
+                "historical_reference_days"
+              ],
+              "explanation": "单段库存上限参考日均分母参考；调高通常收紧额度，调低放宽。不等于实际保护期，也不会自动跟随仓周期。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "exclusiveMinimum": 0
+              },
+              "dependencies": [],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.minimum_reference_units": {
+              "id": "parameters.minimum_reference_units",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "最低覆盖判断量",
+              "unit": "库存单位",
+              "path_template": [
+                "parameters",
+                "minimum_reference_units"
+              ],
+              "explanation": "在途与本值与最小出库数量中的较小值比较。调高可能增加恢复触发；不是补货目标数量，触发后仍按最小出库单位补。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "exclusiveMinimum": 0
+              },
+              "dependencies": [],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.growth_reference_days": {
+              "id": "parameters.growth_reference_days",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "增长额度确认天数",
+              "unit": "天",
+              "path_template": [
+                "parameters",
+                "growth_reference_days"
+              ],
+              "explanation": "有效有货天数/此值形成最高1的系数。调小更快认可增长、调大更慢；有效天数足够后可能无变化。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "exclusiveMinimum": 0
+              },
+              "dependencies": [],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.moq_days": {
+              "id": "parameters.moq_days",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "常规资格周转阈值",
+              "unit": "天",
+              "path_template": [
+                "parameters",
+                "moq_days"
+              ],
+              "explanation": "周转不超过此值可过原资格之一；调高放宽、调低收紧。一箱例外也要求原资格；不是最小起订量。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [
+                "该商品分类已设置专用值时，分类值优先，修改通用值可能不影响它。"
+              ],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "parameters.moq_price": {
+              "id": "parameters.moq_price",
+              "group": "parameters",
+              "group_name": "门店通用参数",
+              "name": "低月销基本售价门槛",
+              "unit": "元",
+              "path_template": [
+                "parameters",
+                "moq_price"
+              ],
+              "explanation": "月销≤5且基本售价基本售价严格小于此值可过另一资格；调高扩大范围。用基本售价，不是采购价。",
+              "constraints": {
+                "type": "number",
+                "finite": true,
+                "minimum": 0
+              },
+              "dependencies": [
+                "该商品分类已设置专用值时，分类值优先，修改通用值可能不影响它。"
+              ],
+              "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+              "alternatives": [],
+              "ai_trial_editable": true,
+              "description_source": "parameter_schema.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "exception": {
+              "id": "exception",
+              "group": "policies",
+              "group_name": "补货策略",
+              "name": "启用一箱例外",
+              "unit": "开关",
+              "path_template": [
+                "exception"
+              ],
+              "explanation": "启用一箱例外，仍受准入与门店总预算约束；开启不代表所有商品都触发，具体原因以原计算及例外审计为准。",
+              "constraints": {
+                "type": "boolean"
+              },
+              "dependencies": [
+                "策略在原业务页面维护；AI只读取现有开关，不通过数值试算接口修改。",
+                "资质、拒收、禁用和停采等硬排除不能由此关闭。"
+              ],
+              "input_encoding": "按返回类型理解；本项不通过AI数值试算修改。",
+              "alternatives": [],
+              "ai_trial_editable": false,
+              "description_source": "parameter_guidance.exception",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "restock_switches.extreme_restore": {
+              "id": "restock_switches.extreme_restore",
+              "group": "policies",
+              "group_name": "补货策略",
+              "name": "极端缺货自动恢复",
+              "unit": "开关",
+              "path_template": [
+                "restock_switches",
+                "extreme_restore"
+              ],
+              "explanation": "有效缺货达到30天时，是否自动恢复一个出库单位。普通缺货、有销量双零最低持有不变。",
+              "constraints": {
+                "type": "boolean"
+              },
+              "dependencies": [
+                "策略在原业务页面维护；AI只读取现有开关，不通过数值试算接口修改。",
+                "资质、拒收、禁用和停采等硬排除不能由此关闭。"
+              ],
+              "input_encoding": "按返回类型理解；本项不通过AI数值试算修改。",
+              "alternatives": [],
+              "ai_trial_editable": false,
+              "description_source": "restock_policy.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "restock_switches.new_stocking": {
+              "id": "restock_switches.new_stocking",
+              "group": "policies",
+              "group_name": "补货策略",
+              "name": "新品铺设",
+              "unit": "开关",
+              "path_template": [
+                "restock_switches",
+                "new_stocking"
+              ],
+              "explanation": "是否允许安排新品及新品清单补足。开启仍须选商品；关闭不删除候选或历史单。",
+              "constraints": {
+                "type": "boolean"
+              },
+              "dependencies": [
+                "策略在原业务页面维护；AI只读取现有开关，不通过数值试算接口修改。",
+                "资质、拒收、禁用和停采等硬排除不能由此关闭。"
+              ],
+              "input_encoding": "按返回类型理解；本项不通过AI数值试算修改。",
+              "alternatives": [],
+              "ai_trial_editable": false,
+              "description_source": "restock_policy.HELP",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            },
+            "category_profiles": {
+              "id": "category_profiles",
+              "group": "category_profiles",
+              "group_name": "全局分类映射",
+              "name": "全局分类映射",
+              "unit": "分类组",
+              "path_template": [
+                "category_profiles",
+                "{商品分类}"
+              ],
+              "explanation": "决定商品分类使用哪个分类参数组；所有门店共用映射，各店分类参数仍独立。新作业或明确采用后生效，不回写历史快照。",
+              "constraints": {
+                "type": "string"
+              },
+              "dependencies": [
+                "目标分类组须在门店参数中存在；无分类按快销。",
+                "通过全局分类映射入口维护，不能放进数值试算修改。"
+              ],
+              "input_encoding": "按返回类型理解；本项不通过AI数值试算修改。",
+              "alternatives": [],
+              "ai_trial_editable": false,
+              "description_source": "parameter_guidance.mapping",
+              "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+              "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+            }
+          }
+        }
+      }
+    },
+    {
+      "ok": true,
+      "result": {
+        "version": "parameter-guidance.v1",
+        "total": 28,
+        "offset": 0,
+        "items": [
+          {
+            "id": "warehouses.depth",
+            "group": "warehouses",
+            "group_name": "分仓周期",
+            "name": "备货天数",
+            "unit": "天",
+            "path_template": [
+              "warehouses",
+              "{仓库}",
+              0
+            ],
+            "explanation": "与到货天数组成保护期；调高通常增加需求和资金。按补货节奏维护，别重复加到货时间。仓设置优先于通用值。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [
+              "同一仓备货天数与到货天数之和必须大于0。",
+              "优先使用对应仓周期；两仓周期可不同。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "warehouses.lead",
+            "group": "warehouses",
+            "group_name": "分仓周期",
+            "name": "到货天数",
+            "unit": "天",
+            "path_template": [
+              "warehouses",
+              "{仓库}",
+              1
+            ],
+            "explanation": "影响保护期、一箱例外及预算紧急程度。调高可能增加需求与紧急商品，按实际到货周期维护。仓设置优先。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [
+              "同一仓备货天数与到货天数之和必须大于0。",
+              "优先使用对应仓周期；两仓周期可不同。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "weight_profiles.alpha",
+            "group": "weight_profiles",
+            "group_name": "分类权重",
+            "name": "趋势敏感度",
+            "unit": "系数",
+            "path_template": [
+              "weight_profiles",
+              "{分类组}",
+              "alpha"
+            ],
+            "explanation": "趋势敏感度：调高通常更响应近期涨跌，调低更稳；仍受趋势支撑与限幅影响，0不等于关闭全部趋势条件。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [
+              "最近7天权重与此前7天权重均须非负，合计不能超过1；此前16天权重=1-两者之和。",
+              "商品按分类映射选取权重组；同店两仓共用，无分类使用快销。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.WEIGHT_HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "weight_profiles.w1",
+            "group": "weight_profiles",
+            "group_name": "分类权重",
+            "name": "最近7天权重",
+            "unit": "比例",
+            "path_template": [
+              "weight_profiles",
+              "{分类组}",
+              "w1"
+            ],
+            "explanation": "最近7天权重：调高更重视最新涨跌，需要减少其他段权重；缺货时按有效有货天数修正。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0,
+              "maximum": 1
+            },
+            "dependencies": [
+              "最近7天权重与此前7天权重均须非负，合计不能超过1；此前16天权重=1-两者之和。",
+              "商品按分类映射选取权重组；同店两仓共用，无分类使用快销。"
+            ],
+            "input_encoding": "接口用0到1小数表示比例，例如95%传0.95；不要传95或“95%”。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.WEIGHT_HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "weight_profiles.w2",
+            "group": "weight_profiles",
+            "group_name": "分类权重",
+            "name": "此前7天权重",
+            "unit": "比例",
+            "path_template": [
+              "weight_profiles",
+              "{分类组}",
+              "w2"
+            ],
+            "explanation": "此前7天权重：调高更重视中间一周，变化方向取决于该段销量。此前16天权重=1-最近7天权重-此前7天权重自动计算。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0,
+              "maximum": 1
+            },
+            "dependencies": [
+              "最近7天权重与此前7天权重均须非负，合计不能超过1；此前16天权重=1-两者之和。",
+              "商品按分类映射选取权重组；同店两仓共用，无分类使用快销。"
+            ],
+            "input_encoding": "接口用0到1小数表示比例，例如95%传0.95；不要传95或“95%”。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.WEIGHT_HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "weight_profiles.w3",
+            "group": "weight_profiles",
+            "group_name": "分类权重",
+            "name": "此前16天权重",
+            "unit": "比例",
+            "path_template": [
+              "weight_profiles",
+              "{分类组}",
+              "w3"
+            ],
+            "explanation": "由1减去最近7天权重与此前7天权重自动计算，不能直接修改。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0,
+              "maximum": 1
+            },
+            "dependencies": [
+              "最近7天权重与此前7天权重均须非负，合计不能超过1；此前16天权重=1-两者之和。",
+              "商品按分类映射选取权重组；同店两仓共用，无分类使用快销。"
+            ],
+            "input_encoding": "接口用0到1小数表示比例，例如95%传0.95；不要传95或“95%”。",
+            "alternatives": [],
+            "ai_trial_editable": false,
+            "description_source": "parameter_schema.WEIGHT_HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "profile_parameters.moq_days",
+            "group": "profile_parameters",
+            "group_name": "分类参数",
+            "name": "常规资格周转阈值",
+            "unit": "天",
+            "path_template": [
+              "profile_parameters",
+              "{分类组}",
+              "moq_days"
+            ],
+            "explanation": "周转不超过此值可过原资格之一；调高放宽、调低收紧。一箱例外也要求原资格；不是最小起订量。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [
+              "填写分类值时覆盖门店通用值；传“沿用门店”取消该分类覆盖。",
+              "同店两仓共用分类参数；无分类使用快销参数。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [
+              "沿用门店"
+            ],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "profile_parameters.moq_price",
+            "group": "profile_parameters",
+            "group_name": "分类参数",
+            "name": "低月销基本售价门槛",
+            "unit": "元",
+            "path_template": [
+              "profile_parameters",
+              "{分类组}",
+              "moq_price"
+            ],
+            "explanation": "月销≤5且基本售价基本售价严格小于此值可过另一资格；调高扩大范围。用基本售价，不是采购价。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [
+              "填写分类值时覆盖门店通用值；传“沿用门店”取消该分类覆盖。",
+              "同店两仓共用分类参数；无分类使用快销参数。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [
+              "沿用门店"
+            ],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "profile_parameters.probability",
+            "group": "profile_parameters",
+            "group_name": "分类参数",
+            "name": "库存目标分位概率",
+            "unit": "概率",
+            "path_template": [
+              "profile_parameters",
+              "{分类组}",
+              "probability"
+            ],
+            "explanation": "调高通常增加安全库存，调低减少；不是实际不断货率承诺，也不是固定安全天数。先试算再应用。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0.5,
+              "maximum": 0.99
+            },
+            "dependencies": [
+              "填写分类值时覆盖门店通用值；传“沿用门店”取消该分类覆盖。",
+              "同店两仓共用分类参数；无分类使用快销参数。"
+            ],
+            "input_encoding": "接口用0到1小数表示比例，例如95%传0.95；不要传95或“95%”。",
+            "alternatives": [
+              "沿用门店"
+            ],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.depth",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "备货深度",
+            "unit": "天",
+            "path_template": [
+              "parameters",
+              "depth"
+            ],
+            "explanation": "与到货天数组成保护期；调高通常增加需求和资金。按补货节奏维护，别重复加到货时间。仓设置优先于通用值。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [
+              "通用周期之和必须大于0；维护时应改对应仓的周期。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": false,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.lead",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "到货时间",
+            "unit": "天",
+            "path_template": [
+              "parameters",
+              "lead"
+            ],
+            "explanation": "影响保护期、一箱例外及预算紧急程度。调高可能增加需求与紧急商品，按实际到货周期维护。仓设置优先。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [
+              "通用周期之和必须大于0；维护时应改对应仓的周期。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": false,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.cap_days",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "普通库存额度天数",
+            "unit": "天",
+            "path_template": [
+              "parameters",
+              "cap_days"
+            ],
+            "explanation": "调低收紧常规补货，调高放宽；0为关闭额度。按库存上限参考日均/增长额度参考日均额度日均计算，并非预测持有天数硬上限；恢复和一箱例外仍存在。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.probability",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "库存目标分位概率",
+            "unit": "概率",
+            "path_template": [
+              "parameters",
+              "probability"
+            ],
+            "explanation": "调高通常增加安全库存，调低减少；不是实际不断货率承诺，也不是固定安全天数。先试算再应用。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0.5,
+              "maximum": 0.99
+            },
+            "dependencies": [
+              "该商品分类已设置专用值时，分类值优先，修改通用值可能不影响它。"
+            ],
+            "input_encoding": "接口用0到1小数表示比例，例如95%传0.95；不要传95或“95%”。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.single_sample_multiple",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "单段样本预测倍数",
+            "unit": "倍",
+            "path_template": [
+              "parameters",
+              "single_sample_multiple"
+            ],
+            "explanation": "仅剩早期样本时调高放宽预测与部分额度，调低更保守。不是所有商品放大倍数；安全库存和整箱另计。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "exclusiveMinimum": 0
+            },
+            "dependencies": [],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.strict_monthly",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "严格约束月销上界",
+            "unit": "库存单位",
+            "path_template": [
+              "parameters",
+              "strict_monthly"
+            ],
+            "explanation": "调高使更多低销量商品严格受单品资金约束；调低更早释放。必须小于退出月销，不替代门店预算。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [
+              "完全退出约束月销必须严格大于严格约束月销上界。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.exit_monthly",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "完全退出约束月销",
+            "unit": "库存单位",
+            "path_template": [
+              "parameters",
+              "exit_monthly"
+            ],
+            "explanation": "达到此月销退出低销量资金层。调高延后退出，调低更早放宽；必须大于严格月销。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "exclusiveMinimum": 0
+            },
+            "dependencies": [
+              "完全退出约束月销必须严格大于严格约束月销上界。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.monthly_extra_money",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "销量侧额外金额",
+            "unit": "元",
+            "path_template": [
+              "parameters",
+              "monthly_extra_money"
+            ],
+            "explanation": "单品基准中月销量×基本售价+此金额。调高可能放宽；若弱证据分支更小则无变化，不是每商品固定加钱。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.weak_extra_money",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "弱证据额外金额",
+            "unit": "元",
+            "path_template": [
+              "parameters",
+              "weak_extra_money"
+            ],
+            "explanation": "单品基准中扣掉最大一段的销量×基本售价+此金额。调高可能放宽，调低收紧；受另一分支及最低出库成本影响，也影响成本过高提示。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.historical_reference_days",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "单段额度参考天数",
+            "unit": "天",
+            "path_template": [
+              "parameters",
+              "historical_reference_days"
+            ],
+            "explanation": "单段库存上限参考日均分母参考；调高通常收紧额度，调低放宽。不等于实际保护期，也不会自动跟随仓周期。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "exclusiveMinimum": 0
+            },
+            "dependencies": [],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.extreme_days",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "极端缺货边界",
+            "unit": "天",
+            "path_template": [
+              "parameters",
+              "extreme_days"
+            ],
+            "explanation": "目前固定为30天，仅供查看；不能通过此表单修改。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "const": 30
+            },
+            "dependencies": [],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": false,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.minimum_reference_units",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "最低覆盖判断量",
+            "unit": "库存单位",
+            "path_template": [
+              "parameters",
+              "minimum_reference_units"
+            ],
+            "explanation": "在途与本值与最小出库数量中的较小值比较。调高可能增加恢复触发；不是补货目标数量，触发后仍按最小出库单位补。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "exclusiveMinimum": 0
+            },
+            "dependencies": [],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.growth_reference_days",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "增长额度确认天数",
+            "unit": "天",
+            "path_template": [
+              "parameters",
+              "growth_reference_days"
+            ],
+            "explanation": "有效有货天数/此值形成最高1的系数。调小更快认可增长、调大更慢；有效天数足够后可能无变化。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "exclusiveMinimum": 0
+            },
+            "dependencies": [],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.moq_days",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "常规资格周转阈值",
+            "unit": "天",
+            "path_template": [
+              "parameters",
+              "moq_days"
+            ],
+            "explanation": "周转不超过此值可过原资格之一；调高放宽、调低收紧。一箱例外也要求原资格；不是最小起订量。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [
+              "该商品分类已设置专用值时，分类值优先，修改通用值可能不影响它。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "parameters.moq_price",
+            "group": "parameters",
+            "group_name": "门店通用参数",
+            "name": "低月销基本售价门槛",
+            "unit": "元",
+            "path_template": [
+              "parameters",
+              "moq_price"
+            ],
+            "explanation": "月销≤5且基本售价基本售价严格小于此值可过另一资格；调高扩大范围。用基本售价，不是采购价。",
+            "constraints": {
+              "type": "number",
+              "finite": true,
+              "minimum": 0
+            },
+            "dependencies": [
+              "该商品分类已设置专用值时，分类值优先，修改通用值可能不影响它。"
+            ],
+            "input_encoding": "接口数量使用库存单位；金额使用元；数值不做隐式单位换算。",
+            "alternatives": [],
+            "ai_trial_editable": true,
+            "description_source": "parameter_schema.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "exception",
+            "group": "policies",
+            "group_name": "补货策略",
+            "name": "启用一箱例外",
+            "unit": "开关",
+            "path_template": [
+              "exception"
+            ],
+            "explanation": "启用一箱例外，仍受准入与门店总预算约束；开启不代表所有商品都触发，具体原因以原计算及例外审计为准。",
+            "constraints": {
+              "type": "boolean"
+            },
+            "dependencies": [
+              "策略在原业务页面维护；AI只读取现有开关，不通过数值试算接口修改。",
+              "资质、拒收、禁用和停采等硬排除不能由此关闭。"
+            ],
+            "input_encoding": "按返回类型理解；本项不通过AI数值试算修改。",
+            "alternatives": [],
+            "ai_trial_editable": false,
+            "description_source": "parameter_guidance.exception",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "restock_switches.extreme_restore",
+            "group": "policies",
+            "group_name": "补货策略",
+            "name": "极端缺货自动恢复",
+            "unit": "开关",
+            "path_template": [
+              "restock_switches",
+              "extreme_restore"
+            ],
+            "explanation": "有效缺货达到30天时，是否自动恢复一个出库单位。普通缺货、有销量双零最低持有不变。",
+            "constraints": {
+              "type": "boolean"
+            },
+            "dependencies": [
+              "策略在原业务页面维护；AI只读取现有开关，不通过数值试算接口修改。",
+              "资质、拒收、禁用和停采等硬排除不能由此关闭。"
+            ],
+            "input_encoding": "按返回类型理解；本项不通过AI数值试算修改。",
+            "alternatives": [],
+            "ai_trial_editable": false,
+            "description_source": "restock_policy.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "restock_switches.new_stocking",
+            "group": "policies",
+            "group_name": "补货策略",
+            "name": "新品铺设",
+            "unit": "开关",
+            "path_template": [
+              "restock_switches",
+              "new_stocking"
+            ],
+            "explanation": "是否允许安排新品及新品清单补足。开启仍须选商品；关闭不删除候选或历史单。",
+            "constraints": {
+              "type": "boolean"
+            },
+            "dependencies": [
+              "策略在原业务页面维护；AI只读取现有开关，不通过数值试算接口修改。",
+              "资质、拒收、禁用和停采等硬排除不能由此关闭。"
+            ],
+            "input_encoding": "按返回类型理解；本项不通过AI数值试算修改。",
+            "alternatives": [],
+            "ai_trial_editable": false,
+            "description_source": "restock_policy.HELP",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          },
+          {
+            "id": "category_profiles",
+            "group": "category_profiles",
+            "group_name": "全局分类映射",
+            "name": "全局分类映射",
+            "unit": "分类组",
+            "path_template": [
+              "category_profiles",
+              "{商品分类}"
+            ],
+            "explanation": "决定商品分类使用哪个分类参数组；所有门店共用映射，各店分类参数仍独立。新作业或明确采用后生效，不回写历史快照。",
+            "constraints": {
+              "type": "string"
+            },
+            "dependencies": [
+              "目标分类组须在门店参数中存在；无分类按快销。",
+              "通过全局分类映射入口维护，不能放进数值试算修改。"
+            ],
+            "input_encoding": "按返回类型理解；本项不通过AI数值试算修改。",
+            "alternatives": [],
+            "ai_trial_editable": false,
+            "description_source": "parameter_guidance.mapping",
+            "constraint_scope": "既有参数服务校验范围；不扩大各表单自身输入范围。",
+            "result_caution": "调参方向是规则解释，不保证每款商品数量单调变化；箱规、库存、资格、准入和预算可能使最终数量不变。实际影响须同输入试算核对。"
+          }
+        ],
+        "next_offset": null,
+        "note": "模板中的仓库/分类组不是可提交的编码；实际路径和值从effective_parameters取得。定义不代表已应用配置；预算、主从仓和策略不是数值试算超参。"
+      }
+    },
+    {
+      "ok": false,
+      "error": {
+        "code": "NOT_AVAILABLE",
+        "message": "首期未开放这个操作",
+        "details": {}
+      }
+    }
+  ],
+  "scheduled_first": {
+    "run": {
+      "id": "eb7f525b8978463484614f46ac78a845",
+      "day": "2026-11-05",
+      "trigger": "manual",
+      "created": "2026-11-05T10:03:37.539540+08:00",
+      "updated": "2026-11-05T10:03:37.545369+08:00",
+      "state": "REVIEW",
+      "stage": "检查运行条件",
+      "revision": 2,
+      "message": "合成任务，请勿执行",
+      "state_name": "需处理",
+      "schedule": {
+        "id": "17e34d62ba68449f8ebb6fa6d614bb5a",
+        "name": "隔离查询验收",
+        "plan_id": "synthetic-only",
+        "revision": 1,
+        "kind": "once",
+        "time": "06:00",
+        "weekdays": null,
+        "date": "2099-01-01",
+        "enabled": false,
+        "next_at": null,
+        "workers": 2,
+        "timezone": "Asia/Shanghai"
+      },
+      "store_count": 2,
+      "ready_stores": 1,
+      "note": "完成表示计算完成等待核对，不表示已签发。仅查询，不会启动或改变任务。"
+    },
+    "stores": {
+      "total": 2,
+      "offset": 0,
+      "items": [
+        {
+          "code": "B",
+          "name": "B",
+          "state": "READY",
+          "message": "合成验收",
+          "state_name": "计算完成"
+        }
+      ],
+      "next_offset": 1
+    },
+    "events": [
+      {
+        "seq": 1,
+        "at": "2026-11-05T10:03:37.540076+08:00",
+        "message": "等待执行"
+      }
+    ],
+    "next_after": 1,
+    "has_more_events": true,
+    "note": "门店按 next_offset 翻页，事件按 next_after 续查；任务运行中可能继续产生进展。"
+  },
+  "scheduled_second": {
+    "run": {
+      "id": "eb7f525b8978463484614f46ac78a845",
+      "day": "2026-11-05",
+      "trigger": "manual",
+      "created": "2026-11-05T10:03:37.539540+08:00",
+      "updated": "2026-11-05T10:03:37.545369+08:00",
+      "state": "REVIEW",
+      "stage": "检查运行条件",
+      "revision": 2,
+      "message": "合成任务，请勿执行",
+      "state_name": "需处理",
+      "schedule": {
+        "id": "17e34d62ba68449f8ebb6fa6d614bb5a",
+        "name": "隔离查询验收",
+        "plan_id": "synthetic-only",
+        "revision": 1,
+        "kind": "once",
+        "time": "06:00",
+        "weekdays": null,
+        "date": "2099-01-01",
+        "enabled": false,
+        "next_at": null,
+        "workers": 2,
+        "timezone": "Asia/Shanghai"
+      },
+      "store_count": 2,
+      "ready_stores": 1,
+      "note": "完成表示计算完成等待核对，不表示已签发。仅查询，不会启动或改变任务。"
+    },
+    "stores": {
+      "total": 2,
+      "offset": 1,
+      "items": [
+        {
+          "code": "A",
+          "name": "A",
+          "state": "FAILED",
+          "message": "合成验收",
+          "state_name": "未完成，需处理"
+        }
+      ],
+      "next_offset": null
+    },
+    "events": [
+      {
+        "seq": 2,
+        "at": "2026-11-05T10:03:37.545369+08:00",
+        "message": "合成任务，请勿执行"
+      }
+    ],
+    "next_after": 2,
+    "has_more_events": true,
+    "note": "门店按 next_offset 翻页，事件按 next_after 续查；任务运行中可能继续产生进展。"
+  },
+  "checks": [
+    "CLI version/build and live doctor",
+    "CLI defaults vs MCP current parameters",
+    "shared UI/MCP/CLI parameter definitions and references",
+    "scheduler write rejected",
+    "schedule/run/store pagination and incremental events",
+    "queries leave DB bytes and current job unchanged"
+  ]
+}

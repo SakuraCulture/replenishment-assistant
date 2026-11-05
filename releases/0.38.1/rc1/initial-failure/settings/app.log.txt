@@ -1,0 +1,32 @@
+ERROR:root:AI 结果处理失败
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 222, in completed
+    try: finish(value)
+         ^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 254, in finish
+    self.journal.update(task['task_id'], state='prepared' if p['report']['ready'] else 'needs_input',
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 63, in update
+    with closing(self.connect()) as db, db:
+                                        ^^
+sqlite3.OperationalError: database is locked
+ERROR:root:界面异常
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 222, in completed
+    try: finish(value)
+         ^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 254, in finish
+    self.journal.update(task['task_id'], state='prepared' if p['report']['ready'] else 'needs_input',
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 63, in update
+    with closing(self.connect()) as db, db:
+                                        ^^
+sqlite3.OperationalError: database is locked
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 225, in completed
+    self.journal.update(task['task_id'], state='failed', message='结果未完成处理：' + str(exc))
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 63, in update
+    with closing(self.connect()) as db, db:
+                                        ^^
+sqlite3.OperationalError: database is locked

@@ -1,0 +1,6 @@
+{
+  "passed": false,
+  "frozen_exe": false,
+  "checks": [],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\automation_smoke.py\", line 62, in run\n    p = m.call('task_status', {'task_id': p['task_id']}); require(p['state'] == 'prepared', str(p))\n                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\automation_smoke.py\", line 26, in require\n    if not value: raise AssertionError(message)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'task_id': '00d5b09e03ab43949b050d6404fe8ba7', 'kind': 'prepare', 'state': 'preparing', 'created': '2026-11-05T01:52:39.050019+00:00', 'message': '已受理', 'scope': '未保存结果仅在当前工作台会话有效', 'events': [], 'cursor': 0, 'in_current_session': True}\n"
+}

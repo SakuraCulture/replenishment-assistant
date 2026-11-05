@@ -1,0 +1,3222 @@
+{
+  "passed": true,
+  "transport": "actual stdio MCP to Qt workbench",
+  "data": "synthetic A/B, 125 SKUs each including a disabled item; no production data",
+  "natural_language_model_runs": 0,
+  "cases": [
+    {
+      "case": "check",
+      "passed": true,
+      "stores": [
+        "B",
+        "A"
+      ],
+      "unchanged": true
+    },
+    {
+      "case": "calculate",
+      "passed": true,
+      "summary": {
+        "stores": [
+          {
+            "store": "B",
+            "name": "测试B",
+            "state": "已完成",
+            "summary": {
+              "rows": 125,
+              "local": 0,
+              "issues": 0,
+              "calculable": 125,
+              "positive": 124,
+              "amount": 29760.0,
+              "calculated_positive": 125,
+              "calculated_amount": 30000.0,
+              "excluded": 1,
+              "excluded_positive": 1,
+              "excluded_amount": 240.0,
+              "unpriced": 0,
+              "candidate_amount": 29760.0,
+              "must_amount": 0.0,
+              "must_candidate_amount": 0.0,
+              "budget_deferred": 0,
+              "holding_gaps": 0,
+              "exception": 0,
+              "extra": 0
+            }
+          },
+          {
+            "store": "A",
+            "name": "测试A",
+            "state": "已完成",
+            "summary": {
+              "rows": 125,
+              "local": 0,
+              "issues": 0,
+              "calculable": 125,
+              "positive": 124,
+              "amount": 29760.0,
+              "calculated_positive": 125,
+              "calculated_amount": 30000.0,
+              "excluded": 1,
+              "excluded_positive": 1,
+              "excluded_amount": 240.0,
+              "unpriced": 0,
+              "candidate_amount": 29760.0,
+              "must_amount": 0.0,
+              "must_candidate_amount": 0.0,
+              "budget_deferred": 0,
+              "holding_gaps": 0,
+              "exception": 0,
+              "extra": 0
+            }
+          }
+        ],
+        "total": 0,
+        "offset": 0,
+        "items": [],
+        "next_offset": null,
+        "note": "未选择门店时仅返回汇总；进一步按门店查询商品。"
+      },
+      "exact_business_differences": 0,
+      "paged_products": 125
+    },
+    {
+      "case": "review",
+      "passed": true,
+      "order": [
+        "B",
+        "A"
+      ],
+      "read_only": true
+    },
+    {
+      "case": "explain",
+      "passed": true,
+      "explanation": {
+        "store": "A",
+        "sku": "1001",
+        "name": "合成测试商品1",
+        "warehouse": "山东仓",
+        "input": [
+          [
+            "日销（原表14天日均输入）",
+            "2",
+            "库存单位/天",
+            ""
+          ],
+          [
+            "周销（最近7天累计）",
+            "14",
+            "库存单位",
+            ""
+          ],
+          [
+            "月销（最近30天累计）",
+            "60",
+            "库存单位",
+            ""
+          ],
+          [
+            "可用库存",
+            "3",
+            "库存单位",
+            ""
+          ],
+          [
+            "在途库存",
+            "0",
+            "库存单位",
+            ""
+          ],
+          [
+            "缺货天数（天）",
+            "0",
+            "天",
+            ""
+          ],
+          [
+            "箱规",
+            "1",
+            "库存单位",
+            ""
+          ],
+          [
+            "基本售价",
+            "8.00",
+            "元/库存单位",
+            ""
+          ]
+        ],
+        "parameters": [
+          [
+            "所属仓",
+            "山东仓",
+            "",
+            "商品当时实际取值"
+          ],
+          [
+            "分类",
+            "快销",
+            "",
+            "商品当时实际取值"
+          ],
+          [
+            "备货天数",
+            "8.0",
+            "天",
+            "商品当时实际取值"
+          ],
+          [
+            "到货天数",
+            "5.0",
+            "天",
+            "商品当时实际取值"
+          ],
+          [
+            "趋势敏感度",
+            "0.4",
+            "倍",
+            "商品当时实际取值"
+          ],
+          [
+            "最近7天权重",
+            "60%",
+            "%",
+            "商品当时实际取值"
+          ],
+          [
+            "此前7天权重",
+            "20%",
+            "%",
+            "商品当时实际取值"
+          ],
+          [
+            "此前16天权重",
+            "20%",
+            "%",
+            "商品当时实际取值"
+          ],
+          [
+            "普通库存额度天数",
+            "21",
+            "天",
+            "当时门店通用值；调低收紧常规补货，调高放宽；0为关闭额度。按库存上限参考日均/增长额度参考日均额度日均计算，并非预测持有天数硬上限；恢复和一箱例外仍存在。"
+          ],
+          [
+            "库存目标分位概率",
+            "90%",
+            "%",
+            "当时门店通用值；调高通常增加安全库存，调低减少；不是实际不断货率承诺，也不是固定安全天数。先试算再应用。"
+          ],
+          [
+            "单段样本预测倍数",
+            "1.5",
+            "倍",
+            "当时门店通用值；仅剩早期样本时调高放宽预测与部分额度，调低更保守。不是所有商品放大倍数；安全库存和整箱另计。"
+          ],
+          [
+            "严格约束月销上界",
+            "3",
+            "库存单位",
+            "当时门店通用值；调高使更多低销量商品严格受单品资金约束；调低更早释放。必须小于退出月销，不替代门店预算。"
+          ],
+          [
+            "完全退出约束月销",
+            "10",
+            "库存单位",
+            "当时门店通用值；达到此月销退出低销量资金层。调高延后退出，调低更早放宽；必须大于严格月销。"
+          ],
+          [
+            "销量侧额外金额",
+            "6.00",
+            "元",
+            "当时门店通用值；单品基准中月销量×基本售价+此金额。调高可能放宽；若弱证据分支更小则无变化，不是每商品固定加钱。"
+          ],
+          [
+            "弱证据额外金额",
+            "30.00",
+            "元",
+            "当时门店通用值；单品基准中扣掉最大一段的销量×基本售价+此金额。调高可能放宽，调低收紧；受另一分支及最低出库成本影响，也影响成本过高提示。"
+          ],
+          [
+            "单段额度参考天数",
+            "13",
+            "天",
+            "当时门店通用值；单段库存上限参考日均分母参考；调高通常收紧额度，调低放宽。不等于实际保护期，也不会自动跟随仓周期。"
+          ],
+          [
+            "极端缺货边界",
+            "30",
+            "天",
+            "当时门店通用值；目前固定为30天，仅供查看；不能通过此表单修改。"
+          ],
+          [
+            "最低覆盖判断量",
+            "1",
+            "库存单位",
+            "当时门店通用值；在途与本值与最小出库数量中的较小值比较。调高可能增加恢复触发；不是补货目标数量，触发后仍按最小出库单位补。"
+          ],
+          [
+            "增长额度确认天数",
+            "4",
+            "天",
+            "当时门店通用值；有效有货天数/此值形成最高1的系数。调小更快认可增长、调大更慢；有效天数足够后可能无变化。"
+          ],
+          [
+            "常规资格周转阈值",
+            "12",
+            "天",
+            "当时门店通用值；周转不超过此值可过原资格之一；调高放宽、调低收紧。一箱例外也要求原资格；不是最小起订量。"
+          ],
+          [
+            "低月销基本售价门槛",
+            "6.00",
+            "元",
+            "当时门店通用值；月销≤5且基本售价基本售价严格小于此值可过另一资格；调高扩大范围。用基本售价，不是采购价。"
+          ],
+          [
+            "门店预算",
+            "不限预算",
+            "元",
+            "门店共用预算，不是单仓预算"
+          ],
+          [
+            "一箱例外",
+            "是",
+            "",
+            "当时开关"
+          ],
+          [
+            "极端缺货自动恢复",
+            "开启",
+            "",
+            "旧版未记录开关，沿用开启规则"
+          ],
+          [
+            "新品铺设",
+            "开启",
+            "",
+            "旧版未记录开关，沿用开启规则"
+          ]
+        ],
+        "calculation": [
+          [
+            "原模型建议量",
+            "30",
+            "库存单位",
+            "模型内部包含预测、约束与恢复规则；不把最低恢复参考量当作实际增量"
+          ],
+          [
+            "一箱例外后",
+            "30",
+            "库存单位",
+            "原模型已有补货建议，不额外加箱；较上一阶段 +0库存单位"
+          ],
+          [
+            "预算前候选量",
+            "30",
+            "库存单位",
+            "包含执行排除及已选择的新品；按当时保存值；较上一阶段 +0库存单位"
+          ],
+          [
+            "自动安排量",
+            "30",
+            "库存单位",
+            "预算与排除后的自动安排；不含签发前人工调整；较上一阶段 +0库存单位"
+          ],
+          [
+            "最终签发量",
+            "30",
+            "库存单位",
+            "三段日均一致；月销达到10.，新增资金层退出；实际补货30.；净需求30.；较上一阶段 +0库存单位"
+          ]
+        ],
+        "note": "原计算结果与当时参数；未重新执行模型，缺项不推测"
+      }
+    },
+    {
+      "case": "compare",
+      "passed": true,
+      "trials": [
+        {
+          "days": 5,
+          "task_id": "9a2af859ae0942a9ba68cb28ee26f1d3",
+          "result": {
+            "items": [
+              {
+                "sku": "1001",
+                "name": "合成测试商品1",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1002",
+                "name": "合成测试商品2",
+                "warehouse": "山东仓",
+                "quantity": 0,
+                "amount": 0,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "默认不补：商品资料禁用；计算结果仅供参考"
+              },
+              {
+                "sku": "1003",
+                "name": "合成测试商品3",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1004",
+                "name": "合成测试商品4",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1005",
+                "name": "合成测试商品5",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1006",
+                "name": "合成测试商品6",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1007",
+                "name": "合成测试商品7",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1008",
+                "name": "合成测试商品8",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1009",
+                "name": "合成测试商品9",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1010",
+                "name": "合成测试商品10",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1011",
+                "name": "合成测试商品11",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1012",
+                "name": "合成测试商品12",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1013",
+                "name": "合成测试商品13",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1014",
+                "name": "合成测试商品14",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1015",
+                "name": "合成测试商品15",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1016",
+                "name": "合成测试商品16",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1017",
+                "name": "合成测试商品17",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1018",
+                "name": "合成测试商品18",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1019",
+                "name": "合成测试商品19",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1020",
+                "name": "合成测试商品20",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1021",
+                "name": "合成测试商品21",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1022",
+                "name": "合成测试商品22",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1023",
+                "name": "合成测试商品23",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1024",
+                "name": "合成测试商品24",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1025",
+                "name": "合成测试商品25",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1026",
+                "name": "合成测试商品26",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1027",
+                "name": "合成测试商品27",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1028",
+                "name": "合成测试商品28",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1029",
+                "name": "合成测试商品29",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1030",
+                "name": "合成测试商品30",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1031",
+                "name": "合成测试商品31",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1032",
+                "name": "合成测试商品32",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1033",
+                "name": "合成测试商品33",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1034",
+                "name": "合成测试商品34",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1035",
+                "name": "合成测试商品35",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1036",
+                "name": "合成测试商品36",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1037",
+                "name": "合成测试商品37",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1038",
+                "name": "合成测试商品38",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1039",
+                "name": "合成测试商品39",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1040",
+                "name": "合成测试商品40",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1041",
+                "name": "合成测试商品41",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1042",
+                "name": "合成测试商品42",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1043",
+                "name": "合成测试商品43",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1044",
+                "name": "合成测试商品44",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1045",
+                "name": "合成测试商品45",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1046",
+                "name": "合成测试商品46",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1047",
+                "name": "合成测试商品47",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1048",
+                "name": "合成测试商品48",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1049",
+                "name": "合成测试商品49",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1050",
+                "name": "合成测试商品50",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1051",
+                "name": "合成测试商品51",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1052",
+                "name": "合成测试商品52",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1053",
+                "name": "合成测试商品53",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1054",
+                "name": "合成测试商品54",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1055",
+                "name": "合成测试商品55",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1056",
+                "name": "合成测试商品56",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1057",
+                "name": "合成测试商品57",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1058",
+                "name": "合成测试商品58",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1059",
+                "name": "合成测试商品59",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1060",
+                "name": "合成测试商品60",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1061",
+                "name": "合成测试商品61",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1062",
+                "name": "合成测试商品62",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1063",
+                "name": "合成测试商品63",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1064",
+                "name": "合成测试商品64",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1065",
+                "name": "合成测试商品65",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1066",
+                "name": "合成测试商品66",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1067",
+                "name": "合成测试商品67",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1068",
+                "name": "合成测试商品68",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1069",
+                "name": "合成测试商品69",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1070",
+                "name": "合成测试商品70",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1071",
+                "name": "合成测试商品71",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1072",
+                "name": "合成测试商品72",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1073",
+                "name": "合成测试商品73",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1074",
+                "name": "合成测试商品74",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1075",
+                "name": "合成测试商品75",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1076",
+                "name": "合成测试商品76",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1077",
+                "name": "合成测试商品77",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1078",
+                "name": "合成测试商品78",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1079",
+                "name": "合成测试商品79",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1080",
+                "name": "合成测试商品80",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1081",
+                "name": "合成测试商品81",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1082",
+                "name": "合成测试商品82",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1083",
+                "name": "合成测试商品83",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1084",
+                "name": "合成测试商品84",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1085",
+                "name": "合成测试商品85",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1086",
+                "name": "合成测试商品86",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1087",
+                "name": "合成测试商品87",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1088",
+                "name": "合成测试商品88",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1089",
+                "name": "合成测试商品89",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1090",
+                "name": "合成测试商品90",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1091",
+                "name": "合成测试商品91",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1092",
+                "name": "合成测试商品92",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1093",
+                "name": "合成测试商品93",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1094",
+                "name": "合成测试商品94",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1095",
+                "name": "合成测试商品95",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1096",
+                "name": "合成测试商品96",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1097",
+                "name": "合成测试商品97",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1098",
+                "name": "合成测试商品98",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1099",
+                "name": "合成测试商品99",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1100",
+                "name": "合成测试商品100",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1101",
+                "name": "合成测试商品101",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1102",
+                "name": "合成测试商品102",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1103",
+                "name": "合成测试商品103",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1104",
+                "name": "合成测试商品104",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1105",
+                "name": "合成测试商品105",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1106",
+                "name": "合成测试商品106",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1107",
+                "name": "合成测试商品107",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1108",
+                "name": "合成测试商品108",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1109",
+                "name": "合成测试商品109",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1110",
+                "name": "合成测试商品110",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1111",
+                "name": "合成测试商品111",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1112",
+                "name": "合成测试商品112",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1113",
+                "name": "合成测试商品113",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1114",
+                "name": "合成测试商品114",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1115",
+                "name": "合成测试商品115",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1116",
+                "name": "合成测试商品116",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1117",
+                "name": "合成测试商品117",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1118",
+                "name": "合成测试商品118",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1119",
+                "name": "合成测试商品119",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1120",
+                "name": "合成测试商品120",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1121",
+                "name": "合成测试商品121",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1122",
+                "name": "合成测试商品122",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1123",
+                "name": "合成测试商品123",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1124",
+                "name": "合成测试商品124",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              },
+              {
+                "sku": "1125",
+                "name": "合成测试商品125",
+                "warehouse": "山东仓",
+                "quantity": 23,
+                "amount": 184,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货23.；净需求23."
+              }
+            ],
+            "stores": [
+              {
+                "store": "A",
+                "name": "测试A",
+                "state": "已完成",
+                "summary": {
+                  "rows": 125,
+                  "local": 0,
+                  "issues": 0,
+                  "calculable": 125,
+                  "positive": 124,
+                  "amount": 22816.0,
+                  "calculated_positive": 125,
+                  "calculated_amount": 23000.0,
+                  "excluded": 1,
+                  "excluded_positive": 1,
+                  "excluded_amount": 184.0,
+                  "unpriced": 0,
+                  "candidate_amount": 22816.0,
+                  "must_amount": 0.0,
+                  "must_candidate_amount": 0.0,
+                  "budget_deferred": 0,
+                  "holding_gaps": 0,
+                  "exception": 0,
+                  "extra": 0
+                }
+              }
+            ]
+          }
+        },
+        {
+          "days": 7,
+          "task_id": "784e784088494b4795e4d61d3050f12e",
+          "result": {
+            "items": [
+              {
+                "sku": "1001",
+                "name": "合成测试商品1",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1002",
+                "name": "合成测试商品2",
+                "warehouse": "山东仓",
+                "quantity": 0,
+                "amount": 0,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "默认不补：商品资料禁用；计算结果仅供参考"
+              },
+              {
+                "sku": "1003",
+                "name": "合成测试商品3",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1004",
+                "name": "合成测试商品4",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1005",
+                "name": "合成测试商品5",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1006",
+                "name": "合成测试商品6",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1007",
+                "name": "合成测试商品7",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1008",
+                "name": "合成测试商品8",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1009",
+                "name": "合成测试商品9",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1010",
+                "name": "合成测试商品10",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1011",
+                "name": "合成测试商品11",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1012",
+                "name": "合成测试商品12",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1013",
+                "name": "合成测试商品13",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1014",
+                "name": "合成测试商品14",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1015",
+                "name": "合成测试商品15",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1016",
+                "name": "合成测试商品16",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1017",
+                "name": "合成测试商品17",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1018",
+                "name": "合成测试商品18",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1019",
+                "name": "合成测试商品19",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1020",
+                "name": "合成测试商品20",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1021",
+                "name": "合成测试商品21",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1022",
+                "name": "合成测试商品22",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1023",
+                "name": "合成测试商品23",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1024",
+                "name": "合成测试商品24",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1025",
+                "name": "合成测试商品25",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1026",
+                "name": "合成测试商品26",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1027",
+                "name": "合成测试商品27",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1028",
+                "name": "合成测试商品28",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1029",
+                "name": "合成测试商品29",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1030",
+                "name": "合成测试商品30",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1031",
+                "name": "合成测试商品31",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1032",
+                "name": "合成测试商品32",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1033",
+                "name": "合成测试商品33",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1034",
+                "name": "合成测试商品34",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1035",
+                "name": "合成测试商品35",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1036",
+                "name": "合成测试商品36",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1037",
+                "name": "合成测试商品37",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1038",
+                "name": "合成测试商品38",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1039",
+                "name": "合成测试商品39",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1040",
+                "name": "合成测试商品40",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1041",
+                "name": "合成测试商品41",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1042",
+                "name": "合成测试商品42",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1043",
+                "name": "合成测试商品43",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1044",
+                "name": "合成测试商品44",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1045",
+                "name": "合成测试商品45",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1046",
+                "name": "合成测试商品46",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1047",
+                "name": "合成测试商品47",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1048",
+                "name": "合成测试商品48",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1049",
+                "name": "合成测试商品49",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1050",
+                "name": "合成测试商品50",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1051",
+                "name": "合成测试商品51",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1052",
+                "name": "合成测试商品52",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1053",
+                "name": "合成测试商品53",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1054",
+                "name": "合成测试商品54",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1055",
+                "name": "合成测试商品55",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1056",
+                "name": "合成测试商品56",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1057",
+                "name": "合成测试商品57",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1058",
+                "name": "合成测试商品58",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1059",
+                "name": "合成测试商品59",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1060",
+                "name": "合成测试商品60",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1061",
+                "name": "合成测试商品61",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1062",
+                "name": "合成测试商品62",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1063",
+                "name": "合成测试商品63",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1064",
+                "name": "合成测试商品64",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1065",
+                "name": "合成测试商品65",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1066",
+                "name": "合成测试商品66",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1067",
+                "name": "合成测试商品67",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1068",
+                "name": "合成测试商品68",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1069",
+                "name": "合成测试商品69",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1070",
+                "name": "合成测试商品70",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1071",
+                "name": "合成测试商品71",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1072",
+                "name": "合成测试商品72",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1073",
+                "name": "合成测试商品73",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1074",
+                "name": "合成测试商品74",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1075",
+                "name": "合成测试商品75",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1076",
+                "name": "合成测试商品76",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1077",
+                "name": "合成测试商品77",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1078",
+                "name": "合成测试商品78",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1079",
+                "name": "合成测试商品79",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1080",
+                "name": "合成测试商品80",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1081",
+                "name": "合成测试商品81",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1082",
+                "name": "合成测试商品82",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1083",
+                "name": "合成测试商品83",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1084",
+                "name": "合成测试商品84",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1085",
+                "name": "合成测试商品85",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1086",
+                "name": "合成测试商品86",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1087",
+                "name": "合成测试商品87",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1088",
+                "name": "合成测试商品88",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1089",
+                "name": "合成测试商品89",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1090",
+                "name": "合成测试商品90",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1091",
+                "name": "合成测试商品91",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1092",
+                "name": "合成测试商品92",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1093",
+                "name": "合成测试商品93",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1094",
+                "name": "合成测试商品94",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1095",
+                "name": "合成测试商品95",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1096",
+                "name": "合成测试商品96",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1097",
+                "name": "合成测试商品97",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1098",
+                "name": "合成测试商品98",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1099",
+                "name": "合成测试商品99",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1100",
+                "name": "合成测试商品100",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1101",
+                "name": "合成测试商品101",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1102",
+                "name": "合成测试商品102",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1103",
+                "name": "合成测试商品103",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1104",
+                "name": "合成测试商品104",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1105",
+                "name": "合成测试商品105",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1106",
+                "name": "合成测试商品106",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1107",
+                "name": "合成测试商品107",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1108",
+                "name": "合成测试商品108",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1109",
+                "name": "合成测试商品109",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1110",
+                "name": "合成测试商品110",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1111",
+                "name": "合成测试商品111",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1112",
+                "name": "合成测试商品112",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1113",
+                "name": "合成测试商品113",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1114",
+                "name": "合成测试商品114",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1115",
+                "name": "合成测试商品115",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1116",
+                "name": "合成测试商品116",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1117",
+                "name": "合成测试商品117",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1118",
+                "name": "合成测试商品118",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1119",
+                "name": "合成测试商品119",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1120",
+                "name": "合成测试商品120",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1121",
+                "name": "合成测试商品121",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1122",
+                "name": "合成测试商品122",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1123",
+                "name": "合成测试商品123",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1124",
+                "name": "合成测试商品124",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              },
+              {
+                "sku": "1125",
+                "name": "合成测试商品125",
+                "warehouse": "山东仓",
+                "quantity": 27,
+                "amount": 216,
+                "monthly_sales": 60,
+                "available": 3,
+                "in_transit": 0,
+                "reason": "三段日均一致；月销达到10.，新增资金层退出；实际补货27.；净需求27."
+              }
+            ],
+            "stores": [
+              {
+                "store": "A",
+                "name": "测试A",
+                "state": "已完成",
+                "summary": {
+                  "rows": 125,
+                  "local": 0,
+                  "issues": 0,
+                  "calculable": 125,
+                  "positive": 124,
+                  "amount": 26784.0,
+                  "calculated_positive": 125,
+                  "calculated_amount": 27000.0,
+                  "excluded": 1,
+                  "excluded_positive": 1,
+                  "excluded_amount": 216.0,
+                  "unpriced": 0,
+                  "candidate_amount": 26784.0,
+                  "must_amount": 0.0,
+                  "must_candidate_amount": 0.0,
+                  "budget_deferred": 0,
+                  "holding_gaps": 0,
+                  "exception": 0,
+                  "extra": 0
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "exact_business_differences": 0,
+      "other_store_unchanged": true
+    },
+    {
+      "case": "stop",
+      "passed": true,
+      "states": [
+        {
+          "code": "B",
+          "name": "测试B",
+          "state": "已完成",
+          "error": ""
+        },
+        {
+          "code": "A",
+          "name": "测试A",
+          "state": "已停止",
+          "error": "未启动，可重新计算"
+        }
+      ]
+    },
+    {
+      "case": "retry",
+      "passed": true,
+      "retried": [
+        "A"
+      ],
+      "root_order": [
+        "B",
+        "A"
+      ]
+    },
+    {
+      "case": "adopt",
+      "passed": true,
+      "adopted": true,
+      "saved_defaults_drafts_orders": false
+    },
+    {
+      "case": "history",
+      "passed": true,
+      "order_id": "BH-20261105-A-ZC-SD",
+      "revision": 2
+    },
+    {
+      "case": "scheduled",
+      "passed": true,
+      "read_only": true,
+      "populated_run_validation": "refresh-report.json"
+    }
+  ],
+  "ui": [
+    "Modeless window permits real MCP requests",
+    "Copy binds exact state",
+    "Business preview hides protocol fields",
+    "Comparison requires one exact store and its supplying warehouse",
+    "Manual changes reject stale copy"
+  ]
+}
