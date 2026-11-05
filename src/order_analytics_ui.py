@@ -59,7 +59,7 @@ class AnalyticsWidget(QWidget):
         row=QHBoxLayout();row.addWidget(button('← 返回全部',self.back));row.addWidget(button('◀ 上一页',lambda:self.turn(-1)));row.addWidget(button('下一页 ▶',lambda:self.turn(1)));self.page_note=label('');row.addWidget(self.page_note,1)
         row.addWidget(button('清空订单勾选',self.clear_selected));v.addLayout(row)
         row=QHBoxLayout();self.export_kind=QComboBox()
-        for title,k in [('门店经营对比','store'),('订单漏斗明细','order'),('当前商品明细','detail')]:self.export_kind.addItem(title,k)
+        for title,k in [('门店漏斗监控（模板样式）','store'),('订单漏斗监控（模板样式）','order'),('当前商品明细','detail')]:self.export_kind.addItem(title,k)
         row.addWidget(self.export_kind);self.export_btn=button('导出当前范围',lambda:self.export(False),True);row.addWidget(self.export_btn)
         self.selected_btn=button('导出所选订单',lambda:self.export(True));row.addWidget(self.selected_btn)
         row.addWidget(button('保存常用视图',self.save_view));row.addWidget(button('复制 AI 分析指令',self.copy_prompt));self.cancel_btn=button('■ 停止当前任务',self.cancel);row.addWidget(self.cancel_btn);v.addLayout(row)
