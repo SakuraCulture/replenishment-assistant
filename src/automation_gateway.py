@@ -204,6 +204,27 @@ class Gateway(QObject):
         from parameter_guidance import catalog
         return catalog(args)
 
+    def query_order_funnel(self, args):
+        from automation_analytics import query
+        return query(self,args)
+
+    def order_funnel_results(self, args):
+        from automation_analytics import results
+        return results(self,args)
+
+    def export_order_funnel(self, args):
+        from automation_analytics import export
+        return export(self,args)
+
+    def store_history_review(self, args):
+        from automation_analytics import require
+        from automation_queries import page
+        report=require(self,args['task_id'])
+        review=report['history']
+        rows=review['items']
+        if args.get('store'):rows=[r for r in rows if r['store']==args['store']]
+        return {k:v for k,v in review.items() if k!='items'}|{'page':page(rows,args.get('offset',0),args.get('limit',50))}
+
     def scheduled_run_status(self, args):
         from automation_queries import scheduled_status
         return scheduled_status(self.host.work_repository.path, args)

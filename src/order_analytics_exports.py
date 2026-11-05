@@ -49,6 +49,8 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
                      ('门店分仓对比',SUMMARY_HEADERS,list(summary_rows(service.summaries(rows,'warehouse'))))])
     if level!='detail':tabs.append(('订单五段漏斗',SUMMARY_HEADERS,list(summary_rows(service.summaries(rows,'order')))))
     tabs.extend([('全量商品五段',DETAIL_HEADERS,list(detail_rows(included))),('资料待核',DETAIL_HEADERS,list(detail_rows(pending)))])
+    from history_diagnostics import HEADERS,review,table
+    tabs.append(('多轮证据复盘',HEADERS,table(review({**report,'rows':rows},report['query'].get('rounds',8)))))
     notes=[['分析口径版本',service.VERSION],['查询快照',report['snapshot_id']],['数据截至',report['as_of']],
            ['业务开始日',report['query']['from']],['业务结束日',report['query']['to']],
            ['导出范围','勾选订单：'+'、'.join(orders) if orders else '当前成功查询的全部分页'],

@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 from PySide6.QtCore import Qt, QTimer, QSignalBlocker
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QLineEdit,QComboBox,QTabWidget,
-    QProgressBar,QMessageBox,QInputDialog,QTableWidget,QTableWidgetItem,QAbstractItemView)
+    QProgressBar,QMessageBox,QInputDialog,QTableWidget,QTableWidgetItem,QAbstractItemView,QSpinBox)
 from ui_controls import button,label
 from business_ui import grid
 from ui_tasks import Worker
@@ -27,12 +27,13 @@ class AnalyticsWidget(QWidget):
         v.addWidget(label('模型建议 → 签发 → 门店确认 → 实际下单 → 实际收货；按签发价比较，付款实际金额另列。','muted'))
         f=QHBoxLayout();self.start=QLineEdit(date.today().isoformat());self.end=QLineEdit(date.today().isoformat())
         for title,edit in [('业务日期',self.start),('至',self.end)]:f.addWidget(label(title));edit.setMaximumWidth(130);f.addWidget(edit)
-        for days,text in ((1,'今天'),(7,'近7天'),(30,'近30天')):f.addWidget(button(text,lambda checked=False,n=days:self.set_dates(n)))
+        for days,text in ((1,'今天'),(7,'近7天'),(30,'近30天'),(90,'多轮复盘·近90天')):f.addWidget(button(text,lambda checked=False,n=days:self.set_dates(n)))
         self.views=QComboBox();self.views.addItem('常用视图',None);f.addWidget(self.views,1);self.views.activated.connect(self.load_view);v.addLayout(f)
         f=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('搜索门店名称、订单号、商品名称或编码');self.search.setClearButtonEnabled(True);f.addWidget(self.search,2)
         self.stores=QLineEdit();self.stores.setPlaceholderText('门店编码，逗号分隔；留空全部');f.addWidget(self.stores,1)
         self.warehouse=QComboBox();self.warehouse.addItems(['全部仓','河北仓','山东仓']);f.addWidget(self.warehouse)
         self.group=QComboBox();self.group.addItems(['全部属性',*service.GROUPS]);f.addWidget(self.group)
+        self.rounds=QSpinBox();self.rounds.setRange(1,30);self.rounds.setValue(8);self.rounds.setSuffix('轮复盘');f.addWidget(self.rounds);self.rounds.valueChanged.connect(self.dirty)
         self.query_btn=button('查询',self.query,True);f.addWidget(self.query_btn);v.addLayout(f)
         self.applied=label('先查询；无需计算本次补货，也无需启用 AI。','muted');v.addWidget(self.applied)
         for edit in (self.start,self.end,self.search,self.stores):edit.textChanged.connect(self.dirty);edit.returnPressed.connect(self.query)
@@ -46,7 +47,7 @@ class AnalyticsWidget(QWidget):
         v.addWidget(self.funnel)
         self.crumb=label('全部查询结果','section');v.addWidget(self.crumb)
         self.tabs=QTabWidget();self.tables={};self.models={}
-        for key,title in [('store','门店汇总'),('warehouse','门店分仓'),('order','订单漏斗'),('detail','商品明细'),('pending','资料待核')]:
+        for key,title in [('store','门店汇总'),('warehouse','门店分仓'),('order','订单漏斗'),('detail','商品明细'),('pending','资料待核'),('history','多轮复盘')]:
             table,model=grid(self,[]);self.tables[key]=table;self.models[key]=model;self.tabs.addTab(table,title)
             table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
             if key in ('store','warehouse','order'):table.doubleClicked.connect(lambda idx,k=key:self.open_detail(k,idx.row()))
@@ -58,7 +59,7 @@ class AnalyticsWidget(QWidget):
         for title,k in [('门店经营对比','store'),('订单漏斗明细','order'),('当前商品明细','detail')]:self.export_kind.addItem(title,k)
         row.addWidget(self.export_kind);self.export_btn=button('导出当前范围',lambda:self.export(False),True);row.addWidget(self.export_btn)
         self.selected_btn=button('导出所选订单',lambda:self.export(True));row.addWidget(self.selected_btn)
-        row.addWidget(button('保存常用视图',self.save_view));self.cancel_btn=button('■ 停止当前任务',self.cancel);row.addWidget(self.cancel_btn);v.addLayout(row)
+        row.addWidget(button('保存常用视图',self.save_view));row.addWidget(button('复制 AI 分析指令',self.copy_prompt));self.cancel_btn=button('■ 停止当前任务',self.cancel);row.addWidget(self.cancel_btn);v.addLayout(row)
         self.timer=QTimer(self);self.timer.setInterval(1000);self.timer.timeout.connect(self.heartbeat);self.ticks=0
         self.load_views();self.controls()
 
@@ -66,7 +67,7 @@ class AnalyticsWidget(QWidget):
         return service.query_spec({'from':self.start.text().strip(),'to':self.end.text().strip(),
             'stores':[s.strip() for s in self.stores.text().replace('，',',').split(',') if s.strip()],
             'warehouse':self.warehouse.currentText() if self.warehouse.currentIndex() else '',
-            'group':self.group.currentText() if self.group.currentIndex() else '', 'search':self.search.text().strip()})
+            'group':self.group.currentText() if self.group.currentIndex() else '', 'search':self.search.text().strip(),'rounds':self.rounds.value()})
 
     def set_dates(self,days):
         self.end.setText(date.today().isoformat());self.start.setText((date.today()-timedelta(days=days-1)).isoformat())
@@ -122,7 +123,7 @@ class AnalyticsWidget(QWidget):
             self.funnel.setRowHeight(i,46)
         self.render();self.controls()
 
-    def key(self):return ('store','warehouse','order','detail','pending')[self.tabs.currentIndex()]
+    def key(self):return ('store','warehouse','order','detail','pending','history')[self.tabs.currentIndex()]
 
     def visible_rows(self):
         rows=self.report['rows'] if self.report else []
@@ -138,6 +139,12 @@ class AnalyticsWidget(QWidget):
             self.display_items=items
             headers=['门店','供货仓','补货单号',*[service.NAMES[s]+'货值' for s in service.STAGES],'必采签发货值','非必采签发货值','待核条目']
             values=[[i['name'],i['warehouse'],i['order'],*[i['metrics']['stages'][s]['value'] for s in service.STAGES],i['groups']['必采']['stages']['signed']['value'],i['groups']['非必采']['stages']['signed']['value'],i['metrics']['pending']] for i in items]
+        elif key=='history':
+            from history_diagnostics import HEADERS,table
+            headers=HEADERS;review=self.report['history'] if self.report else {'items':[]}
+            items=review['items']
+            if self.drill:items=[i for i in items if all(i.get(k)==value for k,value in self.drill.items() if k!='order')]
+            values=table({'items':items})
         else:
             scoped=[r for r in rows if r['scope']==('待核' if key=='pending' else '纳入')]
             headers=exports.DETAIL_HEADERS;values=scoped
@@ -197,6 +204,16 @@ class AnalyticsWidget(QWidget):
             for view in self.saved_views:self.views.addItem(view['name'],view)
         except Exception as exc:self.note.setText('常用视图读取失败，可继续查询：'+str(exc))
 
+    def copy_prompt(self):
+        from PySide6.QtWidgets import QApplication
+        gateway=getattr(self.host,'automation',None)
+        if not gateway or not gateway.enabled:
+            QMessageBox.information(self,'请先启用本机连接','经营分析无需 AI 即可使用；复制 AI 指令前请到“AI 协助”启用本机连接。');return
+        if not self.report:QMessageBox.information(self,'先明确范围','请先成功查询需要的业务日期和门店范围。');return
+        scope={'instance_id':gateway.instance,'business_date':self.host.job_day,'context_token':gateway.token(),'query':self.report['query']}
+        prompt='请使用补货助手 MCP 查询下列范围的五段经营漏斗，分别说明必采、非必采、属性待核的表现，并导出门店经营对比 Excel 到软件已配置目录。\n'+json.dumps(scope,ensure_ascii=False,indent=2)+'\n先核对 workbench_context 的实例、业务日期和 context_token，不一致就停止。用新的 operation_key 调用 query_order_funnel；task_status 确认完成后调用 order_funnel_results，按 next_offset 读完，每页不超过100。区分未导入和0，不把不同可比范围直接相减。再用返回的 task_id 和 snapshot_id 调用 export_order_funnel（level=store），等待任务完成后给出文件和实际范围。只读与写本地报表，不计算、不采用、不签发、不修改参数、不采购、不删除。连接不可用不读本机数据库绕过。'
+        QApplication.clipboard().setText(prompt);self.note.setText('已复制 AI 分析与导出指令；尚未执行或发送任何任务。')
+
     def save_view(self):
         try:spec=self.spec()
         except ValueError as exc:QMessageBox.warning(self,'无法保存视图',str(exc));return
@@ -215,6 +232,7 @@ class AnalyticsWidget(QWidget):
         if view.get('rolling_days'):self.set_dates(view['rolling_days'])
         self.stores.setText(','.join(q.get('stores',[])));self.search.setText(q.get('search',''))
         self.warehouse.setCurrentText(q.get('warehouse') or '全部仓');self.group.setCurrentText(q.get('group') or '全部属性')
+        self.rounds.setValue(q.get('rounds',8))
 
 
 def open_analytics(host):

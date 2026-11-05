@@ -41,7 +41,7 @@ def digest(value):
 
 
 def query_spec(spec):
-    allowed = {'from','to','stores','orders','warehouse','group','search','category'}
+    allowed = {'from','to','stores','orders','warehouse','group','search','category','rounds'}
     if set(spec)-allowed: raise ValueError('存在未开放的分析筛选字段')
     out = {**spec}
     for k in ('from','to'):
@@ -55,6 +55,7 @@ def query_spec(spec):
         out[key] = list(dict.fromkeys(values))
     if out.get('warehouse') not in (None, '', '山东仓', '河北仓'): raise ValueError('未知供货仓')
     if out.get('group') not in (None, '', *GROUPS): raise ValueError('未知必采分组')
+    if type(out.get('rounds',8)) is not int or not 1<=out.get('rounds',8)<=30:raise ValueError('复盘轮数须在1至30之间')
     return out
 
 
@@ -232,10 +233,32 @@ def summaries(rows,level):
              'groups':{g:aggregate([r for r in rs if r['group']==g]) for g in GROUPS}} for key,rs in groups.items()]
 
 
+def data_stamp(db,spec):
+    """Lightweight business-index check, excluding unrelated AI task journal writes."""
+    tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if 'normal_orders' not in tables:return digest([])
+    selection='SELECT oid FROM normal_orders WHERE day>=? AND day<=?'
+    args=(spec['from'],spec['to'])
+    values=[db.execute('SELECT o.oid,o.day,o.store,o.current,r.digest FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid AND r.revision=o.current WHERE o.day>=? AND o.day<=? ORDER BY o.oid',args).fetchall()]
+    for table,columns,order in [('lifecycle_versions','oid,revision,warehouse,stage,version,digest','oid,revision,warehouse,stage,version'),
+                               ('archive_visibility','oid,warehouse,deleted,token','oid,warehouse'),
+                               ('merchant_feedback','oid,revision,version,payload','oid,revision,version')]:
+        values.append(db.execute(f'SELECT {columns} FROM {table} WHERE oid IN ({selection}) ORDER BY {order}',args).fetchall() if table in tables else [])
+    return digest(values)
+
+
+def validate_basis(path,report):
+    with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
+        db.execute('BEGIN')
+        if data_stamp(db,report['query'])!=report['data_stamp']:
+            raise ValueError('订单或履约数据已更新，请重新查询；原报告数据未混入本次结果')
+
+
 def collect(path, spec, progress=lambda _:None, cancel=None):
     spec=query_spec(spec);path=Path(path).resolve();rows=[];tokens=[];heads=[]
     with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as db:
         db.execute('BEGIN')
+        stamp=data_stamp(db,spec)
         if not db.execute("SELECT 1 FROM sqlite_master WHERE name='normal_orders'").fetchone():
             records=[]
         else:
@@ -271,10 +294,13 @@ def collect(path, spec, progress=lambda _:None, cancel=None):
         if set(spec['stores'])-seen_stores:raise ValueError('所选门店在日期和仓范围内没有有效签发：'+'、'.join(sorted(set(spec['stores'])-seen_stores)))
         if set(spec['orders'])-seen_orders:raise ValueError('所选订单不存在、已删除或不在查询范围，请重新查询')
     checkpoint(cancel)
-    return {'schema':VERSION,'query':spec,'as_of':datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds'),
-            'snapshot_id':digest([VERSION,spec,tokens,rows]),'heads':heads,'rows':rows,
+    report={'schema':VERSION,'query':spec,'as_of':datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds'),
+            'snapshot_id':digest([VERSION,spec,tokens,rows]),'data_stamp':stamp,'heads':heads,'rows':rows,
             'metrics':aggregate(rows),'groups':{g:aggregate([r for r in rows if r['group']==g]) for g in GROUPS},
             'stores':summaries(rows,'store'),'warehouses':summaries(rows,'warehouse'),'orders':summaries(rows,'order')}
+    from history_diagnostics import review
+    report['history']=review(report,spec.get('rounds',8))
+    return report
 
 
 def validate_snapshot(path, report, progress=lambda _:None,cancel=None):

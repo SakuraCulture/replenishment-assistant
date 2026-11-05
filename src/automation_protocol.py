@@ -29,7 +29,17 @@ PAGE = {'offset': {'type': 'integer', 'minimum': 0}, 'limit': {'type': 'integer'
 TASK = {'task_id': TEXT}
 CHANGE = obj({'store': TEXT, 'path': {'type': 'array', 'items': {'type': ['string', 'integer']}, 'minItems': 2, 'maxItems': 3},
               'value': {'type': ['number', 'string']}}, ['store', 'path', 'value'])
+ANALYTICS_QUERY = obj({'from':TEXT,'to':TEXT,'stores':LIST,'orders':LIST,'warehouse':{'type':'string','enum':['','山东仓','河北仓']},
+    'group':{'type':'string','enum':['','必采','非必采','属性待核']},'search':{'type':'string'},'category':TEXT,'rounds':{'type':'integer','minimum':1,'maximum':30}},['from','to'])
 TOOLS = [
+    ('store_history_review','只读复盘指定经营分析快照的连续多轮签发和履约证据。轮次按不同业务日期计数；缺货原因证据与参数假设分开。先query_order_funnel取得所需日期范围，不自动改参数。',
+     obj({**TASK,'store':TEXT,**PAGE},['task_id'])),
+    ('query_order_funnel','只读查询五段经营漏斗，按签发业务日期和精确门店/订单范围。异步返回task_id，task_status完成后用order_funnel_results分页。包含必采/非必采与资料待核，排除禁采/对应仓禁用/淘汰品。不执行计算。',
+     obj({'context_token':TEXT,'operation_key':TEXT,'query':ANALYTICS_QUERY},['context_token','operation_key','query'])),
+    ('order_funnel_results','读取已完成经营分析的门店、分仓、订单或商品分页。数量金额以服务为准，未导入不按0；next_offset为空才读完。返回中文业务口径。',
+     obj({**TASK,'level':{'type':'string','enum':['store','warehouse','order','detail','pending']},'store':TEXT,'order':TEXT,**PAGE},['task_id'])),
+    ('export_order_funnel','导出已核对范围的五段漏斗Excel，与原生经营分析相同。只写本地报表；directory可省略以使用配置导出位置。不签发、不修改订单、不发送文件。',
+     obj({**TASK,'snapshot_id':TEXT,'context_token':TEXT,'operation_key':TEXT,'directory':TEXT,'level':{'type':'string','enum':['store','order','detail']},'orders':LIST},['task_id','snapshot_id','context_token','operation_key'])),
     ('workbench_context', '查看当前工作台、已启用范围、业务日期和任务。先调用以取得 context_token。', obj()),
     ('parameter_definitions', '查询参数业务含义、调整影响、合法范围、依赖与AI可改范围；调参前先读说明。模板路径须用实际门店参数路径替换。只读，不修改配置。',
      obj({'group': {'type':'string','enum':['all','warehouses','weight_profiles','profile_parameters','parameters','policies','category_profiles']}, 'search':{'type':'string'}, **PAGE})),
@@ -94,7 +104,7 @@ def validate_call(name, arguments):
 
 
 def public_tools():
-    readonly = {'workbench_context', 'parameter_definitions', 'find_resources', 'effective_parameters', 'task_status', 'scheduled_run_status', 'calculation_results', 'explain_decision'}
+    readonly = {'workbench_context', 'parameter_definitions', 'find_resources', 'effective_parameters', 'task_status', 'scheduled_run_status', 'calculation_results', 'explain_decision', 'query_order_funnel', 'order_funnel_results', 'store_history_review'}
     return [{'name': n, 'description': d, 'inputSchema': s, 'annotations': {
         'readOnlyHint': n in readonly, 'destructiveHint': False, 'openWorldHint': False}}
         for n, d, s in TOOLS]
