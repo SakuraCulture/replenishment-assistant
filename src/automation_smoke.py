@@ -55,7 +55,18 @@ def start_smoke(app, win, args):
             win.loaded_ok(fixture())
             for code in ('A', 'B'): win.store_widgets[code]['mode'].setCurrentIndex(1)
             win.automation.enable(); m = MCP()
-            require(len(m.send('tools/list', {})['result']['tools']) == 14, 'Missing tools')
+            names={t['name'] for t in m.send('tools/list', {})['result']['tools']}
+            require(len(names)==22 and {'query_order_funnel','export_order_funnel','start_stock_diagnosis','adopt_stock_diagnosis'}<=names,'Missing tools')
+            import work_repository as wr
+            q=m.call('query_order_funnel',{'context_token':m.call('workbench_context')['context_token'],'operation_key':'empty-funnel','query':{'from':wr.today(),'to':wr.today()}})
+            wait(lambda:win.automation.worker is None)
+            require(m.call('order_funnel_results',{'task_id':q['task_id']})['page']['total']==0,'Empty database invented orders')
+            trial=m.call('start_stock_diagnosis',{'context_token':m.call('workbench_context')['context_token'],'operation_key':'bounded-diagnosis','stores':['B','A'],'categories':['快销']})
+            wait(lambda:win.automation.worker is None,90)
+            trial_state=m.call('task_status',{'task_id':trial['task_id']});require(trial_state['state']=='completed',str(trial_state))
+            diagnosed=m.call('stock_diagnosis_results',{'task_id':trial['task_id'],'candidate':1,'limit':1})
+            require(diagnosed['candidate_count']==2 and not win.results,'Stock trial adopted or incomplete')
+            report['checks'].append('22-tool discovery, empty funnel through actual stdio, probability-only diagnosis through actual stdio; no implicit adoption')
             # Reproduce commit contention in the actual Qt process (including EXE).
             # Only task metadata is retried; the business callback must run once.
             import sqlite3

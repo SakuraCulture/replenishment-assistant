@@ -244,3 +244,10 @@ if version['version'] in {'0.38.0','0.38.1'}:
     for name in names:shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
     (dest/'使用说明.txt').write_text((root/'docs'/names[0]).read_text('utf-8'),encoding='utf-8')
+
+if version['version']=='0.39.0':
+    (dest/'docs').mkdir(exist_ok=True)
+    names=['0.39.0业务使用指南.md','0.39.0经营分析开发记录.md','0.38.1参数业务字典.md','0.38.0AI与CLI查询试算.md','0.35.0AI协助使用与结构.md']
+    for name in names:shutil.copy2(root/'docs'/name,dest/'docs'/name)
+    shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
+    shutil.copy2(root/'docs'/names[0],dest/'使用说明.txt')
