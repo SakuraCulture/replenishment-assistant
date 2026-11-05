@@ -1,0 +1,12 @@
+{
+  "review": {
+    "errors": [],
+    "old_layout_valid": false,
+    "new_layout_is_old": false,
+    "table_valid": true
+  },
+  "poll": {
+    "error": null,
+    "seconds": 0.0
+  }
+}

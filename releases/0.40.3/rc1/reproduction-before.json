@@ -1,0 +1,14 @@
+{
+  "review": {
+    "errors": [
+      "libshiboken: Internal C++ object (PySide6.QtWidgets.QGridLayout) already deleted."
+    ],
+    "old_layout_valid": false,
+    "new_layout_is_old": false,
+    "table_valid": true
+  },
+  "poll": {
+    "error": "OperationalError: database is locked",
+    "seconds": 1.8910000000032596
+  }
+}

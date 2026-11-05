@@ -1,0 +1,13 @@
+test_diff_export_reopen_keeps_table_and_explicit_confirm_semantics (test_gui_maintenance_callbacks.Callbacks.test_diff_export_reopen_keeps_table_and_explicit_confirm_semantics) ... ok
+test_layout_observer_does_not_keep_private_layout_or_dialog_cycle (test_gui_maintenance_callbacks.Callbacks.test_layout_observer_does_not_keep_private_layout_or_dialog_cycle) ... ok
+test_maintenance_poll_performs_no_database_access (test_gui_maintenance_callbacks.Callbacks.test_maintenance_poll_performs_no_database_access) ... ok
+test_maintenance_rejects_running_scheduler_without_mutation (test_gui_maintenance_callbacks.Callbacks.test_maintenance_rejects_running_scheduler_without_mutation) ... ok
+test_read_started_before_maintenance_cannot_launch_queued_run (test_gui_maintenance_callbacks.Callbacks.test_read_started_before_maintenance_cannot_launch_queued_run) ... ok
+test_signature_sets_information_after_table_without_deleted_layout (test_gui_maintenance_callbacks.Callbacks.test_signature_sets_information_after_table_without_deleted_layout) ... ok
+test_sqlite_exclusive_lock_does_not_block_gui_or_raise_modal_and_recovers (test_gui_maintenance_callbacks.Callbacks.test_sqlite_exclusive_lock_does_not_block_gui_or_raise_modal_and_recovers) ... ok
+test_visible_text_change_and_deleted_box_never_reuses_cxx_layout (test_gui_maintenance_callbacks.Callbacks.test_visible_text_change_and_deleted_box_never_reuses_cxx_layout) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 2.546s
+
+OK

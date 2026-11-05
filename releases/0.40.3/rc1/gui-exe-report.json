@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "actual export_current confirmation: table attached, default/escape cancel, cancel leaves signatures absent",
+    "actual export_current: export full differences, reopen same confirmation, confirm, archive V001 and export files; calculations unchanged",
+    "real scheduled manager: maintenance skips reads; exclusive SQLite lock handled off GUI; heartbeat continues; retry succeeds after release",
+    "no unhandled Qt callbacks; timestamped log written in isolated settings"
+  ],
+  "errors": [],
+  "export_files": [
+    "2026-11-05合成门店QA_A（精简版·山东仓）.xlsx",
+    "2026-11-05合成门店QA_A（精简版·河北仓）.xlsx",
+    "2026-11-05合成门店QA_B（精简版·山东仓）.xlsx",
+    "2026-11-05合成门店QA_B（精简版·河北仓）.xlsx"
+  ],
+  "heartbeat_ticks": 155,
+  "max_gap_seconds": 0.25,
+  "app": "补货助手",
+  "version": "0.40.3",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "e8827c6f2e5e734f634b62147b32be8a9dc48351",
+  "build_id": "rc1",
+  "built_at": "2026-11-05T17:12:16.971774+08:00",
+  "source_archive_sha256": "df27b5850dd82fee2a53d0d8fcbd7176f217c2def27380f71406625bce6acf9e",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "e8827c6f2e5e734f634b62147b32be8a9dc48351",
+    "files": 868,
+    "manifest_sha256": "37e5037a05cff598e19a2f3368a1626494ad503e283700a290f7cc4da021819d",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "825ce83e42dfa9130073c635e2b6c4933a0688168599119fd831e5381d4257a5",
+    "files": 8,
+    "source_commit": "e8827c6f2e5e734f634b62147b32be8a9dc48351",
+    "contains_user_state": false
+  },
+  "process_exit": 0,
+  "seconds": 11.54829119995702,
+  "exe_sha256": "f900a8b52dc7b7c64fb30a15172f16f304df0de56185cd9f971277e277b9f0b0"
+}
