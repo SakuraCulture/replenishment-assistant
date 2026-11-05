@@ -1,5 +1,5 @@
 """Read-only current eligibility overview; does not rewrite admission evidence."""
-import json,os,sqlite3,tempfile
+import copy,json,os,sqlite3,tempfile
 from contextlib import closing
 from pathlib import Path
 import admission
@@ -60,7 +60,30 @@ def load(path,known=None,progress=lambda _:None,cancel=None,*,day=None):
             refusals.append([code,name,sku,item.get('name',''),item['reason'],item.get('expires') or '手动解除',state])
         qualifications.append([code,name,qualification_state(q,day),q.get('state','未登记'),q.get('reviewer',''),q.get('verified_on') or '',q.get('expires') or '',active,q.get('note','')])
         if n%100==0:progress(f'已整理 {n}/{len(names)} 家门店')
-    return {'day':day,'names':names,'qualification':qualifications,'refusals':refusals,'warnings':warnings}
+    return {'day':day,'names':names,'qualification':qualifications,'refusals':refusals,'warnings':warnings,'records':records}
+
+
+def prepare_release(data,keys,progress=lambda _:None,cancel=None):
+    """Freeze an exact store/SKU selection against the displayed read snapshot."""
+    selected=list(dict.fromkeys(tuple(k) for k in keys));old={};new={};rows=[]
+    if not selected:raise ValueError('请先勾选要解除的门店商品')
+    for n,(store,sku) in enumerate(selected,1):
+        checkpoint(cancel)
+        record=data['records'].get(store,{})
+        item=record.get('refusals',{}).get(sku)
+        if not item or not item.get('active',True):raise ValueError('记录已不存在或已解除，请刷新后重选：'+store+' / '+sku)
+        if store not in old:old[store]=copy.deepcopy(record);new[store]=copy.deepcopy(record)
+        new[store]['refusals'][sku]['active']=False
+        rows.append([store,data['names'].get(store,''),sku,item.get('name',''),item['reason'],item.get('expires') or '手动解除',refusal_state(item,data['day']),'已解除'])
+        if n%200==0:progress(f'正在核对解除范围 {n}/{len(selected)} 条…')
+    return {'expected':old,'values':new,'rows':rows,'count':len(selected),'stores':list(old)}
+
+
+def commit_release(path,prepared,progress=lambda _:None,cancel=None):
+    checkpoint(cancel);progress(f'正在提交 {prepared["count"]} 条解除记录（{len(prepared["stores"])} 家门店），请等待提交结束…')
+    admission.save(path,prepared['values'],prepared['expected'])
+    progress(f'已解除 {prepared["count"]} 条；正在刷新列表…')
+    return {'count':prepared['count'],'stores':prepared['stores']}
 
 
 def select_rows(rows,kind,state='全部',text='',focus=None):

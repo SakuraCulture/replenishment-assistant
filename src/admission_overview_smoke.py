@@ -82,6 +82,9 @@ def start_smoke(app,win,args):
                 wb=load_workbook(export);require(wb.worksheets[0].max_row==2 and wb.worksheets[0]['A2'].value=='NEW','实际导出仅包含当前筛选：'+kind);wb.close();dialog.show_all();require(len(dialog.filtered)>1,'清除导入范围可回到全部：'+kind);dialog.hide()
             require(admission.snapshot(win.work_repository.path,'ORPHAN')['record']==before['ORPHAN'],'未选门店准入不变')
             require(win.work_repository.stores()=={},'查看和准入维护不复活已删除门店参数配置')
+            if '--bulk' in args:
+                from bulk_refusal_smoke import verify
+                verify(app,win,out,report,drive,require)
             require(len(beats)>0,'后台查询和保存期间Qt事件循环可运行');require(not errors,'无未捕获Qt异常');report['passed']=True
         except Exception:report['error']=traceback.format_exc();report['gui_errors']=errors
         finally:
