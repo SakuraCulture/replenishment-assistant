@@ -37,6 +37,23 @@ def exercise(win, client, out, wait, require):
     request = out/'cli-parameters.json'; request.write_text(json.dumps({'stores':['A'], 'scope':'defaults'}), 'utf-8')
     defaults = cli('call', 'effective_parameters', '--arguments-file', str(request))['result']
     current = client.call('effective_parameters', {'stores':['A']})
+    definitions = cli('call', 'parameter_definitions')['result']
+    require(definitions == client.call('parameter_definitions'), 'CLI/MCP parameter dictionary differs')
+    probability = next(d for d in definitions['items'] if d['id']=='parameters.probability')
+    require('不是实际不断货率' in probability['explanation'] and probability['constraints']['maximum']==.99, 'Probability semantics missing')
+    require(all(f['definition_id'] in current['guidance']['definitions'] for f in current['stores'][0]['parameters']), 'Missing parameter explanation')
+    from parameter_maintenance_ui import PatchDialog
+    from parameter_guidance import help_text
+    config=win.config_for('A');dialog=PatchDialog(win,{'A':config},'common')
+    field=('parameters','probability');row=dialog.fields.index(field)
+    require(help_text(field) in dialog.table.item(row,1).toolTip(), 'UI/MCP explanation source differs')
+    dialog.close();dialog.deleteLater()
+    from parameter_ui import ParameterDialog
+    detail=ParameterDialog(win,config,win.preset_for('A'),scope='合成说明核对',readonly=True)
+    import parameter_schema as schema
+    detail.tabs.setCurrentWidget(detail.param_table);detail.param_table.setCurrentCell(list(schema.HELP).index('probability'),0)
+    require(detail.help.toPlainText()==help_text(field), 'Full parameter editor explanation differs')
+    detail.grab().save(str(out/'参数业务说明.png'));detail.close();detail.deleteLater()
     require(defaults['stores'][0]['parameter_signature'] != current['stores'][0]['parameter_signature'], 'Scopes mixed')
     error = cli('call', 'start_schedule', expected=2)
     require(error['error']['code'] == 'NOT_AVAILABLE', 'Scheduler write exposed')
@@ -48,7 +65,7 @@ def exercise(win, client, out, wait, require):
     require([first['stores']['items'][0]['code'], second['stores']['items'][0]['code']] == ['B','A'], 'Store order changed')
     require(win.work_repository.path.read_bytes() == before and win.snapshot() == before_ui, 'Read-only queries changed business data')
     report = {'passed':True,'cli':results,'scheduled_first':first,'scheduled_second':second,
-              'checks':['CLI version/build and live doctor','CLI defaults vs MCP current parameters','scheduler write rejected',
+              'checks':['CLI version/build and live doctor','CLI defaults vs MCP current parameters','shared UI/MCP/CLI parameter definitions and references','scheduler write rejected',
                         'schedule/run/store pagination and incremental events','queries leave DB bytes and current job unchanged']}
     (out/'refresh-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
     return report

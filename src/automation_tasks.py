@@ -27,7 +27,7 @@ class Journal:
                     p.update(state='interrupted', message='原工作台已退出；请重新检查，未保存结果不可恢复')
                     db.execute('UPDATE automation_tasks SET payload=? WHERE id=?', (self.dumps(p), task_id))
 
-    def connect(self): return sqlite3.connect(self.path, timeout=.5)
+    def connect(self, timeout=.5): return sqlite3.connect(self.path, timeout=timeout)
     @staticmethod
     def dumps(value): return json.dumps(value, ensure_ascii=False, allow_nan=False)
 
@@ -59,8 +59,8 @@ class Journal:
         if row[0] != digest(arguments): raise CommandError('OPERATION_CONFLICT', '同一操作键的内容已改变，请先查询原任务')
         return json.loads(row[1])
 
-    def update(self, task_id, **values):
-        with closing(self.connect()) as db, db:
+    def update(self, task_id, *, _timeout=.5, **values):
+        with closing(self.connect(_timeout)) as db, db:
             db.execute('BEGIN IMMEDIATE')
             row = db.execute('SELECT payload FROM automation_tasks WHERE id=?', (task_id,)).fetchone()
             if not row: raise CommandError('TASK_NOT_FOUND', '任务不存在')

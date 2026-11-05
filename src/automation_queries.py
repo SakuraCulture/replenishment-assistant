@@ -97,4 +97,7 @@ def parameter_result(host, args, preview=None):
             'note': '分类参数覆盖通用值，分仓只维护周期；方案名是快照标识，不代表每个字段的编辑来源。' +
                     {'current':'当前作业快照，未保存默认。', 'defaults':'新作业可采用的已保存默认及当前全局映射，不代表本次已应用。',
                      'preview':'预案及本次试算修改装配后的冻结参数；不代表当前工作台已采用。'}[scope]})
-    return {'scope': scope, 'stores': rows, **({'preview_id':args['preview_id'], 'preview_context_token':preview['context_token']} if preview else {})}
+    from parameter_guidance import referenced
+    guidance = referenced(rows)
+    return {'scope': scope, 'stores': rows, 'guidance':guidance,
+            **({'preview_id':args['preview_id'], 'preview_context_token':preview['context_token']} if preview else {})}

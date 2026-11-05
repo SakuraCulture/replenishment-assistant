@@ -11,6 +11,7 @@ import parameter_maintenance as pm
 import parameter_schema as schema
 import store_parameter_ui as store_ui
 import store_parameter_import as spi
+from parameter_guidance import help_text
 
 
 class PatchDialog(QDialog):
@@ -57,8 +58,8 @@ class PatchDialog(QDialog):
             mode.currentIndexChanged.connect(lambda _,m=mode,e=edit,ch=check:e.setEnabled(ch.isChecked() and m.currentData()=='set'))
             check.toggled.connect(lambda on,m=mode,e=edit:(m.setEnabled(on),e.setEnabled(on and m.currentData()=='set')))
             mode.setEnabled(check.isChecked());edit.setEnabled(check.isChecked());self.table.setCellWidget(i,3,mode);self.table.setCellWidget(i,4,edit)
-            if f[0]=='parameters' or f[0]=='profile_parameters':item.setToolTip(item.toolTip()+'\n'+schema.HELP[f[-1]][2])
-            elif f[0]=='weight_profiles':item.setToolTip(item.toolTip()+'\n'+schema.WEIGHT_HELP[f[-1]])
+            item.setToolTip(item.toolTip()+'\n'+help_text(f))
+            self.table.item(i,1).setToolTip(help_text(f))
             self.controls[f]=(check,mode,edit)
         self.search.textChanged.connect(lambda t:[self.table.setRowHidden(i,t.lower() not in pm.title(f).lower()) for i,f in enumerate(self.fields)])
         row=QHBoxLayout();row.addWidget(button('清空勾选',self.clear))

@@ -25,7 +25,7 @@ def install(host):
     def refresh():
         g = host.automation
         if g.active:
-            p = g.journal.get(g.active); note.setText('AI 协助 · ' + p['message'])
+            p = g.task_record(g.active); note.setText('AI 协助 · ' + p['message'])
         else: note.setText('AI 协助已连接 · 查询与计算' if g.enabled else 'AI 协助未连接')
         details.setVisible(g.enabled); stop.setVisible(bool(g.active)); take.setVisible(bool(g.active))
     host.automation.changed.connect(refresh); refresh()
@@ -38,7 +38,10 @@ def stop_current(host):
 
 def takeover(host):
     g=host.automation
-    if g.active:g.journal.update(g.active,human_takeover=True)
+    if g.active:
+        task=g.task_record(g.active)
+        try:g.journal.update(g.active,human_takeover=True)
+        except Exception as exc:g.fail_callback(task,exc)
     stop_current(host)
     host.status.setText('已停止启动后续步骤；当前门店安全结束后可人工编辑，已完成结果仍可查看。')
 
@@ -69,6 +72,7 @@ def cli_guide(host):
         '版本（不需要连接）：\n' + executable + ' version',
         '连接诊断（只查询，不自动启用）：\n' + connected + ' doctor',
         '开放工具与参数：\n' + executable + ' tools',
+        '参数业务字典（只查询）：\n' + connected + ' call parameter_definitions',
         '当前工作台：\n' + connected + ' call workbench_context',
         '复杂参数保存为 UTF-8 JSON 后调用，例如：\n' + connected + " call effective_parameters --arguments-file '.\\参数核对.json'",
         '参数核对.json 内容示例：{"stores":["准确门店编码"],"scope":"current"}；defaults 为已保存默认，不代表本次已采用。',
@@ -122,12 +126,17 @@ def tasks(host):
     def stop_selected():
         if pick.currentData(): g.stop_remaining({'task_id': pick.currentData()}); refresh()
     def refresh():
-        current = pick.currentData(); records = g.journal.list(0, 100)
+        current = pick.currentData()
+        try:records = [g.task_failures.get(r['task_id'], r) for r in g.journal.list(0, 100)]
+        except Exception as exc:
+            from automation_gateway import database_busy
+            if not database_busy(exc):raise
+            message.setText('任务记录正在被其他操作使用，稍后自动刷新；不要重复提交。');return
         pick.blockSignals(True); pick.clear()
         for p in records: pick.addItem(p['created'][:19].replace('T', ' ') + ' · ' + STATES.get(p['state'], p['state']), p['task_id'])
         index = pick.findData(current or g.active); pick.setCurrentIndex(max(0, index)); pick.blockSignals(False)
         if not pick.currentData(): message.setText('暂无任务'); return
-        p = g.journal.get(pick.currentData()); message.setText(p['message'])
+        p = g.task_record(pick.currentData()); message.setText(p['message'])
         count = p.get('progress', {}); progress.setRange(0, count.get('total', 1)); progress.setValue(count.get('completed', 0))
         rows = p.get('stores') or p.get('preview', {}).get('stores', []); table.setRowCount(len(rows))
         issues = {x['store']: x['message'] for x in p.get('preview', {}).get('issues', [])}

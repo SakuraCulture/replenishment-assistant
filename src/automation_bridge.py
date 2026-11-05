@@ -63,7 +63,7 @@ def response(request, client, initialized):
         initialized[0] = True
         return {**out, 'result': {'protocolVersion': version, 'capabilities': {'tools': {'listChanged': False}},
             'serverInfo': {'name': 'replenishment-workbench', 'version': version_details()['version']},
-            'instructions': '先查询 workbench_context，明确门店编码、预案和文件后准备。长任务立即返回编号，用 task_status 查询；重复调用不新开任务。首期不签发、不采购、不删除。中文解释使用工具返回的业务参数，不猜缺失数据。'}}
+            'instructions': '先查询 workbench_context，明确门店编码、预案和文件后准备。参数含义读取 parameter_definitions 或 effective_parameters 返回的 guidance.definitions，按 definition_id 对应；调参前核对 ai_trial_editable、constraints、dependencies 和 input_encoding，不猜名称或比例单位。长任务用 task_status 查询。定时任务只读；不签发、不采购、不删除。历史解释仍以当时快照为准，不用当前字典补写历史值。'}}
     if method == 'ping': return {**out, 'result': {}}
     if not initialized[0]: return {**out, 'error': {'code': -32002, 'message': 'Initialize first'}}
     if method == 'tools/list': return {**out, 'result': {'tools': public_tools()}}

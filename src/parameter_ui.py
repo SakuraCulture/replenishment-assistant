@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QWidget,QDialog,QVBoxLayout,QHBoxLayout,QTabWidget
 from ui_controls import label,button
 import parameter_schema as schema
 import restock_policy as policy
+from parameter_guidance import help_text
 
 class NumberInput(QDoubleSpinBox):
     def textFromValue(self,value):return f'{value:.8f}'.rstrip('0').rstrip('.') or '0'
@@ -48,15 +49,15 @@ class ParameterDialog(QDialog):
         self.effective_now=QTableWidget(0,4);self.effective_now.setHorizontalHeaderLabels(['参数','本次表单值（应用后）','适用范围','取值说明']);self.effective_now.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.effective_now.setColumnWidth(0,260);self.effective_now.setColumnWidth(1,160);self.effective_now.setColumnWidth(2,160);self.effective_now.horizontalHeader().setStretchLastSection(True);self.tabs.insertTab(0,self.effective_now,'有效值与适用范围')
         self.tabs.currentChanged.connect(self.tab_changed)
         self.help=QTextBrowser();self.help.setMaximumHeight(115);v.addWidget(self.help)
-        self.param_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText(business_help(schema.HELP[list(schema.HELP)[r]][2])) if r>=0 else None)
-        self.weight_table.currentCellChanged.connect(lambda r,c,*_:self.help.setPlainText(schema.WEIGHT_HELP.get(['','alpha','w1','w2',''][c], '此前16天权重=100%－最近7天权重－此前7天权重，无分类自动跟随快销；缺货时还按有效有货天数修正。')) if c>=0 else None)
-        self.profile_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText('勾选时使用分类值，未勾选沿用模型超参。快销/日百各一套，两仓共用；无分类跟随快销。\n'+business_help(schema.HELP[self.profile_rows[r][1]][2])) if r>=0 and hasattr(self,'profile_rows') else None)
-        self.warehouses.currentCellChanged.connect(lambda *_:self.help.setPlainText('各仓备货、到货天数优先于通用值；按门店实际补货与到货周期维护。修改只在点击应用后生效。'))
+        self.param_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText(help_text(('parameters',list(schema.HELP)[r]))) if r>=0 else None)
+        self.weight_table.currentCellChanged.connect(lambda r,c,*_:self.help.setPlainText(help_text(('weight_profiles','{分类组}',('w3','alpha','w1','w2','w3')[c]))) if c>=0 else None)
+        self.profile_table.currentCellChanged.connect(lambda r,*_:self.help.setPlainText(help_text(('profile_parameters',*self.profile_rows[r]))) if r>=0 and hasattr(self,'profile_rows') else None)
+        self.warehouses.currentCellChanged.connect(lambda r,c,*_:self.help.setPlainText(help_text(('warehouses','{仓库}',1 if c==2 else 0))))
         policy_page=QWidget();policy_layout=QVBoxLayout(policy_page);policy_layout.addWidget(label('只维护补货策略开关；资质、拒收、禁用、停采仍是硬排除，不能在这里关闭。','muted'));self.tabs.addTab(policy_page,'补货策略')
-        self.exception=QCheckBox('启用一箱例外（仍受准入与门店总预算约束）');policy_layout.addWidget(self.exception)
+        self.exception=QCheckBox('启用一箱例外（仍受准入与门店总预算约束）');self.exception.setToolTip(help_text(('exception',)));policy_layout.addWidget(self.exception)
         self.policy_boxes={}
         for key,name in policy.LABELS.items():
-            w=QCheckBox(name);w.setToolTip(policy.HELP[key]);self.policy_boxes[key]=w;policy_layout.addWidget(w)
+            w=QCheckBox(name);w.setToolTip(help_text((policy.KEY,key)));self.policy_boxes[key]=w;policy_layout.addWidget(w)
         policy_layout.addStretch()
         self.note=label('','muted');v.addWidget(self.note)
         if self.managing:
@@ -100,7 +101,7 @@ class ParameterDialog(QDialog):
         if current in (self.effective,self.effective_now):self.refresh_effective()
         elif current is self.profile_table and hasattr(self,'profile_rows'):
             row=max(0,self.profile_table.currentRow());key=self.profile_rows[row][1]
-            self.help.setPlainText('分类值优先于门店通用值；快销/日百各一套，两仓共用，无分类跟随快销。未勾选则沿用门店值。\n'+business_help(schema.HELP[key][2]))
+            self.help.setPlainText(help_text(('profile_parameters',self.profile_rows[row][0],key)))
         elif current.objectName()=='parameterImportSource':self.help.setPlainText('这里保留当时完整注入的原表字段和处理依据。后续编辑不会回写此来源；当前实际值请在“生效核对”中查看。')
     def undo_form(self):
         from interaction_ui import confirm
@@ -170,7 +171,7 @@ class ParameterDialog(QDialog):
         self.config=copy.deepcopy(config);base=self.preset.get('base_config',self.preset['config']);self.param_table.setRowCount(len(schema.HELP))
         for i,(key,(name,unit,helptext)) in enumerate(schema.HELP.items()):
             self.param_table.setRowHidden(i,key in {'depth','lead','extreme_days'})
-            helptext=business_help(helptext)
+            helptext=help_text(('parameters',key))
             self.param_table.setItem(i,0,QTableWidgetItem(name+('（在各仓周期页维护）' if key in {'depth','lead'} else '')));w=self.spin(config['parameters'][key],percent=key=='probability');w.setEnabled(key not in {'extreme_days','depth','lead'});self.param_table.setCellWidget(i,1,w);self.param_table.setItem(i,2,QTableWidgetItem('%' if key=='probability' else '库存单位' if key in ('strict_monthly','exit_monthly') else unit));self.param_table.setItem(i,3,QTableWidgetItem(value_text(base['parameters'][key],key)));self.param_table.item(i,0).setToolTip(helptext+'\n原字段：'+key)
             w.valueChanged.connect(lambda _,text=helptext:self.help.setPlainText(text))
         self.weight_table.setRowCount(len(config['weight_profiles']))

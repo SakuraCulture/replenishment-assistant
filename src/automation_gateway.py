@@ -3,6 +3,7 @@ import copy
 import json
 import logging
 import secrets
+import sqlite3
 import threading
 import time
 import uuid
@@ -13,6 +14,10 @@ from PySide6.QtWidgets import QApplication
 from automation_protocol import VERSION, MAX_FRAME, CommandError, digest, decode, validate_call
 from automation_tasks import Journal
 import automation_jobs
+
+
+def database_busy(exc):
+    return isinstance(exc, sqlite3.OperationalError) and (getattr(exc, 'sqlite_errorcode', 0) & 255) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED)
 
 
 class Job(QThread):
@@ -43,6 +48,9 @@ class Gateway(QObject):
         self.enabled = False; self.server = None; self.lock = None; self.journal = None
         self.secret = ''; self.buffers = {}; self.prepared = {}; self.calculations = {}
         self.active = None; self.worker = None; self.last_stage = 0; self.explanations = {}
+        self.task_failures = {}; self.pending_failures = set()
+        self.failure_timer = QTimer(self); self.failure_timer.setInterval(1000)
+        self.failure_timer.timeout.connect(self.persist_failures)
         self.folder = Path(host.work_repository.path).parent / 'automation'
         self.connection_file = self.folder / 'connection.json'
         self.workspace = digest(str(Path(host.work_repository.path).resolve()))[:24]
@@ -67,6 +75,7 @@ class Gateway(QObject):
         self.server, self.lock, self.journal = server, lock, journal
         self.server.newConnection.connect(self.accept_connections)
         self.enabled = True; self.changed.emit()
+        if self.pending_failures: self.failure_timer.start()
 
     def disable(self):
         if self.worker:
@@ -82,6 +91,7 @@ class Gateway(QObject):
                     self.connection_file.unlink()
             except (OSError, ValueError, KeyError): pass
         if self.lock: self.lock.unlock(); self.lock = None
+        self.failure_timer.stop()
         self.enabled = False; self.secret = ''; self.changed.emit()
 
     def accept_connections(self):
@@ -114,10 +124,11 @@ class Gateway(QObject):
             except CommandError as exc:
                 response = {'id': request.get('id') if isinstance(request, dict) else None, 'ok': False,
                             'error': {'code': exc.code, 'message': str(exc), 'details': exc.details}}
-            except Exception:
+            except Exception as exc:
                 logging.exception('AI 命令处理失败')
                 response = {'id': request.get('id') if isinstance(request, dict) else None, 'ok': False,
-                            'error': {'code': 'INTERNAL_ERROR', 'message': '操作未完成；已保留本地诊断，请核对原任务状态后再继续'}}
+                            'error': {'code': 'BUSY' if database_busy(exc) else 'INTERNAL_ERROR',
+                                      'message': '数据正在被其他操作使用，请稍后查询原任务状态，不要重复提交。' if database_busy(exc) else '操作未完成；已保留本地诊断，请核对原任务状态后再继续'}}
             raw = json.dumps(response, ensure_ascii=False, allow_nan=False, default=str).encode() + b'\n'
             if len(raw) > MAX_FRAME:
                 raw = json.dumps({'id': request.get('id'), 'ok': False, 'error': {'code': 'TOO_LARGE', 'message': '结果过大，请缩小范围或分页读取'}}).encode() + b'\n'
@@ -140,6 +151,7 @@ class Gateway(QObject):
         if token != self.token(): raise CommandError('STALE_CONTEXT', '当前作业、参数或结果已变化，请重新检查；旧结果没有覆盖工作台')
 
     def idle(self):
+        if self.pending_failures: raise CommandError('BUSY', 'AI 任务状态正在等待保存，请稍后查询原任务；不会重复计算或采用结果')
         scheduled = getattr(self.host, 'scheduled', None)
         if self.worker or self.host.worker or (scheduled and (scheduled.worker or scheduled.publisher)):
             raise CommandError('BUSY', '当前已有任务运行，请查看进度或等待当前步骤结束再操作')
@@ -171,7 +183,10 @@ class Gateway(QObject):
         elif kind == 'catalogs': rows = [{**{k: c.get(k) for k in ('warehouse', 'revision', 'source_path', 'source_sha256')},
             'note': '已登记的仓资料；不代表本次输入已完成匹配或可计算。'} for c in h.catalogs.values()]
         elif kind == 'orders': rows = h.orders.headers()
-        else: return self.journal.page(offset, limit, args.get('search', ''))
+        else:
+            value = self.journal.page(offset, limit, args.get('search', ''))
+            value['items'] = [self.task_failures.get(r['task_id'], r) for r in value['items']]
+            return value
         search = args.get('search', '').casefold()
         if search: rows = [r for r in rows if search in json.dumps(r, ensure_ascii=False).casefold()]
         return {'total': len(rows), 'offset': offset, 'items': rows[offset:offset + limit], 'next_offset': offset + limit if offset + limit < len(rows) else None}
@@ -184,6 +199,10 @@ class Gateway(QObject):
             preview = self.require_prepared(args['preview_id'])
         elif args.get('preview_id'): raise CommandError('INVALID_ARGUMENT', 'preview_id 只能用于 scope=preview')
         return {'context_token': self.token(), **parameter_result(self.host, args, preview)}
+
+    def parameter_definitions(self, args):
+        from parameter_guidance import catalog
+        return catalog(args)
 
     def scheduled_run_status(self, args):
         from automation_queries import scheduled_status
@@ -205,25 +224,71 @@ class Gateway(QObject):
             'profile': h.profile, 'plan': plan, 'active_plan': copy.deepcopy(h.active_plan), 'workers': h.concurrency.value(),
             'context_token': self.token(), 'dbpath': str(h.work_repository.path), 'day': h.job_day}
 
+    def task_record(self, task_id):
+        return copy.deepcopy(self.task_failures[task_id]) if task_id in self.task_failures else self.journal.get(task_id)
+
+    def fail_callback(self, task, exc):
+        """Fail closed if callback persistence fails. Never replay a business callback."""
+        tid = task['task_id']
+        if tid in self.task_failures: return
+        logging.exception('AI 任务结果处理未完成：%s', tid)
+        if self.worker: self.worker.cancel.set()
+        self.prepared.pop(tid, None)
+        message = ('数据被其他操作占用，任务状态等待保存；本任务未完成，请勿重复提交。'
+                   if database_busy(exc) else '结果处理未完成，已保留诊断；请核对原任务。')
+        self.task_failures[tid] = {**task, 'state':'failed', 'message':message,
+                                  'error_code':'TASK_STATUS_WRITE_FAILED' if database_busy(exc) else 'TASK_HANDLER_FAILED',
+                                  'status_persistence_pending':True}
+        self.pending_failures.add(tid); self.failure_timer.start()
+        self.host.status.setText('AI 协助 · '+message)
+        self.changed.emit()
+
+    def persist_failures(self):
+        # Retry only the rolled-back metadata transaction, never calculation,
+        # source retention, adoption, signing or a platform request. No UI wait.
+        for tid in list(self.pending_failures):
+            value = self.task_failures[tid]
+            try:
+                saved = self.journal.update(tid, _timeout=0, state='failed', error_code=value['error_code'],
+                    status_persistence_pending=False, message='任务未完成；状态已保存，请核对后重新检查。')
+            except Exception as exc:
+                if database_busy(exc): continue
+                logging.exception('AI 失败状态保存仍未完成：%s', tid)
+                self.pending_failures.discard(tid)
+                value['message']='任务未完成，状态无法保存；请查看本地诊断，原任务不要重复提交。'
+            else:
+                self.task_failures[tid]=saved; self.pending_failures.discard(tid)
+        if not self.pending_failures: self.failure_timer.stop()
+        self.changed.emit()
+
     def start_job(self, task, fn, finish, store_handler=None):
         h = self.host; worker = Job(fn, h); self.worker = worker; self.active = task['task_id']; h.worker = worker
         self.last_stage = 0; h.update_controls()
         def progress(message):
+            if task['task_id'] in self.task_failures: return
             h.status.setText('AI 协助 · ' + message)
             if time.monotonic() - self.last_stage >= 1:
-                self.last_stage = time.monotonic(); self.journal.update(task['task_id'], message=message); self.changed.emit()
+                try:
+                    self.last_stage = time.monotonic(); self.journal.update(task['task_id'], message=message); self.changed.emit()
+                except Exception as exc: self.fail_callback(task, exc)
         worker.progress.connect(progress)
-        if store_handler: worker.store_event.connect(store_handler)
+        if store_handler:
+            def store_event(*args):
+                if task['task_id'] in self.task_failures: return
+                try: store_handler(*args)
+                except Exception as exc: self.fail_callback(task, exc)
+            worker.store_event.connect(store_event)
         def completed(value):
+            if task['task_id'] in self.task_failures: return
             try: finish(value)
-            except Exception as exc:
-                logging.exception('AI 结果处理失败')
-                self.journal.update(task['task_id'], state='failed', message='结果未完成处理：' + str(exc))
-                self.changed.emit()
+            except Exception as exc: self.fail_callback(task, exc)
         worker.result_ready.connect(completed)
         def failed(code, message):
-            self.journal.update(task['task_id'], state='stopped' if code == 'CANCELLED' else 'failed', message=message, error_code=code)
-            self.changed.emit()
+            if task['task_id'] in self.task_failures: return
+            try:
+                self.journal.update(task['task_id'], state='stopped' if code == 'CANCELLED' else 'failed', message=message, error_code=code)
+                self.changed.emit()
+            except Exception as exc: self.fail_callback(task, exc)
         worker.error_ready.connect(failed)
         def done():
             if h.worker is worker: h.worker = None
@@ -233,7 +298,7 @@ class Gateway(QObject):
 
     def prepare_calculation(self, args):
         existing=self.journal.lookup('prepare:' + args['operation_key'],args)
-        if existing:return existing
+        if existing:return self.task_record(existing['task_id'])
         self.idle(); self.check_context(args['context_token'])
         if self.host.readonly and args['mode'] == 'current': raise CommandError('READONLY', '历史作业只读，请先新建或恢复今日作业')
         task, created = self.journal.create('prepare:' + args['operation_key'], args, 'prepare')
@@ -254,6 +319,7 @@ class Gateway(QObject):
         return task
 
     def require_prepared(self, pid):
+        if pid in self.task_failures: raise CommandError('NEEDS_REVIEW', '该检查未完成，请查询原任务状态后重新检查')
         p = self.prepared.get(pid)
         if p is None: raise CommandError('SNAPSHOT_UNAVAILABLE', '原预览快照不在当前会话，请重新检查')
         if not p['report']['ready']: raise CommandError('NEEDS_INPUT', '存在未解决的配置或冲突，请在工作台处理', p['report'])
@@ -322,7 +388,11 @@ class Gateway(QObject):
         return task
 
     def task_status(self, args):
-        p = self.journal.get(args['task_id']); events = self.journal.events(args['task_id'], args.get('after', 0))
+        p = self.task_record(args['task_id'])
+        try: events = self.journal.events(args['task_id'], args.get('after', 0))
+        except Exception as exc:
+            if not database_busy(exc) or args['task_id'] not in self.task_failures: raise
+            events = []  # Keep the cursor: no event was consumed while locked.
         if args['task_id'] in self.explanations:
             from history_read import repository
             from archive_orders import require_active
@@ -335,19 +405,23 @@ class Gateway(QObject):
                 'in_current_session': args['task_id'] in self.prepared or args['task_id'] in self.explanations or isinstance(self.calculations.get(args['task_id']), dict)}
 
     def stop_remaining(self, args):
-        task = self.journal.get(args['task_id'])
+        task = self.task_record(args['task_id'])
         if self.active == args['task_id'] and self.worker:
-            self.worker.cancel.set(); task = self.journal.update(args['task_id'], state='stopping', message='停止后续请求已收到；正在计算的门店完成后结束')
+            self.worker.cancel.set()
+            try: task = self.journal.update(args['task_id'], state='stopping', message='停止后续请求已收到；正在计算的门店完成后结束')
+            except Exception as exc:
+                self.fail_callback(task, exc); task = self.task_record(args['task_id'])
         self.changed.emit(); return task
 
     def require_result(self, tid):
+        if tid in self.task_failures: raise CommandError('NEEDS_REVIEW', '该任务结果处理未完成，请先核对原任务状态')
         result = self.calculations.get(tid)
         if not isinstance(result, dict): raise CommandError('RESULT_UNAVAILABLE', '结果不在当前会话；已保存资料请到原草稿或订单入口查询')
         return result
 
     def retry_failed(self, args):
         existing=self.journal.lookup('retry:'+args['operation_key'],args)
-        if existing:return existing
+        if existing:return self.task_record(existing['task_id'])
         self.idle(); r = self.require_result(args['task_id']); p = r['prepared']; self.check_context(p['context_token'])
         if not args['stores'] or any(s not in r['states'] or r['states'][s]['state'] not in ('计算失败', '已停止') for s in args['stores']):
             raise CommandError('NOT_RETRYABLE', '只能重试原任务中失败或已停止的门店')

@@ -55,7 +55,27 @@ def start_smoke(app, win, args):
             win.loaded_ok(fixture())
             for code in ('A', 'B'): win.store_widgets[code]['mode'].setCurrentIndex(1)
             win.automation.enable(); m = MCP()
-            require(len(m.send('tools/list', {})['result']['tools']) == 13, 'Missing tools')
+            require(len(m.send('tools/list', {})['result']['tools']) == 14, 'Missing tools')
+            # Reproduce commit contention in the actual Qt process (including EXE).
+            # Only task metadata is retried; the business callback must run once.
+            import sqlite3
+            locked_task,_=win.automation.journal.create('synthetic-lock',{},'prepare'); callbacks=[]
+            lock=sqlite3.connect(win.work_repository.path)
+            try:
+                lock.execute('BEGIN');lock.execute('SELECT * FROM automation_tasks').fetchall()
+                def locked_finish(value):
+                    callbacks.append(value)
+                    win.automation.journal.update(locked_task['task_id'],state='prepared')
+                win.automation.start_job(locked_task,lambda _:42,locked_finish)
+                wait(lambda:win.automation.worker is None)
+                blocked=m.call('task_status',{'task_id':locked_task['task_id']})
+                require(blocked['state']=='failed' and blocked['status_persistence_pending'],'Lock incorrectly reported as success')
+            finally:lock.rollback();lock.close()
+            wait(lambda:not win.automation.pending_failures)
+            recovered=m.call('task_status',{'task_id':locked_task['task_id']})
+            require(recovered['state']=='failed' and not recovered['status_persistence_pending'] and callbacks==[42], 'Failed callback replayed or status not recovered')
+            require(len(recovered['events'])==1,'Rolled-back event duplicated')
+            report['checks'].append('Actual SQLite commit lock: queryable failed task, metadata recovery after release, one event, no callback replay; fresh task continues')
             original = copy.deepcopy(win.snapshot()); context = m.call('workbench_context')
             p = m.call('prepare_calculation', {'context_token': context['context_token'], 'operation_key': 'smoke-prepare', 'stores': ['B', 'A'], 'mode': 'trial'})
             wait(lambda: win.automation.worker is None)
