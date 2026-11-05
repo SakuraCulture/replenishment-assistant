@@ -85,7 +85,7 @@ class Sheet:
         for col, width in enumerate(widths, 1):
             self.ws.column_dimensions[get_column_letter(col)].width = width
 
-    def row(self, values, kind=None, fmt=NUMBER, height=28, merge=False, formats=None):
+    def row(self, values, kind=None, fmt=NUMBER, height=28, merge=False, formats=None, comments=None):
         checkpoint(self.cancel)
         self.count += 1
         self.ws.row_dimensions[self.count].height = height
@@ -98,6 +98,9 @@ class Sheet:
             if isinstance(value, str):
                 c.data_type = 's'  # IDs and user-supplied formula-looking names stay text.
             c.fill, c.font, c.alignment = fill, font, ALIGN
+            if comments and index in comments:
+                from openpyxl.comments import Comment
+                c.comment=Comment(comments[index],'补货助手')
             if isinstance(value, (int, float)):
                 c.number_format = (formats or {}).get(index, fmt)
                 if c.number_format == NUMBER and float(value).is_integer():

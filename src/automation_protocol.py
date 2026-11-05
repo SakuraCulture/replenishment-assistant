@@ -54,7 +54,7 @@ TOOLS = [
      obj({'context_token':TEXT,'operation_key':TEXT,'query':ANALYTICS_QUERY},['context_token','operation_key','query'])),
     ('order_funnel_results','读取已完成经营分析的门店、分仓、订单或商品分页。数量金额以服务为准，未导入不按0；next_offset为空才读完。返回中文业务口径。',
      obj({**TASK,'level':{'type':'string','enum':['store','warehouse','order','detail','pending']},'store':TEXT,'order':TEXT,**PAGE},['task_id'])),
-    ('export_order_funnel','导出已核对范围的五段漏斗Excel，与原生经营分析相同。只写本地报表；directory可省略以使用配置导出位置。不签发、不修改订单、不发送文件。',
+    ('export_order_funnel','导出已核对范围的五段漏斗Excel，与原生经营分析相同。门店/订单报表仅37列：基础信息、五段SKU款数/库存单位数量合计/签发价货值、相邻及首尾比值；不同库存单位数量相加仅作执行统计，未知不填0。detail仅按明确请求导出商品明细。只写本地报表；directory可省略以使用配置导出位置。不签发、不修改订单、不发送文件。',
      obj({**TASK,'snapshot_id':TEXT,'context_token':TEXT,'operation_key':TEXT,'directory':TEXT,'level':{'type':'string','enum':['store','order','detail']},'orders':LIST},['task_id','snapshot_id','context_token','operation_key'])),
     ('workbench_context', '查看当前工作台、已启用范围、业务日期和任务。先调用以取得 context_token。', obj()),
     ('parameter_definitions', '查询参数业务含义、调整影响、合法范围、依赖与AI可改范围；调参前先读说明。模板路径须用实际门店参数路径替换。只读，不修改配置。',

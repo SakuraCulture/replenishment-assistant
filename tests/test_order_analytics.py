@@ -89,7 +89,7 @@ class AnalyticsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'变化'):ex.export(self.path,report,target)
         self.assertFalse(target.exists())
     def test_export_types_all_rows_and_source_immutable(self):
-        report=self.report();before=self.path.read_bytes();target=self.root/'report.xlsx';receipt=ex.export(self.path,report,target)
+        report=self.report();before=self.path.read_bytes();target=self.root/'report.xlsx';receipt=ex.export(self.path,report,target,level='detail')
         b=openpyxl.load_workbook(target);self.assertEqual(b.sheetnames,receipt['sheets'])
         self.assertEqual(b['全量商品五段'].max_row,3);self.assertEqual(b['全量商品五段']['F2'].value,'0001')
         self.assertEqual(b['全量商品五段']['F2'].data_type,'s');self.assertEqual(b['全量商品五段']['L2'].data_type,'n')
