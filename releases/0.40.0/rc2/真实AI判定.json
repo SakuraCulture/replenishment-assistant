@@ -1,0 +1,48 @@
+{
+  "review_complete": true,
+  "synthetic": true,
+  "codex": {
+    "execution_completed": true,
+    "language_passed": true,
+    "cases": [
+      "五段漏斗",
+      "多轮历史复盘",
+      "安全库存试算"
+    ],
+    "timings_seconds": [
+      113.36,
+      106.234,
+      155.468
+    ],
+    "export_sheets": 5,
+    "export_scope": "全部商品明细级；不含门店/分仓/订单汇总，回执和回答明确列出5表",
+    "limitations": [
+      "曾查询S1/S2历史整体失败，因S2无历史；随后仅复盘有资料的S1，并明确S2不可归因。没有把失败说成完成。"
+    ]
+  },
+  "workbuddy": {
+    "client": "WorkBuddy 5.9.3 / 快速 GLM-5.3-Flash",
+    "seconds_displayed": 334,
+    "tasks_executed": true,
+    "tool_calls": 22,
+    "numeric_and_export_passed": true,
+    "language_passed": false,
+    "findings": [
+      "在比较结果（两店一致）的每店金额表中混入两店合计4条缺口；应明确每店2条、两店4条，并与箱规覆盖分开。",
+      "11-01足额履约仍缺货的措辞把签发时观察与后续履约时间关系说得过满；没有实际到货时间，不能认定该轮足额到货后仍缺货。",
+      "未完整展示逐商品变化、到货前缺口和每店覆盖天数；工具已读取完整明细，但最终回答省略。"
+    ],
+    "passed_items": [
+      "证据减量正确标为10-29单",
+      "历史保护期12天没有被当前13天替代",
+      "原有4条缺口与新增风险0分开",
+      "执行金额每店10，模型理论变化不冒充资金节省",
+      "未知不当0，实际付款182.70另列",
+      "实际导出8张表，2390单元格与原生导出严格一致"
+    ],
+    "adopted": false
+  },
+  "all_language_passed": false,
+  "business_unchanged": true,
+  "disposition": "连接及数据契约完成；自然语言全部可靠未达成，WorkBuddy回答只可辅助，采用前必须核对软件原生结果。没有通过扩大忽略范围或修改业务预期掩盖问题。"
+}

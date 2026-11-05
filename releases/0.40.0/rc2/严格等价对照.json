@@ -1,0 +1,272 @@
+{
+  "passed": true,
+  "baseline": "86464a64584c17aa69d0269f77f14d212e75ea59",
+  "calculation": {
+    "baseline": "86464a64584c17aa69d0269f77f14d212e75ea59",
+    "input_sha256": "1b96a6772b4739acd4ce97e024af10519f0304cb9bf7d8ae291686d923e37400",
+    "excluded_top_level_fields": [
+      "created",
+      "task.pid",
+      "task.started",
+      "task.finished",
+      "version.version"
+    ],
+    "difference_count": 0,
+    "scope": "2店2商品合成，预算10元，双进程，全部结果递归严格比较值类型和顺序；不代替真实全量业务验收"
+  },
+  "history_rows": 6,
+  "history_difference_count": 0,
+  "additive_fields": [
+    "history.items[].evidence_details",
+    "history.items[].observation_basis",
+    "history.items[].parameter_basis"
+  ],
+  "dynamic_fields": [
+    "as_of",
+    "history.as_of"
+  ],
+  "excel": {
+    "cells_checked": 2390,
+    "value_type_order_style_differences": [],
+    "dynamic_cell_whitelist": [
+      "统计口径/数据截至/说明",
+      "统计口径/生成时间/说明"
+    ]
+  },
+  "database_unchanged": true,
+  "added_evidence": [
+    {
+      "evidence_details": [],
+      "observation_basis": {
+        "business_date": "2026-10-29",
+        "order_number": "BH-20261029-S1-ZC-HB",
+        "source": "本轮签发时冻结快照",
+        "quantities": {
+          "model": "24.0",
+          "signed": "24.0",
+          "return": "12",
+          "payment": "6",
+          "receipt": "3"
+        },
+        "valid": {
+          "model": true,
+          "signed": true,
+          "return": true,
+          "payment": true,
+          "receipt": true
+        }
+      },
+      "parameter_basis": {
+        "business_date": "2026-10-29",
+        "order_number": "BH-20261029-S1-ZC-HB",
+        "source": "当时计算快照，不能用当前参数反证历史错误",
+        "stock_days": "8.0",
+        "lead_days": "4.0",
+        "protection_days": "12.0",
+        "definition": "当时备货天数＋当时到货天数"
+      }
+    },
+    {
+      "evidence_details": [
+        {
+          "business_date": "2026-10-29",
+          "order_number": "BH-20261029-S1-ZC-HB",
+          "warehouse": "河北仓",
+          "sku": "0001",
+          "unit": "包",
+          "from_stage": "signed",
+          "from_name": "签发",
+          "to_stage": "return",
+          "to_name": "门店确认",
+          "before": "24.0",
+          "after": "12",
+          "delta": "-12.0",
+          "relation": "上轮签发单的环节差异，不属于本轮"
+        },
+        {
+          "business_date": "2026-10-29",
+          "order_number": "BH-20261029-S1-ZC-HB",
+          "warehouse": "河北仓",
+          "sku": "0001",
+          "unit": "包",
+          "from_stage": "return",
+          "from_name": "门店确认",
+          "to_stage": "payment",
+          "to_name": "实际下单",
+          "before": "12",
+          "after": "6",
+          "delta": "-6",
+          "relation": "上轮签发单的环节差异，不属于本轮"
+        },
+        {
+          "business_date": "2026-10-29",
+          "order_number": "BH-20261029-S1-ZC-HB",
+          "warehouse": "河北仓",
+          "sku": "0001",
+          "unit": "包",
+          "from_stage": "payment",
+          "from_name": "实际下单",
+          "to_stage": "receipt",
+          "to_name": "实际收货",
+          "before": "6",
+          "after": "3",
+          "delta": "-3",
+          "relation": "上轮签发单的环节差异，不属于本轮"
+        }
+      ],
+      "observation_basis": {
+        "business_date": "2026-11-01",
+        "order_number": "BH-20261101-S1-ZC-HB",
+        "source": "本轮签发时冻结快照",
+        "quantities": {
+          "model": "24.0",
+          "signed": "24.0",
+          "return": "24",
+          "payment": "24",
+          "receipt": "24"
+        },
+        "valid": {
+          "model": true,
+          "signed": true,
+          "return": true,
+          "payment": true,
+          "receipt": true
+        }
+      },
+      "parameter_basis": {
+        "business_date": "2026-11-01",
+        "order_number": "BH-20261101-S1-ZC-HB",
+        "source": "当时计算快照，不能用当前参数反证历史错误",
+        "stock_days": "8.0",
+        "lead_days": "4.0",
+        "protection_days": "12.0",
+        "definition": "当时备货天数＋当时到货天数"
+      }
+    },
+    {
+      "evidence_details": [],
+      "observation_basis": {
+        "business_date": "2026-11-05",
+        "order_number": "BH-20261105-S1-ZC-HB",
+        "source": "本轮签发时冻结快照",
+        "quantities": {
+          "model": "24.0",
+          "signed": "0",
+          "return": null,
+          "payment": null,
+          "receipt": null
+        },
+        "valid": {
+          "model": true,
+          "signed": true,
+          "return": false,
+          "payment": false,
+          "receipt": false
+        }
+      },
+      "parameter_basis": {
+        "business_date": "2026-11-05",
+        "order_number": "BH-20261105-S1-ZC-HB",
+        "source": "当时计算快照，不能用当前参数反证历史错误",
+        "stock_days": "8.0",
+        "lead_days": "4.0",
+        "protection_days": "12.0",
+        "definition": "当时备货天数＋当时到货天数"
+      }
+    },
+    {
+      "evidence_details": [],
+      "observation_basis": {
+        "business_date": "2026-10-29",
+        "order_number": "BH-20261029-S1-ZC-SD",
+        "source": "本轮签发时冻结快照",
+        "quantities": {
+          "model": "24.0",
+          "signed": "24.0",
+          "return": null,
+          "payment": null,
+          "receipt": null
+        },
+        "valid": {
+          "model": true,
+          "signed": true,
+          "return": false,
+          "payment": false,
+          "receipt": false
+        }
+      },
+      "parameter_basis": {
+        "business_date": "2026-10-29",
+        "order_number": "BH-20261029-S1-ZC-SD",
+        "source": "当时计算快照，不能用当前参数反证历史错误",
+        "stock_days": "8.0",
+        "lead_days": "4.0",
+        "protection_days": "12.0",
+        "definition": "当时备货天数＋当时到货天数"
+      }
+    },
+    {
+      "evidence_details": [],
+      "observation_basis": {
+        "business_date": "2026-11-01",
+        "order_number": "BH-20261101-S1-ZC-SD",
+        "source": "本轮签发时冻结快照",
+        "quantities": {
+          "model": "24.0",
+          "signed": "24.0",
+          "return": null,
+          "payment": null,
+          "receipt": null
+        },
+        "valid": {
+          "model": true,
+          "signed": true,
+          "return": false,
+          "payment": false,
+          "receipt": false
+        }
+      },
+      "parameter_basis": {
+        "business_date": "2026-11-01",
+        "order_number": "BH-20261101-S1-ZC-SD",
+        "source": "当时计算快照，不能用当前参数反证历史错误",
+        "stock_days": "8.0",
+        "lead_days": "4.0",
+        "protection_days": "12.0",
+        "definition": "当时备货天数＋当时到货天数"
+      }
+    },
+    {
+      "evidence_details": [],
+      "observation_basis": {
+        "business_date": "2026-11-05",
+        "order_number": "BH-20261105-S1-ZC-SD",
+        "source": "本轮签发时冻结快照",
+        "quantities": {
+          "model": "24.0",
+          "signed": "24.0",
+          "return": null,
+          "payment": null,
+          "receipt": null
+        },
+        "valid": {
+          "model": true,
+          "signed": true,
+          "return": false,
+          "payment": false,
+          "receipt": false
+        }
+      },
+      "parameter_basis": {
+        "business_date": "2026-11-05",
+        "order_number": "BH-20261105-S1-ZC-SD",
+        "source": "当时计算快照，不能用当前参数反证历史错误",
+        "stock_days": "8.0",
+        "lead_days": "4.0",
+        "protection_days": "12.0",
+        "definition": "当时备货天数＋当时到货天数"
+      }
+    }
+  ],
+  "limits": "Synthetic fixed-input regression; not full real-business scale or fresh-machine acceptance."
+}

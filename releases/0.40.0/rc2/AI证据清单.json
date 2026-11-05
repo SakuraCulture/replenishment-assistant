@@ -1,0 +1,102 @@
+[
+  {
+    "path": "real-ai/tool-calls.jsonl",
+    "bytes": 725001,
+    "sha256": "4d5190f5650cc1d175a9343e65f20319ebfa0636a88a70ab2d92c09d0eeef3d6"
+  },
+  {
+    "path": "real-ai/final.json",
+    "bytes": 6833,
+    "sha256": "daedafddb9e295ee244f2fed6e9c2be725f0072ace59f9fdaee7bc1bc9614a50"
+  },
+  {
+    "path": "real-ai/oracle.json",
+    "bytes": 132335,
+    "sha256": "ea63cc49418824b19b69035f6c289eedee379adf1ac2000ac3a3ad209590eb85"
+  },
+  {
+    "path": "codex/funnel/prompt.txt",
+    "bytes": 1006,
+    "sha256": "1d4f0742bb0aa1bc820da68ac16fdd7b1baa326e40c1bb3c330146e50b86bd90"
+  },
+  {
+    "path": "codex/funnel/answer.txt",
+    "bytes": 2605,
+    "sha256": "f3e9b6601a01c8a00c69b198fb00a3e2ec56d3dfbfaa4a910a46b998ac27a6d6"
+  },
+  {
+    "path": "codex/funnel/events.jsonl",
+    "bytes": 194746,
+    "sha256": "55736afc84add84516466b085870b3183fcc46a71bbc594486e82ad9b2c26cd8"
+  },
+  {
+    "path": "codex/funnel/stderr.txt",
+    "bytes": 277,
+    "sha256": "aa0e883030ae895812eb994f910f9bc9509f15722b903e1bd139c3a5cabeb0ce"
+  },
+  {
+    "path": "codex/history/prompt.txt",
+    "bytes": 956,
+    "sha256": "9bf9179ed19bc43ab695bb77d1a667f319ea08bdfa696366322c011d213bfbc4"
+  },
+  {
+    "path": "codex/history/answer.txt",
+    "bytes": 2703,
+    "sha256": "9bda75929812cd723b5ed2c290ac41d1931d4964b333aac1b586f96631e16243"
+  },
+  {
+    "path": "codex/history/events.jsonl",
+    "bytes": 56304,
+    "sha256": "6bc5303709095e404a14aa132a3108874d42767a78232e6efc48ca4bd2ddb800"
+  },
+  {
+    "path": "codex/history/stderr.txt",
+    "bytes": 1348,
+    "sha256": "2e6acf6d52150f1ee2a1aa036024a348dd8341909fadf378eb79dd34fe2efec2"
+  },
+  {
+    "path": "codex/diagnosis/prompt.txt",
+    "bytes": 1059,
+    "sha256": "84d6b01b0979bbbb5283dc30e7d2781c406828f51028d565a37cdcc65fa7ed7f"
+  },
+  {
+    "path": "codex/diagnosis/answer.txt",
+    "bytes": 3274,
+    "sha256": "fd052d504ee1c26c4665c4a6423ca8d9d53384ad99c31ce21a93dd13d0f178b4"
+  },
+  {
+    "path": "codex/diagnosis/events.jsonl",
+    "bytes": 530394,
+    "sha256": "14eb092e7e07753f00c67a6a80a2e5d8090396dbf6f328637fa0b100ac8fabf4"
+  },
+  {
+    "path": "codex/diagnosis/stderr.txt",
+    "bytes": 1348,
+    "sha256": "6ebaead461c0c7e24a1a0c5045ec5b3cc9e1370f1e12f53cfb586af795e40feb"
+  },
+  {
+    "path": "workbuddy/prompt.txt",
+    "bytes": 1943,
+    "sha256": "3ceb748dadb99c6225d6fb13ded853fc6abee6f9ce3c1dddbf62d1bf260a8123"
+  },
+  {
+    "path": "workbuddy/answer.txt",
+    "bytes": 6915,
+    "sha256": "259505a1bfd20d1587b70ea396fd72c853ddf27ce0868acbfc1db7354479f49a"
+  },
+  {
+    "path": "workbuddy/result.json",
+    "bytes": 1072,
+    "sha256": "273acf91a9afebf6f929b394a57f1b8333e9502ebb804152f1bb9413582825ea"
+  },
+  {
+    "path": "real-ai/exports/补货经营分析_20261105_141814_450354.xlsx",
+    "bytes": 13052,
+    "sha256": "c8b7c230fe999264ed81cffd75b47085c0a5a257fd3259d6a3e0f6181375e484"
+  },
+  {
+    "path": "real-ai/exports/补货经营分析_20261105_143421_207271.xlsx",
+    "bytes": 23916,
+    "sha256": "183d30ded9232f4eca9252487a9325c13ac9ac2f899abdbae86d772791ef6f42"
+  }
+]

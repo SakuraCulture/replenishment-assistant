@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "frozen_exe": false,
+  "app": "补货助手",
+  "version": "0.40.0",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "源码运行",
+  "build_id": "未打包",
+  "workspace_unchanged": true,
+  "tools": 23,
+  "risk_summary": {
+    "before_gap_skus": 4,
+    "after_gap_skus": 4,
+    "unknown_gap_skus": 0,
+    "arrival_gap_skus": 4,
+    "new_or_worsened_skus": 0,
+    "reduced_gap_skus": 0,
+    "stores": [
+      {
+        "store": "S1",
+        "before_gap_skus": 2,
+        "after_gap_skus": 2,
+        "unknown_gap_skus": 0,
+        "arrival_gap_skus": 2,
+        "new_or_worsened_skus": 0,
+        "reduced_gap_skus": 0
+      },
+      {
+        "store": "S2",
+        "before_gap_skus": 2,
+        "after_gap_skus": 2,
+        "unknown_gap_skus": 0,
+        "arrival_gap_skus": 2,
+        "new_or_worsened_skus": 0,
+        "reduced_gap_skus": 0
+      }
+    ],
+    "hard_issue_count": 0,
+    "note": "按门店＋商品计数；缺口以预算后执行量和固定预测日均计算。到货前风险未假定在途准时到货。不同商品缺口数量不相加。未新增风险不等于无风险。"
+  },
+  "candidate_stores": [
+    "S1",
+    "S2"
+  ],
+  "operations": [
+    "Codex配置取消/确认",
+    "WorkBuddy配置取消/确认",
+    "保留其他连接",
+    "配置检查按钮",
+    "实际稳定启动器",
+    "实际接口stdio",
+    "启停与重连",
+    "错误环境拒绝",
+    "双进程试算",
+    "候选完整参数",
+    "未采用"
+  ],
+  "maximum_heartbeat_gap_seconds": 0.09399999998277053,
+  "limits": "本机合成资料，确认弹框由QA自动选择；不是另一台电脑或外部AI自然语言验收。"
+}

@@ -1,0 +1,184 @@
+{
+  "passed": true,
+  "build": {
+    "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+    "build_id": "rc2",
+    "version": "0.40.0",
+    "built_at": "2026-11-05T14:14:15.076281+08:00",
+    "source_archive_sha256": "b9e76c119ff7bf699cbbeefe8a2df058f793cd45423b475476da572c5e2bb42e",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+      "files": 868,
+      "manifest_sha256": "5ea923516f566d9e61beeb8b3e30115d74413ac0bfa2ee09f8f3a539d2f15ef9",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "7a984cf92b51bed1984235c7bc074e2eafd172ba694517a9b8d8789bbfb8e7a1",
+      "files": 8,
+      "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+      "contains_user_state": false
+    }
+  },
+  "hashes": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.40.0_rc2\\补货助手\\补货助手.exe": "480841836a4f910151159e54036e0aca4f4115bdfdc21fcae62949bc4dd0ff39",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.40.0_rc2\\补货助手\\AI接口\\补货助手AI接口.exe": "22249f50b7957353a3026f148cec76247c95e8baff1ae1f214fa5002b613723c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.40.0_rc2\\补货助手\\AI入口\\补货助手AI启动器.exe": "f1fb245e0f6a4f10f0310c1cfdc1fe7b2f5c7935ef646110ec29e13694f892d9"
+  },
+  "checks": {
+    "portability": {
+      "passed": true,
+      "frozen_exe": true,
+      "app": "补货助手",
+      "version": "0.40.0",
+      "parameter_schema_version": 3,
+      "job_schema_version": 1,
+      "routing_version": "0.5.1",
+      "model_version": "0.3.4-rules",
+      "model_baseline": "v0.3.0-baseline",
+      "entry": "补货助手.exe",
+      "storage_format_version": 2,
+      "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+      "build_id": "rc2",
+      "built_at": "2026-11-05T14:14:15.076281+08:00",
+      "source_archive_sha256": "b9e76c119ff7bf699cbbeefe8a2df058f793cd45423b475476da572c5e2bb42e",
+      "source_mode": "immutable git archive; no working-tree overlay",
+      "aoxiang": {
+        "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+        "files": 868,
+        "manifest_sha256": "5ea923516f566d9e61beeb8b3e30115d74413ac0bfa2ee09f8f3a539d2f15ef9",
+        "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+        "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+        "contains_user_state": false,
+        "live_platform_tested": false
+      },
+      "jst_catalog": {
+        "manifest_sha256": "7a984cf92b51bed1984235c7bc074e2eafd172ba694517a9b8d8789bbfb8e7a1",
+        "files": 8,
+        "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+        "contains_user_state": false
+      },
+      "workspace_unchanged": true,
+      "tools": 23,
+      "risk_summary": {
+        "before_gap_skus": 4,
+        "after_gap_skus": 4,
+        "unknown_gap_skus": 0,
+        "arrival_gap_skus": 4,
+        "new_or_worsened_skus": 0,
+        "reduced_gap_skus": 0,
+        "stores": [
+          {
+            "store": "S1",
+            "before_gap_skus": 2,
+            "after_gap_skus": 2,
+            "unknown_gap_skus": 0,
+            "arrival_gap_skus": 2,
+            "new_or_worsened_skus": 0,
+            "reduced_gap_skus": 0
+          },
+          {
+            "store": "S2",
+            "before_gap_skus": 2,
+            "after_gap_skus": 2,
+            "unknown_gap_skus": 0,
+            "arrival_gap_skus": 2,
+            "new_or_worsened_skus": 0,
+            "reduced_gap_skus": 0
+          }
+        ],
+        "hard_issue_count": 0,
+        "note": "按门店＋商品计数；缺口以预算后执行量和固定预测日均计算。到货前风险未假定在途准时到货。不同商品缺口数量不相加。未新增风险不等于无风险。"
+      },
+      "candidate_stores": [
+        "S1",
+        "S2"
+      ],
+      "operations": [
+        "Codex配置取消/确认",
+        "WorkBuddy配置取消/确认",
+        "保留其他连接",
+        "配置检查按钮",
+        "实际稳定启动器",
+        "实际接口stdio",
+        "启停与重连",
+        "错误环境拒绝",
+        "双进程试算",
+        "候选完整参数",
+        "未采用"
+      ],
+      "maximum_heartbeat_gap_seconds": 0.5310000000172295,
+      "limits": "本机合成资料，确认弹框由QA自动选择；不是另一台电脑或外部AI自然语言验收。"
+    },
+    "analytics": {
+      "passed": true,
+      "frozen_exe": true,
+      "app": "补货助手",
+      "version": "0.40.0",
+      "parameter_schema_version": 3,
+      "job_schema_version": 1,
+      "routing_version": "0.5.1",
+      "model_version": "0.3.4-rules",
+      "model_baseline": "v0.3.0-baseline",
+      "entry": "补货助手.exe",
+      "storage_format_version": 2,
+      "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+      "build_id": "rc2",
+      "built_at": "2026-11-05T14:14:15.076281+08:00",
+      "source_archive_sha256": "b9e76c119ff7bf699cbbeefe8a2df058f793cd45423b475476da572c5e2bb42e",
+      "source_mode": "immutable git archive; no working-tree overlay",
+      "aoxiang": {
+        "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+        "files": 868,
+        "manifest_sha256": "5ea923516f566d9e61beeb8b3e30115d74413ac0bfa2ee09f8f3a539d2f15ef9",
+        "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+        "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+        "contains_user_state": false,
+        "live_platform_tested": false
+      },
+      "jst_catalog": {
+        "manifest_sha256": "7a984cf92b51bed1984235c7bc074e2eafd172ba694517a9b8d8789bbfb8e7a1",
+        "files": 8,
+        "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+        "contains_user_state": false
+      },
+      "rows": 6000,
+      "exports": [
+        {
+          "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\ai_portability_0400_20261105\\exe-rc2\\analytics\\actual-exe-report.xlsx",
+          "sha256": "dc7709e5cb70d512fa337493443ccf95108648c737742669e8baa406335a251b",
+          "snapshot_id": "a82ed704b917fbf7d093ee3f5f070209d498c4dabb8c9eaefbf10453dcce308a",
+          "rows": 5796,
+          "pending": 0,
+          "sheets": [
+            "门店经营对比",
+            "门店分仓对比",
+            "订单五段漏斗",
+            "全量商品五段",
+            "资料待核",
+            "原单实际付款",
+            "多轮证据复盘",
+            "统计口径"
+          ]
+        }
+      ],
+      "candidate_count": 2,
+      "heartbeat_ticks": 1131,
+      "maximum_heartbeat_gap_seconds": 0.2970000000204891,
+      "operations": [
+        "原生查询",
+        "店仓订单商品下钻",
+        "全量导出",
+        "停止和重试",
+        "双进程冻结试算",
+        "采用及审计",
+        "撤回",
+        "关闭诊断窗"
+      ],
+      "limits": "合成数据；未连接外部AI客户端或平台；自动Qt交互，不替代业务人员自然操作验收"
+    }
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "version": "0.40.0",
+  "build": {
+    "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+    "build_id": "rc2",
+    "version": "0.40.0",
+    "built_at": "2026-11-05T14:14:15.076281+08:00",
+    "source_archive_sha256": "b9e76c119ff7bf699cbbeefe8a2df058f793cd45423b475476da572c5e2bb42e",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+      "files": 868,
+      "manifest_sha256": "5ea923516f566d9e61beeb8b3e30115d74413ac0bfa2ee09f8f3a539d2f15ef9",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "7a984cf92b51bed1984235c7bc074e2eafd172ba694517a9b8d8789bbfb8e7a1",
+      "files": 8,
+      "source_commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311",
+      "contains_user_state": false
+    }
+  },
+  "baseline_commit": "86464a64584c17aa69d0269f77f14d212e75ea59",
+  "branch": "feat/ai-contract-portability-0.40.0",
+  "full_tests": {
+    "count": 864,
+    "seconds": 326.127,
+    "passed": true,
+    "commit": "f52f756725e3e84d7c10ed59f9c3e04f23cca556"
+  },
+  "final_targeted_tests": {
+    "count": 10,
+    "seconds": 6.951,
+    "passed": true,
+    "commit": "ab4fb48f3a530cbfbd7a95a372480bb2f4c0d311"
+  },
+  "protected_files": [
+    {
+      "path": "src/model.py",
+      "sha256": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "unchanged": true
+    },
+    {
+      "path": "src/allocation.py",
+      "sha256": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "unchanged": true
+    },
+    {
+      "path": "src/one_box_exception.py",
+      "sha256": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "unchanged": true
+    },
+    {
+      "path": "src/default_config.json",
+      "sha256": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "unchanged": true
+    },
+    {
+      "path": "src/normal_exports.py",
+      "sha256": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4",
+      "unchanged": true
+    },
+    {
+      "path": "src/lifecycle_comparison.py",
+      "sha256": "9be52d6e9a1b2b89b5ed341c55096f94b4cec4f573f77513629d7c0595263ebf",
+      "unchanged": true
+    },
+    {
+      "path": "src/stock_diagnosis.py",
+      "sha256": "17ab63986c9771b75293860427146de451c129b7e2787edd08e2bc63ccb6d0e4",
+      "unchanged": true
+    },
+    {
+      "path": "src/order_analytics_exports.py",
+      "sha256": "c561999b8d353217f91aa603ad82d35394929a3ee9991da45974cd9045e7ec29",
+      "unchanged": true
+    }
+  ],
+  "old_delivery_unchanged": true,
+  "old_delivery_checked": {
+    "交付_0.39.0_rc2/补货助手/补货助手.exe": "f6494b35c3485123b83e4309e8ec50625478e66714803937429d6031e5e988e8",
+    "交付_0.39.0_rc2/补货助手/AI接口/补货助手AI接口.exe": "8882291cdee48a370b4b906fc0ea1b3b953708d662e4a095cee8316e0119b61b",
+    "交付_0.39.0_rc2/补货助手_0.39.0_rc2.zip": "2db1a8426393565e746cbb1e4a89b315cd243845365f96ebdddd09a3ee23ee8e"
+  },
+  "actual_exe_passed": true,
+  "business_difference_count": 0,
+  "exe_hashes": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.40.0_rc2\\补货助手\\补货助手.exe": "480841836a4f910151159e54036e0aca4f4115bdfdc21fcae62949bc4dd0ff39",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.40.0_rc2\\补货助手\\AI接口\\补货助手AI接口.exe": "22249f50b7957353a3026f148cec76247c95e8baff1ae1f214fa5002b613723c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.40.0_rc2\\补货助手\\AI入口\\补货助手AI启动器.exe": "f1fb245e0f6a4f10f0310c1cfdc1fe7b2f5c7935ef646110ec29e13694f892d9"
+  },
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.40.0_rc2\\补货助手_0.40.0_rc2.zip",
+  "zip_sha256": "fc9c78933666e3b18a2d08518ead1fe1879cdab0b47f347b6b7f458470b94914",
+  "zip_bytes": 124108806,
+  "delivery_files": 1226,
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "PySide6-Essentials": "6.12.0",
+      "openpyxl": "3.1.5",
+      "PyInstaller": "6.22.3"
+    }
+  },
+  "ai_review": {
+    "review_complete": true,
+    "synthetic": true,
+    "codex": {
+      "execution_completed": true,
+      "language_passed": true,
+      "cases": [
+        "五段漏斗",
+        "多轮历史复盘",
+        "安全库存试算"
+      ],
+      "timings_seconds": [
+        113.36,
+        106.234,
+        155.468
+      ],
+      "export_sheets": 5,
+      "export_scope": "全部商品明细级；不含门店/分仓/订单汇总，回执和回答明确列出5表",
+      "limitations": [
+        "曾查询S1/S2历史整体失败，因S2无历史；随后仅复盘有资料的S1，并明确S2不可归因。没有把失败说成完成。"
+      ]
+    },
+    "workbuddy": {
+      "client": "WorkBuddy 5.9.3 / 快速 GLM-5.3-Flash",
+      "seconds_displayed": 334,
+      "tasks_executed": true,
+      "tool_calls": 22,
+      "numeric_and_export_passed": true,
+      "language_passed": false,
+      "findings": [
+        "在比较结果（两店一致）的每店金额表中混入两店合计4条缺口；应明确每店2条、两店4条，并与箱规覆盖分开。",
+        "11-01足额履约仍缺货的措辞把签发时观察与后续履约时间关系说得过满；没有实际到货时间，不能认定该轮足额到货后仍缺货。",
+        "未完整展示逐商品变化、到货前缺口和每店覆盖天数；工具已读取完整明细，但最终回答省略。"
+      ],
+      "passed_items": [
+        "证据减量正确标为10-29单",
+        "历史保护期12天没有被当前13天替代",
+        "原有4条缺口与新增风险0分开",
+        "执行金额每店10，模型理论变化不冒充资金节省",
+        "未知不当0，实际付款182.70另列",
+        "实际导出8张表，2390单元格与原生导出严格一致"
+      ],
+      "adopted": false
+    },
+    "all_language_passed": false,
+    "business_unchanged": true,
+    "disposition": "连接及数据契约完成；自然语言全部可靠未达成，WorkBuddy回答只可辅助，采用前必须核对软件原生结果。没有通过扩大忽略范围或修改业务预期掩盖问题。"
+  },
+  "client_restoration": {
+    "temporary_entry_removed": true,
+    "unrelated_unchanged": true,
+    "original_bytes_restored": true,
+    "sha256": "785755bd9b5947b19adf71737271c7d8315571c7f4fdafa3717ac74d04d64a40",
+    "scope": "Only temporary MCP configuration restored; client trust cache/test conversation retained"
+  },
+  "limits": [
+    "全部新增数据为明确标注的合成验收数据",
+    "未在第二台物理电脑验证",
+    "自然语言通过仅覆盖本轮问题，不等于任意提示词可靠",
+    "真实AI使用源码工作台加包内接口；完整EXE另做原生及stdio验收",
+    "未重跑平台取数及整夜定时链路",
+    "未推送、未合并"
+  ]
+}

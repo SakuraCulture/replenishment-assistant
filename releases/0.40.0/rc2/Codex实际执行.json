@@ -1,0 +1,71 @@
+{
+  "client": "Codex CLI actual model",
+  "synthetic": true,
+  "cases": [
+    {
+      "case": "funnel",
+      "exit_code": 0,
+      "seconds": 113.36000000004424,
+      "events": 27,
+      "values": {
+        "scope": {
+          "instance_id": "bde4537bffa448edbc5484443430c540",
+          "business_date": "2026-11-05",
+          "context_token": "281faf707dda44fa78443eee06f104ae24b4784bebf2bd71fcbce2a04c456f62"
+        },
+        "query": {
+          "from": "2026-10-29",
+          "to": "2026-11-05",
+          "stores": [
+            "S1"
+          ],
+          "rounds": 8
+        }
+      }
+    },
+    {
+      "case": "history",
+      "exit_code": 0,
+      "seconds": 106.23399999999674,
+      "events": 15,
+      "values": {
+        "scope": {
+          "instance_id": "bde4537bffa448edbc5484443430c540",
+          "business_date": "2026-11-05",
+          "context_token": "281faf707dda44fa78443eee06f104ae24b4784bebf2bd71fcbce2a04c456f62"
+        },
+        "query": {
+          "from": "2026-10-29",
+          "to": "2026-11-05",
+          "stores": [
+            "S1"
+          ],
+          "rounds": 8
+        }
+      }
+    },
+    {
+      "case": "diagnosis",
+      "exit_code": 0,
+      "seconds": 155.46799999999348,
+      "events": 34,
+      "values": {
+        "scope": {
+          "instance_id": "bde4537bffa448edbc5484443430c540",
+          "business_date": "2026-11-05",
+          "context_token": "281faf707dda44fa78443eee06f104ae24b4784bebf2bd71fcbce2a04c456f62"
+        },
+        "query": {
+          "from": "2026-10-29",
+          "to": "2026-11-05",
+          "stores": [
+            "S1"
+          ],
+          "rounds": 8
+        }
+      }
+    }
+  ],
+  "passed": false,
+  "execution_completed": true
+}

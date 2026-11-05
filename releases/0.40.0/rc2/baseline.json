@@ -1,0 +1,18 @@
+{
+  "commit": "86464a64584c17aa69d0269f77f14d212e75ea59",
+  "files": {
+    "src/model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "src/allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "src/one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/normal_exports.py": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4",
+    "src/lifecycle_comparison.py": "9be52d6e9a1b2b89b5ed341c55096f94b4cec4f573f77513629d7c0595263ebf",
+    "src/stock_diagnosis.py": "17ab63986c9771b75293860427146de451c129b7e2787edd08e2bc63ccb6d0e4",
+    "src/order_analytics_exports.py": "c561999b8d353217f91aa603ad82d35394929a3ee9991da45974cd9045e7ec29"
+  },
+  "old_package": {
+    "交付_0.39.0_rc2/补货助手/补货助手.exe": "f6494b35c3485123b83e4309e8ec50625478e66714803937429d6031e5e988e8",
+    "交付_0.39.0_rc2/补货助手/AI接口/补货助手AI接口.exe": "8882291cdee48a370b4b906fc0ea1b3b953708d662e4a095cee8316e0119b61b",
+    "交付_0.39.0_rc2/补货助手_0.39.0_rc2.zip": "2db1a8426393565e746cbb1e4a89b315cd243845365f96ebdddd09a3ee23ee8e"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "risks": [
+    {
+      "task_id": "142f0acdd5c247df9f7f0e64f54adc3a",
+      "candidate": 1,
+      "before_gap_skus": 4,
+      "after_gap_skus": 4,
+      "unknown_gap_skus": 0,
+      "arrival_gap_skus": 4,
+      "new_or_worsened_skus": 0,
+      "reduced_gap_skus": 0,
+      "hard_issue_count": 0
+    },
+    {
+      "task_id": "142f0acdd5c247df9f7f0e64f54adc3a",
+      "candidate": 2,
+      "before_gap_skus": 4,
+      "after_gap_skus": 4,
+      "unknown_gap_skus": 0,
+      "arrival_gap_skus": 4,
+      "new_or_worsened_skus": 0,
+      "reduced_gap_skus": 0,
+      "hard_issue_count": 0
+    },
+    {
+      "task_id": "f8cc97588d074df7a0d329598a012743",
+      "candidate": 1,
+      "before_gap_skus": 4,
+      "after_gap_skus": 4,
+      "unknown_gap_skus": 0,
+      "arrival_gap_skus": 4,
+      "new_or_worsened_skus": 0,
+      "reduced_gap_skus": 0,
+      "hard_issue_count": 0
+    },
+    {
+      "task_id": "f8cc97588d074df7a0d329598a012743",
+      "candidate": 2,
+      "before_gap_skus": 4,
+      "after_gap_skus": 4,
+      "unknown_gap_skus": 0,
+      "arrival_gap_skus": 4,
+      "new_or_worsened_skus": 0,
+      "reduced_gap_skus": 0,
+      "hard_issue_count": 0
+    }
+  ],
+  "parameters": [
+    {
+      "task_id": "142f0acdd5c247df9f7f0e64f54adc3a",
+      "candidate": 1,
+      "stores": [
+        "S1",
+        "S2"
+      ],
+      "parameters_per_store": 28,
+      "only_fast_probability_changed": true
+    },
+    {
+      "task_id": "142f0acdd5c247df9f7f0e64f54adc3a",
+      "candidate": 2,
+      "stores": [
+        "S1",
+        "S2"
+      ],
+      "parameters_per_store": 28,
+      "only_fast_probability_changed": true
+    },
+    {
+      "task_id": "f8cc97588d074df7a0d329598a012743",
+      "candidate": 1,
+      "stores": [
+        "S1",
+        "S2"
+      ],
+      "parameters_per_store": 28,
+      "only_fast_probability_changed": true
+    },
+    {
+      "task_id": "f8cc97588d074df7a0d329598a012743",
+      "candidate": 2,
+      "stores": [
+        "S1",
+        "S2"
+      ],
+      "parameters_per_store": 28,
+      "only_fast_probability_changed": true
+    }
+  ],
+  "history_rows_returned": 18,
+  "unique_history_rows": 6,
+  "observed_task_failures": [
+    {
+      "task_id": "3f58270e79fd4153a8bb1c72c06a91fc",
+      "state": "failed",
+      "message": "所选门店在日期和仓范围内没有有效签发：S2",
+      "error": null
+    }
+  ],
+  "natural_language_checked_separately": true
+}
