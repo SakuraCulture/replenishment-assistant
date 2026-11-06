@@ -41,6 +41,16 @@ class AnalyticsWidget(QWidget):
         extra.addWidget(button('诊断本次工作台',lambda:open_diagnosis(self.host)))
         for edit in (self.start,self.end,self.search,self.stores):edit.textChanged.connect(self.dirty);edit.returnPressed.connect(self.query)
         self.warehouse.currentIndexChanged.connect(self.dirty);self.group.currentIndexChanged.connect(self.dirty)
+        metric_row=QHBoxLayout();metric_row.addWidget(label('漏斗指标'))
+        self.metric_choice=QComboBox()
+        for title,key in [('商品货值','value'),('商品款数','skus'),('商品数量','quantity'),('预计可售天数','coverage')]:self.metric_choice.addItem(title,key)
+        metric_row.addWidget(self.metric_choice);self.metric_choice.currentIndexChanged.connect(self.change_metric)
+        metric_row.addWidget(label('天数共同对比至'))
+        self.coverage_through=QComboBox()
+        for stage in service.STAGES:self.coverage_through.addItem(service.NAMES[stage],stage)
+        self.coverage_through.setCurrentIndex(1);self.coverage_through.currentIndexChanged.connect(self.dirty);metric_row.addWidget(self.coverage_through)
+        metric_row.addWidget(label('选择后查询；固定当时预测，实收新增天数不是当前库存。','muted'),1);v.addLayout(metric_row)
+        self.coverage_note=label('','muted');self.coverage_note.setWordWrap(True);v.addWidget(self.coverage_note)
         self.bar=QProgressBar();self.bar.setRange(0,100);self.bar.setValue(0);self.bar.setMaximumHeight(16);v.addWidget(self.bar)
         self.note=label('未查询','muted');v.addWidget(self.note)
         self.funnel=QTableWidget(3,6);self.funnel.setHorizontalHeaderLabels(['必采属性',*[service.NAMES[s] for s in service.STAGES]])
@@ -50,16 +60,17 @@ class AnalyticsWidget(QWidget):
         v.addWidget(self.funnel)
         self.crumb=label('全部查询结果','section');v.addWidget(self.crumb)
         self.tabs=QTabWidget();self.tables={};self.models={}
-        for key,title in [('store','门店汇总'),('warehouse','门店分仓'),('order','订单漏斗'),('detail','商品明细'),('pending','资料待核'),('history','多轮复盘')]:
+        for key,title in [('store','门店汇总'),('warehouse','门店分仓'),('order','订单漏斗'),('detail','商品明细'),('pending','资料待核'),('history','多轮复盘'),('rounds','门店逐轮天数')]:
             table,model=grid(self,[]);self.tables[key]=table;self.models[key]=model;self.tabs.addTab(table,title)
             table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
             if key in ('store','warehouse','order'):table.doubleClicked.connect(lambda idx,k=key:self.open_detail(k,idx.row()))
+        self.tables['detail'].doubleClicked.connect(self.coverage_explanation)
         self.tables['order'].selectionModel().selectionChanged.connect(self.select_orders)
         self.tabs.currentChanged.connect(self.change_tab);v.addWidget(self.tabs,1)
         row=QHBoxLayout();row.addWidget(button('← 返回全部',self.back));row.addWidget(button('◀ 上一页',lambda:self.turn(-1)));row.addWidget(button('下一页 ▶',lambda:self.turn(1)));self.page_note=label('');row.addWidget(self.page_note,1)
         row.addWidget(button('清空订单勾选',self.clear_selected));v.addLayout(row)
         row=QHBoxLayout();self.export_kind=QComboBox()
-        for title,k in [('门店经营分析（精简37列）','store'),('订单经营分析（精简37列）','order'),('当前商品明细','detail')]:self.export_kind.addItem(title,k)
+        for title,k in [('门店经营分析（含可售天数）','store'),('订单经营分析（含可售天数）','order'),('当前商品明细','detail'),('门店逐轮天数','coverage_rounds')]:self.export_kind.addItem(title,k)
         row.addWidget(self.export_kind);self.export_btn=button('导出当前范围',lambda:self.export(False),True);row.addWidget(self.export_btn)
         self.selected_btn=button('导出所选订单',lambda:self.export(True));row.addWidget(self.selected_btn)
         row.addWidget(button('保存常用视图',self.save_view));row.addWidget(button('复制 AI 分析指令',self.copy_prompt));self.cancel_btn=button('■ 停止当前任务',self.cancel);row.addWidget(self.cancel_btn);v.addLayout(row)
@@ -83,7 +94,7 @@ class AnalyticsWidget(QWidget):
         return service.query_spec({'from':self.start.text().strip(),'to':self.end.text().strip(),
             'stores':[s.strip() for s in self.stores.text().replace('，',',').split(',') if s.strip()],
             'warehouse':self.warehouse.currentText() if self.warehouse.currentIndex() else '',
-            'group':self.group.currentText() if self.group.currentIndex() else '', 'search':self.search.text().strip(),'category':self.category.text().strip(),'rounds':self.rounds.value()})
+            'group':self.group.currentText() if self.group.currentIndex() else '', 'search':self.search.text().strip(),'category':self.category.text().strip(),'rounds':self.rounds.value(),'coverage_through':self.coverage_through.currentData()})
 
     def choose_plan(self):
         try:
@@ -142,18 +153,51 @@ class AnalyticsWidget(QWidget):
         self.report=report;self.drill=None;self.selected.clear();self.page=0;self.stale=False
         self.applied.setText(f"已查询 {report['query']['from']} 至 {report['query']['to']} · 数据截至 {report['as_of']} · 按当时资料与清单")
         m=report['metrics'];self.note.setText(f"查询{len(report['heads'])}单，纳入{m['included_orders']}单，五段完整{m['complete_orders']}单；纳入 {m['included']} 条，排除 {m['excluded']} 条，待核 {m['pending']} 条。未导入不算0。")
+        self.render_funnel();self.render();self.controls()
+
+    def change_metric(self,*_):
+        if not hasattr(self,'funnel'):return
+        self.render_funnel();self.render()
+
+    def render_funnel(self):
+        if not self.report:return
+        report=self.report;mode=self.metric_choice.currentData();coverage=report['coverage']
         groups=[g for g in service.GROUPS if g!='属性待核' or report['groups'][g]['included'] or report['groups'][g]['pending']]
         self.funnel.setRowCount(len(groups));self.funnel.setFixedHeight(44+46*len(groups))
         for i,g in enumerate(groups):
-            self.funnel.setItem(i,0,QTableWidgetItem(g))
-            for j,s in enumerate(service.STAGES,1):
-                metric=report['groups'][g]['stages'][s]
-                self.funnel.setItem(i,j,QTableWidgetItem(f"{formatted(metric['value'])} 元\n{metric['skus']}款 / {metric['orders']}单"))
-                self.funnel.item(i,j).setToolTip(f"已计价部分；缺价{metric['unpriced']}条；不同环节有效范围可能不同。")
+            self.funnel.setItem(i,0,QTableWidgetItem(g));eligible=[r for r in report['rows'] if r['group']==g and r['scope']=='纳入']
+            for j,stage in enumerate(service.STAGES,1):
+                metric=report['groups'][g]['stages'][stage]
+                if mode=='coverage':
+                    from coverage_exports import summary_note
+                    m=coverage['groups'][g];value=m['stage_days'][stage]
+                    text=('未纳入比较' if stage not in service.STAGES[:service.STAGES.index(coverage['through'])+1] else ('待核' if value is None else f'{value:.1f}天')+f"\n{m['orders']}/{m['round_orders']}单")
+                    tip=summary_note(m,stage)
+                elif mode=='quantity':
+                    from funnel_compact_export import metrics
+                    value=metrics(eligible,stage)[1];text=formatted(value)+' 个库存单位';tip='不同商品单位合计，仅作执行数量统计。'
+                elif mode=='skus':text=str(metric['skus'])+'款';tip='本环节数量大于0的去重商品编码款数。'
+                else:
+                    text=f"{formatted(metric['value'])} 元\n{metric['skus']}款 / {metric['orders']}单";tip=f"已计价部分；缺价{metric['unpriced']}条；不同环节有效范围可能不同。"
+                cell=QTableWidgetItem(text);cell.setToolTip(tip);self.funnel.setItem(i,j,cell)
             self.funnel.setRowHeight(i,46)
-        self.render();self.controls()
+        m=coverage['overview']
+        self.coverage_note.setText((f"天数依据：{m['basis_day'] or '无'}；共同对比至{service.NAMES[coverage['through']]}；有效{m['eligible_rows']}/{m['round_rows']}条、{m['orders']}/{m['round_orders']}单。按货值加权，跨轮不累计；下表订单显示各自轮次，未完成留空。" if mode=='coverage' else ''))
 
-    def key(self):return ('store','warehouse','order','detail','pending','history')[self.tabs.currentIndex()]
+    def coverage_explanation(self,index):
+        if self.metric_choice.currentData()!='coverage' or not self.report:return
+        from coverage_metrics import item
+        from coverage_exports import explanation
+        rows=[r for r in self.visible_rows() if r['scope']=='纳入'];pos=self.page*100+index.row()
+        if pos>=len(rows):return
+        r=rows[pos];d=item(r)
+        text=f"{r['name']}（{r['sku']}）\n依据业务日：{r['day']}\n预测日均：{formatted(d['forecast_daily'])} {r['unit']}/天\n可用：{formatted(d['available'])}；在途：{formatted(d['inbound'])}\n"
+        for title,key in [('现货可售','available_days'),('含在途覆盖','position_days'),('签发后预计覆盖','signed_position_days'),('当时保护期','protection_days')]:text+=title+'：'+('待核' if d[key] is None else f'{d[key]:.1f}天')+'\n'
+        text+='\n各段新增天数＝本环节数量÷当时预测日均\n'
+        for stage in service.STAGES:text+=service.NAMES[stage]+'：'+('未取得或待核' if d['stage_days'][stage] is None else f"{d['stage_days'][stage]:.1f}天")+'\n'
+        QMessageBox.information(self,'预计可售天数依据',text+'\n'+explanation(d))
+
+    def key(self):return ('store','warehouse','order','detail','pending','history','rounds')[self.tabs.currentIndex()]
 
     def visible_rows(self):
         rows=self.report['rows'] if self.report else []
@@ -169,6 +213,12 @@ class AnalyticsWidget(QWidget):
             self.display_items=items
             headers=['门店','供货仓','补货单号',*[service.NAMES[s]+'货值' for s in service.STAGES],'必采签发货值','非必采签发货值','待核条目']
             values=[[i['name'],i['warehouse'],i['order'],*[i['metrics']['stages'][s]['value'] for s in service.STAGES],i['groups']['必采']['stages']['signed']['value'],i['groups']['非必采']['stages']['signed']['value'],i['metrics']['pending']] for i in items]
+        elif key=='rounds':
+            from coverage_metrics import STAGES
+            headers=['门店','业务日期','供货仓',*[service.NAMES[s]+'新增可售天数' for s in STAGES],'有效商品条数','待核说明']
+            items=self.report['coverage']['rounds'] if self.report else []
+            if self.drill:items=[i for i in items if all(i.get(k)==v for k,v in self.drill.items() if k!='order')]
+            values=[[i['name'],i['day'],i['warehouse'],*[i['coverage']['stage_days'][s] for s in STAGES],i['coverage']['eligible_rows'],'；'.join(i['coverage']['excluded_reasons'])] for i in items]
         elif key=='history':
             from history_diagnostics import HEADERS,table
             headers=HEADERS;review=self.report['history'] if self.report else {'items':[]}
@@ -178,10 +228,31 @@ class AnalyticsWidget(QWidget):
         else:
             scoped=[r for r in rows if r['scope']==('待核' if key=='pending' else '纳入')]
             headers=exports.DETAIL_HEADERS;values=scoped
+        coverage_mode=self.metric_choice.currentData()=='coverage'
+        if coverage_mode and key in ('store','warehouse','order'):
+            kind={'store':'stores','warehouse':'warehouses','order':'orders'}[key]
+            fields=('store',) if key=='store' else ('store','warehouse') if key=='warehouse' else ('store','warehouse','order')
+            lookup={tuple(i[f] for f in fields):i['coverage'] for i in self.report['coverage'][kind]} if self.report else {}
+            headers=['门店','供货仓','补货单号','天数依据业务日',*['建议新增天数','签发新增天数','确认新增天数','下单新增天数','实收新增天数'],'有效商品条数','待核说明']
+            values=[]
+            for i in items:
+                m=lookup[tuple(i[f] for f in fields)]
+                values.append([i['name'],i['warehouse'],i['order'],m['basis_day'],*[None if m['stage_days'][s] is None else f"{m['stage_days'][s]:.1f}" for s in service.STAGES],m['eligible_rows'],'；'.join(dict.fromkeys(list(m['excluded_reasons'])+[v for s in service.STAGES for v in m['stage_reasons'][s]]))])
+        if coverage_mode and key in ('detail','pending'):
+            from coverage_exports import DETAIL_HEADERS
+            headers=DETAIL_HEADERS
         self.page=min(self.page,max(0,(len(values)-1)//100));model=self.models[key];model.headers=headers
         blocker=QSignalBlocker(self.tables[key].selectionModel())
         page=values[self.page*100:(self.page+1)*100]
-        model.replace(list(exports.detail_rows(page)) if key in ('detail','pending') else page);del blocker
+        if key in ('detail','pending') and coverage_mode:
+            from coverage_exports import detail_rows
+            model.replace(list(detail_rows(page)))
+        else:model.replace(list(exports.detail_rows(page)) if key in ('detail','pending') else page)
+        del blocker
+        if coverage_mode and key in ('store','warehouse','order'):
+            for column,width in enumerate([180,150,250,160,160,160,160,160,160,140,300]):self.tables[key].setColumnWidth(column,width)
+        elif coverage_mode and key in ('detail','pending'):
+            for column in range(len(headers)):self.tables[key].setColumnWidth(column,260 if column in (2,4,6,22) else 180)
         self.page_note.setText(f'{len(values)}条 · 第{self.page+1}/{max(1,(len(values)+99)//100)}页 · 已选{len(self.selected)}单；双击汇总下钻')
         self.controls()
 
@@ -241,7 +312,7 @@ class AnalyticsWidget(QWidget):
             QMessageBox.information(self,'请先启用本机连接','经营分析无需 AI 即可使用；复制 AI 指令前请到“AI 协助”启用本机连接。');return
         if not self.report:QMessageBox.information(self,'先明确范围','请先成功查询需要的业务日期和门店范围。');return
         scope={'instance_id':gateway.instance,'business_date':self.host.job_day,'context_token':gateway.token(),'query':self.report['query']}
-        prompt='请使用补货助手 MCP 查询下列范围的五段经营漏斗，分别说明必采、非必采、属性待核的表现，并导出门店经营对比 Excel 到软件已配置目录。\n'+json.dumps(scope,ensure_ascii=False,indent=2)+'\n先核对 workbench_context 的实例、业务日期和 context_token，不一致就停止。用新的 operation_key 调用 query_order_funnel；task_status 确认完成后调用 order_funnel_results，按 next_offset 读完，每页不超过100。区分未导入和0，不把不同可比范围直接相减。再用返回的 task_id 和 snapshot_id 调用 export_order_funnel（level=store），等待任务完成后给出文件和实际范围。只读与写本地报表，不计算、不采用、不签发、不修改参数、不采购、不删除。连接不可用不读本机数据库绕过。'
+        prompt='请使用补货助手 MCP 查询下列范围的五段经营漏斗，分别说明必采、非必采、属性待核的表现，并导出门店经营对比 Excel 到软件已配置目录。\n'+json.dumps(scope,ensure_ascii=False,indent=2)+'\n先核对 workbench_context 的实例、业务日期和 context_token，不一致就停止。用新的 operation_key 调用 query_order_funnel；task_status 确认完成后调用 order_funnel_results，按 next_offset 读完，每页不超过100。区分未导入和0，不把不同可比范围直接相减。读取coverage及definitions说明五段预计可售天数、依据日期、有效范围与缺失原因；固定制单预测，实收新增天数不是当前库存。再用返回的 task_id 和 snapshot_id 调用 export_order_funnel（level=store），等待任务完成后给出文件和实际范围。只读与写本地报表，不计算、不采用、不签发、不修改参数、不采购、不删除。连接不可用不读本机数据库绕过。'
         QApplication.clipboard().setText(prompt);self.note.setText('已复制 AI 分析与导出指令；尚未执行或发送任何任务。')
 
     def save_view(self):
@@ -264,6 +335,7 @@ class AnalyticsWidget(QWidget):
         self.warehouse.setCurrentText(q.get('warehouse') or '全部仓');self.group.setCurrentText(q.get('group') or '全部属性')
         self.rounds.setValue(q.get('rounds',8))
         self.category.setText(q.get('category',''))
+        self.coverage_through.setCurrentIndex(service.STAGES.index(q.get('coverage_through','signed')))
 
 
 def open_analytics(host):

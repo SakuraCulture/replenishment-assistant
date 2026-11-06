@@ -46,8 +46,11 @@ def records(rows,level,cancel=None):
             yield identity+[group]+[v for s in service.STAGES for v in metrics(eligible,s)]+[
                 v for a,b in PAIRS for v in ratios(eligible,a,b)]
 
-def write(book,name,rows,level,progress=lambda _:None,cancel=None):
-    sheet=Sheet(book,name,[24,34,22,44,18,18,16]+[24]*30,cancel)
+def write(book,name,rows,level,progress=lambda _:None,cancel=None,coverage=False):
+    from coverage_exports import STAGE_HEADERS,DAYS,summary_note
+    from coverage_metrics import summarize
+    headers=HEADERS+STAGE_HEADERS if coverage else HEADERS
+    sheet=Sheet(book,name,[24,34,22,44,18,18,16]+[24]*(len(headers)-7),cancel)
     sheet.ws.freeze_panes='H2';sheet.ws.print_title_rows='1:1'
     notes={3:'订单表填写补货单号；门店及分仓汇总涉及多单，此列留空。',4:'本行包含的签发业务日期最小值，不是首次操作的时分秒。',
            5:'本行包含的签发业务日期最大值，不代表收货完成时间。',6:'全部为合计口径；不能再与必采、非必采、属性待核相加。依据签发时清单。'}
@@ -56,15 +59,29 @@ def write(book,name,rows,level,progress=lambda _:None,cancel=None):
         notes[8+3*i]='各商品库存单位数量相加；包、瓶、个等混合，仅作执行数量统计，不代表同质物量。未导入留空。'
         notes[9+3*i]='各商品数量×签发时单价的已知货值合计；正数量缺价不猜0，数量明确为0的货值为0，无已知货值留空。不是付款单实际金额。'
     for i in range(22,37):notes[i]='后阶段÷前阶段；只用两个阶段均有效的相同商品集合，货值还要求签发价已知。缺资料或分母0留空，允许超过100%；并非不同覆盖范围总数直接相除。'
-    sheet.row(HEADERS,'header',height=72,comments=notes)
+    if coverage:
+        for i in range(37,42):notes[i]='本阶段新增数量按制单时预测折算；按签发价加权，跨多轮仅最新日。缺资料留空，详见本行单元格说明。'
+    sheet.row(headers,'header',height=72,comments=notes)
     formats={7+3*i+j:(INTEGER,NUMBER,MONEY)[j] for i in range(5) for j in range(3)}
     formats.update({i:PERCENT for i in range(22,37)})
-    for values in records(rows,level,cancel):sheet.row(values,height=32,formats=formats)
-    sheet.ws.auto_filter.ref=f'A1:AK{sheet.count}'
-    progress(f'已生成：{name}（{sheet.count-1}行，37列）')
+    if coverage:
+        formats.update({i:DAYS for i in range(37,42)})
+        original=iter(records(rows,level,cancel))
+        for rs in grouped(rows,level):
+            for group in ('全部',*service.GROUPS):
+                chosen=rs if group=='全部' else [r for r in rs if r['group']==group]
+                if not chosen:continue
+                metric=summarize(chosen,cancel=cancel)
+                sheet.row(next(original)+list(metric['stage_days'].values()),height=32,formats=formats,
+                          comments={37+i:summary_note(metric,stage) for i,stage in enumerate(service.STAGES)})
+    else:
+        for values in records(rows,level,cancel):sheet.row(values,height=32,formats=formats)
+    from openpyxl.utils import get_column_letter
+    sheet.ws.auto_filter.ref=f'A1:{get_column_letter(len(headers))}{sheet.count}'
+    progress(f'已生成：{name}（{sheet.count-1}行，{len(headers)}列）')
     return name
 
-def write_summary(book,rows,level,progress=lambda _:None,cancel=None):
+def write_summary(book,rows,level,progress=lambda _:None,cancel=None,coverage=False):
     tabs=[('门店经营对比','store'),('门店分仓对比','warehouse')] if level=='store' else []
     tabs.append(('订单五段漏斗','order'))
-    return [write(book,name,rows,kind,progress,cancel) for name,kind in tabs]
+    return [write(book,name,rows,kind,progress,cancel,coverage) for name,kind in tabs]

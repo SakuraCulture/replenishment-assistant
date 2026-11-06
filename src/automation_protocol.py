@@ -39,7 +39,7 @@ TASK = {'task_id': TEXT}
 CHANGE = obj({'store': TEXT, 'path': {'type': 'array', 'items': {'type': ['string', 'integer']}, 'minItems': 2, 'maxItems': 3},
               'value': {'type': ['number', 'string']}}, ['store', 'path', 'value'])
 ANALYTICS_QUERY = obj({'from':TEXT,'to':TEXT,'stores':LIST,'orders':LIST,'warehouse':{'type':'string','enum':['','山东仓','河北仓']},
-    'group':{'type':'string','enum':['','必采','非必采','属性待核']},'search':{'type':'string'},'category':TEXT,'rounds':{'type':'integer','minimum':1,'maximum':30}},['from','to'])
+    'group':{'type':'string','enum':['','必采','非必采','属性待核']},'search':{'type':'string'},'category':{'type':'string','maxLength':4096},'coverage_through':{'type':'string','enum':['model','signed','return','payment','receipt']},'rounds':{'type':'integer','minimum':1,'maximum':30}},['from','to'])
 TOOLS = [
     ('stock_diagnosis_parameters','只读查询库存诊断候选与基线的完整冻结参数、中文含义、来源和修改项。使用start_stock_diagnosis返回的task_id，candidate从1开始；不能用effective_parameters(scope=preview)查询此类会话。',
      obj({**TASK,'candidate':{'type':'integer','minimum':1,'maximum':2},'stores':{**LIST,'minItems':1,'maxItems':100}},['task_id','candidate','stores'])),
@@ -52,10 +52,10 @@ TOOLS = [
      obj({**TASK,'store':TEXT,**PAGE},['task_id'])),
     ('query_order_funnel','只读查询五段经营漏斗，按签发业务日期和精确门店/订单范围。异步返回task_id，task_status完成后用order_funnel_results分页。包含必采/非必采与资料待核，排除禁采/对应仓禁用/淘汰品。不执行计算。',
      obj({'context_token':TEXT,'operation_key':TEXT,'query':ANALYTICS_QUERY},['context_token','operation_key','query'])),
-    ('order_funnel_results','读取已完成经营分析的门店、分仓、订单或商品分页。数量金额以服务为准，未导入不按0；next_offset为空才读完。返回中文业务口径。',
-     obj({**TASK,'level':{'type':'string','enum':['store','warehouse','order','detail','pending']},'store':TEXT,'order':TEXT,**PAGE},['task_id'])),
-    ('export_order_funnel','导出已核对范围的五段漏斗Excel，与原生经营分析相同。门店/订单报表仅37列：基础信息、五段SKU款数/库存单位数量合计/签发价货值、相邻及首尾比值；不同库存单位数量相加仅作执行统计，未知不填0。detail仅按明确请求导出商品明细。只写本地报表；directory可省略以使用配置导出位置。不签发、不修改订单、不发送文件。',
-     obj({**TASK,'snapshot_id':TEXT,'context_token':TEXT,'operation_key':TEXT,'directory':TEXT,'level':{'type':'string','enum':['store','order','detail']},'orders':LIST},['task_id','snapshot_id','context_token','operation_key'])),
+    ('order_funnel_results','读取已完成经营分析的门店、分仓、订单、商品或rounds逐轮分页。数量金额以服务为准，未导入不按0；next_offset为空才读完。返回中文业务口径及coverage预计可售天数；固定当时预测，按签发价加权，跨轮仅最新业务日，实收新增天数不是当前库存天数。',
+     obj({**TASK,'level':{'type':'string','enum':['store','warehouse','order','detail','pending','rounds']},'store':TEXT,'order':TEXT,**PAGE},['task_id'])),
+    ('export_order_funnel','导出已核对范围的五段漏斗Excel，与原生经营分析相同。门店/订单报表保留原37列并追加五段新增可售天数：基础信息、五段SKU款数/库存单位数量合计/签发价货值、相邻及首尾比值；不同库存单位数量相加仅作执行统计，未知不填0。detail按明确请求导出商品明细，coverage_rounds导出门店逐轮天数及口径。只写本地报表；directory可省略以使用配置导出位置。不签发、不修改订单、不发送文件。',
+     obj({**TASK,'snapshot_id':TEXT,'context_token':TEXT,'operation_key':TEXT,'directory':TEXT,'level':{'type':'string','enum':['store','order','detail','coverage_rounds']},'orders':LIST},['task_id','snapshot_id','context_token','operation_key'])),
     ('workbench_context', '查看当前工作台、已启用范围、业务日期和任务。先调用以取得 context_token。', obj()),
     ('parameter_definitions', '查询参数业务含义、调整影响、合法范围、依赖与AI可改范围；调参前先读说明。模板路径须用实际门店参数路径替换。只读，不修改配置。',
      obj({'group': {'type':'string','enum':['all','warehouses','weight_profiles','profile_parameters','parameters','policies','category_profiles']}, 'search':{'type':'string'}, **PAGE})),

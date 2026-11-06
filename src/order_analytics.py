@@ -41,7 +41,7 @@ def digest(value):
 
 
 def query_spec(spec):
-    allowed = {'from','to','stores','orders','warehouse','group','search','category','rounds'}
+    allowed = {'from','to','stores','orders','warehouse','group','search','category','rounds','coverage_through'}
     if set(spec)-allowed: raise ValueError('存在未开放的分析筛选字段')
     out = {**spec}
     for k in ('from','to'):
@@ -56,6 +56,7 @@ def query_spec(spec):
     if out.get('warehouse') not in (None, '', '山东仓', '河北仓'): raise ValueError('未知供货仓')
     if out.get('group') not in (None, '', *GROUPS): raise ValueError('未知必采分组')
     if type(out.get('rounds',8)) is not int or not 1<=out.get('rounds',8)<=30:raise ValueError('复盘轮数须在1至30之间')
+    if out.get('coverage_through', 'signed') not in STAGES: raise ValueError('未知天数比较环节')
     return out
 
 
@@ -258,7 +259,7 @@ def validate_basis(path,report,progress=lambda _:None,cancel=None):
     checkpoint(cancel)
 
 
-def collect(path, spec, progress=lambda _:None, cancel=None):
+def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
     spec=query_spec(spec);path=Path(path).resolve();rows=[];tokens=[];heads=[];payments=[]
     with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as db:
         db.execute('BEGIN')
@@ -314,11 +315,15 @@ def collect(path, spec, progress=lambda _:None, cancel=None):
             'stores':summaries(rows,'store'),'warehouses':summaries(rows,'warehouse'),'orders':summaries(rows,'order')}
     from history_diagnostics import review
     report['history']=review(report,spec.get('rounds',8))
+    if _coverage:
+        from coverage_metrics import projection
+        progress('计算预计可售天数，固定当时预测依据…')
+        report['coverage']=projection(rows,spec.get('coverage_through','signed'),cancel)
     return report
 
 
 def validate_snapshot(path, report, progress=lambda _:None,cancel=None):
-    current=collect(path,report['query'],progress,cancel)
+    current=collect(path,report['query'],progress,cancel,_coverage=False)
     if current['snapshot_id']!=report['snapshot_id']:
         raise ValueError('分析依据或订单范围已变化，请刷新后重新导出；未导出旧缓存')
     return True

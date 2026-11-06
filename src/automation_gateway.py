@@ -113,7 +113,10 @@ class Gateway(QObject):
             s.disconnected.connect(lambda socket=s: self.drop(socket))
 
     def drop(self, socket):
-        self.buffers.pop(socket, None); socket.deleteLater()
+        if socket not in self.buffers:return
+        self.buffers.pop(socket, None)
+        from shiboken6 import isValid
+        if isValid(socket):socket.deleteLater()
 
     def read_connection(self, socket):
         if socket not in self.buffers: return

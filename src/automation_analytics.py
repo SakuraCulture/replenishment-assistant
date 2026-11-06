@@ -35,12 +35,27 @@ def query(gateway,args):
 def results(gateway,args):
     from automation_queries import page
     report=require(gateway,args['task_id']);level=args.get('level','store')
+    if level=='rounds':
+        rows=report['coverage']['rounds']
+        if args.get('store'):rows=[r for r in rows if r['store']==args['store']]
+        if args.get('order'):raise CommandError('NEEDS_REVIEW','逐轮视图按门店及仓查看，指定订单请使用order视图')
+        return {'snapshot_id':report['snapshot_id'],'as_of':report['as_of'],'definitions':report['coverage']['definitions'],
+                'coverage_version':report['coverage']['version'],'page':page(rows,args.get('offset',0),args.get('limit',50))}
     rows=report[{'store':'stores','warehouse':'warehouses','order':'orders'}.get(level,'rows')]
     if level=='detail':rows=[r for r in rows if r['scope']=='纳入']
     elif level=='pending':rows=[r for r in rows if r['scope']=='待核']
     if args.get('store'):rows=[r for r in rows if r['store']==args['store']]
     if args.get('order'):rows=[r for r in rows if r.get('order')==args['order']]
-    return {'snapshot_id':report['snapshot_id'],'as_of':report['as_of'],'query':report['query'],
+    coverage=report['coverage']
+    if level in ('detail','pending'):
+        lookup={(d['order'],d['sku']):d for d in coverage['details']}
+        rows=[{**r,'coverage':lookup[(r['order'],r['sku'])]} for r in rows]
+    else:
+        kind={'store':'stores','warehouse':'warehouses','order':'orders'}[level]
+        fields=('store',) if level=='store' else ('store','warehouse') if level=='warehouse' else ('store','warehouse','order')
+        lookup={tuple(d[k] for k in fields):d for d in coverage[kind]}
+        rows=[{**r,'coverage':lookup[tuple(r[k] for k in fields)]['coverage'],'coverage_groups':lookup[tuple(r[k] for k in fields)]['groups']} for r in rows]
+    return {'snapshot_id':report['snapshot_id'],'coverage':{k:coverage[k] for k in ('version','definitions','through','overview','groups')},'as_of':report['as_of'],'query':report['query'],
             'metrics':report['metrics'],'groups':report['groups'],
             'definitions':{'model':'自动建议，含启用的一箱例外，总预算和人工之前','payment':'业务确认有效的付款数量；本地生成不算实际下单',
                 'price':'各段统一签发价；实际付款金额另列','missing':'未导入或待重新核对不算0','group':'当时必卖清单；无依据为属性待核',

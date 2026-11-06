@@ -22,7 +22,7 @@ def detail_rows(rows):
 
 
 def export(path,report,target,level='store',orders=None,progress=lambda _:None,cancel=None):
-    if level not in ('store','order','detail'):raise ValueError('未知报表类型')
+    if level not in ('store','order','detail','coverage_rounds'):raise ValueError('未知报表类型')
     target=Path(target).resolve()
     if target.suffix.lower()!='.xlsx' or target.exists():raise ValueError('请使用新的.xlsx文件，保留已导出分析快照')
     checkpoint(cancel);service.validate_snapshot(path,report,progress,cancel)
@@ -37,11 +37,13 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
     fd,tmp=tempfile.mkstemp(dir=target.parent,prefix='.analytics-',suffix='.xlsx');os.close(fd)
     try:
         with stream_book() as book:
-            monitor = write_summary(book,rows,level,progress,cancel) if level!='detail' else []
+            monitor = write_summary(book,rows,level,progress,cancel,coverage=True) if level in ('store','order') else []
             for name,headers,values in tabs:
                 checkpoint(cancel)
                 write_table(book,name,headers,([float(v) if isinstance(v,Decimal) else v for v in row] for row in values),
                     style='single',cancel=cancel,progress=progress,row_count=len(values))
+            from coverage_exports import append_sheets
+            extra=append_sheets(book,rows,detail=level=='detail',rounds=level in ('store','coverage_rounds'),cancel=cancel,progress=progress)
             progress('压缩保存报表，完成后响应取消…');book.save(tmp)
         checkpoint(cancel)
         # A confirmed/deleted order while writing must not publish an obsolete report.
@@ -49,4 +51,4 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
         checkpoint(cancel);os.link(tmp,target)
     finally:Path(tmp).unlink(missing_ok=True)
     return {'path':str(target),'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),
-            'snapshot_id':report['snapshot_id'],'rows':len(included),'pending':len(pending),'sheets':monitor+[t[0] for t in tabs]}
+            'snapshot_id':report['snapshot_id'],'rows':len(included),'pending':len(pending),'sheets':monitor+[t[0] for t in tabs]+extra,'coverage_version':report['coverage']['version']}

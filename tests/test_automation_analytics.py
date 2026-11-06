@@ -46,6 +46,36 @@ class AnalyticsApiTests(unittest.TestCase):
         finally:
             for book in books:book.close()
         self.assertEqual(self.g.dispatch('export_order_funnel',args)['task_id'],ex['task_id'])
+    def test_closed_socket_cleanup_is_idempotent(self):
+        from PySide6.QtNetwork import QLocalSocket
+        import shiboken6
+        socket=QLocalSocket();self.g.buffers[socket]=bytearray();shiboken6.delete(socket)
+        self.g.drop(socket);self.g.drop(socket)
+        self.assertNotIn(socket,self.g.buffers)
+
+    def test_blank_category_from_native_query_is_valid(self):
+        t=self.g.dispatch('query_order_funnel',{'context_token':self.g.token(),'operation_key':'native-empty-category',
+            'query':{**self.data.spec,'category':'','coverage_through':'receipt'}})
+        self.f.wait();self.assertEqual(self.g.journal.get(t['task_id'])['state'],'completed')
+        self.assertEqual(self.g.analytics_reports[t['task_id']]['coverage']['through'],'receipt')
+
+    def test_coverage_api_matches_native_and_excel(self):
+        for row in self.data.p['result']['rows']:row.update(AN=2,AM=1,K=4,L=6,AG=7,AH=3,G='包')
+        self.data.save_payload();t,_=self.query('coverage')
+        native=self.g.analytics_reports[t['task_id']]
+        response=self.g.dispatch('order_funnel_results',{'task_id':t['task_id'],'level':'detail','limit':100})
+        self.assertEqual(response['coverage']['overview'],native['coverage']['overview'])
+        self.assertEqual(response['page']['items'][0]['coverage']['stage_days']['signed'],12)
+        rounds=self.g.dispatch('order_funnel_results',{'task_id':t['task_id'],'level':'rounds','limit':1})
+        self.assertEqual(rounds['page']['items'][0],native['coverage']['rounds'][0])
+        target=self.data.root/'coverage.xlsx';exports.export(self.data.path,native,target)
+        book=openpyxl.load_workbook(target)
+        try:
+            ws=book['订单五段漏斗']
+            self.assertEqual(ws['AM2'].value,12);self.assertEqual(ws['AM2'].data_type,'n')
+            self.assertEqual(ws['AM2'].number_format,'0.0');self.assertIn('可售天数口径',book.sheetnames)
+        finally:book.close()
+
     def test_stale_no_page_or_export_and_permissions(self):
         t,_=self.query();self.data.f.save('return')
         with self.assertRaises(CommandError) as e:self.g.dispatch('order_funnel_results',{'task_id':t['task_id']})
