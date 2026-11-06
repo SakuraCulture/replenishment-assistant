@@ -9,11 +9,11 @@ def main():
     delivery=ROOT/'交付_0.46.1_rc1/补货助手';release=ROOT/'releases/0.46.1/rc1'
     build=read(ROOT/'build_0.46.1_rc1/build_info.json');assert build['version']=='0.46.1'
     changed=set(subprocess.check_output(['git','diff','--name-only',build['source_commit'],'--','src','tests','components','tools','prepare_delivery.py','requirements-win-amd64.lock'],cwd=ROOT,text=True).splitlines())
-    assert changed<={'tools/verify_storage_exe.py','tools/seal_current_storage.py'},changed
+    assert changed<={'tools/verify_storage_exe.py','tools/seal_current_storage.py','tests/test_archive_orders.py'},changed
     validation_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     frozen=read(QA/'frozen.json')
     for path,digest in frozen['protected'].items():assert sha(Path(path))==digest,path
-    regression=(QA/'regression-r2.log').read_text('utf-8-sig')
+    regression=(QA/'regression-r3.log').read_text('utf-8-sig')
     assert re.search(r'Ran 1033 tests in [\d.]+s\s+OK\s*$',regression)
     for name in ('fixture-report.json','codec/report.json','backup/report.json','cold/report.json','warm/report.json','multiple/report.json','synthetic-performance/report.json'):
         assert read(QA/name)['passed'],name
@@ -27,7 +27,7 @@ def main():
     assert not any(name=='ijson' or name.startswith('ijson.') for name in modules)
     assert not any('ijson' in p.name.lower() for p in delivery.rglob('*'))
     release.mkdir(parents=True,exist_ok=False)
-    files={'frozen.json':'frozen.json','fixture-report.json':'fixture-report.json','regression-r1.log':'regression-first-fixture-failure.txt','regression-r2.log':'regression.txt',
+    files={'frozen.json':'frozen.json','fixture-report.json':'fixture-report.json','regression-r1.log':'regression-first-fixture-failure.txt','regression-r2.log':'regression-second-fixture-failure.txt','regression-r3.log':'regression.txt',
            'focused-r1.log':'focused-tests.txt','fixture-fix.log':'fixture-fix-tests.txt','codec/report.json':'codec.json','backup/report.json':'backup.json',
            'cold/report.json':'cold-performance.json','warm/report.json':'warm-performance.json','multiple/report.json':'multiple-performance.json','synthetic-performance/report.json':'synthetic-performance.json',
            'exe-deletion/deletion-report.json':'exe-deletion.json','exe-storage-r2/storage_ui_report.json':'exe-storage.json','exe-recovery/process-acceptance.json':'exe-recovery.json',

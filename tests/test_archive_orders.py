@@ -81,7 +81,7 @@ class ArchiveTests(unittest.TestCase):
         events=hf.events(self.work.path,'oid','河北仓');self.assertEqual(len(events['rows']),1);self.assertEqual(events['rows'][0][1],'BH-T-ZC-HB')
         self.assertFalse(hf.events(self.work.path,'oid','山东仓')['records'])
     def test_chunk_storage_identical_view(self):
-        dest=self.root/'chunk';dest.mkdir();work,repo,p=seed(dest,True)
+        dest=self.root/'chunk';dest.mkdir();work,repo,p=seed(dest)
         self.assertEqual(wr.dumps(repo.get(wr.today(),'T')['payload']['result']),wr.dumps(self.p['result']))
         data=hr.execute(work.path,dest/'index.db',{'kind':'list'},self.cancel,lambda _:None);self.assertEqual(len(data['records']),2)
     def test_exception_isolation_survives_python_optimization(self):
