@@ -21,7 +21,7 @@ def fixture(folder,count,skus):
             store=f'S{i:03}';oid='oid-'+store;p=copy.deepcopy(f.f.payload);p['result'].update(store=store,store_name='合成'+store)
             with closing(sqlite3.connect(f.path)) as db,db:
                 db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),store,'normal_model',oid,'BH-'+store+'-ZC',1))
-                db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,no.fingerprint(p['result']),wr.now(),no.encode(p)))
+                db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,no.fingerprint(p['result']),wr.now(),no.encode(p, db)))
             h=next(h for h in purchases.targets(f.path) if h['store']==store and h['warehouse']=='河北仓')
             f.f.h=h;f.f.save('return',[{'门店编码':store,'门店确认数量':40}]);heads.append(h)
         f.f.h=f.h

@@ -88,7 +88,7 @@ class ArchiveTests(unittest.TestCase):
         p=copy.deepcopy(self.f.p);p['result']['rows'][0]['K']=8;day=(date.today()-timedelta(days=7)).isoformat()
         with closing(sqlite3.connect(self.path)) as db,db:
             db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,'T','normal_model','old-inventory','BH-OLD',1))
-            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('old-inventory',1,no.fingerprint(p['result']),wr.now(),no.encode(p)))
+            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('old-inventory',1,no.fingerprint(p['result']),wr.now(),no.encode(p, db)))
         return day
     def test_previous_outside_query_and_no_duplicate_warehouse(self):
         old=self.old();r=s.collect(self.path,self.spec)

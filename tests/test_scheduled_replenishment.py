@@ -76,7 +76,7 @@ class ScheduleTests(unittest.TestCase):
         self.repo.save_value(r['id'],'large',data,r['epoch'])
         with self.repo.db(True) as db:data_maintenance.collect_shared(db,self.root)
         self.assertEqual(self.repo.value(r['id'],'large'),data)
-        target=self.root/'legacy.sqlite3';storage_maintenance.convert(self.work.path,target,'legacy')
+        target=self.root/'backup.sqlite3';storage_maintenance.backup(self.work.path,target)
         self.assertEqual(sr.Repository(target).value(r['id'],'large'),data)
     def test_ready_result_late_epoch_and_delete_guards(self):
         r=self.repo.claim(self.repo.manual(self.s)['id']);self.repo.request_pause(r['id'])

@@ -86,12 +86,12 @@ def main():
     assert not (out/'cancelled.xlsx').exists() and set(ALL_TEMP_FILES)==temp_before
     checks.append('cancel new business Excel cleans its own XML temporary files and publishes no partial workbook')
 
-    # Legacy conversion preserves added independent tables and exact original snapshots.
-    for mode in ['legacy','upgrade']:
-        target=out/(mode+'.sqlite3');sm.convert(work.path,target,mode)
+    # Verified backup preserves independent tables and exact original snapshots.
+    for mode in ['backup']:
+        target=out/(mode+'.sqlite3');sm.backup(work.path,target)
         with sqlite3.connect(target) as db,work.connect() as src:
             for table in ['source_files','merchant_feedback']:assert list(db.execute('SELECT * FROM '+table+' ORDER BY rowid'))==list(src.execute('SELECT * FROM '+table+' ORDER BY rowid'))
-    unchanged();checks.append('legacy/upgrade copy preserves returned versions and original file BLOBs, original signed payload exact')
+    unchanged();checks.append('current backup preserves returned versions and original file BLOBs, original signed payload exact')
     # Signing revision race rejects feedback plan, historical version remains independently readable.
     stale=mf.prepare(work.path,mf.scan([zero]),{num:1});changed=copy.deepcopy(p);changed['results'][codes[0]]['qa_note']='new signed revision';repo.confirm(changed,[codes[0]],saved['revision'],{codes[0]:1})
     try:mf.commit(work.path,stale)

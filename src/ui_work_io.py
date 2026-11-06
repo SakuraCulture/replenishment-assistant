@@ -72,7 +72,7 @@ class Request(QThread):
 
 class Progress(QDialog):
     def __init__(self,parent,session,operation,value):
-        super().__init__(parent);self.session=session;self.operation=operation;self._completed=False;self.setWindowTitle({'prepare_save':'核对保存','save':'保存作业','prepare_normal':'核对归档','confirm_normal':'确认归档','delivery_prepare':'核对导出','delivery_execute':'导出确认单','review_export':'保存完整差异','copy_config':'复制配置','storage_copy':'创建兼容存储副本'}.get(operation,'读取作业'));self.setMinimumWidth(510)
+        super().__init__(parent);self.session=session;self.operation=operation;self._completed=False;self.setWindowTitle({'prepare_save':'核对保存','save':'保存作业','prepare_normal':'核对归档','confirm_normal':'确认归档','delivery_prepare':'核对导出','delivery_execute':'导出确认单','review_export':'保存完整差异','copy_config':'复制配置','storage_copy':'创建数据库备份'}.get(operation,'读取作业'));self.setMinimumWidth(510)
         self.started=time.monotonic();self.last_progress=self.started;self.cancelling=False;self.committing=False;self.cancel_after_commit=False;self.committed=False;self.exporting=False
         self.setWindowTitle({'delivery_probe':'核对导出','delivery_expand':'准备完整签发草稿'}.get(operation,self.windowTitle()))
         self.setWindowTitle({'delete_preview':'核对彻底删除范围','delete_orders':'彻底删除关联数据','delete_job':'删除每日草稿'}.get(operation,self.windowTitle()))

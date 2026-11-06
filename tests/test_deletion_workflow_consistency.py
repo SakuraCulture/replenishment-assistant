@@ -14,12 +14,12 @@ from runtime_support import Cancelled
 class Consistency(unittest.TestCase):
     def setUp(self):
         t=tempfile.TemporaryDirectory();self.addCleanup(t.cleanup);self.root=Path(t.name)
-        self.w,self.r,p=seed(self.root,chunked=True);self.path=self.w.path
+        self.w,self.r,p=seed(self.root);self.path=self.w.path
         p=copy.deepcopy(p);p['result']['store']='U';p['result']['store_name']='未选店'
         for row in p['result']['rows']:row['B']='U'
         with closing(sqlite3.connect(self.path)) as db,db:
             db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),'U','normal_model','other','BH-U-ZC',1))
-            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('other',1,no.fingerprint(p['result']),wr.now(),no.encode(p)))
+            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('other',1,no.fingerprint(p['result']),wr.now(),no.encode(p, db)))
         heads=purchases.targets(self.path);self.a=next(h for h in heads if h['store']=='T');self.b=next(h for h in heads if h['store']=='U')
         self.store=Workflows(self.path.parent/'aoxiang')
         self.before_b=self.r.get(wr.today(),'U')

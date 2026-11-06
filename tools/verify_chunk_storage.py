@@ -12,9 +12,12 @@ p=payload();p['large_map']={str(i):{'value':i,'date':date(2026,10,30)} for i in 
 db=sqlite3.connect(':memory:');prep=ch.prepare(p);expected=wr.dumps(p).encode();assert prep.digest==hashlib.sha256(expected).hexdigest() and prep.size==len(expected)
 with db:blob=ch.put(db,prep)
 assert wr.dumps(ch.load(blob,db,expected=prep.digest))==wr.dumps(p)
-legacy=zlib.compress(expected);assert wr.dumps(ch.load(legacy,db,expected=prep.digest))==wr.dumps(p)
+legacy=zlib.compress(expected)
+try:ch.load(legacy,db,expected=prep.digest)
+except ValueError as exc:assert '已停用' in str(exc)
+else:raise AssertionError('retired format accepted')
 paths=[('store_presets',),('loaded','hashes'),('catalogs','*','revision')]
-assert ch.load(blob,db,expected=prep.digest,paths=paths)==ch.load(legacy,db,expected=prep.digest,paths=paths)
+assert ch.load(blob,db,expected=prep.digest,paths=paths)=={('store_presets',):p['store_presets'],('loaded','hashes'):p['loaded']['hashes'],('catalogs','*','revision'):{'HB':'a'}}
 repeat=ch.prepare(p,ch.known(db));assert not repeat.chunks and repeat.digest==prep.digest
 changed=copy.deepcopy(p);changed['loaded']['rows'][500]['zero']=1;delta=ch.prepare(changed,ch.known(db));assert len(delta.chunks)==1
 bad=bytearray(blob);bad[len(ch.MAGIC)]^=1
@@ -25,12 +28,13 @@ h=next(iter(prep.chunks));db.execute('UPDATE snapshot_chunks SET data=? WHERE ha
 try:ch.load(blob,db)
 except ValueError:pass
 else:raise AssertionError('block corruption accepted')
-work=wr.Repository(out/'legacy');info=wr.summary(p)
-with work.connect() as db:db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?)',(p['day'],'original',prep.digest,'stamp',wr.dumps(info),legacy))
+work=wr.Repository(out/'current');info=wr.summary(p)
+with work.connect() as db:
+ original_blob=ch.put(db,prep);db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?)',(p['day'],'original',prep.digest,'stamp',wr.dumps(info),original_blob))
 assert wr.dumps(work.get_job(p['day'])['payload'])==wr.dumps(p)
 r=work.save_job(p['day'],changed,'original');assert wr.dumps(work.get_job(p['day'])['payload'])==wr.dumps(changed)
 backups=list(work.path.parent.glob('*.before-chunks-*.sqlite3'));assert len(backups)==1
-with sqlite3.connect(backups[0]) as db:assert db.execute('SELECT payload FROM jobs').fetchone()[0]==legacy
+with sqlite3.connect(backups[0]) as db:assert db.execute('SELECT payload FROM jobs').fetchone()[0]==original_blob
 assert work.review_job(p['day'])['payload']['catalogs']=={'HB':{'revision':'a'}}
 with work.connect() as db:
  before=list(db.execute('SELECT hash FROM snapshot_chunks'));db.execute("CREATE TRIGGER fail_save BEFORE UPDATE ON jobs BEGIN SELECT RAISE(ABORT,'injected'); END")
@@ -43,5 +47,5 @@ assert work.get_job(p['day'])['revision']==r['revision']
 try:work.save_job(p['day'],new,'wrong')
 except wr.Conflict:pass
 else:raise AssertionError('revision mismatch accepted')
-report={'passed':True,'canonical_bytes':len(expected),'initial_blocks':len(prep.chunks),'unchanged_new_blocks':len(repeat.chunks),'one_row_change_new_blocks':len(delta.chunks),'cases':['canonical JSON exact','legacy read','full value/type roundtrip','projection parity','dedup','one block changed','manifest corrupt rejected','block corrupt rejected','legacy database backup verified','overwrite revision CAS','failure rollback includes chunks']}
+report={'passed':True,'canonical_bytes':len(expected),'initial_blocks':len(prep.chunks),'unchanged_new_blocks':len(repeat.chunks),'one_row_change_new_blocks':len(delta.chunks),'cases':['canonical JSON exact','retired format rejected','full value/type roundtrip','projection parity','dedup','one block changed','manifest corrupt rejected','block corrupt rejected','initial database backup verified','overwrite revision CAS','failure rollback includes chunks']}
 (out/'report.json').write_text(json.dumps(report,indent=2),encoding='utf-8');print(json.dumps(report))

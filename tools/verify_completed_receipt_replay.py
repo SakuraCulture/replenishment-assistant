@@ -28,7 +28,7 @@ for(const id of ['D16','D17']){const e=r.exports[id];out.push(await readReceiptS
     main,rows=sources[0]['rows'][0],sources[1]['rows']
     if main['status']!='已完成' or any(r['status']!='已完成' for r in rows):raise ValueError('Actual completed state not proven')
     from test_archive_orders import seed
-    work,repo,p=seed(out,chunked=False);catalog_sample=copy.deepcopy(p['result']['rows'][1]);signed=[]
+    work,repo,p=seed(out);catalog_sample=copy.deepcopy(p['result']['rows'][1]);signed=[]
     # This is a QA reference constructed from actual PO purchase quantities,
     # not the missing historic application signing/payment records.
     for r in rows:
@@ -40,7 +40,7 @@ for(const id of ['D16','D17']){const e=r.exports[id];out.push(await readReceiptS
     digest=no.fingerprint(p['result'])
     with closing(work.connect()) as db,db:
         db.execute('UPDATE normal_orders SET store=?',(scope['store'],))
-        db.execute('UPDATE normal_revisions SET digest=?,payload=?',(digest,no.encode(p)))
+        db.execute('UPDATE normal_revisions SET digest=?,payload=?',(digest,no.encode(p, db)))
     head=lc.current_targets(work.path)[0]
     import openpyxl
     for stage in ('return','payment'):

@@ -4,6 +4,7 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 import business_log_views as view
 import work_repository as wr
+import normal_orders as no
 
 
 class BusinessLogTests(unittest.TestCase):
@@ -14,7 +15,7 @@ class BusinessLogTests(unittest.TestCase):
                 db.executescript('CREATE TABLE normal_orders(oid,day,store,current); CREATE TABLE normal_revisions(oid,revision,payload);')
                 db.execute('INSERT INTO normal_orders VALUES(?,?,?,?)',('o','2026-11-02','001',2))
                 for revision,name in [(1,'当时店名'),(2,'后来店名')]:
-                    db.execute('INSERT INTO normal_revisions VALUES(?,?,?)',('o',revision,zlib.compress(wr.dumps({'result':{'store_name':name}}).encode())))
+                    db.execute('INSERT INTO normal_revisions VALUES(?,?,?)',('o',revision,no.encode({'result':{'store_name':name}},db)))
             before=hashlib.sha256(path.read_bytes()).hexdigest()
             records=[{'oid':'o','revision':1,'store':'001'},{'day':'2026-11-02','store':'001'},{'oid':'o','revision':1,'store':'001'}]
             original=copy.deepcopy(records);view.attach_names(path,records)

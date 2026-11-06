@@ -16,16 +16,18 @@ def freeze():
     save(QA/'frozen.json',{'commit':commit,'archive_sha256':sha(QA/'baseline.zip'),'protected':{str(p):sha(p) for p in files}})
 
 def fixture():
+    global QA
+    QA=a.qa_root
     sys.path[:0]=[str(ROOT/'src'),str(ROOT/'tests')]
     import test_archive_orders as f,work_repository as wr,normal_orders as no,storage_chunks as c,copy
-    out=QA/'synthetic';out.mkdir();work,repo,p=f.seed(out,chunked=True);rng=random.Random(451)
+    out=QA/'synthetic';out.mkdir();work,repo,p=f.seed(out);rng=random.Random(451)
     with closing(work.connect()) as db,db:
         # Many immutable revisions on one day expose compressed-history retention.
         states={s:{'name':s,'state':'待计算'} for s in ('T','U')}
         records=[({'B':'T' if i%2==0 else 'U','E':str(i)}, {'source_row':i+2,'raw':rng.randbytes(150).hex()}) for i in range(8000)]
         for rev in range(6):
             day={'schema':1,'day':wr.today(),'model_version':'0.3.4-rules','states':states,'results':{},'input_dirty':True,'loaded':{'stores':{'T':'T','U':'U'},'normalized':records},'revision_note':str(rev)}
-            db.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',(f'rev-{rev}',wr.today(),no.encode(day)))
+            db.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',(f'rev-{rev}',wr.today(),no.encode(day, db)))
             row=copy.deepcopy(p);row['work_revision']=f'rev-{rev}';row['result']['store']='U';row['result']['store_name']='未选店'
             for d in row['result']['rows']:d['B']='U'
             oid=f'other-{rev}';digest=no.fingerprint(row['result'])
@@ -38,7 +40,7 @@ def fixture():
         # Shared chunked payload creates a real live-reference scan, including cold cache.
         row={'states':states,'loaded':{'normalized':records},'revision_note':'chunked'}
         db.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('frozen-chunked',wr.today(),c.put(db,c.prepare(row))))
-    save(out/'fixture.json',{'synthetic':True,'selected_parent':'oid','legacy_revisions':6,'records_per_revision':8000,'run_records':40,'files':{str(p.relative_to(out)):sha(p) for p in out.rglob('*.sqlite3')}})
+    save(out/'fixture.json',{'synthetic':True,'selected_parent':'oid','current_revisions':6,'records_per_revision':8000,'run_records':40,'files':{str(p.relative_to(out)):sha(p) for p in out.rglob('*.sqlite3')}})
 
 def signature(folder):
     import deletion_qa
@@ -54,6 +56,7 @@ def worker(a):
         with closing(sqlite3.connect(path)) as db,closing(sqlite3.connect(a.warm)) as warm,db:
             ms.cache_schema(db)
             for table in ('maintenance_chunk_refs','maintenance_legacy_refs'):
+                if not db.execute("SELECT 1 FROM sqlite_master WHERE name=?",(table,)).fetchone() or not warm.execute("SELECT 1 FROM sqlite_master WHERE name=?",(table,)).fetchone():continue
                 rows=warm.execute('SELECT * FROM '+table)
                 db.executemany('INSERT OR REPLACE INTO '+table+' VALUES('+','.join('?' for _ in rows.description)+')',rows)
     before=signature(out/'settings');stages={};events=[];proc=psutil.Process();stop=threading.Event();peak=[0];calls={'chunk_bytes':0,'chunk_calls':0}

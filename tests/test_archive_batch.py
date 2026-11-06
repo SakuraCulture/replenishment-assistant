@@ -13,18 +13,18 @@ from test_archive_orders import seed
 def fixture(root):
     work,repo,p=seed(root)
     with closing(work.connect()) as db:
-        catalogs=no.decode(db.execute('SELECT payload FROM normal_work_revisions').fetchone()[0])['catalogs']
+        catalogs=no.decode(db.execute('SELECT payload FROM normal_work_revisions').fetchone()[0],db)['catalogs']
     for wh,c in catalogs.items():
         path=Path(c['source_path']);b=openpyxl.load_workbook(path);b.active['A2']='0001' if wh=='河北仓' else '0002';b.active['B2']='=1+2';b.active['C2'].font=Font(bold=True,color='FF0000');b.create_sheet('原件其他页')['A1']='不能丢失';b.save(path);b.close()
         c['source_sha256']=hashlib.sha256(path.read_bytes()).hexdigest();source_archive.capture(work.path,path,c['source_sha256'])
         sku='0001' if wh=='河北仓' else '0002';c['items']={sku:{'商品编码':sku,'_row':2}}
     with closing(work.connect()) as db,db:
-        db.execute('UPDATE normal_work_revisions SET payload=?',(no.encode({'catalogs':catalogs}),))
+        db.execute('UPDATE normal_work_revisions SET payload=?',(no.encode({'catalogs':catalogs}, db),))
         p2=copy.deepcopy(p);p2['result']['store']='T2';p2['result']['store_name']='另一店';p2['result']['rows'][0]['J']=188
         p2['result']['rows'][0]['_extra_audit']='历史新增字段';p2['result']['config']['parameters']['alpha']=.8
         day='2026-10-28';digest=no.fingerprint(p2['result'])
         db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,'T2','normal_model','oid2','BH-T2-ZC',1))
-        db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid2',1,digest,wr.now(),no.encode(p2)))
+        db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid2',1,digest,wr.now(),no.encode(p2, db)))
     heads=hr.execute(work.path,root/'index.db',{'kind':'list'},threading.Event(),lambda _:None)['records']
     return work,repo,heads,catalogs
 

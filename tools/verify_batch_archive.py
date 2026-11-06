@@ -21,7 +21,7 @@ def main():
         oid=f'qa-{i}';number=f'BH-{day}-{result["store"]}-ZC'
         with closing(work.connect()) as db,db:
             db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,result['store'],'normal_model',oid,number,1))
-            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,digest,'fixed',no.encode(payload)))
+            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,digest,'fixed',no.encode(payload, db)))
         for wh in ao.scopes(result['rows']):heads.append({'day':day,'store':result['store'],'name':result['store_name'],'oid':oid,'number':ao.number(number,wh),'revision':1,'digest':digest,'warehouse':wh})
     (out/'heads.json').write_text(json.dumps(heads,ensure_ascii=False),encoding='utf-8')
     before=hashlib.sha256(work.path.read_bytes()).hexdigest();start=time.perf_counter()

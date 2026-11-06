@@ -12,7 +12,7 @@ from test_rules import row,META
 import model,engine
 
 
-def seed(folder,chunked=False):
+def seed(folder):
     work=wr.Repository(Path(folder)/'settings');repo=no.Repository(work)
     rows=[]
     for sku,wh,qty in [('0001','河北仓',24),('0002','山东仓',0)]:
@@ -27,9 +27,9 @@ def seed(folder,chunked=False):
         catalogs[wh]={'sheet':'原资料','revision':'frozen-'+wh,'source_path':str(path),'source_sha256':sha,'items':{}}
     with closing(work.connect()) as db,db:
         db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),'T','normal_model','oid','BH-T-ZC',1))
-        blob=chunks.put(db,chunks.prepare(p,binding=h)) if chunked else no.encode(p)
+        blob=no.encode(p, db)
         db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid',1,h,wr.now(),blob))
-        db.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('frozen',wr.today(),no.encode({'catalogs':catalogs})))
+        db.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('frozen',wr.today(),no.encode({'catalogs':catalogs}, db)))
     return work,repo,p
 
 

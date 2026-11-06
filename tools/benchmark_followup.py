@@ -15,7 +15,7 @@ def main():
             store=f'T{n:04d}';payload=copy.deepcopy(base);result=payload['result'];result.update(store=store,store_name='合成规模店'+store);result['rows']=[]
             for j in range(100):
                 row=copy.deepcopy(base['result']['rows'][j%2]);row.update(E=f'{j:05d}',D='合成商品'+str(j));result['rows'].append(row)
-            result['summary']=sem.summarize(result['rows']);digest=no.fingerprint(result);db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),store,'normal_model','oid'+store,'BH-'+store+'-ZC',1));db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid'+store,1,digest,wr.now(),no.encode(payload)))
+            result['summary']=sem.summarize(result['rows']);digest=no.fingerprint(result);db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),store,'normal_model','oid'+store,'BH-'+store+'-ZC',1));db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid'+store,1,digest,wr.now(),no.encode(payload, db)))
     source=out/'synthetic-purchase.xlsx';book=openpyxl.Workbook(write_only=True);sheet=book.create_sheet('采购明细');sheet.append(io.FIELDS)
     for n in range(50):
         store=f'T{n:04d}'

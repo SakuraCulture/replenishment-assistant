@@ -274,10 +274,6 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
             if spec['stores'] and store not in spec['stores']:continue
             progress(RowProgress('读取签发与履约快照',i+1,len(records)))
             payload=chunks.load(blob,db,binding=sha)
-            if chunks.manifest(blob) is None:
-                from normal_orders import fingerprint_owned
-                if fingerprint_owned(payload['result'],payload.get('new_focus'))!=sha:
-                    raise ValueError('归档快照校验失败')
             order={'day':day,'store':store,'oid':oid,'number':number,'revision':revision,'current_revision':revision,'digest':sha,'saved':saved,'payload':payload}
             result=payload['result']
             for wh in dict.fromkeys(ao.warehouse(r) for r in result['rows']):

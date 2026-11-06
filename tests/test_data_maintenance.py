@@ -10,7 +10,7 @@ from runtime_support import Cancelled
 class DeleteOrders(unittest.TestCase):
     def setUp(self):
         self.t=tempfile.TemporaryDirectory();self.addCleanup(self.t.cleanup)
-        self.root=Path(self.t.name);self.w,self.r,self.p=seed(self.root,chunked=True);self.path=self.w.path
+        self.root=Path(self.t.name);self.w,self.r,self.p=seed(self.root);self.path=self.w.path
         self.heads=purchases.targets(self.path)
     def test_preview_expands_parent_and_delete_reclaims_unowned_chunks(self):
         plan=m.prepare(self.path,[self.heads[0]])
@@ -38,7 +38,7 @@ class DeleteOrders(unittest.TestCase):
         sha=no.fingerprint(p['result'])
         with closing(sqlite3.connect(self.path)) as db,db:
             db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),'U','normal_model','other','BH-U-ZC',1))
-            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('other',1,sha,wr.now(),no.encode(p)))
+            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('other',1,sha,wr.now(),no.encode(p, db)))
         before=self.r.get(wr.today(),'U')
         with closing(sqlite3.connect(self.path)) as db:sources=db.execute('SELECT * FROM source_files ORDER BY sha').fetchall()
         m.execute(self.path,m.prepare(self.path,self.heads))

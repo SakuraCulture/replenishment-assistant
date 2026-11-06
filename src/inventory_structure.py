@@ -189,9 +189,6 @@ def _load(db,head,visibility,cancel):
     row=db.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
     if not row:raise ValueError('该轮签发已不存在，请重新查询')
     payload=chunks.load(row[0],db,binding=head['digest'])
-    if chunks.manifest(row[0]) is None:
-        from normal_orders import fingerprint_owned
-        if fingerprint_owned(payload['result'],payload.get('new_focus'))!=head['digest']:raise ValueError('归档快照校验失败')
     scopes=ao.scopes(payload['result']['rows'])
     deleted=[wh for wh in scopes if visibility.get((head['oid'],wh),{}).get('deleted')]
     if scopes and len(deleted)==len(scopes):return None

@@ -25,7 +25,7 @@ class StreamingEvidence(unittest.TestCase):
             before=db.total_changes;ms.publish_cache(db,scratch);self.assertEqual(before,db.total_changes)
             scratch.execute("UPDATE maintenance_chunk_refs SET refs='[1]'");ms.publish_cache(db,scratch)
             self.assertEqual(db.total_changes,before+1)
-            scratch.execute("INSERT INTO maintenance_legacy_refs VALUES('l','{}','x')");ms.publish_cache(db,scratch)
+            scratch.execute("INSERT INTO maintenance_chunk_refs VALUES('h2','c','[]','s')");ms.publish_cache(db,scratch)
             self.assertEqual(db.total_changes,before+2)
     def test_index_scan_preserves_matches_boundaries_and_rejects_invalid_text(self):
         needle=wr.dumps('待删-oid');text='x'*262141+needle+'中'*300000
@@ -79,7 +79,7 @@ class VerifiedReferences(unittest.TestCase):
             return result
         with patch.object(m,'prepare_rewrites',side_effect=prepare),self.assertRaisesRegex(ValueError,'校验失败'):m.execute(self.path,plan)
         self.assertEqual(len(self.r.headers()),1)
-    def test_prepared_descriptors_do_not_retain_legacy_blobs(self):
+    def test_prepared_descriptors_do_not_retain_source_blobs(self):
         plan=m.prepare(self.path,self.heads)
         with closing(m.connect(self.path)) as db,closing(sqlite3.connect(':memory:')) as scratch:
             prepared=m.prepare_rewrites(db,plan,scratch,lambda _:None,None)
@@ -91,7 +91,7 @@ class VerifiedReferences(unittest.TestCase):
             result=original(*args)
             with closing(sqlite3.connect(self.path)) as other,other:
                 import normal_orders
-                other.execute('UPDATE normal_work_revisions SET payload=?',(normal_orders.encode({'new':'content'}),))
+                other.execute('UPDATE normal_work_revisions SET payload=?',(normal_orders.encode({'new':'content'}, other),))
             return result
         with patch.object(m,'prepare_rewrites',side_effect=prepare),self.assertRaises(wr.Conflict):m.execute(self.path,plan)
         self.assertEqual(len(self.r.headers()),1)
@@ -99,7 +99,7 @@ class VerifiedReferences(unittest.TestCase):
 class DuplicateWorkRewrites(unittest.TestCase):
     setUp=fixtures.DeleteOrders.setUp
 
-    def duplicate_draft(self, legacy=False):
+    def duplicate_draft(self):
         day=wr.today()
         value={'schema':1,'day':day,'model_version':'0.3.4-rules',
                'states':{'T':{'name':'remove','state':'待计算'},
@@ -107,31 +107,23 @@ class DuplicateWorkRewrites(unittest.TestCase):
                'results':{},'pending_copy':None,'export_log':[]}
         self.w.save_job(day,value,None)
         with closing(sqlite3.connect(self.path)) as db,db:
-            if legacy:
-                blob=zlib.compress(wr.dumps(value).encode())
-                db.execute('UPDATE jobs SET payload=? WHERE day=?',(blob,day))
             blob=db.execute('SELECT payload FROM jobs WHERE day=?',(day,)).fetchone()[0]
             db.execute('UPDATE normal_work_revisions SET payload=?',(blob,))
         return value
 
     def test_duplicate_draft_and_signed_work_keep_exact_unselected_values(self):
-        for legacy in (False,True):
-            with self.subTest(legacy=legacy):
-                # Each format has its own isolated fixture.
-                if legacy:
-                    with closing(sqlite3.connect(self.path)) as db,db:db.execute('DELETE FROM jobs')
-                value=self.duplicate_draft(legacy)
-                plan=m.prepare(self.path,self.heads)
-                original=ms.Editor.rewrite
-                with closing(m.connect(self.path)) as db,closing(sqlite3.connect(':memory:')) as scratch:
-                    with patch.object(ms.Editor,'rewrite',autospec=True,side_effect=original) as rewrite:
-                        prepared=m.prepare_rewrites(db,plan,scratch,lambda _:None,None)
-                    self.assertEqual(rewrite.call_count,1)
-                    self.assertEqual(len(prepared),2)
-                    editor=ms.Editor(db,scratch)
-                    expected=wr.dumps(m.strip_work(value,{'T'}))
-                    for _,_,_,pack,_ in prepared:
-                        self.assertEqual(wr.dumps(editor.value(pack.tree)),expected)
+        value=self.duplicate_draft()
+        plan=m.prepare(self.path,self.heads)
+        original=ms.Editor.rewrite
+        with closing(m.connect(self.path)) as db,closing(sqlite3.connect(':memory:')) as scratch:
+            with patch.object(ms.Editor,'rewrite',autospec=True,side_effect=original) as rewrite:
+                prepared=m.prepare_rewrites(db,plan,scratch,lambda _:None,None)
+            self.assertEqual(rewrite.call_count,1)
+            self.assertEqual(len(prepared),2)
+            editor=ms.Editor(db,scratch)
+            expected=wr.dumps(m.strip_work(value,{'T'}))
+            for _,_,_,pack,_ in prepared:
+                self.assertEqual(wr.dumps(editor.value(pack.tree)),expected)
 
     def test_duplicate_payload_still_checks_each_draft_digest(self):
         self.duplicate_draft()

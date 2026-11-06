@@ -1,4 +1,4 @@
-"""Full legacy real database -> chunks -> legacy; every SQL row compared."""
+"""Current-format backup; every business SQL row compared. Historical filename retained."""
 import argparse,hashlib,json,sqlite3,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'src'))
@@ -24,13 +24,11 @@ def capture(path):
 def main():
     p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     out=a.output.resolve();out.mkdir(parents=True,exist_ok=False);source=a.source.resolve();before=sha(source)
-    receipts=[]
-    for mode,src,name in [('upgrade',source,'chunks.sqlite3'),('legacy',out/'chunks.sqlite3','legacy.sqlite3')]:
-        print(mode,flush=True);receipts.append(sm.convert(src,out/name,mode))
+    receipts=[sm.backup(source,out/'backup.sqlite3')]
     old=capture(source)
-    for path in [out/'chunks.sqlite3',out/'legacy.sqlite3']:assert wr.dumps(capture(path))==wr.dumps(old)
+    assert wr.dumps(capture(out/'backup.sqlite3'))==wr.dumps(old)
     assert sha(source)==before
     report={'passed':True,'source_sha256':before,'differences':0,'tables':{k:len(v) for k,v in old.items()},'scope':'every original SQL row in rowid order; full decoded payload canonical hash; IDs/revisions/events/config exact','exclusions':['snapshot_chunks','snapshot_storage_meta'],'receipts':receipts,'source_unchanged':True}
-    (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print('full real database roundtrip passed',flush=True)
+    (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print('full database backup passed',flush=True)
 
 if __name__=='__main__':main()

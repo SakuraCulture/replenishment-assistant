@@ -86,7 +86,7 @@ class ComparisonTests(unittest.TestCase):
         with closing(sqlite3.connect(self.path)) as db,db:
             for n in range(27):
                 payload=copy.deepcopy(self.data.payload);r=payload['result'];r['store']=f'T{n}';r['store_name']=f'门店{n}';oid=f'oid{n}x';digest=no.fingerprint(r)
-                db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),r['store'],'normal_model',oid,'BH-'+r['store'],1));db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,digest,wr.now(),no.encode(payload)))
+                db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),r['store'],'normal_model',oid,'BH-'+r['store'],1));db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,digest,wr.now(),no.encode(payload, db)))
         cache=self.root/'index.sqlite3';request={'from':wr.today(),'to':wr.today()};first=daily_batch.read(self.path,cache,request);heads=c.all_heads(self.path,cache,request)
         self.assertEqual(len(first['records']),50);self.assertEqual(len(heads),56);self.assertEqual(heads[:50],first['records'])
         filtered=c.all_heads(self.path,cache,{**request,'warehouse':'河北仓','search':'T1'})

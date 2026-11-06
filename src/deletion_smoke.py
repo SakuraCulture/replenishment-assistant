@@ -1,4 +1,4 @@
-"""Opt-in isolated Qt/spawn deletion acceptance, including legacy C parser."""
+"""Opt-in isolated Qt/spawn deletion acceptance, including current C parser."""
 import copy,json,os,sqlite3,sys,time,traceback
 from pathlib import Path
 from contextlib import closing
@@ -46,9 +46,9 @@ def start_smoke(app,win,args):
             queue.grab().save(str(out/'local-failure-queue.png'));queue.accept();queue.deleteLater()
             checks.append('local failed preparation: no fake preview, failure reason enabled, zero-success summary; no browser involved')
             queued=store.prepare([chosen[0],other]);queued_other=copy.deepcopy(queued['items'][1]);queued_other['position']=0
-            # Exercise compressed legacy input through the real frozen worker.
+            # Exercise compressed current input through the real frozen worker.
             with closing(sqlite3.connect(win.work_repository.path)) as db,db:
-                db.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('deletion-smoke-legacy',win.job_day,no.encode({'states':{a:{},b:{}},'probe':list(range(800))})))
+                db.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('deletion-smoke-current',win.job_day,no.encode({'states':{a:{},b:{}},'probe':list(range(800))}, db)))
             checks.append('two-store Windows spawn calculation, draft save and atomic signature')
             phase={'mode':'preview_cancel','saw':[],'last_modal':None}
             def click_dialog():
@@ -91,7 +91,7 @@ def start_smoke(app,win,args):
             require('结束关联本地准备' in phase['saw'],'end local task confirmation missing')
             checks.append('local preparation REVIEW no longer blocks deletion; unselected batch item and count preserved')
             checks.append('actual blocker dialog: cancel, explicitly end only selected local preparation, retain unselected queued task; no platform submission')
-            checks.append('retry after cancellation; legacy ijson parser in work process; exact sibling signed/current result retained; current table refreshed')
+            checks.append('retry after cancellation; current chunk parser in work process; exact sibling signed/current result retained; current table refreshed')
             win.show_section(2);win.followup.query();QTest.qWait(300);win.grab().save(str(out/'after-delete.png'))
             with Session(win.work_repository.path) as session:
                 try:request(win,session,'delete_preview',[chosen[0]])

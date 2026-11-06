@@ -134,8 +134,8 @@ def serve(connection,path,cancel):
                     elif op=='delete_orders':result=maintenance.execute(path,arguments['plan'],arguments['ack'],progress,cancel)
                     else:result=maintenance.delete_job(path,arguments['day'],arguments['revision'],progress,cancel)
                 elif op=='storage_copy':
-                    from storage_maintenance import convert
-                    result=convert(path,arguments['destination'],arguments['mode'],progress,cancel)
+                    from storage_maintenance import backup
+                    result=backup(path,arguments['destination'],progress,cancel)
                 elif op in ('load','copy_config'):
                     with stage('读取并校验作业快照',progress):result=ro.get_job(arguments,paths=[('store_presets',),('store_ui',),('active_plan',)] if op=='copy_config' else None,progress=progress)
                     if op=='copy_config' and result:result={k:result['payload'].get((k,)) for k in ('store_presets','store_ui','active_plan')}

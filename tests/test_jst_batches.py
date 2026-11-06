@@ -118,10 +118,10 @@ class Batches(unittest.TestCase):
         with closing(sqlite3.connect(self.path)) as db,db:
             raw=db.execute('SELECT payload FROM normal_revisions WHERE oid=?',(h['oid'],)).fetchone()[0]
             import normal_orders as no
-            value=no.decode(raw)
+            value=no.decode(raw,db)
             for row in value['result']['rows']:
                 if row.get('E')=='0001':row['AU']='山东仓'
-            db.execute('UPDATE normal_revisions SET payload=?,digest=? WHERE oid=?',(no.encode(value),no.fingerprint_owned(value['result'],value.get('new_focus')),h['oid']))
+            db.execute('UPDATE normal_revisions SET payload=?,digest=? WHERE oid=?',(no.encode(value, db),no.fingerprint_owned(value['result'],value.get('new_focus')),h['oid']))
         # Use normal lifecycle APIs so source rows/units remain validated.
         targets=lc.current_targets(self.path);sd=next(x for x in targets if x['store']=='U' and x['warehouse']=='山东仓')
         self.f.f.h=sd;self.f.f.save('return',[{'门店编码':'U','供货仓':'山东仓','商品编码':'0001','门店确认数量':80}]);self.f.f.h=self.h

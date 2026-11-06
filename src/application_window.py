@@ -114,18 +114,16 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
 
     def storage_copy(self):
         if self.worker or getattr(self,'_large_io_dialog',None):return
-        choice,ok=QInputDialog.getItem(self,'存储维护 · 只生成副本','原数据库保持不变。旧版EXE不能直接读分块记录；可生成旧格式副本用于回退。', ['生成旧格式兼容副本','生成完整分块副本（校验并转换历史）'],0,False)
-        if not ok:return
-        path,_=export_locations.save_file(self,'保存为新的数据库副本','','SQLite (*.sqlite3)')
+        path,_=export_locations.save_file(self,'创建数据库备份','','SQLite (*.sqlite3)')
         if not path:return
         if Path(path).exists():self.failed('目标文件已存在，请使用新文件名；不会覆盖任何数据库。');return
         from ui_work_io import Session,request
         from runtime_support import Cancelled
         try:
-            with Session(self.work_repository.path) as session:receipt=request(self,session,'storage_copy',{'mode':'legacy' if choice.startswith('生成旧格式') else 'upgrade','destination':path})
+            with Session(self.work_repository.path) as session:receipt=request(self,session,'storage_copy',{'destination':path})
         except Cancelled:self.status.setText('已取消创建副本，原数据库未改变。');return
         except Exception as exc:self.failed('副本未生成：'+str(exc));return
-        QMessageBox.information(self,'副本已生成','已校验并保存：'+receipt['path']+'\n原数据库未改变。回退时请先关闭所有补货助手版本，保留当前库，再将兼容副本复制到目标版本的独立资料目录。新模型结果在旧版中应只读，继续工作请重新计算。')
+        QMessageBox.information(self,'备份已生成','已校验并保存：'+receipt['path']+'\n原数据库未改变。此文件是当前格式的主数据库备份，外部原件和浏览器登录状态需另外保管。')
 
     def refresh_focus(self):
         if not hasattr(self,'focus_label'):return

@@ -27,7 +27,7 @@ def fixture(out,stores=2,rounds=2,skus=4):
                         row=copy.deepcopy(f.sample()['rows'][i%4]);row.update(E=f'{i:06d}',A=f'合成门店{store}',B=f'S{store:03d}',K=row['K']+round_i,L=i%3);rows.append(row)
                     payload['result']['rows']=rows;payload['result']['store']=f'S{store:03d}';oid=f'inventory-{store}-{round_i}'
                     db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,f'S{store:03d}','normal_model',oid,'BH-'+oid,1))
-                    db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,no.fingerprint(payload['result']),wr.now(),no.encode(payload)))
+                    db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,no.fingerprint(payload['result']),wr.now(),no.encode(payload, db)))
         spec={'from':(date.today()-timedelta(days=7*(rounds-1))).isoformat(),'to':date.today().isoformat()}
         save(out/'query.json',spec);save(out/'synthetic.json',{'synthetic':True,'stores':stores,'rounds':rounds,'skus_per_store_round':skus,'rows':stores*rounds*skus})
         return target,spec

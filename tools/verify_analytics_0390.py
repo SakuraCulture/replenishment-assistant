@@ -39,7 +39,7 @@ def fixture(out,stores=12,skus=500):
     with closing(sqlite3.connect(path)) as db,db:
         db.execute('DELETE FROM normal_orders');db.execute('DELETE FROM normal_revisions')
         catalogs={w:{'source_sha256':sha,'sheet':'原资料','revision':sha,'items':{}} for w in ('山东仓','河北仓')}
-        db.execute('UPDATE normal_work_revisions SET payload=?',(no.encode({'catalogs':catalogs}),))
+        db.execute('UPDATE normal_work_revisions SET payload=?',(no.encode({'catalogs':catalogs}, db),))
         for s in range(stores):
             p=copy.deepcopy(payload);result=p['result'];result['store']=f'S{s:03d}';result['store_name']=f'合成门店{s:03d}'
             base=result['rows'][0];rows=[]
@@ -47,7 +47,7 @@ def fixture(out,stores=12,skus=500):
                 row=copy.deepcopy(base);row.update(E=f'{i:06d}',D=f'合成商品{i:06d}',AU='河北仓' if i%2 else '山东仓',_must_sell=i%3==0)
                 rows.append(row)
             result['rows']=rows;result['must_list']={'revision':'synthetic','total':len([r for r in rows if r['_must_sell']])};result['must_list_audit']=[{'sku':r['E']} for r in rows if r['_must_sell']]
-            oid=f'bench-{s:03d}';day=wr.today();db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,result['store'],'normal_model',oid,'BH-'+oid,1));db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,no.fingerprint(result),wr.now(),no.encode(p)))
+            oid=f'bench-{s:03d}';day=wr.today();db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,result['store'],'normal_model',oid,'BH-'+oid,1));db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,no.fingerprint(result),wr.now(),no.encode(p, db)))
     return path,{'from':wr.today(),'to':wr.today()}
 
 def benchmark(out,path,spec):

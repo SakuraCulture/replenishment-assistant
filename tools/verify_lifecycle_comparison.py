@@ -29,7 +29,7 @@ def exe(args):
         data.save('return',[{'门店确认数量':12}]);data.save('payment',[{'付款单商品数量':6,'实际金额':19.5}]);data.save('receipt',[{'实际收货数量':3}])
         payload=copy.deepcopy(data.payload);payload['result'].update(store='T2',store_name='另一测试店');digest=no.fingerprint(payload['result'])
         with closing(data.work.connect()) as db,db:
-            db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),'T2','normal_model','oid2','BH-T2-ZC',1));db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid2',1,digest,wr.now(),no.encode(payload)))
+            db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),'T2','normal_model','oid2','BH-T2-ZC',1));db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid2',1,digest,wr.now(),no.encode(payload, db)))
         shutil.copytree(data.path.parent,out/'settings')
     finally:data.tearDown()
     env=os.environ.copy();env.update(REPLENISHMENT_DATA_DIR=str(out/'settings'),PYTHONUTF8='1',QT_SCALE_FACTOR='1');env.pop('QT_QPA_PLATFORM',None)
