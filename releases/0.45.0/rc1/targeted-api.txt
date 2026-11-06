@@ -1,0 +1,8 @@
+test_detail_requires_explicit_round_and_readonly_annotation (test_automation_inventory.InventoryApiTests.test_detail_requires_explicit_round_and_readonly_annotation) ... ok
+test_export_equal_and_stale_guard (test_automation_inventory.InventoryApiTests.test_export_equal_and_stale_guard) ... ok
+test_native_equal_paging_and_idempotency (test_automation_inventory.InventoryApiTests.test_native_equal_paging_and_idempotency) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 5.353s
+
+OK

@@ -1,0 +1,154 @@
+{
+  "passed": true,
+  "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\inventory_0450\\business_comparison\\after\\real_None_True.pklz",
+  "sha256": "80d72f0cdc0fccd54a905630f93bce7f86811a94f0ddd75ac4c22eb9616c2ca6",
+  "rows": 14244,
+  "independently_valued_center_rows": 9077,
+  "expected_center_value": "83668.2480",
+  "overview": {
+    "total": {
+      "known_value": "83668.2480",
+      "records": 14244,
+      "held_skus": 3546,
+      "unpriced": 454,
+      "invalid_quantity": 6,
+      "missing_price": 5166,
+      "value": null,
+      "coverage": "0.8719684151156232374506486182"
+    },
+    "stores": 1,
+    "dates": [
+      "2026-10-27"
+    ],
+    "sources": {
+      "中心仓": {
+        "known_value": "83668.2480",
+        "records": 9083,
+        "held_skus": 3092,
+        "unpriced": 0,
+        "invalid_quantity": 1,
+        "missing_price": 5,
+        "value": null,
+        "coverage": "1"
+      },
+      "地采": {
+        "known_value": "0",
+        "records": 5161,
+        "held_skus": 454,
+        "unpriced": 454,
+        "invalid_quantity": 5,
+        "missing_price": 5161,
+        "value": null,
+        "coverage": "0"
+      },
+      "来源待核": {
+        "known_value": "0",
+        "records": 0,
+        "held_skus": 0,
+        "unpriced": 0,
+        "invalid_quantity": 0,
+        "missing_price": 0,
+        "value": "0",
+        "coverage": null
+      }
+    },
+    "statuses": {
+      "启用": {
+        "known_value": "71782.280",
+        "records": 6431,
+        "held_skus": 2592,
+        "unpriced": 0,
+        "invalid_quantity": 1,
+        "missing_price": 0,
+        "value": null,
+        "coverage": "1"
+      },
+      "备用": {
+        "known_value": "3603.420",
+        "records": 679,
+        "held_skus": 114,
+        "unpriced": 0,
+        "invalid_quantity": 0,
+        "missing_price": 4,
+        "value": "3603.420",
+        "coverage": "1"
+      },
+      "禁用": {
+        "known_value": "8282.5480",
+        "records": 1973,
+        "held_skus": 386,
+        "unpriced": 0,
+        "invalid_quantity": 0,
+        "missing_price": 1,
+        "value": "8282.5480",
+        "coverage": "1"
+      },
+      "状态待核": {
+        "known_value": "0",
+        "records": 0,
+        "held_skus": 0,
+        "unpriced": 0,
+        "invalid_quantity": 0,
+        "missing_price": 0,
+        "value": "0",
+        "coverage": null
+      }
+    },
+    "groups": {
+      "必采": {
+        "known_value": "40951.150",
+        "records": 2120,
+        "held_skus": 1069,
+        "unpriced": 0,
+        "invalid_quantity": 0,
+        "missing_price": 0,
+        "value": "40951.150",
+        "coverage": "1"
+      },
+      "非必采": {
+        "known_value": "42717.0980",
+        "records": 6963,
+        "held_skus": 2023,
+        "unpriced": 0,
+        "invalid_quantity": 1,
+        "missing_price": 5,
+        "value": null,
+        "coverage": "1"
+      },
+      "属性待核": {
+        "known_value": "0",
+        "records": 0,
+        "held_skus": 0,
+        "unpriced": 0,
+        "invalid_quantity": 0,
+        "missing_price": 0,
+        "value": "0",
+        "coverage": null
+      }
+    },
+    "delta": "0",
+    "comparison_stores": 0,
+    "source_deltas": {
+      "中心仓": "0",
+      "地采": "0",
+      "来源待核": "0"
+    },
+    "missing_stores": []
+  },
+  "runs": [
+    {
+      "seconds": 0.22804289998020977,
+      "peak_sampled_rss_mb": 230.97265625
+    },
+    {
+      "seconds": 0.23952890001237392,
+      "peak_sampled_rss_mb": 231.78515625
+    },
+    {
+      "seconds": 0.19956229999661446,
+      "peak_sampled_rss_mb": 232.2734375
+    }
+  ],
+  "metric_version": "inventory-structure-1",
+  "limits": "Existing historical 14,244-row real QA result. Preview date is a test label, not observed inventory timestamp. No live business database or platform. No reliable local-procurement price supplied."
+}

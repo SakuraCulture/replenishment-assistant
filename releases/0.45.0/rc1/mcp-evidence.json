@@ -1,0 +1,4199 @@
+[
+  {
+    "tool": "workbench_context",
+    "response": {
+      "instance_id": "[isolated context redacted]",
+      "workspace_id": "f610aba066fffd82d63ced28",
+      "context_token": "[isolated context redacted]",
+      "business_date": "2026-11-06",
+      "application": "0.45.0",
+      "model": "0.3.4-rules",
+      "protocol": "replenishment.tools.v1",
+      "build": {
+        "source_commit": "83c8bb1af06731dfc8147f69cf554494572f3dff",
+        "build_id": "rc1"
+      },
+      "scheduled_access": "read_only",
+      "checked_input_present": false,
+      "readonly": false,
+      "input_dirty": true,
+      "unsaved_changes": false,
+      "selected_stores": [],
+      "active_task": null,
+      "busy": false,
+      "enabled": true,
+      "scope": "查询、已有文件检查、预案计算和试算；定时任务只读；不触发平台取数、不保存默认、不签发、不采购、不删除",
+      "summary": []
+    }
+  },
+  {
+    "tool": "query_inventory_structure",
+    "response": {
+      "task_id": "ea5397492eda4857902e4155b3fdf6f3",
+      "kind": "inventory",
+      "state": "running",
+      "created": "2026-11-06T03:15:08.683477+00:00",
+      "message": "已受理",
+      "scope": "未保存结果仅在当前工作台会话有效"
+    }
+  },
+  {
+    "tool": "task_status",
+    "response": {
+      "task_id": "ea5397492eda4857902e4155b3fdf6f3",
+      "kind": "inventory",
+      "state": "completed",
+      "created": "2026-11-06T03:15:08.683477+00:00",
+      "message": "货盘查询完成，请分页读取",
+      "scope": "未保存结果仅在当前工作台会话有效",
+      "updated": "2026-11-06T03:15:08.803925+00:00",
+      "snapshot_id": "a5798d0bb9e59cac4a35e0ece999215ecc62d4d6c70b57aaddd303ec4baca7d7",
+      "round_count": 4,
+      "events": [
+        {
+          "cursor": 1,
+          "at": "2026-11-06T03:15:08.795222+00:00",
+          "message": "读取货盘轮次"
+        },
+        {
+          "cursor": 2,
+          "at": "2026-11-06T03:15:08.803925+00:00",
+          "state": "completed",
+          "snapshot_id": "a5798d0bb9e59cac4a35e0ece999215ecc62d4d6c70b57aaddd303ec4baca7d7",
+          "message": "货盘查询完成，请分页读取",
+          "round_count": 4
+        }
+      ],
+      "cursor": 2,
+      "in_current_session": false
+    }
+  },
+  {
+    "tool": "inventory_structure_results",
+    "response": {
+      "metric_version": "inventory-structure-1",
+      "snapshot_id": "a5798d0bb9e59cac4a35e0ece999215ecc62d4d6c70b57aaddd303ec4baca7d7",
+      "as_of": "2026-11-06T11:15:08",
+      "query": {
+        "from": "2026-10-30",
+        "to": "2026-11-06",
+        "stores": [],
+        "view": "stock",
+        "overview": "end_day"
+      },
+      "overview": {
+        "total": {
+          "known_value": "222",
+          "records": 8,
+          "held_skus": 8,
+          "unpriced": 0,
+          "invalid_quantity": 0,
+          "missing_price": 0,
+          "value": "222",
+          "coverage": "1"
+        },
+        "stores": 2,
+        "dates": [
+          "2026-11-06"
+        ],
+        "sources": {
+          "中心仓": {
+            "known_value": "172",
+            "records": 6,
+            "held_skus": 6,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "172",
+            "coverage": "1"
+          },
+          "地采": {
+            "known_value": "50",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "50",
+            "coverage": "1"
+          },
+          "来源待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "statuses": {
+          "启用": {
+            "known_value": "44",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "44",
+            "coverage": "1"
+          },
+          "备用": {
+            "known_value": "48",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "48",
+            "coverage": "1"
+          },
+          "禁用": {
+            "known_value": "80",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "80",
+            "coverage": "1"
+          },
+          "状态待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "groups": {
+          "必采": {
+            "known_value": "124",
+            "records": 4,
+            "held_skus": 4,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "124",
+            "coverage": "1"
+          },
+          "非必采": {
+            "known_value": "48",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "48",
+            "coverage": "1"
+          },
+          "属性待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "delta": "42",
+        "comparison_stores": 2,
+        "source_deltas": {
+          "中心仓": "32",
+          "地采": "10",
+          "来源待核": "0"
+        },
+        "missing_stores": []
+      },
+      "definitions": {
+        "scope": "门店本次导入范围，非大仓自身库存；不以补货建议或准入过滤存量。未证明覆盖全店。",
+        "price": "冻结归属仓基本售价估值，非采购成本。地采仅在快照明确保存分析单价及库存单位时计价；否则未计价。",
+        "value": "所选视角库存数量乘当时单价；known_value只表示已计价部分，value在全部有效时才有值。",
+        "coverage": "有效正数量SKU中有有效单价且单位明确的比例；不是未知货值占比。零库存货值为0，缺价另列。",
+        "dimensions": "中心仓状态、必采属性分别分组，不能互相相加。禁用、停采、拒收、淘汰、资质受限存量均保留。",
+        "change": "同店前一有效业务日；数量影响=(本轮量-上轮量)*上轮价，价格影响=本轮量*(本轮价-上轮价)。非销售或采购归因。",
+        "migration": "共同有效商品先数量再价格，最后按本轮货值移动来源/仓/状态/必采分类；迁移与整体货值增减不能重复相加。",
+        "overview": "默认选定结束日，同店库存不跨轮累加。各店最新模式明确列每店日期，不代表同时点库存。",
+        "history": "只读当前有效签发修订及冻结参数资料；缺字段不以当前资料回填。删除或重新签发后须重新查询。"
+      },
+      "page": {
+        "total": 4,
+        "offset": 0,
+        "items": [
+          {
+            "total": {
+              "known_value": "90",
+              "value": "90",
+              "records": 4,
+              "held_skus": 4,
+              "unpriced": 0,
+              "invalid_quantity": 0,
+              "missing_price": 0,
+              "coverage": "1"
+            },
+            "sources": {
+              "中心仓": {
+                "known_value": "70",
+                "value": "70",
+                "records": 3,
+                "held_skus": 3,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "地采": {
+                "known_value": "20",
+                "value": "20",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "来源待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "statuses": {
+              "启用": {
+                "known_value": "20",
+                "value": "20",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "备用": {
+                "known_value": "20",
+                "value": "20",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "禁用": {
+                "known_value": "30",
+                "value": "30",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "状态待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "groups": {
+              "必采": {
+                "known_value": "50",
+                "value": "50",
+                "records": 2,
+                "held_skus": 2,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "非必采": {
+                "known_value": "20",
+                "value": "20",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "属性待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "warehouses": {
+              "山东仓": {
+                "known_value": "50",
+                "value": "50",
+                "records": 2,
+                "held_skus": 2,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "河北仓": {
+                "known_value": "20",
+                "value": "20",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              }
+            },
+            "cross": {
+              "启用": {
+                "必采": {
+                  "known_value": "20",
+                  "value": "20",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "备用": {
+                "必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "非必采": {
+                  "known_value": "20",
+                  "value": "20",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "禁用": {
+                "必采": {
+                  "known_value": "30",
+                  "value": "30",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "状态待核": {
+                "必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              }
+            },
+            "day": "2026-10-30",
+            "store": "S000",
+            "oid": "inventory-0-0",
+            "number": "BH-inventory-0-0",
+            "revision": 1,
+            "digest": "7dbe49f1ab4ac49afbefc8336a403d28a052a79b0016282252a1fcdbae2dd655",
+            "saved": "2026-11-06T11:14:57+08:00",
+            "partial": false,
+            "scope": "本次导入范围（未证明全店）",
+            "store_name": "合成门店0",
+            "previous": null,
+            "previous_day": null,
+            "delta": null,
+            "changes": null,
+            "source_deltas": {
+              "中心仓": null,
+              "地采": null,
+              "来源待核": null
+            },
+            "status_deltas": {
+              "启用": null,
+              "备用": null,
+              "禁用": null,
+              "状态待核": null
+            },
+            "group_deltas": {
+              "必采": null,
+              "非必采": null,
+              "属性待核": null
+            },
+            "warehouse_structures": {
+              "山东仓": {
+                "total": {
+                  "known_value": "50",
+                  "value": "50",
+                  "records": 2,
+                  "held_skus": 2,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "sources": {
+                  "中心仓": {
+                    "known_value": "50",
+                    "value": "50",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "地采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "来源待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "statuses": {
+                  "启用": {
+                    "known_value": "20",
+                    "value": "20",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "备用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "禁用": {
+                    "known_value": "30",
+                    "value": "30",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "状态待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "groups": {
+                  "必采": {
+                    "known_value": "50",
+                    "value": "50",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "非必采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "属性待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "warehouses": {
+                  "山东仓": {
+                    "known_value": "50",
+                    "value": "50",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "河北仓": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "cross": {
+                  "启用": {
+                    "必采": {
+                      "known_value": "20",
+                      "value": "20",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "备用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "禁用": {
+                    "必采": {
+                      "known_value": "30",
+                      "value": "30",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "状态待核": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  }
+                }
+              },
+              "河北仓": {
+                "total": {
+                  "known_value": "20",
+                  "value": "20",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "sources": {
+                  "中心仓": {
+                    "known_value": "20",
+                    "value": "20",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "地采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "来源待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "statuses": {
+                  "启用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "备用": {
+                    "known_value": "20",
+                    "value": "20",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "禁用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "状态待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "groups": {
+                  "必采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "非必采": {
+                    "known_value": "20",
+                    "value": "20",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "属性待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "warehouses": {
+                  "山东仓": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "河北仓": {
+                    "known_value": "20",
+                    "value": "20",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  }
+                },
+                "cross": {
+                  "启用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "备用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "20",
+                      "value": "20",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "禁用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "状态待核": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "next_offset": 1
+      }
+    }
+  },
+  {
+    "tool": "inventory_structure_results",
+    "response": {
+      "metric_version": "inventory-structure-1",
+      "snapshot_id": "a5798d0bb9e59cac4a35e0ece999215ecc62d4d6c70b57aaddd303ec4baca7d7",
+      "as_of": "2026-11-06T11:15:08",
+      "query": {
+        "from": "2026-10-30",
+        "to": "2026-11-06",
+        "stores": [],
+        "view": "stock",
+        "overview": "end_day"
+      },
+      "overview": {
+        "total": {
+          "known_value": "222",
+          "records": 8,
+          "held_skus": 8,
+          "unpriced": 0,
+          "invalid_quantity": 0,
+          "missing_price": 0,
+          "value": "222",
+          "coverage": "1"
+        },
+        "stores": 2,
+        "dates": [
+          "2026-11-06"
+        ],
+        "sources": {
+          "中心仓": {
+            "known_value": "172",
+            "records": 6,
+            "held_skus": 6,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "172",
+            "coverage": "1"
+          },
+          "地采": {
+            "known_value": "50",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "50",
+            "coverage": "1"
+          },
+          "来源待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "statuses": {
+          "启用": {
+            "known_value": "44",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "44",
+            "coverage": "1"
+          },
+          "备用": {
+            "known_value": "48",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "48",
+            "coverage": "1"
+          },
+          "禁用": {
+            "known_value": "80",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "80",
+            "coverage": "1"
+          },
+          "状态待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "groups": {
+          "必采": {
+            "known_value": "124",
+            "records": 4,
+            "held_skus": 4,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "124",
+            "coverage": "1"
+          },
+          "非必采": {
+            "known_value": "48",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "48",
+            "coverage": "1"
+          },
+          "属性待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "delta": "42",
+        "comparison_stores": 2,
+        "source_deltas": {
+          "中心仓": "32",
+          "地采": "10",
+          "来源待核": "0"
+        },
+        "missing_stores": []
+      },
+      "definitions": {
+        "scope": "门店本次导入范围，非大仓自身库存；不以补货建议或准入过滤存量。未证明覆盖全店。",
+        "price": "冻结归属仓基本售价估值，非采购成本。地采仅在快照明确保存分析单价及库存单位时计价；否则未计价。",
+        "value": "所选视角库存数量乘当时单价；known_value只表示已计价部分，value在全部有效时才有值。",
+        "coverage": "有效正数量SKU中有有效单价且单位明确的比例；不是未知货值占比。零库存货值为0，缺价另列。",
+        "dimensions": "中心仓状态、必采属性分别分组，不能互相相加。禁用、停采、拒收、淘汰、资质受限存量均保留。",
+        "change": "同店前一有效业务日；数量影响=(本轮量-上轮量)*上轮价，价格影响=本轮量*(本轮价-上轮价)。非销售或采购归因。",
+        "migration": "共同有效商品先数量再价格，最后按本轮货值移动来源/仓/状态/必采分类；迁移与整体货值增减不能重复相加。",
+        "overview": "默认选定结束日，同店库存不跨轮累加。各店最新模式明确列每店日期，不代表同时点库存。",
+        "history": "只读当前有效签发修订及冻结参数资料；缺字段不以当前资料回填。删除或重新签发后须重新查询。"
+      },
+      "page": {
+        "total": 4,
+        "offset": 1,
+        "items": [
+          {
+            "total": {
+              "known_value": "111",
+              "value": "111",
+              "records": 4,
+              "held_skus": 4,
+              "unpriced": 0,
+              "invalid_quantity": 0,
+              "missing_price": 0,
+              "coverage": "1"
+            },
+            "sources": {
+              "中心仓": {
+                "known_value": "86",
+                "value": "86",
+                "records": 3,
+                "held_skus": 3,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "地采": {
+                "known_value": "25",
+                "value": "25",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "来源待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "statuses": {
+              "启用": {
+                "known_value": "22",
+                "value": "22",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "备用": {
+                "known_value": "24",
+                "value": "24",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "禁用": {
+                "known_value": "40",
+                "value": "40",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "状态待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "groups": {
+              "必采": {
+                "known_value": "62",
+                "value": "62",
+                "records": 2,
+                "held_skus": 2,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "非必采": {
+                "known_value": "24",
+                "value": "24",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "属性待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "warehouses": {
+              "山东仓": {
+                "known_value": "62",
+                "value": "62",
+                "records": 2,
+                "held_skus": 2,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "河北仓": {
+                "known_value": "24",
+                "value": "24",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              }
+            },
+            "cross": {
+              "启用": {
+                "必采": {
+                  "known_value": "22",
+                  "value": "22",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "备用": {
+                "必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "非必采": {
+                  "known_value": "24",
+                  "value": "24",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "禁用": {
+                "必采": {
+                  "known_value": "40",
+                  "value": "40",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "状态待核": {
+                "必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              }
+            },
+            "day": "2026-11-06",
+            "store": "S000",
+            "oid": "inventory-0-1",
+            "number": "BH-inventory-0-1",
+            "revision": 1,
+            "digest": "e6cbb30ba7a0ec8e9c5234c5d56188318f58565a634ca67187de7c496faea8f9",
+            "saved": "2026-11-06T11:14:57+08:00",
+            "partial": false,
+            "scope": "本次导入范围（未证明全店）",
+            "store_name": "合成门店0",
+            "previous": {
+              "day": "2026-10-30",
+              "store": "S000",
+              "oid": "inventory-0-0",
+              "number": "BH-inventory-0-0",
+              "revision": 1,
+              "digest": "7dbe49f1ab4ac49afbefc8336a403d28a052a79b0016282252a1fcdbae2dd655",
+              "saved": "2026-11-06T11:14:57+08:00",
+              "partial": false,
+              "scope": "本次导入范围（未证明全店）"
+            },
+            "previous_day": "2026-10-30",
+            "delta": "21",
+            "changes": {
+              "quantity_effect": "21",
+              "price_effect": "0",
+              "comparable_delta": "21",
+              "comparable_skus": 4,
+              "counts": {
+                "共同可比商品": 4
+              },
+              "migrations": [],
+              "noncomparable_known_delta": "0",
+              "details": []
+            },
+            "source_deltas": {
+              "中心仓": "16",
+              "地采": "5",
+              "来源待核": "0"
+            },
+            "status_deltas": {
+              "启用": "2",
+              "备用": "4",
+              "禁用": "10",
+              "状态待核": "0"
+            },
+            "group_deltas": {
+              "必采": "12",
+              "非必采": "4",
+              "属性待核": "0"
+            },
+            "warehouse_structures": {
+              "山东仓": {
+                "total": {
+                  "known_value": "62",
+                  "value": "62",
+                  "records": 2,
+                  "held_skus": 2,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "sources": {
+                  "中心仓": {
+                    "known_value": "62",
+                    "value": "62",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "地采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "来源待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "statuses": {
+                  "启用": {
+                    "known_value": "22",
+                    "value": "22",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "备用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "禁用": {
+                    "known_value": "40",
+                    "value": "40",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "状态待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "groups": {
+                  "必采": {
+                    "known_value": "62",
+                    "value": "62",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "非必采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "属性待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "warehouses": {
+                  "山东仓": {
+                    "known_value": "62",
+                    "value": "62",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "河北仓": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "cross": {
+                  "启用": {
+                    "必采": {
+                      "known_value": "22",
+                      "value": "22",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "备用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "禁用": {
+                    "必采": {
+                      "known_value": "40",
+                      "value": "40",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "状态待核": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  }
+                }
+              },
+              "河北仓": {
+                "total": {
+                  "known_value": "24",
+                  "value": "24",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "sources": {
+                  "中心仓": {
+                    "known_value": "24",
+                    "value": "24",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "地采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "来源待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "statuses": {
+                  "启用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "备用": {
+                    "known_value": "24",
+                    "value": "24",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "禁用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "状态待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "groups": {
+                  "必采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "非必采": {
+                    "known_value": "24",
+                    "value": "24",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "属性待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "warehouses": {
+                  "山东仓": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "河北仓": {
+                    "known_value": "24",
+                    "value": "24",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  }
+                },
+                "cross": {
+                  "启用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "备用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "24",
+                      "value": "24",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "禁用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "状态待核": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "next_offset": 2
+      }
+    }
+  },
+  {
+    "tool": "inventory_structure_results",
+    "response": {
+      "metric_version": "inventory-structure-1",
+      "snapshot_id": "a5798d0bb9e59cac4a35e0ece999215ecc62d4d6c70b57aaddd303ec4baca7d7",
+      "as_of": "2026-11-06T11:15:08",
+      "query": {
+        "from": "2026-10-30",
+        "to": "2026-11-06",
+        "stores": [],
+        "view": "stock",
+        "overview": "end_day"
+      },
+      "overview": {
+        "total": {
+          "known_value": "222",
+          "records": 8,
+          "held_skus": 8,
+          "unpriced": 0,
+          "invalid_quantity": 0,
+          "missing_price": 0,
+          "value": "222",
+          "coverage": "1"
+        },
+        "stores": 2,
+        "dates": [
+          "2026-11-06"
+        ],
+        "sources": {
+          "中心仓": {
+            "known_value": "172",
+            "records": 6,
+            "held_skus": 6,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "172",
+            "coverage": "1"
+          },
+          "地采": {
+            "known_value": "50",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "50",
+            "coverage": "1"
+          },
+          "来源待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "statuses": {
+          "启用": {
+            "known_value": "44",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "44",
+            "coverage": "1"
+          },
+          "备用": {
+            "known_value": "48",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "48",
+            "coverage": "1"
+          },
+          "禁用": {
+            "known_value": "80",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "80",
+            "coverage": "1"
+          },
+          "状态待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "groups": {
+          "必采": {
+            "known_value": "124",
+            "records": 4,
+            "held_skus": 4,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "124",
+            "coverage": "1"
+          },
+          "非必采": {
+            "known_value": "48",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "48",
+            "coverage": "1"
+          },
+          "属性待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "delta": "42",
+        "comparison_stores": 2,
+        "source_deltas": {
+          "中心仓": "32",
+          "地采": "10",
+          "来源待核": "0"
+        },
+        "missing_stores": []
+      },
+      "definitions": {
+        "scope": "门店本次导入范围，非大仓自身库存；不以补货建议或准入过滤存量。未证明覆盖全店。",
+        "price": "冻结归属仓基本售价估值，非采购成本。地采仅在快照明确保存分析单价及库存单位时计价；否则未计价。",
+        "value": "所选视角库存数量乘当时单价；known_value只表示已计价部分，value在全部有效时才有值。",
+        "coverage": "有效正数量SKU中有有效单价且单位明确的比例；不是未知货值占比。零库存货值为0，缺价另列。",
+        "dimensions": "中心仓状态、必采属性分别分组，不能互相相加。禁用、停采、拒收、淘汰、资质受限存量均保留。",
+        "change": "同店前一有效业务日；数量影响=(本轮量-上轮量)*上轮价，价格影响=本轮量*(本轮价-上轮价)。非销售或采购归因。",
+        "migration": "共同有效商品先数量再价格，最后按本轮货值移动来源/仓/状态/必采分类；迁移与整体货值增减不能重复相加。",
+        "overview": "默认选定结束日，同店库存不跨轮累加。各店最新模式明确列每店日期，不代表同时点库存。",
+        "history": "只读当前有效签发修订及冻结参数资料；缺字段不以当前资料回填。删除或重新签发后须重新查询。"
+      },
+      "page": {
+        "total": 4,
+        "offset": 2,
+        "items": [
+          {
+            "total": {
+              "known_value": "90",
+              "value": "90",
+              "records": 4,
+              "held_skus": 4,
+              "unpriced": 0,
+              "invalid_quantity": 0,
+              "missing_price": 0,
+              "coverage": "1"
+            },
+            "sources": {
+              "中心仓": {
+                "known_value": "70",
+                "value": "70",
+                "records": 3,
+                "held_skus": 3,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "地采": {
+                "known_value": "20",
+                "value": "20",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "来源待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "statuses": {
+              "启用": {
+                "known_value": "20",
+                "value": "20",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "备用": {
+                "known_value": "20",
+                "value": "20",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "禁用": {
+                "known_value": "30",
+                "value": "30",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "状态待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "groups": {
+              "必采": {
+                "known_value": "50",
+                "value": "50",
+                "records": 2,
+                "held_skus": 2,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "非必采": {
+                "known_value": "20",
+                "value": "20",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "属性待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "warehouses": {
+              "山东仓": {
+                "known_value": "50",
+                "value": "50",
+                "records": 2,
+                "held_skus": 2,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "河北仓": {
+                "known_value": "20",
+                "value": "20",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              }
+            },
+            "cross": {
+              "启用": {
+                "必采": {
+                  "known_value": "20",
+                  "value": "20",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "备用": {
+                "必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "非必采": {
+                  "known_value": "20",
+                  "value": "20",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "禁用": {
+                "必采": {
+                  "known_value": "30",
+                  "value": "30",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "状态待核": {
+                "必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              }
+            },
+            "day": "2026-10-30",
+            "store": "S001",
+            "oid": "inventory-1-0",
+            "number": "BH-inventory-1-0",
+            "revision": 1,
+            "digest": "ff473f8fc4775d410b1fb6d0b3309b058c7e19cd5ff52c28036548160c407c9f",
+            "saved": "2026-11-06T11:14:57+08:00",
+            "partial": false,
+            "scope": "本次导入范围（未证明全店）",
+            "store_name": "合成门店1",
+            "previous": null,
+            "previous_day": null,
+            "delta": null,
+            "changes": null,
+            "source_deltas": {
+              "中心仓": null,
+              "地采": null,
+              "来源待核": null
+            },
+            "status_deltas": {
+              "启用": null,
+              "备用": null,
+              "禁用": null,
+              "状态待核": null
+            },
+            "group_deltas": {
+              "必采": null,
+              "非必采": null,
+              "属性待核": null
+            },
+            "warehouse_structures": {
+              "山东仓": {
+                "total": {
+                  "known_value": "50",
+                  "value": "50",
+                  "records": 2,
+                  "held_skus": 2,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "sources": {
+                  "中心仓": {
+                    "known_value": "50",
+                    "value": "50",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "地采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "来源待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "statuses": {
+                  "启用": {
+                    "known_value": "20",
+                    "value": "20",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "备用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "禁用": {
+                    "known_value": "30",
+                    "value": "30",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "状态待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "groups": {
+                  "必采": {
+                    "known_value": "50",
+                    "value": "50",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "非必采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "属性待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "warehouses": {
+                  "山东仓": {
+                    "known_value": "50",
+                    "value": "50",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "河北仓": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "cross": {
+                  "启用": {
+                    "必采": {
+                      "known_value": "20",
+                      "value": "20",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "备用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "禁用": {
+                    "必采": {
+                      "known_value": "30",
+                      "value": "30",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "状态待核": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  }
+                }
+              },
+              "河北仓": {
+                "total": {
+                  "known_value": "20",
+                  "value": "20",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "sources": {
+                  "中心仓": {
+                    "known_value": "20",
+                    "value": "20",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "地采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "来源待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "statuses": {
+                  "启用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "备用": {
+                    "known_value": "20",
+                    "value": "20",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "禁用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "状态待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "groups": {
+                  "必采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "非必采": {
+                    "known_value": "20",
+                    "value": "20",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "属性待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "warehouses": {
+                  "山东仓": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "河北仓": {
+                    "known_value": "20",
+                    "value": "20",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  }
+                },
+                "cross": {
+                  "启用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "备用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "20",
+                      "value": "20",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "禁用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "状态待核": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "next_offset": 3
+      }
+    }
+  },
+  {
+    "tool": "inventory_structure_results",
+    "response": {
+      "metric_version": "inventory-structure-1",
+      "snapshot_id": "a5798d0bb9e59cac4a35e0ece999215ecc62d4d6c70b57aaddd303ec4baca7d7",
+      "as_of": "2026-11-06T11:15:08",
+      "query": {
+        "from": "2026-10-30",
+        "to": "2026-11-06",
+        "stores": [],
+        "view": "stock",
+        "overview": "end_day"
+      },
+      "overview": {
+        "total": {
+          "known_value": "222",
+          "records": 8,
+          "held_skus": 8,
+          "unpriced": 0,
+          "invalid_quantity": 0,
+          "missing_price": 0,
+          "value": "222",
+          "coverage": "1"
+        },
+        "stores": 2,
+        "dates": [
+          "2026-11-06"
+        ],
+        "sources": {
+          "中心仓": {
+            "known_value": "172",
+            "records": 6,
+            "held_skus": 6,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "172",
+            "coverage": "1"
+          },
+          "地采": {
+            "known_value": "50",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "50",
+            "coverage": "1"
+          },
+          "来源待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "statuses": {
+          "启用": {
+            "known_value": "44",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "44",
+            "coverage": "1"
+          },
+          "备用": {
+            "known_value": "48",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "48",
+            "coverage": "1"
+          },
+          "禁用": {
+            "known_value": "80",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "80",
+            "coverage": "1"
+          },
+          "状态待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "groups": {
+          "必采": {
+            "known_value": "124",
+            "records": 4,
+            "held_skus": 4,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "124",
+            "coverage": "1"
+          },
+          "非必采": {
+            "known_value": "48",
+            "records": 2,
+            "held_skus": 2,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "48",
+            "coverage": "1"
+          },
+          "属性待核": {
+            "known_value": "0",
+            "records": 0,
+            "held_skus": 0,
+            "unpriced": 0,
+            "invalid_quantity": 0,
+            "missing_price": 0,
+            "value": "0",
+            "coverage": null
+          }
+        },
+        "delta": "42",
+        "comparison_stores": 2,
+        "source_deltas": {
+          "中心仓": "32",
+          "地采": "10",
+          "来源待核": "0"
+        },
+        "missing_stores": []
+      },
+      "definitions": {
+        "scope": "门店本次导入范围，非大仓自身库存；不以补货建议或准入过滤存量。未证明覆盖全店。",
+        "price": "冻结归属仓基本售价估值，非采购成本。地采仅在快照明确保存分析单价及库存单位时计价；否则未计价。",
+        "value": "所选视角库存数量乘当时单价；known_value只表示已计价部分，value在全部有效时才有值。",
+        "coverage": "有效正数量SKU中有有效单价且单位明确的比例；不是未知货值占比。零库存货值为0，缺价另列。",
+        "dimensions": "中心仓状态、必采属性分别分组，不能互相相加。禁用、停采、拒收、淘汰、资质受限存量均保留。",
+        "change": "同店前一有效业务日；数量影响=(本轮量-上轮量)*上轮价，价格影响=本轮量*(本轮价-上轮价)。非销售或采购归因。",
+        "migration": "共同有效商品先数量再价格，最后按本轮货值移动来源/仓/状态/必采分类；迁移与整体货值增减不能重复相加。",
+        "overview": "默认选定结束日，同店库存不跨轮累加。各店最新模式明确列每店日期，不代表同时点库存。",
+        "history": "只读当前有效签发修订及冻结参数资料；缺字段不以当前资料回填。删除或重新签发后须重新查询。"
+      },
+      "page": {
+        "total": 4,
+        "offset": 3,
+        "items": [
+          {
+            "total": {
+              "known_value": "111",
+              "value": "111",
+              "records": 4,
+              "held_skus": 4,
+              "unpriced": 0,
+              "invalid_quantity": 0,
+              "missing_price": 0,
+              "coverage": "1"
+            },
+            "sources": {
+              "中心仓": {
+                "known_value": "86",
+                "value": "86",
+                "records": 3,
+                "held_skus": 3,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "地采": {
+                "known_value": "25",
+                "value": "25",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "来源待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "statuses": {
+              "启用": {
+                "known_value": "22",
+                "value": "22",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "备用": {
+                "known_value": "24",
+                "value": "24",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "禁用": {
+                "known_value": "40",
+                "value": "40",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "状态待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "groups": {
+              "必采": {
+                "known_value": "62",
+                "value": "62",
+                "records": 2,
+                "held_skus": 2,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "非必采": {
+                "known_value": "24",
+                "value": "24",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "属性待核": {
+                "known_value": "0",
+                "value": "0",
+                "records": 0,
+                "held_skus": 0,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": null
+              }
+            },
+            "warehouses": {
+              "山东仓": {
+                "known_value": "62",
+                "value": "62",
+                "records": 2,
+                "held_skus": 2,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              },
+              "河北仓": {
+                "known_value": "24",
+                "value": "24",
+                "records": 1,
+                "held_skus": 1,
+                "unpriced": 0,
+                "invalid_quantity": 0,
+                "missing_price": 0,
+                "coverage": "1"
+              }
+            },
+            "cross": {
+              "启用": {
+                "必采": {
+                  "known_value": "22",
+                  "value": "22",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "备用": {
+                "必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "非必采": {
+                  "known_value": "24",
+                  "value": "24",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "禁用": {
+                "必采": {
+                  "known_value": "40",
+                  "value": "40",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              },
+              "状态待核": {
+                "必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "非必采": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                },
+                "属性待核": {
+                  "known_value": "0",
+                  "value": "0",
+                  "records": 0,
+                  "held_skus": 0,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": null
+                }
+              }
+            },
+            "day": "2026-11-06",
+            "store": "S001",
+            "oid": "inventory-1-1",
+            "number": "BH-inventory-1-1",
+            "revision": 1,
+            "digest": "ba3d91c6a4cf3e609cf7fca88207f10408f38296555728d9e651b797a6c2e393",
+            "saved": "2026-11-06T11:14:57+08:00",
+            "partial": false,
+            "scope": "本次导入范围（未证明全店）",
+            "store_name": "合成门店1",
+            "previous": {
+              "day": "2026-10-30",
+              "store": "S001",
+              "oid": "inventory-1-0",
+              "number": "BH-inventory-1-0",
+              "revision": 1,
+              "digest": "ff473f8fc4775d410b1fb6d0b3309b058c7e19cd5ff52c28036548160c407c9f",
+              "saved": "2026-11-06T11:14:57+08:00",
+              "partial": false,
+              "scope": "本次导入范围（未证明全店）"
+            },
+            "previous_day": "2026-10-30",
+            "delta": "21",
+            "changes": {
+              "quantity_effect": "21",
+              "price_effect": "0",
+              "comparable_delta": "21",
+              "comparable_skus": 4,
+              "counts": {
+                "共同可比商品": 4
+              },
+              "migrations": [],
+              "noncomparable_known_delta": "0",
+              "details": []
+            },
+            "source_deltas": {
+              "中心仓": "16",
+              "地采": "5",
+              "来源待核": "0"
+            },
+            "status_deltas": {
+              "启用": "2",
+              "备用": "4",
+              "禁用": "10",
+              "状态待核": "0"
+            },
+            "group_deltas": {
+              "必采": "12",
+              "非必采": "4",
+              "属性待核": "0"
+            },
+            "warehouse_structures": {
+              "山东仓": {
+                "total": {
+                  "known_value": "62",
+                  "value": "62",
+                  "records": 2,
+                  "held_skus": 2,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "sources": {
+                  "中心仓": {
+                    "known_value": "62",
+                    "value": "62",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "地采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "来源待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "statuses": {
+                  "启用": {
+                    "known_value": "22",
+                    "value": "22",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "备用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "禁用": {
+                    "known_value": "40",
+                    "value": "40",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "状态待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "groups": {
+                  "必采": {
+                    "known_value": "62",
+                    "value": "62",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "非必采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "属性待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "warehouses": {
+                  "山东仓": {
+                    "known_value": "62",
+                    "value": "62",
+                    "records": 2,
+                    "held_skus": 2,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "河北仓": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "cross": {
+                  "启用": {
+                    "必采": {
+                      "known_value": "22",
+                      "value": "22",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "备用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "禁用": {
+                    "必采": {
+                      "known_value": "40",
+                      "value": "40",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "状态待核": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  }
+                }
+              },
+              "河北仓": {
+                "total": {
+                  "known_value": "24",
+                  "value": "24",
+                  "records": 1,
+                  "held_skus": 1,
+                  "unpriced": 0,
+                  "invalid_quantity": 0,
+                  "missing_price": 0,
+                  "coverage": "1"
+                },
+                "sources": {
+                  "中心仓": {
+                    "known_value": "24",
+                    "value": "24",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "地采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "来源待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "statuses": {
+                  "启用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "备用": {
+                    "known_value": "24",
+                    "value": "24",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "禁用": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "状态待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "groups": {
+                  "必采": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "非必采": {
+                    "known_value": "24",
+                    "value": "24",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  },
+                  "属性待核": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  }
+                },
+                "warehouses": {
+                  "山东仓": {
+                    "known_value": "0",
+                    "value": "0",
+                    "records": 0,
+                    "held_skus": 0,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": null
+                  },
+                  "河北仓": {
+                    "known_value": "24",
+                    "value": "24",
+                    "records": 1,
+                    "held_skus": 1,
+                    "unpriced": 0,
+                    "invalid_quantity": 0,
+                    "missing_price": 0,
+                    "coverage": "1"
+                  }
+                },
+                "cross": {
+                  "启用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "备用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "24",
+                      "value": "24",
+                      "records": 1,
+                      "held_skus": 1,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": "1"
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "禁用": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  },
+                  "状态待核": {
+                    "必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "非必采": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    },
+                    "属性待核": {
+                      "known_value": "0",
+                      "value": "0",
+                      "records": 0,
+                      "held_skus": 0,
+                      "unpriced": 0,
+                      "invalid_quantity": 0,
+                      "missing_price": 0,
+                      "coverage": null
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "next_offset": null
+      }
+    }
+  },
+  {
+    "tool": "export_inventory_structure",
+    "response": {
+      "task_id": "867ff8d28d9b46d0bca4f6de64625a38",
+      "kind": "inventory_export",
+      "state": "running",
+      "created": "2026-11-06T03:15:08.944291+00:00",
+      "message": "已受理",
+      "scope": "未保存结果仅在当前工作台会话有效"
+    }
+  },
+  {
+    "tool": "task_status",
+    "response": {
+      "task_id": "867ff8d28d9b46d0bca4f6de64625a38",
+      "kind": "inventory_export",
+      "state": "completed",
+      "created": "2026-11-06T03:15:08.944291+00:00",
+      "message": "货盘报表已导出，业务数据未变",
+      "scope": "未保存结果仅在当前工作台会话有效",
+      "updated": "2026-11-06T03:15:10.758845+00:00",
+      "receipt": {
+        "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\inventory_0450\\exe-ui\\货盘结构分析_20261106_111508_944291.xlsx",
+        "sha256": "2c001e07712e9282c3e7cda9eef5b23c4e6a068848d782e98062fbfb5f537ad6",
+        "snapshot_id": "a5798d0bb9e59cac4a35e0ece999215ecc62d4d6c70b57aaddd303ec4baca7d7",
+        "metric_version": "inventory-structure-1",
+        "sheets": [
+          "货盘逐轮总览",
+          "中心仓状态",
+          "中心仓必采",
+          "商品与变化明细",
+          "口径与待核"
+        ],
+        "rounds": 4
+      },
+      "events": [
+        {
+          "cursor": 3,
+          "at": "2026-11-06T03:15:09.319004+00:00",
+          "message": "写出商品与变化明细"
+        },
+        {
+          "cursor": 4,
+          "at": "2026-11-06T03:15:10.758845+00:00",
+          "state": "completed",
+          "message": "货盘报表已导出，业务数据未变",
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\inventory_0450\\exe-ui\\货盘结构分析_20261106_111508_944291.xlsx",
+            "sha256": "2c001e07712e9282c3e7cda9eef5b23c4e6a068848d782e98062fbfb5f537ad6",
+            "snapshot_id": "a5798d0bb9e59cac4a35e0ece999215ecc62d4d6c70b57aaddd303ec4baca7d7",
+            "metric_version": "inventory-structure-1",
+            "sheets": [
+              "货盘逐轮总览",
+              "中心仓状态",
+              "中心仓必采",
+              "商品与变化明细",
+              "口径与待核"
+            ],
+            "rounds": 4
+          }
+        }
+      ],
+      "cursor": 4,
+      "in_current_session": false
+    }
+  }
+]

@@ -1,0 +1,115 @@
+{
+  "passed": true,
+  "fixture": {
+    "synthetic": true,
+    "stores": 3,
+    "rounds": 3,
+    "skus_per_store_round": 1000,
+    "rows": 9000
+  },
+  "database_sha256": "c0a2d5b16929893aad60e02a543b17274c10caf62d2ffaffc45e0d262941bbca",
+  "runs": [
+    {
+      "query": {
+        "seconds": 0.12917580001521856,
+        "peak_sampled_rss_mb": 56.8125
+      },
+      "repeat_query": {
+        "seconds": 0.12868059996981174,
+        "peak_sampled_rss_mb": 57.4140625
+      },
+      "detail": {
+        "seconds": 0.02344070002436638,
+        "peak_sampled_rss_mb": 57.18359375
+      },
+      "summary_export": {
+        "seconds": 0.19570779998321086,
+        "peak_sampled_rss_mb": 57.37890625
+      },
+      "detail_export": {
+        "seconds": 6.437377099995501,
+        "peak_sampled_rss_mb": 64.5859375
+      },
+      "cancel_seconds": 0.0011628000065684319
+    },
+    {
+      "query": {
+        "seconds": 0.14390399999683723,
+        "peak_sampled_rss_mb": 65.51171875
+      },
+      "repeat_query": {
+        "seconds": 0.12956600001780316,
+        "peak_sampled_rss_mb": 65.296875
+      },
+      "detail": {
+        "seconds": 0.026164600043557584,
+        "peak_sampled_rss_mb": 64.828125
+      },
+      "summary_export": {
+        "seconds": 0.16487689997302368,
+        "peak_sampled_rss_mb": 64.16015625
+      },
+      "detail_export": {
+        "seconds": 6.527875199972186,
+        "peak_sampled_rss_mb": 65.80859375
+      },
+      "cancel_seconds": 0.0014565999736078084
+    },
+    {
+      "query": {
+        "seconds": 0.15451060002669692,
+        "peak_sampled_rss_mb": 66.23046875
+      },
+      "repeat_query": {
+        "seconds": 0.13203440001234412,
+        "peak_sampled_rss_mb": 67.2578125
+      },
+      "detail": {
+        "seconds": 0.023915600031614304,
+        "peak_sampled_rss_mb": 67.24609375
+      },
+      "summary_export": {
+        "seconds": 0.19171129999449477,
+        "peak_sampled_rss_mb": 67.28515625
+      },
+      "detail_export": {
+        "seconds": 6.676014499971643,
+        "peak_sampled_rss_mb": 67.80859375
+      },
+      "cancel_seconds": 0.001541399979032576
+    }
+  ],
+  "summary": {
+    "query": {
+      "median": 0.14390399999683723,
+      "min": 0.12917580001521856,
+      "max": 0.15451060002669692,
+      "peak_mib": 66.23046875
+    },
+    "repeat_query": {
+      "median": 0.12956600001780316,
+      "min": 0.12868059996981174,
+      "max": 0.13203440001234412,
+      "peak_mib": 67.2578125
+    },
+    "detail": {
+      "median": 0.023915600031614304,
+      "min": 0.02344070002436638,
+      "max": 0.026164600043557584,
+      "peak_mib": 67.24609375
+    },
+    "summary_export": {
+      "median": 0.19171129999449477,
+      "min": 0.16487689997302368,
+      "max": 0.19570779998321086,
+      "peak_mib": 67.28515625
+    },
+    "detail_export": {
+      "median": 6.527875199972186,
+      "min": 6.437377099995501,
+      "max": 6.676014499971643,
+      "peak_mib": 67.80859375
+    }
+  },
+  "limits": "Synthetic, same machine/Python, serial three runs. OS file cache warm after fixture generation. Each query includes SQLite reads, decoding, comparisons, aggregation; detail loaded on demand. RSS main process sampled every30ms including interpreter, short peaks may be missed. No baseline counterpart or speedup claim."
+}

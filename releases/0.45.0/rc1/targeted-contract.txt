@@ -1,0 +1,15 @@
+test_budget_original_rules (test_automation.AutomationContractTests.test_budget_original_rules) ... ok
+test_mcp_initialize_discover_call_and_error (test_automation.AutomationContractTests.test_mcp_initialize_discover_call_and_error) ... ok
+test_parameter_scope_budget_route_and_priority_are_distinct (test_automation.AutomationContractTests.test_parameter_scope_budget_route_and_priority_are_distinct) ... ok
+test_public_surface_excludes_persistence_and_arbitrary_execution (test_automation.AutomationContractTests.test_public_surface_excludes_persistence_and_arbitrary_execution) ... ok
+test_recalculation_impact_exact_original_order (test_automation.AutomationContractTests.test_recalculation_impact_exact_original_order) ... ok
+test_store_order_never_sorted_and_duplicates_rejected (test_automation.AutomationContractTests.test_store_order_never_sorted_and_duplicates_rejected) ... ok
+test_types_missing_unknown_nan_and_duplicate_fields_rejected (test_automation.AutomationContractTests.test_types_missing_unknown_nan_and_duplicate_fields_rejected) ... ok
+test_events_are_ordered_incremental_and_metadata_only (test_automation.AutomationJournalTests.test_events_are_ordered_incremental_and_metadata_only) ... ok
+test_interrupted_session_not_reported_as_completed (test_automation.AutomationJournalTests.test_interrupted_session_not_reported_as_completed) ... ok
+test_operation_key_replay_is_same_task_and_changed_args_rejected (test_automation.AutomationJournalTests.test_operation_key_replay_is_same_task_and_changed_args_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.183s
+
+OK

@@ -22,3 +22,7 @@ releases/0.24.0/ax_rc5/*.txt whitespace=blank-at-eol,blank-at-eof,space-before-t
 # Preserve original Windows evidence bytes for the coverage candidate.
 releases/0.44.0/rc2/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 releases/0.44.0/rc2/*.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# Preserve Windows-generated inventory acceptance evidence bytes.
+releases/0.45.0/rc1/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.45.0/rc1/*.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

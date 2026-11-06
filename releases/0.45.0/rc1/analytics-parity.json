@@ -1,0 +1,188 @@
+{
+  "passed": true,
+  "baseline": "f30455094a0901d4df695d0e11394ff36aa413fd",
+  "differences": 0,
+  "cells_compared": 2835,
+  "dynamic_exclusions": [
+    "report.as_of",
+    "report.history.as_of"
+  ],
+  "allowed_business_changes": [],
+  "runs": [
+    {
+      "side": "before",
+      "run": 0,
+      "query": {
+        "seconds": 0.0330246000085026,
+        "peak_sampled_rss_mb": 46.4609375
+      },
+      "export": {
+        "seconds": 0.1724409000016749,
+        "peak_sampled_rss_mb": 46.921875
+      },
+      "rows": 4,
+      "database_unchanged": true,
+      "receipt": {
+        "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\inventory_0450\\analytics_comparison\\before-0.xlsx",
+        "sha256": "5a77435903f2d7352663388419fd78436683f52574db9f91e514393d4d2776cb",
+        "snapshot_id": "e7f5a12b90056b545646cba2dac38726062286d97bf5f5fda6f3a159940f221e",
+        "rows": 4,
+        "pending": 0,
+        "sheets": [
+          "门店经营对比",
+          "门店分仓对比",
+          "订单五段漏斗",
+          "门店逐轮天数",
+          "可售天数口径"
+        ],
+        "coverage_version": "coverage-1"
+      }
+    },
+    {
+      "side": "after",
+      "run": 0,
+      "query": {
+        "seconds": 0.011321800004225224,
+        "peak_sampled_rss_mb": 44.53515625
+      },
+      "export": {
+        "seconds": 0.13677219999954104,
+        "peak_sampled_rss_mb": 45.80859375
+      },
+      "rows": 4,
+      "database_unchanged": true,
+      "receipt": {
+        "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\inventory_0450\\analytics_comparison\\after-0.xlsx",
+        "sha256": "0ba20e8c2070c4fb0be81e02e224974800b66babc81c694d65ac3a38aae2b285",
+        "snapshot_id": "e7f5a12b90056b545646cba2dac38726062286d97bf5f5fda6f3a159940f221e",
+        "rows": 4,
+        "pending": 0,
+        "sheets": [
+          "门店经营对比",
+          "门店分仓对比",
+          "订单五段漏斗",
+          "门店逐轮天数",
+          "可售天数口径"
+        ],
+        "coverage_version": "coverage-1"
+      }
+    },
+    {
+      "side": "after",
+      "run": 1,
+      "query": {
+        "seconds": 0.010781100019812584,
+        "peak_sampled_rss_mb": 44.6171875
+      },
+      "export": {
+        "seconds": 0.143785200023558,
+        "peak_sampled_rss_mb": 45.80078125
+      },
+      "rows": 4,
+      "database_unchanged": true,
+      "receipt": {
+        "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\inventory_0450\\analytics_comparison\\after-1.xlsx",
+        "sha256": "c08396a10dc0dd9cc08ae59b4714180a11d8f730172fe212e6c56b4ffb9eb9cc",
+        "snapshot_id": "e7f5a12b90056b545646cba2dac38726062286d97bf5f5fda6f3a159940f221e",
+        "rows": 4,
+        "pending": 0,
+        "sheets": [
+          "门店经营对比",
+          "门店分仓对比",
+          "订单五段漏斗",
+          "门店逐轮天数",
+          "可售天数口径"
+        ],
+        "coverage_version": "coverage-1"
+      }
+    },
+    {
+      "side": "before",
+      "run": 1,
+      "query": {
+        "seconds": 0.009696300025098026,
+        "peak_sampled_rss_mb": 44.79296875
+      },
+      "export": {
+        "seconds": 0.1282266000052914,
+        "peak_sampled_rss_mb": 45.94140625
+      },
+      "rows": 4,
+      "database_unchanged": true,
+      "receipt": {
+        "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\inventory_0450\\analytics_comparison\\before-1.xlsx",
+        "sha256": "4437012af7066eae0d967de0f3f1ef44e55da589d4e938abdfcf68a9a55facff",
+        "snapshot_id": "e7f5a12b90056b545646cba2dac38726062286d97bf5f5fda6f3a159940f221e",
+        "rows": 4,
+        "pending": 0,
+        "sheets": [
+          "门店经营对比",
+          "门店分仓对比",
+          "订单五段漏斗",
+          "门店逐轮天数",
+          "可售天数口径"
+        ],
+        "coverage_version": "coverage-1"
+      }
+    },
+    {
+      "side": "before",
+      "run": 2,
+      "query": {
+        "seconds": 0.009955200017429888,
+        "peak_sampled_rss_mb": 44.7109375
+      },
+      "export": {
+        "seconds": 0.15309489995706826,
+        "peak_sampled_rss_mb": 46.0546875
+      },
+      "rows": 4,
+      "database_unchanged": true,
+      "receipt": {
+        "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\inventory_0450\\analytics_comparison\\before-2.xlsx",
+        "sha256": "8183cc0e15a880e364497df6d9b42dbe6c54ca89568ca92a5c94a320deecc930",
+        "snapshot_id": "e7f5a12b90056b545646cba2dac38726062286d97bf5f5fda6f3a159940f221e",
+        "rows": 4,
+        "pending": 0,
+        "sheets": [
+          "门店经营对比",
+          "门店分仓对比",
+          "订单五段漏斗",
+          "门店逐轮天数",
+          "可售天数口径"
+        ],
+        "coverage_version": "coverage-1"
+      }
+    },
+    {
+      "side": "after",
+      "run": 2,
+      "query": {
+        "seconds": 0.015547100047115237,
+        "peak_sampled_rss_mb": 44.78515625
+      },
+      "export": {
+        "seconds": 0.1616924999980256,
+        "peak_sampled_rss_mb": 46.03125
+      },
+      "rows": 4,
+      "database_unchanged": true,
+      "receipt": {
+        "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\inventory_0450\\analytics_comparison\\after-2.xlsx",
+        "sha256": "44f248b6bab9594ce9235f572de467dd685c0a23e779661a879671d737ad4b4e",
+        "snapshot_id": "e7f5a12b90056b545646cba2dac38726062286d97bf5f5fda6f3a159940f221e",
+        "rows": 4,
+        "pending": 0,
+        "sheets": [
+          "门店经营对比",
+          "门店分仓对比",
+          "订单五段漏斗",
+          "门店逐轮天数",
+          "可售天数口径"
+        ],
+        "coverage_version": "coverage-1"
+      }
+    }
+  ],
+  "database_sha256": "f68e8b41bcc239672d02a85c76ff656b61c234a3d72d95d4838753ab2a44a5d2"
+}
