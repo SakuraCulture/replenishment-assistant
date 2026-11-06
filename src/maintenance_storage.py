@@ -87,7 +87,12 @@ class Editor:
         self.cache=OrderedDict();self.cache_size=0;self.reads=0;self.scratch_hashes=chunks.known(scratch)
     def raw(self,node):
         checkpoint(self.cancel);h=node[1]
-        if h in self.cache:self.cache.move_to_end(h);return self.cache[h]
+        if h in self.cache:
+            raw=self.cache[h]
+            # Every reference has its own declared length, including discarded
+            # branches whose bytes were cached while reading shared metadata.
+            if len(raw)!=node[2]:raise ValueError('快照内容块校验失败：'+h)
+            self.cache.move_to_end(h);return raw
         first,second=(self.scratch,self.source) if h in self.scratch_hashes else (self.source,self.scratch)
         row=first.execute('SELECT size,data FROM snapshot_chunks WHERE hash=?',(h,)).fetchone()
         if row is None:row=second.execute('SELECT size,data FROM snapshot_chunks WHERE hash=?',(h,)).fetchone()

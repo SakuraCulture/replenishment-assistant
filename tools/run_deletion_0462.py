@@ -1,7 +1,7 @@
 """Serial fixed-input performance matrix and separate full-content audits."""
 import argparse,hashlib,json,os,subprocess,sys
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1];QA=ROOT/'qa/deletion_0462'
+ROOT=Path(__file__).resolve().parents[1];QA=ROOT/'qa/deletion_0462_final'
 CASES=[('derived-warm','derived',3,1,'derived_warm'),('native-warm','native',3,1,'native_warm'),
        ('derived-cold','derived',2,1,None),('native-cold','native',2,1,None),
        ('derived-multiple','derived',2,3,'derived_warm'),('native-multiple','native',2,3,'native_warm'),

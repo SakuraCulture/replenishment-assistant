@@ -2,7 +2,7 @@
 import hashlib,json,re,shutil,subprocess,zipfile
 from pathlib import Path
 from run_deletion_0462 import CASES
-ROOT=Path(__file__).resolve().parents[1];QA=ROOT/'qa/deletion_0462'
+ROOT=Path(__file__).resolve().parents[1];QA=ROOT/'qa/deletion_0462_final';PRIOR=ROOT/'qa/deletion_0462'
 def read(path):return json.loads(path.read_text('utf-8-sig'))
 def sha(path):
     with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
@@ -13,7 +13,7 @@ def main():
     assert not subprocess.check_output(['git','diff',build['source_commit'],'--','src','tests','tools','components','prepare_delivery.py'],cwd=ROOT)
     for path,h in environment['measured_sources'].items():assert sha(ROOT/path)==h,path
     for path,h in read(QA/'frozen.json')['protected'].items():assert sha(Path(path))==h,path
-    for file,count in [('regression.txt',1043),('stream-tests-r1.txt',48)]:
+    for file,count in [('regression.txt',1044),('stream-tests.txt',49)]:
         assert re.search(r'Ran '+str(count)+r' tests in [\d.]+s\s+OK\s*$',(QA/file).read_text('utf-8-sig')),file
     differential=read(QA/'differential/report.json');assert differential['passed'] and len(differential['cases'])==48
     for name,_,rounds,*_ in CASES:
@@ -30,7 +30,7 @@ def main():
     for name,*_ in CASES:
         shutil.copyfile(QA/name/'report.json',release/(name+'-performance.json'))
         shutil.copyfile(QA/name/'audit.json',release/(name+'-audit.json'))
-    for name in ('frozen.json','environment.json','inputs.json','native-fixture.json','native-cache.json','regression.txt','stream-tests-r1.txt'):
+    for name in ('frozen.json','environment.json','inputs.json','native-fixture.json','native-cache.json','regression.txt','stream-tests.txt','prior-attempt.json'):
         shutil.copyfile(QA/name,release/name)
     shutil.copyfile(QA/'differential/report.json',release/'differential.json')
     shutil.copyfile(ROOT/'build_0.46.2_rc1/build_info.json',release/'build_info.json')
@@ -38,8 +38,10 @@ def main():
         shutil.copyfile(QA/folder/report,release/(folder+'.json'));dest=release/folder;dest.mkdir()
         for path in (QA/folder).glob('*.png'):shutil.copyfile(path,dest/path.name)
     pilots=release/'exploratory';pilots.mkdir()
-    for name in ('cache-pilot','stream-pilot','native-pilot'):shutil.copyfile(QA/name/'report.json',pilots/(name+'.json'))
-    (pilots/'README.txt').write_text('Exploratory single pairs only. cache-pilot changed cache staging alone; stream-pilot and native-pilot also enabled fused rewriting. Final claims use the seven separately rerun matrices from the immutable build commit.',encoding='utf-8')
+    for name in ('cache-pilot','stream-pilot','native-pilot','derived-warm','native-warm'):shutil.copyfile(PRIOR/name/'report.json',pilots/(name+'.json'))
+    for name in ('cached-length-before-fix.txt','cached-length-after-fix.txt','regression.txt','performance-console.txt'):shutil.copyfile(PRIOR/name,pilots/name)
+    shutil.copyfile(PRIOR/'derived-cold/after-1.txt',pilots/'safe-stop-before-worker.txt')
+    (pilots/'README.txt').write_text('Retired attempt: metadata pre-read exposed a missing per-reference length check on cache hits. A negative test failed before the fix. The active baseline worker finished; the next worker was refused before opening its database. No process was killed or package built. All final claims use the seven separately rerun matrices after the fix.',encoding='utf-8')
     patch=subprocess.check_output(['git','diff',read(QA/'frozen.json')['commit'],build['source_commit'],'--','src'],cwd=ROOT)
     (release/'runtime.patch').write_bytes(patch)
     files={p.relative_to(delivery).as_posix():sha(p) for p in sorted(delivery.rglob('*')) if p.is_file()}

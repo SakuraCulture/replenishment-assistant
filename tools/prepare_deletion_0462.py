@@ -2,7 +2,7 @@
 
 Only new directories under qa/deletion_0462 are written. No production profiles.
 """
-import argparse,copy,hashlib,json,random,sqlite3,subprocess,sys,zipfile
+import argparse,copy,hashlib,json,random,shutil,sqlite3,subprocess,sys,zipfile
 from contextlib import closing
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];QA=ROOT/'qa/deletion_0462'
@@ -71,5 +71,15 @@ def warm():
             ms.references_for(cache,h,size,data)
         save(QA/'native-cache.json',{'chunks':i,'source_sha256':sha(source),'scope':'Full baseline reference verification outside timing'})
     print('Native cache ready',flush=True)
+def final():
+    dest=ROOT/'qa/deletion_0462_final';dest.mkdir(exist_ok=False)
+    shutil.copyfile(QA/'baseline.zip',dest/'baseline.zip')
+    with zipfile.ZipFile(dest/'baseline.zip') as z:z.extractall(dest/'baseline')
+    for name in ('frozen.json','inputs.json','native-fixture.json','native-cache.json'):shutil.copyfile(QA/name,dest/name)
+    save(dest/'prior-attempt.json',{'source_commit':'1a4842a50c80bdc59b4482bcfe77d38faa9b86c6',
+                                  'reason':'cached reference length was not checked after metadata pre-read; new negative test exposed it',
+                                  'prior_qa':str(QA),'active_worker_finished':True,'next_worker_refused_before_opening_database':True,
+                                  'full_comparison_restart':True,'never_packaged':True})
+    print('Prepared independent final QA root',flush=True)
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('mode',choices=['freeze','native','warm']);a=p.parse_args();globals()[a.mode]()
+    p=argparse.ArgumentParser();p.add_argument('mode',choices=['freeze','native','warm','final']);a=p.parse_args();globals()[a.mode]()

@@ -42,6 +42,23 @@ class DeltaReferences(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'校验失败'):
                 ms.references_for(scratch,h,len(raw),zlib.compress(b'corrupt'),cache_source=source)
             self.assertEqual(scratch.execute('SELECT COUNT(*) FROM maintenance_chunk_refs').fetchone()[0],0)
+    def test_cached_block_checks_each_reference_length_before_discard(self):
+        import engine
+        config=engine.config();field=config['sales_fields']['store_code']
+        payload={'schema':1,'day':wr.today(),'model_version':'0.3.4-rules',
+                 'states':{'T':{'name':'T','state':'待计算'},'U':{'name':'U','state':'待计算'}},
+                 '_calculation_settings':{'T':field},'loaded':{'config':config}}
+        self.w.save_job(wr.today(),payload,None)
+        with closing(sqlite3.connect(self.path)) as db,db:
+            manifest=c.require_manifest(db.execute('SELECT payload FROM jobs').fetchone()[0])
+            node=dict(dict(manifest['tree'][1])['_calculation_settings'][1])['T']
+            node[2]+=1
+            corrupted=c.Prepared(manifest['tree'],manifest['digest'],manifest['size'],{}).blob()
+            db.execute('UPDATE jobs SET payload=?',(corrupted,))
+        plan=m.prepare(self.path,self.heads)
+        with self.assertRaisesRegex(ValueError,'校验失败'):m.execute(self.path,plan)
+        self.assertEqual(len(self.r.headers()),1)
+        with closing(sqlite3.connect(self.path)) as db:self.assertEqual(db.execute('SELECT payload FROM jobs').fetchone()[0],corrupted)
 
 class StreamRewrite(unittest.TestCase):
     def compare(self,value,codes={'T'}):

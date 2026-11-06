@@ -47,6 +47,7 @@ def signature(folder):
     return {p.name:deletion_qa.signature(p) for p in sorted(folder.rglob('*.sqlite3')) if 'prepared' not in p.name}
 
 def worker(a):
+    if (a.qa_root/'stop-after-group').exists():raise RuntimeError('QA stop requested before worker start; no database opened')
     if not (a.fixture/'workbench.sqlite3').is_file():raise ValueError('Fixture must be the isolated settings folder containing workbench.sqlite3')
     sys.path[:0]=[str(a.source/'src'),str(ROOT/'qa/export_071/qa-deps')]
     import psutil,data_maintenance as m,maintenance_storage as ms
@@ -116,11 +117,13 @@ def worker(a):
         'result':result,'before':before,'after':after,'progress':events})
 
 def run(a):
+    if (a.qa_root/'stop-after-group').exists():raise RuntimeError('QA stop requested at group boundary; no worker started')
     out=a.output;out.resolve().relative_to(a.qa_root.resolve());out.mkdir(parents=True,exist_ok=False)
     records=[];fixture_hash={str(p):sha(p) for p in a.fixture.rglob('*') if p.is_file()}
     if a.warm:fixture_hash[str(a.warm)]=sha(a.warm)
     for n in range(a.rounds):
         for side in (('before','after') if n%2==0 else ('after','before')):
+            if (a.qa_root/'stop-after-group').exists():raise RuntimeError('QA stop requested between workers; active deletion already finished')
             dest=out/f'{side}-{n+1}';source=a.qa_root/'baseline' if side=='before' else ROOT
             cmd=[sys.executable,__file__,'worker','--source',str(source),'--fixture',str(a.fixture),'--output',str(dest),
                  '--qa-root',str(a.qa_root),'--parents',str(a.parents)]
