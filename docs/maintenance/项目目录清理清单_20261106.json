@@ -1,0 +1,1293 @@
+{
+  "date": "2026-11-06",
+  "baseline": "339db8142970d5e1987dcdb58b8f7acc83c12c93",
+  "preserved_version": "0.43.1 rc1",
+  "removed_directories": 211,
+  "removed_delivery_directories": 108,
+  "removed_build_directories": 103,
+  "removed_logical_bytes": 39473038125,
+  "retained_note_bytes": 8855419,
+  "net_logical_bytes_excluding_small_audit_files": 39464182706,
+  "verification": {
+    "latest_manifest_files": 1226,
+    "latest_mismatches": [],
+    "retained_note_files": 1322,
+    "note_mismatches": [],
+    "zip_sha256": "54e9bf8fcd784c089f4597f88e99e9abeea3a27c1c57d740511062a3b0e12cad",
+    "zip_matches_release": true,
+    "remaining_version_directories": [
+      "build_0.43.1_rc1",
+      "交付_0.43.1_rc1"
+    ],
+    "deleted_directory_reappeared": [],
+    "head_unchanged": true
+  },
+  "removed": [
+    {
+      "name": "build",
+      "bytes": 10878355,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.10.0_rc1",
+      "bytes": 13759164,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.11.0_rc1",
+      "bytes": 13825846,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.11.0_rc2",
+      "bytes": 13827130,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.12.0_rc1",
+      "bytes": 13937014,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.12.0_rc2",
+      "bytes": 13937062,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.13.0_rc1",
+      "bytes": 15336626,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.14.0_rc1",
+      "bytes": 15619340,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.14.0_rc2",
+      "bytes": 15619196,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.15.0_rc1",
+      "bytes": 15822818,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.15.1_rc1",
+      "bytes": 15876011,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.16.0_rc1",
+      "bytes": 15980134,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.16.0_rc2",
+      "bytes": 15980134,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.16.1_rc1",
+      "bytes": 15990567,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.17.0_rc1",
+      "bytes": 16159933,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.17.0_rc2",
+      "bytes": 16164120,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.17.0_rc3",
+      "bytes": 16168968,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.17.1_rc1",
+      "bytes": 16181147,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.18.0_rc1",
+      "bytes": 16459855,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.18.0_rc2",
+      "bytes": 16460917,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.2",
+      "bytes": 10887043,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.21.0_rc1",
+      "bytes": 48292299,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.21.0_rc2",
+      "bytes": 48322483,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.22.0_rc1",
+      "bytes": 50360291,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.22.0_rc2",
+      "bytes": 50362805,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.22.1_rc1",
+      "bytes": 50676720,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.22.1_rc2",
+      "bytes": 50676881,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.23.0_rc1",
+      "bytes": 51398017,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.24.0_ax_rc1",
+      "bytes": 164845964,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.24.0_ax_rc2",
+      "bytes": 165285621,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.24.0_ax_rc3",
+      "bytes": 165694740,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.24.0_ax_rc4",
+      "bytes": 166107355,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.24.0_ax_rc5",
+      "bytes": 166678212,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.25.0_rc1",
+      "bytes": 167366774,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.26.0_rc1",
+      "bytes": 168148559,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.26.0_rc2",
+      "bytes": 168151218,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.26.1_rc1",
+      "bytes": 168583741,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.27.0_rc1",
+      "bytes": 169196895,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.27.0_rc2",
+      "bytes": 169198304,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.27.1_rc1",
+      "bytes": 170275679,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.28.0_rc1",
+      "bytes": 171579350,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.29.0_rc1",
+      "bytes": 173797674,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.3",
+      "bytes": 10958887,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.30.0_rc1",
+      "bytes": 175595793,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.31.0_rc1",
+      "bytes": 177026448,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.31.0_rc2",
+      "bytes": 177026939,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.31.0_rc3",
+      "bytes": 177030520,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.31.0_rc4",
+      "bytes": 177946264,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.31.0_rc5",
+      "bytes": 177948402,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.32.0_rc1",
+      "bytes": 180032334,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.32.1_rc1",
+      "bytes": 186016617,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.32.1_rc2",
+      "bytes": 186020281,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.32.1_rc3",
+      "bytes": 186042865,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.32.2_rc1",
+      "bytes": 186818788,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.33.0_rc1",
+      "bytes": 187995380,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.33.1_rc1",
+      "bytes": 189328393,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.33.1_rc2",
+      "bytes": 189337142,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.34.0_rc1",
+      "bytes": 190418048,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.34.0_rc2",
+      "bytes": 190419785,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.35.0_rc1",
+      "bytes": 265286160,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.35.1_rc1",
+      "bytes": 267098653,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.36.0_rc1",
+      "bytes": 268839764,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.36.1_rc1",
+      "bytes": 274175623,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.36.1_rc2",
+      "bytes": 274176466,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.36.2_rc1",
+      "bytes": 275156156,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.37.0_rc1",
+      "bytes": 276707886,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.37.0_rc2",
+      "bytes": 277900454,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.38.0_rc1",
+      "bytes": 278959687,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.38.1_rc1",
+      "bytes": 279740287,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.39.0_rc1",
+      "bytes": 286771983,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.39.0_rc2",
+      "bytes": 286776227,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.4.0_rc1",
+      "bytes": 12178473,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.4.0_rc2",
+      "bytes": 12179853,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.40.0_rc1",
+      "bytes": 306342111,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.40.0_rc2",
+      "bytes": 306347556,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.40.1_rc1",
+      "bytes": 307680895,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.40.2_rc1",
+      "bytes": 308271911,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.40.3_rc1",
+      "bytes": 309479473,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.40.4_rc1",
+      "bytes": 310945865,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.41.0_rc1",
+      "bytes": 311570430,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.41.1_rc1",
+      "bytes": 312364971,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.41.2_rc1",
+      "bytes": 313444026,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.42.0_rc1",
+      "bytes": 314435217,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.43.0_rc1",
+      "bytes": 315653151,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.5.0_rc1",
+      "bytes": 12270681,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.6.0_rc1",
+      "bytes": 12523882,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.6.0_rc2",
+      "bytes": 12526546,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.6.1_rc1",
+      "bytes": 12517558,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.6.2_rc1",
+      "bytes": 12557326,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.7.0_rc1",
+      "bytes": 12739084,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.7.0_rc2",
+      "bytes": 12740631,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.7.0_rc3",
+      "bytes": 12809550,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.7.1_rc1",
+      "bytes": 12895160,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.7.1_rc2",
+      "bytes": 12895178,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.7.2_rc1",
+      "bytes": 12999098,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.7.3_rc1",
+      "bytes": 13139474,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.7.4_rc1",
+      "bytes": 13167586,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.8.0_rc1",
+      "bytes": 13251098,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.9.0_rc1",
+      "bytes": 13510202,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.9.0_rc2",
+      "bytes": 13512224,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.9.1_rc1",
+      "bytes": 13576466,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.9.2_rc1",
+      "bytes": 13678131,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "build_0.9.2_rc2",
+      "bytes": 13680931,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付",
+      "bytes": 159695543,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.10.0_rc1",
+      "bytes": 164965178,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.11.0_rc1",
+      "bytes": 117661462,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.11.0_rc2",
+      "bytes": 165175520,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.12.0_rc1",
+      "bytes": 117701392,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.12.0_rc2",
+      "bytes": 165249126,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.13.0_rc1",
+      "bytes": 166316932,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.14.0_rc1",
+      "bytes": 118365129,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.14.0_rc2",
+      "bytes": 166507997,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.15.0_rc1",
+      "bytes": 166633437,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.15.1_rc1",
+      "bytes": 166661263,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.16.0_rc1",
+      "bytes": 118399891,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.16.0_rc2",
+      "bytes": 166617468,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.16.1_rc1",
+      "bytes": 166689973,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.17.0_rc1",
+      "bytes": 118506818,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.17.0_rc2",
+      "bytes": 118510148,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.17.0_rc3",
+      "bytes": 166818752,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.17.1_rc1",
+      "bytes": 166834239,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.18.0_rc1",
+      "bytes": 118620025,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.18.0_rc2",
+      "bytes": 167031840,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.18.1_rc1",
+      "bytes": 167044600,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.19.0_rc1",
+      "bytes": 118657573,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.19.0_rc2",
+      "bytes": 167097970,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.19.1_rc1",
+      "bytes": 167126955,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.2",
+      "bytes": 159703580,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.20.0_rc1",
+      "bytes": 167178660,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.21.0_rc1",
+      "bytes": 118745237,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.21.0_rc2",
+      "bytes": 167300116,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.22.0_rc1",
+      "bytes": 118704402,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.22.0_rc2",
+      "bytes": 167217771,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.22.1_rc1",
+      "bytes": 118716922,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.22.1_rc2",
+      "bytes": 167242534,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.23.0_rc1",
+      "bytes": 167439765,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.24.0_ax_rc1",
+      "bytes": 317411144,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.24.0_ax_rc2",
+      "bytes": 317422006,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.24.0_ax_rc3",
+      "bytes": 317426927,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.24.0_ax_rc4",
+      "bytes": 317457784,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.24.0_ax_rc5",
+      "bytes": 317470680,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.25.0_rc1",
+      "bytes": 317541694,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.26.0_rc1",
+      "bytes": 229374767,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.26.0_rc2",
+      "bytes": 317560933,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.26.1_rc1",
+      "bytes": 317580497,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.27.0_rc1",
+      "bytes": 229447639,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.27.0_rc2",
+      "bytes": 317697687,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.27.1_rc1",
+      "bytes": 317712841,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.28.0_rc1",
+      "bytes": 317827621,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.29.0_rc1",
+      "bytes": 317638052,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.3",
+      "bytes": 160243523,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.30.0_rc1",
+      "bytes": 317690967,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.31.0_rc1",
+      "bytes": 229628772,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.31.0_rc2",
+      "bytes": 229628970,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.31.0_rc3",
+      "bytes": 317991092,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.31.0_rc4",
+      "bytes": 229637723,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.31.0_rc5",
+      "bytes": 318011582,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.32.0_rc1",
+      "bytes": 318386699,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.32.1_rc1",
+      "bytes": 231843809,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.32.1_rc2",
+      "bytes": 231844225,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.32.1_rc3",
+      "bytes": 322254492,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.32.2_rc1",
+      "bytes": 322306174,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.33.0_rc1",
+      "bytes": 322373011,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.33.1_rc1",
+      "bytes": 232006251,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.33.1_rc2",
+      "bytes": 322571785,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.34.0_rc1",
+      "bytes": 322694597,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.34.0_rc2",
+      "bytes": 322694591,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.35.0_rc1",
+      "bytes": 415148178,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.35.1_rc1",
+      "bytes": 415219957,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.36.0_rc1",
+      "bytes": 414994575,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.36.1_rc1",
+      "bytes": 300390203,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.36.1_rc2",
+      "bytes": 415007046,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.36.2_rc1",
+      "bytes": 415041961,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.37.0_rc1",
+      "bytes": 415202505,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.37.0_rc2",
+      "bytes": 415207489,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.38.0_rc1",
+      "bytes": 415252402,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.38.1_rc1",
+      "bytes": 415285087,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.39.0_rc1",
+      "bytes": 302637520,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.39.0_rc2",
+      "bytes": 419371147,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.4.0_rc1",
+      "bytes": 115331793,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.4.0_rc2",
+      "bytes": 161376550,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.40.0_rc1",
+      "bytes": 310249910,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.40.0_rc2",
+      "bytes": 434360733,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.40.1_rc1",
+      "bytes": 434385704,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.40.2_rc1",
+      "bytes": 434419409,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.40.3_rc1",
+      "bytes": 434441891,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.40.4_rc1",
+      "bytes": 434440798,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.41.0_rc1",
+      "bytes": 434502836,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.41.1_rc1",
+      "bytes": 434517451,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.41.2_rc1",
+      "bytes": 434524946,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.42.0_rc1",
+      "bytes": 434566534,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.43.0_rc1",
+      "bytes": 434617809,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.5.0_rc1",
+      "bytes": 161436837,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.6.0_rc1",
+      "bytes": 117194368,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.6.0_rc2",
+      "bytes": 164282458,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.6.1_rc1",
+      "bytes": 164242883,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.6.2_rc1",
+      "bytes": 164266451,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.7.0_rc1",
+      "bytes": 117246101,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.7.0_rc2",
+      "bytes": 117246426,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.7.0_rc3",
+      "bytes": 164444748,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.7.1_rc1",
+      "bytes": 117299682,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.7.1_rc2",
+      "bytes": 164501035,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.7.2_rc1",
+      "bytes": 164560379,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.7.3_rc1",
+      "bytes": 164675809,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.7.4_rc1",
+      "bytes": 164695063,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.8.0_rc1",
+      "bytes": 164759349,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.9.0_rc1",
+      "bytes": 117526020,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.9.0_rc2",
+      "bytes": 164947218,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.9.1_rc1",
+      "bytes": 164992545,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.9.2_rc1",
+      "bytes": 117500062,
+      "status": "deleted",
+      "error": null
+    },
+    {
+      "name": "交付_0.9.2_rc2",
+      "bytes": 164901572,
+      "status": "deleted",
+      "error": null
+    }
+  ]
+}
