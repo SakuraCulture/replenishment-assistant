@@ -33,7 +33,7 @@ def main():
         result=subprocess.Popen(command+['--storage-copy','backup',str(source),str(target),'--report',str(receipt)],cwd=out,env=env);result.wait(timeout=120)
         data=json.loads(receipt.read_text(encoding='utf-8'));assert result.returncode==0 and data['passed']
         assert hashlib.sha256(source.read_bytes()).hexdigest()==before
-        with sqlite3.connect(source) as a,sqlite3.connect(target) as b:assert list(a.iterdump())==list(b.iterdump())
+        with sqlite3.connect(source) as source_db,sqlite3.connect(target) as target_db:assert list(source_db.iterdump())==list(target_db.iterdump())
         report['cli_backup']=data;report['checks'].append('native CLI backup preserves every SQL value and source hash')
         old=out/'unsupported.sqlite3'
         with sqlite3.connect(old) as db:db.execute('CREATE TABLE jobs(payload BLOB)');db.execute('INSERT INTO jobs VALUES(?)',(zlib.compress(b'{}'),))
