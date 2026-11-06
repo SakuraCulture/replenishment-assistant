@@ -1,0 +1,601 @@
+diff --git a/src/aoxiang_purchase_messages.py b/src/aoxiang_purchase_messages.py
+new file mode 100644
+index 0000000..1e4f036
+--- /dev/null
++++ b/src/aoxiang_purchase_messages.py
+@@ -0,0 +1,44 @@
++"""Business explanations for purchase recovery; raw evidence stays available."""
++
++
++def observation(record):
++    return {k: record.get(k) for k in ('state', 'taskId', 'uploadAttempted', 'additionalTaskIds')} | {
++        'orderId': (record.get('binding') or {}).get('orderId')}
++
++
++def waiting(item, kind):
++    return (kind == 'upload' and item['state'] in ('FAILED', 'REVIEW')
++            and (item.get('error') or {}).get('code') == 'TASK_PENDING')
++
++
++def explain(error, known=None):
++    error, known = error or {}, known or {}
++    code = error.get('code', '')
++    messages = {
++        'TASK_PENDING': '翱象已受理，采购单或核对文件仍在处理中。稍后点击“继续核对采购结果”，沿原任务检查完成状态。',
++        'TASK_NOT_FOUND': '本次暂未查到原平台任务，已有任务号仍保留。请稍后继续核对采购结果；不要重新导入。',
++        'IMPORT_TASK_FAILED': '翱象报告原导入任务未成功。请在平台原导入记录查看失败明细，并核对是否已有部分商品建单；不要整单重新导入。',
++        'IMPORT_TASK_PARTIAL': '原导入任务未全部成功，可能已有部分商品建单。请核对平台原任务的成功及失败商品，再处理差异；不要整单重新导入。',
++        'MULTIPLE_IMPORT_TASKS': '同一笔采购发现多个受理任务号，无法自动确定对应采购单。请到单据详情核对原采购记录，保留已有平台单据。',
++        'LOGIN_REQUIRED': '翱象登录已失效。请在原浏览器重新登录并核验连接，再继续核对原任务。',
++        'WRONG_IDENTITY': '当前翱象账号或商家与这笔采购不一致。请切回原商家并核验连接，再继续原任务。',
++    }
++    if code == 'SUBMISSION_UNKNOWN':
++        if known.get('taskId'):
++            return '已找到原受理任务号，之前的结果提示尚未更新。请点击“继续核对采购结果”，读取原任务并关联已有采购单。'
++        if known.get('uploadAttempted'):
++            return '上传已发起，但未收到可核验的受理回执，平台可能已建单。请在单据详情打开翱象采购，核对已有采购单；不要重新导入。'
++        return '此记录尚未完成上传结果核对。请先点击“继续核对采购结果”重新读取原任务；若仍缺少回执，再到单据详情核对已有采购单。'
++    return messages.get(code) or error.get('message') or '当前没有异常记录。'
++
++
++def item_message(item, kind):
++    if kind != 'upload':
++        return (item.get('error') or {}).get('message', '')
++    if item['state'] == 'BOUND':
++        return '采购单已核验并关联；可在平台处理后续提交。'
++    if item.get('error'):
++        return explain(item['error'], item.get('purchase_observation'))
++    if item.get('purchase_observation', {}).get('taskId'):
++        return '已取得原受理任务号，正在核对采购结果。'
++    return ''
+diff --git a/src/aoxiang_purchase_ui.py b/src/aoxiang_purchase_ui.py
+index 08cb846..c91bc2d 100644
+--- a/src/aoxiang_purchase_ui.py
++++ b/src/aoxiang_purchase_ui.py
+@@ -194,7 +194,8 @@ class PurchaseDialog(BindingActions, ComponentDialog):
+             elif r.get('taskId'):
+                 text += '\n原导入任务号：' + r['taskId']
+             if r.get('error'):
+-                text += '\n' + r['error']['message']
++                from aoxiang_purchase_messages import explain
++                text += '\n' + explain(r['error'], r)
+             self.note.setText(text)
+         self.update_buttons()
+ 
+diff --git a/src/aoxiang_workflow_runner.py b/src/aoxiang_workflow_runner.py
+index 650f1e7..22193a5 100644
+--- a/src/aoxiang_workflow_runner.py
++++ b/src/aoxiang_workflow_runner.py
+@@ -19,10 +19,12 @@ def package_ref(p):
+ 
+ 
+ class Runner:
+-    def __init__(self, store, client, component_root, business_path, *, cancel, progress=lambda _: None, delay=.8):
++    def __init__(self, store, client, component_root, business_path, *, cancel, progress=lambda _: None, delay=.8,
++                 verification_wait=30, verification_interval=3):
+         self.store, self.client = store, client
+         self.component_root, self.business_path = Path(component_root), Path(business_path)
+         self.cancel, self.progress, self.delay = cancel, progress, delay
++        self.verification_wait, self.verification_interval = verification_wait, verification_interval
+ 
+     def wait_status(self, action, id_field, id, *, cancel_action, notify=lambda _: None):
+         while True:
+@@ -65,22 +67,36 @@ class Runner:
+             raise ValueError('此预览已进入上传；请核对原采购任务，不重复列为待上传')
+         return 'PREPARED', {'purchase_id': p['id']}
+ 
+-    def upload_item(self, item, configuration, suppliers):
++    def upload_item(self, item, configuration, suppliers, notify=lambda _: None):
+         p = item['package']
+         record = self.client.request('purchase.status', purchase_id=p['id'])
++        notify(record)
+         if record['state'] == 'BOUND':
+             return 'BOUND', {'binding': record['binding']}
+-        if record['uploadAttempted'] and not record.get('receipt'):
+-            raise ComponentError('SUBMISSION_UNKNOWN','原上传结果尚未核实，没有唯一受理任务号。请在原采购页核对关联；禁止重新上传。')
++        if record.get('additionalTaskIds'):
++            raise ComponentError('MULTIPLE_IMPORT_TASKS', '同一采购存在多个受理任务号，请在原采购记录核对')
++        if record['uploadAttempted'] and not record.get('taskId'):
++            raise ComponentError('SUBMISSION_UNKNOWN', '上传已发起，但尚未取得唯一受理回执；请核对已有平台采购单')
+         if not record['uploadAttempted']:
+             validate_for_upload(self.business_path, p, configuration, suppliers, cancel=self.cancel)
+-        checkpoint(self.cancel)
+-        self.client.request('purchase.start', purchase_id=p['id'])
+-        record = self.wait_status('purchase.status', 'purchase_id', p['id'], cancel_action='purchase.pause')
+-        if record['state'] != 'BOUND':
++        deadline = time.monotonic() + self.verification_wait
++        while True:
++            checkpoint(self.cancel)
++            self.client.request('purchase.start', purchase_id=p['id'])
++            record = self.wait_status('purchase.status', 'purchase_id', p['id'], cancel_action='purchase.pause', notify=notify)
++            if record['state'] == 'BOUND':
++                return 'BOUND', {'binding': record['binding']}
+             error = record.get('error') or {}
++            # Only poll a known accepted task. start() then takes the component's
++            # observe-only branch; the durable upload flag is never reset.
++            remaining = deadline - time.monotonic()
++            if (record.get('taskId') and record.get('uploadAttempted') and not record.get('additionalTaskIds')
++                    and error.get('code') == 'TASK_PENDING' and remaining > 0):
++                self.progress('翱象已受理，等待原采购任务完成；正在继续核对…')
++                if self.cancel.wait(min(self.verification_interval, remaining)):
++                    raise Cancelled('已停止等待；原受理任务保留，可继续核对采购结果')
++                continue
+             raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'), error.get('message', '原采购任务尚未核实成功，不能重传'))
+-        return 'BOUND', {'binding': record['binding']}
+ 
+     def receipt_item(self, item, configuration, suppliers):
+         id = item['purchase_id']
+@@ -137,7 +153,9 @@ class Runner:
+                 if job['kind'] == 'prepare':
+                     state, result = self.prepare_item(job, item, configuration, suppliers)
+                 elif job['kind'] == 'upload':
+-                    state, result = self.upload_item(item, configuration, suppliers)
++                    from aoxiang_purchase_messages import observation
++                    state, result = self.upload_item(item, configuration, suppliers,
++                        notify=lambda r: self.store.update(id, position=position, changes={'purchase_observation': observation(r)}))
+                 else:
+                     state, result = self.receipt_item(item, configuration, suppliers)
+                 self.store.update(id, position=position, changes={'state': state, 'result': result, 'error': None})
+@@ -157,4 +175,6 @@ class Runner:
+         if any(i['state']=='PENDING' for i in current['items']):
+             return self.store.update(id,state='QUEUED',message='继续处理本批中新排入的失败重跑项')
+         bad = sum(i['state'] in ('FAILED', 'REVIEW') for i in current['items'])
+-        return self.store.update(id, state='COMPLETED_WITH_ERRORS' if bad else 'READY' if job['kind'] == 'prepare' else 'COMPLETED', message=f'已处理 {len(job["items"])} 单；待核/失败 {bad} 单')
++        from aoxiang_workflow_state import summary
++        final = {**current, 'state': 'COMPLETED_WITH_ERRORS' if bad else 'READY' if job['kind'] == 'prepare' else 'COMPLETED'}
++        return self.store.update(id, state=final['state'], message=summary(final))
+diff --git a/src/aoxiang_workflow_state.py b/src/aoxiang_workflow_state.py
+index 8af960c..b5d2694 100644
+--- a/src/aoxiang_workflow_state.py
++++ b/src/aoxiang_workflow_state.py
+@@ -1,5 +1,6 @@
+ """Shared local task evidence rules. No browser calls or business writes."""
+ import copy
++from aoxiang_purchase_messages import waiting
+ 
+ ACTIVE = ('QUEUED', 'RUNNING', 'YIELDED', 'PAUSED')
+ SUCCESS = ('PREPARED', 'BOUND', 'SYNCED')
+@@ -41,7 +42,8 @@ def deletion_issue(job, item):
+ def counts(job):
+     items=job['items']
+     return {'total':len(items),'success':sum(i['state'] in SUCCESS for i in items),
+-            'review':sum(i['state'] in ('REVIEW','FAILED') for i in items),
++            'review':sum(i['state'] in ('REVIEW','FAILED') and not waiting(i,job['kind']) for i in items),
++            'waiting':sum(waiting(i,job['kind']) for i in items),
+             'pending':sum(i['state'] in ('PENDING','RUNNING') for i in items),
+             'observed':sum(i['state']=='OBSERVED' for i in items),
+             'skipped':sum(i['state']=='SKIPPED' for i in items)}
+@@ -51,7 +53,8 @@ def summary(job):
+     c=counts(job)
+     prefix='正在处理' if job['state']=='RUNNING' else '等待处理' if c['pending'] and job['state']!='CANCELLED' else '检查结束'
+     success='预览就绪' if job['kind']=='prepare' else '已关联采购' if job['kind']=='upload' else '实收已同步'
+-    return f"{prefix}：{success}{c['success']}单，待处理{c['review']}单，未处理{c['pending']}单，已观察{c['observed']}单，已结束/跳过{c['skipped']}单"
++    wait=f"，已受理待核对{c['waiting']}单" if job['kind']=='upload' else ''
++    return f"{prefix}：{success}{c['success']}单{wait}，待处理{c['review']}单，未处理{c['pending']}单，已观察{c['observed']}单，已结束/跳过{c['skipped']}单"
+ 
+ 
+ def reconcile(job):
+diff --git a/src/aoxiang_workflow_ui.py b/src/aoxiang_workflow_ui.py
+index 8d62dab..3ace47e 100644
+--- a/src/aoxiang_workflow_ui.py
++++ b/src/aoxiang_workflow_ui.py
+@@ -2,6 +2,7 @@
+ import time
+ import sqlite3
+ import logging
++import json
+ from contextlib import contextmanager
+ from datetime import datetime
+ from decimal import Decimal
+@@ -9,7 +10,7 @@ from pathlib import Path
+ 
+ from PySide6.QtCore import QObject, QThread, Signal, QTimer, Qt, QSignalBlocker
+ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QProgressBar,
+-                             QTableWidget, QTableWidgetItem, QMessageBox, QSpinBox, QLineEdit)
++                             QTableWidget, QTableWidgetItem, QMessageBox, QSpinBox, QLineEdit, QPushButton)
+ from ui_controls import button, label
+ from aoxiang_session import SessionGate, SessionOwner
+ from aoxiang_workflows import Workflows, DONE_ITEM
+@@ -18,8 +19,9 @@ from aoxiang_client import ProcessClient
+ from aoxiang_ui_common import ComponentDialog, Call, component_root, show_modal
+ from runtime_support import Cancelled
+ 
+-KINDS = {'prepare': '采购预览', 'upload': '确认上传采购', 'receipt': '收货同步'}
++KINDS = {'prepare': '采购预览', 'upload': '采购上传与核对', 'receipt': '收货同步'}
+ from aoxiang_workflow_state import can_end_local,local_preparation,summary as task_summary,counts
++from aoxiang_purchase_messages import waiting, item_message
+ STATES = {'QUEUED': '排队', 'RUNNING': '正在处理', 'YIELDED': '等待人工操作结束', 'PAUSED': '已停止，可继续原任务',
+           'FAILED': '批次未完成', 'READY': '预览完成，尚未上传', 'COMPLETED': '完成', 'COMPLETED_WITH_ERRORS': '已处理，有待核项', 'CANCELLED': '剩余任务已取消',
+           'PENDING': '未处理', 'PREPARED': '预览就绪，未上传', 'BOUND': '已关联采购单', 'OBSERVED': '已观察，尚未完成', 'SYNCED': '正式实收已保存', 'REVIEW': '待核，不自动重试', 'SKIPPED': '周期已停止，本次跳过'}
+@@ -248,7 +250,7 @@ class QueueDialog(QDialog):
+         v.addWidget(self.table, 1)
+         row = QHBoxLayout()
+         self.preview_btn=button('查看采购预览', self.details);row.addWidget(self.preview_btn)
+-        self.reason_btn=button('查看失败原因', self.failure_reason);row.addWidget(self.reason_btn)
++        self.reason_btn=button('查看原因与下一步', self.failure_reason);row.addWidget(self.reason_btn)
+         self.table.itemSelectionChanged.connect(self.detail_controls)
+         self.upload_btn = button('确认上传勾选的采购预览', self.upload, True)
+         self.resume_btn = button('继续本批原未完任务', self.resume)
+@@ -281,14 +283,17 @@ class QueueDialog(QDialog):
+             with QSignalBlocker(self.jobs):
+                 self.jobs.clear()
+                 for j in jobs:
+-                    self.jobs.addItem(datetime.fromtimestamp(j['created_at']).strftime('%m-%d %H:%M:%S') + ' · ' + KINDS[j['kind']] + ' · ' + STATES[j['state']], j['id'])
++                    state_text='已受理，等待核对' if j['state']=='COMPLETED_WITH_ERRORS' and counts(j)['waiting'] and not counts(j)['review'] else STATES[j['state']]
++                    self.jobs.addItem(datetime.fromtimestamp(j['created_at']).strftime('%m-%d %H:%M:%S') + ' · ' + KINDS[j['kind']] + ' · ' + state_text, j['id'])
+                 self.jobs.setCurrentIndex(self.jobs.findData(selected))
+             self.id = selected
+             job = next((j for j in jobs if j['id'] == selected), None)
+             active = bool(self.manager.worker and self.manager.worker.job['id'] == selected)
+             self.note.setText(self.manager.message)
+             self.stop_btn.setEnabled(active)
+-            self.retry_btn.setEnabled(bool(job and job['state']!='CANCELLED' and any(i['state']=='FAILED' for i in job['items'])))
++            self.retry_btn.setText('继续核对未完成采购' if job and job['kind']=='upload' else '重跑全部失败项')
++            self.retry_btn.setEnabled(bool(job and job['state']!='CANCELLED' and not active and any(
++                i['state'] in (('FAILED','REVIEW') if job['kind']=='upload' else ('FAILED',)) for i in job['items'])))
+             self.new_batch_btn.setEnabled(bool(job and job['state']!='RUNNING' and not any(i['state'] in ('RUNNING','REVIEW') for i in job['items']) and any(i['state'] in ('PENDING','FAILED') for i in job['items'])))
+             self.resume_btn.setEnabled(bool(job and job['state'] in ('PAUSED', 'FAILED')) and not active)
+             self.cancel_btn.setEnabled(bool(job and job['state'] in ('QUEUED', 'PAUSED', 'YIELDED', 'FAILED')) and not active)
+@@ -309,6 +314,7 @@ class QueueDialog(QDialog):
+             self.current = job
+             self.table.setRowCount(len(job['items']))
+             for n, i in enumerate(job['items']):
++                self.table.setRowHeight(n,54 if job['kind']=='upload' and i.get('error') else 34)
+                 h = i.get('head') or i.get('basis') or {}
+                 check = QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
+                 check.setCheckState(Qt.CheckState.Checked if i['key'] in checked else Qt.CheckState.Unchecked)
+@@ -316,16 +322,18 @@ class QueueDialog(QDialog):
+                 self.table.setItem(n, 0, check)
+                 summary = i.get('summary') or {}
+                 state_text='本地准备未通过，未生成采购预览' if local_preparation(i,job['kind']) and i['state'] in ('FAILED','REVIEW') else '本地准备已结束' if i.get('ended_locally') else STATES.get(i['state'], i['state'])
++                if waiting(i,job['kind']):state_text='已受理，等待核对'
++                elif job['kind']=='upload' and i['state'] in ('FAILED','REVIEW'):state_text='采购结果需核对'
+                 values = [i.get('display_name') or h.get('name') or h.get('store'), h.get('warehouse'), h.get('number'), state_text,
+                           f"{summary.get('sku_count', '—')} / {summary.get('amount', '—')}", (i.get('result') or {}).get('binding', {}).get('orderId') or i.get('order_id', '—'),
+-                          (i.get('error') or {}).get('message', '')]
++                          item_message(i,job['kind'])]
+                 for c, x in enumerate(values, 1):
+                     item = QTableWidgetItem(str(x));item.setToolTip(str(x));self.table.setItem(n, c, item)
+                 if i['state'] in ('FAILED','REVIEW'):
+-                    b=button('核对原任务并继续' if i['state']=='REVIEW' else '重跑此任务',lambda checked=False,pos=n:self.retry([pos]))
++                    b=button('继续核对采购结果' if job['kind']=='upload' else '核对原任务并继续' if i['state']=='REVIEW' else '重跑此任务',lambda checked=False,pos=n:self.retry([pos]))
+                     b.setEnabled(job['state']!='CANCELLED');self.table.setCellWidget(n,8,b)
+                 else:self.table.removeCellWidget(n,8)
+-            for c, width in enumerate((50, 140, 70, 235, 160, 120, 170, 240)):self.table.setColumnWidth(c, width)
++            for c, width in enumerate((50, 140, 70, 235, 160, 120, 170, 280, 175)):self.table.setColumnWidth(c, width)
+             self.detail_controls()
+         except Exception as exc:
+             self.note.setText('读取队列失败：' + str(exc))
+@@ -339,7 +347,25 @@ class QueueDialog(QDialog):
+     def failure_reason(self):
+         n=self.table.currentRow()
+         if not self.current or not 0<=n<len(self.current['items']):return
+-        item=self.current['items'][n];message=(item.get('error') or {}).get('message') or '本项没有失败记录。'
++        item=self.current['items'][n];message=item_message(item,self.current['kind']) or '本项没有异常记录。'
++        if self.current['kind']=='upload':
++            head=item.get('head') or {};box=QMessageBox(self);box.setWindowTitle('采购状态与处理方法')
++            box.setText((head.get('name') or head.get('store') or '')+' · '+head.get('warehouse','')+'\n'+item['key'])
++            box.setInformativeText(message)
++            box.setTextFormat(Qt.TextFormat.PlainText)
++            box.setStyleSheet('QLabel { min-width: 440px; }')
++            box.setDetailedText(json.dumps({'原始记录':item.get('error'),'原任务状态':item.get('purchase_observation'),
++                                          '本地采购任务':(item.get('package') or {}).get('id')},ensure_ascii=False,indent=2))
++            box.setStandardButtons(QMessageBox.StandardButton.Ok)
++            ok=box.button(QMessageBox.StandardButton.Ok);ok.setText('知道了')
++            for detail in box.findChildren(QPushButton):
++                if detail is ok:continue
++                detail.setText('查看技术详情');detail.setProperty('expanded',False)
++                def toggle(_,b=detail):
++                    expanded=not b.property('expanded');b.setProperty('expanded',expanded)
++                    b.setText('收起技术详情' if expanded else '查看技术详情')
++                detail.clicked.connect(toggle)
++            box.exec();return
+         if local_preparation(item,self.current['kind']):message+='\n本次未生成采购预览，未进入上传。可核对付款后重跑，或结束本地准备；不必为删除订单而确认付款。'
+         else:message+='\n请核对原平台任务；本地停止不代表平台订单已撤销。'
+         QMessageBox.information(self,'任务原因',message)
+@@ -404,7 +430,8 @@ class QueueDialog(QDialog):
+         except Exception as exc:QMessageBox.warning(self,'未排入重跑',str(exc))
+ 
+     def retry_all(self):
+-        if self.current:self.retry([i['position'] for i in self.current['items'] if i['state']=='FAILED'])
++        if self.current:self.retry([i['position'] for i in self.current['items'] if i['state'] in (
++            ('FAILED','REVIEW') if self.current['kind']=='upload' else ('FAILED',))])
+ 
+     def finish_new(self):
+         if not self.current:return
+diff --git a/src/app.py b/src/app.py
+index 74a9876..4ba7dcc 100644
+--- a/src/app.py
++++ b/src/app.py
+@@ -25,6 +25,9 @@ def main():
+         from application_window import ApplicationWindow
+         win=ApplicationWindow()
+     win.show()
++    if '--purchase-recovery-smoke' in sys.argv:
++        from purchase_recovery_smoke import start_smoke
++        start_smoke(app,win,sys.argv[sys.argv.index('--purchase-recovery-smoke')+1:])
+     if '--admission-overview-smoke' in sys.argv:
+         from admission_overview_smoke import start_smoke
+         start_smoke(app,win,sys.argv[sys.argv.index('--admission-overview-smoke')+1:])
+diff --git a/src/job_date_messages.py b/src/job_date_messages.py
+new file mode 100644
+index 0000000..2255a07
+--- /dev/null
++++ b/src/job_date_messages.py
+@@ -0,0 +1,12 @@
++"""Explain date-bound actions without changing the existing business-day rules."""
++
++
++def continue_today(day, today):
++    return (f'当前作业日期是 {day}，今天是 {today}。\n'
++            '请到“草稿记录”选中原记录，点击“用此配置新建今日草稿”，核对今日输入并重新计算后继续。原日期草稿保留。')
++
++
++def export_previous(day, today, signed):
++    reason = ('当前内容与原已签发版本不同，旧日期不能新增签发。若要原单，请从订单跟踪导出原已签发版本。'
++              if signed else '这份旧日期草稿尚未签发，不能直接导出为正式签发单。')
++    return reason + '\n' + continue_today(day, today)
+diff --git a/src/normal_delivery.py b/src/normal_delivery.py
+index 3c0d9aa..ac2c9fd 100644
+--- a/src/normal_delivery.py
++++ b/src/normal_delivery.py
+@@ -42,7 +42,9 @@ def prepare_owned_batch(repository,payload,codes,progress=lambda s:None,cancel=N
+         same=bool(head_order and head_order['digest']==normal_orders.fingerprint_owned(result,frozen.get('new_focus')))
+         old=repository.get(frozen['day'],store,head_order['revision'],view='export' if same else None,progress=progress) if head_order else None
+         if not same:
+-            if frozen['day']!=wr.today():raise ValueError('历史只读，请从历史页导出已签发修订')
++            if frozen['day']!=wr.today():
++                from job_date_messages import export_previous
++                raise ValueError(export_previous(frozen['day'],wr.today(),bool(head_order)))
+             if frozen.get('admission_required'):
+                 from admission import verify_result
+                 with closing(repository.work.connect()) as db:verify_result(db,result,required=True)
+diff --git a/src/purchase_recovery_smoke.py b/src/purchase_recovery_smoke.py
+new file mode 100644
+index 0000000..236085e
+--- /dev/null
++++ b/src/purchase_recovery_smoke.py
+@@ -0,0 +1,145 @@
++"""Frozen Qt acceptance with synthetic accepted tasks; never connects to a platform."""
++import copy,json,os,sys,time,traceback
++from pathlib import Path
++from types import SimpleNamespace
++from unittest.mock import patch
++from PySide6.QtCore import QTimer
++from PySide6.QtTest import QTest
++from PySide6.QtWidgets import QApplication,QWidget,QMessageBox
++from aoxiang_workflow_ui import Manager,QueueDialog
++
++
++def start_smoke(app,win,args):
++    out=Path(args[0]).resolve()
++    if (not json.loads((out/'fixture.json').read_text('utf-8')).get('synthetic')
++            or Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve()!=out/'settings'):
++        raise ValueError('Requires isolated synthetic settings')
++
++    def run():
++        checks=[];beats=[];dialogs=[];manager=None
++        timer=QTimer();timer.setInterval(25);timer.timeout.connect(lambda:beats.append(time.monotonic()));timer.start()
++        report={'passed':False,'frozen_exe':bool(getattr(sys,'frozen',False)),'live_platform':False,'checks':checks}
++        records={};starts=[];polls={}
++        def wait(predicate,seconds=20):
++            until=time.monotonic()+seconds
++            while not predicate() and time.monotonic()<until:app.processEvents();QTest.qWait(15)
++            if not predicate():raise TimeoutError('Isolated UI condition timed out')
++        def box_action(action,expected,name):
++            captured=[];answers=QTimer();answers.setInterval(20)
++            def answer():
++                box=QApplication.activeModalWidget()
++                if isinstance(box,QMessageBox):
++                    answers.stop();captured.append(box.text()+'\n'+box.informativeText())
++                    box.grab().save(str(out/name));box.accept()
++            answers.timeout.connect(answer);answers.start()
++            try:action()
++            finally:answers.stop()
++            if not captured or not all(s in captured[0] for s in expected):raise AssertionError(captured)
++        class Client:
++            def __init__(self,*_):self.running=False
++            def start(self):self.running=True
++            def close(self,timeout=.5):self.running=False;return True
++            def request(self,action,**kw):
++                if action=='configuration':return {}
++                id=kw.get('purchase_id');r=records[id]
++                if action=='purchase.status':return copy.deepcopy(r)
++                if action!='purchase.start':raise AssertionError(action)
++                # This test permits only continuation of already accepted tasks.
++                if not r['uploadAttempted'] or not r.get('taskId'):raise AssertionError('Unexpected upload dispatch')
++                starts.append(id);polls[id]=polls.get(id,0)+1
++                if id=='synthetic-0' and polls[id]==1:
++                    r.update(state='ACCEPTED',error={'code':'TASK_PENDING','message':'原导入任务尚未完成'})
++                else:r.update(state='BOUND',binding={'orderId':'PO-'+id,'status':'待提交'},error=None)
++                return copy.deepcopy(r)
++        def batch(ids,states):
++            heads=[{'oid':'OID-'+str(n),'day':'2026-11-07','store':'TEST-'+str(n),'name':'合成门店'+str(n),
++                    'warehouse':'山东仓','number':'BH-QA-'+str(n),'revision':'R1','current_revision':'R1',
++                    'digest':'0'*64,'visibility_token':None} for n in ids]
++            p=manager.store.prepare(heads)
++            for pos,n in enumerate(ids):
++                id='synthetic-'+str(n)
++                manager.store.update(p['id'],position=pos,changes={'state':'PREPARED','package':{'id':id},
++                    'summary':{'sku_count':100+n,'amount':'100.00'}})
++                records[id]={'id':id,'state':'BOUND' if states[pos]=='BOUND' else 'ACCEPTED','taskId':'TASK-'+id,
++                    'uploadAttempted':True,'active':False,'binding':{'orderId':'PO-'+id,'status':'待提交'} if states[pos]=='BOUND' else None,
++                    'error':None,'additionalTaskIds':[]}
++            p=manager.store.update(p['id'],state='READY');j=manager.store.upload(p['id'],list(range(len(ids))),p['sequence'])
++            for pos,state in enumerate(states):
++                manager.store.update(j['id'],position=pos,changes={'state':state,
++                    'error':{'code':'SUBMISSION_UNKNOWN','message':'旧版本提示：没有唯一受理任务号'} if state=='REVIEW' else None,
++                    'result':{'binding':copy.deepcopy(records['synthetic-'+str(ids[pos])]['binding'])} if state=='BOUND' else {}})
++            return manager.store.update(j['id'],state='COMPLETED_WITH_ERRORS')
++        try:
++            build=Path(getattr(sys,'_MEIPASS',Path(__file__).parent))/'build_info.json'
++            report['source_commit']=json.loads(build.read_text('utf-8'))['source_commit'] if build.exists() else 'source'
++            win.auto_check.stop();win.jst_generator.stopped=True;win.jst_generator.timer.stop()
++            win.aoxiang_workflows.stopping=True;win.aoxiang_workflows.timer.stop()
++            host=QWidget(win);host.repository=SimpleNamespace(folder=out/'isolated-queue');host.closing=False
++            host.work_repository=SimpleNamespace(path=out/'unused-business.sqlite3')
++            manager=Manager(host,client_factory=Client);manager.timer.stop()
++            job=batch(range(6),['REVIEW']*5+['BOUND']);successful=copy.deepcopy(job['items'][5])
++            dialog=QueueDialog(host,manager,job['id']);dialogs.append(dialog);dialog.resize(1380,780);dialog.show();app.processEvents()
++            assert dialog.retry_btn.isEnabled() and dialog.retry_btn.text()=='继续核对未完成采购'
++            assert dialog.table.item(0,4).text()=='采购结果需核对'
++            assert '没有唯一受理任务号' not in dialog.table.item(0,7).text()
++            dialog.grab().save(str(out/'01-旧待核记录可继续.png'));checks.append('旧版五笔误待核可一键沿原采购任务继续，原因显示处理路径')
++            dialog.retry_btn.click();wait(lambda:manager.worker is None and manager.store.get(job['id'])['state']=='COMPLETED')
++            dialog.refresh();after=manager.store.get(job['id'])
++            assert all(i['state']=='BOUND' for i in after['items']) and after['items'][5]==successful
++            assert set(starts)=={'synthetic-'+str(n) for n in range(5)} and polls['synthetic-0']==2
++            assert all(a['package']==b['package'] for a,b in zip(job['items'],after['items']))
++            dialog.grab().save(str(out/'02-原任务全部核验关联.png'));checks.append('已受理任务先等待再关联，原任务身份不变，已成功第六单不重复执行')
++            checks.append('采购创建动作零次；组件边界只接收已有任务的结果核验')
++            waiting_job=batch([7],['REVIEW'])
++            manager.store.update(waiting_job['id'],position=0,changes={'state':'FAILED',
++                'error':{'code':'TASK_PENDING','message':'原任务未完成'},'purchase_observation':{'taskId':'TASK-synthetic-7','uploadAttempted':True}})
++            dialog.id=waiting_job['id'];dialog.current=None;dialog.refresh()
++            assert dialog.table.item(0,4).text()=='已受理，等待核对'
++            assert '已受理待核对1单' in dialog.summary.text() and '失败' not in dialog.jobs.currentText()
++            dialog.grab().save(str(out/'03-已受理等待核对.png'));checks.append('平台处理中单独计为已受理待核对，批次标题不显示失败')
++            unknown=batch([8],['REVIEW']);records['synthetic-8'].update(taskId=None,state='NEEDS_REVIEW')
++            dialog.id=unknown['id'];dialog.current=None;dialog.refresh();before=len(starts)
++            dialog.retry_btn.click();wait(lambda:manager.worker is None and manager.store.get(unknown['id'])['state']=='COMPLETED_WITH_ERRORS')
++            dialog.refresh();assert len(starts)==before
++            dialog.table.selectRow(0)
++            box_action(dialog.reason_btn.click,['可能已建单','单据详情','不要重新导入'],'04-无回执处理方法.png')
++            checks.append('真正没有回执时保持保护，弹框说明可能已建单及核对路径')
++            dialog.accept();dialogs.remove(dialog);dialog.deleteLater()
++            reopened=QueueDialog(host,manager,job['id']);dialogs.append(reopened);reopened.show();app.processEvents()
++            assert all(reopened.table.item(n,4).text()=='已关联采购单' for n in range(6))
++            assert not reopened.retry_btn.isEnabled();checks.append('关闭重开保留六笔关联状态，完成项不再提供重试')
++            reopened.accept();dialogs.remove(reopened);reopened.deleteLater()
++            from retry_profile_smoke import install
++            from stock_diagnosis_ui import DiagnosisDialog
++            install(win,'B');win.job_day='2026-11-06'
++            diagnosis=DiagnosisDialog(win);dialogs.append(diagnosis);diagnosis.show()
++            with patch('work_repository.today',return_value='2026-11-07'):
++                box_action(diagnosis.calculate,['作业已跨天','2026-11-06','2026-11-07','用此配置新建今日草稿'],'05-跨天试算说明.png')
++            assert diagnosis.session is None;checks.append('跨天试算在计算前说明两天日期及继续路径，不生成候选')
++            from stock_diagnosis import strict_baseline
++            old={'S':{'store_name':'合成门店','rows':[{'E':'QA-001','AS':4}]}}
++            new=copy.deepcopy(old);new['S']['rows'][0]['AS']=5
++            try:strict_baseline(old,new)
++            except ValueError as exc:message=str(exc)
++            else:raise AssertionError('Mismatch accepted')
++            box_action(lambda:QMessageBox.warning(win,'未完成试算',message),['QA-001','模型补货量','当前结果 4，重算结果 5','重新计算'],'06-具体差异说明.png')
++            checks.append('一致性检查仍阻止真实数量差异，说明商品、字段、原值与重算值')
++            from job_date_messages import export_previous
++            message=export_previous('2026-11-06','2026-11-07',False)
++            box_action(lambda:QMessageBox.warning(win,'尚不能签发导出',message),['尚未签发','用此配置新建今日草稿'],'07-旧草稿签发说明.png')
++            checks.append('旧日期未签发草稿明确引导今日续作，不要求导出不存在的签发修订')
++            report.update(passed=True,original_task_checks=starts,synthetic_uploads=0)
++        except Exception:report['error']=traceback.format_exc()
++        finally:
++            for dialog in dialogs:dialog.close();dialog.deleteLater()
++            if manager:
++                manager.prepare_close()
++                try:wait(lambda:manager.worker is None and manager.session_closer is None);manager.shutdown()
++                except Exception:report['passed']=False;report['queue_close_error']=traceback.format_exc()
++            win.job_dirty=False;win._discard_close=True;win.close()
++            try:wait(lambda:win.aoxiang_workflows.owner is None)
++            except Exception:report['passed']=False;report['close_error']=traceback.format_exc()
++            timer.stop();report['heartbeat_ticks']=len(beats)
++            (out/'exe-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
++            QTimer.singleShot(100,lambda:app.exit(0 if report['passed'] else 1))
++    QTimer.singleShot(250,run)
+diff --git a/src/stock_diagnosis.py b/src/stock_diagnosis.py
+index a94e91b..1cff430 100644
+--- a/src/stock_diagnosis.py
++++ b/src/stock_diagnosis.py
+@@ -53,6 +53,46 @@ def compute(p,progress,cancel):
+     return {'results':{s:results[s] for s in p['codes']},'states':{s:states[s] for s in p['codes']},'codes':list(p['codes']),'prepared':p}
+ 
+ 
++def baseline_difference(code, old, rebuilt, field):
++    """Explain the first mismatch without weakening the original full comparison."""
++    def first(a,b,path):
++        if isinstance(a,dict) and isinstance(b,dict):
++            for key in dict.fromkeys([*a,*b]):
++                if key not in a or key not in b:return path+[key],a.get(key,'缺少此项'),b.get(key,'缺少此项')
++                if a[key]!=b[key]:return first(a[key],b[key],path+[key])
++        elif isinstance(a,list) and isinstance(b,list):
++            if len(a)!=len(b):return path+['length'],len(a),len(b)
++            for n,(left,right) in enumerate(zip(a,b)):
++                if left!=right:return first(left,right,path+[n])
++        return path,a,b
++    path,before,after=first(old.get(field),rebuilt.get(field),[field])
++    titles={'rows':'当前商品明细','baseline':'原始计算明细','summary':'金额汇总','budget':'门店预算','config':'计算参数',
++            'warehouses':'仓范围','enabled':'仓启用状态','must_list':'必采清单','must_list_audit':'必采核验依据',
++            'sources':'输入来源','checks':'输入核验','effective_settings':'实际计算依据','import_audit':'导入核验依据',
++            'catalogs':'仓商品资料','supply_route':'主从仓配置'}
++    leaf={'AS':'模型补货量','BV':'执行金额','_candidate_qty':'候选数量','_allocated_qty':'分配数量',
++          '_execution_qty':'执行数量','V':'计价单价','K':'可用库存','L':'在途库存','E':'商品编码',
++          'checked_day':'准入核验日期','length':'明细条数'}
++    scope=titles[field]
++    if len(path)>1 and isinstance(path[1],int):
++        row=old[field][path[1]]
++        if isinstance(row,dict):scope='商品 '+str(row.get('E',''))+' '+str(row.get('D',''))
++    date_changed=path[-1]=='checked_day' or path==['effective_settings','admission','day']
++    label='准入核验日期' if date_changed else leaf.get(path[-1],titles[field])
++    def display(value):
++        if value is None:return '空值'
++        if isinstance(value,(dict,list)):return '内容或类型发生变化'
++        return str(value)[:100]
++    name=old.get('store_name') or rebuilt.get('store_name') or code
++    reason=(f'核验日期由 {display(before)} 变为 {display(after)}；日期变化也会影响商品准入。'
++            if date_changed else '当前结果和重算所用依据不一致，需要先核对并重新计算。')
++    step=('请回到补货出单，核对日期和输入时效，重新计算后再试算。若仍是旧日期作业，先从“草稿记录”用原配置新建今日草稿。'
++          if date_changed else '请回到补货出单，核对本店输入、参数及准入资料，重新计算后再试算。')
++    return (f'{name}（{code}）基线重算未通过一致性核对。\n'
++            f'首处差异：{scope} · {label}；当前结果 {display(before)}，重算结果 {display(after)}。\n'
++            +reason+'\n'+step+'当前清单未被本次试算修改。')
++
++
+ def strict_baseline(current,baseline):
+     """Only explicitly dynamic/non-computational top-level fields are projected."""
+     fields=('rows','baseline','summary','budget','config','warehouses','enabled','must_list','must_list_audit','sources',
+@@ -63,7 +103,7 @@ def strict_baseline(current,baseline):
+         for field in fields:
+             if field in old or field in r:
+                 if type(old.get(field)) is not type(r.get(field)) or old.get(field)!=r.get(field):
+-                    raise ValueError(code+'基线重算与当前结果不一致：'+field+'；先核对当前输入与参数，不继续调参')
++                    raise ValueError(baseline_difference(code,old,r,field))
+ 
+ 
+ def metrics(before,after):
+@@ -125,6 +165,10 @@ def metrics(before,after):
+ 
+ def run(snapshot,arguments,current,progress=lambda _:None,cancel=None):
+     checkpoint(cancel)
++    import work_repository as wr
++    if snapshot.get('day') and snapshot['day']!=wr.today():
++        from job_date_messages import continue_today
++        raise ValueError('作业已跨天，需要按今日依据重新核验后试算。\n'+continue_today(snapshot['day'],wr.today()))
+     if not arguments.get('stores'):raise ValueError('请明确选择试算门店，不自动扩大到全部门店')
+     p=automation_jobs.prepare(snapshot,{'mode':'trial','stores':arguments['stores']},progress,cancel)
+     if not p['report']['ready']:raise ValueError('当前资料或参数尚未就绪：'+str(p['report']['issues']))
+diff --git a/src/stock_diagnosis_ui.py b/src/stock_diagnosis_ui.py
+index 212eb00..9c3e8df 100644
+--- a/src/stock_diagnosis_ui.py
++++ b/src/stock_diagnosis_ui.py
+@@ -44,6 +44,10 @@ class DiagnosisDialog(QDialog):
+     def calculate(self):
+         try:
+             self.gateway.idle()
++            import work_repository as wr
++            if self.host.job_day!=wr.today():
++                from job_date_messages import continue_today
++                raise ValueError('作业已跨天，需要按今日依据重新核验后试算。\n'+continue_today(self.host.job_day,wr.today()))
+             if self.host.readonly:raise ValueError('历史作业只读，回到本次可编辑工作台试算')
+             stores=self.chosen(self.stores)
+             if not stores:raise ValueError('至少选择一家门店')
+diff --git a/src/version.json b/src/version.json
+index c53c8f9..9bfd6e5 100644
+--- a/src/version.json
++++ b/src/version.json
+@@ -1,6 +1,6 @@
+ {
+   "app": "补货助手",
+-  "version": "0.46.2",
++  "version": "0.46.3",
+   "parameter_schema_version": 3,
+   "job_schema_version": 1,
+   "routing_version": "0.5.1",
