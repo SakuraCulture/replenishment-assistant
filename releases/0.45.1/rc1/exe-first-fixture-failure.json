@@ -1,0 +1,9 @@
+{
+  "passed": false,
+  "frozen_exe": true,
+  "checks": [],
+  "error": "Traceback (most recent call last):\n  File \"deletion_smoke.py\", line 39, in execute\nStopIteration\n",
+  "process_exit": 1,
+  "exe_sha256": "13279f1e8e2872a0908968beb8fed2432ff23d86fdd8a1f7193c1df9e721959a",
+  "seconds": 9.757863299979363
+}

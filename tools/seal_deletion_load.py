@@ -9,7 +9,7 @@ def save(p,v):p.write_text(json.dumps(v,ensure_ascii=False,indent=2),'utf-8')
 def main():
     release=ROOT/'releases/0.45.1/rc1';delivery=ROOT/'交付_0.45.1_rc1/补货助手'
     frozen=read(QA/'frozen.json');small=read(QA/'synthetic-release/report.json');real=read(QA/'real-warm-release/report.json')
-    ui=read(QA/'exe/deletion-report.json');build=read(ROOT/'build_0.45.1_rc1/build_info.json')
+    ui=read(QA/'exe-r2/deletion-report.json');build=read(ROOT/'build_0.45.1_rc1/build_info.json')
     for r in (small,real):
         if not r['passed'] or r['differences'] or len(r['runs'])!=6:raise ValueError('Comparison incomplete')
     for p,h in frozen['protected'].items():
@@ -21,9 +21,9 @@ def main():
     if not ui['passed'] or not ui['frozen_exe'] or ui['process_exit'] or ui['source_commit']!=build['source_commit'] or ui['exe_sha256']!=sha(delivery/'补货助手.exe'):raise ValueError('Actual EXE not accepted')
     if subprocess.check_output(['git','diff',build['source_commit'],'--','src'],cwd=ROOT):raise ValueError('Source differs from build')
     release.mkdir(parents=True,exist_ok=False)
-    for a,b in {'frozen.json':'frozen.json','synthetic-release/report.json':'synthetic-performance.json','real-warm-release/report.json':'historical-performance.json','regression.txt':'regression.txt','targeted-deletion.txt':'deletion-tests.txt','targeted-maintenance.txt':'maintenance-tests.txt','exe/deletion-report.json':'exe-report.json'}.items():shutil.copyfile(QA/a,release/b)
+    for a,b in {'frozen.json':'frozen.json','synthetic-release/report.json':'synthetic-performance.json','real-warm-release/report.json':'historical-performance.json','regression.txt':'regression.txt','targeted-deletion.txt':'deletion-tests.txt','targeted-maintenance.txt':'maintenance-tests.txt','exe-r2/deletion-report.json':'exe-report.json','exe/deletion-report.json':'exe-first-fixture-failure.json'}.items():shutil.copyfile(QA/a,release/b)
     shutil.copyfile(ROOT/'build_0.45.1_rc1/build_info.json',release/'build_info.json')
-    for p in (QA/'exe').glob('*.png'):shutil.copyfile(p,release/p.name)
+    for p in (QA/'exe-r2').glob('*.png'):shutil.copyfile(p,release/p.name)
     files={p.relative_to(delivery).as_posix():sha(p) for p in sorted(delivery.rglob('*')) if p.is_file()};target=delivery.parent/'补货助手_0.45.1_rc1_删除负载优化.zip'
     with zipfile.ZipFile(target,'x',zipfile.ZIP_DEFLATED) as z:
         for name in files:z.write(delivery/name,'补货助手/'+name)
@@ -66,6 +66,7 @@ def main():
 - 全量{check[1]}项回归通过（{check[2]}秒）。核心八文件及旧EXE/ZIP哈希相同；没有因性能调整业务预期。
 - 回归日志含既有browser_status_ui控件销毁后QLabel回调警告；releases/0.44.0/rc2/regression.txt已有同一堆栈。本轮没有修改该模块，不宣称已修复该独立遗留项。
 - 实际打包EXE通过{len(ui['checks'])}项验收：两店spawn计算/保存/签发，取消预览、关闭删除进度安全取消、重试删除、旧格式解析器、结束所选本地准备、不影响未选已排队任务、未选店签发/计算值保持、重复删除拒绝、页面刷新。EXE报告另列心跳，整段含同步验收取样，不能当作仅删除阶段的响应上限。
+- EXE首轮误选qa/governance_032/inputs样本，第二店没有可供脚本使用的签发子单，StopIteration发生在删除之前；保留失败报告。换回原删除专用qa/deletion_0321/inputs后同一EXE通过，不更改程序或测试预期。after-delete截图拍摄时历史列表仍在异步加载，不能据此宣称历史页面已完成加载；当前作业列表及未选订单通过脚本断言核验。
 
 ## 交付与复跑
 
@@ -81,5 +82,5 @@ ZIP SHA256：{manifest['zip_sha256']}
 
 ZIP共{len(files)}个文件逐一核验。证据提交在构建之后，构建源码以build_info.json为准。
 '''
-    (release/'交付报告.md').write_text(text,'utf-8');print(json.dumps({'zip':str(target),'sha256':manifest['zip_sha256'],'files':len(files)},ensure_ascii=False))
+    (release/'交付报告.md').write_text(text,'utf-8',newline='\n');print(json.dumps({'zip':str(target),'sha256':manifest['zip_sha256'],'files':len(files)},ensure_ascii=False))
 if __name__=='__main__':main()

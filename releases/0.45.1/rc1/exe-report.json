@@ -1,0 +1,49 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "local failed preparation: no fake preview, failure reason enabled, zero-success summary; no browser involved",
+    "two-store Windows spawn calculation, draft save and atomic signature",
+    "actual deletion preview cancelled without mutation",
+    "close deletion progress: safe cancellation and original order retained",
+    "local preparation REVIEW no longer blocks deletion; unselected batch item and count preserved",
+    "actual blocker dialog: cancel, explicitly end only selected local preparation, retain unselected queued task; no platform submission",
+    "retry after cancellation; legacy ijson parser in work process; exact sibling signed/current result retained; current table refreshed",
+    "repeat removed target rejected; process error returned without blocking"
+  ],
+  "heartbeat_ticks": 217,
+  "max_gap_seconds": 0.31299999996554106,
+  "scope": "whole scripted walk, including synchronous fixture checks/screenshots",
+  "app": "补货助手",
+  "version": "0.45.1",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "9ca0175e5296096e2c1300ef67a42dcf1f9c3d79",
+  "build_id": "rc1",
+  "built_at": "2026-11-06T15:10:56.058563+08:00",
+  "source_archive_sha256": "be2b119eee5157f6f7c48063c0e0fa0ed1fb33a6c86744fb8c842674966d725a",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "9ca0175e5296096e2c1300ef67a42dcf1f9c3d79",
+    "files": 868,
+    "manifest_sha256": "2c605a9a590cd586049b677a09137aee35e2d780897924a029cd7c8bd9d7bdb4",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "daf8391aea58381e3b0a0b9e0f73a87f42526b141c238d0de695425dce246edc",
+    "files": 8,
+    "source_commit": "9ca0175e5296096e2c1300ef67a42dcf1f9c3d79",
+    "contains_user_state": false
+  },
+  "process_exit": 0,
+  "exe_sha256": "13279f1e8e2872a0908968beb8fed2432ff23d86fdd8a1f7193c1df9e721959a",
+  "seconds": 11.331009500019718
+}
