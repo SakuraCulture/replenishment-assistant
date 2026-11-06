@@ -40,6 +40,22 @@ class FormatContract(unittest.TestCase):
 
 class RejectionAtomicity(unittest.TestCase):
     setUp=fixtures.DeleteOrders.setUp
+    def corrupt_manifest(self,db):
+        blob=bytearray(c.put(db,c.prepare({'probe':'完整性测试'})))
+        blob[len(c.MAGIC)]^=1
+        return bytes(blob)
+    def test_corrupt_orphan_work_manifest_rejected_before_reclamation(self):
+        with closing(sqlite3.connect(self.path)) as db,db:
+            db.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('unreferenced','2000-01-01',self.corrupt_manifest(db)))
+        plan=m.prepare(self.path,self.heads);before=self.dump()
+        with self.assertRaisesRegex(ValueError,'校验'):m.execute(self.path,plan)
+        self.assertEqual(self.dump(),before)
+    def test_corrupt_old_signed_revision_rejected_before_parent_deletion(self):
+        with closing(sqlite3.connect(self.path)) as db,db:
+            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid',0,'historical',wr.now(),self.corrupt_manifest(db)))
+        plan=m.prepare(self.path,self.heads);before=self.dump()
+        with self.assertRaisesRegex(ValueError,'校验'):m.execute(self.path,plan)
+        self.assertEqual(self.dump(),before)
     def dump(self):
         with closing(sqlite3.connect(self.path)) as db:return list(db.iterdump())
     def inject(self):

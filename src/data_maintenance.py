@@ -257,6 +257,12 @@ def prepare_rewrites(db,plan,scratch,progress,cancel):
             refs=storage.references_for(scratch,h,size,data,cancel)
             scratch.execute('INSERT INTO verified_chunks VALUES(?,?)',(h,wr.dumps(refs)))
             if i%32==0 or i==total:progress(RowProgress('准备共享附件引用（首次需核对历史块）',i,total))
+    # The former compatibility pass also validated every current manifest,
+    # including orphan work and old revisions about to be removed. Retain that
+    # integrity boundary independently of retired-format support.
+    for table in ('normal_revisions','normal_work_revisions','jobs'):
+        for blob, in db.execute(f'SELECT payload FROM {table}'):
+            checkpoint(cancel);chunks.require_manifest(blob)
     scratch.commit();return prepared
 
 

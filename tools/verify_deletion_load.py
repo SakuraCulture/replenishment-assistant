@@ -47,6 +47,7 @@ def signature(folder):
     return {p.name:deletion_qa.signature(p) for p in sorted(folder.rglob('*.sqlite3')) if 'prepared' not in p.name}
 
 def worker(a):
+    if not (a.fixture/'workbench.sqlite3').is_file():raise ValueError('Fixture must be the isolated settings folder containing workbench.sqlite3')
     sys.path[:0]=[str(a.source/'src'),str(ROOT/'qa/export_071/qa-deps')]
     import psutil,data_maintenance as m,maintenance_storage as ms
     # QA helper for streaming legacy signatures, never substituted for the implementation.
