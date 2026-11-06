@@ -40,6 +40,9 @@ def main():
     if '--automation-portability-smoke' in sys.argv:
         from automation_portability_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--automation-portability-smoke')+1:])
+    if '--inventory-smoke' in sys.argv:
+        from inventory_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--inventory-smoke')+1:])
     if '--coverage-smoke' in sys.argv:
         from coverage_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--coverage-smoke')+1:])

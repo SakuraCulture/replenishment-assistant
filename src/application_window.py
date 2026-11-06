@@ -73,6 +73,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         from stock_diagnosis_ui import open_diagnosis
         self.diagnosis_btn=button('缺货与资金诊断',lambda:open_diagnosis(self))
         actions.insertWidget(0,self.diagnosis_btn)
+        from inventory_structure_ui import open_preview
+        self.inventory_btn=button('查看本轮货盘',lambda:open_preview(self));actions.insertWidget(0,self.inventory_btn)
         actions.insertWidget(0,self.final_list_btn)
         self.issue_policy_btn=button('调整补货策略',self.choose_restock_policy);actions.insertWidget(0,self.issue_policy_btn)
         self.final_detail_btn=button('编辑本店最终清单',lambda:self.open_final_list(True),True)
@@ -240,6 +242,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         return bool(cached and cached[0] is self.results.get(s) and cached[1] is self.new_focus)
 
     def closeEvent(self,event):
+        inventory=getattr(self,'inventory',None)
+        if inventory and not inventory.prepare_close():event.ignore();return
         analytics=getattr(self,'analytics',None)
         if analytics and not analytics.prepare_close():event.ignore();return
         scheduled=getattr(self,'scheduled',None)

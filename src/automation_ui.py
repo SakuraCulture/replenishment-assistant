@@ -73,6 +73,7 @@ def cli_guide(host):
         '参数核对.json 内容示例：{"stores":["准确门店编码"],"scope":"current"}；defaults 为已保存默认，不代表本次已采用。',
         '先核对 context_token 和门店编码再试算；新请求使用新 operation_key，状态不明查询原任务。',
         '定时任务只读：find_resources 的 schedules / scheduled_runs，以及 scheduled_run_status。',
+        '货盘结构：query_inventory_structure → task_status → inventory_structure_results；先核对未计价与日期，包含禁用存量，不与漏斗混用。',
         '五段经营分析：query_order_funnel → task_status → order_funnel_results（分页）；export_order_funnel导出同一查询快照，store_history_review查看多轮证据。',
         '安全库存诊断：start_stock_diagnosis → task_status → stock_diagnosis_results；steps如[-0.025,0.025]为上下2.5个百分点，仅概率可变。人员明确候选及原因后才adopt_stock_diagnosis；未再操作前可undo_stock_diagnosis。',
         '候选完整参数：stock_diagnosis_parameters，提供诊断task_id、candidate及stores。risk_count只代表新增或加剧风险，原有缺口看risk_summary。历史差异按evidence_details中的日期和单号归属，当前参数不反证历史错误。',

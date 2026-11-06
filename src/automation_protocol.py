@@ -41,6 +41,12 @@ CHANGE = obj({'store': TEXT, 'path': {'type': 'array', 'items': {'type': ['strin
 ANALYTICS_QUERY = obj({'from':TEXT,'to':TEXT,'stores':LIST,'orders':LIST,'warehouse':{'type':'string','enum':['','山东仓','河北仓']},
     'group':{'type':'string','enum':['','必采','非必采','属性待核']},'search':{'type':'string'},'category':{'type':'string','maxLength':4096},'coverage_through':{'type':'string','enum':['model','signed','return','payment','receipt']},'rounds':{'type':'integer','minimum':1,'maximum':30}},['from','to'])
 TOOLS = [
+    ('query_inventory_structure','只读货盘存量分析，与补货漏斗不同：包括禁用、停采、地采及零补货商品。库存视角stock现货/inbound在途/position总持有；日期是签发业务日，非实时库存。默认结束日大盘，latest为各店最新且不同时间。异步task_status完成后分页；商品明细需同时指定detail_store/detail_day，在后台加载。缺价不算0，不重跑模型。',
+     obj({'context_token':TEXT,'operation_key':TEXT,'query':obj({'from':TEXT,'to':TEXT,'stores':LIST,'view':{'type':'string','enum':['stock','inbound','position']},'overview':{'type':'string','enum':['end_day','latest']},'detail_store':TEXT,'detail_day':TEXT},['from','to'])},['context_token','operation_key','query'])),
+    ('inventory_structure_results','分页读取货盘rounds门店轮次或detail所选轮次明细。先核对计价覆盖和未知款数；value未知与known_value已计价部分不同。中心仓状态与必采是独立维度不能相加。数量/价格变化不等于销售、消化或采购；分页直到next_offset为空。',
+     obj({**TASK,'level':{'type':'string','enum':['rounds','detail']},'store':TEXT,**PAGE},['task_id'])),
+    ('export_inventory_structure','明确要求导出后，将同一货盘快照写入本地独立Excel。默认汇总及口径；include_details=true增加商品变化明细。缺价留空，0保留0。不修改历史、签发或采购。',
+     obj({**TASK,'snapshot_id':TEXT,'context_token':TEXT,'operation_key':TEXT,'directory':TEXT,'include_details':{'type':'boolean'}},['task_id','snapshot_id','context_token','operation_key'])),
     ('stock_diagnosis_parameters','只读查询库存诊断候选与基线的完整冻结参数、中文含义、来源和修改项。使用start_stock_diagnosis返回的task_id，candidate从1开始；不能用effective_parameters(scope=preview)查询此类会话。',
      obj({**TASK,'candidate':{'type':'integer','minimum':1,'maximum':2},'stores':{**LIST,'minItems':1,'maxItems':100}},['task_id','candidate','stores'])),
     ('start_stock_diagnosis','冻结当前已检查作业，基线加最多两个库存概率候选；仅所选门店分类组，整店重算预算。steps传概率增量，如-0.025表示降2.5个百分点；最大5个百分点，其他参数不变。不采用、不保存。先核对历史履约证据。异步等待task_status完成。',
@@ -120,7 +126,7 @@ def validate_call(name, arguments):
 
 
 def public_tools():
-    readonly = {'workbench_context', 'parameter_definitions', 'find_resources', 'effective_parameters', 'task_status', 'scheduled_run_status', 'calculation_results', 'explain_decision', 'query_order_funnel', 'order_funnel_results', 'store_history_review', 'stock_diagnosis_results', 'stock_diagnosis_parameters'}
+    readonly = {'query_inventory_structure','inventory_structure_results','workbench_context', 'parameter_definitions', 'find_resources', 'effective_parameters', 'task_status', 'scheduled_run_status', 'calculation_results', 'explain_decision', 'query_order_funnel', 'order_funnel_results', 'store_history_review', 'stock_diagnosis_results', 'stock_diagnosis_parameters'}
     return [{'name': n, 'description': d, 'inputSchema': s, 'annotations': {
         'readOnlyHint': n in readonly, 'destructiveHint': False, 'openWorldHint': False}}
         for n, d, s in TOOLS]

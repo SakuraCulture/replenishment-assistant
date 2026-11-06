@@ -233,6 +233,18 @@ class Gateway(QObject):
         from automation_analytics import query
         return query(self,args)
 
+    def query_inventory_structure(self,args):
+        from automation_inventory import query
+        return query(self,args)
+
+    def inventory_structure_results(self,args):
+        from automation_inventory import results
+        return results(self,args)
+
+    def export_inventory_structure(self,args):
+        from automation_inventory import export
+        return export(self,args)
+
     def order_funnel_results(self, args):
         from automation_analytics import results
         return results(self,args)

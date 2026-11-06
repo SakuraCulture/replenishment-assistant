@@ -31,6 +31,9 @@ def install(host, home_layout):
     host.tracking_tabs = QTabWidget()
     host.tracking_tabs.addTab(host.followup,'流程处理')
     host.tracking_tabs.addTab(host.analytics,'经营分析')
+    from inventory_structure_ui import InventoryWidget
+    host.inventory = InventoryWidget(host)
+    host.tracking_tabs.addTab(host.inventory,'货盘结构')
     v.addWidget(host.tracking_tabs, 1)
     host.sections.addWidget(orders)  # 3
     from parameter_scene import ParameterScene
