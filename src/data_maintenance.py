@@ -226,14 +226,22 @@ def prepare_rewrites(db,plan,scratch,progress,cancel):
             records.append(('normal_work_revisions',rev,day,codes))
         for _, in db.execute('SELECT day FROM jobs WHERE day=?',(day,)):
             records.append(('jobs',day,day,codes))
+    rewritten={}
     for i,(table,key,day,codes) in enumerate(records,1):
         col='day' if table=='jobs' else 'revision'
         row=db.execute(f'SELECT payload'+(',digest' if table=='jobs' else '')+f' FROM {table} WHERE {col}=?',(key,)).fetchone()
         if row is None:raise wr.Conflict('当天共享作业在准备时变化，请重新核对删除范围')
         blob=row[0];expected=row[1] if table=='jobs' else None
         checkpoint(cancel);progress(RowProgress('准备当天作业清理',i-1,len(records)))
-        pack=editor.rewrite(blob,codes,lambda p,c:strip_work(p,c,owned=True,cancel=cancel),expected)
-        info={'original_digest':editor.original_digest}
+        source_hash=hashlib.sha256(blob).digest()
+        # The current draft and signed work revisions can hold identical bytes.
+        # Reuse only within the same day (hence the same selected stores).
+        if (day,source_hash) not in rewritten:
+            pack=editor.rewrite(blob,codes,lambda p,c:strip_work(p,c,owned=True,cancel=cancel),expected)
+            rewritten[day,source_hash]=pack,editor.original_digest
+        pack,original_digest=rewritten[day,source_hash]
+        if expected and expected!=original_digest:raise ValueError('作业快照与索引不一致')
+        info={'original_digest':original_digest}
         if table=='jobs':
             states=editor.get(pack.tree,('states',),{})
             if states:
@@ -242,7 +250,7 @@ def prepare_rewrites(db,plan,scratch,progress,cancel):
                 if editor.get(pack.tree,('schema',))!=1 or editor.get(pack.tree,('day',))!=day:raise ValueError('作业快照与日期不一致')
                 info=editor.job_summary(pack.tree)
             else:info={'stores':{}}
-        prepared.append((table,key,hashlib.sha256(blob).digest(),pack,info))
+        prepared.append((table,key,source_hash,pack,info))
         del blob,row
         progress(RowProgress('准备当天作业清理',i,len(records)))
     # Reusable cache is staged on disk. It is published only with successful deletion.

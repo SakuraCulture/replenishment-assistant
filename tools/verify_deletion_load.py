@@ -48,7 +48,7 @@ def worker(a):
     sys.path[:0]=[str(a.source/'src'),str(ROOT/'qa/export_071/qa-deps')]
     import psutil,data_maintenance as m,maintenance_storage as ms
     # QA helper for streaming legacy signatures, never substituted for the implementation.
-    out=a.output.resolve();out.relative_to(QA.resolve());out.mkdir(parents=True,exist_ok=False)
+    out=a.output.resolve();out.relative_to(a.qa_root.resolve());out.mkdir(parents=True,exist_ok=False)
     shutil.copytree(a.fixture,out/'settings');path=out/'settings/workbench.sqlite3'
     if a.warm:
         with closing(sqlite3.connect(path)) as db,closing(sqlite3.connect(a.warm)) as warm,db:
@@ -57,13 +57,20 @@ def worker(a):
                 rows=warm.execute('SELECT * FROM '+table)
                 db.executemany('INSERT OR REPLACE INTO '+table+' VALUES('+','.join('?' for _ in rows.description)+')',rows)
     before=signature(out/'settings');stages={};events=[];proc=psutil.Process();stop=threading.Event();peak=[0];calls={'chunk_bytes':0,'chunk_calls':0}
+    scratch_bytes=None
     def sample():
         while not stop.wait(.03):peak[0]=max(peak[0],proc.memory_info().rss)
     def timed(name):
         fn=getattr(m,name);stages[name]={'seconds':0,'calls':0}
         def run(*args,**kwargs):
+            nonlocal scratch_bytes
             start=time.perf_counter()
-            try:return fn(*args,**kwargs)
+            try:
+                result=fn(*args,**kwargs)
+                if name=='prepare_rewrites':
+                    scratch_path=args[2].execute('PRAGMA database_list').fetchone()[2]
+                    scratch_bytes=Path(scratch_path).stat().st_size
+                return result
             finally:stages[name]['seconds']+=time.perf_counter()-start;stages[name]['calls']+=1
         setattr(m,name,run)
     for name in ('snapshot','prepare_rewrites','apply_rewrites','collect_shared','clear_indexes'):timed(name)
@@ -75,12 +82,21 @@ def worker(a):
     def progress(s):
         if len(events)<250 or getattr(s,'active',False):events.append({'seconds':time.perf_counter()-start,'text':str(s)})
     with closing(sqlite3.connect(path)) as db:
-        heads=[dict(oid=o,revision=r,digest=d) for o,r,d in db.execute('SELECT n.oid,n.current,r.digest FROM normal_orders n JOIN normal_revisions r ON n.oid=r.oid AND n.current=r.revision ORDER BY n.day DESC,n.rowid DESC')]
+        candidates=list(db.execute('SELECT n.oid,n.current,r.digest,n.day FROM normal_orders n JOIN normal_revisions r ON n.oid=r.oid AND n.current=r.revision ORDER BY n.day DESC,n.rowid DESC'))
+    heads=[dict(oid=o,revision=r,digest=d) for o,r,d,_ in candidates]
+    if a.parents>1:
+        by_day={}
+        for head,(*_,day) in zip(heads,candidates):by_day.setdefault(day,head)
+        if len(by_day)<a.parents:raise ValueError('Not enough distinct days in isolated fixture')
+        selections=[list(by_day.values())[:a.parents]]
+    else:
+        selections=[[head] for head in heads[:15]]
     start=time.perf_counter();io=proc.io_counters();thread=threading.Thread(target=sample);thread.start();plan=None
     try:
-        for head in heads[:15]:
-            try:plan=m.prepare(path,[head],progress=progress);break
-            except ValueError:continue
+        for selection in selections:
+            try:plan=m.prepare(path,selection,progress=progress);break
+            except ValueError:
+                if a.parents>1:raise
         if plan is None:raise ValueError('No eligible isolated target')
         preview=time.perf_counter()-start;token=plan['token'];tick=time.perf_counter()
         # Same clock for the deletion event in both implementations. No event
@@ -91,15 +107,18 @@ def worker(a):
     finally:stop.set();thread.join()
     endio=proc.io_counters();total=time.perf_counter()-start;after=signature(out/'settings')
     save(out/'result.json',{'preview_seconds':preview,'execute_seconds':execute,'total_seconds':total,'peak_rss':peak[0],
-        'io':{k:getattr(endio,k)-getattr(io,k) for k in io._fields},'stages':stages,'scan':calls,'plan_token':token,
+        'io':{k:getattr(endio,k)-getattr(io,k) for k in io._fields},'stages':stages,'scan':calls,'scratch_prepared_bytes':scratch_bytes,'plan_token':token,
         'result':result,'before':before,'after':after,'progress':events})
 
 def run(a):
-    out=a.output;out.mkdir(parents=True,exist_ok=False);records=[];fixture_hash={str(p):sha(p) for p in a.fixture.rglob('*') if p.is_file()}
+    out=a.output;out.resolve().relative_to(a.qa_root.resolve());out.mkdir(parents=True,exist_ok=False)
+    records=[];fixture_hash={str(p):sha(p) for p in a.fixture.rglob('*') if p.is_file()}
+    if a.warm:fixture_hash[str(a.warm)]=sha(a.warm)
     for n in range(a.rounds):
         for side in (('before','after') if n%2==0 else ('after','before')):
-            dest=out/f'{side}-{n+1}';source=QA/'baseline' if side=='before' else ROOT
-            cmd=[sys.executable,__file__,'worker','--source',str(source),'--fixture',str(a.fixture),'--output',str(dest)]
+            dest=out/f'{side}-{n+1}';source=a.qa_root/'baseline' if side=='before' else ROOT
+            cmd=[sys.executable,__file__,'worker','--source',str(source),'--fixture',str(a.fixture),'--output',str(dest),
+                 '--qa-root',str(a.qa_root),'--parents',str(a.parents)]
             if a.warm:cmd+=['--warm',str(a.warm)]
             with (out/f'{side}-{n+1}.txt').open('w',encoding='utf-8') as f:subprocess.run(cmd,cwd=ROOT,stdout=f,stderr=f,env={**os.environ,'PYTHONIOENCODING':'utf-8','PYTHONHASHSEED':'0'},check=True,timeout=900)
             r=json.loads((dest/'result.json').read_text('utf-8'));records.append({'side':side,'round':n+1,**r})
@@ -115,12 +134,16 @@ def run(a):
             vs=[r[k] for r in rs];summary[side][k]={'median':statistics.median(vs),'min':min(vs),'max':max(vs)}
         for k in ('read_bytes','write_bytes'):
             vs=[r['io'][k] for r in rs];summary[side][k]={'median':statistics.median(vs),'min':min(vs),'max':max(vs)}
-    protected=json.loads((QA/'frozen.json').read_text('utf-8'))['protected'];changed=[p for p,h in {**fixture_hash,**protected}.items() if sha(Path(p))!=h]
+    protected=json.loads((a.qa_root/'frozen.json').read_text('utf-8'))['protected'];changed=[p for p,h in {**fixture_hash,**protected}.items() if sha(Path(p))!=h]
     report={'passed':not diff and not changed,'summary':summary,'differences':diff,'changed_protected':changed,'runs':records,
         'scope':'Alternating serial runs; warm OS cache; 30ms worker RSS; Windows process I/O counts API bytes, not physical disk activity. Timed preview+delete, excludes fixture copy/signature. Exact plan token/result and ordered per-table typed signature; only jobs.revision/saved are dynamic; deletion event time frozen to 1793923200.0 on both sides, no ignored event fields; internal chunk/cache layout excluded by existing deletion oracle.'}
     save(out/'report.json',report)
     if not report['passed']:raise AssertionError(str(diff or changed))
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('mode',choices=['freeze','fixture','worker','run']);p.add_argument('--source',type=Path);p.add_argument('--fixture',type=Path);p.add_argument('--output',type=Path);p.add_argument('--warm',type=Path);p.add_argument('--rounds',type=int,default=3);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('mode',choices=['freeze','fixture','worker','run']);p.add_argument('--source',type=Path);p.add_argument('--fixture',type=Path);p.add_argument('--output',type=Path);p.add_argument('--warm',type=Path);p.add_argument('--rounds',type=int,default=3)
+    p.add_argument('--qa-root',type=Path,default=QA,help='Independent comparison root with baseline/src and frozen.json')
+    p.add_argument('--parents',type=int,default=1,help='Select this many parents, from distinct days for multiple parents')
+    a=p.parse_args();a.qa_root.resolve().relative_to(ROOT/'qa')
+    if a.parents<1 or a.rounds<1:p.error('parents and rounds must be positive')
     globals()[a.mode](a) if a.mode in ('worker','run') else globals()[a.mode]()

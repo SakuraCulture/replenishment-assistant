@@ -96,4 +96,71 @@ class VerifiedReferences(unittest.TestCase):
         with patch.object(m,'prepare_rewrites',side_effect=prepare),self.assertRaises(wr.Conflict):m.execute(self.path,plan)
         self.assertEqual(len(self.r.headers()),1)
 
+class DuplicateWorkRewrites(unittest.TestCase):
+    setUp=fixtures.DeleteOrders.setUp
+
+    def duplicate_draft(self, legacy=False):
+        day=wr.today()
+        value={'schema':1,'day':day,'model_version':'0.3.4-rules',
+               'states':{'T':{'name':'remove','state':'待计算'},
+                         'U':{'name':'keep','state':'待计算'}},
+               'results':{},'pending_copy':None,'export_log':[]}
+        self.w.save_job(day,value,None)
+        with closing(sqlite3.connect(self.path)) as db,db:
+            if legacy:
+                blob=zlib.compress(wr.dumps(value).encode())
+                db.execute('UPDATE jobs SET payload=? WHERE day=?',(blob,day))
+            blob=db.execute('SELECT payload FROM jobs WHERE day=?',(day,)).fetchone()[0]
+            db.execute('UPDATE normal_work_revisions SET payload=?',(blob,))
+        return value
+
+    def test_duplicate_draft_and_signed_work_keep_exact_unselected_values(self):
+        for legacy in (False,True):
+            with self.subTest(legacy=legacy):
+                # Each format has its own isolated fixture.
+                if legacy:
+                    with closing(sqlite3.connect(self.path)) as db,db:db.execute('DELETE FROM jobs')
+                value=self.duplicate_draft(legacy)
+                plan=m.prepare(self.path,self.heads)
+                original=ms.Editor.rewrite
+                with closing(m.connect(self.path)) as db,closing(sqlite3.connect(':memory:')) as scratch:
+                    with patch.object(ms.Editor,'rewrite',autospec=True,side_effect=original) as rewrite:
+                        prepared=m.prepare_rewrites(db,plan,scratch,lambda _:None,None)
+                    self.assertEqual(rewrite.call_count,1)
+                    self.assertEqual(len(prepared),2)
+                    editor=ms.Editor(db,scratch)
+                    expected=wr.dumps(m.strip_work(value,{'T'}))
+                    for _,_,_,pack,_ in prepared:
+                        self.assertEqual(wr.dumps(editor.value(pack.tree)),expected)
+
+    def test_duplicate_payload_still_checks_each_draft_digest(self):
+        self.duplicate_draft()
+        with closing(sqlite3.connect(self.path)) as db,db:
+            db.execute("UPDATE jobs SET digest='invalid'")
+        plan=m.prepare(self.path,self.heads)
+        with self.assertRaisesRegex(ValueError,'校验|不一致'):m.execute(self.path,plan)
+        self.assertEqual(len(self.r.headers()),1)
+
+    def test_same_payload_on_different_days_uses_each_days_selected_stores(self):
+        value=self.duplicate_draft()
+        with closing(m.connect(self.path)) as db,db,closing(sqlite3.connect(':memory:')) as scratch:
+            blob=db.execute('SELECT payload FROM normal_work_revisions').fetchone()[0]
+            db.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('other-day','2001-01-01',blob))
+            plan={'parents':[{'day':wr.today(),'store':'T'},{'day':'2001-01-01','store':'U'}]}
+            prepared=m.prepare_rewrites(db,plan,scratch,lambda _:None,None)
+            editor=ms.Editor(db,scratch)
+            for _,key,_,pack,_ in prepared:
+                removed={'U'} if key=='other-day' else {'T'}
+                self.assertEqual(wr.dumps(editor.value(pack.tree)),wr.dumps(m.strip_work(value,removed)))
+
+    def test_repeated_staged_block_is_compressed_once(self):
+        with closing(sqlite3.connect(':memory:')) as db,closing(sqlite3.connect(':memory:')) as scratch:
+            editor=ms.Editor(db,scratch)
+            with patch.object(ms.zlib,'compress',wraps=zlib.compress) as compress:
+                first=editor.block({'keep':[None,0,False,'中文']})
+                second=editor.block({'keep':[None,0,False,'中文']})
+            self.assertEqual(first,second)
+            self.assertEqual(compress.call_count,1)
+            self.assertEqual(editor.value(second),{'keep':[None,0,False,'中文']})
+
 if __name__=='__main__':unittest.main()

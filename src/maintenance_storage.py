@@ -183,8 +183,9 @@ class Editor:
         return prepared.tree
     def block(self,value):
         raw=wr.dumps(value).encode();h=hashlib.sha256(raw).hexdigest();checkpoint(self.cancel)
-        self.scratch.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',(h,len(raw),zlib.compress(raw)))
-        self.scratch_hashes.add(h)
+        if h not in self.scratch_hashes:
+            self.scratch.execute('INSERT INTO snapshot_chunks VALUES(?,?,?)',(h,len(raw),zlib.compress(raw)))
+            self.scratch_hashes.add(h)
         return ['ref',h,len(raw)]
     def get(self,node,path,default=None):
         if not path:return self.value(node)
