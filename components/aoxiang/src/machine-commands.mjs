@@ -3,6 +3,7 @@ import schema from '../assets/schemas/machine.command.schema.json' with {type:'j
 import {canonical,sha256,now,fail} from './common.mjs';
 import {validateConfig} from './config.mjs';
 import {planReplenishmentRun,insertRunPlan} from './run-plan.mjs';
+import {resumableTask} from './collection-recovery.mjs';
 
 export const PROTOCOL_VERSION=1;
 export const MAX_FRAME_BYTES=1024*1024;
@@ -86,13 +87,27 @@ export class MachineCommands{
       const plans=command.scope.warehouse_codes.map(warehouseCode=>planReplenishmentRun(config,{
         warehouseCode,mode:command.policy.freshness==='refresh'?'rerun':'normal'
       }));
+      const recovered=plans.map(plan=>{
+        const pending=this.state.pending(config.tenantBinding,plan.run.targets[0].buyerWarehouseCode);
+        if(pending.length!==1||!resumableTask(pending[0]))return null;
+        const attempt=pending[0],run=this.state.getRun(attempt.runId),items=this.state.getItems(attempt.runId);
+        if(run?.status!=='ENDED'||!run.resumePending)return null;
+        if(items.length!==1||items[0].attemptId!==attempt.id||attempt.semanticVersion!==config.exportPolicy.semanticVersion)
+          fail('RECOVERY_SCOPE','原平台任务范围或版本不同，请核对原任务后继续');
+        return {run,attempt};
+      });
       const at=now();
       const record={id:command.command_id,fingerprint,request:structuredClone(command),state:'QUEUED',sequence:1,
         created_at:at,updated_at:at,config_snapshot:structuredClone(config),
-        items:plans.map((p,index)=>({index,warehouse_code:p.run.targets[0].buyerWarehouseCode,run_id:p.run.id,state:'PENDING',result:null,error:null})),
+        items:plans.map((p,index)=>({index,warehouse_code:p.run.targets[0].buyerWarehouseCode,run_id:recovered[index]?.run.id||p.run.id,state:'PENDING',result:null,error:null,
+          ...(recovered[index]?{task_id:recovered[index].attempt.taskId,phase:'RECOVER_KNOWN_TASK',resumed_accepted_task:true}:{})})),
         result:null,error:null};
       this.db.prepare('INSERT INTO machine_commands VALUES(?,?,?,?,?)').run(record.id,fingerprint,record.state,1,JSON.stringify(record));
-      for(const plan of plans)insertRunPlan(this.db,plan);
+      for(const [index,plan] of plans.entries()){
+        const recovery=recovered[index];
+        if(recovery)this.db.prepare('UPDATE runs SET payload=? WHERE id=?').run(JSON.stringify({...recovery.run,status:'NEEDS_ATTENTION',resumePending:false,resumedByCommand:record.id}),recovery.run.id);
+        else insertRunPlan(this.db,plan);
+      }
       this.insertEvent(record,'RESERVED',{items:record.items});
       return {created:true,record};
     });

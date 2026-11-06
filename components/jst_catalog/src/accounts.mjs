@@ -9,7 +9,7 @@ export const accountId=wh=>({'山东仓':'sd','河北仓':'hb'})[wh];
 export function dedicatedLaunchArgs(binding){
   if(binding.backend!=='jst_dedicated')throw new CatalogError('BROWSER_ISOLATION','只能启动已核验的聚水潭专用浏览器');
   return [`--user-data-dir=${binding.userDataRoot}`,`--profile-directory=${binding.profileDirectory}`,
-    '--remote-debugging-address=127.0.0.1','--remote-debugging-port=0','about:blank'];
+    '--remote-debugging-address=127.0.0.1','--remote-debugging-port=0','--no-first-run','--no-default-browser-check','about:blank'];
 }
 export function validateIdentity(a){
   if(!accountId(a.warehouse)||a.id!==accountId(a.warehouse)||!a.expectedCompany||
@@ -34,6 +34,18 @@ export class AccountSessions {
     const profile=await fs.realpath(input.profilePath).catch(()=>{throw new CatalogError('PROFILE_MISSING','专用浏览器目录不存在，请在连接设置中重新选择；未连接其他浏览器');});
     const directory=path.basename(profile),root=await fs.realpath(path.dirname(profile));
     if(!/^(Default|Profile \d+)$/.test(directory))throw new CatalogError('PROFILE_INVALID','请选择专用浏览器的Default或Profile目录');
+    await this.assertIsolated(root,others);
+    const found=await env.discover({extraDataRoot:root});
+    const p=found.profiles.find(p=>samePath(p.actualProfilePath,profile));
+    // A fresh managed profile is not always in Local State until Edge exits.
+    // The bridge still verifies the live edge://version profile path before use.
+    const managed=['sd','hb'].some(id=>samePath(profile,path.join(this.stateRoot,'browsers',id,'User Data','Default')));
+    const exe=input.edgeExecutable?found.installations.find(e=>samePath(e.executable,input.edgeExecutable)):found.installations[0];
+    if((!p&&!managed)||!exe)throw new CatalogError('BROWSER_MISSING','未找到所选专用配置或已安装Edge，请修复本机绑定');
+    return {userDataRoot:root,actualProfilePath:profile,profileDirectory:directory,edgeExecutable:exe.executable,backend:'jst_dedicated'};
+  }
+  async assertIsolated(root,others=[]){
+    const {env}=this.components;
     for(const forbidden of [env.defaultEdgeRoot(),...this.forbiddenRoots]){
       const f=await fs.realpath(forbidden).catch(()=>path.resolve(forbidden));
       if(inside(f.toLowerCase(),root.toLowerCase())||inside(root.toLowerCase(),f.toLowerCase()))
@@ -41,11 +53,24 @@ export class AccountSessions {
     }
     for(const a of others)if(a.binding&&samePath(a.binding.userDataRoot,root))
       throw new CatalogError('ACCOUNT_ISOLATION','两仓不能绑定同一个浏览器资料根');
-    const found=await env.discover({extraDataRoot:root});
-    const p=found.profiles.find(p=>samePath(p.actualProfilePath,profile));
-    const exe=input.edgeExecutable?found.installations.find(e=>samePath(e.executable,input.edgeExecutable)):found.installations[0];
-    if(!p||!exe)throw new CatalogError('BROWSER_MISSING','未找到所选专用配置或已安装Edge，请修复本机绑定');
-    return {userDataRoot:root,actualProfilePath:profile,profileDirectory:directory,edgeExecutable:exe.executable,backend:'jst_dedicated'};
+  }
+  async automaticBinding(warehouse,others,signal){
+    const id=accountId(warehouse);
+    if(!id)throw new CatalogError('ACCOUNT_UNVERIFIED','未知仓库');
+    await this.initialize();check(signal);
+    const root=path.join(this.stateRoot,'browsers',id,'User Data');
+    const profile=path.join(root,'Default');
+    await fs.mkdir(profile,{recursive:true});
+    const discovered=await this.components.env.discover({extraDataRoot:root});
+    const executable=discovered.installations[0]?.executable;
+    if(!executable)throw new CatalogError('BROWSER_MISSING','未找到已安装的 Microsoft Edge');
+    const binding={userDataRoot:await fs.realpath(root),actualProfilePath:await fs.realpath(profile),
+      profileDirectory:'Default',edgeExecutable:executable,backend:'jst_dedicated'};
+    await this.assertIsolated(binding.userDataRoot,others);
+    if(!samePath(path.dirname(binding.actualProfilePath),binding.userDataRoot))
+      throw new CatalogError('BROWSER_ISOLATION','专用配置目录链接到其他浏览器，未启动');
+    await this.ensureBrowser(binding,signal);
+    return this.binding({profilePath:profile,edgeExecutable:executable},others);
   }
   async ensureBrowser(binding,signal){
     const {env}=this.components;check(signal);
@@ -59,7 +84,7 @@ export class AccountSessions {
       let failure;child.once('error',e=>{failure=e;});child.unref();
       const until=Date.now()+20000;
       while(!endpoint&&Date.now()<until){check(signal);if(failure)throw failure;await sleep(300);endpoint=await env.discoverEndpoint(binding.userDataRoot).catch(()=>null);}
-      if(!endpoint)throw new CatalogError('BROWSER_SETUP','专用浏览器已打开，但调试连接未就绪；请在该实例允许远程调试后继续');
+      if(!endpoint)throw new CatalogError('BROWSER_SETUP','专用浏览器自动连接未就绪；如已手动打开该专用实例，请正常关闭后重试自动配置');
     }
     for(const root of [env.defaultEdgeRoot(),...this.forbiddenRoots]){
       const other=await env.discoverEndpoint(root).catch(()=>null);
@@ -86,9 +111,9 @@ export class AccountSessions {
         throw new CatalogError('ACCOUNT_ISOLATION','两仓连接到了相同浏览器实例');
       const bridge=new this.components.EdgeBridge();
       this.connectionStates.set(key,{state:'CONNECTING',reason:cached?'原连接已断开，正在重新连接':'首次连接或已主动重连'});
-      this.phase('CONNECTING','正在连接专用浏览器；如有提示请允许调试');
+      this.phase('CONNECTING','正在自动连接本仓专用浏览器');
       try{await bridge.bind(binding,{timeout:60000,mode:'background_tab',onPhase:()=>check(signal)});check(signal);}
-      catch(e){await bridge.close().catch(()=>{});this.connectionStates.set(key,{state:'DISCONNECTED',reason:'连接未建立，请检查授权提示或浏览器状态'});throw e;}
+      catch(e){await bridge.close().catch(()=>{});this.connectionStates.set(key,{state:'DISCONNECTED',reason:'连接未建立，请重试自动配置或检查专用浏览器状态'});throw e;}
       bridge.catalogEndpoint=endpoint;this.sessions.set(key,bridge);this.connectionStates.set(key,{state:'CONNECTED',reason:'关闭业务窗口后继续保留'});return bridge;
     }catch(e){if(!this.sessions.has(key)){this.instanceLocks.get(key)?.release();this.instanceLocks.delete(key);}throw e;}
   }
@@ -106,17 +131,27 @@ export class AccountSessions {
     this.sessions.delete(key);this.instanceLocks.get(key)?.release();this.instanceLocks.delete(key);
     this.connectionStates.set(key,{state:'DISCONNECTED',reason:'已主动断开本仓；下次连接可能需要重新允许'});
   }
-  async page(account,signal,{loginOnly=false}={}){
+  async page(account,signal,{loginOnly=false,waitForLogin=false}={}){
     const bridge=await this.connect(account,signal);check(signal);
     await bridge.page.goto('https://www.erp321.com/epaas',{waitUntil:'domcontentloaded',timeout:60000});check(signal);
     if(loginOnly){await bridge.page.bringToFront();return bridge.page;}
     await bridge.page.waitForFunction(()=>document.querySelector('a[class^=menuItem]')||document.querySelector('input[type=password]')||/扫码登录|密码登录|账号登录/.test(document.body?.innerText||''),null,{timeout:30000});check(signal);
     const login=await bridge.page.evaluate(()=>[...document.querySelectorAll('input[type=password]')].some(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0;})||/扫码登录|密码登录|账号登录/.test(document.body?.innerText||''));
-    if(login)throw new CatalogError('LOGIN_REQUIRED','该仓需要正常登录；登录完成后继续本仓，另一仓可以继续');
+    if(login&&waitForLogin){
+      this.phase('WAIT_LOGIN','请在本仓专用浏览器登录对应仓库账号，完成后将自动核验并保存');
+      await bridge.page.bringToFront();
+      const until=Date.now()+180000;
+      while(!await bridge.page.locator('a[class^=menuItem]').count()){
+        check(signal);
+        if(Date.now()>until)throw new CatalogError('LOGIN_REQUIRED','等待登录超时，请点击自动配置继续；专用浏览器已保留');
+        await sleep(300);
+      }
+      check(signal);
+    }else if(login)throw new CatalogError('LOGIN_REQUIRED','该仓需要正常登录；登录完成后继续本仓，另一仓可以继续');
     return bridge.page;
   }
-  async inspect(binding,company,signal){
-    const page=await this.page({binding},signal);check(signal);
+  async inspect(binding,company,signal,options={}){
+    const page=await this.page({binding},signal,options);check(signal);
     const detected=company||await page.evaluate(()=>{
       const lines=(document.querySelector('#root')?.innerText||'').split('\n').map(x=>x.trim()).filter(x=>/^.{2,150}\[[^\]]+\]$/.test(x));
       return lines.length===1?lines[0].replace(/\[[^\]]+\]$/,'').trim():null;

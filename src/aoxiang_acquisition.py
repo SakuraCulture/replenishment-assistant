@@ -25,7 +25,7 @@ def prepare(jobs, configuration, codes, freshness, *, day):
         old = pending['command']
         if (old['operation'] == 'replenishment.export' and old['account_binding'] == configuration['account_binding']
                 and set(codes).intersection(old['scope']['warehouse_codes'])):
-            raise ValueError('所选门店还有未完成或待核对的原采集，请从采集记录继续，不能另建任务：' + pending['id'])
+            raise ValueError('所选门店还有未完成或待核对的原采集，不能另建任务。请继续原采集，或先“结束本次采集”再新建；已受理平台任务将保留接续：' + pending['id'])
     command = {'protocol_version': 1, 'command_id': 'rep-' + uuid.uuid4().hex,
                'operation': 'replenishment.export', 'account_binding': configuration['account_binding'],
                'scope': {'warehouse_codes': list(codes)},

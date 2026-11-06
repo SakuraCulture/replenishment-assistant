@@ -108,4 +108,14 @@ class MaintenanceUiTests(unittest.TestCase):
         d.select_visible();d.start_btn.click();self.wait(lambda:d.worker is None and d.current['id'].startswith('rep-'))
         self.assertNotIn('不能另建任务',' '.join(self.errors));self.assertFalse(self.errors)
 
+    def test_component_exit_does_not_disable_end_and_new_collection(self):
+        d=self.d
+        self.assertTrue(d.client.close())
+        with patch.object(d,'confirm_maintenance',return_value=True):
+            d.end_btn.click();self.wait(lambda:d.worker is None and d.current['state']=='ENDED')
+        self.assertTrue(d.client.close())
+        d.select_visible();d.start_btn.click()
+        self.wait(lambda:d.worker is None and d.current['id'].startswith('rep-'))
+        self.assertFalse(self.errors)
+
 if __name__=='__main__':unittest.main()

@@ -16,6 +16,7 @@ export class CatalogService {
     this.sessions=driver?null:new AccountSessions({stateRoot,bridgeRoot,lockRoot,forbiddenRoots,phase:(phase,message)=>{if(this.active)this.active.phase={phase,message,at:now()};}});
     this.driver=driver||{
       binding:(...a)=>this.sessions.binding(...a),
+      automaticBinding:(...a)=>this.sessions.automaticBinding(...a),
       inspect:(...a)=>this.sessions.inspect(...a),
       page:(...a)=>this.sessions.page(...a),
       query:(page,a)=>native.queryAll(page,a),
@@ -87,7 +88,7 @@ export class CatalogService {
       await this.sessions.disconnect(a.binding);
       return {disconnected:true,warehouse:c.warehouse};
     }
-    if(['accounts.probe','accounts.verify','accounts.open_login'].includes(action))return this.accountOperation(c);
+    if(['accounts.auto','accounts.probe','accounts.verify','accounts.open_login'].includes(action))return this.accountOperation(c);
     if(action==='sync.resume'||action==='sync.retry_unsubmitted'){
       const b=this.store.batch(c.batch_id),ids=c.item_ids||b.items.filter(i=>!i.adoption).map(i=>i.id);
       if(!ids.length||new Set(ids).size!==ids.length||ids.some(id=>!b.items.some(i=>i.id===id)))throw Error('恢复项无效');
@@ -96,7 +97,7 @@ export class CatalogService {
     }
     throw new CatalogError('UNKNOWN_ACTION','未知商品资料操作');
   }
-  async configure(c){
+  async configure(c,verified=null){
     const data=this.store.read(),old=data.accounts?.[c.warehouse];if(!WAREHOUSES.includes(c.warehouse))throw Error('未知仓库');
     if((old?.bindingVersion||0)!==c.expected_version)throw new CatalogError('CONFIG_CONFLICT','账号设置已由其他窗口更新，请重新核对');
     if(Object.values(data.batches).some(b=>b.items.some(i=>i.account.warehouse===c.warehouse&&(unresolved(i)||!i.adoption&&i.receipt))))
@@ -105,11 +106,11 @@ export class CatalogService {
     if(c.action==='accounts.set_enabled'){
       if(!old||typeof c.enabled!=='boolean')throw Error('账号或启用状态无效');next={...old,enabled:c.enabled};
     }else{
-      const op=data.operations?.[c.probe_id];
-      if(op?.state!=='SUCCEEDED'||op.action!=='accounts.probe'||op.warehouse!==c.warehouse||c.mapping_verified!==true)throw Error('请完成本仓账号核验并确认库存范围');
+      const op=verified||data.operations?.[c.probe_id];
+      if(op?.state!=='SUCCEEDED'||!['accounts.probe','accounts.auto'].includes(op.action)||op.warehouse!==c.warehouse||c.mapping_verified!==true)throw Error('请完成本仓账号核验并确认库存范围');
       const r=op.result;next={id:accountId(c.warehouse),warehouse:c.warehouse,expectedCompany:r.scope.company,
         expectedCoid:r.scope.coid,expectedUid:r.scope.uid,binding:r.binding,mappingVerified:true,enabled:true,
-        mappingEvidence:'业务在本机确认该账号资料对应'+c.warehouse,verifiedAt:op.finishedAt};
+        mappingEvidence:op.action==='accounts.auto'?'用户选择'+c.warehouse+'专用浏览器自动配置，登录账号核验后保存':'业务在本机确认该账号资料对应'+c.warehouse,verifiedAt:op.finishedAt};
       for(const a of Object.values(data.accounts||{}))if(a.warehouse!==c.warehouse&&(
           a.expectedCoid===next.expectedCoid&&a.expectedUid===next.expectedUid||canonical(a.binding)===canonical(next.binding)))throw Error('两个仓不能使用同一账号或浏览器绑定');
     }
@@ -126,11 +127,14 @@ export class CatalogService {
   }
   async accountOperation(c){
     if(!WAREHOUSES.includes(c.warehouse))throw Error('未知仓库');
+    if(c.action==='accounts.auto'&&(this.store.read().accounts?.[c.warehouse]?.bindingVersion||0)!==c.expected_version)
+      throw new CatalogError('CONFIG_CONFLICT','账号设置已更新，请刷新后重试');
     const id=crypto.randomUUID();await this.store.write(d=>{d.operations||={};d.operations[id]={id,action:c.action,warehouse:c.warehouse,state:'RUNNING',createdAt:now()};});
     this.launch(id,'account',async signal=>{
       const data=this.store.read(),a=data.accounts?.[c.warehouse];let binding,result;
       try{
-        if(c.action==='accounts.probe')binding=await this.driver.binding(c,Object.values(data.accounts||{}).filter(x=>x.warehouse!==c.warehouse));
+        if(c.action==='accounts.auto')binding=await this.driver.automaticBinding(c.warehouse,Object.values(data.accounts||{}).filter(x=>x.warehouse!==c.warehouse),signal);
+        else if(c.action==='accounts.probe')binding=await this.driver.binding(c,Object.values(data.accounts||{}).filter(x=>x.warehouse!==c.warehouse));
         else{
           const probe=data.operations?.[c.probe_id];
           if(c.action==='accounts.open_login'&&probe?.warehouse===c.warehouse&&probe.binding)binding=probe.binding;
@@ -138,11 +142,21 @@ export class CatalogService {
         }
         if(c.action==='accounts.open_login'){await this.driver.page({binding},signal,{loginOnly:true});result={opened:true};}
         else{
-          const scope=await this.driver.inspect(binding,c.company||a?.expectedCompany,signal);
-          if(a&&c.action==='accounts.verify'&&(scope.coid!==a.expectedCoid||scope.uid!==a.expectedUid))throw new CatalogError('WRONG_ACCOUNT','当前登录账号与该仓绑定不同');
+          const scope=await this.driver.inspect(binding,c.company||a?.expectedCompany,signal,{waitForLogin:c.action==='accounts.auto'});
+          if(a&&['accounts.verify','accounts.auto'].includes(c.action)&&(scope.coid!==a.expectedCoid||scope.uid!==a.expectedUid))throw new CatalogError('WRONG_ACCOUNT','当前登录账号与该仓绑定不同');
           result={scope,binding};
         }
-        check(signal);await this.store.write(d=>Object.assign(d.operations[id],{state:'SUCCEEDED',result,finishedAt:now()}));
+        check(signal);
+        if(c.action==='accounts.auto'){
+          // An unchanged verified binding must not invalidate pending batch versions.
+          if(a&&canonical(a.binding)===canonical(binding)){
+            result.account=a;
+          }else{
+            result.account=await this.configure({action:'accounts.bind',warehouse:c.warehouse,expected_version:c.expected_version,mapping_verified:true},
+              {state:'SUCCEEDED',action:c.action,warehouse:c.warehouse,result,finishedAt:now()});
+          }
+        }
+        await this.store.write(d=>Object.assign(d.operations[id],{state:'SUCCEEDED',result,finishedAt:now()}));
       }catch(e){
         await this.store.write(d=>Object.assign(d.operations[id],{state:e.code==='LOGIN_REQUIRED'?'LOGIN_REQUIRED':signal.aborted?'CANCELLED':'FAILED',error:safeError(e),binding,finishedAt:now()}));
       }

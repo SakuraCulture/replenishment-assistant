@@ -84,9 +84,10 @@ export class MachineRuntime{
       const phases=this.pipeline?['submit','collect']:['complete'];
       for(const phase of phases){
       const deadline=Date.now()+this.commands.get(id).config_snapshot.resourceLimits.taskWaitBudgetMs;
+      const missing=new Map();
       do{
       for(const initial of this.commands.get(id).items){
-        if(['SUCCEEDED','FAILED','ENDED'].includes(initial.state))continue;
+        if(['SUCCEEDED','FAILED','ENDED'].includes(initial.state)||missing.has(initial.index))continue;
         if(control.signal.aborted){this.change(id,'PAUSED');return;}
         this.updateItem(id,initial.index,{state:'RUNNING',error:null});
         try{
@@ -113,12 +114,17 @@ export class MachineRuntime{
           if(ordinaryFailures.has(info.code)){
             this.updateItem(id,initial.index,{state:'FAILED',error:info});continue;
           }
+          if(this.pipeline&&phase==='collect'&&info.code==='TASK_NOT_FOUND'){
+            this.updateItem(id,initial.index,{state:'INTERRUPTED',error:info});
+            missing.set(initial.index,info);continue;
+          }
           this.updateItem(id,initial.index,{state:'INTERRUPTED',error:info});
           this.change(id,'INTERRUPTED',{error:info});return;
         }
       }
       if(control.signal.aborted){this.change(id,'PAUSED');return;}
-      const pending=this.commands.get(id).items.some(i=>!['SUCCEEDED','FAILED','ENDED'].includes(i.state));
+      const pending=this.commands.get(id).items.some(i=>!['SUCCEEDED','FAILED','ENDED'].includes(i.state)&&!missing.has(i.index));
+      if(!pending&&missing.size){this.change(id,'INTERRUPTED',{error:missing.values().next().value});return;}
       if(phase!=='collect'||!pending)break;
       if(Date.now()>=deadline){this.change(id,'INTERRUPTED',{error:{code:'TASK_PENDING',message:'平台仍在生成部分文件；已完成文件保留，请继续原采集任务',details:{}}});return;}
       // Sleep once per round, not per store. Pause wakes the wait immediately.
