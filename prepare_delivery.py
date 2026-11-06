@@ -269,10 +269,11 @@ if version['version'] in {'0.45.0','0.45.1'}:
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
     shutil.copy2(root/'docs'/names[0],dest/'使用说明.txt')
 
-if version['version']=='0.46.1':
+if version['version'] in {'0.46.1','0.46.2'}:
     (dest/'docs').mkdir(exist_ok=True)
     names=['0.46.1仅保留当前快照格式.md','0.46.0采集恢复与浏览器自动配置.md','0.45.2删除性能优化.md',
            '0.45.0货盘结构分析.md','0.39.0业务使用指南.md','0.40.0AI口径与本机连接.md']
+    if version['version']=='0.46.2':names.insert(0,'0.46.2删除流式处理优化.md')
     for name in names:shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
-    (dest/'使用说明.txt').write_text('\n\n'.join((root/'docs'/name).read_text('utf-8') for name in names[:2]),encoding='utf-8')
+    (dest/'使用说明.txt').write_text('\n\n'.join((root/'docs'/name).read_text('utf-8') for name in names[:3 if version['version']=='0.46.2' else 2]),encoding='utf-8')

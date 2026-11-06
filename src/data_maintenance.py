@@ -247,14 +247,14 @@ def prepare_rewrites(db,plan,scratch,progress,cancel):
         prepared.append((table,key,source_hash,pack,info))
         del blob,row
         progress(RowProgress('准备当天作业清理',i,len(records)))
-    # Reusable cache is staged on disk. It is published only with successful deletion.
-    if 'maintenance_chunk_refs' in tables(db):
-        scratch.executemany('INSERT OR REPLACE INTO maintenance_chunk_refs VALUES(?,?,?,?)',db.execute('SELECT * FROM maintenance_chunk_refs'))
+    # Read existing receipts in place; stage only changed receipts. Every source
+    # block is still verified, and no source cache writes precede the write lock.
+    cache_source=db if 'maintenance_chunk_refs' in tables(db) else None
     scratch.execute('CREATE TABLE verified_chunks(hash TEXT PRIMARY KEY,refs TEXT NOT NULL)')
     if 'snapshot_chunks' in tables(db):
         total=db.execute('SELECT COUNT(*) FROM snapshot_chunks').fetchone()[0]
         for i,(h,size,data) in enumerate(db.execute('SELECT hash,size,data FROM snapshot_chunks'),1):
-            refs=storage.references_for(scratch,h,size,data,cancel)
+            refs=storage.references_for(scratch,h,size,data,cancel,cache_source=cache_source)
             scratch.execute('INSERT INTO verified_chunks VALUES(?,?)',(h,wr.dumps(refs)))
             if i%32==0 or i==total:progress(RowProgress('准备共享附件引用（首次需核对历史块）',i,total))
     # The former compatibility pass also validated every current manifest,

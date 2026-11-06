@@ -95,6 +95,7 @@ def worker(a):
         selections=[list(by_day.values())[:a.parents]]
     else:
         selections=[[head] for head in heads[:15]]
+    rss_at_start=proc.memory_info().rss;peak[0]=rss_at_start
     start=time.perf_counter();io=proc.io_counters();thread=threading.Thread(target=sample);thread.start();plan=None
     try:
         for selection in selections:
@@ -110,7 +111,7 @@ def worker(a):
         execute=time.perf_counter()-tick
     finally:stop.set();thread.join()
     endio=proc.io_counters();total=time.perf_counter()-start;after=signature(out/'settings')
-    save(out/'result.json',{'preview_seconds':preview,'execute_seconds':execute,'total_seconds':total,'peak_rss':peak[0],
+    save(out/'result.json',{'preview_seconds':preview,'execute_seconds':execute,'total_seconds':total,'peak_rss':peak[0],'rss_at_start':rss_at_start,
         'io':{k:getattr(endio,k)-getattr(io,k) for k in io._fields},'stages':stages,'scan':calls,'scratch_prepared_bytes':scratch_bytes,'plan_token':token,
         'result':result,'before':before,'after':after,'progress':events})
 
@@ -124,7 +125,13 @@ def run(a):
             cmd=[sys.executable,__file__,'worker','--source',str(source),'--fixture',str(a.fixture),'--output',str(dest),
                  '--qa-root',str(a.qa_root),'--parents',str(a.parents)]
             if a.warm:cmd+=['--warm',str(a.warm)]
-            with (out/f'{side}-{n+1}.txt').open('w',encoding='utf-8') as f:subprocess.run(cmd,cwd=ROOT,stdout=f,stderr=f,env={**os.environ,'PYTHONIOENCODING':'utf-8','PYTHONHASHSEED':'0'},check=True,timeout=900)
+            with (out/f'{side}-{n+1}.txt').open('w',encoding='utf-8') as f:
+                process=subprocess.Popen(cmd,cwd=ROOT,stdout=f,stderr=f,env={**os.environ,'PYTHONIOENCODING':'utf-8','PYTHONHASHSEED':'0'})
+                try:code=process.wait(timeout=900)
+                except subprocess.TimeoutExpired:
+                    save(out/'pending-process.json',{'pid':process.pid,'output':str(dest),'state':'Still running; not terminated because commit state is unknown'})
+                    raise RuntimeError(f'Worker {process.pid} still running; inspect before continuing')
+                if code:raise subprocess.CalledProcessError(code,cmd)
             r=json.loads((dest/'result.json').read_text('utf-8'));records.append({'side':side,'round':n+1,**r})
             save(out/'partial.json',records);print(json.dumps({'side':side,'round':n+1,'seconds':r['total_seconds'],'rss_mib':r['peak_rss']/2**20}),flush=True)
     old=[r for r in records if r['side']=='before'];new=[r for r in records if r['side']=='after'];diff=[]

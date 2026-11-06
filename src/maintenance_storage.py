@@ -65,9 +65,12 @@ def cache_schema(db):
 
 
 
-def references_for(db,h,size,data,cancel=None):
+def references_for(db,h,size,data,cancel=None,*,cache_source=None):
     checkpoint(cancel);compressed=hashlib.sha256(data).hexdigest()
-    row=db.execute('SELECT compressed_sha,refs,checksum FROM maintenance_chunk_refs WHERE hash=?',(h,)).fetchone()
+    # During preparation the source cache is read-only. Only a missing or
+    # invalid receipt is staged in db, and publication stays inside deletion.
+    lookup=cache_source if cache_source is not None else db
+    row=lookup.execute('SELECT compressed_sha,refs,checksum FROM maintenance_chunk_refs WHERE hash=?',(h,)).fetchone()
     if row and row[0]==compressed and hashlib.sha256(row[1].encode()).hexdigest()==row[2]:
         refs=wr.loads(row[1])
         if isinstance(refs,list) and all(isinstance(x,str) and re.fullmatch('[0-9a-f]{64}',x) for x in refs):return refs
@@ -179,6 +182,99 @@ class Editor:
             return ['array',parts]
         value=self.value(node);return self.encode([v for v in value if keep(v)])
     def rewrite(self,blob,codes,expected=None):
+        manifest=chunks.require_manifest(blob);tree=manifest['tree']
+        # The native writer uses ordered dictionaries for these containers. A
+        # wide/current-format map or a scalar container keeps the existing path.
+        def ordered(node):
+            if node[0]!='dict':return False
+            keys=[k for k,_ in node[1]]
+            return all(isinstance(k,str) for k in keys) and keys==sorted(set(keys))
+        if not ordered(tree):return self._rewrite_serial(blob,codes,expected)
+        top=dict(tree[1]);loaded=top.get('loaded');intake=None;warehouses=None
+        if loaded is not None:
+            if not ordered(loaded):return self._rewrite_serial(blob,codes,expected)
+            fields=dict(loaded[1]);intake=fields.get('intake');warehouses=fields.get('warehouse_rows')
+            if any(n is not None and not ordered(n) for n in (intake,warehouses)):
+                return self._rewrite_serial(blob,codes,expected)
+        if expected and manifest['digest']!=expected:raise ValueError('作业快照与索引不一致')
+        import engine
+        config=self.get(tree,('loaded','config')) or engine.config();field=config['sales_fields']['store_code']
+        def affected(e):
+            if isinstance(e,dict):return e.get('store') in codes or any(affected(v) for v in e.values())
+            return isinstance(e,list) and any(affected(v) for v in e)
+        drops={(key,) for key in STORE_MAPS}|{('loaded','stores'),('loaded','blocked'),('loaded','intake','stores')}
+        filters={('loaded','normalized'):lambda r:r[0].get('B') not in codes,
+                 ('loaded','intake','conflicts'):lambda r:r['store'] not in codes,
+                 ('loaded','intake','selected'):lambda r:engine.adapter.identifier(r.get('values',{}).get(field))[0] not in codes,
+                 ('export_log',):lambda e:not affected(e)}
+        if warehouses:
+            filters.update({('loaded','warehouse_rows',w):filters[('loaded','normalized')] for w,_ in warehouses[1]})
+        defaults={():{'export_log':[],'pending_copy':None}}
+        if loaded and loaded[1]:defaults[('loaded',)]={'normalized':[]}
+        if intake and intake[1]:defaults[('loaded','intake')]={'stores':{},'conflicts':[],'selected':[]}
+        containers={(),('loaded',),('loaded','intake'),('loaded','warehouse_rows')}
+        old_sha=hashlib.sha256();new_sha=hashlib.sha256();sizes=[0,0]
+        def old(raw):old_sha.update(raw);sizes[0]+=len(raw)
+        def new(raw):new_sha.update(raw);sizes[1]+=len(raw)
+        def both(raw):old(raw);new(raw)
+        def key_bytes(key):return wr.dumps(key).encode()+b': '
+        def encoded(value):
+            node=self.encode(value);self.emit(node,new);return node
+        def filtered(node,keep,is_map=False):
+            # Each block supplies the original digest, parsed selection and
+            # surviving digest before it leaves the bounded raw-byte cache.
+            kind='map' if is_map else 'array'
+            if node[0]!=kind:
+                raw=[];self.emit(node,raw.append);data=b''.join(raw);old(data)
+                value=wr.loads(data)
+                if is_map and not isinstance(value,dict):new(data);return node
+                return encoded({k:v for k,v in value.items() if k not in codes} if is_map else [v for v in value if keep(v)])
+            both(b'{' if is_map else b'[');parts=[]
+            for i,part in enumerate(node[1]):
+                raw=self.raw(part)
+                if i:old(b', ')
+                old(raw[1:-1]);value=wr.loads(raw)
+                kept={k:v for k,v in value.items() if k not in codes} if is_map else [v for v in value if keep(v)]
+                if kept:
+                    if parts:new(b', ')
+                    if len(kept)==len(value):parts.append(part);new(raw[1:-1])
+                    else:parts.append(self.block(kept));new(wr.dumps(kept).encode()[1:-1])
+            both(b'}' if is_map else b']');return [kind,parts]
+        def walk(node,path):
+            checkpoint(self.cancel)
+            if path==('pending_copy',):self.emit(node,old);return encoded(None)
+            if path in filters:return filtered(node,filters[path])
+            if path in drops:
+                if node[0]!='dict':return filtered(node,None,True)
+                both(b'{');items=[]
+                for i,(key,child) in enumerate(node[1]):
+                    if i:old(b', ')
+                    old(key_bytes(key))
+                    if key in codes:self.emit(child,old)
+                    else:
+                        if items:new(b', ')
+                        new(key_bytes(key));self.emit(child,both);items.append([key,child])
+                both(b'}');return ['dict',items]
+            if path not in containers:self.emit(node,both);return node
+            fields=dict(node[1]);extra=defaults.get(path,{})
+            both(b'{');items=[];old_count=0
+            for key in sorted(fields.keys()|extra.keys()):
+                if items:new(b', ')
+                new(key_bytes(key))
+                if key in fields:
+                    if old_count:old(b', ')
+                    old(key_bytes(key));old_count+=1
+                    child=walk(fields[key],path+(key,))
+                else:child=encoded(extra[key])
+                items.append([key,child])
+            both(b'}');return ['dict',items]
+        rewritten=walk(tree,())
+        # Even discarded branches feed the full original digest. A mismatch
+        # rejects the prepared result before any business transaction begins.
+        if (old_sha.hexdigest(),sizes[0])!=(manifest['digest'],manifest['size']):raise ValueError('完整快照校验失败')
+        self.original_digest=manifest['digest']
+        return chunks.Prepared(rewritten,new_sha.hexdigest(),sizes[1],{})
+    def _rewrite_serial(self,blob,codes,expected=None):
         manifest=chunks.require_manifest(blob)
         if expected and manifest['digest']!=expected:raise ValueError('作业快照与索引不一致')
         original=manifest['tree']
