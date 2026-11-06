@@ -105,7 +105,14 @@ export class AoxiangUI {
     if(!this.identity)fail('WAIT_LOGIN','尚未核验翱象身份');
     const modal=this.page.getByRole('dialog',{name:'历史记录',exact:true});
     const response=this.waitResponse(TASKS);
-    if(await modal.isVisible())await this.click(modal.getByRole('button',{name:'刷新列表',exact:true}));
+    if(await modal.isVisible()){
+      // Refresh retains the current page. A prior missing-task search may have
+      // left the dialog at its last page, hiding newly accepted tasks on page 1.
+      const first=modal.locator('.ant-pagination-item-1:not(.ant-pagination-item-active)');
+      const count=await first.count();
+      if(count>1)fail('AMBIGUOUS_CONTROL','历史记录第一页入口不唯一，未继续');
+      await this.click(count===1?first:modal.getByRole('button',{name:'刷新列表',exact:true}));
+    }
     else await this.click(this.page.locator('#suggestTable').getByRole('button',{name:'历史记录',exact:true}));
     const raw=await response;
     const j=parseResponse(await raw.text());

@@ -25,6 +25,24 @@ test('只关闭已知导出提示；其他确认弹窗保留',{skip:process.plat
   const fixture=await isolatedEdge();let ui;
   try{const page=fixture.browser.contexts()[0].pages()[0];await page.setContent(html);ui=new AoxiangUI(page,{timeoutMs:800});ui.identity={accountId:'test',merchantCode:'M'};await ui.activate();await page.evaluate(()=>{const n=document.createElement('div');n.className='overlay';n.innerHTML='<div role="dialog">确认修改补货参数？<button>确认</button></div>';document.body.append(n);});await assert.rejects(()=>ui.click(page.locator('#suggestTable button')));assert.equal(ui.noticeDismissals,0);assert.equal(await page.evaluate(()=>historyCalls),0);assert.ok(await page.getByRole('dialog').isVisible());}finally{await ui?.dispose();await fixture.close();}
 });
+test('真实Edge离线分页：末页刷新先回第一页，查无任务后重试仍可找到原任务',{skip:process.platform!=='win32',timeout:30000},async()=>{
+  const fixture=await isolatedEdge();let ui;const requests=[];
+  try{
+    const page=fixture.browser.contexts()[0].pages()[0];
+    await page.route(prefix+'/**',r=>{
+      const p=JSON.parse(r.request().postData()).page;requests.push(p);
+      return r.fulfill({status:200,headers:{'content-type':'application/json','access-control-allow-origin':'*'},body:JSON.stringify({success:true,total:3,data:[{taskId:'task'+p,taskStatus:'FINISHED'}]})});
+    });
+    await page.setContent(`<div role="dialog" aria-label="历史记录"><button onclick="load(current)">刷新列表</button><button class="ant-pagination-item-1" onclick="load(1)">1</button><button class="ant-pagination-next ant-pagination-disabled" onclick="load(current+1)">下一页</button></div><script>
+      let current=3;function load(p){current=p;document.querySelector('.ant-pagination-item-1').classList.toggle('ant-pagination-item-active',p===1);document.querySelector('.ant-pagination-next').classList.toggle('ant-pagination-disabled',p===3);fetch('${prefix}/ebai/gei/task/list',{method:'POST',body:JSON.stringify({page:p})});}
+      </script>`);
+    ui=new AoxiangUI(page,{timeoutMs:5000});ui.identity={accountId:'test',merchantCode:'M'};
+    assert.equal((await ui.findTask('task1')).taskId,'task1');assert.deepEqual(requests,[1]);
+    await assert.rejects(ui.findTask('task-missing'),{code:'TASK_NOT_FOUND'});
+    assert.deepEqual(requests,[1,1,2,3]);
+    assert.equal((await ui.findTask('task1')).taskId,'task1');assert.deepEqual(requests,[1,1,2,3,1]);
+  }finally{await ui?.dispose();await fixture.close();}
+});
 test('后台标签使用同一已核对Profile；关闭绑定页和作业页后保留原页面',{skip:process.platform!=='win32',timeout:60000},async()=>{
   const fixture=await isolatedEdge(),bridge=new EdgeBridge();
   const server=http.createServer((req,res)=>res.writeHead(200,{'Content-Type':'text/html'}).end('<title>Isolated job fixture</title>'));await new Promise(r=>server.listen(0,'127.0.0.1',r));
