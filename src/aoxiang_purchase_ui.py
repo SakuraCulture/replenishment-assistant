@@ -194,7 +194,8 @@ class PurchaseDialog(BindingActions, ComponentDialog):
             elif r.get('taskId'):
                 text += '\n原导入任务号：' + r['taskId']
             if r.get('error'):
-                text += '\n' + r['error']['message']
+                from aoxiang_purchase_messages import explain
+                text += '\n' + explain(r['error'], r)
             self.note.setText(text)
         self.update_buttons()
 

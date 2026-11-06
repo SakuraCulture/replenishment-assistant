@@ -1,5 +1,6 @@
 """Shared local task evidence rules. No browser calls or business writes."""
 import copy
+from aoxiang_purchase_messages import waiting
 
 ACTIVE = ('QUEUED', 'RUNNING', 'YIELDED', 'PAUSED')
 SUCCESS = ('PREPARED', 'BOUND', 'SYNCED')
@@ -41,7 +42,8 @@ def deletion_issue(job, item):
 def counts(job):
     items=job['items']
     return {'total':len(items),'success':sum(i['state'] in SUCCESS for i in items),
-            'review':sum(i['state'] in ('REVIEW','FAILED') for i in items),
+            'review':sum(i['state'] in ('REVIEW','FAILED') and not waiting(i,job['kind']) for i in items),
+            'waiting':sum(waiting(i,job['kind']) for i in items),
             'pending':sum(i['state'] in ('PENDING','RUNNING') for i in items),
             'observed':sum(i['state']=='OBSERVED' for i in items),
             'skipped':sum(i['state']=='SKIPPED' for i in items)}
@@ -51,7 +53,8 @@ def summary(job):
     c=counts(job)
     prefix='正在处理' if job['state']=='RUNNING' else '等待处理' if c['pending'] and job['state']!='CANCELLED' else '检查结束'
     success='预览就绪' if job['kind']=='prepare' else '已关联采购' if job['kind']=='upload' else '实收已同步'
-    return f"{prefix}：{success}{c['success']}单，待处理{c['review']}单，未处理{c['pending']}单，已观察{c['observed']}单，已结束/跳过{c['skipped']}单"
+    wait=f"，已受理待核对{c['waiting']}单" if job['kind']=='upload' else ''
+    return f"{prefix}：{success}{c['success']}单{wait}，待处理{c['review']}单，未处理{c['pending']}单，已观察{c['observed']}单，已结束/跳过{c['skipped']}单"
 
 
 def reconcile(job):
