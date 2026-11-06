@@ -215,7 +215,7 @@ class AnalyticsWidget(QWidget):
             values=[[i['name'],i['warehouse'],i['order'],*[i['metrics']['stages'][s]['value'] for s in service.STAGES],i['groups']['必采']['stages']['signed']['value'],i['groups']['非必采']['stages']['signed']['value'],i['metrics']['pending']] for i in items]
         elif key=='rounds':
             from coverage_metrics import STAGES
-            headers=['门店','业务日期','供货仓',*[service.NAMES[s]+'新增可售天数' for s in STAGES],'有效商品条数','待核说明']
+            headers=['门店','业务日期','供货仓','建议新增天数','签发新增天数','确认新增天数','下单新增天数','实收新增天数','有效商品条数','待核说明']
             items=self.report['coverage']['rounds'] if self.report else []
             if self.drill:items=[i for i in items if all(i.get(k)==v for k,v in self.drill.items() if k!='order')]
             values=[[i['name'],i['day'],i['warehouse'],*[i['coverage']['stage_days'][s] for s in STAGES],i['coverage']['eligible_rows'],'；'.join(i['coverage']['excluded_reasons'])] for i in items]
@@ -246,13 +246,18 @@ class AnalyticsWidget(QWidget):
         page=values[self.page*100:(self.page+1)*100]
         if key in ('detail','pending') and coverage_mode:
             from coverage_exports import detail_rows
-            model.replace(list(detail_rows(page)))
-        else:model.replace(list(exports.detail_rows(page)) if key in ('detail','pending') else page)
+            display=list(detail_rows(page))
+        else:display=list(exports.detail_rows(page)) if key in ('detail','pending') else page
+        if (coverage_mode and key!='history') or key=='rounds':
+            display=[['待核' if value is None else value for value in row] for row in display]
+        model.replace(display)
         del blocker
         if coverage_mode and key in ('store','warehouse','order'):
             for column,width in enumerate([180,150,250,160,160,160,160,160,160,140,300]):self.tables[key].setColumnWidth(column,width)
         elif coverage_mode and key in ('detail','pending'):
             for column in range(len(headers)):self.tables[key].setColumnWidth(column,260 if column in (2,4,6,22) else 180)
+        if key=='rounds':
+            for column,width in enumerate([180,150,120,160,160,160,160,160,140,360]):self.tables[key].setColumnWidth(column,width)
         self.page_note.setText(f'{len(values)}条 · 第{self.page+1}/{max(1,(len(values)+99)//100)}页 · 已选{len(self.selected)}单；双击汇总下钻')
         self.controls()
 

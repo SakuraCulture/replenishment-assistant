@@ -12,12 +12,12 @@ def save(p,v):p.write_text(json.dumps(v,ensure_ascii=False,indent=2),'utf-8',new
 
 
 def main():
-    qa=ROOT/'qa/coverage_0440';release=ROOT/'releases/0.44.0/rc1'
-    delivery=ROOT/'交付_0.44.0_rc1/补货助手'
-    build=read(ROOT/'build_0.44.0_rc1/build_info.json')
+    qa=ROOT/'qa/coverage_0440';release=ROOT/'releases/0.44.0/rc2'
+    delivery=ROOT/'交付_0.44.0_rc2/补货助手'
+    build=read(ROOT/'build_0.44.0_rc2/build_info.json')
     business=read(qa/'business_comparison/equivalence.json');frozen=read(qa/'business_comparison/frozen.json')
     analytics=read(qa/'analytics_comparison_2/report.json');afrozen=read(qa/'analytics_comparison_2/frozen.json')
-    gui=read(qa/'exe-ui/report.json')
+    gui=read(qa/'exe-ui-rc2/report.json')
     regression=(qa/'regression.txt').read_text('utf-8-sig')
     m=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\s*$',regression)
     if not m or int(m[1])<988:raise ValueError('Full regression missing')
@@ -37,19 +37,19 @@ def main():
     copies={'business_comparison/equivalence.json':'business-equivalence.json','business_comparison/frozen.json':'business-frozen.json',
             'analytics_comparison_2/report.json':'analytics-report.json','analytics_comparison_2/frozen.json':'analytics-frozen.json',
             'regression.txt':'regression.txt','targeted-coverage.txt':'targeted-coverage.txt','targeted-ai.txt':'targeted-ai.txt',
-            'targeted-analytics.txt':'targeted-analytics.txt','exe-ui/report.json':'exe-report.json','exe-ui/mcp-calls.json':'mcp-calls.json'}
+            'targeted-analytics.txt':'targeted-analytics.txt','exe-ui-rc2/report.json':'exe-report.json','exe-ui-rc2/mcp-calls.json':'mcp-calls.json'}
     for source,target in copies.items():shutil.copyfile(qa/source,release/target)
-    shutil.copyfile(ROOT/'build_0.44.0_rc1/build_info.json',release/'build_info.json')
-    for p in (qa/'exe-ui').glob('0*.png'):shutil.copyfile(p,release/p.name)
+    shutil.copyfile(ROOT/'build_0.44.0_rc2/build_info.json',release/'build_info.json')
+    for p in (qa/'exe-ui-rc2').glob('0*.png'):shutil.copyfile(p,release/p.name)
     files={p.relative_to(delivery).as_posix():sha(p) for p in sorted(delivery.rglob('*')) if p.is_file()}
-    target=delivery.parent/'补货助手_0.44.0_rc1_预计可售天数.zip'
+    target=delivery.parent/'补货助手_0.44.0_rc2_预计可售天数.zip'
     with zipfile.ZipFile(target,'x',zipfile.ZIP_DEFLATED) as z:
         for rel in files:z.write(delivery/rel,'补货助手/'+rel)
     with zipfile.ZipFile(target) as z:
         if len(z.namelist())!=len(files):raise ValueError('ZIP file count mismatch')
         for rel,h in files.items():
             if hashlib.sha256(z.read('补货助手/'+rel)).hexdigest()!=h:raise ValueError('ZIP content mismatch: '+rel)
-    manifest={'source_commit':build['source_commit'],'baseline':business['baseline_commit'],'version':'0.44.0','build_id':'rc1',
+    manifest={'source_commit':build['source_commit'],'baseline':business['baseline_commit'],'version':'0.44.0','build_id':'rc2',
               'exe_sha256':sha(delivery/'补货助手.exe'),'zip_sha256':sha(target),'files':files}
     save(release/'manifest.json',manifest)
     lines=[]
@@ -92,7 +92,7 @@ def main():
 
 ## 失败证据和修正
 
-首次源码窗口发现新增metric属性与Qt原生方法重名，改为metric_choice。MCP验证发现空分类接口拒绝和已销毁socket重复清理异常并修正。测试读回Decimal文本12.0按Decimal值与12核对，不改变业务预期；样式对照按对象副本的实际样式比较。首次新旧分析对照暴露history.as_of运行时间差，明确列为第二个精确动态路径，其他历史字段全比。旧失败目录保留在qa/coverage_0440，不作为通过证据。过期测试主动修改隔离库摘要引发的ValueError是预期拦截，之后恢复并重新查询通过。
+首次源码窗口发现新增metric属性与Qt原生方法重名，改为metric_choice。MCP验证发现空分类接口拒绝和已销毁socket重复清理异常并修正。测试读回Decimal文本12.0按Decimal值与12核对，不改变业务预期；样式对照按对象副本的实际样式比较。首次新旧分析对照暴露history.as_of运行时间差，明确列为第二个精确动态路径，其他历史字段全比。rc1功能验收通过后，截图复查发现逐轮表头截断及缺失文字不够准确，rc2仅缩短显示表头并将天数待核项明确标为待核；重新运行完整EXE/MCP检查。旧失败目录保留在qa/coverage_0440，不作为通过证据。过期测试主动修改隔离库摘要引发的ValueError是预期拦截，之后恢复并重新查询通过。
 
 ## 使用、交付和边界
 

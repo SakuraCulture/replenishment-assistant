@@ -62,7 +62,9 @@ def start_smoke(app, win, args):
             QTimer.singleShot(150,dismiss);widget.coverage_explanation(widget.models['detail'].index(0,0))
             require(modal and '各段新增天数' in modal[0] and '预测日均' in modal[0],'Click explanation provides business formula and historical values')
             widget.grab().save(str(out/'02-detail.png'));widget.back();widget.tabs.setCurrentIndex(6)
-            require(widget.models['rounds'].rowCount()==4,'Round view retains both warehouses and old missing-forecast history')
+            require(widget.models['rounds'].rowCount()==4 and widget.tables['rounds'].columnWidth(3)>=160
+                    and any('待核' in row for row in widget.models['rounds'].rows),
+                    'Round view retains both warehouses and old missing-forecast history with readable headers')
             widget.grab().save(str(out/'03-rounds.png'))
             import order_analytics_exports as exports
             receipts=[]
