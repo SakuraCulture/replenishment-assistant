@@ -1,0 +1,29 @@
+{
+  "performance_python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "performance_executable": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+  "performance_packages": {
+    "PySide6-Essentials": "6.12.0",
+    "shiboken6": "6.12.0",
+    "openpyxl": "3.1.5",
+    "et-xmlfile": "2.0.0",
+    "pillow": "13.0.0",
+    "PyInstaller": "6.22.3",
+    "pyinstaller-hooks-contrib": "2026.9",
+    "altgraph": "0.17.5",
+    "packaging": "26.3",
+    "pefile": "2024.8.26",
+    "pywin32-ctypes": "0.2.3",
+    "setuptools": "84.2.1",
+    "ijson": "3.6.0"
+  },
+  "performance_and_regression_environment": "existing .venv; both comparison sides use identical environment",
+  "build_environment": "qa/v0350/locked-venv; all requirements-win-amd64.lock versions verified matching",
+  "development_lock_differences": [
+    "pillow 13.0.0 vs locked 12.3.0",
+    "setuptools 84.2.1 vs locked 84.1.0"
+  ],
+  "measured_runtime_sources": {
+    "src\\data_maintenance.py": "66a2258ade6ee3ebde6bda7eba7c5a9e529919b0daac7add4e55d3fbfb6ce76a",
+    "src\\maintenance_storage.py": "b9f2d6af494733b100901adc8f38754b269d663890b7219384b2648ae2b3e976"
+  }
+}
