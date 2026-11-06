@@ -1,0 +1,30 @@
+{
+  "commit": "8795b78dd76869c652bb45916c86df6bd9f67e4f",
+  "archive_sha256": "4972a23c4304e19a0b37bd34b05b9336e2edbb02fcacdbe4732b5fb01bd43e52",
+  "protected": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\engine.py": "a2c5005367550167019f4cd07bd0dcfe572346ebbef0b11a84166ea0905d2525",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\normal_exports.py": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\jst_orders.py": "c4fc938902cc3647bdc720be3b828cd103e986d2c78871efa51c96bf41d415d0",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.0_rc1\\补货助手\\补货助手.exe": "e925399420263e64bc5f0f67d967eb3ab8b836d32c15dbe2f35b3653fd2a545c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.0_rc1\\补货助手_0.45.0_rc1_货盘结构分析.zip": "accfeb6984737b04291f6998a5e65caf9ddd8ff3aa48a9e2623ef324053c7d9c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.1_rc1\\补货助手_0.45.1_rc1_删除负载优化.zip": "ea4047ae5a1a5fef80feb302d4fa65218dd769ba3c44ef6a3971c31fedd17020",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.1_rc1\\补货助手\\补货助手.exe": "13279f1e8e2872a0908968beb8fed2432ff23d86fdd8a1f7193c1df9e721959a",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\delete_diagnosis_20261103\\frozen\\archive_index.sqlite3": "f4c7248741c53130ac0575dd5b1a0526226eecf6cbeb2fbd6f5877bd9951adf6",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\delete_diagnosis_20261103\\frozen\\lifecycle_index.sqlite3": "c834fdc8a2e30ffcabc72bc14200d0df7b5be372d4af2f1e6f835b5cfc6d8b56",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\delete_diagnosis_20261103\\frozen\\must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\delete_diagnosis_20261103\\frozen\\new_product_focus.json": "6036b771c7dea27592746b548b43c046fee59c0be1627023b105ab6e5123fa6f",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\delete_diagnosis_20261103\\frozen\\workbench.sqlite3": "9ea73a0d219e18ad4f5bf800125e0975b80d802e977432011922dd8ce1ca6535",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\delete_diagnosis_20261103\\frozen\\aoxiang\\workflows.sqlite3": "cd7335807a2c750aab9a2421f98365e305a60b5d46ec3305533fbdef9487c58c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\delete_diagnosis_20261103\\frozen\\warehouse_catalogs\\山东仓.json": "6d80e58ec2e62c4da16bedeecc1c16a6dae3bbd520b1a5c987bd30c4705f5052",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\delete_diagnosis_20261103\\frozen\\warehouse_catalogs\\河北仓.json": "642b054425ba90ce50b6944ca994a2adfd007ef9348359a5ef5e9072025e968c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.2_rc1\\补货助手\\补货助手.exe": "f2d9afa3ddf9dd11ed41468e6c7178ff0f840000cbea32fc4a64a72162ca5854",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.0_rc2\\补货助手\\补货助手.exe": "ac3c8b4cfbb6d586676952d0a905ca6e6011618e5584c2bee997d7c8d8e146ec",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.1_rc2\\补货助手\\补货助手.exe": "9cbbfad388514b363916528c1cd7e0ae87d21f0ceea1cee07d811e43863e5819",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.1_rc2\\补货助手_0.46.1_rc2_当前格式与采集修复.zip": "8dbc76ce3279df7d85418329abfc9e545ab39fc3c03f5ed76b1198b2a3835225"
+  }
+}

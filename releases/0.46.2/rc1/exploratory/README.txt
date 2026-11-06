@@ -1,0 +1,1 @@
+Retired attempt: metadata pre-read exposed a missing per-reference length check on cache hits. A negative test failed before the fix. The active baseline worker finished; the next worker was refused before opening its database. No process was killed or package built. All final claims use the seven separately rerun matrices after the fix.

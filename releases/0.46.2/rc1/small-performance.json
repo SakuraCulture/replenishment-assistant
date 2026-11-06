@@ -1,0 +1,2528 @@
+{
+  "passed": true,
+  "summary": {
+    "before": {
+      "preview_seconds": {
+        "median": 0.09528180000052089,
+        "min": 0.09239499999966938,
+        "max": 0.09934989999965183
+      },
+      "execute_seconds": {
+        "median": 0.5224741999991238,
+        "min": 0.5197021000021778,
+        "max": 0.5273420000012266
+      },
+      "total_seconds": {
+        "median": 0.6191323999992164,
+        "min": 0.6150085999979638,
+        "max": 0.6247960000000603
+      },
+      "peak_rss": {
+        "median": 63148032,
+        "min": 61784064,
+        "max": 63553536
+      },
+      "read_bytes": {
+        "median": 49575037,
+        "min": 49575037,
+        "max": 49575037
+      },
+      "write_bytes": {
+        "median": 5011700,
+        "min": 5011700,
+        "max": 5011700
+      }
+    },
+    "after": {
+      "preview_seconds": {
+        "median": 0.09569850000116276,
+        "min": 0.0951865999995789,
+        "max": 0.1010695000004489
+      },
+      "execute_seconds": {
+        "median": 0.5357133999968937,
+        "min": 0.5187093000022287,
+        "max": 0.5777927999988606
+      },
+      "total_seconds": {
+        "median": 0.6315061999994214,
+        "min": 0.6198656000015035,
+        "max": 0.6730678999992961
+      },
+      "peak_rss": {
+        "median": 62078976,
+        "min": 61820928,
+        "max": 62308352
+      },
+      "read_bytes": {
+        "median": 49575037,
+        "min": 49575037,
+        "max": 49575037
+      },
+      "write_bytes": {
+        "median": 5011700,
+        "min": 5011700,
+        "max": 5011700
+      }
+    }
+  },
+  "differences": [],
+  "changed_protected": [],
+  "runs": [
+    {
+      "side": "before",
+      "round": 1,
+      "preview_seconds": 0.09239499999966938,
+      "execute_seconds": 0.5224741999991238,
+      "total_seconds": 0.6150085999979638,
+      "peak_rss": 61784064,
+      "rss_at_start": 48824320,
+      "io": {
+        "read_count": 12004,
+        "write_count": 2045,
+        "read_bytes": 49575037,
+        "write_bytes": 5011700,
+        "other_count": 6304,
+        "other_bytes": 61080
+      },
+      "stages": {
+        "snapshot": {
+          "seconds": 0.18113440000161063,
+          "calls": 2
+        },
+        "prepare_rewrites": {
+          "seconds": 0.2783440999992308,
+          "calls": 1
+        },
+        "apply_rewrites": {
+          "seconds": 0.0035046000011789147,
+          "calls": 1
+        },
+        "collect_shared": {
+          "seconds": 0.03401499999745283,
+          "calls": 1
+        },
+        "clear_indexes": {
+          "seconds": 1.3799999578623101e-05,
+          "calls": 1
+        }
+      },
+      "scan": {
+        "chunk_bytes": 2223278,
+        "chunk_calls": 163
+      },
+      "scratch_prepared_bytes": 872448,
+      "plan_token": "e870b0694fcfd4069e1d84770cc596cc9b7c0282f151488d0ebfc255133e13df",
+      "result": {
+        "deleted": 1,
+        "orders": [
+          "BH-T-ZC"
+        ]
+      },
+      "before": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "4e780a2587fd676b34dc35fc0cac7851fa891a89b031b2b22aeb0ab333fb25d3",
+          "normal_revisions": "35cd7b027e0dbeb683ff8ee497a6e882873c1f0336714904237e1344a6deec75",
+          "normal_work_revisions": "b3a801990d88b8ec1cc40ce0de200ddb9ae9ec3c7da41af25c8ccc28cf42934f",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "069faed7ead40518555cf4e69b0baf195249050dd7542318671bd2da1dec5aea",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "after": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "229f3b3eb24f2c51c98caf0ac10c47b2f0e2c0e08723fb7e6e7c9cb19097175e",
+          "normal_revisions": "efa24bfdbfe7846a37cebf33eff1ecdbd45ee8eb05b43910ff901127b35370b1",
+          "normal_work_revisions": "ff2d7395f3abd5a843eb6f9713a75a301163d4dcd0e0f47b8ebf24e5bb9b247d",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "07eb2f3be59c88a944cfedaa680b47ee452128cbedf09e2e8842d23aacd6c682",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "progress": [
+        {
+          "seconds": 0.0006617999970330857,
+          "text": "读取订单与关联数据，核对删除范围…"
+        },
+        {
+          "seconds": 0.0023825999996915925,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.0025738999975146726,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.0027596999971137848,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.2032489999983227,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.20994889999929,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.21000359999743523,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2107460999977775,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.21077789999981178,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.21079739999913727,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2108124999977008,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.21086239999931422,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.21105249999891385,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.23131669999929727,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.3103525999977137,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3118801999989955,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3119118999966304,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3119264999986626,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.31193749999874854,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.31194909999976517,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3159176999979536,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.31975859999874956,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3200022999990324,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.344503899999836,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.344584999998915,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3446159999984957,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3446299999995972,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3446409999996831,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3446526999978232,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3456858999998076,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3458965999998327,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.36139969999931054,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3614342000000761,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.36146159999771044,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.36147409999830415,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.36148529999991297,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3614977999968687,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3624698999992688,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3626632999985304,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.37850819999948726,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3785344999996596,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3785582999989856,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3785744999986491,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.37858520000008866,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.37859739999839803,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3793452999998408,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.37956019999910495,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.39488779999737744,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3949159999974654,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.39494079999712994,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.39495349999924656,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3949641999970481,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3949760999967111,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3957606999974814,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.39596529999835184,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.41321199999947567,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.41324209999947925,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.4132726999996521,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.4132843999977922,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.41329429999677814,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.41330589999779477,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.414073299998563,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.41425209999943036,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.42956239999693935,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.42959069999778876,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.42961839999770746,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.4296305999996548,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.4296396999998251,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.4296502999968652,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.4303769999969518,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.4315437999975984,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.43197589999908814,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4486498999976902,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4641730999974243,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4642041999977664,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.470317299997987,
+          "text": "准备完成，正在取得删除写锁…"
+        },
+        {
+          "seconds": 0.47119889999885345,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.47137929999735206,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.47159179999653134,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.561281999998755,
+          "text": "正在删除关联单据，提交前仍可取消…"
+        },
+        {
+          "seconds": 0.5658724999993865,
+          "text": "当天作业清理已写入事务，继续核对共享引用…"
+        },
+        {
+          "seconds": 0.5659918999990623,
+          "text": "核对存活订单及共享资料引用…"
+        },
+        {
+          "seconds": 0.5879125999999815,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.591509899997618,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.5960377999981574,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.5991198999981862,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.5999458999976923,
+          "text": "正在最终提交，暂不可取消…"
+        },
+        {
+          "seconds": 0.6132870999972511,
+          "text": "归档已提交；可取消后续导出"
+        }
+      ]
+    },
+    {
+      "side": "after",
+      "round": 1,
+      "preview_seconds": 0.09569850000116276,
+      "execute_seconds": 0.5357133999968937,
+      "total_seconds": 0.6315061999994214,
+      "peak_rss": 62078976,
+      "rss_at_start": 48701440,
+      "io": {
+        "read_count": 12004,
+        "write_count": 2045,
+        "read_bytes": 49575037,
+        "write_bytes": 5011700,
+        "other_count": 6304,
+        "other_bytes": 61080
+      },
+      "stages": {
+        "snapshot": {
+          "seconds": 0.1905575000018871,
+          "calls": 2
+        },
+        "prepare_rewrites": {
+          "seconds": 0.2977449999998498,
+          "calls": 1
+        },
+        "apply_rewrites": {
+          "seconds": 0.0038367999986803625,
+          "calls": 1
+        },
+        "collect_shared": {
+          "seconds": 0.04506810000020778,
+          "calls": 1
+        },
+        "clear_indexes": {
+          "seconds": 2.3200002033263445e-05,
+          "calls": 1
+        }
+      },
+      "scan": {
+        "chunk_bytes": 2223278,
+        "chunk_calls": 163
+      },
+      "scratch_prepared_bytes": 872448,
+      "plan_token": "e870b0694fcfd4069e1d84770cc596cc9b7c0282f151488d0ebfc255133e13df",
+      "result": {
+        "deleted": 1,
+        "orders": [
+          "BH-T-ZC"
+        ]
+      },
+      "before": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "4e780a2587fd676b34dc35fc0cac7851fa891a89b031b2b22aeb0ab333fb25d3",
+          "normal_revisions": "35cd7b027e0dbeb683ff8ee497a6e882873c1f0336714904237e1344a6deec75",
+          "normal_work_revisions": "b3a801990d88b8ec1cc40ce0de200ddb9ae9ec3c7da41af25c8ccc28cf42934f",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "069faed7ead40518555cf4e69b0baf195249050dd7542318671bd2da1dec5aea",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "after": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "229f3b3eb24f2c51c98caf0ac10c47b2f0e2c0e08723fb7e6e7c9cb19097175e",
+          "normal_revisions": "efa24bfdbfe7846a37cebf33eff1ecdbd45ee8eb05b43910ff901127b35370b1",
+          "normal_work_revisions": "ff2d7395f3abd5a843eb6f9713a75a301163d4dcd0e0f47b8ebf24e5bb9b247d",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "07eb2f3be59c88a944cfedaa680b47ee452128cbedf09e2e8842d23aacd6c682",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "progress": [
+        {
+          "seconds": 0.000669100001687184,
+          "text": "读取订单与关联数据，核对删除范围…"
+        },
+        {
+          "seconds": 0.0027489000021887477,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.0030588000008719973,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.0032467000019096304,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.18100570000024163,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.18237240000235033,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.1824326000023575,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.1847120000020368,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.18474720000085654,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.1847756000024674,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.18499069999961648,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.18565959999978077,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.1856874000004609,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.24363110000194865,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.2716368000001239,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2716671000016504,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2723394999993616,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2724822000018321,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.27287170000272454,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2728970999996818,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3011093000022811,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3011380000025383,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.30144149999978254,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.30162840000048163,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3020269000007829,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.30205190000197035,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.32725660000141943,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3272872000015923,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3276742000016384,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.327832999999373,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.32825620000221534,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3282911000023887,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3509637000024668,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.35100510000120266,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.351323400002002,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3514658000021882,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3518244000006234,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.35184990000198013,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3743815000016184,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3744107999991684,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3747170000024198,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.37485410000226693,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3752602000022307,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.37528970000130357,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3993837000016356,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3994112000000314,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3997269999999844,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3998706999991555,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.4003917000009096,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.400416899999982,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.4247093000012683,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.42473679999966407,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.4251562000026752,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.42649440000241157,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4269476000008581,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4458149999991292,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4625345999993442,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4625704999998561,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.47024790000068606,
+          "text": "准备完成，正在取得删除写锁…"
+        },
+        {
+          "seconds": 0.47147140000015497,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.47165189999941504,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.4718572999991011,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.5676789000026474,
+          "text": "正在删除关联单据，提交前仍可取消…"
+        },
+        {
+          "seconds": 0.5724867000026279,
+          "text": "当天作业清理已写入事务，继续核对共享引用…"
+        },
+        {
+          "seconds": 0.5726273000000219,
+          "text": "核对存活订单及共享资料引用…"
+        },
+        {
+          "seconds": 0.6033680000000459,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6076467000020784,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6123969000000216,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6165180999996664,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6176326000022527,
+          "text": "正在最终提交，暂不可取消…"
+        },
+        {
+          "seconds": 0.6299094000023615,
+          "text": "归档已提交；可取消后续导出"
+        }
+      ]
+    },
+    {
+      "side": "after",
+      "round": 2,
+      "preview_seconds": 0.0951865999995789,
+      "execute_seconds": 0.5777927999988606,
+      "total_seconds": 0.6730678999992961,
+      "peak_rss": 61820928,
+      "rss_at_start": 48742400,
+      "io": {
+        "read_count": 12004,
+        "write_count": 2045,
+        "read_bytes": 49575037,
+        "write_bytes": 5011700,
+        "other_count": 6304,
+        "other_bytes": 61080
+      },
+      "stages": {
+        "snapshot": {
+          "seconds": 0.1823977999993076,
+          "calls": 2
+        },
+        "prepare_rewrites": {
+          "seconds": 0.298072300000058,
+          "calls": 1
+        },
+        "apply_rewrites": {
+          "seconds": 0.0033994999976130202,
+          "calls": 1
+        },
+        "collect_shared": {
+          "seconds": 0.08570930000132648,
+          "calls": 1
+        },
+        "clear_indexes": {
+          "seconds": 1.559999873279594e-05,
+          "calls": 1
+        }
+      },
+      "scan": {
+        "chunk_bytes": 2223278,
+        "chunk_calls": 163
+      },
+      "scratch_prepared_bytes": 872448,
+      "plan_token": "e870b0694fcfd4069e1d84770cc596cc9b7c0282f151488d0ebfc255133e13df",
+      "result": {
+        "deleted": 1,
+        "orders": [
+          "BH-T-ZC"
+        ]
+      },
+      "before": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "4e780a2587fd676b34dc35fc0cac7851fa891a89b031b2b22aeb0ab333fb25d3",
+          "normal_revisions": "35cd7b027e0dbeb683ff8ee497a6e882873c1f0336714904237e1344a6deec75",
+          "normal_work_revisions": "b3a801990d88b8ec1cc40ce0de200ddb9ae9ec3c7da41af25c8ccc28cf42934f",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "069faed7ead40518555cf4e69b0baf195249050dd7542318671bd2da1dec5aea",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "after": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "229f3b3eb24f2c51c98caf0ac10c47b2f0e2c0e08723fb7e6e7c9cb19097175e",
+          "normal_revisions": "efa24bfdbfe7846a37cebf33eff1ecdbd45ee8eb05b43910ff901127b35370b1",
+          "normal_work_revisions": "ff2d7395f3abd5a843eb6f9713a75a301163d4dcd0e0f47b8ebf24e5bb9b247d",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "07eb2f3be59c88a944cfedaa680b47ee452128cbedf09e2e8842d23aacd6c682",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "progress": [
+        {
+          "seconds": 0.0019722999968507793,
+          "text": "读取订单与关联数据，核对删除范围…"
+        },
+        {
+          "seconds": 0.0035874999994121026,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.00375509999867063,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.003929899998183828,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.1883135999996739,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.1898202999982459,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.18987889999698382,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.19062099999791826,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.19065599999885308,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.1906831999986025,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.19086849999803235,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.19140859999970417,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.1914340999974229,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2487580999986676,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.2744085999984236,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2746490999998059,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2751710999982606,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2752994000002218,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2756926999973075,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.27572719999807305,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2985588999981701,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.29858969999986584,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2988764000001538,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.29902429999856395,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.29944350000005215,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.29947079999692505,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.32442059999812045,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.32445089999964694,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.32476649999807705,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3248948999971617,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.32528109999839216,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3253079999994952,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3487241000002541,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.34875479999755044,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3491560999973444,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.349330099998042,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.34974829999919166,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.34977429999707965,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3731207999990147,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.37314879999757977,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3734934999993129,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.37362709999797517,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3739921999986109,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3740223999993759,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3971748999974807,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.39720159999706084,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3975200999993831,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.39768699999694945,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3980418999999529,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.398065499997756,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.4296641999972053,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.4296966000001703,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.43002449999767123,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.4312718999972276,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4318491999983962,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.45114889999968,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.46861559999888414,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.46864999999888823,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.47761650000029476,
+          "text": "准备完成，正在取得删除写锁…"
+        },
+        {
+          "seconds": 0.4784798000000592,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.47864839999965625,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.47881649999908404,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.5682056999976339,
+          "text": "正在删除关联单据，提交前仍可取消…"
+        },
+        {
+          "seconds": 0.5726437999983318,
+          "text": "当天作业清理已写入事务，继续核对共享引用…"
+        },
+        {
+          "seconds": 0.5728232000001299,
+          "text": "核对存活订单及共享资料引用…"
+        },
+        {
+          "seconds": 0.6457283999989158,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6500010999989172,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6542540999980702,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6575173999990511,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.658417599999666,
+          "text": "正在最终提交，暂不可取消…"
+        },
+        {
+          "seconds": 0.6715618999987782,
+          "text": "归档已提交；可取消后续导出"
+        }
+      ]
+    },
+    {
+      "side": "before",
+      "round": 2,
+      "preview_seconds": 0.09528180000052089,
+      "execute_seconds": 0.5273420000012266,
+      "total_seconds": 0.6247960000000603,
+      "peak_rss": 63553536,
+      "rss_at_start": 48664576,
+      "io": {
+        "read_count": 12004,
+        "write_count": 2045,
+        "read_bytes": 49575037,
+        "write_bytes": 5011700,
+        "other_count": 6304,
+        "other_bytes": 61080
+      },
+      "stages": {
+        "snapshot": {
+          "seconds": 0.18223460000081104,
+          "calls": 2
+        },
+        "prepare_rewrites": {
+          "seconds": 0.2315472000009322,
+          "calls": 1
+        },
+        "apply_rewrites": {
+          "seconds": 0.004816599997866433,
+          "calls": 1
+        },
+        "collect_shared": {
+          "seconds": 0.08429339999929653,
+          "calls": 1
+        },
+        "clear_indexes": {
+          "seconds": 1.3900000340072438e-05,
+          "calls": 1
+        }
+      },
+      "scan": {
+        "chunk_bytes": 2223278,
+        "chunk_calls": 163
+      },
+      "scratch_prepared_bytes": 872448,
+      "plan_token": "e870b0694fcfd4069e1d84770cc596cc9b7c0282f151488d0ebfc255133e13df",
+      "result": {
+        "deleted": 1,
+        "orders": [
+          "BH-T-ZC"
+        ]
+      },
+      "before": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "4e780a2587fd676b34dc35fc0cac7851fa891a89b031b2b22aeb0ab333fb25d3",
+          "normal_revisions": "35cd7b027e0dbeb683ff8ee497a6e882873c1f0336714904237e1344a6deec75",
+          "normal_work_revisions": "b3a801990d88b8ec1cc40ce0de200ddb9ae9ec3c7da41af25c8ccc28cf42934f",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "069faed7ead40518555cf4e69b0baf195249050dd7542318671bd2da1dec5aea",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "after": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "229f3b3eb24f2c51c98caf0ac10c47b2f0e2c0e08723fb7e6e7c9cb19097175e",
+          "normal_revisions": "efa24bfdbfe7846a37cebf33eff1ecdbd45ee8eb05b43910ff901127b35370b1",
+          "normal_work_revisions": "ff2d7395f3abd5a843eb6f9713a75a301163d4dcd0e0f47b8ebf24e5bb9b247d",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "07eb2f3be59c88a944cfedaa680b47ee452128cbedf09e2e8842d23aacd6c682",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "progress": [
+        {
+          "seconds": 0.0007469000011042226,
+          "text": "读取订单与关联数据，核对删除范围…"
+        },
+        {
+          "seconds": 0.002423300000373274,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.00272209999820916,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.0028982000003452413,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.20530289999805973,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2066503999994893,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.20671089999814285,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.20747230000051786,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.20750720000069123,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.20752509999874746,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.20754110000052606,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.20759239999824786,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2077742000001308,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2215171999996528,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.274685699998372,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2747148999987985,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2747415000012552,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2747546999999031,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.27476519999981974,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2747768000008364,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.27837799999906565,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.28212599999824306,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.28234990000055404,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.29827709999881336,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2983371000009356,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2983639000012772,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.29838060000111,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2983911999981501,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2984031000014511,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2991355000012845,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.29933819999860134,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.31542590000026394,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.31545879999976023,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3154849999991711,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3154982999985805,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3155098999995971,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.31552219999866793,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.31635919999826,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.31657799999811687,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.33257899999807705,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3326081000013801,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3326329999981681,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.33264929999859305,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3326597000013862,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.33267139999952633,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3334074000013061,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3335942999983672,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.34893469999951776,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.34896179999850574,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.34898619999876246,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.34899940000104834,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3490100999988499,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3490227000002051,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3498488000004727,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3500577999984671,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.36857899999813526,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3686180000004242,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.36865620000025956,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3686702000013611,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3686813999993319,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3686940000006871,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3695112999994308,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.36977610000030836,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3856424000005063,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3856755000015255,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.38570569999865256,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.38571959999899263,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.38573069999984,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.385742599999503,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3865473000005295,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.38784360000136076,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.38832239999828744,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.40498329999900307,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.42130189999807044,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4213386999981594,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.42808380000133184,
+          "text": "准备完成，正在取得删除写锁…"
+        },
+        {
+          "seconds": 0.42891859999872395,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.4290934999989986,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.4292886000002909,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.5172114000015426,
+          "text": "正在删除关联单据，提交前仍可取消…"
+        },
+        {
+          "seconds": 0.5230464000014763,
+          "text": "当天作业清理已写入事务，继续核对共享引用…"
+        },
+        {
+          "seconds": 0.5232572999993863,
+          "text": "核对存活订单及共享资料引用…"
+        },
+        {
+          "seconds": 0.5954635999987659,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.599224099998537,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.603541899999982,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6066404000011971,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6074053999982425,
+          "text": "正在最终提交，暂不可取消…"
+        },
+        {
+          "seconds": 0.6211323999996239,
+          "text": "归档已提交；可取消后续导出"
+        }
+      ]
+    },
+    {
+      "side": "before",
+      "round": 3,
+      "preview_seconds": 0.09934989999965183,
+      "execute_seconds": 0.5197021000021778,
+      "total_seconds": 0.6191323999992164,
+      "peak_rss": 63148032,
+      "rss_at_start": 48840704,
+      "io": {
+        "read_count": 12004,
+        "write_count": 2045,
+        "read_bytes": 49575037,
+        "write_bytes": 5011700,
+        "other_count": 6304,
+        "other_bytes": 61080
+      },
+      "stages": {
+        "snapshot": {
+          "seconds": 0.18127499999900465,
+          "calls": 2
+        },
+        "prepare_rewrites": {
+          "seconds": 0.2328090000009979,
+          "calls": 1
+        },
+        "apply_rewrites": {
+          "seconds": 0.0038480000002891757,
+          "calls": 1
+        },
+        "collect_shared": {
+          "seconds": 0.08668670000042766,
+          "calls": 1
+        },
+        "clear_indexes": {
+          "seconds": 1.340000017080456e-05,
+          "calls": 1
+        }
+      },
+      "scan": {
+        "chunk_bytes": 2223278,
+        "chunk_calls": 163
+      },
+      "scratch_prepared_bytes": 872448,
+      "plan_token": "e870b0694fcfd4069e1d84770cc596cc9b7c0282f151488d0ebfc255133e13df",
+      "result": {
+        "deleted": 1,
+        "orders": [
+          "BH-T-ZC"
+        ]
+      },
+      "before": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "4e780a2587fd676b34dc35fc0cac7851fa891a89b031b2b22aeb0ab333fb25d3",
+          "normal_revisions": "35cd7b027e0dbeb683ff8ee497a6e882873c1f0336714904237e1344a6deec75",
+          "normal_work_revisions": "b3a801990d88b8ec1cc40ce0de200ddb9ae9ec3c7da41af25c8ccc28cf42934f",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "069faed7ead40518555cf4e69b0baf195249050dd7542318671bd2da1dec5aea",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "after": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "229f3b3eb24f2c51c98caf0ac10c47b2f0e2c0e08723fb7e6e7c9cb19097175e",
+          "normal_revisions": "efa24bfdbfe7846a37cebf33eff1ecdbd45ee8eb05b43910ff901127b35370b1",
+          "normal_work_revisions": "ff2d7395f3abd5a843eb6f9713a75a301163d4dcd0e0f47b8ebf24e5bb9b247d",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "07eb2f3be59c88a944cfedaa680b47ee452128cbedf09e2e8842d23aacd6c682",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "progress": [
+        {
+          "seconds": 0.0009153999999398366,
+          "text": "读取订单与关联数据，核对删除范围…"
+        },
+        {
+          "seconds": 0.003939899997931207,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.004166700000496348,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.004354400000011083,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.20284949999768287,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.20428019999962999,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2043271000002278,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.20515859999795794,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.20518769999762299,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.20520529999703285,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.20522119999805,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.20526999999856343,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2054355999971449,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2189357999995991,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.27219719999993686,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2722280999987561,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2722593999969831,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2722729999986768,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.27228370000011637,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.27229479999732575,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2759530999974231,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.27948660000038217,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.27969149999989895,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2956771999997727,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.29574309999952675,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.29577659999995376,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.29580199999691104,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2958130999977584,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2958254000004672,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.29660449999937555,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2967934999978752,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3127206999997725,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.31274779999876046,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3127723999969021,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.31278649999876507,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3127977000003739,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.31280969999716035,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3139357999971253,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.31423829999766895,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3303717999988294,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.33042029999705846,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3304500999984157,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3304692999990948,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3304798999997729,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3304921999988437,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3313927999988664,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.33164299999771174,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.34778259999802685,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.34781110000039916,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.34784189999845694,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3478547999984585,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3478652999983751,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3478765999971074,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.34862169999905745,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.34880899999916437,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.365894999999,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.365930699997989,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.36596649999773945,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.36598009999943315,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.36599159999968833,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3660037999979977,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.36678119999851333,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3669774999980291,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3833952999993926,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.38342759999795817,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3834599999972852,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3834738000005018,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.38348430000041844,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3834967000002507,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.38427409999712836,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3857191999995848,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.3861661999981152,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4039788999980374,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4201026999980968,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4201340999970853,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.42645009999978356,
+          "text": "准备完成，正在取得删除写锁…"
+        },
+        {
+          "seconds": 0.42726069999844185,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.4274267999971926,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.42759749999822816,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.5119046999971033,
+          "text": "正在删除关联单据，提交前仍可取消…"
+        },
+        {
+          "seconds": 0.5167751999979373,
+          "text": "当天作业清理已写入事务，继续核对共享引用…"
+        },
+        {
+          "seconds": 0.5169526999998197,
+          "text": "核对存活订单及共享资料引用…"
+        },
+        {
+          "seconds": 0.5911022999971465,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.5954619999974966,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.5992660999982036,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6026449999990291,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6035289999999804,
+          "text": "正在最终提交，暂不可取消…"
+        },
+        {
+          "seconds": 0.6174657999981719,
+          "text": "归档已提交；可取消后续导出"
+        }
+      ]
+    },
+    {
+      "side": "after",
+      "round": 3,
+      "preview_seconds": 0.1010695000004489,
+      "execute_seconds": 0.5187093000022287,
+      "total_seconds": 0.6198656000015035,
+      "peak_rss": 62308352,
+      "rss_at_start": 48807936,
+      "io": {
+        "read_count": 12004,
+        "write_count": 2045,
+        "read_bytes": 49575037,
+        "write_bytes": 5011700,
+        "other_count": 6304,
+        "other_bytes": 61080
+      },
+      "stages": {
+        "snapshot": {
+          "seconds": 0.19100280000566272,
+          "calls": 2
+        },
+        "prepare_rewrites": {
+          "seconds": 0.2766207000022405,
+          "calls": 1
+        },
+        "apply_rewrites": {
+          "seconds": 0.003438399999140529,
+          "calls": 1
+        },
+        "collect_shared": {
+          "seconds": 0.0380059999988589,
+          "calls": 1
+        },
+        "clear_indexes": {
+          "seconds": 1.5300000086426735e-05,
+          "calls": 1
+        }
+      },
+      "scan": {
+        "chunk_bytes": 2223278,
+        "chunk_calls": 163
+      },
+      "scratch_prepared_bytes": 872448,
+      "plan_token": "e870b0694fcfd4069e1d84770cc596cc9b7c0282f151488d0ebfc255133e13df",
+      "result": {
+        "deleted": 1,
+        "orders": [
+          "BH-T-ZC"
+        ]
+      },
+      "before": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "4e780a2587fd676b34dc35fc0cac7851fa891a89b031b2b22aeb0ab333fb25d3",
+          "normal_revisions": "35cd7b027e0dbeb683ff8ee497a6e882873c1f0336714904237e1344a6deec75",
+          "normal_work_revisions": "b3a801990d88b8ec1cc40ce0de200ddb9ae9ec3c7da41af25c8ccc28cf42934f",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "069faed7ead40518555cf4e69b0baf195249050dd7542318671bd2da1dec5aea",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "after": {
+        "workbench.before-normal-orders.8cf1f56fe8444248830b70450975d327.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        },
+        "workbench.sqlite3": {
+          "jobs": "fe1a1aa52e452f98dcf50cd515ce7689c4ca7222b3c0dcfec52211bb49fb61e1",
+          "jst_runs": "ba3d2c2b0d087f1cab9c077f571ac1dec1dfab09e8d28274ed78a9d0356b29fd",
+          "normal_events": "f6d1372c7343003bb6a6992e5e6b98ccabd5b46b13b21374d1a494ab5698e223",
+          "normal_orders": "229f3b3eb24f2c51c98caf0ac10c47b2f0e2c0e08723fb7e6e7c9cb19097175e",
+          "normal_revisions": "efa24bfdbfe7846a37cebf33eff1ecdbd45ee8eb05b43910ff901127b35370b1",
+          "normal_work_revisions": "ff2d7395f3abd5a843eb6f9713a75a301163d4dcd0e0f47b8ebf24e5bb9b247d",
+          "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+          "source_files": "07eb2f3be59c88a944cfedaa680b47ee452128cbedf09e2e8842d23aacd6c682",
+          "sqlite_sequence": "3dbada7a687fee4c22930c86e8b8e8fd78aeaab9730c711803c449b797a23f16",
+          "stores": "a92ab98805f58bd20c0f418d94d911946a595ecb75a766115cb3ba9cb12dc741"
+        }
+      },
+      "progress": [
+        {
+          "seconds": 0.0008426000022154767,
+          "text": "读取订单与关联数据，核对删除范围…"
+        },
+        {
+          "seconds": 0.0029761000005237292,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.0031587000012223143,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.0033457999998063315,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.19904139999925974,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.20066700000097626,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.20073250000132248,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.20166640000024927,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.20169990000067628,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.20172810000076424,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2019631000002846,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.20304220000252826,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.20310629999949015,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.2565061000022979,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.2811780000010913,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.28121549999923445,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.28181970000150613,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2819572000007611,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.2823515000018233,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.2823772000010649,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.30541790000279434,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.30545250000068336,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3057516000008036,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.30588080000234186,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.30629250000129105,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.30631759999960195,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.33062620000055176,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3306609999999637,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3309714000024542,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.33112220000111847,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.33153020000099787,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3315586999997322,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.35393590000239783,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.35397240000020247,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.3542927000016789,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3544355000012729,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.35484310000174446,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.3548722000014095,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.37758540000140783,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.37762520000251243,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.37794810000195866,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.37809720000223024,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.3785046000011789,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.37853700000050594,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.4005397000000812,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.4005746000002546,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.40088310000282945,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.4013245000023744,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.40170470000157366,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.40173280000090017,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.4243535999994492,
+          "text": "按内容块编码及校验完整快照…"
+        },
+        {
+          "seconds": 0.42438659999970696,
+          "text": "快照编码完成：1 块，新增 1 块"
+        },
+        {
+          "seconds": 0.4246853000004194,
+          "text": "准备当天作业清理"
+        },
+        {
+          "seconds": 0.42593780000242987,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.42641270000240183,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4436537000001408,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4601744999999937,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.46021010000185925,
+          "text": "准备共享附件引用（首次需核对历史块）"
+        },
+        {
+          "seconds": 0.4671516000016709,
+          "text": "准备完成，正在取得删除写锁…"
+        },
+        {
+          "seconds": 0.4680240000016056,
+          "text": "逐块核对作业：已读取 32 块"
+        },
+        {
+          "seconds": 0.4682020000000193,
+          "text": "逐块核对作业：已读取 64 块"
+        },
+        {
+          "seconds": 0.46851230000174837,
+          "text": "核对订单范围"
+        },
+        {
+          "seconds": 0.5597314000006008,
+          "text": "正在删除关联单据，提交前仍可取消…"
+        },
+        {
+          "seconds": 0.564124600001378,
+          "text": "当天作业清理已写入事务，继续核对共享引用…"
+        },
+        {
+          "seconds": 0.5642569000010553,
+          "text": "核对存活订单及共享资料引用…"
+        },
+        {
+          "seconds": 0.5894077000011748,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.5935831999995571,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.5978336000007403,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6012284999997064,
+          "text": "核对共享附件引用"
+        },
+        {
+          "seconds": 0.6021956000004138,
+          "text": "正在最终提交，暂不可取消…"
+        },
+        {
+          "seconds": 0.6182350000017323,
+          "text": "归档已提交；可取消后续导出"
+        }
+      ]
+    }
+  ],
+  "scope": "Alternating serial runs; warm OS cache; 30ms worker RSS; Windows process I/O counts API bytes, not physical disk activity. Timed preview+delete, excludes fixture copy/signature. Exact plan token/result and ordered per-table typed signature; only jobs.revision/saved are dynamic; deletion event time frozen to 1793923200.0 on both sides, no ignored event fields; internal chunk/cache layout excluded by existing deletion oracle."
+}

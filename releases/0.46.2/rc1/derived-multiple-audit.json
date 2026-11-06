@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "settings": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\deletion_0462_final\\derived-multiple\\after-1\\settings",
+  "records": {
+    "normal_revisions": 49,
+    "normal_work_revisions": 11,
+    "jobs": 3
+  },
+  "unique_full_snapshot_scans": 60,
+  "logical_bytes_verified": 12726366695,
+  "live_chunks": 173716,
+  "seconds": 34.09468559999732,
+  "scope": "Read-only; original Reader verifies raw chunk size/hash and complete original JSON stream; exact reachable chunk set; no maintenance-cache shortcut"
+}

@@ -1,0 +1,14 @@
+F........
+======================================================================
+FAIL: test_cached_block_checks_each_reference_length_before_discard (test_deletion_stream.DeltaReferences.test_cached_block_checks_each_reference_length_before_discard)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_deletion_stream.py", line 59, in test_cached_block_checks_each_reference_length_before_discard
+    with self.assertRaisesRegex(ValueError,'校验失败'):m.execute(self.path,plan)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.398s
+
+FAILED (failures=1)

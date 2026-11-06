@@ -1,0 +1,9 @@
+{
+  "source_commit": "1a4842a50c80bdc59b4482bcfe77d38faa9b86c6",
+  "reason": "cached reference length was not checked after metadata pre-read; new negative test exposed it",
+  "prior_qa": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\deletion_0462",
+  "active_worker_finished": true,
+  "next_worker_refused_before_opening_database": true,
+  "full_comparison_restart": true,
+  "never_packaged": true
+}

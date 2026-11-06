@@ -1,0 +1,1 @@
+{"passed": true, "frozen_exe": true, "seconds": 12.632368599999609}

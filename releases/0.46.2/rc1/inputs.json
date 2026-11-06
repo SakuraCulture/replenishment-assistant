@@ -1,0 +1,7 @@
+{
+  "derived": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\current_storage_0461\\current-fixture",
+  "derived_warm": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\current_storage_0461_rc2\\warm.sqlite3",
+  "small": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\current_storage_0461\\synthetic\\settings",
+  "native": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\deletion_0462\\native\\settings",
+  "native_warm": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\deletion_0462\\native-warm.sqlite3"
+}

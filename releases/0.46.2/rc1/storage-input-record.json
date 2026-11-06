@@ -1,0 +1,11 @@
+{
+  "fixture": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\business_090\\normal\\payload.json",
+  "sha256": "3149b75ff99db27326efdc72bb461be489947dbfb89fa6455092fbc85e261ef6",
+  "fixture_type": "job JSON",
+  "schema": 1,
+  "model_version": "0.3.1-rules",
+  "results_count": 2,
+  "failed_attempt": "exe-storage",
+  "accepted_attempt": "exe-storage-r2",
+  "first_failure_before_actions": true
+}

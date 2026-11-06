@@ -1,0 +1,16 @@
+Measuring derived-warm
+{"case": "derived-warm", "passed": true, "seconds": {"before": 36.883085699999356, "after": 26.50376419999884}}
+Measuring native-warm
+{"case": "native-warm", "passed": true, "seconds": {"before": 12.807799400001386, "after": 6.224699200000032}}
+Measuring derived-cold
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tools\run_deletion_0462.py", line 37, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tools\run_deletion_0462.py", line 28, in main
+    print('Measuring '+name,flush=True);run(cmd,QA/(name+'-console.txt'))
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tools\run_deletion_0462.py", line 15, in run
+    if code:raise subprocess.CalledProcessError(code,cmd)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+subprocess.CalledProcessError: Command '['D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe', 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\tools\\verify_deletion_load.py', 'run', '--qa-root', 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\qa\\deletion_0462', '--fixture', 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\qa\\current_storage_0461\\current-fixture', '--output', 'D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\qa\\deletion_0462\\derived-cold', '--rounds', '2', '--parents', '1']' returned non-zero exit status 1.
