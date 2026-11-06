@@ -260,10 +260,11 @@ if version['version']=='0.44.0':
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
     shutil.copy2(root/'docs'/names[0],dest/'使用说明.txt')
 
-if version['version']=='0.45.0':
+if version['version'] in {'0.45.0','0.45.1'}:
     (dest/'docs').mkdir(exist_ok=True)
     names=['0.45.0货盘结构分析.md','0.44.0预计可售天数.md','0.39.0业务使用指南.md','0.40.0AI口径与本机连接.md',
            '0.42.0参数批量快捷设置.md','0.43.0准入现状查询.md','0.43.1批量解除拒收.md']
+    if version['version']=='0.45.1':names.insert(0,'0.45.1删除负载优化.md')
     for name in names:shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
     shutil.copy2(root/'docs'/names[0],dest/'使用说明.txt')

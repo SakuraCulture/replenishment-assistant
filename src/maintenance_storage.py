@@ -3,7 +3,7 @@
 Business JSON and the existing chunk format are unchanged. Scratch chunks live
 on disk until CAS succeeds; no full workday object is materialized for v2 data.
 """
-import hashlib,re,sqlite3,zlib
+import codecs,hashlib,re,sqlite3,zlib
 from collections import OrderedDict
 import storage_chunks as chunks
 import work_repository as wr
@@ -15,13 +15,24 @@ STORE_MAPS=('states','results','store_presets','store_ui','overrides','default_b
             'preissue_drafts','new_product_bases','_calculation_settings')
 HEX_RUN=re.compile(rb'[0-9a-f]{64,}')
 
+class EvidenceDigest:
+    """Same canonical JSON list digest, without retaining every database payload."""
+    def __init__(self):self.sha=hashlib.sha256(b'[');self.count=0
+    def append(self,value):
+        if self.count:self.sha.update(b', ')
+        self.sha.update(wr.dumps(value).encode());self.count+=1
+    def extend(self,values):
+        for value in values:self.append(value)
+    def hexdigest(self):
+        h=self.sha.copy();h.update(b']');return h.hexdigest()
+
 def hashes(raw,cancel=None):
     """Same lowercase 64-hex boundaries as the legacy scanner, bounded windows."""
     if isinstance(raw,str):raw=raw.encode('utf-8')
-    raw.decode('utf-8')  # retain invalid-text rejection; do not retain the string
-    found=set();width=262144
+    decoder=codecs.getincrementaldecoder('utf-8')();found=set();width=262144
     for start in range(0,len(raw),width):
         checkpoint(cancel)
+        decoder.decode(raw[start:start+width],final=start+width>=len(raw))
         # One char before and 64+one after preserve runs crossing window edges.
         segment=raw[max(0,start-1):min(len(raw),start+width+65)]
         for match in HEX_RUN.finditer(segment):
@@ -29,6 +40,26 @@ def hashes(raw,cancel=None):
             if start<=absolute<start+width and match.end()-match.start()==64:
                 found.add(match.group().decode('ascii'))
     return sorted(found)
+
+def contains_text(stream,needles,cancel=None):
+    """Exact Unicode substring semantics; validate all UTF-8 even after a match."""
+    decoder=codecs.getincrementaldecoder('utf-8')();tail='';found=False
+    overlap=max((len(n) for n in needles),default=1)-1
+    while True:
+        checkpoint(cancel);raw=stream.read(262144);text=decoder.decode(raw,final=not raw)
+        if not found:
+            combined=tail+text;found=any(n in combined for n in needles)
+            tail=combined[-overlap:] if overlap else ''
+        if not raw:return found
+
+def publish_cache(db,scratch):
+    """Do not rewrite identical historical reference caches on every deletion."""
+    cache_schema(db)
+    for table,columns in (('maintenance_chunk_refs',('compressed_sha','refs','checksum')),('maintenance_legacy_refs',('info','checksum'))):
+        values=','.join('?' for _ in range(len(columns)+1))
+        update=','.join(f'{c}=excluded.{c}' for c in columns)
+        different=' OR '.join(f'{table}.{c} IS NOT excluded.{c}' for c in columns)
+        db.executemany(f'INSERT INTO {table} VALUES({values}) ON CONFLICT(hash) DO UPDATE SET {update} WHERE {different}',scratch.execute(f'SELECT * FROM {table}'))
 
 def cache_schema(db):
     db.execute('CREATE TABLE IF NOT EXISTS maintenance_chunk_refs(hash TEXT PRIMARY KEY, compressed_sha TEXT NOT NULL, refs TEXT NOT NULL, checksum TEXT NOT NULL)')
@@ -107,12 +138,13 @@ class Editor:
     def __init__(self,source,scratch,progress=lambda _:None,cancel=None):
         self.source=source;self.scratch=scratch;self.progress=progress;self.cancel=cancel
         chunks.schema(scratch);cache_schema(scratch)
-        self.cache=OrderedDict();self.cache_size=0;self.reads=0
+        self.cache=OrderedDict();self.cache_size=0;self.reads=0;self.scratch_hashes=chunks.known(scratch)
     def raw(self,node):
         checkpoint(self.cancel);h=node[1]
         if h in self.cache:self.cache.move_to_end(h);return self.cache[h]
-        row=self.scratch.execute('SELECT size,data FROM snapshot_chunks WHERE hash=?',(h,)).fetchone()
-        if row is None:row=self.source.execute('SELECT size,data FROM snapshot_chunks WHERE hash=?',(h,)).fetchone()
+        first,second=(self.scratch,self.source) if h in self.scratch_hashes else (self.source,self.scratch)
+        row=first.execute('SELECT size,data FROM snapshot_chunks WHERE hash=?',(h,)).fetchone()
+        if row is None:row=second.execute('SELECT size,data FROM snapshot_chunks WHERE hash=?',(h,)).fetchone()
         if row is None:raise ValueError('快照内容块缺失：'+h)
         raw=zlib.decompress(row[1]);checkpoint(self.cancel)
         if len(raw)!=row[0] or len(raw)!=node[2] or hashlib.sha256(raw).hexdigest()!=h:raise ValueError('快照内容块校验失败：'+h)
@@ -147,10 +179,12 @@ class Editor:
         prepared=chunks.prepare(value,progress=report)
         for h,(size,raw) in prepared.chunks.items():
             checkpoint(self.cancel);self.scratch.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',(h,size,raw))
+            self.scratch_hashes.add(h)
         return prepared.tree
     def block(self,value):
         raw=wr.dumps(value).encode();h=hashlib.sha256(raw).hexdigest();checkpoint(self.cancel)
         self.scratch.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',(h,len(raw),zlib.compress(raw)))
+        self.scratch_hashes.add(h)
         return ['ref',h,len(raw)]
     def get(self,node,path,default=None):
         if not path:return self.value(node)
@@ -251,15 +285,18 @@ class Editor:
         except StopIteration:pass
         else:raise ValueError('旧作业快照包含多余数据')
         if expected and stream.sha.hexdigest()!=expected:raise ValueError('作业快照校验失败')
+        self.legacy_digest=stream.sha.hexdigest()
         return tree
     def rewrite(self,blob,codes,strip_legacy,expected=None):
         manifest=chunks.manifest(blob)
         if manifest is None:
             original=self.legacy_tree(blob,expected)
+            self.original_digest=self.legacy_digest
         else:
             if expected and manifest['digest']!=expected:raise ValueError('作业快照与索引不一致')
             original=manifest['tree']
             if self.checksum(original)!=(manifest['digest'],manifest['size']):raise ValueError('完整快照校验失败')
+            self.original_digest=manifest['digest']
         tree=original
         for key in STORE_MAPS:tree=self.update(tree,(key,),lambda n:self.drop_keys(n,codes))
         for path in (('loaded','stores'),('loaded','blocked')):
