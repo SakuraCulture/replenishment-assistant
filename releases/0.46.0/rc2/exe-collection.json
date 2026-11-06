@@ -1,0 +1,20 @@
+{
+  "frozen_exe": true,
+  "live_platform": false,
+  "passed": true,
+  "checks": [
+    "结束预览取消不修改记录；真实弹框默认取消",
+    "结束当前批次及同门店旧失败记录，底层占用释放",
+    "删除预览取消/确认，列表立即刷新",
+    "成功采集记录可删除，原采用文件仍在",
+    "同门店新建成功并进入调度；离线夹具无浏览器绑定，在连接前按预期停止",
+    "关闭重开，结束和删除持久保存",
+    "真实草稿/签发库完整逻辑行、采用清单和原文件哈希不变"
+  ],
+  "source_commit": "aaec40e494ec4326450428d975409d7948f6e089",
+  "shared_component_closed": true,
+  "heartbeat_ticks": 184,
+  "max_heartbeat_gap_seconds": 0.14000000000032742,
+  "process_exit_code": 0,
+  "accepted": true
+}

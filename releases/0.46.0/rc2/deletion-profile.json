@@ -1,0 +1,28 @@
+{
+  "source_scope": "0.45.2 deletion implementation; function timing instrumentation only",
+  "timings": {
+    "legacy_info": {
+      "seconds": 146.92787150000277,
+      "calls": 28,
+      "compressed_bytes": 389894396,
+      "cache_misses": 10
+    },
+    "references_for": {
+      "seconds": 69.1599291000066,
+      "calls": 16222,
+      "compressed_bytes": 501559007,
+      "cache_misses": 16222
+    }
+  },
+  "frozen_input_unchanged": true,
+  "input_hashes": {
+    "archive_index.sqlite3": "f4c7248741c53130ac0575dd5b1a0526226eecf6cbeb2fbd6f5877bd9951adf6",
+    "lifecycle_index.sqlite3": "c834fdc8a2e30ffcabc72bc14200d0df7b5be372d4af2f1e6f835b5cfc6d8b56",
+    "must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "new_product_focus.json": "6036b771c7dea27592746b548b43c046fee59c0be1627023b105ab6e5123fa6f",
+    "workbench.sqlite3": "9ea73a0d219e18ad4f5bf800125e0975b80d802e977432011922dd8ce1ca6535",
+    "aoxiang\\workflows.sqlite3": "cd7335807a2c750aab9a2421f98365e305a60b5d46ec3305533fbdef9487c58c",
+    "warehouse_catalogs\\山东仓.json": "6d80e58ec2e62c4da16bedeecc1c16a6dae3bbd520b1a5c987bd30c4705f5052",
+    "warehouse_catalogs\\河北仓.json": "642b054425ba90ce50b6944ca994a2adfd007ef9348359a5ef5e9072025e968c"
+  }
+}

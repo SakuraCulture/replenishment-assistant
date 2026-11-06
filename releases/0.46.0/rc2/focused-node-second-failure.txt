@@ -1,0 +1,106 @@
+✔ 结束当前受阻任务同时释放同门店旧失败；新批次可正常建立，文件和成功项不变 (95.8858ms)
+✔ 结束与删除回执可重复查询；删除防重标识阻止旧命令重放 (40.5359ms)
+✔ 未核清状态不能结束或释放：INTENT_RECORDED (36.5079ms)
+✔ 未核清状态不能结束或释放：SUBMITTING (41.9282ms)
+✔ 未核清状态不能结束或释放：SUBMISSION_UNKNOWN (41.7074ms)
+✔ 未核清状态不能结束或释放：WRONG_SCOPE_ACCEPTED (39.2661ms)
+✖ 结束本地采集保留已受理原任务，新批次只接续不重新导出：ACCEPTED (42.4362ms)
+✖ 结束本地采集保留已受理原任务，新批次只接续不重新导出：RUNNING (47.1622ms)
+✔ 已受理状态但身份不确定仍禁止结束：{"taskId":null} (43.9111ms)
+✔ 已受理状态但身份不确定仍禁止结束：{"additionalTaskIds":["another-task"]} (37.1683ms)
+✔ 下载字段不足不能猜测平台已完成 (32.6498ms)
+✔ 预览后版本变化或重新运行时拒绝；事务写入失败完整回滚 (42.2778ms)
+✔ 只结束涉及门店；同旧批次其他失败门店仍可重跑，原顺序不变 (38.2742ms)
+✔ 原作业结束后不能从旧 run 恢复，旧回执不复活占用 (43.0056ms)
+✔ 成功记录删除保留原件及日资产；未结束记录不能删除 (36.2788ms)
+✔ 维护协议严格验证动作与预览凭据 (0.4368ms)
+✔ 显式单项重跑保留成功文件和原任务号，旧预览与重复点击被拒绝 (85.9017ms)
+✔ 平台受理不明不可用重跑绕过核对 (23.3864ms)
+✔ 浏览器任务严格串行，单店普通失败保留原顺序并继续其他店 (112.5463ms)
+✔ 先提交全部门店，慢首店不阻塞后店完成；结果保留所选顺序 (32.2997ms)
+✔ 流水线未知受理立即停后续提交，不因已受理数量相等就取最新任务 (27.0827ms)
+✔ 首店任务暂未找到不阻塞后店多轮收取，继续仍使用原任务身份 (54.4878ms)
+✔ 流水线等待可立即暂停，继续保持run和task身份 (40.9671ms)
+✔ 读取中暂停响应立即返回，等待当前动作安全结束，继续只执行剩余店 (30.7999ms)
+✔ 暂停与未知受理同时出现时保留待核，不允许通过继续按钮再次提交 (20.4391ms)
+✔ 登录等全局错误中断，显式继续复用原run；旧取消状态不污染继续 (30.1725ms)
+✔ 关闭停止排队，不强杀当前动作，重开恢复不会自动运行 (25.4107ms)
+✔ 同一身份配置连续门店复用连接，更换Profile先关闭原连接，更新取消信号 (0.3439ms)
+✔ 连接等待登录后再次继续使用原执行器，避免新子进程被旧runner锁阻断 (2.9282ms)
+✔ 按所选仓自动准备、核验和保存；两仓绑定独立且重复配置不改变版本 (43.8957ms)
+✔ 账号不同或两个仓使用同一身份时不会自动覆盖绑定 (33.1289ms)
+✔ 待收取任务可复用原绑定；自动迁移新目录仍受待处理任务保护 (35.2889ms)
+✔ 取消登录等待不保存；自动保存完成前不返回成功 (61.1561ms)
+✔ 自动目录可复用且按仓隔离，启动前阻止正常浏览器和其他仓目录 (38.2991ms)
+✔ restart keeps selected dedicated profile and exposes only an ephemeral loopback endpoint (0.934ms)
+✔ ordinary browser bindings cannot use dedicated startup (0.2902ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 34
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 933.8537
+
+✖ failing tests:
+
+test at components\aoxiang\test\machine-maintenance.test.mjs:42:43
+✖ 结束本地采集保留已受理原任务，新批次只接续不重新导出：ACCEPTED (42.4362ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    Comparison {
+  +   code: 'COLLECTION_BUSY'
+  -   code: 'COLLECTION_ALREADY_ENDED'
+    }
+  
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/machine-maintenance.test.mjs:54:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: 先点“停止后续取数”，等待当前动作安全暂停后，再结束或删除采集记录
+        at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)
+        at CollectionMaintenance.idle (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/machine-maintenance.mjs:16:7)
+        at CollectionMaintenance.preview (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/machine-maintenance.mjs:20:10)
+        at assert.throws.code (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/machine-maintenance.test.mjs:54:35)
+        at getActual (node:assert:611:5)
+        at strict.throws (node:assert:759:24)
+        at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/machine-maintenance.test.mjs:54:10)
+        at async Test.run (node:internal/test_runner/test:1409:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:974:7),
+    expected: { code: 'COLLECTION_ALREADY_ENDED' },
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at components\aoxiang\test\machine-maintenance.test.mjs:42:43
+✖ 结束本地采集保留已受理原任务，新批次只接续不重新导出：RUNNING (47.1622ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    Comparison {
+  +   code: 'COLLECTION_BUSY'
+  -   code: 'COLLECTION_ALREADY_ENDED'
+    }
+  
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/machine-maintenance.test.mjs:54:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: 先点“停止后续取数”，等待当前动作安全暂停后，再结束或删除采集记录
+        at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)
+        at CollectionMaintenance.idle (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/machine-maintenance.mjs:16:7)
+        at CollectionMaintenance.preview (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/machine-maintenance.mjs:20:10)
+        at assert.throws.code (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/machine-maintenance.test.mjs:54:35)
+        at getActual (node:assert:611:5)
+        at strict.throws (node:assert:759:24)
+        at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/machine-maintenance.test.mjs:54:10)
+        at async Test.run (node:internal/test_runner/test:1409:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:974:7),
+    expected: { code: 'COLLECTION_ALREADY_ENDED' },
+    operator: 'throws',
+    diff: 'simple'
+  }
