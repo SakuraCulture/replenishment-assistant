@@ -1,0 +1,398 @@
+{
+  "passed": true,
+  "baseline": "fb4a023916dd7c21ffbea8c1c17d17f42291c91d",
+  "differences": 0,
+  "original_excel_cells_compared": 22311,
+  "allowed_changes": [
+    "report.coverage (new)",
+    "Excel appended AL:AP and new coverage sheets"
+  ],
+  "dynamic_exclusions": [
+    "report.as_of",
+    "report.history.as_of"
+  ],
+  "strict_types_and_order": true,
+  "runs": {
+    "rich": {
+      "before": [
+        {
+          "query": {
+            "seconds": 0.02739020000444725,
+            "peak_sampled_rss_mb": 45.94921875
+          },
+          "export": {
+            "seconds": 0.1235647999565117,
+            "peak_sampled_rss_mb": 46.78515625
+          },
+          "rows": 4,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\rich\\before-0.xlsx",
+            "sha256": "792d2179cd29e9c0ba2d2c52dc1fdee368ef17b914931dbaffa320905f480b4e",
+            "snapshot_id": "427756b2114f86f3a94867c5d4a44824c4f355007138415607380e81568e0567",
+            "rows": 4,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗"
+            ]
+          }
+        },
+        {
+          "query": {
+            "seconds": 0.009216699982061982,
+            "peak_sampled_rss_mb": 44.453125
+          },
+          "export": {
+            "seconds": 0.12665130000095814,
+            "peak_sampled_rss_mb": 45.4375
+          },
+          "rows": 4,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\rich\\before-1.xlsx",
+            "sha256": "87fc5d7f8c4a56b0f6998e9a714403d39fba38d8aa8611632a4af8302e879938",
+            "snapshot_id": "427756b2114f86f3a94867c5d4a44824c4f355007138415607380e81568e0567",
+            "rows": 4,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗"
+            ]
+          }
+        },
+        {
+          "query": {
+            "seconds": 0.008965299988631159,
+            "peak_sampled_rss_mb": 44.40625
+          },
+          "export": {
+            "seconds": 0.13977970002451912,
+            "peak_sampled_rss_mb": 45.65234375
+          },
+          "rows": 4,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\rich\\before-2.xlsx",
+            "sha256": "6b72d01f048ab3ad82e55d77340c95cbd0a7a9ded75cb764bdd38537a50f34d5",
+            "snapshot_id": "427756b2114f86f3a94867c5d4a44824c4f355007138415607380e81568e0567",
+            "rows": 4,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗"
+            ]
+          }
+        }
+      ],
+      "after": [
+        {
+          "query": {
+            "seconds": 0.013617899967357516,
+            "peak_sampled_rss_mb": 44.5859375
+          },
+          "export": {
+            "seconds": 0.16378509998321533,
+            "peak_sampled_rss_mb": 46.20703125
+          },
+          "rows": 4,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\rich\\after-0.xlsx",
+            "sha256": "e2186d3fc43bb2c9c5301914b68f60d1ffcc2f34883feb18aff05cf4caf2b0e8",
+            "snapshot_id": "427756b2114f86f3a94867c5d4a44824c4f355007138415607380e81568e0567",
+            "rows": 4,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗",
+              "门店逐轮天数",
+              "可售天数口径"
+            ],
+            "coverage_version": "coverage-1"
+          }
+        },
+        {
+          "query": {
+            "seconds": 0.013174300023820251,
+            "peak_sampled_rss_mb": 44.3359375
+          },
+          "export": {
+            "seconds": 0.16247340000700206,
+            "peak_sampled_rss_mb": 45.75390625
+          },
+          "rows": 4,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\rich\\after-1.xlsx",
+            "sha256": "a59a8f27291f515d9f847767a87ff5eeb47f374c15d08b049ec850ef2a2ee19d",
+            "snapshot_id": "427756b2114f86f3a94867c5d4a44824c4f355007138415607380e81568e0567",
+            "rows": 4,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗",
+              "门店逐轮天数",
+              "可售天数口径"
+            ],
+            "coverage_version": "coverage-1"
+          }
+        },
+        {
+          "query": {
+            "seconds": 0.011522700020577759,
+            "peak_sampled_rss_mb": 44.5
+          },
+          "export": {
+            "seconds": 0.15360949997557327,
+            "peak_sampled_rss_mb": 45.8515625
+          },
+          "rows": 4,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\rich\\after-2.xlsx",
+            "sha256": "6ce9080da55f5f5831eb28c5aa2e46e85d3373425d8b123aee7436fadd2eab50",
+            "snapshot_id": "427756b2114f86f3a94867c5d4a44824c4f355007138415607380e81568e0567",
+            "rows": 4,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗",
+              "门店逐轮天数",
+              "可售天数口径"
+            ],
+            "coverage_version": "coverage-1"
+          }
+        }
+      ]
+    },
+    "large": {
+      "before": [
+        {
+          "query": {
+            "seconds": 0.5556944999843836,
+            "peak_sampled_rss_mb": 79.05859375
+          },
+          "export": {
+            "seconds": 1.5043116000015289,
+            "peak_sampled_rss_mb": 113.79296875
+          },
+          "rows": 6000,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\large\\before-0.xlsx",
+            "sha256": "2f70c8d23b8f27f84e55ddb5c075c199daf89420901c97db17d21f6fa0aba678",
+            "snapshot_id": "ca236d3e0c168cd6703661d23fde13faadbef3ff25a18895f5b95913ebe41f96",
+            "rows": 5796,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗"
+            ]
+          }
+        },
+        {
+          "query": {
+            "seconds": 0.5649032999644987,
+            "peak_sampled_rss_mb": 81.13671875
+          },
+          "export": {
+            "seconds": 1.4885891000158153,
+            "peak_sampled_rss_mb": 115.23046875
+          },
+          "rows": 6000,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\large\\before-1.xlsx",
+            "sha256": "fe99b2406f795a7bf48bcc4f549bafcaa270f948432f0ff07ac3787754d3ab84",
+            "snapshot_id": "ca236d3e0c168cd6703661d23fde13faadbef3ff25a18895f5b95913ebe41f96",
+            "rows": 5796,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗"
+            ]
+          }
+        },
+        {
+          "query": {
+            "seconds": 0.5555311999632977,
+            "peak_sampled_rss_mb": 80.75
+          },
+          "export": {
+            "seconds": 1.4974815999739803,
+            "peak_sampled_rss_mb": 117.015625
+          },
+          "rows": 6000,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\large\\before-2.xlsx",
+            "sha256": "de1fcb6da61594c8cf88f12aea6f4697754adf5ed58299029b33a3aaf829b1d0",
+            "snapshot_id": "ca236d3e0c168cd6703661d23fde13faadbef3ff25a18895f5b95913ebe41f96",
+            "rows": 5796,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗"
+            ]
+          }
+        }
+      ],
+      "after": [
+        {
+          "query": {
+            "seconds": 0.8047275000135414,
+            "peak_sampled_rss_mb": 105.609375
+          },
+          "export": {
+            "seconds": 2.5120293999789283,
+            "peak_sampled_rss_mb": 137.89453125
+          },
+          "rows": 6000,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\large\\after-0.xlsx",
+            "sha256": "0921888c386ab4a90e14f361cf635eaadce90407ddd163a32c1aa43ecf12884c",
+            "snapshot_id": "ca236d3e0c168cd6703661d23fde13faadbef3ff25a18895f5b95913ebe41f96",
+            "rows": 5796,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗",
+              "门店逐轮天数",
+              "可售天数口径"
+            ],
+            "coverage_version": "coverage-1"
+          }
+        },
+        {
+          "query": {
+            "seconds": 0.8059703999897465,
+            "peak_sampled_rss_mb": 105.98046875
+          },
+          "export": {
+            "seconds": 2.443201999994926,
+            "peak_sampled_rss_mb": 138.4296875
+          },
+          "rows": 6000,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\large\\after-1.xlsx",
+            "sha256": "2fa32303bd28fea0ba0d59576a22e08e4a229b2a88c7a3c34f7ff38b1c19df3b",
+            "snapshot_id": "ca236d3e0c168cd6703661d23fde13faadbef3ff25a18895f5b95913ebe41f96",
+            "rows": 5796,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗",
+              "门店逐轮天数",
+              "可售天数口径"
+            ],
+            "coverage_version": "coverage-1"
+          }
+        },
+        {
+          "query": {
+            "seconds": 0.8566252999589778,
+            "peak_sampled_rss_mb": 105.85546875
+          },
+          "export": {
+            "seconds": 2.432581100030802,
+            "peak_sampled_rss_mb": 137.82421875
+          },
+          "rows": 6000,
+          "database_unchanged": true,
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\large\\after-2.xlsx",
+            "sha256": "e8df1b3d244de2544778218d892c9fcf7f7e9b6ef5867d31de045fc75f13a0f5",
+            "snapshot_id": "ca236d3e0c168cd6703661d23fde13faadbef3ff25a18895f5b95913ebe41f96",
+            "rows": 5796,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗",
+              "门店逐轮天数",
+              "可售天数口径"
+            ],
+            "coverage_version": "coverage-1"
+          }
+        }
+      ]
+    }
+  },
+  "performance": {
+    "rich": {
+      "before": {
+        "query": {
+          "median": 0.009216699982061982,
+          "min": 0.008965299988631159,
+          "max": 0.02739020000444725,
+          "sampled_peak_mb": 45.94921875
+        },
+        "export": {
+          "median": 0.12665130000095814,
+          "min": 0.1235647999565117,
+          "max": 0.13977970002451912,
+          "sampled_peak_mb": 46.78515625
+        }
+      },
+      "after": {
+        "query": {
+          "median": 0.013174300023820251,
+          "min": 0.011522700020577759,
+          "max": 0.013617899967357516,
+          "sampled_peak_mb": 44.5859375
+        },
+        "export": {
+          "median": 0.16247340000700206,
+          "min": 0.15360949997557327,
+          "max": 0.16378509998321533,
+          "sampled_peak_mb": 46.20703125
+        }
+      }
+    },
+    "large": {
+      "before": {
+        "query": {
+          "median": 0.5556944999843836,
+          "min": 0.5555311999632977,
+          "max": 0.5649032999644987,
+          "sampled_peak_mb": 81.13671875
+        },
+        "export": {
+          "median": 1.4974815999739803,
+          "min": 1.4885891000158153,
+          "max": 1.5043116000015289,
+          "sampled_peak_mb": 117.015625
+        }
+      },
+      "after": {
+        "query": {
+          "median": 0.8059703999897465,
+          "min": 0.8047275000135414,
+          "max": 0.8566252999589778,
+          "sampled_peak_mb": 105.98046875
+        },
+        "export": {
+          "median": 2.443201999994926,
+          "min": 2.432581100030802,
+          "max": 2.5120293999789283,
+          "sampled_peak_mb": 138.4296875
+        }
+      }
+    }
+  },
+  "limits": "Synthetic rich lifecycle and 12-store 6000-row inputs. Same Python/environment, serial AB/BA/AB, warm OS file cache. Query includes coverage projection; export includes freshness checks and save. RSS samples main process every30ms; includes interpreter, may miss short peaks. Original compact 37 columns compared including styles/comments; expanded filter range and new sheets allowed."
+}

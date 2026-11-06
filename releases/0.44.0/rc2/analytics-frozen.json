@@ -1,0 +1,12 @@
+{
+  "baseline": "fb4a023916dd7c21ffbea8c1c17d17f42291c91d",
+  "archive_sha256": "3bbbcc4748127919842b6a5405da24417bd36b87a649eac9d924cb7fad18bb1e",
+  "databases": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\rich\\settings\\workbench.sqlite3": "babe4344b5493675b554c575717eae4ee4894f0fab2768e3138c275db93d5f01",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\analytics_comparison_2\\large\\settings\\workbench.sqlite3": "4dee8fa9380ceb08663ffe217f42fce3a0ca80d6b84bbf26db6bde0346cd007a"
+  },
+  "protected": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.43.1_rc1\\补货助手\\补货助手.exe": "1392844ca1f2a16121217ae40f1b06fc99c75576a9ecf930ed5c050bf02caf1b",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.43.1_rc1\\补货助手_0.43.1_rc.zip": "54e9bf8fcd784c089f4597f88e99e9abeea3a27c1c57d740511062a3b0e12cad"
+  }
+}

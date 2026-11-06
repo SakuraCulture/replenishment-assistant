@@ -1,0 +1,19 @@
+test_common_orders_and_incomplete_order_not_partial (test_coverage_metrics.CoverageTests.test_common_orders_and_incomplete_order_not_partial) ... ok
+test_cross_round_latest_only (test_coverage_metrics.CoverageTests.test_cross_round_latest_only) ... ok
+test_cross_warehouse_conflict_not_guessed (test_coverage_metrics.CoverageTests.test_cross_warehouse_conflict_not_guessed) ... ok
+test_cross_warehouse_denominator_once (test_coverage_metrics.CoverageTests.test_cross_warehouse_denominator_once) ... ok
+test_duplicate_records_reject_and_cancel (test_coverage_metrics.CoverageTests.test_duplicate_records_reject_and_cancel) ... ok
+test_exclusions_mandatory_groups_and_no_mutation (test_coverage_metrics.CoverageTests.test_exclusions_mandatory_groups_and_no_mutation) ... ok
+test_extended_excel_keeps_first37_cells_and_styles (test_coverage_metrics.CoverageTests.test_extended_excel_keeps_first37_cells_and_styles) ... ok
+test_frozen_formula_and_each_stage (test_coverage_metrics.CoverageTests.test_frozen_formula_and_each_stage) ... ok
+test_no_forecast_missing_invalid_and_new (test_coverage_metrics.CoverageTests.test_no_forecast_missing_invalid_and_new) ... ok
+test_no_monthly_substitution (test_coverage_metrics.CoverageTests.test_no_monthly_substitution) ... ok
+test_price_does_not_block_sku_but_blocks_weighting (test_coverage_metrics.CoverageTests.test_price_does_not_block_sku_but_blocks_weighting) ... ok
+test_stock_negative_not_clamped_and_unit_required (test_coverage_metrics.CoverageTests.test_stock_negative_not_clamped_and_unit_required) ... ok
+test_weighted_different_units_and_zero_keeps_denominator (test_coverage_metrics.CoverageTests.test_weighted_different_units_and_zero_keeps_denominator) ... ok
+test_zero_is_not_missing (test_coverage_metrics.CoverageTests.test_zero_is_not_missing) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.249s
+
+OK

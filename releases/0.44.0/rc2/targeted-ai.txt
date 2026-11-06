@@ -1,0 +1,11 @@
+test_ai_and_manual_workbooks_equal (test_automation_analytics.AnalyticsApiTests.test_ai_and_manual_workbooks_equal) ... ok
+test_async_paging_and_idempotent_query (test_automation_analytics.AnalyticsApiTests.test_async_paging_and_idempotent_query) ... ok
+test_blank_category_from_native_query_is_valid (test_automation_analytics.AnalyticsApiTests.test_blank_category_from_native_query_is_valid) ... ok
+test_closed_socket_cleanup_is_idempotent (test_automation_analytics.AnalyticsApiTests.test_closed_socket_cleanup_is_idempotent) ... ok
+test_coverage_api_matches_native_and_excel (test_automation_analytics.AnalyticsApiTests.test_coverage_api_matches_native_and_excel) ... ok
+test_stale_no_page_or_export_and_permissions (test_automation_analytics.AnalyticsApiTests.test_stale_no_page_or_export_and_permissions) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 8.252s
+
+OK

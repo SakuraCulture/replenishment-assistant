@@ -21,7 +21,7 @@ def main():
     regression=(qa/'regression.txt').read_text('utf-8-sig')
     m=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\s*$',regression)
     if not m or int(m[1])<988:raise ValueError('Full regression missing')
-    for name in ('targeted-coverage','targeted-ai','targeted-analytics'):
+    for name in ('final-targeted-coverage','final-targeted-ai','final-targeted-analytics'):
         if not re.search(r'\sOK\s*$',(qa/(name+'.txt')).read_text('utf-8-sig')):raise ValueError(name)
     if not business['passed'] or business['differences'] or business['additional_ignored_fields']:raise ValueError('Business differs')
     if not analytics['passed'] or analytics['differences']:raise ValueError('Analytics differs')
@@ -36,8 +36,8 @@ def main():
     release.mkdir(parents=True,exist_ok=False)
     copies={'business_comparison/equivalence.json':'business-equivalence.json','business_comparison/frozen.json':'business-frozen.json',
             'analytics_comparison_2/report.json':'analytics-report.json','analytics_comparison_2/frozen.json':'analytics-frozen.json',
-            'regression.txt':'regression.txt','targeted-coverage.txt':'targeted-coverage.txt','targeted-ai.txt':'targeted-ai.txt',
-            'targeted-analytics.txt':'targeted-analytics.txt','exe-ui-rc2/report.json':'exe-report.json','exe-ui-rc2/mcp-calls.json':'mcp-calls.json'}
+            'regression.txt':'regression.txt','final-targeted-coverage.txt':'targeted-coverage.txt','final-targeted-ai.txt':'targeted-ai.txt',
+            'final-targeted-analytics.txt':'targeted-analytics.txt','exe-ui-rc2/report.json':'exe-report.json','exe-ui-rc2/mcp-calls.json':'mcp-calls.json'}
     for source,target in copies.items():shutil.copyfile(qa/source,release/target)
     shutil.copyfile(ROOT/'build_0.44.0_rc2/build_info.json',release/'build_info.json')
     for p in (qa/'exe-ui-rc2').glob('0*.png'):shutil.copyfile(p,release/p.name)
@@ -75,7 +75,7 @@ def main():
 
 ## 独立验证
 
-- 全量{m[1]}项回归通过（{m[2]}秒）；最后改动后另跑覆盖指标14项、AI6项、分析16项定向检查。
+- 主体实现全量{m[1]}项回归通过（{m[2]}秒，rc1布局）；rc2只调整展示文字/列宽，最后改动后另跑覆盖指标14项、AI6项、分析16项定向检查。
 - 固定基线38份原业务计算/Excel对照差异0，含14,244行真实样本和既有组合场景；保持原精确时间/进程/构建信息白名单，没有增加忽略业务字段。输入及0.43.1 EXE/ZIP哈希未变。
 - 独立两组冻结合成分析库，旧新AB/BA/AB串行3轮。原报告逐字段值、类型、字典/记录顺序和snapshot_id相同；旧报表{analytics['original_excel_cells_compared']}个单元格的值、类型、数字格式、字体、填色、边框、对齐、保护和原批注相同；原工作表及37列顺序保留。
 - 分析对照仅排除查询生成时刻report.as_of与report.history.as_of；只允许新增report.coverage、Excel五列/新表及扩展筛选范围。不是忽略整块历史或元数据。
@@ -104,7 +104,7 @@ EXE SHA256：{manifest['exe_sha256']}
 ZIP SHA256：{manifest['zip_sha256']}
 已逐项核对{len(files)}个ZIP文件；保留0.43.1 rc1，不改变用户业务数据库、配置或平台数据。运行需完整目录。
 
-实际stdio MCP链路通过；本轮没有重新配置Codex/WorkBuddy或验收其自然语言回答，不把工具数值一致当作AI解释必然正确。没有重新进行真实平台、第二台电脑或全新电脑构建验收。旧历史缺少预测依据仍待核，不能用当前资料填补；当前库存周转需要连续库存/销量依据，暂不提供。
+实际stdio MCP链路通过；本轮没有重新配置Codex/WorkBuddy或验收其自然语言回答，不把工具数值一致当作AI解释必然正确。没有重新进行真实平台、第二台电脑或全新电脑构建验收。旧历史缺少预测依据仍待核，不能用当前资料填补；当前库存周转需要连续库存/销量依据，暂不提供。逐轮趋势首期采用可导出的逐轮表，未新增折线图；异常需结合既有多轮复盘查看，不自动推断缺货原因。
 '''
     (release/'交付报告.md').write_text(report,'utf-8',newline='\n')
     print(json.dumps({'zip':str(target),'sha256':manifest['zip_sha256'],'files':len(files)},ensure_ascii=False))

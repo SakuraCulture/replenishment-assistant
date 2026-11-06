@@ -1,0 +1,3821 @@
+[
+  {
+    "tool": "query_order_funnel",
+    "response": {
+      "task_id": "c6af5263702741f6954372edeb801347",
+      "kind": "analytics",
+      "state": "running",
+      "created": "2026-11-06T01:49:12.838404+00:00",
+      "message": "已受理",
+      "scope": "未保存结果仅在当前工作台会话有效"
+    }
+  },
+  {
+    "tool": "task_status",
+    "response": {
+      "task_id": "c6af5263702741f6954372edeb801347",
+      "kind": "analytics",
+      "state": "completed",
+      "created": "2026-11-06T01:49:12.838404+00:00",
+      "message": "经营分析完成，请分页读取结果",
+      "scope": "只读分析；原业务未变",
+      "updated": "2026-11-06T01:49:12.995259+00:00",
+      "snapshot_id": "f7adaf84c0e52ee619472f1bfc8a094c4878774e47c595b401faf1f98a144c36",
+      "row_count": 4,
+      "order_count": 4,
+      "as_of": "2026-11-06T09:49:12+08:00",
+      "events": [
+        {
+          "cursor": 1,
+          "at": "2026-11-06T01:49:12.989176+00:00",
+          "message": "读取签发与履约快照"
+        },
+        {
+          "cursor": 2,
+          "at": "2026-11-06T01:49:12.995259+00:00",
+          "state": "completed",
+          "snapshot_id": "f7adaf84c0e52ee619472f1bfc8a094c4878774e47c595b401faf1f98a144c36",
+          "message": "经营分析完成，请分页读取结果",
+          "row_count": 4,
+          "order_count": 4,
+          "as_of": "2026-11-06T09:49:12+08:00",
+          "scope": "只读分析；原业务未变"
+        }
+      ],
+      "cursor": 2,
+      "in_current_session": false
+    }
+  },
+  {
+    "tool": "order_funnel_results",
+    "response": {
+      "snapshot_id": "f7adaf84c0e52ee619472f1bfc8a094c4878774e47c595b401faf1f98a144c36",
+      "coverage": {
+        "version": "coverage-1",
+        "definitions": {
+          "forecast": "制单时预测日均×当时趋势修正；五段固定同一依据，不用最新销量反算历史。",
+          "increment": "本环节库存单位数量÷当时预测日均；实收新增天数不是门店当前库存天数。",
+          "stock": "现货=可用÷日均；含在途=(可用+在途)÷日均；签发后=(可用+在途+签发)÷日均，均为制单时静态预计。",
+          "weighted": "Σ(本环节数量×签发价)÷Σ(预测日均×签发价)，仅代表本次商品，非全店实际周转。",
+          "missing": "有效数量0为0天；未取得、无销量参考、缺价、异常或缺历史依据不能当0。",
+          "cohort": "比较范围内使用共同有效订单及固定商品集合，保留数量0；未选择比较的后续阶段不展示比较天数。",
+          "rounds": "跨多轮天数仅展示最新业务日并标日期；逐轮另列，不累计历史库存。",
+          "warehouse": "同日同店同SKU跨仓只有单位、预测、价格及库存依据一致才合并，库存和日均各计一次；不一致停止汇总。"
+        },
+        "through": "signed",
+        "overview": {
+          "version": "coverage-1",
+          "basis_day": "2026-11-06",
+          "through": "signed",
+          "stage_days": {
+            "model": "12.0",
+            "signed": "12.0",
+            "return": null,
+            "payment": null,
+            "receipt": null
+          },
+          "stage_reasons": {
+            "model": [],
+            "signed": [],
+            "return": [
+              "未纳入本次比较环节",
+              "门店确认存在未取得或待核数量，不能当0"
+            ],
+            "payment": [
+              "未纳入本次比较环节",
+              "实际下单存在未取得或待核数量，不能当0"
+            ],
+            "receipt": [
+              "未纳入本次比较环节",
+              "实际收货存在未取得或待核数量，不能当0"
+            ]
+          },
+          "input_rows": 4,
+          "round_rows": 2,
+          "eligible_rows": 2,
+          "unique_demand_items": 2,
+          "orders": 2,
+          "round_orders": 2,
+          "excluded_order_count": 0,
+          "base_order_count": 2,
+          "eligible_fraction": "1",
+          "excluded_reasons": {},
+          "conflicts": [],
+          "daily_value": "27.2",
+          "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+        },
+        "groups": {
+          "必采": {
+            "version": "coverage-1",
+            "basis_day": "2026-11-06",
+            "through": "signed",
+            "stage_days": {
+              "model": "12.0",
+              "signed": "12.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [],
+              "signed": [],
+              "return": [
+                "未纳入本次比较环节"
+              ],
+              "payment": [
+                "未纳入本次比较环节"
+              ],
+              "receipt": [
+                "未纳入本次比较环节"
+              ]
+            },
+            "input_rows": 2,
+            "round_rows": 1,
+            "eligible_rows": 1,
+            "unique_demand_items": 1,
+            "orders": 1,
+            "round_orders": 1,
+            "excluded_order_count": 0,
+            "base_order_count": 1,
+            "eligible_fraction": "1",
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": "13.6",
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          },
+          "非必采": {
+            "version": "coverage-1",
+            "basis_day": "2026-11-06",
+            "through": "signed",
+            "stage_days": {
+              "model": "12.0",
+              "signed": "12.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [],
+              "signed": [],
+              "return": [
+                "未纳入本次比较环节",
+                "门店确认存在未取得或待核数量，不能当0"
+              ],
+              "payment": [
+                "未纳入本次比较环节",
+                "实际下单存在未取得或待核数量，不能当0"
+              ],
+              "receipt": [
+                "未纳入本次比较环节",
+                "实际收货存在未取得或待核数量，不能当0"
+              ]
+            },
+            "input_rows": 2,
+            "round_rows": 1,
+            "eligible_rows": 1,
+            "unique_demand_items": 1,
+            "orders": 1,
+            "round_orders": 1,
+            "excluded_order_count": 0,
+            "base_order_count": 1,
+            "eligible_fraction": "1",
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": "13.6",
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          },
+          "属性待核": {
+            "version": "coverage-1",
+            "basis_day": null,
+            "through": "signed",
+            "stage_days": {
+              "model": null,
+              "signed": null,
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [
+                "没有共同有效商品"
+              ],
+              "signed": [
+                "没有共同有效商品"
+              ],
+              "return": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ],
+              "payment": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ],
+              "receipt": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ]
+            },
+            "input_rows": 0,
+            "round_rows": 0,
+            "eligible_rows": 0,
+            "unique_demand_items": 0,
+            "orders": 0,
+            "round_orders": 0,
+            "excluded_order_count": 0,
+            "base_order_count": 0,
+            "eligible_fraction": null,
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": null,
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          }
+        }
+      },
+      "as_of": "2026-11-06T09:49:12+08:00",
+      "query": {
+        "from": "2026-10-30",
+        "to": "2026-11-06",
+        "stores": [],
+        "warehouse": "",
+        "group": "",
+        "search": "",
+        "category": "",
+        "rounds": 8,
+        "coverage_through": "signed",
+        "orders": []
+      },
+      "metrics": {
+        "rows": 4,
+        "included": 4,
+        "included_orders": 4,
+        "complete_orders": 1,
+        "complete_rows": 1,
+        "excluded": 0,
+        "pending": 0,
+        "stages": {
+          "model": {
+            "value": "652.80",
+            "valid_rows": 4,
+            "unpriced": 0,
+            "skus": 2,
+            "orders": 4
+          },
+          "signed": {
+            "value": "652.80",
+            "valid_rows": 4,
+            "unpriced": 0,
+            "skus": 2,
+            "orders": 4
+          },
+          "return": {
+            "value": "81.6",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          },
+          "payment": {
+            "value": "40.8",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          },
+          "receipt": {
+            "value": "20.4",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          }
+        },
+        "pairs": [
+          {
+            "from": "model",
+            "to": "signed",
+            "rows": 4,
+            "orders": 4,
+            "changed": 0,
+            "before": "652.80",
+            "after": "652.80",
+            "increase": "0",
+            "decrease": "0",
+            "delta": "0",
+            "ratio": "1"
+          },
+          {
+            "from": "signed",
+            "to": "return",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "163.20",
+            "after": "81.6",
+            "increase": "0",
+            "decrease": "81.60",
+            "delta": "-81.60",
+            "ratio": "0.5"
+          },
+          {
+            "from": "return",
+            "to": "payment",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "81.6",
+            "after": "40.8",
+            "increase": "0",
+            "decrease": "40.8",
+            "delta": "-40.8",
+            "ratio": "0.5"
+          },
+          {
+            "from": "payment",
+            "to": "receipt",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "40.8",
+            "after": "20.4",
+            "increase": "0",
+            "decrease": "20.4",
+            "delta": "-20.4",
+            "ratio": "0.5"
+          }
+        ],
+        "payment": {
+          "CNY": {
+            "amount": "12",
+            "missing": 0
+          }
+        }
+      },
+      "groups": {
+        "必采": {
+          "rows": 2,
+          "included": 2,
+          "included_orders": 2,
+          "complete_orders": 1,
+          "complete_rows": 1,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "signed": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "return": {
+              "value": "81.6",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            },
+            "payment": {
+              "value": "40.8",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            },
+            "receipt": {
+              "value": "20.4",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 2,
+              "orders": 2,
+              "changed": 0,
+              "before": "326.40",
+              "after": "326.40",
+              "increase": "0",
+              "decrease": "0",
+              "delta": "0",
+              "ratio": "1"
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "163.20",
+              "after": "81.6",
+              "increase": "0",
+              "decrease": "81.60",
+              "delta": "-81.60",
+              "ratio": "0.5"
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "81.6",
+              "after": "40.8",
+              "increase": "0",
+              "decrease": "40.8",
+              "delta": "-40.8",
+              "ratio": "0.5"
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "40.8",
+              "after": "20.4",
+              "increase": "0",
+              "decrease": "20.4",
+              "delta": "-20.4",
+              "ratio": "0.5"
+            }
+          ],
+          "payment": {
+            "CNY": {
+              "amount": "12",
+              "missing": 0
+            }
+          }
+        },
+        "非必采": {
+          "rows": 2,
+          "included": 2,
+          "included_orders": 2,
+          "complete_orders": 0,
+          "complete_rows": 0,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "signed": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "return": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "payment": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "receipt": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 2,
+              "orders": 2,
+              "changed": 0,
+              "before": "326.40",
+              "after": "326.40",
+              "increase": "0",
+              "decrease": "0",
+              "delta": "0",
+              "ratio": "1"
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            }
+          ],
+          "payment": {}
+        },
+        "属性待核": {
+          "rows": 0,
+          "included": 0,
+          "included_orders": 0,
+          "complete_orders": 0,
+          "complete_rows": 0,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "signed": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "return": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "payment": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "receipt": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            }
+          ],
+          "payment": {}
+        }
+      },
+      "definitions": {
+        "model": "自动建议，含启用的一箱例外，总预算和人工之前",
+        "payment": "业务确认有效的付款数量；本地生成不算实际下单",
+        "price": "各段统一签发价；实际付款金额另列",
+        "missing": "未导入或待重新核对不算0",
+        "group": "当时必卖清单；无依据为属性待核",
+        "scope": "各段货值只含已知部分；比率与差额使用相同可比集合"
+      },
+      "page": {
+        "total": 4,
+        "offset": 0,
+        "items": [
+          {
+            "day": "2026-11-06",
+            "store": "T",
+            "store_name": "测试店",
+            "warehouse": "河北仓",
+            "order": "BH-T-ZC-HB",
+            "sku": "0001",
+            "name": "商品",
+            "unit": "包",
+            "category": null,
+            "group": "必采",
+            "scope": "纳入",
+            "reasons": [],
+            "price": "6.8",
+            "quantities": {
+              "model": "24.0",
+              "signed": "24.0",
+              "return": "12",
+              "payment": "6",
+              "receipt": "3"
+            },
+            "valid": {
+              "model": true,
+              "signed": true,
+              "return": true,
+              "payment": true,
+              "receipt": true
+            },
+            "states": {
+              "model": "当时自动建议",
+              "signed": "已签发",
+              "return": "已确认",
+              "payment": "已确认",
+              "receipt": "已确认"
+            },
+            "master_basis": "9e61f799315c26083df788a440fc8acd0da5d1595d7589d1db90e2fa880e7ccc",
+            "source_row": 2,
+            "observations": {
+              "H": 1.71,
+              "I": 14.0,
+              "J": 38.0,
+              "K": 4,
+              "L": 6,
+              "N": null,
+              "AN": 2,
+              "AM": 1,
+              "AG": 7,
+              "AH": 3,
+              "BD": 24.0,
+              "AL": 5.394796428571432
+            },
+            "decision": {
+              "budget": null,
+              "manual": null,
+              "new": null,
+              "one_box": null
+            },
+            "payment_amount": "12",
+            "payment_currency": "CNY",
+            "payment_source": "原付款单据",
+            "notes": {
+              "return": "已提供",
+              "payment": "已提供",
+              "receipt": "已提供"
+            },
+            "coverage": {
+              "day": "2026-11-06",
+              "store": "T",
+              "warehouse": "河北仓",
+              "order": "BH-T-ZC-HB",
+              "sku": "0001",
+              "name": "商品",
+              "unit": "包",
+              "forecast_daily": "2",
+              "available": "4",
+              "inbound": "6",
+              "price": "6.8",
+              "stage_days": {
+                "model": "12.0",
+                "signed": "12.0",
+                "return": "6",
+                "payment": "3",
+                "receipt": "1.5"
+              },
+              "stage_reasons": {
+                "model": [],
+                "signed": [],
+                "return": [],
+                "payment": [],
+                "receipt": []
+              },
+              "base_reasons": [],
+              "price_reason": "",
+              "available_days": "2",
+              "position_days": "5",
+              "signed_position_days": "17.0",
+              "protection_days": "10",
+              "lead_days": "3",
+              "stock_reasons": [],
+              "position_reasons": [],
+              "risks": [
+                "现货覆盖短于到货周期；有在途须核对到店时间",
+                "签发后覆盖高于当时保护期，需结合箱规及铺货原因核对"
+              ],
+              "signed_to_receipt_loss_days": "10.5"
+            }
+          }
+        ],
+        "next_offset": 1
+      }
+    }
+  },
+  {
+    "tool": "order_funnel_results",
+    "response": {
+      "snapshot_id": "f7adaf84c0e52ee619472f1bfc8a094c4878774e47c595b401faf1f98a144c36",
+      "coverage": {
+        "version": "coverage-1",
+        "definitions": {
+          "forecast": "制单时预测日均×当时趋势修正；五段固定同一依据，不用最新销量反算历史。",
+          "increment": "本环节库存单位数量÷当时预测日均；实收新增天数不是门店当前库存天数。",
+          "stock": "现货=可用÷日均；含在途=(可用+在途)÷日均；签发后=(可用+在途+签发)÷日均，均为制单时静态预计。",
+          "weighted": "Σ(本环节数量×签发价)÷Σ(预测日均×签发价)，仅代表本次商品，非全店实际周转。",
+          "missing": "有效数量0为0天；未取得、无销量参考、缺价、异常或缺历史依据不能当0。",
+          "cohort": "比较范围内使用共同有效订单及固定商品集合，保留数量0；未选择比较的后续阶段不展示比较天数。",
+          "rounds": "跨多轮天数仅展示最新业务日并标日期；逐轮另列，不累计历史库存。",
+          "warehouse": "同日同店同SKU跨仓只有单位、预测、价格及库存依据一致才合并，库存和日均各计一次；不一致停止汇总。"
+        },
+        "through": "signed",
+        "overview": {
+          "version": "coverage-1",
+          "basis_day": "2026-11-06",
+          "through": "signed",
+          "stage_days": {
+            "model": "12.0",
+            "signed": "12.0",
+            "return": null,
+            "payment": null,
+            "receipt": null
+          },
+          "stage_reasons": {
+            "model": [],
+            "signed": [],
+            "return": [
+              "未纳入本次比较环节",
+              "门店确认存在未取得或待核数量，不能当0"
+            ],
+            "payment": [
+              "未纳入本次比较环节",
+              "实际下单存在未取得或待核数量，不能当0"
+            ],
+            "receipt": [
+              "未纳入本次比较环节",
+              "实际收货存在未取得或待核数量，不能当0"
+            ]
+          },
+          "input_rows": 4,
+          "round_rows": 2,
+          "eligible_rows": 2,
+          "unique_demand_items": 2,
+          "orders": 2,
+          "round_orders": 2,
+          "excluded_order_count": 0,
+          "base_order_count": 2,
+          "eligible_fraction": "1",
+          "excluded_reasons": {},
+          "conflicts": [],
+          "daily_value": "27.2",
+          "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+        },
+        "groups": {
+          "必采": {
+            "version": "coverage-1",
+            "basis_day": "2026-11-06",
+            "through": "signed",
+            "stage_days": {
+              "model": "12.0",
+              "signed": "12.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [],
+              "signed": [],
+              "return": [
+                "未纳入本次比较环节"
+              ],
+              "payment": [
+                "未纳入本次比较环节"
+              ],
+              "receipt": [
+                "未纳入本次比较环节"
+              ]
+            },
+            "input_rows": 2,
+            "round_rows": 1,
+            "eligible_rows": 1,
+            "unique_demand_items": 1,
+            "orders": 1,
+            "round_orders": 1,
+            "excluded_order_count": 0,
+            "base_order_count": 1,
+            "eligible_fraction": "1",
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": "13.6",
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          },
+          "非必采": {
+            "version": "coverage-1",
+            "basis_day": "2026-11-06",
+            "through": "signed",
+            "stage_days": {
+              "model": "12.0",
+              "signed": "12.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [],
+              "signed": [],
+              "return": [
+                "未纳入本次比较环节",
+                "门店确认存在未取得或待核数量，不能当0"
+              ],
+              "payment": [
+                "未纳入本次比较环节",
+                "实际下单存在未取得或待核数量，不能当0"
+              ],
+              "receipt": [
+                "未纳入本次比较环节",
+                "实际收货存在未取得或待核数量，不能当0"
+              ]
+            },
+            "input_rows": 2,
+            "round_rows": 1,
+            "eligible_rows": 1,
+            "unique_demand_items": 1,
+            "orders": 1,
+            "round_orders": 1,
+            "excluded_order_count": 0,
+            "base_order_count": 1,
+            "eligible_fraction": "1",
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": "13.6",
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          },
+          "属性待核": {
+            "version": "coverage-1",
+            "basis_day": null,
+            "through": "signed",
+            "stage_days": {
+              "model": null,
+              "signed": null,
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [
+                "没有共同有效商品"
+              ],
+              "signed": [
+                "没有共同有效商品"
+              ],
+              "return": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ],
+              "payment": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ],
+              "receipt": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ]
+            },
+            "input_rows": 0,
+            "round_rows": 0,
+            "eligible_rows": 0,
+            "unique_demand_items": 0,
+            "orders": 0,
+            "round_orders": 0,
+            "excluded_order_count": 0,
+            "base_order_count": 0,
+            "eligible_fraction": null,
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": null,
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          }
+        }
+      },
+      "as_of": "2026-11-06T09:49:12+08:00",
+      "query": {
+        "from": "2026-10-30",
+        "to": "2026-11-06",
+        "stores": [],
+        "warehouse": "",
+        "group": "",
+        "search": "",
+        "category": "",
+        "rounds": 8,
+        "coverage_through": "signed",
+        "orders": []
+      },
+      "metrics": {
+        "rows": 4,
+        "included": 4,
+        "included_orders": 4,
+        "complete_orders": 1,
+        "complete_rows": 1,
+        "excluded": 0,
+        "pending": 0,
+        "stages": {
+          "model": {
+            "value": "652.80",
+            "valid_rows": 4,
+            "unpriced": 0,
+            "skus": 2,
+            "orders": 4
+          },
+          "signed": {
+            "value": "652.80",
+            "valid_rows": 4,
+            "unpriced": 0,
+            "skus": 2,
+            "orders": 4
+          },
+          "return": {
+            "value": "81.6",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          },
+          "payment": {
+            "value": "40.8",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          },
+          "receipt": {
+            "value": "20.4",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          }
+        },
+        "pairs": [
+          {
+            "from": "model",
+            "to": "signed",
+            "rows": 4,
+            "orders": 4,
+            "changed": 0,
+            "before": "652.80",
+            "after": "652.80",
+            "increase": "0",
+            "decrease": "0",
+            "delta": "0",
+            "ratio": "1"
+          },
+          {
+            "from": "signed",
+            "to": "return",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "163.20",
+            "after": "81.6",
+            "increase": "0",
+            "decrease": "81.60",
+            "delta": "-81.60",
+            "ratio": "0.5"
+          },
+          {
+            "from": "return",
+            "to": "payment",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "81.6",
+            "after": "40.8",
+            "increase": "0",
+            "decrease": "40.8",
+            "delta": "-40.8",
+            "ratio": "0.5"
+          },
+          {
+            "from": "payment",
+            "to": "receipt",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "40.8",
+            "after": "20.4",
+            "increase": "0",
+            "decrease": "20.4",
+            "delta": "-20.4",
+            "ratio": "0.5"
+          }
+        ],
+        "payment": {
+          "CNY": {
+            "amount": "12",
+            "missing": 0
+          }
+        }
+      },
+      "groups": {
+        "必采": {
+          "rows": 2,
+          "included": 2,
+          "included_orders": 2,
+          "complete_orders": 1,
+          "complete_rows": 1,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "signed": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "return": {
+              "value": "81.6",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            },
+            "payment": {
+              "value": "40.8",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            },
+            "receipt": {
+              "value": "20.4",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 2,
+              "orders": 2,
+              "changed": 0,
+              "before": "326.40",
+              "after": "326.40",
+              "increase": "0",
+              "decrease": "0",
+              "delta": "0",
+              "ratio": "1"
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "163.20",
+              "after": "81.6",
+              "increase": "0",
+              "decrease": "81.60",
+              "delta": "-81.60",
+              "ratio": "0.5"
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "81.6",
+              "after": "40.8",
+              "increase": "0",
+              "decrease": "40.8",
+              "delta": "-40.8",
+              "ratio": "0.5"
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "40.8",
+              "after": "20.4",
+              "increase": "0",
+              "decrease": "20.4",
+              "delta": "-20.4",
+              "ratio": "0.5"
+            }
+          ],
+          "payment": {
+            "CNY": {
+              "amount": "12",
+              "missing": 0
+            }
+          }
+        },
+        "非必采": {
+          "rows": 2,
+          "included": 2,
+          "included_orders": 2,
+          "complete_orders": 0,
+          "complete_rows": 0,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "signed": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "return": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "payment": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "receipt": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 2,
+              "orders": 2,
+              "changed": 0,
+              "before": "326.40",
+              "after": "326.40",
+              "increase": "0",
+              "decrease": "0",
+              "delta": "0",
+              "ratio": "1"
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            }
+          ],
+          "payment": {}
+        },
+        "属性待核": {
+          "rows": 0,
+          "included": 0,
+          "included_orders": 0,
+          "complete_orders": 0,
+          "complete_rows": 0,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "signed": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "return": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "payment": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "receipt": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            }
+          ],
+          "payment": {}
+        }
+      },
+      "definitions": {
+        "model": "自动建议，含启用的一箱例外，总预算和人工之前",
+        "payment": "业务确认有效的付款数量；本地生成不算实际下单",
+        "price": "各段统一签发价；实际付款金额另列",
+        "missing": "未导入或待重新核对不算0",
+        "group": "当时必卖清单；无依据为属性待核",
+        "scope": "各段货值只含已知部分；比率与差额使用相同可比集合"
+      },
+      "page": {
+        "total": 4,
+        "offset": 1,
+        "items": [
+          {
+            "day": "2026-11-06",
+            "store": "T",
+            "store_name": "测试店",
+            "warehouse": "山东仓",
+            "order": "BH-T-ZC-SD",
+            "sku": "0002",
+            "name": "商品",
+            "unit": "包",
+            "category": null,
+            "group": "非必采",
+            "scope": "纳入",
+            "reasons": [],
+            "price": "6.8",
+            "quantities": {
+              "model": "24.0",
+              "signed": "24.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "valid": {
+              "model": true,
+              "signed": true,
+              "return": false,
+              "payment": false,
+              "receipt": false
+            },
+            "states": {
+              "model": "当时自动建议",
+              "signed": "已签发",
+              "return": "未导入",
+              "payment": "未导入",
+              "receipt": "未导入"
+            },
+            "master_basis": "9e61f799315c26083df788a440fc8acd0da5d1595d7589d1db90e2fa880e7ccc",
+            "source_row": 3,
+            "observations": {
+              "H": 1.71,
+              "I": 14.0,
+              "J": 38.0,
+              "K": 4,
+              "L": 6,
+              "N": null,
+              "AN": 2,
+              "AM": 1,
+              "AG": 7,
+              "AH": 3,
+              "BD": 24.0,
+              "AL": 5.394796428571432
+            },
+            "decision": {
+              "budget": null,
+              "manual": null,
+              "new": null,
+              "one_box": null
+            },
+            "payment_amount": null,
+            "payment_currency": "未标币种",
+            "payment_source": null,
+            "notes": {
+              "return": "",
+              "payment": "",
+              "receipt": ""
+            },
+            "coverage": {
+              "day": "2026-11-06",
+              "store": "T",
+              "warehouse": "山东仓",
+              "order": "BH-T-ZC-SD",
+              "sku": "0002",
+              "name": "商品",
+              "unit": "包",
+              "forecast_daily": "2",
+              "available": "4",
+              "inbound": "6",
+              "price": "6.8",
+              "stage_days": {
+                "model": "12.0",
+                "signed": "12.0",
+                "return": null,
+                "payment": null,
+                "receipt": null
+              },
+              "stage_reasons": {
+                "model": [],
+                "signed": [],
+                "return": [
+                  "门店确认资料未取得或待核"
+                ],
+                "payment": [
+                  "实际下单资料未取得或待核"
+                ],
+                "receipt": [
+                  "实际收货资料未取得或待核"
+                ]
+              },
+              "base_reasons": [],
+              "price_reason": "",
+              "available_days": "2",
+              "position_days": "5",
+              "signed_position_days": "17.0",
+              "protection_days": "10",
+              "lead_days": "3",
+              "stock_reasons": [],
+              "position_reasons": [],
+              "risks": [
+                "现货覆盖短于到货周期；有在途须核对到店时间",
+                "签发后覆盖高于当时保护期，需结合箱规及铺货原因核对"
+              ],
+              "signed_to_receipt_loss_days": null
+            }
+          }
+        ],
+        "next_offset": 2
+      }
+    }
+  },
+  {
+    "tool": "order_funnel_results",
+    "response": {
+      "snapshot_id": "f7adaf84c0e52ee619472f1bfc8a094c4878774e47c595b401faf1f98a144c36",
+      "coverage": {
+        "version": "coverage-1",
+        "definitions": {
+          "forecast": "制单时预测日均×当时趋势修正；五段固定同一依据，不用最新销量反算历史。",
+          "increment": "本环节库存单位数量÷当时预测日均；实收新增天数不是门店当前库存天数。",
+          "stock": "现货=可用÷日均；含在途=(可用+在途)÷日均；签发后=(可用+在途+签发)÷日均，均为制单时静态预计。",
+          "weighted": "Σ(本环节数量×签发价)÷Σ(预测日均×签发价)，仅代表本次商品，非全店实际周转。",
+          "missing": "有效数量0为0天；未取得、无销量参考、缺价、异常或缺历史依据不能当0。",
+          "cohort": "比较范围内使用共同有效订单及固定商品集合，保留数量0；未选择比较的后续阶段不展示比较天数。",
+          "rounds": "跨多轮天数仅展示最新业务日并标日期；逐轮另列，不累计历史库存。",
+          "warehouse": "同日同店同SKU跨仓只有单位、预测、价格及库存依据一致才合并，库存和日均各计一次；不一致停止汇总。"
+        },
+        "through": "signed",
+        "overview": {
+          "version": "coverage-1",
+          "basis_day": "2026-11-06",
+          "through": "signed",
+          "stage_days": {
+            "model": "12.0",
+            "signed": "12.0",
+            "return": null,
+            "payment": null,
+            "receipt": null
+          },
+          "stage_reasons": {
+            "model": [],
+            "signed": [],
+            "return": [
+              "未纳入本次比较环节",
+              "门店确认存在未取得或待核数量，不能当0"
+            ],
+            "payment": [
+              "未纳入本次比较环节",
+              "实际下单存在未取得或待核数量，不能当0"
+            ],
+            "receipt": [
+              "未纳入本次比较环节",
+              "实际收货存在未取得或待核数量，不能当0"
+            ]
+          },
+          "input_rows": 4,
+          "round_rows": 2,
+          "eligible_rows": 2,
+          "unique_demand_items": 2,
+          "orders": 2,
+          "round_orders": 2,
+          "excluded_order_count": 0,
+          "base_order_count": 2,
+          "eligible_fraction": "1",
+          "excluded_reasons": {},
+          "conflicts": [],
+          "daily_value": "27.2",
+          "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+        },
+        "groups": {
+          "必采": {
+            "version": "coverage-1",
+            "basis_day": "2026-11-06",
+            "through": "signed",
+            "stage_days": {
+              "model": "12.0",
+              "signed": "12.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [],
+              "signed": [],
+              "return": [
+                "未纳入本次比较环节"
+              ],
+              "payment": [
+                "未纳入本次比较环节"
+              ],
+              "receipt": [
+                "未纳入本次比较环节"
+              ]
+            },
+            "input_rows": 2,
+            "round_rows": 1,
+            "eligible_rows": 1,
+            "unique_demand_items": 1,
+            "orders": 1,
+            "round_orders": 1,
+            "excluded_order_count": 0,
+            "base_order_count": 1,
+            "eligible_fraction": "1",
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": "13.6",
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          },
+          "非必采": {
+            "version": "coverage-1",
+            "basis_day": "2026-11-06",
+            "through": "signed",
+            "stage_days": {
+              "model": "12.0",
+              "signed": "12.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [],
+              "signed": [],
+              "return": [
+                "未纳入本次比较环节",
+                "门店确认存在未取得或待核数量，不能当0"
+              ],
+              "payment": [
+                "未纳入本次比较环节",
+                "实际下单存在未取得或待核数量，不能当0"
+              ],
+              "receipt": [
+                "未纳入本次比较环节",
+                "实际收货存在未取得或待核数量，不能当0"
+              ]
+            },
+            "input_rows": 2,
+            "round_rows": 1,
+            "eligible_rows": 1,
+            "unique_demand_items": 1,
+            "orders": 1,
+            "round_orders": 1,
+            "excluded_order_count": 0,
+            "base_order_count": 1,
+            "eligible_fraction": "1",
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": "13.6",
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          },
+          "属性待核": {
+            "version": "coverage-1",
+            "basis_day": null,
+            "through": "signed",
+            "stage_days": {
+              "model": null,
+              "signed": null,
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [
+                "没有共同有效商品"
+              ],
+              "signed": [
+                "没有共同有效商品"
+              ],
+              "return": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ],
+              "payment": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ],
+              "receipt": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ]
+            },
+            "input_rows": 0,
+            "round_rows": 0,
+            "eligible_rows": 0,
+            "unique_demand_items": 0,
+            "orders": 0,
+            "round_orders": 0,
+            "excluded_order_count": 0,
+            "base_order_count": 0,
+            "eligible_fraction": null,
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": null,
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          }
+        }
+      },
+      "as_of": "2026-11-06T09:49:12+08:00",
+      "query": {
+        "from": "2026-10-30",
+        "to": "2026-11-06",
+        "stores": [],
+        "warehouse": "",
+        "group": "",
+        "search": "",
+        "category": "",
+        "rounds": 8,
+        "coverage_through": "signed",
+        "orders": []
+      },
+      "metrics": {
+        "rows": 4,
+        "included": 4,
+        "included_orders": 4,
+        "complete_orders": 1,
+        "complete_rows": 1,
+        "excluded": 0,
+        "pending": 0,
+        "stages": {
+          "model": {
+            "value": "652.80",
+            "valid_rows": 4,
+            "unpriced": 0,
+            "skus": 2,
+            "orders": 4
+          },
+          "signed": {
+            "value": "652.80",
+            "valid_rows": 4,
+            "unpriced": 0,
+            "skus": 2,
+            "orders": 4
+          },
+          "return": {
+            "value": "81.6",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          },
+          "payment": {
+            "value": "40.8",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          },
+          "receipt": {
+            "value": "20.4",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          }
+        },
+        "pairs": [
+          {
+            "from": "model",
+            "to": "signed",
+            "rows": 4,
+            "orders": 4,
+            "changed": 0,
+            "before": "652.80",
+            "after": "652.80",
+            "increase": "0",
+            "decrease": "0",
+            "delta": "0",
+            "ratio": "1"
+          },
+          {
+            "from": "signed",
+            "to": "return",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "163.20",
+            "after": "81.6",
+            "increase": "0",
+            "decrease": "81.60",
+            "delta": "-81.60",
+            "ratio": "0.5"
+          },
+          {
+            "from": "return",
+            "to": "payment",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "81.6",
+            "after": "40.8",
+            "increase": "0",
+            "decrease": "40.8",
+            "delta": "-40.8",
+            "ratio": "0.5"
+          },
+          {
+            "from": "payment",
+            "to": "receipt",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "40.8",
+            "after": "20.4",
+            "increase": "0",
+            "decrease": "20.4",
+            "delta": "-20.4",
+            "ratio": "0.5"
+          }
+        ],
+        "payment": {
+          "CNY": {
+            "amount": "12",
+            "missing": 0
+          }
+        }
+      },
+      "groups": {
+        "必采": {
+          "rows": 2,
+          "included": 2,
+          "included_orders": 2,
+          "complete_orders": 1,
+          "complete_rows": 1,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "signed": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "return": {
+              "value": "81.6",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            },
+            "payment": {
+              "value": "40.8",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            },
+            "receipt": {
+              "value": "20.4",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 2,
+              "orders": 2,
+              "changed": 0,
+              "before": "326.40",
+              "after": "326.40",
+              "increase": "0",
+              "decrease": "0",
+              "delta": "0",
+              "ratio": "1"
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "163.20",
+              "after": "81.6",
+              "increase": "0",
+              "decrease": "81.60",
+              "delta": "-81.60",
+              "ratio": "0.5"
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "81.6",
+              "after": "40.8",
+              "increase": "0",
+              "decrease": "40.8",
+              "delta": "-40.8",
+              "ratio": "0.5"
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "40.8",
+              "after": "20.4",
+              "increase": "0",
+              "decrease": "20.4",
+              "delta": "-20.4",
+              "ratio": "0.5"
+            }
+          ],
+          "payment": {
+            "CNY": {
+              "amount": "12",
+              "missing": 0
+            }
+          }
+        },
+        "非必采": {
+          "rows": 2,
+          "included": 2,
+          "included_orders": 2,
+          "complete_orders": 0,
+          "complete_rows": 0,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "signed": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "return": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "payment": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "receipt": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 2,
+              "orders": 2,
+              "changed": 0,
+              "before": "326.40",
+              "after": "326.40",
+              "increase": "0",
+              "decrease": "0",
+              "delta": "0",
+              "ratio": "1"
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            }
+          ],
+          "payment": {}
+        },
+        "属性待核": {
+          "rows": 0,
+          "included": 0,
+          "included_orders": 0,
+          "complete_orders": 0,
+          "complete_rows": 0,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "signed": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "return": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "payment": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "receipt": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            }
+          ],
+          "payment": {}
+        }
+      },
+      "definitions": {
+        "model": "自动建议，含启用的一箱例外，总预算和人工之前",
+        "payment": "业务确认有效的付款数量；本地生成不算实际下单",
+        "price": "各段统一签发价；实际付款金额另列",
+        "missing": "未导入或待重新核对不算0",
+        "group": "当时必卖清单；无依据为属性待核",
+        "scope": "各段货值只含已知部分；比率与差额使用相同可比集合"
+      },
+      "page": {
+        "total": 4,
+        "offset": 2,
+        "items": [
+          {
+            "day": "2026-10-30",
+            "store": "T",
+            "store_name": "测试店",
+            "warehouse": "河北仓",
+            "order": "BH-OLD-COVERAGE-HB",
+            "sku": "0001",
+            "name": "商品",
+            "unit": "包",
+            "category": null,
+            "group": "必采",
+            "scope": "纳入",
+            "reasons": [],
+            "price": "6.8",
+            "quantities": {
+              "model": "24.0",
+              "signed": "24.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "valid": {
+              "model": true,
+              "signed": true,
+              "return": false,
+              "payment": false,
+              "receipt": false
+            },
+            "states": {
+              "model": "当时自动建议",
+              "signed": "已签发",
+              "return": "未导入",
+              "payment": "未导入",
+              "receipt": "未导入"
+            },
+            "master_basis": "9e61f799315c26083df788a440fc8acd0da5d1595d7589d1db90e2fa880e7ccc",
+            "source_row": 2,
+            "observations": {
+              "H": 1.71,
+              "I": 14.0,
+              "J": 38.0,
+              "K": 4,
+              "L": 6,
+              "N": null,
+              "AN": null,
+              "AM": 1,
+              "AG": 7,
+              "AH": 3,
+              "BD": 24.0,
+              "AL": 5.394796428571432
+            },
+            "decision": {
+              "budget": null,
+              "manual": null,
+              "new": null,
+              "one_box": null
+            },
+            "payment_amount": null,
+            "payment_currency": "未标币种",
+            "payment_source": null,
+            "notes": {
+              "return": "",
+              "payment": "",
+              "receipt": ""
+            },
+            "coverage": {
+              "day": "2026-10-30",
+              "store": "T",
+              "warehouse": "河北仓",
+              "order": "BH-OLD-COVERAGE-HB",
+              "sku": "0001",
+              "name": "商品",
+              "unit": "包",
+              "forecast_daily": null,
+              "available": "4",
+              "inbound": "6",
+              "price": "6.8",
+              "stage_days": {
+                "model": null,
+                "signed": null,
+                "return": null,
+                "payment": null,
+                "receipt": null
+              },
+              "stage_reasons": {
+                "model": [
+                  "历史预测依据不足或无效"
+                ],
+                "signed": [
+                  "历史预测依据不足或无效"
+                ],
+                "return": [
+                  "历史预测依据不足或无效",
+                  "门店确认资料未取得或待核"
+                ],
+                "payment": [
+                  "历史预测依据不足或无效",
+                  "实际下单资料未取得或待核"
+                ],
+                "receipt": [
+                  "历史预测依据不足或无效",
+                  "实际收货资料未取得或待核"
+                ]
+              },
+              "base_reasons": [
+                "历史预测依据不足或无效"
+              ],
+              "price_reason": "",
+              "available_days": null,
+              "position_days": null,
+              "signed_position_days": null,
+              "protection_days": "10",
+              "lead_days": "3",
+              "stock_reasons": [
+                "历史预测依据不足或无效"
+              ],
+              "position_reasons": [
+                "历史预测依据不足或无效"
+              ],
+              "risks": [],
+              "signed_to_receipt_loss_days": null
+            }
+          }
+        ],
+        "next_offset": 3
+      }
+    }
+  },
+  {
+    "tool": "order_funnel_results",
+    "response": {
+      "snapshot_id": "f7adaf84c0e52ee619472f1bfc8a094c4878774e47c595b401faf1f98a144c36",
+      "coverage": {
+        "version": "coverage-1",
+        "definitions": {
+          "forecast": "制单时预测日均×当时趋势修正；五段固定同一依据，不用最新销量反算历史。",
+          "increment": "本环节库存单位数量÷当时预测日均；实收新增天数不是门店当前库存天数。",
+          "stock": "现货=可用÷日均；含在途=(可用+在途)÷日均；签发后=(可用+在途+签发)÷日均，均为制单时静态预计。",
+          "weighted": "Σ(本环节数量×签发价)÷Σ(预测日均×签发价)，仅代表本次商品，非全店实际周转。",
+          "missing": "有效数量0为0天；未取得、无销量参考、缺价、异常或缺历史依据不能当0。",
+          "cohort": "比较范围内使用共同有效订单及固定商品集合，保留数量0；未选择比较的后续阶段不展示比较天数。",
+          "rounds": "跨多轮天数仅展示最新业务日并标日期；逐轮另列，不累计历史库存。",
+          "warehouse": "同日同店同SKU跨仓只有单位、预测、价格及库存依据一致才合并，库存和日均各计一次；不一致停止汇总。"
+        },
+        "through": "signed",
+        "overview": {
+          "version": "coverage-1",
+          "basis_day": "2026-11-06",
+          "through": "signed",
+          "stage_days": {
+            "model": "12.0",
+            "signed": "12.0",
+            "return": null,
+            "payment": null,
+            "receipt": null
+          },
+          "stage_reasons": {
+            "model": [],
+            "signed": [],
+            "return": [
+              "未纳入本次比较环节",
+              "门店确认存在未取得或待核数量，不能当0"
+            ],
+            "payment": [
+              "未纳入本次比较环节",
+              "实际下单存在未取得或待核数量，不能当0"
+            ],
+            "receipt": [
+              "未纳入本次比较环节",
+              "实际收货存在未取得或待核数量，不能当0"
+            ]
+          },
+          "input_rows": 4,
+          "round_rows": 2,
+          "eligible_rows": 2,
+          "unique_demand_items": 2,
+          "orders": 2,
+          "round_orders": 2,
+          "excluded_order_count": 0,
+          "base_order_count": 2,
+          "eligible_fraction": "1",
+          "excluded_reasons": {},
+          "conflicts": [],
+          "daily_value": "27.2",
+          "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+        },
+        "groups": {
+          "必采": {
+            "version": "coverage-1",
+            "basis_day": "2026-11-06",
+            "through": "signed",
+            "stage_days": {
+              "model": "12.0",
+              "signed": "12.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [],
+              "signed": [],
+              "return": [
+                "未纳入本次比较环节"
+              ],
+              "payment": [
+                "未纳入本次比较环节"
+              ],
+              "receipt": [
+                "未纳入本次比较环节"
+              ]
+            },
+            "input_rows": 2,
+            "round_rows": 1,
+            "eligible_rows": 1,
+            "unique_demand_items": 1,
+            "orders": 1,
+            "round_orders": 1,
+            "excluded_order_count": 0,
+            "base_order_count": 1,
+            "eligible_fraction": "1",
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": "13.6",
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          },
+          "非必采": {
+            "version": "coverage-1",
+            "basis_day": "2026-11-06",
+            "through": "signed",
+            "stage_days": {
+              "model": "12.0",
+              "signed": "12.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [],
+              "signed": [],
+              "return": [
+                "未纳入本次比较环节",
+                "门店确认存在未取得或待核数量，不能当0"
+              ],
+              "payment": [
+                "未纳入本次比较环节",
+                "实际下单存在未取得或待核数量，不能当0"
+              ],
+              "receipt": [
+                "未纳入本次比较环节",
+                "实际收货存在未取得或待核数量，不能当0"
+              ]
+            },
+            "input_rows": 2,
+            "round_rows": 1,
+            "eligible_rows": 1,
+            "unique_demand_items": 1,
+            "orders": 1,
+            "round_orders": 1,
+            "excluded_order_count": 0,
+            "base_order_count": 1,
+            "eligible_fraction": "1",
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": "13.6",
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          },
+          "属性待核": {
+            "version": "coverage-1",
+            "basis_day": null,
+            "through": "signed",
+            "stage_days": {
+              "model": null,
+              "signed": null,
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "stage_reasons": {
+              "model": [
+                "没有共同有效商品"
+              ],
+              "signed": [
+                "没有共同有效商品"
+              ],
+              "return": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ],
+              "payment": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ],
+              "receipt": [
+                "未纳入本次比较环节",
+                "没有共同有效商品"
+              ]
+            },
+            "input_rows": 0,
+            "round_rows": 0,
+            "eligible_rows": 0,
+            "unique_demand_items": 0,
+            "orders": 0,
+            "round_orders": 0,
+            "excluded_order_count": 0,
+            "base_order_count": 0,
+            "eligible_fraction": null,
+            "excluded_reasons": {},
+            "conflicts": [],
+            "daily_value": null,
+            "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+          }
+        }
+      },
+      "as_of": "2026-11-06T09:49:12+08:00",
+      "query": {
+        "from": "2026-10-30",
+        "to": "2026-11-06",
+        "stores": [],
+        "warehouse": "",
+        "group": "",
+        "search": "",
+        "category": "",
+        "rounds": 8,
+        "coverage_through": "signed",
+        "orders": []
+      },
+      "metrics": {
+        "rows": 4,
+        "included": 4,
+        "included_orders": 4,
+        "complete_orders": 1,
+        "complete_rows": 1,
+        "excluded": 0,
+        "pending": 0,
+        "stages": {
+          "model": {
+            "value": "652.80",
+            "valid_rows": 4,
+            "unpriced": 0,
+            "skus": 2,
+            "orders": 4
+          },
+          "signed": {
+            "value": "652.80",
+            "valid_rows": 4,
+            "unpriced": 0,
+            "skus": 2,
+            "orders": 4
+          },
+          "return": {
+            "value": "81.6",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          },
+          "payment": {
+            "value": "40.8",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          },
+          "receipt": {
+            "value": "20.4",
+            "valid_rows": 1,
+            "unpriced": 0,
+            "skus": 1,
+            "orders": 1
+          }
+        },
+        "pairs": [
+          {
+            "from": "model",
+            "to": "signed",
+            "rows": 4,
+            "orders": 4,
+            "changed": 0,
+            "before": "652.80",
+            "after": "652.80",
+            "increase": "0",
+            "decrease": "0",
+            "delta": "0",
+            "ratio": "1"
+          },
+          {
+            "from": "signed",
+            "to": "return",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "163.20",
+            "after": "81.6",
+            "increase": "0",
+            "decrease": "81.60",
+            "delta": "-81.60",
+            "ratio": "0.5"
+          },
+          {
+            "from": "return",
+            "to": "payment",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "81.6",
+            "after": "40.8",
+            "increase": "0",
+            "decrease": "40.8",
+            "delta": "-40.8",
+            "ratio": "0.5"
+          },
+          {
+            "from": "payment",
+            "to": "receipt",
+            "rows": 1,
+            "orders": 1,
+            "changed": 1,
+            "before": "40.8",
+            "after": "20.4",
+            "increase": "0",
+            "decrease": "20.4",
+            "delta": "-20.4",
+            "ratio": "0.5"
+          }
+        ],
+        "payment": {
+          "CNY": {
+            "amount": "12",
+            "missing": 0
+          }
+        }
+      },
+      "groups": {
+        "必采": {
+          "rows": 2,
+          "included": 2,
+          "included_orders": 2,
+          "complete_orders": 1,
+          "complete_rows": 1,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "signed": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "return": {
+              "value": "81.6",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            },
+            "payment": {
+              "value": "40.8",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            },
+            "receipt": {
+              "value": "20.4",
+              "valid_rows": 1,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 1
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 2,
+              "orders": 2,
+              "changed": 0,
+              "before": "326.40",
+              "after": "326.40",
+              "increase": "0",
+              "decrease": "0",
+              "delta": "0",
+              "ratio": "1"
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "163.20",
+              "after": "81.6",
+              "increase": "0",
+              "decrease": "81.60",
+              "delta": "-81.60",
+              "ratio": "0.5"
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "81.6",
+              "after": "40.8",
+              "increase": "0",
+              "decrease": "40.8",
+              "delta": "-40.8",
+              "ratio": "0.5"
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 1,
+              "orders": 1,
+              "changed": 1,
+              "before": "40.8",
+              "after": "20.4",
+              "increase": "0",
+              "decrease": "20.4",
+              "delta": "-20.4",
+              "ratio": "0.5"
+            }
+          ],
+          "payment": {
+            "CNY": {
+              "amount": "12",
+              "missing": 0
+            }
+          }
+        },
+        "非必采": {
+          "rows": 2,
+          "included": 2,
+          "included_orders": 2,
+          "complete_orders": 0,
+          "complete_rows": 0,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "signed": {
+              "value": "326.40",
+              "valid_rows": 2,
+              "unpriced": 0,
+              "skus": 1,
+              "orders": 2
+            },
+            "return": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "payment": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "receipt": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 2,
+              "orders": 2,
+              "changed": 0,
+              "before": "326.40",
+              "after": "326.40",
+              "increase": "0",
+              "decrease": "0",
+              "delta": "0",
+              "ratio": "1"
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            }
+          ],
+          "payment": {}
+        },
+        "属性待核": {
+          "rows": 0,
+          "included": 0,
+          "included_orders": 0,
+          "complete_orders": 0,
+          "complete_rows": 0,
+          "excluded": 0,
+          "pending": 0,
+          "stages": {
+            "model": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "signed": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "return": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "payment": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            },
+            "receipt": {
+              "value": null,
+              "valid_rows": 0,
+              "unpriced": 0,
+              "skus": 0,
+              "orders": 0
+            }
+          },
+          "pairs": [
+            {
+              "from": "model",
+              "to": "signed",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "signed",
+              "to": "return",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "return",
+              "to": "payment",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            },
+            {
+              "from": "payment",
+              "to": "receipt",
+              "rows": 0,
+              "orders": 0,
+              "changed": 0,
+              "before": null,
+              "after": null,
+              "increase": null,
+              "decrease": null,
+              "delta": null,
+              "ratio": null
+            }
+          ],
+          "payment": {}
+        }
+      },
+      "definitions": {
+        "model": "自动建议，含启用的一箱例外，总预算和人工之前",
+        "payment": "业务确认有效的付款数量；本地生成不算实际下单",
+        "price": "各段统一签发价；实际付款金额另列",
+        "missing": "未导入或待重新核对不算0",
+        "group": "当时必卖清单；无依据为属性待核",
+        "scope": "各段货值只含已知部分；比率与差额使用相同可比集合"
+      },
+      "page": {
+        "total": 4,
+        "offset": 3,
+        "items": [
+          {
+            "day": "2026-10-30",
+            "store": "T",
+            "store_name": "测试店",
+            "warehouse": "山东仓",
+            "order": "BH-OLD-COVERAGE-SD",
+            "sku": "0002",
+            "name": "商品",
+            "unit": "包",
+            "category": null,
+            "group": "非必采",
+            "scope": "纳入",
+            "reasons": [],
+            "price": "6.8",
+            "quantities": {
+              "model": "24.0",
+              "signed": "24.0",
+              "return": null,
+              "payment": null,
+              "receipt": null
+            },
+            "valid": {
+              "model": true,
+              "signed": true,
+              "return": false,
+              "payment": false,
+              "receipt": false
+            },
+            "states": {
+              "model": "当时自动建议",
+              "signed": "已签发",
+              "return": "未导入",
+              "payment": "未导入",
+              "receipt": "未导入"
+            },
+            "master_basis": "9e61f799315c26083df788a440fc8acd0da5d1595d7589d1db90e2fa880e7ccc",
+            "source_row": 3,
+            "observations": {
+              "H": 1.71,
+              "I": 14.0,
+              "J": 38.0,
+              "K": 4,
+              "L": 6,
+              "N": null,
+              "AN": null,
+              "AM": 1,
+              "AG": 7,
+              "AH": 3,
+              "BD": 24.0,
+              "AL": 5.394796428571432
+            },
+            "decision": {
+              "budget": null,
+              "manual": null,
+              "new": null,
+              "one_box": null
+            },
+            "payment_amount": null,
+            "payment_currency": "未标币种",
+            "payment_source": null,
+            "notes": {
+              "return": "",
+              "payment": "",
+              "receipt": ""
+            },
+            "coverage": {
+              "day": "2026-10-30",
+              "store": "T",
+              "warehouse": "山东仓",
+              "order": "BH-OLD-COVERAGE-SD",
+              "sku": "0002",
+              "name": "商品",
+              "unit": "包",
+              "forecast_daily": null,
+              "available": "4",
+              "inbound": "6",
+              "price": "6.8",
+              "stage_days": {
+                "model": null,
+                "signed": null,
+                "return": null,
+                "payment": null,
+                "receipt": null
+              },
+              "stage_reasons": {
+                "model": [
+                  "历史预测依据不足或无效"
+                ],
+                "signed": [
+                  "历史预测依据不足或无效"
+                ],
+                "return": [
+                  "历史预测依据不足或无效",
+                  "门店确认资料未取得或待核"
+                ],
+                "payment": [
+                  "历史预测依据不足或无效",
+                  "实际下单资料未取得或待核"
+                ],
+                "receipt": [
+                  "历史预测依据不足或无效",
+                  "实际收货资料未取得或待核"
+                ]
+              },
+              "base_reasons": [
+                "历史预测依据不足或无效"
+              ],
+              "price_reason": "",
+              "available_days": null,
+              "position_days": null,
+              "signed_position_days": null,
+              "protection_days": "10",
+              "lead_days": "3",
+              "stock_reasons": [
+                "历史预测依据不足或无效"
+              ],
+              "position_reasons": [
+                "历史预测依据不足或无效"
+              ],
+              "risks": [],
+              "signed_to_receipt_loss_days": null
+            }
+          }
+        ],
+        "next_offset": null
+      }
+    }
+  },
+  {
+    "tool": "order_funnel_results",
+    "response": {
+      "snapshot_id": "f7adaf84c0e52ee619472f1bfc8a094c4878774e47c595b401faf1f98a144c36",
+      "as_of": "2026-11-06T09:49:12+08:00",
+      "definitions": {
+        "forecast": "制单时预测日均×当时趋势修正；五段固定同一依据，不用最新销量反算历史。",
+        "increment": "本环节库存单位数量÷当时预测日均；实收新增天数不是门店当前库存天数。",
+        "stock": "现货=可用÷日均；含在途=(可用+在途)÷日均；签发后=(可用+在途+签发)÷日均，均为制单时静态预计。",
+        "weighted": "Σ(本环节数量×签发价)÷Σ(预测日均×签发价)，仅代表本次商品，非全店实际周转。",
+        "missing": "有效数量0为0天；未取得、无销量参考、缺价、异常或缺历史依据不能当0。",
+        "cohort": "比较范围内使用共同有效订单及固定商品集合，保留数量0；未选择比较的后续阶段不展示比较天数。",
+        "rounds": "跨多轮天数仅展示最新业务日并标日期；逐轮另列，不累计历史库存。",
+        "warehouse": "同日同店同SKU跨仓只有单位、预测、价格及库存依据一致才合并，库存和日均各计一次；不一致停止汇总。"
+      },
+      "coverage_version": "coverage-1",
+      "page": {
+        "total": 4,
+        "offset": 0,
+        "items": [
+          {
+            "store": "T",
+            "day": "2026-11-06",
+            "warehouse": "河北仓",
+            "name": "测试店",
+            "coverage": {
+              "version": "coverage-1",
+              "basis_day": "2026-11-06",
+              "through": null,
+              "stage_days": {
+                "model": "12.0",
+                "signed": "12.0",
+                "return": "6",
+                "payment": "3",
+                "receipt": "1.5"
+              },
+              "stage_reasons": {
+                "model": [],
+                "signed": [],
+                "return": [],
+                "payment": [],
+                "receipt": []
+              },
+              "input_rows": 1,
+              "round_rows": 1,
+              "eligible_rows": 1,
+              "unique_demand_items": 1,
+              "orders": 1,
+              "round_orders": 1,
+              "excluded_order_count": 0,
+              "base_order_count": 1,
+              "eligible_fraction": "1",
+              "excluded_reasons": {},
+              "conflicts": [],
+              "daily_value": "13.6",
+              "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+            },
+            "groups": {
+              "必采": {
+                "version": "coverage-1",
+                "basis_day": "2026-11-06",
+                "through": null,
+                "stage_days": {
+                  "model": "12.0",
+                  "signed": "12.0",
+                  "return": "6",
+                  "payment": "3",
+                  "receipt": "1.5"
+                },
+                "stage_reasons": {
+                  "model": [],
+                  "signed": [],
+                  "return": [],
+                  "payment": [],
+                  "receipt": []
+                },
+                "input_rows": 1,
+                "round_rows": 1,
+                "eligible_rows": 1,
+                "unique_demand_items": 1,
+                "orders": 1,
+                "round_orders": 1,
+                "excluded_order_count": 0,
+                "base_order_count": 1,
+                "eligible_fraction": "1",
+                "excluded_reasons": {},
+                "conflicts": [],
+                "daily_value": "13.6",
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              },
+              "非必采": {
+                "version": "coverage-1",
+                "basis_day": null,
+                "through": null,
+                "stage_days": {
+                  "model": null,
+                  "signed": null,
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [
+                    "没有共同有效商品"
+                  ],
+                  "signed": [
+                    "没有共同有效商品"
+                  ],
+                  "return": [
+                    "没有共同有效商品"
+                  ],
+                  "payment": [
+                    "没有共同有效商品"
+                  ],
+                  "receipt": [
+                    "没有共同有效商品"
+                  ]
+                },
+                "input_rows": 0,
+                "round_rows": 0,
+                "eligible_rows": 0,
+                "unique_demand_items": 0,
+                "orders": 0,
+                "round_orders": 0,
+                "excluded_order_count": 0,
+                "base_order_count": 0,
+                "eligible_fraction": null,
+                "excluded_reasons": {},
+                "conflicts": [],
+                "daily_value": null,
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              },
+              "属性待核": {
+                "version": "coverage-1",
+                "basis_day": null,
+                "through": null,
+                "stage_days": {
+                  "model": null,
+                  "signed": null,
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [
+                    "没有共同有效商品"
+                  ],
+                  "signed": [
+                    "没有共同有效商品"
+                  ],
+                  "return": [
+                    "没有共同有效商品"
+                  ],
+                  "payment": [
+                    "没有共同有效商品"
+                  ],
+                  "receipt": [
+                    "没有共同有效商品"
+                  ]
+                },
+                "input_rows": 0,
+                "round_rows": 0,
+                "eligible_rows": 0,
+                "unique_demand_items": 0,
+                "orders": 0,
+                "round_orders": 0,
+                "excluded_order_count": 0,
+                "base_order_count": 0,
+                "eligible_fraction": null,
+                "excluded_reasons": {},
+                "conflicts": [],
+                "daily_value": null,
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              }
+            }
+          },
+          {
+            "store": "T",
+            "day": "2026-11-06",
+            "warehouse": "山东仓",
+            "name": "测试店",
+            "coverage": {
+              "version": "coverage-1",
+              "basis_day": "2026-11-06",
+              "through": null,
+              "stage_days": {
+                "model": "12.0",
+                "signed": "12.0",
+                "return": null,
+                "payment": null,
+                "receipt": null
+              },
+              "stage_reasons": {
+                "model": [],
+                "signed": [],
+                "return": [
+                  "门店确认存在未取得或待核数量，不能当0"
+                ],
+                "payment": [
+                  "实际下单存在未取得或待核数量，不能当0"
+                ],
+                "receipt": [
+                  "实际收货存在未取得或待核数量，不能当0"
+                ]
+              },
+              "input_rows": 1,
+              "round_rows": 1,
+              "eligible_rows": 1,
+              "unique_demand_items": 1,
+              "orders": 1,
+              "round_orders": 1,
+              "excluded_order_count": 0,
+              "base_order_count": 1,
+              "eligible_fraction": "1",
+              "excluded_reasons": {},
+              "conflicts": [],
+              "daily_value": "13.6",
+              "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+            },
+            "groups": {
+              "必采": {
+                "version": "coverage-1",
+                "basis_day": null,
+                "through": null,
+                "stage_days": {
+                  "model": null,
+                  "signed": null,
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [
+                    "没有共同有效商品"
+                  ],
+                  "signed": [
+                    "没有共同有效商品"
+                  ],
+                  "return": [
+                    "没有共同有效商品"
+                  ],
+                  "payment": [
+                    "没有共同有效商品"
+                  ],
+                  "receipt": [
+                    "没有共同有效商品"
+                  ]
+                },
+                "input_rows": 0,
+                "round_rows": 0,
+                "eligible_rows": 0,
+                "unique_demand_items": 0,
+                "orders": 0,
+                "round_orders": 0,
+                "excluded_order_count": 0,
+                "base_order_count": 0,
+                "eligible_fraction": null,
+                "excluded_reasons": {},
+                "conflicts": [],
+                "daily_value": null,
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              },
+              "非必采": {
+                "version": "coverage-1",
+                "basis_day": "2026-11-06",
+                "through": null,
+                "stage_days": {
+                  "model": "12.0",
+                  "signed": "12.0",
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [],
+                  "signed": [],
+                  "return": [
+                    "门店确认存在未取得或待核数量，不能当0"
+                  ],
+                  "payment": [
+                    "实际下单存在未取得或待核数量，不能当0"
+                  ],
+                  "receipt": [
+                    "实际收货存在未取得或待核数量，不能当0"
+                  ]
+                },
+                "input_rows": 1,
+                "round_rows": 1,
+                "eligible_rows": 1,
+                "unique_demand_items": 1,
+                "orders": 1,
+                "round_orders": 1,
+                "excluded_order_count": 0,
+                "base_order_count": 1,
+                "eligible_fraction": "1",
+                "excluded_reasons": {},
+                "conflicts": [],
+                "daily_value": "13.6",
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              },
+              "属性待核": {
+                "version": "coverage-1",
+                "basis_day": null,
+                "through": null,
+                "stage_days": {
+                  "model": null,
+                  "signed": null,
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [
+                    "没有共同有效商品"
+                  ],
+                  "signed": [
+                    "没有共同有效商品"
+                  ],
+                  "return": [
+                    "没有共同有效商品"
+                  ],
+                  "payment": [
+                    "没有共同有效商品"
+                  ],
+                  "receipt": [
+                    "没有共同有效商品"
+                  ]
+                },
+                "input_rows": 0,
+                "round_rows": 0,
+                "eligible_rows": 0,
+                "unique_demand_items": 0,
+                "orders": 0,
+                "round_orders": 0,
+                "excluded_order_count": 0,
+                "base_order_count": 0,
+                "eligible_fraction": null,
+                "excluded_reasons": {},
+                "conflicts": [],
+                "daily_value": null,
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              }
+            }
+          },
+          {
+            "store": "T",
+            "day": "2026-10-30",
+            "warehouse": "河北仓",
+            "name": "测试店",
+            "coverage": {
+              "version": "coverage-1",
+              "basis_day": "2026-10-30",
+              "through": null,
+              "stage_days": {
+                "model": null,
+                "signed": null,
+                "return": null,
+                "payment": null,
+                "receipt": null
+              },
+              "stage_reasons": {
+                "model": [
+                  "没有共同有效商品"
+                ],
+                "signed": [
+                  "没有共同有效商品"
+                ],
+                "return": [
+                  "没有共同有效商品"
+                ],
+                "payment": [
+                  "没有共同有效商品"
+                ],
+                "receipt": [
+                  "没有共同有效商品"
+                ]
+              },
+              "input_rows": 1,
+              "round_rows": 1,
+              "eligible_rows": 0,
+              "unique_demand_items": 0,
+              "orders": 0,
+              "round_orders": 1,
+              "excluded_order_count": 0,
+              "base_order_count": 0,
+              "eligible_fraction": "0",
+              "excluded_reasons": {
+                "历史预测依据不足或无效": 1
+              },
+              "conflicts": [],
+              "daily_value": null,
+              "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+            },
+            "groups": {
+              "必采": {
+                "version": "coverage-1",
+                "basis_day": "2026-10-30",
+                "through": null,
+                "stage_days": {
+                  "model": null,
+                  "signed": null,
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [
+                    "没有共同有效商品"
+                  ],
+                  "signed": [
+                    "没有共同有效商品"
+                  ],
+                  "return": [
+                    "没有共同有效商品"
+                  ],
+                  "payment": [
+                    "没有共同有效商品"
+                  ],
+                  "receipt": [
+                    "没有共同有效商品"
+                  ]
+                },
+                "input_rows": 1,
+                "round_rows": 1,
+                "eligible_rows": 0,
+                "unique_demand_items": 0,
+                "orders": 0,
+                "round_orders": 1,
+                "excluded_order_count": 0,
+                "base_order_count": 0,
+                "eligible_fraction": "0",
+                "excluded_reasons": {
+                  "历史预测依据不足或无效": 1
+                },
+                "conflicts": [],
+                "daily_value": null,
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              },
+              "非必采": {
+                "version": "coverage-1",
+                "basis_day": null,
+                "through": null,
+                "stage_days": {
+                  "model": null,
+                  "signed": null,
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [
+                    "没有共同有效商品"
+                  ],
+                  "signed": [
+                    "没有共同有效商品"
+                  ],
+                  "return": [
+                    "没有共同有效商品"
+                  ],
+                  "payment": [
+                    "没有共同有效商品"
+                  ],
+                  "receipt": [
+                    "没有共同有效商品"
+                  ]
+                },
+                "input_rows": 0,
+                "round_rows": 0,
+                "eligible_rows": 0,
+                "unique_demand_items": 0,
+                "orders": 0,
+                "round_orders": 0,
+                "excluded_order_count": 0,
+                "base_order_count": 0,
+                "eligible_fraction": null,
+                "excluded_reasons": {},
+                "conflicts": [],
+                "daily_value": null,
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              },
+              "属性待核": {
+                "version": "coverage-1",
+                "basis_day": null,
+                "through": null,
+                "stage_days": {
+                  "model": null,
+                  "signed": null,
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [
+                    "没有共同有效商品"
+                  ],
+                  "signed": [
+                    "没有共同有效商品"
+                  ],
+                  "return": [
+                    "没有共同有效商品"
+                  ],
+                  "payment": [
+                    "没有共同有效商品"
+                  ],
+                  "receipt": [
+                    "没有共同有效商品"
+                  ]
+                },
+                "input_rows": 0,
+                "round_rows": 0,
+                "eligible_rows": 0,
+                "unique_demand_items": 0,
+                "orders": 0,
+                "round_orders": 0,
+                "excluded_order_count": 0,
+                "base_order_count": 0,
+                "eligible_fraction": null,
+                "excluded_reasons": {},
+                "conflicts": [],
+                "daily_value": null,
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              }
+            }
+          },
+          {
+            "store": "T",
+            "day": "2026-10-30",
+            "warehouse": "山东仓",
+            "name": "测试店",
+            "coverage": {
+              "version": "coverage-1",
+              "basis_day": "2026-10-30",
+              "through": null,
+              "stage_days": {
+                "model": null,
+                "signed": null,
+                "return": null,
+                "payment": null,
+                "receipt": null
+              },
+              "stage_reasons": {
+                "model": [
+                  "没有共同有效商品"
+                ],
+                "signed": [
+                  "没有共同有效商品"
+                ],
+                "return": [
+                  "没有共同有效商品"
+                ],
+                "payment": [
+                  "没有共同有效商品"
+                ],
+                "receipt": [
+                  "没有共同有效商品"
+                ]
+              },
+              "input_rows": 1,
+              "round_rows": 1,
+              "eligible_rows": 0,
+              "unique_demand_items": 0,
+              "orders": 0,
+              "round_orders": 1,
+              "excluded_order_count": 0,
+              "base_order_count": 0,
+              "eligible_fraction": "0",
+              "excluded_reasons": {
+                "历史预测依据不足或无效": 1
+              },
+              "conflicts": [],
+              "daily_value": null,
+              "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+            },
+            "groups": {
+              "必采": {
+                "version": "coverage-1",
+                "basis_day": null,
+                "through": null,
+                "stage_days": {
+                  "model": null,
+                  "signed": null,
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [
+                    "没有共同有效商品"
+                  ],
+                  "signed": [
+                    "没有共同有效商品"
+                  ],
+                  "return": [
+                    "没有共同有效商品"
+                  ],
+                  "payment": [
+                    "没有共同有效商品"
+                  ],
+                  "receipt": [
+                    "没有共同有效商品"
+                  ]
+                },
+                "input_rows": 0,
+                "round_rows": 0,
+                "eligible_rows": 0,
+                "unique_demand_items": 0,
+                "orders": 0,
+                "round_orders": 0,
+                "excluded_order_count": 0,
+                "base_order_count": 0,
+                "eligible_fraction": null,
+                "excluded_reasons": {},
+                "conflicts": [],
+                "daily_value": null,
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              },
+              "非必采": {
+                "version": "coverage-1",
+                "basis_day": "2026-10-30",
+                "through": null,
+                "stage_days": {
+                  "model": null,
+                  "signed": null,
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [
+                    "没有共同有效商品"
+                  ],
+                  "signed": [
+                    "没有共同有效商品"
+                  ],
+                  "return": [
+                    "没有共同有效商品"
+                  ],
+                  "payment": [
+                    "没有共同有效商品"
+                  ],
+                  "receipt": [
+                    "没有共同有效商品"
+                  ]
+                },
+                "input_rows": 1,
+                "round_rows": 1,
+                "eligible_rows": 0,
+                "unique_demand_items": 0,
+                "orders": 0,
+                "round_orders": 1,
+                "excluded_order_count": 0,
+                "base_order_count": 0,
+                "eligible_fraction": "0",
+                "excluded_reasons": {
+                  "历史预测依据不足或无效": 1
+                },
+                "conflicts": [],
+                "daily_value": null,
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              },
+              "属性待核": {
+                "version": "coverage-1",
+                "basis_day": null,
+                "through": null,
+                "stage_days": {
+                  "model": null,
+                  "signed": null,
+                  "return": null,
+                  "payment": null,
+                  "receipt": null
+                },
+                "stage_reasons": {
+                  "model": [
+                    "没有共同有效商品"
+                  ],
+                  "signed": [
+                    "没有共同有效商品"
+                  ],
+                  "return": [
+                    "没有共同有效商品"
+                  ],
+                  "payment": [
+                    "没有共同有效商品"
+                  ],
+                  "receipt": [
+                    "没有共同有效商品"
+                  ]
+                },
+                "input_rows": 0,
+                "round_rows": 0,
+                "eligible_rows": 0,
+                "unique_demand_items": 0,
+                "orders": 0,
+                "round_orders": 0,
+                "excluded_order_count": 0,
+                "base_order_count": 0,
+                "eligible_fraction": null,
+                "excluded_reasons": {},
+                "conflicts": [],
+                "daily_value": null,
+                "note": "本次商品按签发价加权；跨多轮仅最新业务日，不是当前库存周转。"
+              }
+            }
+          }
+        ],
+        "next_offset": null
+      }
+    }
+  },
+  {
+    "tool": "export_order_funnel",
+    "response": {
+      "task_id": "072ffdef5354426cb2ae8e93880ff909",
+      "kind": "analytics_export",
+      "state": "running",
+      "created": "2026-11-06T01:49:13.183200+00:00",
+      "message": "已受理",
+      "scope": "未保存结果仅在当前工作台会话有效"
+    }
+  },
+  {
+    "tool": "task_status",
+    "response": {
+      "task_id": "072ffdef5354426cb2ae8e93880ff909",
+      "kind": "analytics_export",
+      "state": "completed",
+      "created": "2026-11-06T01:49:13.183200+00:00",
+      "message": "报表已导出，业务数据未变",
+      "scope": "未保存结果仅在当前工作台会话有效",
+      "updated": "2026-11-06T01:49:14.546350+00:00",
+      "receipt": {
+        "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\exe-ui-rc2\\补货经营分析_20261106_094913_182479.xlsx",
+        "sha256": "a1b37059a2e6ae01f6ddf8df8d9c57a1cfff98310d071ef23fbf01ad0f106329",
+        "snapshot_id": "f7adaf84c0e52ee619472f1bfc8a094c4878774e47c595b401faf1f98a144c36",
+        "rows": 4,
+        "pending": 0,
+        "sheets": [
+          "门店经营对比",
+          "门店分仓对比",
+          "订单五段漏斗",
+          "门店逐轮天数",
+          "可售天数口径"
+        ],
+        "coverage_version": "coverage-1"
+      },
+      "events": [
+        {
+          "cursor": 3,
+          "at": "2026-11-06T01:49:13.421308+00:00",
+          "message": "读取签发与履约快照"
+        },
+        {
+          "cursor": 4,
+          "at": "2026-11-06T01:49:14.540384+00:00",
+          "message": "读取签发与履约快照"
+        },
+        {
+          "cursor": 5,
+          "at": "2026-11-06T01:49:14.546350+00:00",
+          "state": "completed",
+          "message": "报表已导出，业务数据未变",
+          "receipt": {
+            "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\coverage_0440\\exe-ui-rc2\\补货经营分析_20261106_094913_182479.xlsx",
+            "sha256": "a1b37059a2e6ae01f6ddf8df8d9c57a1cfff98310d071ef23fbf01ad0f106329",
+            "snapshot_id": "f7adaf84c0e52ee619472f1bfc8a094c4878774e47c595b401faf1f98a144c36",
+            "rows": 4,
+            "pending": 0,
+            "sheets": [
+              "门店经营对比",
+              "门店分仓对比",
+              "订单五段漏斗",
+              "门店逐轮天数",
+              "可售天数口径"
+            ],
+            "coverage_version": "coverage-1"
+          }
+        }
+      ],
+      "cursor": 5,
+      "in_current_session": false
+    }
+  }
+]
