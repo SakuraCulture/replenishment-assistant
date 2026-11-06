@@ -1,0 +1,141 @@
+{
+  "passed": true,
+  "records_converted": [
+    {
+      "table": "normal_revisions",
+      "rowid": 5,
+      "logical_sha256": "5cf2349b09390dc34b46b0b36125c87f396bd6599f69e2b6b8b7b5bf36318c74",
+      "legacy_bytes": 7744415,
+      "manifest_bytes": 1100629
+    },
+    {
+      "table": "normal_revisions",
+      "rowid": 6,
+      "logical_sha256": "a90006041bee7893723bb6a409fa514eaed5ddc94c7e2c09368fe89f0393abf0",
+      "legacy_bytes": 7744181,
+      "manifest_bytes": 1100504
+    },
+    {
+      "table": "normal_revisions",
+      "rowid": 1,
+      "logical_sha256": "a23089394f230674b2aeec8b7cc603b231c4b829f4b22b60faa4a9fa06bb4c3b",
+      "legacy_bytes": 4803076,
+      "manifest_bytes": 733724
+    },
+    {
+      "table": "normal_revisions",
+      "rowid": 2,
+      "logical_sha256": "7ee4b11a9a6a91fa4f390a01eb5ecbe4216efb5db6f12b1460da2393b62220ae",
+      "legacy_bytes": 5296245,
+      "manifest_bytes": 642990
+    },
+    {
+      "table": "normal_revisions",
+      "rowid": 7,
+      "logical_sha256": "662f713ca7fdf295e4da771f8d418e852f0583a188f1841f35b6a9a6edd6c2f5",
+      "legacy_bytes": 4841115,
+      "manifest_bytes": 713930
+    },
+    {
+      "table": "normal_revisions",
+      "rowid": 8,
+      "logical_sha256": "94cf7d865e4beb88e7c0681358b0b54a1bbdba3f56daf48b27e7fff6eb4664d7",
+      "legacy_bytes": 7779422,
+      "manifest_bytes": 1055580
+    },
+    {
+      "table": "normal_revisions",
+      "rowid": 4,
+      "logical_sha256": "63093d185d69865cea7cdbecffe56b8ff7a20c1b5269d43a302e402667defe36",
+      "legacy_bytes": 5641090,
+      "manifest_bytes": 652917
+    },
+    {
+      "table": "normal_revisions",
+      "rowid": 3,
+      "logical_sha256": "13951b96b859e4b2b60b40dee86dff0ab7a199dd4a14feb4873004f1718468ab",
+      "legacy_bytes": 6064622,
+      "manifest_bytes": 926515
+    },
+    {
+      "table": "normal_work_revisions",
+      "rowid": 1,
+      "logical_sha256": "259fdb898581603ea1048cbfdded14fbeda2ecedd8425587cfcddecd604654ad",
+      "legacy_bytes": 72483972,
+      "manifest_bytes": 3512517
+    },
+    {
+      "table": "normal_work_revisions",
+      "rowid": 2,
+      "logical_sha256": "ede515f42bfa1e0f6b0f3997fdf6908af95d4fca21f52f25189d05ea72bb2589",
+      "legacy_bytes": 47591977,
+      "manifest_bytes": 3470346
+    }
+  ],
+  "before": {
+    "catalog_sync_applies": "6f3ef5a793a1a7f17a35d33f0fae5121594da7c89797bdc91a8ff22691684687",
+    "jobs": "16fd2cdf388db842c93d3ef3d2f2451b90b903a77f8509e384d530a154ecc932",
+    "jst_active": "db3bb06b62366d42e1bf6f06703b20ae88f17014f4c3794da2daa921e7cafa21",
+    "jst_baselines": "3ac3970941d699b9486f798af70abd108abf6807699478773896674487914709",
+    "jst_events": "daf8361fac5c23fa3e8627f7cf0d50af4b1b78f5498711cc4bf3e58b4cf73bf0",
+    "jst_files": "2a388927d85aeebe1021143dc07e3b25279bdf36c3e6d3966f58117386faa5ef",
+    "jst_generations": "f22bc1070c887531b463e3ebd006dab723248c42d0ea5bf182744941dc1bace7",
+    "jst_headers": "f140a8d680de41a90ea771fa5d69c19bc93a1a9963c4411ea72a9ecbc993bbdc",
+    "jst_locks": "32caa92b62f95b4d356816bfe92b4bb5d9262a8c2e8db34ab648c72972d447ab",
+    "jst_reservations": "8f6c7a17d46dcf5e4e468babc431558506b5704efb4bf73ee085636191cd7b42",
+    "jst_runs": "990a8765a1840d96dbf666e0c4631242dc02c19e7b3f08616b558fc33ec759e7",
+    "jst_steps": "60024f773debeb8313fb1de13d2592dbc8d1324c5137e295942b5922cc32b1b3",
+    "jst_tasks": "38904dcf4971e6bbd6972eef5a764ae4a6a42e7ecefc28ee3bd4b75dc2a2e8ee",
+    "jst_warehouses": "147c773b467447f6a42996e3c761309a097e72cf752206db6c6c59bcf4aecdd6",
+    "lifecycle_events": "e809fb70ee302e18e41c533c640467b8d55751c2120aa1f994f06918e8cec8ac",
+    "lifecycle_files": "7c8b8930a89c2151b49073b491c4da23b9187f22abc8fa85d1455b15e1f54054",
+    "lifecycle_mappings": "a47de4b68ed8702e8b20419ba50d4501d750c15ffde2e16cb0b3ce15c67965f4",
+    "lifecycle_versions": "7be35311d35185ab59f9dfa8a13fa9e8422e672cd545a58e2f14a1662eafc5a3",
+    "normal_events": "608becd82d357558b0de15f6434720aedcda833e98c52dd76580d3ccbe30ea10",
+    "normal_orders": "6898b4bfd7a4f4889024d4d3bf13cfb172302cb0c65e4129a94428ef807a1a5a",
+    "normal_revisions": "6d911cf309d7bf2deea9c5bcfe7d0a83d4d1a20980b7eac425fb46eee87f464e",
+    "normal_work_revisions": "124b46c5f47729939f405f899f555d2e9a51008366bc0e1bc492d30607127ef7",
+    "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+    "retired_stock": "9734fb68997bc18a4a5f5dbcb9266cba3752ef2dc26a23d952ce99268ca0b064",
+    "source_files": "b03af696dc7ada8a20c22ffffc9f152877b334e05c308f390137da4b5ed83e82",
+    "sqlite_sequence": "03adfde57f1509bbbfb4e41fa653dba2c225f00ef3916717406fda6c1dda442e",
+    "stores": "8485e28b2991d72bf3f6e3a963c3f7a0b83467f4652e7171d86222e24f705930"
+  },
+  "after": {
+    "catalog_sync_applies": "6f3ef5a793a1a7f17a35d33f0fae5121594da7c89797bdc91a8ff22691684687",
+    "jobs": "16fd2cdf388db842c93d3ef3d2f2451b90b903a77f8509e384d530a154ecc932",
+    "jst_active": "db3bb06b62366d42e1bf6f06703b20ae88f17014f4c3794da2daa921e7cafa21",
+    "jst_baselines": "3ac3970941d699b9486f798af70abd108abf6807699478773896674487914709",
+    "jst_events": "daf8361fac5c23fa3e8627f7cf0d50af4b1b78f5498711cc4bf3e58b4cf73bf0",
+    "jst_files": "2a388927d85aeebe1021143dc07e3b25279bdf36c3e6d3966f58117386faa5ef",
+    "jst_generations": "f22bc1070c887531b463e3ebd006dab723248c42d0ea5bf182744941dc1bace7",
+    "jst_headers": "f140a8d680de41a90ea771fa5d69c19bc93a1a9963c4411ea72a9ecbc993bbdc",
+    "jst_locks": "32caa92b62f95b4d356816bfe92b4bb5d9262a8c2e8db34ab648c72972d447ab",
+    "jst_reservations": "8f6c7a17d46dcf5e4e468babc431558506b5704efb4bf73ee085636191cd7b42",
+    "jst_runs": "990a8765a1840d96dbf666e0c4631242dc02c19e7b3f08616b558fc33ec759e7",
+    "jst_steps": "60024f773debeb8313fb1de13d2592dbc8d1324c5137e295942b5922cc32b1b3",
+    "jst_tasks": "38904dcf4971e6bbd6972eef5a764ae4a6a42e7ecefc28ee3bd4b75dc2a2e8ee",
+    "jst_warehouses": "147c773b467447f6a42996e3c761309a097e72cf752206db6c6c59bcf4aecdd6",
+    "lifecycle_events": "e809fb70ee302e18e41c533c640467b8d55751c2120aa1f994f06918e8cec8ac",
+    "lifecycle_files": "7c8b8930a89c2151b49073b491c4da23b9187f22abc8fa85d1455b15e1f54054",
+    "lifecycle_mappings": "a47de4b68ed8702e8b20419ba50d4501d750c15ffde2e16cb0b3ce15c67965f4",
+    "lifecycle_versions": "7be35311d35185ab59f9dfa8a13fa9e8422e672cd545a58e2f14a1662eafc5a3",
+    "normal_events": "608becd82d357558b0de15f6434720aedcda833e98c52dd76580d3ccbe30ea10",
+    "normal_orders": "6898b4bfd7a4f4889024d4d3bf13cfb172302cb0c65e4129a94428ef807a1a5a",
+    "normal_revisions": "6d911cf309d7bf2deea9c5bcfe7d0a83d4d1a20980b7eac425fb46eee87f464e",
+    "normal_work_revisions": "124b46c5f47729939f405f899f555d2e9a51008366bc0e1bc492d30607127ef7",
+    "presets": "4f7833212d239a529f324be9c620418c76c1ad16860d12d93e518e0091322575",
+    "retired_stock": "9734fb68997bc18a4a5f5dbcb9266cba3752ef2dc26a23d952ce99268ca0b064",
+    "source_files": "b03af696dc7ada8a20c22ffffc9f152877b334e05c308f390137da4b5ed83e82",
+    "sqlite_sequence": "03adfde57f1509bbbfb4e41fa653dba2c225f00ef3916717406fda6c1dda442e",
+    "stores": "8485e28b2991d72bf3f6e3a963c3f7a0b83467f4652e7171d86222e24f705930"
+  },
+  "changed_protected": [],
+  "fixture_files": {
+    "archive_index.sqlite3": "f4c7248741c53130ac0575dd5b1a0526226eecf6cbeb2fbd6f5877bd9951adf6",
+    "lifecycle_index.sqlite3": "c834fdc8a2e30ffcabc72bc14200d0df7b5be372d4af2f1e6f835b5cfc6d8b56",
+    "workbench.sqlite3": "4555c1e33750c54d46c70f0e24b0b9f474fab8f16b4497daf63cd40ab134582b",
+    "workflows.sqlite3": "cd7335807a2c750aab9a2421f98365e305a60b5d46ec3305533fbdef9487c58c"
+  },
+  "purpose": "QA-only current-format fixture, semantic signatures preserved; not a product migration"
+}

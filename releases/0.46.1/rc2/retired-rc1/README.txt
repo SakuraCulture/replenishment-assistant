@@ -1,0 +1,1 @@
+rc1 is superseded: it omitted manifest validation for retiring records. Its performance results are not used for final claims. Two added tests demonstrated the defect before the rc2 fix. All original QA outputs and the unsealed EXE remain in their original paths.

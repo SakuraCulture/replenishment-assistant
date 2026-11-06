@@ -1,0 +1,64 @@
+{
+  "passed": true,
+  "error": null,
+  "checks": [
+    "old-model daily result remains readonly; current-model daily result remains editable",
+    "actual home backup action preserves full current-format values and snapshot digest",
+    "cooperative cancellation waits for worker cleanup and publishes no file",
+    "existing destination refused without overwriting",
+    "all maintenance actions preserve current live job revision and complete payload",
+    "native CLI backup preserves every SQL value and source hash",
+    "native CLI rejects retired format, leaves source untouched and publishes no database"
+  ],
+  "screenshots": [
+    "storage-backup.png",
+    "storage-backup-cancel.png"
+  ],
+  "version": {
+    "app": "补货助手",
+    "version": "0.46.1",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.1",
+    "model_version": "0.3.4-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "dbf5ee7fd339e2cb96608f0046debf2bd70b31f0",
+    "build_id": "rc2",
+    "built_at": "2026-11-06T19:28:19.657704+08:00",
+    "source_archive_sha256": "a8e9ce7372e1c06291055611f4335a0039fe882005df5833dca541fdd16a4084",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "dbf5ee7fd339e2cb96608f0046debf2bd70b31f0",
+      "files": 869,
+      "manifest_sha256": "735c9f051c702bfa2582b72fd013250b131df44de4e89e0f3d1705d9973237b8",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "77ce0ed35225722c2b9943c551db7c7e29af40ebdf2917491c74c53f76741f7d",
+      "files": 8,
+      "source_commit": "dbf5ee7fd339e2cb96608f0046debf2bd70b31f0",
+      "contains_user_state": false
+    }
+  },
+  "cli_backup": {
+    "passed": true,
+    "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\current_storage_0461_rc2\\exe-storage\\cli-backup.sqlite3",
+    "mode": "backup",
+    "records": {
+      "jobs": 1,
+      "normal_revisions": 0,
+      "normal_work_revisions": 0
+    },
+    "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\current_storage_0461_rc2\\exe-storage\\backup.sqlite3",
+    "source_modified": false
+  },
+  "exit_code": 0,
+  "remaining_children": [],
+  "development": false,
+  "exe_sha256": "9cbbfad388514b363916528c1cd7e0ae87d21f0ceea1cee07d811e43863e5819"
+}

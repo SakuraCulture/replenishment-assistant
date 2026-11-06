@@ -1,0 +1,23 @@
+FF
+======================================================================
+FAIL: test_corrupt_orphan_work_manifest_rejected_before_reclamation (test_current_storage.RejectionAtomicity.test_corrupt_orphan_work_manifest_rejected_before_reclamation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_current_storage.py", line 51, in test_corrupt_orphan_work_manifest_rejected_before_reclamation
+    with self.assertRaisesRegex(ValueError,'校验'):m.execute(self.path,plan)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_corrupt_old_signed_revision_rejected_before_parent_deletion (test_current_storage.RejectionAtomicity.test_corrupt_old_signed_revision_rejected_before_parent_deletion)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_current_storage.py", line 57, in test_corrupt_old_signed_revision_rejected_before_parent_deletion
+    with self.assertRaisesRegex(ValueError,'校验'):m.execute(self.path,plan)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.243s
+
+FAILED (failures=2)
