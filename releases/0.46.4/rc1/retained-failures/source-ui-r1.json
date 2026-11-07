@@ -1,0 +1,14 @@
+{
+  "passed": false,
+  "frozen_exe": false,
+  "live_platform": false,
+  "checks": [
+    "复现六份重复预览：不再误当平台任务，五份原上传待核仍阻止删除",
+    "取消结束操作时原任务完整保留"
+  ],
+  "source_commit": "source",
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\deletion_void_smoke.py\", line 86, in run\n    ended=manager.store.get(duplicate['id']);assert ended['items'][0]['ended_locally']\n                                                    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\nKeyError: 'ended_locally'\n",
+  "heartbeat_ticks": 1,
+  "process_exit": 0,
+  "accepted": false
+}

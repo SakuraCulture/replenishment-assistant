@@ -1,0 +1,10 @@
+.........WARNING:root:翱象调度锁初始化失败: C:\Users\lenovo\AppData\Local\Temp\tmp4ki7fdcn\aoxiang
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 84, in __init__
+    self.owner.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+...
+----------------------------------------------------------------------
+Ran 12 tests in 1.891s
+
+OK

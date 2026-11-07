@@ -1,0 +1,53 @@
+✔ native main/detail XLSX values are read by contract and strictly compared per SKU (73.1343ms)
+✖ known-task service reaches native void proof and refreshes only completed old export runs (79.8734ms)
+✔ decimal facts retain precision and reject null/number/exponent/negative (1.5316ms)
+✔ reserve idempotent; changed payment and different ID cannot duplicate an order (38.5862ms)
+✔ pre-upload cancel releases reservation; post-boundary cancel cannot release it (32.5729ms)
+✔ crash before upload pauses; crash after boundary needs review and never retries (44.2699ms)
+✔ pause during preparation never uploads; retry uses original intent safely (33.1034ms)
+✔ pause in upload persists returned receipt; next start only observes it (29.8493ms)
+✔ timeout no receipt forbids replay; late exact receipt can recover (39.4615ms)
+✔ strict per-SKU proof catches equal-total swaps, wrong scope, null, split, status and external order (0.7511ms)
+✔ receipt identity cannot change; conflicting task retained for review (30.3265ms)
+✔ recovered verification repeats read-only observation and protects unique platform order (38.7904ms)
+✔ missing durable table or duplicate protection index fails closed and keeps backup (26.3694ms)
+✔ legacy component migration cannot silently omit a reserved or submitted creation identity (25.7512ms)
+✔ immediate close before preparation microtask pauses without upload or lost task (28.3883ms)
+✔ native Excel whole-valued decimal SKU count binds without weakening quantity or amount checks (0.5447ms)
+✔ voided original purchase still needs exact receipt, identity, marker and every native SKU (0.817ms)
+✔ observing a void retains the original receipt and prevents duplicate upload after restart (33.5085ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 17
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2327.6004
+
+✖ failing tests:
+
+test at test\purchase-create-evidence.test.mjs:37:1
+✖ known-task service reaches native void proof and refreshes only completed old export runs (79.8734ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + Comparison {}
+  - Comparison {
+  -   code: 'PURCHASE_PROOF_CHANGED'
+  - }
+  
+      at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/purchase-create-evidence.test.mjs:69:62)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: Invalid comment length. Expected: 7. Found: 0. Are there extra bytes at the end of the file? Or is the end of central dir signature `PK☺☻` in the comment?
+        at D:\优团工作文件夹\outputs\replenishment_mvp_20261029\components\aoxiang\node_modules\yauzl\index.js:134:25
+        at D:\优团工作文件夹\outputs\replenishment_mvp_20261029\components\aoxiang\node_modules\yauzl\index.js:772:5
+        at D:\优团工作文件夹\outputs\replenishment_mvp_20261029\components\aoxiang\node_modules\yauzl\fd-slicer.js:33:7
+        at FSReqCallback.wrapper [as oncomplete] (node:fs:730:5),
+    expected: { code: 'PURCHASE_PROOF_CHANGED' },
+    operator: 'rejects',
+    diff: 'simple'
+  }

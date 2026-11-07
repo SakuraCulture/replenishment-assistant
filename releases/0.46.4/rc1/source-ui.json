@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "frozen_exe": false,
+  "live_platform": false,
+  "checks": [
+    "复现六份重复预览：不再误当平台任务，五份原上传待核仍阻止删除",
+    "取消结束操作时原任务完整保留",
+    "只结束勾选的重复预览，未选任务不变，未调用平台",
+    "仅继续五笔原受理任务，已关联第六单及采购身份不变，没有新上传",
+    "已核实作废单独计数，旧关联只表示上次核验，不声称实时有效",
+    "全部已核实后允许返回完整删除范围确认；本验收未删除业务订单",
+    "关闭重开保留采购单号及作废状态，完成项不重复执行"
+  ],
+  "source_commit": "source",
+  "original_task_checks": [
+    "original-0",
+    "original-1",
+    "original-2",
+    "original-3",
+    "original-4"
+  ],
+  "synthetic_uploads": 0,
+  "heartbeat_ticks": 56,
+  "process_exit": 0,
+  "accepted": true
+}
