@@ -7,7 +7,10 @@ for name in ['河北仓.xlsx','山东仓.xlsx','sales.xlsx','duplicate.xlsx']:as
 out=a.output.resolve();out.mkdir(parents=True,exist_ok=False);env=os.environ.copy()
 for k in ['PYTHONPATH','PYTHONHOME','QT_QPA_PLATFORM','QT_PLUGIN_PATH']:env.pop(k,None)
 env['PATH']=str(Path(env['WINDIR'])/'System32')+';'+env['WINDIR'];env['REPLENISHMENT_DATA_DIR']=str(out/'settings')
-run=subprocess.run([str(a.exe.resolve()),'--warehouse-smoke',str(a.fixtures.resolve()),str(out)],cwd=out,env=env,timeout=180)
+with (out/'process.log').open('w',encoding='utf-8') as log:
+    run=subprocess.Popen([str(a.exe.resolve()),'--warehouse-smoke',str(a.fixtures.resolve()),str(out)],cwd=out,env=env,stdout=log,stderr=log)
+    try:run.wait(timeout=180)
+    except subprocess.TimeoutExpired:raise TimeoutError('Inspect isolated QA process; not killed: PID '+str(run.pid)) from None
 assert run.returncode==0,run.returncode
 report=json.loads((out/'warehouse_ui_report.json').read_text(encoding='utf-8'));assert report['passed'],report
-report['exe_sha256']=hashlib.sha256(a.exe.read_bytes()).hexdigest();(out/'warehouse_ui_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(report,ensure_ascii=False,indent=2))
+report.update(exe_sha256=hashlib.sha256(a.exe.read_bytes()).hexdigest(),process_exit=run.returncode,frozen_exe=True);(out/'warehouse_ui_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(report,ensure_ascii=False,indent=2))

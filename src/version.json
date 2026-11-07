@@ -1,9 +1,9 @@
 {
   "app": "补货助手",
-  "version": "0.46.4",
+  "version": "0.46.5",
   "parameter_schema_version": 3,
   "job_schema_version": 1,
-  "routing_version": "0.5.1",
+  "routing_version": "0.5.2",
   "model_version": "0.3.4-rules",
   "model_baseline": "v0.3.0-baseline",
   "entry": "补货助手.exe",
