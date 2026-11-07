@@ -297,7 +297,7 @@ def continue_batch(path,batch_id,progress=lambda _:None,cancel=None):
     return execute(path,preview_existing(path,batch_id,progress=progress,cancel=cancel),progress=progress,cancel=cancel)
 
 
-def drain(path,progress=lambda _:None,cancel=None):
+def drain(path,progress=lambda _:None,cancel=None,*,before_work=lambda:None):
     with closing(sqlite3.connect(path)) as db:
         if not exists(db):checkpoint(cancel);return []
         ids = [r[0] for r in db.execute("SELECT batch_id FROM jst_batches WHERE status='active' ORDER BY rowid")]
@@ -306,6 +306,7 @@ def drain(path,progress=lambda _:None,cancel=None):
     for bid in ids:
         try:
             checkpoint(cancel)
+            before_work()
             plan = preview_existing(path,bid,progress=progress,cancel=cancel)
             out.append(execute(path,plan,progress=progress,cancel=cancel,background=True))
         except Cancelled:

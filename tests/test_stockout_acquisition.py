@@ -20,6 +20,7 @@ class NativeFixture:
     def __init__(self,root,cancel):
         self.root=root;self.cancel=cancel;self.calls=[];self.commands={};self.observation=None
         self.ack=None;self.operation=None;self.pause_on_reserve=False;self.unknown_once=False;self.mapping='m1'
+        self.codes=['S'];self.fail_codes=set();self.bad_store_codes=set();self.results={};self.before_reserve=None
         folder=root/'jst/downloads/batch/item';folder.mkdir(parents=True)
         source=workbook(folder/'source.xlsx',['商品编码','分类','基本售价','出库箱规','商品状态','可用数','供应商名称','虚拟分类'],
                         [['A','饮品',2,1,'启用',0,'供应商甲',''],['B','饮品',2,1,'禁用',0,'供应商乙','淘便考核']])
@@ -52,24 +53,41 @@ class NativeFixture:
             if action=='sync.resume':return {}
             raise AssertionError(action)
         if action=='configuration':return {'configured':True,'enabled':True,'account_binding':{'account_id':'A','merchant_code':'M'},
-            'store_mapping_version':self.mapping,'targets':[{'buyerWarehouseCode':'S','displayName':'测试门店'}]}
+            'store_mapping_version':self.mapping,'targets':[{'buyerWarehouseCode':code,'displayName':'测试门店'+code} for code in self.codes]}
         if action=='reserve':
             command=v['command'];cid=command['command_id']
+            if self.before_reserve:self.before_reserve(command)
             if cid not in self.commands:
                 folder=self.root/'ax/command-files'/cid;folder.mkdir(parents=True)
-                source=workbook(folder/'source.xlsx',['仓库/门店编码','商品编码','商品名称','月销','可用库存','在途库存'],
-                                [['S','A','商品A',1,0,6],['S','B','商品B',1,2,0]])
-                sha=file_hash(source);destination=folder/('0-'+sha+'.xlsx');source.rename(destination)
-                result={'warehouse_code':'S','run_id':'native-'+cid,'file':str(destination.resolve()),'sha256':sha,'bytes':destination.stat().st_size,
-                        'rows':2,'account_binding':command['account_binding'],'collected_at':'2026-11-07T08:00:00+08:00'}
+                items=[]
+                for index,code in enumerate(command['scope']['warehouse_codes']):
+                    raw_code='WRONG' if code in self.bad_store_codes else code
+                    source=workbook(folder/'source.xlsx',['仓库/门店编码','商品编码','商品名称','月销','可用库存','在途库存'],
+                                    [[raw_code,'A','商品A',1,0,6],[raw_code,'B','商品B',1,2,0]])
+                    sha=file_hash(source);destination=folder/(str(index)+'-'+sha+'.xlsx');source.rename(destination)
+                    native='native-'+cid+'-'+code
+                    result={'warehouse_code':code,'run_id':native,'file':str(destination.resolve()),'sha256':sha,'bytes':destination.stat().st_size,
+                            'rows':2,'account_binding':command['account_binding'],'collected_at':'2026-11-07T08:00:00+08:00'}
+                    self.results[(cid,code)]=result
+                    failed=code in self.fail_codes
+                    items.append({'index':index,'warehouse_code':code,'run_id':native,'task_id':'accepted-'+native,
+                                  'state':'FAILED' if failed else 'SUCCEEDED','result':None if failed else result,
+                                  'error':{'code':'QUERY_FILE_COUNT_DIFF','message':'原件条数待核对'} if failed else None})
                 self.commands[cid]={'id':cid,'fingerprint':fingerprint(command),'request':command,'sequence':1,'state':'SUCCEEDED',
-                    'items':[{'index':0,'warehouse_code':'S','run_id':'native-'+cid,'state':'SUCCEEDED','result':result,'error':None}]}
+                    'items':items}
+                if any(i['state']=='FAILED' for i in items):self.commands[cid]['state']='COMPLETED_WITH_ERRORS'
                 if self.pause_on_reserve:self.commands[cid]['state']='RUNNING';self.cancel.set()
                 if self.unknown_once:self.unknown_once=False;raise RuntimeError('受理响应中断，结果未知')
             return {'record':copy.deepcopy(self.commands[cid])}
         if action=='status':return copy.deepcopy(self.commands[v['command_id']])
         if action in {'resume','pause'}:
             row=self.commands[v['command_id']];row['sequence']+=1;row['state']='PAUSED' if action=='pause' else 'SUCCEEDED';return copy.deepcopy(row)
+        if action=='retry':
+            row=self.commands[v['command_id']];assert row['sequence']==v['sequence']
+            for index in v['indices']:
+                item=row['items'][index];assert item['state']=='FAILED'
+                item.update(state='SUCCEEDED',error=None,result=self.results[(row['id'],item['warehouse_code'])])
+            row['sequence']+=1;row['state']='SUCCEEDED';return copy.deepcopy(row)
         raise AssertionError(action)
 
 
@@ -81,6 +99,114 @@ class PipelineTests(unittest.TestCase):
         self.cancel=threading.Event();self.native=NativeFixture(self.root,self.cancel)
 
     def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+
+    def select(self,codes):
+        self.native.codes=list(codes)
+        self.repo.save_settings({'stores':[{'code':c,'name':'测试门店'+c} for c in codes],
+                                'routes':{c:{'primary':'山东仓','secondary':None} for c in codes},'profile':None})
+
+    def test_all_stores_share_one_ordered_command_linked_before_dispatch(self):
+        self.select(['T','S','U']);rid=self.repo.new_run()['id']
+        def linked(command):
+            self.assertEqual(self.repo.run(rid)['external']['ax_commands'],{c:command['command_id'] for c in ['T','S','U']})
+        self.native.before_reserve=linked
+        result=self.run_it(rid)
+        self.assertEqual(result['state'],'COMPLETE');self.assertEqual(len(self.native.commands),1)
+        job=Jobs(self.repo.root/'aoxiang/jobs.sqlite3').recent()[0]
+        self.assertEqual(job['command']['scope']['warehouse_codes'],['T','S','U'])
+        self.assertEqual(job['context']['purpose'],'stockout_analysis')
+        self.assertEqual([s['store'] for s in result['stores']],['T','S','U'])
+        self.assertTrue(all(s['state']=='READY' for s in result['stores']))
+
+    def test_partial_batch_revision_retries_only_failed_store_same_command(self):
+        self.select(['S','T','U']);self.native.fail_codes={'T'};rid=self.repo.new_run()['id']
+        first=self.run_it(rid);self.assertEqual(first['state'],'PARTIAL')
+        self.assertEqual([s['state'] for s in first['stores']],['READY','FAILED','READY'])
+        cid=next(iter(self.native.commands));original=copy.deepcopy(self.native.commands[cid]['items'][0])
+        revision=self.repo.new_run(source_run=rid)['id'];last=self.run_it(revision)
+        self.assertEqual(last['state'],'COMPLETE');self.assertEqual(len(self.native.commands),1)
+        retries=[p['values'] for s,p in self.native.calls if p.get('action')=='retry']
+        self.assertEqual([r['indices'] for r in retries],[[1]])
+        self.assertEqual(self.native.commands[cid]['items'][0],original)
+        self.assertEqual(self.repo.run(rid),first)
+
+    def test_multistore_cancel_keeps_batch_identity(self):
+        self.select(['S','T','U']);rid=self.repo.new_run()['id'];self.native.pause_on_reserve=True
+        with self.assertRaises(Cancelled):self.run_it(rid)
+        command=copy.deepcopy(next(iter(self.native.commands.values()))['request'])
+        self.cancel.clear();self.native.pause_on_reserve=False
+        self.assertEqual(self.run_it(rid)['state'],'COMPLETE')
+        self.assertEqual(next(iter(self.native.commands.values()))['request'],command)
+        self.assertEqual(len(self.native.commands),1)
+    def test_multistore_unknown_response_reconciles_same_batch(self):
+        self.select(['S','T','U']);rid=self.repo.new_run()['id'];self.native.unknown_once=True
+        with self.assertRaises(ValueError):self.run_it(rid)
+        ids=list(self.native.commands)
+        self.assertEqual(self.run_it(rid)['state'],'COMPLETE');self.assertEqual(list(self.native.commands),ids)
+        self.assertEqual(len(ids),1)
+
+    def test_cancel_during_projection_preserves_ready_store_and_original_files(self):
+        from unittest.mock import patch
+        from stockout_facts import load_store
+        self.select(['S','T','U']);rid=self.repo.new_run()['id'];seen=[]
+        def project(*args,**kw):
+            seen.append(args[2]);result=load_store(*args,**kw)
+            if seen==['S']:self.cancel.set()
+            return result
+        with patch('stockout_acquisition.load_store',project):
+            with self.assertRaises(Cancelled):self.run_it(rid)
+            ready=self.repo.run(rid)['stores'][0]['snapshot']
+            self.cancel.clear();self.assertEqual(self.run_it(rid)['state'],'COMPLETE')
+        self.assertEqual(seen,['S','T','U']);self.assertEqual(self.repo.run(rid)['stores'][0]['snapshot'],ready)
+        self.assertEqual(len([p for s,p in self.native.calls if p.get('action')=='reserve']),1)
+
+    def test_existing_single_store_commands_resume_without_merging_or_recreating(self):
+        from aoxiang_acquisition import prepare
+        self.select(['S','T','U']);rid=self.repo.new_run()['id'];jobs=Jobs(self.repo.root/'aoxiang/jobs.sqlite3')
+        config=self.native.rpc('ax',action='configuration',values={});commands={}
+        for code in ['S','T']:
+            commands[code]=prepare(jobs,config,[code],'refresh',day='2026-11-07',purpose='stockout_analysis',owner=rid)['id']
+        self.repo.change(rid,external={'ax_commands':commands})
+        result=self.run_it(rid);self.assertEqual(result['state'],'COMPLETE')
+        for code,cid in commands.items():
+            self.assertEqual(result['external']['ax_commands'][code],cid)
+            self.assertEqual(self.native.commands[cid]['request']['scope']['warehouse_codes'],[code])
+        self.assertEqual(len(self.native.commands),3)
+
+    def test_business_conflict_only_blocks_affected_store(self):
+        from aoxiang_acquisition import prepare
+        self.select(['S','T','U']);rid=self.repo.new_run()['id'];jobs=Jobs(self.repo.root/'aoxiang/jobs.sqlite3')
+        config=self.native.rpc('ax',action='configuration',values={})
+        business=prepare(jobs,config,['T'],'refresh',day='2026-11-07')
+        result=self.run_it(rid);self.assertEqual(result['state'],'PARTIAL')
+        self.assertEqual([s['state'] for s in result['stores']],['READY','FAILED','READY'])
+        self.assertIn(business['id'],result['stores'][1]['error']);self.assertEqual(jobs.get(business['id']),business)
+        self.assertEqual(next(iter(self.native.commands.values()))['request']['scope']['warehouse_codes'],['S','U'])
+
+    def test_bad_store_data_does_not_discard_other_complete_files(self):
+        self.select(['S','T','U']);self.native.bad_store_codes={'T'};rid=self.repo.new_run()['id']
+        result=self.run_it(rid);self.assertEqual(result['state'],'PARTIAL')
+        self.assertEqual([s['state'] for s in result['stores']],['READY','FAILED','READY'])
+        self.assertIn('门店',result['stores'][1]['error']);self.assertEqual(len(self.native.commands),1)
+
+    def test_changed_original_still_rejects_manifest_without_adoption(self):
+        self.select(['S','T']);rid=self.repo.new_run()['id'];self.native.pause_on_reserve=True
+        with self.assertRaises(Cancelled):self.run_it(rid)
+        row=next(iter(self.native.commands.values()))
+        Path(row['items'][1]['result']['file']).write_bytes(b'changed')
+        self.cancel.clear();self.native.pause_on_reserve=False
+        with self.assertRaisesRegex(ValueError,'没有完整验收'):self.run_it(rid)
+        self.assertTrue(all(s['snapshot'] is None for s in self.repo.run(rid)['stores']))
+        self.assertEqual(len(self.native.commands),1)
+
+    def test_incomplete_batch_association_cannot_dispatch_broader_scope(self):
+        from aoxiang_acquisition import prepare
+        self.select(['S','T']);rid=self.repo.new_run()['id'];jobs=Jobs(self.repo.root/'aoxiang/jobs.sqlite3')
+        config=self.native.rpc('ax',action='configuration',values={})
+        job=prepare(jobs,config,['S'],'refresh',day='2026-11-07',purpose='stockout_analysis',owner=rid)
+        self.repo.change(rid,external={'ax_commands':{'S':job['id'],'T':job['id']}})
+        with self.assertRaises(ValueError):self.run_it(rid)
+        self.assertEqual(self.native.commands,{})
 
     def test_native_handshake_complete_and_no_business_publication(self):
         rid=self.repo.new_run()['id'];result=self.run_it(rid)

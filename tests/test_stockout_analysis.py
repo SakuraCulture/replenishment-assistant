@@ -48,6 +48,41 @@ class AnalysisTests(unittest.TestCase):
         folder=self.root/'unused';repo=Repository(folder)
         self.assertFalse(folder.exists());self.assertFalse(repo.path.exists())
 
+    def test_native_v2_three_unused_margin_headers_are_accepted(self):
+        import json
+        contract=json.loads((Path(__file__).resolve().parents[1]/'components/aoxiang/assets/field-contract-v2.json').read_text('utf-8'))
+        heads=[c['rawHeader'] for c in contract['columns']]
+        self.assertEqual(heads.count('毛利'),3)
+        values={'仓库/门店编码':'S','商品编码':'A','商品名称':'原生商品','月销':5,'可用库存':0,'在途库存':6}
+        source=workbook(self.root/'native-v2.xlsx',heads,[[values.get(h,100+i if h=='毛利' else None) for i,h in enumerate(heads)]])
+        before=file_hash(source);run=self.repo.new_run(day='2026-11-07')
+        load_store(self.repo,run['id'],'S',source,observed='2026-11-07T08:00:00+08:00',expected=before,expected_rows=1)
+        self.repo.publish(run['id'])
+        self.assertEqual((self.total()['base'],self.total()['zero']),(1,1));self.assertEqual(file_hash(source),before)
+        with self.repo.connect() as db:self.assertEqual(tuple(db.execute('SELECT month,stock,inbound FROM facts').fetchone()),(5,0,6))
+
+    def test_repeated_consumed_headers_name_columns_and_never_guess(self):
+        from stockout_facts import table,STORE_FIELDS
+        for header in STORE_FIELDS:
+            with self.subTest(header=header):
+                heads=list(STORE_FIELDS)+[' '+header+' ']
+                source=workbook(self.root/'bad-heads.xlsx',heads,[['S','A','商品',1,0,0,'食品','正常',99]])
+                with self.assertRaisesRegex(ValueError,'分析使用的表头重复：'+header):
+                    with table(source,['仓库/门店编码','商品编码','月销','可用库存'],used=STORE_FIELDS):pass
+
+    def test_catalog_optional_tag_or_supplier_duplicates_remain_blocked(self):
+        for header in ['虚拟分类','供应商名称','可用数']:
+            with self.subTest(header=header):
+                source=workbook(self.root/'catalog-duplicate.xlsx',['商品编码',header,header],[['A','first','last']])
+                with self.assertRaisesRegex(ValueError,'分析使用的表头重复：'+header):load_catalog(self.repo,source,'山东仓')
+
+    def test_duplicate_unused_columns_cannot_override_consumed_values(self):
+        from stockout_facts import table,STORE_FIELDS
+        source=workbook(self.root/'duplicates.xlsx',['仓库/门店编码','商品编码','月销','可用库存','毛利','毛利'],[['S','A',7,0,12,99]])
+        with table(source,['仓库/门店编码','商品编码','月销','可用库存'],used=STORE_FIELDS) as (_,rows):
+            value=list(rows)[0][1]
+        self.assertEqual(value,{'仓库/门店编码':'S','商品编码':'A','月销':7,'可用库存':0})
+
     def test_base_stock_zero_and_inbound(self):
         self.publish([('A',3,0),('B',4,1),('C',0,0)])
         value=self.total()

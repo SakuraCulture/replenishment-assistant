@@ -8,6 +8,9 @@ from runtime_support import checkpoint
 from warehouse_routing import select_warehouse
 from virtual_categories import RETIRED
 
+CATALOG_FIELDS=('商品编码','商品名称','商品状态','可用数','分类','供应商名称','虚拟分类')
+STORE_FIELDS=('仓库/门店编码','商品编码','商品名称','月销','可用库存','在途库存','分类','补货状态')
+
 
 def identifier(value):
     # Use the original precision contract, including rejection of >15-digit numbers.
@@ -19,8 +22,10 @@ def identifier(value):
 
 
 @contextmanager
-def table(path, required, cancel=None):
+def table(path, required, cancel=None, *, used=()):
     import openpyxl
+    from table_records import table_records
+    from openpyxl.utils import get_column_letter
     book = openpyxl.load_workbook(path, read_only=True, data_only=False, keep_links=False)
     try:
         choices=[]
@@ -30,16 +35,23 @@ def table(path, required, cancel=None):
                 checkpoint(cancel)
                 if index>50:
                     break
-                heads=[str(v or '').strip() for v in row]
+                heads=[str(v).strip() if v is not None else '' for v in row]
                 if set(required)<=set(heads):
-                    nonempty=[v for v in heads if v]
-                    if len(nonempty)!=len(set(nonempty)):
-                        raise ValueError('原件存在重复表头：'+sheet.title)
+                    needed=set(required)|set(used)
+                    # Same boundary as replenishment: duplicate unused native
+                    # columns (e.g. the three 毛利 columns) are not ambiguous inputs.
+                    # Validate optional fields too whenever analysis consumes them.
+                    try:table_records(heads,(),sheet.title,[h for h in dict.fromkeys(heads) if h in needed])
+                    except ValueError:
+                        ambiguous=[h for h in dict.fromkeys(heads) if h in needed and heads.count(h)>1]
+                        detail='、'.join(h+'（'+ '、'.join(get_column_letter(i+1) for i,v in enumerate(heads) if v==h)+'列）' for h in ambiguous)
+                        raise ValueError(f'分析使用的表头重复：{detail}；工作表“{sheet.title}”第{index}行。无法确定应使用哪列，请核对导出格式；原文件未改动。') from None
                     choices.append((sheet,index,heads))
                     break
         if len(choices)!=1:
             raise ValueError('原件需要且只能有一张含这些表头的数据表：'+'、'.join(required))
         sheet,start,heads=choices[0]
+        positions=[(i,h) for i,h in enumerate(heads) if h in set(required)|set(used)]
         def rows():
             for line,values in enumerate(sheet.iter_rows(min_row=start+1,values_only=True),start+1):
                 checkpoint(cancel)
@@ -47,7 +59,7 @@ def table(path, required, cancel=None):
                     continue
                 if any(isinstance(v,str) and len(v)>65536 for v in values):
                     raise ValueError(f'第{line}行字段异常过长，请核对原件')
-                yield line,dict(zip(heads,values))
+                yield line,{h:values[i] if i<len(values) else None for i,h in positions}
         yield heads,rows()
     finally:
         book.close()
@@ -65,7 +77,7 @@ def load_catalog(repo, source, warehouse, *, expected=None, expected_rows=None, 
             raise ValueError('仓原件条数与平台回执不一致')
         return sha
     count=0
-    with table(path,['商品编码'],cancel) as (heads,rows):
+    with table(path,['商品编码'],cancel,used=CATALOG_FIELDS) as (heads,rows):
         # Store rows under immutable source hash; incomplete projections are never adopted.
         with repo.connect(write=True) as db:
             db.execute('DELETE FROM catalog_items WHERE sha=?',(sha,))
@@ -159,7 +171,7 @@ def load_store(repo,rid,store,source,*,observed,expected=None,expected_rows=None
     profile=basis.get('profile')
     mandatory={i['sku'] for i in profile['items']} if profile else None
     count=0;batch=[];batch_bytes=0
-    with table(path,['仓库/门店编码','商品编码','月销','可用库存'],cancel) as (heads,rows), repo.connect() as reader:
+    with table(path,['仓库/门店编码','商品编码','月销','可用库存'],cancel,used=STORE_FIELDS) as (heads,rows), repo.connect() as reader:
         for line,row in rows:
             if identifier(row.get('仓库/门店编码'))!=store:
                 raise ValueError(f'第{line}行出现其他门店，不能混入本店快照')

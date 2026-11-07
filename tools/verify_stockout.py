@@ -16,17 +16,23 @@ def fixture(out):
     write(out/'synthetic.json',{'synthetic':True,'no_live_platform':True})
     write(settings/'store_supply.json',{s:{'primary':'山东仓','secondary':None} for s in ('S','T')})
     write(settings/'must_sell.json',make_profile([{'sku':s,'name':s,'category':'测试'} for s in ('A','L')],'隔离测试必卖清单'))
-    def book(name,heads,rows):
-        path=inputs/(name+'.xlsx');b=openpyxl.Workbook(write_only=True);w=b.create_sheet();w.append(heads)
+    def book(name,heads,rows,sheet_name=None):
+        path=inputs/(name+'.xlsx');b=openpyxl.Workbook(write_only=True);w=b.create_sheet(title=sheet_name);w.append(heads)
         for row in rows:w.append(row)
         b.save(path);b.close();return {'file':str(path),'sha256':file_hash(path),'rows':len(rows)}
     tags=['标杆淘汰','淘便考核','标杆淘汰;淘便考核','','']
     catalog=book('山东仓',['商品编码','商品状态','可用数','分类','供应商名称','虚拟分类'],
                  [[s,'禁用' if s=='C' else '启用',10,'饮品' if i%2 else '食品','供货商'+str(i%2),tags[i]] for i,s in enumerate('ABCDE')])
     observed=today()+'T08:00:00+08:00';files=[]
+    contract=json.loads((ROOT/'components/aoxiang/assets/field-contract-v2.json').read_text('utf-8'))
+    heads=[c['rawHeader'] for c in contract['columns']];assert heads.count('毛利')==3
     for store,skus in [('S','ABCDEL'),('T','DEL')]:
-        value=book(store,['仓库/门店编码','商品编码','商品名称','月销','可用库存','在途库存','补货状态'],
-                   [[store,s,s,3,1 if s in 'BE' else 0,6,'停采' if s=='C' else '正常'] for s in skus])
+        rows=[]
+        for sku in skus:
+            fields={'仓库/门店编码':store,'商品编码':sku,'商品名称':sku,'月销':3,'可用库存':1 if sku in 'BE' else 0,
+                    '在途库存':6,'补货状态':'停采' if sku=='C' else '正常'}
+            rows.append([fields.get(h,index if h=='毛利' else None) for index,h in enumerate(heads)])
+        value=book(store,heads,rows,contract['nativeSheetName'])
         files.append({**value,'store':store,'observed':observed})
     write(out/'ingest.json',{'day':today(),'catalogs':{'山东仓':catalog},'files':files})
 

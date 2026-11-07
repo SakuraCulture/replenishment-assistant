@@ -1,4 +1,4 @@
-"""Actual source/frozen Qt acceptance. Marked synthetic inputs only; no platform RPC."""
+"""Actual source/frozen Qt acceptance. Marked synthetic inputs; no live platform RPC."""
 import json,os,sys,time,traceback,sqlite3,hashlib
 from pathlib import Path
 from PySide6.QtCore import QTimer
@@ -51,12 +51,53 @@ def start_smoke(app,win,args):
             # Deliberately reject every bridge request; this acceptance cannot reach a real platform.
             import stockout_task
             original_request=stockout_task.Bridge.request
-            stockout_task.Bridge.request=lambda *a,**k:(_ for _ in ()).throw(AssertionError('Live RPC forbidden in synthetic smoke'))
+            forbidden=lambda *a,**k:(_ for _ in ()).throw(AssertionError('Live RPC forbidden in synthetic smoke'))
+            stockout_task.Bridge.request=forbidden
             entry.enter();wait(idle)
             require(entry.page is not None and (settings/'analysis/stockout/stockout.sqlite3').is_file(),'First entry lazily creates independent database')
             spec=json.loads((out/'ingest.json').read_text('utf-8'))
             request('adopt',{'stores':[{'code':'S','name':'测试门店S'},{'code':'T','name':'测试门店T'}]})
             run=request('ingest',spec);require(run['state']=='COMPLETE','Same worker projection publishes complete synthetic daily snapshot')
+            # Drive the actual acquisition worker over a closed offline protocol
+            # fixture, proving that the frozen EXE passes both stores together.
+            import copy,shutil
+            from aoxiang_jobs import fingerprint
+            from stockout_repository import Repository
+            native={};native_root=out/'offline-ax';calls=[]
+            def native_request(bridge,payload):
+                calls.append(copy.deepcopy(payload));service=payload['service']
+                if service=='release_ax':return True
+                if service=='ax_root':return str(native_root)
+                if service!='ax':raise AssertionError('Live platform service forbidden: '+service)
+                action=payload['action'];values=payload.get('values',{})
+                if action=='configuration':return {'configured':True,'enabled':True,'account_binding':{'account_id':'offline','merchant_code':'QA'},
+                    'store_mapping_version':'offline-v1','targets':[{'buyerWarehouseCode':s,'displayName':'测试'+s} for s in ('S','T')]}
+                if action=='reserve':
+                    command=values['command'];cid=command['command_id']
+                    assert command['operation']=='replenishment.export'
+                    if cid not in native:
+                        folder=native_root/'command-files'/cid;folder.mkdir(parents=True);items=[]
+                        for index,code in enumerate(command['scope']['warehouse_codes']):
+                            file=next(f for f in spec['files'] if f['store']==code)
+                            target=folder/(str(index)+'-'+file['sha256']+'.xlsx');shutil.copyfile(file['file'],target)
+                            identity='offline-'+code
+                            result={'warehouse_code':code,'run_id':identity,'file':str(target),'sha256':file['sha256'],'rows':file['rows'],
+                                    'bytes':target.stat().st_size,'account_binding':command['account_binding'],'collected_at':file['observed']}
+                            items.append({'index':index,'warehouse_code':code,'run_id':identity,'task_id':identity,
+                                          'state':'SUCCEEDED','result':result,'error':None})
+                        native[cid]={'id':cid,'request':command,'fingerprint':fingerprint(command),'sequence':1,'state':'SUCCEEDED','items':items}
+                    return {'record':copy.deepcopy(native[cid])}
+                if action=='status':return copy.deepcopy(native[values['command_id']])
+                raise AssertionError('Unexpected offline action: '+action)
+            repo=Repository(settings);batch=repo.new_run()
+            repo.change(batch['id'],catalogs=run['catalogs'],external={'catalogs_frozen':True})
+            stockout_task.Bridge.request=native_request
+            collected=request('collect',{'resume':batch['id']})
+            stockout_task.Bridge.request=forbidden
+            require(collected['state']=='COMPLETE','Actual acquisition worker publishes all selected stores')
+            require(len(native)==1 and next(iter(native.values()))['request']['scope']['warehouse_codes']==['S','T'],
+                    'All selected stores use one native batch command in their selected order')
+            require(len(set(collected['external']['ax_commands'].values()))==1,'Analysis persists the shared command association for every store')
             entry.page.refresh_metadata();wait(idle);page=entry.page
             page.start.setDate(page.end.date());page.refresh();wait(idle)
             require('缺货 6 / 有销 9' in page.total.text(),'Actual page shows weighted numerator and denominator')
@@ -92,6 +133,7 @@ def start_smoke(app,win,args):
             stockout_task.Bridge.request=original_request
             from version_info import diagnostic
             result={'passed':True,**diagnostic(),'application_pid':os.getpid(),'frozen_exe':bool(getattr(sys,'frozen',False)),'checks':checks,'workers':diagnostics,
+                    'pipeline_scopes':[r['request']['scope'] for r in native.values()],
                     'business_signatures':before,'heartbeat_ticks':len(beats),'max_heartbeat_gap_seconds':max((b-a for a,b in zip(beats,beats[1:])),default=0),
                     'limits':'Marked synthetic originals; real Qt, spawned worker and Excel. No live platform requests. Not a low-spec business-PC measurement.'}
         except Exception:result={'passed':False,'checks':checks,'error':traceback.format_exc(),'frozen_exe':bool(getattr(sys,'frozen',False))}

@@ -49,8 +49,8 @@ def retry(path, heads, progress=lambda _:None,cancel=None):
     batches.activate(path,plan,progress,cancel)
 
 
-def drain(path, folder, progress=lambda _:None,cancel=None):
+def drain(path, folder, progress=lambda _:None,cancel=None,*,before_work=lambda:None):
     # Unassigned/legacy outbox entries remain visible, but never silently form
     # one batch per store or adopt another batch's current stock.
     import jst_batches
-    return jst_batches.drain(path,progress,cancel)
+    return jst_batches.drain(path,progress,cancel,before_work=before_work)

@@ -65,13 +65,13 @@ class Entry(QObject):
 
     def busy(self):
         h=self.host;scheduled=getattr(h,'scheduled',None);ax=getattr(h,'aoxiang_workflows',None)
-        io=getattr(h,'_large_io_dialog',None)
+        io=getattr(h,'_large_io_dialog',None);generator=getattr(h,'jst_generator',None)
         return bool(getattr(h,'worker',None) or getattr(h,'closing',False)
                     or io is not None and not getattr(io,'_completed',False)
                     or getattr(h,'_aoxiang_dialog',None)
                     or scheduled and (scheduled.worker or scheduled.publisher or getattr(scheduled,'queued_for_execution',False))
                     or ax and (ax.worker or ax.maintenance_depth or ax.gate.foreground is not None)
-                    or getattr(getattr(h,'jst_generator',None),'worker',None))
+                    or generator and generator.worker and getattr(generator,'active_work',True))
 
     def start(self,operation,args=None,callback=None,*,background=False):
         if self.closing:return

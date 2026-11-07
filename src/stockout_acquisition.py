@@ -81,9 +81,111 @@ def collect_catalogs(repo,rid,rpc,cancel,progress):
     return catalogs
 
 
-def execute(repo,rid,rpc,cancel,progress=lambda _:None):
+def collect_stores(repo,rid,configuration,rpc,cancel,progress):
+    """Use the business export pipeline: submit all stores, then collect originals.
+
+    Keep the existing store->command map so pre-0.47.1 single-store intentions
+    resume unchanged. A new command owns all still-unassigned, eligible stores.
+    Browser actions and local projection remain serial; platform generation overlaps.
+    """
     from aoxiang_jobs import Jobs
     from aoxiang_acquisition import prepare,manifest,ACTIVE
+    jobs=Jobs(repo.root/'aoxiang'/'jobs.sqlite3');client=Client(rpc,'ax')
+    root=Path(rpc('ax_root'));run=repo.run(rid);basis=repo.settings(run['basis'])
+    stores={s['code']:s for s in basis['stores']}
+    states={s['store']:s['state'] for s in run['stores']}
+    external=run['external'];commands=dict(external.get('ax_commands',{}))
+    if set(commands)-set(stores):raise ValueError('原命令关联包含本分析范围外门店，未启动导出')
+
+    def failed(codes,message):
+        for code in codes:
+            repo.store_result(rid,code,error=message)
+            progress(stores[code]['name']+'未完成：'+message)
+
+    # Preserve per-store conflict isolation: one unrelated unfinished business
+    # command must not prevent the other selected stores from forming a batch.
+    blocked={}
+    for pending in jobs.unfinished():
+        command=pending['command']
+        if command['operation']=='replenishment.export' and command['account_binding']==configuration['account_binding']:
+            for code in command['scope']['warehouse_codes']:blocked[code]=pending['id']
+    fresh=[]
+    for code in stores:
+        if states[code]=='READY' or code in commands:continue
+        if code in blocked:
+            failed([code],'该门店已有未完成或待核对的原采集，请先处理原任务：'+blocked[code])
+        else:fresh.append(code)
+    if fresh:
+        checkpoint(cancel)
+        try:
+            job=prepare(jobs,configuration,fresh,'refresh',day=today(),purpose='stockout_analysis',owner=rid)
+            commands.update({code:job['id'] for code in fresh})
+            external['ax_commands']=commands
+            # Bind every store before the first external reserve. Replays retain
+            # this exact immutable command, including after a lost response.
+            repo.change(rid,external=external)
+        except Exception as exc:
+            failed(fresh,str(exc))
+            # Do not dispatch an intention whose analysis association failed.
+            raise
+    groups={}
+    for code in stores:
+        if code in commands:groups.setdefault(commands[code],[]).append(code)
+    for cid,codes in groups.items():
+        wanted=[code for code in codes if states[code]!='READY']
+        if not wanted:continue
+        checkpoint(cancel);resource_check(repo.folder)
+        try:
+            job=jobs.get(cid);command=job['command']
+            if (job['context'].get('purpose')!='stockout_analysis' or command['operation']!='replenishment.export'
+                    or command['scope']['warehouse_codes']!=codes
+                    or command['account_binding']!=configuration['account_binding']
+                    or command['basis_versions']['store_mapping']!=configuration['store_mapping_version']):
+                raise ValueError('原命令用途、门店范围或连接身份不符，未重试')
+            progress(f'批量采集 {len(codes)} 家：先提交各店导出，平台同时生成文件')
+            if job['state']=='PREPARED':jobs.dispatch(client,cid)
+            else:
+                job=refresh_job(jobs,client,cid)
+                if job['state'] in ('PAUSED','INTERRUPTED'):
+                    jobs.observe(cid,client.request('resume',command_id=cid))
+                elif job['state']=='COMPLETED_WITH_ERRORS':
+                    indices=[i['index'] for i in job['record']['items'] if i['state']=='FAILED' and i['warehouse_code'] in wanted]
+                    if indices:jobs.observe(cid,client.request('retry',command_id=cid,indices=indices,sequence=job['sequence']))
+            stop=False;deadline=time.monotonic()+3600;last_progress=None
+            while True:
+                job=refresh_job(jobs,client,cid)
+                items=(job.get('record') or {}).get('items',[])
+                counts=(sum(bool(i.get('task_id')) for i in items),sum(i['state']=='SUCCEEDED' for i in items),
+                        sum(i['state'] in ('FAILED','NEEDS_REVIEW','INTERRUPTED') for i in items))
+                if counts!=last_progress:
+                    progress(f'批量导出 {len(codes)} 家：平台已受理 {counts[0]} 家，已取得文件 {counts[1]} 家，待处理 {counts[2]} 家')
+                    last_progress=counts
+                if job['state'] not in ACTIVE:break
+                if (cancel.is_set() or time.monotonic()>deadline) and not stop:
+                    client.request('pause',command_id=cid);stop=True
+                time.sleep(.4)
+            if stop or cancel.is_set():raise Cancelled('已安全暂停；已受理导出保留原任务，继续时先查询原结果')
+            if not any(i['state']=='SUCCEEDED' for i in items):
+                reasons=[(i.get('error') or {}).get('message','') for i in items]
+                raise ValueError('原导出尚未取得可用原件：'+('；'.join(x for x in reasons if x) or job['state'])+'。保留原任务编号，继续时先核对原结果。')
+            value=manifest(job,root)
+            files={item['warehouse_code']:item for item in value['files']}
+            omitted={item['warehouse_code']:item for item in value['omitted']}
+            for code in wanted:
+                checkpoint(cancel);resource_check(repo.folder)
+                try:
+                    if code not in files:
+                        item=omitted[code];reason=(item.get('error') or {}).get('message') or item['state']
+                        raise ValueError('原导出尚未取得可用原件：'+reason+'。保留原任务编号，继续时先核对原结果。')
+                    file=files[code];progress('校验并解析 '+stores[code]['name']+'；其余原件保留在磁盘')
+                    load_store(repo,rid,code,file['file'],observed=file['collected_at'],expected=file['sha256'],expected_rows=file['rows'],cancel=cancel,progress=progress)
+                except Cancelled:raise
+                except Exception as exc:failed([code],str(exc))
+        except Cancelled:raise
+        except Exception as exc:failed(wanted,str(exc))
+
+
+def execute(repo,rid,rpc,cancel,progress=lambda _:None):
     run=repo.run(rid)
     if run['state'] in {'COMPLETE','PARTIAL','ENDED'}:
         raise ValueError('已发布任务请创建新修订，不可覆盖')
@@ -105,50 +207,7 @@ def execute(repo,rid,rpc,cancel,progress=lambda _:None):
         if not external.get('catalogs_frozen'):
             collect_catalogs(repo,rid,rpc,cancel,progress)
             external=repo.run(rid)['external'];external['catalogs_frozen']=not external.get('catalogs_pending',False);repo.change(rid,external=external)
-        jobs=Jobs(repo.root/'aoxiang'/'jobs.sqlite3')
-        root=Path(rpc('ax_root'))
-        for store in basis['stores']:
-            checkpoint(cancel);resource_check(repo.folder);code=store['code'];current=repo.run(rid)
-            row=next(s for s in current['stores'] if s['store']==code)
-            if row['state']=='READY':continue
-            external=current['external'];commands=dict(external.get('ax_commands',{}));cid=commands.get(code)
-            progress('采集 '+store['name']+'；只生成分析快照')
-            try:
-                if cid is None:
-                    job=prepare(jobs,configuration,[code],'refresh',day=today(),purpose='stockout_analysis',owner=rid)
-                    cid=job['id'];commands[code]=cid;external['ax_commands']=commands;repo.change(rid,external=external)
-                    jobs.dispatch(client,cid)
-                else:
-                    job=jobs.get(cid)
-                    if job['context'].get('purpose')!='stockout_analysis' or job['command']['scope']['warehouse_codes']!=[code]:
-                        raise ValueError('原命令用途或门店不符，未重试')
-                    if job['state']=='PREPARED':jobs.dispatch(client,cid)
-                    else:
-                        job=refresh_job(jobs,client,cid)
-                        if job['state'] in ('PAUSED','INTERRUPTED'):
-                            jobs.observe(cid,client.request('resume',command_id=cid))
-                        elif job['state']=='COMPLETED_WITH_ERRORS':
-                            indices=[i['index'] for i in job['record']['items'] if i['state']=='FAILED']
-                            if indices:jobs.observe(cid,client.request('retry',command_id=cid,indices=indices,sequence=job['sequence']))
-                stop=False;deadline=time.monotonic()+3600
-                while True:
-                    job=refresh_job(jobs,client,cid)
-                    if job['state'] not in ACTIVE:break
-                    if (cancel.is_set() or time.monotonic()>deadline) and not stop:
-                        client.request('pause',command_id=cid);stop=True
-                    time.sleep(.4)
-                if stop or cancel.is_set():raise Cancelled('已安全暂停；已受理导出保留原任务，继续时先查询原结果')
-                if not any(i['state']=='SUCCEEDED' for i in (job.get('record') or {}).get('items',[])):
-                    reasons=[(i.get('error') or {}).get('message','') for i in (job.get('record') or {}).get('items',[])]
-                    raise ValueError('原导出尚未取得可用原件：'+('；'.join(x for x in reasons if x) or job['state'])+'。保留原任务编号，继续时先核对原结果。')
-                value=manifest(job,root)
-                file=value['files'][0]
-                load_store(repo,rid,code,file['file'],observed=file['collected_at'],expected=file['sha256'],expected_rows=file['rows'],cancel=cancel,progress=progress)
-            except Cancelled:
-                raise
-            except Exception as exc:
-                repo.store_result(rid,code,error=str(exc))
-                progress(store['name']+'未完成：'+str(exc))
+        collect_stores(repo,rid,configuration,rpc,cancel,progress)
         checkpoint(cancel)
         return repo.publish(rid)
     except Cancelled as exc:
@@ -170,7 +229,7 @@ def finish_local(repo,rid,rpc,cancel):
             raise ValueError('原仓导出尚未完成核对和留存，请继续原分析任务；不会解除原任务关联后重新导出')
     if run['external'].get('ax_commands'):
         jobs=Jobs(repo.root/'aoxiang'/'jobs.sqlite3');client=Client(rpc,'ax')
-        for cid in run['external']['ax_commands'].values():
+        for cid in dict.fromkeys(run['external']['ax_commands'].values()):
             checkpoint(cancel);job=refresh_job(jobs,client,cid)
             if job['state'] not in {'SUCCEEDED','COMPLETED_WITH_ERRORS','ENDED','CANCELLED'}:
                 raise ValueError('原平台任务尚未结束，请先继续核对原任务；暂不解除防重保护')
