@@ -16,7 +16,9 @@ class ParameterScene(QWidget):
         super().__init__(host)
         self.host = host
         v = QVBoxLayout(self)
-        v.addWidget(label('参数设置', 'title'))
+        title=QHBoxLayout();title.addWidget(label('参数设置', 'title'));title.addStretch()
+        self.reset_btn=button('全部初始化（开发测试）',lambda:__import__('application_reset_ui').request_reset(host))
+        title.addWidget(self.reset_btn);v.addLayout(title)
         v.addWidget(label('先选门店，再明确应用到本次作业，或保存供以后使用。历史签发不会变化。', 'muted'))
         self.search = QLineEdit()
         self.search.setPlaceholderText('搜索门店名称或编码')

@@ -62,6 +62,8 @@ class Runner:
             # Save exact package identity before the separate component reservation.
             self.store.update(job['id'], position=item['position'], changes={'package': package_ref(p), 'summary': summary})
         checkpoint(self.cancel)
+        from aoxiang_order_guard import require_orders
+        require_orders(self.business_path,[item])
         accepted = self.client.request('purchase.reserve', package_file=p['package_file'], package_sha256=p['package_sha256'])
         if accepted['record']['uploadAttempted']:
             raise ValueError('此预览已进入上传；请核对原采购任务，不重复列为待上传')
@@ -78,6 +80,8 @@ class Runner:
         if record['uploadAttempted'] and not record.get('taskId'):
             raise ComponentError('SUBMISSION_UNKNOWN', '上传已发起，但尚未取得唯一受理回执；请核对已有平台采购单')
         if not record['uploadAttempted']:
+            from aoxiang_order_guard import require_orders
+            require_orders(self.business_path,[item])
             validate_for_upload(self.business_path, p, configuration, suppliers, cancel=self.cancel)
         deadline = time.monotonic() + self.verification_wait
         while True:
@@ -127,16 +131,22 @@ class Runner:
 
     def run(self, id):
         job = self.store.update(id, state='RUNNING', message='读取本地配置及原任务状态')
-        configuration = self.client.request('configuration')
-        suppliers = Directory(self.store.folder).suppliers()
-        if job['kind'] == 'prepare' and any(i['state'] not in DONE_ITEM and not i.get('package') for i in job['items']):
-            self.template(job)
         for position in range(len(job['items'])):
             item=self.store.get(id)['items'][position]
             if item['state'] in DONE_ITEM:
                 continue
+            scope=self.store.get(id).get('dispatch_keys')
+            if scope is not None and item['key'] not in scope:continue
             checkpoint(self.cancel)
             position = item['position']
+            from aoxiang_order_guard import deleted_orders
+            missing=deleted_orders(self.business_path,[item]) if job['kind']=='prepare' else {}
+            if missing:
+                from aoxiang_workflow_state import local_preparation
+                local=local_preparation(item,job['kind'])
+                self.store.update(id,position=position,changes={'state':'SKIPPED' if local else 'REVIEW','source_deleted':True,
+                    'ended_locally':local,'error':{'code':'SOURCE_ORDER_DELETED','message':missing[item['key']]+'；已停止本地后续动作，未向平台提交'}})
+                continue
             if job.get('automatic'):
                 schedule = self.store.schedule(item['purchase_id'])
                 if not schedule or schedule.get('automation_paused'):
@@ -174,7 +184,10 @@ class Runner:
                 self.store.update(id, position=position, changes={'state': 'FAILED' if code in RETRYABLE else 'REVIEW', 'error': error})
         current = self.store.get(id)
         if any(i['state']=='PENDING' for i in current['items']):
-            return self.store.update(id,state='QUEUED',message='继续处理本批中新排入的失败重跑项')
+            scope=current.get('dispatch_keys')
+            if scope is not None and not any(i['state']=='PENDING' and i['key'] in scope for i in current['items']):
+                return self.store.update(id,state='PAUSED',message='勾选范围已处理；未勾选项保留，等待另行选择，不自动执行')
+            return self.store.update(id,state='QUEUED',message='继续处理本批执行范围中新排入的失败重跑项')
         bad = sum(i['state'] in ('FAILED', 'REVIEW') for i in current['items'])
         from aoxiang_workflow_state import summary
         final = {**current, 'state': 'COMPLETED_WITH_ERRORS' if bad else 'READY' if job['kind'] == 'prepare' else 'COMPLETED'}

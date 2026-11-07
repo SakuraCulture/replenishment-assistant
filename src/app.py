@@ -13,7 +13,14 @@ def main():
     app.setPalette(palette);app.setStyleSheet(STYLE)
     icon=Path(__file__).parent/'app.ico'
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
-    logs=Path(os.environ.get('REPLENISHMENT_DATA_DIR') or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation));logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=logs/'app.log',level=logging.INFO,encoding='utf-8',force=True,format='%(asctime)s %(levelname)s %(message)s')
+    logs=Path(os.environ.get('REPLENISHMENT_DATA_DIR') or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation))
+    from application_reset import recover,InstanceLease
+    try:
+        recover(logs);instance_lease=InstanceLease(logs)
+    except Exception as exc:
+        QMessageBox.warning(None,'资料目录未打开',str(exc));return 1
+    app.data_root=logs
+    logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=logs/'app.log',level=logging.INFO,encoding='utf-8',force=True,format='%(asctime)s %(levelname)s %(message)s')
     def unexpected(t,v,tb):
         logging.error('界面异常',exc_info=(t,v,tb))
         from readable_ui import failure
@@ -29,6 +36,9 @@ def main():
     # startup; normal launches always attempt connection after the first paint.
     from browser_startup_ui import start_application_connections
     start_application_connections(win, sys.argv)
+    if '--reset-selected-smoke' in sys.argv:
+        from reset_selected_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--reset-selected-smoke')+1:])
     if '--startup-connections-smoke' in sys.argv:
         from browser_startup_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--startup-connections-smoke')+1:])
@@ -189,11 +199,21 @@ def main():
         from intake_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--intake-smoke')+1:])
     code=app.exec()
+    reset_request=getattr(win,'_factory_reset_request',None)
     # Dispose the entire widget tree while QApplication is still alive. The new
     # archive dialogs retain callbacks; interpreter-finalization order is unsafe
     # for Qt objects in the frozen Windows runtime.
     import shiboken6
     if shiboken6.isValid(win):shiboken6.delete(win)
+    instance_lease.close()
+    if reset_request:
+        logging.shutdown()
+        from application_reset import perform
+        try:
+            result=perform(reset_request)
+        except Exception as exc:
+            QMessageBox.warning(None,'初始化未完成',str(exc)+'\n重新打开程序前，请查看资料及备份目录。');return 1
+        QMessageBox.information(None,'全部初始化完成','本机应用资料已初始化。重新打开程序即可使用初始设置。\n完整备份：'+result['backup'])
     return code
 
 
