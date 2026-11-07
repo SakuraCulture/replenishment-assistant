@@ -9,7 +9,7 @@ from stockout_common import VIEWS,today
 from stockout_settings import route_label
 from stockout_metrics import cut_columns,view_label
 
-DIMENSIONS=[('门店','store'),('供货来源','source'),('必采属性','mandatory'),('供货仓','warehouse'),('商品类目','category'),('仓库上游供货商','supplier'),('仓商品状态','product_status'),('翱象补货状态','replen_status'),('在途情况','inbound_status'),('标签依据','tag_status'),('商品','sku')]
+DIMENSIONS=[('门店','store'),('供货来源','source'),('必采属性','mandatory'),('供货仓','warehouse'),('商品类目','category'),('仓库上游供货商','supplier'),('仓商品状态','product_status'),('翱象补货状态','replen_status'),('在途情况','inbound_status'),('标签依据','tag_status'),('商品','sku'),('观测日期','day')]
 STATES={'PREPARED':'待开始','RUNNING':'进行中','PAUSED':'已安全暂停','REVIEW':'需核对后继续','COMPLETE':'已发布','PARTIAL':'已发布部分范围','ENDED':'本地已结束'}
 
 
@@ -36,7 +36,7 @@ class Page(QWidget):
         super().__init__(host);self.host,self.entry=host,entry
         self.settings=None;self.filters={};self.offset=0;self.cut_offset=0;self.cut_rows=[];self.last_error='';self.query_args=None
         self.pages=[];self.cut_pages=[];self.next_page=None;self.next_cut=None
-        self.identity_names={}
+        self.identity_names={};self.views_config=None;self.custom_dimensions=None;self.filter_dialog=None
         layout=QVBoxLayout(self)
         layout.addWidget(label('门店缺货率分析','title'))
         layout.addWidget(label('有月销商品中，门店可用库存≤0的比例；负库存按0统计，原始值保留。','muted'))
@@ -67,7 +67,8 @@ class Page(QWidget):
         exclusions.addWidget(self.exclude_stopped);exclusions.addWidget(self.exclude_disabled)
         exclusions.addWidget(label('可与淘汰品、考核品组合；分子分母同步剔除，未知状态保留。','muted'));exclusions.addStretch()
         layout.addLayout(exclusions)
-        self.filter_note=label('当前筛选：全部已选门店、全部商品维度');layout.addWidget(self.filter_note)
+        filter_row=QHBoxLayout();self.filter_btn=button('多维筛选…',self.edit_filters);filter_row.addWidget(self.filter_btn)
+        self.filter_note=label('当前筛选：全部已选门店、全部商品维度');self.filter_note.setWordWrap(True);filter_row.addWidget(self.filter_note,1);layout.addLayout(filter_row)
         self.total=label('尚未取得本范围的完整分析结果','section');layout.addWidget(self.total)
         self.coverage=label('未采日期保持空白；需要连续日快照时请单独启用每日采集。','muted');self.coverage.setWordWrap(True);layout.addWidget(self.coverage)
         self.space=label('','muted');layout.addWidget(self.space)
@@ -78,9 +79,13 @@ class Page(QWidget):
         cut=QWidget();cv=QVBoxLayout(cut);cr=QHBoxLayout()
         self.dimension=QComboBox();self.second=QComboBox();self.second.addItem('不交叉',None)
         for name,key in DIMENSIONS:self.dimension.addItem(name,key);self.second.addItem(name,key)
-        cr.addWidget(QLabel('按'));cr.addWidget(self.dimension);cr.addWidget(QLabel('交叉'));cr.addWidget(self.second)
+        cr.addWidget(QLabel('快捷两维：'));cr.addWidget(self.dimension);cr.addWidget(QLabel('交叉'));cr.addWidget(self.second)
         cr.addWidget(button('查看此切面',self.refresh));cr.addWidget(button('按选中分组筛选',self.select_groups));cr.addWidget(label('同维度多选为或，跨维度为且；双击可直接筛选。'))
-        cv.addLayout(cr);self.cuts=QTableWidget();self.cuts.cellDoubleClicked.connect(self.select_cut);cv.addWidget(self.cuts)
+        cv.addLayout(cr)
+        custom=QHBoxLayout();custom.addWidget(QLabel('已保存组合：'));self.preset=QComboBox();self.preset.setMinimumWidth(220);custom.addWidget(self.preset)
+        self.manage_views_btn=button('管理 / 自定义组合',self.manage_views);custom.addWidget(self.manage_views_btn)
+        self.active_dimensions=label('');self.active_dimensions.setWordWrap(True);custom.addWidget(self.active_dimensions,1);cv.addLayout(custom)
+        self.cuts=QTableWidget();self.cuts.cellDoubleClicked.connect(self.select_cut);cv.addWidget(self.cuts)
         self.cuts.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         cp=QHBoxLayout();cp.addWidget(button('上一页',lambda:self.cut_turn(-1)));cp.addWidget(button('下一页',lambda:self.cut_turn(1)))
         self.cut_note=label('');cp.addWidget(self.cut_note);cv.addLayout(cp);tabs.addTab(cut,'切面分析')
@@ -117,6 +122,8 @@ class Page(QWidget):
                               (self.only_zero,'toggled'),(self.excluded,'toggled'),(self.sku,'textChanged'),
                               (self.exclude_stopped,'toggled'),(self.exclude_disabled,'toggled')]:
             getattr(widget,signal).connect(self.reset_pages)
+        self.dimension.currentIndexChanged.connect(self.quick_dimensions_changed);self.second.currentIndexChanged.connect(self.quick_dimensions_changed)
+        self.preset.activated.connect(self.use_preset);self.show_dimension_label()
         self.note=label(entry.message);self.note.setWordWrap(True);layout.addWidget(self.note)
         self.controls()
 
@@ -125,14 +132,19 @@ class Page(QWidget):
 
     def controls(self):
         active=self.entry.worker is not None
-        for widget in (self.adopt,self.collect,self.resume,self.end_run_btn,self.rerun_btn,self.recalculate_btn,self.delete_log_btn,self.delete_data_btn):widget.setEnabled(not active)
+        for widget in (self.adopt,self.collect,self.resume,self.end_run_btn,self.rerun_btn,self.recalculate_btn,self.delete_log_btn,self.delete_data_btn,self.export_btn,self.filter_btn,self.manage_views_btn):widget.setEnabled(not active)
         self.collect.setEnabled(not active and self.settings is not None)
         self.stop.setEnabled(active or self.entry.queued is not None)
+        if self.filter_dialog:self.filter_dialog.controls()
 
     def refresh_metadata(self):self.entry.start('open',{'include_result_links':self.result_links.isChecked()},callback=self.metadata)
 
     def metadata(self,value):
         self.settings=value['settings']
+        if 'views' in value:
+            first=self.views_config is None;self.views_config=value['views'];self.populate_presets()
+            if first:self.set_dimensions(self.views_config['active'])
+            if value.get('views_error'):self.entry.status(value['views_error']+'；可继续查询分析数据')
         usage=value['space'];self.pending_cleanups=value['cleanups'];self.retry_cleanup.setEnabled(bool(self.pending_cleanups))
         self.space.setText(f"分析库 {usage['database']/1024**2:.1f} MiB · 自有原件 {usage['originals']/1024**2:.1f} MiB · 磁盘剩余 {usage['free']/1024**3:.1f} GiB（按记账与文件大小，不扫描全部原件）")
         if self.settings:
@@ -195,7 +207,50 @@ class Page(QWidget):
                 'view':self.view.currentData(),'filters':self.filters.copy(),
                 'exclude_stopped':self.exclude_stopped.isChecked(),'exclude_disabled':self.exclude_disabled.isChecked()}
 
-    def dimensions(self):return list(dict.fromkeys(k for k in (self.dimension.currentData(),self.second.currentData()) if k))
+    def dimensions(self):return self.custom_dimensions or list(dict.fromkeys(k for k in (self.dimension.currentData(),self.second.currentData()) if k))
+
+    def show_dimension_label(self):
+        from stockout_views_ui import describe
+        self.active_dimensions.setText('当前：'+describe(self.dimensions()))
+
+    def quick_dimensions_changed(self,*_):
+        self.custom_dimensions=None;self.show_dimension_label();self.sync_preset()
+
+    def set_dimensions(self,dimensions):
+        self.custom_dimensions=list(dimensions)
+        for widget,key in ((self.dimension,dimensions[0]),(self.second,dimensions[1] if len(dimensions)>1 else None)):
+            widget.blockSignals(True);widget.setCurrentIndex(widget.findData(key));widget.blockSignals(False)
+        self.show_dimension_label();self.sync_preset();self.reset_pages()
+
+    def populate_presets(self):
+        self.preset.clear();self.preset.addItem('选择已保存组合…',None)
+        for item in self.views_config['combinations']:self.preset.addItem(item['name'],item['dimensions'])
+        self.sync_preset()
+
+    def sync_preset(self):
+        index=next((i for i in range(1,self.preset.count()) if self.preset.itemData(i)==self.dimensions()),0)
+        self.preset.setCurrentIndex(index)
+
+    def use_preset(self,index):
+        dimensions=self.preset.itemData(index)
+        if dimensions:self.set_dimensions(dimensions);self.refresh()
+
+    def manage_views(self):
+        from stockout_views_ui import CombinationDialog
+        if not self.views_config:return
+        dialog=CombinationDialog(self,self.views_config,self.dimensions())
+        accepted=dialog.exec()==QDialog.DialogCode.Accepted;value=dialog.config;dialog.deleteLater()
+        if not accepted:return
+        def saved(value):
+            self.views_config=value;self.populate_presets();self.set_dimensions(value['active']);self.refresh()
+        self.entry.start('save_views',{'views':value,'expected':self.views_config.get('revision')},saved)
+
+    def edit_filters(self):
+        from stockout_views_ui import FilterDialog
+        dialog=FilterDialog(self);self.filter_dialog=dialog
+        if dialog.exec()==QDialog.DialogCode.Accepted:
+            self.filters=dialog.filters;self.identity_names.update(dialog.names);self.update_filter_note();self.reset_pages();self.refresh()
+        self.filter_dialog=None;dialog.deleteLater()
 
     def refresh(self):
         self.query_args={'query':self.options(),'dimensions':self.dimensions(),'offset':self.offset,'cut_offset':self.cut_offset,
@@ -223,7 +278,7 @@ class Page(QWidget):
                 if dimension in self.cut_dims:self.identity_names[dimension,r[dimension]]=r[dimension+'_name']
         render(self.cuts,[*[title for _,title in columns],'有销基数','缺货数','门店缺货率','标签待核','指标待核'],
                [[*[display(r[key],key) for key,_ in columns],r['base'],r['zero'],display(r['rate'],'rate'),r['unknown_tags'],r['bad']] for r in self.cut_rows])
-        self.cut_note.setText(f"第 {self.cut_offset+1} 起，当前 {len(self.cut_rows)} 组 / 共 {cuts['total']} 组")
+        self.cut_note.setText(f"第 {self.cut_offset+1 if self.cut_rows else 0} 起，当前 {len(self.cut_rows)} 组 / 共 {cuts['total']} 组；导出包含全部分组")
         rows=value['details']['items'];self.detail_rows=rows
         render(self.details,['日期','门店编码','门店名称','商品编码','商品名称','月销','可用库存','供货来源','仓','必采','类目','上游供货商','虚拟分类','补货状态','仓商品状态','说明'],
                [[r['day'],r['store'],r['store_name'],r['sku'],r['name'],r['month_raw'],r['stock_raw'],display(r['source'],'source'),r['warehouse'],
@@ -247,15 +302,18 @@ class Page(QWidget):
         if not indices:return
         for dimension in self.cut_dims:self.filters[dimension]=list(dict.fromkeys(self.cut_rows[i][dimension] for i in indices))
         self.reset_pages()
+        self.update_filter_note();self.refresh()
+
+    def update_filter_note(self):
         names=dict((key,name) for name,key in DIMENSIONS)
         def title(key,value):
             name=self.identity_names.get((key,value))
             return name+'（'+str(value)+'）' if name else display(value,key)
-        self.filter_note.setText('当前筛选：'+'；'.join(names.get(k,k)+'='+','.join(title(k,v) for v in values) for k,values in self.filters.items()))
-        self.refresh()
+        text='；'.join(names.get(k,k)+'='+','.join(title(k,v) for v in values[:3])+(f' 等{len(values)}项' if len(values)>3 else '') for k,values in self.filters.items())
+        self.filter_note.setText('当前筛选：'+(text or '全部已选门店、全部商品维度'))
 
     def clear_filters(self):
-        self.filters={};self.reset_pages();self.filter_note.setText('当前筛选：全部已选门店、全部商品维度');self.refresh()
+        self.filters={};self.reset_pages();self.update_filter_note();self.refresh()
 
     def reset_pages(self,*_):
         self.offset=self.cut_offset=0;self.pages=[];self.cut_pages=[];self.next_page=self.next_cut=None
@@ -340,10 +398,15 @@ class Page(QWidget):
             except ValueError as exc:QMessageBox.information(self,'计划未保存',str(exc))
 
     def export(self):
+        from stockout_views_ui import ExportDialog
+        if not self.views_config:return
+        dialog=ExportDialog(self,self.views_config,self.dimensions())
+        accepted=dialog.exec()==QDialog.DialogCode.Accepted
+        combinations=dialog.combinations if accepted else [];details=dialog.details.isChecked();dialog.deleteLater()
+        if not accepted:return
         destination,_=QFileDialog.getSaveFileName(self,'导出独立门店缺货率报表','门店缺货率_'+today()+'.xlsx','Excel (*.xlsx)')
         if not destination:return
-        details=QMessageBox.question(self,'商品明细','是否同时导出商品明细？大范围明细将逐行写入，可能耗时。',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)==QMessageBox.StandardButton.Yes
-        self.entry.start('export',{'query':self.options(),'dimensions':self.dimensions(),'destination':destination,'include_detail':details},lambda path:self.entry.status('已导出：'+path))
+        self.entry.start('export',{'query':self.options(),'combinations':combinations,'destination':destination,'include_detail':details},lambda path:self.entry.status('已导出：'+path))
 
     def cleanup(self):
         options=self.options()

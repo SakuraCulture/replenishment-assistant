@@ -127,7 +127,7 @@ def classify(db,sku,route,catalogs):
     row=selected[target]
     if row is None:
         if not any(r is not None for r in selected.values()):
-            return 'local','不适用',None,f'本次所选供货仓无该商品，按本次地采处理'
+            return 'local','地采',None,'本次所选供货仓无该商品，按本次地采处理'
         return pending
     return 'center',target,row,f'按已采用供货设置归属{target}；主仓{state}'
 

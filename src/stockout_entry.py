@@ -77,7 +77,7 @@ class Entry(QObject):
         if self.closing:return
         request=(operation,args or {},callback,background,self.generation)
         if self.worker or self.busy():
-            if self.worker and self.worker.operation not in {'collect','adopt','end','cleanup','ingest','cleanup_retry','delete_run_log','rerun','recalculate'}:
+            if self.worker and self.worker.operation not in {'collect','adopt','end','cleanup','ingest','cleanup_retry','delete_run_log','rerun','recalculate','save_views'}:
                 self.callback=None;self.worker.cancel_reason='已按新请求取消上次查询';self.worker.cancel.set()
             self.queued=request;self.status('等待当前任务安全结束；原补货业务优先')
             self.ensure_watch();return

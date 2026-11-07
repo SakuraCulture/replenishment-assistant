@@ -169,6 +169,8 @@ def start_smoke(app,win,args):
             book=openpyxl.load_workbook(status_export,read_only=True)
             try:require(list(book['总体'].values)[1][:2]==(8,5),'Status-filtered export equals visible totals')
             finally:book.close()
+            from stockout_views_smoke import verify
+            verify(page,entry,out,wait,idle,request,require)
             # Exercise the actual action buttons, confirmation callbacks and spawned workers.
             from unittest.mock import patch
             from PySide6.QtWidgets import QMessageBox,QInputDialog
