@@ -45,7 +45,7 @@ def seal(build_id):
         (QA/'capacity-01/report.json','capacity-before.json'),(QA/'capacity-02/report.json','capacity-after.json'),
         (QA/'idle-01/report.json','idle-comparison.json'),(ROOT/f'build_0.47.0_{build_id}/build_info.json','build_info.json')]:shutil.copyfile(source,release/target)
     failures=release/'retained-failures';failures.mkdir()
-    for name in ('source-ui-01','source-ui-final'):
+    for name in ('source-ui-01','source-ui-final','exe-rc1'):
         shutil.copyfile(QA/name/'report.json',failures/(name+'.json'))
         shutil.copyfile(QA/name/'settings/app.log',failures/(name+'-app.txt'))
     for p in (QA/('exe-'+build_id)).glob('*.png'):shutil.copyfile(p,release/p.name)
@@ -63,5 +63,5 @@ def seal(build_id):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['freeze','seal']);p.add_argument('--build-id',default='rc1');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['freeze','seal']);p.add_argument('--build-id',default='rc2');a=p.parse_args()
     freeze() if a.action=='freeze' else seal(a.build_id)
