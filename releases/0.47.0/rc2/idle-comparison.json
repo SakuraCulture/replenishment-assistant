@@ -1,0 +1,447 @@
+{
+  "passed": true,
+  "baseline": "e712b4c",
+  "summary": {
+    "empty": {
+      "baseline": {
+        "startup_seconds": 3.387286299999687,
+        "business_reads_100_seconds": 0.5661495999956969,
+        "rss": 209051648,
+        "peak_rss": 209051648
+      },
+      "candidate": {
+        "startup_seconds": 2.968361700011883,
+        "business_reads_100_seconds": 0.552840299991658,
+        "rss": 207982592,
+        "peak_rss": 207982592
+      }
+    },
+    "30-day": {
+      "baseline": {
+        "startup_seconds": 2.8615254999895114,
+        "business_reads_100_seconds": 0.40432280000823084,
+        "rss": 208900096,
+        "peak_rss": 208900096
+      },
+      "candidate": {
+        "startup_seconds": 2.8122680999949807,
+        "business_reads_100_seconds": 0.4304646000091452,
+        "rss": 208494592,
+        "peak_rss": 208494592
+      }
+    },
+    "90-day": {
+      "baseline": {
+        "startup_seconds": 2.785775600001216,
+        "business_reads_100_seconds": 0.374212599999737,
+        "rss": 208695296,
+        "peak_rss": 208695296
+      },
+      "candidate": {
+        "startup_seconds": 2.7766621000046143,
+        "business_reads_100_seconds": 0.36046330000681337,
+        "rss": 208101376,
+        "peak_rss": 208101376
+      }
+    }
+  },
+  "records": [
+    {
+      "scale": "empty",
+      "side": "baseline",
+      "round": 1,
+      "passed": true,
+      "startup_seconds": 5.9887392000091495,
+      "business_reads_100_seconds": 0.5803092999994988,
+      "rss": 212283392,
+      "peak_rss": 212283392,
+      "analysis_access": [],
+      "analysis_modules": [],
+      "io": {
+        "read_count": 6314,
+        "write_count": 240,
+        "read_bytes": 17792012,
+        "write_bytes": 3629711,
+        "other_count": 125179,
+        "other_bytes": 1449812
+      }
+    },
+    {
+      "scale": "empty",
+      "side": "candidate",
+      "round": 1,
+      "passed": true,
+      "startup_seconds": 3.3037054999877,
+      "business_reads_100_seconds": 0.5580788000079338,
+      "rss": 207687680,
+      "peak_rss": 207687680,
+      "analysis_access": [],
+      "analysis_modules": [
+        "stockout_entry",
+        "stockout_common",
+        "stockout_trigger"
+      ],
+      "io": {
+        "read_count": 6331,
+        "write_count": 90,
+        "read_bytes": 19280329,
+        "write_bytes": 615193,
+        "other_count": 106241,
+        "other_bytes": 1149062
+      }
+    },
+    {
+      "scale": "empty",
+      "side": "candidate",
+      "round": 2,
+      "passed": true,
+      "startup_seconds": 2.968361700011883,
+      "business_reads_100_seconds": 0.552840299991658,
+      "rss": 209162240,
+      "peak_rss": 209162240,
+      "analysis_access": [],
+      "analysis_modules": [
+        "stockout_entry",
+        "stockout_common",
+        "stockout_trigger"
+      ],
+      "io": {
+        "read_count": 6346,
+        "write_count": 89,
+        "read_bytes": 19272927,
+        "write_bytes": 595747,
+        "other_count": 107540,
+        "other_bytes": 1163234
+      }
+    },
+    {
+      "scale": "empty",
+      "side": "baseline",
+      "round": 2,
+      "passed": true,
+      "startup_seconds": 3.269829500000924,
+      "business_reads_100_seconds": 0.5661495999956969,
+      "rss": 208166912,
+      "peak_rss": 208166912,
+      "analysis_access": [],
+      "analysis_modules": [],
+      "io": {
+        "read_count": 6316,
+        "write_count": 89,
+        "read_bytes": 19233921,
+        "write_bytes": 595877,
+        "other_count": 107130,
+        "other_bytes": 1157708
+      }
+    },
+    {
+      "scale": "empty",
+      "side": "baseline",
+      "round": 3,
+      "passed": true,
+      "startup_seconds": 3.387286299999687,
+      "business_reads_100_seconds": 0.47883330000331625,
+      "rss": 209051648,
+      "peak_rss": 209051648,
+      "analysis_access": [],
+      "analysis_modules": [],
+      "io": {
+        "read_count": 6322,
+        "write_count": 89,
+        "read_bytes": 19233921,
+        "write_bytes": 595877,
+        "other_count": 107142,
+        "other_bytes": 1158004
+      }
+    },
+    {
+      "scale": "empty",
+      "side": "candidate",
+      "round": 3,
+      "passed": true,
+      "startup_seconds": 2.9063333999947645,
+      "business_reads_100_seconds": 0.4024649000057252,
+      "rss": 207982592,
+      "peak_rss": 207982592,
+      "analysis_access": [],
+      "analysis_modules": [
+        "stockout_entry",
+        "stockout_common",
+        "stockout_trigger"
+      ],
+      "io": {
+        "read_count": 6345,
+        "write_count": 89,
+        "read_bytes": 19272927,
+        "write_bytes": 595747,
+        "other_count": 107538,
+        "other_bytes": 1163218
+      }
+    },
+    {
+      "scale": "30-day",
+      "side": "baseline",
+      "round": 1,
+      "passed": true,
+      "startup_seconds": 2.8615254999895114,
+      "business_reads_100_seconds": 0.40432280000823084,
+      "rss": 208900096,
+      "peak_rss": 208900096,
+      "analysis_access": [],
+      "analysis_modules": [],
+      "io": {
+        "read_count": 6329,
+        "write_count": 89,
+        "read_bytes": 19233921,
+        "write_bytes": 595883,
+        "other_count": 107178,
+        "other_bytes": 1158190
+      }
+    },
+    {
+      "scale": "30-day",
+      "side": "candidate",
+      "round": 1,
+      "passed": true,
+      "startup_seconds": 2.8448080999951344,
+      "business_reads_100_seconds": 0.45361870000488125,
+      "rss": 208494592,
+      "peak_rss": 208494592,
+      "analysis_access": [],
+      "analysis_modules": [
+        "stockout_entry",
+        "stockout_common",
+        "stockout_trigger"
+      ],
+      "io": {
+        "read_count": 6343,
+        "write_count": 89,
+        "read_bytes": 19272927,
+        "write_bytes": 595753,
+        "other_count": 107550,
+        "other_bytes": 1163520
+      }
+    },
+    {
+      "scale": "30-day",
+      "side": "candidate",
+      "round": 2,
+      "passed": true,
+      "startup_seconds": 2.7822215000051074,
+      "business_reads_100_seconds": 0.37724959998740815,
+      "rss": 209068032,
+      "peak_rss": 209072128,
+      "analysis_access": [],
+      "analysis_modules": [
+        "stockout_entry",
+        "stockout_common",
+        "stockout_trigger"
+      ],
+      "io": {
+        "read_count": 6347,
+        "write_count": 89,
+        "read_bytes": 19272927,
+        "write_bytes": 595753,
+        "other_count": 107558,
+        "other_bytes": 1163584
+      }
+    },
+    {
+      "scale": "30-day",
+      "side": "baseline",
+      "round": 2,
+      "passed": true,
+      "startup_seconds": 2.8366380000079516,
+      "business_reads_100_seconds": 0.3840269999927841,
+      "rss": 207908864,
+      "peak_rss": 207908864,
+      "analysis_access": [],
+      "analysis_modules": [],
+      "io": {
+        "read_count": 6330,
+        "write_count": 89,
+        "read_bytes": 19233921,
+        "write_bytes": 595883,
+        "other_count": 107181,
+        "other_bytes": 1158300
+      }
+    },
+    {
+      "scale": "30-day",
+      "side": "baseline",
+      "round": 3,
+      "passed": true,
+      "startup_seconds": 2.8663392000016756,
+      "business_reads_100_seconds": 0.41261949999898206,
+      "rss": 209178624,
+      "peak_rss": 209178624,
+      "analysis_access": [],
+      "analysis_modules": [],
+      "io": {
+        "read_count": 6330,
+        "write_count": 89,
+        "read_bytes": 19233921,
+        "write_bytes": 595883,
+        "other_count": 107130,
+        "other_bytes": 1158278
+      }
+    },
+    {
+      "scale": "30-day",
+      "side": "candidate",
+      "round": 3,
+      "passed": true,
+      "startup_seconds": 2.8122680999949807,
+      "business_reads_100_seconds": 0.4304646000091452,
+      "rss": 208343040,
+      "peak_rss": 208343040,
+      "analysis_access": [],
+      "analysis_modules": [
+        "stockout_entry",
+        "stockout_common",
+        "stockout_trigger"
+      ],
+      "io": {
+        "read_count": 6346,
+        "write_count": 89,
+        "read_bytes": 19272927,
+        "write_bytes": 595753,
+        "other_count": 107555,
+        "other_bytes": 1163608
+      }
+    },
+    {
+      "scale": "90-day",
+      "side": "baseline",
+      "round": 1,
+      "passed": true,
+      "startup_seconds": 2.786267500006943,
+      "business_reads_100_seconds": 0.4275323999900138,
+      "rss": 209203200,
+      "peak_rss": 209203200,
+      "analysis_access": [],
+      "analysis_modules": [],
+      "io": {
+        "read_count": 6330,
+        "write_count": 89,
+        "read_bytes": 19233921,
+        "write_bytes": 595883,
+        "other_count": 107116,
+        "other_bytes": 1158322
+      }
+    },
+    {
+      "scale": "90-day",
+      "side": "candidate",
+      "round": 1,
+      "passed": true,
+      "startup_seconds": 2.7766621000046143,
+      "business_reads_100_seconds": 0.3711371999961557,
+      "rss": 208101376,
+      "peak_rss": 208101376,
+      "analysis_access": [],
+      "analysis_modules": [
+        "stockout_entry",
+        "stockout_common",
+        "stockout_trigger"
+      ],
+      "io": {
+        "read_count": 6346,
+        "write_count": 89,
+        "read_bytes": 19272927,
+        "write_bytes": 595753,
+        "other_count": 107514,
+        "other_bytes": 1163540
+      }
+    },
+    {
+      "scale": "90-day",
+      "side": "candidate",
+      "round": 2,
+      "passed": true,
+      "startup_seconds": 2.7037657000037143,
+      "business_reads_100_seconds": 0.3001583000004757,
+      "rss": 209309696,
+      "peak_rss": 209309696,
+      "analysis_access": [],
+      "analysis_modules": [
+        "stockout_entry",
+        "stockout_common",
+        "stockout_trigger"
+      ],
+      "io": {
+        "read_count": 6346,
+        "write_count": 89,
+        "read_bytes": 19272927,
+        "write_bytes": 595753,
+        "other_count": 107515,
+        "other_bytes": 1163460
+      }
+    },
+    {
+      "scale": "90-day",
+      "side": "baseline",
+      "round": 2,
+      "passed": true,
+      "startup_seconds": 2.785775600001216,
+      "business_reads_100_seconds": 0.374212599999737,
+      "rss": 208072704,
+      "peak_rss": 208072704,
+      "analysis_access": [],
+      "analysis_modules": [],
+      "io": {
+        "read_count": 6332,
+        "write_count": 89,
+        "read_bytes": 19233921,
+        "write_bytes": 595883,
+        "other_count": 107173,
+        "other_bytes": 1158378
+      }
+    },
+    {
+      "scale": "90-day",
+      "side": "baseline",
+      "round": 3,
+      "passed": true,
+      "startup_seconds": 2.720936300000176,
+      "business_reads_100_seconds": 0.3622029999969527,
+      "rss": 208695296,
+      "peak_rss": 208695296,
+      "analysis_access": [],
+      "analysis_modules": [],
+      "io": {
+        "read_count": 6330,
+        "write_count": 89,
+        "read_bytes": 19233921,
+        "write_bytes": 595883,
+        "other_count": 107169,
+        "other_bytes": 1158266
+      }
+    },
+    {
+      "scale": "90-day",
+      "side": "candidate",
+      "round": 3,
+      "passed": true,
+      "startup_seconds": 2.804874199995538,
+      "business_reads_100_seconds": 0.36046330000681337,
+      "rss": 207863808,
+      "peak_rss": 207863808,
+      "analysis_access": [],
+      "analysis_modules": [
+        "stockout_entry",
+        "stockout_common",
+        "stockout_trigger"
+      ],
+      "io": {
+        "read_count": 6347,
+        "write_count": 89,
+        "read_bytes": 19272927,
+        "write_bytes": 595753,
+        "other_count": 107557,
+        "other_bytes": 1163704
+      }
+    }
+  ],
+  "limits": "Same-machine synthetic unused history, Python audit of analysis file/SQLite opens, empty original business reads. Does not measure low-spec PC or physical disk utilization."
+}

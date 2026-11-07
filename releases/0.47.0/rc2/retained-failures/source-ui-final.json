@@ -1,0 +1,66 @@
+{
+  "passed": false,
+  "checks": [
+    "Unentered page has no page, worker or schedule timer",
+    "No analysis directory or database on ordinary startup",
+    "No heavy analysis imports before entry",
+    "First entry lazily creates independent database"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\stockout_smoke.py\", line 52, in execute\n    run=request('ingest',spec);require(run['state']=='COMPLETE','Same worker projection publishes complete synthetic daily snapshot')\n        ^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\stockout_smoke.py\", line 27, in request\n    if not results:raise AssertionError(entry.message)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 分析未完成：已取消；原补货资料保持不变\n",
+  "frozen_exe": false,
+  "process_exit": 1,
+  "seconds": 6.921999999991385,
+  "tree_peak_rss": 358813696,
+  "children_peak_rss": 353697792,
+  "temporary_peak_bytes": 0,
+  "processes": {
+    "35756": {
+      "peak_rss": 5115904,
+      "read_bytes": 448,
+      "write_bytes": 0,
+      "cpu_seconds": 0.046875
+    },
+    "32972": {
+      "peak_rss": 8105984,
+      "read_bytes": 0,
+      "write_bytes": 0,
+      "cpu_seconds": 0.03125
+    },
+    "46180": {
+      "peak_rss": 205832192,
+      "read_bytes": 17541690,
+      "write_bytes": 295528,
+      "cpu_seconds": 2.625
+    },
+    "27404": {
+      "peak_rss": 46383104,
+      "read_bytes": 6605759,
+      "write_bytes": 61,
+      "cpu_seconds": 0.53125
+    },
+    "35932": {
+      "peak_rss": 48140288,
+      "read_bytes": 6941217,
+      "write_bytes": 12927,
+      "cpu_seconds": 0.484375
+    },
+    "29368": {
+      "peak_rss": 23773184,
+      "read_bytes": 1937202,
+      "write_bytes": 208141,
+      "cpu_seconds": 0.171875
+    },
+    "27568": {
+      "peak_rss": 45436928,
+      "read_bytes": 6455221,
+      "write_bytes": 34272,
+      "cpu_seconds": 0.640625
+    },
+    "18388": {
+      "peak_rss": 44863488,
+      "read_bytes": 6257582,
+      "write_bytes": 73378,
+      "cpu_seconds": 0.578125
+    }
+  }
+}

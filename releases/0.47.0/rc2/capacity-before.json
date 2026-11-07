@@ -1,0 +1,83 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "single_store_projection_seconds": 5.1635183000034885,
+  "elapsed_seconds": 413.5783458000078,
+  "reports": [
+    {
+      "days": 30,
+      "rows": 6000000,
+      "database_bytes": 1838256128,
+      "peak_rss": 71258112,
+      "journal_peak": 0,
+      "io": {
+        "read_count": 3838464,
+        "write_count": 562810,
+        "read_bytes": 15720320791,
+        "write_bytes": 2304065584,
+        "other_count": 71350,
+        "other_bytes": 1597728
+      },
+      "cpu_seconds": 67.703125,
+      "timings": {
+        "summary": 0.006374200005666353,
+        "trend": 0.0696033999993233,
+        "supplier_category": 19.120776199997636,
+        "detail_200": 6.39046279998729,
+        "summary_export": 43.481878200007486,
+        "cancel": 0.10751319999690168
+      },
+      "total": {
+        "base": 4800000,
+        "zero": 1200000,
+        "bad": 0,
+        "unknown_tags": 0,
+        "unknown_zero": 0,
+        "removed_base": 1200000,
+        "removed_zero": 300000,
+        "rate": 0.25,
+        "status": "已核对"
+      },
+      "cuts": 20,
+      "detail_count": 200
+    },
+    {
+      "days": 90,
+      "rows": 18000000,
+      "database_bytes": 5511819264,
+      "peak_rss": 71749632,
+      "journal_peak": 0,
+      "io": {
+        "read_count": 11507064,
+        "write_count": 1688337,
+        "read_bytes": 47127349571,
+        "write_bytes": 6912109196,
+        "other_count": 215417,
+        "other_bytes": 4956600
+      },
+      "cpu_seconds": 213.890625,
+      "timings": {
+        "summary": 0.011847899993881583,
+        "trend": 0.21966300001076888,
+        "supplier_category": 60.33198730000004,
+        "detail_200": 19.356460800001514,
+        "summary_export": 137.6821276999981,
+        "cancel": 0.11494869999296498
+      },
+      "total": {
+        "base": 14400000,
+        "zero": 3600000,
+        "bad": 0,
+        "unknown_tags": 0,
+        "unknown_zero": 0,
+        "removed_base": 3600000,
+        "removed_zero": 900000,
+        "rate": 0.25,
+        "status": "已核对"
+      },
+      "cuts": 20,
+      "detail_count": 200
+    }
+  ],
+  "limits": "Synthetic fixed dimensions and SQL-expanded history. Query cost and storage scale, not 90 days of live acquisition; no low-spec PC or physical disk utilization claim."
+}

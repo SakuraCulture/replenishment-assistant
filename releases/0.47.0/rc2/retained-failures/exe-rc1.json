@@ -1,0 +1,190 @@
+{
+  "passed": false,
+  "checks": [
+    "Unentered page has no page, worker or schedule timer",
+    "No analysis directory or database on ordinary startup",
+    "No heavy analysis imports before entry",
+    "First entry lazily creates independent database",
+    "Same worker projection publishes complete synthetic daily snapshot",
+    "Actual page shows weighted numerator and denominator",
+    "View all updates numerator and denominator",
+    "View retired updates numerator and denominator",
+    "View assessment updates numerator and denominator",
+    "View both updates numerator and denominator",
+    "Source and mandatory cross-cut reconciles with total",
+    "Double-click cut applies exact filters",
+    "Actual worker exports independent detailed workbook",
+    "Workbook and actual page agree",
+    "Leave cancels query and releases page 0",
+    "Leave cancels query and releases page 1",
+    "Leave cancels query and releases page 2"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"stockout_smoke.py\", line 81, in execute\n  File \"stockout_smoke.py\", line 18, in require\nAssertionError: Spawned workers never create/import Qt application\n",
+  "frozen_exe": true,
+  "process_exit": 1,
+  "seconds": 15.202999999994063,
+  "tree_peak_rss": 325337088,
+  "children_peak_rss": 131510272,
+  "temporary_peak_bytes": 13566,
+  "processes": {
+    "31688": {
+      "peak_rss": 206512128,
+      "read_bytes": 7951677,
+      "write_bytes": 557580,
+      "cpu_seconds": 3.4375
+    },
+    "34872": {
+      "peak_rss": 43098112,
+      "read_bytes": 4915216,
+      "write_bytes": 244,
+      "cpu_seconds": 0.53125
+    },
+    "39892": {
+      "peak_rss": 44343296,
+      "read_bytes": 5173834,
+      "write_bytes": 13272,
+      "cpu_seconds": 0.546875
+    },
+    "39428": {
+      "peak_rss": 35340288,
+      "read_bytes": 2682264,
+      "write_bytes": 363477,
+      "cpu_seconds": 0.21875
+    },
+    "36692": {
+      "peak_rss": 41971712,
+      "read_bytes": 4745672,
+      "write_bytes": 34256,
+      "cpu_seconds": 0.484375
+    },
+    "44192": {
+      "peak_rss": 44077056,
+      "read_bytes": 5392871,
+      "write_bytes": 366038,
+      "cpu_seconds": 0.515625
+    },
+    "36148": {
+      "peak_rss": 34320384,
+      "read_bytes": 2828566,
+      "write_bytes": 1265,
+      "cpu_seconds": 0.234375
+    },
+    "42404": {
+      "peak_rss": 33427456,
+      "read_bytes": 2552314,
+      "write_bytes": 0,
+      "cpu_seconds": 0.1875
+    },
+    "4220": {
+      "peak_rss": 34275328,
+      "read_bytes": 2609658,
+      "write_bytes": 0,
+      "cpu_seconds": 0.1875
+    },
+    "11480": {
+      "peak_rss": 35782656,
+      "read_bytes": 2864259,
+      "write_bytes": 0,
+      "cpu_seconds": 0.1875
+    },
+    "26108": {
+      "peak_rss": 33304576,
+      "read_bytes": 2585093,
+      "write_bytes": 0,
+      "cpu_seconds": 0.21875
+    },
+    "46452": {
+      "peak_rss": 35225600,
+      "read_bytes": 2921760,
+      "write_bytes": 4446,
+      "cpu_seconds": 0.203125
+    },
+    "40536": {
+      "peak_rss": 33349632,
+      "read_bytes": 2937805,
+      "write_bytes": 4080,
+      "cpu_seconds": 0.234375
+    },
+    "46492": {
+      "peak_rss": 33939456,
+      "read_bytes": 2609347,
+      "write_bytes": 0,
+      "cpu_seconds": 0.21875
+    },
+    "12064": {
+      "peak_rss": 33849344,
+      "read_bytes": 2626104,
+      "write_bytes": 0,
+      "cpu_seconds": 0.21875
+    },
+    "35596": {
+      "peak_rss": 35336192,
+      "read_bytes": 2674999,
+      "write_bytes": 0,
+      "cpu_seconds": 0.1875
+    },
+    "45876": {
+      "peak_rss": 43970560,
+      "read_bytes": 5091681,
+      "write_bytes": 33210,
+      "cpu_seconds": 0.46875
+    },
+    "27476": {
+      "peak_rss": 34181120,
+      "read_bytes": 2642115,
+      "write_bytes": 252,
+      "cpu_seconds": 0.15625
+    },
+    "51724": {
+      "peak_rss": 34017280,
+      "read_bytes": 2625886,
+      "write_bytes": 0,
+      "cpu_seconds": 0.171875
+    },
+    "3748": {
+      "peak_rss": 35151872,
+      "read_bytes": 2921748,
+      "write_bytes": 5172,
+      "cpu_seconds": 0.21875
+    },
+    "41164": {
+      "peak_rss": 33792000,
+      "read_bytes": 2626044,
+      "write_bytes": 252,
+      "cpu_seconds": 0.171875
+    },
+    "44644": {
+      "peak_rss": 30932992,
+      "read_bytes": 2478430,
+      "write_bytes": 0,
+      "cpu_seconds": 0.171875
+    },
+    "33980": {
+      "peak_rss": 35520512,
+      "read_bytes": 2790264,
+      "write_bytes": 0,
+      "cpu_seconds": 0.1875
+    },
+    "45172": {
+      "peak_rss": 33685504,
+      "read_bytes": 2519548,
+      "write_bytes": 0,
+      "cpu_seconds": 0.203125
+    },
+    "29692": {
+      "peak_rss": 35307520,
+      "read_bytes": 2658775,
+      "write_bytes": 0,
+      "cpu_seconds": 0.1875
+    },
+    "5056": {
+      "peak_rss": 33112064,
+      "read_bytes": 2552321,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    }
+  },
+  "application_peak_rss": null,
+  "analysis_worker_peak_rss": 0,
+  "exe_sha256": "5bcb2bc9de27ceeab7e2c2588c8e1539ec940e82cf223d797a5b1b109d511e10"
+}
