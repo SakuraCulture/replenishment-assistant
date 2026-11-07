@@ -207,13 +207,12 @@ def route_store(loaded:InputBatch,store:str,route) -> InputBatch:
     validate_route(route,loaded['catalogs']);primary=route['primary'];secondary=route.get('secondary')
     variants={w:[x for x in rows if x[0]['B']==store] for w,rows in loaded['warehouse_rows'].items()};base=[p for p in loaded['normalized'] if p[0]['B']==store];rows=[]
     for i,original in enumerate(base):
-        p=variants[primary][i];state=assessment(p);target=primary
-        if state in {'禁用','无货','无该商品'} and secondary:target=secondary
+        p=variants[primary][i];state=assessment(p)
         # Availability chooses between existing catalog entries. A missing child
         # entry must not discard the primary's price/carton/status/provenance.
-        retain_primary=(target!=primary and p[1]['match']=='商品编码精确匹配'
-                        and variants[target][i][1]['match']=='资料未匹配')
-        if retain_primary:target=primary
+        from warehouse_routing import select_warehouse
+        target,retain_primary=select_warehouse(primary,secondary,state,p[1]['match'],
+            variants[secondary][i][1]['match'] if secondary else None)
         # Product ownership is scoped to this store's selected supply route.
         # An imported but unselected warehouse cannot turn local goods into a
         # matching error or supply its price/carton to a single-warehouse job.

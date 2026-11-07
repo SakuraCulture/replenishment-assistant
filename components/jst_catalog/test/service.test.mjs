@@ -38,6 +38,16 @@ test('scheduled catalogs have separate adoption scope and durable replay',async 
   const i=b.items[0];await s.command({action:'sync.acknowledge_adoption',batch_id:b.id,item_id:i.id,receipt:{warehouse:i.account.warehouse,source_sha256:i.receipt.source_sha256,purpose:r.purpose,run_id:'local_run'}});
   assert.equal((await s.command(r)).batch_id,b.id);assert.equal(counts.exports.length,2);
 });
+test('stockout analysis owns native receipts and cannot replay as default catalog',async t=>{
+  const {service:s,counts}=await fixture(t),r={...request('analysis_1'),purpose:'stockout_analysis'};
+  const x=await s.command(r),b=await finish(s,x.batch_id);
+  assert.equal(b.purpose,'stockout_analysis');assert.deepEqual(counts.exports,warehouses);
+  for(const i of b.items)await s.command({action:'sync.acknowledge_adoption',batch_id:b.id,item_id:i.id,
+    receipt:{warehouse:i.account.warehouse,source_sha256:i.receipt.source_sha256,purpose:'stockout_analysis',run_id:'analysis_run'}});
+  assert.equal((await s.command(r)).batch_id,b.id);
+  await assert.rejects(s.command({...r,purpose:'default_catalog'}),/不同范围/);
+  assert.equal(counts.exports.length,2);
+});
 async function finish(s,bid){
   const until=Date.now()+4000;
   while(s.active){

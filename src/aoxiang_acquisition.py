@@ -11,7 +11,7 @@ ACTIVE = {'QUEUED', 'RUNNING', 'PAUSE_REQUESTED'}
 RESUMABLE = {'PAUSED', 'INTERRUPTED'}
 
 
-def prepare(jobs, configuration, codes, freshness, *, day):
+def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=None):
     if not configuration.get('configured') or not configuration.get('enabled'):
         raise ValueError('请先核验并保存翱象连接与门店')
     if freshness not in {'reuse', 'refresh'}:
@@ -32,6 +32,10 @@ def prepare(jobs, configuration, codes, freshness, *, day):
                'basis_versions': {'store_mapping': configuration['store_mapping_version']},
                'policy': {'freshness': freshness}}
     context = {'day': day, 'created': now(), 'stores': [available[code] for code in codes]}
+    if purpose is not None:
+        if purpose != 'stockout_analysis' or not isinstance(owner,str) or not owner:
+            raise ValueError('分析采集需要明确用途与任务拥有者')
+        context.update(purpose=purpose,owner=owner)
     return jobs.register(command, context)
 
 

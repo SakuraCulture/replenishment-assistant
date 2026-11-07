@@ -120,7 +120,7 @@ class Dialog(QDialog):
     def reload(self):self.refresh(run(self,connect,(self.client,),'读取采集状态'))
     def refresh(self,state):
         previous=self.records.currentData();self.state=state;self.records.blockSignals(True);self.records.clear()
-        for b in state.get('batches',[]):self.records.addItem(b['createdAt'][:19].replace('T',' ')+' · '+('默认资料' if b['purpose']=='default_catalog' else '分配库存')+' · '+'、'.join(i['account']['warehouse'] for i in b['items']),b['id'])
+        for b in state.get('batches',[]):self.records.addItem(b['createdAt'][:19].replace('T',' ')+' · '+{'default_catalog':'默认资料','allocation_baseline':'分配库存','scheduled_replenishment':'定时补货','stockout_analysis':'缺货率分析（独立资料）'}.get(b['purpose'],'未知用途')+' · '+'、'.join(i['account']['warehouse'] for i in b['items']),b['id'])
         index=self.records.findData(previous);self.records.setCurrentIndex(max(index,0));self.records.blockSignals(False);self.select_account();self.show_record()
     def show_record(self,*_):
         b=next((b for b in self.state.get('batches',[]) if b['id']==self.records.currentData()),None);rows=[]

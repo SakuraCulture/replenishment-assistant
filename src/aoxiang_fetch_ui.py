@@ -132,7 +132,7 @@ class FetchDialog(ComponentDialog):
         self.ensure_client()
         self.jobs = Jobs(self.folder / 'jobs.sqlite3')
         self.jobs.synchronize(self.client)
-        return self.client.request('configuration'), self.jobs.recent(include_unfinished=True)
+        return self.client.request('configuration'), self.jobs.recent(include_unfinished=True,exclude_analysis=True)
 
     def initialized(self, data):
         self.configuration, history = data
@@ -201,7 +201,7 @@ class FetchDialog(ComponentDialog):
             except ComponentError:
                 # The intention and transport error remain available; next action queries/replays this exact ID.
                 pass
-            return self.jobs.get(job['id']), self.jobs.recent(include_unfinished=True)
+            return self.jobs.get(job['id']), self.jobs.recent(include_unfinished=True,exclude_analysis=True)
         self.run(operation, self.created)
 
     def created(self, data):
@@ -313,7 +313,7 @@ class FetchDialog(ComponentDialog):
             def operation(progress):
                 progress('正在结束采集并释放门店…' if plan['action'] == 'end' else '正在删除采集记录，保留已采用文件…')
                 job = self.jobs.maintenance_apply(self.client, plan)
-                return job, self.jobs.recent(include_unfinished=True), plan['action']
+                return job, self.jobs.recent(include_unfinished=True,exclude_analysis=True), plan['action']
             self.run(operation, self.maintenance_done)
             return
         if self.pause_pending:

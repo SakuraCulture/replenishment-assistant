@@ -29,8 +29,7 @@ NAMES = dict(model='模型建议', signed='签发', **{'return':'门店确认'},
 GROUPS = ('必采', '非必采', '属性待核')
 PAIRS = tuple(zip(STAGES, STAGES[1:]))
 # Exact tokens observed in the two original warehouse exports, not fuzzy substrings.
-RETIRED = frozenset(['标杆淘汰'] + ['标杆淘汰（'+x+'）' for x in (
-    '箱规废弃','厂家停产','夏季','冬季','拉回下单','样品/赠品','质量问题','节庆商品','召回退供','河北仓专属')])
+from virtual_categories import RETIRED
 num = comparison.num
 amount = comparison.amount
 

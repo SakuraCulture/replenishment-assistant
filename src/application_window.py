@@ -67,6 +67,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         install(self,hv)
         from business_scenes import install as install_scenes
         install_scenes(self,hv)
+        from stockout_entry import install as install_stockout
+        install_stockout(self)
         from jst_task_ui import Generator
         self.jst_generator=Generator(self,self.followup.layout())
         self.final_list_btn=button('最终清单 / 改量',self.open_final_list)
@@ -240,6 +242,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         return bool(cached and cached[0] is self.results.get(s) and cached[1] is self.new_focus)
 
     def closeEvent(self,event):
+        stockout=getattr(self,'stockout',None)
+        if stockout and not stockout.prepare_close():event.ignore();return
         inventory=getattr(self,'inventory',None)
         if inventory and not inventory.prepare_close():event.ignore();return
         analytics=getattr(self,'analytics',None)
@@ -279,6 +283,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             if self.status_hash_task:
                 self.status_hash_task.requestInterruption();self.status_hash_task.wait()
         elif axmanager:
+            if stockout:stockout.resume_after_cancelled_close()
             if scheduled:scheduled.resume_after_cancelled_close()
             axmanager.resume_after_cancelled_close()
             if indicator:indicator.resume()
