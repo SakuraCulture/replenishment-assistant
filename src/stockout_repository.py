@@ -218,20 +218,21 @@ class Repository:
         return self.run(rid)
 
     def adopt_business(self, stores, *, use_builtin=False):
-        """Read saved files directly: no repository defaults, migrations or writeback."""
-        paths = [self.root/'store_supply.json', self.root/'must_sell.json']
+        """Freeze saved parameter-page routes; no business initialization or writeback."""
+        from stockout_settings import supply_snapshot
+        stores = [{'code': s['code'], 'name': s['name']} for s in stores]
+        supply = supply_snapshot(self.root, stores)
+        paths = [self.root/'must_sell.json']
         before = {str(p):file_hash(p) if p.exists() else None for p in paths}
-        routes = read_json(paths[0]) if paths[0].exists() else {}
-        profile = read_json(paths[1]) if paths[1].exists() else None
+        profile = read_json(paths[0]) if paths[0].exists() else None
         if profile is None and use_builtin:
             profile = read_json(Path(__file__).parent/'default_must_sell.json')
         if profile is not None:
             from priority_list import validate_profile
             validate_profile(profile)
-        if before != {str(p):file_hash(p) if p.exists() else None for p in paths}:
+        if before != {str(p):file_hash(p) if p.exists() else None for p in paths} or supply != supply_snapshot(self.root, stores):
             raise ValueError('采用期间原业务设置变化，请重新核对采用')
-        return self.save_settings({'stores':stores, 'routes':{s['code']:routes[s['code']] for s in stores if s['code'] in routes},
-                                   'profile':profile, 'adopted_at':now(), 'source_hashes':before})
+        return self.save_settings({'stores':stores, **supply, 'profile':profile, 'adopted_at':now(), 'source_hashes':before})
 
     def retain(self, source, expected, cancel=None):
         from runtime_support import checkpoint

@@ -14,7 +14,14 @@ def fixture(out):
     from priority_list import make_profile
     out.mkdir(parents=True,exist_ok=False);settings=out/'settings';settings.mkdir();inputs=out/'inputs';inputs.mkdir()
     write(out/'synthetic.json',{'synthetic':True,'no_live_platform':True})
-    write(settings/'store_supply.json',{s:{'primary':'山东仓','secondary':None} for s in ('S','T')})
+    write(settings/'store_supply.json',{s:{'primary':'河北仓','secondary':None} for s in ('S','T')})
+    # ParameterScene persists routes in stores.ui, not the old standalone cache.
+    import sqlite3
+    from contextlib import closing
+    with closing(sqlite3.connect(settings/'workbench.sqlite3')) as db,db:
+        db.execute('CREATE TABLE stores(code TEXT PRIMARY KEY,data TEXT NOT NULL)')
+        for code in ('S','T'):
+            db.execute('INSERT INTO stores VALUES(?,?)',(code,json.dumps({'name':'测试门店'+code,'ui':{'primary':'山东仓','secondary':None}})))
     write(settings/'must_sell.json',make_profile([{'sku':s,'name':s,'category':'测试'} for s in ('A','L')],'隔离测试必卖清单'))
     def book(name,heads,rows,sheet_name=None):
         path=inputs/(name+'.xlsx');b=openpyxl.Workbook(write_only=True);w=b.create_sheet(title=sheet_name);w.append(heads)
@@ -29,7 +36,7 @@ def fixture(out):
     for store,skus in [('S','ABCDEL'),('T','DEL')]:
         rows=[]
         for sku in skus:
-            fields={'仓库/门店编码':store,'商品编码':sku,'商品名称':sku,'月销':3,'可用库存':1 if sku in 'BE' else 0,
+            fields={'仓库/门店编码':store,'商品编码':sku,'商品名称':'测试商品'+sku,'月销':3,'可用库存':1 if sku in 'BE' else 0,
                     '在途库存':6,'补货状态':'停采' if sku=='C' else '正常'}
             rows.append([fields.get(h,index if h=='毛利' else None) for index,h in enumerate(heads)])
         value=book(store,heads,rows,contract['nativeSheetName'])

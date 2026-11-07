@@ -118,7 +118,9 @@ class Task(QThread):
                                     '门店缺货率 %s; 取消来源=%s: %s',self.operation,self.cancel_reason or '未由页面请求',value['traceback'])
                         error=self.cancel_reason or value['message'] if value['type']=='Cancelled' else value['message'];received=True
                     if received:break  # Windows closed pipe can raise WinError 109 on a later poll.
-                elif not process.is_alive():break
+                # The worker can send its final reply and exit after poll timed
+                # out, before is_alive(). Drain that reply before declaring failure.
+                elif not process.is_alive() and not parent.poll():break
             process.join()
             if not received:error='分析工作进程异常退出；原任务编号和已确认原件保留，请继续原任务核对'
         except Exception as exc:error=str(exc)

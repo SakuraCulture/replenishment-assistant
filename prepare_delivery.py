@@ -278,14 +278,15 @@ if version['version'] in {'0.46.1','0.46.2'}:
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
     (dest/'使用说明.txt').write_text('\n\n'.join((root/'docs'/name).read_text('utf-8') for name in names[:3 if version['version']=='0.46.2' else 2]),encoding='utf-8')
 
-if version['version'] in {'0.46.4','0.46.5','0.47.0','0.47.1','0.47.2'}:
+if version['version'] in {'0.46.4','0.46.5','0.47.0','0.47.1','0.47.2','0.47.3'}:
     (dest/'docs').mkdir(exist_ok=True)
     names=['0.46.4作废采购核对与删除恢复.md','0.46.3采购恢复与异常说明.md','0.46.2删除流式处理优化.md',
            '0.46.1仅保留当前快照格式.md','0.46.0采集恢复与浏览器自动配置.md','0.39.0业务使用指南.md','0.40.0AI口径与本机连接.md']
-    if version['version'] in {'0.46.5','0.47.0','0.47.1','0.47.2'}:names.insert(0,'0.46.5单仓商品归属修正.md')
-    if version['version'] in {'0.47.0','0.47.1','0.47.2'}:names.insert(0,'0.47.0门店缺货率分析.md')
-    if version['version'] in {'0.47.1','0.47.2'}:names.insert(0,'0.47.1缺货率翱象并行导出.md')
-    if version['version']=='0.47.2':names.insert(0,'0.47.2启动自动连接与登录核验.md')
+    if version['version'] in {'0.46.5','0.47.0','0.47.1','0.47.2','0.47.3'}:names.insert(0,'0.46.5单仓商品归属修正.md')
+    if version['version'] in {'0.47.0','0.47.1','0.47.2','0.47.3'}:names.insert(0,'0.47.0门店缺货率分析.md')
+    if version['version'] in {'0.47.1','0.47.2','0.47.3'}:names.insert(0,'0.47.1缺货率翱象并行导出.md')
+    if version['version'] in {'0.47.2','0.47.3'}:names.insert(0,'0.47.2启动自动连接与登录核验.md')
+    if version['version']=='0.47.3':names.insert(0,'0.47.3分析供货设置与名称显示.md')
     for name in names:shutil.copy2(root/'docs'/name,dest/'docs'/name)
     shutil.copy2(root/'requirements-win-amd64.lock',dest/'requirements-win-amd64.lock')
     shutil.copy2(root/'docs'/names[0],dest/'使用说明.txt')

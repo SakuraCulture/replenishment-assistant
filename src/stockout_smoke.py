@@ -56,7 +56,9 @@ def start_smoke(app,win,args):
             entry.enter();wait(idle)
             require(entry.page is not None and (settings/'analysis/stockout/stockout.sqlite3').is_file(),'First entry lazily creates independent database')
             spec=json.loads((out/'ingest.json').read_text('utf-8'))
-            request('adopt',{'stores':[{'code':'S','name':'测试门店S'},{'code':'T','name':'测试门店T'}]})
+            adopted=request('adopt',{'stores':[{'code':'S','name':'测试门店S'},{'code':'T','name':'测试门店T'}]})
+            require(adopted['route_source']['source']=='参数设置 / 已保存门店配置' and len(adopted['routes'])==2,
+                    'Analysis adopts supply routes from the saved parameter-page database')
             run=request('ingest',spec);require(run['state']=='COMPLETE','Same worker projection publishes complete synthetic daily snapshot')
             # Drive the actual acquisition worker over a closed offline protocol
             # fixture, proving that the frozen EXE passes both stores together.
@@ -101,7 +103,26 @@ def start_smoke(app,win,args):
             entry.page.refresh_metadata();wait(idle);page=entry.page
             page.start.setDate(page.end.date());page.refresh();wait(idle)
             require('缺货 6 / 有销 9' in page.total.text(),'Actual page shows weighted numerator and denominator')
+            require([page.cuts.horizontalHeaderItem(i).text() for i in range(2)]==['门店编码','门店名称']
+                    and all('测试门店' in page.cuts.item(i,1).text() for i in range(page.cuts.rowCount())),
+                    'Store cuts display both exact code and saved snapshot name')
+            require([page.details.horizontalHeaderItem(i).text() for i in range(1,5)]==['门店编码','门店名称','商品编码','商品名称'],
+                    'Details display both store and product code and name')
             win.resize(1600,1000);page.grab().save(str(out/'01-overview.png'))
+            page.dimension.setCurrentIndex(page.dimension.findData('sku'));page.second.setCurrentIndex(page.second.findData('store'));page.refresh();wait(idle)
+            require([page.cuts.horizontalHeaderItem(i).text() for i in range(4)]==['商品编码','商品名称','门店编码','门店名称']
+                    and '测试商品' in page.cuts.item(0,1).text(),'Product and store cross-cut includes both identities')
+            selected=page.cut_rows[0];page.select_cut(0,0);wait(idle)
+            require(page.filters['sku']==[selected['sku']] and page.filters['store']==[selected['store']]
+                    and selected['sku_name'] in page.filter_note.text() and selected['store_name'] in page.filter_note.text(),
+                    'Readable filter labels preserve exact code-only selection')
+            page.clear_filters();wait(idle)
+            from PySide6.QtWidgets import QApplication,QDialog,QTabWidget
+            page.findChild(QTabWidget).setCurrentIndex(1);QTest.qWait(100);page.grab().save(str(out/'03-readable-cut.png'))
+            def inspect_supply():
+                dialog=QApplication.activeModalWidget()
+                if isinstance(dialog,QDialog):dialog.grab().save(str(out/'04-adopted-supply.png'));dialog.reject()
+            QTimer.singleShot(100,inspect_supply);page.show_supply()
             for key,expected in [('all',(9,6)),('retired',(7,4)),('assessment',(7,5)),('both',(6,4))]:
                 page.view.setCurrentIndex(page.view.findData(key));page.refresh();wait(idle)
                 require(f'缺货 {expected[1]} / 有销 {expected[0]}' in page.total.text(),'View '+key+' updates numerator and denominator')

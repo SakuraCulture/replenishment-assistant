@@ -77,10 +77,11 @@ def _write(book,repo,options,include_detail,dimensions,cancel,progress):
     for row in metrics.trend(repo,options,cancel=cancel):
         checkpoint(cancel);append(trend,[row['day'],*[row['total'][k] for k in keys]])
     for title,dims in [('门店汇总',('store',)),('四类分层',('source','mandatory')),('当前切面',tuple(dimensions))]:
-        ws=sheet(title,[*[metrics.DIMENSIONS[d][1] for d in dims],*measure]);offset=0
+        columns=metrics.cut_columns(dims)
+        ws=sheet(title,[*[title for _,title in columns],*measure]);offset=0
         while True:
             checkpoint(cancel);data=metrics.cuts(repo,options,dims,offset=offset,cancel=cancel)
-            for row in data['items']:append(ws,[*[row[d] for d in dims],*[row[k] for k in keys]])
+            for row in data['items']:append(ws,[*[row[d] for d,_ in columns],*[row[k] for k in keys]])
             offset+=len(data['items'])
             if offset>=data['total'] or not data['items']:break
     if include_detail:

@@ -6,8 +6,10 @@ from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QLabel,QTableWidg
     QMessageBox,QFileDialog,QLineEdit,QInputDialog)
 from ui_controls import button,label
 from stockout_common import VIEWS,today
+from stockout_settings import route_label
+from stockout_metrics import cut_columns
 
-DIMENSIONS=[('门店','store'),('供货来源','source'),('必采属性','mandatory'),('供货仓','warehouse'),('商品类目','category'),('仓库上游供货商','supplier'),('仓商品状态','product_status'),('翱象补货状态','replen_status'),('在途情况','inbound_status'),('标签依据','tag_status'),('商品编码','sku')]
+DIMENSIONS=[('门店','store'),('供货来源','source'),('必采属性','mandatory'),('供货仓','warehouse'),('商品类目','category'),('仓库上游供货商','supplier'),('仓商品状态','product_status'),('翱象补货状态','replen_status'),('在途情况','inbound_status'),('标签依据','tag_status'),('商品','sku')]
 STATES={'PREPARED':'待开始','RUNNING':'进行中','PAUSED':'已安全暂停','REVIEW':'需核对后继续','COMPLETE':'已发布','PARTIAL':'已发布部分范围','ENDED':'本地已结束'}
 
 
@@ -34,17 +36,20 @@ class Page(QWidget):
         super().__init__(host);self.host,self.entry=host,entry
         self.settings=None;self.filters={};self.offset=0;self.cut_offset=0;self.cut_rows=[];self.last_error='';self.query_args=None
         self.pages=[];self.cut_pages=[];self.next_page=None;self.next_cut=None
+        self.identity_names={}
         layout=QVBoxLayout(self)
         layout.addWidget(label('门店缺货率分析','title'))
         layout.addWidget(label('有月销商品中，门店可用库存为0的比例；资料独立留存，进入页面不自动采集。','muted'))
         self.basis=label('正在读取分析已采用版本…');layout.addWidget(self.basis)
+        self.basis.setWordWrap(True)
         actions=QHBoxLayout()
         self.adopt=button('选门店 / 采用补货侧设置',self.choose_stores)
+        self.supply=button('查看已采用供货设置',self.show_supply)
         self.collect=button('采集今日分析资料',self.start_collect,True)
         self.stop=button('安全暂停本次',lambda:entry.pause())
         self.background=QCheckBox('离开后本次继续采集');self.background.toggled.connect(self.background_changed)
         self.schedule=button('每日采集计划',self.configure_schedule)
-        for widget in [self.adopt,self.collect,self.stop,self.background,self.schedule]:actions.addWidget(widget)
+        for widget in [self.adopt,self.supply,self.collect,self.stop,self.background,self.schedule]:actions.addWidget(widget)
         actions.addStretch();layout.addLayout(actions)
         filters=QHBoxLayout()
         self.start=QDateEdit();self.end=QDateEdit()
@@ -116,7 +121,9 @@ class Page(QWidget):
         self.space.setText(f"分析库 {usage['database']/1024**2:.1f} MiB · 自有原件 {usage['originals']/1024**2:.1f} MiB · 磁盘剩余 {usage['free']/1024**3:.1f} GiB（按记账与文件大小，不扫描全部原件）")
         if self.settings:
             p=self.settings.get('profile')
-            self.basis.setText(f"分析采用：{len(self.settings['stores'])}家门店 · 设置版本 {self.settings['version'][:12]} · 必卖清单 {p.get('revision','待核') if p else '待核'}；更新仅影响分析新任务")
+            stores=self.settings['stores'];routes=self.settings.get('routes',{});configured=sum(s['code'] in routes for s in stores)
+            warning=f'；{len(stores)-configured}家未取得供货关系，请查看已采用设置并重新采用' if configured<len(stores) else ''
+            self.basis.setText(f"分析采用：{len(stores)}家门店 · 供货关系 {configured}/{len(stores)}家 · 设置版本 {self.settings['version'][:12]} · 必卖清单 {p.get('revision','待核') if p else '待核'}{warning}；更新仅影响分析新任务")
         else:self.basis.setText('尚未采用分析设置，请先选择门店；不会修改补货侧设置。')
         previous=self.runs.currentData();self.runs.blockSignals(True);self.runs.clear()
         for run in value['runs']:self.runs.addItem(f"{run['created'][5:16]} · {STATES.get(run['state'],run['state'])} · {run['message']}",run['id'])
@@ -127,16 +134,32 @@ class Page(QWidget):
 
     def choose_stores(self):self.entry.start('choices',callback=self.stores_ready)
 
+    def show_supply(self):
+        if not self.settings:
+            QMessageBox.information(self,'尚未采用设置','请先选择门店并采用补货侧设置。');return
+        dialog=QDialog(self);dialog.setWindowTitle('分析已采用的门店供货设置');dialog.resize(1050,520);layout=QVBoxLayout(dialog)
+        note=label('以下为分析独立保存的设置。参数页保存主从仓后，请重新“采用补货侧设置”；旧日报保持当时依据。');note.setWordWrap(True);layout.addWidget(note)
+        routes=self.settings.get('routes',{});issues=self.settings.get('route_issues',{})
+        rows=[]
+        for store in self.settings['stores']:
+            route=routes.get(store['code'],{})
+            rows.append([store['code'],store['name'],'双仓' if route.get('secondary') else '单仓' if route else '未配置',
+                         route.get('primary','未取得'),route.get('secondary') or '无从仓',
+                         ('按主从顺序判断，商品资料取最终归属仓' if route.get('secondary') else '仅按本仓资料；本仓无该商品按本次地采') if route else issues.get(store['code'],'原分析未取得供货设置，请重新采用')])
+        table=QTableWidget();render(table,['门店编码','门店名称','供货方式','主仓','从仓','资料取用 / 待处理原因'],rows);layout.addWidget(table)
+        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Close);buttons.button(QDialogButtonBox.StandardButton.Close).setText('关闭');buttons.rejected.connect(dialog.reject);layout.addWidget(buttons);dialog.exec()
+
     def stores_ready(self,value):
         if not value['configured'] or not value['stores']:
             QMessageBox.information(self,'连接待配置','请先在原翱象连接配置中核验并保存门店，本分析复用已有连接。');return
         dialog=QDialog(self);dialog.setWindowTitle('分析所选门店与资料采用');dialog.resize(620,600);layout=QVBoxLayout(dialog)
-        layout.addWidget(label('只复制供货设置和必卖清单到分析；两边之后互不自动更新。'))
+        note=label('复制参数设置中已保存的主从仓和必卖清单；两边之后互不自动更新。未配置供货关系的门店仍可统计全量，但仓、供应商及标签会待核。');note.setWordWrap(True);layout.addWidget(note)
         search=QLineEdit();search.setPlaceholderText('搜索门店名称 / 编码');layout.addWidget(search)
         listing=QListWidget();layout.addWidget(listing)
         selected={s['code'] for s in (self.settings or {}).get('stores',[])}
         for store in value['stores']:
-            item=QListWidgetItem(store['name']+' · '+store['code']);item.setData(Qt.ItemDataRole.UserRole,store)
+            text=store['name']+' · '+store['code']+' · '+route_label(value.get('routes',{}).get(store['code']))
+            item=QListWidgetItem(text);item.setToolTip(text+'\n'+value.get('route_issues',{}).get(store['code'],''));item.setData(Qt.ItemDataRole.UserRole,store)
             item.setFlags(item.flags()|Qt.ItemFlag.ItemIsUserCheckable);item.setCheckState(Qt.CheckState.Checked if store['code'] in selected else Qt.CheckState.Unchecked);listing.addItem(item)
         search.textChanged.connect(lambda text:[listing.item(i).setHidden(text.casefold() not in listing.item(i).text().casefold()) for i in range(listing.count())])
         row=QHBoxLayout();row.addWidget(button('勾选当前筛选',lambda:[listing.item(i).setCheckState(Qt.CheckState.Checked) for i in range(listing.count()) if not listing.item(i).isHidden()]))
@@ -171,20 +194,24 @@ class Page(QWidget):
                  '、'.join(f"{c['completed']}/{c['selected']}" for c in r['coverage'])] for r in value['trend']])
         cuts=value['cuts'];self.cut_rows=cuts['items'];self.cut_dims=cuts['dimensions']
         self.next_cut=cuts['next_offset'];self.next_page=value['details']['next_offset']
-        names=dict((key,name) for name,key in DIMENSIONS)
-        render(self.cuts,[*[names[d] for d in self.cut_dims],'有销基数','缺货数','门店缺货率','标签待核','指标待核'],
-               [[*[display(r[d],d) for d in self.cut_dims],r['base'],r['zero'],display(r['rate'],'rate'),r['unknown_tags'],r['bad']] for r in self.cut_rows])
+        columns=cut_columns(self.cut_dims)
+        self.identity_names={key:name for key,name in self.identity_names.items() if key[1] in self.filters.get(key[0],[])}
+        for r in self.cut_rows:
+            for dimension in ('store','sku'):
+                if dimension in self.cut_dims:self.identity_names[dimension,r[dimension]]=r[dimension+'_name']
+        render(self.cuts,[*[title for _,title in columns],'有销基数','缺货数','门店缺货率','标签待核','指标待核'],
+               [[*[display(r[key],key) for key,_ in columns],r['base'],r['zero'],display(r['rate'],'rate'),r['unknown_tags'],r['bad']] for r in self.cut_rows])
         self.cut_note.setText(f"第 {self.cut_offset+1} 起，当前 {len(self.cut_rows)} 组 / 共 {cuts['total']} 组")
         rows=value['details']['items'];self.detail_rows=rows
-        render(self.details,['日期','门店','商品编码','商品名称','月销','可用库存','供货来源','仓','必采','类目','上游供货商','虚拟分类','说明'],
-               [[r['day'],r['store_name'],r['sku'],r['name'],r['month_raw'],r['stock_raw'],display(r['source'],'source'),r['warehouse'],
+        render(self.details,['日期','门店编码','门店名称','商品编码','商品名称','月销','可用库存','供货来源','仓','必采','类目','上游供货商','虚拟分类','说明'],
+               [[r['day'],r['store'],r['store_name'],r['sku'],r['name'],r['month_raw'],r['stock_raw'],display(r['source'],'source'),r['warehouse'],
                  display(r['mandatory'],'mandatory'),r['category'],r['supplier'],display(r['tags']),r['error']] for r in rows])
         self.page_note.setText(f"第 {self.offset+1} 起，当前 {len(rows)} 条 / 共 {value['details']['total']} 条；每页最多200条")
 
     def explain(self,index,column):
         if index>=len(self.detail_rows):return
         r=self.detail_rows[index]
-        text=f"{r['store_name']} · {r['sku']} · {r['name']}\n观测时间：{r['observed']}\n原件行号：{r['rownum']}\n日报修订：{r['revision']}\n原件哈希：{r['source_sha']}\n\n月销：{r['month_raw']}；可用库存：{r['stock_raw']}；在途：{r['inbound_raw']}\n仓商品状态：{r['product_status']}；翱象补货状态：{r['replen_status']}\n来源：{display(r['source'],'source')}；仓：{r['warehouse']}\n虚拟分类：{display(r['tags'])}\n\n{r['error']}"
+        text=f"门店：{r['store_name']}（{r['store']}）\n商品：{r['name']}（{r['sku']}）\n观测时间：{r['observed']}\n原件行号：{r['rownum']}\n日报修订：{r['revision']}\n原件哈希：{r['source_sha']}\n\n月销：{r['month_raw']}；可用库存：{r['stock_raw']}；在途：{r['inbound_raw']}\n仓商品状态：{r['product_status']}；翱象补货状态：{r['replen_status']}\n来源：{display(r['source'],'source')}；仓：{r['warehouse']}\n虚拟分类：{display(r['tags'])}\n\n{r['error']}"
         QMessageBox.information(self,'商品口径与原件依据',text)
 
     def select_cut(self,index,column):
@@ -199,7 +226,10 @@ class Page(QWidget):
         for dimension in self.cut_dims:self.filters[dimension]=list(dict.fromkeys(self.cut_rows[i][dimension] for i in indices))
         self.reset_pages()
         names=dict((key,name) for name,key in DIMENSIONS)
-        self.filter_note.setText('当前筛选：'+'；'.join(names.get(k,k)+'='+','.join(display(v,k) for v in values) for k,values in self.filters.items()))
+        def title(key,value):
+            name=self.identity_names.get((key,value))
+            return name+'（'+str(value)+'）' if name else display(value,key)
+        self.filter_note.setText('当前筛选：'+'；'.join(names.get(k,k)+'='+','.join(title(k,v) for v in values) for k,values in self.filters.items()))
         self.refresh()
 
     def clear_filters(self):

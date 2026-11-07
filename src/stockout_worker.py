@@ -55,8 +55,10 @@ def execute(repo,operation,args,cancel,progress,rpc):
         return {'settings':public_settings(repo.settings()),'runs':repo.recent(),'dates':metrics.dates(repo),
                 'space':{'database':repo.path.stat().st_size,'originals':originals,'free':shutil.disk_usage(repo.folder).free},'cleanups':cleanups}
     if operation=='choices':
+        from stockout_settings import supply_snapshot
         config=rpc('ax',action='configuration',values={})
-        return {'stores':[{'code':s['buyerWarehouseCode'],'name':s['displayName']} for s in config.get('targets',[])],
+        stores=[{'code':s['buyerWarehouseCode'],'name':s['displayName']} for s in config.get('targets',[])]
+        return {'stores':stores, **supply_snapshot(repo.root,stores),
                 'configured':bool(config.get('configured') and config.get('enabled'))}
     if operation=='adopt':
         return public_settings(repo.adopt_business(args['stores'],use_builtin=bool(args.get('use_builtin'))))

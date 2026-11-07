@@ -184,6 +184,32 @@ class AnalysisTests(unittest.TestCase):
         cuts=metrics.cuts(self.repo,options,('supplier','category'))
         self.assertEqual(cuts['total'],1);self.assertEqual(cuts['items'][0]['zero'],1)
 
+    def test_identity_names_supplement_codes_without_splitting_groups(self):
+        self.publish([('A',1,0),('B',1,1)])
+        self.publish([('A',1,0),('B',1,1)])
+        with self.repo.connect(write=True) as db:
+            db.execute("UPDATE fact_records SET name='相同商品名'")
+        rows=metrics.cuts(self.repo,{'start':'2026-11-07'},('store','sku'))['items']
+        self.assertEqual(len(rows),2)
+        self.assertEqual({r['sku'] for r in rows},{'A','B'})
+        self.assertEqual({r['sku_name'] for r in rows},{'相同商品名'})
+        self.assertEqual({r['store_name'] for r in rows},{'门店S'})
+        self.assertEqual(sum(r['base'] for r in rows),2)
+        chosen=metrics.query(self.repo,{'start':'2026-11-07','filters':{'sku':['A']}})['total']
+        self.assertEqual((chosen['base'],chosen['zero']),(1,1))
+
+    def test_multiple_names_for_one_code_keep_one_group_and_show_notice(self):
+        self.repo.save_settings({'stores':[{'code':s,'name':'同名门店'} for s in ('S','T')],'routes':{},'profile':None})
+        rid=self.repo.new_run()['id']
+        for store,name in [('S','旧名称'),('T','新名称')]:
+            path=workbook(self.root/(store+'.xlsx'),['仓库/门店编码','商品编码','商品名称','月销','可用库存'],[[store,'A',name,1,0]])
+            load_store(self.repo,rid,store,path,observed='2026-11-07T08:00:00+08:00')
+        self.repo.publish(rid)
+        self.assertEqual(metrics.cuts(self.repo,{'start':'2026-11-07'},('store',))['total'],2)
+        cut=metrics.cuts(self.repo,{'start':'2026-11-07'},('sku',))
+        self.assertEqual(cut['total'],1);self.assertEqual(cut['items'][0]['base'],2)
+        self.assertIn('同编码多名称',cut['items'][0]['sku_name'])
+
     def test_precise_unsafe_sku_is_rejected(self):
         rid=self.repo.new_run()['id']
         with self.assertRaises(ValueError):load_store(self.repo,rid,'S',self.sales([(12345678901234567,1,0)]),observed='2026-11-07T08:00:00+08:00')
@@ -231,10 +257,14 @@ class AnalysisTests(unittest.TestCase):
         import threading
         self.publish([(str(i),1,i%2) for i in range(1005)])
         with self.repo.connect(write=True) as db:db.execute("UPDATE fact_records SET name='=1+1' WHERE sku='0'")
-        path=self.root/'report.xlsx';export(self.repo,{'start':'2026-11-07'},path,include_detail=True)
+        path=self.root/'report.xlsx';export(self.repo,{'start':'2026-11-07'},path,include_detail=True,dimensions=('store','sku'))
         book=openpyxl.load_workbook(path)
         try:
             self.assertEqual((book['总体']['A2'].value,book['总体']['B2'].value),(1005,503))
+            self.assertEqual(tuple(c.value for c in book['门店汇总'][1][:2]),('门店编码','门店名称'))
+            self.assertEqual(tuple(c.value for c in book['门店汇总'][2][:2]),('S','门店S'))
+            self.assertEqual(tuple(c.value for c in book['当前切面'][1][:4]),('门店编码','门店名称','商品编码','商品名称'))
+            self.assertEqual(book['当前切面']['D2'].value,'=1+1');self.assertEqual(book['当前切面']['D2'].data_type,'s')
             self.assertEqual(book['商品明细1']['E2'].data_type,'s');self.assertEqual(book['商品明细1']['E2'].value,'=1+1')
             self.assertIn('剔除与标签待核',book.sheetnames)
         finally:book.close()

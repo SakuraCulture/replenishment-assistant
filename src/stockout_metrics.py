@@ -15,6 +15,16 @@ LINKS='''current_days d JOIN publications p ON p.id=d.publication
 AGG_KEYS=('base','zero','bad','unknown_tags','unknown_zero','removed_base','removed_zero')
 
 
+def cut_columns(dimensions):
+    """Names supplement exact code groups; they never become grouping/filter keys."""
+    columns=[]
+    for dimension in dimensions:
+        columns.append((dimension,DIMENSIONS[dimension][1]))
+        if dimension in ('store','sku'):
+            columns.append((dimension+'_name','门店名称' if dimension=='store' else '商品名称'))
+    return columns
+
+
 def validate(query):
     query=dict(query or {})
     start=query.setdefault('start',today());end=query.setdefault('end',start)
@@ -109,6 +119,10 @@ def cuts(repo, options, dimensions=('store',), *, offset=0, limit=200, cancel=No
         raise ValueError('请选择1至3个不同的分析维度')
     condition,args=where(options)
     fields=','.join(DIMENSIONS[k][0]+' AS '+k for k in dimensions)
+    for dimension,field in (('store','s.name'),('sku','f.name')):
+        if dimension in dimensions:
+            name=f"nullif({field},'')"
+            fields+=f",coalesce(min({name}),'名称未提供') || CASE WHEN count(DISTINCT {name})>1 THEN '（同编码多名称，详见明细）' ELSE '' END AS {dimension}_name"
     group=','.join(DIMENSIONS[k][0] for k in dimensions)
     with repo.connect() as db:
         if cancel:db.set_progress_handler(lambda:int(cancel.is_set()),1000)
