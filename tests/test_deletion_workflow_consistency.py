@@ -95,6 +95,51 @@ class Consistency(unittest.TestCase):
                 item={'state':'REVIEW',**changes};job={'state':'COMPLETED_WITH_ERRORS','kind':'prepare'}
                 self.assertFalse(can_end_local(job,item));self.assertIsNotNone(deletion_issue(job,item))
 
+    def test_duplicate_package_does_not_block_but_original_upload_still_does(self):
+        duplicate=self.failed();duplicate=self.store.update(duplicate['id'],position=0,changes={
+            'package':{'id':'never-reserved'},'error':{'code':'PURCHASE_ALREADY_RESERVED','message':'原任务存在'}})
+        original=self.failed([self.a]);original=self.store.update(original['id'],kind='upload',position=0,changes={
+            'package':{'id':'original'},'error':{'code':'PURCHASE_CREATED_MISMATCH'},
+            'purchase_observation':{'taskId':'original-task','uploadAttempted':True}})
+        other=copy.deepcopy(duplicate['items'][1])
+        plan=m.inspect_deletion(self.path,[self.a]);self.assertEqual(len(plan['blockers']),1)
+        self.assertEqual(plan['blockers'][0]['id'],original['id'])
+        self.assertTrue(can_end_local(duplicate,duplicate['items'][0]))
+        ended=self.store.end_local_items(duplicate['id'],[self.a['number']],duplicate['sequence'])
+        self.assertEqual(ended['items'][1],other)
+        with self.assertRaises(ValueError):m.execute(self.path,m.inspect_deletion(self.path,[self.a]),True)
+        # The isolated component boundary reports full native verification; no direct
+        # production DB modification or screenshot is used as terminal evidence.
+        self.store.update(original['id'],position=0,changes={'state':'BOUND','error':None,
+            'result':{'binding':{'orderId':'PO-original','status':'已作废','method':'known_import_task_and_exact_native_rows'}}})
+        plan=m.prepare(self.path,[self.a]);self.assertFalse(plan['blockers'])
+        self.assertEqual(len(plan['parents'][0]['warehouses']),2)
+        m.execute(self.path,plan,True)
+        self.assertIsNone(self.r.get(wr.today(),'T'));self.assertEqual(self.r.get(wr.today(),'U'),self.before_b)
+        remaining=self.store.get(duplicate['id']);other['position']=0
+        self.assertEqual(remaining['items'],[other])
+
+    def test_duplicate_error_never_overrides_upload_receipt_or_accepted_identity(self):
+        job={'kind':'prepare','state':'COMPLETED_WITH_ERRORS'}
+        base={'state':'REVIEW','package':{'id':'local-file'},'error':{'code':'PURCHASE_ALREADY_RESERVED'}}
+        for record in ('item','result','purchase_observation'):
+            for field,value in [('purchase_id','p'),('binding',{'orderId':'PO'}),('uploadAttempted',True),
+                                ('taskId','T'),('receipt',{'taskId':'T'}),('orderId','PO'),('additionalTaskIds',['T'])]:
+                with self.subTest(record=record,field=field):
+                    item=copy.deepcopy(base)
+                    (item if record=='item' else item.setdefault(record,{}))[field]=value
+                    self.assertFalse(can_end_local(job,item));self.assertIsNotNone(deletion_issue(job,item))
+        for kind in ('upload','receipt'):
+            self.assertFalse(can_end_local({**job,'kind':kind},base))
+        self.assertFalse(can_end_local({**job,'state':'RUNNING'},base))
+
+    def test_duplicate_local_end_still_checks_sequence(self):
+        job=self.failed([self.a]);job=self.store.update(job['id'],position=0,changes={
+            'package':{'id':'local-only'},'error':{'code':'PURCHASE_ALREADY_RESERVED'}})
+        current=self.store.update(job['id'],message='changed')
+        with self.assertRaises(ValueError):self.store.end_local_items(job['id'],[self.a['number']],job['sequence'])
+        self.assertEqual(self.store.get(job['id']),current)
+
     def test_cancel_and_cross_database_failure_restore_all_task_payloads(self):
         j=self.failed();plan=m.prepare(self.path,[self.a]);cancel=threading.Event()
         def progress(value):

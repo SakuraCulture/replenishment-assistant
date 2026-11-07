@@ -11,6 +11,10 @@ def waiting(item, kind):
             and (item.get('error') or {}).get('code') == 'TASK_PENDING')
 
 
+def voided(item):
+    return item['state'] == 'BOUND' and ((item.get('result') or {}).get('binding') or {}).get('status') == '已作废'
+
+
 def explain(error, known=None):
     error, known = error or {}, known or {}
     code = error.get('code', '')
@@ -22,6 +26,8 @@ def explain(error, known=None):
         'MULTIPLE_IMPORT_TASKS': '同一笔采购发现多个受理任务号，无法自动确定对应采购单。请到单据详情核对原采购记录，保留已有平台单据。',
         'LOGIN_REQUIRED': '翱象登录已失效。请在原浏览器重新登录并核验连接，再继续核对原任务。',
         'WRONG_IDENTITY': '当前翱象账号或商家与这笔采购不一致。请切回原商家并核验连接，再继续原任务。',
+        'PURCHASE_STATUS_UNSUPPORTED': '原采购单已找到，但目前状态不属于待提交或已作废，暂不自动关联。请在平台查看该单当前状态，并在技术详情核对原始状态；不要重新导入。',
+        'PURCHASE_STATUS_CHANGED': '平台查询状态与核对文件不同，暂不关联。请稍后继续核对采购结果，保留原任务和已导出文件；不要重新导入。',
     }
     if code == 'SUBMISSION_UNKNOWN':
         if known.get('taskId'):
@@ -34,9 +40,13 @@ def explain(error, known=None):
 
 def item_message(item, kind):
     if kind != 'upload':
+        if kind == 'prepare' and (item.get('error') or {}).get('code') == 'PURCHASE_ALREADY_RESERVED':
+            return '已有原采购任务，本次重复预览未建立新任务。可勾选后结束本地准备；原上传结果仍须到原采购上传批次继续核对。'
         return (item.get('error') or {}).get('message', '')
     if item['state'] == 'BOUND':
-        return '采购单已核验并关联；可在平台处理后续提交。'
+        if voided(item):
+            return '已核实原采购单及全部商品明细，平台状态为已作废。可返回删除页重新核对完整范围；本次没有重传或操作平台作废。'
+        return '采购单已核验并关联；此处保留上次核验结果，平台当前状态以平台为准。'
     if item.get('error'):
         return explain(item['error'], item.get('purchase_observation'))
     if item.get('purchase_observation', {}).get('taskId'):

@@ -96,7 +96,7 @@ class Runner:
                 if self.cancel.wait(min(self.verification_interval, remaining)):
                     raise Cancelled('已停止等待；原受理任务保留，可继续核对采购结果')
                 continue
-            raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'), error.get('message', '原采购任务尚未核实成功，不能重传'))
+            raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'), error.get('message', '原采购任务尚未核实成功，不能重传'), error.get('details'))
 
     def receipt_item(self, item, configuration, suppliers):
         id = item['purchase_id']
@@ -165,6 +165,7 @@ class Runner:
             except Exception as exc:
                 code = getattr(exc, 'code', 'BUSINESS_REVIEW')
                 error = {'code': code, 'message': str(exc)}
+                if getattr(exc, 'details', None):error['details'] = exc.details
                 if job['kind'] == 'receipt':
                     self.store.observe_schedule(item['purchase_id'], None, error=error, review=code not in RETRYABLE)
                 if code in SESSION_ERRORS:

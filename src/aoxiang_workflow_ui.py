@@ -21,7 +21,7 @@ from runtime_support import Cancelled
 
 KINDS = {'prepare': '采购预览', 'upload': '采购上传与核对', 'receipt': '收货同步'}
 from aoxiang_workflow_state import can_end_local,local_preparation,summary as task_summary,counts
-from aoxiang_purchase_messages import waiting, item_message
+from aoxiang_purchase_messages import waiting, item_message, voided
 STATES = {'QUEUED': '排队', 'RUNNING': '正在处理', 'YIELDED': '等待人工操作结束', 'PAUSED': '已停止，可继续原任务',
           'FAILED': '批次未完成', 'READY': '预览完成，尚未上传', 'COMPLETED': '完成', 'COMPLETED_WITH_ERRORS': '已处理，有待核项', 'CANCELLED': '剩余任务已取消',
           'PENDING': '未处理', 'PREPARED': '预览就绪，未上传', 'BOUND': '已关联采购单', 'OBSERVED': '已观察，尚未完成', 'SYNCED': '正式实收已保存', 'REVIEW': '待核，不自动重试', 'SKIPPED': '周期已停止，本次跳过'}
@@ -324,6 +324,8 @@ class QueueDialog(QDialog):
                 state_text='本地准备未通过，未生成采购预览' if local_preparation(i,job['kind']) and i['state'] in ('FAILED','REVIEW') else '本地准备已结束' if i.get('ended_locally') else STATES.get(i['state'], i['state'])
                 if waiting(i,job['kind']):state_text='已受理，等待核对'
                 elif job['kind']=='upload' and i['state'] in ('FAILED','REVIEW'):state_text='采购结果需核对'
+                elif voided(i):state_text='已关联，平台已作废'
+                elif not i.get('ended_locally') and local_preparation(i,job['kind']) and (i.get('error') or {}).get('code')=='PURCHASE_ALREADY_RESERVED':state_text='重复本地预览，可结束'
                 values = [i.get('display_name') or h.get('name') or h.get('store'), h.get('warehouse'), h.get('number'), state_text,
                           f"{summary.get('sku_count', '—')} / {summary.get('amount', '—')}", (i.get('result') or {}).get('binding', {}).get('orderId') or i.get('order_id', '—'),
                           item_message(i,job['kind'])]
@@ -366,7 +368,7 @@ class QueueDialog(QDialog):
                     b.setText('收起技术详情' if expanded else '查看技术详情')
                 detail.clicked.connect(toggle)
             box.exec();return
-        if local_preparation(item,self.current['kind']):message+='\n本次未生成采购预览，未进入上传。可核对付款后重跑，或结束本地准备；不必为删除订单而确认付款。'
+        if local_preparation(item,self.current['kind']):message+='\n本次未建立新的平台采购任务，未进入上传。可结束本地准备；不必为删除订单而确认付款。'
         else:message+='\n请核对原平台任务；本地停止不代表平台订单已撤销。'
         QMessageBox.information(self,'任务原因',message)
 

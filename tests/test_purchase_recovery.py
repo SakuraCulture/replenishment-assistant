@@ -95,6 +95,31 @@ console.log(JSON.stringify(new MachinePurchaseCreate({ledger:{get:()=>r}}).statu
         self.assertEqual(self.runner(c).upload_item(self.item('x'),{}, {})[0],'BOUND')
         self.assertEqual([a for a,_ in c.calls],['purchase.status'])
 
+    def test_verified_void_is_terminal_association_not_purchase_success(self):
+        job=self.upload_batch(1);c=Client();c.add('0',bound=True)
+        c.records['0']['binding']['status']='已作废'
+        after=self.runner(c).run(job['id']);item=after['items'][0]
+        self.assertEqual(item['state'],'BOUND');self.assertEqual(counts(after)['voided'],1)
+        self.assertEqual(counts(after)['success'],0);self.assertIn('已核实作废1单',summary(after))
+        self.assertIn('返回删除页',item_message(item,'upload'))
+        self.assertEqual([a for a,_ in c.calls if a.startswith('purchase.')],['purchase.status'])
+
+    def test_bound_message_does_not_claim_live_platform_state(self):
+        self.assertIn('上次核验',item_message({'state':'BOUND','result':{'binding':{'status':'待提交'}}},'upload'))
+        self.assertNotIn('后续提交',item_message({'state':'BOUND'},'upload'))
+
+    def test_platform_status_details_survive_runner_failure(self):
+        job=self.upload_batch(1);c=Client();c.add('0')
+        def failed(action,**kw):
+            if action=='configuration':return {}
+            if action=='purchase.start':return c.records['0']
+            r=copy.deepcopy(c.records['0']);r.update(state='NEEDS_REVIEW',error={
+                'code':'PURCHASE_STATUS_UNSUPPORTED','message':'状态不符','details':{'status':'已完成'}})
+            return r
+        c.request=failed;after=self.runner(c).run(job['id'])
+        self.assertEqual(after['items'][0]['error']['details'],{'status':'已完成'})
+        self.assertEqual(after['items'][0]['state'],'REVIEW')
+
     def test_cancel_while_waiting_preserves_original_task(self):
         c=Client(pending=100);c.add('x')
         def progress(_):self.cancel.set()

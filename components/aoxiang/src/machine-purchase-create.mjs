@@ -48,7 +48,7 @@ export class MachinePurchaseCreate{
       this.check();r=this.ledger.get(id);this.progress('核对原导入任务、采购主单和商品数量金额');
       r=this.ledger.update(id,r.sequence,'VERIFYING',{error:null});
       const evidence=await this.adapter.observe(r.intent,r.receipt,{signal:this.control.signal});this.check();
-      this.ledger.bind(id,evidence);this.progress('采购单已核验并关联，保留待提交');
+      const bound=this.ledger.bind(id,evidence);this.progress(bound.binding.status==='已作废'?'已核实原采购单已作废，可返回本地删除页重新核对':'采购单已核验并关联，保留待提交');
     }catch(e){
       r=this.ledger.get(id);const error=errorInfo(e);
       if(['BOUND','CANCELLED_BEFORE_UPLOAD'].includes(r.state))throw e;

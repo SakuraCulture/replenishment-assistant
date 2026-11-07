@@ -4,14 +4,15 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--exe',type=Path);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--exe',type=Path);p.add_argument('--out',type=Path,required=True)
+    p.add_argument('--scenario',choices=['purchase-recovery','deletion-void'],default='purchase-recovery');a=p.parse_args()
     out=a.out.resolve();out.relative_to(ROOT/'qa');out.mkdir(parents=True,exist_ok=False)
     (out/'fixture.json').write_text(json.dumps({'synthetic':True,'live_platform':False}),'utf-8')
     env={**os.environ,'REPLENISHMENT_DATA_DIR':str(out/'settings'),'LOCALAPPDATA':str(out/'localappdata'),'PYTHONUTF8':'1'}
     env.pop('QT_QPA_PLATFORM',None)
     cmd=[str(a.exe.resolve())] if a.exe else [sys.executable,str(ROOT/'src/app.py')]
     with (out/'process.log').open('w',encoding='utf-8') as log:
-        process=subprocess.Popen(cmd+['--purchase-recovery-smoke',str(out)],cwd=ROOT,env=env,stdout=log,stderr=log,creationflags=subprocess.CREATE_NO_WINDOW)
+        process=subprocess.Popen(cmd+['--'+a.scenario+'-smoke',str(out)],cwd=ROOT,env=env,stdout=log,stderr=log,creationflags=subprocess.CREATE_NO_WINDOW)
         started=time.monotonic()
         while process.poll() is None:
             if time.monotonic()-started>180:

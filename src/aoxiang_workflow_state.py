@@ -1,6 +1,6 @@
 """Shared local task evidence rules. No browser calls or business writes."""
 import copy
-from aoxiang_purchase_messages import waiting
+from aoxiang_purchase_messages import waiting, voided
 
 ACTIVE = ('QUEUED', 'RUNNING', 'YIELDED', 'PAUSED')
 SUCCESS = ('PREPARED', 'BOUND', 'SYNCED')
@@ -10,10 +10,15 @@ def local_preparation(item, kind):
     """Only preparation which never reached a durable purchase identity is local."""
     result = item.get('result') or {}
     code = (item.get('error') or {}).get('code', '')
-    return (kind == 'prepare' and not any(item.get(k) for k in
-            ('package','purchase_id','order_id','uploadAttempted','binding'))
-            and not any(result.get(k) for k in ('purchase_id','binding','orderId','uploadAttempted'))
-            and not code.startswith(('SUBMISSION_', 'UPLOAD_', 'PURCHASE_')))
+    evidence = ('purchase_id','order_id','orderId','uploadAttempted','binding','taskId','receipt','additionalTaskIds')
+    if kind != 'prepare' or any(record.get(k) for record in
+            (item, result, item.get('purchase_observation') or {}) for k in evidence):
+        return False
+    # reserve() rejects a DIFFERENT intent before inserting it. A frozen local
+    # package is not a reservation; the original intent remains independently guarded.
+    if code == 'PURCHASE_ALREADY_RESERVED' and item['state'] in ('REVIEW','FAILED','SKIPPED'):
+        return True
+    return not item.get('package') and not code.startswith(('SUBMISSION_', 'UPLOAD_', 'PURCHASE_'))
 
 
 def can_end_local(job, item):
@@ -41,7 +46,8 @@ def deletion_issue(job, item):
 
 def counts(job):
     items=job['items']
-    return {'total':len(items),'success':sum(i['state'] in SUCCESS for i in items),
+    return {'total':len(items),'success':sum(i['state'] in SUCCESS and not voided(i) for i in items),
+            'voided':sum(voided(i) for i in items),
             'review':sum(i['state'] in ('REVIEW','FAILED') and not waiting(i,job['kind']) for i in items),
             'waiting':sum(waiting(i,job['kind']) for i in items),
             'pending':sum(i['state'] in ('PENDING','RUNNING') for i in items),
@@ -54,7 +60,8 @@ def summary(job):
     prefix='正在处理' if job['state']=='RUNNING' else '等待处理' if c['pending'] and job['state']!='CANCELLED' else '检查结束'
     success='预览就绪' if job['kind']=='prepare' else '已关联采购' if job['kind']=='upload' else '实收已同步'
     wait=f"，已受理待核对{c['waiting']}单" if job['kind']=='upload' else ''
-    return f"{prefix}：{success}{c['success']}单{wait}，待处理{c['review']}单，未处理{c['pending']}单，已观察{c['observed']}单，已结束/跳过{c['skipped']}单"
+    void=f"，已核实作废{c['voided']}单" if c['voided'] else ''
+    return f"{prefix}：{success}{c['success']}单{wait}{void}，待处理{c['review']}单，未处理{c['pending']}单，已观察{c['observed']}单，已结束/跳过{c['skipped']}单"
 
 
 def reconcile(job):
