@@ -1,0 +1,35 @@
+{
+  "baseline": "bc3aa46017accbee9b8442d93fdc4c213fe63b8e",
+  "source_commit": "0a4ac27fd6fe025edb239459a8b0f75d63405186",
+  "core_unchanged": {
+    "src/model.py": true,
+    "src/engine.py": true,
+    "src/allocation.py": true,
+    "src/one_box_exception.py": true,
+    "src/input_adapter.py": true,
+    "src/parameter_schema.py": true,
+    "src/default_config.json": true,
+    "src/default_must_sell.json": true,
+    "src/result_semantics.py": true,
+    "src/new_products.py": true,
+    "src/preissue.py": true,
+    "src/normal_exports.py": true,
+    "src/work_repository.py": true,
+    "src/data_maintenance.py": true
+  },
+  "protected_files_unchanged": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.0_rc1\\补货助手_0.45.0_rc1_货盘结构分析.zip": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.0_rc1\\补货助手\\补货助手.exe": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.0_rc1\\补货助手\\_internal\\base_library.zip": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.0_rc1\\补货助手\\AI接口\\_internal\\base_library.zip": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.1_rc1\\补货助手_0.45.1_rc1_删除负载优化.zip": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.1_rc1\\补货助手\\补货助手.exe": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.1_rc1\\补货助手\\_internal\\base_library.zip": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.1_rc1\\补货助手\\AI接口\\_internal\\base_library.zip": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.4_rc1\\补货助手_0.46.4_rc1_作废采购核对与删除恢复.zip": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.4_rc1\\补货助手\\补货助手.exe": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.4_rc1\\补货助手\\_internal\\base_library.zip": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.4_rc1\\补货助手\\AI接口\\_internal\\base_library.zip": true
+  },
+  "runtime_diff": " src/version.json         |  4 ++--\n src/warehouse_catalog.py |  9 +++++++--\n src/warehouse_smoke.py   | 37 ++++++++++++++++++++++++++++++++-----\n 3 files changed, 41 insertions(+), 9 deletions(-)\n"
+}

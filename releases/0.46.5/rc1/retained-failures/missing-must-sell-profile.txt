@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_single_warehouse_scope.py", line 103, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_single_warehouse_scope.py", line 55, in main
+    if a.worker:return worker(a.worker.resolve(),a.inputs.resolve(),a.output.resolve(),a.oracle)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_single_warehouse_scope.py", line 34, in worker
+    result=bs.calculate_store(selected,store,settings,None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\single_warehouse_0465\baseline\src\batch_service.py", line 113, in calculate_store
+    result=engine.run_calculation(loaded,store,settings['warehouses'],settings['exception'],settings['budget'],profile,progress,cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\single_warehouse_0465\baseline\src\engine.py", line 184, in run_calculation
+    return apply_budget(report,budget,profile,progress,cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\single_warehouse_0465\baseline\src\engine.py", line 189, in apply_budget
+    if budget is not None and profile is None:raise ValueError('启用预算前请先导入有效必卖清单')
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: 启用预算前请先导入有效必卖清单
