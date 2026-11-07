@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "frozen_exe": false,
+  "checks": [
+    "actual export_current confirmation: table attached, default/escape cancel, cancel leaves signatures absent",
+    "actual export_current: export full differences, reopen same confirmation, confirm, archive V001 and export files; calculations unchanged",
+    "actual audit dialog: font 10/12, row-height adjustment, horizontal-scroll identity, cancel preserves all calculation results",
+    "actual 核对与签发→确认签发并导出: Windows file lock produces readable receipt; old file and signed revision preserved",
+    "actual recovery dialog: inspect selected receipt, restore checked missing files to new directory, no re-signing",
+    "actual signed workbook → batch return: hidden identities matched; readonly metadata shown; preview and atomic save completed",
+    "packaged independent stockout: native UI and AI totals agree; negative stock, disabled exclusion, repeated observations, pinned Excel export exercised",
+    "real scheduled manager: maintenance skips reads; exclusive SQLite lock handled off GUI; heartbeat continues; retry succeeds after release",
+    "no unhandled Qt callbacks; timestamped log written in isolated settings"
+  ],
+  "errors": [],
+  "export_files": [
+    "2026-11-07合成门店QA_A（精简版·山东仓）.xlsx",
+    "2026-11-07合成门店QA_A（精简版·河北仓）.xlsx",
+    "2026-11-07合成门店QA_B（精简版·山东仓）.xlsx",
+    "2026-11-07合成门店QA_B（精简版·河北仓）.xlsx"
+  ],
+  "heartbeat_ticks": 347,
+  "max_gap_seconds": 0.6090000000003783,
+  "app": "补货助手",
+  "version": "0.47.7",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "源码运行",
+  "build_id": "未打包"
+}

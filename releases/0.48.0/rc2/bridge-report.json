@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "transport": "real bundled CLI and named pipe; same gateway as MCP; no external AI client",
+  "calls": [
+    {
+      "tool": "workbench_context",
+      "ok": true
+    },
+    {
+      "tool": "stockout_context",
+      "ok": true
+    },
+    {
+      "tool": "query_stockout_analysis",
+      "ok": true
+    },
+    {
+      "tool": "task_status",
+      "ok": true
+    },
+    {
+      "tool": "stockout_analysis_results",
+      "ok": true
+    },
+    {
+      "tool": "stockout_analysis_results",
+      "ok": true
+    },
+    {
+      "tool": "stockout_analysis_results",
+      "ok": true
+    },
+    {
+      "tool": "export_stockout_analysis",
+      "ok": true
+    },
+    {
+      "tool": "task_status",
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "passed": false,
+  "frozen_exe": true,
+  "checks": [
+    "actual export_current confirmation: table attached, default/escape cancel, cancel leaves signatures absent",
+    "actual export_current: export full differences, reopen same confirmation, confirm, archive V001 and export files; calculations unchanged",
+    "actual audit dialog: font 10/12, row-height adjustment, horizontal-scroll identity, cancel preserves all calculation results",
+    "actual 核对与签发→确认签发并导出: Windows file lock produces readable receipt; old file and signed revision preserved",
+    "actual recovery dialog: inspect selected receipt, restore checked missing files to new directory, no re-signing",
+    "actual signed workbook → batch return: hidden identities matched; readonly metadata shown; preview and atomic save completed",
+    "packaged independent stockout: native UI and AI totals agree; negative stock, disabled exclusion, repeated observations, pinned Excel export exercised"
+  ],
+  "errors": [],
+  "error": "Traceback (most recent call last):\n  File \"gui_maintenance_smoke.py\", line 76, in execute\n  File \"workflow_acceptance.py\", line 158, in exercise\n  File \"workflow_acceptance.py\", line 149, in call\n  File \"workflow_acceptance.py\", line 17, in wait\nAssertionError: walkthrough background timeout\n"
+}
