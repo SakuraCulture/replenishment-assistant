@@ -64,12 +64,13 @@ def pdf_manual():
         'title':ParagraphStyle('Title',fontName=font,fontSize=25,leading=34,spaceAfter=20,textColor=HexColor('#09665e'),wordWrap='CJK'),
         'heading':ParagraphStyle('Heading',fontName=font,fontSize=19,leading=28,spaceAfter=16,textColor=HexColor('#09665e'),wordWrap='CJK'),
         'caption':ParagraphStyle('Caption',fontName=font,fontSize=9,leading=14,spaceAfter=12,textColor=HexColor('#526d71'),wordWrap='CJK'),
+        'contents':ParagraphStyle('Contents',fontName=font,fontSize=10,leading=18,spaceAfter=5,wordWrap='CJK'),
     }
     def plain(text):return html.escape(text.replace('`','')).replace('—','-').replace('–','-')
     def para(text,style='body'):return Paragraph(plain(text),styles[style])
     target=FOLDER/'补货助手_0.48.0_新人使用手册.pdf'
     def footer(canvas,doc):
-        width,height=doc.pagesize;canvas.saveState();canvas.setStrokeColor(HexColor('#bed1cf'));canvas.line(38,31,width-38,31)
+        width,height=canvas._pagesize;canvas.saveState();canvas.setStrokeColor(HexColor('#bed1cf'));canvas.line(38,31,width-38,31)
         canvas.setFont(font,8);canvas.setFillColor(HexColor('#526d71'));canvas.drawString(38,19,'补货助手 0.48.0 | 新人使用手册 | 隔离演示截图')
         canvas.drawRightString(width-38,19,str(doc.page));canvas.restoreState()
     class Document(BaseDocTemplate):
@@ -82,9 +83,9 @@ def pdf_manual():
     intro,chapters=sections();story=[para('补货助手\n新人使用手册','title'),para('适用版本 0.48.0 · 本机离线使用'),Spacer(1,20)]
     for line in intro.splitlines():
         if line and not line.startswith('#'):story.append(para(line))
-    story+=[Spacer(1,18),para('先看目标，再看完成标志。遇到失败，先确认已经生效的结果。','heading'),para('签发已提交 ≠ 文件已生成。已受理 ≠ 已完成。缺失事实 ≠ 0。')]
+    story+=[Spacer(1,18),para('按任务找步骤，按状态判断下一步。','heading'),para('遇到失败，先确认已经生效的结果。'),para('签发已提交 ≠ 文件已生成。已受理 ≠ 已完成。缺失事实 ≠ 0。')]
     story.append(PageBreak());story.append(para('任务目录','heading'))
-    for i,(title,_) in enumerate(chapters,1):story.append(Paragraph(f'<link href="#c{i:02d}" color="#09665e">{plain(title)}</link>',styles['body']))
+    for i,(title,_) in enumerate(chapters,1):story.append(Paragraph(f'<link href="#c{i:02d}" color="#09665e">{plain(title)}</link>',styles['contents']))
     for i,(title,body) in enumerate(chapters,1):
         story.append(PageBreak());heading=para(title,'heading');heading.bookmark=f'c{i:02d}';story.append(heading)
         images=[];captions=[]

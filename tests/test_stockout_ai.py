@@ -5,17 +5,17 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 import openpyxl
-from test_stockout_analysis import AnalysisTests
+import test_stockout_analysis as fixtures
 import stockout_ai as service
 import stockout_metrics as metrics
 from stockout_facts import load_store
 
 
 class StockoutAI(unittest.TestCase):
-    setUp=AnalysisTests.setUp
-    sales=AnalysisTests.sales
-    publish=AnalysisTests.publish
-    catalog=AnalysisTests.catalog
+    setUp=fixtures.AnalysisTests.setUp
+    sales=fixtures.AnalysisTests.sales
+    publish=fixtures.AnalysisTests.publish
+    catalog=fixtures.AnalysisTests.catalog
 
     def query(self):return {'start':'2026-11-01','end':'2026-11-07'}
 

@@ -145,9 +145,12 @@ def exercise(app,win,out,codes,checks):
     calls=[]
     def call(tool,args):
         request=out/('bridge-'+str(len(calls))+'.json');request.write_text(json.dumps(args,ensure_ascii=False),'utf-8')
-        process=subprocess.Popen([*bridge,'--connection',str(gateway.connection_file),'call',tool,'--arguments-file',str(request)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
-        wait(lambda:process.poll() is not None);stdout,stderr=process.communicate();value=json.loads(stdout)
-        assert process.returncode==0 and value['ok'],(tool,value,stderr.decode('utf-8',errors='replace'))
+        response=out/('bridge-response-'+str(len(calls))+'.json');error=out/('bridge-error-'+str(len(calls))+'.txt')
+        with response.open('wb') as stdout,error.open('wb') as stderr:
+            process=subprocess.Popen([*bridge,'--connection',str(gateway.connection_file),'call',tool,'--arguments-file',str(request)],stdout=stdout,stderr=stderr,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            wait(lambda:process.poll() is not None)
+        value=json.loads(response.read_text('utf-8'))
+        assert process.returncode==0 and value['ok'],(tool,value,error.read_text('utf-8',errors='replace'))
         calls.append({'tool':tool,'ok':value['ok']});return value['result']
     context=call('workbench_context',{});assert call('stockout_context',{})['available']
     task=call('query_stockout_analysis',{'context_token':context['context_token'],'operation_key':'exe-query','query':page.options(),'dimensions':page.dimensions()})
@@ -160,6 +163,17 @@ def exercise(app,win,out,codes,checks):
     wait(lambda:gateway.worker is None);assert call('task_status',{'task_id':output['task_id']})['state']=='completed'
     gateway.disable();(out/'bridge-report.json').write_text(json.dumps({'passed':True,'transport':'real bundled CLI and named pipe; same gateway as MCP; no external AI client','calls':calls},ensure_ascii=False,indent=2),'utf-8')
     checks.append('actual AI interface executable: named-pipe context, query, asynchronous page, status and export completed; no external Codex/WorkBuddy client asserted')
+    import user_help
+    from PySide6.QtGui import QAction
+    manual=user_help.location();html=manual.read_text('utf-8')
+    assert html.count('<section id=')==26
+    assert (manual.parent/'补货助手_0.48.0_新人使用手册.pdf').is_file()
+    assert len(list((manual.parent/'images').glob('*.png')))==13
+    action=next(a for a in win.findChildren(QAction) if a.text()=='图文使用手册')
+    with patch('PySide6.QtGui.QDesktopServices.openUrl',return_value=True) as opened:
+        action.trigger()
+        assert Path(opened.call_args.args[0].toLocalFile())==manual
+    checks.append('packaged help menu resolves bundled offline HTML, 26 chapters, 13 real EXE screenshots and PDF; HTML browser behavior validated separately')
     win.show_section(1);QTest.qWait(150);assert win.stockout.page is None
     assert win.results==before
     (out/'screenshot-index.json').write_text(json.dumps({'source':'actual EXE' if getattr(__import__('sys'),'frozen',False) else 'source application',
