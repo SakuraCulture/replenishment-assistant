@@ -25,6 +25,13 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    # GUI acceptance installs isolated transports before explicitly exercising
+    # startup; normal launches always attempt connection after the first paint.
+    from browser_startup_ui import start_application_connections
+    start_application_connections(win, sys.argv)
+    if '--startup-connections-smoke' in sys.argv:
+        from browser_startup_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--startup-connections-smoke')+1:])
     if '--stockout-smoke' in sys.argv:
         from stockout_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--stockout-smoke')+1:])

@@ -31,6 +31,44 @@ test('按所选仓自动准备、核验和保存；两仓绑定独立且重复�
   assert.deepEqual(c.service.store.accounts(),accounts);
   await assert.rejects(c.auto('山东仓',0),{code:'CONFIG_CONFLICT'});
 });
+
+test('startup reuses a saved custom binding and version even with pending exports; never migrates it',async t=>{
+  const c=await fixture(t);await c.auto();const a=c.service.store.accounts()[0];
+  await c.service.store.write(d=>{d.batches.pending={items:[{account:a,native:{nativeTaskRef:'known',stage:'ACCEPTED'}}]};});
+  c.driver.automaticBinding=async()=>{throw Error('Startup must not replace saved profile');};
+  c.driver.inspect=async(binding,company,signal,options)=>{
+    assert.deepEqual(binding,a.binding);assert.equal(options.waitForLogin,false);
+    return {company:'fixture',coid:'1',uid:'9'};
+  };
+  const before=c.service.store.read();
+  const ack=await c.service.command({action:'accounts.ensure',warehouse:'山东仓',expected_version:1});await c.service.active.promise;
+  assert.equal(c.service.status().operations[ack.operation_id].state,'SUCCEEDED');
+  assert.deepEqual(c.service.store.accounts(),[a]);assert.deepEqual(c.service.store.read().batches,before.batches);
+});
+test('startup automatically binds a new dedicated account after login, and leaves missing login unbound',async t=>{
+  const c=await fixture(t);
+  c.driver.inspect=async(binding,company,signal,options)=>{
+    assert.equal(options.waitForLogin,false);
+    if(binding.userDataRoot.endsWith('山东仓'))throw Object.assign(Error('Please login'),{code:'LOGIN_REQUIRED'});
+    return {company:'fixture',coid:'2',uid:'9'};
+  };
+  for(const warehouse of ['山东仓','河北仓']){
+    const ack=await c.service.command({action:'accounts.ensure',warehouse,expected_version:0});await c.service.active.promise;
+    assert.equal(c.service.status().operations[ack.operation_id].state,warehouse==='山东仓'?'LOGIN_REQUIRED':'SUCCEEDED');
+  }
+  assert.deepEqual(c.service.store.accounts().map(a=>a.warehouse),['河北仓']);
+});
+test('startup does not enable a disabled account or replace a mismatched login',async t=>{
+  const c=await fixture(t);await c.auto();
+  c.driver.inspect=async()=>({company:'fixture',coid:'8',uid:'9'});
+  let ack=await c.service.command({action:'accounts.ensure',warehouse:'山东仓',expected_version:1});await c.service.active.promise;
+  assert.equal(c.service.status().operations[ack.operation_id].error.code,'WRONG_ACCOUNT');
+  await c.service.command({action:'accounts.set_enabled',warehouse:'山东仓',expected_version:1,enabled:false});
+  const before=c.service.store.accounts();
+  ack=await c.service.command({action:'accounts.ensure',warehouse:'山东仓',expected_version:2});await c.service.active.promise;
+  assert.equal(c.service.status().operations[ack.operation_id].error.code,'ACCOUNT_DISABLED');
+  assert.deepEqual(c.service.store.accounts(),before);
+});
 test('账号不同或两个仓使用同一身份时不会自动覆盖绑定',async t=>{
   const c=await fixture(t);await c.auto();const before=c.service.store.accounts();
   c.driver.inspect=async()=>({company:'fixture',coid:'8',uid:'9'});

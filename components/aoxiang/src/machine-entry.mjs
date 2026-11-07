@@ -67,13 +67,14 @@ async function main(){
     let request,result,stop=false,kick=false;
     try{
       request=validateRequest(raw);
-      const configurationActions=['discover','setup.start','setup.verify_saved','setup.commit','template.start'];
+      const configurationActions=['discover','setup.start','setup.check_login','setup.verify_saved','setup.commit','template.start'];
       if((configurationActions.includes(request.action)||['reserve','resume','purchase.start','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&(purchase.busy||receiptSync.busy||bindingCheck.busy))fail('PURCHASE_CREATE_BUSY','当前采购、关联核对或收货动作正在运行或安全停止，请等待后再执行其他作业');
       if(configurationActions.includes(request.action)&&(runtime.active||commands.list().some(r=>r.state==='QUEUED')))fail('COMPONENT_BUSY','先暂停或完成当前取数任务，再修改连接与目录');
       if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
       switch(request.action){
         case 'discover':result=await setup.discover();break;
         case 'setup.start':result=setup.begin(request);break;
+        case 'setup.check_login':result=await setup.verifySaved([]);break;
         case 'setup.verify_saved':result=await setup.verifySaved(request.codes);break;
         case 'setup.status':result=setup.status(request.setup_id);break;
         case 'setup.cancel':result=await setup.cancel(request.setup_id);break;

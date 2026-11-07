@@ -40,7 +40,7 @@ class Dialog(QDialog):
         self.client=manager(host).session.acquire()
         self.setWindowTitle('聚水潭商品资料 · '+('更新本次分配库存' if purpose=='allocation_baseline' else '同步默认仓资料'));self.resize(1090,710)
         v=QVBoxLayout(self);v.addWidget(label('选择仓 → 核验账号 → 获取并采用；两仓独立登录，按仓依次处理。','section'))
-        v.addWidget(label('自动为所选仓准备独立浏览器；首次登录对应仓库账号后自动核验并保存。关闭本窗口保留连接。'+('将更新本次分配依据；已有分配需自行复查。' if purpose=='allocation_baseline' else '采用新资料后已有计算需要重新检查。'),'muted'))
+        v.addWidget(label('应用启动时自动连接两仓浏览器并检查登录；本页用于异常后修复、维护账号及主动刷新资料。关闭本窗口保留连接。'+('将更新本次分配依据；已有分配需自行复查。' if purpose=='allocation_baseline' else '采用新资料后已有计算需要重新检查。'),'muted'))
         row=QHBoxLayout();self.warehouse=QComboBox();self.warehouse.addItems(WAREHOUSES)
         if warehouses:self.warehouse.setCurrentText(warehouses[0])
         row.addWidget(self.warehouse);self.account=label('尚未读取连接设置');row.addWidget(self.account,1);v.addLayout(row)
@@ -184,6 +184,10 @@ def open_sync(host,warehouses=None,purpose='default_catalog',parent=None):
     if getattr(host,'worker',None) or getattr(host,'readonly',False):return []
     d=None;previous=getattr(host,'_large_io_dialog',None)
     try:
+        startup=getattr(host,'browser_startup',None)
+        if startup and 'jst' in startup.workers:
+            from browser_startup import yield_startup
+            run(parent or host,yield_startup,(host,'jst'),'等待自动连接检查让行')
         d=Dialog(host,warehouses,purpose,parent);host._large_io_dialog=d;d.exec();return d.adopted
     except Exception as exc:
         QMessageBox.warning(parent or host,'商品资料同步未打开',str(exc));return []

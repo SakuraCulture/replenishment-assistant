@@ -56,7 +56,10 @@ export class MachineSetup{
     }).finally(async()=>{
       this.job.cleanup_pending=true;
       try{
-        if(!this.browsers||!this.preview||this.control.signal.aborted)await this.closeClient();
+        const waitingLogin=params.verificationOnly&&!params.targets.length&&this.job.error?.code==='WAIT_LOGIN'&&
+          !this.control.signal.aborted&&this.client&&!this.client.closed;
+        if(waitingLogin)this.pendingLogin={candidate:params.candidate,hash:configurationHash(params.saved)};
+        else if(!this.browsers||!this.preview||this.control.signal.aborted)await this.closeClient();
         if(this.control.signal.aborted){this.preview=null;this.job.state='CANCELLED';this.job.stage='核验已停止，未保存新配置';}
         else if(this.preview&&this.job.state==='RUNNING'){
           if(params.verificationOnly){
@@ -101,7 +104,7 @@ export class MachineSetup{
   }
   async closeClient({healthy=false}={}){
     if(!(healthy&&this.borrowed))await this.client?.stop();
-    this.client=null;this.borrowed=false;
+    this.client=null;this.borrowed=false;this.pendingLogin=null;
   }
   async cancel(id){
     this.status(id);this.control.abort();this.job.cancel_requested=true;this.job.updated_at=now();
@@ -110,23 +113,38 @@ export class MachineSetup{
   }
   async close(){if(this.job)this.control.abort();await this.promise;await this.closeClient({healthy:this.job?.state==='READY'});this.preview=null;if(this.job?.state==='READY')this.job.state='CANCELLED';}
   async run(params){
-    const old=await this.readStep(()=>readConfiguration(this.root)),env=await this.readStep(()=>this.discoverEnvironment());this.check();
+    const old=await this.readStep(()=>readConfiguration(this.root));
+    const env=await this.readStep(()=>this.discoverEnvironment({extraDataRoot:old.binding?.userDataRoot}));this.check();
     const profile=env.profiles.find(p=>p.actualProfilePath.toLowerCase()===params.candidate.actual_profile_path.toLowerCase());
     const edge=env.installations.find(e=>e.executable.toLowerCase()===params.candidate.edge_executable.toLowerCase());
     if(!profile||!edge)fail('MACHINE_REBIND_REQUIRED','所选浏览器或已有用户配置未在本机发现，不能执行任意路径');
-    const output=await this.readStep(()=>this.checkOutputRoot(params.output_root));this.check();
+    const output=params.verificationOnly&&!params.targets.length?{root:old.binding.outputRoot}:
+      await this.readStep(()=>this.checkOutputRoot(params.output_root));this.check();
     const job=this.job;
     const onPhase=stage=>{if(this.job.id===job.id&&!this.control.signal.aborted){this.job.stage=stage;this.job.updated_at=now();}};
-    this.client=await this.browsers?.forSetup(params.candidate,old,onPhase);
-    this.borrowed=!!this.client;
+    const waiting=this.pendingLogin&&this.client&&!this.client.closed&&this.client.connectionState!=='DISCONNECTED'&&
+      this.pendingLogin.hash===configurationHash(old)&&canonical(this.pendingLogin.candidate)===canonical(params.candidate);
+    if(!waiting){
+      if(this.pendingLogin)await this.closeClient();
+      this.client=await this.browsers?.forSetup(params.candidate,old,onPhase);
+      this.borrowed=!!this.client;
+    }else this.client.onPhase=onPhase;
+    this.pendingLogin=null;
     if(!this.client)this.client=new this.Client({onPhase});
     this.job.stage='核验登录与商家';
-    const result=await this.readStep(()=>this.borrowed?this.client.recheckLogin(old.config.tenantBinding):this.client.connect({candidate:{...profile,edgeExecutable:edge.executable},expectedIdentity:old.config?.tenantBinding,
+    const result=await this.readStep(()=>this.borrowed||waiting?this.client.recheckLogin(old.config.tenantBinding):this.client.connect({candidate:{...profile,edgeExecutable:edge.executable},expectedIdentity:old.config?.tenantBinding,
       stateRoot:this.root,timeout:old.config?.resourceLimits.connectTimeoutMs||60000,pageTimeoutMs:old.config?.resourceLimits.pageTimeoutMs||30000,
       mode:'background_tab',source:'D13'}),(old.config?.resourceLimits.connectTimeoutMs||60000)+(old.config?.resourceLimits.pageTimeoutMs||30000)*2);this.check();
     this.connected=result;
     if(old.config&&!sameIdentity(old.config.tenantBinding,result.identity))fail('WRONG_IDENTITY','当前商家与已保存账号不同；原配置保持不变');
     this.job.identity={account_id:result.identity.accountId,merchant_code:result.identity.merchantCode,display_name:result.identity.displayName};
+    // Startup only verifies the saved browser and tenant. Store verification stays
+    // explicit; no catalogue scan, export or mapping-version rewrite is needed.
+    if(params.verificationOnly&&!this.job.targets.length){
+      this.preview={expectedHash:configurationHash(old),desired:old};
+      this.job.verified=0;this.job.failed=0;
+      return;
+    }
     const verified=[];
     for(const item of this.job.targets){
       this.check();item.state='RUNNING';this.job.stage='核对门店 '+(item.index+1)+'/'+this.job.total+' · '+item.name;

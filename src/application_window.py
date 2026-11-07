@@ -97,6 +97,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         from automation_ui import install as install_automation
         install_automation(self)
         from browser_status_ui import BrowserStatus
+        from browser_startup_ui import StartupConnections
+        self.browser_startup=StartupConnections(self)
         self.browser_status=BrowserStatus(self)
         from scheduled_ui import Manager as ScheduledManager
         self.scheduled=ScheduledManager(self,hv)
@@ -109,6 +111,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
     def open_aoxiang_setup(self):
         from aoxiang_setup_ui import open_setup
         open_setup(self)
+        if self.browser_startup.started:self.browser_startup.retry(['翱象'])
 
     def check_added_files(self):
         if not self.worker and not self.closing and not self.readonly and self.sales.paths and (self.products.path if self.master_legacy.isChecked() else self.catalogs):self.start_load()
@@ -242,6 +245,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         return bool(cached and cached[0] is self.results.get(s) and cached[1] is self.new_focus)
 
     def closeEvent(self,event):
+        startup=getattr(self,'browser_startup',None)
+        if startup and not startup.prepare_close():event.ignore();return
         stockout=getattr(self,'stockout',None)
         if stockout and not stockout.prepare_close():event.ignore();return
         inventory=getattr(self,'inventory',None)
@@ -283,6 +288,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             if self.status_hash_task:
                 self.status_hash_task.requestInterruption();self.status_hash_task.wait()
         elif axmanager:
+            if startup:startup.resume()
             if stockout:stockout.resume_after_cancelled_close()
             if scheduled:scheduled.resume_after_cancelled_close()
             axmanager.resume_after_cancelled_close()

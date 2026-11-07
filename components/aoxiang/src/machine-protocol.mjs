@@ -10,7 +10,7 @@ export const correlationId=value=>value?.protocol_version===1&&typeof value.requ
 const fields={ping:[],'session.release':[],'session.status':[],'session.health':[],configuration:[],list:['offset','limit'],reserve:['command'],status:['command_id'],
   'collection.preview':['command_id','operation'],'collection.apply':['command_id','operation','token'],
   events:['command_id','after','limit'],pause:['command_id'],resume:['command_id'],retry:['command_id','indices','sequence'],shutdown:[],
-  discover:[],'setup.verify_saved':['codes'],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
+  discover:[],'setup.check_login':[],'setup.verify_saved':['codes'],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
   'setup.cancel':['setup_id'],'setup.commit':['setup_id'],
   'template.start':[],'template.status':['template_id'],'template.cancel':['template_id'],
   'purchase.reserve':['package_file','package_sha256'],'purchase.start':['purchase_id'],

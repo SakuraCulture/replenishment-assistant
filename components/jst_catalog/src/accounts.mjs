@@ -147,7 +147,10 @@ export class AccountSessions {
         await sleep(300);
       }
       check(signal);
-    }else if(login)throw new CatalogError('LOGIN_REQUIRED','该仓需要正常登录；登录完成后继续本仓，另一仓可以继续');
+    }else if(login){
+      await bridge.page.bringToFront();
+      throw new CatalogError('LOGIN_REQUIRED','该仓需要正常登录；登录完成后继续本仓，另一仓可以继续');
+    }
     return bridge.page;
   }
   async inspect(binding,company,signal,options={}){

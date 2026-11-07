@@ -33,6 +33,7 @@ export class BoundBrowser{
     this.client.onImportReceipt=receipt=>this.adapter.onImportReceipt?.(receipt);
   }
   async ensure(){
+    if(this.client?.connectionState==='DISCONNECTED')await this.close();
     if(this.client&&!this.client.closed&&this.connected)return;
     if(!this.binding?.enabled)fail('SETUP_REQUIRED','请先配置本机翱象连接');
     const env=await this.discoverEnvironment({extraDataRoot:this.binding.userDataRoot});this.check();
@@ -77,7 +78,7 @@ export class BoundBrowserPool{
   }
   async forSetup(candidate,old,onPhase){
     const b=this.browser;
-    if(b?.client&&!b.client.closed&&b.connected&&old.config&&old.binding&&this.key===this.keyFor(old)&&
+    if(b?.client&&!b.client.closed&&b.client.connectionState!=='DISCONNECTED'&&b.connected&&old.config&&old.binding&&this.key===this.keyFor(old)&&
       old.binding.actualProfilePath.toLowerCase()===candidate.actual_profile_path.toLowerCase()&&
       old.binding.edgeExecutable.toLowerCase()===candidate.edge_executable.toLowerCase()){
       b.client.onPhase=onPhase;return b.client;

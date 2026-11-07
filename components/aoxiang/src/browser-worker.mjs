@@ -63,6 +63,9 @@ process.on('message',async message=>{
       }else throw Object.assign(new Error('未允许的浏览器操作'),{code:'UNKNOWN_WORKER_METHOD'});
     }
     send({id,result});
-  }catch(e){send({event:'connection',state:browserConnectionState(bridge)});send({id,error:redact({code:e.code||'BROWSER_OPERATION_FAILED',message:e.message,details:e.details})});}
+  }catch(e){
+    if(e.code==='WAIT_LOGIN'&&['connect','recheckLogin'].includes(method))await bridge.page?.bringToFront().catch(()=>{});
+    send({event:'connection',state:browserConnectionState(bridge)});send({id,error:redact({code:e.code||'BROWSER_OPERATION_FAILED',message:e.message,details:e.details})});
+  }
   finally{busy=false;}
 });
