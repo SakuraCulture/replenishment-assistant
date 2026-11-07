@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "settings": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\deletion_0462_final\\native-cold\\after-1\\settings",
+  "records": {
+    "normal_revisions": 23,
+    "normal_work_revisions": 3,
+    "jobs": 3
+  },
+  "unique_full_snapshot_scans": 26,
+  "logical_bytes_verified": 2087181061,
+  "live_chunks": 1173,
+  "seconds": 12.967888200000743,
+  "scope": "Read-only; original Reader verifies raw chunk size/hash and complete original JSON stream; exact reachable chunk set; no maintenance-cache shortcut"
+}

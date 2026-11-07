@@ -41,17 +41,27 @@ def start_smoke(app,win,args):
             if dialog.current['id']!='blocked':raise ValueError('Fixture not loaded')
             dialog.grab().save(str(out/'01-结束入口.png'))
             confirm(dialog.end_btn,False)
-            if dialog.current['state']!='NEEDS_REVIEW':raise ValueError('Cancel changed record')
+            if dialog.current['state']!=('INTERRUPTED' if fixture.get('recovery') else 'NEEDS_REVIEW'):raise ValueError('Cancel changed record')
             checks.append('结束预览取消不修改记录；真实弹框默认取消')
+            if fixture.get('recovery'):
+                if not dialog.resume_btn.isEnabled() or dialog.pause_btn.text()!='已停止取数':raise ValueError('Interrupted controls not restored')
+                component=win.aoxiang_workflows.session.client
+                if not component.close():raise ValueError('Offline component did not close')
+                checks.append('离线空闲组件退出；接下来由真实结束按钮自动重建连接')
             confirm(dialog.end_btn,True)
             if dialog.current['state']!='ENDED' or dialog.jobs.get('old-failed')['state']!='ENDED':raise ValueError('Related blockers not ended')
-            checks.append('结束当前批次及同门店旧失败记录，底层占用释放')
+            checks.append('结束本地批次，明确已受理的平台任务保持防重记录' if fixture.get('recovery') else '结束当前批次及同门店旧失败记录，底层占用释放')
             dialog.grab().save(str(out/'02-结束后可新建.png'))
-            confirm(dialog.delete_btn,False)
-            if dialog.history.findData('blocked')<0:raise ValueError('Cancel deleted row')
-            confirm(dialog.delete_btn,True)
-            if dialog.history.findData('blocked')>=0:raise ValueError('Delete not refreshed')
-            checks.append('删除预览取消/确认，列表立即刷新')
+            if fixture.get('recovery'):
+                plan=dialog.jobs.maintenance_preview(dialog.client,'blocked','delete')
+                if not plan['blocked']:raise ValueError('Accepted task deletion must remain blocked')
+                checks.append('已受理未完成任务不能通过删除记录丢弃')
+            else:
+                confirm(dialog.delete_btn,False)
+                if dialog.history.findData('blocked')<0:raise ValueError('Cancel deleted row')
+                confirm(dialog.delete_btn,True)
+                if dialog.history.findData('blocked')>=0:raise ValueError('Delete not refreshed')
+                checks.append('删除预览取消/确认，列表立即刷新')
             dialog.history.setCurrentIndex(dialog.history.findData('adopted'));wait(lambda:dialog.worker is None and dialog.current['id']=='adopted')
             confirm(dialog.delete_btn,True)
             checks.append('成功采集记录可删除，原采用文件仍在')
@@ -61,15 +71,26 @@ def start_smoke(app,win,args):
             wait(lambda:dialog.worker is None and dialog.current['state']=='INTERRUPTED')
             if dialog.current['record']['error']['code']!='SETUP_REQUIRED':raise ValueError('Unexpected new task outcome')
             checks.append('同门店新建成功并进入调度；离线夹具无浏览器绑定，在连接前按预期停止')
+            if fixture.get('recovery'):
+                for i in dialog.current['record']['items']:
+                    if i['warehouse_code'] in fixture['original_runs'] and (i['run_id']!=fixture['original_runs'][i['warehouse_code']] or i.get('task_id')!='task-'+i['warehouse_code']):raise ValueError('Original accepted identity lost')
+                if not dialog.resume_btn.isEnabled():raise ValueError('Resume disabled')
+                dialog.resume_btn.click();wait(lambda:dialog.worker is None and dialog.current['state']=='INTERRUPTED')
+                checks.append('新批次接续原run及任务号；继续按钮可再次执行且没有重新导出')
+                dialog.grab().save(str(out/'03-中断后可继续.png'))
             confirm(dialog.end_btn,True)
             dialog.close();wait(lambda:dialog._can_close and dialog.worker is None)
             dialog.deleteLater()
             dialog=FetchDialog(win,win.repository.folder,win.job_day);dialog.show();wait(lambda:dialog.worker is None)
-            if dialog.history.findData('blocked')>=0 or dialog.jobs.get(new_id)['state']!='ENDED':raise ValueError('State not durable')
+            if (not fixture.get('recovery') and dialog.history.findData('blocked')>=0) or dialog.jobs.get(new_id)['state']!='ENDED':raise ValueError('State not durable')
             checks.append('关闭重开，结束和删除持久保存')
             if before!=business():raise ValueError('Draft/signed business rows changed')
             if before_files!={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}:raise ValueError('Adopted bytes changed')
             checks.append('真实草稿/签发库完整逻辑行、采用清单和原文件哈希不变')
+            if fixture.get('recovery'):
+                dialog.close();wait(lambda:dialog._can_close and dialog.worker is None);dialog.deleteLater();dialog=None
+                from catalog_auto_smoke import verify
+                verify(win,out,checks)
             report['passed']=True
         except Exception:
             report['error']=traceback.format_exc()

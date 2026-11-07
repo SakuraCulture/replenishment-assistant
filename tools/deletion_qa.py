@@ -34,10 +34,13 @@ def signature(path):
                             manifest=chunks.manifest(v)
                             if manifest:logical=manifest['digest']
                             else:
-                                from maintenance_storage import Inflated
-                                stream=Inflated(v,None,lambda _:None)
-                                while stream.read():pass
-                                logical=stream.sha.hexdigest()
+                                decompressor=zlib.decompressobj();digest=hashlib.sha256()
+                                for offset in range(0,len(v),65536):
+                                    data=v[offset:offset+65536]
+                                    while data:
+                                        digest.update(decompressor.decompress(data,65536));data=decompressor.unconsumed_tail
+                                if not decompressor.eof:raise ValueError('Truncated historical QA snapshot')
+                                logical=digest.hexdigest()
                             v=['logical-json-sha256',logical]
                         else:v=['blob-sha256',hashlib.sha256(v).hexdigest()]
                     values.append([type(v).__name__,v])

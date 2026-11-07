@@ -1,0 +1,60 @@
+{
+  "passed": false,
+  "checks": [
+    "Unentered page has no page, worker or schedule timer",
+    "No analysis directory or database on ordinary startup",
+    "No heavy analysis imports before entry",
+    "First entry lazily creates independent database"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\stockout_smoke.py\", line 51, in execute\n    request('adopt',{'stores':[{'code':'S','name':'测试门店S'},{'code':'T','name':'测试门店T'}]})\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\stockout_smoke.py\", line 27, in request\n    if not results:raise AssertionError(entry.message)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 分析未完成：[WinError 109] 管道已结束。；原补货资料保持不变\n",
+  "frozen_exe": false,
+  "process_exit": 1,
+  "seconds": 7.235000000000582,
+  "tree_peak_rss": 376938496,
+  "children_peak_rss": 371838976,
+  "temporary_peak_bytes": 0,
+  "processes": {
+    "33248": {
+      "peak_rss": 5099520,
+      "read_bytes": 448,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0
+    },
+    "22404": {
+      "peak_rss": 8101888,
+      "read_bytes": 0,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0
+    },
+    "52316": {
+      "peak_rss": 223068160,
+      "read_bytes": 17554345,
+      "write_bytes": 483860,
+      "cpu_seconds": 2.984375
+    },
+    "51004": {
+      "peak_rss": 46305280,
+      "read_bytes": 6645980,
+      "write_bytes": 61,
+      "cpu_seconds": 0.875
+    },
+    "5428": {
+      "peak_rss": 48074752,
+      "read_bytes": 6981438,
+      "write_bytes": 12927,
+      "cpu_seconds": 0.890625
+    },
+    "51748": {
+      "peak_rss": 24330240,
+      "read_bytes": 2013016,
+      "write_bytes": 337840,
+      "cpu_seconds": 0.265625
+    },
+    "14616": {
+      "peak_rss": 46440448,
+      "read_bytes": 6439031,
+      "write_bytes": 0,
+      "cpu_seconds": 0.734375
+    }
+  }
+}

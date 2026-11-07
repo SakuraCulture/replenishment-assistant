@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_deletion_load.py", line 163, in <module>
+    globals()[a.mode](a) if a.mode in ('worker','run') else globals()[a.mode]()
+    ^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_deletion_load.py", line 50, in worker
+    if (a.qa_root/'stop-after-group').exists():raise RuntimeError('QA stop requested before worker start; no database opened')
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: QA stop requested before worker start; no database opened

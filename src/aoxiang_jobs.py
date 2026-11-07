@@ -91,14 +91,16 @@ class Jobs:
             result[key] = json.loads(result[key]) if result[key] is not None else None
         return result
 
-    def recent(self, limit=100, *, include_unfinished=False) -> list[dict]:
+    def recent(self, limit=100, *, include_unfinished=False, exclude_analysis=False) -> list[dict]:
         if type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError('每次最多读取100个作业')
         with closing(self.connect()) as db:
-            ids = [row[0] for row in db.execute('SELECT id FROM ax_jobs ORDER BY rowid DESC LIMIT ?', (limit,))]
+            condition=" WHERE coalesce(json_extract(context,'$.purpose'),'')!='stockout_analysis'" if exclude_analysis else ''
+            ids = [row[0] for row in db.execute('SELECT id FROM ax_jobs'+condition+' ORDER BY rowid DESC LIMIT ?', (limit,))]
         if include_unfinished:
             ids.extend(row['id'] for row in self.unfinished() if row['id'] not in ids)
-        return [self.get(value) for value in ids]
+        values=[self.get(value) for value in ids]
+        return [v for v in values if not exclude_analysis or v['context'].get('purpose')!='stockout_analysis']
 
     def unfinished(self) -> list[dict]:
         with closing(self.connect()) as db:
@@ -173,6 +175,8 @@ class Jobs:
         if operation not in {'end', 'delete'}:
             raise ValueError('未知采集维护动作')
         job = self.get(command_id)
+        if job['context'].get('purpose')=='stockout_analysis':
+            raise ValueError('这是门店缺货率分析的采集任务，请在该板块继续或安全结束，不能从补货页面处理')
         if job['state'] in {'PREPARED', 'CANCELLED'} and job['record'] is None:
             try:
                 record = client.request('status', command_id=command_id)

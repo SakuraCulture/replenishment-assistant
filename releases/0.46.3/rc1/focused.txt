@@ -1,0 +1,18 @@
+test_baseline_date_mismatch_names_actual_date (test_purchase_recovery.DateMessageTests.test_baseline_date_mismatch_names_actual_date) ... ok
+test_baseline_quantity_difference_is_not_described_as_date_change (test_purchase_recovery.DateMessageTests.test_baseline_quantity_difference_is_not_described_as_date_change) ... ok
+test_crossday_trial_stops_before_preparation (test_purchase_recovery.DateMessageTests.test_crossday_trial_stops_before_preparation) ... ok
+test_unsigned_previous_day_is_not_sent_to_nonexistent_signed_history (test_purchase_recovery.DateMessageTests.test_unsigned_previous_day_is_not_sent_to_nonexistent_signed_history) ... ok
+test_actual_component_status_contract_resumes_known_task (test_purchase_recovery.PurchaseRecoveryTests.test_actual_component_status_contract_resumes_known_task) ... ok
+test_bound_is_reconciled_without_any_start (test_purchase_recovery.PurchaseRecoveryTests.test_bound_is_reconciled_without_any_start) ... ok
+test_cancel_while_waiting_preserves_original_task (test_purchase_recovery.PurchaseRecoveryTests.test_cancel_while_waiting_preserves_original_task) ... ok
+test_explanations_have_action_and_keep_unknown_uncertain (test_purchase_recovery.PurchaseRecoveryTests.test_explanations_have_action_and_keep_unknown_uncertain) ... ok
+test_first_upload_pending_then_completion_uploads_exactly_once (test_purchase_recovery.PurchaseRecoveryTests.test_first_upload_pending_then_completion_uploads_exactly_once) ... ok
+test_old_false_review_retries_same_batch_and_keeps_success (test_purchase_recovery.PurchaseRecoveryTests.test_old_false_review_retries_same_batch_and_keeps_success) ... ok
+test_pending_exhausts_bounded_wait_and_shows_waiting_not_failure (test_purchase_recovery.PurchaseRecoveryTests.test_pending_exhausts_bounded_wait_and_shows_waiting_not_failure) ... ok
+test_pending_is_observed_again_without_reupload (test_purchase_recovery.PurchaseRecoveryTests.test_pending_is_observed_again_without_reupload) ... ok
+test_unknown_and_conflicting_receipts_stay_blocked (test_purchase_recovery.PurchaseRecoveryTests.test_unknown_and_conflicting_receipts_stay_blocked) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.489s
+
+OK

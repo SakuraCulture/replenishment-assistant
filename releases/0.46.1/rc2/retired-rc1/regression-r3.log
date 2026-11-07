@@ -1,0 +1,184 @@
+........................................WARNING:root:本机登记更新未完成，请点击配置/修复本机连接；当前工作台连接仍可使用。
+......................................................................................................WARNING:root:翱象调度锁初始化失败: C:\Users\lenovo\AppData\Local\Temp\tmpj7kljoww\aoxiang
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 82, in __init__
+    self.owner.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+.....................................................................ERROR:root:AI 任务失败
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 33, in run
+    try: self.result_ready.emit(self.fn(self))
+                                ^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_automation_lock.py", line 75, in fail
+    def fail(_): raise ValueError('synthetic failure')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: synthetic failure
+ERROR:root:AI 任务结果处理未完成：ec5f33c6fa824058815476b8f004f31e
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 370, in failed
+    self.journal.update(task['task_id'], state='stopped' if code == 'CANCELLED' else 'failed', message=message, error_code=code)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 64, in update
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+..ERROR:root:AI 任务结果处理未完成：6e1a9c3026254f7389a1221473ce8fba
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 364, in completed
+    try: finish(value)
+         ^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_automation_lock.py", line 65, in finish
+    self.g.journal.update(self.tid,state='prepared')
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 63, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+.ERROR:root:AI 任务结果处理未完成：5e9cc1f9bbae4320ad1ea81f9f3bed95
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 353, in progress
+    self.last_stage = time.monotonic(); self.journal.update(task['task_id'], message=message); self.changed.emit()
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 63, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+.ERROR:root:AI 任务结果处理未完成：fb00506eabd74817bd00c16aac963b6a
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 359, in store_event
+    try: store_handler(*args)
+         ^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_automation_lock.py", line 84, in <lambda>
+    lambda *args:self.g.journal.update(self.tid,message='门店已完成'))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 63, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+..........................................................................................................................................................................................................................................................................................ERROR:root:数据库忙，未能保存停止／失败日志：database is locked
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\jst_orders.py", line 382, in commit
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+............................................................................................................................................ERROR:root:操作失败
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\order_analytics.py", line 258, in validate_basis
+    raise ValueError('订单或履约数据已更新，请重新查询；原报告数据未混入本次结果')
+ValueError: 订单或履约数据已更新，请重新查询；原报告数据未混入本次结果
+...............................................................................................................................................................................................ERROR:root:翱象队列故障: C:\Users\lenovo\AppData\Local\Temp\tmprhsf2ot6\settings\aoxiang\workflows.sqlite3
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 114, in tick
+    self.store.enqueue_due(timeout=0)
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+ValueError: 合成结构错误
+..WARNING:root:翱象队列数据库繁忙，将重查原任务: C:\Users\lenovo\AppData\Local\Temp\tmp3mp5hf1y\settings\aoxiang\workflows.sqlite3
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 114, in tick
+    self.store.enqueue_due(timeout=0)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflows.py", line 256, in enqueue_due
+    with self.db(True,timeout=timeout) as db:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflows.py", line 31, in db
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+.WARNING:root:翱象调度锁初始化失败: C:\Users\lenovo\AppData\Local\Temp\tmp1m22cbu3\settings\aoxiang
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 82, in __init__
+    self.owner.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+.....................................................................ERROR:root:诊断 43bb3451c645 阶段=商品计算 门店=T 商品=SKU 文件= 行=2
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\input_adapter.py", line 185, in execute_one
+    try:d=calculate(inp,rules,extreme_restore=extreme_restore)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\model.py", line 262, in calculate
+    raise ValueError('趋势支撑无法确定：前7天日均Z为0，但早期销量差值非0；请核对日销/周销/月销精度，不自动回退预测')
+ValueError: 趋势支撑无法确定：前7天日均Z为0，但早期销量差值非0；请核对日销/周销/月销精度，不自动回退预测
+.......................ERROR:root:定时补货运行未完成 b89773298c88495592261154e544ce7b
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\scheduled_execution.py", line 96, in execute
+    codes=[i['code'] for i in frozen['plan']['stores']];overlap(self.repo,run,codes)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\scheduled_execution.py", line 72, in overlap
+    if selected.intersection(codes):raise ValueError('同日门店已有自动任务，请先核对或结束原任务：'+other['schedule']['name'])
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: 同日门店已有自动任务，请先核对或结束原任务：早班
+.ERROR:root:定时补货运行未完成 1b8cbbe1895f437cb3e6cb0d717492eb
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\scheduled_execution.py", line 95, in execute
+    raise ValueError('预案、默认参数或准入依据已变化，请重新检查运行条件后新建任务')
+ValueError: 预案、默认参数或准入依据已变化，请重新检查运行条件后新建任务
+...........................Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 71, in refresh
+    if client is None:self.set_group(kind,'NOT_CONNECTED');continue
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 65, in set_group
+    for name in NAMES[kind]:self.set_state(name,state)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 57, in set_state
+    text,color=STATES[state];self.dots[name].setStyleSheet(f'color:{color};font-size:12px;')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: libshiboken: Internal C++ object (PySide6.QtWidgets.QLabel) already deleted.
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 71, in refresh
+    if client is None:self.set_group(kind,'NOT_CONNECTED');continue
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 65, in set_group
+    for name in NAMES[kind]:self.set_state(name,state)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 57, in set_state
+    text,color=STATES[state];self.dots[name].setStyleSheet(f'color:{color};font-size:12px;')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: libshiboken: Internal C++ object (PySide6.QtWidgets.QLabel) already deleted.
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 71, in refresh
+    if client is None:self.set_group(kind,'NOT_CONNECTED');continue
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 65, in set_group
+    for name in NAMES[kind]:self.set_state(name,state)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 57, in set_state
+    text,color=STATES[state];self.dots[name].setStyleSheet(f'color:{color};font-size:12px;')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: libshiboken: Internal C++ object (PySide6.QtWidgets.QLabel) already deleted.
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 71, in refresh
+    if client is None:self.set_group(kind,'NOT_CONNECTED');continue
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 65, in set_group
+    for name in NAMES[kind]:self.set_state(name,state)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 57, in set_state
+    text,color=STATES[state];self.dots[name].setStyleSheet(f'color:{color};font-size:12px;')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: libshiboken: Internal C++ object (PySide6.QtWidgets.QLabel) already deleted.
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 71, in refresh
+    if client is None:self.set_group(kind,'NOT_CONNECTED');continue
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 65, in set_group
+    for name in NAMES[kind]:self.set_state(name,state)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\browser_status_ui.py", line 57, in set_state
+    text,color=STATES[state];self.dots[name].setStyleSheet(f'color:{color};font-size:12px;')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: libshiboken: Internal C++ object (PySide6.QtWidgets.QLabel) already deleted.
+.......................D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stocking_ui.py:247: DeprecationWarning: Function: 'QSortFilterProxyModel.invalidateFilter()' is marked as deprecated, please check the documentation for more information.
+  if refresh:self.proxy.invalidateFilter()
+D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stocking_ui.py:244: DeprecationWarning: Function: 'QSortFilterProxyModel.invalidateFilter()' is marked as deprecated, please check the documentation for more information.
+  self.proxy.needle=self.search.text().strip();self.proxy.warehouse=self.warehouse.currentData() or '';self.proxy.category=self.category.currentData() or '';self.proxy.only_selected=self.only_selected.isChecked();self.proxy.invalidateFilter();self.changed(False)
+...........................................................
+----------------------------------------------------------------------
+Ran 1033 tests in 372.594s
+
+OK

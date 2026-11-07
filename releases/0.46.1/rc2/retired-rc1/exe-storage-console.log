@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_storage_exe.py", line 49, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_storage_exe.py", line 45, in main
+    report.update(exit_code=run.returncode,remaining_children=left,development=not bool(a.exe),exe_sha256=hashlib.sha256(a.exe.read_bytes()).hexdigest() if a.exe else None)
+                                                                                        ^^^^^
+AttributeError: 'sqlite3.Connection' object has no attribute 'exe'

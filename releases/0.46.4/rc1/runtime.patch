@@ -1,0 +1,379 @@
+diff --git a/components/aoxiang/src/machine-purchase-create.mjs b/components/aoxiang/src/machine-purchase-create.mjs
+index dd5c248..953b7ef 100644
+--- a/components/aoxiang/src/machine-purchase-create.mjs
++++ b/components/aoxiang/src/machine-purchase-create.mjs
+@@ -48,7 +48,7 @@ export class MachinePurchaseCreate{
+       this.check();r=this.ledger.get(id);this.progress('核对原导入任务、采购主单和商品数量金额');
+       r=this.ledger.update(id,r.sequence,'VERIFYING',{error:null});
+       const evidence=await this.adapter.observe(r.intent,r.receipt,{signal:this.control.signal});this.check();
+-      this.ledger.bind(id,evidence);this.progress('采购单已核验并关联，保留待提交');
++      const bound=this.ledger.bind(id,evidence);this.progress(bound.binding.status==='已作废'?'已核实原采购单已作废，可返回本地删除页重新核对':'采购单已核验并关联，保留待提交');
+     }catch(e){
+       r=this.ledger.get(id);const error=errorInfo(e);
+       if(['BOUND','CANCELLED_BEFORE_UPLOAD'].includes(r.state))throw e;
+diff --git a/components/aoxiang/src/purchase-create-contract.mjs b/components/aoxiang/src/purchase-create-contract.mjs
+index bc1ab52..78ac1fe 100644
+--- a/components/aoxiang/src/purchase-create-contract.mjs
++++ b/components/aoxiang/src/purchase-create-contract.mjs
+@@ -43,8 +43,13 @@ export function checkImportReceipt(p,r){
+ export function checkCreatedPurchase(p,receipt,e){
+   checkImportReceipt(p,receipt);
+   if(!e||canonical(e.identity)!==canonical(p.identity)||e.task?.taskId!==receipt.taskId||e.task?.code!==IMPORT_CODE||e.task?.status!=='FINISHED'||countValue(e.task.failCount)!==0||countValue(e.task.successCount)!==p.rows.length)fail('PURCHASE_TASK_NOT_COMPLETE','原导入任务尚未核实全量成功，不绑定采购单');
+-  checkNativePurchase(p,e,{status:'待提交',requireNote:true});
+-  return {orderId:e.candidates[0],status:'待提交',taskId:receipt.taskId,files:e.files,verifiedAt:e.observedAt,method:'known_import_task_and_exact_native_rows'};
++  const status=e.main?.status;
++  if(!['待提交','已作废'].includes(status))fail('PURCHASE_STATUS_UNSUPPORTED','原采购单当前状态不在自动关联范围，请核对平台原单',{status});
++  // A void is a verified historical association, never a successful new purchase
++  // or a released reservation. The native main AND every SKU must prove it.
++  if(e.listingStatus!==undefined&&((status==='待提交')!==(e.listingStatus==='0')))fail('PURCHASE_STATUS_CHANGED','采购查询状态与原生核对文件状态不同，请继续核对原单',{listingStatus:e.listingStatus,nativeStatus:status});
++  checkNativePurchase(p,e,{status,requireNote:true});
++  return {orderId:e.candidates[0],status,taskId:receipt.taskId,files:e.files,verifiedAt:e.observedAt,method:'known_import_task_and_exact_native_rows'};
+ }
+ 
+ // Both automatic and operator-confirmed associations share the same per-SKU checks.
+diff --git a/components/aoxiang/src/purchase-create-service.mjs b/components/aoxiang/src/purchase-create-service.mjs
+index 503c9a2..2b73665 100644
+--- a/components/aoxiang/src/purchase-create-service.mjs
++++ b/components/aoxiang/src/purchase-create-service.mjs
+@@ -1,10 +1,10 @@
+ import path from 'node:path';
+-import {readJson,fail,now,businessDate,countValue} from './common.mjs';
++import {readJson,fail,now,businessDate,countValue,sameIdentity} from './common.mjs';
+ import {loadConfig,validateConfig} from './config.mjs';
+ import {assertHandoff} from './preflight.mjs';
+ import {checkPurchaseConfiguration,checkPurchaseInput} from './purchase-create-artifacts.mjs';
+ import {PurchaseCoordinator} from './purchase-coordinator.mjs';
+-import {purchaseContract} from './purchase-contract.mjs';
++import {purchaseContract,purchaseScopeHash} from './purchase-contract.mjs';
+ import {validateWorkbook} from './workbook-validator.mjs';
+ import {IMPORT_CODE} from './purchase-create-contract.mjs';
+ 
+@@ -24,7 +24,7 @@ export async function nativeCreationEvidence(p,task,candidate,coordinator,run){
+ }
+ 
+ export class PurchaseCreateService{
+-  constructor({root,state,ledger,browsers,progress=()=>{}}){Object.assign(this,{root,state,ledger,browsers,progress});}
++  constructor({root,state,ledger,browsers,progress=()=>{},coordinatorFactory=options=>new PurchaseCoordinator(options)}){Object.assign(this,{root,state,ledger,browsers,progress,coordinatorFactory});}
+   async context(p,signal){
+     const config=await loadConfig(this.root);checkPurchaseConfiguration(p,config);await assertHandoff(this.root,config.tenantBinding);
+     const binding=await validateConfig('machine.binding',await readJson(path.join(this.root,'config/machine.binding.json')));
+@@ -44,13 +44,19 @@ export class PurchaseCreateService{
+     const candidates=current.rows.filter(v=>v.buyerMessage===p.note&&!r.baseline.orderIds.includes(v.supplyOrderId));
+     if(candidates.length!==1)fail('PURCHASE_NOT_UNIQUE','尚未唯一找到本次新采购单，缺单或意外多单只待核，不重传',{orderIds:candidates.map(v=>v.supplyOrderId)});
+     const c=candidates[0];
+-    if(c.buyerWarehouseCode!==p.basis.store||c.sellerMerchantCode!==p.supplierCode||c.status!=='0'||c.outOrderId||c.executionMainOrderId)fail('PURCHASE_CREATED_MISMATCH','新采购单不是预期店仓供应商的待提交单，请核对');
++    if(c.buyerWarehouseCode!==p.basis.store||c.sellerMerchantCode!==p.supplierCode||c.outOrderId||c.executionMainOrderId)fail('PURCHASE_CREATED_MISMATCH','找到的原采购单店仓、供应商或外部订单与本次任务不一致，请核对原单');
++    if(typeof c.status!=='string'||!c.status)fail('PURCHASE_STATUS_UNSUPPORTED','原采购单查询状态缺失，暂不能核实是否已作废',{status:c.status});
+     if(typeof c.gmtCreate!=='string'||!/^\d{13}$/.test(c.gmtCreate))fail('PURCHASE_CREATED_DATE','采购制单时间口径未支持，不按本地时间猜测');
+     const day=businessDate(new Date(Number(c.gmtCreate)));
+-    const coordinator=new PurchaseCoordinator({state:this.state,...context,onProgress:e=>this.progress(e.stage)});
++    const coordinator=this.coordinatorFactory({state:this.state,...context,onProgress:e=>this.progress(e.stage)});
+     // One exact PO. The existing coordinator persists D16/D17 intents, task IDs and files;
+     // resuming a failed verification follows those tasks, never submits the import again.
+-    const run=await coordinator.run({target:p.target,from:day,to:day,dateBasis:'created',orderId:c.supplyOrderId});
+-    return nativeCreationEvidence(p,task,c,coordinator,run);
++    const scope={buyerWarehouseCode:p.basis.store,from:day,to:day,dateBasis:'created',orderId:c.supplyOrderId};
++    const prior=this.state.rows('purchase_runs').filter(v=>sameIdentity(v.identity,p.identity)&&v.scopeHash===purchaseScopeHash(scope)).at(-1);
++    // A completed old export may predate a platform void. Refresh only completed
++    // evidence; unfinished exports must resume their saved tasks, never resubmit.
++    const rerun=c.status!=='0'&&prior?.status==='SUCCEEDED';
++    const run=await coordinator.run({target:p.target,...scope,rerun});
++    return {...await nativeCreationEvidence(p,task,c,coordinator,run),listingStatus:c.status};
+   }
+ }
+diff --git a/src/aoxiang_purchase_messages.py b/src/aoxiang_purchase_messages.py
+index 1e4f036..d0ed792 100644
+--- a/src/aoxiang_purchase_messages.py
++++ b/src/aoxiang_purchase_messages.py
+@@ -11,6 +11,10 @@ def waiting(item, kind):
+             and (item.get('error') or {}).get('code') == 'TASK_PENDING')
+ 
+ 
++def voided(item):
++    return item['state'] == 'BOUND' and ((item.get('result') or {}).get('binding') or {}).get('status') == '已作废'
++
++
+ def explain(error, known=None):
+     error, known = error or {}, known or {}
+     code = error.get('code', '')
+@@ -22,6 +26,8 @@ def explain(error, known=None):
+         'MULTIPLE_IMPORT_TASKS': '同一笔采购发现多个受理任务号，无法自动确定对应采购单。请到单据详情核对原采购记录，保留已有平台单据。',
+         'LOGIN_REQUIRED': '翱象登录已失效。请在原浏览器重新登录并核验连接，再继续核对原任务。',
+         'WRONG_IDENTITY': '当前翱象账号或商家与这笔采购不一致。请切回原商家并核验连接，再继续原任务。',
++        'PURCHASE_STATUS_UNSUPPORTED': '原采购单已找到，但目前状态不属于待提交或已作废，暂不自动关联。请在平台查看该单当前状态，并在技术详情核对原始状态；不要重新导入。',
++        'PURCHASE_STATUS_CHANGED': '平台查询状态与核对文件不同，暂不关联。请稍后继续核对采购结果，保留原任务和已导出文件；不要重新导入。',
+     }
+     if code == 'SUBMISSION_UNKNOWN':
+         if known.get('taskId'):
+@@ -34,9 +40,13 @@ def explain(error, known=None):
+ 
+ def item_message(item, kind):
+     if kind != 'upload':
++        if kind == 'prepare' and (item.get('error') or {}).get('code') == 'PURCHASE_ALREADY_RESERVED':
++            return '已有原采购任务，本次重复预览未建立新任务。可勾选后结束本地准备；原上传结果仍须到原采购上传批次继续核对。'
+         return (item.get('error') or {}).get('message', '')
+     if item['state'] == 'BOUND':
+-        return '采购单已核验并关联；可在平台处理后续提交。'
++        if voided(item):
++            return '已核实原采购单及全部商品明细，平台状态为已作废。可返回删除页重新核对完整范围；本次没有重传或操作平台作废。'
++        return '采购单已核验并关联；此处保留上次核验结果，平台当前状态以平台为准。'
+     if item.get('error'):
+         return explain(item['error'], item.get('purchase_observation'))
+     if item.get('purchase_observation', {}).get('taskId'):
+diff --git a/src/aoxiang_workflow_runner.py b/src/aoxiang_workflow_runner.py
+index 22193a5..904c808 100644
+--- a/src/aoxiang_workflow_runner.py
++++ b/src/aoxiang_workflow_runner.py
+@@ -96,7 +96,7 @@ class Runner:
+                 if self.cancel.wait(min(self.verification_interval, remaining)):
+                     raise Cancelled('已停止等待；原受理任务保留，可继续核对采购结果')
+                 continue
+-            raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'), error.get('message', '原采购任务尚未核实成功，不能重传'))
++            raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'), error.get('message', '原采购任务尚未核实成功，不能重传'), error.get('details'))
+ 
+     def receipt_item(self, item, configuration, suppliers):
+         id = item['purchase_id']
+@@ -165,6 +165,7 @@ class Runner:
+             except Exception as exc:
+                 code = getattr(exc, 'code', 'BUSINESS_REVIEW')
+                 error = {'code': code, 'message': str(exc)}
++                if getattr(exc, 'details', None):error['details'] = exc.details
+                 if job['kind'] == 'receipt':
+                     self.store.observe_schedule(item['purchase_id'], None, error=error, review=code not in RETRYABLE)
+                 if code in SESSION_ERRORS:
+diff --git a/src/aoxiang_workflow_state.py b/src/aoxiang_workflow_state.py
+index b5d2694..7ac051e 100644
+--- a/src/aoxiang_workflow_state.py
++++ b/src/aoxiang_workflow_state.py
+@@ -1,6 +1,6 @@
+ """Shared local task evidence rules. No browser calls or business writes."""
+ import copy
+-from aoxiang_purchase_messages import waiting
++from aoxiang_purchase_messages import waiting, voided
+ 
+ ACTIVE = ('QUEUED', 'RUNNING', 'YIELDED', 'PAUSED')
+ SUCCESS = ('PREPARED', 'BOUND', 'SYNCED')
+@@ -10,10 +10,15 @@ def local_preparation(item, kind):
+     """Only preparation which never reached a durable purchase identity is local."""
+     result = item.get('result') or {}
+     code = (item.get('error') or {}).get('code', '')
+-    return (kind == 'prepare' and not any(item.get(k) for k in
+-            ('package','purchase_id','order_id','uploadAttempted','binding'))
+-            and not any(result.get(k) for k in ('purchase_id','binding','orderId','uploadAttempted'))
+-            and not code.startswith(('SUBMISSION_', 'UPLOAD_', 'PURCHASE_')))
++    evidence = ('purchase_id','order_id','orderId','uploadAttempted','binding','taskId','receipt','additionalTaskIds')
++    if kind != 'prepare' or any(record.get(k) for record in
++            (item, result, item.get('purchase_observation') or {}) for k in evidence):
++        return False
++    # reserve() rejects a DIFFERENT intent before inserting it. A frozen local
++    # package is not a reservation; the original intent remains independently guarded.
++    if code == 'PURCHASE_ALREADY_RESERVED' and item['state'] in ('REVIEW','FAILED','SKIPPED'):
++        return True
++    return not item.get('package') and not code.startswith(('SUBMISSION_', 'UPLOAD_', 'PURCHASE_'))
+ 
+ 
+ def can_end_local(job, item):
+@@ -41,7 +46,8 @@ def deletion_issue(job, item):
+ 
+ def counts(job):
+     items=job['items']
+-    return {'total':len(items),'success':sum(i['state'] in SUCCESS for i in items),
++    return {'total':len(items),'success':sum(i['state'] in SUCCESS and not voided(i) for i in items),
++            'voided':sum(voided(i) for i in items),
+             'review':sum(i['state'] in ('REVIEW','FAILED') and not waiting(i,job['kind']) for i in items),
+             'waiting':sum(waiting(i,job['kind']) for i in items),
+             'pending':sum(i['state'] in ('PENDING','RUNNING') for i in items),
+@@ -54,7 +60,8 @@ def summary(job):
+     prefix='正在处理' if job['state']=='RUNNING' else '等待处理' if c['pending'] and job['state']!='CANCELLED' else '检查结束'
+     success='预览就绪' if job['kind']=='prepare' else '已关联采购' if job['kind']=='upload' else '实收已同步'
+     wait=f"，已受理待核对{c['waiting']}单" if job['kind']=='upload' else ''
+-    return f"{prefix}：{success}{c['success']}单{wait}，待处理{c['review']}单，未处理{c['pending']}单，已观察{c['observed']}单，已结束/跳过{c['skipped']}单"
++    void=f"，已核实作废{c['voided']}单" if c['voided'] else ''
++    return f"{prefix}：{success}{c['success']}单{wait}{void}，待处理{c['review']}单，未处理{c['pending']}单，已观察{c['observed']}单，已结束/跳过{c['skipped']}单"
+ 
+ 
+ def reconcile(job):
+diff --git a/src/aoxiang_workflow_ui.py b/src/aoxiang_workflow_ui.py
+index 3ace47e..c4cee1b 100644
+--- a/src/aoxiang_workflow_ui.py
++++ b/src/aoxiang_workflow_ui.py
+@@ -21,7 +21,7 @@ from runtime_support import Cancelled
+ 
+ KINDS = {'prepare': '采购预览', 'upload': '采购上传与核对', 'receipt': '收货同步'}
+ from aoxiang_workflow_state import can_end_local,local_preparation,summary as task_summary,counts
+-from aoxiang_purchase_messages import waiting, item_message
++from aoxiang_purchase_messages import waiting, item_message, voided
+ STATES = {'QUEUED': '排队', 'RUNNING': '正在处理', 'YIELDED': '等待人工操作结束', 'PAUSED': '已停止，可继续原任务',
+           'FAILED': '批次未完成', 'READY': '预览完成，尚未上传', 'COMPLETED': '完成', 'COMPLETED_WITH_ERRORS': '已处理，有待核项', 'CANCELLED': '剩余任务已取消',
+           'PENDING': '未处理', 'PREPARED': '预览就绪，未上传', 'BOUND': '已关联采购单', 'OBSERVED': '已观察，尚未完成', 'SYNCED': '正式实收已保存', 'REVIEW': '待核，不自动重试', 'SKIPPED': '周期已停止，本次跳过'}
+@@ -324,6 +324,8 @@ class QueueDialog(QDialog):
+                 state_text='本地准备未通过，未生成采购预览' if local_preparation(i,job['kind']) and i['state'] in ('FAILED','REVIEW') else '本地准备已结束' if i.get('ended_locally') else STATES.get(i['state'], i['state'])
+                 if waiting(i,job['kind']):state_text='已受理，等待核对'
+                 elif job['kind']=='upload' and i['state'] in ('FAILED','REVIEW'):state_text='采购结果需核对'
++                elif voided(i):state_text='已关联，平台已作废'
++                elif not i.get('ended_locally') and local_preparation(i,job['kind']) and (i.get('error') or {}).get('code')=='PURCHASE_ALREADY_RESERVED':state_text='重复本地预览，可结束'
+                 values = [i.get('display_name') or h.get('name') or h.get('store'), h.get('warehouse'), h.get('number'), state_text,
+                           f"{summary.get('sku_count', '—')} / {summary.get('amount', '—')}", (i.get('result') or {}).get('binding', {}).get('orderId') or i.get('order_id', '—'),
+                           item_message(i,job['kind'])]
+@@ -366,7 +368,7 @@ class QueueDialog(QDialog):
+                     b.setText('收起技术详情' if expanded else '查看技术详情')
+                 detail.clicked.connect(toggle)
+             box.exec();return
+-        if local_preparation(item,self.current['kind']):message+='\n本次未生成采购预览，未进入上传。可核对付款后重跑，或结束本地准备；不必为删除订单而确认付款。'
++        if local_preparation(item,self.current['kind']):message+='\n本次未建立新的平台采购任务，未进入上传。可结束本地准备；不必为删除订单而确认付款。'
+         else:message+='\n请核对原平台任务；本地停止不代表平台订单已撤销。'
+         QMessageBox.information(self,'任务原因',message)
+ 
+diff --git a/src/app.py b/src/app.py
+index 4ba7dcc..6e6313e 100644
+--- a/src/app.py
++++ b/src/app.py
+@@ -25,6 +25,9 @@ def main():
+         from application_window import ApplicationWindow
+         win=ApplicationWindow()
+     win.show()
++    if '--deletion-void-smoke' in sys.argv:
++        from deletion_void_smoke import start_smoke
++        start_smoke(app,win,sys.argv[sys.argv.index('--deletion-void-smoke')+1:])
+     if '--purchase-recovery-smoke' in sys.argv:
+         from purchase_recovery_smoke import start_smoke
+         start_smoke(app,win,sys.argv[sys.argv.index('--purchase-recovery-smoke')+1:])
+diff --git a/src/deletion_void_smoke.py b/src/deletion_void_smoke.py
+new file mode 100644
+index 0000000..416f7ab
+--- /dev/null
++++ b/src/deletion_void_smoke.py
+@@ -0,0 +1,121 @@
++"""Isolated Qt acceptance for duplicate previews and verified void associations."""
++import copy,json,os,sys,time,traceback
++from pathlib import Path
++from types import SimpleNamespace
++from PySide6.QtCore import QTimer,Qt
++from PySide6.QtTest import QTest
++from PySide6.QtWidgets import QApplication,QWidget,QMessageBox
++from aoxiang_workflow_ui import Manager,QueueDialog
++from aoxiang_workflow_state import deletion_issue,counts
++
++
++def start_smoke(app,win,args):
++    out=Path(args[0]).resolve()
++    if (not json.loads((out/'fixture.json').read_text('utf-8')).get('synthetic')
++            or Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve()!=out/'settings'):
++        raise ValueError('Requires isolated synthetic settings')
++    app.setQuitOnLastWindowClosed(False)
++
++    def run():
++        checks=[];dialogs=[];manager=None;starts=[];records={};beats=[]
++        report={'passed':False,'frozen_exe':bool(getattr(sys,'frozen',False)),'live_platform':False,'checks':checks}
++        timer=QTimer();timer.setInterval(25);timer.timeout.connect(lambda:beats.append(time.monotonic()));timer.start()
++        def wait(predicate,seconds=20):
++            until=time.monotonic()+seconds
++            while not predicate() and time.monotonic()<until:app.processEvents();QTest.qWait(15)
++            if not predicate():raise TimeoutError('Isolated condition timed out')
++        def confirm(action,answer,name):
++            captured=[];answers=QTimer();answers.setInterval(20)
++            def respond():
++                box=QApplication.activeModalWidget()
++                if isinstance(box,QMessageBox):
++                    answers.stop();captured.append(box.text());box.grab().save(str(out/name));box.button(answer).click()
++            answers.timeout.connect(respond);answers.start()
++            try:action()
++            finally:answers.stop()
++            assert captured and '不操作平台' in captured[0]
++        class Client:
++            def __init__(self,*_):self.running=False
++            def start(self):self.running=True
++            def close(self,timeout=.5):self.running=False;return True
++            def request(self,action,**kw):
++                if action=='configuration':return {}
++                id=kw.get('purchase_id');r=records[id]
++                if action=='purchase.status':return copy.deepcopy(r)
++                if action!='purchase.start':raise AssertionError(action)
++                if not r['uploadAttempted'] or not r.get('taskId'):raise AssertionError('Unexpected upload')
++                starts.append(id);r.update(state='BOUND',binding={'orderId':'PO-'+id,'status':'已作废',
++                    'method':'known_import_task_and_exact_native_rows'},error=None)
++                return copy.deepcopy(r)
++        try:
++            build=Path(getattr(sys,'_MEIPASS',Path(__file__).parent))/'build_info.json'
++            report['source_commit']=json.loads(build.read_text('utf-8'))['source_commit'] if build.exists() else 'source'
++            win.auto_check.stop();win.jst_generator.stopped=True;win.jst_generator.timer.stop()
++            win.aoxiang_workflows.stopping=True;win.aoxiang_workflows.timer.stop()
++            host=QWidget(win);host.repository=SimpleNamespace(folder=out/'isolated-queue');host.closing=False
++            host.work_repository=SimpleNamespace(path=out/'unused-business.sqlite3')
++            manager=Manager(host,client_factory=Client);manager.timer.stop()
++            heads=[{'oid':'OID-'+str(n),'day':'2026-11-07','store':'QA-'+str(n),'name':'合成门店'+str(n),
++                'warehouse':'河北仓' if n==2 else '山东仓','number':'BH-QA-'+str(n),'revision':'R1','current_revision':'R1',
++                'digest':'0'*64,'visibility_token':None} for n in range(6)]
++            prepared=manager.store.prepare(heads)
++            for n in range(6):
++                id='original-'+str(n)
++                manager.store.update(prepared['id'],position=n,changes={'state':'PREPARED','package':{'id':id},'summary':{'sku_count':n+100,'amount':'100.00'}})
++                records[id]={'id':id,'state':'ACCEPTED','taskId':'TASK-'+id,'uploadAttempted':True,'active':False,'additionalTaskIds':[]}
++            prepared=manager.store.update(prepared['id'],state='READY')
++            original=manager.store.upload(prepared['id'],list(range(6)),prepared['sequence'])
++            for n in range(6):
++                manager.store.update(original['id'],position=n,changes={'state':'REVIEW' if n<5 else 'BOUND',
++                    'error':{'code':'PURCHASE_CREATED_MISMATCH','message':'旧版待提交状态限制'} if n<5 else None,
++                    'result':{} if n<5 else {'binding':{'orderId':'PO-original-5','status':'待提交'}}})
++            original=manager.store.update(original['id'],state='COMPLETED_WITH_ERRORS');sixth=copy.deepcopy(original['items'][5])
++            duplicate=manager.store.prepare(heads)
++            for n in range(6):manager.store.update(duplicate['id'],position=n,changes={'state':'REVIEW','package':{'id':'duplicate-'+str(n)},
++                'error':{'code':'PURCHASE_ALREADY_RESERVED','message':'原任务存在'}})
++            duplicate=manager.store.update(duplicate['id'],state='COMPLETED_WITH_ERRORS')
++            dialog=QueueDialog(host,manager,duplicate['id']);dialogs.append(dialog);dialog.resize(1450,780);dialog.show();app.processEvents()
++            assert dialog.end_local_btn.isEnabled()
++            assert all(dialog.table.item(n,4).text()=='重复本地预览，可结束' for n in range(6))
++            assert all(deletion_issue(original,i) for i in original['items'][:5])
++            assert all(deletion_issue(duplicate,i) is None for i in duplicate['items'])
++            dialog.grab().save(str(out/'01-重复预览可结束.png'));checks.append('复现六份重复预览：不再误当平台任务，五份原上传待核仍阻止删除')
++            dialog.table.item(0,0).setCheckState(Qt.CheckState.Checked)
++            confirm(dialog.end_local_btn.click,QMessageBox.StandardButton.No,'02-取消结束本地准备.png')
++            assert manager.store.get(duplicate['id'])==duplicate;checks.append('取消结束操作时原任务完整保留')
++            confirm(dialog.end_local_btn.click,QMessageBox.StandardButton.Yes,'03-结束所选本地准备.png')
++            ended=manager.store.get(duplicate['id']);assert ended['items'][0]['ended_locally']
++            assert ended['items'][1:]==duplicate['items'][1:] and not starts
++            checks.append('只结束勾选的重复预览，未选任务不变，未调用平台')
++            dialog.id=original['id'];dialog.current=None;dialog.refresh()
++            assert dialog.retry_btn.isEnabled();dialog.retry_btn.click()
++            wait(lambda:manager.worker is None and manager.store.get(original['id'])['state']=='COMPLETED')
++            dialog.refresh();after=manager.store.get(original['id'])
++            assert starts==['original-'+str(n) for n in range(5)] and after['items'][5]==sixth
++            assert all(a['package']==b['package'] for a,b in zip(original['items'],after['items']))
++            checks.append('仅继续五笔原受理任务，已关联第六单及采购身份不变，没有新上传')
++            assert counts(after)['voided']==5 and counts(after)['success']==1
++            assert all(dialog.table.item(n,4).text()=='已关联，平台已作废' for n in range(5))
++            assert '上次核验' in dialog.table.item(5,7).text()
++            dialog.grab().save(str(out/'04-已作废明确显示.png'));checks.append('已核实作废单独计数，旧关联只表示上次核验，不声称实时有效')
++            assert all(deletion_issue(after,i) is None for i in after['items'])
++            checks.append('全部已核实后允许返回完整删除范围确认；本验收未删除业务订单')
++            dialog.accept();dialogs.remove(dialog);dialog.deleteLater()
++            reopened=QueueDialog(host,manager,original['id']);dialogs.append(reopened);reopened.show();app.processEvents()
++            assert reopened.table.item(0,6).text()=='PO-original-0' and not reopened.retry_btn.isEnabled()
++            checks.append('关闭重开保留采购单号及作废状态，完成项不重复执行')
++            report.update(passed=True,original_task_checks=starts,synthetic_uploads=0)
++        except Exception:report['error']=traceback.format_exc()
++        finally:
++            for dialog in dialogs:dialog.close();dialog.deleteLater()
++            if manager:
++                manager.prepare_close()
++                try:wait(lambda:manager.worker is None and manager.session_closer is None);manager.shutdown()
++                except Exception:report['passed']=False;report['queue_close_error']=traceback.format_exc()
++            win.job_dirty=False;win._discard_close=True;win.close()
++            try:wait(lambda:win.aoxiang_workflows.owner is None)
++            except Exception:report['passed']=False;report['close_error']=traceback.format_exc()
++            timer.stop();report['heartbeat_ticks']=len(beats)
++            (out/'exe-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
++            QTimer.singleShot(100,lambda:app.exit(0 if report['passed'] else 1))
++    QTimer.singleShot(250,run)
+diff --git a/src/version.json b/src/version.json
+index 9bfd6e5..63a6f77 100644
+--- a/src/version.json
++++ b/src/version.json
+@@ -1,6 +1,6 @@
+ {
+   "app": "补货助手",
+-  "version": "0.46.3",
++  "version": "0.46.4",
+   "parameter_schema_version": 3,
+   "job_schema_version": 1,
+   "routing_version": "0.5.1",

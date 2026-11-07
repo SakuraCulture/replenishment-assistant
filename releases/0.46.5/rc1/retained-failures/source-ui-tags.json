@@ -1,0 +1,9 @@
+{
+  "passed": false,
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\warehouse_smoke.py\", line 58, in tick\n    win.search.setText('both_empty');assert win.proxy.rowCount()==1;win.show_detail(win.proxy.index(0,0))\n                                            ^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n",
+  "version": "0.46.5",
+  "source_commit": "源码运行",
+  "checks": [
+    "separate import workers, explicit warehouse labels, missing/identical primary-secondary blocked"
+  ]
+}

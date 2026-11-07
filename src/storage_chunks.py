@@ -2,7 +2,7 @@
 
 The canonical JSON stream is identical to work_repository.dumps. A manifest is
 not a mutable cache: its checksum covers its ordered tree and every block hash.
-Legacy zlib JSON remains readable. No deletion/GC of historical blocks is done.
+Only version-2 manifests are supported. Garbage collection lives in maintenance.
 """
 import hashlib,json,zlib,sqlite3,uuid,os
 from dataclasses import dataclass
@@ -14,6 +14,26 @@ from export_progress import RowProgress
 
 MAGIC=b'YTCHUNK2\x00'
 BLOCK_ROWS=256
+UNSUPPORTED='检测到已停用的旧快照格式；请使用 0.46.0 或更早的保留版本打开该资料库。本版本未修改该快照。'
+
+def require_manifest(blob):
+    value=manifest(blob)
+    if value is None:raise ValueError(UNSUPPORTED)
+    return value
+
+def require_current(db,cancel=None):
+    """Check only headers, including unselected owners, before any reclamation.
+
+    This is a format gate, not an integrity shortcut: full manifest/block checks
+    still run where the payload is read or its shared references are collected.
+    """
+    from runtime_support import checkpoint
+    available={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    for table in ('normal_revisions','normal_work_revisions','jobs','scheduled_values'):
+        if table not in available:continue
+        for header, in db.execute(f'SELECT substr(payload,1,?) FROM {table}',(len(MAGIC),)):
+            checkpoint(cancel)
+            if header!=MAGIC:raise ValueError(UNSUPPORTED+'（'+table+'）')
 
 def codec():
     import work_repository
@@ -38,9 +58,9 @@ def backup_before_write(path,progress=lambda _:None):
         present=src.execute("SELECT 1 FROM sqlite_master WHERE name='snapshot_storage_meta'").fetchone()
         if present and src.execute("SELECT 1 FROM snapshot_storage_meta WHERE key='initial_backup'").fetchone():return
         dest=path.with_name(path.stem+'.before-chunks-'+os.urandom(16).hex()+'.sqlite3')
-        with stage('备份首次分块写入前的完整数据库',progress),closing(sqlite3.connect(dest)) as target:
-            src.backup(target,pages=1024,progress=lambda status,left,total:progress(RowProgress('备份升级前数据库',total-left,total)))
-            if target.execute('PRAGMA quick_check').fetchone()[0]!='ok':raise ValueError('升级前备份完整性检查失败')
+        with stage('备份首次写入前的完整数据库',progress),closing(sqlite3.connect(dest)) as target:
+            src.backup(target,pages=1024,progress=lambda status,left,total:progress(RowProgress('备份数据库',total-left,total)))
+            if target.execute('PRAGMA quick_check').fetchone()[0]!='ok':raise ValueError('备份完整性检查失败')
         with src:
             schema(src)
             src.execute("INSERT OR IGNORE INTO snapshot_storage_meta VALUES('initial_backup',?)",(str(dest),))
@@ -165,7 +185,7 @@ class Reader:
             feed(b']');return result
         raise ValueError('未知快照节点')
     def emit(self,node,feed):
-        # Full restore parses one JSON document, like the legacy codec. This
+        # Full restore parses one JSON document. This
         # retains the decoder's shared dictionary-key strings across all blocks.
         kind=node[0]
         if kind=='ref':feed(self.raw(node));return
@@ -199,18 +219,7 @@ def select_value(value,path):
     return select_value(value[path[0]],path[1:])
 
 def load(blob,db=None,expected=None,paths=None,binding=None,progress=lambda _:None):
-    m=manifest(blob)
-    if m is None:
-        raw=zlib.decompress(blob)
-        if expected and hashlib.sha256(raw).hexdigest()!=expected:raise ValueError('作业快照校验失败')
-        value=codec().loads(raw)
-        if paths is None:return value
-        out={}
-        for path in paths:
-            try:part=select_value(value,path)
-            except (KeyError,TypeError):continue
-            out[tuple(path)]=part
-        return out
+    m=require_manifest(blob)
     if expected and m['digest']!=expected:raise ValueError('作业快照清单与索引不一致')
     if binding is not None and m.get('binding')!=binding:raise ValueError('归档清单与业务指纹不一致')
     if db is None:raise ValueError('分块快照需要数据库连接')

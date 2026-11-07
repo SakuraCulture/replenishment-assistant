@@ -7,7 +7,6 @@ import codecs,hashlib,re,sqlite3,zlib
 from collections import OrderedDict
 import storage_chunks as chunks
 import work_repository as wr
-import ijson.backends.yajl2_c as streaming_json
 from runtime_support import checkpoint
 from export_progress import RowProgress
 
@@ -27,7 +26,7 @@ class EvidenceDigest:
         h=self.sha.copy();h.update(b']');return h.hexdigest()
 
 def hashes(raw,cancel=None):
-    """Same lowercase 64-hex boundaries as the legacy scanner, bounded windows."""
+    """Exact lowercase 64-hex reference boundaries, bounded windows."""
     if isinstance(raw,str):raw=raw.encode('utf-8')
     decoder=codecs.getincrementaldecoder('utf-8')();found=set();width=262144
     for start in range(0,len(raw),width):
@@ -55,7 +54,7 @@ def contains_text(stream,needles,cancel=None):
 def publish_cache(db,scratch):
     """Do not rewrite identical historical reference caches on every deletion."""
     cache_schema(db)
-    for table,columns in (('maintenance_chunk_refs',('compressed_sha','refs','checksum')),('maintenance_legacy_refs',('info','checksum'))):
+    for table,columns in (('maintenance_chunk_refs',('compressed_sha','refs','checksum')),):
         values=','.join('?' for _ in range(len(columns)+1))
         update=','.join(f'{c}=excluded.{c}' for c in columns)
         different=' OR '.join(f'{table}.{c} IS NOT excluded.{c}' for c in columns)
@@ -63,68 +62,15 @@ def publish_cache(db,scratch):
 
 def cache_schema(db):
     db.execute('CREATE TABLE IF NOT EXISTS maintenance_chunk_refs(hash TEXT PRIMARY KEY, compressed_sha TEXT NOT NULL, refs TEXT NOT NULL, checksum TEXT NOT NULL)')
-    db.execute('CREATE TABLE IF NOT EXISTS maintenance_legacy_refs(hash TEXT PRIMARY KEY, info TEXT NOT NULL, checksum TEXT NOT NULL)')
 
-class Inflated:
-    def __init__(self,blob,cancel,progress):self.blob=blob;self.cancel=cancel;self.progress=progress;self.pos=0;self.z=zlib.decompressobj();self.pending=b'';self.total=0;self.reported=0;self.sha=hashlib.sha256()
-    def read(self,n=65536):
-        if n==0:return b''
-        n=min(n if n>0 else 65536,65536);checkpoint(self.cancel)
-        while True:
-            if self.pending:data=self.pending
-            elif self.pos<len(self.blob):data=self.blob[self.pos:self.pos+65536];self.pos+=len(data)
-            else:
-                if not self.z.eof:raise ValueError('旧快照压缩数据不完整')
-                return b''
-            raw=self.z.decompress(data,n);self.pending=self.z.unconsumed_tail;self.total+=len(raw);self.sha.update(raw)
-            if self.total-self.reported>=16*1024*1024:self.progress(f'核对旧格式历史资料：已读取 {self.total//1048576:,} MiB');self.reported=self.total
-            if raw:return raw
 
-def legacy_info(db,blob,cancel=None,progress=lambda _:None):
-    """Validate legacy JSON incrementally; fold references with last-key-wins."""
-    key=hashlib.sha256(blob).hexdigest();row=db.execute('SELECT info,checksum FROM maintenance_legacy_refs WHERE hash=?',(key,)).fetchone()
-    if row and hashlib.sha256(row[0].encode()).hexdigest()==row[1]:
-        info=wr.loads(row[0])
-        if isinstance(info,dict) and isinstance(info.get('refs'),list) and all(isinstance(x,str) and re.fullmatch('[0-9a-f]{64}',x) for x in info['refs']) and isinstance(info.get('work_revision'),(str,type(None))):return info
-    stack=[];root=set();work_revision=None;count=0
-    def attach(refs):
-        nonlocal root
-        if not stack:root=refs
-        elif stack[-1]['kind']=='map':stack[-1]['values'][stack[-1]['key']]=refs
-        else:stack[-1]['refs'].update(refs)
-    for prefix,event,value in streaming_json.parse(Inflated(blob,cancel,progress)):
-        count+=1
-        if count%8192==0:checkpoint(cancel)
-        if event in ('start_map','start_array'):
-            stack.append({'kind':'map','values':{},'key':None,'date':{}} if event=='start_map' else {'kind':'array','refs':set()})
-        elif event=='map_key':stack[-1]['key']=value
-        elif event in ('end_map','end_array'):
-            node=stack.pop()
-            if node['kind']=='map':
-                if set(node['values'])=={'__workbook_datetime__','date_only'}:wr.decode_object(node['date'])
-                refs=set()
-                for keyname,child in node['values'].items():
-                    refs.update(child)
-                    if len(keyname)>=64:refs.update(hashes(wr.dumps(keyname),cancel))
-            else:refs=node['refs']
-            attach(refs)
-        else:
-            refs=set()
-            if stack and stack[-1]['kind']=='map' and stack[-1]['key'] in ('__workbook_datetime__','date_only'):stack[-1]['date'][stack[-1]['key']]=value
-            if event=='string' and len(value)>=64:refs.update(hashes(wr.dumps(value),cancel))
-            elif event=='number':
-                if not isinstance(value,int):value=float(value)
-                encoded=wr.dumps(value)
-                if len(encoded)>=64:refs.update(hashes(encoded,cancel))
-            if prefix=='work_revision':work_revision=value
-            attach(refs)
-    checkpoint(cancel);info={'refs':sorted(root),'work_revision':work_revision};raw=wr.dumps(info)
-    db.execute('INSERT OR REPLACE INTO maintenance_legacy_refs VALUES(?,?,?)',(hashlib.sha256(blob).hexdigest(),raw,hashlib.sha256(raw.encode()).hexdigest()))
-    return info
 
-def references_for(db,h,size,data,cancel=None):
+def references_for(db,h,size,data,cancel=None,*,cache_source=None):
     checkpoint(cancel);compressed=hashlib.sha256(data).hexdigest()
-    row=db.execute('SELECT compressed_sha,refs,checksum FROM maintenance_chunk_refs WHERE hash=?',(h,)).fetchone()
+    # During preparation the source cache is read-only. Only a missing or
+    # invalid receipt is staged in db, and publication stays inside deletion.
+    lookup=cache_source if cache_source is not None else db
+    row=lookup.execute('SELECT compressed_sha,refs,checksum FROM maintenance_chunk_refs WHERE hash=?',(h,)).fetchone()
     if row and row[0]==compressed and hashlib.sha256(row[1].encode()).hexdigest()==row[2]:
         refs=wr.loads(row[1])
         if isinstance(refs,list) and all(isinstance(x,str) and re.fullmatch('[0-9a-f]{64}',x) for x in refs):return refs
@@ -141,7 +87,12 @@ class Editor:
         self.cache=OrderedDict();self.cache_size=0;self.reads=0;self.scratch_hashes=chunks.known(scratch)
     def raw(self,node):
         checkpoint(self.cancel);h=node[1]
-        if h in self.cache:self.cache.move_to_end(h);return self.cache[h]
+        if h in self.cache:
+            raw=self.cache[h]
+            # Every reference has its own declared length, including discarded
+            # branches whose bytes were cached while reading shared metadata.
+            if len(raw)!=node[2]:raise ValueError('快照内容块校验失败：'+h)
+            self.cache.move_to_end(h);return raw
         first,second=(self.scratch,self.source) if h in self.scratch_hashes else (self.source,self.scratch)
         row=first.execute('SELECT size,data FROM snapshot_chunks WHERE hash=?',(h,)).fetchone()
         if row is None:row=second.execute('SELECT size,data FROM snapshot_chunks WHERE hash=?',(h,)).fetchone()
@@ -183,8 +134,9 @@ class Editor:
         return prepared.tree
     def block(self,value):
         raw=wr.dumps(value).encode();h=hashlib.sha256(raw).hexdigest();checkpoint(self.cancel)
-        self.scratch.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',(h,len(raw),zlib.compress(raw)))
-        self.scratch_hashes.add(h)
+        if h not in self.scratch_hashes:
+            self.scratch.execute('INSERT INTO snapshot_chunks VALUES(?,?,?)',(h,len(raw),zlib.compress(raw)))
+            self.scratch_hashes.add(h)
         return ['ref',h,len(raw)]
     def get(self,node,path,default=None):
         if not path:return self.value(node)
@@ -234,69 +186,105 @@ class Editor:
                 if new:parts.append(part if len(new)==len(value) else self.block(new))
             return ['array',parts]
         value=self.value(node);return self.encode([v for v in value if keep(v)])
-    def legacy_tree(self,blob,expected=None):
-        """Stream historical JSON to existing chunk nodes; never build a workday."""
-        stream=Inflated(blob,self.cancel,self.progress);events=iter(streaming_json.basic_parse(stream));count=0
-        def scalar(event,value):
-            return float(value) if event=='number' and not isinstance(value,int) else value
-        def item(first):
-            # Array elements and deep leaves are the same bounded record units
-            # used by the v2 codec. Dates retain its object-hook semantics.
-            event,value=first
-            if event=='start_map':
-                obj={}
-                while True:
-                    event,key=next(events)
-                    if event=='end_map':return wr.decode_object(obj)
-                    obj[key]=item(next(events))
-            if event=='start_array':
-                values=[]
-                while True:
-                    token=next(events)
-                    if token[0]=='end_array':return values
-                    values.append(item(token))
-            return scalar(event,value)
-        def node(first,depth=0):
-            nonlocal count
-            checkpoint(self.cancel);event,value=first
-            if event=='start_map' and depth<5:
-                fields={}
-                while True:
-                    event,key=next(events)
-                    if event=='end_map':break
-                    fields[key]=node(next(events),depth+1)
-                tree=['dict',[[key,fields[key]] for key in sorted(fields)]]
-                if set(fields)=={'__workbook_datetime__','date_only'}:return self.block(self.value(tree))
-                return tree
-            if event=='start_array':
-                parts=[];batch=[]
-                while True:
-                    token=next(events)
-                    if token[0]=='end_array':break
-                    batch.append(item(token))
-                    if len(batch)==chunks.BLOCK_ROWS:
-                        parts.append(self.block(batch));batch=[];count+=1
-                        if count%32==0:self.progress(f'逐段整理旧格式作业：已写入 {count:,} 块');checkpoint(self.cancel)
-                if batch:parts.append(self.block(batch))
-                return ['array',parts]
-            return self.block(item(first))
-        tree=node(next(events))
-        try:next(events)
-        except StopIteration:pass
-        else:raise ValueError('旧作业快照包含多余数据')
-        if expected and stream.sha.hexdigest()!=expected:raise ValueError('作业快照校验失败')
-        self.legacy_digest=stream.sha.hexdigest()
-        return tree
-    def rewrite(self,blob,codes,strip_legacy,expected=None):
-        manifest=chunks.manifest(blob)
-        if manifest is None:
-            original=self.legacy_tree(blob,expected)
-            self.original_digest=self.legacy_digest
-        else:
-            if expected and manifest['digest']!=expected:raise ValueError('作业快照与索引不一致')
-            original=manifest['tree']
-            if self.checksum(original)!=(manifest['digest'],manifest['size']):raise ValueError('完整快照校验失败')
-            self.original_digest=manifest['digest']
+    def rewrite(self,blob,codes,expected=None):
+        manifest=chunks.require_manifest(blob);tree=manifest['tree']
+        # The native writer uses ordered dictionaries for these containers. A
+        # wide/current-format map or a scalar container keeps the existing path.
+        def ordered(node):
+            if node[0]!='dict':return False
+            keys=[k for k,_ in node[1]]
+            return all(isinstance(k,str) for k in keys) and keys==sorted(set(keys))
+        if not ordered(tree):return self._rewrite_serial(blob,codes,expected)
+        top=dict(tree[1]);loaded=top.get('loaded');intake=None;warehouses=None
+        if loaded is not None:
+            if not ordered(loaded):return self._rewrite_serial(blob,codes,expected)
+            fields=dict(loaded[1]);intake=fields.get('intake');warehouses=fields.get('warehouse_rows')
+            if any(n is not None and not ordered(n) for n in (intake,warehouses)):
+                return self._rewrite_serial(blob,codes,expected)
+        if expected and manifest['digest']!=expected:raise ValueError('作业快照与索引不一致')
+        import engine
+        config=self.get(tree,('loaded','config')) or engine.config();field=config['sales_fields']['store_code']
+        def affected(e):
+            if isinstance(e,dict):return e.get('store') in codes or any(affected(v) for v in e.values())
+            return isinstance(e,list) and any(affected(v) for v in e)
+        drops={(key,) for key in STORE_MAPS}|{('loaded','stores'),('loaded','blocked'),('loaded','intake','stores')}
+        filters={('loaded','normalized'):lambda r:r[0].get('B') not in codes,
+                 ('loaded','intake','conflicts'):lambda r:r['store'] not in codes,
+                 ('loaded','intake','selected'):lambda r:engine.adapter.identifier(r.get('values',{}).get(field))[0] not in codes,
+                 ('export_log',):lambda e:not affected(e)}
+        if warehouses:
+            filters.update({('loaded','warehouse_rows',w):filters[('loaded','normalized')] for w,_ in warehouses[1]})
+        defaults={():{'export_log':[],'pending_copy':None}}
+        if loaded and loaded[1]:defaults[('loaded',)]={'normalized':[]}
+        if intake and intake[1]:defaults[('loaded','intake')]={'stores':{},'conflicts':[],'selected':[]}
+        containers={(),('loaded',),('loaded','intake'),('loaded','warehouse_rows')}
+        old_sha=hashlib.sha256();new_sha=hashlib.sha256();sizes=[0,0]
+        def old(raw):old_sha.update(raw);sizes[0]+=len(raw)
+        def new(raw):new_sha.update(raw);sizes[1]+=len(raw)
+        def both(raw):old(raw);new(raw)
+        def key_bytes(key):return wr.dumps(key).encode()+b': '
+        def encoded(value):
+            node=self.encode(value);self.emit(node,new);return node
+        def filtered(node,keep,is_map=False):
+            # Each block supplies the original digest, parsed selection and
+            # surviving digest before it leaves the bounded raw-byte cache.
+            kind='map' if is_map else 'array'
+            if node[0]!=kind:
+                raw=[];self.emit(node,raw.append);data=b''.join(raw);old(data)
+                value=wr.loads(data)
+                if is_map and not isinstance(value,dict):new(data);return node
+                return encoded({k:v for k,v in value.items() if k not in codes} if is_map else [v for v in value if keep(v)])
+            both(b'{' if is_map else b'[');parts=[]
+            for i,part in enumerate(node[1]):
+                raw=self.raw(part)
+                if i:old(b', ')
+                old(raw[1:-1]);value=wr.loads(raw)
+                kept={k:v for k,v in value.items() if k not in codes} if is_map else [v for v in value if keep(v)]
+                if kept:
+                    if parts:new(b', ')
+                    if len(kept)==len(value):parts.append(part);new(raw[1:-1])
+                    else:parts.append(self.block(kept));new(wr.dumps(kept).encode()[1:-1])
+            both(b'}' if is_map else b']');return [kind,parts]
+        def walk(node,path):
+            checkpoint(self.cancel)
+            if path==('pending_copy',):self.emit(node,old);return encoded(None)
+            if path in filters:return filtered(node,filters[path])
+            if path in drops:
+                if node[0]!='dict':return filtered(node,None,True)
+                both(b'{');items=[]
+                for i,(key,child) in enumerate(node[1]):
+                    if i:old(b', ')
+                    old(key_bytes(key))
+                    if key in codes:self.emit(child,old)
+                    else:
+                        if items:new(b', ')
+                        new(key_bytes(key));self.emit(child,both);items.append([key,child])
+                both(b'}');return ['dict',items]
+            if path not in containers:self.emit(node,both);return node
+            fields=dict(node[1]);extra=defaults.get(path,{})
+            both(b'{');items=[];old_count=0
+            for key in sorted(fields.keys()|extra.keys()):
+                if items:new(b', ')
+                new(key_bytes(key))
+                if key in fields:
+                    if old_count:old(b', ')
+                    old(key_bytes(key));old_count+=1
+                    child=walk(fields[key],path+(key,))
+                else:child=encoded(extra[key])
+                items.append([key,child])
+            both(b'}');return ['dict',items]
+        rewritten=walk(tree,())
+        # Even discarded branches feed the full original digest. A mismatch
+        # rejects the prepared result before any business transaction begins.
+        if (old_sha.hexdigest(),sizes[0])!=(manifest['digest'],manifest['size']):raise ValueError('完整快照校验失败')
+        self.original_digest=manifest['digest']
+        return chunks.Prepared(rewritten,new_sha.hexdigest(),sizes[1],{})
+    def _rewrite_serial(self,blob,codes,expected=None):
+        manifest=chunks.require_manifest(blob)
+        if expected and manifest['digest']!=expected:raise ValueError('作业快照与索引不一致')
+        original=manifest['tree']
+        if self.checksum(original)!=(manifest['digest'],manifest['size']):raise ValueError('完整快照校验失败')
+        self.original_digest=manifest['digest']
         tree=original
         for key in STORE_MAPS:tree=self.update(tree,(key,),lambda n:self.drop_keys(n,codes))
         for path in (('loaded','stores'),('loaded','blocked')):

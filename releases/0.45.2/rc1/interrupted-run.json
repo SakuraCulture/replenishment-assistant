@@ -1,0 +1,29 @@
+{
+  "status": "interrupted by chat interruption; no comparison report completed",
+  "completed_runs": [
+    [
+      "before",
+      1,
+      45.83049480000045
+    ],
+    [
+      "after",
+      1,
+      29.278091899992432
+    ],
+    [
+      "after",
+      2,
+      31.14496580004925
+    ],
+    [
+      "before",
+      2,
+      38.60094090003986
+    ]
+  ],
+  "incomplete": "historical-warm/before-3",
+  "processes_remaining_at_resume": false,
+  "action": "fresh full comparison in historical-warm-r2; prior files retained",
+  "profiling_setup_failure": "profile.py shadowed Python profile module before database work; renamed profile_baseline.py"
+}

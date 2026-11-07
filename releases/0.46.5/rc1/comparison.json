@@ -1,0 +1,716 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "QA_A/山东仓/None/None/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 1008.0,
+      "new_amount": 1008.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/None/None/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 1008.0,
+      "new_amount": 1008.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/None/0/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/None/0/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/None/60/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 63.0,
+      "new_amount": 63.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/None/60/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 63.0,
+      "new_amount": 63.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/None/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 1014.0,
+      "new_amount": 1014.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/None/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 1014.0,
+      "new_amount": 1014.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/0/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/0/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/60/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/60/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/None/None/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 462.0,
+      "new_amount": 462.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/None/None/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 462.0,
+      "new_amount": 462.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/None/0/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/None/0/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/None/60/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/None/60/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/None/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 834.0,
+      "new_amount": 834.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/None/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 834.0,
+      "new_amount": 834.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/0/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/0/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/60/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/60/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/None/None/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 1008.0,
+      "new_amount": 1008.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/None/None/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 1008.0,
+      "new_amount": 1008.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/None/0/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/None/0/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/None/60/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 63.0,
+      "new_amount": 63.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/None/60/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 63.0,
+      "new_amount": 63.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/None/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 1014.0,
+      "new_amount": 1014.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/None/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 1014.0,
+      "new_amount": 1014.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/0/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/0/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/60/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/60/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/None/None/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 462.0,
+      "new_amount": 462.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/None/None/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 462.0,
+      "new_amount": 462.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/None/0/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/None/0/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/None/60/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/None/60/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/None/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 834.0,
+      "new_amount": 834.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/None/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 834.0,
+      "new_amount": 834.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/0/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/0/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/60/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/60/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    }
+  ],
+  "unexpected_differences": [],
+  "input_hashes": {
+    "catalogs.json": "b3e6a76b15fc10056e1a5a204d18c88aa6a0f90887b60be0aadb92a5bc9da1d8",
+    "duplicate.xlsx": "ca70a2c023224304d3e8bfa67c5c56804cee549795e104774025d8835a3618dc",
+    "sales.xlsx": "dd1e519f07cec2cdb2b35ea11b3c9a12e112609f7249be4ca24ded4bed57234d",
+    "山东仓.xlsx": "468388b8cb41edf9f7401163a0a07888e5ae02ca05a4ee3b1f6b448c9c756102",
+    "河北仓.xlsx": "78e7b0cf245bf155f52212253bd63a5c853470af941269894ea3c43b0a8b785e"
+  },
+  "comparison": "Exact type, value, row and dictionary order. Old engine oracle scopes only the routing warehouse rows; approved single-local audit reason/version are explicit. No model or budget changes.",
+  "ignored_fields": [
+    "result.created",
+    "result.task.pid/started/finished",
+    "result.version.version/source_commit/build_id/built_at/routing_version"
+  ],
+  "scope": "Synthetic two-store, both single/dual directions, 3 budgets and both one-box settings. No production data or platform calls."
+}

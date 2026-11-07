@@ -1,0 +1,136 @@
+test_ambiguous_new_content_never_overwritten (test_application_reset.ResetTests.test_ambiguous_new_content_never_overwritten) ... ok
+test_busy_writer_keeps_original (test_application_reset.ResetTests.test_busy_writer_keeps_original) ... ok
+test_complete_backup_includes_settings_platform_identity_and_analysis (test_application_reset.ResetTests.test_complete_backup_includes_settings_platform_identity_and_analysis) ... ok
+test_failed_commit_restores_original (test_application_reset.ResetTests.test_failed_commit_restores_original) ... ok
+test_interrupted_after_commit_recognizes_receipt (test_application_reset.ResetTests.test_interrupted_after_commit_recognizes_receipt) ... ok
+test_interrupted_after_rename_restores_before_open (test_application_reset.ResetTests.test_interrupted_after_rename_restores_before_open) ... ok
+test_interrupted_before_rename_leaves_original (test_application_reset.ResetTests.test_interrupted_before_rename_leaves_original) ... ok
+test_multiple_instances_allowed_but_reset_exclusive (test_application_reset.ResetTests.test_multiple_instances_allowed_but_reset_exclusive) ... ok
+test_old_instance_blocks_before_backup (test_application_reset.ResetTests.test_old_instance_blocks_before_backup) ... ok
+test_reject_unsafe_paths_and_changed_destination (test_application_reset.ResetTests.test_reject_unsafe_paths_and_changed_destination) ... ok
+test_repeated_reset_keeps_each_previous_backup (test_application_reset.ResetTests.test_repeated_reset_keeps_each_previous_backup) ... ok
+test_all_deleted_local_batches_disappear_without_platform_request (test_aoxiang_selected_queue.SelectedQueueTests.test_all_deleted_local_batches_disappear_without_platform_request) ... ok
+test_cannot_delete_platform_identity_or_running_item (test_aoxiang_selected_queue.SelectedQueueTests.test_cannot_delete_platform_identity_or_running_item) ... ok
+test_delete_selected_local_only_cas_and_remaining_business_unchanged (test_aoxiang_selected_queue.SelectedQueueTests.test_delete_selected_local_only_cas_and_remaining_business_unchanged) ... ok
+test_deleted_order_rejected_before_new_queue_and_runner_has_final_guard (test_aoxiang_selected_queue.SelectedQueueTests.test_deleted_order_rejected_before_new_queue_and_runner_has_final_guard) ... ok
+test_deleted_order_upload_not_attempted_is_blocked_but_bound_is_readable (test_aoxiang_selected_queue.SelectedQueueTests.test_deleted_order_upload_not_attempted_is_blocked_but_bound_is_readable) ... ok
+test_only_checked_execute_and_previews_can_upload_while_others_held (test_aoxiang_selected_queue.SelectedQueueTests.test_only_checked_execute_and_previews_can_upload_while_others_held) ... ok
+test_reconcile_prunes_stale_local_only_and_preserves_platform_evidence (test_aoxiang_selected_queue.SelectedQueueTests.test_reconcile_prunes_stale_local_only_and_preserves_platform_evidence) ... ok
+test_retry_selected_does_not_dispatch_unrelated_pending (test_aoxiang_selected_queue.SelectedQueueTests.test_retry_selected_does_not_dispatch_unrelated_pending) ... ok
+test_selection_compare_and_set_and_no_empty_or_completed_replay (test_aoxiang_selected_queue.SelectedQueueTests.test_selection_compare_and_set_and_no_empty_or_completed_replay) ... ok
+test_soft_deleted_child_does_not_hide_sibling_warehouse (test_aoxiang_selected_queue.SelectedQueueTests.test_soft_deleted_child_does_not_hide_sibling_warehouse) ... ok
+test_stop_resume_preserves_dispatch_range (test_aoxiang_selected_queue.SelectedQueueTests.test_stop_resume_preserves_dispatch_range) ... ok
+test_valid_queue_reconciliation_under_reader_lock_is_read_only (test_aoxiang_selected_queue.SelectedQueueTests.test_valid_queue_reconciliation_under_reader_lock_is_read_only) ... ok
+test_cancel_never_erases_packages_and_corrupt_tables_not_recreated (test_aoxiang_workflows.QueueTests.test_cancel_never_erases_packages_and_corrupt_tables_not_recreated) ... ok
+test_disable_after_enqueued_skips_without_starting_platform_and_item_failures_isolated (test_aoxiang_workflows.QueueTests.test_disable_after_enqueued_skips_without_starting_platform_and_item_failures_isolated) ... ok
+test_foreground_cancel_does_not_release_ongoing_background (test_aoxiang_workflows.QueueTests.test_foreground_cancel_does_not_release_ongoing_background) ... ok
+test_foreground_preempts_then_waits_for_real_release_and_blocks_new_background (test_aoxiang_workflows.QueueTests.test_foreground_preempts_then_waits_for_real_release_and_blocks_new_background) ... ok
+test_history_window_keeps_all_active_and_oldest_queued_not_last_completion (test_aoxiang_workflows.QueueTests.test_history_window_keeps_all_active_and_oldest_queued_not_last_completion) ... ok
+test_many_busy_schedules_do_not_starve_later_due_orders (test_aoxiang_workflows.QueueTests.test_many_busy_schedules_do_not_starve_later_due_orders) ... ok
+test_order_duplicates_preview_gate_stale_confirmation_and_idempotent_upload (test_aoxiang_workflows.QueueTests.test_order_duplicates_preview_gate_stale_confirmation_and_idempotent_upload) ... ok
+test_pause_in_poll_targets_original_task_and_prevents_next_store (test_aoxiang_workflows.QueueTests.test_pause_in_poll_targets_original_task_and_prevents_next_store) ... ok
+test_periodic_opt_in_order_duplicate_exclusion_backoff_and_manual_pause (test_aoxiang_workflows.QueueTests.test_periodic_opt_in_order_duplicate_exclusion_backoff_and_manual_pause) ... ok
+test_review_stops_automatic_retry_and_multi_record_config_rolls_back (test_aoxiang_workflows.QueueTests.test_review_stops_automatic_retry_and_multi_record_config_rolls_back) ... ok
+test_terminal_latch_stops_routine_but_retries_final_task_and_keeps_after_restart (test_aoxiang_workflows.QueueTests.test_terminal_latch_stops_routine_but_retries_final_task_and_keeps_after_restart) ... ok
+test_formal_receipt_saved_then_ack_lost_reuses_same_observation_no_duplicate_receipt (test_aoxiang_workflows.ReceiptBatchTests.test_formal_receipt_saved_then_ack_lost_reuses_same_observation_no_duplicate_receipt) ... ok
+test_batch_template_once_actual_native_package_and_real_component_reservation (test_aoxiang_workflows.RunnerTests.test_batch_template_once_actual_native_package_and_real_component_reservation) ... ok
+test_unknown_upload_response_is_not_replayed_and_payment_stale_rejected_before_upload (test_aoxiang_workflows.RunnerTests.test_unknown_upload_response_is_not_replayed_and_payment_stale_rejected_before_upload) ... ok
+test_batch_confirmation_rejects_concurrent_preview_change (test_aoxiang_workflow_ui.WorkflowUiTests.test_batch_confirmation_rejects_concurrent_preview_change) ... ok
+test_batch_upload_default_cancel_exact_selection_and_no_checkbox_leak (test_aoxiang_workflow_ui.WorkflowUiTests.test_batch_upload_default_cancel_exact_selection_and_no_checkbox_leak) ... ok
+test_client_constructor_failure_keeps_task_and_releases_gate (test_aoxiang_workflow_ui.WorkflowUiTests.test_client_constructor_failure_keeps_task_and_releases_gate) ... ok
+test_foreground_waits_for_actual_child_exit_and_ui_heartbeat_continues (test_aoxiang_workflow_ui.WorkflowUiTests.test_foreground_waits_for_actual_child_exit_and_ui_heartbeat_continues) ... ok
+test_idle_host_direct_destruction_releases_directory_lock (test_aoxiang_workflow_ui.WorkflowUiTests.test_idle_host_direct_destruction_releases_directory_lock) ... ok
+test_idle_queue_message_finishes_and_delete_navigation_releases_maintenance (test_aoxiang_workflow_ui.WorkflowUiTests.test_idle_queue_message_finishes_and_delete_navigation_releases_maintenance) ... ok
+test_local_failure_has_reason_not_fake_preview_and_can_end_selected (test_aoxiang_workflow_ui.WorkflowUiTests.test_local_failure_has_reason_not_fake_preview_and_can_end_selected) ... ok
+test_receipt_selection_local_only_order_default_off_and_confirmation (test_aoxiang_workflow_ui.WorkflowUiTests.test_receipt_selection_local_only_order_default_off_and_confirmation) ... ok
+test_refresh_keeps_checks_by_order_identity_not_old_row_number (test_aoxiang_workflow_ui.WorkflowUiTests.test_refresh_keeps_checks_by_order_identity_not_old_row_number) ... ok
+test_second_instance_cannot_dispatch_and_lock_released_on_shutdown (test_aoxiang_workflow_ui.WorkflowUiTests.test_second_instance_cannot_dispatch_and_lock_released_on_shutdown) ... WARNING:root:翱象调度锁初始化失败: C:\Users\lenovo\AppData\Local\Temp\tmpnwjjg7kj\aoxiang
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 85, in __init__
+    self.owner.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+test_selected_button_and_local_delete_apply_exact_checkbox_scope (test_aoxiang_workflow_ui.WorkflowUiTests.test_selected_button_and_local_delete_apply_exact_checkbox_scope) ... ok
+test_show_modal_assigns_gate_before_queued_local_load (test_aoxiang_workflow_ui.WorkflowUiTests.test_show_modal_assigns_gate_before_queued_local_load) ... ok
+test_stop_target_close_wait_and_cancelled_host_close_can_resume (test_aoxiang_workflow_ui.WorkflowUiTests.test_stop_target_close_wait_and_cancelled_host_close_can_resume) ... ok
+test_cancel_and_cross_database_failure_restore_all_task_payloads (test_deletion_workflow_consistency.Consistency.test_cancel_and_cross_database_failure_restore_all_task_payloads) ... ok
+test_duplicate_error_never_overrides_upload_receipt_or_accepted_identity (test_deletion_workflow_consistency.Consistency.test_duplicate_error_never_overrides_upload_receipt_or_accepted_identity) ... ok
+test_duplicate_local_end_still_checks_sequence (test_deletion_workflow_consistency.Consistency.test_duplicate_local_end_still_checks_sequence) ... ok
+test_duplicate_package_does_not_block_but_original_upload_still_does (test_deletion_workflow_consistency.Consistency.test_duplicate_package_does_not_block_but_original_upload_still_does) ... ok
+test_end_all_local_then_fresh_prepare_no_old_cancel_leak (test_deletion_workflow_consistency.Consistency.test_end_all_local_then_fresh_prepare_no_old_cancel_leak) ... ok
+test_end_only_selected_then_delete_preserves_queued_other_and_new_task_allowed (test_deletion_workflow_consistency.Consistency.test_end_only_selected_then_delete_preserves_queued_other_and_new_task_allowed) ... ok
+test_inspection_lists_all_blockers_and_never_writes (test_deletion_workflow_consistency.Consistency.test_inspection_lists_all_blockers_and_never_writes) ... ok
+test_partial_removal_reconciles_state_and_keeps_external_identity (test_deletion_workflow_consistency.Consistency.test_partial_removal_reconciles_state_and_keeps_external_identity) ... ok
+test_preview_then_execution_start_rejects_all_deletion (test_deletion_workflow_consistency.Consistency.test_preview_then_execution_start_rejects_all_deletion) ... ok
+test_purchase_identity_never_treated_as_local_failure (test_deletion_workflow_consistency.Consistency.test_purchase_identity_never_treated_as_local_failure) ... ok
+test_reported_local_review_deletes_only_selected_and_keeps_other_snapshot (test_deletion_workflow_consistency.Consistency.test_reported_local_review_deletes_only_selected_and_keeps_other_snapshot) ... ok
+test_stale_end_or_running_batch_is_rejected_without_partial_change (test_deletion_workflow_consistency.Consistency.test_stale_end_or_running_batch_is_rejected_without_partial_change) ... ok
+test_upload_unknown_cannot_be_cleared_by_cancel_or_missing_browser (test_deletion_workflow_consistency.Consistency.test_upload_unknown_cannot_be_cleared_by_cancel_or_missing_browser) ... ok
+test_cancellation_rolls_back_no_recycle_bin (test_data_maintenance.DeleteOrders.test_cancellation_rolls_back_no_recycle_bin) ... ok
+test_cross_database_failure_rolls_back_both (test_data_maintenance.DeleteOrders.test_cross_database_failure_rolls_back_both) ... ok
+test_late_change_rejects_entire_delete (test_data_maintenance.DeleteOrders.test_late_change_rejects_entire_delete) ... ok
+test_old_recycle_records_can_be_permanently_removed (test_data_maintenance.DeleteOrders.test_old_recycle_records_can_be_permanently_removed) ... ok
+test_other_store_unchanged_and_shared_source_kept (test_data_maintenance.DeleteOrders.test_other_store_unchanged_and_shared_source_kept) ... ok
+test_pending_generation_task_is_deleted_even_without_inventory_tables (test_data_maintenance.DeleteOrders.test_pending_generation_task_is_deleted_even_without_inventory_tables) ... ok
+test_preview_expands_parent_and_delete_reclaims_unowned_chunks (test_data_maintenance.DeleteOrders.test_preview_expands_parent_and_delete_reclaims_unowned_chunks) ... ok
+test_stale_cache_cannot_reopen_removed_order (test_data_maintenance.DeleteOrders.test_stale_cache_cannot_reopen_removed_order) ... ok
+test_locked_does_not_add_stock_and_fresh_catalog_does_not_double_deduct (test_data_maintenance.StockDeletion.test_locked_does_not_add_stock_and_fresh_catalog_does_not_double_deduct) ... ok
+test_unplaced_releases_stock (test_data_maintenance.StockDeletion.test_unplaced_releases_stock) ... ok
+test_closing_and_active_worker_are_not_bypassed (test_queue_lock_recovery.QueueLockRecovery.test_closing_and_active_worker_are_not_bypassed) ... ok
+test_due_schedule_rechecked_after_read_phase (test_queue_lock_recovery.QueueLockRecovery.test_due_schedule_rechecked_after_read_phase) ... ok
+test_fatal_error_reported_but_owned_maintenance_possible (test_queue_lock_recovery.QueueLockRecovery.test_fatal_error_reported_but_owned_maintenance_possible) ... ERROR:root:翱象队列故障: C:\Users\lenovo\AppData\Local\Temp\tmpna84mbsq\settings\aoxiang\workflows.sqlite3
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 118, in tick
+    self.store.enqueue_due(timeout=0)
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+ValueError: 合成结构错误
+ok
+test_idle_poll_under_read_lock_never_needs_write (test_queue_lock_recovery.QueueLockRecovery.test_idle_poll_under_read_lock_never_needs_write) ... ok
+test_live_timer_busy_recovery_and_maintenance (test_queue_lock_recovery.QueueLockRecovery.test_live_timer_busy_recovery_and_maintenance) ... WARNING:root:翱象队列数据库繁忙，将重查原任务: C:\Users\lenovo\AppData\Local\Temp\tmppqhtiogt\settings\aoxiang\workflows.sqlite3
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 118, in tick
+    self.store.enqueue_due(timeout=0)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflows.py", line 337, in enqueue_due
+    with self.db(True,timeout=timeout) as db:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflows.py", line 32, in db
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+test_other_owner_cannot_maintain_then_explicit_reacquire (test_queue_lock_recovery.QueueLockRecovery.test_other_owner_cannot_maintain_then_explicit_reacquire) ... WARNING:root:翱象调度锁初始化失败: C:\Users\lenovo\AppData\Local\Temp\tmpcu3xi301\settings\aoxiang
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 85, in __init__
+    self.owner.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+test_baseline_date_mismatch_names_actual_date (test_purchase_recovery.DateMessageTests.test_baseline_date_mismatch_names_actual_date) ... ok
+test_baseline_quantity_difference_is_not_described_as_date_change (test_purchase_recovery.DateMessageTests.test_baseline_quantity_difference_is_not_described_as_date_change) ... ok
+test_crossday_trial_stops_before_preparation (test_purchase_recovery.DateMessageTests.test_crossday_trial_stops_before_preparation) ... ok
+test_unsigned_previous_day_is_not_sent_to_nonexistent_signed_history (test_purchase_recovery.DateMessageTests.test_unsigned_previous_day_is_not_sent_to_nonexistent_signed_history) ... ok
+test_actual_component_status_contract_resumes_known_task (test_purchase_recovery.PurchaseRecoveryTests.test_actual_component_status_contract_resumes_known_task) ... ok
+test_bound_is_reconciled_without_any_start (test_purchase_recovery.PurchaseRecoveryTests.test_bound_is_reconciled_without_any_start) ... ok
+test_bound_message_does_not_claim_live_platform_state (test_purchase_recovery.PurchaseRecoveryTests.test_bound_message_does_not_claim_live_platform_state) ... ok
+test_cancel_while_waiting_preserves_original_task (test_purchase_recovery.PurchaseRecoveryTests.test_cancel_while_waiting_preserves_original_task) ... ok
+test_explanations_have_action_and_keep_unknown_uncertain (test_purchase_recovery.PurchaseRecoveryTests.test_explanations_have_action_and_keep_unknown_uncertain) ... ok
+test_first_upload_pending_then_completion_uploads_exactly_once (test_purchase_recovery.PurchaseRecoveryTests.test_first_upload_pending_then_completion_uploads_exactly_once) ... ok
+test_old_false_review_retries_same_batch_and_keeps_success (test_purchase_recovery.PurchaseRecoveryTests.test_old_false_review_retries_same_batch_and_keeps_success) ... ok
+test_pending_exhausts_bounded_wait_and_shows_waiting_not_failure (test_purchase_recovery.PurchaseRecoveryTests.test_pending_exhausts_bounded_wait_and_shows_waiting_not_failure) ... ok
+test_pending_is_observed_again_without_reupload (test_purchase_recovery.PurchaseRecoveryTests.test_pending_is_observed_again_without_reupload) ... ok
+test_platform_status_details_survive_runner_failure (test_purchase_recovery.PurchaseRecoveryTests.test_platform_status_details_survive_runner_failure) ... ok
+test_unknown_and_conflicting_receipts_stay_blocked (test_purchase_recovery.PurchaseRecoveryTests.test_unknown_and_conflicting_receipts_stay_blocked) ... ok
+test_verified_void_is_terminal_association_not_purchase_success (test_purchase_recovery.PurchaseRecoveryTests.test_verified_void_is_terminal_association_not_purchase_success) ... ok
+
+----------------------------------------------------------------------
+Ran 95 tests in 12.610s
+
+OK

@@ -1,0 +1,17 @@
+{
+  "synthetic": true,
+  "format": "native v2 via immutable 0.46.1 writer, no legacy conversion",
+  "days": [
+    "2026-10-20",
+    "2026-10-21",
+    "2026-10-22"
+  ],
+  "stores_per_day": 8,
+  "rows_per_store": 12000,
+  "random_bytes_per_row": 1200,
+  "purpose": "Large native chunk layout; random trace fields inflate history and are not business observations",
+  "chunks": 1229,
+  "compressed_bytes": 400427670,
+  "database_bytes": 402624512,
+  "sha256": "f88725d1ffc14d9ac68441674bd591c2d6e69b160bdb1ece7683033e551d8453"
+}

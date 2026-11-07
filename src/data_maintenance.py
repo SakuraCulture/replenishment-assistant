@@ -28,12 +28,9 @@ def snapshot(db,oids,cancel=None,progress=lambda _:None,inspect=False):
         day,store,number,current=row
         raw=db.execute('SELECT digest,payload FROM normal_revisions WHERE oid=? AND revision=?',(oid,current)).fetchone()
         with closing(sqlite3.connect(':memory:')) as scratch:
-            editor=storage.Editor(db,scratch,progress,cancel);manifest=chunks.manifest(raw[1])
-            if manifest:
-                if manifest.get('binding')!=raw[0] or editor.checksum(manifest['tree'])!=(manifest['digest'],manifest['size']):raise ValueError('归档快照校验失败')
-                tree=manifest['tree']
-            else:
-                tree=editor.legacy_tree(raw[1])
+            editor=storage.Editor(db,scratch,progress,cancel);manifest=chunks.require_manifest(raw[1])
+            if manifest.get('binding')!=raw[0] or editor.checksum(manifest['tree'])!=(manifest['digest'],manifest['size']):raise ValueError('归档快照校验失败')
+            tree=manifest['tree']
             found=set()
             def rows(node):
                 for part in node[1] if node[0]=='array' else [node]:
@@ -106,7 +103,7 @@ def prepare(path,heads,progress=lambda _:None,cancel=None,*,inspect=False):
     if not oids:raise ValueError('请勾选要彻底删除的订单')
     progress('读取订单与关联数据，核对删除范围…')
     with closing(connect(path)) as db:
-        db.execute('BEGIN');plan=snapshot(db,oids,cancel,progress,inspect=inspect)
+        db.execute('BEGIN');chunks.require_current(db,cancel);plan=snapshot(db,oids,cancel,progress,inspect=inspect)
         for h in heads:
             p=next(p for p in plan['parents'] if p['oid']==h['oid'])
             if h['revision']!=p['revision'] or h['digest']!=p['digest']:raise wr.Conflict('原签发已变化，请刷新再删除')
@@ -160,23 +157,21 @@ def references(node):
 
 def collect_shared(db,folder,cancel=None,progress=lambda _:None,*,verified=None):
     """Reclaim unreferenced blocks and files; validate every live manifest first."""
-    live=set();work_ids=set();hashes=set();legacy_live=set();available=tables(db);storage.cache_schema(db)
+    chunks.require_current(db,cancel)
+    live=set();work_ids=set();hashes=set();available=tables(db);storage.cache_schema(db)
     progress('核对存活订单及共享资料引用…')
     if 'normal_revisions' in available:
         for raw, in db.execute('SELECT payload FROM normal_revisions'):
             checkpoint(cancel)
-            if chunks.manifest(raw):revision=chunks.load(raw,db,paths=[('work_revision',)],progress=lambda s:checkpoint(cancel)).get(('work_revision',))
-            else:revision=storage.legacy_info(db,raw,cancel,progress)['work_revision']
+            revision=chunks.load(raw,db,paths=[('work_revision',)],progress=lambda s:checkpoint(cancel)).get(('work_revision',))
             if revision:work_ids.add(revision)
     for rev, in db.execute('SELECT revision FROM normal_work_revisions').fetchall():
         if rev not in work_ids:db.execute('DELETE FROM normal_work_revisions WHERE revision=?',(rev,))
     for table in ('normal_revisions','normal_work_revisions','jobs','scheduled_values'):
         if table not in available:continue
         for raw, in db.execute(f'SELECT payload FROM {table}'):
-            checkpoint(cancel);m=chunks.manifest(raw)
-            if m:live.update(references(m['tree']))
-            else:
-                legacy_live.add(hashlib.sha256(raw).hexdigest());hashes.update(storage.legacy_info(db,raw,cancel,progress)['refs'])
+            checkpoint(cancel);m=chunks.require_manifest(raw)
+            live.update(references(m['tree']))
     if 'snapshot_chunks' in available:
         for h, in db.execute('SELECT hash FROM snapshot_chunks').fetchall():
             checkpoint(cancel)
@@ -211,13 +206,12 @@ def collect_shared(db,folder,cancel=None,progress=lambda _:None,*,verified=None)
             for sha, in db.execute(f'SELECT sha FROM {table}').fetchall():
                 checkpoint(cancel)
                 if sha not in hashes:db.execute(f'DELETE FROM {table} WHERE sha=?',(sha,))
-    for key, in db.execute('SELECT hash FROM maintenance_legacy_refs').fetchall():
-        if key not in legacy_live:db.execute('DELETE FROM maintenance_legacy_refs WHERE hash=?',(key,))
     checkpoint(cancel)
 
 
 def prepare_rewrites(db,plan,scratch,progress,cancel):
     """Prepare outside the writer lock. Recheck exact source blobs before use."""
+    chunks.require_current(db,cancel)
     editor=storage.Editor(db,scratch,progress,cancel);prepared=[]
     records=[]
     for day in dict.fromkeys(h['day'] for h in plan['parents']):
@@ -226,14 +220,22 @@ def prepare_rewrites(db,plan,scratch,progress,cancel):
             records.append(('normal_work_revisions',rev,day,codes))
         for _, in db.execute('SELECT day FROM jobs WHERE day=?',(day,)):
             records.append(('jobs',day,day,codes))
+    rewritten={}
     for i,(table,key,day,codes) in enumerate(records,1):
         col='day' if table=='jobs' else 'revision'
         row=db.execute(f'SELECT payload'+(',digest' if table=='jobs' else '')+f' FROM {table} WHERE {col}=?',(key,)).fetchone()
         if row is None:raise wr.Conflict('当天共享作业在准备时变化，请重新核对删除范围')
         blob=row[0];expected=row[1] if table=='jobs' else None
         checkpoint(cancel);progress(RowProgress('准备当天作业清理',i-1,len(records)))
-        pack=editor.rewrite(blob,codes,lambda p,c:strip_work(p,c,owned=True,cancel=cancel),expected)
-        info={'original_digest':editor.original_digest}
+        source_hash=hashlib.sha256(blob).digest()
+        # The current draft and signed work revisions can hold identical bytes.
+        # Reuse only within the same day (hence the same selected stores).
+        if (day,source_hash) not in rewritten:
+            pack=editor.rewrite(blob,codes,expected)
+            rewritten[day,source_hash]=pack,editor.original_digest
+        pack,original_digest=rewritten[day,source_hash]
+        if expected and expected!=original_digest:raise ValueError('作业快照与索引不一致')
+        info={'original_digest':original_digest}
         if table=='jobs':
             states=editor.get(pack.tree,('states',),{})
             if states:
@@ -242,24 +244,25 @@ def prepare_rewrites(db,plan,scratch,progress,cancel):
                 if editor.get(pack.tree,('schema',))!=1 or editor.get(pack.tree,('day',))!=day:raise ValueError('作业快照与日期不一致')
                 info=editor.job_summary(pack.tree)
             else:info={'stores':{}}
-        prepared.append((table,key,hashlib.sha256(blob).digest(),pack,info))
+        prepared.append((table,key,source_hash,pack,info))
         del blob,row
         progress(RowProgress('准备当天作业清理',i,len(records)))
-    # Reusable cache is staged on disk. It is published only with successful deletion.
-    if 'maintenance_chunk_refs' in tables(db):
-        scratch.executemany('INSERT OR REPLACE INTO maintenance_chunk_refs VALUES(?,?,?,?)',db.execute('SELECT * FROM maintenance_chunk_refs'))
-    if 'maintenance_legacy_refs' in tables(db):
-        scratch.executemany('INSERT OR REPLACE INTO maintenance_legacy_refs VALUES(?,?,?)',db.execute('SELECT * FROM maintenance_legacy_refs'))
+    # Read existing receipts in place; stage only changed receipts. Every source
+    # block is still verified, and no source cache writes precede the write lock.
+    cache_source=db if 'maintenance_chunk_refs' in tables(db) else None
     scratch.execute('CREATE TABLE verified_chunks(hash TEXT PRIMARY KEY,refs TEXT NOT NULL)')
     if 'snapshot_chunks' in tables(db):
         total=db.execute('SELECT COUNT(*) FROM snapshot_chunks').fetchone()[0]
         for i,(h,size,data) in enumerate(db.execute('SELECT hash,size,data FROM snapshot_chunks'),1):
-            refs=storage.references_for(scratch,h,size,data,cancel)
+            refs=storage.references_for(scratch,h,size,data,cancel,cache_source=cache_source)
             scratch.execute('INSERT INTO verified_chunks VALUES(?,?)',(h,wr.dumps(refs)))
             if i%32==0 or i==total:progress(RowProgress('准备共享附件引用（首次需核对历史块）',i,total))
+    # The former compatibility pass also validated every current manifest,
+    # including orphan work and old revisions about to be removed. Retain that
+    # integrity boundary independently of retired-format support.
     for table in ('normal_revisions','normal_work_revisions','jobs'):
         for blob, in db.execute(f'SELECT payload FROM {table}'):
-            if not chunks.manifest(blob):storage.legacy_info(scratch,blob,cancel,progress)
+            checkpoint(cancel);chunks.require_manifest(blob)
     scratch.commit();return prepared
 
 
@@ -271,7 +274,7 @@ def apply_rewrites(db,scratch,prepared,days,progress,cancel):
         current.update({('jobs',day):hashlib.sha256(blob).digest() for blob, in db.execute('SELECT payload FROM jobs WHERE day=?',(day,))})
     if current!=expected:raise wr.Conflict('当天共享作业在准备后变化，请重新核对删除范围')
     # This exact set/content check already runs under BEGIN IMMEDIATE. There is
-    # no intervening source mutation: do not read every legacy BLOB a second time.
+    # no intervening source mutation: do not read every payload a second time.
     for h,size,raw in scratch.execute('SELECT hash,size,data FROM snapshot_chunks'):
         checkpoint(cancel);db.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',(h,size,raw))
     for table,key,old,pack,info in prepared:
@@ -280,7 +283,7 @@ def apply_rewrites(db,scratch,prepared,days,progress,cancel):
             if not info['stores']:db.execute('DELETE FROM jobs WHERE day=?',(key,))
             else:db.execute('UPDATE jobs SET revision=?,digest=?,saved=?,summary=?,payload=? WHERE day=?',(uuid.uuid4().hex,pack.digest,wr.now(),wr.dumps(info),chunks.put(db,pack,cancel=cancel),key))
         else:
-            # Preserve no-change legacy records byte-for-byte, as before.
+            # Preserve unchanged records byte-for-byte.
             if pack.digest!=info['original_digest']:db.execute('UPDATE normal_work_revisions SET payload=? WHERE revision=?',(chunks.put(db,pack,cancel=cancel),key))
     storage.publish_cache(db,scratch)
     progress('当天作业清理已写入事务，继续核对共享引用…')
@@ -327,6 +330,7 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
         if verified is not None and not scratch.in_transaction:scratch.execute('BEGIN')
         db.set_progress_handler(lambda:int(cancel is not None and cancel.is_set()),10000)
         try:
+            chunks.require_current(db,cancel)
             latest=snapshot(db,plan['oids'],cancel,progress)
             if latest!= {k:plan[k] for k in latest}:raise wr.Conflict('关联数据在预览后变化，请重新核对删除范围')
             available=tables(db);oids=set(plan['oids']);progress('正在删除关联单据，提交前仍可取消…')
@@ -396,6 +400,7 @@ def delete_job(path,day,revision,progress=lambda _:None,cancel=None):
     with closing(connect(path)) as db:
         lc.begin(db,cancel)
         try:
+            chunks.require_current(db,cancel)
             row=db.execute('SELECT revision FROM jobs WHERE day=?',(day,)).fetchone()
             if not row or row[0]!=revision:raise wr.Conflict('草稿已变化，请重新查看后删除')
             db.execute('DELETE FROM jobs WHERE day=?',(day,))

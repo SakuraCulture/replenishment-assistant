@@ -26,7 +26,7 @@ def rich_fixture(out):
         for r in old['result']['rows']:r.pop('AN',None)
         with closing(sqlite3.connect(f.path)) as db,db:
             db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(oldday,'T','normal_model','old-coverage','BH-OLD-COVERAGE',1))
-            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('old-coverage',1,no.fingerprint(old['result']),wr.now(),no.encode(old)))
+            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('old-coverage',1,no.fingerprint(old['result']),wr.now(),no.encode(old, db)))
         (out/'settings').mkdir()
         target=out/'settings/workbench.sqlite3'
         with closing(sqlite3.connect(f.path)) as db,closing(sqlite3.connect(target)) as dst:db.backup(dst)
@@ -90,9 +90,9 @@ def compare(a):
     sys.path.insert(0,str(ROOT/'src'));import normal_orders as no
     with closing(sqlite3.connect(large_db)) as conn,conn:
         for oid,rev,blob in conn.execute('SELECT oid,revision,payload FROM normal_revisions').fetchall():
-            payload=no.decode(blob)
+            payload=no.decode(blob,conn)
             for r in payload['result']['rows']:r.update(AN=2,AM=1,K=4,L=6,AG=7,AH=3,G='包')
-            conn.execute('UPDATE normal_revisions SET payload=?,digest=? WHERE oid=? AND revision=?',(no.encode(payload),no.fingerprint(payload['result']),oid,rev))
+            conn.execute('UPDATE normal_revisions SET payload=?,digest=? WHERE oid=? AND revision=?',(no.encode(payload, conn),no.fingerprint(payload['result']),oid,rev))
     save(large/'query.json',large_spec)
     frozen={str(p):sha(p) for p in (db,large_db)};save(out/'frozen.json',{'baseline':baseline,'archive_sha256':sha(archive),'databases':frozen,'protected':protected})
     results={};cells=0

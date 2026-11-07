@@ -1,0 +1,33 @@
+{
+  "baseline": "bc3aa46017accbee9b8442d93fdc4c213fe63b8e",
+  "core": {
+    "src/model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "src/engine.py": "a2c5005367550167019f4cd07bd0dcfe572346ebbef0b11a84166ea0905d2525",
+    "src/allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "src/one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "src/input_adapter.py": "5334b172715ca606ac61af027738cb99cb4fe73e50b6c66502afecde1d8f41f6",
+    "src/parameter_schema.py": "e56631c53580168b00901356aef15732b34d8856243cff4c4c5538af1c0282f4",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "src/result_semantics.py": "f1c565b25b8592cf0fe5cb243e11ecd725bc406888279da64368ceb82fe2baeb",
+    "src/new_products.py": "2264dc0c9362e4225f6ff179db2f5afdb97d1c63a92330cc25f37da6b2909947",
+    "src/preissue.py": "ded4da791b42070340c4cd2111213deef990dfa793f87962f28c2f8b3a201987",
+    "src/normal_exports.py": "7ff0599fa0311c07860fb4d438783e4919f3a68727dd5050c0e6be66305d96a4",
+    "src/work_repository.py": "2bb199b82e2e35c322d2d5fa9fb0400c07919840276e3cfaae044e4ba23dca16",
+    "src/data_maintenance.py": "46f28619a13e02f72d210c5dfcab08e37a748029f59e1662280b7b6999581ae7"
+  },
+  "protected": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.0_rc1\\补货助手_0.45.0_rc1_货盘结构分析.zip": "accfeb6984737b04291f6998a5e65caf9ddd8ff3aa48a9e2623ef324053c7d9c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.0_rc1\\补货助手\\补货助手.exe": "e925399420263e64bc5f0f67d967eb3ab8b836d32c15dbe2f35b3653fd2a545c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.0_rc1\\补货助手\\_internal\\base_library.zip": "db19221ee92825e2e245bf830916a66a49091b7d384dd599abc4adaaca12a69e",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.0_rc1\\补货助手\\AI接口\\_internal\\base_library.zip": "295d1d0213e562e62ee39dbb23bd8069566f02cedcda13594194356d33361a1b",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.1_rc1\\补货助手_0.45.1_rc1_删除负载优化.zip": "ea4047ae5a1a5fef80feb302d4fa65218dd769ba3c44ef6a3971c31fedd17020",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.1_rc1\\补货助手\\补货助手.exe": "13279f1e8e2872a0908968beb8fed2432ff23d86fdd8a1f7193c1df9e721959a",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.1_rc1\\补货助手\\_internal\\base_library.zip": "e45099ffb9672bc416603e5328ccffc439ce7b172d07f9ca4bc35ed04632d66d",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.45.1_rc1\\补货助手\\AI接口\\_internal\\base_library.zip": "1aed95d6593c78a558e5ac252405f5fa66a54b66e682dc022ef64ef0abf7362c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.4_rc1\\补货助手_0.46.4_rc1_作废采购核对与删除恢复.zip": "c5d1304f94f6bea8d2f4b283c976978e967f5d1bd73daab1720304b2b396e639",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.4_rc1\\补货助手\\补货助手.exe": "3caab55a695e9675a6585ba1e9ea0059a1b02da3ff8478bebf046a2e13571990",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.4_rc1\\补货助手\\_internal\\base_library.zip": "79be8b92c0b8392667cc38aca25237f7c59ecd29420daac5e801a49df86c9a3c",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.4_rc1\\补货助手\\AI接口\\_internal\\base_library.zip": "e4ade48c7c87e68894912698bd828078e7ce34158eeee960f07e58eba2bceb37"
+  }
+}

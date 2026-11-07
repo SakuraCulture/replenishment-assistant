@@ -19,10 +19,12 @@ def package_ref(p):
 
 
 class Runner:
-    def __init__(self, store, client, component_root, business_path, *, cancel, progress=lambda _: None, delay=.8):
+    def __init__(self, store, client, component_root, business_path, *, cancel, progress=lambda _: None, delay=.8,
+                 verification_wait=30, verification_interval=3):
         self.store, self.client = store, client
         self.component_root, self.business_path = Path(component_root), Path(business_path)
         self.cancel, self.progress, self.delay = cancel, progress, delay
+        self.verification_wait, self.verification_interval = verification_wait, verification_interval
 
     def wait_status(self, action, id_field, id, *, cancel_action, notify=lambda _: None):
         while True:
@@ -60,27 +62,45 @@ class Runner:
             # Save exact package identity before the separate component reservation.
             self.store.update(job['id'], position=item['position'], changes={'package': package_ref(p), 'summary': summary})
         checkpoint(self.cancel)
+        from aoxiang_order_guard import require_orders
+        require_orders(self.business_path,[item])
         accepted = self.client.request('purchase.reserve', package_file=p['package_file'], package_sha256=p['package_sha256'])
         if accepted['record']['uploadAttempted']:
             raise ValueError('此预览已进入上传；请核对原采购任务，不重复列为待上传')
         return 'PREPARED', {'purchase_id': p['id']}
 
-    def upload_item(self, item, configuration, suppliers):
+    def upload_item(self, item, configuration, suppliers, notify=lambda _: None):
         p = item['package']
         record = self.client.request('purchase.status', purchase_id=p['id'])
+        notify(record)
         if record['state'] == 'BOUND':
             return 'BOUND', {'binding': record['binding']}
-        if record['uploadAttempted'] and not record.get('receipt'):
-            raise ComponentError('SUBMISSION_UNKNOWN','原上传结果尚未核实，没有唯一受理任务号。请在原采购页核对关联；禁止重新上传。')
+        if record.get('additionalTaskIds'):
+            raise ComponentError('MULTIPLE_IMPORT_TASKS', '同一采购存在多个受理任务号，请在原采购记录核对')
+        if record['uploadAttempted'] and not record.get('taskId'):
+            raise ComponentError('SUBMISSION_UNKNOWN', '上传已发起，但尚未取得唯一受理回执；请核对已有平台采购单')
         if not record['uploadAttempted']:
+            from aoxiang_order_guard import require_orders
+            require_orders(self.business_path,[item])
             validate_for_upload(self.business_path, p, configuration, suppliers, cancel=self.cancel)
-        checkpoint(self.cancel)
-        self.client.request('purchase.start', purchase_id=p['id'])
-        record = self.wait_status('purchase.status', 'purchase_id', p['id'], cancel_action='purchase.pause')
-        if record['state'] != 'BOUND':
+        deadline = time.monotonic() + self.verification_wait
+        while True:
+            checkpoint(self.cancel)
+            self.client.request('purchase.start', purchase_id=p['id'])
+            record = self.wait_status('purchase.status', 'purchase_id', p['id'], cancel_action='purchase.pause', notify=notify)
+            if record['state'] == 'BOUND':
+                return 'BOUND', {'binding': record['binding']}
             error = record.get('error') or {}
-            raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'), error.get('message', '原采购任务尚未核实成功，不能重传'))
-        return 'BOUND', {'binding': record['binding']}
+            # Only poll a known accepted task. start() then takes the component's
+            # observe-only branch; the durable upload flag is never reset.
+            remaining = deadline - time.monotonic()
+            if (record.get('taskId') and record.get('uploadAttempted') and not record.get('additionalTaskIds')
+                    and error.get('code') == 'TASK_PENDING' and remaining > 0):
+                self.progress('翱象已受理，等待原采购任务完成；正在继续核对…')
+                if self.cancel.wait(min(self.verification_interval, remaining)):
+                    raise Cancelled('已停止等待；原受理任务保留，可继续核对采购结果')
+                continue
+            raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'), error.get('message', '原采购任务尚未核实成功，不能重传'), error.get('details'))
 
     def receipt_item(self, item, configuration, suppliers):
         id = item['purchase_id']
@@ -111,16 +131,22 @@ class Runner:
 
     def run(self, id):
         job = self.store.update(id, state='RUNNING', message='读取本地配置及原任务状态')
-        configuration = self.client.request('configuration')
-        suppliers = Directory(self.store.folder).suppliers()
-        if job['kind'] == 'prepare' and any(i['state'] not in DONE_ITEM and not i.get('package') for i in job['items']):
-            self.template(job)
         for position in range(len(job['items'])):
             item=self.store.get(id)['items'][position]
             if item['state'] in DONE_ITEM:
                 continue
+            scope=self.store.get(id).get('dispatch_keys')
+            if scope is not None and item['key'] not in scope:continue
             checkpoint(self.cancel)
             position = item['position']
+            from aoxiang_order_guard import deleted_orders
+            missing=deleted_orders(self.business_path,[item]) if job['kind']=='prepare' else {}
+            if missing:
+                from aoxiang_workflow_state import local_preparation
+                local=local_preparation(item,job['kind'])
+                self.store.update(id,position=position,changes={'state':'SKIPPED' if local else 'REVIEW','source_deleted':True,
+                    'ended_locally':local,'error':{'code':'SOURCE_ORDER_DELETED','message':missing[item['key']]+'；已停止本地后续动作，未向平台提交'}})
+                continue
             if job.get('automatic'):
                 schedule = self.store.schedule(item['purchase_id'])
                 if not schedule or schedule.get('automation_paused'):
@@ -137,7 +163,9 @@ class Runner:
                 if job['kind'] == 'prepare':
                     state, result = self.prepare_item(job, item, configuration, suppliers)
                 elif job['kind'] == 'upload':
-                    state, result = self.upload_item(item, configuration, suppliers)
+                    from aoxiang_purchase_messages import observation
+                    state, result = self.upload_item(item, configuration, suppliers,
+                        notify=lambda r: self.store.update(id, position=position, changes={'purchase_observation': observation(r)}))
                 else:
                     state, result = self.receipt_item(item, configuration, suppliers)
                 self.store.update(id, position=position, changes={'state': state, 'result': result, 'error': None})
@@ -147,6 +175,7 @@ class Runner:
             except Exception as exc:
                 code = getattr(exc, 'code', 'BUSINESS_REVIEW')
                 error = {'code': code, 'message': str(exc)}
+                if getattr(exc, 'details', None):error['details'] = exc.details
                 if job['kind'] == 'receipt':
                     self.store.observe_schedule(item['purchase_id'], None, error=error, review=code not in RETRYABLE)
                 if code in SESSION_ERRORS:
@@ -155,6 +184,11 @@ class Runner:
                 self.store.update(id, position=position, changes={'state': 'FAILED' if code in RETRYABLE else 'REVIEW', 'error': error})
         current = self.store.get(id)
         if any(i['state']=='PENDING' for i in current['items']):
-            return self.store.update(id,state='QUEUED',message='继续处理本批中新排入的失败重跑项')
+            scope=current.get('dispatch_keys')
+            if scope is not None and not any(i['state']=='PENDING' and i['key'] in scope for i in current['items']):
+                return self.store.update(id,state='PAUSED',message='勾选范围已处理；未勾选项保留，等待另行选择，不自动执行')
+            return self.store.update(id,state='QUEUED',message='继续处理本批执行范围中新排入的失败重跑项')
         bad = sum(i['state'] in ('FAILED', 'REVIEW') for i in current['items'])
-        return self.store.update(id, state='COMPLETED_WITH_ERRORS' if bad else 'READY' if job['kind'] == 'prepare' else 'COMPLETED', message=f'已处理 {len(job["items"])} 单；待核/失败 {bad} 单')
+        from aoxiang_workflow_state import summary
+        final = {**current, 'state': 'COMPLETED_WITH_ERRORS' if bad else 'READY' if job['kind'] == 'prepare' else 'COMPLETED'}
+        return self.store.update(id, state=final['state'], message=summary(final))

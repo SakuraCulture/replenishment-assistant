@@ -29,8 +29,7 @@ NAMES = dict(model='模型建议', signed='签发', **{'return':'门店确认'},
 GROUPS = ('必采', '非必采', '属性待核')
 PAIRS = tuple(zip(STAGES, STAGES[1:]))
 # Exact tokens observed in the two original warehouse exports, not fuzzy substrings.
-RETIRED = frozenset(['标杆淘汰'] + ['标杆淘汰（'+x+'）' for x in (
-    '箱规废弃','厂家停产','夏季','冬季','拉回下单','样品/赠品','质量问题','节庆商品','召回退供','河北仓专属')])
+from virtual_categories import RETIRED
 num = comparison.num
 amount = comparison.amount
 
@@ -274,10 +273,6 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
             if spec['stores'] and store not in spec['stores']:continue
             progress(RowProgress('读取签发与履约快照',i+1,len(records)))
             payload=chunks.load(blob,db,binding=sha)
-            if chunks.manifest(blob) is None:
-                from normal_orders import fingerprint_owned
-                if fingerprint_owned(payload['result'],payload.get('new_focus'))!=sha:
-                    raise ValueError('归档快照校验失败')
             order={'day':day,'store':store,'oid':oid,'number':number,'revision':revision,'current_revision':revision,'digest':sha,'saved':saved,'payload':payload}
             result=payload['result']
             for wh in dict.fromkeys(ao.warehouse(r) for r in result['rows']):

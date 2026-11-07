@@ -53,6 +53,46 @@ def compute(p,progress,cancel):
     return {'results':{s:results[s] for s in p['codes']},'states':{s:states[s] for s in p['codes']},'codes':list(p['codes']),'prepared':p}
 
 
+def baseline_difference(code, old, rebuilt, field):
+    """Explain the first mismatch without weakening the original full comparison."""
+    def first(a,b,path):
+        if isinstance(a,dict) and isinstance(b,dict):
+            for key in dict.fromkeys([*a,*b]):
+                if key not in a or key not in b:return path+[key],a.get(key,'缺少此项'),b.get(key,'缺少此项')
+                if a[key]!=b[key]:return first(a[key],b[key],path+[key])
+        elif isinstance(a,list) and isinstance(b,list):
+            if len(a)!=len(b):return path+['length'],len(a),len(b)
+            for n,(left,right) in enumerate(zip(a,b)):
+                if left!=right:return first(left,right,path+[n])
+        return path,a,b
+    path,before,after=first(old.get(field),rebuilt.get(field),[field])
+    titles={'rows':'当前商品明细','baseline':'原始计算明细','summary':'金额汇总','budget':'门店预算','config':'计算参数',
+            'warehouses':'仓范围','enabled':'仓启用状态','must_list':'必采清单','must_list_audit':'必采核验依据',
+            'sources':'输入来源','checks':'输入核验','effective_settings':'实际计算依据','import_audit':'导入核验依据',
+            'catalogs':'仓商品资料','supply_route':'主从仓配置'}
+    leaf={'AS':'模型补货量','BV':'执行金额','_candidate_qty':'候选数量','_allocated_qty':'分配数量',
+          '_execution_qty':'执行数量','V':'计价单价','K':'可用库存','L':'在途库存','E':'商品编码',
+          'checked_day':'准入核验日期','length':'明细条数'}
+    scope=titles[field]
+    if len(path)>1 and isinstance(path[1],int):
+        row=old[field][path[1]]
+        if isinstance(row,dict):scope='商品 '+str(row.get('E',''))+' '+str(row.get('D',''))
+    date_changed=path[-1]=='checked_day' or path==['effective_settings','admission','day']
+    label='准入核验日期' if date_changed else leaf.get(path[-1],titles[field])
+    def display(value):
+        if value is None:return '空值'
+        if isinstance(value,(dict,list)):return '内容或类型发生变化'
+        return str(value)[:100]
+    name=old.get('store_name') or rebuilt.get('store_name') or code
+    reason=(f'核验日期由 {display(before)} 变为 {display(after)}；日期变化也会影响商品准入。'
+            if date_changed else '当前结果和重算所用依据不一致，需要先核对并重新计算。')
+    step=('请回到补货出单，核对日期和输入时效，重新计算后再试算。若仍是旧日期作业，先从“草稿记录”用原配置新建今日草稿。'
+          if date_changed else '请回到补货出单，核对本店输入、参数及准入资料，重新计算后再试算。')
+    return (f'{name}（{code}）基线重算未通过一致性核对。\n'
+            f'首处差异：{scope} · {label}；当前结果 {display(before)}，重算结果 {display(after)}。\n'
+            +reason+'\n'+step+'当前清单未被本次试算修改。')
+
+
 def strict_baseline(current,baseline):
     """Only explicitly dynamic/non-computational top-level fields are projected."""
     fields=('rows','baseline','summary','budget','config','warehouses','enabled','must_list','must_list_audit','sources',
@@ -63,7 +103,7 @@ def strict_baseline(current,baseline):
         for field in fields:
             if field in old or field in r:
                 if type(old.get(field)) is not type(r.get(field)) or old.get(field)!=r.get(field):
-                    raise ValueError(code+'基线重算与当前结果不一致：'+field+'；先核对当前输入与参数，不继续调参')
+                    raise ValueError(baseline_difference(code,old,r,field))
 
 
 def metrics(before,after):
@@ -125,6 +165,10 @@ def metrics(before,after):
 
 def run(snapshot,arguments,current,progress=lambda _:None,cancel=None):
     checkpoint(cancel)
+    import work_repository as wr
+    if snapshot.get('day') and snapshot['day']!=wr.today():
+        from job_date_messages import continue_today
+        raise ValueError('作业已跨天，需要按今日依据重新核验后试算。\n'+continue_today(snapshot['day'],wr.today()))
     if not arguments.get('stores'):raise ValueError('请明确选择试算门店，不自动扩大到全部门店')
     p=automation_jobs.prepare(snapshot,{'mode':'trial','stores':arguments['stores']},progress,cancel)
     if not p['report']['ready']:raise ValueError('当前资料或参数尚未就绪：'+str(p['report']['issues']))

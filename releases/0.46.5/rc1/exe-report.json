@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "error": null,
+  "version": "0.46.5",
+  "source_commit": "0a4ac27fd6fe025edb239459a8b0f75d63405186",
+  "checks": [
+    "separate import workers, explicit warehouse labels, missing/identical primary-secondary blocked",
+    "packaged process computation uses per-store priority, zero-stock secondary demand survives; disabled excluded",
+    "Hebei-only: Shandong-only SKU is local, absent from review and central-warehouse orders; zero-stock Hebei SKU stays Hebei",
+    "Shandong-only: Hebei-only SKU is local; selected store recomputed without changing the other store",
+    "single-store supply change invalidates/recomputes only that store; exported results and persisted catalogs/routes verified",
+    "failed catalog import preserves previous snapshot/results; successful update invalidates input/results and blocks stale export"
+  ],
+  "exe_sha256": "bde3ce451421e16b4bbde899ff7cd515dc5c857ef993998103076a302646aae5",
+  "process_exit": 0,
+  "frozen_exe": true
+}

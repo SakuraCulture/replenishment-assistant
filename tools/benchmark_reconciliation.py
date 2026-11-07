@@ -36,7 +36,7 @@ def main():
     work,repo,p=seed(fixture);template=p['result']['rows'][0];p['result']['rows']=[]
     for i in range(a.rows):
         r=copy.deepcopy(template);r['E']=f'{i:06d}';r['D']='合成商品'+str(i);r['_execution_qty']=12;r['_execution_amount']=12*r['V'];p['result']['rows'].append(r)
-    with sqlite3.connect(work.path) as db:db.execute('UPDATE normal_revisions SET digest=?,payload=?',(no.fingerprint(p['result']),no.encode(p)))
+    with sqlite3.connect(work.path) as db:db.execute('UPDATE normal_revisions SET digest=?,payload=?',(no.fingerprint(p['result']),no.encode(p, db)))
     for stage,qty in [('return',6),('payment',4),('receipt',3)]:
         b=openpyxl.Workbook(write_only=True);s=b.create_sheet('明细');headers=list(io.fields(stage))
         if stage=='payment':headers.insert(headers.index('付款单号')+1,'付款日期')

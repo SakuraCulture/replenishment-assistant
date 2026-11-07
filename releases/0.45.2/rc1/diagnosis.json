@@ -1,0 +1,14 @@
+{
+  "baseline": "1c020e1",
+  "profile": "qa/deletion_0452/profile-warm.pstats",
+  "profile_is_not_benchmark": true,
+  "selected_latest_day": {
+    "signed_work_revisions": 1,
+    "drafts": 1,
+    "distinct_payload_sha256": 1,
+    "each_logical_payload_mib": 1351,
+    "format": "YTCHUNK2"
+  },
+  "cause": "Identical signed work and current draft repeat full source checksum, per-row filtering and output checksum; whole-history reference validation remains necessary for current reclamation semantics.",
+  "scope": "39 parents across 4 dates; 16218 content chunks; selected latest-day work is chunked, while other legacy snapshots remain present."
+}

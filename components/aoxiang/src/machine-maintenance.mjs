@@ -1,6 +1,7 @@
 // Local collection maintenance only. No browser, filesystem deletion or business tables.
 import {canonical,sha256,now,fail,sameIdentity} from './common.mjs';
 import {publicRecord} from './machine-protocol.mjs';
+import {resumableTask} from './collection-recovery.mjs';
 
 const ACTIVE=new Set(['QUEUED','RUNNING','PAUSE_REQUESTED']);
 const DONE=new Set(['SUCCEEDED','REUSED','FAILED_CONFIRMED','CANCELLED_BEFORE_SUBMIT','ABANDONED']);
@@ -24,9 +25,10 @@ export class CollectionMaintenance{
     }
     const command=this.commands.get(id);
     if(!command)fail('COMMAND_NOT_FOUND','未找到原采集任务，请刷新记录');
+    if(action==='end'&&command.state==='ENDED')fail('COLLECTION_ALREADY_ENDED','本次本地采集已结束，请操作当前采集记录');
     if(action==='delete'&&!CLOSED.has(command.state))fail('COLLECTION_NOT_ENDED','请先结束本次采集，再删除记录');
     const runs=new Set(command.items.map(i=>i.run_id)),identity=command.config_snapshot.tenantBinding;
-    const blocked=[];
+    const blocked=[],retained=[];
     // A blocked new command may point at earlier failed attempts for these stores.
     if(action==='end')for(const code of command.request.scope.warehouse_codes){
       for(const a of this.state.pending(identity,code)){
@@ -37,6 +39,13 @@ export class CollectionMaintenance{
     const attempts=this.state.rows('attempts').filter(a=>runs.has(a.runId));
     const publications=this.state.rows('publishes').filter(p=>attempts.some(a=>a.id===p.attemptId));
     for(const a of attempts){
+      if(action==='end'&&resumableTask(a)){
+        const items=this.state.getItems(a.runId);
+        if(items.length!==1||items[0].attemptId!==a.id||this.state.pending(identity,a.buyerWarehouseCode).length!==1)
+          blocked.push({store:a.buyerWarehouseCode,task_id:a.taskId,reason:'存在多个或范围不明的原任务，请先核对原采集记录'});
+        retained.push({store:a.buyerWarehouseCode,task_id:a.taskId,run_id:a.runId});
+        continue;
+      }
       const summary=a.taskSummary;
       const finished=['FINISHED','DOWNLOADED','VALIDATED'].includes(a.stage)&&a.taskId&&summary?.taskId===a.taskId&&
         Number.isSafeInteger(summary.successCount)&&summary.successCount>=0&&Number.isSafeInteger(summary.failCount)&&summary.failCount>=0;
@@ -51,7 +60,7 @@ export class CollectionMaintenance{
     return {id,action,token:sha256(canonical(basis)),fingerprint:command.fingerprint,
       stores:command.items.map(i=>({code:i.warehouse_code,name:command.config_snapshot.targets.find(t=>t.buyerWarehouseCode===i.warehouse_code)?.displayName||i.warehouse_code})),
       related:related.filter(c=>c.id!==id).map(c=>({id:c.id,stores:c.items.filter(i=>runs.has(i.run_id)).map(i=>i.warehouse_code)})),
-      blocked,run_ids:[...runs],command_ids:related.map(c=>c.id)};
+      blocked,retained,run_ids:[...runs],command_ids:related.map(c=>c.id)};
   }
   apply(id,action,token){
     this.idle();
@@ -79,20 +88,23 @@ export class CollectionMaintenance{
         return {deleted:id,fingerprint:plan.fingerprint};
       }
       for(const a of this.state.rows('attempts').filter(a=>runs.has(a.runId)&&!DONE.has(a.stage))){
+        if(resumableTask(a))continue;
         const ended={...a,stage:'ABANDONED',previousStage:a.stage,endedAt:at,endedByCommand:id};
         this.db.prepare('UPDATE attempts SET stage=?,payload=? WHERE id=?').run('ABANDONED',JSON.stringify(ended),a.id);
       }
       for(const runId of runs){
         const run=this.state.getRun(runId);if(!run)continue;
+        const retain=plan.retained.some(a=>a.run_id===runId);
         for(const item of this.state.getItems(runId))if(!['SUCCEEDED','REUSED','ENDED'].includes(item.stage)){
+          if(retain&&resumableTask(this.state.getAttempt(item.attemptId)))continue;
           this.db.prepare('UPDATE items SET payload=? WHERE id=?').run(JSON.stringify({...item,stage:'ENDED',previousStage:item.stage,endedAt:at}),item.id);
         }
-        if(run.status!=='SUCCEEDED')this.db.prepare('UPDATE runs SET payload=? WHERE id=?').run(JSON.stringify({...run,status:'ENDED',endedAt:at}),runId);
+        if(run.status!=='SUCCEEDED')this.db.prepare('UPDATE runs SET payload=? WHERE id=?').run(JSON.stringify({...run,status:'ENDED',endedAt:at,resumePending:retain}),runId);
       }
       const records=[];
       for(const commandId of plan.command_ids){
         const old=this.commands.get(commandId);
-        const items=old.items.map(i=>runs.has(i.run_id)&&!['SUCCEEDED','ENDED'].includes(i.state)?{...i,state:'ENDED',previous_state:i.state,ended_at:at}:i);
+        const items=old.items.map(i=>runs.has(i.run_id)&&!['SUCCEEDED','ENDED'].includes(i.state)?{...i,state:'ENDED',previous_state:i.state,ended_at:at,retained_platform_task:plan.retained.some(a=>a.run_id===i.run_id)}:i);
         const all=items.every(i=>['SUCCEEDED','ENDED'].includes(i.state));
         const next=all?'ENDED':old.state==='NEEDS_REVIEW'&&!items.some(i=>i.state==='NEEDS_REVIEW')?'PAUSED':old.state;
         const record={...old,items,state:next,sequence:old.sequence+1,updated_at:at};

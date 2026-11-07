@@ -11,7 +11,7 @@ def fixture(out):
     for sku in ('0003','0004'):
         d=copy.deepcopy(p['result']['rows'][0]);d['E']=sku;d['D']='合成商品'+sku;p['result']['rows'].append(d)
     digest=no.fingerprint(p['result'])
-    with sqlite3.connect(work.path) as db:db.execute('UPDATE normal_revisions SET digest=?,payload=?',(digest,no.encode(p)))
+    with sqlite3.connect(work.path) as db:db.execute('UPDATE normal_revisions SET digest=?,payload=?',(digest,no.encode(p, db)))
     order=repo.get(wr.today(),'T')
     for wh,tag in [('河北仓','hb'),('山东仓','sd')]:
         original=out/('signed-'+tag+'.xlsx');ne.export(order,original,warehouse=wh)

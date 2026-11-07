@@ -58,8 +58,8 @@ class BudgetTests(unittest.TestCase):
             with self.assertRaises(ValueError):allocation.apply([dict(d,_candidate_qty=q)],10)
 
 class IntegrityTests(unittest.TestCase):
-    def test_legacy_checksum_runtime_not_assert(self):
+    def test_retired_format_is_rejected_before_decoding(self):
         blob=zlib.compress(wr.dumps({'hello':1}).encode())
-        with self.assertRaisesRegex(ValueError,'校验'):storage_chunks.load(blob,expected='0'*64)
+        with self.assertRaisesRegex(ValueError,'已停用'):storage_chunks.load(blob,expected='0'*64)
 
 if __name__=='__main__':unittest.main(verbosity=2)

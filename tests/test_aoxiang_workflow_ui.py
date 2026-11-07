@@ -53,6 +53,11 @@ class WorkflowUiTests(unittest.TestCase):
         self.selections = []
         self.host = QWidget();self.host.repository = SimpleNamespace(folder=self.root)
         self.host.work_repository = SimpleNamespace(path=self.root / 'not-used.db');self.host.closing = False
+        import sqlite3
+        with sqlite3.connect(self.host.work_repository.path) as db:
+            db.execute('CREATE TABLE normal_orders(oid TEXT PRIMARY KEY,day TEXT,store TEXT)')
+            db.executemany('INSERT INTO normal_orders VALUES(?,?,?)',[(str(n),head(n)['day'],str(n)) for n in range(1,101)])
+        db.close()
         self.m = Manager(self.host, client_factory=Client);self.m.timer.stop();self.host.aoxiang_workflows = self.m
         self.warnings = []
         self.warning = patch('aoxiang_workflow_ui.QMessageBox.warning', side_effect=lambda *a:self.warnings.append(a[-1]));self.warning.start()
@@ -195,6 +200,20 @@ class WorkflowUiTests(unittest.TestCase):
         self.assertEqual(d.table.item(0,0).checkState(),Qt.CheckState.Checked)
         self.assertEqual(d.table.item(1,0).checkState(),Qt.CheckState.Unchecked)
         d.accept();d.deleteLater()
+
+    def test_selected_button_and_local_delete_apply_exact_checkbox_scope(self):
+        j=self.m.store.prepare([head(1),head(2)]);j=self.m.store.update(j['id'],state='PAUSED')
+        d=QueueDialog(self.host,self.m,j['id']);d.timer.stop()
+        d.table.item(1,0).setCheckState(Qt.CheckState.Checked)
+        with patch.object(self.m,'tick'),patch('aoxiang_workflow_ui.QMessageBox.question',return_value=QMessageBox.StandardButton.Yes):
+            d.selected_btn.click()
+        out=self.m.store.get(j['id']);self.assertEqual(out['dispatch_keys'],['BH-2'])
+        self.assertEqual([i['state'] for i in out['items']],['PENDING','PENDING'])
+        with patch('aoxiang_workflow_ui.QMessageBox.question',return_value=QMessageBox.StandardButton.No):d.delete_local_btn.click()
+        self.assertEqual(len(self.m.store.get(j['id'])['items']),2)
+        with patch('aoxiang_workflow_ui.QMessageBox.question',return_value=QMessageBox.StandardButton.Yes):d.delete_local_btn.click()
+        self.assertEqual([i['key'] for i in self.m.store.get(j['id'])['items']],['BH-1'])
+        self.assertEqual(Client.instances,[]);d.accept();d.deleteLater()
 
     def test_idle_queue_message_finishes_and_delete_navigation_releases_maintenance(self):
         self.m.message='正在重新检查后台及原任务状态…';self.m.tick()

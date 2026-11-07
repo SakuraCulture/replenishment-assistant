@@ -1,0 +1,109 @@
+{
+  "passed": false,
+  "checks": [
+    "Unentered page has no page, worker or schedule timer",
+    "No analysis directory or database on ordinary startup",
+    "No heavy analysis imports before entry",
+    "First entry lazily creates independent database",
+    "Analysis adopts supply routes from the saved parameter-page database",
+    "Same worker projection publishes complete synthetic daily snapshot",
+    "Actual acquisition worker publishes all selected stores",
+    "All selected stores use one native batch command in their selected order",
+    "Analysis persists the shared command association for every store"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\stockout_smoke.py\", line 105, in execute\n    require('缺货 6 / 有销 9' in page.total.text(),'Actual page shows weighted numerator and denominator')\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\stockout_smoke.py\", line 18, in require\n    if not value:raise AssertionError(name)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Actual page shows weighted numerator and denominator\n",
+  "frozen_exe": false,
+  "process_exit": 1,
+  "seconds": 7.593000000000075,
+  "tree_peak_rss": 359788544,
+  "children_peak_rss": 355323904,
+  "temporary_peak_bytes": 0,
+  "processes": {
+    "3796": {
+      "peak_rss": 4464640,
+      "read_bytes": 448,
+      "write_bytes": 0,
+      "cpu_seconds": 0.015625
+    },
+    "10120": {
+      "peak_rss": 7503872,
+      "read_bytes": 0,
+      "write_bytes": 0,
+      "cpu_seconds": 0.015625
+    },
+    "9472": {
+      "peak_rss": 209510400,
+      "read_bytes": 17905108,
+      "write_bytes": 376900,
+      "cpu_seconds": 2.421875
+    },
+    "39064": {
+      "peak_rss": 45260800,
+      "read_bytes": 6606701,
+      "write_bytes": 61,
+      "cpu_seconds": 0.703125
+    },
+    "27768": {
+      "peak_rss": 47153152,
+      "read_bytes": 6942298,
+      "write_bytes": 12927,
+      "cpu_seconds": 0.53125
+    },
+    "43088": {
+      "peak_rss": 23044096,
+      "read_bytes": 1938786,
+      "write_bytes": 263013,
+      "cpu_seconds": 0.171875
+    },
+    "43212": {
+      "peak_rss": 45780992,
+      "read_bytes": 6441689,
+      "write_bytes": 0,
+      "cpu_seconds": 0.5
+    },
+    "43540": {
+      "peak_rss": 46419968,
+      "read_bytes": 7113745,
+      "write_bytes": 367521,
+      "cpu_seconds": 0.59375
+    },
+    "43772": {
+      "peak_rss": 46342144,
+      "read_bytes": 6994911,
+      "write_bytes": 122787,
+      "cpu_seconds": 0.484375
+    },
+    "44000": {
+      "peak_rss": 21393408,
+      "read_bytes": 1938533,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "34948": {
+      "peak_rss": 21311488,
+      "read_bytes": 1904214,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "42800": {
+      "peak_rss": 19324928,
+      "read_bytes": 2075752,
+      "write_bytes": 1571,
+      "cpu_seconds": 0.15625
+    },
+    "43152": {
+      "peak_rss": 20381696,
+      "read_bytes": 2227657,
+      "write_bytes": 5345,
+      "cpu_seconds": 0.125
+    },
+    "43344": {
+      "peak_rss": 22966272,
+      "read_bytes": 1996218,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    }
+  },
+  "application_peak_rss": null,
+  "analysis_worker_peak_rss": 0
+}

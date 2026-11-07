@@ -1,0 +1,7 @@
+{
+  "passed": false,
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\warehouse_smoke.py\", line 32, in tick\n    assert '河北仓' in win.catalogs;win.import_catalog_path(fixture/'山东仓.xlsx','山东仓');state['step']=2\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n",
+  "version": "0.46.5",
+  "source_commit": "源码运行",
+  "checks": []
+}

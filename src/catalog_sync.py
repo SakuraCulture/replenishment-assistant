@@ -59,6 +59,8 @@ class Adoptions:
         return results
     def apply(self,batch,item,progress=lambda _:None,cancel=None):
         checkpoint(cancel)
+        if batch.get('purpose')=='stockout_analysis':
+            raise ValueError('分析资料只能在门店缺货率分析中留存，不能发布到补货默认资料')
         receipt=item.get('receipt');account=item['account'];warehouse=account['warehouse'];native=item.get('native') or {}
         if not receipt or receipt['warehouse']!=warehouse or native.get('sha256')!=receipt['source_sha256']:
             raise ValueError('下载、校验与仓绑定不一致')

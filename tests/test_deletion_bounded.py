@@ -28,23 +28,16 @@ class BlockEdits(unittest.TestCase):
                                 'selected':[{'values':{field:'T'}},{'values':{field:'U'}}]}},
             'export_log':[{'items':[{'store':'T'}]},{'items':[{'store':'U'}]}],
             'pending_copy':{'x':1},'date':datetime.date(2026,11,3),**{k:{'T':0,'U':None} for k in ms.STORE_MAPS if k not in ('states','results')}}
-    def compare(self,p,legacy=False):
+    def compare(self,p):
         expected=m.strip_work(p,{'T'})
-        blob=__import__('normal_orders').encode(p) if legacy else c.put(self.db,c.prepare(p))
-        editor=ms.Editor(self.db,self.scratch);out=editor.rewrite(blob,{'T'},m.strip_work)
+        blob=c.put(self.db,c.prepare(p))
+        editor=ms.Editor(self.db,self.scratch);out=editor.rewrite(blob,{'T'})
         c.schema(self.db)
         self.db.executemany('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',self.scratch.execute('SELECT hash,size,data FROM snapshot_chunks'))
         result=c.load(c.put(self.db,out),self.db,expected=out.digest)
         self.assertEqual(wr.dumps(result),wr.dumps(expected));self.assertEqual(out.digest,hashlib.sha256(wr.dumps(expected).encode()).hexdigest())
         return editor,out
     def test_chunked_types_order_dates_and_shared_fields(self):self.compare(self.payload())
-    def test_legacy_equivalent(self):self.compare(self.payload(),True)
-    def test_legacy_progress_is_bounded_per_block_not_per_row(self):
-        import zlib
-        messages=[];editor=ms.Editor(self.db,self.scratch,messages.append)
-        tree=editor.legacy_tree(zlib.compress(wr.dumps(list(range(9000))).encode()))
-        self.assertEqual(len(messages),1)
-        self.assertEqual(editor.value(tree),list(range(9000)))
     def test_empty_and_missing_optional_fields(self):
         for p in ({'catalogs':{}},{'loaded':None},{'loaded':{'stores':{'T':'T'}}},{'loaded':{'intake':{'frozen':True}}}):
             with self.subTest(p=p):self.compare(p)
@@ -55,45 +48,21 @@ class BlockEdits(unittest.TestCase):
         def bounded(node):
             if node[0]=='dict':self.assertFalse({'normalized','stores','warehouse_rows'}.issubset({k for k,_ in node[1]}))
             return original(node)
-        with patch.object(editor,'value',side_effect=bounded):editor.rewrite(blob,{'T'},m.strip_work)
+        with patch.object(editor,'value',side_effect=bounded):editor.rewrite(blob,{'T'})
     def test_cancellation_during_streamed_read(self):
         blob=c.put(self.db,c.prepare(self.payload()));event=threading.Event()
         editor=ms.Editor(self.db,self.scratch,lambda _:event.set(),event)
-        with self.assertRaises(Cancelled):editor.rewrite(blob,{'T'},m.strip_work)
+        with self.assertRaises(Cancelled):editor.rewrite(blob,{'T'})
     def test_original_manifest_and_block_corruption_rejected(self):
         blob=c.put(self.db,c.prepare(self.payload()));editor=ms.Editor(self.db,self.scratch)
         self.db.execute('UPDATE snapshot_chunks SET size=size+1')
-        with self.assertRaisesRegex(ValueError,'校验'):editor.rewrite(blob,{'T'},m.strip_work)
+        with self.assertRaisesRegex(ValueError,'校验'):editor.rewrite(blob,{'T'})
     def test_owned_filter_does_not_mutate_other_inputs(self):
         p=self.payload();before=wr.dumps(p);out=m.strip_work(p,{'T'},owned=True)
         self.assertEqual(wr.dumps(p),before);self.assertEqual(wr.dumps(out),wr.dumps(m.strip_work(p,{'T'})))
 
 class ReferenceScan(unittest.TestCase):
-    def test_legacy_stream_refs_and_last_duplicate_key(self):
-        import zlib
-        texts=[wr.dumps({'x':['a'*64,datetime.date(2026,11,3)],'work_revision':'rev'}),
-               '{"x":"'+('b'*64)+'","x":"'+('c'*64)+'","work_revision":null}',
-               '{"x":"\\u0061'+('a'*63)+'","number":1e100,"s":"中文"}']
-        with closing(sqlite3.connect(':memory:')) as db:
-            ms.cache_schema(db)
-            for text in texts:
-                blob=zlib.compress(text.encode());expected=ms.hashes(wr.dumps(wr.loads(text)))
-                self.assertEqual(ms.legacy_info(db,blob)['refs'],expected)
-                with patch.object(ms.streaming_json,'parse',side_effect=AssertionError('cache not reused')):
-                    self.assertEqual(ms.legacy_info(db,blob)['refs'],expected)
-            with self.assertRaises(Exception):ms.legacy_info(db,zlib.compress(b'{broken'))
-    def test_legacy_tree_never_calls_full_load(self):
-        import zlib
-        with closing(sqlite3.connect(':memory:')) as db,closing(sqlite3.connect(':memory:')) as scratch:
-            editor=ms.Editor(db,scratch);data={'states':{'T':1,'U':2},'rows':[{'n':i,'d':datetime.date(2026,11,3)} for i in range(800)]}
-            raw=wr.dumps(data).encode();blob=zlib.compress(raw)
-            with patch.object(c,'load',side_effect=AssertionError('full decode')):
-                result=editor.rewrite(blob,{'T'},m.strip_work,hashlib.sha256(raw).hexdigest())
-            self.assertEqual(wr.dumps(editor.value(result.tree)),wr.dumps(m.strip_work(data,{'T'})))
-            with self.assertRaisesRegex(ValueError,'校验'):editor.legacy_tree(blob,'wrong')
-            event=threading.Event();event.set()
-            with self.assertRaises(Cancelled):ms.Editor(db,scratch,cancel=event).legacy_tree(blob)
-    def test_exact_legacy_regex_including_utf8_and_window_edges(self):
+    def test_exact_reference_regex_including_utf8_and_window_edges(self):
         rng=random.Random(4);texts=['', 'A'+'f'*64+'Z', '1'*65, '中文'+('a'*64)+'®', 'x'*262140+'b'*64+'!', 'c'*600000,
             ''.join(rng.choice('ab0129gX中文\n') for _ in range(600000))]
         for text in texts:
@@ -153,7 +122,7 @@ class DeletionRaces(unittest.TestCase):
         plan=m.prepare(self.path,self.heads);original=m.prepare_rewrites
         def add(db,plan,scratch,progress,cancel):
             result=original(db,plan,scratch,progress,cancel)
-            with closing(sqlite3.connect(self.path)) as other,other:other.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('other',wr.today(),__import__('normal_orders').encode({})))
+            with closing(sqlite3.connect(self.path)) as other,other:other.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('other',wr.today(),__import__('normal_orders').encode({}, other)))
             return result
         with patch.object(m,'prepare_rewrites',side_effect=add),self.assertRaises(wr.Conflict):m.execute(self.path,plan)
         self.assertEqual(len(self.r.headers()),1)

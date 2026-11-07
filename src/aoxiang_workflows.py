@@ -15,10 +15,11 @@ DONE_ITEM = ('PREPARED', 'BOUND', 'OBSERVED', 'SYNCED', 'REVIEW', 'FAILED', 'SKI
 
 
 class Workflows:
-    def __init__(self, folder, *, clock=time.time):
+    def __init__(self, folder, *, clock=time.time, business_path=None):
         self.folder = Path(folder)
         self.path = self.folder / 'workflows.sqlite3'
         self.clock = clock
+        self.business_path=business_path
 
     @contextmanager
     def db(self, write=False, *, timeout=10):
@@ -104,12 +105,17 @@ class Workflows:
                 raise ValueError('只能准备有效且明确供货仓的订单')
             items.append({'key': h['number'], 'head': head})
         with self.db(True) as db:
+            if self.business_path:
+                from aoxiang_order_guard import require_orders
+                require_orders(self.business_path,items)
             return self._new(db, 'prepare', items)
 
     def upload(self, prepared_id, positions, expected_sequence):
         with self.db(True) as db:
             original = self._get(db, prepared_id)
-            if original['kind'] != 'prepare' or original['sequence'] != expected_sequence or original['state'] in ACTIVE:
+            scoped_pause=(original['state']=='PAUSED' and 'dispatch_keys' in original and not any(
+                i['key'] in original['dispatch_keys'] and i['state'] not in DONE_ITEM for i in original['items']))
+            if original['kind'] != 'prepare' or original['sequence'] != expected_sequence or (original['state'] in ACTIVE and not scoped_pause):
                 raise ValueError('采购预览已变化或尚未停止，请重新核对')
             if not positions or positions != sorted(set(positions)) or any(n < 0 or n >= len(original['items']) for n in positions):
                 raise ValueError('待上传范围或顺序无效')
@@ -149,8 +155,82 @@ class Workflows:
             job = self._get(db, id)
             if job['state'] not in ('PAUSED', 'YIELDED', 'FAILED'):
                 raise ValueError('此批次不需要继续')
+            scope=job.get('dispatch_keys')
+            if scope is not None and not any(i['key'] in scope and i['state'] not in DONE_ITEM for i in job['items']):
+                raise ValueError('上次勾选范围已经完成；请勾选其他未处理订单，再点“仅执行勾选项”')
             job['state'] = 'QUEUED'
             return self._save(db, job, 'RESUMED_ORIGINAL')
+
+    def execute_selected(self,id,keys,expected_sequence):
+        with self.db(True) as db:
+            job=self._get(db,id)
+            if job['sequence']!=expected_sequence:raise ValueError('批次已变化，请刷新后重新勾选')
+            if job['state'] in ('RUNNING','CANCELLED'):raise ValueError('请先停止正在执行的批次；已结束批次不能直接重启')
+            selected=[i for i in job['items'] if i['key'] in keys]
+            if not keys or len(keys)!=len(set(keys)) or len(selected)!=len(keys):raise ValueError('请选择明确的未处理、失败或待核订单')
+            if any(i['state'] not in ('PENDING','FAILED','REVIEW') for i in selected):raise ValueError('仅执行勾选的未处理、失败或待核项；就绪预览请另行确认上传')
+            if self.business_path and job['kind']=='prepare':
+                from aoxiang_order_guard import require_orders
+                require_orders(self.business_path,selected)
+            for item in selected:
+                item['previous_error']=item.get('error');item['error']=None;item['state']='PENDING'
+            job['dispatch_keys']=[i['key'] for i in selected];job['state']='QUEUED'
+            job['message']=f'仅执行勾选的{len(selected)}项；未勾选项保留，不自动执行'
+            return self._save(db,job,'EXECUTE_SELECTED_ONLY')
+
+    def reconcile_deleted(self,path=None):
+        """Drop stale local-only items; retain every durable external identity."""
+        from aoxiang_order_guard import deleted_orders
+        from aoxiang_workflow_state import local_preparation,reconcile
+        path=path or self.business_path
+        if path is None:return
+        candidates=[]
+        # Idle polling must not request a writer lock. Only changed local queues
+        # enter the write transaction, with a fresh recheck of both repositories.
+        with self.db(timeout=0) as db:
+            for row in db.execute("SELECT payload FROM ax_workflows WHERE state!='RUNNING' AND (rowid IN (SELECT rowid FROM ax_workflows ORDER BY rowid DESC LIMIT 100) OR state IN ('QUEUED','YIELDED','PAUSED')) ORDER BY rowid"):
+                job=json.loads(row[0])
+                if job['kind']=='receipt':continue
+                missing=deleted_orders(path,job['items'])
+                if any(i['key'] in missing and (local_preparation(i,job['kind']) or not i.get('source_deleted')) for i in job['items']):
+                    candidates.append(job['id'])
+        if not candidates:return
+        with self.db(True,timeout=0) as db:
+            for id in candidates:
+                row=db.execute('SELECT payload FROM ax_workflows WHERE id=?',(id,)).fetchone()
+                if not row:continue
+                job=json.loads(row[0])
+                if job['state']=='RUNNING':continue
+                missing=deleted_orders(path,job['items'])
+                gone={i['key'] for i in job['items'] if i['key'] in missing and local_preparation(i,job['kind'])}
+                changed=False
+                for item in job['items']:
+                    if item['key'] in missing and item['key'] not in gone and not item.get('source_deleted'):
+                        item['source_deleted']=True;changed=True
+                if not gone and not changed:continue
+                job['items']=[i for i in job['items'] if i['key'] not in gone]
+                if not job['items']:
+                    db.execute('DELETE FROM ax_workflow_events WHERE id=?',(job['id'],));db.execute('DELETE FROM ax_workflows WHERE id=?',(job['id'],));continue
+                for n,item in enumerate(job['items']):item['position']=n
+                if 'dispatch_keys' in job:job['dispatch_keys']=[k for k in job['dispatch_keys'] if k not in gone]
+                if not any(i['state']=='PENDING' for i in job['items']) and job['state'] in ACTIVE:job['state']='COMPLETED'
+                job=reconcile(job);self._save(db,job,'RECONCILED_DELETED_LOCAL_ORDERS')
+
+    def delete_local_items(self,id,keys,expected_sequence):
+        from aoxiang_workflow_state import local_preparation,reconcile
+        with self.db(True) as db:
+            job=self._get(db,id)
+            if job['sequence']!=expected_sequence or job['state']=='RUNNING':raise ValueError('批次变化或正在执行，请停止后重新勾选')
+            selected=[i for i in job['items'] if i['key'] in keys]
+            if not keys or len(keys)!=len(set(keys)) or len(selected)!=len(keys):raise ValueError('请选择要删除的本地任务项')
+            if any(not local_preparation(i,job['kind']) or i['state']=='RUNNING' for i in selected):raise ValueError('所选含平台采购身份，不能按本地未执行任务删除；请核对原采购任务')
+            job['items']=[i for i in job['items'] if i['key'] not in keys]
+            if not job['items']:
+                db.execute('DELETE FROM ax_workflow_events WHERE id=?',(id,));db.execute('DELETE FROM ax_workflows WHERE id=?',(id,));return None
+            for n,item in enumerate(job['items']):item['position']=n
+            if 'dispatch_keys' in job:job['dispatch_keys']=[k for k in job['dispatch_keys'] if k not in keys]
+            if not any(i['state']=='PENDING' for i in job['items']) and job['state'] in ACTIVE:job['state']='COMPLETED'
+            return self._save(db,reconcile(job),'DELETED_SELECTED_LOCAL_ITEMS')
 
     def cancel_queued(self, id):
         with self.db(True) as db:
@@ -198,6 +278,7 @@ class Workflows:
                 item=job['items'][n];item['attempts']=item.get('attempts',0)+1
                 item['previous_error']=item.get('error');item['state']='PENDING';item['error']=None
             if job['state']!='RUNNING':job['state']='QUEUED'
+            if job['state']=='QUEUED':job['dispatch_keys']=[job['items'][n]['key'] for n in positions]
             job['message']='原任务已排入重跑；成功项保持，采购仍核对原任务号'
             return self._save(db,job,'RETRY_ORIGINAL_ITEMS')
 

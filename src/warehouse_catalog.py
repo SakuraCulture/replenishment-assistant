@@ -207,14 +207,16 @@ def route_store(loaded:InputBatch,store:str,route) -> InputBatch:
     validate_route(route,loaded['catalogs']);primary=route['primary'];secondary=route.get('secondary')
     variants={w:[x for x in rows if x[0]['B']==store] for w,rows in loaded['warehouse_rows'].items()};base=[p for p in loaded['normalized'] if p[0]['B']==store];rows=[]
     for i,original in enumerate(base):
-        p=variants[primary][i];state=assessment(p);target=primary
-        if state in {'禁用','无货','无该商品'} and secondary:target=secondary
+        p=variants[primary][i];state=assessment(p)
         # Availability chooses between existing catalog entries. A missing child
         # entry must not discard the primary's price/carton/status/provenance.
-        retain_primary=(target!=primary and p[1]['match']=='商品编码精确匹配'
-                        and variants[target][i][1]['match']=='资料未匹配')
-        if retain_primary:target=primary
-        d,m=copy.deepcopy(variants[target][i]);known=any(v[i][1]['match']=='商品编码精确匹配' for v in variants.values())
+        from warehouse_routing import select_warehouse
+        target,retain_primary=select_warehouse(primary,secondary,state,p[1]['match'],
+            variants[secondary][i][1]['match'] if secondary else None)
+        # Product ownership is scoped to this store's selected supply route.
+        # An imported but unselected warehouse cannot turn local goods into a
+        # matching error or supply its price/carton to a single-warehouse job.
+        d,m=copy.deepcopy(variants[target][i]);known=any(variants[w][i][1]['match']=='商品编码精确匹配' for w in (primary,secondary) if w)
         child=assessment(variants[secondary][i]) if secondary else '未配置'
         reason=f'主仓{state}，需求归属'+('从仓' if target!=primary else '主仓')
         if target!=primary:reason+=f'；从仓{child}'
@@ -224,6 +226,8 @@ def route_store(loaded:InputBatch,store:str,route) -> InputBatch:
             d['_source']='匹配待核';m['blocking']=[s for s in m['blocking'] if s!='待补商品资料'];m['blocking'].append('归属仓未匹配商品资料，价格与箱规待核')
         d['AU']='地采' if d['_source']=='地采商品' else target
         if not known:reason='已导入的仓资料均未匹配，标记地采' if d['_source']=='地采商品' else '商品编码或资料匹配待核'
-        m['routing']={'primary':primary,'secondary':secondary,'assigned':d['AU'],'primary_state':state,'secondary_state':child,'primary_stock':p[1].get('warehouse_available'),'secondary_stock':variants[secondary][i][1].get('warehouse_available') if secondary else None,'reason':reason,'version':'0.5.1' if retain_primary else '0.5.0'}
+        single_local=secondary is None and d['_source']=='地采商品'
+        if single_local:reason=f'本次仅由{primary}供货，该仓无此商品，按本次地采处理'
+        m['routing']={'primary':primary,'secondary':secondary,'assigned':d['AU'],'primary_state':state,'secondary_state':child,'primary_stock':p[1].get('warehouse_available'),'secondary_stock':variants[secondary][i][1].get('warehouse_available') if secondary else None,'reason':reason,'version':'0.5.2' if single_local else '0.5.1' if retain_primary else '0.5.0'}
         rows.append((d,m))
     return {**loaded,'normalized':rows,'supply_route':copy.deepcopy(route)}

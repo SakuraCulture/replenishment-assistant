@@ -31,7 +31,7 @@ class PurchaseTests(unittest.TestCase):
     def second_revision(self):
         h=self.repo.get(wr.today(),'T');result=copy.deepcopy(h['payload']);result['result']['marker']='revision2';digest=no.fingerprint(result['result'])
         with closing(sqlite3.connect(self.path)) as db,db:
-            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid',2,digest,wr.now(),no.encode(result)));db.execute('UPDATE normal_orders SET current=2')
+            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid',2,digest,wr.now(),no.encode(result, db)));db.execute('UPDATE normal_orders SET current=2')
 
     def test_first_import_versions_units_and_signed_immutable(self):
         before=self.original();scan,plan,receipts=self.save();self.assertEqual(self.original(),before);self.assertEqual(receipts[0]['version'],1);self.assertEqual(scan['rows'][0]['sku'],'0001');self.assertEqual(p.comparison(self.path,self.h)['rows'][0][4],5);self.assertEqual(p.comparison(self.path,self.h)['rows'][0][3],None)
@@ -160,7 +160,7 @@ class PurchaseTests(unittest.TestCase):
         self.second_revision();self.assertTrue(all(h['old_revision'] for h in self.home()['records']))
     def test_legacy_unlabelled_warehouse_does_not_block_other_orders(self):
         payload=copy.deepcopy(self.payload);payload['result']['rows'][0]['AU']='旧混合仓';digest=no.fingerprint(payload['result'])
-        with closing(sqlite3.connect(self.path)) as db,db:db.execute('UPDATE normal_revisions SET payload=?,digest=?',(no.encode(payload),digest))
+        with closing(sqlite3.connect(self.path)) as db,db:db.execute('UPDATE normal_revisions SET payload=?,digest=?',(no.encode(payload, db),digest))
         before=self.original();home=self.home()['records'];legacy=next(h for h in home if h['warehouse']=='旧版未标仓');self.assertIn('旧单仓归属待核',legacy['issues']);self.assertEqual(len(p.targets(self.path)),1);self.assertEqual(p.comparison(self.path,legacy)['rows'][0][0],'0001');self.assertEqual(self.original(),before)
     def test_retained_raw_cells_are_integrity_checked(self):
         self.save()

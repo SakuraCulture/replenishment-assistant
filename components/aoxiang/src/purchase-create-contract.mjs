@@ -43,8 +43,13 @@ export function checkImportReceipt(p,r){
 export function checkCreatedPurchase(p,receipt,e){
   checkImportReceipt(p,receipt);
   if(!e||canonical(e.identity)!==canonical(p.identity)||e.task?.taskId!==receipt.taskId||e.task?.code!==IMPORT_CODE||e.task?.status!=='FINISHED'||countValue(e.task.failCount)!==0||countValue(e.task.successCount)!==p.rows.length)fail('PURCHASE_TASK_NOT_COMPLETE','原导入任务尚未核实全量成功，不绑定采购单');
-  checkNativePurchase(p,e,{status:'待提交',requireNote:true});
-  return {orderId:e.candidates[0],status:'待提交',taskId:receipt.taskId,files:e.files,verifiedAt:e.observedAt,method:'known_import_task_and_exact_native_rows'};
+  const status=e.main?.status;
+  if(!['待提交','已作废'].includes(status))fail('PURCHASE_STATUS_UNSUPPORTED','原采购单当前状态不在自动关联范围，请核对平台原单',{status});
+  // A void is a verified historical association, never a successful new purchase
+  // or a released reservation. The native main AND every SKU must prove it.
+  if(e.listingStatus!==undefined&&((status==='待提交')!==(e.listingStatus==='0')))fail('PURCHASE_STATUS_CHANGED','采购查询状态与原生核对文件状态不同，请继续核对原单',{listingStatus:e.listingStatus,nativeStatus:status});
+  checkNativePurchase(p,e,{status,requireNote:true});
+  return {orderId:e.candidates[0],status,taskId:receipt.taskId,files:e.files,verifiedAt:e.observedAt,method:'known_import_task_and_exact_native_rows'};
 }
 
 // Both automatic and operator-confirmed associations share the same per-SKU checks.

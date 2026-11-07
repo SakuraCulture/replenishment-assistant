@@ -1,0 +1,45 @@
+{
+  "baseline": "9448b888f24a2561cd614da439f5d27a17e0ff77",
+  "source_commit": "4d4d55cbb753105bf7298e9d78645c30f5d6aa29",
+  "protected": {
+    "src/model.py": {
+      "baseline_sha256": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "candidate_sha256": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595"
+    },
+    "src/engine.py": {
+      "baseline_sha256": "a2c5005367550167019f4cd07bd0dcfe572346ebbef0b11a84166ea0905d2525",
+      "candidate_sha256": "a2c5005367550167019f4cd07bd0dcfe572346ebbef0b11a84166ea0905d2525"
+    },
+    "src/allocation.py": {
+      "baseline_sha256": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "candidate_sha256": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb"
+    },
+    "src/parameter_schema.py": {
+      "baseline_sha256": "e56631c53580168b00901356aef15732b34d8856243cff4c4c5538af1c0282f4",
+      "candidate_sha256": "e56631c53580168b00901356aef15732b34d8856243cff4c4c5538af1c0282f4"
+    },
+    "src/default_config.json": {
+      "baseline_sha256": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "candidate_sha256": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012"
+    },
+    "src/default_must_sell.json": {
+      "baseline_sha256": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "candidate_sha256": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+    },
+    "src/warehouse_catalog.py": {
+      "baseline_sha256": "756f02aefb0212989dbbf834239fcd54739d708db1ddc54d7b7218004fa45cb6",
+      "candidate_sha256": "756f02aefb0212989dbbf834239fcd54739d708db1ddc54d7b7218004fa45cb6"
+    },
+    "src/data_maintenance.py": {
+      "baseline_sha256": "46f28619a13e02f72d210c5dfcab08e37a748029f59e1662280b7b6999581ae7",
+      "candidate_sha256": "46f28619a13e02f72d210c5dfcab08e37a748029f59e1662280b7b6999581ae7"
+    },
+    "src/maintenance_storage.py": {
+      "baseline_sha256": "208d030d5a1896b725a638fb789018e7816a923fb6d5ef15e86a7edeb3429e3d",
+      "candidate_sha256": "208d030d5a1896b725a638fb789018e7816a923fb6d5ef15e86a7edeb3429e3d"
+    }
+  },
+  "components_unchanged": true,
+  "old_0462_exe_unchanged": true,
+  "python_tests": 1057
+}

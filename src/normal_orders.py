@@ -1,5 +1,5 @@
 """One current normal order per day/store, immutable revisions and atomic draft save."""
-import copy,hashlib,json,sqlite3,uuid,zlib,time
+import copy,hashlib,json,sqlite3,uuid,time
 from runtime_support import checkpoint,CommitProgress
 from contextlib import closing
 from datetime import date
@@ -8,7 +8,7 @@ import work_repository as wr
 import storage_chunks as chunks
 import new_product_focus as focus
 from version_info import MODEL_VERSION
-from io_stages import stage,compress as compress_bytes
+from io_stages import stage
 from export_progress import RowProgress,prefixed
 
 
@@ -27,7 +27,9 @@ def fingerprint_owned(result,new_focus=None):
     return hashlib.sha256(wr.dumps(business).encode()).hexdigest()
 
 
-def encode(value):return zlib.compress(wr.dumps(value).encode())
+def encode(value,db):
+    binding=fingerprint_owned(value['result'],value.get('new_focus')) if isinstance(value,dict) and isinstance(value.get('result'),dict) else None
+    return chunks.put(db,chunks.prepare(value,binding=binding))
 def decode(value,db=None):return chunks.load(value,db)
 
 
@@ -74,13 +76,12 @@ class Repository:
             if data is None:raise ValueError('归档修订不存在')
             fields={'export':[('result','rows'),('result','summary'),('result','store'),('result','store_name'),('new_focus',)],'review':[('result','summary'),('result','effective_settings'),('result','sources'),('new_focus',)]}
             if view is not None and view not in fields:raise ValueError('未知归档读取范围')
-            if view and chunks.manifest(data[2]) is not None:
+            if view:
                 parts=chunks.load(data[2],db,paths=fields[view],binding=data[0],progress=progress)
                 payload={'result':{path[1]:value for path,value in parts.items() if path[0]=='result'},'new_focus':parts.get(('new_focus',))}
             else:
                 payload=chunks.load(data[2],db,binding=data[0],progress=progress)
                 if fingerprint_owned(payload['result'],payload.get('new_focus'))!=data[0]:raise ValueError('归档快照校验失败')
-                if view:payload={'result':{path[1]:payload['result'][path[1]] for path in fields[view] if len(path)==2 and path[1] in payload['result']},'new_focus':payload.get('new_focus')}
             return {'oid':oid,'number':number,'day':day,'store':store,'revision':rev,'current_revision':current,'digest':data[0],'saved':data[1],'payload':payload}
 
     def head(self,day,store):

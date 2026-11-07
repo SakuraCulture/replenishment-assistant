@@ -42,10 +42,10 @@ class AnalyticsTests(unittest.TestCase):
         source_archive.capture(self.path,p,sha)
         self.catalogs[wh]={'source_sha256':sha,'sheet':'原资料','revision':sha,'items':{}}
         with closing(sqlite3.connect(self.path)) as db,db:
-            db.execute('UPDATE normal_work_revisions SET payload=?',(no.encode({'catalogs':self.catalogs}),))
+            db.execute('UPDATE normal_work_revisions SET payload=?',(no.encode({'catalogs':self.catalogs}, db),))
     def save_payload(self):
         with closing(sqlite3.connect(self.path)) as db,db:
-            db.execute('UPDATE normal_revisions SET payload=?,digest=?',(no.encode(self.p),no.fingerprint(self.p['result'])))
+            db.execute('UPDATE normal_revisions SET payload=?,digest=?',(no.encode(self.p, db),no.fingerprint(self.p['result'])))
     def report(self,**kwargs):return a.collect(self.path,{**self.spec,**kwargs})
     def test_five_stages_price_missing_and_membership(self):
         r=self.report();x=r['rows'][0]

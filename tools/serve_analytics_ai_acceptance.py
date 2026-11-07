@@ -38,7 +38,7 @@ def fixture(out):
                 if i==2:r['rows'][0].update(_budget_active=True,_allocated_qty=0,_allocated_amount=0)
                 oid='ai-history-'+str(i)
                 db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,'S1','normal_model',oid,'BH-'+day.replace('-','')+'-S1-ZC',1))
-                db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,no.fingerprint(r),wr.now(),no.encode(p)))
+                db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,no.fingerprint(r),wr.now(),no.encode(p, db)))
         heads=purchases.targets(path)
         for h in heads:
             if h['warehouse']!='河北仓' or h['day']==days[-1]:continue

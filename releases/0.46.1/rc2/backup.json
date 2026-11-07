@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "checks": [
+    "source read-only and hash unchanged",
+    "all SQL rows and decoded values exact in backup",
+    "exclusive target refuses overwrite",
+    "cancel no final target or temporary residue",
+    "corrupt input no published output"
+  ],
+  "copied_records": {
+    "jobs": 0,
+    "normal_revisions": 7,
+    "normal_work_revisions": 8
+  }
+}

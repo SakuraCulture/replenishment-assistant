@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "Restart has no old business orders",
+    "Restart has no saved store parameters",
+    "Restart has no old purchase batch",
+    "Restart has no old analysis data",
+    "Restart has no old application connection configuration",
+    "Restart preserves reset receipt and backup location"
+  ],
+  "passed": true,
+  "frozen_exe": false,
+  "no_live_platform": true,
+  "version": "0.47.5",
+  "older_process_probe": "bypassed only in marked isolated UI acceptance; production keeps the probe",
+  "process_exit": 0
+}

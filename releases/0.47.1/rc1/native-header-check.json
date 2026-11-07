@@ -1,0 +1,87 @@
+{
+  "passed": true,
+  "source": "Read-only copies of five already retained native AX originals; no platform calls or business writes",
+  "files": [
+    {
+      "sha256": "352b90e5c92b217e7f665039d34c7042564bb8ca7b46ddaa097e5d35c8d6ab4a",
+      "header_columns": 54,
+      "duplicate_unused_headers": [
+        {
+          "header": "毛利",
+          "positions": [
+            43,
+            45,
+            47
+          ]
+        }
+      ],
+      "rows_read": 14156,
+      "original_unchanged": true
+    },
+    {
+      "sha256": "2381b9b64d2c4cc246a9f99cf831e2f19204d21fa3aec3e76e109302ab704128",
+      "header_columns": 54,
+      "duplicate_unused_headers": [
+        {
+          "header": "毛利",
+          "positions": [
+            43,
+            45,
+            47
+          ]
+        }
+      ],
+      "rows_read": 18342,
+      "original_unchanged": true
+    },
+    {
+      "sha256": "6e55369b50d640496f8addd0297ec779f3502113aaf16db68bca6d67c5390062",
+      "header_columns": 54,
+      "duplicate_unused_headers": [
+        {
+          "header": "毛利",
+          "positions": [
+            43,
+            45,
+            47
+          ]
+        }
+      ],
+      "rows_read": 14507,
+      "original_unchanged": true
+    },
+    {
+      "sha256": "2de29344b325ec59903319d9f8831aece14fa98316e3d1144c09d92dc984149e",
+      "header_columns": 54,
+      "duplicate_unused_headers": [
+        {
+          "header": "毛利",
+          "positions": [
+            43,
+            45,
+            47
+          ]
+        }
+      ],
+      "rows_read": 16031,
+      "original_unchanged": true
+    },
+    {
+      "sha256": "e1be24d5a29f142370046a8f791277c9df34631c028051b2c87eb832b023c896",
+      "header_columns": 54,
+      "duplicate_unused_headers": [
+        {
+          "header": "毛利",
+          "positions": [
+            43,
+            45,
+            47
+          ]
+        }
+      ],
+      "rows_read": 14145,
+      "original_unchanged": true
+    }
+  ],
+  "limits": "Native streaming parser acceptance only; does not verify live export or complete warehouse classification."
+}

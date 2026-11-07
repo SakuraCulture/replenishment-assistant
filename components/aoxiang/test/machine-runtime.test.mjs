@@ -87,6 +87,27 @@ test('流水线未知受理立即停后续提交，不因已受理数量相等�
   assert.deepEqual(seen,['W2','W1']);assert.equal(c.commands.get('job-1').state,'NEEDS_REVIEW');
   assert.throws(()=>c.runtime.resume('job-1'),{code:'COMMAND_TRANSITION'});
 });
+test('首店任务暂未找到不阻塞后店多轮收取，继续仍使用原任务身份',async t=>{
+  const seen=[],polls=new Map();let missing=true;
+  const c=await context(t,async({item,phase,onProgress})=>{
+    seen.push([item.index,phase,item.run_id]);
+    if(phase==='submit'){onProgress({taskId:'task-'+item.index});return {pending:true};}
+    const n=(polls.get(item.index)||0)+1;polls.set(item.index,n);
+    if(item.index===0&&missing)throw new AppError('TASK_NOT_FOUND','not in task history yet');
+    if(item.index===1&&n===1)return {pending:true};
+    return {file:'file-'+item.index};
+  },{pipeline:true});
+  const original=(await c.reserve()).record;original.config_snapshot.resourceLimits.pollIntervalMs=1;
+  c.commands.db.prepare('UPDATE machine_commands SET payload=? WHERE id=?').run(JSON.stringify(original),original.id);
+  c.runtime.kick();await c.runtime.idle();const interrupted=c.commands.get(original.id);
+  assert.equal(interrupted.state,'INTERRUPTED');assert.deepEqual(interrupted.items.map(i=>i.state),['INTERRUPTED','SUCCEEDED','SUCCEEDED']);
+  assert.equal(polls.get(0),1);assert.equal(polls.get(1),2);
+  missing=false;c.runtime.resume(original.id);c.runtime.kick();await c.runtime.idle();
+  const completed=c.commands.get(original.id);assert.equal(completed.state,'SUCCEEDED');
+  assert.deepEqual(completed.items.slice(1),interrupted.items.slice(1));
+  assert.deepEqual(completed.items.map(i=>i.run_id),original.items.map(i=>i.run_id));
+  assert.deepEqual(completed.items.map(i=>i.task_id),['task-0','task-1','task-2']);
+});
 
 test('流水线等待可立即暂停，继续保持run和task身份',async t=>{
   const reached=deferred(),seen=[];let ready=false;

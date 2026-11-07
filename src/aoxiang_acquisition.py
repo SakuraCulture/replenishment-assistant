@@ -11,7 +11,7 @@ ACTIVE = {'QUEUED', 'RUNNING', 'PAUSE_REQUESTED'}
 RESUMABLE = {'PAUSED', 'INTERRUPTED'}
 
 
-def prepare(jobs, configuration, codes, freshness, *, day):
+def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=None):
     if not configuration.get('configured') or not configuration.get('enabled'):
         raise ValueError('请先核验并保存翱象连接与门店')
     if freshness not in {'reuse', 'refresh'}:
@@ -25,13 +25,17 @@ def prepare(jobs, configuration, codes, freshness, *, day):
         old = pending['command']
         if (old['operation'] == 'replenishment.export' and old['account_binding'] == configuration['account_binding']
                 and set(codes).intersection(old['scope']['warehouse_codes'])):
-            raise ValueError('所选门店还有未完成或待核对的原采集，请从采集记录继续，不能另建任务：' + pending['id'])
+            raise ValueError('所选门店还有未完成或待核对的原采集，不能另建任务。请继续原采集，或先“结束本次采集”再新建；已受理平台任务将保留接续：' + pending['id'])
     command = {'protocol_version': 1, 'command_id': 'rep-' + uuid.uuid4().hex,
                'operation': 'replenishment.export', 'account_binding': configuration['account_binding'],
                'scope': {'warehouse_codes': list(codes)},
                'basis_versions': {'store_mapping': configuration['store_mapping_version']},
                'policy': {'freshness': freshness}}
     context = {'day': day, 'created': now(), 'stores': [available[code] for code in codes]}
+    if purpose is not None:
+        if purpose != 'stockout_analysis' or not isinstance(owner,str) or not owner:
+            raise ValueError('分析采集需要明确用途与任务拥有者')
+        context.update(purpose=purpose,owner=owner)
     return jobs.register(command, context)
 
 

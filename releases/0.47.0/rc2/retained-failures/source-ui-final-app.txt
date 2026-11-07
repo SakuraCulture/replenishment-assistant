@@ -1,0 +1,19 @@
+2026-11-07 13:59:43,972 ERROR 门店缺货率 ingest: Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_worker.py", line 27, in serve
+    result=execute(repo,operation,arguments,cancel,progress,rpc)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_worker.py", line 100, in execute
+    catalogs[warehouse]=load_catalog(repo,item['file'],warehouse,expected=item['sha256'],expected_rows=item['rows'],cancel=cancel,progress=progress)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_facts.py", line 68, in load_catalog
+    with table(path,['商品编码'],cancel) as (heads,rows):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_facts.py", line 30, in table
+    checkpoint(cancel)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\runtime_support.py", line 7, in checkpoint
+    if cancel and cancel.is_set():raise Cancelled('已取消')
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+runtime_support.Cancelled: 已取消

@@ -1,0 +1,58 @@
+{
+  "frozen.json": {
+    "source": "qa\\reset_selected_0475\\frozen.json",
+    "sha256": "d9b92dfbe6d9d9451e6863144808fc5760c1d0cc58621e99a04c104957152add"
+  },
+  "regression-final.txt": {
+    "source": "qa\\reset_selected_0475\\regression-02.txt",
+    "sha256": "bed3e8719af8e0001904264aadaa85275c42c037e4180bbcbc2a6cac845497f1"
+  },
+  "focused-final.txt": {
+    "source": "qa\\reset_selected_0475\\focused-02.txt",
+    "sha256": "435029347f75a59e576b7616268780843fe9064820f57582546acd006c988e8d"
+  },
+  "regression-01.txt": {
+    "source": "qa\\reset_selected_0475\\regression-01.txt",
+    "sha256": "f98eb669d58621835881f31115fba455cd996fc2c74e6d0ad64a1cbbe4a4a8e2"
+  },
+  "source-ui-01/report.json": {
+    "source": "qa\\reset_selected_0475\\source-ui-01\\report.json",
+    "sha256": "cb3aba921e916c1be9cd789027da8776e4aab2175a4d5e1b72e388a878d52e91"
+  },
+  "source-ui-rc2/report.json": {
+    "source": "qa\\reset_selected_0475\\source-ui-rc2\\report.json",
+    "sha256": "4a26314f2a1ef54e8fe3922ec68d4da62bf7706ab194d2425f7e37d227deba0c"
+  },
+  "source-ui-rc2/restart-report.json": {
+    "source": "qa\\reset_selected_0475\\source-ui-rc2\\restart-report.json",
+    "sha256": "019b6147ced185df58c243f86624b361ba24b2a32f701bec289bc2daf216d254"
+  },
+  "reset-exe-rc2/report.json": {
+    "source": "qa\\reset_selected_0475\\reset-exe-rc2\\report.json",
+    "sha256": "bbbc6cfd5e5270757e1f1cdfca0e3a8c822284b28da5e11b2d8a4fc73516194d"
+  },
+  "reset-exe-rc2/restart-report.json": {
+    "source": "qa\\reset_selected_0475\\reset-exe-rc2\\restart-report.json",
+    "sha256": "93d9ae80d7c68dcc392aff7110aaef72363bdd1466791c4a688b440b30b270bf"
+  },
+  "startup-exe-rc2/report.json": {
+    "source": "qa\\reset_selected_0475\\startup-exe-rc2\\report.json",
+    "sha256": "ed97bec353fe4f486a9c989743cde780c78a37f54a8d57ea98d70583a4241193"
+  },
+  "deletion-exe-rc2/deletion-report.json": {
+    "source": "qa\\reset_selected_0475\\deletion-exe-rc2-valid\\deletion-report.json",
+    "sha256": "a2f22473dcad30f3588042a4876afae39ba3c67247ea341608c6fcf01ab169d9"
+  },
+  "exe-rc2/report.json": {
+    "source": "qa\\reset_selected_0475\\exe-rc2\\report.json",
+    "sha256": "3b9162cc06c0ce17743cbcf776b7e8678d998bfa2cc36f876334e104a07e8ea0"
+  },
+  "reset-exe-rc2/reset-confirm.png": {
+    "source": "qa\\reset_selected_0475\\reset-exe-rc2\\reset-confirm.png",
+    "sha256": "b4f3faa9b62d51deef2ff52f5e439aed9187176a841b2a1a5f40d2f2279172ae"
+  },
+  "reset-exe-rc2/selected-queue.png": {
+    "source": "qa\\reset_selected_0475\\reset-exe-rc2\\selected-queue.png",
+    "sha256": "63ffaaa51b2fb3b1cab43782c849edc513e79a1cc69569ac31335e7a4c04f595"
+  }
+}

@@ -1,0 +1,105 @@
+test_all_stores_share_one_ordered_command_linked_before_dispatch (tests.test_stockout_acquisition.PipelineTests.test_all_stores_share_one_ordered_command_linked_before_dispatch) ... ok
+test_analysis_receipt_cannot_adopt_business (tests.test_stockout_acquisition.PipelineTests.test_analysis_receipt_cannot_adopt_business) ... ok
+test_bad_store_data_does_not_discard_other_complete_files (tests.test_stockout_acquisition.PipelineTests.test_bad_store_data_does_not_discard_other_complete_files) ... ok
+test_business_conflict_only_blocks_affected_store (tests.test_stockout_acquisition.PipelineTests.test_business_conflict_only_blocks_affected_store) ... ok
+test_cancel_during_projection_preserves_ready_store_and_original_files (tests.test_stockout_acquisition.PipelineTests.test_cancel_during_projection_preserves_ready_store_and_original_files) ... ok
+test_cancel_then_resume_keeps_native_command_and_catalog (tests.test_stockout_acquisition.PipelineTests.test_cancel_then_resume_keeps_native_command_and_catalog) ... ok
+test_changed_original_still_rejects_manifest_without_adoption (tests.test_stockout_acquisition.PipelineTests.test_changed_original_still_rejects_manifest_without_adoption) ... ok
+test_existing_single_store_commands_resume_without_merging_or_recreating (tests.test_stockout_acquisition.PipelineTests.test_existing_single_store_commands_resume_without_merging_or_recreating) ... ok
+test_identity_change_blocks_before_new_export (tests.test_stockout_acquisition.PipelineTests.test_identity_change_blocks_before_new_export) ... ok
+test_incomplete_batch_association_cannot_dispatch_broader_scope (tests.test_stockout_acquisition.PipelineTests.test_incomplete_batch_association_cannot_dispatch_broader_scope) ... ok
+test_multistore_cancel_keeps_batch_identity (tests.test_stockout_acquisition.PipelineTests.test_multistore_cancel_keeps_batch_identity) ... ok
+test_multistore_unknown_response_reconciles_same_batch (tests.test_stockout_acquisition.PipelineTests.test_multistore_unknown_response_reconciles_same_batch) ... ok
+test_native_handshake_complete_and_no_business_publication (tests.test_stockout_acquisition.PipelineTests.test_native_handshake_complete_and_no_business_publication) ... ok
+test_partial_batch_revision_retries_only_failed_store_same_command (tests.test_stockout_acquisition.PipelineTests.test_partial_batch_revision_retries_only_failed_store_same_command) ... ok
+test_unknown_accepted_response_reconciles_same_id (tests.test_stockout_acquisition.PipelineTests.test_unknown_accepted_response_reconciles_same_id) ... ok
+test_bad_and_oversized_markers_do_not_enable_work (tests.test_stockout_acquisition.ScheduleTests.test_bad_and_oversized_markers_do_not_enable_work) ... ok
+test_default_does_not_create_directory (tests.test_stockout_acquisition.ScheduleTests.test_default_does_not_create_directory) ... ok
+test_timezone_once_and_missed_history (tests.test_stockout_acquisition.ScheduleTests.test_timezone_once_and_missed_history) ... ok
+test_aggregates_equal_raw_facts_for_all_views_and_filters (tests.test_stockout_analysis.AnalysisTests.test_aggregates_equal_raw_facts_for_all_views_and_filters) ... ok
+test_base_stock_zero_and_inbound (tests.test_stockout_analysis.AnalysisTests.test_base_stock_zero_and_inbound) ... ok
+test_catalog_optional_tag_or_supplier_duplicates_remain_blocked (tests.test_stockout_analysis.AnalysisTests.test_catalog_optional_tag_or_supplier_duplicates_remain_blocked) ... ok
+test_cleanup_scope_stale_preview_cancel_and_shared_original (tests.test_stockout_analysis.AnalysisTests.test_cleanup_scope_stale_preview_cancel_and_shared_original) ... ok
+test_cross_midnight_real_observation_date (tests.test_stockout_analysis.AnalysisTests.test_cross_midnight_real_observation_date) ... ok
+test_cuts_and_summary_share_filter (tests.test_stockout_analysis.AnalysisTests.test_cuts_and_summary_share_filter) ... ok
+test_duplicate_and_other_store_are_rejected (tests.test_stockout_analysis.AnalysisTests.test_duplicate_and_other_store_are_rejected) ... ok
+test_duplicate_unused_columns_cannot_override_consumed_values (tests.test_stockout_analysis.AnalysisTests.test_duplicate_unused_columns_cannot_override_consumed_values) ... ok
+test_expected_rows_and_source_hash_preserved (tests.test_stockout_analysis.AnalysisTests.test_expected_rows_and_source_hash_preserved) ... ok
+test_export_equal_literal_strings_and_cancel_removes_temp (tests.test_stockout_analysis.AnalysisTests.test_export_equal_literal_strings_and_cancel_removes_temp) ... ok
+test_invalid_metric_values_never_become_zero (tests.test_stockout_analysis.AnalysisTests.test_invalid_metric_values_never_become_zero) ... ok
+test_local_adoption_does_not_write_defaults (tests.test_stockout_analysis.AnalysisTests.test_local_adoption_does_not_write_defaults) ... ok
+test_missing_selected_catalog_pending_not_local (tests.test_stockout_analysis.AnalysisTests.test_missing_selected_catalog_pending_not_local) ... ok
+test_native_v2_three_unused_margin_headers_are_accepted (tests.test_stockout_analysis.AnalysisTests.test_native_v2_three_unused_margin_headers_are_accepted) ... ok
+test_no_io_until_initialize (tests.test_stockout_analysis.AnalysisTests.test_no_io_until_initialize) ... ok
+test_page_byte_budget_and_low_resource_pause (tests.test_stockout_analysis.AnalysisTests.test_page_byte_budget_and_low_resource_pause) ... ok
+test_precise_unsafe_sku_is_rejected (tests.test_stockout_analysis.AnalysisTests.test_precise_unsafe_sku_is_rejected) ... ok
+test_published_revision_immutable_and_same_file_no_duplicate (tests.test_stockout_analysis.AnalysisTests.test_published_revision_immutable_and_same_file_no_duplicate) ... ok
+test_repeated_consumed_headers_name_columns_and_never_guess (tests.test_stockout_analysis.AnalysisTests.test_repeated_consumed_headers_name_columns_and_never_guess) ... ok
+test_single_warehouse_other_catalog_does_not_steal_local (tests.test_stockout_analysis.AnalysisTests.test_single_warehouse_other_catalog_does_not_steal_local) ... ok
+test_state_and_tag_dimensions_keep_valid_denominator (tests.test_stockout_analysis.AnalysisTests.test_state_and_tag_dimensions_keep_valid_denominator) ... ok
+test_tags_four_views_union_and_no_fuzzy_match (tests.test_stockout_analysis.AnalysisTests.test_tags_four_views_union_and_no_fuzzy_match) ... ok
+test_unknown_tags_retained_and_empty_known (tests.test_stockout_analysis.AnalysisTests.test_unknown_tags_retained_and_empty_known) ... ok
+test_weighted_two_stores_and_normalized_dimensions (tests.test_stockout_analysis.AnalysisTests.test_weighted_two_stores_and_normalized_dimensions) ... ok
+test_zero_base_dash (tests.test_stockout_analysis.AnalysisTests.test_zero_base_dash) ... ok
+test_zero_month_bad_stock_is_not_metric_blocker (tests.test_stockout_analysis.AnalysisTests.test_zero_month_bad_stock_is_not_metric_blocker) ... ok
+test_selection_exhaustive_matches_previous_expression (tests.test_stockout_analysis.RoutingEquivalenceTests.test_selection_exhaustive_matches_previous_expression) ... ok
+test_actual_allocation_work_marks_priority_before_preview (tests.test_stockout_scheduling.PriorityTests.test_actual_allocation_work_marks_priority_before_preview) ... ERROR
+test_empty_poll_does_not_interrupt_analysis (tests.test_stockout_scheduling.PriorityTests.test_empty_poll_does_not_interrupt_analysis) ... ok
+test_other_business_workers_still_take_priority (tests.test_stockout_scheduling.PriorityTests.test_other_business_workers_still_take_priority) ... ok
+test_active_receipts_or_invalid_selection_cannot_be_adopted (tests.test_aoxiang_acquisition.AcquisitionTests.test_active_receipts_or_invalid_selection_cannot_be_adopted) ... ok
+test_changed_bytes_same_size_and_wrong_scope_blocked (tests.test_aoxiang_acquisition.AcquisitionTests.test_changed_bytes_same_size_and_wrong_scope_blocked) ... ok
+test_loaded_hash_order_and_errors_checked_without_business_mutation (tests.test_aoxiang_acquisition.AcquisitionTests.test_loaded_hash_order_and_errors_checked_without_business_mutation) ... ok
+test_other_command_path_cannot_impersonate_valid_hash (tests.test_aoxiang_acquisition.AcquisitionTests.test_other_command_path_cannot_impersonate_valid_hash) ... ok
+test_out_of_order_or_missing_item_never_sorted_to_hide_difference (tests.test_aoxiang_acquisition.AcquisitionTests.test_out_of_order_or_missing_item_never_sorted_to_hide_difference) ... ok
+test_partial_failure_preserved_not_adopted (tests.test_aoxiang_acquisition.AcquisitionTests.test_partial_failure_preserved_not_adopted) ... ok
+test_requested_order_manifest_and_exact_snapshot_reuse (tests.test_aoxiang_acquisition.AcquisitionTests.test_requested_order_manifest_and_exact_snapshot_reuse) ... ok
+test_unaccepted_cancel_requires_definitive_missing_not_timeout (tests.test_aoxiang_acquisition.AcquisitionTests.test_unaccepted_cancel_requires_definitive_missing_not_timeout) ... ok
+test_unknown_dispatch_cannot_be_replaced_by_new_id (tests.test_aoxiang_acquisition.AcquisitionTests.test_unknown_dispatch_cannot_be_replaced_by_new_id) ... ok
+test_jst_batches (unittest.loader._FailedTest.test_jst_batches) ... ERROR
+
+======================================================================
+ERROR: test_actual_allocation_work_marks_priority_before_preview (tests.test_stockout_scheduling.PriorityTests.test_actual_allocation_work_marks_priority_before_preview)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\shutil.py", line 633, in _rmtree_unsafe
+    os.unlink(fullname)
+PermissionError: [WinError 32] 另一个程序正在使用此文件，进程无法访问。: 'C:\\Users\\lenovo\\AppData\\Local\\Temp\\tmptx0dbc7j\\isolated.sqlite3'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_scheduling.py", line 22, in test_actual_allocation_work_marks_priority_before_preview
+    with tempfile.TemporaryDirectory() as temp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\tempfile.py", line 950, in __exit__
+    self.cleanup()
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\tempfile.py", line 954, in cleanup
+    self._rmtree(self.name, ignore_errors=self._ignore_cleanup_errors)
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\tempfile.py", line 934, in _rmtree
+    _shutil.rmtree(name, onexc=onexc)
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\shutil.py", line 781, in rmtree
+    return _rmtree_unsafe(path, onexc)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\shutil.py", line 635, in _rmtree_unsafe
+    onexc(os.unlink, fullname, err)
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\tempfile.py", line 909, in onexc
+    _os.unlink(path)
+PermissionError: [WinError 32] 另一个程序正在使用此文件，进程无法访问。: 'C:\\Users\\lenovo\\AppData\\Local\\Temp\\tmptx0dbc7j\\isolated.sqlite3'
+
+======================================================================
+ERROR: test_jst_batches (unittest.loader._FailedTest.test_jst_batches)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_jst_batches
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_batches.py", line 10, in <module>
+    import test_jst as fixture
+ModuleNotFoundError: No module named 'test_jst'
+
+
+----------------------------------------------------------------------
+Ran 58 tests in 19.436s
+
+FAILED (errors=2)

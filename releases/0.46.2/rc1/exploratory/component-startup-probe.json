@@ -1,0 +1,12 @@
+{
+  "live_platform": false,
+  "component": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.46.2_rc1\\补货助手\\_internal\\components\\aoxiang",
+  "timings": {
+    "start": 0.7179999999971187,
+    "synchronize": 0.03200000000288128,
+    "configuration": 0.030999999999039574
+  },
+  "configured": true,
+  "passed": true,
+  "closed": true
+}

@@ -17,7 +17,7 @@ def fixture(out,count=2):
     with closing(sqlite3.connect(work.path)) as db,db:
         for i in range(1,count):
             p=copy.deepcopy(payload);store='S'+str(i);oid='oid-'+str(i);p['result']['store']=store;p['result']['store_name']='合成门店'+str(i)
-            d=no.fingerprint(p['result']);db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),store,'normal_model',oid,'BH-'+store+'-ZC',1));db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,d,wr.now(),no.encode(p)))
+            d=no.fingerprint(p['result']);db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),store,'normal_model',oid,'BH-'+store+'-ZC',1));db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,1,d,wr.now(),no.encode(p, db)))
     heads=lc.current_targets(work.path)
     for wh in wc.WAREHOUSES:
         path=out/(wh+'-分配.xlsx');b=openpyxl.Workbook();s=b.active;s.append(wc.FIELDS)

@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "live_platform": false,
+  "checks": [
+    "旧版五笔误待核可一键沿原采购任务继续，原因显示处理路径",
+    "已受理任务先等待再关联，原任务身份不变，已成功第六单不重复执行",
+    "采购创建动作零次；组件边界只接收已有任务的结果核验",
+    "平台处理中单独计为已受理待核对，批次标题不显示失败",
+    "真正没有回执时保持保护，弹框说明可能已建单及核对路径",
+    "关闭重开保留六笔关联状态，完成项不再提供重试",
+    "跨天试算在计算前说明两天日期及继续路径，不生成候选",
+    "一致性检查仍阻止真实数量差异，说明商品、字段、原值与重算值",
+    "旧日期未签发草稿明确引导今日续作，不要求导出不存在的签发修订"
+  ],
+  "source_commit": "34c14a80b6ba4b0d4792c6f526fa07610a8fb918",
+  "original_task_checks": [
+    "synthetic-0",
+    "synthetic-0",
+    "synthetic-1",
+    "synthetic-2",
+    "synthetic-3",
+    "synthetic-4"
+  ],
+  "synthetic_uploads": 0,
+  "heartbeat_ticks": 177,
+  "process_exit": 0,
+  "exe_sha256": "3caab55a695e9675a6585ba1e9ea0059a1b02da3ff8478bebf046a2e13571990",
+  "accepted": true
+}

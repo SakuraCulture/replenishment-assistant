@@ -44,6 +44,10 @@ class DiagnosisDialog(QDialog):
     def calculate(self):
         try:
             self.gateway.idle()
+            import work_repository as wr
+            if self.host.job_day!=wr.today():
+                from job_date_messages import continue_today
+                raise ValueError('作业已跨天，需要按今日依据重新核验后试算。\n'+continue_today(self.host.job_day,wr.today()))
             if self.host.readonly:raise ValueError('历史作业只读，回到本次可编辑工作台试算')
             stores=self.chosen(self.stores)
             if not stores:raise ValueError('至少选择一家门店')

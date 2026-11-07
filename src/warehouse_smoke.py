@@ -1,17 +1,17 @@
 """Opt-in native UI acceptance for explicitly labelled synthetic warehouse fixtures."""
 import json,sys,time,traceback
 from pathlib import Path
-from PySide6.QtCore import QTimer,Qt
+from PySide6.QtCore import QTimer,Qt,QUrl
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication,QPushButton
+from PySide6.QtWidgets import QApplication,QPushButton,QMessageBox
 import batch_service,engine
 from version_info import diagnostic
 
 def start_smoke(app,win,args):
     fixture,out=map(Path,args[:2]);out.mkdir(parents=True,exist_ok=True)
-    state={'step':0,'start':time.monotonic(),'checks':[]};timer=QTimer(win)
+    state={'step':0,'start':time.monotonic(),'checks':[]};timer=QTimer(win);dialogs=QTimer(win)
     def finish(error=None):
-        timer.stop();meta=diagnostic();report={'passed':error is None,'error':error,'version':meta['version'],'source_commit':meta['source_commit'],'checks':state['checks']}
+        timer.stop();dialogs.stop();meta=diagnostic();report={'passed':error is None,'error':error,'version':meta['version'],'source_commit':meta['source_commit'],'checks':state['checks']}
         (out/'warehouse_ui_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');app.exit(1 if error else 0)
     def failed(message):
         if state.get('expected_failure'):state['expected_failure']=False;state['failure_seen']=message
@@ -21,9 +21,16 @@ def start_smoke(app,win,args):
     def choose(store,primary,secondary):
         for key,value in [('primary',primary),('secondary',secondary)]:
             c=win.store_widgets[store][key];c.setCurrentIndex(c.findData(value))
+    def confirm_fixture_write():
+        dialog=QApplication.activeModalWidget()
+        if isinstance(dialog,QMessageBox) and dialog.windowTitle()=='确认更新并保存仓资料':
+            assert dialog.defaultButton() is dialog.button(QMessageBox.StandardButton.Cancel)
+            dialog.button(QMessageBox.StandardButton.Yes).click()
+        elif dialog and dialog.objectName()=='storeDefaultsConfirm':dialog.accept()
     def tick():
         try:
             if time.monotonic()-state['start']>150:raise TimeoutError(str(state))
+            if QApplication.activeModalWidget():return
             step=state['step']
             if step==0:
                 assert not win.master_legacy.isChecked();assert not win.catalogs
@@ -48,7 +55,10 @@ def start_smoke(app,win,args):
                 assert engine.order_quantity(a['both_disabled'])==0
                 win.navigate(3);snap('03_需求结果');win.open_overview(0,0)
                 # Open an actual zero-stock ownership detail using the visible proxy row.
-                win.search.setText('both_empty');assert win.proxy.rowCount()==1;win.show_detail(win.proxy.index(0,0))
+                win.search.setText('both_empty');state['step']=40
+            elif step==40 and win.proxy.rowCount()==1:
+                win.show_detail(win.proxy.index(0,0))
+                win.details.anchorClicked.emit(QUrl('technical'))
                 assert '需求归属仓' in win.details.toPlainText() and '从仓无货仍保留需求' in win.details.toPlainText()
                 state['checks'].append('packaged process computation uses per-store priority, zero-stock secondary demand survives; disabled excluded')
                 state['step']=41
@@ -65,6 +75,22 @@ def start_smoke(app,win,args):
             elif step==7 and win.worker is None:
                 assert win.results['QA_B'] is state['other']
                 a={d['E']:d for d in win.results['QA_A']['rows']};assert a['both_empty']['AU']=='河北仓' and engine.order_quantity(a['both_empty'])>0
+                assert a['missing']['_source']=='地采商品' and a['missing']['AU']=='地采'
+                assert not engine.issue_text(a['missing']) and not engine.orderable(a['missing'])
+                assert '本次仅由河北仓供货' in a['missing']['_meta']['routing']['reason']
+                state['checks'].append('Hebei-only: Shandong-only SKU is local, absent from review and central-warehouse orders; zero-stock Hebei SKU stays Hebei')
+                state['first']=win.results['QA_A'];choose('QA_B','山东仓',None)
+                win.store_widgets['QA_A']['check'].setChecked(False);win.store_widgets['QA_B']['check'].setChecked(True)
+                win.start_calculation();state['step']=71
+            elif step==71 and win.worker is None:
+                assert win.results['QA_A'] is state['first']
+                b={d['E']:d for d in win.results['QA_B']['rows']}
+                assert b['child_missing']['_source']=='地采商品' and b['child_missing']['AU']=='地采'
+                assert not engine.issue_text(b['child_missing']) and not engine.orderable(b['child_missing'])
+                assert '本次仅由山东仓供货' in b['child_missing']['_meta']['routing']['reason']
+                assert b['both_empty']['AU']=='山东仓' and engine.order_quantity(b['both_empty'])>0
+                state['checks'].append('Shandong-only: Hebei-only SKU is local; selected store recomputed without changing the other store')
+                win.navigate(3);snap('07_单仓地采结果')
                 win.job(batch_service.export_batch,(win.results,win.states,out/'界面分仓导出.xlsx'),lambda p:state.update(exported=p));state['step']=8
             elif step==8 and win.worker is None:
                 assert Path(state['exported']).is_file()
@@ -82,4 +108,5 @@ def start_smoke(app,win,args):
                 assert win.input_dirty and all(s['state']=='待重算' for s in win.states.values()) and not win.batch_export.isEnabled()
                 state['checks'].append('failed catalog import preserves previous snapshot/results; successful update invalidates input/results and blocks stale export');finish()
         except Exception:finish(traceback.format_exc())
+    dialogs.timeout.connect(confirm_fixture_write);dialogs.start(30)
     timer.timeout.connect(tick);timer.start(250)

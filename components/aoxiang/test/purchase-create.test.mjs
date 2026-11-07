@@ -130,3 +130,33 @@ test('native Excel whole-valued decimal SKU count binds without weakening quanti
     const e=evidence(p);e.main.skuCount='2.0';e.rows[0][field]='0';assert.throws(()=>checkCreatedPurchase(p,r,e));
   }
 });
+
+function voidEvidence(p){
+  const e=evidence(p);e.main.status='已作废';e.rows.forEach(r=>r.status='已作废');e.listingStatus='synthetic-nonpending';return e;
+}
+test('voided original purchase still needs exact receipt, identity, marker and every native SKU',()=>{
+  const p=intent(),r=receipt(p);assert.equal(checkCreatedPurchase(p,r,voidEvidence(p)).status,'已作废');
+  for(const change of [e=>e.task.taskId='OTHER',e=>e.task.failCount='1',e=>e.task.successCount='1',
+    e=>e.identity={accountId:'OTHER',merchantCode:'M'},e=>e.main.store='OTHER',e=>e.main.supplier='OTHER',
+    e=>e.main.marker='OTHER',e=>e.rows[0].note='OTHER',e=>e.main.externalOrderId='EXTERNAL',
+    e=>e.candidates.push('PO-2'),e=>e.rows.pop(),e=>e.rows[1].sku=e.rows[0].sku,
+    e=>{[e.rows[0].amount,e.rows[1].amount]=[e.rows[1].amount,e.rows[0].amount];},
+    e=>e.rows[0].quantity='3',e=>e.rows[0].amount='',e=>e.rows[0].status='待提交',
+    e=>e.main.status='已完成',e=>e.main.status='未知',e=>e.listingStatus='0',e=>e.files=[]]){
+    const e=voidEvidence(p);change(e);assert.throws(()=>checkCreatedPurchase(p,r,e));
+  }
+  const e=evidence(p);e.listingStatus='synthetic-nonpending';assert.throws(()=>checkCreatedPurchase(p,r,e),{code:'PURCHASE_STATUS_CHANGED'});
+});
+test('observing a void retains the original receipt and prevents duplicate upload after restart',async t=>{
+  const f=await fixture(t),p=reserve(f);sent(f,p);f.ledger.accepted(receipt(p));let observations=0;
+  const c=new MachinePurchaseCreate({ledger:f.ledger,adapter:{
+    prepare:()=>assert.fail('must not prepare'),upload:()=>assert.fail('must not upload'),
+    observe:async()=>{observations++;return voidEvidence(p);}}});
+  c.start(p.id);await c.pending;
+  assert.equal(c.status(p.id).binding.status,'已作废');assert.match(c.status(p.id).stage,/已作废/);
+  assert.equal(f.ledger.get(p.id).receipt.taskId,receipt(p).taskId);assert.equal(f.ledger.get(p.id).uploadAttempted,true);
+  c.start(p.id);assert.equal(observations,1);await f.reopen();
+  assert.equal(f.ledger.get(p.id).binding.status,'已作废');
+  assert.throws(()=>reserve(f,intent('another-id')),{code:'PURCHASE_ALREADY_RESERVED'});
+  assert.throws(()=>f.ledger.get('another-id'),{code:'PURCHASE_CREATE_NOT_FOUND'});
+});

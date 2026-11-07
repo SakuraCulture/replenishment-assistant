@@ -1,0 +1,745 @@
+{
+  "passed": true,
+  "app": "补货助手",
+  "version": "0.47.4",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "源码运行",
+  "build_id": "未打包",
+  "application_pid": 34256,
+  "frozen_exe": false,
+  "checks": [
+    "Unentered page has no page, worker or schedule timer",
+    "No analysis directory or database on ordinary startup",
+    "No heavy analysis imports before entry",
+    "First entry lazily creates independent database",
+    "Analysis adopts supply routes from the saved parameter-page database",
+    "Same worker projection publishes complete synthetic daily snapshot",
+    "Actual acquisition worker publishes all selected stores",
+    "All selected stores use one native batch command in their selected order",
+    "Analysis persists the shared command association for every store",
+    "Default view excludes stopped and disabled items from both numerator and denominator",
+    "Actual page shows weighted numerator and denominator",
+    "Store cuts display both exact code and saved snapshot name",
+    "Details display both store and product code and name",
+    "Product and store cross-cut includes both identities",
+    "Readable filter labels preserve exact code-only selection",
+    "View all updates numerator and denominator",
+    "View retired updates numerator and denominator",
+    "View assessment updates numerator and denominator",
+    "View both updates numerator and denominator",
+    "Source and mandatory cross-cut reconciles with total",
+    "Double-click cut applies exact filters",
+    "Actual worker exports independent detailed workbook",
+    "Workbook and actual page agree",
+    "Status filters apply to current cards and product details",
+    "Status-filtered export equals visible totals",
+    "Rerun button creates a fresh successful native collection with both stores",
+    "Explicit rerun gets new platform command and warehouse receipt without changing original task",
+    "Recalculate button publishes new revision with live RPC forbidden",
+    "Recalculation creates fresh snapshots and preserves original metric",
+    "Delete-log button removes task from list while preserving current analysis",
+    "Deleted-log result links remain available for future recalculation without restoring logs",
+    "Cancelling deletion confirmation preserves analysis results",
+    "Date-scoped data deletion refreshes empty state with no stale results",
+    "Analysis data deletion preserves input originals and platform command records",
+    "Leave cancels query and releases page 0",
+    "Leave cancels query and releases page 1",
+    "Leave cancels query and releases page 2",
+    "Spawned workers never create/import Qt application",
+    "All original business tables retain exact ordered signatures",
+    "Original route and mandatory profile bytes unchanged",
+    "Entering and collecting do not enable daily schedule",
+    "No worker or polling remains after leaving",
+    "Corrupt analysis database produces an analysis error",
+    "Original business remains available after analysis corruption"
+  ],
+  "workers": [
+    {
+      "pid": 45564,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 27940,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 38068,
+      "qt_loaded": false,
+      "operation": "adopt"
+    },
+    {
+      "pid": 38068,
+      "qt_loaded": false,
+      "operation": "adopt"
+    },
+    {
+      "pid": 10956,
+      "qt_loaded": false,
+      "operation": "ingest"
+    },
+    {
+      "pid": 10956,
+      "qt_loaded": false,
+      "operation": "ingest"
+    },
+    {
+      "pid": 45708,
+      "qt_loaded": false,
+      "operation": "collect"
+    },
+    {
+      "pid": 45724,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 42832,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 45708,
+      "qt_loaded": false,
+      "operation": "collect"
+    },
+    {
+      "pid": 28396,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 42464,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 20772,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 45004,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 45924,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 44956,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 45728,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 44560,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 43128,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 5812,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 45124,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 4236,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 39248,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 8684,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 41980,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 41980,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 37492,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 24628,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 24628,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 39132,
+      "qt_loaded": false,
+      "operation": "run"
+    },
+    {
+      "pid": 26992,
+      "qt_loaded": false,
+      "operation": "run_action_preview"
+    },
+    {
+      "pid": 42116,
+      "qt_loaded": false,
+      "operation": "rerun"
+    },
+    {
+      "pid": 43032,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 41500,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 5936,
+      "qt_loaded": false,
+      "operation": "run"
+    },
+    {
+      "pid": 17076,
+      "qt_loaded": false,
+      "operation": "run_action_preview"
+    },
+    {
+      "pid": 6688,
+      "qt_loaded": false,
+      "operation": "recalculate"
+    },
+    {
+      "pid": 24536,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 43668,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 37780,
+      "qt_loaded": false,
+      "operation": "run"
+    },
+    {
+      "pid": 4280,
+      "qt_loaded": false,
+      "operation": "run_action_preview"
+    },
+    {
+      "pid": 45112,
+      "qt_loaded": false,
+      "operation": "delete_run_log"
+    },
+    {
+      "pid": 26992,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 35764,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 44900,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 35976,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 20056,
+      "qt_loaded": false,
+      "operation": "cleanup_preview"
+    },
+    {
+      "pid": 20428,
+      "qt_loaded": false,
+      "operation": "cleanup_preview"
+    },
+    {
+      "pid": 33952,
+      "qt_loaded": false,
+      "operation": "cleanup"
+    },
+    {
+      "pid": 40652,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 9256,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 33056,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 43644,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 41992,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 4472,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 24952,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 21788,
+      "qt_loaded": false,
+      "operation": "query"
+    }
+  ],
+  "pipeline_scopes": [
+    {
+      "warehouse_codes": [
+        "S",
+        "T"
+      ]
+    },
+    {
+      "warehouse_codes": [
+        "S",
+        "T"
+      ]
+    }
+  ],
+  "business_signatures": {
+    "jobs": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_orders": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_revisions": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_work_revisions": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "presets": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sqlite_sequence": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stores": "c674421c1734bd3cdbf1589b2ccacf5d21102ac827ea251a34c01670eb8ccb60"
+  },
+  "heartbeat_ticks": 648,
+  "max_heartbeat_gap_seconds": 0.14100000000053114,
+  "limits": "Marked synthetic originals; real Qt, spawned worker and Excel. No live platform requests. Not a low-spec business-PC measurement.",
+  "process_exit": 0,
+  "seconds": 24.485000000000582,
+  "tree_peak_rss": 380338176,
+  "children_peak_rss": 375885824,
+  "temporary_peak_bytes": 17248,
+  "processes": {
+    "40356": {
+      "peak_rss": 4452352,
+      "read_bytes": 448,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0
+    },
+    "44256": {
+      "peak_rss": 8032256,
+      "read_bytes": 0,
+      "write_bytes": 0,
+      "cpu_seconds": 0.015625
+    },
+    "34256": {
+      "peak_rss": 240869376,
+      "read_bytes": 20463626,
+      "write_bytes": 1544459,
+      "cpu_seconds": 5.4375
+    },
+    "35688": {
+      "peak_rss": 45539328,
+      "read_bytes": 6732514,
+      "write_bytes": 366,
+      "cpu_seconds": 0.734375
+    },
+    "45656": {
+      "peak_rss": 47026176,
+      "read_bytes": 7109926,
+      "write_bytes": 13502,
+      "cpu_seconds": 0.59375
+    },
+    "45564": {
+      "peak_rss": 23793664,
+      "read_bytes": 2175227,
+      "write_bytes": 406977,
+      "cpu_seconds": 0.203125
+    },
+    "27940": {
+      "peak_rss": 21319680,
+      "read_bytes": 2041227,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "38068": {
+      "peak_rss": 45051904,
+      "read_bytes": 6435649,
+      "write_bytes": 0,
+      "cpu_seconds": 0.5625
+    },
+    "10956": {
+      "peak_rss": 47255552,
+      "read_bytes": 7410539,
+      "write_bytes": 467565,
+      "cpu_seconds": 0.546875
+    },
+    "45708": {
+      "peak_rss": 46202880,
+      "read_bytes": 7252823,
+      "write_bytes": 148002,
+      "cpu_seconds": 0.515625
+    },
+    "45724": {
+      "peak_rss": 20840448,
+      "read_bytes": 1941515,
+      "write_bytes": 0,
+      "cpu_seconds": 0.15625
+    },
+    "42832": {
+      "peak_rss": 20783104,
+      "read_bytes": 1854687,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "28396": {
+      "peak_rss": 20721664,
+      "read_bytes": 1840519,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "42464": {
+      "peak_rss": 21483520,
+      "read_bytes": 1941644,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "20772": {
+      "peak_rss": 23089152,
+      "read_bytes": 2104836,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "45004": {
+      "peak_rss": 21467136,
+      "read_bytes": 1940236,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "45924": {
+      "peak_rss": 20496384,
+      "read_bytes": 2232247,
+      "write_bytes": 6095,
+      "cpu_seconds": 0.15625
+    },
+    "44956": {
+      "peak_rss": 21471232,
+      "read_bytes": 1940268,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "45728": {
+      "peak_rss": 22892544,
+      "read_bytes": 1958156,
+      "write_bytes": 0,
+      "cpu_seconds": 0.15625
+    },
+    "44560": {
+      "peak_rss": 20815872,
+      "read_bytes": 2232242,
+      "write_bytes": 6095,
+      "cpu_seconds": 0.109375
+    },
+    "43128": {
+      "peak_rss": 21565440,
+      "read_bytes": 1941660,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "5812": {
+      "peak_rss": 22069248,
+      "read_bytes": 1941663,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "45124": {
+      "peak_rss": 20627456,
+      "read_bytes": 1827009,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "4236": {
+      "peak_rss": 20422656,
+      "read_bytes": 2232255,
+      "write_bytes": 4341,
+      "cpu_seconds": 0.140625
+    },
+    "39248": {
+      "peak_rss": 20533248,
+      "read_bytes": 1858154,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "8684": {
+      "peak_rss": 21553152,
+      "read_bytes": 1941659,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "41980": {
+      "peak_rss": 45752320,
+      "read_bytes": 6661598,
+      "write_bytes": 46423,
+      "cpu_seconds": 0.515625
+    },
+    "37492": {
+      "peak_rss": 21553152,
+      "read_bytes": 1941663,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "24628": {
+      "peak_rss": 45531136,
+      "read_bytes": 6702782,
+      "write_bytes": 52542,
+      "cpu_seconds": 0.546875
+    },
+    "39132": {
+      "peak_rss": 21422080,
+      "read_bytes": 1940076,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "26992": {
+      "peak_rss": 21192704,
+      "read_bytes": 1826829,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "42116": {
+      "peak_rss": 46813184,
+      "read_bytes": 7892655,
+      "write_bytes": 288116,
+      "cpu_seconds": 0.734375
+    },
+    "43032": {
+      "peak_rss": 21233664,
+      "read_bytes": 1899987,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "41500": {
+      "peak_rss": 20799488,
+      "read_bytes": 1854698,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "5936": {
+      "peak_rss": 21245952,
+      "read_bytes": 1940076,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "17076": {
+      "peak_rss": 20496384,
+      "read_bytes": 2128952,
+      "write_bytes": 2429,
+      "cpu_seconds": 0.125
+    },
+    "6688": {
+      "peak_rss": 46714880,
+      "read_bytes": 7460244,
+      "write_bytes": 333918,
+      "cpu_seconds": 0.546875
+    },
+    "24536": {
+      "peak_rss": 21499904,
+      "read_bytes": 2041057,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "43668": {
+      "peak_rss": 22925312,
+      "read_bytes": 2240442,
+      "write_bytes": 5068,
+      "cpu_seconds": 0.125
+    },
+    "37780": {
+      "peak_rss": 17846272,
+      "read_bytes": 1826841,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "4280": {
+      "peak_rss": 22495232,
+      "read_bytes": 1941648,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "45112": {
+      "peak_rss": 20860928,
+      "read_bytes": 1827384,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "35764": {
+      "peak_rss": 20865024,
+      "read_bytes": 2240441,
+      "write_bytes": 5068,
+      "cpu_seconds": 0.125
+    },
+    "44900": {
+      "peak_rss": 20942848,
+      "read_bytes": 1901883,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "35976": {
+      "peak_rss": 23367680,
+      "read_bytes": 2170529,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "20056": {
+      "peak_rss": 23195648,
+      "read_bytes": 2035918,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "20428": {
+      "peak_rss": 17559552,
+      "read_bytes": 2052329,
+      "write_bytes": 403,
+      "cpu_seconds": 0.125
+    },
+    "33952": {
+      "peak_rss": 23465984,
+      "read_bytes": 2261415,
+      "write_bytes": 223066,
+      "cpu_seconds": 0.09375
+    },
+    "40652": {
+      "peak_rss": 21319680,
+      "read_bytes": 1940064,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "9256": {
+      "peak_rss": 21159936,
+      "read_bytes": 1907184,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "39752": {
+      "peak_rss": 21962752,
+      "read_bytes": 2049125,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "33056": {
+      "peak_rss": 22761472,
+      "read_bytes": 1957977,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "43644": {
+      "peak_rss": 23007232,
+      "read_bytes": 2072311,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "10432": {
+      "peak_rss": 17678336,
+      "read_bytes": 1788971,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "41992": {
+      "peak_rss": 20844544,
+      "read_bytes": 1854517,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "4472": {
+      "peak_rss": 23080960,
+      "read_bytes": 2080508,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "35728": {
+      "peak_rss": 21164032,
+      "read_bytes": 1907165,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "24952": {
+      "peak_rss": 20869120,
+      "read_bytes": 1854512,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "21788": {
+      "peak_rss": 23015424,
+      "read_bytes": 2068115,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "38464": {
+      "peak_rss": 20709376,
+      "read_bytes": 2094514,
+      "write_bytes": 1486,
+      "cpu_seconds": 0.0625
+    }
+  },
+  "application_peak_rss": 240869376,
+  "analysis_worker_peak_rss": 47255552
+}

@@ -1,0 +1,1389 @@
+{
+  "passed": false,
+  "cases": [
+    {
+      "case": "QA_A/山东仓/None/None/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 1008.0,
+      "new_amount": 1008.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/山东仓/None/None/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 1008.0,
+      "new_amount": 1008.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/山东仓/None/0/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/山东仓/None/0/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/山东仓/None/60/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 63.0,
+      "new_amount": 63.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/山东仓/None/60/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 63.0,
+      "new_amount": 63.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/None/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 1014.0,
+      "new_amount": 1014.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/None/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 1014.0,
+      "new_amount": 1014.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/0/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/0/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/60/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/山东仓/河北仓/60/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/None/None/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 462.0,
+      "new_amount": 462.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/河北仓/None/None/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 462.0,
+      "new_amount": 462.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/河北仓/None/0/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/河北仓/None/0/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/河北仓/None/60/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/河北仓/None/60/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/None/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 834.0,
+      "new_amount": 834.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/None/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 834.0,
+      "new_amount": 834.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/0/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/0/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/60/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_A/河北仓/山东仓/60/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/None/None/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 1008.0,
+      "new_amount": 1008.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/山东仓/None/None/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 1008.0,
+      "new_amount": 1008.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/山东仓/None/0/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/山东仓/None/0/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/山东仓/None/60/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 63.0,
+      "new_amount": 63.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/山东仓/None/60/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 63.0,
+      "new_amount": 63.0,
+      "changed_skus": [
+        "child_missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/None/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 1014.0,
+      "new_amount": 1014.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/None/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 1014.0,
+      "new_amount": 1014.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/0/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/0/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/60/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/山东仓/河北仓/60/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/None/None/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 462.0,
+      "new_amount": 462.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/河北仓/None/None/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 462.0,
+      "new_amount": 462.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/河北仓/None/0/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/河北仓/None/0/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/河北仓/None/60/True",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/河北仓/None/60/False",
+      "rows": 12,
+      "single_warehouse": true,
+      "old_issues": 1,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 2,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [
+        "missing",
+        "local"
+      ],
+      "oracle_differences": 4
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/None/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 834.0,
+      "new_amount": 834.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/None/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 834.0,
+      "new_amount": 834.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/0/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/0/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 0.0,
+      "new_amount": 0.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/60/True",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    },
+    {
+      "case": "QA_B/河北仓/山东仓/60/False",
+      "rows": 12,
+      "single_warehouse": false,
+      "old_issues": 0,
+      "new_issues": 0,
+      "old_local": 1,
+      "new_local": 1,
+      "old_amount": 62.0,
+      "new_amount": 62.0,
+      "changed_skus": [],
+      "oracle_differences": 0
+    }
+  ],
+  "unexpected_differences": [
+    [
+      "QA_A/山东仓/None/None/True",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/None/True",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/None/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/None/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/None/False",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/None/False",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/None/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/None/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/0/True",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/0/True",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/0/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/0/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/0/False",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/0/False",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/0/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/0/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/60/True",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/60/True",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/60/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/60/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/60/False",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/60/False",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/山东仓/None/60/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/山东仓/None/60/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/None/True",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/None/True",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/None/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/None/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/None/False",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/None/False",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/None/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/None/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/0/True",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/0/True",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/0/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/0/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/0/False",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/0/False",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/0/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/0/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/60/True",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/60/True",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/60/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/60/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/60/False",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/60/False",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_A/河北仓/None/60/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_A/河北仓/None/60/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/None/True",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/None/True",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/None/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/None/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/None/False",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/None/False",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/None/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/None/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/0/True",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/0/True",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/0/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/0/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/0/False",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/0/False",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/0/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/0/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/60/True",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/60/True",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/60/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/60/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/60/False",
+      "$.baseline[6]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/60/False",
+      "$.baseline[6]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/山东仓/None/60/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由山东仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/山东仓/None/60/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/None/True",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/None/True",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/None/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/None/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/None/False",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/None/False",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/None/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/None/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/0/True",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/0/True",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/0/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/0/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/0/False",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/0/False",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/0/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/0/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/60/True",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/60/True",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/60/True",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/60/True",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/60/False",
+      "$.baseline[3]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/60/False",
+      "$.baseline[3]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ],
+    [
+      "QA_B/河北仓/None/60/False",
+      "$.baseline[11]._meta.routing.reason",
+      "value",
+      "'已导入的仓资料均未匹配，标记地采'",
+      "'本次仅由河北仓供货，该仓无此商品，按本次地采处理'"
+    ],
+    [
+      "QA_B/河北仓/None/60/False",
+      "$.baseline[11]._meta.routing.version",
+      "value",
+      "'0.5.0'",
+      "'0.5.2'"
+    ]
+  ],
+  "input_hashes": {
+    "catalogs.json": "aca54f7a2676a02a323274e9964457ea58971634852f68c391e9b12861438982",
+    "duplicate.xlsx": "3d2729399a167f93203cbfc6fabd19e23b5cfb66e401882c3b8c6dc8744eba95",
+    "sales.xlsx": "d48224c4ead009e26eb6c3c5192593020a8c38e8f839560d8c1dd6540a6403e2",
+    "山东仓.xlsx": "258d7d4241eb4f3f8ff41dcc7e8ab93439af2c8ae6161bcce1cc7bf7771b0634",
+    "河北仓.xlsx": "49cd4ac5da0c5a449c203456ac585f3deca987e00b8d2d04dc9309e4b389aace"
+  },
+  "comparison": "Exact type, value, row and dictionary order. Old engine oracle scopes only the routing warehouse rows; approved single-local audit reason/version are explicit. No model or budget changes.",
+  "ignored_fields": [
+    "result.created",
+    "result.task.pid/started/finished",
+    "result.version.version/source_commit/build_id/built_at/routing_version"
+  ],
+  "scope": "Synthetic two-store, both single/dual directions, 3 budgets and both one-box settings. No production data or platform calls."
+}

@@ -6,7 +6,7 @@ from pathlib import Path
 import parameter_schema as schema
 import storage_chunks as chunks
 from version_info import MODEL_VERSION
-from io_stages import stage,digest as digest_bytes,compress as compress_bytes
+from io_stages import stage,digest as digest_bytes
 
 def now():return datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds')
 def today():return now()[:10]
@@ -119,7 +119,7 @@ class Repository:
             if old and expected_revision!=old[0]:raise Conflict('该日期已有记录或已被另一窗口更新，请重新查看差异并确认覆盖')
             if not old and expected_revision is not None:raise Conflict('原记录已发生变化，请重新保存')
             if old and digest==old[1]:return {'revision':old[0],'saved':old[2],'digest':digest}
-            blob=chunks.put(db,raw) if isinstance(raw,chunks.Prepared) else compress_bytes(raw,progress)
+            blob=chunks.put(db,raw)
             revision=uuid.uuid4().hex
             db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET revision=excluded.revision,digest=excluded.digest,saved=excluded.saved,summary=excluded.summary,payload=excluded.payload',(day,revision,digest,stamp,dumps(info),blob))
         return {'revision':revision,'saved':stamp,'digest':digest}

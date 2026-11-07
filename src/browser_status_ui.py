@@ -1,5 +1,6 @@
-"""Small global indicators. Observe existing transports only; never start/reconnect them."""
+"""Transport observation plus separately verified startup-login status."""
 import time
+import shiboken6
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QWidget,QHBoxLayout,QLabel
 from aoxiang_ui_common import Call
@@ -45,27 +46,43 @@ class BrowserStatus(QWidget):
             if name!='河北仓':row.addSpacing(10)
         host.statusBar().setSizeGripEnabled(False)
         host.statusBar().addPermanentWidget(self)
+        startup=getattr(host,'browser_startup',None)
+        if startup:
+            from ui_controls import button
+            row.addWidget(button('连接检查 / 修复',startup.open_details))
+            startup.changed.connect(self.render)
         self.timer=QTimer(self);self.timer.setInterval(INTERVAL_MS);self.timer.timeout.connect(self.refresh);self.timer.start()
-        QTimer.singleShot(0,self.refresh)
+        self.initial=QTimer(self);self.initial.setSingleShot(True);self.initial.timeout.connect(self.refresh);self.initial.start(0)
 
     def owner(self,kind):
         manager=getattr(self.host,'aoxiang_workflows' if kind=='ax' else 'catalog_sessions',None)
         return getattr(manager,'session',None)
 
     def set_state(self,name,state):
+        if not shiboken6.isValid(self) or not shiboken6.isValid(self.dots[name]):return
         state=state if state in STATES else 'UNKNOWN';self.states[name]=state
-        text,color=STATES[state];self.dots[name].setStyleSheet(f'color:{color};font-size:12px;')
+        text,color=STATES[state]
+        tip=name+'：'+text+'。约每3秒更新；仅表示浏览器连接，不代表网站登录有效或业务核验通过。'
+        startup=getattr(self.host,'browser_startup',None)
+        owner=self.owner('ax' if name=='翱象' else 'jst')
+        checked=startup.presentation(name,state,getattr(owner,'client',None)) if startup else None
+        if checked:
+            text,color,detail=checked;tip=name+'：'+detail+'\n登录核验仅代表最近检查时刻；业务执行前仍核验账号与范围。'
+        self.dots[name].setStyleSheet(f'color:{color};font-size:12px;')
         self.labels[name].setText(name+' '+text);self.labels[name].setAccessibleName(name+'浏览器连接'+text)
-        tip=name+'：'+text+'。约每3秒更新；仅表示浏览器连接，不代表网站登录有效或业务核验通过。\n只读取已有连接，不主动重连或触发授权。'
-        if state=='DISCONNECTED':tip+='\n请到对应连接窗口检查浏览器，需要时主动重连；原任务不会自动重发。'
-        elif state=='UNKNOWN':tip+='\n暂未取得可靠状态，不据此停止或重发业务任务。'
+        if state=='DISCONNECTED' and not checked:tip+='\n请点击“连接检查 / 修复”查看原因并重试；原任务不会自动重发。'
+        elif state=='UNKNOWN' and not checked:tip+='\n暂未取得可靠状态，不据此停止或重发业务任务。'
         self.labels[name].setToolTip(tip);self.dots[name].setToolTip(tip)
+
+    def render(self):
+        if not shiboken6.isValid(self) or self.paused:return
+        for name,state in list(self.states.items()):self.set_state(name,state)
 
     def set_group(self,kind,state):
         for name in NAMES[kind]:self.set_state(name,state)
 
     def refresh(self):
-        if self.paused:return
+        if not shiboken6.isValid(self) or self.paused:return
         for kind in NAMES:
             owner=self.owner(kind);client=getattr(owner,'client',None)
             if client is None:self.set_group(kind,'NOT_CONNECTED');continue
@@ -91,7 +108,7 @@ class BrowserStatus(QWidget):
             task.succeeded.connect(apply);task.failed.connect(failed);task.finished.connect(finished);task.start()
 
     def prepare_close(self):
-        self.paused=self.close_requested=True;self.timer.stop()
+        self.paused=self.close_requested=True;self.timer.stop();self.initial.stop()
         return not self.workers
 
     def resume(self):

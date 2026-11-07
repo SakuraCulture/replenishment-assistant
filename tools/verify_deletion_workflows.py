@@ -37,11 +37,15 @@ def exe(a):
     env={**os.environ,'REPLENISHMENT_DATA_DIR':str(out/'settings'),'PYTHONIOENCODING':'utf-8'};env.pop('QT_QPA_PLATFORM',None)
     start=time.perf_counter()
     with (out/'process.txt').open('w',encoding='utf-8') as log:
-        result=subprocess.run([str(a.exe.resolve()),'--deletion-smoke',str(a.fixture.resolve()),str(out)],cwd=ROOT,env=env,stdout=log,stderr=log,timeout=300)
+        process=subprocess.Popen([str(a.exe.resolve()),'--deletion-smoke',str(a.fixture.resolve()),str(out)],cwd=ROOT,env=env,stdout=log,stderr=log)
+        try:code=process.wait(timeout=300)
+        except subprocess.TimeoutExpired:
+            save(out/'pending-process.json',{'pid':process.pid,'state':'Still running; commit state unknown; not terminated'})
+            raise RuntimeError(f'EXE {process.pid} still running; inspect before continuing')
     report=json.loads((out/'deletion-report.json').read_text('utf-8'))
-    report.update(process_exit=result.returncode,exe_sha256=q.sha(a.exe),seconds=time.perf_counter()-start)
+    report.update(process_exit=code,exe_sha256=q.sha(a.exe),seconds=time.perf_counter()-start)
     save(out/'deletion-report.json',report);print(json.dumps({'passed':report['passed'],'frozen_exe':report.get('frozen_exe'),'seconds':report['seconds']}))
-    if result.returncode or not report['passed'] or not report.get('frozen_exe'):raise AssertionError('Actual EXE acceptance failed')
+    if code or not report['passed'] or not report.get('frozen_exe'):raise AssertionError('Actual EXE acceptance failed')
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);s=p.add_subparsers(dest='mode',required=True)

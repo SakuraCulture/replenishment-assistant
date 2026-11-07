@@ -42,7 +42,9 @@ def prepare_owned_batch(repository,payload,codes,progress=lambda s:None,cancel=N
         same=bool(head_order and head_order['digest']==normal_orders.fingerprint_owned(result,frozen.get('new_focus')))
         old=repository.get(frozen['day'],store,head_order['revision'],view='export' if same else None,progress=progress) if head_order else None
         if not same:
-            if frozen['day']!=wr.today():raise ValueError('历史只读，请从历史页导出已签发修订')
+            if frozen['day']!=wr.today():
+                from job_date_messages import export_previous
+                raise ValueError(export_previous(frozen['day'],wr.today(),bool(head_order)))
             if frozen.get('admission_required'):
                 from admission import verify_result
                 with closing(repository.work.connect()) as db:verify_result(db,result,required=True)

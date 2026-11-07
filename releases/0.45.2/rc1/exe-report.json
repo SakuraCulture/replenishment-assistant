@@ -1,0 +1,49 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "local failed preparation: no fake preview, failure reason enabled, zero-success summary; no browser involved",
+    "two-store Windows spawn calculation, draft save and atomic signature",
+    "actual deletion preview cancelled without mutation",
+    "close deletion progress: safe cancellation and original order retained",
+    "local preparation REVIEW no longer blocks deletion; unselected batch item and count preserved",
+    "actual blocker dialog: cancel, explicitly end only selected local preparation, retain unselected queued task; no platform submission",
+    "retry after cancellation; legacy ijson parser in work process; exact sibling signed/current result retained; current table refreshed",
+    "repeat removed target rejected; process error returned without blocking"
+  ],
+  "heartbeat_ticks": 148,
+  "max_gap_seconds": 0.375,
+  "scope": "whole scripted walk, including synchronous fixture checks/screenshots",
+  "app": "补货助手",
+  "version": "0.45.2",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.1",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "0b0f5b743e1039803e79670fe118e14292a3c1c3",
+  "build_id": "rc1",
+  "built_at": "2026-11-06T17:05:15.477666+08:00",
+  "source_archive_sha256": "197119d7b151de2e82ecc2bb9c5e81ac9d888524b1c6f528e9856f504dd24ecd",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "0b0f5b743e1039803e79670fe118e14292a3c1c3",
+    "files": 868,
+    "manifest_sha256": "c3ca886296a7a71ddd6e1ef92c8511abccb52031ea4fdde5fbd1402a8abc15dc",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "c2b089ebd482855c210cb3be42e504a5df447efc98f92ccc39006714f5e1aa82",
+    "files": 8,
+    "source_commit": "0b0f5b743e1039803e79670fe118e14292a3c1c3",
+    "contains_user_state": false
+  },
+  "process_exit": 0,
+  "exe_sha256": "f2d9afa3ddf9dd11ed41468e6c7178ff0f840000cbea32fc4a64a72162ca5854",
+  "seconds": 13.400365299999976
+}

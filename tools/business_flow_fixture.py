@@ -26,7 +26,7 @@ def prepare(out, stores=60, products=200):
     import jst_batches as batches
     import jst_orders as jst
     import openpyxl
-    work, _, original = seed(out, chunked=True)
+    work, _, original = seed(out)
     # All order quantities come from an unchanged model-generated fixture.
     with closing(work.connect()) as db, db:
         db.execute('DELETE FROM normal_orders')

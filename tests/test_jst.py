@@ -118,7 +118,7 @@ class Service(unittest.TestCase):
         p=copy.deepcopy(self.f.payload);p['result']['store']='U';p['result']['store_name']='第二店';d=no.fingerprint(p['result'])
         with closing(sqlite3.connect(self.path)) as db,db:
             db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),'U','normal_model','oid-u','BH-U-ZC',1))
-            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid-u',1,d,wr.now(),no.encode(p)))
+            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid-u',1,d,wr.now(),no.encode(p, db)))
         h=next(h for h in purchases.targets(self.path) if h['store']=='U' and h['warehouse']=='河北仓')
         old=self.f.h;self.f.h=h
         try:self.f.save('return',[{'门店编码':'U','门店确认数量':80}])

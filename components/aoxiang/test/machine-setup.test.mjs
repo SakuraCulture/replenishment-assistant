@@ -12,6 +12,48 @@ import {BoundBrowserPool} from '../src/bound-browser.mjs';
 const identity={accountId:'001',merchantCode:'M',displayName:'测试商家'};
 const target=code=>({buyerWarehouseCode:code,displayName:code,operatingStores:[],mappingSource:'fixture',mappingVerifiedAt:'2026-11-01T00:00:00Z'});
 const params=root=>({candidate:{edge_executable:'C:/Edge/msedge.exe',actual_profile_path:'C:/EdgeData/Profile1'},output_root:path.join(root,'output'),targets:[{code:'W2',name:'门店2'},{code:'W1',name:'门店1'}]});
+test('startup checks saved login without querying stores, changing mappings or committing configuration',async t=>{
+  const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};
+  t.after(()=>c.setup.browsers.close());
+  let job=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(job.id);
+  const before=await readConfiguration(c.root),client=c.setup.browsers.browser.client;c.calls.length=0;
+  c.setup.checkOutputRoot=async()=>{throw Error('Login check must not inspect or create export output directories');};
+  validateRequest({protocol_version:1,request_id:'startup',action:'setup.check_login'});
+  assert.throws(()=>validateRequest({protocol_version:1,request_id:'bad',action:'setup.check_login',codes:['W1']}));
+  assert.throws(()=>validateRequest({protocol_version:1,request_id:'bad',action:'setup.verify_saved',codes:[]}));
+  job=await c.setup.verifySaved([]);await c.setup.promise;
+  assert.equal(c.setup.status(job.id).state,'VERIFIED');assert.deepEqual(c.calls,['recheck']);
+  assert.deepEqual(await readConfiguration(c.root),before);assert.equal(c.setup.browsers.browser.client,client);
+});
+test('startup rejects missing configuration and changed login without saving a replacement identity',async t=>{
+  const c=await context(t);await assert.rejects(c.setup.verifySaved([]),{code:'NOT_CONFIGURED'});
+  c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};t.after(()=>c.setup.browsers.close());
+  const job=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(job.id);
+  const before=await readConfiguration(c.root);
+  c.setup.browsers.browser.client.recheckLogin=async()=>({identity:{...identity,merchantCode:'different'}});
+  await c.setup.verifySaved([]);await c.setup.promise;
+  assert.equal(c.setup.job.error.code,'WRONG_IDENTITY');assert.deepEqual(await readConfiguration(c.root),before);
+});
+test('login recheck rebuilds a disconnected browser worker instead of borrowing a stale successful connection',async t=>{
+  const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};t.after(()=>c.setup.browsers.close());
+  const job=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(job.id);
+  const old=c.setup.browsers.browser.client;old.connectionState='DISCONNECTED';c.calls.length=0;
+  await c.setup.verifySaved([]);await c.setup.promise;
+  assert.equal(old.closed,true);assert.equal(c.setup.job.state,'VERIFIED');assert.deepEqual(c.calls,['stop','new','connect']);
+});
+test('startup keeps the login page for the user and retries the same client without changing bindings',async t=>{
+  const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};t.after(()=>c.setup.browsers.close());
+  const job=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(job.id);
+  const before=await readConfiguration(c.root),client=c.setup.browsers.browser.client;
+  const original=client.recheckLogin.bind(client);let login=false;
+  client.recheckLogin=async()=>{if(!login)throw new AppError('WAIT_LOGIN','please login');return original();};
+  await c.setup.verifySaved([]);await c.setup.promise;
+  assert.equal(c.setup.job.error.code,'WAIT_LOGIN');assert.equal(client.closed,undefined);assert.equal(c.setup.busy,false);
+  assert.equal(c.setup.client,client);assert.deepEqual(await readConfiguration(c.root),before);
+  login=true;c.calls.length=0;await c.setup.verifySaved([]);await c.setup.promise;
+  assert.equal(c.setup.job.state,'VERIFIED');assert.deepEqual(c.calls,['recheck']);assert.equal(c.setup.browsers.browser.client,client);
+  assert.deepEqual(await readConfiguration(c.root),before);
+});
 test('scheduled preflight reads saved binding and cancels preview without modifying configuration',async t=>{
   const c=await context(t);let job=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(job.id);
   const before=await readConfiguration(c.root);

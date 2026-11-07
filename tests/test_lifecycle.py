@@ -90,7 +90,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(lc.history(self.path,h,'return'),[])
     def second_revision(self):
         payload=copy.deepcopy(self.payload);payload['result']['revision_marker']='second';digest=no.fingerprint(payload['result'])
-        with closing(sqlite3.connect(self.path)) as db,db:db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid',2,digest,wr.now(),no.encode(payload)));db.execute('UPDATE normal_orders SET current=2')
+        with closing(sqlite3.connect(self.path)) as db,db:db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('oid',2,digest,wr.now(),no.encode(payload, db)));db.execute('UPDATE normal_orders SET current=2')
     def test_new_signing_no_auto_transfer_old_documents(self):
         self.save('payment');self.second_revision();heads=purchases.targets(self.path);h=next(h for h in heads if h['warehouse']=='河北仓' and h['revision']==2);self.assertFalse(self.view(h)['present']['payment']);self.assertTrue(self.view()['present']['payment']);self.assertTrue(next(r for r in self.read()['records'] if r['warehouse']=='河北仓')['old_revision'])
     def test_signing_changes_after_preview_reject(self):

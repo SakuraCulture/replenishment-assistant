@@ -53,8 +53,9 @@ class Manager(QObject):
         maintenance=getattr(getattr(h,'aoxiang_workflows',None),'maintenance_depth',0)
         return bool(getattr(h,'worker',None) or pending is not None and not pending._completed or
                     maintenance or
+                    getattr(getattr(h,'browser_startup',None),'workers',None) or
                     getattr(h,'_aoxiang_dialog',None) or h.catalog_sessions.session.lease or
-                    h.jst_generator.worker or getattr(h,'closing',False))
+                    h.jst_generator.worker or getattr(getattr(h,'stockout',None),'worker',None) or getattr(h,'closing',False))
 
     def poll(self):
         if self.reader or self.closing:return
@@ -70,6 +71,9 @@ class Manager(QObject):
         def done(value):
             if value is None:return
             self.schedules,self.recent,queued=value
+            self.queued_for_execution=bool(queued)
+            stockout=getattr(self.host,'stockout',None)
+            if queued and stockout and stockout.worker:stockout.pause('定时补货已排队，分析安全让行；可稍后继续原分析任务')
             active=next((r for r in self.recent if r['state'] in ('RUNNING','PAUSING','REVIEW','COMPLETE') and not r['viewed']),None)
             future=[s['next_at'] for s in self.schedules if s['enabled'] and s.get('next_at')]
             self.status.setText(('另一个窗口负责定时执行 · ' if not self.owner else '')+

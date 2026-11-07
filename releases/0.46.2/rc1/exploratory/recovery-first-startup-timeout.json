@@ -1,0 +1,13 @@
+{
+  "frozen_exe": true,
+  "live_platform": false,
+  "passed": false,
+  "checks": [],
+  "source_commit": "e0d0f66daf3cb1cc45bbbbf96c3834146a864461",
+  "error": "Traceback (most recent call last):\n  File \"collection_maintenance_smoke.py\", line 40, in run\n  File \"collection_maintenance_smoke.py\", line 20, in wait\nTimeoutError: UI condition timed out\n",
+  "shared_component_closed": true,
+  "heartbeat_ticks": 687,
+  "max_heartbeat_gap_seconds": 0.0779999999977008,
+  "process_exit_code": 0,
+  "accepted": false
+}
