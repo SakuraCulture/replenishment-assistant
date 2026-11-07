@@ -184,11 +184,23 @@ class Workflows:
         from aoxiang_workflow_state import local_preparation,reconcile
         path=path or self.business_path
         if path is None:return
-        with self.db(True,timeout=.2) as db:
-            ids=[r[0] for r in db.execute("SELECT id FROM ax_workflows WHERE state!='RUNNING' AND (rowid IN (SELECT rowid FROM ax_workflows ORDER BY rowid DESC LIMIT 100) OR state IN ('QUEUED','YIELDED','PAUSED')) ORDER BY rowid")]
-            for id in ids:
-                job=self._get(db,id)
-                if job['kind']=='receipt':continue  # Receipt identity is its platform binding, validated at synchronization.
+        candidates=[]
+        # Idle polling must not request a writer lock. Only changed local queues
+        # enter the write transaction, with a fresh recheck of both repositories.
+        with self.db(timeout=0) as db:
+            for row in db.execute("SELECT payload FROM ax_workflows WHERE state!='RUNNING' AND (rowid IN (SELECT rowid FROM ax_workflows ORDER BY rowid DESC LIMIT 100) OR state IN ('QUEUED','YIELDED','PAUSED')) ORDER BY rowid"):
+                job=json.loads(row[0])
+                if job['kind']=='receipt':continue
+                missing=deleted_orders(path,job['items'])
+                if any(i['key'] in missing and (local_preparation(i,job['kind']) or not i.get('source_deleted')) for i in job['items']):
+                    candidates.append(job['id'])
+        if not candidates:return
+        with self.db(True,timeout=0) as db:
+            for id in candidates:
+                row=db.execute('SELECT payload FROM ax_workflows WHERE id=?',(id,)).fetchone()
+                if not row:continue
+                job=json.loads(row[0])
+                if job['state']=='RUNNING':continue
                 missing=deleted_orders(path,job['items'])
                 gone={i['key'] for i in job['items'] if i['key'] in missing and local_preparation(i,job['kind'])}
                 changed=False

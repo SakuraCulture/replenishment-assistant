@@ -110,6 +110,13 @@ class SelectedQueueTests(unittest.TestCase):
         self.s.prepare([head(1)]);self.delete_order('1');self.s.reconcile_deleted()
         self.assertEqual(self.s.list(),[]);self.assertEqual(self.api,[])
 
+    def test_valid_queue_reconciliation_under_reader_lock_is_read_only(self):
+        j=self.s.prepare([head(1)])
+        with closing(sqlite3.connect(self.s.path)) as reader:
+            reader.execute('BEGIN');reader.execute('SELECT * FROM ax_workflows').fetchall()
+            self.s.reconcile_deleted()
+            self.assertEqual(self.s.get(j['id']),j)
+
     def test_deleted_order_upload_not_attempted_is_blocked_but_bound_is_readable(self):
         item={'key':'BH-1','head':head(1),'package':{'id':'p1'}};self.delete_order('1')
         record={'state':'READY','uploadAttempted':False}

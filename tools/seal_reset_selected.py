@@ -33,10 +33,10 @@ def seal(build_id):
     assert all(sha(ROOT/p)==h for p,h in frozen['core'].items())
     assert all(sha(Path(p))==h for p,h in frozen['protected'].items())
     regression=(QA/'regression-final.txt').read_text('utf-8-sig');count=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\s*$',regression)
-    assert count and int(count[1])>=1189
+    assert count and int(count[1])>=1190
     focused=re.search(r'Ran (\d+) tests in [\d.]+s\s+OK\s*$',(QA/'focused-final.txt').read_text('utf-8-sig'))
-    assert focused and int(focused[1])>=72
-    source_ui=read(QA/'source-ui-final/report.json')
+    assert focused and int(focused[1])>=95
+    source_ui=read(QA/'source-ui-rc2/report.json')
     assert source_ui['passed'] and source_ui['version']=='0.47.5' and len(source_ui['checks'])>=13
     reports={'reset-exe.json':QA/('reset-exe-'+build_id)/'report.json','restart-exe.json':QA/('reset-exe-'+build_id)/'restart-report.json','analysis-exe.json':QA/('exe-'+build_id)/'report.json','startup-exe.json':QA/('startup-exe-'+build_id)/'report.json',
              'deletion-exe.json':QA/('deletion-exe-'+build_id)/'deletion-report.json'}
@@ -51,8 +51,8 @@ def seal(build_id):
     assert len(read(reports['deletion-exe.json'])['checks'])>=8
     release=ROOT/f'releases/0.47.5/{build_id}';release.mkdir(parents=True,exist_ok=False)
     files={'frozen.json':QA/'frozen.json','regression.txt':QA/'regression-final.txt','focused-tests.txt':QA/'focused-final.txt',
-           'source-ui.json':QA/'source-ui-final/report.json','source-restart.json':QA/'source-ui-final/restart-report.json',
-           'first-source-ui.json':QA/'source-ui-01/report.json',
+           'source-ui.json':QA/'source-ui-rc2/report.json','source-restart.json':QA/'source-ui-rc2/restart-report.json',
+           'first-source-ui.json':QA/'source-ui-01/report.json','first-regression.txt':QA/'regression-01.txt',
            'build_info.json':ROOT/f'build_0.47.5_{build_id}/build_info.json',
            **reports}
     for name,source in files.items():
@@ -73,5 +73,5 @@ def seal(build_id):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['freeze','seal']);p.add_argument('--build-id',default='rc1');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['freeze','seal']);p.add_argument('--build-id',default='rc2');a=p.parse_args()
     freeze() if a.action=='freeze' else seal(a.build_id)

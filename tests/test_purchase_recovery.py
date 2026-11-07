@@ -47,11 +47,16 @@ class PurchaseRecoveryTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name);self.cancel=threading.Event()
         self.store=Workflows(self.root)
+        import sqlite3
+        from contextlib import closing
+        with closing(sqlite3.connect(self.root/'business.sqlite3')) as db:
+            db.execute('CREATE TABLE normal_orders(oid TEXT PRIMARY KEY,day TEXT,store TEXT)')
+            db.execute('INSERT INTO normal_orders VALUES(?,?,?)',('0',head(0)['day'],'0'));db.commit()
     def tearDown(self):self.tmp.cleanup()
     def runner(self,client,**kw):
-        return Runner(self.store,client,ROOT/'components/aoxiang',self.root/'unused.sqlite3',cancel=self.cancel,
+        return Runner(self.store,client,ROOT/'components/aoxiang',self.root/'business.sqlite3',cancel=self.cancel,
                       delay=.001,verification_interval=.001,verification_wait=kw.pop('verification_wait',.1),**kw)
-    def item(self,id):return {'package':{'id':id}}
+    def item(self,id):return {'package':{'id':id},'head':head(0),'key':head(0)['number']}
     def upload_batch(self,n=2):
         p=self.store.prepare([head(i) for i in range(n)])
         for i in range(n):self.store.update(p['id'],position=i,changes={'state':'PREPARED','package':{'id':str(i)}})
