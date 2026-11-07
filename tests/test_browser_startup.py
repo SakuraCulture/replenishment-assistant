@@ -92,6 +92,14 @@ class StartupUi(unittest.TestCase):
         self.wait(lambda:'jst' not in self.ui.workers)
         self.assertIn('ax',self.ui.workers);self.assertEqual(self.ui.records['河北仓']['state'],'READY')
         self.ax.gate.set();self.wait(lambda:not self.ui.workers)
+    def test_due_schedule_waits_for_ax_startup_and_becomes_available_after_handoff(self):
+        from scheduled_ui import Manager
+        self.host.jst_generator=NS(worker=None)
+        self.ax.gate=threading.Event();self.ui.start();self.wait(lambda:'jst' not in self.ui.workers)
+        self.assertIn('ax',self.ui.workers)
+        self.assertTrue(Manager.busy(NS(host=self.host)))
+        self.ax.gate.set();self.wait(lambda:not self.ui.workers)
+        self.assertFalse(Manager.busy(NS(host=self.host)))
     def test_foreground_business_keeps_ownership_and_startup_defers(self):
         ticket=self.host.aoxiang_workflows.gate.request_foreground();lease=self.host.catalog_sessions.session.acquire()
         self.ui.start();self.assertFalse(self.ui.workers);self.assertFalse(self.ax.running or self.jst.running)

@@ -30,24 +30,25 @@ def seal(build_id):
     frozen=read(QA/'frozen.json')
     assert all(sha(ROOT/p)==h for p,h in frozen['core'].items())
     assert all(sha(Path(p))==h for p,h in frozen['protected'].items())
-    regression=(QA/'regression-final.txt').read_text('utf-8-sig');count=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\s*$',regression)
-    assert count and int(count[1])>=1134
-    assert re.search(r'Ran 37 tests .*\s+OK\s*$',(QA/'focused-03.txt').read_text('utf-8-sig'))
+    regression=(QA/'regression-final-02.txt').read_text('utf-8-sig');count=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\s*$',regression)
+    assert count and int(count[1])>=1135
+    assert re.search(r'Ran 38 tests .*\s+OK\s*$',(QA/'focused-04.txt').read_text('utf-8-sig'))
     native=(QA/'components-03.txt').read_text('utf-8-sig');assert 'pass 229' in native and 'fail 0' in native
-    assert read(QA/'source-ui-02/report.json')['passed']
-    reports={'startup-exe.json':QA/('exe-'+build_id)/'report.json','analysis-exe.json':QA/'analysis-exe/report.json',
-             'original-deletion-exe.json':QA/'original-deletion-exe/deletion-report.json'}
+    assert read(QA/'source-ui-03/report.json')['passed']
+    reports={'startup-exe.json':QA/('exe-'+build_id)/'report.json','analysis-exe.json':QA/('analysis-exe-'+build_id)/'report.json',
+             'original-deletion-exe.json':QA/('original-deletion-exe-'+build_id)/'deletion-report.json'}
     for source in reports.values():
         report=read(source)
         assert report['passed'] and report['frozen_exe'] and report['process_exit']==0
         assert report['source_commit']==build['source_commit'] and report['exe_sha256']==sha(delivery/'补货助手.exe')
-    edge=read(QA/'edge-bundle/report.json')
+    edge=read(QA/('edge-bundle-'+build_id)/'report.json')
     assert edge['passed'] and edge['closed']==[True,True] and len(edge['warehouses'])==2
     assert Path(edge['components']).resolve()==(delivery/'_internal/components').resolve()
     release=ROOT/f'releases/0.47.2/{build_id}';release.mkdir(parents=True,exist_ok=False)
-    files={'frozen.json':QA/'frozen.json','regression.txt':QA/'regression-final.txt','focused-tests.txt':QA/'focused-03.txt',
-           'components-tests.txt':QA/'components-03.txt','source-ui.json':QA/'source-ui-02/report.json',
-           'edge-bundle.json':QA/'edge-bundle/report.json','build_info.json':ROOT/f'build_0.47.2_{build_id}/build_info.json',**reports}
+    files={'frozen.json':QA/'frozen.json','regression.txt':QA/'regression-final-02.txt','focused-tests.txt':QA/'focused-04.txt',
+           'components-tests.txt':QA/'components-03.txt','source-ui.json':QA/'source-ui-03/report.json',
+           'edge-bundle.json':QA/('edge-bundle-'+build_id)/'report.json','build_info.json':ROOT/f'build_0.47.2_{build_id}/build_info.json',
+           'scheduled-gate-reproduction.txt':QA/'scheduled-gate-reproduction.txt',**reports}
     for name,source in files.items():(release/name).write_text(source.read_text('utf-8-sig').rstrip('\n')+'\n','utf-8',newline='\n')
     for source in (QA/('exe-'+build_id)).glob('*.png'):shutil.copyfile(source,release/source.name)
     hashes={p.relative_to(delivery).as_posix():sha(p) for p in sorted(delivery.rglob('*')) if p.is_file()}
@@ -63,5 +64,5 @@ def seal(build_id):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['freeze','seal']);p.add_argument('--build-id',default='rc1');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['freeze','seal']);p.add_argument('--build-id',default='rc2');a=p.parse_args()
     freeze() if a.action=='freeze' else seal(a.build_id)

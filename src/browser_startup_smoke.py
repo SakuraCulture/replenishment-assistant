@@ -48,6 +48,7 @@ def start_smoke(app,win,args):
             require(startup.started and set(startup.workers)=={'ax','jst'},'Normal launch hook starts both connection checks without a button click')
             wait(lambda:'jst' not in startup.workers)
             require('ax' in startup.workers and startup.records['河北仓']['state']=='READY','Slow AX connection does not block the two warehouse checks')
+            require(win.scheduled.busy(),'A due schedule waits for remaining startup check instead of failing on session contention')
             require(len(beats)>5,'Main window continues processing events during connection startup')
             ax.gate.set();wait(lambda:not startup.workers)
             bar.refresh();wait(lambda:not bar.workers)

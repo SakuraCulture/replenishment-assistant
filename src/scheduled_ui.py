@@ -53,6 +53,7 @@ class Manager(QObject):
         maintenance=getattr(getattr(h,'aoxiang_workflows',None),'maintenance_depth',0)
         return bool(getattr(h,'worker',None) or pending is not None and not pending._completed or
                     maintenance or
+                    getattr(getattr(h,'browser_startup',None),'workers',None) or
                     getattr(h,'_aoxiang_dialog',None) or h.catalog_sessions.session.lease or
                     h.jst_generator.worker or getattr(getattr(h,'stockout',None),'worker',None) or getattr(h,'closing',False))
 
