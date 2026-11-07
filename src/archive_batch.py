@@ -14,6 +14,8 @@ from history_read import repository
 from runtime_support import checkpoint, Cancelled
 from xlsx_exports import stream_book, write_table
 from export_progress import RowProgress
+from export_files import publish_new,sha256,explain_error
+import export_receipts as receipts
 
 TITLES={'calculation':'完整计算表','signed':'签发建议','original':'商品资料原文件','reference':'商品资料核对表（加工表）'}
 IDENTITY=['订单 / 业务日期','订单 / 门店编码','订单 / 门店名称','订单 / 仓库','订单 / 补货单号','订单 / 修订']
@@ -138,9 +140,9 @@ def write_group(repo,plan,items,target,progress,cancel):
             checkpoint(cancel)
             with closing(repo.work.connect()) as db:
                 for item in items:ao.require_active(db,item['head']['oid'],wh)
-            os.link(tmp,target)
+            digest=sha256(tmp);publish_new(tmp,target)
         finally:Path(tmp).unlink(missing_ok=True)
-        return
+        return digest
     union=list(dict.fromkeys(c for item in items for c in item['columns']))
     total=sum(item['count'] for item in items)
     if total+1>MAX_ROWS or len(union)+len(IDENTITY)>MAX_COLUMNS:raise ValueError('超过Excel容量，请缩小范围或分别导出；未截断')
@@ -164,19 +166,19 @@ def write_group(repo,plan,items,target,progress,cancel):
             progress('明细已写完，正在压缩保存；完成当前安全步骤后响应取消…');book.save(tmp);checkpoint(cancel)
             with closing(repo.work.connect()) as db:
                 for item in items:ao.require_active(db,item['head']['oid'],wh)
-            os.link(tmp,target)
+            digest=sha256(tmp);publish_new(tmp,target)
     finally:Path(tmp).unlink(missing_ok=True)
+    return digest
 
 def execute(path,plan,folder,allow_partial=False,progress=lambda _:None,cancel=None):
     missing=[i for i in plan['items'] if i['error']]
     if missing and not allow_partial:raise ValueError('存在不可导出单据，请明确选择仅导出可用部分')
     if not groups(plan):raise ValueError('没有可导出单据')
     root=Path(folder)/('归档导出-'+uuid.uuid4().hex[:12]);root.mkdir(parents=True,exist_ok=False)
-    result={'directory':str(root),'files':[],'failed':[],'skipped':missing,'cancelled':[],'kind':plan['kind'],'mode':plan['mode']}
+    result={'directory':str(root),'files':[],'failed':[],'skipped':missing,'cancelled':[],'kind':plan['kind'],'mode':plan['mode'],'warnings':[]}
     repo=repository(path);units=groups(plan)
+    pending=[]
     for index,items in enumerate(units):
-        if cancel is not None and cancel.is_set():
-            result['cancelled'].extend(x for unit in units[index:] for x in unit);break
         h=items[0]['head'];wh=h['warehouse'];days=[i['head']['day'] for i in items]
         name=(h['day']+safe(h.get('name',h['store']))+'-'+safe(h['store'])+f'（{TITLES[plan["kind"]]}·{wh}·V{h["revision"]:03d}）') if plan['mode']=='separate' else (min(days)+'至'+max(days)+f'（{TITLES[plan["kind"]]}汇总·{wh}·{len(items)}单）')
         suffix='.xlsx'
@@ -184,18 +186,33 @@ def execute(path,plan,folder,allow_partial=False,progress=lambda _:None,cancel=N
             suffix=Path(items[0]['name']).suffix or '.xlsx'
             name=(name if plan['mode']=='separate' else wh+'-'+safe(Path(items[0]['name']).stem))+'-'+items[0]['sha'][:12]
         target=root/(f'{index+1:03d}-'+name+suffix)
+        pending.append({'path':str(target.resolve()),'heads':[i['head'] for i in items],'state':'未执行','stage':'准备'})
+    receipt=receipts.begin(path,'archive',pending,plan_kind=plan['kind'],mode=plan['mode'],signature='原归档不变')
+    result['export_task']=receipt['id']
+    for index,(items,item) in enumerate(zip(units,pending)):
+        if cancel is not None and cancel.is_set():
+            result['cancelled'].extend(x for unit in units[index:] for x in unit);break
+        target=Path(item['path'])
         progress(f'文件 {index+1}/{len(units)} · '+target.name)
         try:
-            write_group(repo,plan,items,target,progress,cancel)
-            result['files'].append({'path':str(target),'heads':[i['head'] for i in items],'sha256':hashlib.sha256(target.read_bytes()).hexdigest()})
+            item.update(state='正在写出',stage='写出文件');receipts.update(path,receipt)
+            digest=write_group(repo,plan,items,target,progress,cancel)
+            item.update(state='已完成',stage='完成',sha256=digest)
+            result['files'].append({'path':str(target),'heads':item['heads'],'sha256':digest})
         except Cancelled:
+            item.update(state='未完成',stage='安全取消');receipts.update(path,receipt)
             result['cancelled'].extend(x for unit in units[index:] for x in unit);break
-        except Exception as exc:result['failed'].extend({**i,'error':str(exc)} for i in items)
+        except Exception as exc:
+            item.update(state='未完成',error=explain_error(exc));result['failed'].extend({**i,'error':item['error']} for i in items)
+        receipts.update(path,receipt)
     lines=[f'导出内容：{TITLES[plan["kind"]]}',f'完成文件：{len(result["files"])}；失败仓单：{len(result["failed"])}；未留存/不可用：{len(missing)}；取消未执行：{len(result["cancelled"])}','文件绑定下列明确修订，不重新计算。缺少的历史字段留空，不能视为0；全店共享预算不可按行累加。']
     for f in result['files']:
         lines.append('\n文件：'+Path(f['path']).name)
         for h in f['heads']:lines.append(f'  {h["day"]} / {h["store"]} / {h["warehouse"]} / {h["number"]} / V{h["revision"]:03d}')
     for state in ('skipped','failed','cancelled'):
         for item in result[state]:lines.append(state+'：'+str(key(item['head']))+' / '+str(item.get('error') or '未执行'))
-    (root/'导出清单.txt').write_text('\n'.join(lines),encoding='utf-8-sig')
+    try:(root/'导出清单.txt').write_text('\n'.join(lines),encoding='utf-8-sig')
+    except OSError as exc:receipt['warnings'].append('文件结果已保留，但导出清单写入失败：'+str(exc))
+    receipt['state']='已完成' if not result['failed'] and not result['cancelled'] else '导出未全部完成'
+    receipts.update(path,receipt);result['warnings']=receipt['warnings']
     return result

@@ -11,6 +11,7 @@ import result_semantics as sem
 import source_archive
 from runtime_support import checkpoint
 from xlsx_exports import stream_book,write_table
+from export_files import publish_new
 
 LETTER_LABELS={'A': '仓库/门店名称', 'B': '仓库/门店编码', 'C': '供应商编码', 'D': '商品名称', 'E': '商品编码', 'F': '商品条码', 'G': '单位类型', 'H': '日销（原表14天日均输入）', 'I': '周销（最近7天累计）', 'J': '月销（最近30天累计）', 'K': '可用库存', 'L': '在途库存', 'M': '在途库存天数', 'N': '缺货天数（天）', 'O': '箱规', 'P': '周转天数', 'Q': '库存状态', 'R': '库存健康度', 'S': '中心仓状态', 'T': '商品标签', 'U': '分类', 'V': '基本售价', 'W': '近7天参考日均', 'X': '14天重组参考日均', 'Y': '30天重组参考日均', 'Z': '8至14天参考日均', 'AA': '15至30天参考日均', 'AB': 'α', 'AC': 'w1', 'AD': 'w2', 'AE': 'w3', 'AF': 'Z（原参数；新安全库存未使用）', 'AG': '备货深度', 'AH': '在途时长', 'AI': '周期性盘点临界天数', 'AJ': '周期性盘点受限价格', 'AK': '阶段离散度（参考）', 'AL': '安全库存', 'AM': '状态校正系数', 'AN': '校正综合日均', 'AO': '保护期预测基值', 'AP': '趋势后需求', 'AQ': '净需求（未整箱）', 'AR': '约束后候选量', 'AS': '补货数量（最终）', 'AT': '黑名单状态', 'AU': '所属仓', 'AV': '商品等级', 'AW': '校正状态', 'AX': '近7天有货天数', 'AY': '8至14天有货天数', 'AZ': '15至30天有货天数', 'BA': '计算用缺货天数', 'BB': '计算类型及异常标记', 'BC': '异常窗口参考日均', 'BD': '最小出库单位', 'BE': '分位查找起点', 'BF': '参考库存分位数', 'BG': '分位有效性', 'BH': '上限计算日均', 'BI': '原补货资格', 'BJ': '需求取整量', 'BK': '额度允许量', 'BL': '销售业务状态', 'BM': '补货结果说明', 'BN': '额度支持日均', 'BO': '极端缺货最低恢复量', 'BP': '资金约束前补货量', 'BQ': '本次最低恢复量', 'BR': '资金约束候选量', 'BS': '跨阶段支持销量', 'BT': '严格阶段库存金额上限', 'BU': '资金允许整箱数量', 'BV': '本次补货金额（元）', 'BW': '重点关注', 'BX': '待定额外数量'}
 
@@ -107,6 +108,6 @@ def export(path,head,target,progress=lambda _:None,cancel=None):
                 write_table(book,title,hs,checked_rows(rs),cancel=cancel,progress=progress,row_count=n)
             progress('三张表写入完成，正在压缩保存（完成后响应取消）…');book.save(tmp);checkpoint(cancel)
             with closing(repo.work.connect()) as db:ao.require_active(db,head['oid'],wh)
-            os.link(tmp,target)
+            publish_new(tmp,target)
     finally:Path(tmp).unlink(missing_ok=True)
     return str(target)

@@ -113,6 +113,7 @@ def issue_result(host, receipt):
     layout = QVBoxLayout(dialog)
     layout.addWidget(label(f'已生成 {len(paths)} 份签发单文件', 'section'))
     layout.addWidget(label('已签发内容独立保留；下次导出已有签发请进入订单跟踪。'))
+    if receipt.get('warnings'):layout.addWidget(label('\n'.join(receipt['warnings'])))
     from business_ui import grid
     table, _ = grid(dialog, ['文件名（含门店、仓及用途）'], [[Path(p).name] for p in paths])
     table.setColumnWidth(0, 690)

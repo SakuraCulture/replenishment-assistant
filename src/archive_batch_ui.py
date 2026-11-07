@@ -40,6 +40,7 @@ class Preview(QDialog):
 def show_result(parent,path,plan,result):
     d=QDialog(parent);d.setWindowTitle('导出结果 · 原归档未改变');d.resize(1000,600);v=QVBoxLayout(d)
     v.addWidget(label(f'完成 {len(result["files"])} 个文件；失败 {len(result["failed"])} 单；不可用 {len(result["skipped"])} 单；取消未执行 {len(result["cancelled"])} 单','section'))
+    if result.get('warnings'):v.addWidget(label('\n'.join(result['warnings'])))
     rows=[[Path(f['path']).name,'完成',f'{len(f["heads"])} 张仓单'] for f in result['files']]
     for state,title in [('failed','失败'),('skipped','不可用'),('cancelled','取消未执行')]:
         rows.extend([[i['head']['number']+f' V{i["head"]["revision"]:03d}',title,i.get('error') or '未执行'] for i in result[state]])
@@ -85,6 +86,7 @@ class ArchiveBatchActions:
         self.archive_checked={};row=QHBoxLayout();self.archive_export_buttons=[]
         for title,kind in [('导出完整计算表','calculation'),('下载商品资料原表','original'),('导出签发明细（内部）','signed')]:
             b=button(title,lambda checked=False,k=kind:self.export_archive_batch(k));row.addWidget(b);self.archive_export_buttons.append(b)
+        row.addWidget(button('导出任务与恢复',lambda:__import__('export_recovery_ui').show(self,self.work_repository.path)))
         layout.addLayout(row)
         disclosure=QCheckBox('展开辅助导出与维护');layout.addWidget(disclosure)
         self.archive_aux=QWidget();aux=QVBoxLayout(self.archive_aux);aux.setContentsMargins(0,0,0,0);layout.addWidget(self.archive_aux);self.archive_aux.hide();disclosure.toggled.connect(self.archive_aux.setVisible)

@@ -171,7 +171,7 @@ class Workbench(ParameterUi,BatchWindow):
     def confirm_overwrite(self,old,new):
         a=old['summary'];b=wr.summary(new);oldstores=a['stores'];newstores=b['stores']
         removed=set(oldstores)-set(newstores);added=set(newstores)-set(oldstores);lost=[s for s in oldstores.keys()&newstores.keys() if oldstores[s]['state']=='已完成' and newstores[s]['state']!='已完成']
-        box=QMessageBox(self);box.setObjectName('dailyOverwrite');box.setWindowTitle('覆盖 '+new['day']+' 的作业记录？')
+        box=__import__('readable_ui').ReviewDialog(self);box.setObjectName('dailyOverwrite');box.setWindowTitle('覆盖 '+new['day']+' 的作业记录？')
         box.setText('每天只保留一份作业。本次将替换该日整份记录；已导出的Excel不受影响。')
         money=lambda x:'暂无有效金额' if x is None else f'¥{x:,.2f}'
         box.setInformativeText(f"原保存：{old['saved']}\n原记录：{len(oldstores)}家 / 完成{a['completed']}家 / {money(a['amount'])}\n本次保存：{wr.now()}\n本次：{len(newstores)}家 / 完成{b['completed']}家 / {money(b['amount'])}\n新增{len(added)}家，减少{len(removed)}家，完成变失效{len(lost)}家。展开详情核对名单、状态和版本。")

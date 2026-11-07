@@ -9,6 +9,7 @@ from runtime_support import Cancelled
 import lifecycle_batch as batch
 import lifecycle_io as io
 import order_lifecycle as service
+import lifecycle_diagnostics as diagnostics
 
 
 class BatchImport(QDialog):
@@ -23,14 +24,18 @@ class BatchImport(QDialog):
         from lifecycle_ui import template
         for s in io.STAGES:row.addWidget(button('下载'+io.TITLES[s]+'模板',lambda checked=False,k=s:template(self,k)))
         v.addLayout(row);self.file_note=label('拖入文件后自动识别，原文件不变。');v.addWidget(self.file_note)
-        self.table=QTableWidget(0,6);self.table.setHorizontalHeaderLabels(['纳入','来源文件 / 来源订单','环节','商品行数','补货单号（整单关联）','读取范围']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table=QTableWidget(0,7);self.table.setHorizontalHeaderLabels(['纳入','来源文件 / 来源订单','环节','商品行数','补货单号（整单关联）','读取范围','识别状态与下一步']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         for i,w in enumerate([50,270,130,85,380,260]):self.table.setColumnWidth(i,w)
         v.addWidget(self.table,1)
-        v.addWidget(button('划分选中来源组并绑定签发单',self.split_selected))
+        row=QHBoxLayout();row.addWidget(button('划分选中来源组并绑定签发单',self.split_selected));row.addWidget(button('查看识别依据与候选',self.explain_binding));row.addWidget(button('查看文件关联信息',self.file_identity));v.addLayout(row)
+        self.table.setColumnWidth(6,420)
         self.issue_note=label('需要处理');v.addWidget(self.issue_note)
         self.issue_table=QTableWidget(0,4);self.issue_table.setHorizontalHeaderLabels(['问题文件 / 原因','环节','修正映射','本次不纳入']);self.issue_table.setColumnWidth(0,600);self.issue_table.setMaximumHeight(180);self.issue_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);v.addWidget(self.issue_table)
         self.note=label('同单同环节有多份文件时只能选择一份，不按到达时间覆盖，也不累加。','muted');v.addWidget(self.note)
         row=QHBoxLayout();row.addWidget(button('取消',self.reject));self.preview_btn=button('核对并准备保存',self.preview,True);row.addWidget(self.preview_btn);v.addLayout(row)
+        from table_readability import fit_window,install
+        fit_window(self,1240,820)
+        for table in (self.table,self.issue_table):install(table)
 
     def choose(self):
         paths,_=QFileDialog.getOpenFileNames(self,'选择完整单据（可跨订单、跨环节）','','Excel (*.xlsx)')
@@ -62,17 +67,17 @@ class BatchImport(QDialog):
             title=r['source']['file']+(' / '+str(source.get('店铺名称'))+' / '+str(source.get('内部订单号')) if source else ' / '+str(r.get('signed_number') or r.get('document_number') or '缺单号'))
             for j,text in ((1,title),(2,io.TITLES[d['scan']['stage']]),(3,str(len(rows))),(5,'、'.join(dict.fromkeys(x['source']['sheet'] for x in rows)))):self.table.setItem(i,j,QTableWidgetItem(text))
             combo=QComboBox();combo.setMinimumWidth(350);combo.addItem('请选择完整来源单对应的补货单号',None)
-            number=r.get('signed_number');candidates=r.get('identity_candidates');allowed={e['number'] for e in candidates} if candidates else None
-            choices=[h for h in self.heads if (not number or h['number']==number) and (allowed is None or h['number'] in allowed) and (not r.get('store') or h['store']==r['store']) and (not r.get('warehouse') or h['warehouse']==r['warehouse'])]
-            for h in choices:combo.addItem(f"{h['day']} · {h.get('name',h['store'])} · {h['warehouse']} · {h['number']}",h)
+            explanation=diagnostics.binding(d,self.heads,scoped=self.scope is not None);choices=explanation['candidates']
+            for h in choices:combo.addItem(f"{h['day']} · {h.get('name',h['store'])} ({h['store']}) · {h['warehouse']} · {h['number']} · V{h['revision']:03d}",h)
             combo.setEditable(True);combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert);combo.completer().setFilterMode(Qt.MatchFlag.MatchContains);combo.completer().setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
-            if len(choices)==1 and (number or self.scope is not None and len(self.scope)==1):combo.setCurrentIndex(1)
+            if explanation['automatic']:combo.setCurrentIndex(1)
             if d.get('target'):
                 index=next((n+1 for n,h in enumerate(choices) if h['number']==d['target']['number']),0);combo.setCurrentIndex(index)
             self.table.setCellWidget(i,4,combo);self.targets.append(combo)
+            cell=QTableWidgetItem(explanation['state']+'：'+explanation['reason']);cell.setToolTip(cell.text());self.table.setItem(i,6,cell)
         self.issue_table.setRowCount(len(self.issues))
         for i,issue in enumerate(self.issues):
-            self.issue_table.setItem(i,0,QTableWidgetItem(str(issue.get('path') or issue['info']['name'])+'：'+issue['message']))
+            cell=QTableWidgetItem(str(issue.get('path') or issue['info']['name'])+'：'+diagnostics.issue(issue['message'])+'\n'+issue['message']);cell.setToolTip(cell.text());self.issue_table.setItem(i,0,cell)
             c=QComboBox()
             for s in io.STAGES:c.addItem(io.TITLES[s],s)
             c.setCurrentIndex(io.STAGES.index(issue.get('stage') or 'return'));self.issue_table.setCellWidget(i,1,c)
@@ -80,6 +85,33 @@ class BatchImport(QDialog):
             self.issue_table.setCellWidget(i,3,button('本次不读取未识别部分',lambda checked=False,n=i:self.exclude_issue(n)))
         self.issue_note.setVisible(bool(self.issues));self.issue_table.setVisible(bool(self.issues))
         self.note.setText(f'已识别 {len(self.documents)} 份完整来源单；待处理 {len(self.issues)} 项。选择范围将在下一步完整核对。')
+        self.table.verticalHeader().setDefaultSectionSize(68);self.issue_table.verticalHeader().setDefaultSectionSize(72)
+    def explain_binding(self):
+        index=self.table.currentRow()
+        if index<0 or index>=len(self.documents):self.note.setText('请先选择一个来源订单。');return
+        result=diagnostics.binding(self.documents[index],self.heads,scoped=self.scope is not None)
+        from readable_ui import details
+        rows=[]
+        for h in result['candidates']:rows.append([h['day'],h['store'],h.get('name',''),h['warehouse'],h['number'],f"V{h['revision']:03d}",'可选；仍需核对完整来源及数量'])
+        for item in result['rejected']:
+            h=item['head'];rows.append([h['day'],h['store'],h.get('name',''),h['warehouse'],h['number'],f"V{h['revision']:03d}",item['reason']])
+        details(self,'识别依据与原单候选',['业务日期','门店编码','门店名称','仓','补货单号','签发修订','匹配依据 / 排除原因'],rows,result['state']+'：'+result['reason'])
+    def file_identity(self):
+        index=self.table.currentRow()
+        if index>=0 and index<len(self.documents):path=self.documents[index]['scan']['files'][0]['path']
+        else:
+            path,_=QFileDialog.getOpenFileName(self,'只读查看文件关联信息','','Excel (*.xlsx)')
+        if not path:return
+        try:
+            info=run(self,io.inspect,([path],),'只读核对文件关联信息')[0]
+            rows=[[e['sheet'],e['number'],e['store'],e['warehouse'] or '未分仓',e['day'],f"V{e['revision']:03d}",e['created']] for e in info.get('identity',[])]
+            note='隐藏关联页完整，导入时仍须与当前资料目录中的原签发核对。' if rows else '没有系统关联页。文件属性：'+str({k:v for k,v in info.get('properties',{}).items() if k in ('补货单号','修订')})+'；缺少明确身份时，需要人工核对完整原单。'
+            from readable_ui import details
+            details(self,'文件关联信息（只读）',['业务工作表','补货单号','门店编码','仓','业务日期','签发修订','签发保存时间'],rows,note)
+        except Cancelled:pass
+        except Exception as exc:
+            from readable_ui import failure
+            failure(self,'文件关联信息未通过',exc)
     def split_selected(self):
         i=self.table.currentRow()
         if i<0 or i>=len(self.documents):self.note.setText('请先选择需要划分的来源组。');return
@@ -100,7 +132,9 @@ class BatchImport(QDialog):
             self.documents[i:i+1]=parts;self.populate()
         except Exception as exc:self.note.setText('未划分：'+str(exc))
     def capture(self):
-        for i,d in enumerate(self.documents):d['selected']=self.table.item(i,0).checkState()==Qt.CheckState.Checked;d['target']=self.targets[i].currentData()
+        for i,d in enumerate(self.documents):
+            combo=self.targets[i];d['selected']=self.table.item(i,0).checkState()==Qt.CheckState.Checked
+            d['target']=combo.currentData() if combo.currentText()==combo.itemText(combo.currentIndex()) else None
     def exclude_issue(self,index):
         self.capture();self.excluded.append(self.issues.pop(index));self.populate()
         self.note.setText('已明确排除未识别部分；其余已识别工作表仍在上方，是否纳入由勾选决定。重新读取可恢复排除项。')

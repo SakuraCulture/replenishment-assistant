@@ -1,0 +1,204 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>补货助手 0.48.0 · 新人使用手册</title><style>*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f3f6f7;color:#213b41;font:17px/1.85 "Microsoft YaHei","Noto Sans SC",sans-serif}a{color:#086f65}aside{position:fixed;inset:0 auto 0 0;width:275px;padding:24px 20px;background:#123b3d;color:white;overflow:auto}aside a{display:block;color:#e2efea;font-size:14px;text-decoration:none;padding:7px 0;border-bottom:1px solid #ffffff18}aside strong{font-size:24px}main{margin-left:275px;padding:34px 4vw;max-width:1450px}h1{font-size:40px;line-height:1.3;margin:18px 0}h2{font-size:27px;line-height:1.4;color:#0b635d;margin:0 0 22px}header,section{background:white;border:1px solid #d9e5e5;border-radius:14px;padding:32px 36px;margin-bottom:28px;box-shadow:0 5px 15px #163b4210}section{scroll-margin-top:20px}p{margin:12px 0}li{margin:9px 0}code{background:#eff4f4;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}input{width:100%;font:inherit;padding:12px 16px;border:1px solid #aac2bf;border-radius:8px;margin:16px 0}figure{margin:24px 0 8px}.zoom{border:1px solid #cbdad8;background:white;width:100%;padding:0;cursor:zoom-in}.zoom img{width:100%;height:auto;display:block}.caption,figcaption{font-size:14px;color:#5a7075}figcaption{margin-top:5px}.back{display:inline-block;margin-top:16px;font-size:14px}.flow{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0}.flow span{background:#e2f2eb;padding:8px 14px;border-radius:6px;font-weight:bold}.tag{letter-spacing:2px;color:#10776b;font-size:13px}dialog{max-width:96vw;max-height:96vh;padding:12px;border:0;border-radius:10px}dialog img{max-width:none;display:block}dialog .scroll{max-width:92vw;max-height:86vh;overflow:auto}dialog::backdrop{background:#102c34cc}dialog button{font:inherit;float:right;margin-bottom:8px}#count{color:#526c70;font-size:14px}@media(max-width:950px){aside{position:static;width:auto;max-height:320px}main{margin:0;padding:18px}header,section{padding:22px}h1{font-size:32px}}@media print{aside,input,.back,.zoom:after,#count{display:none}main{margin:0;padding:0}section,header{box-shadow:none;break-inside:avoid;border:0}body{font-size:11pt}}</style><aside><strong>新人从这里开始</strong><p>补货助手 · 0.48.0</p><a href="#c01">01 初次使用：从哪里开始</a><a href="#c02">02 开机连接：自动尝试，失败再修复</a><a href="#c03">03 设置门店：主仓、从仓、预算、资料来源</a><a href="#c04">04 准备数据：取得补货建议和仓商品资料</a><a href="#c05">05 采集异常中断：继续原任务</a><a href="#c06">06 检查并计算：先处理输入，再看结果</a><a href="#c07">07 保存草稿、跨日与历史只读</a><a href="#c08">08 人工核对：让表格完整可读</a><a href="#c09">09 改量、新品与清单补足</a><a href="#c10">10 确认签发并导出</a><a href="#c11">11 导出失败：按原修订恢复</a><a href="#c12">12 签发 Excel 中的隐藏关联是什么</a><a href="#c13">13 门店回传导入：识别、核对、保存</a><a href="#c14">14 回传绑定失败：先看是哪种问题</a><a href="#c15">15 付款、收货与五段漏斗</a><a href="#c16">16 翱象采购：预览与结果核对</a><a href="#c17">17 门店缺货率：第一次采集</a><a href="#c18">18 缺货率怎么算，为什么有时显示横线</a><a href="#c19">19 多维切面、筛选与 Excel 导出</a><a href="#c20">20 分析数据维护：重跑、重算与删除</a><a href="#c21">21 AI 连接与门店缺货率分析</a><a href="#c22">22 AI 调参：本期能做什么</a><a href="#c23">23 删除订单、任务与全部初始化</a><a href="#c24">24 常见报错：先做哪一步</a><a href="#c25">25 向维护人员描述问题</a><a href="#c26">26 新人内部练习单</a></aside><main id="top"><header><span class="tag">操作指南 / 报错恢复 / 离线可用</span><h1>补货助手 · 新人使用手册</h1>
+<p>适用版本：0.48.0。模型：0.3.4-rules。本手册以本机 Windows 应用为准；截图来自同版本实际 EXE 的隔离演示数据，不能当作真实经营数据或新增平台实测证据。</p>
+<p>先找到要做的事，再按步骤操作。HTML 可离线搜索；PDF 可搜索文字。应用里的“显示与帮助 → 图文使用手册”打开本手册。页面名称可能因窗口宽度折行，含义不变。</p><div class="flow"><span>准备数据</span><span>→ 检查与计算</span><span>→ 人工核对</span><span>→ 签发导出</span><span>→ 回传 / 付款 / 收货</span></div><p>独立分析路径：门店缺货率 → 采集留存 → 切面筛选 → Excel / AI 分析。</p><input aria-label="搜索任务或报错" type="search" placeholder="输入想做的事或报错，例如：回传、历史只读、恢复、缺货率"><div id="count">共 26 个任务章节，所有内容可离线阅读</div><p><a href="补货助手_0.48.0_新人使用手册.pdf">打开可搜索 PDF</a> · <a href="screenshot-index.json">截图来源索引</a></p></header><section id="c01"><h2>01 初次使用：从哪里开始</h2><p>目标：打开正确版本，知道资料保存在哪一边。</p>
+<ol>
+<li>完整解压交付包，打开“补货助手.exe”；保留旁边的 <code>_internal</code>、AI 接口和使用手册目录。不要只复制 EXE。</li>
+<li>在“版本信息”核对应用版本和构建。升级前关闭旧版，保留旧程序包；不要同时用两个版本编辑同一份资料。</li>
+<li>进入首页。补货作业使用补货侧资料；“门店缺货率”使用独立分析资料。只有明确采用设置时，分析侧才复制一份设置，不会反向改补货侧。</li>
+<li>点击“导出设置”，选择本人有写入权限、空间足够的本地目录。先用测试门店走一次完整流程。</li>
+</ol>
+<p>完成标志：能进入首页，版本正确，知道导出位置。软件启动成功不代表平台登录、商品资料和门店参数都已就绪。</p>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/home.png" alt="首页与主要入口"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 1：实际 EXE 首页，隔离演示资料。① 顶部切换业务；② 首页恢复草稿或查询历史；③ 顶部菜单进入显示、手册和导出恢复。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c02"><h2>02 开机连接：自动尝试，失败再修复</h2><p>目标：让翱象、山东仓、河北仓连接可用。</p>
+<ol>
+<li>正常启动后等待底部连接状态更新，应用会尝试接通和登录核验。</li>
+<li>若显示未连接或登录待核，点“连接检查 / 修复”，查看是哪一个平台或仓失败；按界面打开专用浏览器并完成本人登录。</li>
+<li>登录失效、验证码、权限不足必须本人处理。修复后重新核验；浏览器能打开不等于账号已通过核验。</li>
+<li>手动接通用于自动尝试失败后的排查。不要把另一公司的浏览器、账号或仓会话混用。</li>
+</ol>
+<p>异常处理：连接失败时先保留当前作业，修复连接；不要反复新建已提交的采集或采购任务。本章是入口说明，本轮手册没有新增真实平台登录验收。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c03"><h2>03 设置门店：主仓、从仓、预算、资料来源</h2><p>目标：按实际供货关系配置门店。</p>
+<ol>
+<li>打开“参数设置”，按门店编码和名称定位对象；批量修改前核对所选门店数量。</li>
+<li>单仓门店只配置实际供货仓。双仓门店按真实业务设置主仓、从仓，主从顺序影响供货与资料选择。</li>
+<li>核对预算、各仓备货天数和到货天数、完整参数预案及必卖清单。单仓归属只依据本店实际供货范围；其他仓有资料，不会因此把商品强行归到其他仓。</li>
+<li>“仅用于本次”只影响当前作业；明确点击保存默认的入口才改变以后采用的门店配置。保存草稿、计算、签发不会自动保存永久默认。</li>
+<li>修改输入、参数或供货关系后重新检查、计算。不要在旧结果上继续签发。</li>
+</ol>
+<p>完成标志：门店编码、单/双仓、主从顺序、预算和实际采用参数一致。分析侧要采用新设置时，另到缺货率板块明确采用；旧分析快照保持原设置。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c04"><h2>04 准备数据：取得补货建议和仓商品资料</h2><p>目标：取得本次所选门店的销量库存和实际供货仓资料。</p>
+<ol>
+<li>在“补货出单 → 准备数据”选择需要的门店，获取翱象补货建议；核对日期、门店编码与名称。</li>
+<li>按实际供货仓准备聚水潭商品资料。销售库存来源与商品资料分开使用；不能把缺资料的字段猜成 0。</li>
+<li>等待本机采集记录显示各店结果，核对已验收、进行中、待处理与失败的门店。</li>
+<li>点击“采用已验收文件并检查”。采用前不会替换当前计算结果；检查后处理明确的表头、门店或资料冲突。</li>
+</ol>
+<p>异常处理：“原件存在重复表头”需区分分析会使用的字段与不使用的原表字段；使用字段重复不能按第一列猜取。保留原文件和完整报错用于排查。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c05"><h2>05 采集异常中断：继续原任务</h2><p>目标：恢复已受理的采集，避免重复导出。</p>
+<ol>
+<li>在本机采集记录选择原来那次任务，点“刷新原任务状态”。先看平台是否已受理和已生成文件。</li>
+<li>已受理但尚未定位结果时，使用“继续原采集任务”；不要重新提交同一导出请求。</li>
+<li>需要停下时使用安全停止或结束本次采集，等待当前安全步骤完成。停止本地后续动作不会撤回平台已经受理的任务。</li>
+<li><code>TASK_NOT_FOUND</code> 的意思是当前查询依据尚未找到原任务，不等于导出一定失败。保留原受理编号、时间和原任务记录，按界面核对。</li>
+</ol>
+<p>完成标志：各门店状态和验收文件一致。关闭窗口不一定取消已排队任务，应以界面说明和原任务状态为准。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c06"><h2>06 检查并计算：先处理输入，再看结果</h2><ol>
+<li>检查文件后确认有效门店、商品资料、必卖清单及待核项。按需要选择门店和预算。</li>
+<li>开始计算，查看各店进度；界面显示已受理或进度条运行不代表门店已完成。</li>
+<li>已完成门店进入“核对与签发”。未完成、输入过期或失败的门店先按原因处理。</li>
+<li>需要停止时停止后续任务；当前安全步骤结束后查看已完成与未执行门店。重试应复用原任务允许重试的范围。</li>
+</ol>
+<p>异常处理：模型提示字段缺失、趋势矛盾或箱规不合法时回查原表。不要把待核值改成 0 来消除报错。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c07"><h2>07 保存草稿、跨日与历史只读</h2><ol>
+<li>“保存草稿”保存当前完整作业，不是只保存屏幕筛选出的门店。</li>
+<li>同日覆盖前看差异和减少/失效的门店，默认取消；确认后旧修订仍按现有规则留存。</li>
+<li>今日草稿可继续；过去日期的作业按历史只读处理。新一天作业应新建今日草稿或复制配置，并重新准备当天输入。</li>
+<li>已签发且未变化的历史修订可以从订单跟踪重导。历史只读时不要把“确认签发并导出”当作新签发入口。</li>
+</ol>
+<p>异常处理：“历史只读，请从历史页导出已签发修订”说明当前对象是历史作业；先到订单跟踪选择原单及修订，不是再点击签发。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c08"><h2>08 人工核对：让表格完整可读</h2><ol>
+<li>打开最终清单，先选门店、仓及商品范围。收起上方筛选与批量操作区可给表格更多空间；收起不会清除筛选或勾选。</li>
+<li>使用“全部字段 / 改量与金额 / 库存与覆盖 / 原因与风险”选择当前要看的列。</li>
+<li>拖动列宽，或在“显示与帮助”选择 10、11、12 磅正文和紧凑、标准、宽松行距。偏好只保存本机显示，不改业务参数。</li>
+<li>选中商品后，表格上方常驻显示当前商品身份；横向滚动时仍可核对门店、仓、编码与名称。</li>
+<li>右键“查看当前行完整内容”，或按 Ctrl+Shift+D；可搜索、选中文本和复制完整字段。长原因不能仅凭省略号判断。</li>
+<li>多张风险表可拖动分隔条分配高度；取消窗口不会应用改量。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/audit-10pt.png" alt="人工核对表格"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 2：实际最终清单，10 磅演示。① 收起筛选区；② 选择列组；③ 查看当前行完整内容。金额汇总与商品筛选的口径以界面说明为准。</p>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/audit-12pt.png" alt="较大字号与当前行身份"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 3：实际同一窗口，12 磅、宽松行距；横向滚动后当前商品身份仍显示。截图仅为隔离演示，不代表人工改量已应用。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c09"><h2>09 改量、新品与清单补足</h2><ol>
+<li>在最终清单按库存单位填写数量；箱规输入必须符合允许的整倍数。</li>
+<li>填写业务原因，查看自动安排、拟签发量、差额、金额和风险。人工改量与新品金额可能交叉，不能简单相加。</li>
+<li>若使用清单补足，先核对所选清单、门店、策略及商品范围，再预览变化。未选门店与商品不应被带入。</li>
+<li>对出现的风险逐项核对。应用到本次草稿后还需签发；应用改量不等于已经签发或采购。</li>
+</ol>
+<p>异常处理：箱规不合法、关键资料待核、超预算或覆盖风险不能通过缩小显示范围绕过。筛选只改变看到的内容，确认范围要看确认页。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c10"><h2>10 确认签发并导出</h2><p>目标：从“核对与签发 → 确认签发并导出”生成门店签发文件。</p>
+<ol>
+<li>选择需要导出的门店和仓，核对目标目录。单店双仓可能有多份文件。</li>
+<li>在可调整大小的核对窗查看本次变化、旧修订与新签发范围；需要全量时导出完整差异 Excel。搜索只筛选显示，不改变实际确认范围。</li>
+<li>确认无误后点击“确认签发并导出”。默认按钮是取消；取消不新增签发。</li>
+<li>等待签发归档和逐文件导出结束，查看结果页。签发已提交和 Excel 已生成是两件事；中途失败时可能原签发已保留。</li>
+<li>按结果页路径打开实际文件，再发送给门店。发送文件本身需由人员明确操作。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/confirm-confirmation.png" alt="签发核对窗口"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 4：实际签发核对窗。① 本次签发范围；② 可搜索的差异表；③ 完整差异导出与最终确认。演示中取消与确认分别做了检查。</p>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/export-result.png" alt="签发与导出结果"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 5：实际结果页。请以逐文件路径和状态判断完成，不能仅凭关闭进度窗口判断成功。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c11"><h2>11 导出失败：按原修订恢复</h2><ol>
+<li>先读错误第一行：是否已归档、已生成几份。不要因为 Excel 失败就重新签发。</li>
+<li>如果文件被 Excel/WPS 占用，关闭该文件；若目录无权限或空间不足，改选可写目录或释放空间。</li>
+<li>打开“显示与帮助 → 导出任务与恢复”，也可在订单跟踪的归档导出区域进入。</li>
+<li>选择原任务，点“核对所选任务”。系统核对原签发身份、文件是否存在和摘要；缺失或变化的文件可勾选恢复。</li>
+<li>点“按勾选项恢复”，选择目录；软件新建恢复目录，保留用户原文件，读取原修订，不新增签发。</li>
+<li>文件已生成但导出日志未写完时，可核验后补记日志。原修订无法确认、已删除或已失效时保持待核，不自动改用最新单。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/export-locked-error.png" alt="文件占用后的业务提示"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 6：实际 EXE 中用 Windows 文件占用模拟故障；不是用户原故障的复现证明。旧文件与签发修订在测试中保留。</p>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/export-recovery.png" alt="逐文件恢复核对"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 7：核对原任务后按勾选项恢复；已完成文件与需要处理的文件分别展示。</p>
+<p>注意：旧版本没有导出回执的任务，从订单跟踪选择原单、原仓和原修订重导。任务状态未知且没有充分回执时，先核对订单和目录，不推断“没有签发”。本地回执只记录任务和身份，不自动清理已导出的外部文件。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c12"><h2>12 签发 Excel 中的隐藏关联是什么</h2><p>签发文件已有隐藏工作表“系统关联信息”，记录补货单号、门店编码、仓、业务日期、原签发修订和摘要。它用于回传定位；不是防伪签名，也不能代替原数据库中的签发依据。</p>
+<ol>
+<li>使用原签发文件填写需要回传的数量，尽量保留工作簿结构。</li>
+<li>文件重命名与工作表重命名不是一回事。复制业务工作表到新文件、删隐藏页、改表名、转 CSV 可能丢失或破坏关联。</li>
+<li>不确定时在导入窗口选中文件，点“查看文件关联信息”，只读核对门店、仓、日期与修订。</li>
+<li>当前代码路径已验证读写校验；本轮没有替所有 Excel/WPS 版本验证各类另存操作，转换后应重新核对。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/return-identity.png" alt="文件关联信息只读查看"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 8：从实际签发工作簿读取的关联信息。它不会修改回传原件，也不会创建新的订单绑定。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c13"><h2>13 门店回传导入：识别、核对、保存</h2><ol>
+<li>在订单跟踪进入生命周期单据导入，选择回传环节，选择文件或拖入文件。</li>
+<li>检查每个来源组的文件、表、商品行数、环节和目标补货单。新版“识别状态与下一步”会说明为什么匹配或无法匹配。</li>
+<li>选中来源组，点“查看识别依据与候选”：候选保留和排除的原因都可查看。</li>
+<li>明确缺标记的来源允许人员按完整订单绑定；同名门店、相同 SKU 或相近数量不能证明是同一张单。</li>
+<li>有多店/多单混合来源时先划分完整来源组，再明确选原单。来源内部冲突时先修正正确来源，不删标记强行绕过。</li>
+<li>点“核对并准备保存”，查看差异和本次纳入范围，再保存。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/return-binding.png" alt="回传识别工作区"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 9：实际签发文件回传识别。① 来源组；② 精确签发单；③ 识别状态；④ 原因和隐藏关联查看入口。</p>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/return-review.png" alt="回传保存前核对"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 10：保存前核对上下游与差异。仅预览不保存；正式保存后以回执确认完成。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c14"><h2>14 回传绑定失败：先看是哪种问题</h2><ul>
+<li>“缺少关联”：没有足够的签发身份。核对原文件是否由本程序导出；明确来源后整单人工绑定。</li>
+<li>“旧修订 / 签发依据不一致”：回传对应的不是当前有效签发。回查原签发版本，不自动绑定到新修订。</li>
+<li>“标记损坏 / 字段冲突”：隐藏关联、行字段或文件属性互相矛盾。保留原件，取正确文件或交由维护人员查冲突；不能忽略冲突后自动识别。</li>
+<li>“原单不存在”：核对当前资料目录、门店、日期和原单是否已删除。不能新建同名订单来伪装原单。</li>
+<li>“同单同环节多份文件”：明确选择一份完整事实来源，不按文件到达时间覆盖，不把多份整单数量相加。</li>
+</ul>
+<p>整张订单尚未回传不等于回传量为 0。完整订单内明确的空白/缺行处理沿用保存前核对规则，以预览为准。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c15"><h2>15 付款、收货与五段漏斗</h2><ol>
+<li>在订单跟踪定位精确门店、仓、补货单，依次导入回传、付款、实际收货文件；不同环节独立留存。</li>
+<li>导入付款时核对来源订单、数量单位、支付事实与原补货单；不以采购预览代替付款事实。</li>
+<li>实际收货记录用于对照已付款和签发范围。没有收货资料时保持未取得，不能算成已收 0 或已收齐。</li>
+<li>在决策复查看五段漏斗与货盘结构。库存货值、签发价货值、实际付款和现货库存不是同一指标。</li>
+<li>漏斗供应商/类目扩展另有方案，不能把缺货率已有切面当作所有旧报表都已支持。</li>
+</ol><a class="back" href="#top">回到目录 ↑</a></section><section id="c16"><h2>16 翱象采购：预览与结果核对</h2><ol>
+<li>从订单跟踪选择本次需要的准确订单，进入翱象批次作业；先看采购预览，再明确确认上传。</li>
+<li>在批次内核对勾选范围，只执行需要的订单。历史批次的待处理项不代表本次都要重跑。</li>
+<li>显示“采购结果需核对”时，使用“继续核对采购结果”，查询原任务和原采购单；不重新上传。</li>
+<li>平台单已创建但本机未关联时，原结果应继续核对。平台已作废、门店/仓/供应关系不符或状态变化时，不能当作待提交成功单直接关联。</li>
+<li>停止、结束本地任务不会撤销平台已创建的单。是否提交或作废平台单，由人员在明确业务范围内处理。</li>
+</ol>
+<p>异常处理：<code>SUBMISSION_UNKNOWN</code> 表示提交结果未知；<code>TASK_NOT_FOUND</code> 表示当前查询未定位原任务。都不是“可以再下单”的证明。保留原编号和受理时间。</p>
+<p>本章依据现有功能路径和已有验收记录；本轮不连接真实采购平台，也不创建、提交或作废真实采购单。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c17"><h2>17 门店缺货率：第一次采集</h2><ol>
+<li>进入“门店缺货率”，点“选门店 / 采用补货侧设置”，选择门店并核对采用的设置版本、必卖清单、单/双仓及主从顺序。</li>
+<li>点击“查看已采用供货设置”，确认分析使用的供货关系。补货侧后来改参数，不会自动覆盖这里的已采用快照。</li>
+<li>点击“采集今日分析资料”，观察采集与快照中的原任务状态。翱象采集复用并行能力；按平台实际受理状态等待。</li>
+<li>需要离开时先选择是否“离开后本次继续采集”。未进入板块时不加载分析页和查询能力；每日采集计划是明确启用后的独立安排。</li>
+<li>选择观测日期，点击“查询已留存结果”。未采日期不补 0；只对已完成的门店日覆盖作结论。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/stockout-overview.png" alt="缺货率分析概览"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 11：实际 EXE 查询隔离演示日报。标题同时显示缺货数、有销基数、比例和覆盖，便于判断是否可比较。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c18"><h2>18 缺货率怎么算，为什么有时显示横线</h2><p>门店缺货率 = 纳入范围内“月销大于 0 且可用库存小于等于 0”的店品数 ÷ 纳入范围内“月销大于 0”的店品数。</p>
+<ul>
+<li>负库存按 0 参与统计，原负数保留在证据中；在途不是门店可用库存。</li>
+<li>默认剔除门店停采/禁采及实际供货仓禁用，同时从分子和分母剔除。</li>
+<li>淘汰品按虚拟分类“标杆淘汰”系列识别，考核品按“淘便考核”识别；四种视角可选择。</li>
+<li>标签未知与指标未知不同。标签待核需要查看资料依据；指标待核或基数为 0 时不输出可靠百分比。</li>
+<li>多店、多日用缺货数合计除以有销基数合计，不平均门店百分比。跨日同店同商品计为不同店品日观测。</li>
+<li>缺货率是门店观测指标，不是仓库缺货率，也不是全天缺货时长；不能单凭它认定参数设小、没采购或仓库迟发。</li>
+</ul>
+<p>显示“—”时到“商品与待核”查指标待核；若是旧日报尚未采用负库存规则，按第 20 节用留存原件重算，不必重新采集。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c19"><h2>19 多维切面、筛选与 Excel 导出</h2><ol>
+<li>先固定日期、剔除视角及停采/禁用开关，再设多维筛选。按编码或名称定位，门店和商品都要核对编码。</li>
+<li>选择或自定义维度组合：门店、供货仓、中心仓/地采、必采属性、上游供应商、类目等，最多 12 个维度。</li>
+<li>同一维度多选是“或”，不同维度之间是“且”。地采的供货仓显示“地采”；上游供应商是仓商品对应的供货商。</li>
+<li>查看切面后可选分组筛选或下钻，逐页读取。分组数很多时不要只看第一页就称为全量。</li>
+<li>点击“导出本视角 Excel”，选择要导出的多套组合和是否包含明细。每套组合一张工作表，每行一组完整维度与指标，表头可筛选。</li>
+<li>导出后核对日期、过滤条件、覆盖、分子分母和工作表名称。未知仍为空或待核，不自动编造。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/stockout-cuts.png" alt="自定义组合的切面"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 12：隔离演示中的门店、仓、上游供应商和类目组合。界面是分页预览；导出范围由导出确认确定。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c20"><h2>20 分析数据维护：重跑、重算与删除</h2><ol>
+<li>到“采集与快照”选择原作业，先看该作业日期、门店范围、设置版本及原件状态。</li>
+<li>重跑采集使用原任务允许的范围；先查询已受理任务，不重复创建未知结果的导出。</li>
+<li>“用留存原件重算”在本地复用原件；明确选择原作业当时设置或当前已采用设置。两者不是同一业务口径。</li>
+<li>重算发布新日报修订，旧分析会话不自动换到新数据。重新查询后才看到最新日报。</li>
+<li>删除分析结果或作业日志前看确认范围；有原件被引用或任务未安全结束时按界面处理，不强制删文件。</li>
+<li>分析维护只影响本模块，不能用它清理补货侧订单、参数或真实平台数据。</li>
+</ol><a class="back" href="#top">回到目录 ↑</a></section><section id="c21"><h2>21 AI 连接与门店缺货率分析</h2><ol>
+<li>点击顶部“AI 协助”，启用本机连接；在配置/修复本机连接中为使用的客户端生成配置。使用随包 AI 接口和稳定入口，不需要把业务资料直接交给任意脚本读取。</li>
+<li>客户端完成 MCP 配置后先查询工作台上下文。未连接时按配置说明处理，不以终端、SQL 或浏览器绕过接口。</li>
+<li>在门店缺货率设好日期、筛选与维度，点击“用 AI 分析当前范围”。选择概览、两日比较、重复缺货、资料剔除复核或后续调参证据，复制后发给 AI。</li>
+<li>复制要求不会自动执行。AI 查询后台完成后按页读取；同一分析会话固定日报修订，约 1 小时过期，关闭连接或重启后需重新查询。</li>
+<li>明确要求导出时，AI 使用同一快照导出本地报表。默认只查询，不采集、不签发、不采购、不删除。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片"><img loading="lazy" src="images/ai-stockout.png" alt="复制精确范围给 AI"></button><figcaption>点击查看原图 · 实际程序，隔离演示数据</figcaption></figure>
+<p class="caption">图 13：实际 AI 分析要求窗口。范围来自当前缺货率页，复制不会启动业务操作；此图不证明外部 AI 客户端已经完成调用。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c22"><h2>22 AI 调参：本期能做什么</h2><p>本期新增缺货率事实、切面、重复观测和原表证据查询，以及为后续调参准备证据的操作说明。已有的参数字典、独立试算和明确采用到本次作业继续使用。</p>
+<ol>
+<li>先核对资料质量和缺货覆盖，再看准确原单的签发、回传、付款、收货事实。</li>
+<li>履约没有精确原单关联时，原因保持未知；需要人员明确原单后，通过已有漏斗与历史复盘工具查询。</li>
+<li>拟调整参数时，先读完整参数含义、合法范围和本店供货配置，按同一输入独立试算。</li>
+<li>人员核对完整候选、金额与风险后，明确采用到本次作业；保存永久默认是另一个决定。</li>
+</ol>
+<p>尚未实现：AI 自动为所有门店批量配置参数并保存默认、自动采购闭环、根据缺货率自动判定原因。本期不能把提示模板当成已交付的自动配参引擎。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c23"><h2>23 删除订单、任务与全部初始化</h2><ol>
+<li>删除前选准日期、门店、仓及订单，阅读完整预览；同店同日两仓共享父单的现有规则仍适用。</li>
+<li>若提示关联任务未处理，进入原批次核对平台结果。已有采购身份或平台任务不能仅靠结束本地准备来消除。</li>
+<li>停止后等待安全边界；正在提交时不能强杀进程。取消后查看原任务结果，再决定是否重试。</li>
+<li>“全部初始化”用于明确清空本机资料的场景，按确认页核对数据目录、备份和清空范围。它不能撤销平台采购单，也不能用来绕过未知提交结果。</li>
+<li>外部已导出的 Excel、其他位置备份与平台单据，不会因为本机订单删除就自动消失。</li>
+</ol>
+<p>本手册的演练只用隔离数据。对业务电脑执行初始化或删除前，必须由操作者核对准确对象和备份，不要照抄演示目录。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c24"><h2>24 常见报错：先做哪一步</h2><ul>
+<li>登录待核 / 未连接：打开连接检查，核对具体平台和仓，完成本人登录，再复核。</li>
+<li>已受理、结果未知：查询原任务；不要重新提交。保留受理编号与时间。</li>
+<li>当前作业、参数或结果已变化 / STALE_CONTEXT：重新核对当前范围，重新查询或试算；旧候选不能直接采用。</li>
+<li>基线重算与当前结果不一致：停止调参，核对输入、参数、人工改量及结果来源。不是“可忽略误差”；保存原提示用于排查。</li>
+<li>历史只读 / 跨日作业：新业务使用今日草稿；旧已签发单从订单跟踪按原修订重导。</li>
+<li>导出未全部完成：先看签发和逐文件状态，再进入导出任务与恢复；不重复签发。</li>
+<li>文件被占用 / PermissionError：关闭 Excel/WPS 文件，核对写入目录；恢复到新目录可保留原文件。</li>
+<li>数据被占用 / database is locked：等当前操作结束，查看原任务状态，再重试原操作；不要同时开多个版本编辑。</li>
+<li>旧修订 / 隐藏关联冲突：查原文件与原签发修订；不自动匹配到最近订单，不删标记绕过。</li>
+<li>缺货率为横线：查看指标待核或基数是否为 0；缺采不补 0，负库存旧日报按提示重算。</li>
+<li>磁盘不足：停止启动新的大采集/导出，保留已完成数据，核对可清理范围；不要直接删除数据库附件目录。</li>
+</ul><a class="back" href="#top">回到目录 ↑</a></section><section id="c25"><h2>25 向维护人员描述问题</h2><p>请一次提供：应用版本与构建、入口及按钮、日期/门店编码/仓/订单或任务编号、操作前状态、完整报错与发生时间、目标导出目录、是否已有部分结果。截图要包含状态和提示。</p>
+<p>导出问题优先附本地导出回执和日志；回传问题保留原 Excel，不要先删隐藏页或改名改表。不要在普通聊天中发送密码、Cookie、令牌或无关敏感资料。</p>
+<p>本次已知限制：用户所说的签发导出失败入口已确认，但未取得那次原始错误与原件，因此不能断言某一个故障注入就是原故障根因。测试、截图和真实业务验收的范围以交付报告为准。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c26"><h2>26 新人内部练习单</h2><p>使用隔离演示环境依次完成：连接状态辨认 → 两店输入检查与计算 → 打开审计表并查看全文 → 取消一次签发 → 确认签发与打开文件 → 查看隐藏关联并导入回传 → 演练导出占用及原修订恢复 → 缺货率多维筛选/导出/本地重算 → 复制 AI 只读分析要求。</p>
+<p>每一步记录：想做什么、点击哪里、看到什么代表完成、遇到什么提示、怎么恢复。没有真实新人独立参与时，只能称为内部走查，不能称为“新人验收通过”。</p>
+<p>手册来源：应用对应源码、自动化验收及实际 EXE 截图。截图索引记录来源和演示条件；旧版记录保留在项目历史文档中。本手册为当前操作入口，不承诺未标明的真实平台或低配置电脑验证。</p><a class="back" href="#top">回到目录 ↑</a></section></main><dialog><button>关闭原图</button><div class="scroll"><img alt=""></div></dialog><script>const search=document.querySelector('input');search.addEventListener('input',()=>{const terms=search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);let count=0;document.querySelectorAll('section').forEach(s=>{s.hidden=!terms.every(t=>s.textContent.toLowerCase().includes(t));if(!s.hidden)count++;});document.querySelector('#count').textContent=terms.length?'找到 '+count+' 个章节；清空搜索显示全部':'共 26 个任务章节，所有内容可离线阅读';});const zoom=document.querySelector('dialog');document.querySelectorAll('.zoom').forEach(b=>b.onclick=()=>{const src=b.querySelector('img');zoom.querySelector('img').src=src.src;zoom.querySelector('img').alt=src.alt;zoom.showModal();});zoom.querySelector('button').onclick=()=>zoom.close();</script></html>

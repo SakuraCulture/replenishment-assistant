@@ -49,6 +49,8 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.initializing=False;self.restore_master();self.update_controls()
         self.store_table.verticalHeader().setDefaultSectionSize(56)
         for table in [self.task_table,self.overview,self.file_report]:table.verticalHeader().setDefaultSectionSize(46)
+        from display_settings import install
+        install(self)
     def page(self):
         p=QWidget();v=QVBoxLayout(p);v.setContentsMargins(0,0,0,0);v.setSpacing(12);self.pages.addWidget(p);return p,v
     def make_import(self):

@@ -62,6 +62,8 @@ class ResultsView:
         for i,w in enumerate([300,180,105,85,110,70,85,70,70,90,90,90,110,340,110,100,190,90,90]):self.table.setColumnWidth(i,w)
         self.table.horizontalHeader().moveSection(19,2)
         self.table.sortByColumn(10,Qt.SortOrder.DescendingOrder)
+        from table_readability import install
+        install(self.table)
         splitter.addWidget(self.table)
         self.detail_panel=QWidget();dv=QVBoxLayout(self.detail_panel);dv.setContentsMargins(8,0,0,0);dr=QHBoxLayout();dr.addWidget(label('商品计算依据','section'));dr.addStretch();dr.addWidget(button('关闭',self.detail_panel.hide));dv.addLayout(dr)
         self.details=QTextBrowser();dv.addWidget(self.details);self.detail_panel.setMinimumWidth(340);splitter.addWidget(self.detail_panel);splitter.setStretchFactor(0,3);splitter.setStretchFactor(1,1);self.detail_panel.hide();v.addWidget(splitter,1)

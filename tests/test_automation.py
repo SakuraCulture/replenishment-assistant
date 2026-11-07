@@ -17,7 +17,12 @@ import work_repository as wr
 class AutomationContractTests(unittest.TestCase):
     def test_public_surface_excludes_persistence_and_arbitrary_execution(self):
         names = {x['name'] for x in protocol.public_tools()}
-        self.assertEqual(len(names), 26)  # Three read-only inventory query/result/export capabilities.
+        self.assertEqual(len(names), 32)  # Existing 26 plus six scoped stockout capabilities.
+        self.assertTrue({'stockout_context','query_stockout_analysis','stockout_analysis_results','stockout_filter_values','stockout_evidence','export_stockout_analysis'}<=names)
+        annotations={t['name']:t['annotations'] for t in protocol.public_tools()}
+        for name in ('stockout_context','query_stockout_analysis','stockout_analysis_results','stockout_filter_values','stockout_evidence'):
+            self.assertTrue(annotations[name]['readOnlyHint'])
+        self.assertFalse(annotations['export_stockout_analysis']['readOnlyHint'])
         self.assertTrue({'query_inventory_structure','inventory_structure_results','export_inventory_structure'}<=names)
         self.assertTrue({'query_order_funnel','order_funnel_results','export_order_funnel','store_history_review',
                          'stock_diagnosis_parameters','start_stock_diagnosis','stock_diagnosis_results','adopt_stock_diagnosis','undo_stock_diagnosis'}<=names)
@@ -45,7 +50,7 @@ class AutomationContractTests(unittest.TestCase):
         def call(method, **params): return response({'jsonrpc': '2.0', 'id': 1, 'method': method, 'params': params}, c, ready)
         self.assertIn('error', call('tools/list'))
         self.assertEqual(call('initialize', protocolVersion='2025-11-25')['result']['protocolVersion'], '2025-11-25')
-        self.assertEqual(len(call('tools/list')['result']['tools']), 26)
+        self.assertEqual(len(call('tools/list')['result']['tools']), 32)
         self.assertEqual(call('tools/call', name='workbench_context')['result']['structuredContent']['amount'], 0)
         self.assertTrue(call('tools/call', name='save')['result']['isError'])
         self.assertIsNone(response({'jsonrpc': '2.0', 'method': 'tools/call', 'params': {'name': 'workbench_context'}}, c, ready))

@@ -11,6 +11,8 @@ def fmt(v):return '待核' if v is None else f'{v:,.2f}' if isinstance(v,(int,fl
 class DiagnosisDialog(QDialog):
     def __init__(self,host):
         super().__init__(host);self.host=host;self.gateway=host.automation;self.session=None;self.resize(1180,780);self.setWindowTitle('安全库存与资金诊断 · 仅本次作业')
+        from table_readability import fit_window
+        fit_window(self,1180,780)
         v=QVBoxLayout(self);v.addWidget(label('先查执行与多轮缺货证据，再比较资金与覆盖。试算不会改变当前清单。','section'))
         v.addWidget(label('仅调整分类库存目标分位概率；两仓共用分类参数，完整重算整店预算。已有人工改量/新品安排须先核对，不自动清除。','muted'))
         top=QHBoxLayout();self.stores=QListWidget();self.categories=QListWidget();top.addWidget(self.stores,2);top.addWidget(self.categories,1);self.stores.setMaximumHeight(135);self.categories.setMaximumHeight(135);v.addLayout(top)

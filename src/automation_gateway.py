@@ -101,6 +101,8 @@ class Gateway(QObject):
             except (OSError, ValueError, KeyError): pass
         if self.lock: self.lock.unlock(); self.lock = None
         self.failure_timer.stop()
+        self.stockout_reports={}
+        if hasattr(self,'stockout_expiry'):self.stockout_expiry.stop()
         self.enabled = False; self.secret = ''; self.changed.emit()
         self.last_client = None
 
@@ -173,6 +175,9 @@ class Gateway(QObject):
         if token != self.token(): raise CommandError('STALE_CONTEXT', '当前作业、参数或结果已变化，请重新检查；旧结果没有覆盖工作台')
 
     def idle(self):
+        entry=getattr(self.host,'stockout',None)
+        if entry and (getattr(entry,'worker',None) or getattr(entry,'queued',None)):
+            raise CommandError('BUSY','门店缺货率正在采集或维护，请等待安全结束后分析')
         dialog=getattr(self.host,'_large_io_dialog',None)
         if dialog is not None and not getattr(dialog,'complete',getattr(dialog,'_completed',False)):raise CommandError('BUSY','当前有后台业务任务，等待完成后再操作')
         if self.pending_failures: raise CommandError('BUSY', 'AI 任务状态正在等待保存，请稍后查询原任务；不会重复计算或采用结果')
@@ -236,6 +241,30 @@ class Gateway(QObject):
     def query_inventory_structure(self,args):
         from automation_inventory import query
         return query(self,args)
+
+    def stockout_context(self,args):
+        from automation_stockout import context
+        return context(self,args)
+
+    def query_stockout_analysis(self,args):
+        from automation_stockout import query
+        return query(self,args)
+
+    def stockout_analysis_results(self,args):
+        from automation_stockout import results
+        return results(self,args)
+
+    def stockout_filter_values(self,args):
+        from automation_stockout import results
+        return results(self,args,'filters')
+
+    def stockout_evidence(self,args):
+        from automation_stockout import results
+        return results(self,args,'evidence')
+
+    def export_stockout_analysis(self,args):
+        from automation_stockout import export
+        return export(self,args)
 
     def inventory_structure_results(self,args):
         from automation_inventory import results

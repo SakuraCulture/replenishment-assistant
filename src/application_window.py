@@ -401,7 +401,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
 
     def preview_new(self,s,base,current,result):
         if self.closing or (self.worker and self.worker.cancel.is_set()):return
-        diffs=new_products.changes(current,result);box=QMessageBox(self);box.setObjectName('newBudgetPreview');box.setWindowTitle('预览预算变化 · '+result['store_name']);box.setText(f"调整 {len(diffs)} 款；本店安排 ¥{current['summary']['amount']:,.2f} → ¥{result['summary']['amount']:,.2f}\n最低持有缺口 {current['summary']['holding_gaps']} → {result['summary']['holding_gaps']}\n必卖新品可占用普通动销的预算。取消保持原方案；应用后需重新确认归档。");__import__('readable_ui').review_table(box,['商品编码','商品名称','候选原量','候选新量','自动原量','拟安排量','原金额','新金额'],[[d.get(k) for k in ('sku','name','before_candidate','after_candidate','before_qty','after_qty','before_amount','after_amount')] for d in diffs]);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);apply=box.addButton('应用到本店草稿',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.exec()
+        diffs=new_products.changes(current,result);box=__import__('readable_ui').ReviewDialog(self);box.setObjectName('newBudgetPreview');box.setWindowTitle('预览预算变化 · '+result['store_name']);box.setText(f"调整 {len(diffs)} 款；本店安排 ¥{current['summary']['amount']:,.2f} → ¥{result['summary']['amount']:,.2f}\n最低持有缺口 {current['summary']['holding_gaps']} → {result['summary']['holding_gaps']}\n必卖新品可占用普通动销的预算。取消保持原方案；应用后需重新确认归档。");__import__('readable_ui').review_table(box,['商品编码','商品名称','候选原量','候选新量','自动原量','拟安排量','原金额','新金额'],[[d.get(k) for k in ('sku','name','before_candidate','after_candidate','before_qty','after_qty','before_amount','after_amount')] for d in diffs]);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);apply=box.addButton('应用到本店草稿',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.exec()
         if box.clickedButton() is not apply:return
         # Published result trees are replaced, never mutated; apply() copies its input.
         if result.get('new_products'):self.new_bases[s]=base
@@ -455,7 +455,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         try:
             with Session(self.work_repository.path) as session:
                 prepared=request(self,session,'prepare_normal',[self.snapshot(),codes])
-                box=QMessageBox(self);box.setObjectName('normalConfirm');box.setWindowTitle('确认归档本次补货建议');box.setText('内部签发确认；不代表加盟商确认或已下单。\n同时保存当前完整草稿；只更新下列门店正常单，其他门店历史单保留。')
+                box=__import__('readable_ui').ReviewDialog(self);box.setObjectName('normalConfirm');box.setWindowTitle('确认归档本次补货建议');box.setText('内部签发确认；不代表加盟商确认或已下单。\n同时保存当前完整草稿；只更新下列门店正常单，其他门店历史单保留。')
                 box.setInformativeText('\n'.join(prepared['lines']));__import__('readable_ui').review_table(box,__import__('order_review').HEADERS,__import__('business_presenter').readable_changes(prepared['rows']),total=prepared['total'])
                 cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton(f'确认归档 {len(codes)} 家店',QMessageBox.ButtonRole.AcceptRole);review=box.addButton('导出完整差异',QMessageBox.ButtonRole.ActionRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
                 while True:
@@ -491,7 +491,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                 if any(not p['same'] for p in plans):
                     tail={**full,'results':{s:r for s,r in full['results'].items() if s not in codes}}
                     request(self,session,'delivery_expand',[tail,list(full['results'])])
-                    box=QMessageBox(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出签发单');lines=[]
+                    box=__import__('readable_ui').ReviewDialog(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出签发单');lines=[]
                     for p in plans:
                         old=p['old'];action='沿用已归档修订' if p['same'] else f"覆盖当天正常单 V{old['revision']:03d} → V{old['revision']+1:03d}（旧版保留）" if old else '首次签发 V001'
                         lines.append(p['name']+' ('+p['store']+')：'+action+f"；¥{p['amount']:,.2f}")
@@ -521,7 +521,10 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
                 receipt=request(self,session,'delivery_execute',path)
             self.delivery_done(receipt)
         except Cancelled:self.status.setText('已取消导出核对，原正常单与草稿保留。')
-        except Exception as exc:self.failed('导出操作未全部完成：'+str(exc))
+        except Exception as exc:
+            message='导出操作未全部完成：'+str(exc);self.status.setText('未完成：'+message)
+            from readable_ui import failure
+            failure(self,'操作未完成',message)
 
     def delivery_done(self,receipt):
         self.tracking_stale=True
