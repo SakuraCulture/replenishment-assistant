@@ -49,10 +49,13 @@ def execute(repo,operation,args,cancel,progress,rpc):
                 'profile':{k:v for k,v in profile.items() if k!='items'}|{'count':len(profile['items'])} if profile else None}
     if operation=='open':
         import shutil
+        from stockout_views import load,defaults
+        try:views=load(repo);views_error=''
+        except (ValueError,OSError) as exc:views=defaults();views_error='切面配置未读取：'+str(exc)
         with repo.connect() as db:
             originals=db.execute('SELECT coalesce(sum(bytes),0) FROM originals').fetchone()[0]
             cleanups=[dict(r) for r in db.execute("SELECT id,created FROM cleanups WHERE state='FILES_PENDING' ORDER BY created DESC LIMIT 10")]
-        return {'settings':public_settings(repo.settings()),'runs':repo.recent(include_result_links=args.get('include_result_links',False)),'dates':metrics.dates(repo),
+        return {'views':views,'views_error':views_error,'settings':public_settings(repo.settings()),'runs':repo.recent(include_result_links=args.get('include_result_links',False)),'dates':metrics.dates(repo),
                 'space':{'database':repo.path.stat().st_size,'originals':originals,'free':shutil.disk_usage(repo.folder).free},'cleanups':cleanups}
     if operation=='choices':
         from stockout_settings import supply_snapshot
@@ -73,7 +76,12 @@ def execute(repo,operation,args,cancel,progress,rpc):
     if operation=='export':
         from stockout_exports import export
         return export(repo,args['query'],args['destination'],include_detail=args.get('include_detail',False),
-                      dimensions=args.get('dimensions',['store']),cancel=cancel,progress=progress)
+                      dimensions=args.get('dimensions',['store']),combinations=args.get('combinations'),cancel=cancel,progress=progress)
+    if operation=='filter_values':
+        return metrics.filter_values(repo,args['query'],args['dimension'],search=args.get('search',''),offset=args.get('offset',0),cancel=cancel)
+    if operation=='save_views':
+        from stockout_views import save
+        return save(repo,args['views'],args['expected'])
     if operation=='collect':
         from stockout_acquisition import execute
         rid=args.get('resume')

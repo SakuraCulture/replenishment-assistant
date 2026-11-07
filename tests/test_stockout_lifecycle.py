@@ -24,7 +24,7 @@ class LifecycleTests(unittest.TestCase):
                        'routes':{'S':{'primary':'山东仓','secondary':None},'T':{'primary':'河北仓','secondary':None}},'profile':None}
         self.repo.save_settings(self.settings)
 
-    def seed(self,*,partial=False,day='2026-11-07'):
+    def seed(self,*,partial=False,day='2026-11-07',negative=False):
         catalog={}
         for warehouse in ('山东仓','河北仓'):
             path=workbook(self.root/(warehouse+'.xlsx'),['商品编码','商品名称','商品状态','可用数','分类','供应商名称','虚拟分类'],
@@ -33,9 +33,43 @@ class LifecycleTests(unittest.TestCase):
         run=self.repo.new_run(day=day);self.repo.change(run['id'],catalogs=catalog)
         for store in ('S',) if partial else ('S','T'):
             path=workbook(self.root/(store+'.xlsx'),['仓库/门店编码','商品编码','商品名称','月销','可用库存','补货状态'],
-                          [[store,'A','商品A',2,0 if store=='S' else 1,'正常']])
+                          [[store,'A','商品A',2,(-3 if negative else 0) if store=='S' else 1,'正常']])
             load_store(self.repo,run['id'],store,path,observed=day+'T08:00:00+08:00')
         return self.repo.publish(run['id'])
+
+    def test_legacy_negative_snapshot_recalculates_offline_and_preserves_old_revision(self):
+        old=self.seed(negative=True);settings=self.repo.settings()
+        # Persist the v1 derived state over a real negative-stock original.
+        # This fixture models a database produced before the normalization rule.
+        with self.repo.connect(write=True) as db:
+            sid=db.execute("SELECT snapshot FROM run_stores WHERE run=? AND store='S'",(old['id'],)).fetchone()[0]
+            db.execute('UPDATE fact_records SET stock=-3,bad=1,zero=0 WHERE snapshot=?',(sid,))
+            db.execute('UPDATE dimension_summaries SET bad=1,zero=0 WHERE snapshot=?',(sid,))
+            db.execute('UPDATE summaries SET bad=1,zero=0,unknown_zero=0 WHERE snapshot=?',(sid,))
+            original=tuple(db.execute('SELECT * FROM facts WHERE snapshot=?',(sid,)).fetchone())
+            files=[(r['sha'],r['path']) for r in db.execute('SELECT * FROM originals')]
+        q={'start':'2026-11-07'}
+        before=metrics.query(self.repo,q)
+        self.assertIsNone(before['total']['rate']);self.assertTrue(before['needs_negative_stock_recalculation'])
+        self.assertFalse(metrics.query(self.repo,{**q,'filters':{'store':['T']}})['needs_negative_stock_recalculation'])
+        from stockout_exports import export
+        import openpyxl
+        path=self.root/'legacy.xlsx';export(self.repo,q,path)
+        book=openpyxl.load_workbook(path,read_only=True)
+        try:self.assertIn('需用留存原件重算',{row[0]:row[1] for row in book['口径与覆盖'].values}['统计口径版本'])
+        finally:book.close()
+        with patch('stockout_acquisition.execute',side_effect=AssertionError('No platform acquisition during recalculation')):
+            new=recalculate(self.repo,preview(self.repo,old['id'],'recalculate','original'))
+        self.assertNotEqual(new['id'],old['id'])
+        after=metrics.query(self.repo,q)
+        self.assertEqual((after['total']['base'],after['total']['zero'],after['total']['bad'],after['total']['rate']),(2,1,0,.5))
+        self.assertFalse(after['needs_negative_stock_recalculation'])
+        row=next(r for r in metrics.detail(self.repo,q)['items'] if r['store']=='S')
+        self.assertEqual((row['stock_raw'],row['stock'],row['zero'],row['bad']),('-3',0,1,0))
+        with self.repo.connect() as db:
+            self.assertEqual(tuple(db.execute('SELECT * FROM facts WHERE snapshot=?',(sid,)).fetchone()),original)
+        self.assertEqual(self.repo.settings(),settings)
+        self.assertTrue(all(file_hash(Path(p))==h for h,p in files))
 
     def test_original_recalc_creates_revision_same_data_and_never_updates_current_settings(self):
         old=self.seed();before=metrics.detail(self.repo,{'start':'2026-11-07'})

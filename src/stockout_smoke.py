@@ -124,6 +124,10 @@ def start_smoke(app,win,args):
                     and '缺货 5 / 有销 8' in page.total.text(),'Default view excludes stopped and disabled items from both numerator and denominator')
             page.exclude_stopped.setChecked(False);page.exclude_disabled.setChecked(False);page.refresh();wait(idle)
             require('缺货 6 / 有销 9' in page.total.text(),'Actual page shows weighted numerator and denominator')
+            negative=[r for r in page.detail_rows if r['sku']=='D']
+            require(len(negative)==2 and all(r['stock_raw']=='-3' and r['stock']==0 and r['zero']==1 and r['bad']==0 for r in negative),
+                    'Negative available stock counts as zero in both stores while the raw negative value is preserved')
+            require('66.67%' in page.total.text(),'Negative stock contributes to the displayed weighted stockout rate')
             require([page.cuts.horizontalHeaderItem(i).text() for i in range(2)]==['门店编码','门店名称']
                     and all('测试门店' in page.cuts.item(i,1).text() for i in range(page.cuts.rowCount())),
                     'Store cuts display both exact code and saved snapshot name')
@@ -165,6 +169,8 @@ def start_smoke(app,win,args):
             book=openpyxl.load_workbook(status_export,read_only=True)
             try:require(list(book['总体'].values)[1][:2]==(8,5),'Status-filtered export equals visible totals')
             finally:book.close()
+            from stockout_views_smoke import verify
+            verify(page,entry,out,wait,idle,request,require)
             # Exercise the actual action buttons, confirmation callbacks and spawned workers.
             from unittest.mock import patch
             from PySide6.QtWidgets import QMessageBox,QInputDialog

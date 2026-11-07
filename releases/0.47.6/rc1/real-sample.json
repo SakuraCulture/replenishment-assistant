@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "source_database_sha256": "4d85b29b4d84bd115c11affdec088903e2d1a69ec45c8c1a96de434437dcb372",
+  "source_unchanged": true,
+  "old_snapshots_unchanged": true,
+  "settings_unchanged": true,
+  "seconds": 51.84399999999914,
+  "copied_originals": 9,
+  "source_snapshots": 6,
+  "scope": "Frozen read-only source backup; only QA copy and copied originals used by the actual offline recalculate path. No platform calls; no live settings modified.",
+  "before_all": {
+    "base": 15696,
+    "zero": 3918,
+    "bad": 293,
+    "unknown_tags": 1322,
+    "unknown_zero": 378,
+    "removed_base": 0,
+    "removed_zero": 0,
+    "rate": null,
+    "status": "指标依据待核"
+  },
+  "after_all": {
+    "base": 15696,
+    "zero": 4211,
+    "bad": 0,
+    "unknown_tags": 1322,
+    "unknown_zero": 431,
+    "removed_base": 0,
+    "removed_zero": 0,
+    "rate": 0.2682849133537207,
+    "status": "含标签待核"
+  },
+  "before_default": {
+    "base": 14883,
+    "zero": 3559,
+    "bad": 280,
+    "unknown_tags": 1318,
+    "unknown_zero": 376,
+    "removed_base": 813,
+    "removed_zero": 359,
+    "rate": null,
+    "status": "指标依据待核"
+  },
+  "after_default": {
+    "base": 14883,
+    "zero": 3839,
+    "bad": 0,
+    "unknown_tags": 1318,
+    "unknown_zero": 429,
+    "removed_base": 813,
+    "removed_zero": 372,
+    "rate": 0.2579453067257945,
+    "status": "含标签待核"
+  },
+  "recalculation_warning_before": true,
+  "recalculation_warning_after": false
+}

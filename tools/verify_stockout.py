@@ -36,7 +36,7 @@ def fixture(out):
     for store,skus in [('S','ABCDEL'),('T','DEL')]:
         rows=[]
         for sku in skus:
-            fields={'仓库/门店编码':store,'商品编码':sku,'商品名称':'测试商品'+sku,'月销':3,'可用库存':1 if sku in 'BE' else 0,
+            fields={'仓库/门店编码':store,'商品编码':sku,'商品名称':'测试商品'+sku,'月销':3,'可用库存':-3 if sku=='D' else 1 if sku in 'BE' else 0,
                     '在途库存':6,'补货状态':'停采' if sku=='C' else '正常'}
             rows.append([fields.get(h,index if h=='毛利' else None) for index,h in enumerate(heads)])
         value=book(store,heads,rows,contract['nativeSheetName'])

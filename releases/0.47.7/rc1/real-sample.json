@@ -1,0 +1,108 @@
+{
+  "passed": true,
+  "scope": "Existing isolated QA copy, read only; no platform calls, no snapshot or business writes",
+  "source_database_sha256": "637d3cbd58fb747f872089c3756fe7abcb93ad82a3ac578c1bb15c291870d680",
+  "source_unchanged": true,
+  "originals_unchanged": true,
+  "settings_unchanged": true,
+  "dates": [
+    "2026-11-07"
+  ],
+  "raw_rows": 74672,
+  "total": {
+    "base": 14883,
+    "zero": 3839,
+    "bad": 0,
+    "unknown_tags": 1318,
+    "unknown_zero": 429,
+    "removed_base": 813,
+    "removed_zero": 372,
+    "rate": 0.2579453067257945,
+    "status": "含标签待核"
+  },
+  "cuts": [
+    {
+      "name": "门店仓供货商类目必采",
+      "dimensions": [
+        "store",
+        "warehouse",
+        "supplier",
+        "category",
+        "mandatory"
+      ],
+      "groups": 6969,
+      "seconds": 0.073,
+      "differences": 0
+    },
+    {
+      "name": "门店商品供货",
+      "dimensions": [
+        "store",
+        "sku",
+        "source",
+        "warehouse",
+        "category",
+        "mandatory"
+      ],
+      "groups": 74672,
+      "seconds": 0.745,
+      "differences": 0
+    },
+    {
+      "name": "日期供货结构",
+      "dimensions": [
+        "day",
+        "source",
+        "warehouse",
+        "supplier",
+        "category",
+        "mandatory"
+      ],
+      "groups": 1669,
+      "seconds": 0.055,
+      "differences": 0
+    }
+  ],
+  "filters": [
+    {
+      "filters": {
+        "warehouse": [
+          "地采"
+        ]
+      },
+      "base": 1318,
+      "zero": 429,
+      "differences": 0
+    },
+    {
+      "filters": {
+        "source": [
+          "center",
+          "local"
+        ],
+        "category": [
+          "食品"
+        ]
+      },
+      "base": 0,
+      "zero": 0,
+      "differences": 0
+    },
+    {
+      "filters": {
+        "mandatory": [
+          0,
+          1,
+          null
+        ]
+      },
+      "base": 14883,
+      "zero": 3839,
+      "differences": 0
+    }
+  ],
+  "export_seconds": 12.993,
+  "export_bytes": 9863321,
+  "export_sha256": "16ab0823334a52454b113957b3056c8c42cc05aff72b5521eb76324cb29cd2d7",
+  "seconds": 24.925
+}

@@ -3,7 +3,7 @@ from datetime import date
 from stockout_common import VIEWS, today, encoded
 from stockout_facts import exclusion
 
-DIMENSIONS={'store':('s.store','门店编码'),'warehouse':('f.warehouse','供货仓'),
+DIMENSIONS={'store':('s.store','门店编码'),'warehouse':("CASE WHEN f.source='local' THEN '地采' ELSE f.warehouse END",'供货仓'),
             'source':('f.source','供货来源'),'mandatory':('f.mandatory','必采属性'),
             'category':('f.category','商品类目'),'supplier':('f.supplier','仓库上游供货商'),'day':('s.day','观测日期'),
             'product_status':('f.product_status','仓商品状态'),'replen_status':('f.replen_status','翱象补货状态'),
@@ -13,6 +13,24 @@ DIMENSIONS={'store':('s.store','门店编码'),'warehouse':('f.warehouse','供�
 LINKS='''current_days d JOIN publications p ON p.id=d.publication
  JOIN run_stores r ON r.run=p.run JOIN store_snapshots s ON s.id=r.snapshot AND s.day=d.day'''
 AGG_KEYS=('base','zero','bad','unknown_tags','unknown_zero','removed_base','removed_zero')
+
+
+def dimension_keys(dimensions):
+    if not isinstance(dimensions,(list,tuple)) or not 1<=len(dimensions)<=len(DIMENSIONS) or any(not isinstance(k,str) or k not in DIMENSIONS for k in dimensions) or len(set(dimensions))!=len(dimensions):
+        raise ValueError('请选择1至12个不同的分析维度')
+    return tuple(dimensions)
+
+
+def dimension_value(value,key):
+    if key=='mandatory':return {1:'必采',0:'非必采',None:'属性待核'}.get(value,str(value))
+    if key=='source':return {'center':'中心仓','local':'地采','pending':'归属待核'}.get(value,value)
+    return '待核' if value is None else value
+
+
+def canonical_record(row):
+    value=dict(row)
+    if value.get('source')=='local':value['warehouse']='地采'
+    return value
 
 
 def cut_columns(dimensions):
@@ -40,8 +58,11 @@ def validate(query):
     if not isinstance(filters,dict) or set(filters)-set(DIMENSIONS):
         raise ValueError('未知筛选维度')
     for values in filters.values():
-        if not isinstance(values,list) or len(values)>256:
-            raise ValueError('每个维度筛选最多256项')
+        if not isinstance(values,list) or len(values)>1000:
+            raise ValueError('每个维度筛选最多1000项；更多商品可按类目或供应商缩小范围')
+        if any(v is not None and type(v) not in (str,int) for v in values):raise ValueError('筛选值必须是编码、名称或待核项')
+    # Normalize legacy local labels at the read boundary; immutable snapshots stay intact.
+    query['filters']={k:list(dict.fromkeys('地采' if k=='warehouse' and v=='不适用' else v for v in values)) for k,values in filters.items() if values}
     if len(encoded(query).encode('utf-8'))>1024*1024:
         raise ValueError('筛选内容过长，请减少选中分组后查询；原始商品数据未截断')
     return query
@@ -114,23 +135,31 @@ def query(repo, options, *, cancel=None):
             total=db.execute(f'SELECT {fields} FROM {LINKS} JOIN summaries m ON m.snapshot=s.id AND m.view=? WHERE {condition}',[options['view'],*args]).fetchone()
         else:
             total=db.execute(f'SELECT {aggregation(options)} FROM {LINKS} JOIN {fact_source(options)} f ON f.snapshot=s.id WHERE {condition}',args).fetchone()
+        # Existing immutable snapshots keep their old derived values until a
+        # local recalculation publishes a new revision. Do not relabel them v2.
+        needs_recalculation=bool(total['bad'] and db.execute(f'''SELECT 1 FROM {LINKS}
+          JOIN facts f ON f.snapshot=s.id WHERE {condition} AND NOT ({excluded_sql(options)})
+          AND f.month>0 AND f.stock<0 LIMIT 1''',args).fetchone())
         # Coverage describes acquisition scope, not the number of filtered SKU rows.
         selected_filter=options['filters'].get('store',[])
         scope='';scope_args=[]
         if selected_filter:
             scope=' AND r.store IN ('+','.join('?' for _ in selected_filter)+')';scope_args=selected_filter
+        selected_days=options['filters'].get('day',[])
+        if selected_days:
+            scope+=' AND d.day IN ('+','.join('?' for _ in selected_days)+')';scope_args=[*scope_args,*selected_days]
         coverage=[dict(r) for r in db.execute(f'''SELECT d.day,p.id AS revision,p.created,count(*) AS selected,
           sum(CASE WHEN s.state='READY' AND s.day=d.day THEN 1 ELSE 0 END) AS completed
           FROM current_days d JOIN publications p ON p.id=d.publication JOIN run_stores r ON r.run=p.run
           LEFT JOIN store_snapshots s ON s.id=r.snapshot WHERE d.day BETWEEN ? AND ? {scope}
           GROUP BY d.day,p.id ORDER BY d.day''',[options['start'],options['end'],*scope_args])]
-    return {'total':rate(total),'coverage':coverage,'query':options}
+    return {'total':rate(total),'coverage':coverage,'query':options,
+            'needs_negative_stock_recalculation':needs_recalculation}
 
 
-def cuts(repo, options, dimensions=('store',), *, offset=0, limit=200, cancel=None):
+def cut_statement(options, dimensions):
     options=validate(options)
-    if not 1<=len(dimensions)<=3 or len(set(dimensions))!=len(dimensions) or any(k not in DIMENSIONS for k in dimensions):
-        raise ValueError('请选择1至3个不同的分析维度')
+    dimensions=dimension_keys(dimensions)
     condition,args=where(options)
     fields=','.join(DIMENSIONS[k][0]+' AS '+k for k in dimensions)
     for dimension,field in (('store','s.name'),('sku','f.name')):
@@ -138,13 +167,52 @@ def cuts(repo, options, dimensions=('store',), *, offset=0, limit=200, cancel=No
             name=f"nullif({field},'')"
             fields+=f",coalesce(min({name}),'名称未提供') || CASE WHEN count(DISTINCT {name})>1 THEN '（同编码多名称，详见明细）' ELSE '' END AS {dimension}_name"
     group=','.join(DIMENSIONS[k][0] for k in dimensions)
+    source=fact_source(options,dimensions)
+    sql=f'SELECT {fields},{aggregation(options)} FROM {LINKS} JOIN {source} f ON f.snapshot=s.id WHERE {condition} GROUP BY {group}'
+    return sql,args
+
+
+def cuts(repo, options, dimensions=('store',), *, offset=0, limit=200, cancel=None):
+    sql,args=cut_statement(options,dimensions);offset=max(0,offset)
     with repo.connect() as db:
         if cancel:db.set_progress_handler(lambda:int(cancel.is_set()),1000)
-        source=fact_source(options,dimensions)
-        sql=f'SELECT {fields},{aggregation(options)} FROM {LINKS} JOIN {source} f ON f.snapshot=s.id WHERE {condition} GROUP BY {group}'
-        count=db.execute(f'SELECT count(*) FROM (SELECT {group} FROM {LINKS} JOIN {source} f ON f.snapshot=s.id WHERE {condition} GROUP BY {group})',args).fetchone()[0]
-        records=bounded_page(db.execute(sql+' ORDER BY zero DESC,base DESC,'+group+' LIMIT ? OFFSET ?',[*args,min(200,max(1,limit)),max(0,offset)]),rate)
-    return {'items':records,'total':count,'dimensions':list(dimensions),'offset':max(0,offset),'next_offset':offset+len(records) if offset+len(records)<count else None}
+        count=db.execute(f'SELECT count(*) FROM ({sql})',args).fetchone()[0]
+        records=bounded_page(db.execute(sql+' ORDER BY zero DESC,base DESC,'+','.join(dimensions)+' LIMIT ? OFFSET ?',[*args,min(200,max(1,limit)),offset]),rate)
+    return {'items':records,'total':count,'dimensions':list(dimensions),'offset':offset,'next_offset':offset+len(records) if offset+len(records)<count else None}
+
+
+def iter_cuts(repo,options,dimensions,*,cancel=None):
+    """One grouped query per sheet, streamed without repeated COUNT/OFFSET scans."""
+    from runtime_support import checkpoint
+    sql,args=cut_statement(options,dimensions)
+    with repo.connect() as db:
+        if cancel:db.set_progress_handler(lambda:int(cancel.is_set()),1000)
+        for row in db.execute(sql+' ORDER BY zero DESC,base DESC,'+','.join(dimensions),args):
+            checkpoint(cancel);yield rate(row)
+
+
+def filter_values(repo,options,dimension,*,search='',offset=0,limit=200,cancel=None):
+    """Bounded suggestions, constrained by other dimensions; selected values live in the UI."""
+    dimension_keys([dimension]);options=validate(options)
+    options['filters'].pop(dimension,None)
+    sql,args=cut_statement(options,[dimension])
+    if not isinstance(search,str) or len(search)>200:raise ValueError('筛选搜索最多200字')
+    condition='1=1'
+    if search.strip():
+        term='%'+search.strip().replace('\\','\\\\').replace('%','\\%').replace('_','\\_')+'%'
+        label=("CASE source WHEN 'center' THEN '中心仓' WHEN 'local' THEN '地采' ELSE '归属待核' END" if dimension=='source' else
+               "CASE mandatory WHEN 1 THEN '必采' WHEN 0 THEN '非必采' ELSE '属性待核' END" if dimension=='mandatory' else
+               f"coalesce(CAST({dimension} AS TEXT),'待核')")
+        condition=label+" LIKE ? ESCAPE '\\'";args.append(term)
+        if dimension in ('store','sku'):
+            condition+=f" OR {dimension}_name LIKE ? ESCAPE '\\'";args.append(term)
+    filtered=f'SELECT * FROM ({sql}) WHERE {condition}'
+    offset=max(0,offset)
+    with repo.connect() as db:
+        if cancel:db.set_progress_handler(lambda:int(cancel.is_set()),1000)
+        count=db.execute(f'SELECT count(*) FROM ({filtered})',args).fetchone()[0]
+        records=bounded_page(db.execute(filtered+f' ORDER BY {dimension} LIMIT ? OFFSET ?',[*args,min(200,max(1,limit)),offset]))
+    return {'dimension':dimension,'items':records,'total':count,'offset':offset,'next_offset':offset+len(records) if offset+len(records)<count else None}
 
 
 def detail(repo, options, *, offset=0, limit=200, only_zero=False, excluded=False, sku='', cancel=None):
@@ -169,7 +237,7 @@ def detail(repo, options, *, offset=0, limit=200, only_zero=False, excluded=Fals
                               [*args,snapshot['id'],remaining,skip])
             skip=0
             for record in cursor:
-                row={**dict(snapshot),**dict(record)};cost=len(encoded(row).encode('utf-8'))
+                row=canonical_record({**dict(snapshot),**dict(record)});cost=len(encoded(row).encode('utf-8'))
                 if rows and size+cost>4*1024*1024:remaining=0;break
                 rows.append(row);size+=cost;remaining-=1
             if remaining==0:break
@@ -181,6 +249,7 @@ def trend(repo,options,*,cancel=None):
     # Daily queries keep missing dates absent. UI renders gaps instead of filling zeros.
     with repo.connect() as db:
         days=[r[0] for r in db.execute('SELECT day FROM current_days WHERE day BETWEEN ? AND ? ORDER BY day',(options['start'],options['end']))]
+    if options['filters'].get('day'):days=[day for day in days if day in options['filters']['day']]
     result=[]
     for day in days:
         value=query(repo,{**options,'start':day,'end':day},cancel=cancel)
