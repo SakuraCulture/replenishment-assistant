@@ -132,12 +132,15 @@ def classify(db,sku,route,catalogs):
     return 'center',target,row,f'按已采用供货设置归属{target}；主仓{state}'
 
 
-def exclusion(view, prefix=''):
+def exclusion(view, prefix='', *, exclude_stopped=False, exclude_disabled=False):
     if view not in VIEWS:
         raise ValueError('未知剔除视角')
     r=f'coalesce({prefix}retired,0)=1'
     a=f'coalesce({prefix}assessment,0)=1'
-    return {'all':'0','retired':r,'assessment':a,'both':f'({r} OR {a})'}[view]
+    terms=[{'all':'0','retired':r,'assessment':a,'both':f'({r} OR {a})'}[view]]
+    if exclude_stopped:terms.append(f"{prefix}replen_status IN ('停采','禁采')")
+    if exclude_disabled:terms.append(f"{prefix}product_status='禁用'")
+    return '('+' OR '.join(terms)+')'
 
 
 def load_store(repo,rid,store,source,*,observed,expected=None,expected_rows=None,cancel=None,progress=lambda _:None):
@@ -151,7 +154,9 @@ def load_store(repo,rid,store,source,*,observed,expected=None,expected_rows=None
     day=date_of(observed)
     sha=expected or file_hash(source)
     path=repo.retain(source,sha,cancel)
-    sid=digest([store,day,observed,sha,run['basis'],run['catalogs'],VERSION,TAG_VERSION])
+    identity=[store,day,observed,sha,run['basis'],run['catalogs'],VERSION,TAG_VERSION]
+    if run['external'].get('recalculate'):identity.append(rid)
+    sid=digest(identity)
     with repo.connect() as db:
         prior=db.execute('SELECT rows,state FROM store_snapshots WHERE id=?',(sid,)).fetchone()
         for warehouse,source_sha in run['catalogs'].items():

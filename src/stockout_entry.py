@@ -77,7 +77,7 @@ class Entry(QObject):
         if self.closing:return
         request=(operation,args or {},callback,background,self.generation)
         if self.worker or self.busy():
-            if self.worker and self.worker.operation not in {'collect','adopt','end','cleanup','ingest','cleanup_retry'}:
+            if self.worker and self.worker.operation not in {'collect','adopt','end','cleanup','ingest','cleanup_retry','delete_run_log','rerun','recalculate'}:
                 self.callback=None;self.worker.cancel_reason='已按新请求取消上次查询';self.worker.cancel.set()
             self.queued=request;self.status('等待当前任务安全结束；原补货业务优先')
             self.ensure_watch();return
@@ -128,7 +128,7 @@ class Entry(QObject):
         if self.page:self.page.controls()
         if self.closing:QTimer.singleShot(0,self.host.close)
         else:
-            if self.page and task and task.operation=='collect' and not self.queued:self.page.refresh_metadata()
+            if self.page and task and task.operation in {'collect','rerun','recalculate'} and not self.queued:self.page.refresh_metadata()
             self.tick()
 
     def pause(self,message='已请求安全暂停；原件和原任务编号保留'):

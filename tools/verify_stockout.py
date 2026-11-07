@@ -28,8 +28,8 @@ def fixture(out):
         for row in rows:w.append(row)
         b.save(path);b.close();return {'file':str(path),'sha256':file_hash(path),'rows':len(rows)}
     tags=['标杆淘汰','淘便考核','标杆淘汰;淘便考核','','']
-    catalog=book('山东仓',['商品编码','商品状态','可用数','分类','供应商名称','虚拟分类'],
-                 [[s,'禁用' if s=='C' else '启用',10,'饮品' if i%2 else '食品','供货商'+str(i%2),tags[i]] for i,s in enumerate('ABCDE')])
+    catalog=book('山东仓',['商品编码','商品状态','可用数','分类','供应商名称','虚拟分类','基本售价','出库箱规'],
+                 [[s,'禁用' if s=='C' else '启用',10,'饮品' if i%2 else '食品','供货商'+str(i%2),tags[i],2,1] for i,s in enumerate('ABCDE')])
     observed=today()+'T08:00:00+08:00';files=[]
     contract=json.loads((ROOT/'components/aoxiang/assets/field-contract-v2.json').read_text('utf-8'))
     heads=[c['rawHeader'] for c in contract['columns']];assert heads.count('毛利')==3

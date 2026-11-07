@@ -52,7 +52,7 @@ def execute(repo,operation,args,cancel,progress,rpc):
         with repo.connect() as db:
             originals=db.execute('SELECT coalesce(sum(bytes),0) FROM originals').fetchone()[0]
             cleanups=[dict(r) for r in db.execute("SELECT id,created FROM cleanups WHERE state='FILES_PENDING' ORDER BY created DESC LIMIT 10")]
-        return {'settings':public_settings(repo.settings()),'runs':repo.recent(),'dates':metrics.dates(repo),
+        return {'settings':public_settings(repo.settings()),'runs':repo.recent(include_result_links=args.get('include_result_links',False)),'dates':metrics.dates(repo),
                 'space':{'database':repo.path.stat().st_size,'originals':originals,'free':shutil.disk_usage(repo.folder).free},'cleanups':cleanups}
     if operation=='choices':
         from stockout_settings import supply_snapshot
@@ -89,6 +89,18 @@ def execute(repo,operation,args,cancel,progress,rpc):
         from stockout_acquisition import finish_local
         return finish_local(repo,args['run'],rpc,cancel)
     if operation=='run':return repo.run(args['run'])
+    if operation=='run_action_preview':
+        from stockout_lifecycle import preview
+        return preview(repo,args['run'],args['action'],args.get('mode','current'))
+    if operation=='delete_run_log':
+        from stockout_lifecycle import delete_log
+        return delete_log(repo,args['plan'],cancel)
+    if operation=='rerun':
+        from stockout_lifecycle import rerun
+        return rerun(repo,args['plan'],rpc,cancel,progress)
+    if operation=='recalculate':
+        from stockout_lifecycle import recalculate
+        return recalculate(repo,args.get('plan'),resume=args.get('resume'),cancel=cancel,progress=progress)
     if operation=='cleanup_preview':
         from stockout_maintenance import preview
         return preview(repo,args['start'],args['end'])

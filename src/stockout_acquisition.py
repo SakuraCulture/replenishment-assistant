@@ -219,13 +219,13 @@ def execute(repo,rid,rpc,cancel,progress=lambda _:None):
 def finish_local(repo,rid,rpc,cancel):
     """End local analysis without losing outstanding native commands or enabling duplicates."""
     run=repo.run(rid)
-    if run['state'] in {'COMPLETE','PARTIAL','ENDED'}:return run
+    if run['state'] in {'COMPLETE','ENDED'}:return run
     # No forced detach: shared outstanding commands must be reconciled first.
     from aoxiang_jobs import Jobs
     if run['external'].get('catalog_operation'):
         state=Client(rpc,'jst').request('sync.status')
         batch=next((b for b in state.get('batches',[]) if b.get('operation_id')==run['external']['catalog_operation']),None)
-        if batch and any(not item.get('adoption') for item in batch['items']):
+        if not batch or any(not item.get('adoption') for item in batch['items']):
             raise ValueError('原仓导出尚未完成核对和留存，请继续原分析任务；不会解除原任务关联后重新导出')
     if run['external'].get('ax_commands'):
         jobs=Jobs(repo.root/'aoxiang'/'jobs.sqlite3');client=Client(rpc,'ax')
@@ -233,5 +233,12 @@ def finish_local(repo,rid,rpc,cancel):
             checkpoint(cancel);job=refresh_job(jobs,client,cid)
             if job['state'] not in {'SUCCEEDED','COMPLETED_WITH_ERRORS','ENDED','CANCELLED'}:
                 raise ValueError('原平台任务尚未结束，请先继续核对原任务；暂不解除防重保护')
-    repo.change(rid,state='ENDED',message='已结束本地分析；成功原件及平台证据保留')
+    with repo.connect(write=True) as db:
+        db.execute('BEGIN IMMEDIATE')
+        current=db.execute('SELECT state,updated FROM runs WHERE id=?',(rid,)).fetchone()
+        if tuple(current)!=(run['state'],run['updated']):raise ValueError('任务核对期间发生变化，请重新结束')
+        external=dict(run['external']);external['catalogs_pending']=False
+        from stockout_common import encoded,now
+        db.execute("UPDATE runs SET state='ENDED',message=?,updated=?,external=? WHERE id=?",
+                   ('已结束本地分析；成功原件及平台证据保留',now(),encoded(external),rid))
     return repo.run(rid)

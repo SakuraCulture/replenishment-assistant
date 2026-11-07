@@ -34,6 +34,8 @@ def validate(query):
         raise ValueError('单次查询最多366天，请缩小日期范围')
     if query.setdefault('view','all') not in VIEWS:
         raise ValueError('剔除视角无效')
+    for key in ('exclude_stopped','exclude_disabled'):
+        if key in query and type(query[key]) is not bool:raise ValueError('剔除开关必须为勾选或未勾选')
     filters=query.setdefault('filters',{})
     if not isinstance(filters,dict) or set(filters)-set(DIMENSIONS):
         raise ValueError('未知筛选维度')
@@ -61,8 +63,20 @@ def where(query):
     return ' AND '.join(conditions),args
 
 
-def aggregation(view):
-    ex=exclusion(view,'f.')
+def excluded_sql(options, prefix='f.'):
+    return exclusion(options['view'],prefix,exclude_stopped=options.get('exclude_stopped',False),
+                     exclude_disabled=options.get('exclude_disabled',False))
+
+
+def view_label(options):
+    names=[] if options['view']=='all' else [VIEWS[options['view']]]
+    if options.get('exclude_stopped'):names.append('剔除禁采（含停采）')
+    if options.get('exclude_disabled'):names.append('剔除禁用')
+    return '、'.join(names) or '全量'
+
+
+def aggregation(options):
+    ex=excluded_sql(options)
     cases=[f'eligible * NOT ({ex})',f'zero * NOT ({ex})',f'bad * NOT ({ex})',
            f'eligible * (retired IS NULL OR assessment IS NULL) * NOT ({ex})',
            f'zero * (retired IS NULL OR assessment IS NULL) * NOT ({ex})',
@@ -95,11 +109,11 @@ def query(repo, options, *, cancel=None):
     condition,args=where(options)
     with repo.connect() as db:
         if cancel:db.set_progress_handler(lambda:int(cancel.is_set()),1000)
-        if not options['filters']:
+        if not options['filters'] and not options.get('exclude_stopped') and not options.get('exclude_disabled'):
             fields=','.join('coalesce(sum(m.'+k+'),0) AS '+k for k in AGG_KEYS)
             total=db.execute(f'SELECT {fields} FROM {LINKS} JOIN summaries m ON m.snapshot=s.id AND m.view=? WHERE {condition}',[options['view'],*args]).fetchone()
         else:
-            total=db.execute(f'SELECT {aggregation(options["view"])} FROM {LINKS} JOIN {fact_source(options)} f ON f.snapshot=s.id WHERE {condition}',args).fetchone()
+            total=db.execute(f'SELECT {aggregation(options)} FROM {LINKS} JOIN {fact_source(options)} f ON f.snapshot=s.id WHERE {condition}',args).fetchone()
         # Coverage describes acquisition scope, not the number of filtered SKU rows.
         selected_filter=options['filters'].get('store',[])
         scope='';scope_args=[]
@@ -127,7 +141,7 @@ def cuts(repo, options, dimensions=('store',), *, offset=0, limit=200, cancel=No
     with repo.connect() as db:
         if cancel:db.set_progress_handler(lambda:int(cancel.is_set()),1000)
         source=fact_source(options,dimensions)
-        sql=f'SELECT {fields},{aggregation(options["view"])} FROM {LINKS} JOIN {source} f ON f.snapshot=s.id WHERE {condition} GROUP BY {group}'
+        sql=f'SELECT {fields},{aggregation(options)} FROM {LINKS} JOIN {source} f ON f.snapshot=s.id WHERE {condition} GROUP BY {group}'
         count=db.execute(f'SELECT count(*) FROM (SELECT {group} FROM {LINKS} JOIN {source} f ON f.snapshot=s.id WHERE {condition} GROUP BY {group})',args).fetchone()[0]
         records=bounded_page(db.execute(sql+' ORDER BY zero DESC,base DESC,'+group+' LIMIT ? OFFSET ?',[*args,min(200,max(1,limit)),max(0,offset)]),rate)
     return {'items':records,'total':count,'dimensions':list(dimensions),'offset':max(0,offset),'next_offset':offset+len(records) if offset+len(records)<count else None}
@@ -135,7 +149,7 @@ def cuts(repo, options, dimensions=('store',), *, offset=0, limit=200, cancel=No
 
 def detail(repo, options, *, offset=0, limit=200, only_zero=False, excluded=False, sku='', cancel=None):
     options=validate(options);condition,args=where(options)
-    ex=exclusion(options['view'],'f.')
+    ex=excluded_sql(options)
     condition+=f' AND ({ex})' if excluded else f' AND NOT ({ex})'
     if only_zero:condition+=' AND f.zero>0'
     if sku:condition+=' AND f.sku=?';args.append(sku)

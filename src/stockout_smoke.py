@@ -65,11 +65,29 @@ def start_smoke(app,win,args):
             import copy,shutil
             from aoxiang_jobs import fingerprint
             from stockout_repository import Repository
-            native={};native_root=out/'offline-ax';calls=[]
+            native={};native_root=out/'offline-ax';calls=[];jst_batches={};jst_root=out/'offline-jst'
             def native_request(bridge,payload):
                 calls.append(copy.deepcopy(payload));service=payload['service']
-                if service=='release_ax':return True
+                if service in {'release_ax','release_jst'}:return True
                 if service=='ax_root':return str(native_root)
+                if service=='jst_root':return str(jst_root)
+                if service=='jst':
+                    action=payload['action'];values=payload.get('values',{})
+                    if action=='sync.start':
+                        bid=values['operation_id'];assert values['purpose']=='stockout_analysis'
+                        if bid not in jst_batches:
+                            from catalog_sync_validation import validate
+                            folder=jst_root/'downloads'/bid/'item';folder.mkdir(parents=True)
+                            spec_cat=spec['catalogs']['山东仓'];source=folder/'source.xlsx';shutil.copyfile(spec_cat['file'],source)
+                            receipt=validate({'schema':1,'file':str(source),'warehouse':'山东仓','sha256':spec_cat['sha256'],
+                                              'expected_rows':spec_cat['rows'],'candidate':str(folder/'candidate.json')})
+                            jst_batches[bid]={'id':bid,'operation_id':bid,'purpose':'stockout_analysis','items':[
+                                {'id':'item','stage':'READY','account':{'warehouse':'山东仓','expectedCoid':'C','expectedUid':'U'},
+                                 'native':{'scope':{'coid':'C','uid':'U'},'sha256':receipt['source_sha256']},'receipt':receipt,'adoption':None}]}
+                        return {'batch_id':bid,'reused':False}
+                    if action=='sync.status':return {'running':False,'batches':[copy.deepcopy(jst_batches[values['batch_id']])]}
+                    if action=='sync.acknowledge_adoption':jst_batches[values['batch_id']]['items'][0]['adoption']=values['receipt'];return {'accepted':True}
+                    raise AssertionError('Unexpected offline JST action: '+action)
                 if service!='ax':raise AssertionError('Live platform service forbidden: '+service)
                 action=payload['action'];values=payload.get('values',{})
                 if action=='configuration':return {'configured':True,'enabled':True,'account_binding':{'account_id':'offline','merchant_code':'QA'},
@@ -102,6 +120,9 @@ def start_smoke(app,win,args):
             require(len(set(collected['external']['ax_commands'].values()))==1,'Analysis persists the shared command association for every store')
             entry.page.refresh_metadata();wait(idle);page=entry.page
             page.start.setDate(page.end.date());page.refresh();wait(idle)
+            require(page.exclude_stopped.isChecked() and page.exclude_disabled.isChecked()
+                    and '缺货 5 / 有销 8' in page.total.text(),'Default view excludes stopped and disabled items from both numerator and denominator')
+            page.exclude_stopped.setChecked(False);page.exclude_disabled.setChecked(False);page.refresh();wait(idle)
             require('缺货 6 / 有销 9' in page.total.text(),'Actual page shows weighted numerator and denominator')
             require([page.cuts.horizontalHeaderItem(i).text() for i in range(2)]==['门店编码','门店名称']
                     and all('测试门店' in page.cuts.item(i,1).text() for i in range(page.cuts.rowCount())),
@@ -136,6 +157,54 @@ def start_smoke(app,win,args):
             book=openpyxl.load_workbook(exported,read_only=True)
             try:require(list(book['总体'].values)[1][:2]==(6,4),'Workbook and actual page agree')
             finally:book.close()
+            page.view.setCurrentIndex(page.view.findData('all'));page.exclude_stopped.setChecked(True);page.exclude_disabled.setChecked(True);page.refresh();wait(idle)
+            require('缺货 5 / 有销 8' in page.total.text() and all(r['sku']!='C' for r in page.detail_rows),
+                    'Status filters apply to current cards and product details')
+            page.grab().save(str(out/'05-status-filters.png'))
+            status_export=request('export',{'query':page.options(),'destination':str(out/'status-report.xlsx'),'include_detail':True})
+            book=openpyxl.load_workbook(status_export,read_only=True)
+            try:require(list(book['总体'].values)[1][:2]==(8,5),'Status-filtered export equals visible totals')
+            finally:book.close()
+            # Exercise the actual action buttons, confirmation callbacks and spawned workers.
+            from unittest.mock import patch
+            from PySide6.QtWidgets import QMessageBox,QInputDialog
+            page.findChild(QTabWidget).setCurrentIndex(3);wait(idle)
+            page.runs.setCurrentIndex(page.runs.findData(collected['id']));wait(idle)
+            stockout_task.Bridge.request=native_request
+            with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Yes):
+                page.rerun_btn.click();wait(idle)
+            stockout_task.Bridge.request=forbidden
+            fresh=repo.run(repo.recent()[0]['id'])
+            require(fresh['trigger']=='rerun' and fresh['state']=='COMPLETE' and len(native)==2,
+                    'Rerun button creates a fresh successful native collection with both stores')
+            require(fresh['external']['ax_commands']!=collected['external']['ax_commands'] and len(jst_batches)==1,
+                    'Explicit rerun gets new platform command and warehouse receipt without changing original task')
+            page.runs.setCurrentIndex(page.runs.findData(fresh['id']));wait(idle)
+            with patch.object(QInputDialog,'getItem',return_value=('原作业当时设置',True)),patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Yes):
+                page.recalculate_btn.click();wait(idle)
+            recalculated=repo.run(repo.recent()[0]['id'])
+            require(recalculated['trigger']=='recalculate' and recalculated['state']=='COMPLETE',
+                    'Recalculate button publishes new revision with live RPC forbidden')
+            require(recalculated['stores'][0]['snapshot']!=fresh['stores'][0]['snapshot'] and '缺货 5 / 有销 8' in page.total.text(),
+                    'Recalculation creates fresh snapshots and preserves original metric')
+            page.runs.setCurrentIndex(page.runs.findData(recalculated['id']));wait(idle);page.grab().save(str(out/'06-lifecycle.png'))
+            with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Yes),patch.object(QMessageBox,'information'):
+                page.delete_log_btn.click();wait(idle)
+            require(recalculated['id'] not in [r['id'] for r in repo.recent()] and '缺货 5 / 有销 8' in page.total.text(),
+                    'Delete-log button removes task from list while preserving current analysis')
+            page.result_links.setChecked(True);wait(idle)
+            require(page.runs.findData(recalculated['id'])>=0 and repo.run(recalculated['id'])['external'].get('log_deleted_at'),
+                    'Deleted-log result links remain available for future recalculation without restoring logs')
+            with patch.object(QMessageBox,'warning',return_value=QMessageBox.StandardButton.Cancel):
+                page.delete_data_btn.click();wait(idle)
+            require('缺货 5 / 有销 8' in page.total.text() and page.details.rowCount()>0,
+                    'Cancelling deletion confirmation preserves analysis results')
+            with patch.object(QMessageBox,'warning',return_value=QMessageBox.StandardButton.Yes),patch.object(QMessageBox,'information'):
+                page.delete_data_btn.click();wait(idle)
+            require('缺货 0 / 有销 0' in page.total.text() and page.details.rowCount()==0,
+                    'Date-scoped data deletion refreshes empty state with no stale results')
+            require(all(Path(f['file']).is_file() for f in spec['files']) and len(native)==2,
+                    'Analysis data deletion preserves input originals and platform command records')
             for n in range(3):
                 page.refresh();win.show_section(0);wait(idle)
                 require(entry.page is None and entry.callback is None,'Leave cancels query and releases page '+str(n))

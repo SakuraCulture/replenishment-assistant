@@ -49,10 +49,11 @@ def _write(book,repo,options,include_detail,dimensions,cancel,progress):
     totals=metrics.query(repo,options,cancel=cancel)
     meta=sheet('口径与覆盖',['项目','内容'])
     for row in [('指标','门店缺货率：当前视角中月销>0且门店可用库存=0的店品数 / 月销>0店品数'),
-                ('统计口径版本',VERSION),('标签版本',TAG_VERSION),('视角',VIEWS[totals['query']['view']]),
+                ('统计口径版本',VERSION),('标签版本',TAG_VERSION),('视角',metrics.view_label(totals['query'])),
                 ('起止日期',totals['query']['start']+' 至 '+totals['query']['end']),('生成时间',now()),
                 ('说明','按每日实际观测时点；在途不抵扣；未知不当作0；期间率按店品日分子分母加总'),
                 ('剔除说明','按虚拟分类精确识别标杆淘汰系列与淘便考核；同时剔除分子分母，双标去重；标签未知保留'),
+                ('状态剔除','禁采按翱象补货状态“停采/禁采”；禁用按所选供货仓商品状态“禁用”；未知状态保留，不剔除备用；与标签剔除合并去重'),
                 ('责任说明','供货商、类目、仓均是门店缺货的切面，不自动归因于仓或供货商'),
                 ('查询范围',__import__('json').dumps(totals['query'],ensure_ascii=False))]:append(meta,row)
     append(meta,['观测日期','日报修订','已完成门店','所选门店','发布时间'])
@@ -72,7 +73,7 @@ def _write(book,repo,options,include_detail,dimensions,cancel,progress):
     for view,name in VIEWS.items():
         checkpoint(cancel)
         value=metrics.query(repo,{**options,'view':view},cancel=cancel)['total']
-        append(tags,[name,*[value[k] for k in keys]])
+        append(tags,[metrics.view_label({**options,'view':view}),*[value[k] for k in keys]])
     trend=sheet('每日趋势',['观测日期',*measure])
     for row in metrics.trend(repo,options,cancel=cancel):
         checkpoint(cancel);append(trend,[row['day'],*[row['total'][k] for k in keys]])
@@ -95,7 +96,7 @@ def _write(book,repo,options,include_detail,dimensions,cancel,progress):
         with repo.connect() as db:
             if cancel:db.set_progress_handler(lambda:int(cancel.is_set()),1000)
             cursor=db.execute(f'''SELECT s.day,s.store,s.name AS store_name,s.observed,s.source_sha,p.id AS revision,
-                ({exclusion(query['view'],'f.')}) AS excluded,f.* FROM {metrics.LINKS} JOIN facts f ON f.snapshot=s.id
+                ({metrics.excluded_sql(query)}) AS excluded,f.* FROM {metrics.LINKS} JOIN facts f ON f.snapshot=s.id
                 WHERE {condition} ORDER BY s.day,s.store,f.sku''',args)
             for row in cursor:
                 checkpoint(cancel)

@@ -122,7 +122,7 @@ class Repository:
             raise ValueError('分析设置内容与版本不一致')
         return dict(value, version=row['id'])
 
-    def save_settings(self, value):
+    def save_settings(self, value, *, make_current=True):
         value = dict(value)
         value.pop('version', None)
         stores = value.get('stores') or []
@@ -137,19 +137,25 @@ class Repository:
         version = digest(value)
         with self.connect(write=True) as db:
             db.execute('INSERT OR IGNORE INTO settings_versions VALUES(?,?,?)', (version, encoded(value), now()))
-            db.execute('INSERT INTO settings_current VALUES(1,?) ON CONFLICT(id) DO UPDATE SET version=excluded.version', (version,))
+            if make_current:
+                db.execute('INSERT INTO settings_current VALUES(1,?) ON CONFLICT(id) DO UPDATE SET version=excluded.version', (version,))
         return self.settings(version)
 
-    def new_run(self, *, trigger='manual', day=None, source_run=None):
+    def new_run(self, *, trigger='manual', day=None, source_run=None, fresh_source=None):
+        if source_run and fresh_source:raise ValueError('继续原任务与重新采集不能同时选择')
         basis = self.settings()
-        old = self.run(source_run) if source_run else None
+        old = self.run(source_run or fresh_source) if source_run or fresh_source else None
         if old:
             basis = self.settings(old['basis'])
+            if old['external'].get('recalculate') and source_run:raise ValueError('这是本地重算任务，请使用继续重算')
+            if fresh_source and old['state'] not in {'COMPLETE','PARTIAL','ENDED'}:raise ValueError('原任务尚未结束，请先继续或结束原任务')
         if not basis:
             raise ValueError('请先选择门店并采用分析供货设置及必卖清单')
         rid = uuid.uuid4().hex
         from version_info import INFO
-        external=dict(old['external'] if old else {})
+        external=dict(old['external'] if old and not fresh_source else {})
+        external.pop('log_deleted_at',None)
+        if fresh_source:external['rerun']=True
         external.setdefault('versions',{k:INFO[k] for k in ('version','model_version','routing_version')})
         with self.connect(write=True) as db:
             # Never create a second local intention over an unfinished analysis run.
@@ -160,8 +166,8 @@ class Repository:
             if not source_run and latest and json.loads(latest[0]).get('catalogs_pending'):
                 raise ValueError('原分析的仓资料采集尚未核对，请先继续原任务，不重复提交新仓导出')
             db.execute('INSERT INTO runs(id,day,basis,trigger,state,message,created,updated,source_run,external,catalogs) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
-                       (rid, day or today(), basis['version'], trigger, 'PREPARED', '已保存采集意图', now(), now(), source_run,
-                        encoded(external), encoded(old['catalogs'] if old else {})))
+                       (rid, day or today(), basis['version'], trigger, 'PREPARED', '已保存采集意图', now(), now(), source_run or fresh_source,
+                        encoded(external), encoded(old['catalogs'] if old and not fresh_source else {})))
             for store in basis['stores']:
                 db.execute('INSERT INTO run_stores(run,store,name,state) VALUES(?,?,?,?)', (rid, store['code'], store['name'], 'PENDING'))
         return self.run(rid)
@@ -177,9 +183,13 @@ class Repository:
             value[key] = json.loads(value[key])
         return dict(value, stores=stores)
 
-    def recent(self, limit=30):
+    def recent(self, limit=30, *, include_result_links=False):
         with self.connect() as db:
-            return [dict(r) for r in db.execute('SELECT id,day,state,message,created,trigger FROM runs ORDER BY rowid DESC LIMIT ?', (min(100, max(1, limit)),))]
+            return [dict(r) for r in db.execute("""SELECT id,day,state,message,created,trigger,
+                (SELECT group_concat(d.day,'、') FROM current_days d JOIN publications p ON p.id=d.publication WHERE p.run=runs.id) AS current_dates
+                FROM runs WHERE coalesce(json_extract(external,'$.log_deleted_at'),'')='' OR
+                (? AND EXISTS(SELECT 1 FROM run_stores r WHERE r.run=runs.id AND r.snapshot IS NOT NULL))
+                ORDER BY rowid DESC LIMIT ?""", (bool(include_result_links),min(100, max(1, limit))))]
 
     def change(self, rid, **values):
         if set(values) - {'state','message','external','catalogs'}:
@@ -205,14 +215,22 @@ class Repository:
             run = db.execute('SELECT state FROM runs WHERE id=?', (rid,)).fetchone()
             if not run or run[0] in {'COMPLETE','PARTIAL','ENDED'}:
                 raise ValueError('该任务已发布或已结束')
+            external=json.loads(db.execute('SELECT external FROM runs WHERE id=?',(rid,)).fetchone()[0])
+            for day,expected in external.get('recalculate',{}).get('publications',{}).items():
+                current=db.execute('SELECT publication FROM current_days WHERE day=?',(day,)).fetchone()
+                if not current or current[0]!=expected:raise ValueError('重算期间该日期日报已变化，未覆盖；请结束本次重算后选择当前作业')
             days = [r[0] for r in db.execute("SELECT DISTINCT s.day FROM run_stores r JOIN store_snapshots s ON s.id=r.snapshot WHERE r.run=? AND s.state='READY'", (rid,))]
             if not days:
                 raise ValueError('没有完整验收的门店快照，未发布日报')
             for day in days:
+                if external.get('rerun'):
+                    outside=db.execute('''SELECT 1 FROM current_days d JOIN publications p ON p.id=d.publication
+                        JOIN run_stores r ON r.run=p.run WHERE d.day=? AND r.store NOT IN
+                        (SELECT store FROM run_stores WHERE run=?) LIMIT 1''',(day,rid)).fetchone()
+                    if outside:raise ValueError('该日期已有其他门店日报，重新采集范围不完整，未覆盖；请结束本次后选择覆盖完整门店的作业')
                 cursor = db.execute('INSERT INTO publications(day,run,created) VALUES(?,?,?)', (day,rid,now()))
                 db.execute('INSERT INTO current_days VALUES(?,?) ON CONFLICT(day) DO UPDATE SET publication=excluded.publication', (day,cursor.lastrowid))
             missing = db.execute("SELECT count(*) FROM run_stores WHERE run=? AND state!='READY'", (rid,)).fetchone()[0]
-            external=json.loads(db.execute('SELECT external FROM runs WHERE id=?',(rid,)).fetchone()[0])
             state = 'PARTIAL' if missing or len(days)>1 or external.get('catalogs_pending') else 'COMPLETE'
             db.execute('UPDATE runs SET state=?,message=?,updated=? WHERE id=?', (state, '日报已发布；按实际观测日期及已完成门店展示',now(),rid))
         return self.run(rid)
