@@ -1,0 +1,2017 @@
+{
+  "passed": true,
+  "baseline_commit": "14f4aa7f96037ab98c2752248f6322cc037976b6",
+  "candidate_file_sha256": "48dbafc404c5f6a04c0be4fe574df33199c9867c431d10f9cfc779ebdfad999d",
+  "live_platform": false,
+  "method": "Separate processes, same XLSX bytes, sequential alternating 3 runs each; simulated submit 40ms/store, generation 1000ms first store and 600ms others.",
+  "equivalence": "Source hashes, all typed fact columns except snapshot identity, and all four view totals match exactly.",
+  "limits": "Host scheduling simulation; not actual AX speed, production throughput or low-spec business-PC memory. Native JS pipeline has separate runtime tests.",
+  "summaries": [
+    {
+      "stores": 1,
+      "baseline": {
+        "seconds": 1.4060000000026776,
+        "peak_rss": 49483776,
+        "read_bytes": 910914,
+        "write_bytes": 347728
+      },
+      "candidate": {
+        "seconds": 1.3910000000032596,
+        "peak_rss": 49623040,
+        "read_bytes": 960382,
+        "write_bytes": 347728
+      },
+      "reduction_percent": 1.066856329970789
+    },
+    {
+      "stores": 3,
+      "baseline": {
+        "seconds": 3.312999999994645,
+        "peak_rss": 49770496,
+        "read_bytes": 2161928,
+        "write_bytes": 792816
+      },
+      "candidate": {
+        "seconds": 1.5779999999940628,
+        "peak_rss": 49778688,
+        "read_bytes": 1622640,
+        "write_bytes": 676648
+      },
+      "reduction_percent": 52.36945366747319
+    },
+    {
+      "stores": 5,
+      "baseline": {
+        "seconds": 5.327999999994063,
+        "peak_rss": 49782784,
+        "read_bytes": 3478468,
+        "write_bytes": 1229686
+      },
+      "candidate": {
+        "seconds": 1.375,
+        "peak_rss": 49799168,
+        "read_bytes": 2227112,
+        "write_bytes": 1005502
+      },
+      "reduction_percent": 74.19294294291419
+    }
+  ],
+  "raw": [
+    {
+      "count": 1,
+      "seconds": 1.4060000000026776,
+      "command_scopes": [
+        [
+          "S5"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.10900000001129229
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3430000000080327
+        }
+      ],
+      "progress": [
+        "采集 测试S5；只生成分析快照"
+      ],
+      "peak_rss": 50274304,
+      "read_bytes": 910914,
+      "write_bytes": 347728,
+      "business_signature": "9769bffb844d68c773e009d44e19954318a3607480ba08c37924ff9164ba1e8e",
+      "totals": {
+        "all": {
+          "base": 3,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 2,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 1,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 2,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 1,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 2,
+          "removed_zero": 1,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5"
+      ],
+      "version": "baseline",
+      "round": 0
+    },
+    {
+      "count": 1,
+      "seconds": 1.4070000000065193,
+      "command_scopes": [
+        [
+          "S5"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.11000000000058208
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3440000000118744
+        }
+      ],
+      "progress": [
+        "批量采集 1 家：先提交各店导出，平台同时生成文件",
+        "批量导出 1 家：平台已受理 1 家，已取得文件 0 家，待处理 0 家",
+        "批量导出 1 家：平台已受理 1 家，已取得文件 1 家，待处理 0 家",
+        "校验并解析 测试S5；其余原件保留在磁盘"
+      ],
+      "peak_rss": 49623040,
+      "read_bytes": 960382,
+      "write_bytes": 347728,
+      "business_signature": "9769bffb844d68c773e009d44e19954318a3607480ba08c37924ff9164ba1e8e",
+      "totals": {
+        "all": {
+          "base": 3,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 2,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 1,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 2,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 1,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 2,
+          "removed_zero": 1,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5"
+      ],
+      "version": "candidate",
+      "round": 0
+    },
+    {
+      "count": 1,
+      "seconds": 1.375,
+      "command_scopes": [
+        [
+          "S5"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.09399999999732245
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3279999999940628
+        }
+      ],
+      "progress": [
+        "批量采集 1 家：先提交各店导出，平台同时生成文件",
+        "批量导出 1 家：平台已受理 1 家，已取得文件 0 家，待处理 0 家",
+        "批量导出 1 家：平台已受理 1 家，已取得文件 1 家，待处理 0 家",
+        "校验并解析 测试S5；其余原件保留在磁盘"
+      ],
+      "peak_rss": 49524736,
+      "read_bytes": 960382,
+      "write_bytes": 347728,
+      "business_signature": "9769bffb844d68c773e009d44e19954318a3607480ba08c37924ff9164ba1e8e",
+      "totals": {
+        "all": {
+          "base": 3,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 2,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 1,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 2,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 1,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 2,
+          "removed_zero": 1,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5"
+      ],
+      "version": "candidate",
+      "round": 1
+    },
+    {
+      "count": 1,
+      "seconds": 1.389999999999418,
+      "command_scopes": [
+        [
+          "S5"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.09399999999732245
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3279999999940628
+        }
+      ],
+      "progress": [
+        "采集 测试S5；只生成分析快照"
+      ],
+      "peak_rss": 49483776,
+      "read_bytes": 910914,
+      "write_bytes": 347728,
+      "business_signature": "9769bffb844d68c773e009d44e19954318a3607480ba08c37924ff9164ba1e8e",
+      "totals": {
+        "all": {
+          "base": 3,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 2,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 1,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 2,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 1,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 2,
+          "removed_zero": 1,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5"
+      ],
+      "version": "baseline",
+      "round": 1
+    },
+    {
+      "count": 1,
+      "seconds": 1.4070000000065193,
+      "command_scopes": [
+        [
+          "S5"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.11000000000058208
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3440000000118744
+        }
+      ],
+      "progress": [
+        "采集 测试S5；只生成分析快照"
+      ],
+      "peak_rss": 49463296,
+      "read_bytes": 910914,
+      "write_bytes": 347728,
+      "business_signature": "9769bffb844d68c773e009d44e19954318a3607480ba08c37924ff9164ba1e8e",
+      "totals": {
+        "all": {
+          "base": 3,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 2,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 1,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 2,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 1,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 2,
+          "removed_zero": 1,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5"
+      ],
+      "version": "baseline",
+      "round": 2
+    },
+    {
+      "count": 1,
+      "seconds": 1.3910000000032596,
+      "command_scopes": [
+        [
+          "S5"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.09399999999732245
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3280000000086147
+        }
+      ],
+      "progress": [
+        "批量采集 1 家：先提交各店导出，平台同时生成文件",
+        "批量导出 1 家：平台已受理 1 家，已取得文件 0 家，待处理 0 家",
+        "批量导出 1 家：平台已受理 1 家，已取得文件 1 家，待处理 0 家",
+        "校验并解析 测试S5；其余原件保留在磁盘"
+      ],
+      "peak_rss": 49684480,
+      "read_bytes": 960382,
+      "write_bytes": 347728,
+      "business_signature": "9769bffb844d68c773e009d44e19954318a3607480ba08c37924ff9164ba1e8e",
+      "totals": {
+        "all": {
+          "base": 3,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 2,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 1,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 2,
+          "zero": 2,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 1,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 1,
+          "zero": 1,
+          "bad": 0,
+          "unknown_tags": 1,
+          "unknown_zero": 1,
+          "removed_base": 2,
+          "removed_zero": 1,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5"
+      ],
+      "version": "candidate",
+      "round": 2
+    },
+    {
+      "count": 3,
+      "seconds": 3.312999999994645,
+      "command_scopes": [
+        [
+          "S5"
+        ],
+        [
+          "S1"
+        ],
+        [
+          "S3"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.09399999999732245
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3289999999979045
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 1.4539999999979045
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 2.2969999999913853
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 2.4219999999913853
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 3.2660000000032596
+        }
+      ],
+      "progress": [
+        "采集 测试S5；只生成分析快照",
+        "采集 测试S1；只生成分析快照",
+        "采集 测试S3；只生成分析快照"
+      ],
+      "peak_rss": 49692672,
+      "read_bytes": 2161928,
+      "write_bytes": 792816,
+      "business_signature": "9795d4475d042eb7a65e15c527c4222d5ac3fe4b2a4d6ad143b9ab0c5090c4e0",
+      "totals": {
+        "all": {
+          "base": 9,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 6,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 3,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 6,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 3,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 6,
+          "removed_zero": 3,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3"
+      ],
+      "version": "baseline",
+      "round": 0
+    },
+    {
+      "count": 3,
+      "seconds": 1.5470000000059372,
+      "command_scopes": [
+        [
+          "S5",
+          "S1",
+          "S3"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.09399999999732245
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 0.14100000000325963
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 0.17200000000593718
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 1.0
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 1.0
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.4220000000059372
+        }
+      ],
+      "progress": [
+        "批量采集 3 家：先提交各店导出，平台同时生成文件",
+        "批量导出 3 家：平台已受理 3 家，已取得文件 0 家，待处理 0 家",
+        "批量导出 3 家：平台已受理 3 家，已取得文件 2 家，待处理 0 家",
+        "批量导出 3 家：平台已受理 3 家，已取得文件 3 家，待处理 0 家",
+        "校验并解析 测试S5；其余原件保留在磁盘",
+        "校验并解析 测试S1；其余原件保留在磁盘",
+        "校验并解析 测试S3；其余原件保留在磁盘"
+      ],
+      "peak_rss": 49799168,
+      "read_bytes": 1622640,
+      "write_bytes": 676648,
+      "business_signature": "9795d4475d042eb7a65e15c527c4222d5ac3fe4b2a4d6ad143b9ab0c5090c4e0",
+      "totals": {
+        "all": {
+          "base": 9,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 6,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 3,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 6,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 3,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 6,
+          "removed_zero": 3,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3"
+      ],
+      "version": "candidate",
+      "round": 0
+    },
+    {
+      "count": 3,
+      "seconds": 1.5779999999940628,
+      "command_scopes": [
+        [
+          "S5",
+          "S1",
+          "S3"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.09399999999732245
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 0.13999999999941792
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 0.1869999999908032
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 1.014999999999418
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 1.014999999999418
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.4219999999913853
+        }
+      ],
+      "progress": [
+        "批量采集 3 家：先提交各店导出，平台同时生成文件",
+        "批量导出 3 家：平台已受理 3 家，已取得文件 0 家，待处理 0 家",
+        "批量导出 3 家：平台已受理 3 家，已取得文件 2 家，待处理 0 家",
+        "批量导出 3 家：平台已受理 3 家，已取得文件 3 家，待处理 0 家",
+        "校验并解析 测试S5；其余原件保留在磁盘",
+        "校验并解析 测试S1；其余原件保留在磁盘",
+        "校验并解析 测试S3；其余原件保留在磁盘"
+      ],
+      "peak_rss": 49778688,
+      "read_bytes": 1622640,
+      "write_bytes": 676648,
+      "business_signature": "9795d4475d042eb7a65e15c527c4222d5ac3fe4b2a4d6ad143b9ab0c5090c4e0",
+      "totals": {
+        "all": {
+          "base": 9,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 6,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 3,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 6,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 3,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 6,
+          "removed_zero": 3,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3"
+      ],
+      "version": "candidate",
+      "round": 1
+    },
+    {
+      "count": 3,
+      "seconds": 3.313000000009197,
+      "command_scopes": [
+        [
+          "S5"
+        ],
+        [
+          "S1"
+        ],
+        [
+          "S3"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.09400000001187436
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3280000000086147
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 1.4690000000118744
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 2.297000000005937
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 2.422000000005937
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 3.25
+        }
+      ],
+      "progress": [
+        "采集 测试S5；只生成分析快照",
+        "采集 测试S1；只生成分析快照",
+        "采集 测试S3；只生成分析快照"
+      ],
+      "peak_rss": 49770496,
+      "read_bytes": 2161928,
+      "write_bytes": 792816,
+      "business_signature": "9795d4475d042eb7a65e15c527c4222d5ac3fe4b2a4d6ad143b9ab0c5090c4e0",
+      "totals": {
+        "all": {
+          "base": 9,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 6,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 3,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 6,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 3,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 6,
+          "removed_zero": 3,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3"
+      ],
+      "version": "baseline",
+      "round": 1
+    },
+    {
+      "count": 3,
+      "seconds": 3.312999999994645,
+      "command_scopes": [
+        [
+          "S5"
+        ],
+        [
+          "S1"
+        ],
+        [
+          "S3"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.125
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3589999999967404
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 1.5
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 2.327999999994063
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 2.437999999994645
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 3.2659999999887077
+        }
+      ],
+      "progress": [
+        "采集 测试S5；只生成分析快照",
+        "采集 测试S1；只生成分析快照",
+        "采集 测试S3；只生成分析快照"
+      ],
+      "peak_rss": 49864704,
+      "read_bytes": 2161928,
+      "write_bytes": 792816,
+      "business_signature": "9795d4475d042eb7a65e15c527c4222d5ac3fe4b2a4d6ad143b9ab0c5090c4e0",
+      "totals": {
+        "all": {
+          "base": 9,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 6,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 3,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 6,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 3,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 6,
+          "removed_zero": 3,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3"
+      ],
+      "version": "baseline",
+      "round": 2
+    },
+    {
+      "count": 3,
+      "seconds": 1.6089999999967404,
+      "command_scopes": [
+        [
+          "S5",
+          "S1",
+          "S3"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.10899999999674037
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 0.13999999999941792
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 0.1870000000053551
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 1.014999999999418
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 1.014999999999418
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.4210000000020955
+        }
+      ],
+      "progress": [
+        "批量采集 3 家：先提交各店导出，平台同时生成文件",
+        "批量导出 3 家：平台已受理 3 家，已取得文件 0 家，待处理 0 家",
+        "批量导出 3 家：平台已受理 3 家，已取得文件 2 家，待处理 0 家",
+        "批量导出 3 家：平台已受理 3 家，已取得文件 3 家，待处理 0 家",
+        "校验并解析 测试S5；其余原件保留在磁盘",
+        "校验并解析 测试S1；其余原件保留在磁盘",
+        "校验并解析 测试S3；其余原件保留在磁盘"
+      ],
+      "peak_rss": 49741824,
+      "read_bytes": 1622640,
+      "write_bytes": 676648,
+      "business_signature": "9795d4475d042eb7a65e15c527c4222d5ac3fe4b2a4d6ad143b9ab0c5090c4e0",
+      "totals": {
+        "all": {
+          "base": 9,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 6,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 3,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 6,
+          "zero": 6,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 3,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 3,
+          "zero": 3,
+          "bad": 0,
+          "unknown_tags": 3,
+          "unknown_zero": 3,
+          "removed_base": 6,
+          "removed_zero": 3,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3"
+      ],
+      "version": "candidate",
+      "round": 2
+    },
+    {
+      "count": 5,
+      "seconds": 5.4060000000026776,
+      "command_scopes": [
+        [
+          "S5"
+        ],
+        [
+          "S1"
+        ],
+        [
+          "S3"
+        ],
+        [
+          "S2"
+        ],
+        [
+          "S4"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.09399999999732245
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3280000000086147
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 1.4530000000086147
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 2.2810000000026776
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 2.422000000005937
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 3.2660000000032596
+        },
+        {
+          "action": "submit",
+          "store": "S2",
+          "seconds": 3.4060000000026776
+        },
+        {
+          "action": "collect",
+          "store": "S2",
+          "seconds": 4.26600000000326
+        },
+        {
+          "action": "submit",
+          "store": "S4",
+          "seconds": 4.422000000005937
+        },
+        {
+          "action": "collect",
+          "store": "S4",
+          "seconds": 5.297000000005937
+        }
+      ],
+      "progress": [
+        "采集 测试S5；只生成分析快照",
+        "采集 测试S1；只生成分析快照",
+        "采集 测试S3；只生成分析快照",
+        "采集 测试S2；只生成分析快照",
+        "采集 测试S4；只生成分析快照"
+      ],
+      "peak_rss": 49840128,
+      "read_bytes": 3478468,
+      "write_bytes": 1229686,
+      "business_signature": "60039f52862dd7cfcb97b78e5ad9a251022ba28785e99025e721d2e1410be2ba",
+      "totals": {
+        "all": {
+          "base": 15,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 10,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 5,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 10,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 5,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 10,
+          "removed_zero": 5,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3",
+        "S2",
+        "S4"
+      ],
+      "version": "baseline",
+      "round": 0
+    },
+    {
+      "count": 5,
+      "seconds": 1.4060000000026776,
+      "command_scopes": [
+        [
+          "S5",
+          "S1",
+          "S3",
+          "S2",
+          "S4"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.125
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 0.15600000000267755
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 0.20299999999406282
+        },
+        {
+          "action": "submit",
+          "store": "S2",
+          "seconds": 0.25
+        },
+        {
+          "action": "submit",
+          "store": "S4",
+          "seconds": 0.2960000000020955
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S2",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S4",
+          "seconds": 1.125
+        }
+      ],
+      "progress": [
+        "批量采集 5 家：先提交各店导出，平台同时生成文件",
+        "批量导出 5 家：平台已受理 5 家，已取得文件 0 家，待处理 0 家",
+        "批量导出 5 家：平台已受理 5 家，已取得文件 5 家，待处理 0 家",
+        "校验并解析 测试S5；其余原件保留在磁盘",
+        "校验并解析 测试S1；其余原件保留在磁盘",
+        "校验并解析 测试S3；其余原件保留在磁盘",
+        "校验并解析 测试S2；其余原件保留在磁盘",
+        "校验并解析 测试S4；其余原件保留在磁盘"
+      ],
+      "peak_rss": 49799168,
+      "read_bytes": 2227112,
+      "write_bytes": 1005502,
+      "business_signature": "60039f52862dd7cfcb97b78e5ad9a251022ba28785e99025e721d2e1410be2ba",
+      "totals": {
+        "all": {
+          "base": 15,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 10,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 5,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 10,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 5,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 10,
+          "removed_zero": 5,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3",
+        "S2",
+        "S4"
+      ],
+      "version": "candidate",
+      "round": 0
+    },
+    {
+      "count": 5,
+      "seconds": 1.375,
+      "command_scopes": [
+        [
+          "S5",
+          "S1",
+          "S3",
+          "S2",
+          "S4"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.125
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 0.17200000000593718
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 0.21899999999732245
+        },
+        {
+          "action": "submit",
+          "store": "S2",
+          "seconds": 0.26600000000325963
+        },
+        {
+          "action": "submit",
+          "store": "S4",
+          "seconds": 0.2970000000059372
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S2",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S4",
+          "seconds": 1.125
+        }
+      ],
+      "progress": [
+        "批量采集 5 家：先提交各店导出，平台同时生成文件",
+        "批量导出 5 家：平台已受理 5 家，已取得文件 0 家，待处理 0 家",
+        "批量导出 5 家：平台已受理 5 家，已取得文件 5 家，待处理 0 家",
+        "校验并解析 测试S5；其余原件保留在磁盘",
+        "校验并解析 测试S1；其余原件保留在磁盘",
+        "校验并解析 测试S3；其余原件保留在磁盘",
+        "校验并解析 测试S2；其余原件保留在磁盘",
+        "校验并解析 测试S4；其余原件保留在磁盘"
+      ],
+      "peak_rss": 49811456,
+      "read_bytes": 2227112,
+      "write_bytes": 1005502,
+      "business_signature": "60039f52862dd7cfcb97b78e5ad9a251022ba28785e99025e721d2e1410be2ba",
+      "totals": {
+        "all": {
+          "base": 15,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 10,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 5,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 10,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 5,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 10,
+          "removed_zero": 5,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3",
+        "S2",
+        "S4"
+      ],
+      "version": "candidate",
+      "round": 1
+    },
+    {
+      "count": 5,
+      "seconds": 5.327999999994063,
+      "command_scopes": [
+        [
+          "S5"
+        ],
+        [
+          "S1"
+        ],
+        [
+          "S3"
+        ],
+        [
+          "S2"
+        ],
+        [
+          "S4"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.09299999999348074
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3279999999940628
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 1.4839999999967404
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 2.312000000005355
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 2.452999999994063
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 3.2810000000026776
+        },
+        {
+          "action": "submit",
+          "store": "S2",
+          "seconds": 3.437000000005355
+        },
+        {
+          "action": "collect",
+          "store": "S2",
+          "seconds": 4.264999999999418
+        },
+        {
+          "action": "submit",
+          "store": "S4",
+          "seconds": 4.4060000000026776
+        },
+        {
+          "action": "collect",
+          "store": "S4",
+          "seconds": 5.25
+        }
+      ],
+      "progress": [
+        "采集 测试S5；只生成分析快照",
+        "采集 测试S1；只生成分析快照",
+        "采集 测试S3；只生成分析快照",
+        "采集 测试S2；只生成分析快照",
+        "采集 测试S4；只生成分析快照"
+      ],
+      "peak_rss": 49774592,
+      "read_bytes": 3478468,
+      "write_bytes": 1229686,
+      "business_signature": "60039f52862dd7cfcb97b78e5ad9a251022ba28785e99025e721d2e1410be2ba",
+      "totals": {
+        "all": {
+          "base": 15,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 10,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 5,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 10,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 5,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 10,
+          "removed_zero": 5,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3",
+        "S2",
+        "S4"
+      ],
+      "version": "baseline",
+      "round": 1
+    },
+    {
+      "count": 5,
+      "seconds": 5.25,
+      "command_scopes": [
+        [
+          "S5"
+        ],
+        [
+          "S1"
+        ],
+        [
+          "S3"
+        ],
+        [
+          "S2"
+        ],
+        [
+          "S4"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.09399999999732245
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.3279999999940628
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 1.437999999994645
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 2.2660000000032596
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 2.4060000000026776
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 3.235000000000582
+        },
+        {
+          "action": "submit",
+          "store": "S2",
+          "seconds": 3.360000000000582
+        },
+        {
+          "action": "collect",
+          "store": "S2",
+          "seconds": 4.202999999994063
+        },
+        {
+          "action": "submit",
+          "store": "S4",
+          "seconds": 4.327999999994063
+        },
+        {
+          "action": "collect",
+          "store": "S4",
+          "seconds": 5.1560000000026776
+        }
+      ],
+      "progress": [
+        "采集 测试S5；只生成分析快照",
+        "采集 测试S1；只生成分析快照",
+        "采集 测试S3；只生成分析快照",
+        "采集 测试S2；只生成分析快照",
+        "采集 测试S4；只生成分析快照"
+      ],
+      "peak_rss": 49782784,
+      "read_bytes": 3478468,
+      "write_bytes": 1229686,
+      "business_signature": "60039f52862dd7cfcb97b78e5ad9a251022ba28785e99025e721d2e1410be2ba",
+      "totals": {
+        "all": {
+          "base": 15,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 10,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 5,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 10,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 5,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 10,
+          "removed_zero": 5,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3",
+        "S2",
+        "S4"
+      ],
+      "version": "baseline",
+      "round": 2
+    },
+    {
+      "count": 5,
+      "seconds": 1.3589999999967404,
+      "command_scopes": [
+        [
+          "S5",
+          "S1",
+          "S3",
+          "S2",
+          "S4"
+        ]
+      ],
+      "events": [
+        {
+          "action": "submit",
+          "store": "S5",
+          "seconds": 0.10899999999674037
+        },
+        {
+          "action": "submit",
+          "store": "S1",
+          "seconds": 0.15600000000267755
+        },
+        {
+          "action": "submit",
+          "store": "S3",
+          "seconds": 0.20299999999406282
+        },
+        {
+          "action": "submit",
+          "store": "S2",
+          "seconds": 0.23399999999674037
+        },
+        {
+          "action": "submit",
+          "store": "S4",
+          "seconds": 0.28100000000267755
+        },
+        {
+          "action": "collect",
+          "store": "S5",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S1",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S3",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S2",
+          "seconds": 1.125
+        },
+        {
+          "action": "collect",
+          "store": "S4",
+          "seconds": 1.125
+        }
+      ],
+      "progress": [
+        "批量采集 5 家：先提交各店导出，平台同时生成文件",
+        "批量导出 5 家：平台已受理 5 家，已取得文件 0 家，待处理 0 家",
+        "批量导出 5 家：平台已受理 5 家，已取得文件 5 家，待处理 0 家",
+        "校验并解析 测试S5；其余原件保留在磁盘",
+        "校验并解析 测试S1；其余原件保留在磁盘",
+        "校验并解析 测试S3；其余原件保留在磁盘",
+        "校验并解析 测试S2；其余原件保留在磁盘",
+        "校验并解析 测试S4；其余原件保留在磁盘"
+      ],
+      "peak_rss": 49799168,
+      "read_bytes": 2227112,
+      "write_bytes": 1005502,
+      "business_signature": "60039f52862dd7cfcb97b78e5ad9a251022ba28785e99025e721d2e1410be2ba",
+      "totals": {
+        "all": {
+          "base": 15,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 0,
+          "removed_zero": 0,
+          "rate": 0.6666666666666666,
+          "status": "含标签待核"
+        },
+        "retired": {
+          "base": 10,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 5,
+          "rate": 0.5,
+          "status": "含标签待核"
+        },
+        "assessment": {
+          "base": 10,
+          "zero": 10,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 5,
+          "removed_zero": 0,
+          "rate": 1.0,
+          "status": "含标签待核"
+        },
+        "both": {
+          "base": 5,
+          "zero": 5,
+          "bad": 0,
+          "unknown_tags": 5,
+          "unknown_zero": 5,
+          "removed_base": 10,
+          "removed_zero": 5,
+          "rate": 1.0,
+          "status": "含标签待核"
+        }
+      },
+      "complete_stores": [
+        "S5",
+        "S1",
+        "S3",
+        "S2",
+        "S4"
+      ],
+      "version": "candidate",
+      "round": 2
+    }
+  ]
+}
