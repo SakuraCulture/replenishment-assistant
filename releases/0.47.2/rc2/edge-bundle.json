@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "scope": "installed Edge; fresh QA profiles; local pages only; no platform requests",
+  "components": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.47.2_rc2\\补货助手\\_internal\\components",
+  "warehouses": [
+    {
+      "warehouse": "山东仓",
+      "seconds": 7.3606869999999995,
+      "facts": {
+        "edgeVersion": "Edg/157.0.4341.42",
+        "profileDirectory": "Default",
+        "actualProfilePath": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\startup_connections_0472\\edge-bundle-rc2\\browsers\\sd\\User Data\\Default",
+        "profilePathVerified": true,
+        "ownedTargetId": "7A5605C062C0E726F628168AF7C5982E",
+        "mode": "background_tab"
+      },
+      "connection_reused": true
+    },
+    {
+      "warehouse": "河北仓",
+      "seconds": 6.9403548,
+      "facts": {
+        "edgeVersion": "Edg/157.0.4341.42",
+        "profileDirectory": "Default",
+        "actualProfilePath": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\startup_connections_0472\\edge-bundle-rc2\\browsers\\hb\\User Data\\Default",
+        "profilePathVerified": true,
+        "ownedTargetId": "E7403CB6063493F16358EDD1E54511CC",
+        "mode": "background_tab"
+      },
+      "connection_reused": true
+    }
+  ],
+  "closed": [
+    true,
+    true
+  ]
+}

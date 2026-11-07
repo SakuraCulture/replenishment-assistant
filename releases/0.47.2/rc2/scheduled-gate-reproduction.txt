@@ -1,0 +1,13 @@
+test_due_schedule_waits_for_ax_startup (__main__.GateReproduction.test_due_schedule_waits_for_ax_startup) ... FAIL
+
+======================================================================
+FAIL: test_due_schedule_waits_for_ax_startup (__main__.GateReproduction.test_due_schedule_waits_for_ax_startup)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<stdin>", line 11, in test_due_schedule_waits_for_ax_startup
+AssertionError: False is not true : A due schedule must wait while AX startup owns the browser
+
+----------------------------------------------------------------------
+Ran 1 test in 0.097s
+
+FAILED (failures=1)
