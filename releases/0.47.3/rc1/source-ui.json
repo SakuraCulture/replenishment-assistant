@@ -1,0 +1,436 @@
+{
+  "passed": true,
+  "app": "补货助手",
+  "version": "0.47.3",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "源码运行",
+  "build_id": "未打包",
+  "application_pid": 42608,
+  "frozen_exe": false,
+  "checks": [
+    "Unentered page has no page, worker or schedule timer",
+    "No analysis directory or database on ordinary startup",
+    "No heavy analysis imports before entry",
+    "First entry lazily creates independent database",
+    "Analysis adopts supply routes from the saved parameter-page database",
+    "Same worker projection publishes complete synthetic daily snapshot",
+    "Actual acquisition worker publishes all selected stores",
+    "All selected stores use one native batch command in their selected order",
+    "Analysis persists the shared command association for every store",
+    "Actual page shows weighted numerator and denominator",
+    "Store cuts display both exact code and saved snapshot name",
+    "Details display both store and product code and name",
+    "Product and store cross-cut includes both identities",
+    "Readable filter labels preserve exact code-only selection",
+    "View all updates numerator and denominator",
+    "View retired updates numerator and denominator",
+    "View assessment updates numerator and denominator",
+    "View both updates numerator and denominator",
+    "Source and mandatory cross-cut reconciles with total",
+    "Double-click cut applies exact filters",
+    "Actual worker exports independent detailed workbook",
+    "Workbook and actual page agree",
+    "Leave cancels query and releases page 0",
+    "Leave cancels query and releases page 1",
+    "Leave cancels query and releases page 2",
+    "Spawned workers never create/import Qt application",
+    "All original business tables retain exact ordered signatures",
+    "Original route and mandatory profile bytes unchanged",
+    "Entering and collecting do not enable daily schedule",
+    "No worker or polling remains after leaving",
+    "Corrupt analysis database produces an analysis error",
+    "Original business remains available after analysis corruption"
+  ],
+  "workers": [
+    {
+      "pid": 40320,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 11544,
+      "qt_loaded": false,
+      "operation": "adopt"
+    },
+    {
+      "pid": 11544,
+      "qt_loaded": false,
+      "operation": "adopt"
+    },
+    {
+      "pid": 42116,
+      "qt_loaded": false,
+      "operation": "ingest"
+    },
+    {
+      "pid": 42116,
+      "qt_loaded": false,
+      "operation": "ingest"
+    },
+    {
+      "pid": 4508,
+      "qt_loaded": false,
+      "operation": "collect"
+    },
+    {
+      "pid": 37048,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 32252,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 4508,
+      "qt_loaded": false,
+      "operation": "collect"
+    },
+    {
+      "pid": 34756,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 12908,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 40780,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 41788,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 36872,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 39544,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 4528,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 41900,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 40424,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 29180,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 43660,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 23776,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 43644,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 39360,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 39360,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 14808,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 25824,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 29008,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 43720,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 43684,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 6468,
+      "qt_loaded": false,
+      "operation": "query"
+    }
+  ],
+  "pipeline_scopes": [
+    {
+      "warehouse_codes": [
+        "S",
+        "T"
+      ]
+    }
+  ],
+  "business_signatures": {
+    "jobs": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_orders": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_revisions": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_work_revisions": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "presets": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sqlite_sequence": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stores": "c674421c1734bd3cdbf1589b2ccacf5d21102ac827ea251a34c01670eb8ccb60"
+  },
+  "heartbeat_ticks": 355,
+  "max_heartbeat_gap_seconds": 0.13999999999987267,
+  "limits": "Marked synthetic originals; real Qt, spawned worker and Excel. No live platform requests. Not a low-spec business-PC measurement.",
+  "process_exit": 0,
+  "seconds": 15.125,
+  "tree_peak_rss": 367685632,
+  "children_peak_rss": 363233280,
+  "temporary_peak_bytes": 14843,
+  "processes": {
+    "17332": {
+      "peak_rss": 4452352,
+      "read_bytes": 448,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0
+    },
+    "37040": {
+      "peak_rss": 7499776,
+      "read_bytes": 0,
+      "write_bytes": 0,
+      "cpu_seconds": 0.015625
+    },
+    "42608": {
+      "peak_rss": 230137856,
+      "read_bytes": 18191952,
+      "write_bytes": 911304,
+      "cpu_seconds": 4.078125
+    },
+    "43788": {
+      "peak_rss": 45572096,
+      "read_bytes": 6732496,
+      "write_bytes": 366,
+      "cpu_seconds": 0.71875
+    },
+    "19992": {
+      "peak_rss": 46989312,
+      "read_bytes": 7109908,
+      "write_bytes": 13502,
+      "cpu_seconds": 0.703125
+    },
+    "40320": {
+      "peak_rss": 22904832,
+      "read_bytes": 1938663,
+      "write_bytes": 123041,
+      "cpu_seconds": 0.171875
+    },
+    "11544": {
+      "peak_rss": 45785088,
+      "read_bytes": 6466386,
+      "write_bytes": 33324,
+      "cpu_seconds": 0.578125
+    },
+    "42116": {
+      "peak_rss": 46653440,
+      "read_bytes": 7320964,
+      "write_bytes": 517217,
+      "cpu_seconds": 0.640625
+    },
+    "4508": {
+      "peak_rss": 46272512,
+      "read_bytes": 6896686,
+      "write_bytes": 114067,
+      "cpu_seconds": 0.5625
+    },
+    "37048": {
+      "peak_rss": 20811776,
+      "read_bytes": 1857128,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "32252": {
+      "peak_rss": 20262912,
+      "read_bytes": 2227659,
+      "write_bytes": 5345,
+      "cpu_seconds": 0.15625
+    },
+    "34756": {
+      "peak_rss": 21311488,
+      "read_bytes": 1904051,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "12908": {
+      "peak_rss": 23064576,
+      "read_bytes": 2190766,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "40780": {
+      "peak_rss": 22822912,
+      "read_bytes": 1857293,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "41788": {
+      "peak_rss": 21356544,
+      "read_bytes": 1937284,
+      "write_bytes": 0,
+      "cpu_seconds": 0.203125
+    },
+    "36872": {
+      "peak_rss": 23187456,
+      "read_bytes": 2227694,
+      "write_bytes": 1847,
+      "cpu_seconds": 0.203125
+    },
+    "39544": {
+      "peak_rss": 20836352,
+      "read_bytes": 1897217,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "4528": {
+      "peak_rss": 20873216,
+      "read_bytes": 1897212,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "41900": {
+      "peak_rss": 23093248,
+      "read_bytes": 2046905,
+      "write_bytes": 0,
+      "cpu_seconds": 0.15625
+    },
+    "40424": {
+      "peak_rss": 21278720,
+      "read_bytes": 1904228,
+      "write_bytes": 0,
+      "cpu_seconds": 0.15625
+    },
+    "29180": {
+      "peak_rss": 20639744,
+      "read_bytes": 1839898,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "43660": {
+      "peak_rss": 18919424,
+      "read_bytes": 1826205,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "23776": {
+      "peak_rss": 22708224,
+      "read_bytes": 1951138,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "43644": {
+      "peak_rss": 21143552,
+      "read_bytes": 1899116,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "39360": {
+      "peak_rss": 45449216,
+      "read_bytes": 6650954,
+      "write_bytes": 37297,
+      "cpu_seconds": 0.578125
+    },
+    "42080": {
+      "peak_rss": 20848640,
+      "read_bytes": 1897220,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "14808": {
+      "peak_rss": 21446656,
+      "read_bytes": 1937119,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "25824": {
+      "peak_rss": 23089152,
+      "read_bytes": 1972687,
+      "write_bytes": 0,
+      "cpu_seconds": 0.1875
+    },
+    "42008": {
+      "peak_rss": 21917696,
+      "read_bytes": 2045468,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "29008": {
+      "peak_rss": 23420928,
+      "read_bytes": 2075751,
+      "write_bytes": 1571,
+      "cpu_seconds": 0.125
+    },
+    "43720": {
+      "peak_rss": 22913024,
+      "read_bytes": 1996943,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "43684": {
+      "peak_rss": 22827008,
+      "read_bytes": 1972524,
+      "write_bytes": 0,
+      "cpu_seconds": 0.140625
+    },
+    "6468": {
+      "peak_rss": 21389312,
+      "read_bytes": 1937281,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    },
+    "16892": {
+      "peak_rss": 20131840,
+      "read_bytes": 1826037,
+      "write_bytes": 0,
+      "cpu_seconds": 0.109375
+    }
+  },
+  "application_peak_rss": 230137856,
+  "analysis_worker_peak_rss": 46653440
+}

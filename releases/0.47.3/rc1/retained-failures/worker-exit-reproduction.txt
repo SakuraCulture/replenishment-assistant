@@ -1,0 +1,22 @@
+test_completed_worker_result_is_drained_after_poll_exit_race (test_stockout_supply.WorkerCompletionTests.test_completed_worker_result_is_drained_after_poll_exit_race) ... FAIL
+
+======================================================================
+FAIL: test_completed_worker_result_is_drained_after_poll_exit_race (test_stockout_supply.WorkerCompletionTests.test_completed_worker_result_is_drained_after_poll_exit_race)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_supply.py", line 121, in test_completed_worker_result_is_drained_after_poll_exit_race
+    self.assertEqual(errors,[]);self.assertEqual(results,[{'base':9,'zero':6}]);self.assertEqual(pipe.messages,[])
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['分析工作进程异常退出；原任务编号和已确认原件保留，请继续原任务核对'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'分析工作进程异常退出；原任务编号和已确认原件保留，请继续原任务核对'
+
+- ['分析工作进程异常退出；原任务编号和已确认原件保留，请继续原任务核对']
++ []
+
+----------------------------------------------------------------------
+Ran 1 test in 0.104s
+
+FAILED (failures=1)

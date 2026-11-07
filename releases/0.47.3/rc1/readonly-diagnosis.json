@@ -1,0 +1,26 @@
+{
+  "observed_at": "2026-11-07T16:41:02+08:00",
+  "scope": "Read-only local diagnosis. No business writes, no platform calls. Historical run from supplied screenshot.",
+  "run_basis_prefix": "0a3c94adc55b",
+  "selected_stores": 15,
+  "adopted_routes": 0,
+  "adopted_catalogs": 0,
+  "totals": {
+    "base": 49786,
+    "zero": 7083,
+    "bad": 61,
+    "unknown_tags": 49786
+  },
+  "store_states": [
+    {
+      "state": "FAILED",
+      "n": 1
+    },
+    {
+      "state": "READY",
+      "n": 14
+    }
+  ],
+  "currently_saved_routes_for_original_selection": 8,
+  "unconfigured_for_original_selection": 7
+}
