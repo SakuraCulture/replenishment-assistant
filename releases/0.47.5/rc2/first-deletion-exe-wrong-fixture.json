@@ -1,0 +1,9 @@
+{
+  "passed": false,
+  "frozen_exe": true,
+  "checks": [],
+  "error": "Traceback (most recent call last):\n  File \"deletion_smoke.py\", line 27, in execute\n  File \"warehouse_catalog.py\", line 31, in import_catalog\n  File \"input_adapter.py\", line 29, in digest\n  File \"pathlib.py\", line 1013, in open\nFileNotFoundError: [Errno 2] No such file or directory: 'D:\\\\优团工作文件夹\\\\outputs\\\\replenishment_mvp_20261029\\\\qa\\\\deletion_0321\\\\河北仓.xlsx'\n",
+  "process_exit": 1,
+  "exe_sha256": "654b44908ba295c12f06927882b7699659a5004076889a07e92ebf0d310246de",
+  "seconds": 2.4906835999991017
+}

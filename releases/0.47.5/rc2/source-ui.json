@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "UI dispatches exactly the checked order",
+    "Runner does not prepare unchecked siblings",
+    "Unchecked siblings remain pending",
+    "Selection completion holds remaining items",
+    "Selected successful preview can be confirmed without running siblings",
+    "UI deletes only the checked local queue record",
+    "Queue-record deletion leaves business orders intact",
+    "Refresh prunes deleted-order local remnants",
+    "Platform identity remains available after local order deletion",
+    "Cancel reset leaves application and data unchanged",
+    "Confirmed reset closes through normal safe-shutdown path",
+    "Complete backup has identical file bytes including databases and configuration",
+    "All original local data moved out before fresh restart"
+  ],
+  "passed": true,
+  "frozen_exe": false,
+  "no_live_platform": true,
+  "version": "0.47.5",
+  "older_process_probe": "bypassed only in marked isolated UI acceptance; production keeps the probe",
+  "backup": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\reset_selected_0475\\source-ui-rc2\\settings.初始化备份-20261107-182239-77425e11",
+  "backup_file_count": 10,
+  "process_exit": 0
+}

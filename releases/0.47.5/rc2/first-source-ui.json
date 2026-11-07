@@ -1,0 +1,21 @@
+{
+  "checks": [
+    "UI dispatches exactly the checked order",
+    "Runner does not prepare unchecked siblings",
+    "Unchecked siblings remain pending",
+    "Selection completion holds remaining items",
+    "Selected successful preview can be confirmed without running siblings",
+    "UI deletes only the checked local queue record",
+    "Queue-record deletion leaves business orders intact",
+    "Refresh prunes deleted-order local remnants",
+    "Platform identity remains available after local order deletion",
+    "Cancel reset leaves application and data unchanged",
+    "Confirmed reset closes through normal safe-shutdown path"
+  ],
+  "passed": false,
+  "frozen_exe": false,
+  "no_live_platform": true,
+  "version": "0.47.4",
+  "error": "其他补货助手窗口仍在运行（可能是旧版），请先正常关闭；资料未清空\n重新打开程序前，请查看资料及备份目录。",
+  "process_exit": 1
+}
