@@ -48,8 +48,10 @@ def _write(book,repo,options,include_detail,dimensions,cancel,progress):
         ws=book.create_sheet(name);ws._stockout_headers=headers;append(ws,headers);ws.freeze_panes='A2';return ws
     totals=metrics.query(repo,options,cancel=cancel)
     meta=sheet('口径与覆盖',['项目','内容'])
-    for row in [('指标','门店缺货率：当前视角中月销>0且门店可用库存=0的店品数 / 月销>0店品数'),
-                ('统计口径版本',VERSION),('标签版本',TAG_VERSION),('视角',metrics.view_label(totals['query'])),
+    pending=totals['needs_negative_stock_recalculation']
+    for row in [('指标','门店缺货率：当前视角中月销>0且门店可用库存≤0的店品数 / 月销>0店品数；负库存按0统计，原始值保留'),
+                ('统计口径版本','含旧口径结果，需用留存原件重算' if pending else VERSION),('标签版本',TAG_VERSION),('视角',metrics.view_label(totals['query'])),
+                ('旧日报处理','本报表含尚未按负库存计缺货的旧结果；到采集与快照用留存原件重算后再导出' if pending else '当前范围已按负库存按0统计'),
                 ('起止日期',totals['query']['start']+' 至 '+totals['query']['end']),('生成时间',now()),
                 ('说明','按每日实际观测时点；在途不抵扣；未知不当作0；期间率按店品日分子分母加总'),
                 ('剔除说明','按虚拟分类精确识别标杆淘汰系列与淘便考核；同时剔除分子分母，双标去重；标签未知保留'),

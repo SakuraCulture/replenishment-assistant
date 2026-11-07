@@ -182,9 +182,12 @@ def load_store(repo,rid,store,source,*,observed,expected=None,expected_rows=None
                 raise ValueError(f'第{line}行出现其他门店，不能混入本店快照')
             sku=identifier(row.get('商品编码'))
             month,stock,inbound=(number(row.get(k)) for k in ('月销','可用库存','在途库存'))
+            # Store stockouts use available stock floored at zero. Keep stock_raw
+            # below exactly as supplied, including negatives, for traceability.
+            if stock is not None:stock=max(0,stock)
             valid_month=month is not None and month>=0
             eligible=int(month>0) if valid_month else None
-            bad=int(not valid_month or eligible==1 and (stock is None or stock<0))
+            bad=int(not valid_month or eligible==1 and stock is None)
             zero=int(eligible==1 and stock==0)
             source_type,warehouse,product,reason=classify(reader,sku,basis.get('routes',{}).get(store),run['catalogs'])
             tags=product['tags'] if product is not None else None
@@ -195,7 +198,7 @@ def load_store(repo,rid,store,source,*,observed,expected=None,expected_rows=None
             supplier=(warehouse+' · '+product['supplier'] if product is not None and product['supplier'] else '供货商未提供') if source_type=='center' else '不适用（地采）' if source_type=='local' else '供货商待核'
             errors=[reason]
             if not valid_month:errors.append('月销缺失、非法或负数，有销基数待核')
-            if stock is None or stock<0:errors.append('门店可用库存缺失、非法或负数，不能当作0')
+            if stock is None:errors.append('门店可用库存缺失或非法，不能当作0')
             if tokens is None:errors.append('虚拟分类依据未取得，剔除视角仍保留此商品')
             fact=(sid,sku,str(row.get('商品名称') or ''),str(row.get('月销') if row.get('月销') is not None else ''),
                   str(row.get('可用库存') if row.get('可用库存') is not None else ''),str(row.get('在途库存') if row.get('在途库存') is not None else ''),

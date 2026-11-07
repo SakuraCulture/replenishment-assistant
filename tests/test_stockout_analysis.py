@@ -124,10 +124,61 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(row['source'],'pending');self.assertEqual(self.total()['rate'],1)
 
     def test_invalid_metric_values_never_become_zero(self):
-        for month,stock in [(1,-1),(1,None),(-1,0),(None,0),('=1+1',0)]:
+        for month,stock in [(1,None),(1,'无数据'),(1,'=1+1'),(-1,0),(None,0),('=1+1',0)]:
             with self.subTest(month=month,stock=stock):
                 self.publish([('A',month,stock)])
                 self.assertIsNone(self.total()['rate']);self.assertEqual(self.total()['bad'],1)
+
+    def test_negative_stock_counts_as_zero_with_raw_value_and_zero_sales_outside_base(self):
+        self.publish([('A',2,-40),('B',3,-.5),('C',1,0),('D',4,1),('E',0,-9)])
+        q={'start':'2026-11-07'};value=metrics.query(self.repo,q)
+        self.assertEqual((value['total']['base'],value['total']['zero'],value['total']['bad'],value['total']['rate']),(4,3,0,.75))
+        self.assertFalse(value['needs_negative_stock_recalculation'])
+        rows={r['sku']:r for r in metrics.detail(self.repo,q)['items']}
+        self.assertEqual((rows['A']['stock_raw'],rows['A']['stock'],rows['A']['zero'],rows['A']['bad']),('-40',0,1,0))
+        self.assertEqual((rows['B']['stock_raw'],rows['B']['stock']),('-0.5',0))
+        self.assertEqual((rows['E']['eligible'],rows['E']['zero'],rows['E']['bad']),(0,0,0))
+        self.assertEqual({r['sku'] for r in metrics.detail(self.repo,q,only_zero=True)['items']},{'A','B','C'})
+        self.assertEqual(metrics.trend(self.repo,q)[0]['total'],value['total'])
+        self.assertEqual(metrics.cuts(self.repo,q,('store',))['items'][0]['zero'],3)
+
+    def test_negative_stock_export_preserves_raw_and_agrees_with_aggregates(self):
+        from stockout_exports import export
+        self.publish([('A',1,-4),('B',1,0),('C',1,2)])
+        path=self.root/'negative.xlsx';export(self.repo,{'start':'2026-11-07'},path,include_detail=True)
+        book=openpyxl.load_workbook(path,read_only=True,data_only=True)
+        try:
+            self.assertEqual(tuple(next(book['总体'].iter_rows(min_row=2,values_only=True)))[:4],(3,2,2/3,0))
+            meta={row[0]:row[1] for row in book['口径与覆盖'].values}
+            self.assertEqual(meta['统计口径版本'],'store-stockout-2');self.assertIn('负库存按0',meta['指标'])
+            sheet=list(book['商品明细1'].values);row=dict(zip(sheet[0],sheet[1]))
+            self.assertEqual((row['原可用库存'],row['缺货标记'],row['指标待核']),('-4',1,0))
+        finally:book.close()
+
+    def test_negative_stock_status_exclusions_remove_both_sides_once(self):
+        from stockout_exports import export
+        catalog=self.catalog([[s,'禁用' if s in 'BC' else '备用' if s=='D' else '启用',10,'饮品','供应商',
+                               '标杆淘汰;淘便考核' if s=='C' else ''] for s in 'ABCDEF'])
+        run=self.repo.new_run(day='2026-11-07');self.repo.change(run['id'],catalogs={'山东仓':catalog})
+        path=workbook(self.root/'status-negative.xlsx',['仓库/门店编码','商品编码','月销','可用库存','补货状态'],
+                      [['S',s,0 if s=='F' else 1,{'A':-1,'B':-3,'C':-8,'D':-2,'E':2,'F':-9}[s],
+                        '停采' if s=='A' else '禁采' if s=='C' else '正常'] for s in 'ABCDEF'])
+        load_store(self.repo,run['id'],'S',path,observed='2026-11-07T08:00:00+08:00');self.repo.publish(run['id'])
+        q={'start':'2026-11-07','exclude_stopped':True,'exclude_disabled':True}
+        for view in ('all','retired','assessment','both'):
+            options={**q,'view':view};total=metrics.query(self.repo,options)['total']
+            self.assertEqual((total['base'],total['zero'],total['bad'],total['removed_base'],total['removed_zero']),(2,1,0,3,3))
+            self.assertEqual(total['rate'],.5)
+            self.assertEqual({r['sku'] for r in metrics.detail(self.repo,options,only_zero=True)['items']},{'D'})
+            self.assertEqual(sum(r['zero'] for r in metrics.cuts(self.repo,options,('warehouse','source'))['items']),1)
+        target=self.root/'status-negative-export.xlsx';export(self.repo,q,target,include_detail=True)
+        book=openpyxl.load_workbook(target,read_only=True,data_only=True)
+        try:
+            self.assertEqual(tuple(next(book['总体'].iter_rows(min_row=2,values_only=True)))[:4],(2,1,.5,0))
+            values=list(book['商品明细1'].values);rows={r[3]:dict(zip(values[0],r)) for r in values[1:]}
+            self.assertTrue(all(rows[s]['本视角剔除']==1 for s in 'ABC'))
+            self.assertEqual((rows['D']['原可用库存'],rows['D']['缺货标记'],rows['D']['本视角剔除']),('-2',1,0))
+        finally:book.close()
 
     def test_zero_month_bad_stock_is_not_metric_blocker(self):
         self.publish([('A',0,None),('B',2,1)])

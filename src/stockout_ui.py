@@ -39,7 +39,7 @@ class Page(QWidget):
         self.identity_names={}
         layout=QVBoxLayout(self)
         layout.addWidget(label('门店缺货率分析','title'))
-        layout.addWidget(label('有月销商品中，门店可用库存为0的比例；资料独立留存，进入页面不自动采集。','muted'))
+        layout.addWidget(label('有月销商品中，门店可用库存≤0的比例；负库存按0统计，原始值保留。','muted'))
         self.basis=label('正在读取分析已采用版本…');layout.addWidget(self.basis)
         self.basis.setWordWrap(True)
         actions=QHBoxLayout()
@@ -62,14 +62,14 @@ class Page(QWidget):
         self.export_btn=button('导出本视角Excel',self.export)
         filters.addWidget(self.export_btn);layout.addLayout(filters)
         exclusions=QHBoxLayout()
-        self.exclude_stopped=QCheckBox('剔除禁采（含翱象停采）');self.exclude_stopped.setChecked(True)
-        self.exclude_disabled=QCheckBox('剔除供货仓禁用商品');self.exclude_disabled.setChecked(True)
+        self.exclude_stopped=QCheckBox('剔除门店停采/禁采（不计入基数）');self.exclude_stopped.setChecked(True)
+        self.exclude_disabled=QCheckBox('剔除供货仓禁用（不计入基数）');self.exclude_disabled.setChecked(True)
         exclusions.addWidget(self.exclude_stopped);exclusions.addWidget(self.exclude_disabled)
         exclusions.addWidget(label('可与淘汰品、考核品组合；分子分母同步剔除，未知状态保留。','muted'));exclusions.addStretch()
         layout.addLayout(exclusions)
         self.filter_note=label('当前筛选：全部已选门店、全部商品维度');layout.addWidget(self.filter_note)
         self.total=label('尚未取得本范围的完整分析结果','section');layout.addWidget(self.total)
-        self.coverage=label('未采日期保持空白；需要连续日快照时请单独启用每日采集。','muted');layout.addWidget(self.coverage)
+        self.coverage=label('未采日期保持空白；需要连续日快照时请单独启用每日采集。','muted');self.coverage.setWordWrap(True);layout.addWidget(self.coverage)
         self.space=label('','muted');layout.addWidget(self.space)
         tabs=QTabWidget();layout.addWidget(tabs,1)
         overview=QWidget();ov=QVBoxLayout(overview)
@@ -209,6 +209,8 @@ class Page(QWidget):
         self.total.setText(f"{prefix}：{display(row['rate'],'rate')}　缺货 {row['zero']} / 有销 {row['base']}　· {view}　· {row['status']}；标签待核 {row['unknown_tags']}，剔除有销 {row['removed_base']}")
         coverage=value['coverage'];complete=sum(r['completed'] for r in coverage);selected=sum(r['selected'] for r in coverage)
         self.coverage.setText(f'实际留存 {len(coverage)} 个日期，已完成 {complete}/{selected} 个门店日；仅此覆盖范围，未采日期不补0。')
+        if value.get('needs_negative_stock_recalculation'):
+            self.coverage.setText(self.coverage.text()+'\n旧日报尚未按“负库存按0”统计：请到“采集与快照”选择当前日报，点“用留存原件重算”并选择“原作业当时设置”；无需重新采集。')
         render(self.trend,['观测日期','缺货数','有销基数','门店缺货率','指标待核','标签待核','完成/所选门店'],
                [[r['day'],r['total']['zero'],r['total']['base'],display(r['total']['rate'],'rate'),r['total']['bad'],r['total']['unknown_tags'],
                  '、'.join(f"{c['completed']}/{c['selected']}" for c in r['coverage'])] for r in value['trend']])

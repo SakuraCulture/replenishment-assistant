@@ -114,6 +114,11 @@ def query(repo, options, *, cancel=None):
             total=db.execute(f'SELECT {fields} FROM {LINKS} JOIN summaries m ON m.snapshot=s.id AND m.view=? WHERE {condition}',[options['view'],*args]).fetchone()
         else:
             total=db.execute(f'SELECT {aggregation(options)} FROM {LINKS} JOIN {fact_source(options)} f ON f.snapshot=s.id WHERE {condition}',args).fetchone()
+        # Existing immutable snapshots keep their old derived values until a
+        # local recalculation publishes a new revision. Do not relabel them v2.
+        needs_recalculation=bool(total['bad'] and db.execute(f'''SELECT 1 FROM {LINKS}
+          JOIN facts f ON f.snapshot=s.id WHERE {condition} AND NOT ({excluded_sql(options)})
+          AND f.month>0 AND f.stock<0 LIMIT 1''',args).fetchone())
         # Coverage describes acquisition scope, not the number of filtered SKU rows.
         selected_filter=options['filters'].get('store',[])
         scope='';scope_args=[]
@@ -124,7 +129,8 @@ def query(repo, options, *, cancel=None):
           FROM current_days d JOIN publications p ON p.id=d.publication JOIN run_stores r ON r.run=p.run
           LEFT JOIN store_snapshots s ON s.id=r.snapshot WHERE d.day BETWEEN ? AND ? {scope}
           GROUP BY d.day,p.id ORDER BY d.day''',[options['start'],options['end'],*scope_args])]
-    return {'total':rate(total),'coverage':coverage,'query':options}
+    return {'total':rate(total),'coverage':coverage,'query':options,
+            'needs_negative_stock_recalculation':needs_recalculation}
 
 
 def cuts(repo, options, dimensions=('store',), *, offset=0, limit=200, cancel=None):
