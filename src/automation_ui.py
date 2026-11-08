@@ -3,7 +3,7 @@ import json
 import sys
 from pathlib import Path
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QMessageBox, QFileDialog, QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar, QComboBox
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QMessageBox, QFileDialog, QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar, QComboBox, QPushButton, QMenu
 from ui_controls import label, button
 from automation_protocol import CommandError
 
@@ -19,15 +19,23 @@ def install(host):
     row = QHBoxLayout(); note = label('AI 协助未连接', 'muted'); note.setWordWrap(False)
     row.addWidget(button('AI 协助', lambda: settings(host)))
     row.addWidget(button('AI 常用业务', lambda: show_playbooks(host))); row.addWidget(note, 1)
-    details = button('查看进度', lambda: tasks(host)); stop = button('■ 停止后续', lambda: stop_current(host))
-    take = button('接手处理', lambda: takeover(host)); row.addWidget(details); row.addWidget(stop); row.addWidget(take)
-    host.centralWidget().layout().insertLayout(1, row)
+    task_button=QPushButton('AI任务');menu=QMenu(task_button);task_button.setMenu(menu)
+    details=menu.addAction('查看进度',lambda:tasks(host));stop=menu.addAction('■ 停止后续',lambda:stop_current(host));take=menu.addAction('接手处理',lambda:takeover(host));row.addWidget(task_button)
+    # Keep AI entry points on the main navigation row, freeing business-table height.
+    navigation=host.centralWidget().layout().itemAt(0).layout()
+    if navigation is not None:
+        while row.count():
+            item=row.takeAt(0)
+            if item.widget():navigation.insertWidget(navigation.count()-1,item.widget())
+        note.setMaximumWidth(155);row.deleteLater()
+    else:host.centralWidget().layout().insertLayout(1,row)
     def refresh():
         g = host.automation
         if g.active:
             p = g.task_record(g.active); note.setText('AI 协助 · ' + p['message'])
         else: note.setText('AI 接口已启用 · 客户端需核对当前作业' if g.enabled else 'AI 协助未连接')
         details.setVisible(g.enabled); stop.setVisible(bool(g.active)); take.setVisible(bool(g.active))
+        task_button.setVisible(g.enabled or bool(g.active));note.setToolTip(note.text())
     host.automation.changed.connect(refresh); refresh()
 
 

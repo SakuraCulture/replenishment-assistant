@@ -21,6 +21,7 @@ class Workbench(ParameterUi,BatchWindow):
         self.end_batch_btn=button('结束本批并新建',self.end_batch);row.addWidget(self.end_batch_btn)
         self.presets_btn=button('管理参数方案',self.open_preset_library);row.addWidget(self.presets_btn)
         self.save_job_btn=button('保存作业',self.save_current,True);row.addWidget(self.save_job_btn)
+        self.work_header.layout().removeWidget(self.version_btn);row.addWidget(self.version_btn);self.work_header.hide()
         self.centralWidget().layout().insertLayout(1,row)
         row=QHBoxLayout();self.defaults_btn=button('保存主从仓与参数为门店默认',self.save_default_dialog);row.addWidget(self.defaults_btn);self.fresh_btn=button('换用最新资料并重新检查',self.use_current_data);row.addWidget(self.fresh_btn);row.addStretch();self.store_advanced_layout.addLayout(row)
         row=QHBoxLayout();self.parameter_import_btn=button('批量导入门店参数',self.import_store_parameters);self.parameter_export_btn=button('导出勾选门店本次参数',self.export_store_parameters);row.addWidget(self.parameter_import_btn);row.addWidget(self.parameter_export_btn);row.addStretch();self.store_advanced_layout.addLayout(row)

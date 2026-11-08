@@ -35,7 +35,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         except Exception as exc:self.config_warning=str(exc)
         self.setWindowTitle(f'补货助手 {VERSION} · 多店工作台');self.resize(1380,900);self.setMinimumSize(1080,720)
         root=QWidget();self.setCentralWidget(root);v=QVBoxLayout(root);v.setContentsMargins(16,10,16,10);v.setSpacing(6)
-        head=QHBoxLayout();head.addWidget(label('补货出单','section'));subtitle=label('多店独立预算 · 必卖优先','muted');subtitle.setWordWrap(False);head.addWidget(subtitle);head.addStretch();head.addWidget(button('版本信息',self.about));v.addLayout(head)
+        self.work_header=QWidget();head=QHBoxLayout(self.work_header);head.setContentsMargins(0,0,0,0);head.addWidget(label('补货出单','section'));subtitle=label('多店独立预算 · 必卖优先','muted');subtitle.setWordWrap(False);head.addWidget(subtitle);head.addStretch();self.version_btn=button('版本信息',self.about);head.addWidget(self.version_btn);v.addWidget(self.work_header)
         nav=QHBoxLayout();self.nav=[]
         for i,text in enumerate(['① 准备数据','② 门店与预算','③ 计算进度','④ 查看与导出']):
             b=button(text,lambda checked=False,n=i:self.navigate(n));self.nav.append(b);nav.addWidget(b)
