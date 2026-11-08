@@ -1,0 +1,65 @@
+test_bound_purchase_ids_are_read_without_starting_a_client_or_writing_databases (test_analytics_identifiers.IdentifierTests.test_bound_purchase_ids_are_read_without_starting_a_client_or_writing_databases) ... ok
+test_cancelled_id_read_and_export_leave_no_output (test_analytics_identifiers.IdentifierTests.test_cancelled_id_read_and_export_leave_no_output) ... ok
+test_excel_appends_ids_keeps_first42_cells_and_types_and_saves_exact_mapping (test_analytics_identifiers.IdentifierTests.test_excel_appends_ids_keeps_first42_cells_and_types_and_saves_exact_mapping) ... ok
+test_id_change_invalidates_ui_basis_and_prevents_stale_export (test_analytics_identifiers.IdentifierTests.test_id_change_invalidates_ui_basis_and_prevents_stale_export) ... ok
+test_id_changes_during_export_prevent_publication_and_retry_uses_new_values (test_analytics_identifiers.IdentifierTests.test_id_changes_during_export_prevent_publication_and_retry_uses_new_values) ... ok
+test_inconsistent_stored_binding_stops_query (test_analytics_identifiers.IdentifierTests.test_inconsistent_stored_binding_stops_query) ... ok
+test_large_aggregate_retains_full_ids_in_detail_instead_of_excel_truncation (test_analytics_identifiers.IdentifierTests.test_large_aggregate_retains_full_ids_in_detail_instead_of_excel_truncation) ... ok
+test_legacy_frozen_package_required_and_hash_checked (test_analytics_identifiers.IdentifierTests.test_legacy_frozen_package_required_and_hash_checked) ... ok
+test_missing_sources_and_accepted_task_without_order_are_not_invented (test_analytics_identifiers.IdentifierTests.test_missing_sources_and_accepted_task_without_order_are_not_invented) ... ok
+test_multiple_and_voided_purchase_ids_remain_traceable (test_analytics_identifiers.IdentifierTests.test_multiple_and_voided_purchase_ids_remain_traceable) ... ok
+test_native_payment_number_and_manual_override_are_frozen_together (test_analytics_identifiers.IdentifierTests.test_native_payment_number_and_manual_override_are_frozen_together) ... ok
+test_old_payment_version_keeps_id_with_explicit_review_note (test_analytics_identifiers.IdentifierTests.test_old_payment_version_keeps_id_with_explicit_review_note) ... ok
+test_other_warehouse_recreated_identity_revision_and_digest_are_not_guessed (test_analytics_identifiers.IdentifierTests.test_other_warehouse_recreated_identity_revision_and_digest_are_not_guessed) ... ok
+test_purchase_change_and_status_change_invalidate_snapshot (test_analytics_identifiers.IdentifierTests.test_purchase_change_and_status_change_invalidate_snapshot) ... ok
+test_same_order_repeated_products_deduplicate_and_multi_date_lines_stay_aligned (test_analytics_identifiers.IdentifierTests.test_same_order_repeated_products_deduplicate_and_multi_date_lines_stay_aligned) ... ok
+test_selected_export_and_group_scope_keep_only_the_selected_correspondence (test_analytics_identifiers.IdentifierTests.test_selected_export_and_group_scope_keep_only_the_selected_correspondence) ... ok
+test_ai_and_manual_workbooks_equal (test_automation_analytics.AnalyticsApiTests.test_ai_and_manual_workbooks_equal) ... ok
+test_async_paging_and_idempotent_query (test_automation_analytics.AnalyticsApiTests.test_async_paging_and_idempotent_query) ... ok
+test_blank_category_from_native_query_is_valid (test_automation_analytics.AnalyticsApiTests.test_blank_category_from_native_query_is_valid) ... ok
+test_closed_socket_cleanup_is_idempotent (test_automation_analytics.AnalyticsApiTests.test_closed_socket_cleanup_is_idempotent) ... ok
+test_coverage_api_matches_native_and_excel (test_automation_analytics.AnalyticsApiTests.test_coverage_api_matches_native_and_excel) ... ok
+test_stale_no_page_or_export_and_permissions (test_automation_analytics.AnalyticsApiTests.test_stale_no_page_or_export_and_permissions) ... ok
+test_added_rows_unknown_not_zero_and_group_sums (test_order_analytics.AnalyticsTests.test_added_rows_unknown_not_zero_and_group_sums) ... ok
+test_budget_zero_still_in_model_cohort (test_order_analytics.AnalyticsTests.test_budget_zero_still_in_model_cohort) ... ok
+test_cancel_and_retry (test_order_analytics.AnalyticsTests.test_cancel_and_retry) ... ok
+test_changed_source_rejects_export_no_half_file (test_order_analytics.AnalyticsTests.test_changed_source_rejects_export_no_half_file) ... ok
+test_complete_lifecycle_and_actual_payment (test_order_analytics.AnalyticsTests.test_complete_lifecycle_and_actual_payment) ... ok
+test_confirmed_blank_zero_and_stale_downstream (test_order_analytics.AnalyticsTests.test_confirmed_blank_zero_and_stale_downstream) ... ok
+test_do_not_overmatch_retired_words (test_order_analytics.AnalyticsTests.test_do_not_overmatch_retired_words) ... ok
+test_each_frozen_warehouse_source_read_once (test_order_analytics.AnalyticsTests.test_each_frozen_warehouse_source_read_once) ... ok
+test_exact_query_and_order_snapshot (test_order_analytics.AnalyticsTests.test_exact_query_and_order_snapshot) ... ok
+test_export_types_all_rows_and_source_immutable (test_order_analytics.AnalyticsTests.test_export_types_all_rows_and_source_immutable) ... ok
+test_false_without_list_is_unknown_not_nonmandatory (test_order_analytics.AnalyticsTests.test_false_without_list_is_unknown_not_nonmandatory) ... ok
+test_five_stages_price_missing_and_membership (test_order_analytics.AnalyticsTests.test_five_stages_price_missing_and_membership) ... ok
+test_missing_virtual_column_not_blank (test_order_analytics.AnalyticsTests.test_missing_virtual_column_not_blank) ... ok
+test_no_mutation_during_collection (test_order_analytics.AnalyticsTests.test_no_mutation_during_collection) ... ok
+test_store_stop_and_warehouse_disabled_no_double_count (test_order_analytics.AnalyticsTests.test_store_stop_and_warehouse_disabled_no_double_count) ... ok
+test_virtual_tag_excludes_all_stages_in_assigned_warehouse (test_order_analytics.AnalyticsTests.test_virtual_tag_excludes_all_stages_in_assigned_warehouse) ... ok
+test_cancel_close_waits_for_thread (test_order_analytics_ui.AnalyticsUiTests.test_cancel_close_waits_for_thread) ... ok
+test_detail_is_readonly (test_order_analytics_ui.AnalyticsUiTests.test_detail_is_readonly) ... ok
+test_identifiers_appear_in_all_summary_views_and_coverage_view (test_order_analytics_ui.AnalyticsUiTests.test_identifiers_appear_in_all_summary_views_and_coverage_view) ... ok
+test_number_maintenance_marks_existing_report_stale (test_order_analytics_ui.AnalyticsUiTests.test_number_maintenance_marks_existing_report_stale) ... ERROR:root:操作失败
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\order_analytics.py", line 262, in validate_basis
+    raise ValueError('订单关联单号已更新，请重新查询；原报告中的单号未自动替换')
+ValueError: 订单关联单号已更新，请重新查询；原报告中的单号未自动替换
+ok
+test_query_drill_back_and_scope (test_order_analytics_ui.AnalyticsUiTests.test_query_drill_back_and_scope) ... ok
+test_updated_data_does_not_replace_visible_snapshot (test_order_analytics_ui.AnalyticsUiTests.test_updated_data_does_not_replace_visible_snapshot) ... ERROR:root:操作失败
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\order_analytics.py", line 259, in validate_basis
+    raise ValueError('订单或履约数据已更新，请重新查询；原报告数据未混入本次结果')
+ValueError: 订单或履约数据已更新，请重新查询；原报告数据未混入本次结果
+ok
+
+----------------------------------------------------------------------
+Ran 44 tests in 17.893s
+
+OK
