@@ -114,7 +114,7 @@ class Review(QDialog):
             source=next((r['source_order'] for r in payload['raw_rows'] if r.get('source_order')),None)
             if source:summary.append('来源店铺：'+str(source.get('店铺名称'))+'；内部订单：'+str(source.get('内部订单号'))+'；线上订单：'+str(source.get('线上订单号'))+'。请与上方所选店仓单核对。')
             if show_source_notices and payload.get('payment_source',{}).get('type')=='jst_import_return':
-                v.addWidget(label(h['number']+'：使用聚水潭导入单作为付款来源；聚水潭内部单号未提供，可后补。确认前请核实外部导入无异常且已经付款。','section'))
+                v.addWidget(label(h['number']+'：使用聚水潭导入单作为付款来源；内部号可在“订单详情 → 维护聚水潭内部订单号”补填。确认前请核实外部导入无异常且已经付款。','section'))
             rows.extend([*r,io.TITLES[p['stage']]] for r in p['differences'])
             item=orders.setdefault(h['number'],[h['number'],*['本次未提供']*len(io.STAGES)])
             item[1+io.STAGES.index(p['stage'])]=('内容相同' if not p['changed'] else '拟更新' if p['expected'] else '拟新增')+(' · 仅留存待核' if payload['pending'] else '')
@@ -237,6 +237,7 @@ class LifecycleDialog(QDialog):
         v.addWidget(label('已签发 → 门店回传 → 门店付款 → 门店实际收货。新单据核对确认后空白/缺行按0；未导入整单不当作0。旧记录按旧口径保留。','muted'));search=QLineEdit();search.setPlaceholderText('筛选商品编码 / 名称 / 资料说明');v.addWidget(search);self.table,self.model=grid(self,service.HEADERS);v.addWidget(self.table,1);search.textChanged.connect(self.model.filter)
         sources=QGroupBox('单据与依据');row=QHBoxLayout(sources);row.addWidget(button('查看决策依据',on_audit or (lambda:host.open_archive(head))));self.views={}
         for s in io.STAGES:self.views[s]=button('查看'+io.TITLES[s]+'版本',lambda checked=False,k=s:self.document(k));row.addWidget(self.views[s])
+        self.payment_reference_btn=button('维护聚水潭内部订单号',self.payment_references);row.addWidget(self.payment_reference_btn)
         v.addWidget(sources)
         ax=QGroupBox('翱象采购（以已确认付款为依据）');ax_row=QHBoxLayout(ax);self.ax_purchase=button('打开翱象采购',self.open_ax_purchase);ax_row.addWidget(self.ax_purchase);ax_row.addWidget(label('生成预览、上传建单、核对原任务；建单后保留待提交。','muted'));ax_row.addStretch();v.addWidget(ax)
         self.ax_receipt=button('查看 / 同步翱象收货',self.open_ax_receipt);ax_row.addWidget(self.ax_receipt)
@@ -256,8 +257,13 @@ class LifecycleDialog(QDialog):
         for s,b in self.rechecks.items():b.setEnabled(bool(self.view['documents'][s]) and not self.head.get('deleted'))
         for s,b in self.zeros.items():b.setEnabled(not self.head.get('deleted'))
         self.imports.setEnabled(not self.head.get('deleted'));self.export_confirmation.setEnabled(not self.head.get('deleted'))
+        self.payment_reference_btn.setEnabled(not self.head.get('deleted') and bool(self.view['documents']['payment']))
         self.ax_purchase.setEnabled(not self.head.get('deleted') and bool(self.view['documents']['payment']))
         self.ax_receipt.setEnabled(not self.head.get('deleted') and bool(self.view['documents']['payment']))
+    def payment_references(self):
+        from payment_references_ui import edit_reference
+        receipt=edit_reference(self,self.host,self.head)
+        if receipt:self.note.setText('已保存聚水潭内部订单号：'+receipt['number']+'；付款和采购依据未变。')
     def open_ax_purchase(self):
         from aoxiang_purchase_ui import open_purchase
         open_purchase(self,self.host,self.head)
