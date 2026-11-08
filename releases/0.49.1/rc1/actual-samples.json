@@ -1,0 +1,96 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "case": "01重复同一文件",
+      "passed": true,
+      "new_version": false
+    },
+    {
+      "case": 1,
+      "file": "01_正常付款单_恒大御景半岛_山东仓.xlsx",
+      "passed": true,
+      "automatic": true,
+      "state": "已自动识别",
+      "reason": "已自动识别 淘宝便利店（恒大御景半岛店） / 山东仓：商品编码、逐商品数量及金额完整一致，全部相关日期内仅此一单。",
+      "saved_in_isolated_database": true
+    },
+    {
+      "case": 2,
+      "file": "02_同店另一仓_河北仓.xlsx",
+      "passed": true,
+      "automatic": true,
+      "state": "已自动识别",
+      "reason": "已自动识别 淘宝便利店（恒大御景半岛店） / 河北仓：商品编码、逐商品数量及金额完整一致，全部相关日期内仅此一单。",
+      "saved_in_isolated_database": true
+    },
+    {
+      "case": 3,
+      "file": "03_原始未填签发号.xlsx",
+      "passed": true,
+      "automatic": true,
+      "state": "已自动识别",
+      "reason": "已自动识别 淘宝便利店（恒大御景半岛店） / 山东仓：商品编码、逐商品数量及金额完整一致，全部相关日期内仅此一单。",
+      "saved_in_isolated_database": true
+    },
+    {
+      "case": 4,
+      "file": "04_相同别称_新内部号.xlsx",
+      "passed": true,
+      "automatic": true,
+      "state": "已自动识别",
+      "reason": "已自动识别 淘宝便利店（恒大御景半岛店） / 山东仓：商品编码、逐商品数量及金额完整一致，全部相关日期内仅此一单。",
+      "saved_in_isolated_database": true
+    },
+    {
+      "case": 5,
+      "file": "05_原内部号_金额增加一分钱.xlsx",
+      "passed": true,
+      "automatic": true,
+      "state": "已自动识别原内部单号",
+      "reason": "已自动识别原内部单号对应的 淘宝便利店（恒大御景半岛店） / 山东仓；逐商品和数量一致，金额较分配结果变化 +0.01 元，核对页保留差异。",
+      "saved_in_isolated_database": true
+    },
+    {
+      "case": 6,
+      "file": "06_少一行商品_预览勿保存.xlsx",
+      "passed": true,
+      "automatic": false,
+      "state": "没有完整匹配订单",
+      "reason": "没有找到逐商品明细完全一致的有效分配单。柴小囤便利超市（东阿店） / 山东仓：少 1 款、多 174 款、数量不同 0 款、金额不同 0 款；缺少编码 1716748010287599678；清单外编码 1547910130811805773、1548248147602690117、1548293459667054652；淘宝便利店（恒大御景半岛店） / 河北仓：商品属于另一供货仓，请核对目标仓单：5004699202054；淘宝便利店（恒大御景半岛店） / 山东仓：少 1 款、多 0 款、数量不同 0 款、金额不同 0 款；缺少编码 5002708443665",
+      "saved_in_isolated_database": false
+    },
+    {
+      "case": 7,
+      "file": "07_合计相同但商品编码错误_预览勿保存.xlsx",
+      "passed": true,
+      "automatic": false,
+      "state": "没有完整匹配订单",
+      "reason": "没有找到逐商品明细完全一致的有效分配单。柴小囤便利超市（东阿店） / 山东仓：少 1 款、多 175 款、数量不同 0 款、金额不同 0 款；缺少编码 1716748010287599678；清单外编码 1547910130811805773、1548248147602690117、1548293459667054652；淘宝便利店（恒大御景半岛店） / 河北仓：商品属于另一供货仓，请核对目标仓单：5004699202054；淘宝便利店（恒大御景半岛店） / 山东仓：少 1 款、多 1 款、数量不同 0 款、金额不同 0 款；缺少编码 5002708443665；清单外编码 CASE490-NOT-A-REAL-SKU",
+      "saved_in_isolated_database": false
+    },
+    {
+      "case": "03用户追加的错误签发号",
+      "passed": true,
+      "state": "单号与原关联冲突",
+      "reason": "新增签发单号 BH-20261108-CXT20260623-ZC-SD 与该付款内部单号已保存的原订单不一致。",
+      "saved": false
+    }
+  ],
+  "source_files_sha256": {
+    "01_正常付款单_恒大御景半岛_山东仓.xlsx": "e8278c3b530066c4f11b047ee79fa4d9c0880b61056c7feeb36e6bfe703eaa3a",
+    "02_同店另一仓_河北仓.xlsx": "b750adee3ccccc21105ff3660c74a713a3c2eb2609a0b4f6f094b47ec224e761",
+    "03_门店别称_首次确认.xlsx": "af81fa42daa3879a4b37ec2a5e99b999f5f6e5ad784ce86b0bbe3be7256a29d2",
+    "04_相同别称_新内部号.xlsx": "5e6ba899cbb191732c5f1e2f2434067d8b6146d13622c06cc8b879fbafe6edb4",
+    "05_原内部号_金额增加一分钱.xlsx": "a95a18f80ada8d1d648b23a5798ac39b31651524740bab73c095ac6d12bf1d7e",
+    "06_少一行商品_预览勿保存.xlsx": "1c33f0e1b9a5f6a518c62ab708c54b50bf670da20cf178dc1edd474bd7bf9445",
+    "07_合计相同但商品编码错误_预览勿保存.xlsx": "8c69d3b7cb7865190fcc5d8767cd06ab135f32b83bae169212078c8469b8674d"
+  },
+  "source_files_unchanged": true,
+  "snapshot_unchanged": true,
+  "source_database_written": false,
+  "platform_called": false,
+  "company_selection_required": false,
+  "manual_order_selection_required_for_cases_01_to_05": false,
+  "note": "03正向案例使用此前交付ZIP中的未填号原件；用户追加错误单号版本单独验证为冲突。付款仅保存在新隔离库；不推断来源企业。"
+}
