@@ -1,0 +1,9 @@
+{
+  "not_final_acceptance": true,
+  "matching1": "Development test fixture left a SQLite connection open; duplicate imported test class was removed. Final discovery contains unique test IDs.",
+  "python1": "Early isolated unittest blocked on UI error dialog after newly enforced local identity guard; owned test process stopped, no business task killed.",
+  "python2": "UI-only fake identities did not satisfy new local guard; unrelated queue fake was isolated and real DB tests added. An explicit fixture connection leak was fixed. No production validation relaxed.",
+  "performance1": "Sampler dependency missing; exited before measurement. Existing QA-only psutil reused.",
+  "performance2_and_3": "Early timing probes, including an incorrect venv-launcher RSS sample and a source change during development. Retained under qa, excluded from performance claims.",
+  "performance4": "Parent read the worker PID handoff before the first write completed. QA sampler now tolerates this brief handoff; runtime unchanged. Final performance5 targets actual worker PID and native Windows peak."
+}

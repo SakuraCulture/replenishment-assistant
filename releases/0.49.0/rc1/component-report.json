@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "tests": 28,
+  "component": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.49.0_rc1\\补货助手\\_internal\\components\\aoxiang",
+  "synthetic": true,
+  "live_platform": false,
+  "scope": "Bundled Node, native receipt fixtures, ledger/recovery, query request contracts, isolated offline Edge form. No vendor page or live export."
+}

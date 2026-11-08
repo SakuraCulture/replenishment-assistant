@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "source_commit": "a0e6f41a07e18bb54555049668ce641d4bbd2864",
+  "python_tests": 1287,
+  "unique_python_test_ids": 1287,
+  "python_seconds": 512.881,
+  "python_single_run_passed": false,
+  "python_fixture_supplement_required": true,
+  "python_fixture_supplement_tests": 6,
+  "node_tests": 199,
+  "exe_checks": 14,
+  "component_tests": 28,
+  "pricing_component_tests": 8,
+  "live_platform": false,
+  "core_unchanged": 15,
+  "preserved_delivery_files": 38,
+  "component_files_verified": 871,
+  "exe_sha256": "e397bd2161acdadd99dc86018d23fc7a2d1a3050472f429b9b6e47cc3ac7efae",
+  "zip": "交付_0.49.0_rc1\\补货助手_0.49.0_rc1_付款识别与采购状态.zip",
+  "zip_sha256": "9aed2cbd858d12e38de9e61faf559b6ef692b77e48bb5082f89f53241bb5c82a",
+  "zip_bytes": 126033910,
+  "files": 1249
+}
