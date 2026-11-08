@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "source_commit": "46fcfbd4f9bd580a0855b83669a6a42dbd5f8465",
+  "python_tests": 1227,
+  "python_seconds": 424.786,
+  "node_tests": 181,
+  "exe_checks": 25,
+  "exe_sha256": "156f901f129cac63ae738302a57122c5df2c77018a43b995c5727157ed39f555",
+  "zip": "交付_0.48.1_rc1\\补货助手_0.48.1_rc1_全局连接交接修复.zip",
+  "zip_sha256": "8bbe4e52d8954b1af4ead2d928aea690bcfe13349a22a026a75425e0822ab628",
+  "zip_bytes": 125577449,
+  "files": 1242,
+  "core_unchanged": 15,
+  "preserved_delivery_files": 24,
+  "no_live_platform_calls": true,
+  "real_edge_permission_prompt_retested": false
+}
