@@ -289,7 +289,7 @@ class ParameterUi:
         source=p.get('parameter_source')
         if source:text+='\n来源：'+source['kind']+' · '+source['plan_name']
         w=self.store_widgets[s];w['params'].setText('编辑参数');w['params'].setToolTip('编辑此店完整参数；不自动保存每日草稿')
-        if 'param_status' in w:w['param_status'].setText(text);w['param_status'].setToolTip(text)
+        if 'param_status' in w:w['param_status'].setText(text.replace('\n','；'));w['param_status'].setToolTip(text)
     def view_parameters(self,store):
         if store not in self.store_widgets:return
         d=ParameterDialog(self,self.config_for(store),self.preset_for(store),scope='本店实际生效参数 · '+store,readonly=True);d.exec()

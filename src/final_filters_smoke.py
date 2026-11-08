@@ -79,7 +79,7 @@ def start_smoke(app,win,args):
             def close_message():
                 modal=app.activeModalWidget()
                 if isinstance(modal,QMessageBox):
-                    messages.append(modal.text());modal.grab().save(str(out/'05-pending-export-blocked.png'));modal.reject()
+                    messages.append(modal.text()+'\n'+modal.informativeText());modal.grab().save(str(out/'05-pending-export-blocked.png'));modal.reject()
             controller.timeout.connect(close_message);controller.start()
             try:win.export_current(['QA1'])
             finally:controller.stop();win.preissue_drafts={}

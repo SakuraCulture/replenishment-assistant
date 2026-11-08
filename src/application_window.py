@@ -415,10 +415,10 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if d.exec()==QDialog.DialogCode.Accepted:self.open_final_list(listing=d.selected)
         d.deleteLater()
 
-    def open_final_list(self,use_current=False,listing=None):
+    def open_final_list(self,use_current=False,listing=None,*,codes=None):
         if self.worker or self.readonly or self.input_dirty or self.job_day!=wr.today():return
         from interaction_ui import choose_stores
-        codes=[self.current_store] if use_current is True and self.states.get(self.current_store,{}).get('state')=='已完成' else choose_stores(self,'选择最终清单门店',self.states,self.selected_codes())
+        if codes is None:codes=[self.current_store] if use_current is True and self.states.get(self.current_store,{}).get('state')=='已完成' else choose_stores(self,'选择最终清单门店',self.states,self.selected_codes())
         if not codes:return
         from preissue_ui import FinalListDialog
         d=FinalListDialog(self,codes,listing)
@@ -449,6 +449,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         from interaction_ui import choose_stores
         codes=choose_stores(self,'选择需要确认归档的门店',self.states,self.selected_codes())
         if not codes:self.failed('请先在门店页勾选有效完成门店。');return
+        from signing_guidance import require_applied
+        if not require_applied(self,codes):return
         from ui_work_io import Session,request
         from runtime_support import Cancelled
         try:
@@ -479,6 +481,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             if dialog.exec()!=QDialog.DialogCode.Accepted:return
             codes=dialog.codes();warehouses=dialog.warehouses();destination=dialog.destination.text()
         if not codes:return
+        from signing_guidance import require_applied
+        if not require_applied(self,codes):return
         from ui_work_io import Session,request
         from runtime_support import Cancelled
         try:
