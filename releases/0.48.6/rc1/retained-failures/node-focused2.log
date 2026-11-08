@@ -1,0 +1,65 @@
+✔ native import sends exact bytes at most once and binds only the exact response request (2.2721ms)
+✔ wrong bytes, more than one payload, create POST, and unrelated business mutations are blocked (0.4694ms)
+✔ no task, conflicting tasks and HTTP failure never become a successful receipt (0.4787ms)
+✔ guard permits exact identity read, keeps writes blocked and records only safe request metadata (0.7771ms)
+✔ late body is awaited, receipt persistence failure is surfaced, read-only queries pass fence (0.4192ms)
+✔ isolated real Edge native file input/confirm: one exact multipart body; late retry fenced; no external network (1462.2183ms)
+✔ decimal facts retain precision and reject null/number/exponent/negative (1.7743ms)
+✔ reserve idempotent; changed payment and different ID cannot duplicate an order (37.045ms)
+✔ pre-upload cancel releases reservation; post-boundary cancel cannot release it (30.3063ms)
+✔ crash before upload pauses; crash after boundary needs review and never retries (47.5025ms)
+✔ pause during preparation never uploads; retry uses original intent safely (30.514ms)
+✔ pause in upload persists returned receipt; next start only observes it (30.1101ms)
+✔ timeout no receipt forbids replay; late exact receipt can recover (35.9996ms)
+✔ strict per-SKU proof catches equal-total swaps, wrong scope, null, split, status and external order (0.829ms)
+✔ receipt identity cannot change; conflicting task retained for review (29.5571ms)
+✔ recovered verification repeats read-only observation and protects unique platform order (38.2355ms)
+✔ missing durable table or duplicate protection index fails closed and keeps backup (31.894ms)
+✔ legacy component migration cannot silently omit a reserved or submitted creation identity (58.0343ms)
+✔ immediate close before preparation microtask pauses without upload or lost task (56.3687ms)
+✔ native Excel whole-valued decimal SKU count binds without weakening quantity or amount checks (0.6276ms)
+✖ blocked extra request after a durable receipt continues full original-task proof, never uploads twice (37.4307ms)
+✔ blocked request without receipt cannot start proof or replay upload (38.0105ms)
+✔ accepted interrupted upload still rejects every invalid SKU and identity proof (181.264ms)
+✔ voided original purchase still needs exact receipt, identity, marker and every native SKU (1.5551ms)
+✔ observing a void retains the original receipt and prevents duplicate upload after restart (69.6366ms)
+✔ store code first; exact name normalization permits whitespace/parentheses, never fuzzy shop identity (4.9625ms)
+✔ code unsupported falls back to district; wrong shop never selected; duplicates rejected (322.1857ms)
+✔ isolated real Edge selects the normalized exact option; no platform traffic (1431.3575ms)
+✔ page/navigation failure is not mislabeled as an expired login (1.3256ms)
+✔ exact original import and export task reads recover once without replaying any write (0.7285ms)
+✔ identity body is captured before navigation completes; expired or invalid body never uses cached identity (21.0703ms)
+✔ read-only query identity timeout can recover once; writes and uncertain response never replay (0.4914ms)
+✔ one page D13 -> purchase -> purchase_create -> D13; listeners disposed, fixed identity (0.5769ms)
+✔ failed module switch never marked ready, next attempt reopens with original identity (0.2461ms)
+✔ identity read timeout retries once on same page; second timeout/unknown acceptance not retried (0.2612ms)
+✔ failed initial identity remains pinned across retries, never adopts another merchant (0.1663ms)
+✔ handoff pauses all actors, waits for actual settlement, no browser close or resume (0.2765ms)
+✔ setup adopts same worker; callback routing updated once; different profile closes old worker (0.6086ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 37
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2144.8138
+
+✖ failing tests:
+
+test at components\aoxiang\test\purchase-create.test.mjs:138:1
+✖ blocked extra request after a durable receipt continues full original-task proof, never uploads twice (37.4307ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/purchase-create.test.mjs:146:34)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

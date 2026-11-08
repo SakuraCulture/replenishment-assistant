@@ -1,0 +1,1156 @@
+TAP version 13
+# Subtest: 控制桥保留文本协议，拦截关闭用户浏览器和改下载行为
+ok 1 - 控制桥保留文本协议，拦截关闭用户浏览器和改下载行为
+  ---
+  duration_ms: 63.107
+  type: 'test'
+  ...
+# Subtest: 发现文件存在但端口无服务不能声称连接可用
+ok 2 - 发现文件存在但端口无服务不能声称连接可用
+  ---
+  duration_ms: 46.8626
+  type: 'test'
+  ...
+# Subtest: connection observer follows actual page/socket, without browser commands
+ok 3 - connection observer follows actual page/socket, without browser commands
+  ---
+  duration_ms: 1.8875
+  type: 'test'
+  ...
+# Subtest: host does not mistake an old successful connection for live browser state
+ok 4 - host does not mistake an old successful connection for live browser state
+  ---
+  duration_ms: 0.2627
+  type: 'test'
+  ...
+# Subtest: status protocol is strictly read-only with no extra command fields
+ok 5 - status protocol is strictly read-only with no extra command fields
+  ---
+  duration_ms: 0.7231
+  type: 'test'
+  ...
+# Subtest: real idle worker remains unconnected; closing is observed without probe
+ok 6 - real idle worker remains unconnected; closing is observed without probe
+  ---
+  duration_ms: 881.0809
+  type: 'test'
+  ...
+# Subtest: 完整作业只提交一次；当日再次正常运行复用合格资产
+ok 7 - 完整作业只提交一次；当日再次正常运行复用合格资产
+  ---
+  duration_ms: 436.7334
+  type: 'test'
+  ...
+# Subtest: 提交阶段不等待或下载，轮询未完成立即返回；恢复只取原任务且文件字节一致
+ok 8 - 提交阶段不等待或下载，轮询未完成立即返回；恢复只取原任务且文件字节一致
+  ---
+  duration_ms: 202.5323
+  type: 'test'
+  ...
+# Subtest: 提交结果未知不可重放；正面受理已记录时可恢复同任务
+ok 9 - 提交结果未知不可重放；正面受理已记录时可恢复同任务
+  ---
+  duration_ms: 281.8906
+  type: 'test'
+  ...
+# Subtest: 已下载后本地保存失败，恢复不再访问浏览器或重新下载
+ok 10 - 已下载后本地保存失败，恢复不再访问浏览器或重新下载
+  ---
+  duration_ms: 143.6831
+  type: 'test'
+  ...
+# Subtest: 已验收文件丢失时下载原任务；当前查询变动不改写原快照
+ok 11 - 已验收文件丢失时下载原任务；当前查询变动不改写原快照
+  ---
+  duration_ms: 158.2747
+  type: 'test'
+  ...
+# Subtest: 错误范围的受理记录立即阻断，即使工作进程随后失去应答
+ok 12 - 错误范围的受理记录立即阻断，即使工作进程随后失去应答
+  ---
+  duration_ms: 86.7912
+  type: 'test'
+  ...
+# Subtest: 派发前明确暂停可继续；未把未发送意图当成已提交任务重放
+ok 13 - 派发前明确暂停可继续；未把未发送意图当成已提交任务重放
+  ---
+  duration_ms: 137.8154
+  type: 'test'
+  ...
+# Subtest: 已知任务传输的对象身份、字节和哈希
+ok 14 - 已知任务传输的对象身份、字节和哈希
+  ---
+  duration_ms: 110.8599
+  type: 'test'
+  ...
+# Subtest: 下载器拒绝替换任务、任意主机和明文地址
+ok 15 - 下载器拒绝替换任务、任意主机和明文地址
+  ---
+  duration_ms: 1.3855
+  type: 'test'
+  ...
+# Subtest: HTML错误页和403分别识别，不把响应当原生Excel
+ok 16 - HTML错误页和403分别识别，不把响应当原生Excel
+  ---
+  duration_ms: 96.7116
+  type: 'test'
+  ...
+# Subtest: 压缩包CRC错误不能通过工作簿验收
+ok 17 - 压缩包CRC错误不能通过工作簿验收
+  ---
+  duration_ms: 186.2828
+  type: 'test'
+  ...
+# Subtest: 命令采用确切文件副本；刷新日文件后重复读取仍返回原字节
+ok 18 - 命令采用确切文件副本；刷新日文件后重复读取仍返回原字节
+  ---
+  duration_ms: 110.6638
+  type: 'test'
+  ...
+# Subtest: 崩溃在日文件完成与冻结之间，按原哈希备份恢复，不能使用新的日版本
+ok 19 - 崩溃在日文件完成与冻结之间，按原哈希备份恢复，不能使用新的日版本
+  ---
+  duration_ms: 78.0586
+  type: 'test'
+  ...
+# Subtest: 原文件版本缺失或已冻结文件被改均阻断，不能静默换为最新文件
+ok 20 - 原文件版本缺失或已冻结文件被改均阻断，不能静默换为最新文件
+  ---
+  duration_ms: 321.6881
+  type: 'test'
+  ...
+# Subtest: 机器契约拒绝数字编码、未知字段、重复门店、超量和未实现采购操作
+ok 21 - 机器契约拒绝数字编码、未知字段、重复门店、超量和未实现采购操作
+  ---
+  duration_ms: 6.6218
+  type: 'test'
+  ...
+# Subtest: 命令、逐店run及有序事件原子保存，重复派发只返回原绑定
+ok 22 - 命令、逐店run及有序事件原子保存，重复派发只返回原绑定
+  ---
+  duration_ms: 190.6817
+  type: 'test'
+  ...
+# Subtest: 事务中途失败整体回滚，未留下只有命令没有run的恢复断点
+ok 23 - 事务中途失败整体回滚，未留下只有命令没有run的恢复断点
+  ---
+  duration_ms: 49.2771
+  type: 'test'
+  ...
+# Subtest: 账号错误、未配置目标均不留下命令或部分门店
+ok 24 - 账号错误、未配置目标均不留下命令或部分门店
+  ---
+  duration_ms: 34.6187
+  type: 'test'
+  ...
+# Subtest: 状态序号拒绝过期更新，终态和待人工核对不能自动重启
+ok 25 - 状态序号拒绝过期更新，终态和待人工核对不能自动重启
+  ---
+  duration_ms: 47.4926
+  type: 'test'
+  ...
+# Subtest: 重开数据库保留原命令及run，重启只标中断不自动执行
+ok 26 - 重开数据库保留原命令及run，重启只标中断不自动执行
+  ---
+  duration_ms: 86.3027
+  type: 'test'
+  ...
+# Subtest: 命令表或版本标记丢失均拒绝重建，防止丢失派发记录后重提
+ok 27 - 命令表或版本标记丢失均拒绝重建，防止丢失派发记录后重提
+  ---
+  duration_ms: 46.9592
+  type: 'test'
+  ...
+# Subtest: 冻结原参数和目录，调用方后续改动不改变命令依据
+ok 28 - 冻结原参数和目录，调用方后续改动不改变命令依据
+  ---
+  duration_ms: 41.7224
+  type: 'test'
+  ...
+# Subtest: 等待任务有上限，重复命令在队列满时仍能查询原任务
+ok 29 - 等待任务有上限，重复命令在队列满时仍能查询原任务
+  ---
+  duration_ms: 119.2394
+  type: 'test'
+  ...
+# Subtest: 结束当前受阻任务同时释放同门店旧失败；新批次可正常建立，文件和成功项不变
+ok 30 - 结束当前受阻任务同时释放同门店旧失败；新批次可正常建立，文件和成功项不变
+  ---
+  duration_ms: 225.6236
+  type: 'test'
+  ...
+# Subtest: 结束与删除回执可重复查询；删除防重标识阻止旧命令重放
+ok 31 - 结束与删除回执可重复查询；删除防重标识阻止旧命令重放
+  ---
+  duration_ms: 98.0491
+  type: 'test'
+  ...
+# Subtest: 未核清状态不能结束或释放：INTENT_RECORDED
+ok 32 - 未核清状态不能结束或释放：INTENT_RECORDED
+  ---
+  duration_ms: 90.2222
+  type: 'test'
+  ...
+# Subtest: 未核清状态不能结束或释放：SUBMITTING
+ok 33 - 未核清状态不能结束或释放：SUBMITTING
+  ---
+  duration_ms: 83.1148
+  type: 'test'
+  ...
+# Subtest: 未核清状态不能结束或释放：SUBMISSION_UNKNOWN
+ok 34 - 未核清状态不能结束或释放：SUBMISSION_UNKNOWN
+  ---
+  duration_ms: 81.9875
+  type: 'test'
+  ...
+# Subtest: 未核清状态不能结束或释放：WRONG_SCOPE_ACCEPTED
+ok 35 - 未核清状态不能结束或释放：WRONG_SCOPE_ACCEPTED
+  ---
+  duration_ms: 78.7037
+  type: 'test'
+  ...
+# Subtest: 结束本地采集保留已受理原任务，新批次只接续不重新导出：ACCEPTED
+ok 36 - 结束本地采集保留已受理原任务，新批次只接续不重新导出：ACCEPTED
+  ---
+  duration_ms: 105.164
+  type: 'test'
+  ...
+# Subtest: 结束本地采集保留已受理原任务，新批次只接续不重新导出：RUNNING
+ok 37 - 结束本地采集保留已受理原任务，新批次只接续不重新导出：RUNNING
+  ---
+  duration_ms: 106.7671
+  type: 'test'
+  ...
+# Subtest: 已受理状态但身份不确定仍禁止结束：{"taskId":null}
+ok 38 - 已受理状态但身份不确定仍禁止结束：{"taskId":null}
+  ---
+  duration_ms: 73.9169
+  type: 'test'
+  ...
+# Subtest: 已受理状态但身份不确定仍禁止结束：{"additionalTaskIds":["another-task"]}
+ok 39 - 已受理状态但身份不确定仍禁止结束：{"additionalTaskIds":["another-task"]}
+  ---
+  duration_ms: 75.504
+  type: 'test'
+  ...
+# Subtest: 下载字段不足不能猜测平台已完成
+ok 40 - 下载字段不足不能猜测平台已完成
+  ---
+  duration_ms: 89.7413
+  type: 'test'
+  ...
+# Subtest: 预览后版本变化或重新运行时拒绝；事务写入失败完整回滚
+ok 41 - 预览后版本变化或重新运行时拒绝；事务写入失败完整回滚
+  ---
+  duration_ms: 85.312
+  type: 'test'
+  ...
+# Subtest: 只结束涉及门店；同旧批次其他失败门店仍可重跑，原顺序不变
+ok 42 - 只结束涉及门店；同旧批次其他失败门店仍可重跑，原顺序不变
+  ---
+  duration_ms: 84.6764
+  type: 'test'
+  ...
+# Subtest: 原作业结束后不能从旧 run 恢复，旧回执不复活占用
+ok 43 - 原作业结束后不能从旧 run 恢复，旧回执不复活占用
+  ---
+  duration_ms: 78.8683
+  type: 'test'
+  ...
+# Subtest: 成功记录删除保留原件及日资产；未结束记录不能删除
+ok 44 - 成功记录删除保留原件及日资产；未结束记录不能删除
+  ---
+  duration_ms: 88.0123
+  type: 'test'
+  ...
+# Subtest: 维护协议严格验证动作与预览凭据
+ok 45 - 维护协议严格验证动作与预览凭据
+  ---
+  duration_ms: 0.8369
+  type: 'test'
+  ...
+# Subtest: NDJSON按字节分帧，支持分段中文、CRLF，多帧且拒绝超长/截断/非法编码
+ok 46 - NDJSON按字节分帧，支持分段中文、CRLF，多帧且拒绝超长/截断/非法编码
+  ---
+  duration_ms: 8.3208
+  type: 'test'
+  ...
+# Subtest: 机器动作字段严格校验，不接受未知开关和无效游标；内部配置不传入UI
+ok 47 - 机器动作字段严格校验，不接受未知开关和无效游标；内部配置不传入UI
+  ---
+  duration_ms: 0.7818
+  type: 'test'
+  ...
+# Subtest: 实际Node子进程使用独立根目录，查询恢复原命令；第二实例互斥，退出后锁释放
+ok 48 - 实际Node子进程使用独立根目录，查询恢复原命令；第二实例互斥，退出后锁释放
+  ---
+  duration_ms: 3907.0317
+  type: 'test'
+  ...
+# Subtest: 非法机器帧不当作命令执行，错误不回显原始敏感文本
+ok 49 - 非法机器帧不当作命令执行，错误不回显原始敏感文本
+  ---
+  duration_ms: 736.5743
+  type: 'test'
+  ...
+# Subtest: invalid business form returns its exact request error and leaves the same process usable
+ok 50 - invalid business form returns its exact request error and leaves the same process usable
+  ---
+  duration_ms: 356.6919
+  type: 'test'
+  ...
+# Subtest: configuration exposes only saved browser form fields without connecting or rewriting binding
+ok 51 - configuration exposes only saved browser form fields without connecting or rewriting binding
+  ---
+  duration_ms: 558.8216
+  type: 'test'
+  ...
+# Subtest: 显式单项重跑保留成功文件和原任务号，旧预览与重复点击被拒绝
+ok 52 - 显式单项重跑保留成功文件和原任务号，旧预览与重复点击被拒绝
+  ---
+  duration_ms: 201.4228
+  type: 'test'
+  ...
+# Subtest: 平台受理不明不可用重跑绕过核对
+ok 53 - 平台受理不明不可用重跑绕过核对
+  ---
+  duration_ms: 48.4277
+  type: 'test'
+  ...
+# Subtest: 浏览器任务严格串行，单店普通失败保留原顺序并继续其他店
+ok 54 - 浏览器任务严格串行，单店普通失败保留原顺序并继续其他店
+  ---
+  duration_ms: 140.8714
+  type: 'test'
+  ...
+# Subtest: 先提交全部门店，慢首店不阻塞后店完成；结果保留所选顺序
+ok 55 - 先提交全部门店，慢首店不阻塞后店完成；结果保留所选顺序
+  ---
+  duration_ms: 63.2292
+  type: 'test'
+  ...
+# Subtest: 流水线未知受理立即停后续提交，不因已受理数量相等就取最新任务
+ok 56 - 流水线未知受理立即停后续提交，不因已受理数量相等就取最新任务
+  ---
+  duration_ms: 43.9315
+  type: 'test'
+  ...
+# Subtest: 首店任务暂未找到不阻塞后店多轮收取，继续仍使用原任务身份
+ok 57 - 首店任务暂未找到不阻塞后店多轮收取，继续仍使用原任务身份
+  ---
+  duration_ms: 72.6859
+  type: 'test'
+  ...
+# Subtest: 流水线等待可立即暂停，继续保持run和task身份
+ok 58 - 流水线等待可立即暂停，继续保持run和task身份
+  ---
+  duration_ms: 73.0972
+  type: 'test'
+  ...
+# Subtest: 读取中暂停响应立即返回，等待当前动作安全结束，继续只执行剩余店
+ok 59 - 读取中暂停响应立即返回，等待当前动作安全结束，继续只执行剩余店
+  ---
+  duration_ms: 48.4133
+  type: 'test'
+  ...
+# Subtest: 暂停与未知受理同时出现时保留待核，不允许通过继续按钮再次提交
+ok 60 - 暂停与未知受理同时出现时保留待核，不允许通过继续按钮再次提交
+  ---
+  duration_ms: 38.7169
+  type: 'test'
+  ...
+# Subtest: 登录等全局错误中断，显式继续复用原run；旧取消状态不污染继续
+ok 61 - 登录等全局错误中断，显式继续复用原run；旧取消状态不污染继续
+  ---
+  duration_ms: 56.8981
+  type: 'test'
+  ...
+# Subtest: 关闭停止排队，不强杀当前动作，重开恢复不会自动运行
+ok 62 - 关闭停止排队，不强杀当前动作，重开恢复不会自动运行
+  ---
+  duration_ms: 47.1888
+  type: 'test'
+  ...
+# Subtest: 同一身份配置连续门店复用连接，更换Profile先关闭原连接，更新取消信号
+ok 63 - 同一身份配置连续门店复用连接，更换Profile先关闭原连接，更新取消信号
+  ---
+  duration_ms: 0.6396
+  type: 'test'
+  ...
+# Subtest: 连接等待登录后再次继续使用原执行器，避免新子进程被旧runner锁阻断
+ok 64 - 连接等待登录后再次继续使用原执行器，避免新子进程被旧runner锁阻断
+  ---
+  duration_ms: 10.4549
+  type: 'test'
+  ...
+# Subtest: startup identity failure hands off same transport without claiming verified identity
+ok 65 - startup identity failure hands off same transport without claiming verified identity
+  ---
+  duration_ms: 395.6834
+  type: 'test'
+  ...
+# Subtest: startup checks saved login without querying stores, changing mappings or committing configuration
+ok 66 - startup checks saved login without querying stores, changing mappings or committing configuration
+  ---
+  duration_ms: 80.4872
+  type: 'test'
+  ...
+# Subtest: startup rejects missing configuration and changed login without saving a replacement identity
+ok 67 - startup rejects missing configuration and changed login without saving a replacement identity
+  ---
+  duration_ms: 167.8062
+  type: 'test'
+  ...
+# Subtest: login recheck rebuilds a disconnected browser worker instead of borrowing a stale successful connection
+ok 68 - login recheck rebuilds a disconnected browser worker instead of borrowing a stale successful connection
+  ---
+  duration_ms: 207.6514
+  type: 'test'
+  ...
+# Subtest: startup keeps the login page for the user and retries the same client without changing bindings
+ok 69 - startup keeps the login page for the user and retries the same client without changing bindings
+  ---
+  duration_ms: 319.6082
+  type: 'test'
+  ...
+# Subtest: scheduled preflight reads saved binding and cancels preview without modifying configuration
+ok 70 - scheduled preflight reads saved binding and cancels preview without modifying configuration
+  ---
+  duration_ms: 61.8442
+  type: 'test'
+  ...
+# Subtest: shared setup keeps verified worker until explicit save, then reuses it for subsequent setup
+ok 71 - shared setup keeps verified worker until explicit save, then reuses it for subsequent setup
+  ---
+  duration_ms: 53.3538
+  type: 'test'
+  ...
+# Subtest: uncommitted new setup releases connection on cancel; failed borrowed setup stops unsafe worker
+ok 72 - uncommitted new setup releases connection on cancel; failed borrowed setup stops unsafe worker
+  ---
+  duration_ms: 63.0747
+  type: 'test'
+  ...
+# Subtest: shared setup recovers one query identity timeout on same worker without starting another connection
+ok 73 - shared setup recovers one query identity timeout on same worker without starting another connection
+  ---
+  duration_ms: 6.6839
+  type: 'test'
+  ...
+# Subtest: 配置动作严格校验编码、列表与已发现浏览器路径，不允许未知字段
+ok 74 - 配置动作严格校验编码、列表与已发现浏览器路径，不允许未知字段
+  ---
+  duration_ms: 4.694
+  type: 'test'
+  ...
+# Subtest: 核验仅查询、保留选店顺序，明确保存前配置不变；保存后可读取复用
+ok 75 - 核验仅查询、保留选店顺序，明确保存前配置不变；保存后可读取复用
+  ---
+  duration_ms: 58.1262
+  type: 'test'
+  ...
+# Subtest: 部分门店编码不符只保存已核验项，不按名字猜编码
+ok 76 - 部分门店编码不符只保存已核验项，不按名字猜编码
+  ---
+  duration_ms: 61.8727
+  type: 'test'
+  ...
+# Subtest: 换商家阻断查询和保存，旧参数保持
+ok 77 - 换商家阻断查询和保存，旧参数保持
+  ---
+  duration_ms: 24.2137
+  type: 'test'
+  ...
+# Subtest: 身份超时和未分类浏览器异常停止整次核验，不逐店重复等待
+ok 78 - 身份超时和未分类浏览器异常停止整次核验，不逐店重复等待
+  ---
+  duration_ms: 5.1034
+  type: 'test'
+  ...
+# Subtest: 停止只读核验立即释放执行器，不再等挂起查询或核验下一店，不保存半成品
+ok 79 - 停止只读核验立即释放执行器，不再等挂起查询或核验下一店，不保存半成品
+  ---
+  duration_ms: 4.1298
+  type: 'test'
+  ...
+# Subtest: 挂起查询到达步骤上限后失败退出、释放连接，重试不被旧结果污染
+ok 80 - 挂起查询到达步骤上限后失败退出、释放连接，重试不被旧结果污染
+  ---
+  duration_ms: 50.4696
+  type: 'test'
+  ...
+# Subtest: 核验后被其他操作更新时拒绝覆盖；重试不受旧取消状态影响
+ok 81 - 核验后被其他操作更新时拒绝覆盖；重试不受旧取消状态影响
+  ---
+  duration_ms: 28.0136
+  type: 'test'
+  ...
+# Subtest: 配置双文件中断恢复到已确认组合；外部修改不静默覆盖
+ok 82 - 配置双文件中断恢复到已确认组合；外部修改不静默覆盖
+  ---
+  duration_ms: 110.131
+  type: 'test'
+  ...
+# Subtest: template control validates exact request ids and rejects extra side-effect options
+ok 83 - template control validates exact request ids and rejects extra side-effect options
+  ---
+  duration_ms: 2.0894
+  type: 'test'
+  ...
+# Subtest: template fetch is background work with progress; repeat cannot overlap and later refresh fetches again
+ok 84 - template fetch is background work with progress; repeat cannot overlap and later refresh fetches again
+  ---
+  duration_ms: 1.3878
+  type: 'test'
+  ...
+# Subtest: cancel waits for current read, returns no ready receipt, and next fetch has fresh cancellation state
+ok 85 - cancel waits for current read, returns no ready receipt, and next fetch has fresh cancellation state
+  ---
+  duration_ms: 0.54
+  type: 'test'
+  ...
+# Subtest: template fetch failure remains failed without cached fallback; status cannot impersonate another request
+ok 86 - template fetch failure remains failed without cached fallback; status cannot impersonate another request
+  ---
+  duration_ms: 0.7296
+  type: 'test'
+  ...
+# Subtest: blocked write during awaited input inspection or final cleanup cannot produce a successful template receipt
+ok 87 - blocked write during awaited input inspection or final cleanup cannot produce a successful template receipt
+  ---
+  duration_ms: 38.4821
+  type: 'test'
+  ...
+# Subtest: 迁移恢复未知任务，重建配置但不携带本机绑定或浏览器资料
+ok 88 - 迁移恢复未知任务，重建配置但不携带本机绑定或浏览器资料
+  ---
+  duration_ms: 353.6703
+  type: 'test'
+  ...
+# Subtest: 迁移包配置被篡改或混入非白名单成员时拒绝
+ok 89 - 迁移包配置被篡改或混入非白名单成员时拒绝
+  ---
+  duration_ms: 95.7644
+  type: 'test'
+  ...
+# Subtest: 未决记录被删减不能以空清单导入
+ok 90 - 未决记录被删减不能以空清单导入
+  ---
+  duration_ms: 72.9438
+  type: 'test'
+  ...
+# Subtest: 重跑保存失败保留旧文件，恢复只完成本地保存
+ok 91 - 重跑保存失败保留旧文件，恢复只完成本地保存
+  ---
+  duration_ms: 170.4162
+  type: 'test'
+  ...
+# Subtest: 未登记文件和用户改动不能被覆盖
+ok 92 - 未登记文件和用户改动不能被覆盖
+  ---
+  duration_ms: 59.0313
+  type: 'test'
+  ...
+# Subtest: native exact PO preview does not bind; explicit confirm is idempotent and never claims upload
+ok 93 - native exact PO preview does not bind; explicit confirm is idempotent and never claims upload
+  ---
+  duration_ms: 246.0032
+  type: 'test'
+  ...
+# Subtest: unknown upload requires unique original marker and exact native rows; never retries upload
+ok 94 - unknown upload requires unique original marker and exact native rows; never retries upload
+  ---
+  duration_ms: 135.1812
+  type: 'test'
+  ...
+# Subtest: per SKU swaps, blanks, wrong identity/supplier/status, split and stale basis fail closed
+ok 95 - per SKU swaps, blanks, wrong identity/supplier/status, split and stale basis fail closed
+  ---
+  duration_ms: 122.7566
+  type: 'test'
+  ...
+# Subtest: confirmation binds precise sequence and rejects source/proof tamper
+ok 96 - confirmation binds precise sequence and rejects source/proof tamper
+  ---
+  duration_ms: 142.2699
+  type: 'test'
+  ...
+# Subtest: confirmation catches state change during awaited preflight and cannot overwrite it
+ok 97 - confirmation catches state change during awaited preflight and cannot overwrite it
+  ---
+  duration_ms: 104.9455
+  type: 'test'
+  ...
+# Subtest: platform PO uniqueness is shared with automatic creates and rollback keeps preview
+ok 98 - platform PO uniqueness is shared with automatic creates and rollback keeps preview
+  ---
+  duration_ms: 120.3088
+  type: 'test'
+  ...
+# Subtest: pause/restart keeps original proof run and never auto-confirms
+ok 99 - pause/restart keeps original proof run and never auto-confirms
+  ---
+  duration_ms: 81.2177
+  type: 'test'
+  ...
+# Subtest: known completed manual PO immediately latches final-sync pending on receipt registration
+ok 100 - known completed manual PO immediately latches final-sync pending on receipt registration
+  ---
+  duration_ms: 158.2445
+  type: 'test'
+  ...
+# Subtest: binding protocol rejects missing reason, fuzzy IDs, invalid/future day and unknown fields
+ok 101 - binding protocol rejects missing reason, fuzzy IDs, invalid/future day and unknown fields
+  ---
+  duration_ms: 1.7607
+  type: 'test'
+  ...
+# Subtest: late receipt during proof retires only the preview and preserves the original recovery path
+ok 102 - late receipt during proof retires only the preview and preserves the original recovery path
+  ---
+  duration_ms: 75.4576
+  type: 'test'
+  ...
+# Subtest: restart retires an interrupted preview after receipt without allowing proof replacement
+ok 103 - restart retires an interrupted preview after receipt without allowing proof replacement
+  ---
+  duration_ms: 80.3171
+  type: 'test'
+  ...
+# Subtest: native main/detail XLSX values are read by contract and strictly compared per SKU
+ok 104 - native main/detail XLSX values are read by contract and strictly compared per SKU
+  ---
+  duration_ms: 259.67
+  type: 'test'
+  ...
+# Subtest: known-task service reaches native void proof and refreshes only completed old export runs
+ok 105 - known-task service reaches native void proof and refreshes only completed old export runs
+  ---
+  duration_ms: 645.3301
+  type: 'test'
+  ...
+# Subtest: native import sends exact bytes at most once and binds only the exact response request
+ok 106 - native import sends exact bytes at most once and binds only the exact response request
+  ---
+  duration_ms: 4.7396
+  type: 'test'
+  ...
+# Subtest: wrong bytes, more than one payload, create POST, and unrelated business mutations are blocked
+ok 107 - wrong bytes, more than one payload, create POST, and unrelated business mutations are blocked
+  ---
+  duration_ms: 0.9239
+  type: 'test'
+  ...
+# Subtest: no task, conflicting tasks and HTTP failure never become a successful receipt
+ok 108 - no task, conflicting tasks and HTTP failure never become a successful receipt
+  ---
+  duration_ms: 0.8992
+  type: 'test'
+  ...
+# Subtest: guard permits exact identity read, keeps writes blocked and records only safe request metadata
+ok 109 - guard permits exact identity read, keeps writes blocked and records only safe request metadata
+  ---
+  duration_ms: 1.9603
+  type: 'test'
+  ...
+# Subtest: late body is awaited, receipt persistence failure is surfaced, read-only queries pass fence
+ok 110 - late body is awaited, receipt persistence failure is surfaced, read-only queries pass fence
+  ---
+  duration_ms: 0.9385
+  type: 'test'
+  ...
+# Subtest: isolated real Edge native file input/confirm: one exact multipart body; late retry fenced; no external network
+ok 111 - isolated real Edge native file input/confirm: one exact multipart body; late retry fenced; no external network
+  ---
+  duration_ms: 2186.6956
+  type: 'test'
+  ...
+# Subtest: decimal facts retain precision and reject null/number/exponent/negative
+ok 112 - decimal facts retain precision and reject null/number/exponent/negative
+  ---
+  duration_ms: 2.6937
+  type: 'test'
+  ...
+# Subtest: reserve idempotent; changed payment and different ID cannot duplicate an order
+ok 113 - reserve idempotent; changed payment and different ID cannot duplicate an order
+  ---
+  duration_ms: 103.546
+  type: 'test'
+  ...
+# Subtest: pre-upload cancel releases reservation; post-boundary cancel cannot release it
+ok 114 - pre-upload cancel releases reservation; post-boundary cancel cannot release it
+  ---
+  duration_ms: 57.2726
+  type: 'test'
+  ...
+# Subtest: crash before upload pauses; crash after boundary needs review and never retries
+ok 115 - crash before upload pauses; crash after boundary needs review and never retries
+  ---
+  duration_ms: 92.0681
+  type: 'test'
+  ...
+# Subtest: pause during preparation never uploads; retry uses original intent safely
+ok 116 - pause during preparation never uploads; retry uses original intent safely
+  ---
+  duration_ms: 61.7561
+  type: 'test'
+  ...
+# Subtest: pause in upload persists returned receipt; next start only observes it
+ok 117 - pause in upload persists returned receipt; next start only observes it
+  ---
+  duration_ms: 61.9321
+  type: 'test'
+  ...
+# Subtest: timeout no receipt forbids replay; late exact receipt can recover
+ok 118 - timeout no receipt forbids replay; late exact receipt can recover
+  ---
+  duration_ms: 65.762
+  type: 'test'
+  ...
+# Subtest: strict per-SKU proof catches equal-total swaps, wrong scope, null, split, status and external order
+ok 119 - strict per-SKU proof catches equal-total swaps, wrong scope, null, split, status and external order
+  ---
+  duration_ms: 2.0266
+  type: 'test'
+  ...
+# Subtest: receipt identity cannot change; conflicting task retained for review
+ok 120 - receipt identity cannot change; conflicting task retained for review
+  ---
+  duration_ms: 57.1719
+  type: 'test'
+  ...
+# Subtest: recovered verification repeats read-only observation and protects unique platform order
+ok 121 - recovered verification repeats read-only observation and protects unique platform order
+  ---
+  duration_ms: 82.8236
+  type: 'test'
+  ...
+# Subtest: missing durable table or duplicate protection index fails closed and keeps backup
+ok 122 - missing durable table or duplicate protection index fails closed and keeps backup
+  ---
+  duration_ms: 50.9935
+  type: 'test'
+  ...
+# Subtest: legacy component migration cannot silently omit a reserved or submitted creation identity
+ok 123 - legacy component migration cannot silently omit a reserved or submitted creation identity
+  ---
+  duration_ms: 51.5281
+  type: 'test'
+  ...
+# Subtest: immediate close before preparation microtask pauses without upload or lost task
+ok 124 - immediate close before preparation microtask pauses without upload or lost task
+  ---
+  duration_ms: 52.7598
+  type: 'test'
+  ...
+# Subtest: native Excel whole-valued decimal SKU count binds without weakening quantity or amount checks
+ok 125 - native Excel whole-valued decimal SKU count binds without weakening quantity or amount checks
+  ---
+  duration_ms: 0.9983
+  type: 'test'
+  ...
+# Subtest: blocked extra request after a durable receipt continues full original-task proof, never uploads twice
+ok 126 - blocked extra request after a durable receipt continues full original-task proof, never uploads twice
+  ---
+  duration_ms: 73.5054
+  type: 'test'
+  ...
+# Subtest: blocked request without receipt cannot start proof or replay upload
+ok 127 - blocked request without receipt cannot start proof or replay upload
+  ---
+  duration_ms: 63.6709
+  type: 'test'
+  ...
+# Subtest: conflicting receipts after upload cannot recover into an automatic binding
+ok 128 - conflicting receipts after upload cannot recover into an automatic binding
+  ---
+  duration_ms: 64.228
+  type: 'test'
+  ...
+# Subtest: accepted interrupted upload still rejects every invalid SKU and identity proof
+ok 129 - accepted interrupted upload still rejects every invalid SKU and identity proof
+  ---
+  duration_ms: 234.9021
+  type: 'test'
+  ...
+# Subtest: voided original purchase still needs exact receipt, identity, marker and every native SKU
+ok 130 - voided original purchase still needs exact receipt, identity, marker and every native SKU
+  ---
+  duration_ms: 1.4066
+  type: 'test'
+  ...
+# Subtest: observing a void retains the original receipt and prevents duplicate upload after restart
+ok 131 - observing a void retains the original receipt and prevents duplicate upload after restart
+  ---
+  duration_ms: 75.8663
+  type: 'test'
+  ...
+# Subtest: observed success null/null requires visible empty table AND exact zero total
+ok 132 - observed success null/null requires visible empty table AND exact zero total
+  ---
+  duration_ms: 3.9623
+  type: 'test'
+  ...
+# Subtest: ordinary list and explicit [] zero preserve response types/order
+ok 133 - ordinary list and explicit [] zero preserve response types/order
+  ---
+  duration_ms: 0.7749
+  type: 'test'
+  ...
+# Subtest: null is not an unconditional zero; failed, partial, missing and mismatching results rejected
+ok 134 - null is not an unconditional zero; failed, partial, missing and mismatching results rejected
+  ---
+  duration_ms: 1.2751
+  type: 'test'
+  ...
+# Subtest: UI proof absent, nonzero, ambiguous or unsuccessful HTTP rejected
+ok 135 - UI proof absent, nonzero, ambiguous or unsuccessful HTTP rejected
+  ---
+  duration_ms: 1.0905
+  type: 'test'
+  ...
+# Subtest: actual receipt uses exact decimal, native row numbers and raw blank values; completed is not equal-quantity
+ok 136 - actual receipt uses exact decimal, native row numbers and raw blank values; completed is not equal-quantity
+  ---
+  duration_ms: 334.7506
+  type: 'test'
+  ...
+# Subtest: status conflict, changed purchase, missing/duplicate SKU, unit and total mismatch never become formal receipt
+ok 137 - status conflict, changed purchase, missing/duplicate SKU, unit and total mismatch never become formal receipt
+  ---
+  duration_ms: 125.6661
+  type: 'test'
+  ...
+# Subtest: completed latch and final pending are atomic and survive interruption/reopen, failed D17 does not restart routine monitoring
+ok 138 - completed latch and final pending are atomic and survive interruption/reopen, failed D17 does not restart routine monitoring
+  ---
+  duration_ms: 120.0789
+  type: 'test'
+  ...
+# Subtest: real coordinator hook persists completed D16 before failed D17; retry uses original tasks and fresh later poll never reuses old snapshot
+ok 139 - real coordinator hook persists completed D16 before failed D17; retry uses original tasks and fresh later poll never reuses old snapshot
+  ---
+  duration_ms: 456.9738
+  type: 'test'
+  ...
+# Subtest: receipt controller close before work, failed retry, ready idempotency and persisted stop are independent of purchase upload
+ok 140 - receipt controller close before work, failed retry, ready idempotency and persisted stop are independent of purchase upload
+  ---
+  duration_ms: 81.2679
+  type: 'test'
+  ...
+# Subtest: missing state tables fail closed and original purchase binding cannot be replaced
+ok 141 - missing state tables fail closed and original purchase binding cannot be replaced
+  ---
+  duration_ms: 48.5943
+  type: 'test'
+  ...
+# Subtest: service freezes native proof, recovers crash after proof before ledger, and never imports again
+ok 142 - service freezes native proof, recovers crash after proof before ledger, and never imports again
+  ---
+  duration_ms: 849.447
+  type: 'test'
+  ...
+# Subtest: store code first; exact name normalization permits whitespace/parentheses, never fuzzy shop identity
+ok 143 - store code first; exact name normalization permits whitespace/parentheses, never fuzzy shop identity
+  ---
+  duration_ms: 2.5529
+  type: 'test'
+  ...
+# Subtest: code unsupported falls back to district; wrong shop never selected; duplicates rejected
+ok 144 - code unsupported falls back to district; wrong shop never selected; duplicates rejected
+  ---
+  duration_ms: 320.9268
+  type: 'test'
+  ...
+# Subtest: isolated real Edge selects the normalized exact option; no platform traffic
+ok 145 - isolated real Edge selects the normalized exact option; no platform traffic
+  ---
+  duration_ms: 2085.8639
+  type: 'test'
+  ...
+# Subtest: 采购模板：原生12列、单位说明、示例行和隐藏是/否选项的语义契约
+ok 146 - 采购模板：原生12列、单位说明、示例行和隐藏是/否选项的语义契约
+  ---
+  duration_ms: 73.0584
+  type: 'test'
+  ...
+# Subtest: 采购模板：每次准备都重新请求平台；相同内容只复用归档，不使用离线旧模板
+ok 147 - 采购模板：每次准备都重新请求平台；相同内容只复用归档，不使用离线旧模板
+  ---
+  duration_ms: 755.9959
+  type: 'test'
+  ...
+# Subtest: 采购模板：样式或ZIP元数据更新可直接接受，不误判为列映射变化
+ok 148 - 采购模板：样式或ZIP元数据更新可直接接受，不误判为列映射变化
+  ---
+  duration_ms: 187.7714
+  type: 'test'
+  ...
+# Subtest: 采购模板：字段、填写规则、隐藏表和新增样例行漂移均保存新版并阻止导入准备
+ok 149 - 采购模板：字段、填写规则、隐藏表和新增样例行漂移均保存新版并阻止导入准备
+  ---
+  duration_ms: 857.8155
+  type: 'test'
+  ...
+# Subtest: 采购模板：用户修改过缓存时不覆盖；商家不符或暂停时不交付可用模板
+ok 150 - 采购模板：用户修改过缓存时不覆盖；商家不符或暂停时不交付可用模板
+  ---
+  duration_ms: 151.757
+  type: 'test'
+  ...
+# Subtest: 采购模板：空XML成员明确拒绝；下载来源只允许当前原生采购模板GET
+ok 151 - 采购模板：空XML成员明确拒绝；下载来源只允许当前原生采购模板GET
+  ---
+  duration_ms: 30.933
+  type: 'test'
+  ...
+# Subtest: 真实隔离Edge：仅点模板按钮；空窗取消；不确认、不上传，阻断PUT且拒绝HTML登录页
+ok 152 - 真实隔离Edge：仅点模板按钮；空窗取消；不确认、不上传，阻断PUT且拒绝HTML登录页
+  ---
+  duration_ms: 2228.423
+  type: 'test'
+  ...
+# Subtest: 采购时间按上海自然日，日切片无漏日，查询分页字段不进入导出范围
+ok 153 - 采购时间按上海自然日，日切片无漏日，查询分页字段不进入导出范围
+  ---
+  duration_ms: 2.6779
+  type: 'test'
+  ...
+# Subtest: 状态升级先备份；采购表丢失不能重建；原补货记录保留
+ok 154 - 状态升级先备份；采购表丢失不能重建；原补货记录保留
+  ---
+  duration_ms: 86.3425
+  type: 'test'
+  ...
+# Subtest: 真实XLSX校验采购父子关联；缺SKU、跨主单、日期超界拒绝，重复明细保留
+ok 155 - 真实XLSX校验采购父子关联；缺SKU、跨主单、日期超界拒绝，重复明细保留
+  ---
+  duration_ms: 203.7098
+  type: 'test'
+  ...
+# Subtest: 真实隔离Edge：列表内同名仓店不干扰采购选择器
+ok 156 - 真实隔离Edge：列表内同名仓店不干扰采购选择器
+  ---
+  duration_ms: 2434.4467
+  type: 'test'
+  ...
+# Subtest: 明细下载中断恢复原任务；主单不重导；再次运行校验并复用文件
+ok 157 - 明细下载中断恢复原任务；主单不重导；再次运行校验并复用文件
+  ---
+  duration_ms: 397.1338
+  type: 'test'
+  ...
+# Subtest: 采购受理未知持久化并阻断重跑及另一日期，不盲目再点导出
+ok 158 - 采购受理未知持久化并阻断重跑及另一日期，不盲目再点导出
+  ---
+  duration_ms: 175.9862
+  type: 'test'
+  ...
+# Subtest: 用户改过旧采购文件时正常复用停止；显式重跑另建快照并保留旧文件
+ok 159 - 用户改过旧采购文件时正常复用停止；显式重跑另建快照并保留旧文件
+  ---
+  duration_ms: 401.016
+  type: 'test'
+  ...
+# Subtest: 采购迁移携带原任务和原生文件，新输出目录恢复；未知状态不会被旧包抹掉
+ok 160 - 采购迁移携带原任务和原生文件，新输出目录恢复；未知状态不会被旧包抹掉
+  ---
+  duration_ms: 347.3133
+  type: 'test'
+  ...
+# Subtest: 采购迁移删减主子任务不能用新包解除未知提交
+ok 161 - 采购迁移删减主子任务不能用新包解除未知提交
+  ---
+  duration_ms: 54.7898
+  type: 'test'
+  ...
+# Subtest: 真实隔离Edge：Fusion采购确认框只提交一次，迟到提示不挡历史记录
+ok 162 - 真实隔离Edge：Fusion采购确认框只提交一次，迟到提示不挡历史记录
+  ---
+  duration_ms: 1289.7684
+  type: 'test'
+  ...
+# Subtest: 随迁结果在不同输出根核验后复用，重复导入不改变文件
+ok 163 - 随迁结果在不同输出根核验后复用，重复导入不改变文件
+  ---
+  duration_ms: 679.2437
+  type: 'test'
+  ...
+# Subtest: 已知迁入任务冻结原日期和查询，未知记录不能采用已知路径
+ok 164 - 已知迁入任务冻结原日期和查询，未知记录不能采用已知路径
+  ---
+  duration_ms: 123.6544
+  type: 'test'
+  ...
+# Subtest: 状态缺失或版本过新不重建空库；长数字ID与低磁盘保护
+ok 165 - 状态缺失或版本过新不重建空库；长数字ID与低磁盘保护
+  ---
+  duration_ms: 112.4486
+  type: 'test'
+  ...
+# Subtest: page/navigation failure is not mislabeled as an expired login
+ok 166 - page/navigation failure is not mislabeled as an expired login
+  ---
+  duration_ms: 2.014
+  type: 'test'
+  ...
+# Subtest: exact original import and export task reads recover once without replaying any write
+ok 167 - exact original import and export task reads recover once without replaying any write
+  ---
+  duration_ms: 1.1978
+  type: 'test'
+  ...
+# Subtest: identity body is captured before navigation completes; expired or invalid body never uses cached identity
+ok 168 - identity body is captured before navigation completes; expired or invalid body never uses cached identity
+  ---
+  duration_ms: 25.5431
+  type: 'test'
+  ...
+# Subtest: read-only query identity timeout can recover once; writes and uncertain response never replay
+ok 169 - read-only query identity timeout can recover once; writes and uncertain response never replay
+  ---
+  duration_ms: 1.2896
+  type: 'test'
+  ...
+# Subtest: one page D13 -> purchase -> purchase_create -> D13; listeners disposed, fixed identity
+ok 170 - one page D13 -> purchase -> purchase_create -> D13; listeners disposed, fixed identity
+  ---
+  duration_ms: 0.9717
+  type: 'test'
+  ...
+# Subtest: failed module switch never marked ready, next attempt reopens with original identity
+ok 171 - failed module switch never marked ready, next attempt reopens with original identity
+  ---
+  duration_ms: 0.5126
+  type: 'test'
+  ...
+# Subtest: identity read timeout retries once on same page; second timeout/unknown acceptance not retried
+ok 172 - identity read timeout retries once on same page; second timeout/unknown acceptance not retried
+  ---
+  duration_ms: 0.5045
+  type: 'test'
+  ...
+# Subtest: failed initial identity remains pinned across retries, never adopts another merchant
+ok 173 - failed initial identity remains pinned across retries, never adopts another merchant
+  ---
+  duration_ms: 0.3554
+  type: 'test'
+  ...
+# Subtest: handoff pauses all actors, waits for actual settlement, no browser close or resume
+ok 174 - handoff pauses all actors, waits for actual settlement, no browser close or resume
+  ---
+  duration_ms: 0.4986
+  type: 'test'
+  ...
+# Subtest: setup adopts same worker; callback routing updated once; different profile closes old worker
+ok 175 - setup adopts same worker; callback routing updated once; different profile closes old worker
+  ---
+  duration_ms: 1.1556
+  type: 'test'
+  ...
+# Subtest: 两个执行器不能同时持有同一本机锁，释放后可恢复
+ok 176 - 两个执行器不能同时持有同一本机锁，释放后可恢复
+  ---
+  duration_ms: 54.361
+  type: 'test'
+  ...
+# Subtest: 未知提交持久化，重建进程和换日不能解除
+ok 177 - 未知提交持久化，重建进程和换日不能解除
+  ---
+  duration_ms: 56.2462
+  type: 'test'
+  ...
+# Subtest: 迁入UNKNOWN后，旧包已知状态不能消除未知；重复导入幂等
+ok 178 - 迁入UNKNOWN后，旧包已知状态不能消除未知；重复导入幂等
+  ---
+  duration_ms: 33.2691
+  type: 'test'
+  ...
+# Subtest: 真实独立worker持锁；父IPC断开后退出并释放锁
+ok 179 - 真实独立worker持锁；父IPC断开后退出并释放锁
+  ---
+  duration_ms: 1161.7939
+  type: 'test'
+  ...
+# Subtest: Windows真实独占文件锁下保留旧文件，解锁后只恢复本地发布
+ok 180 - Windows真实独占文件锁下保留旧文件，解锁后只恢复本地发布
+  ---
+  duration_ms: 1806.622
+  type: 'test'
+  ...
+# Subtest: 发行依赖哈希被改动时阻止执行
+ok 181 - 发行依赖哈希被改动时阻止执行
+  ---
+  duration_ms: 158.3189
+  type: 'test'
+  ...
+# Subtest: 真实Edge复现：受理后迟到的导出弹窗自动关闭，历史查询只执行一次
+ok 182 - 真实Edge复现：受理后迟到的导出弹窗自动关闭，历史查询只执行一次
+  ---
+  duration_ms: 2479.4436
+  type: 'test'
+  ...
+# Subtest: 只关闭已知导出提示；其他确认弹窗保留
+ok 183 - 只关闭已知导出提示；其他确认弹窗保留
+  ---
+  duration_ms: 1803.1682
+  type: 'test'
+  ...
+# Subtest: 真实Edge离线分页：末页刷新先回第一页，查无任务后重试仍可找到原任务
+ok 184 - 真实Edge离线分页：末页刷新先回第一页，查无任务后重试仍可找到原任务
+  ---
+  duration_ms: 1476.8022
+  type: 'test'
+  ...
+# Subtest: 后台标签使用同一已核对Profile；关闭绑定页和作业页后保留原页面
+ok 185 - 后台标签使用同一已核对Profile；关闭绑定页和作业页后保留原页面
+  ---
+  duration_ms: 1277.2233
+  type: 'test'
+  ...
+# Subtest: 真实XML行数、长编码和三个同名毛利列保留
+ok 186 - 真实XML行数、长编码和三个同名毛利列保留
+  ---
+  duration_ms: 109.0212
+  type: 'test'
+  ...
+# Subtest: 仓店错位和字段漂移均不能通过
+ok 187 - 仓店错位和字段漂移均不能通过
+  ---
+  duration_ms: 107.7825
+  type: 'test'
+  ...
+# Subtest: 无损响应解析保持大整数和前导零文本
+ok 188 - 无损响应解析保持大整数和前导零文本
+  ---
+  duration_ms: 1.8071
+  type: 'test'
+  ...
+# Subtest: Asia/Shanghai跨日和范围指纹
+ok 189 - Asia/Shanghai跨日和范围指纹
+  ---
+  duration_ms: 19.4977
+  type: 'test'
+  ...
+# Subtest: 迁移相对路径拒绝越界和绝对路径
+ok 190 - 迁移相对路径拒绝越界和绝对路径
+  ---
+  duration_ms: 0.5087
+  type: 'test'
+  ...
+# Subtest: 完整JSON Schema拒绝未知凭据字段、未验证目标及数字ID
+ok 191 - 完整JSON Schema拒绝未知凭据字段、未验证目标及数字ID
+  ---
+  duration_ms: 272.3654
+  type: 'test'
+  ...
+1..191
+# tests 191
+# suites 0
+# pass 191
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8802.5254

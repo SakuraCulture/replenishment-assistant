@@ -1,0 +1,78 @@
+{
+  "passed": true,
+  "app": "补货助手",
+  "version": "0.48.6",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "b5f77bed4c9e3161e1f14b3c56bbf35c7b26f79a",
+  "build_id": "rc1",
+  "built_at": "2026-11-08T16:21:46.758554+08:00",
+  "source_archive_sha256": "d879096d57915a0f51fac86216a24bc5a273fcb28c5c627aecd319d2c610c6df",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "b5f77bed4c9e3161e1f14b3c56bbf35c7b26f79a",
+    "files": 870,
+    "manifest_sha256": "ccffef44f10ba997fd515b21699c4e66113f7239a20a001e5473ab63847c99c3",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "b232be4efc9da771a43368fc7e16ad4f889c152969897271e8f37e4eaa1663bc",
+    "files": 8,
+    "source_commit": "b5f77bed4c9e3161e1f14b3c56bbf35c7b26f79a",
+    "contains_user_state": false
+  },
+  "checks": [
+    "只操作新目录的隔离数据库",
+    "两店四仓单夹具已生成",
+    "实际新批预览成功",
+    "回传时间预览结果与上方可见执行顺序一致",
+    "真实Qt列表完成移动",
+    "拖动自动采用人工顺序并使旧预览失效，无需再勾选",
+    "人工预览沿用上方顺序",
+    "恢复回传顺序并重新预览，不保存生成",
+    "实际确认生成四单并安全完成提交",
+    "完成后无选择时锁单按钮禁用并显示0单",
+    "无选择直接调用锁单会显示操作指引",
+    "实际锁单仅作用于明确选择的一单",
+    "全选已生成单及锁单范围数量可见",
+    "保存后原批顺序冻结，不能重新拖动改序",
+    "生成及锁单不自动确认付款",
+    "实际批量文件导入进入新核对布局",
+    "查看一单时仍明确保存整批四单，未改确认范围",
+    "未确认完整读取范围不能保存",
+    "原生窗口1366x900商品明细占核对区至少一半且可读",
+    "原生窗口1280x800商品明细占核对区至少一半且可读",
+    "左侧仅查看一单后确认仍原子保存本批四单",
+    "四张付款单均已正确关联各自仓单"
+  ],
+  "geometry": [
+    {
+      "window": [
+        1366,
+        900
+      ],
+      "review_height": 823,
+      "table_height": 592,
+      "viewport_height": 536
+    },
+    {
+      "window": [
+        1280,
+        800
+      ],
+      "review_height": 723,
+      "table_height": 492,
+      "viewport_height": 436
+    }
+  ],
+  "synthetic": true,
+  "live_platform": false
+}

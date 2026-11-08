@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "offline": true,
+  "images": [
+    {
+      "loaded": true,
+      "width": 1830
+    },
+    {
+      "loaded": true,
+      "width": 1920
+    },
+    {
+      "loaded": true,
+      "width": 1800
+    }
+  ]
+}
