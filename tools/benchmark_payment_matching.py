@@ -41,7 +41,7 @@ def run(out):
                     try:
                         pidfile=dest/(mode+'.pid')
                         if pidfile.exists():peak=max(peak,psutil.Process(int(pidfile.read_text('ascii'))).memory_info().rss)
-                    except psutil.Error:pass
+                    except (psutil.Error,ValueError,OSError):pass
                     if time.monotonic()-started>300:raise TimeoutError(f'Isolated worker {p.pid} retained')
                     time.sleep(.02)
             if p.returncode:raise RuntimeError(str(dest/(mode+'.log')))
@@ -49,7 +49,7 @@ def run(out):
             result.update(stores=count,mode=mode,sampled_peak_worker_rss_mib=peak/1048576);runs.append(result)
         subset=runs[-5:];assert subset[0]['head_identity']==subset[1]['head_identity']==subset[2]['head_identity'];assert subset[2]['decoded_snapshots']==0 and subset[-1]['cancelled']
     for r in runs:r.pop('head_identity',None)
-    report={'passed':True,'synthetic':True,'live_platform':False,'rounds':1,'runs':runs,'limitations':'Tiny synthetic SKU sets; Windows actual worker process high-water RSS and 20ms sampled RSS (launcher excluded), OS-cached process I/O, not physical disk or whole-app memory. Baseline reads old full current-target path; cold index additionally computes generation summaries. Expanded includes file read and exact comparisons. No low-end business PC measurement.'}
+    report={'passed':True,'synthetic':True,'live_platform':False,'rounds':1,'sampler_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'runs':runs,'limitations':'Tiny synthetic SKU sets; Windows actual worker process high-water RSS and 20ms sampled RSS (launcher excluded), OS-cached process I/O, not physical disk or whole-app memory. Baseline reads old full current-target path; cold index additionally computes generation summaries. Expanded includes file read and exact comparisons. No low-end business PC measurement.'}
     (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8');print(json.dumps(report,ensure_ascii=False))
 
 if __name__=='__main__':
