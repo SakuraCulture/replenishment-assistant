@@ -1,0 +1,40 @@
+{
+  "passed": false,
+  "checks": [
+    "Store-maintenance table owns at least 40 percent of its work page",
+    "Store-maintenance table owns at least 40 percent of its work page",
+    "Low-frequency default/data-maintenance actions are folded by default",
+    "All original maintenance controls remain reachable in expanded scroll panel",
+    "Store goods table owns at least 45 percent of its work page"
+  ],
+  "geometry": [
+    {
+      "page": "stores",
+      "window": [
+        1366,
+        900
+      ],
+      "table_height": 297,
+      "page_height": 576
+    },
+    {
+      "page": "stores",
+      "window": [
+        1280,
+        800
+      ],
+      "table_height": 197,
+      "page_height": 476
+    },
+    {
+      "page": "goods",
+      "window": [
+        1366,
+        900
+      ],
+      "table_height": 286,
+      "page_height": 578
+    }
+  ],
+  "error": "Traceback (most recent call last):\n  File \"layout_smoke.py\", line 43, in run\n  File \"layout_smoke.py\", line 13, in require\nAssertionError: Store goods table owns at least 45 percent of its work page\n"
+}

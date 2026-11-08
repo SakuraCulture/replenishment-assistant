@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "source_commit": "8a724ad52cd18d1e5a5ad825c5070d03ec1af138",
+  "python_tests": 1245,
+  "unique_test_ids": 1245,
+  "python_seconds": 421.232,
+  "focused_tests": 72,
+  "exe_checks": 17,
+  "exe_distinct_checks": 15,
+  "exe_sha256": "3985b8edadcdd3c485d8302c13435fb9a5f01994c486fb99aca530d5ada86c66",
+  "zip": "交付_0.48.4_rc2\\补货助手_0.48.4_rc2_主表格布局与签发引导.zip",
+  "zip_sha256": "ed045bc7a756b4ffa150c19c7573dfe7a1b380d7f130fe0c276525a7a37b89b0",
+  "zip_bytes": 125622442,
+  "files": 1244,
+  "core_unchanged": 15,
+  "preserved_delivery_files": 30,
+  "components_unchanged": true,
+  "live_platform": false,
+  "geometry": [
+    {
+      "page": "stores",
+      "window": [
+        1366,
+        900
+      ],
+      "table_height": 379,
+      "page_height": 658
+    },
+    {
+      "page": "stores",
+      "window": [
+        1280,
+        800
+      ],
+      "table_height": 279,
+      "page_height": 558
+    },
+    {
+      "page": "goods",
+      "window": [
+        1366,
+        900
+      ],
+      "table_height": 368,
+      "page_height": 660
+    },
+    {
+      "page": "goods",
+      "window": [
+        1280,
+        800
+      ],
+      "table_height": 268,
+      "page_height": 560
+    }
+  ]
+}

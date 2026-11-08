@@ -1,0 +1,73 @@
+{
+  "passed": true,
+  "app": "补货助手",
+  "version": "0.48.4",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "源码运行",
+  "build_id": "未打包",
+  "checks": [
+    "Store-maintenance table owns at least 40 percent of its work page",
+    "Store-maintenance table owns at least 40 percent of its work page",
+    "Low-frequency default/data-maintenance actions are folded by default",
+    "All original maintenance controls remain reachable in expanded scroll panel",
+    "Store goods table owns at least 45 percent of its work page",
+    "Store goods table owns at least 45 percent of its work page",
+    "Full original amount and budget details remain accessible",
+    "Goods table remains usable with 12-point roomy display",
+    "Layout expand/collapse and navigation do not mutate results",
+    "sign entry explains pending store by name/code and explicit application step",
+    "sign entry can open exactly the pending store final list without applying it",
+    "sign cancellation retains pending edits",
+    "export entry explains pending store by name/code and explicit application step",
+    "export entry can open exactly the pending store final list without applying it",
+    "export cancellation retains pending edits",
+    "Blocked pure-sign and export entries create no signed orders",
+    "Actual pure-sign entry succeeds after pending edits are resolved, without exporting"
+  ],
+  "geometry": [
+    {
+      "page": "stores",
+      "window": [
+        1366,
+        900
+      ],
+      "table_height": 436,
+      "page_height": 682
+    },
+    {
+      "page": "stores",
+      "window": [
+        1280,
+        800
+      ],
+      "table_height": 336,
+      "page_height": 582
+    },
+    {
+      "page": "goods",
+      "window": [
+        1366,
+        900
+      ],
+      "table_height": 418,
+      "page_height": 684
+    },
+    {
+      "page": "goods",
+      "window": [
+        1280,
+        800
+      ],
+      "table_height": 318,
+      "page_height": 584
+    }
+  ],
+  "synthetic": true,
+  "live_platform": false
+}
