@@ -14,6 +14,10 @@ class PaymentMatchingTests(unittest.TestCase):
         self.f=fixtures.DirectPayment();self.f.setUp();self.path=self.f.path;self.n=0
         self.accounts_file=self.path.parent/'jst_catalog_sync/jobs.json';self.accounts_file.parent.mkdir()
         self.account_data={'accounts':{'sd':{'warehouse':'山东仓','expectedCoid':'100','expectedUid':'1','mappingVerified':True,'expectedCompany':'合成来源甲','bindingVersion':1},'hb':{'warehouse':'河北仓','expectedCoid':'200','expectedUid':'2','mappingVerified':True,'expectedCompany':'合成来源乙','bindingVersion':1}}}
+        # Company 100 owns the first fixture generation; generation traversal
+        # starts with Hebei and must not be mistaken for the Shandong account.
+        self.account_data['accounts']['sd']['warehouse']=jst.get(self.path,self.f.gids[0])['head']['warehouse']
+        self.account_data['accounts']['hb']['warehouse']=jst.get(self.path,self.f.gids[-1])['head']['warehouse']
         self.accounts_file.write_text(json.dumps(self.account_data,ensure_ascii=False),'utf-8')
         self.index=matching.build(self.path);self.generation=jst.get(self.path,self.f.gids[0]);self.target=next(h for h in self.index['heads'] if h['generation_id']==self.f.gids[0])
     def tearDown(self):self.f.tearDown()
@@ -85,13 +89,13 @@ class PaymentMatchingTests(unittest.TestCase):
         self.assertIn('买家帐号',doc['scan']['rows'][0]['raw_headers'])
         info={'sheets':[{'headers':io.PAYMENT_HEADERS+['买家帐号']}]}
         with self.assertRaisesRegex(ValueError,'同义表头'):io.payment_specs(info)
-    def test_unique_generation_name_and_verified_company_are_required_for_automatic_selection(self):
+    def test_unique_generation_default_auto_and_explicit_company_validation(self):
         doc=self.document();r=matching.analyze(self.path,doc,self.index,source_scope='100')
         self.assertTrue(r['automatic']);self.assertEqual(r['candidates'][0]['number'],self.target['number'])
-        self.assertFalse(matching.analyze(self.path,doc,self.index)['automatic'])
+        self.assertTrue(matching.analyze(self.path,doc,self.index)['automatic'])
         self.assertFalse(matching.analyze(self.path,doc,self.index,source_scope='999')['automatic'])
-    def test_business_alias_requires_confirmation_then_is_remembered_with_atomic_payment(self):
-        doc=self.document(name='合成门店一号（别称）');r=matching.analyze(self.path,doc,self.index,source_scope='100');self.assertFalse(r['automatic'])
+    def test_business_alias_auto_matches_and_is_remembered_with_atomic_payment(self):
+        doc=self.document(name='合成门店一号（别称）');r=matching.analyze(self.path,doc,self.index,source_scope='100');self.assertTrue(r['automatic'])
         before=self.f.stock();receipt=lc.commit(self.path,self.plan(doc));self.assertEqual(len(receipt),1);self.assertEqual(self.f.stock(),before)
         second=self.document(internal='J2',name='合成门店一号（别称）');r=matching.analyze(self.path,second,matching.build(self.path),source_scope='100');self.assertTrue(r['automatic'])
         r=matching.analyze(self.path,second,matching.build(self.path),source_scope='200');self.assertFalse(r['automatic'])
@@ -149,4 +153,4 @@ class PaymentMatchingTests(unittest.TestCase):
         doc=self.document();lc.commit(self.path,self.plan(doc));ao.change_many(self.path,[self.target],True)
         index=matching.build(self.path);r=matching.analyze(self.path,doc,index,source_scope='100')
         self.assertTrue(r['prevent_rebind']);self.assertEqual(r['candidates'],[])
-        r=matching.analyze(self.path,doc,index);self.assertTrue(r['prevent_rebind']);self.assertEqual(r['state'],'请确认来源企业')
+        r=matching.analyze(self.path,doc,index);self.assertTrue(r['prevent_rebind']);self.assertEqual(r['state'],'原订单已失效')

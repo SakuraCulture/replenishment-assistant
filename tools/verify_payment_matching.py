@@ -15,7 +15,21 @@ def fixture(out,count=2):
     file=out/'付款合成.xlsx';b=openpyxl.Workbook();s=b.active;s.append(['内部订单号','商品编码','数量','商品金额','店铺名称','买家帐号','下单时间'])
     for r in g['rows']:
         if float(r['quantity'])>0:s.append(['J-OFFLINE',r['sku'],r['quantity'],r['amount'],g['head']['name'],'合成帐号',g['head']['day']+' 12:00:00'])
-    b.save(file);b.close();(out/'matching-fixture.json').write_text(json.dumps({'payment':str(file),'head':g['head'],'gids':gids,'synthetic':True,'live_platform':False},ensure_ascii=False),'utf-8')
+    b.save(file);b.close()
+    cases=[]
+    for name,number,internal,alias,amount_delta in [
+        ('别称首次自动识别',None,'J-ALIAS','不同店名（业务别称）',0),
+        ('金额更正自动认原单',None,'J-OFFLINE',g['head']['name'],.01),
+        ('新增签发单号',g['head']['number'],'J-EXPLICIT',g['head']['name'],0),
+        ('签发单号填错',j.get(path,gids[-1])['head']['number'],'J-WRONG',g['head']['name'],0)]:
+        from decimal import Decimal
+        f=out/(name+'.xlsx');book=openpyxl.Workbook();sheet=book.active;sheet.append(['内部订单号','商品编码','数量','商品金额','店铺名称','签发单号'])
+        first=True
+        for r in g['rows']:
+            if Decimal(r['quantity'])<=0:continue
+            sheet.append([internal,r['sku'],r['quantity'],str(Decimal(r['amount'])+Decimal(str(amount_delta if first else 0))),alias,number]);first=False
+        book.save(f);book.close();cases.append({'name':name,'path':str(f),'expected_number':None if name=='签发单号填错' else g['head']['number'],'reason':'签发单号与明细冲突' if name=='签发单号填错' else '', 'screenshot':'自动认单_'+name+'.png'})
+    (out/'matching-fixture.json').write_text(json.dumps({'payment':str(file),'head':g['head'],'gids':gids,'automatic_cases':cases,'synthetic':True,'live_platform':False},ensure_ascii=False),'utf-8')
     return path
 
 def main():

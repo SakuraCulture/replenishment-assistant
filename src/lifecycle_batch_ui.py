@@ -2,7 +2,7 @@
 from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog,QVBoxLayout,QHBoxLayout,QStackedWidget,QWidget,
-    QTableWidget,QTableWidgetItem,QComboBox,QFileDialog,QMessageBox,QPushButton,QCompleter,QCheckBox,QLineEdit)
+    QTableWidget,QTableWidgetItem,QComboBox,QFileDialog,QMessageBox,QPushButton,QCompleter,QCheckBox,QLineEdit,QPlainTextEdit)
 from ui_controls import button,label
 from business_ui import run
 from runtime_support import Cancelled
@@ -18,7 +18,7 @@ class BatchImport(QDialog):
         self.paths=[];self.documents=[];self.issues=[];self.excluded=[];self.heads=[];self.receipt=None;self.review=None;self.busy=False
         self.payment_index=None;self.read_ready=False
         self.setObjectName('lifecycleBatchImport');self.setWindowTitle('批量导入单据');self.resize(1240,820);self.setAcceptDrops(True)
-        root=QVBoxLayout(self);self.identity=label(f'限定范围：所选 {len(scope)} 张仓单；按文件中的补货单号匹配。' if scope is not None else '范围：按文件中的补货单号识别；缺号来源订单需明确关联。','section');root.addWidget(self.identity)
+        root=QVBoxLayout(self);self.identity=label(f'限定范围：所选 {len(scope)} 张仓单；付款表自动认单，识别后核对保存。' if scope is not None else '付款表自动认单：有签发单号按单号核对，缺号按完整商品明细识别门店和仓。','section');root.addWidget(self.identity)
         if scope is not None:self.identity.setToolTip('\n'.join(h['number'] for h in scope))
         root.addWidget(label('拖入回传、付款、收货文件，可同批混合。只填写本环节事实；上环节自动读取本批资料或已有资料。','muted'))
         self.pages=QStackedWidget();root.addWidget(self.pages,1);queue=QWidget();v=QVBoxLayout(queue);self.pages.addWidget(queue)
@@ -27,21 +27,24 @@ class BatchImport(QDialog):
         for s in io.STAGES:row.addWidget(button('下载'+io.TITLES[s]+'模板',lambda checked=False,k=s:template(self,k)))
         v.addLayout(row);self.file_note=label('拖入文件后自动识别，原文件不变。');v.addWidget(self.file_note)
         self.match_bar=QWidget();match_layout=QVBoxLayout(self.match_bar);match_layout.setContentsMargins(0,0,0,0)
-        row=QHBoxLayout();row.addWidget(label('本批付款表来自'));self.source_company=QComboBox();self.source_company.addItem('来源未确认（仍可人工关联，不记住内部单号）',None);row.addWidget(self.source_company,1)
+        row=QHBoxLayout();row.addWidget(label('自动识别完整付款单；门店名称略有不同、同店两仓均按实际分配明细核对。'))
+        self.source_company=QComboBox();self.source_company.addItem('自动识别（无需选择来源企业）',None)
         self.match_mode=QComboBox()
         for title,value in [('首次付款优先','first'),('重复导入 / 付款更正优先','correction'),('全部有效生命周期','all')]:self.match_mode.addItem(title,value)
-        row.addWidget(self.match_mode);self.remember_matching=QCheckBox('记住内部单号及门店对应');self.remember_matching.setChecked(True);row.addWidget(self.remember_matching)
+        row.addWidget(self.match_mode);self.remember_matching=QCheckBox('保存本次认单对应');self.remember_matching.setChecked(True);row.addWidget(self.remember_matching)
         self.match_more=QCheckBox('更多候选筛选');row.addWidget(self.match_more);match_layout.addLayout(row)
         self.match_filters=QWidget();filters_layout=QVBoxLayout(self.match_filters);filters_layout.setContentsMargins(0,0,0,0)
+        row=QHBoxLayout();row.addWidget(label('指定来源企业（仅需要时设置）'));row.addWidget(self.source_company,1);filters_layout.addLayout(row)
         row=QHBoxLayout();self.match_from=QLineEdit();self.match_from.setPlaceholderText('候选起始日 YYYY-MM-DD，选填');self.match_to=QLineEdit();self.match_to.setPlaceholderText('候选结束日 YYYY-MM-DD，选填');row.addWidget(self.match_from);row.addWidget(self.match_to)
         row.addWidget(button('筛选候选日期',self.filter_candidates));row.addWidget(button('扩大到全部日期',self.expand_candidates));row.addWidget(button('刷新索引并重新识别',self.refresh_payment_index));row.addWidget(button('维护已确认门店对应',self.maintain_aliases));filters_layout.addLayout(row)
         self.match_filters.hide();self.match_more.toggled.connect(self.match_filters.setVisible);match_layout.addWidget(self.match_filters)
-        match_layout.addWidget(label('同批付款表须来自所选企业；不同企业请分批。日期只筛候选显示，唯一性仍查全部相关日期。','muted'));self.match_bar.hide();v.addWidget(self.match_bar)
+        filters_layout.addWidget(label('指定企业时，本批文件须来自该企业。自动模式支持同店两仓混合；不猜测或回写企业身份。日期只筛候选显示。','muted'));self.match_bar.hide();v.addWidget(self.match_bar)
         self.source_company.currentIndexChanged.connect(self.rematch);self.match_mode.currentIndexChanged.connect(self.rematch)
         self.table=QTableWidget(0,7);self.table.setHorizontalHeaderLabels(['纳入','来源文件 / 来源订单','环节','商品行数','补货单号（整单关联）','读取范围','识别状态与下一步']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         for i,w in enumerate([50,270,130,85,380,260]):self.table.setColumnWidth(i,w)
         v.addWidget(self.table,1)
-        self.selection_note=label('选择一行查看完整来源、目标签发单及识别原因。','muted');v.addWidget(self.selection_note)
+        self.selection_note=QPlainTextEdit('选择一行查看完整来源、目标签发单及识别原因。');self.selection_note.setReadOnly(True)
+        self.selection_note.setMinimumHeight(76);self.selection_note.setMaximumHeight(130);v.addWidget(self.selection_note)
         self.table.currentCellChanged.connect(lambda *_:self.describe_selection())
         row=QHBoxLayout();row.addWidget(button('划分选中来源组并绑定签发单',self.split_selected));row.addWidget(button('查看识别依据与候选',self.explain_binding));row.addWidget(button('查看文件关联信息',self.file_identity));v.addLayout(row)
         self.table.setColumnWidth(6,420)
@@ -52,6 +55,9 @@ class BatchImport(QDialog):
         from table_readability import fit_window,install
         fit_window(self,1240,820)
         for table in (self.table,self.issue_table):install(table)
+        self.table.reading_controller.apply()
+        # Cell widgets may shrink with columns; never paint over the reason.
+        for i,w in enumerate([50,240,105,75,340,90,390]):self.table.setColumnWidth(i,w)
 
     def choose(self):
         paths,_=QFileDialog.getOpenFileNames(self,'选择完整单据（可跨订单、跨环节）','','Excel (*.xlsx)')
@@ -93,7 +99,7 @@ class BatchImport(QDialog):
             rows=d['scan']['rows'];r=rows[0];source=r.get('source_order',{});check=QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);check.setCheckState(Qt.CheckState.Checked if d.get('selected',True) else Qt.CheckState.Unchecked);self.table.setItem(i,0,check)
             title=r['source']['file']+(' / '+str(source.get('店铺名称') or '原表未提供店名')+' / '+str(source.get('内部订单号')) if source else ' / '+str(r.get('signed_number') or r.get('document_number') or '缺单号'))
             for j,text in ((1,title),(2,io.TITLES[d['scan']['stage']]),(3,str(len(rows))),(5,'、'.join(dict.fromkeys(x['source']['sheet'] for x in rows)))):self.table.setItem(i,j,QTableWidgetItem(text))
-            combo=QComboBox();combo.setMinimumWidth(350);combo.addItem('请选择完整来源单对应的补货单号',None)
+            combo=QComboBox();combo.setMinimumWidth(0);combo.setMinimumContentsLength(12);combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon);combo.addItem('尚未自动对应订单',None)
             explanation=diagnostics.binding(d,self.heads,scoped=self.scope is not None);choices=explanation['candidates']
             automatic_head=choices[0] if choices and explanation['automatic'] else None
             if d.get('payment_match') is not None and (self.match_from.text().strip() or self.match_to.text().strip()):
@@ -118,7 +124,8 @@ class BatchImport(QDialog):
             b=button('修正字段映射',lambda checked=False,n=i:self.map_issue(n));b.setEnabled('info' in issue);self.issue_table.setCellWidget(i,2,b)
             self.issue_table.setCellWidget(i,3,button('本次不读取未识别部分',lambda checked=False,n=i:self.exclude_issue(n)))
         self.issue_note.setVisible(bool(self.issues));self.issue_table.setVisible(bool(self.issues))
-        self.note.setText(f'已识别 {len(self.documents)} 份完整来源单；待处理 {len(self.issues)} 项。选择范围将在下一步完整核对。')
+        matched=sum(bool(c.currentData()) for c in self.targets)
+        self.note.setText(f'已读取 {len(self.documents)} 份来源单；已对应订单 {matched} 份；未对应 {len(self.documents)-matched} 份；文件问题 {len(self.issues)} 项。下一步核对付款明细并保存。')
         self.table.verticalHeader().setDefaultSectionSize(68);self.issue_table.verticalHeader().setDefaultSectionSize(72)
         if self.documents and self.table.currentRow()<0:self.table.setCurrentCell(0,1)
         self.describe_selection()
@@ -128,7 +135,7 @@ class BatchImport(QDialog):
         source=self.table.item(i,1);status=self.table.item(i,6);target=self.targets[i].currentData()
         text=('来源：'+source.text() if source else '')+'\n目标签发：'+(f"{target['day']} · {target.get('name',target['store'])} ({target['store']}) · {target['warehouse']} · {target['number']}" if target else '尚未确认')
         if status:text+='\n'+status.text()
-        self.selection_note.setText(text)
+        self.selection_note.setPlainText(text)
     def explain_binding(self):
         index=self.table.currentRow()
         if index<0 or index>=len(self.documents):self.note.setText('请先选择一个来源订单。');return
@@ -148,7 +155,7 @@ class BatchImport(QDialog):
         def operation(progress,cancel):
             values=[]
             for d in self.documents:
-                if d['scan']['stage']=='payment' and d['scan']['rows'][0].get('adapter')=='paid_order' and not any(r.get('signed_number') for r in d['scan']['rows']):
+                if d['scan']['stage']=='payment' and d['scan']['rows'][0].get('adapter')=='paid_order':
                     values.append(analyze(self.host.work_repository.path,d,self.payment_index,self.scope,source_scope,mode,progress,cancel))
                 else:values.append(None)
             return values
@@ -159,7 +166,7 @@ class BatchImport(QDialog):
     def populate_sources(self):
         previous=self.source_company.currentData();self.source_company.blockSignals(True)
         try:
-            self.source_company.clear();self.source_company.addItem('来源未确认（仍可人工关联，不记住内部单号）',None)
+            self.source_company.clear();self.source_company.addItem('自动识别（无需选择来源企业）',None)
             for source in self.payment_index['accounts']['choices']:self.source_company.addItem(source['name']+' · '+' / '.join(source['warehouses']),source['coid'])
             self.source_company.setCurrentIndex(next((i for i in range(self.source_company.count()) if self.source_company.itemData(i)==previous),0))
         finally:self.source_company.blockSignals(False)
@@ -273,7 +280,7 @@ class BatchImport(QDialog):
             self.review=Review(self,self.plan);self.review.setWindowFlags(Qt.WindowType.Widget);self.review.save.clicked.disconnect();self.review.save.clicked.connect(self.save)
             if self.plan.get('payment_matching'):
                 scope=self.source_company.currentData();name=self.source_company.currentText()
-                self.review.layout().insertWidget(0,label('本批付款来源：'+(name if scope else '企业未确认，仅保存本次人工核对的付款事实，不记住内部单号')+'；'+('确认保存时同时记住内部单号和门店对应，不改变其他业务资料。' if scope and self.remember_matching.isChecked() else '本次不新增永久对应关系。'),'muted'))
+                self.review.layout().insertWidget(0,label(('本批指定付款来源：'+name if scope else '本批按文件证据自动认单，不修改企业身份及门店资料。')+'；'+('确认保存时同时保留本次认单对应，供重复导入和金额更正使用。' if self.remember_matching.isChecked() else '本次不新增认单对应关系。'),'muted'))
             names=[str(x.get('path') or x['info']['name'])+'：'+x['message'] for x in self.excluded]
             omitted=[d['scan']['files'][0]['name']+' / '+io.TITLES[d['scan']['stage']] for d in self.documents if not d['selected']]
             self.review.layout().insertWidget(0,label(f"本批拟保存 {len(self.plan['plans'])} 份；仅留存待核 {sum(p['payload']['pending'] for p in self.plan['plans'])} 份；未纳入 {len(names)+len(omitted)} 项。"+('\n未纳入：'+'；'.join(names+omitted) if names or omitted else ''),'section'))
