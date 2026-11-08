@@ -484,8 +484,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         try:
             with Session(self.work_repository.path) as session:
                 full=self.snapshot()
-                slim={k:full[k] for k in ('day','input_dirty','new_focus')}
-                slim.update(states={s:full['states'][s] for s in codes},results={s:full['results'][s] for s in codes},model_version=full['model_version'],_draft_summary=wr.summary(full))
+                slim=normal_delivery.probe_payload(full,codes)
                 prepared=request(self,session,'delivery_probe',[slim,codes,warehouses]);plans=prepared['plans']
                 if any(not p['same'] for p in plans):
                     tail={**full,'results':{s:r for s,r in full['results'].items() if s not in codes}}

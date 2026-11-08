@@ -135,6 +135,9 @@ def file_results(parent,paths,title='导出完成',note=''):
 
 def failure_message(exc):
     raw=str(exc)
+    if '门店尚有待核对的签发前调整：' in raw:
+        code=raw.split('门店尚有待核对的签发前调整：',1)[1].splitlines()[0]
+        return '门店 '+code+' 的最终清单调整尚未应用，暂不能签发导出。\n打开“最终清单 / 改量”，补齐调整原因，核对修改与预算并确认风险后，点击“应用最终数量”，再签发导出。\n“保留为待核对草稿”只暂存，不代表应用；此提示不表示文件被占用。'
     if '导出任务与恢复' in raw and '已生成 ' in raw:
         import re
         amount=re.search(r'已生成 \d+/\d+ 份',raw)

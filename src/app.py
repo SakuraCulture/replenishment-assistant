@@ -141,6 +141,9 @@ def main():
     if '--preissue-smoke' in sys.argv:
         from preissue_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--preissue-smoke')+1:])
+    if '--final-filters-smoke' in sys.argv:
+        from final_filters_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--final-filters-smoke')+1:])
     if '--business-flows-smoke' in sys.argv:
         from business_flows_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--business-flows-smoke')+1:])
