@@ -24,7 +24,8 @@ def prepare(repository,payload,store,progress=lambda s:None,cancel=None):
 
 def probe_payload(full,codes):
     """Keep signing blockers when projecting the small export preflight."""
-    slim={k:full[k] for k in ('day','input_dirty','new_focus')}
+    slim={k:full[k] for k in ('day','input_dirty')}
+    slim['new_focus']=full.get('new_focus')
     slim.update(states={s:full['states'][s] for s in codes},results={s:full['results'][s] for s in codes},
                 model_version=full['model_version'],_draft_summary=wr.summary(full),
                 preissue_drafts={s:v for s,v in full.get('preissue_drafts',{}).items() if s in codes})

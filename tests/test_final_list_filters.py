@@ -94,6 +94,8 @@ class ExportBlockTests(unittest.TestCase):
         slim=normal_delivery.probe_payload(full,['S1'])
         self.assertEqual(slim['preissue_drafts'],{'S1':{'status':'待核对'}})
         with self.assertRaisesRegex(ValueError,'待核对'):preissue.validate_payload(slim,['S1'])
+        del full['new_focus']
+        self.assertIsNone(normal_delivery.probe_payload(full,['S1'])['new_focus'])
     def test_pending_export_error_does_not_advise_file_occupancy(self):
         from readable_ui import failure_message
         text=failure_message('导出任务与恢复\n已生成 0/4 份\n门店尚有待核对的签发前调整：S1')

@@ -73,6 +73,19 @@ def start_smoke(app,win,args):
             except ValueError as error:require('待核对' in str(error),'Real projected export preflight blocks pending adjustment before signing')
             require(repository.headers()==[] and export_receipts.recent(win.work_repository.path)==old_receipts,'Blocked export creates neither signed order nor misleading export receipt')
             require('关闭占用文件' not in failure_message('门店尚有待核对的签发前调整：QA1'),'Pending-adjustment message does not advise closing Excel')
+            from PySide6.QtWidgets import QMessageBox
+            win.preissue_drafts={'QA1':{'status':'待核对','edits':{}}};messages=[]
+            controller=QTimer(win);controller.setInterval(30)
+            def close_message():
+                modal=app.activeModalWidget()
+                if isinstance(modal,QMessageBox):
+                    messages.append(modal.text());modal.grab().save(str(out/'05-pending-export-blocked.png'));modal.reject()
+            controller.timeout.connect(close_message);controller.start()
+            try:win.export_current(['QA1'])
+            finally:controller.stop();win.preissue_drafts={}
+            (out/'main-entry-messages.json').write_text(json.dumps(messages,ensure_ascii=False,indent=2),'utf-8')
+            require(bool(messages) and '应用最终数量' in messages[-1] and '关闭占用文件' not in messages[-1],'Actual main-window sign/export entry stops at preflight with actionable pending-adjustment message')
+            require(repository.headers()==[] and export_receipts.recent(win.work_repository.path)==old_receipts,'Actual blocked GUI export creates no signed revision, file or export receipt')
             exports=out/'exports';exports.mkdir();batch=normal_delivery.prepare_batch(repository,payload,['QA1','QA2']);done=normal_delivery.execute_batch(repository,batch,exports)
             require(len(done['paths'])==2 and all(Path(p).is_file() for p in done['paths']),'Reviewed batch signs and exports both isolated stores')
             import openpyxl
