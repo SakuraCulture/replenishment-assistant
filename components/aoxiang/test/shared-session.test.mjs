@@ -14,6 +14,18 @@ test('page/navigation failure is not mislabeled as an expired login',async()=>{
   context.identityAfter=async()=>{throw error('WRONG_IDENTITY');};
   await assert.rejects(()=>AoxiangUI.prototype.open.call(context,identity),{code:'WRONG_IDENTITY'});
 });
+
+test('exact original import and export task reads recover once without replaying any write',async()=>{
+  for(const method of ['purchaseImportTask','purchaseTask']){
+    let calls=0,verifies=0;const args=[{taskId:'EXACT-OLD-TASK',identity}];
+    const client={recheckLogin:async who=>{assert.deepEqual(who,identity);verifies++;return {identity};},
+      [method]:async(...value)=>{assert.deepEqual(value,args);if(++calls===1)throw error('IDENTITY_RESPONSE_TIMEOUT');return {taskId:'EXACT-OLD-TASK'};}};
+    const browser={client,config:{tenantBinding:identity},check:()=>{},onProgress:()=>{}};
+    assert.equal((await invokeBoundRead(browser,method,args)).taskId,'EXACT-OLD-TASK');assert.equal(calls,2);assert.equal(verifies,1);
+    calls=0;client.recheckLogin=async()=>({identity:{...identity,merchantCode:'OTHER'}});
+    await assert.rejects(()=>invokeBoundRead(browser,method,args),{code:'WRONG_IDENTITY'});assert.equal(calls,1);
+  }
+});
 test('identity body is captured before navigation completes; expired or invalid body never uses cached identity',async()=>{
   let valid=true,read=false;
   const response={text:async()=>{if(!valid)throw Error('response discarded');read=true;return JSON.stringify({status:true,success:true,data:{account:{accountId:'a'},user:{accountId:'a',userId:'u',merchantCode:'m'}}});}};

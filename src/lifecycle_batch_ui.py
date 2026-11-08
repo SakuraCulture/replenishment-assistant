@@ -17,7 +17,8 @@ class BatchImport(QDialog):
         super().__init__(parent);self.host=host;self.stage=stage;self.scope=scope
         self.paths=[];self.documents=[];self.issues=[];self.excluded=[];self.heads=[];self.receipt=None;self.review=None;self.busy=False
         self.setObjectName('lifecycleBatchImport');self.setWindowTitle('批量导入单据');self.resize(1240,820);self.setAcceptDrops(True)
-        root=QVBoxLayout(self);self.identity=label('限定范围：'+'、'.join(h['number'] for h in scope) if scope is not None else '范围：按文件中的补货单号识别；缺号来源订单需明确关联。','section');root.addWidget(self.identity)
+        root=QVBoxLayout(self);self.identity=label(f'限定范围：所选 {len(scope)} 张仓单；按文件中的补货单号匹配。' if scope is not None else '范围：按文件中的补货单号识别；缺号来源订单需明确关联。','section');root.addWidget(self.identity)
+        if scope is not None:self.identity.setToolTip('\n'.join(h['number'] for h in scope))
         root.addWidget(label('拖入回传、付款、收货文件，可同批混合。只填写本环节事实；上环节自动读取本批资料或已有资料。','muted'))
         self.pages=QStackedWidget();root.addWidget(self.pages,1);queue=QWidget();v=QVBoxLayout(queue);self.pages.addWidget(queue)
         row=QHBoxLayout();row.addWidget(button('选择文件',self.choose));row.addWidget(button('重新读取全部文件',self.reload))

@@ -47,7 +47,7 @@ export class PurchaseCreates{
     return this.state.write(()=>{
       const old=this.get(id);if(old.sequence!==sequence)fail('PURCHASE_STATE_CONFLICT','采购任务已更新，请读取原记录');
       if(!transitions[old.state]?.includes(next))fail('PURCHASE_STATE_TRANSITION','采购任务不允许从 '+old.state+' 进入 '+next);
-      if(Object.keys(changes).some(k=>!['baseline','uploadAttempted','receipt','binding','error','evidence','additionalTaskIds'].includes(k)))fail('PURCHASE_STATE_IMMUTABLE','不能修改采购冻结依据');
+      if(Object.keys(changes).some(k=>!['baseline','uploadAttempted','receipt','binding','error','evidence','additionalTaskIds','uploadWarning'].includes(k)))fail('PURCHASE_STATE_IMMUTABLE','不能修改采购冻结依据');
       if(old.uploadAttempted&&changes.uploadAttempted===false)fail('PURCHASE_STATE_IMMUTABLE','已进入上传边界，不能清除提交事实');
       if(old.receipt&&changes.receipt?.taskId&&old.receipt.taskId!==changes.receipt.taskId)fail('PURCHASE_RECEIPT_CONFLICT','原导入任务号不能覆盖');
       const r={...old,...structuredClone(changes),state:next,sequence:sequence+1,updatedAt:now()};
@@ -111,6 +111,6 @@ export class PurchaseCreates{
 export function purchasePublic(r){
   return {id:r.id,state:r.state,sequence:r.sequence,createdAt:r.createdAt,updatedAt:r.updatedAt,
     basis:r.intent.basis,target:r.intent.target,supplierCode:r.intent.supplierCode,rows:r.intent.rows.length,totalQuantity:r.intent.totalQuantity,totalAmount:r.intent.totalAmount,
-    uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding:r.binding,error:r.error,additionalTaskIds:r.additionalTaskIds||[],
+    uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding:r.binding,error:r.error,uploadWarning:r.uploadWarning||null,additionalTaskIds:r.additionalTaskIds||[],
     ...(r.bindingProposal?{bindingProposal:r.bindingProposal}:{})};
 }

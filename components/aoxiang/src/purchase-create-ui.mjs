@@ -7,7 +7,7 @@ import {fail,sha256,sameIdentity,now,businessDate} from './common.mjs';
 const allowed=u=>['saas-retail.ele.me','tc-supply-chain-portal.ele.me','sc-gei-tc-supply-chain-portal.ele.me'].includes(u.hostname);
 const importPath=u=>/\/(?:gei\/import\/task|(?:ebai\/)?gei\/create\/import\/task)(?:\/|$)/.test(u.pathname);
 const otherWrite=u=>/\/(?:purchase|merchant|warehouse|inventory)\/.*(?:save|update|disable|enable|delete|cancel|settle|confirm|inbound|outbound|create|submit|audit)(?:\/|$)/i.test(u.pathname);
-const knownReads=new Set(['/ebai/gei/task/list','/saas/chain/plan/supply/purchase/order/pageQuery']);
+const knownReads=new Set(['/account/session/getLoginInfo','/ebai/gei/task/list','/saas/chain/plan/supply/purchase/order/pageQuery']);
 
 // Kept for the lifetime of this owned worker page, including after a timed-out upload.
 // Playwright dispatches the later one-shot guard first; its verified request alone continues.
@@ -30,10 +30,10 @@ export class NativeImportGuard{
       if(importPath(u)){
         const body=r.postDataBuffer();
         if(this.requests||r.method()!=='PUT'||u.hostname!=='sc-gei-tc-supply-chain-portal.ele.me'||u.pathname!=='/gei/import/task/'+IMPORT_CODE||!body?.includes(this.bytes)||body.indexOf(this.bytes)!==body.lastIndexOf(this.bytes)){
-          this.blocked.push('unexpected_or_repeated_import');return route.abort();
+          this.blocked.push({kind:'unexpected_or_repeated_import',method:r.method(),host:u.hostname,path:u.pathname});return route.abort();
         }
         this.requests++;this.matched.set(r,{requestSha256:sha256(body),method:r.method()});
-      }else if(!knownReads.has(u.pathname)){this.blocked.push(u.pathname);return route.abort();}
+      }else if(r.method()!=='POST'||!knownReads.has(u.pathname)){this.blocked.push({kind:'unapproved_request',method:r.method(),host:u.hostname,path:u.pathname});return route.abort();}
       return route.continue();
     };
     this.listener=response=>{const work=this.observe(response);this.pending.add(work);void work.finally(()=>this.pending.delete(work));};
@@ -52,7 +52,8 @@ export class NativeImportGuard{
   async result(){
     await Promise.all([...this.pending]);
     if(this.error)throw this.error;
-    if(this.blocked.length)fail('IMPORT_SIDE_EFFECT_BLOCKED','检测到额外导入或其他业务写入并已阻断，原任务待核');
+    if(this.blocked.length)fail('IMPORT_SIDE_EFFECT_BLOCKED','额外请求已阻断；已有回执时只核对原任务，不重传',
+      {blocked:this.blocked,acceptedTaskId:this.receipts.length===1?this.receipts[0].taskId:null});
     if(this.requests!==1||this.receipts.length!==1)fail('SUBMISSION_UNKNOWN','未取得本次唯一导入任务回执，只能核对原任务，不允许重传');
     return this.receipts[0];
   }

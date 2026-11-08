@@ -150,6 +150,9 @@ def main():
     if '--jst-payment-smoke' in sys.argv:
         from jst_payment_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--jst-payment-smoke')+1:])
+    if '--workflow-refinements-smoke' in sys.argv:
+        from workflow_refinements_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--workflow-refinements-smoke')+1:])
     if '--business-flows-smoke' in sys.argv:
         from business_flows_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--business-flows-smoke')+1:])

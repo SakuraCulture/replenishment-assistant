@@ -89,7 +89,7 @@ class Runner:
             self.client.request('purchase.start', purchase_id=p['id'])
             record = self.wait_status('purchase.status', 'purchase_id', p['id'], cancel_action='purchase.pause', notify=notify)
             if record['state'] == 'BOUND':
-                return 'BOUND', {'binding': record['binding']}
+                return 'BOUND', {'binding': record['binding']} | ({'uploadWarning': record['uploadWarning']} if record.get('uploadWarning') else {})
             error = record.get('error') or {}
             # Only poll a known accepted task. start() then takes the component's
             # observe-only branch; the durable upload flag is never reset.

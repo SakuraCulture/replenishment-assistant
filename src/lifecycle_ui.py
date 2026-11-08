@@ -131,7 +131,7 @@ class Review(QDialog):
         self.search=QLineEdit();self.search.setPlaceholderText('搜索单号 / 商品编码 / 名称 / 处理说明');self.category=QComboBox();self.category.addItems(['全部','数量变化','明确填0','空白按0','缺行按0','清单外商品']);self.stage_filter=QComboBox();self.stage_filter.addItems(['全部环节',*[io.TITLES[s] for s in io.STAGES]]);filters=QHBoxLayout();filters.addWidget(self.stage_filter);filters.addWidget(self.category);filters.addWidget(self.search);v.addLayout(filters)
         self.all_rows=rows;self.table,self.model=grid(self,['补货单号','环节','商品编码','商品名称','上环节数量（自动）','本环节数量','差额（自动）','处理说明','上次保存数量（自动）','源单商品金额'],self.display_rows(rows));v.addWidget(self.table,1);self.category.currentTextChanged.connect(self.filter_rows);self.stage_filter.currentTextChanged.connect(self.filter_rows);self.search.textChanged.connect(self.filter_rows);self.overview.clicked.connect(self.select_order)
         self.table.setColumnWidth(1,120)
-        corrections=[ [p['head']['number'],*r] for p in plan['plans'] for r in p.get('calibration',[]) ]
+        corrections=[ [p['head']['number'],*r] for p in plan['plans'] for r in p.get('calibration',[]) ];correction_table=None
         if corrections:
             v.addWidget(label('与上次保存的差异（校准后保留原件和旧值；不修改仓占用或收货事实）','section'))
             correction_table,correction_model=grid(self,['补货单号','商品编码','名称','原数量','新数量','原金额','新金额','原外部单号','新外部单号'],corrections)
@@ -140,22 +140,28 @@ class Review(QDialog):
         self.extra_ack=QCheckBox('清单外商品已逐项核对，确属所选门店和仓单；完全匹配不上时已重新核对订单。');self.extra_ack.setVisible(any(p['payload']['extra'] for p in plan['plans']));self.extra_ack.setChecked(not any(p['payload']['extra'] for p in plan['plans']));v.addWidget(self.extra_ack)
         v.addWidget(label('数量与推荐不同不阻止环节完成。确认后独立留存新版本和原件，不修改签发、计算或其它环节。','muted'))
         row=QHBoxLayout(); cancel=button('取消',self.reject); cancel.setDefault(True); row.addWidget(cancel); self.save=button('确认保存完整单据',self.accept,True); self.save.setEnabled(False); self.save.setAutoDefault(False);self.complete.toggled.connect(self.allow_save);self.extra_ack.toggled.connect(self.allow_save);row.addWidget(self.save);v.addLayout(row)
+        from lifecycle_review_layout import arrange
+        arrange(self,plan,details,disclosure,filters,row,correction_table)
     def select_stat(self,index):
+        self.scope_tree.setCurrentItem(self.scope_tree.topLevelItem(0))
         row=self.stats_model.rows[self.stats_model.indices[index.row()]];self.search.setText(row[0]);self.stage_filter.setCurrentText(row[1])
         self.category.setCurrentText({3:'明确填0',4:'空白按0',5:'缺行按0',6:'清单外商品'}.get(index.column(),'全部'))
     def allow_save(self):self.save.setEnabled(self.complete.isChecked() and self.extra_ack.isChecked())
     @staticmethod
     def display_rows(rows):return [[r[0],r[-1],*r[2:-1]] for r in rows]
     def select_order(self,index):
+        self.scope_tree.setCurrentItem(self.scope_tree.topLevelItem(0))
         self.search.setText(self.overview_model.rows[index.row()][0])
         self.stage_filter.setCurrentText(io.TITLES[io.STAGES[index.column()-1]] if index.column() else '全部环节')
     def filter_rows(self):
         from decimal import Decimal
         kind=self.category.currentText();rows=self.all_rows
+        if getattr(self,'scope_numbers',None) is not None:rows=[r for r in rows if r[0] in self.scope_numbers]
         if kind=='数量变化':rows=[r for r in rows if r[6] is not None and Decimal(str(r[6]))!=0]
         elif kind!='全部':rows=[r for r in rows if kind in r[7]]
         if self.stage_filter.currentIndex():rows=[r for r in rows if r[-1]==self.stage_filter.currentText()]
         self.model.replace(self.display_rows(rows));self.model.filter(self.search.text())
+        if hasattr(self,'view_scope'):self.view_scope.setText(f'当前查看 {self.model.rowCount()} 行；确认保存范围仍为本批全部 {self.review_count} 份。切换门店、环节和筛选不会缩小保存范围。')
 
 def commit(parent,host,plan):
     task=Task(parent,service.commit,(host.work_repository.path,plan),'保存完整单据')

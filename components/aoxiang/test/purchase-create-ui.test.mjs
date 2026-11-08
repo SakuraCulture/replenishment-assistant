@@ -37,6 +37,18 @@ test('no task, conflicting tasks and HTTP failure never become a successful rece
     const page=new Page(),guard=new NativeImportGuard(page,p,bytes);await guard.install();const r=request();await page.request(r);page.emit('response',response(r,body,status));await assert.rejects(()=>guard.result(),{code:'SUBMISSION_UNKNOWN'});await guard.dispose();
   }
 });
+
+test('guard permits exact identity read, keeps writes blocked and records only safe request metadata',async()=>{
+  const page=new Page(),guard=new NativeImportGuard(page,p,bytes);await guard.install();
+  await page.request(request(undefined,'POST','/account/session/getLoginInfo'));assert.equal(page.sent.length,1);
+  const r=request();await page.request(r);page.emit('response',response(r));await guard.result();
+  await page.request(request(undefined,'POST','/unknown/newBusinessAction?token=must-not-log'));
+  await assert.rejects(()=>guard.result(),e=>{
+    assert.equal(e.code,'IMPORT_SIDE_EFFECT_BLOCKED');assert.equal(e.details.acceptedTaskId,task);
+    assert.deepEqual(e.details.blocked,[{kind:'unapproved_request',method:'POST',host:'sc-gei-tc-supply-chain-portal.ele.me',path:'/unknown/newBusinessAction'}]);
+    assert.ok(!JSON.stringify(e.details).includes('must-not-log'));return true;
+  });await guard.dispose();
+});
 test('late body is awaited, receipt persistence failure is surfaced, read-only queries pass fence',async()=>{
   const page=new Page();await installPurchaseWriteFence(page);await page.request(request(undefined,'POST','/saas/chain/plan/supply/purchase/order/pageQuery'));assert.equal(page.sent.length,1);
   const guard=new NativeImportGuard(page,p,bytes,()=>{throw Error('disk unavailable');});await guard.install();const r=request();await page.request(r);

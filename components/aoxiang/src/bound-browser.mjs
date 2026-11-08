@@ -3,7 +3,7 @@ import {discover} from './environment.mjs';
 import {BrowserClient} from './worker-client.mjs';
 import {fail,sameIdentity,now,writeJson,canonical} from './common.mjs';
 
-const recoverableReads=new Set(['verifyIdentity','querySingle','warehouseOptions','queryPurchase','queryCreateOrders']);
+const recoverableReads=new Set(['verifyIdentity','querySingle','warehouseOptions','queryPurchase','queryCreateOrders','purchaseImportTask','purchaseTask']);
 export async function invokeBoundRead(browser,method,args){
   try{return await browser.client[method](...args);}
   catch(error){
