@@ -17,6 +17,10 @@ class PlaybookDialog(QDialog):
         v = QVBoxLayout(self)
         v.addWidget(label('选一个目标 → 填清操作对象 → 复制给 AI。这里不会启动计算或发送数据。'))
         self.connection = label('', 'muted'); v.addWidget(self.connection)
+        if hasattr(host,'stockout'):
+            def stockout_analysis():
+                host.stockout.enter();self.hide()
+            v.addWidget(button('门店缺货率分析：前往独立板块选择日期与切面',stockout_analysis))
         body = QHBoxLayout(); v.addLayout(body, 1)
         self.cases = QListWidget(); self.cases.setMaximumWidth(260)
         for _, title, _, _ in PLAYBOOKS: self.cases.addItem(title)

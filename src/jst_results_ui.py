@@ -24,8 +24,8 @@ CHECKED=Qt.CheckState.Checked
 class ResultsPage(QWidget):
     def __init__(self,host,scope=None,parent=None):
         super().__init__(parent);self.host=host;self.path=host.work_repository.path;self.scope=scope
-        self.data=None;self.records=[];self.count=0;self.worker=None;self.reading=False;self.closing=False
-        self.batch_id=None;self.close_pending=None;self.last_plan=None;self.remaining=[];self.chosen=set();self.building=False
+        self.data=None;self.records=[];self.count=0;self.worker=None;self.reading=False;self.closing=False;self.reviewing=False
+        self.batch_id=None;self.close_pending=None;self.last_plan=None;self.remaining=[];self.chosen=set();self.building=False;self.payment_notice=''
         self.reader=HistoryReader(self.path,host.repository.folder/'jst_result_index.sqlite3',self)
         v=QVBoxLayout(self);v.setContentsMargins(0,0,0,0)
         v.addWidget(label('聚水潭导入单 · 看分配结果，随时导出','section'))
@@ -58,6 +58,9 @@ class ResultsPage(QWidget):
         self.status=label('正在读取结果…','muted');v.addWidget(self.status)
         row=QHBoxLayout();self.all_btn=button('导出本批全部（0份）',self.export_all,True);self.selected_btn=button('导出勾选（0份）',self.export_selected)
         self.open_btn=button('打开导出文件夹',self.open_folder);row.addWidget(self.all_btn);row.addWidget(self.selected_btn);row.addWidget(self.open_btn);v.addLayout(row)
+        row=QHBoxLayout();self.payment_all_btn=button('按当前筛选核对付款（0单）',self.payment_all)
+        self.payment_selected_btn=button('按勾选核对付款（0单）',self.payment_selected)
+        row.addWidget(self.payment_all_btn);row.addWidget(self.payment_selected_btn);v.addLayout(row)
         row=QHBoxLayout();self.retry_btn=button('重试未完成导出',self.retry);self.stop_btn=button('停止本次导出',self.stop)
         row.addWidget(self.retry_btn);row.addWidget(self.stop_btn);self.tools_btn=button('其他订单操作',self.tools);row.addWidget(self.tools_btn);v.addLayout(row)
         self.day.dateChanged.connect(self.day_changed);self.end.dateChanged.connect(self.day_changed);self.lock_filter.currentIndexChanged.connect(self.filter_changed);self.search.textChanged.connect(self.filter_changed);self.warehouse.currentIndexChanged.connect(self.filter_changed)
@@ -65,27 +68,30 @@ class ResultsPage(QWidget):
         self.controls();QTimer.singleShot(0,self.refresh)
 
     def controls(self):
-        busy=self.worker is not None;ready=self.data is not None and not self.closing
+        busy=self.worker is not None or self.reviewing;ready=self.data is not None and not self.closing
         n=len(service.export_plan(self.data,{service.key(r['head']) for r in self.visible_records()})['entries']) if self.data else 0
         m=len(service.export_plan(self.data,self.chosen)['entries']) if self.data else 0
         self.all_btn.setText(f'导出当前筛选（{n}份）');self.selected_btn.setText(f'导出勾选（{m}份）')
         self.all_btn.setEnabled(ready and not busy and n>0);self.selected_btn.setEnabled(ready and not busy and m>0)
+        self.payment_all_btn.setText(f'按当前筛选核对付款（{len(self.visible_records())}单）');self.payment_selected_btn.setText(f'按勾选核对付款（{len(self.chosen)}单）')
+        self.payment_all_btn.setEnabled(ready and not busy and bool(self.visible_records()));self.payment_selected_btn.setEnabled(ready and not busy and bool(self.chosen))
+        for b in (self.payment_all_btn,self.payment_selected_btn):b.setToolTip('直接使用已保存生成单，无需导出再导入；核对实际已付款后才保存。')
         self.selection.setText(f'已勾选 {len(self.chosen)} 单，可导出 {m} 份；已导出、锁单、付款和收货不会移除已有结果。')
         for b in (self.day,self.end,self.refresh_btn,self.scope_btn,self.folder_btn,self.prepare_btn,self.tools_btn,self.batch_btn,self.all_batches_btn):b.setEnabled(not busy and not self.closing)
         self.day.setEnabled(not busy and not self.batch_id);self.end.setEnabled(not busy and not self.batch_id)
         self.continue_btn.setEnabled(ready and not busy and bool(self.batch_id) and bool(self.data.get('batch_pending')));self.reallocate_btn.setEnabled(ready and not busy and bool(self.batch_id) and bool(self.chosen))
         self.continue_btn.setToolTip('先选择分配批次；继续使用其冻结库存和原顺序')
         if not n:self.all_btn.setToolTip('当前筛选没有有效生成单；请准备批次或核对待处理原因')
-        self.stop_btn.setEnabled(busy and not self.worker.cancel.is_set());self.retry_btn.setEnabled(bool(self.remaining) and not busy and not self.closing)
+        self.stop_btn.setEnabled(self.worker is not None and not self.worker.cancel.is_set());self.retry_btn.setEnabled(bool(self.remaining) and not busy and not self.closing)
 
     def refresh(self):
-        if self.closing or self.worker:return
+        if self.closing or self.worker or self.reviewing:return
         self.reading=True;self.controls()
         self.scope_note.setText(('分配批次 '+self.batch_id[:8]+' · 冻结库存、原分配顺序' if self.batch_id else self.day.text()+' 至 '+self.end.text()+' · 日期范围（可包含多个分配批次）')+(' · 限定所选 '+str(len(self.scope))+' 单' if self.scope is not None else ''))
         if self.data is None:self.progress.show();self.progress.setRange(0,0)
         self.reader.request({'kind':'jst_results','day':self.day.text(),'date_end':self.end.text(),'batch_id':self.batch_id,'scope':[list(service.key(h)) for h in self.scope] if self.scope is not None else None},self.ready,self.failed_read,self.read_progress)
     def poll(self):
-        if self.isVisible() and not self.worker and not self.reading and not self.closing:self.refresh()
+        if self.isVisible() and not self.worker and not self.reading and not self.closing and not self.reviewing:self.refresh()
     def read_progress(self,p):
         if self.data is None:self.progress.setRange(0,max(1,p['total']));self.progress.setValue(p['done']);self.status.setText(p['text'])
     def failed_read(self,message):
@@ -100,6 +106,7 @@ class ResultsPage(QWidget):
         if changed:self.render()
         if self.last_plan and new-old:self.status.setText(f'新增 {len(new-old)} 份可导出结果；不会加入已开始的导出，可再次导出。')
         elif self.last_plan is None:self.status.setText('查询完成；业务进度见各单状态。可重复导出有效结果，不重新分配。' if c['ready'] else '当前范围没有可导出结果：尚未回传请先确认回传；已回传请准备分配批次，或选择原批继续。')
+        if self.payment_notice:self.status.setText(self.payment_notice)
         self.progress.hide();self.controls()
     def day_changed(self,*_):
         self.reader.cancel();self.data=None;self.records=[];self.table.clear();self.clear_selection();self.remaining=[];self.last_plan=None;self.refresh()
@@ -160,6 +167,24 @@ class ResultsPage(QWidget):
         if self.data:self.begin(service.export_plan(self.data,{service.key(r['head']) for r in self.visible_records()}))
     def export_selected(self):
         if self.data:self.begin(service.export_plan(self.data,self.chosen))
+    def payment_all(self):self.review_payment(False)
+    def payment_selected(self):self.review_payment(True)
+    def review_payment(self,selected):
+        if self.worker or self.reviewing or self.closing or not self.data:return
+        import jst_payment,jst_payment_ui
+        from lifecycle_ui import warn
+        try:
+            entries=jst_payment.selection(self.visible_records(),self.chosen if selected else None)
+            self.reviewing=True;self.reader.cancel();self.reading=False;self.controls()
+            receipt=jst_payment_ui.review(self,self.host,entries)
+            self.payment_receipt=receipt
+            if receipt is not None:self.payment_notice=f'付款核对完成 {len(receipt)} 单，新增/更新 {sum(r["changed"] for r in receipt)} 单；生成、导出和锁单记录保留。'
+            else:self.payment_notice='已取消付款核对，本次未保存付款单。'
+            self.status.setText(self.payment_notice)
+        except Exception as exc:warn(self,exc)
+        finally:
+            self.reviewing=False;self.controls()
+            if not self.closing:self.refresh()
     def begin(self,plan):
         if self.worker or self.closing or not plan['entries']:return
         self.reader.cancel();self.reading=False;self.last_plan=copy.deepcopy(plan);self.last_folder=self.folder.text();self.remaining=[]

@@ -205,6 +205,7 @@ class AnalyticsWidget(QWidget):
         return rows
 
     def render(self):
+        from analytics_identifiers import HEADERS as ID_HEADERS,cells
         key=self.key();rows=self.visible_rows();self.display_items=[]
         self.crumb.setText('全部查询结果' if not self.drill else ' → '.join(str(v) for v in self.drill.values()))
         if key in ('store','warehouse','order'):
@@ -241,6 +242,9 @@ class AnalyticsWidget(QWidget):
         if coverage_mode and key in ('detail','pending'):
             from coverage_exports import DETAIL_HEADERS
             headers=DETAIL_HEADERS
+        if key in ('store','warehouse','order'):
+            headers=headers[:2]+ID_HEADERS+headers[3:]
+            values=[value[:2]+cells(i.get('order_links',[]))+value[3:] for value,i in zip(values,items)]
         self.page=min(self.page,max(0,(len(values)-1)//100));model=self.models[key];model.headers=headers
         blocker=QSignalBlocker(self.tables[key].selectionModel())
         page=values[self.page*100:(self.page+1)*100]
@@ -253,11 +257,13 @@ class AnalyticsWidget(QWidget):
         model.replace(display)
         del blocker
         if coverage_mode and key in ('store','warehouse','order'):
-            for column,width in enumerate([180,150,250,160,160,160,160,160,160,140,300]):self.tables[key].setColumnWidth(column,width)
+            for column,width in enumerate([240,110,360,260,260,160,160,160,160,160,160,140,300]):self.tables[key].setColumnWidth(column,width)
         elif coverage_mode and key in ('detail','pending'):
             for column in range(len(headers)):self.tables[key].setColumnWidth(column,260 if column in (2,4,6,22) else 180)
         if key=='rounds':
             for column,width in enumerate([180,150,120,160,160,160,160,160,140,360]):self.tables[key].setColumnWidth(column,width)
+        if key in ('store','warehouse','order'):
+            for column,width in enumerate((240,110,360,260,260)):self.tables[key].setColumnWidth(column,width)
         self.page_note.setText(f'{len(values)}条 · 第{self.page+1}/{max(1,(len(values)+99)//100)}页 · 已选{len(self.selected)}单；双击汇总下钻')
         self.controls()
 

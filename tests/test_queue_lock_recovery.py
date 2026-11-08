@@ -59,13 +59,21 @@ class QueueLockRecovery(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'正在安全关闭'):self.m.ensure_owner(for_maintenance=True)
     def test_due_schedule_rechecked_after_read_phase(self):
         from test_aoxiang_workflows import record
-        self.m.store.configure_schedules([record(1)],5,True)
-        original=self.m.store._due;calls=[]
-        def changed(db):
-            value=original(db);calls.append(1)
-            if len(calls)==1:self.m.store.configure_schedules([record(1)],5,False)
-            return value
-        with patch.object(self.m.store,'_due',side_effect=changed):self.assertIsNone(self.m.store.enqueue_due(timeout=0))
-        self.assertEqual(len(calls),2);self.assertEqual(self.m.store.list(),[])
+        # A due-schedule race needs a valid original order/payment now. Keep
+        # the new production guard active while exercising the same lock race.
+        from test_lifecycle import LifecycleTests
+        fixture=LifecycleTests();fixture.setUp();previous=self.m.store.business_path
+        try:
+            fixture.save('return');fixture.save('payment');payment=fixture.view()['documents']['payment']
+            value=record(1);value['basis']={k:fixture.h[k] for k in ('oid','revision','number','store','warehouse')};value['basis'].update(paymentVersion=payment['version'],paymentDigest=payment['digest'])
+            self.m.store.business_path=fixture.path;self.m.store.configure_schedules([value],5,True)
+            original=self.m.store._due;calls=[]
+            def changed(db):
+                due=original(db);calls.append(1)
+                if len(calls)==1:self.m.store.configure_schedules([value],5,False)
+                return due
+            with patch.object(self.m.store,'_due',side_effect=changed):self.assertIsNone(self.m.store.enqueue_due(timeout=0))
+            self.assertEqual(len(calls),2);self.assertEqual(self.m.store.list(),[])
+        finally:self.m.store.business_path=previous;fixture.tearDown()
 
 if __name__=='__main__':unittest.main()

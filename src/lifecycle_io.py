@@ -32,7 +32,7 @@ def field_key(value):
     return text
 
 def auto_mapping(stage, headers):
-    aliases={'门店确认数量':['补货数量'],'供货仓':['所属仓','仓'],'门店编码':['仓库/门店编码']}
+    aliases={'补货单号':['签发单号'],'门店确认数量':['补货数量'],'供货仓':['所属仓','仓'],'门店编码':['仓库/门店编码']}
     headers=[field_key(h) for h in headers]
     result={}
     for field in fields(stage):
@@ -51,9 +51,17 @@ def payment_specs(info):
             aliases={'补货单号':'订单号','商品编码':'商品编码','付款单商品数量':'数量'}
             result.append({**info,**sheet,'mapping':{f:hs.index(aliases[f]) if f in aliases else None for f in fields('payment')},'defaults':{'数量单位':'库存单位','币种':'CNY'},'adapter':'jst_import_return','price_column':hs.index('单价')})
             continue
-        if not all(hs.count(h)==1 for h in PAYMENT_HEADERS):continue
+        normalized=[{'买家帐号':'买家账号'}.get(field_key(h),field_key(h)) for h in hs]
+        if not all(normalized.count(h)==1 for h in ('内部订单号','商品编码','数量','商品金额')):continue
+        normalized=[{'签发单号':'补货单号'}.get(h,h) for h in normalized]
+        duplicates=[h for h in dict.fromkeys(PAYMENT_HEADERS+COMMON) if normalized.count(h)>1]
+        if duplicates:raise ValueError('付款表存在重复或同义表头，不能自动选列：'+'、'.join(duplicates))
+        columns={h:normalized.index(h) for h in PAYMENT_HEADERS if h in normalized}
         aliases={'商品编码':'商品编码','商品名称':'商品名称','付款单商品数量':'数量','付款单号':'内部订单号','实际金额':'商品金额'}
-        result.append({**info,**sheet,'mapping':{f:hs.index(aliases[f]) if f in aliases else None for f in fields('payment')},'defaults':{'数量单位':'库存单位'},'adapter':'paid_order'})
+        mapping={f:columns.get(aliases[f]) if f in aliases else None for f in fields('payment')}
+        for f in ('补货单号','签发修订','门店编码','供货仓'):
+            if f in normalized:mapping[f]=normalized.index(f)
+        result.append({**info,**sheet,'mapping':mapping,'defaults':{'数量单位':'库存单位'},'adapter':'paid_order','paid_columns':columns})
     return result
 
 def inspect(paths, progress=lambda _: None, cancel=None):
@@ -172,7 +180,8 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
                         if not signed:raise ValueError('聚水潭导入单缺少订单号，不能猜测关联')
                         rows[-1].update(adapter='jst_import_return',price=price,amount_basis='数量×单价',external_order_number=None)
                     if spec.get('adapter')=='paid_order':
-                        rows[-1]['source_order']={h:cells[spec['headers'].index(h)] if spec['headers'].index(h)<len(cells) else None for h in PAYMENT_HEADERS}
+                        columns=spec.get('paid_columns') or {h:spec['headers'].index(h) for h in PAYMENT_HEADERS if h in spec['headers']}
+                        rows[-1]['source_order']={h:cells[columns[h]] if h in columns and columns[h]<len(cells) else None for h in PAYMENT_HEADERS}
                         rows[-1]['adapter']='paid_order'
                 except (ValueError, ArithmeticError) as exc: raise ValueError(f'{p.name} / {ws.title} 第{n}行：{exc}') from exc
                 if n % 200 == 0: progress(RowProgress(f'读取{TITLES[stage]} {p.name} 第{n}行', i, len(specs)))

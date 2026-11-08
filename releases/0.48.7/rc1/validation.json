@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "source_commit": "ccdd38a0f7ae8e8f60b10fc676c918e16b8c6786",
+  "python_tests": 1264,
+  "unique_test_ids": 1264,
+  "python_seconds": 504.01,
+  "python_split_environment_supplement": true,
+  "python_supplement_tests": 7,
+  "focused_tests": 138,
+  "node_tests": 193,
+  "exe_checks": 9,
+  "packaged_component_tests": 8,
+  "live_platform": false,
+  "core_unchanged": 15,
+  "preserved_delivery_files": 36,
+  "component_files_verified": 870,
+  "exe_sha256": "45317883f56ed4fb52479963fd43faea3a0a1211e9ad6134307d1f5839d4f6c5",
+  "zip": "交付_0.48.7_rc1\\补货助手_0.48.7_rc1_采购单价两位小数.zip",
+  "zip_sha256": "cd7a1c96ed820e5c02ecc5f1a31b8cce2a49ea678ed8964d393fc3c6974be103",
+  "files": 1244,
+  "zip_bytes": 125663066
+}

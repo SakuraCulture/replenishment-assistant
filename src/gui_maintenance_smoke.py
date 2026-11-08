@@ -3,7 +3,7 @@ import copy,json,logging,os,sqlite3,sys,time,traceback
 from pathlib import Path
 from contextlib import closing
 from types import SimpleNamespace
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer,QPoint
 from PySide6.QtWidgets import QMessageBox,QDialogButtonBox
 from PySide6.QtTest import QTest
 
@@ -49,8 +49,8 @@ def start_smoke(app,win,args):
                     if key not in visible:visible[key]=now;return
                     if now-visible[key]<.10:return
                     layout=d.layout();table=d.business_table;buttons=d.findChild(QDialogButtonBox)
-                    require(layout.indexOf(table)>=0 and table.isVisible(),'difference table detached')
-                    require(layout.getItemPosition(layout.indexOf(buttons))[0]>layout.getItemPosition(layout.indexOf(table))[0],'confirmation buttons above/overlapping table')
+                    require((getattr(d,'body',layout).indexOf(table)>=0) and table.isVisible(),'difference table detached')
+                    require(buttons.mapTo(d,QPoint(0,0)).y()>=table.mapTo(d,QPoint(0,table.height())).y(),'confirmation buttons above/overlapping table')
                     require(d.defaultButton().text()=='取消' and d.escapeButton().text()=='取消','default cancellation changed')
                     mode=phase['mode'];d.grab().save(str(out/(mode+'-confirmation.png')));phase['seen'].append(mode)
                     text={'cancel':'取消','diff':'导出完整差异Excel','confirm':'确认签发并导出'}[mode]
@@ -71,6 +71,9 @@ def start_smoke(app,win,args):
             require(win.results==original,'calculation changed during signing')
             checks.append('actual export_current: export full differences, reopen same confirmation, confirm, archive V001 and export files; calculations unchanged')
             controller.stop()
+            if len(args)>2 and args[2]=='workflow0480':
+                from workflow_acceptance import exercise
+                exercise(app,win,out,codes,checks)
             # Real timer manager with no schedule, against exclusive isolated SQLite lock.
             m=win.scheduled;m.repo.ensure();wait(lambda:m.reader is None)
             with closing(sqlite3.connect(win.work_repository.path)) as db:

@@ -1,0 +1,36 @@
+✔ native exact PO preview does not bind; explicit confirm is idempotent and never claims upload (113.547ms)
+✔ unknown upload requires unique original marker and exact native rows; never retries upload (86.8855ms)
+✔ per SKU swaps, blanks, wrong identity/supplier/status, split and stale basis fail closed (78.3278ms)
+✔ confirmation binds precise sequence and rejects source/proof tamper (94.3836ms)
+✔ confirmation catches state change during awaited preflight and cannot overwrite it (98.7366ms)
+✔ platform PO uniqueness is shared with automatic creates and rollback keeps preview (80.6726ms)
+✔ pause/restart keeps original proof run and never auto-confirms (147.5012ms)
+✔ known completed manual PO immediately latches final-sync pending on receipt registration (162.533ms)
+✔ binding protocol rejects missing reason, fuzzy IDs, invalid/future day and unknown fields (1.54ms)
+✔ late receipt during proof retires only the preview and preserves the original recovery path (81.9757ms)
+✔ restart retires an interrupted preview after receipt without allowing proof replacement (51.4715ms)
+✔ observed success null/null requires visible empty table AND exact zero total (2.2429ms)
+✔ ordinary list and explicit [] zero preserve response types/order (0.9597ms)
+✔ null is not an unconditional zero; failed, partial, missing and mismatching results rejected (1.0526ms)
+✔ UI proof absent, nonzero, ambiguous or unsuccessful HTTP rejected (0.7231ms)
+✔ offline Edge exact-PO form clears native dates, never selects store, and rejects hidden scope (1457.8074ms)
+✔ known PO query has its own scope and rejects any hidden date/store filter (1.8467ms)
+✔ exact PO native pair permits the true older creation date but still validates all identities and dates (14.5872ms)
+✔ date fallback uses only a proven day, retires only unexported exact query, and cannot replay accepted tasks (0.5567ms)
+✔ actual receipt uses exact decimal, native row numbers and raw blank values; completed is not equal-quantity (204.407ms)
+✔ voided blank receipts stop routine work without inventing zero or final receipt (71.4439ms)
+✔ voided partial receipt and completed-to-void preserve evidence and require review (155.6316ms)
+✔ status conflict, changed purchase, missing/duplicate SKU, unit and total mismatch never become formal receipt (68.6172ms)
+✔ completed latch and final pending are atomic and survive interruption/reopen, failed D17 does not restart routine monitoring (65.5885ms)
+✔ real coordinator hook persists completed D16 before failed D17; retry uses original tasks and fresh later poll never reuses old snapshot (548.9175ms)
+✔ receipt controller close before work, failed retry, ready idempotency and persisted stop are independent of purchase upload (60.7021ms)
+✔ missing state tables fail closed and original purchase binding cannot be replaced (31.7787ms)
+✔ service freezes native proof, recovers crash after proof before ledger, and never imports again (395.1968ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1963.2154

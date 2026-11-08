@@ -21,13 +21,15 @@ class Workbench(ParameterUi,BatchWindow):
         self.end_batch_btn=button('结束本批并新建',self.end_batch);row.addWidget(self.end_batch_btn)
         self.presets_btn=button('管理参数方案',self.open_preset_library);row.addWidget(self.presets_btn)
         self.save_job_btn=button('保存作业',self.save_current,True);row.addWidget(self.save_job_btn)
+        self.work_header.layout().removeWidget(self.version_btn);row.addWidget(self.version_btn);self.work_header.hide()
         self.centralWidget().layout().insertLayout(1,row)
-        row=QHBoxLayout();self.defaults_btn=button('保存主从仓与参数为门店默认',self.save_default_dialog);row.addWidget(self.defaults_btn);self.fresh_btn=button('换用最新资料并重新检查',self.use_current_data);row.addWidget(self.fresh_btn);row.addStretch();self.store_page.layout().insertLayout(2,row)
-        row=QHBoxLayout();self.parameter_import_btn=button('批量导入门店参数',self.import_store_parameters);self.parameter_export_btn=button('导出勾选门店本次参数',self.export_store_parameters);row.addWidget(self.parameter_import_btn);row.addWidget(self.parameter_export_btn);row.addStretch();self.store_page.layout().insertLayout(3,row)
+        row=QHBoxLayout();self.defaults_btn=button('保存主从仓与参数为门店默认',self.save_default_dialog);row.addWidget(self.defaults_btn);self.fresh_btn=button('换用最新资料并重新检查',self.use_current_data);row.addWidget(self.fresh_btn);row.addStretch();self.store_advanced_layout.addLayout(row)
+        row=QHBoxLayout();self.parameter_import_btn=button('批量导入门店参数',self.import_store_parameters);self.parameter_export_btn=button('导出勾选门店本次参数',self.export_store_parameters);row.addWidget(self.parameter_import_btn);row.addWidget(self.parameter_export_btn);row.addStretch();self.store_advanced_layout.addLayout(row)
         quick=QHBoxLayout()
         quick.addWidget(button('批量设置开关 / 预算 / 供货仓',lambda:__import__('parameter_quick_ui').open_quick(self,self,self.selected_codes(),'current')))
         quick.addWidget(button('应用参数方案到本次',lambda:__import__('parameter_preset_ui').choose_preset(self,self,self.selected_codes()),True))
-        quick.addStretch();self.store_page.layout().insertLayout(3,quick)
+        quick.addWidget(button('编辑所选门店补货参数',lambda:self.edit_parameters(self.selected_codes())))
+        quick.addStretch();self.store_page.layout().insertLayout(2,quick)
         self.policy_btn=button('批量调整补货策略',lambda:self.edit_restock_policy());row.insertWidget(0,self.policy_btn)
         from parameter_maintenance_ui import edit_stores
         row.addWidget(button('设置所选门店补货参数',lambda:self.edit_parameters(self.selected_codes())))
@@ -171,7 +173,7 @@ class Workbench(ParameterUi,BatchWindow):
     def confirm_overwrite(self,old,new):
         a=old['summary'];b=wr.summary(new);oldstores=a['stores'];newstores=b['stores']
         removed=set(oldstores)-set(newstores);added=set(newstores)-set(oldstores);lost=[s for s in oldstores.keys()&newstores.keys() if oldstores[s]['state']=='已完成' and newstores[s]['state']!='已完成']
-        box=QMessageBox(self);box.setObjectName('dailyOverwrite');box.setWindowTitle('覆盖 '+new['day']+' 的作业记录？')
+        box=__import__('readable_ui').ReviewDialog(self);box.setObjectName('dailyOverwrite');box.setWindowTitle('覆盖 '+new['day']+' 的作业记录？')
         box.setText('每天只保留一份作业。本次将替换该日整份记录；已导出的Excel不受影响。')
         money=lambda x:'暂无有效金额' if x is None else f'¥{x:,.2f}'
         box.setInformativeText(f"原保存：{old['saved']}\n原记录：{len(oldstores)}家 / 完成{a['completed']}家 / {money(a['amount'])}\n本次保存：{wr.now()}\n本次：{len(newstores)}家 / 完成{b['completed']}家 / {money(b['amount'])}\n新增{len(added)}家，减少{len(removed)}家，完成变失效{len(lost)}家。展开详情核对名单、状态和版本。")

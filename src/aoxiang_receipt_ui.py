@@ -16,7 +16,8 @@ from business_ui import grid
 from ui_controls import button, label
 
 STATES = {'IDLE': '等待下一次查询', 'RUNNING': '正在同步平台资料', 'PAUSED': '已停止，可继续原任务',
-          'NEEDS_REVIEW': '资料待核或下载未完成', 'READY': '完整终态已验收，待保存正式实收', 'SYNCED': '正式实收已保存'}
+          'NEEDS_REVIEW': '资料待核或下载未完成', 'READY': '完整终态已验收，待保存正式实收', 'SYNCED': '正式实收已保存',
+          'VOIDED':'平台已作废，常规同步已停止；不生成实收', 'VOIDED_REVIEW':'平台已作废，但存在实收或状态冲突，请人工处理'}
 PHASES = {'PURCHASE_RUNNING': '核对指定采购单查询范围', 'INTENT_RECORDED': '记录原生导出任务',
           'ACCEPTED': '平台已受理导出，等待生成', 'SAVED': '原文件已下载并校验',
           'PURCHASE_COMPLETE': '主单与明细已保存', 'PURCHASE_EMPTY': '未查到指定采购单'}
@@ -100,7 +101,7 @@ class ReceiptDialog(ComponentDialog):
         idle = not self.worker and not self._closing
         active = bool((self.current or {}).get('active'))
         state = (self.current or {}).get('state')
-        self.sync_btn.setEnabled(idle and not active and bool(self.current) and state not in ('READY', 'SYNCED') and not self.head.get('deleted'))
+        self.sync_btn.setEnabled(idle and not active and bool(self.current) and state not in ('READY', 'SYNCED', 'VOIDED', 'VOIDED_REVIEW') and not self.head.get('deleted'))
         self.save_btn.setEnabled(idle and not active and state == 'READY' and not self.head.get('deleted'))
         self.stop_btn.setEnabled((idle and active) or (self.local_saving and not self.local_cancel.is_set()))
         self.reload_btn.setEnabled(idle and not active)
@@ -151,6 +152,11 @@ class ReceiptDialog(ComponentDialog):
 
     def status_data(self, id, *, check_basis=False):
         record = self.client.request('receipt.status', purchase_id=id)
+        from aoxiang_receipt_scope import formal_receipt_exists
+        if record['state']=='VOIDED' and formal_receipt_exists(self.host.work_repository.path,record['basis']):
+            record=self.client.request('receipt.host_void_conflict',purchase_id=id,reason='本机已有正式收货记录，平台现已作废；保留原实收，需人工核对后续处理')
+        manager=getattr(self.host,'aoxiang_workflows',None)
+        if manager:manager.store.observe_schedule(id,record)
         observation = checked_json(record['manifest']['file'], record['manifest']['sha256']) if record.get('manifest') else None
         state = None
         if check_basis:
@@ -183,7 +189,8 @@ class ReceiptDialog(ComponentDialog):
         summary = record.get('summary') or {}
         self.summary.setText('采购单 ' + record['scope']['orderId'] + ' · ' + STATES.get(record['state'], record['state']) +
                              '\n平台状态：' + summary.get('status', '尚未查询') + ' · 最后观察：' + display_time(summary.get('observedAt')))
-        note = '已见“已完成”：常规监控已停止；最终实收任务单独保留。' if record['terminal'] else '尚未见“已完成”；已知入库值仅作进度观察，不提前记账。'
+        note = (STATES[record['state']]+'；保留原签发和付款，不记收货0，不自动退款。') if record['state'] in ('VOIDED','VOIDED_REVIEW') else '已见“已完成”：常规监控已停止；最终实收任务单独保留。' if record['terminal'] else '尚未见“已完成”；已知入库值仅作进度观察，不提前记账。'
+        if record.get('hostConflict'):note+='\n'+record['hostConflict']
         if record.get('error'):
             note += '\n' + record['error']['message']
         if o and o['issues']:
@@ -224,7 +231,11 @@ class ReceiptDialog(ComponentDialog):
             self.render((r, None))
             if r['state'] == 'READY':
                 self.pending_save = True
-        self.run(lambda _: self.client.request('receipt.start', purchase_id=id), started)
+        def operation(_):
+            from aoxiang_receipt_scope import require
+            require(self.host.work_repository.path,[{'key':id,'basis':self.current['basis']}])
+            return self.client.request('receipt.start', purchase_id=id)
+        self.run(operation, started)
 
     def retry_save(self):
         self.pending_save = True

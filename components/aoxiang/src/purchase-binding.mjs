@@ -6,6 +6,7 @@ import {nativeCreationEvidence} from './purchase-create-service.mjs';
 import {bindingRequest,canBind,bindingEligible,checkedBinding} from './purchase-create-contract.mjs';
 import {fileHash} from './workbook-validator.mjs';
 import {errorInfo} from './machine-runtime.mjs';
+import {runKnownPurchase} from './purchase-known-scope.mjs';
 
 async function checkedFile(manifest){
   const bytes=await fs.readFile(manifest.file);
@@ -20,7 +21,7 @@ export class PurchaseBindingService{
   async observe(id,proposal,{signal}){
     const r=this.creates.get(id);canBind(r);
     const p=r.intent,request=bindingRequest(proposal.request),context=await this.creationService.context(p,signal);
-    await this.creationService.preflight(p);
+    await this.creationService.preflight(p,{forBinding:true});
     const stop=()=>{if(signal?.aborted)fail('PAUSED','已停止核对；原采购任务和已受理导出保留');};stop();
     let marked=[];
     if(r.uploadAttempted){
@@ -37,12 +38,13 @@ export class PurchaseBindingService{
       }
       this.progress(e.stage);
     }});
-    const run=await engine.run(proposal.runId?{runId:proposal.runId}:{target:p.target,from:request.created_day,to:request.created_day,dateBasis:'created',orderId:request.order_id,rerun:true});
+    const run=request.created_day?await engine.run(proposal.runId?{runId:proposal.runId}:{target:p.target,from:request.created_day,to:request.created_day,dateBasis:'created',orderId:request.order_id,rerun:true}):
+      await runKnownPurchase(engine,this.state,{target:p.target,orderId:request.order_id,rerun:true,...(proposal.runId?{runId:proposal.runId}:{})});
     stop();
-    if(!sameIdentity(run.identity,p.identity)||run.from!==request.created_day||run.to!==request.created_day)fail('BINDING_PROOF','采购查询日期或身份不符');
+    if(!sameIdentity(run.identity,p.identity)||(request.created_day?(run.from!==request.created_day||run.to!==request.created_day):run.queryMode!=='order_id'))fail('BINDING_PROOF','采购查询日期、单号精查口径或身份不符');
     const candidate={supplyOrderId:request.order_id,buyerMessage:r.uploadAttempted?p.note:''};
     const evidence=await nativeCreationEvidence(p,null,candidate,engine,run);
-    const proof={schema:1,operation:'purchase.binding.proof',purchaseId:id,basis:p.basis,request,requireNote:r.uploadAttempted,uniqueMarkedOrders:marked,runId:run.id,evidence};
+    const proof={schema:1,operation:'purchase.binding.proof',purchaseId:id,basis:p.basis,request,requireNote:r.uploadAttempted,uniqueMarkedOrders:marked,runId:run.id,evidence,...(!request.created_day?{nativeCreatedDay:run.pairValidation?.createdDay||null}:{})};
     checkedBinding(this.creates.get(id),proof);stop();
     const folder=path.join(this.state.root,'purchase-binding-proofs');await fs.mkdir(folder,{recursive:true});
     const file=path.join(folder,proposal.id+'.json'),bytes=canonical(proof)+'\n';
@@ -60,7 +62,7 @@ export class PurchaseBindingService{
     if(r.state==='BOUND'&&r.binding.proposalId===proposalId&&r.binding.proofSha256===hash)return r;
     if(r.sequence!==sequence||proposal?.id!==proposalId||proposal.state!=='READY'||proposal.manifest.sha256!==hash)fail('BINDING_PREVIEW_STALE','关联预览已变化，请重新核对');
     const proof=await checkedFile(proposal.manifest);checkedBinding(r,proof);
-    await this.creationService.preflight(r.intent);
+    await this.creationService.preflight(r.intent,{forBinding:true});
     return this.creates.confirmBinding(id,sequence,proof,proposalId,hash);
   }
 }

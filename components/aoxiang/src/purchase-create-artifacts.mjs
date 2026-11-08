@@ -5,7 +5,7 @@ import {openArchive} from './zip.mjs';
 import {canonical,readJson,sha256,fail,sameIdentity} from './common.mjs';
 import {fileHash,validateWorkbook} from './workbook-validator.mjs';
 import {inspectPurchaseTemplate,templateContract} from './purchase-template.mjs';
-import {validatePurchaseIntent,decimal} from './purchase-create-contract.mjs';
+import {validatePurchaseIntent,decimal,PRICE_POLICY} from './purchase-create-contract.mjs';
 import {mappingVersion} from './machine-commands.mjs';
 
 export async function readPurchasePackage(file,hash){
@@ -19,7 +19,9 @@ export function checkPurchaseConfiguration(p,config){
   const targets=config.targets.filter(t=>t.buyerWarehouseCode===p.basis.store);
   if(targets.length!==1||canonical(targets[0])!==canonical(p.target))fail('PURCHASE_CONFIGURATION_CHANGED','采购目标门店与已核验目录不符');
 }
-export async function checkPurchaseInput(p,{latest=true}={}){
+export async function checkPurchaseInput(p,{latest=true,requireRounded=true}={}){
+  validatePurchaseIntent(p);
+  if(requireRounded&&p.pricePolicy!==PRICE_POLICY)fail('PURCHASE_PRICE_POLICY','旧预览未按两位采购单价生成；未上传任务请取消原预览后重新生成，已上传任务只继续原任务核对');
   const receipt=await readJson(p.template.recordFile),contract=await templateContract();
   if(receipt.status!=='SUPPORTED'||receipt.attemptId!==p.template.attemptId||receipt.sha256!==p.template.sha256||!sameIdentity(receipt.identity,p.identity)||receipt.contractVersion!==contract.version||canonical(receipt.schema)!==canonical(contract.schema)||receipt.importSubmissions!==0)fail('PURCHASE_TEMPLATE_PROOF','本次模板获取记录未通过核验');
   if(latest){const last=await readJson(receipt.latestFile);if(last.attemptId!==receipt.attemptId||last.status!=='SUPPORTED'||last.sha256!==receipt.sha256)fail('PURCHASE_TEMPLATE_STALE','采购模板获取记录已变化，请重新获取并预览');}
@@ -38,8 +40,8 @@ export async function checkPurchaseInput(p,{latest=true}={}){
   const parsed=await validateWorkbook(p.file.path,{warehouseCode:p.basis.store,expectedRows:p.rows.length,maxCompressedBytes:10485760,
     contract:{nativeSheetName:visible.name,headerRow:visible.headerRow,columns:visible.headers.map(c=>({rawHeader:c.value})),keyColumnPositions1Based:{buyerWarehouseCode:1,skuCode:3},captureColumns1Based:Object.fromEntries([...'ABCDEFGHIJKL'].map((c,i)=>[c,i+1]))}});
   for(let i=0;i<p.rows.length;i++){
-    const r=p.rows[i],a=parsed.capturedRows[i],expected={A:p.basis.store,B:p.supplierCode,C:r.sku,D:decimal(r.quantity),E:'',F:decimal(r.amount),G:'',H:r.name,I:'',J:p.note,K:'否',L:''};
-    a.D=decimal(a.D);a.F=decimal(a.F);
+    const r=p.rows[i],a=parsed.capturedRows[i],rounded=p.pricePolicy===PRICE_POLICY,expected={A:p.basis.store,B:p.supplierCode,C:r.sku,D:decimal(r.quantity),E:rounded?decimal(r.unitPrice):'',F:rounded?'':decimal(r.amount),G:'',H:r.name,I:'',J:p.note,K:'否',L:''};
+    a.D=decimal(a.D);if(rounded)a.E=decimal(a.E);else a.F=decimal(a.F);
     if(canonical(a)!==canonical(expected))fail('PURCHASE_INPUT_MISMATCH','采购文件逐行内容、顺序或外部订单标记与冻结付款不一致',{index:i});
   }
   if(await fileHash(p.file.path)!==p.file.sha256||await fileHash(receipt.file)!==p.template.sha256)fail('PURCHASE_FILE_CHANGED','核验期间采购文件发生变化');

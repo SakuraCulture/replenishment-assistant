@@ -106,7 +106,12 @@ def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=N
             else:raise ValueError('缺少补货单号：批量导入须填写；单张订单可从该订单详情进入，由系统带入')
         if scope and row['signed_number']!=scope['number']:raise ValueError('补货单号与所选订单不一致')
         if not row.get('identity_reference'):row['revision']=None
-    heads=[h for h in available(path,scanned,progress,cancel) if h['revision']==h['current_revision']]
+    if scope:
+        with closing(purchases.connect(path)) as db:purchases.validate_head(db,scope)
+        h=full_head(path,scope)
+        if not h['products']:raise ValueError('所选签发中不存在该仓的业务明细')
+        heads=[h] if h['revision']==h['current_revision'] else []
+    else:heads=[h for h in available(path,scanned,progress,cancel) if h['revision']==h['current_revision']]
     bindings={}
     for row in scanned['rows']:
         checkpoint(cancel)
@@ -280,6 +285,9 @@ def commit(path, plan, progress=lambda _: None, cancel=None):
     receipts = []
     with closing(sqlite3.connect(path, timeout=.15)) as db, db:
         begin(db, cancel); schema(db)
+        if plan.get('payment_matching'):
+            from payment_matching import validate
+            validate(path,db,plan)
         staged={}
         for p in plan['plans']:
             checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'])
@@ -305,6 +313,9 @@ def commit(path, plan, progress=lambda _: None, cancel=None):
                     enqueue(db,h,{'version':v,'digest':p['digest']})
                 db.execute('INSERT INTO lifecycle_events(at,oid,revision,warehouse,stage,version,action,detail) VALUES(?,?,?,?,?,?,?,?)', (wr.now(), *key(h), p['stage'], v, '确认完整单据', wr.dumps({'number': h['number'], 'rows': len(p['payload']['rows']), 'missing': p['payload']['missing'], 'extra': p['payload']['extra']})))
             receipts.append({'number': h['number'], 'revision': h['revision'], 'stage': p['stage'], 'version': v, 'changed': p['changed']})
+        if plan.get('payment_matching'):
+            from payment_matching import apply
+            apply(db,plan)
     return receipts
 
 def state(present):

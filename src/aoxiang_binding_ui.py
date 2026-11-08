@@ -49,10 +49,10 @@ class BindingActions:
 
     def binding_start(self):
         dialog=QDialog(self);dialog.setWindowTitle('核对已有翱象采购单');dialog.resize(590,280)
-        v=QVBoxLayout(dialog);v.addWidget(label('请从翱象核对准确单号及制单日；本次只查询并取得原件，核对后还需确认关联。'))
+        v=QVBoxLayout(dialog);v.addWidget(label('填写准确采购单号即可精查，无需填写店名或日期；本次只查询原件，核对后确认关联。'))
         form=QFormLayout();order=QLineEdit();day=QLineEdit();reason=QLineEdit()
-        order.setPlaceholderText('必填，精确采购单号');day.setPlaceholderText('必填，平台制单日 YYYY-MM-DD');reason.setPlaceholderText('必填，例如上传回执丢失，已在平台核实')
-        for text,field in [('采购单号（必填）',order),('平台制单日（必填）',day),('核对原因（必填）',reason)]:form.addRow(text,field)
+        order.setPlaceholderText('必填，精确采购单号');day.setPlaceholderText('可留空；仅平台要求时填已核对的原生制单日');reason.setPlaceholderText('必填，例如上传回执丢失，已在平台核实')
+        for text,field in [('采购单号（必填）',order),('制单日（选填）',day),('核对原因（必填）',reason)]:form.addRow(text,field)
         v.addLayout(form);row=QHBoxLayout();row.addWidget(button('开始核对',dialog.accept));cancel=button('取消',dialog.reject);cancel.setDefault(True);row.addWidget(cancel);v.addLayout(row)
         accepted=dialog.exec();request={'order_id':order.text().strip(),'created_day':day.text().strip(),'reason':reason.text().strip()};dialog.deleteLater()
         if accepted!=QDialog.DialogCode.Accepted:return
@@ -61,7 +61,7 @@ class BindingActions:
     def start_binding_request(self, request):
         package=self.package;id=self.current['id']
         def operation(_):
-            validate_for_upload(self.host.work_repository.path,package,self.client.request('configuration'),Directory(self.folder).suppliers())
+            validate_for_upload(self.host.work_repository.path,package,self.client.request('configuration'),Directory(self.folder).suppliers(),for_binding=True)
             return self.client.request('binding.start',purchase_id=id,binding_request=request)
         self.run(operation,self.binding_status)
 
@@ -88,7 +88,7 @@ class BindingActions:
             v.addWidget(label(self.head['name']+' · '+self.head['warehouse']+' · '+self.head['number'],'section'))
             v.addWidget(label('平台制单日 '+p['request']['created_day']+'；原件观察时间 '+proof['evidence']['observedAt']+'。只读核对，不调整付款或采购。','muted'))
             search=QLineEdit();search.setPlaceholderText('查找商品编码或名称');v.addWidget(search)
-            table,model=grid(d,['商品编码','商品名称','付款基础数量','采购基础数量','付款商品金额','采购商品金额','平台状态'],rows)
+            table,model=grid(d,['商品编码','商品名称','预览基础数量','采购基础数量','预览采购金额','平台采购金额','平台状态'],rows)
             for column,width in enumerate((220,240,130,130,130,130,140)):table.setColumnWidth(column,width)
             search.textChanged.connect(model.filter);v.addWidget(table,1);v.addWidget(button('关闭',d.accept));d.exec();d.deleteLater()
         except Exception as exc:QMessageBox.warning(self,'未打开关联核对',str(exc))
@@ -99,6 +99,6 @@ class BindingActions:
         text=f"{self.head['name']} · {self.head['warehouse']}\n本地补货单：{self.head['number']}\n关联翱象采购单：{p['request']['order_id']}\n平台状态：{p['summary']['status']}\n{p['summary']['rows']}款 · 数量{p['summary']['quantity']} · 金额{p['summary']['amount']}元\n原因：{p['request']['reason']}\n\n只建立本地关联，不代表重新下单或已收货；不会修改原签发及付款。"
         if QMessageBox.question(self,'确认关联已有采购单',text,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return
         def operation(_):
-            validate_for_upload(self.host.work_repository.path,package,self.client.request('configuration'),Directory(self.folder).suppliers())
+            validate_for_upload(self.host.work_repository.path,package,self.client.request('configuration'),Directory(self.folder).suppliers(),for_binding=True)
             return self.client.request('binding.confirm',purchase_id=id,proposal_id=proposal_id,sequence=sequence,manifest_sha256=sha)
         self.run(operation,self.purchase_status)

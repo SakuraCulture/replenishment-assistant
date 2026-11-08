@@ -1,0 +1,265 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "live_platform": false,
+  "rounds": 1,
+  "sampler_sha256": "ab5e72ee6975eb0081eed0c360f00e86a8e6442ad09ff6d4f2660fd3c7e78f46",
+  "runs": [
+    {
+      "heads": 10,
+      "seconds": 0.02918350000254577,
+      "process_read_mib": 0.31891632080078125,
+      "process_write_mib": 0.0,
+      "worker_pid": 55208,
+      "native_peak_worker_rss_mib": 45.48828125,
+      "stores": 5,
+      "mode": "baseline",
+      "sampled_peak_worker_rss_mib": 45.4921875
+    },
+    {
+      "heads": 10,
+      "decoded_snapshots": 13,
+      "seconds": 0.04232670000055805,
+      "process_read_mib": 0.45314693450927734,
+      "process_write_mib": 0.0361785888671875,
+      "worker_pid": 6568,
+      "native_peak_worker_rss_mib": 46.46875,
+      "stores": 5,
+      "mode": "cold",
+      "sampled_peak_worker_rss_mib": 46.44921875
+    },
+    {
+      "heads": 10,
+      "decoded_snapshots": 0,
+      "seconds": 0.011437900000601076,
+      "process_read_mib": 0.17369747161865234,
+      "process_write_mib": 0.0,
+      "worker_pid": 45180,
+      "native_peak_worker_rss_mib": 45.9375,
+      "stores": 5,
+      "mode": "warm",
+      "sampled_peak_worker_rss_mib": 45.94140625
+    },
+    {
+      "heads": 10,
+      "decoded_snapshots": 0,
+      "automatic": true,
+      "matching": [
+        "BH-S1-ZC-HB"
+      ],
+      "trace": [
+        [
+          "有效仓单",
+          10
+        ],
+        [
+          "待付款优先",
+          8
+        ],
+        [
+          "同日优先",
+          10
+        ],
+        [
+          "汇总相同",
+          2
+        ],
+        [
+          "完整匹配（跨全部相关日期）",
+          1
+        ]
+      ],
+      "seconds": 0.06453939999846625,
+      "process_read_mib": 0.5492515563964844,
+      "process_write_mib": 0.0,
+      "worker_pid": 48600,
+      "native_peak_worker_rss_mib": 47.3828125,
+      "stores": 5,
+      "mode": "expanded",
+      "sampled_peak_worker_rss_mib": 46.46484375
+    },
+    {
+      "cancelled": true,
+      "progress_steps": 3,
+      "seconds": 0.02910410000185948,
+      "process_read_mib": 0.27574825286865234,
+      "process_write_mib": 0.0361785888671875,
+      "worker_pid": 35848,
+      "native_peak_worker_rss_mib": 46.1328125,
+      "stores": 5,
+      "mode": "cancel",
+      "sampled_peak_worker_rss_mib": 46.01171875
+    },
+    {
+      "heads": 50,
+      "seconds": 0.14843290000135312,
+      "process_read_mib": 1.7151718139648438,
+      "process_write_mib": 0.0,
+      "worker_pid": 55384,
+      "native_peak_worker_rss_mib": 45.828125,
+      "stores": 25,
+      "mode": "baseline",
+      "sampled_peak_worker_rss_mib": 45.82421875
+    },
+    {
+      "heads": 50,
+      "decoded_snapshots": 63,
+      "seconds": 0.1536597999984224,
+      "process_read_mib": 1.9666204452514648,
+      "process_write_mib": 0.09530258178710938,
+      "worker_pid": 44724,
+      "native_peak_worker_rss_mib": 46.74609375,
+      "stores": 25,
+      "mode": "cold",
+      "sampled_peak_worker_rss_mib": 46.7265625
+    },
+    {
+      "heads": 50,
+      "decoded_snapshots": 0,
+      "seconds": 0.020008600000437582,
+      "process_read_mib": 0.33461666107177734,
+      "process_write_mib": 0.0,
+      "worker_pid": 56592,
+      "native_peak_worker_rss_mib": 46.21484375,
+      "stores": 25,
+      "mode": "warm",
+      "sampled_peak_worker_rss_mib": 46.08203125
+    },
+    {
+      "heads": 50,
+      "decoded_snapshots": 0,
+      "automatic": true,
+      "matching": [
+        "BH-S1-ZC-HB"
+      ],
+      "trace": [
+        [
+          "有效仓单",
+          50
+        ],
+        [
+          "待付款优先",
+          38
+        ],
+        [
+          "同日优先",
+          50
+        ],
+        [
+          "汇总相同",
+          2
+        ],
+        [
+          "完整匹配（跨全部相关日期）",
+          1
+        ]
+      ],
+      "seconds": 0.06622050000078161,
+      "process_read_mib": 0.7414207458496094,
+      "process_write_mib": 0.0,
+      "worker_pid": 14948,
+      "native_peak_worker_rss_mib": 47.59765625,
+      "stores": 25,
+      "mode": "expanded",
+      "sampled_peak_worker_rss_mib": 46.67578125
+    },
+    {
+      "cancelled": true,
+      "progress_steps": 3,
+      "seconds": 0.02364040000247769,
+      "process_read_mib": 0.42418575286865234,
+      "process_write_mib": 0.0361785888671875,
+      "worker_pid": 21300,
+      "native_peak_worker_rss_mib": 46.578125,
+      "stores": 25,
+      "mode": "cancel",
+      "sampled_peak_worker_rss_mib": 46.57421875
+    },
+    {
+      "heads": 200,
+      "seconds": 0.5242760999972234,
+      "process_read_mib": 7.840778350830078,
+      "process_write_mib": 0.0,
+      "worker_pid": 56028,
+      "native_peak_worker_rss_mib": 46.15234375,
+      "stores": 100,
+      "mode": "baseline",
+      "sampled_peak_worker_rss_mib": 46.19921875
+    },
+    {
+      "heads": 200,
+      "decoded_snapshots": 250,
+      "seconds": 0.532870200000616,
+      "process_read_mib": 8.55725383758545,
+      "process_write_mib": 0.4892463684082031,
+      "worker_pid": 48292,
+      "native_peak_worker_rss_mib": 48.00390625,
+      "stores": 100,
+      "mode": "cold",
+      "sampled_peak_worker_rss_mib": 47.921875
+    },
+    {
+      "heads": 200,
+      "decoded_snapshots": 0,
+      "seconds": 0.04551980000178446,
+      "process_read_mib": 0.9155950546264648,
+      "process_write_mib": 0.0,
+      "worker_pid": 51052,
+      "native_peak_worker_rss_mib": 47.53125,
+      "stores": 100,
+      "mode": "warm",
+      "sampled_peak_worker_rss_mib": 47.1640625
+    },
+    {
+      "heads": 200,
+      "decoded_snapshots": 0,
+      "automatic": true,
+      "matching": [
+        "BH-S1-ZC-HB"
+      ],
+      "trace": [
+        [
+          "有效仓单",
+          200
+        ],
+        [
+          "待付款优先",
+          150
+        ],
+        [
+          "同日优先",
+          200
+        ],
+        [
+          "汇总相同",
+          2
+        ],
+        [
+          "完整匹配（跨全部相关日期）",
+          1
+        ]
+      ],
+      "seconds": 0.09507259999736561,
+      "process_read_mib": 1.3692741394042969,
+      "process_write_mib": 0.0,
+      "worker_pid": 31072,
+      "native_peak_worker_rss_mib": 48.1953125,
+      "stores": 100,
+      "mode": "expanded",
+      "sampled_peak_worker_rss_mib": 47.4140625
+    },
+    {
+      "cancelled": true,
+      "progress_steps": 3,
+      "seconds": 0.025620699998398777,
+      "process_read_mib": 0.9593420028686523,
+      "process_write_mib": 0.0361785888671875,
+      "worker_pid": 41264,
+      "native_peak_worker_rss_mib": 47.609375,
+      "stores": 100,
+      "mode": "cancel",
+      "sampled_peak_worker_rss_mib": 46.73828125
+    }
+  ],
+  "limitations": "Tiny synthetic SKU sets; Windows actual worker process high-water RSS and 20ms sampled RSS (launcher excluded), OS-cached process I/O, not physical disk or whole-app memory. Baseline reads old full current-target path; cold index additionally computes generation summaries. Expanded includes file read and exact comparisons. No low-end business PC measurement."
+}

@@ -117,7 +117,7 @@ class QueueTests(unittest.TestCase):
             called.append(item['purchase_id'])
             if item['purchase_id']=='p1':raise ValueError('资料需核对')
             return 'OBSERVED',{'summary':{'status':'待收货'}}
-        with patch.object(Runner,'receipt_item',receipt):
+        with patch.object(Runner,'receipt_item',receipt),patch('aoxiang_receipt_scope.assess',side_effect=lambda path,items,**kw:{i['key']:{'eligible':True,'reason':''} for i in items}):
             out=Runner(self.s,Client(),self.root,self.root/'unused.db',cancel=threading.Event()).run(job['id'])
         self.assertEqual(called,['p1','p3'])
         self.assertEqual([i['state'] for i in out['items']],['SKIPPED','REVIEW','OBSERVED'])

@@ -1,0 +1,55 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "checks": [
+    "actual export_current confirmation: table attached, default/escape cancel, cancel leaves signatures absent",
+    "actual export_current: export full differences, reopen same confirmation, confirm, archive V001 and export files; calculations unchanged",
+    "actual audit dialog: font 10/12, row-height adjustment, horizontal-scroll identity, cancel preserves all calculation results",
+    "actual 核对与签发→确认签发并导出: Windows file lock produces readable receipt; old file and signed revision preserved",
+    "actual recovery dialog: inspect selected receipt, restore checked missing files to new directory, no re-signing",
+    "actual signed workbook → batch return: hidden identities matched; readonly metadata shown; preview and atomic save completed",
+    "packaged independent stockout: native UI and AI totals agree; negative stock, disabled exclusion, repeated observations, pinned Excel export exercised",
+    "actual AI interface executable: named-pipe context, query, asynchronous page, status and export completed; no external Codex/WorkBuddy client asserted",
+    "packaged help menu resolves bundled offline HTML, 26 chapters, 13 real EXE screenshots and PDF; HTML browser behavior validated separately",
+    "real scheduled manager: maintenance skips reads; exclusive SQLite lock handled off GUI; heartbeat continues; retry succeeds after release",
+    "no unhandled Qt callbacks; timestamped log written in isolated settings"
+  ],
+  "errors": [],
+  "export_files": [
+    "2026-11-07合成门店QA_A（精简版·山东仓）.xlsx",
+    "2026-11-07合成门店QA_A（精简版·河北仓）.xlsx",
+    "2026-11-07合成门店QA_B（精简版·山东仓）.xlsx",
+    "2026-11-07合成门店QA_B（精简版·河北仓）.xlsx"
+  ],
+  "heartbeat_ticks": 496,
+  "max_gap_seconds": 0.7030000000013388,
+  "app": "补货助手",
+  "version": "0.48.0",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "c3dda6c7488d6d443580092aed7a6e607accb6dc",
+  "build_id": "rc2",
+  "built_at": "2026-11-07T23:55:18.829064+08:00",
+  "source_archive_sha256": "44522b54fd8610afbd68ce66a7bb06dcad65f0411ac81e5b753b5c70f1420e7d",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "c3dda6c7488d6d443580092aed7a6e607accb6dc",
+    "files": 869,
+    "manifest_sha256": "be941bc392d8e3cd12ccb8ef23110648a68c92f2179131dce5c1f33326e18702",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "0c7e55088c3747539749c490e4bdc124294a9451a8a1a6fc0634f115c48c5871",
+    "files": 8,
+    "source_commit": "c3dda6c7488d6d443580092aed7a6e607accb6dc",
+    "contains_user_state": false
+  }
+}

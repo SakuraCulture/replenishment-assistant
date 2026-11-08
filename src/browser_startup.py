@@ -12,6 +12,7 @@ def yield_startup(host, kind, *, progress=lambda _: None, cancel=None):
     worker = startup.workers.get(kind) if startup else None
     if worker is None:
         return
+    worker.cancel.handoff = True
     worker.cancel.set()
     progress('等待自动登录检查安全让出连接；原业务任务优先…')
     while not worker.released.wait(.1):
@@ -45,8 +46,10 @@ def check_ax(client, cancel, report):
     job = client.request('setup.check_login')
     ident = job['id']; stopped = False; deadline = time.monotonic() + 180
     while job['state'] == 'RUNNING' or job.get('cleanup_pending'):
-        if (cancel.is_set() or time.monotonic() > deadline) and not stopped:
+        if ((cancel.is_set() and not getattr(cancel, 'handoff', False)) or time.monotonic() > deadline) and not stopped:
             client.request('setup.cancel', setup_id=ident); stopped = True
+        if cancel.is_set() and getattr(cancel, 'handoff', False):
+            report(name, result('CHECKING', '正在完成当前只读登录检查并交接原连接；不会另开浏览器连接。'))
         report(name, result('CHECKING', '正在核验登录：' + job.get('stage', '连接浏览器')))
         time.sleep(.15)
         job = client.request('setup.status', setup_id=ident, timeout=5)

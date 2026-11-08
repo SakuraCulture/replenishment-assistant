@@ -12,6 +12,7 @@ from aoxiang_purchase_tasks import prepare, validate_for_upload, inspect_basis
 from aoxiang_ui_common import ComponentDialog, component_root, show_modal
 from ui_controls import label, button
 from aoxiang_binding_ui import BindingActions
+from aoxiang_purchase_pricing import HEADERS, preview_rows, intent_summary
 
 STATES = {'RESERVED': '已准备，尚未上传', 'PREPARING': '核验上传准备', 'READY': '准备就绪',
           'SUBMITTING': '正在上传，等待唯一回执', 'ACCEPTED': '已受理，待核对原任务', 'VERIFYING': '正在核对采购单',
@@ -42,7 +43,7 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         self.resize(1080, 760)
         layout = QVBoxLayout(self)
         layout.addWidget(label(head['name'] + ' · ' + head['warehouse'] + ' · ' + head['number'], 'section'))
-        layout.addWidget(label('使用已确认付款数量和金额生成采购单；仅创建为“待提交”，后续提交由业务在翱象操作。', 'muted'))
+        layout.addWidget(label('按付款金额÷基础数量计算单价，四舍五入到两位；采购金额随之计算，原付款记录不变。仅创建为“待提交”。', 'muted'))
         self.summary = label('正在读取本单采购记录…')
         self.summary.setWordWrap(True)
         layout.addWidget(self.summary)
@@ -54,15 +55,15 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         self.reload_btn = button('刷新本单记录', self.load)
         row.addWidget(self.reload_btn)
         layout.addLayout(row)
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(['商品编码', '商品名称', '付款基础数量', '付款商品金额（元）'])
+        self.table = QTableWidget(0, len(HEADERS))
+        self.table.setHorizontalHeaderLabels(HEADERS)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table.setColumnWidth(0, 220)
         self.table.setColumnWidth(2, 170)
         self.table.setColumnWidth(3, 190)
         layout.addWidget(self.table, 1)
-        self.note = label('预览逐项来自本单付款快照，不以最新商品价格替换。')
+        self.note = label('单价按付款金额÷基础数量四舍五入到两位；采购金额按两位单价计算，原付款记录不变。')
         self.note.setWordWrap(True)
         layout.addWidget(self.note)
         self.basis_note = label('尚未选择采购记录。', 'muted')
@@ -177,11 +178,11 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         if self.package:
             p = self.package['intent']
             self.summary.setText(f"{p['target']['displayName']} · {self.head['warehouse']} · 供应商 {p['supplierCode']}\n"
-                                 f"{len(p['rows'])} 款 · 基础数量 {p['totalQuantity']} · 付款金额 {p['totalAmount']} 元")
+                                 f"{len(p['rows'])} 款 · 基础数量 {p['totalQuantity']} · " + intent_summary(p))
             self.table.setRowCount(len(p['rows']))
-            for i, r in enumerate(p['rows']):
-                for j, k in enumerate(('sku', 'name', 'quantity', 'amount')):
-                    self.table.setItem(i, j, QTableWidgetItem(str(r[k])))
+            for i, r in enumerate(preview_rows(p['rows'])):
+                for j, value in enumerate(r):
+                    self.table.setItem(i, j, QTableWidgetItem(str(value)))
         else:
             self.table.setRowCount(0)
             if self.current:
@@ -191,6 +192,9 @@ class PurchaseDialog(BindingActions, ComponentDialog):
             text = STATES.get(r['state'], r['state'])
             if r.get('binding'):
                 text += ' · 采购单号：' + r['binding']['orderId'] + ' · ' + (r['binding'].get('status') or '平台状态未提供')
+                from aoxiang_receipt_scope import saved_observations
+                latest=saved_observations(self.folder,[r['id']]).get(r['id'])
+                if latest:text+='\n最新平台观察：'+latest['status']+' · '+latest.get('observedAt','未知时间')+('；作废后实收待处理' if latest.get('receipt_state')=='VOIDED_REVIEW' else '')
             elif r.get('taskId'):
                 text += '\n原导入任务号：' + r['taskId']
             if r.get('error'):
@@ -276,14 +280,14 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         self.history.setCurrentIndex(self.history.count() - 1)
         self.history.blockSignals(False)
         self.render()
-        self.note.setText('请核对商品、数量、金额及供应商；尚未上传，也未创建任何平台采购单。')
+        self.note.setText('请核对商品、数量、两位单价、采购金额、舍入差额及供应商；尚未上传，原付款记录不变。')
         self.status.setText('采购预览已生成，确认后再上传建单。')
 
     def upload(self):
         p = self.package['intent']
         answer = QMessageBox.question(self, '确认上传并创建采购单',
             f"{p['target']['displayName']} · {self.head['warehouse']}\n供应商编码：{p['supplierCode']}\n"
-            f"{len(p['rows'])} 款，基础数量 {p['totalQuantity']}，付款金额 {p['totalAmount']} 元。\n创建后保留待提交，不自动提交或入库。",
+            f"{len(p['rows'])} 款，基础数量 {p['totalQuantity']}。\n{intent_summary(p)}。\n单价四舍五入到两位，原付款记录不变。创建后保留待提交，不自动提交或入库。",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
         if answer != QMessageBox.StandardButton.Yes:
             return

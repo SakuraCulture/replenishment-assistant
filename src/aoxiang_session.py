@@ -34,6 +34,7 @@ class SessionGate:
             ticket = ForegroundTicket(self)
             self.foreground = ticket
             if self.background is not None:
+                self.background.handoff = True
                 self.background.set()
             return ticket
 

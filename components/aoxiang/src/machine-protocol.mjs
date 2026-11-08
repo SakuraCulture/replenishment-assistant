@@ -18,7 +18,7 @@ const fields={ping:[],'session.release':[],'session.status':[],'session.health':
   'binding.start':['purchase_id','binding_request'],'binding.status':['purchase_id'],'binding.pause':['purchase_id'],
   'binding.confirm':['purchase_id','proposal_id','sequence','manifest_sha256'],
   'receipt.start':['purchase_id'],'receipt.status':['purchase_id'],'receipt.pause':['purchase_id'],
-  'receipt.synced':['purchase_id','manifest_sha256','receipt'],'receipt.list':['offset','limit']};
+  'receipt.synced':['purchase_id','manifest_sha256','receipt'],'receipt.host_void_conflict':['purchase_id','reason'],'receipt.list':['offset','limit']};
 export function validateRequest(value){
   if(!value||typeof value!=='object'||Array.isArray(value)||value.protocol_version!==1||
     typeof value.request_id!=='string'||!idPattern.test(value.request_id)||!Object.hasOwn(fields,value.action))fail('REQUEST_SCHEMA','机器请求版本、编号或动作无效');

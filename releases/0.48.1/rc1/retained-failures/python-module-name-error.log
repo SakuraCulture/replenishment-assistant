@@ -1,0 +1,42 @@
+test_cancel_only_stops_its_own_account_operation_and_drains (test_browser_startup.Checks.test_cancel_only_stops_its_own_account_operation_and_drains) ... ok
+test_disabled_warehouse_is_not_reenabled_and_other_warehouse_connects (test_browser_startup.Checks.test_disabled_warehouse_is_not_reenabled_and_other_warehouse_connects) ... ok
+test_explicit_close_still_cancels_read (test_browser_startup.Checks.test_explicit_close_still_cancels_read) ... ok
+test_foreground_handoff_drains_read_without_cancel_or_second_start (test_browser_startup.Checks.test_foreground_handoff_drains_read_without_cancel_or_second_start) ... ok
+test_login_errors_are_actionable_and_identity_errors_are_distinct (test_browser_startup.Checks.test_login_errors_are_actionable_and_identity_errors_are_distinct) ... ok
+test_missing_ax_binding_does_not_start_setup_or_guess_stores (test_browser_startup.Checks.test_missing_ax_binding_does_not_start_setup_or_guess_stores) ... ok
+test_partial_login_failure_does_not_block_the_other_warehouse (test_browser_startup.Checks.test_partial_login_failure_does_not_block_the_other_warehouse) ... ok
+test_business_can_cancel_only_startup_probe_then_acquire_same_retained_client (test_browser_startup.StartupUi.test_business_can_cancel_only_startup_probe_then_acquire_same_retained_client) ... ok
+test_business_identity_failure_replaces_previous_green_status (test_browser_startup.StartupUi.test_business_identity_failure_replaces_previous_green_status) ... ok
+test_close_cancels_startup_and_waits_for_safe_handoff (test_browser_startup.StartupUi.test_close_cancels_startup_and_waits_for_safe_handoff) ... ok
+test_destroying_idle_indicator_before_first_timer_callback_is_safe (test_browser_startup.StartupUi.test_destroying_idle_indicator_before_first_timer_callback_is_safe) ... ok
+test_due_schedule_waits_for_ax_startup_and_becomes_available_after_handoff (test_browser_startup.StartupUi.test_due_schedule_waits_for_ax_startup_and_becomes_available_after_handoff) ... ok
+test_foreground_business_keeps_ownership_and_startup_defers (test_browser_startup.StartupUi.test_foreground_business_keeps_ownership_and_startup_defers) ... ok
+test_login_auto_retry_stops_at_deadline_without_losing_reason (test_browser_startup.StartupUi.test_login_auto_retry_stops_at_deadline_without_losing_reason) ... ok
+test_login_retry_is_automatic_only_for_failed_login_and_keeps_a_bounded_window (test_browser_startup.StartupUi.test_login_retry_is_automatic_only_for_failed_login_and_keeps_a_bounded_window) ... ok
+test_normal_launch_starts_immediately_and_smoke_launch_remains_isolated (test_browser_startup.StartupUi.test_normal_launch_starts_immediately_and_smoke_launch_remains_isolated) ... ok
+test_old_success_does_not_mark_new_transport_or_disconnection_logged_in (test_browser_startup.StartupUi.test_old_success_does_not_mark_new_transport_or_disconnection_logged_in) ... ok
+test_slow_ax_does_not_block_other_connections_or_gui (test_browser_startup.StartupUi.test_slow_ax_does_not_block_other_connections_or_gui) ... ok
+test_startup_without_manual_actions_checks_all_and_retains_shared_clients (test_browser_startup.StartupUi.test_startup_without_manual_actions_checks_all_and_retains_shared_clients) ... ok
+test_wrong_account_never_gets_green_and_no_automatic_rebinding (test_browser_startup.StartupUi.test_wrong_account_never_gets_green_and_no_automatic_rebinding) ... ok
+test_aoxiang_session (unittest.loader._FailedTest.test_aoxiang_session) ... ERROR
+test_cancel_before_adoption_keeps_state_and_does_not_start_check (test_aoxiang_fetch_ui.AdoptionUiTests.test_cancel_before_adoption_keeps_state_and_does_not_start_check) ... ok
+test_check_uses_original_worker_and_only_adopts_once_after_success (test_aoxiang_fetch_ui.AdoptionUiTests.test_check_uses_original_worker_and_only_adopts_once_after_success) ... ok
+test_mismatch_after_check_keeps_original_results (test_aoxiang_fetch_ui.AdoptionUiTests.test_mismatch_after_check_keeps_original_results) ... ok
+test_selection_pause_resume_same_id_then_manifest_order (test_aoxiang_fetch_ui.FetchUiTests.test_selection_pause_resume_same_id_then_manifest_order) ... ok
+test_unknown_receipt_has_no_resume_but_successful_files_stay_available (test_aoxiang_fetch_ui.FetchUiTests.test_unknown_receipt_has_no_resume_but_successful_files_stay_available) ... ok
+
+======================================================================
+ERROR: test_aoxiang_session (unittest.loader._FailedTest.test_aoxiang_session)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_aoxiang_session
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'test_aoxiang_session'
+
+
+----------------------------------------------------------------------
+Ran 26 tests in 9.448s
+
+FAILED (errors=1)

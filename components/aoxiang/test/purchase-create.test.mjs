@@ -6,11 +6,32 @@ import path from 'node:path';
 import {StateStore} from '../src/state.mjs';
 import {PurchaseCreates,purchasePublic} from '../src/purchase-create-ledger.mjs';
 import {MachinePurchaseCreate} from '../src/machine-purchase-create.mjs';
-import {IMPORT_CODE,validatePurchaseIntent,checkCreatedPurchase,decimal,sum} from '../src/purchase-create-contract.mjs';
+import {IMPORT_CODE,validatePurchaseIntent,checkCreatedPurchase,decimal,sum,roundedPurchaseRow,PRICE_POLICY} from '../src/purchase-create-contract.mjs';
 import {sha256} from '../src/common.mjs';
 import {exportMigration} from '../src/migration.mjs';
 
 const h='a'.repeat(64);
+test('HALF_UP price cents, fractional quantity amount, and exact rational boundaries',()=>{
+  for(const [q,a,unitPrice,amount,roundingDelta] of [
+    ['1','1.005','1.01','1.01','0.005'],['1','1.0049','1.00','1.00','-0.0049'],
+    ['2','5.35','2.68','5.36','0.01'],['3','10','3.33','9.99','-0.01'],
+    ['7','0.99','0.14','0.98','-0.01'],['0.5','0.005','0.01','0.01','0.005'],
+    ['10000','1','0.00','0.00','-1'],['2','0','0.00','0.00','0'],['200','201','1.01','202.00','1']]){
+    assert.deepEqual(roundedPurchaseRow(q,a),{unitPrice,amount,roundingDelta});
+  }
+  assert.equal(roundedPurchaseRow('1','1.004'+'9'.repeat(80)).unitPrice,'1.00');
+});
+test('rounded intent validates original payment, all row deltas and strict native procurement amounts',()=>{
+  const p=intent();p.pricePolicy=PRICE_POLICY;
+  p.rows=p.rows.map(r=>({...r,paymentAmount:r.amount,...roundedPurchaseRow(r.quantity,r.amount)}));
+  p.totalAmount='3.01';p.paymentTotalAmount='3';p.roundingDelta='0.01';
+  assert.equal(validatePurchaseIntent(p),p);
+  const e=evidence(p);e.main.amount='3.01';assert.equal(checkCreatedPurchase(p,receipt(p),e).orderId,'PO-1');
+  e.main.amount='3';assert.throws(()=>checkCreatedPurchase(p,receipt(p),e),{code:'PURCHASE_CREATED_MISMATCH'});
+  for(const mutate of [x=>x.rows[0].unitPrice='0.495',x=>x.rows[0].unitPrice='0.49',x=>x.rows[0].amount='0.99',x=>x.rows[0].roundingDelta='0',x=>x.paymentTotalAmount='3.01',x=>x.roundingDelta='0',x=>x.pricePolicy='unknown']){
+    const x=structuredClone(p);mutate(x);assert.throws(()=>validatePurchaseIntent(x));
+  }
+});
 function intent(id='create-one'){
   const marker='AX_CREATE:'+id;
   return {schema:1,operation:'purchase.create',id,identity:{accountId:'A',merchantCode:'M'},mappingVersion:h,
@@ -134,6 +155,46 @@ test('native Excel whole-valued decimal SKU count binds without weakening quanti
 function voidEvidence(p){
   const e=evidence(p);e.main.status='已作废';e.rows.forEach(r=>r.status='已作废');e.listingStatus='synthetic-nonpending';return e;
 }
+
+test('blocked extra request after a durable receipt continues full original-task proof, never uploads twice',async t=>{
+  const f=await fixture(t),p=reserve(f);let uploads=0,reads=0;
+  const controller=new MachinePurchaseCreate({ledger:f.ledger,adapter:{
+    prepare:async()=>({orderIds:[]}),
+    upload:async()=>{uploads++;f.ledger.accepted(receipt(p));throw Object.assign(new Error('blocked'),{code:'IMPORT_SIDE_EFFECT_BLOCKED',details:{blocked:[{method:'POST',host:'saas-retail.ele.me',path:'/unknown/read'}]}});},
+    observe:async(original,r)=>{reads++;assert.equal(r.taskId,receipt(p).taskId);assert.deepEqual(original,p);return evidence(p,r);}
+  }});
+  controller.start(p.id);await controller.pending;
+  assert.equal(uploads,1);assert.equal(reads,1);assert.equal(f.ledger.get(p.id).state,'BOUND');
+  assert.equal(purchasePublic(f.ledger.get(p.id)).uploadWarning.code,'IMPORT_SIDE_EFFECT_BLOCKED');
+  controller.start(p.id);assert.equal(uploads,1);await f.reopen();assert.equal(f.ledger.get(p.id).binding.orderId,'PO-1');
+});
+
+test('blocked request without receipt cannot start proof or replay upload',async t=>{
+  const f=await fixture(t),p=reserve(f);let uploads=0;
+  const controller=new MachinePurchaseCreate({ledger:f.ledger,adapter:{prepare:async()=>({orderIds:[]}),
+    upload:async()=>{uploads++;throw Object.assign(new Error('blocked'),{code:'IMPORT_SIDE_EFFECT_BLOCKED'});},
+    observe:()=>assert.fail('no receipt, no proof')}});
+  controller.start(p.id);await controller.pending;assert.equal(f.ledger.get(p.id).state,'NEEDS_REVIEW');
+  assert.throws(()=>controller.start(p.id),{code:'SUBMISSION_UNKNOWN'});assert.equal(uploads,1);
+});
+
+test('conflicting receipts after upload cannot recover into an automatic binding',async t=>{
+  const f=await fixture(t),p=reserve(f);let reads=0;
+  const controller=new MachinePurchaseCreate({ledger:f.ledger,adapter:{prepare:async()=>({orderIds:[]}),
+    upload:async()=>{f.ledger.accepted(receipt(p));f.ledger.accepted({...receipt(p),taskId:receipt(p).taskId.replace('@7114','@7115')});throw Object.assign(new Error('blocked'),{code:'IMPORT_SIDE_EFFECT_BLOCKED'});},
+    observe:async()=>{reads++;return evidence(p);}}});
+  controller.start(p.id);await controller.pending;assert.equal(reads,0);assert.equal(f.ledger.get(p.id).state,'NEEDS_REVIEW');assert.equal(f.ledger.get(p.id).additionalTaskIds.length,1);
+});
+
+test('accepted interrupted upload still rejects every invalid SKU and identity proof',async t=>{
+  for(const change of [e=>e.rows[0].amount='9',e=>e.rows[0].quantity='9',e=>e.identity.accountId='OTHER',e=>e.candidates.push('PO-2')]){
+    const f=await fixture(t),p=reserve(f);let uploads=0;
+    const controller=new MachinePurchaseCreate({ledger:f.ledger,adapter:{prepare:async()=>({orderIds:[]}),
+      upload:async()=>{uploads++;f.ledger.accepted(receipt(p));throw Object.assign(new Error('blocked'),{code:'IMPORT_SIDE_EFFECT_BLOCKED'});},
+      observe:async()=>{const e=evidence(p);e.identity={...p.identity};change(e);return e;}}});
+    controller.start(p.id);await controller.pending;assert.equal(f.ledger.get(p.id).state,'NEEDS_REVIEW');assert.equal(f.ledger.get(p.id).binding,null);assert.equal(uploads,1);
+  }
+});
 test('voided original purchase still needs exact receipt, identity, marker and every native SKU',()=>{
   const p=intent(),r=receipt(p);assert.equal(checkCreatedPurchase(p,r,voidEvidence(p)).status,'已作废');
   for(const change of [e=>e.task.taskId='OTHER',e=>e.task.failCount='1',e=>e.task.successCount='1',

@@ -1,0 +1,95 @@
+test_canonical_and_alias_appended_signing_number_are_read_and_automatic (test_payment_auto_matching.PaymentAutoTests.test_canonical_and_alias_appended_signing_number_are_read_and_automatic) ... ok
+test_default_normal_alias_and_both_warehouses_without_manual_fields (test_payment_auto_matching.PaymentAutoTests.test_default_normal_alias_and_both_warehouses_without_manual_fields) ... ok
+test_duplicate_identity_headers_never_choose_first (test_payment_auto_matching.PaymentAutoTests.test_duplicate_identity_headers_never_choose_first) ... ok
+test_explicit_correct_identity_allows_real_payment_differences_in_review (test_payment_auto_matching.PaymentAutoTests.test_explicit_correct_identity_allows_real_payment_differences_in_review) ... ok
+test_first_amount_change_without_original_link_is_not_a_complete_match (test_payment_auto_matching.PaymentAutoTests.test_first_amount_change_without_original_link_is_not_a_complete_match) ... ok
+test_known_company_link_still_cannot_be_bypassed_by_wrong_explicit_number (test_payment_auto_matching.PaymentAutoTests.test_known_company_link_still_cannot_be_bypassed_by_wrong_explicit_number) ... ok
+test_local_link_keeps_deleted_identity_and_cannot_rebind (test_payment_auto_matching.PaymentAutoTests.test_local_link_keeps_deleted_identity_and_cannot_rebind) ... ok
+test_local_mapping_and_payment_rollback_together (test_payment_auto_matching.PaymentAutoTests.test_local_mapping_and_payment_rollback_together) ... ok
+test_missing_wrong_or_duplicate_sku_never_satisfies_full_match (test_payment_auto_matching.PaymentAutoTests.test_missing_wrong_or_duplicate_sku_never_satisfies_full_match) ... ok
+test_new_alias_does_not_need_prior_alias_save (test_payment_auto_matching.PaymentAutoTests.test_new_alias_does_not_need_prior_alias_save) ... ok
+test_no_manual_target_needed_and_cancellation_leaves_no_mapping (test_payment_auto_matching.PaymentAutoTests.test_no_manual_target_needed_and_cancellation_leaves_no_mapping) ... ok
+test_reimport_and_one_cent_correction_without_source_selection (test_payment_auto_matching.PaymentAutoTests.test_reimport_and_one_cent_correction_without_source_selection) ... ok
+test_same_day_scope_does_not_hide_cross_day_complete_collision (test_payment_auto_matching.PaymentAutoTests.test_same_day_scope_does_not_hide_cross_day_complete_collision) ... ok
+test_selected_scope_cannot_redirect_unique_other_order (test_payment_auto_matching.PaymentAutoTests.test_selected_scope_cannot_redirect_unique_other_order) ... ok
+test_source_changed_after_preview_or_new_candidate_rejects_commit (test_payment_auto_matching.PaymentAutoTests.test_source_changed_after_preview_or_new_candidate_rejects_commit) ... ok
+test_wrong_explicit_number_blocks_instead_of_rewriting_or_silently_ignoring (test_payment_auto_matching.PaymentAutoTests.test_wrong_explicit_number_blocks_instead_of_rewriting_or_silently_ignoring) ... ok
+test_atomic_failure_does_not_leave_order_or_alias_mapping (test_payment_matching.PaymentMatchingTests.test_atomic_failure_does_not_leave_order_or_alias_mapping) ... ok
+test_blank_duplicate_and_extra_rows_are_not_complete_matches (test_payment_matching.PaymentMatchingTests.test_blank_duplicate_and_extra_rows_are_not_complete_matches) ... ok
+test_business_alias_auto_matches_and_is_remembered_with_atomic_payment (test_payment_matching.PaymentMatchingTests.test_business_alias_auto_matches_and_is_remembered_with_atomic_payment) ... FAIL
+test_cancelled_index_has_no_business_write_and_corrupt_cached_entry_is_rebuilt (test_payment_matching.PaymentMatchingTests.test_cancelled_index_has_no_business_write_and_corrupt_cached_entry_is_rebuilt) ... ok
+test_changed_global_pool_mapping_company_or_input_blocks_old_preview (test_payment_matching.PaymentMatchingTests.test_changed_global_pool_mapping_company_or_input_blocks_old_preview) ... ok
+test_cold_warm_index_has_only_current_heads_and_no_snapshot_copies (test_payment_matching.PaymentMatchingTests.test_cold_warm_index_has_only_current_heads_and_no_snapshot_copies) ... ok
+test_corrupt_disposable_index_rebuilds_without_touching_business (test_payment_matching.PaymentMatchingTests.test_corrupt_disposable_index_rebuilds_without_touching_business) ... ok
+test_deleted_original_link_cannot_rebind_or_bypass_source_scope (test_payment_matching.PaymentMatchingTests.test_deleted_original_link_cannot_rebind_or_bypass_source_scope) ... ok
+test_forget_alias_is_explicit_cas_backed_up_and_keeps_original_order (test_payment_matching.PaymentMatchingTests.test_forget_alias_is_explicit_cas_backed_up_and_keeps_original_order) ... FAIL
+test_minimum_four_headers_and_buyer_alias_preserve_raw_headers (test_payment_matching.PaymentMatchingTests.test_minimum_four_headers_and_buyer_alias_preserve_raw_headers) ... ok
+test_missing_extra_or_changed_sku_is_not_full_match_even_with_same_totals (test_payment_matching.PaymentMatchingTests.test_missing_extra_or_changed_sku_is_not_full_match_even_with_same_totals) ... ok
+test_missing_or_malformed_source_identity_never_invents_company (test_payment_matching.PaymentMatchingTests.test_missing_or_malformed_source_identity_never_invents_company) ... ok
+test_new_cross_day_candidate_after_preview_blocks_atomic_commit (test_payment_matching.PaymentMatchingTests.test_new_cross_day_candidate_after_preview_blocks_atomic_commit) ... ok
+test_reimport_and_correction_use_original_internal_number_without_duplicate_version (test_payment_matching.PaymentMatchingTests.test_reimport_and_correction_use_original_internal_number_without_duplicate_version) ... FAIL
+test_same_internal_number_in_another_company_does_not_follow_first_mapping (test_payment_matching.PaymentMatchingTests.test_same_internal_number_in_another_company_does_not_follow_first_mapping) ... FAIL
+test_same_store_cross_day_identical_generation_cannot_hide_behind_date_or_lifecycle_priority (test_payment_matching.PaymentMatchingTests.test_same_store_cross_day_identical_generation_cannot_hide_behind_date_or_lifecycle_priority) ... FAIL
+test_unique_generation_default_auto_and_explicit_company_validation (test_payment_matching.PaymentMatchingTests.test_unique_generation_default_auto_and_explicit_company_validation) ... FAIL
+
+======================================================================
+FAIL: test_business_alias_auto_matches_and_is_remembered_with_atomic_payment (test_payment_matching.PaymentMatchingTests.test_business_alias_auto_matches_and_is_remembered_with_atomic_payment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_matching.py", line 94, in test_business_alias_auto_matches_and_is_remembered_with_atomic_payment
+    doc=self.document(name='合成门店一号（别称）');r=matching.analyze(self.path,doc,self.index,source_scope='100');self.assertTrue(r['automatic'])
+                                                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_forget_alias_is_explicit_cas_backed_up_and_keeps_original_order (test_payment_matching.PaymentMatchingTests.test_forget_alias_is_explicit_cas_backed_up_and_keeps_original_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_matching.py", line 66, in test_forget_alias_is_explicit_cas_backed_up_and_keeps_original_order
+    r=matching.analyze(self.path,doc,matching.build(self.path),source_scope='100');self.assertEqual(r['state'],'已识别原内部单号')
+                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '原关联失效' != '已识别原内部单号'
+- 原关联失效
++ 已识别原内部单号
+
+
+======================================================================
+FAIL: test_reimport_and_correction_use_original_internal_number_without_duplicate_version (test_payment_matching.PaymentMatchingTests.test_reimport_and_correction_use_original_internal_number_without_duplicate_version)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_matching.py", line 100, in test_reimport_and_correction_use_original_internal_number_without_duplicate_version
+    result=matching.analyze(self.path,doc,index,source_scope='100',mode='first');self.assertTrue(result['automatic']);self.assertEqual(result['state'],'已识别原内部单号')
+                                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_same_internal_number_in_another_company_does_not_follow_first_mapping (test_payment_matching.PaymentMatchingTests.test_same_internal_number_in_another_company_does_not_follow_first_mapping)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_matching.py", line 108, in test_same_internal_number_in_another_company_does_not_follow_first_mapping
+    self.assertTrue(result['automatic']);self.assertEqual(result['candidates'][0]['number'],other['head']['number'])
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_same_store_cross_day_identical_generation_cannot_hide_behind_date_or_lifecycle_priority (test_payment_matching.PaymentMatchingTests.test_same_store_cross_day_identical_generation_cannot_hide_behind_date_or_lifecycle_priority)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_matching.py", line 141, in test_same_store_cross_day_identical_generation_cannot_hide_behind_date_or_lifecycle_priority
+    self.assertFalse(result['automatic']);self.assertEqual(len(result['exact_numbers']),2)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 2
+
+======================================================================
+FAIL: test_unique_generation_default_auto_and_explicit_company_validation (test_payment_matching.PaymentMatchingTests.test_unique_generation_default_auto_and_explicit_company_validation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_matching.py", line 90, in test_unique_generation_default_auto_and_explicit_company_validation
+    self.assertTrue(r['automatic']);self.assertEqual(r['candidates'][0]['number'],self.target['number'])
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 33 tests in 15.820s
+
+FAILED (failures=6)

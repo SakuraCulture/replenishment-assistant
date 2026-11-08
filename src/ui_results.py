@@ -38,15 +38,21 @@ class SummaryTask(QThread):
 
 class ResultsView:
     def make_results(self):
-        page=QWidget();v=QVBoxLayout(page);v.setContentsMargins(0,0,0,0);v.setSpacing(12)
-        self.result_caption=label('尚未计算','section');v.addWidget(self.result_caption)
-        self.admission_btn=button('查看本店准入问题 / 就地维护',self.review_admission);v.addWidget(self.admission_btn)
+        page=QWidget();v=QVBoxLayout(page);v.setContentsMargins(0,0,0,0);v.setSpacing(5)
+        self.result_caption=label('尚未计算');self.result_caption.setStyleSheet('font-weight:600;');self.result_caption.setWordWrap(True);v.addWidget(self.result_caption)
+        self.result_compact_summary=label('','muted');v.addWidget(self.result_compact_summary)
+        from business_flow_ui import disclosure
+        toggle,summary_panel,summary_layout=disclosure('展开金额、预算、人工调整及准入详情',page)
+        self.result_summary_toggle=toggle;self.result_summary_panel=summary_panel
+        v.addWidget(toggle);summary_scroll=QScrollArea();summary_scroll.setWidgetResizable(True);summary_scroll.setWidget(summary_panel);summary_scroll.setFrameShape(QFrame.Shape.NoFrame);summary_scroll.setMaximumHeight(180);summary_scroll.hide();toggle.toggled.connect(summary_scroll.setVisible);v.addWidget(summary_scroll);outer=v;v=summary_layout
+        self.admission_btn=button('查看本店准入问题 / 就地维护',self.review_admission);outer.insertWidget(2,self.admission_btn)
         metrics=QHBoxLayout();self.metric_values=[]
         for title in ['执行补货金额（元）','执行补货商品','一箱例外候选 / 候选金额','地采 / 已排除']:
             c=QFrame();c.setObjectName('card');cv=QVBoxLayout(c);cv.setContentsMargins(16,12,16,12);cv.addWidget(label(title,'muted'));x=label('—','metric');cv.addWidget(x);metrics.addWidget(c);self.metric_values.append(x)
         v.addLayout(metrics)
         self.detail_review_amounts=ReviewAmounts();v.addWidget(self.detail_review_amounts)
         self.budget_caption=label('','muted');v.addWidget(self.budget_caption)
+        v=outer
         self.result_facets=ReviewFilters();v.addWidget(self.result_facets)
         tools=QHBoxLayout();self.mode=QComboBox();self.mode.setToolTip('快捷条件；仍与上方组合筛选同时生效');self.mode.addItems(['全部商品','建议补货','必卖商品','预算未满足','最低持有缺口','资料匹配','一箱例外','地采商品','待处理','重点关注']);tools.addWidget(self.mode)
         self.warehouse_filter=QComboBox();self.warehouse_filter.addItem('全部仓');tools.addWidget(self.warehouse_filter)
@@ -62,6 +68,8 @@ class ResultsView:
         for i,w in enumerate([300,180,105,85,110,70,85,70,70,90,90,90,110,340,110,100,190,90,90]):self.table.setColumnWidth(i,w)
         self.table.horizontalHeader().moveSection(19,2)
         self.table.sortByColumn(10,Qt.SortOrder.DescendingOrder)
+        from table_readability import install
+        install(self.table)
         splitter.addWidget(self.table)
         self.detail_panel=QWidget();dv=QVBoxLayout(self.detail_panel);dv.setContentsMargins(8,0,0,0);dr=QHBoxLayout();dr.addWidget(label('商品计算依据','section'));dr.addStretch();dr.addWidget(button('关闭',self.detail_panel.hide));dv.addLayout(dr)
         self.details=QTextBrowser();dv.addWidget(self.details);self.detail_panel.setMinimumWidth(340);splitter.addWidget(self.detail_panel);splitter.setStretchFactor(0,3);splitter.setStretchFactor(1,1);self.detail_panel.hide();v.addWidget(splitter,1)
@@ -104,6 +112,7 @@ class ResultsView:
         self.metric_values[1].setText(f"{s['positive']:,}" if calculated else '待计算')
         self.metric_values[2].setText(f"{s['exception']} / +{s['extra']:,.2f}" if calculated else '待计算')
         self.metric_values[3].setText(f"{s['local']:,} / {s['excluded']:,}")
+        self.result_compact_summary.setText(f"执行金额 {s['amount']:,.2f} 元 · 安排 {s['positive']:,} 款 · 地采 {s['local']:,} 款 / 已排除 {s['excluded']:,} 款" if calculated else '导入预览；计算后显示金额和安排数量。')
         self.detail_review_amounts.set_summary((review_amounts.cached(self,self.result) if self.result and rows is self.result['rows'] else review_amounts.summarize(rows)) if calculated else None)
         self.detail_review_amounts.setToolTip('本店完整结果的金额；不随下方仓库、分类或搜索筛选变化。'+review_amounts.NOTE)
         name=self.loaded['stores'].get(self.selected_store(),'') if self.loaded else ''

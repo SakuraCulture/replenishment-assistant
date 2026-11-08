@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "source_commit": "b23ca977aad7dd0918c11ed85fe14c9e634cd814",
+  "python_regression": {
+    "tests": 1305,
+    "unique_test_ids": 1305,
+    "seconds": 479.21
+  },
+  "payment_tests": {
+    "tests": 35,
+    "unique_test_ids": 35,
+    "seconds": 14.911
+  },
+  "exe_synthetic_checks": 23,
+  "exe_actual_sample_checks": 31,
+  "actual_sample_checks": 9,
+  "source_files_unchanged": true,
+  "live_database_written": false,
+  "live_platform": false,
+  "performance_measured": false,
+  "core_unchanged": 15,
+  "preserved_delivery_files": 40,
+  "components_unchanged_from": "v0.49.0-rc1",
+  "component_files_verified": 871,
+  "node_tests_rerun": false,
+  "exe_sha256": "f31e14f332d495b1f79e94f065c43e2d67fdaf69fdf2bd8deb7eedac38e091fa",
+  "zip": "交付_0.49.1_rc1/补货助手_0.49.1_rc1_付款自动认单.zip",
+  "zip_sha256": "bec2d6eb3bd94cfef5729168088086c2209fab4fbbdba37a1ef3968dbf19bdcf",
+  "zip_bytes": 125991560,
+  "files": 1248
+}

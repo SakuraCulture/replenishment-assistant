@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_payment_auto_samples.py", line 58, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_payment_auto_samples.py", line 21, in main
+    originals=sorted((a.samples/'付款文件').glob('*.xlsx'));hashes={p.name:sha(p) for p in originals};cases=[]
+                                                                           ^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_payment_auto_samples.py", line 9, in sha
+    with Path(p).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+         ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: 'D:\\优团工作文件夹\\outputs\\付款认单案例_20261108_02\\付款文件\\~$01_正常付款单_恒大御景半岛_山东仓.xlsx'

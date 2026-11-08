@@ -51,7 +51,13 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
     matched=[r for r in records if in_stage(r) and (not stage or stage==r['status'] or stage=='全部未完成' and r['next']) and (not wh or r['warehouse']==wh) and (not lock or r['locked']==(lock=='已锁'))]
     if request.get('all_matched'):return {'records':matched,'count':len(matched),'counts':counts,'scope':len(records)}
     page=min(max(0,int(request.get('page',0))),max(0,(len(matched)-1)//50))
-    return {'records':matched[page*50:(page+1)*50],'count':len(matched),'page':page,'counts':counts,'scope':len(records)}
+    visible=matched[page*50:(page+1)*50]
+    from aoxiang_receipt_scope import tracking_observations
+    observed=tracking_observations(path,visible)
+    for h in visible:
+        value=observed.get((h['oid'],h['revision'],h['warehouse']))
+        if value:h['platform_purchase']=value
+    return {'records':visible,'count':len(matched),'page':page,'counts':counts,'scope':len(records)}
 
 
 def logs(path,start='',end='',search='',progress=lambda _:None,cancel=None,*,page=None):

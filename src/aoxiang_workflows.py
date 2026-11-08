@@ -11,7 +11,7 @@ from aoxiang_jobs import encoded
 
 HEAD_FIELDS = ('oid', 'day', 'store', 'name', 'warehouse', 'number', 'revision', 'current_revision', 'digest', 'visibility_token')
 ACTIVE = ('QUEUED', 'RUNNING', 'YIELDED', 'PAUSED')
-DONE_ITEM = ('PREPARED', 'BOUND', 'OBSERVED', 'SYNCED', 'REVIEW', 'FAILED', 'SKIPPED')
+DONE_ITEM = ('PREPARED', 'BOUND', 'OBSERVED', 'SYNCED', 'VOIDED', 'REVIEW', 'FAILED', 'SKIPPED')
 
 
 class Workflows:
@@ -134,8 +134,13 @@ class Workflows:
             return self._new(db, 'upload', items, prepared_id=prepared_id, confirmed_sequence=expected_sequence)
 
     def receipt(self, records):
+        if any(r.get('receipt_terminal') or (r.get('receipt_summary') or {}).get('status')=='已作废' for r in records):
+            raise ValueError('已完成或已作废采购单不能加入常规同步；请在原订单查看实收待办或作废后的待处理事实')
         items = [{'key': r['id'], 'purchase_id': r['id'], 'basis': copy.deepcopy(r['basis']), 'display_name': r.get('target', {}).get('displayName'), 'order_id': r['binding']['orderId']} for r in records]
         with self.db(True) as db:
+            if self.business_path:
+                from aoxiang_receipt_scope import require
+                require(self.business_path,items)
             return self._new(db, 'receipt', items)
 
     def update(self, id, *, state=None, message=None, position=None, changes=None, **job_changes):
@@ -310,11 +315,14 @@ class Workflows:
         if type(minutes) is not int or not 5 <= minutes <= 1440:
             raise ValueError('同步周期须为5至1440分钟；未启用前不会自动查询')
         with self.db(True) as db:
+            if enabled and self.business_path:
+                from aoxiang_receipt_scope import require
+                require(self.business_path,[{'key':r['id'],'basis':r['basis']} for r in records])
             for r in records:
                 old = db.execute('SELECT payload FROM ax_schedules WHERE id=?', (r['id'],)).fetchone()
                 s = json.loads(old[0]) if old else {'id': r['id'], 'basis': r['basis'], 'order_id': r['binding']['orderId'], 'terminal': False, 'final_pending': False, 'failures': 0, 'active_job': None, 'created_at': self.clock()}
-                if enabled and (s['terminal'] or r.get('receipt_terminal')):
-                    raise ValueError('已完成订单不能重新启用常规监控；最终同步待办仍保留')
+                if enabled and (s['terminal'] or r.get('receipt_terminal') or r.get('platform_status')=='已作废' or r['binding'].get('status')=='已作废'):
+                    raise ValueError('已完成或已作废订单不能重新启用常规监控；已完成的实收待办仍保留')
                 s.update(enabled=bool(enabled), automation_paused=not enabled, display_name=r.get('target', {}).get('displayName'), interval_seconds=minutes * 60, next_at=self.clock(), updated_at=self.clock())
                 db.execute('INSERT INTO ax_schedules VALUES(?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload', (r['id'], encoded(s)))
 
@@ -326,7 +334,12 @@ class Workflows:
                 job=self._get(db,s['active_job'])
                 if job['state'] in ('PAUSED','FAILED') or job['state'] in ACTIVE:continue
                 s['active_job']=None
+            if s.get('retired') or (s.get('summary') or {}).get('status')=='已作废':continue
             if not s.get('automation_paused') and (s.get('enabled') and not s['terminal'] or s.get('final_pending')) and s.get('next_at',0)<=self.clock() and not s.get('needs_review'):due.append(s)
+        if self.business_path and due:
+            from aoxiang_receipt_scope import assess
+            states=assess(self.business_path,[{'key':s['id'],'basis':s['basis']} for s in due])
+            due=[s for s in due if states[s['id']]['eligible']]
         return due
 
     def enqueue_due(self, *, timeout=10):
@@ -354,17 +367,67 @@ class Workflows:
             return job
 
     def observe_schedule(self, purchase_id, record, *, error=None, review=False):
+        local_head=None
+        if record and self.business_path and record.get('basis'):
+            from aoxiang_receipt_scope import assess
+            local=assess(self.business_path,[{'key':purchase_id,'basis':record['basis']}])[purchase_id]
+            if local['eligible']:local_head=local['head']
         with self.db(True) as db:
             row = db.execute('SELECT payload FROM ax_schedules WHERE id=?', (purchase_id,)).fetchone()
             if not row:
-                return
-            s = json.loads(row[0])
+                if not local_head or not (record.get('scope') or {}).get('orderId'):return
+                s={'id':purchase_id,'basis':record['basis'],'order_id':record['scope']['orderId'],'terminal':False,'final_pending':False,'failures':0,
+                   'active_job':None,'created_at':self.clock(),'enabled':False,'automation_paused':True,'interval_seconds':1800}
+            else:s = json.loads(row[0])
             terminal = s['terminal'] or bool((record or {}).get('terminal'))
             if record:
                 s['last_state'] = record['state']
                 s['summary'] = record.get('summary')
+                if local_head:s['local_head']=local_head
             s.update(terminal=terminal, enabled=s['enabled'] and not terminal, needs_review=bool(review), last_error=error,
                      last_observed_at=self.clock(), failures=s['failures'] + 1 if error else 0)
-            s['final_pending'] = terminal and s.get('last_state') != 'SYNCED'
+            voided=(record or {}).get('terminalKind')=='VOIDED' or (s.get('summary') or {}).get('status')=='已作废'
+            if voided:
+                s['enabled']=False;s['automation_paused']=True
+                s['needs_review']=s['needs_review'] or s.get('last_state')=='VOIDED_REVIEW'
+            s['final_pending'] = terminal and not voided and s.get('last_state') != 'SYNCED'
             s['next_at'] = self.clock() + min(86400, s['interval_seconds'] * (2 ** min(s['failures'], 6)))
-            db.execute('UPDATE ax_schedules SET payload=? WHERE id=?', (encoded(s), purchase_id))
+            db.execute('INSERT INTO ax_schedules VALUES(?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload', (purchase_id,encoded(s)))
+
+    def retire_receipt_sources(self):
+        """Retire local scheduling projections, retaining all external identities."""
+        if not self.business_path:return
+        from aoxiang_receipt_scope import assess
+        with self.db(timeout=0) as db:
+            schedules=[json.loads(r[0]) for r in db.execute('SELECT payload FROM ax_schedules')]
+            jobs=[json.loads(r[0]) for r in db.execute("SELECT payload FROM ax_workflows WHERE state IN ('QUEUED','YIELDED','PAUSED','FAILED')")]
+        items=[{'key':s['id'],'basis':s['basis']} for s in schedules if not s.get('retired')]
+        items += [i for j in jobs if j['kind']=='receipt' for i in j['items'] if i['state'] not in DONE_ITEM]
+        if not items:return
+        states=assess(self.business_path,items);invalid={k:v['reason'] for k,v in states.items() if not v['eligible']}
+        voided={s['id'] for s in schedules if (s.get('summary') or {}).get('status')=='已作废' and (s.get('enabled') or s.get('final_pending'))}
+        projection={s['id'] for s in schedules if s['id'] in states and states[s['id']]['eligible'] and s.get('summary') and not s.get('local_head')}
+        if not invalid and not voided and not projection:return
+        with self.db(True,timeout=0) as db:
+            # Recheck after taking the projection lock; no business transaction is changed.
+            fresh=assess(self.business_path,items);invalid={k:v['reason'] for k,v in fresh.items() if not v['eligible']}
+            for s in schedules:
+                if s['id'] not in invalid and s['id'] not in voided and s['id'] not in projection:continue
+                row=db.execute('SELECT payload FROM ax_schedules WHERE id=?',(s['id'],)).fetchone()
+                if not row:continue
+                current=json.loads(row[0]);current['updated_at']=self.clock()
+                if s['id'] in invalid or s['id'] in voided:current.update(enabled=False,automation_paused=True,final_pending=False,
+                    retired=s['id'] in invalid,retired_reason=invalid.get(s['id'],'平台已观察到作废，停止常规同步；原事实保留'))
+                if s['id'] in fresh and fresh[s['id']]['eligible']:current['local_head']=fresh[s['id']]['head']
+                db.execute('UPDATE ax_schedules SET payload=? WHERE id=?',(encoded(current),s['id']))
+            for old in jobs:
+                if old['kind']!='receipt':continue
+                job=self._get(db,old['id']);changed=False
+                if job['state']=='RUNNING':continue
+                for item in job['items']:
+                    if item['key'] in invalid and item['state'] not in DONE_ITEM:
+                        item.update(state='SKIPPED',source_retired=True,error={'code':'RECEIPT_SOURCE_RETIRED','message':invalid[item['key']]});changed=True
+                if changed:
+                    from aoxiang_workflow_state import reconcile
+                    if all(i['state'] in DONE_ITEM for i in job['items']):job['state']='CANCELLED' if all(i['state']=='SKIPPED' for i in job['items']) else 'COMPLETED'
+                    self._save(db,reconcile(job),'RECEIPT_SOURCE_RETIRED')

@@ -116,12 +116,15 @@ def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None):
         ws.column_dimensions['U'].width=14
         ws.print_options.horizontalCentered=False
     import order_identity
-    order_identity.write(wb,[order_identity.entry(order,warehouse,name) for name in grouped])
+    identities=[order_identity.entry(order,warehouse,name) for name in grouped]
+    order_identity.write(wb,identities)
     progress('数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…');path.parent.mkdir(parents=True,exist_ok=True)
     fd,temp=tempfile.mkstemp(prefix='.normal-',suffix='.xlsx',dir=path.parent);os.close(fd)
     try:
         with stage('压缩保存 Excel（完成后响应取消）',progress):wb.save(temp)
         checkpoint(cancel)
+        from export_files import verify_identity
+        progress('核验文件中的补货单号、店仓与签发修订…');verify_identity(temp,identities);checkpoint(cancel)
         # The complete temporary workbook lives on the destination volume.
         # Never remove/truncate the previous signed file before publication.
         try:os.replace(temp,path)

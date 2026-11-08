@@ -1,0 +1,286 @@
+{
+  "base": "f481cbe31a2ec82be97d8df83303aae64dd17bcc",
+  "approved_head": "8cb6661343f7c55916d2137986a309af783d7c36",
+  "commits": [
+    {
+      "sha": "87a530771deaa649718afc2c58283a5c11742bd9",
+      "subject": "feat: add pinned stockout AI analysis and recoverable signing workflows"
+    },
+    {
+      "sha": "c12feff48eb81008a2643b2ce61d636b56fae980",
+      "subject": "docs: normalize generated offline manual for packaging"
+    },
+    {
+      "sha": "c3dda6c7488d6d443580092aed7a6e607accb6dc",
+      "subject": "docs: package illustrated manual and complete native acceptance driver"
+    },
+    {
+      "sha": "27dbc3786e21bef7f766a70003017a338c8fe81f",
+      "subject": "release: seal 0.48.0 rc2 workflow acceptance and illustrated guide"
+    },
+    {
+      "sha": "987f9b076624062913860a1de99a3c2969dd6af2",
+      "subject": "docs: guide newcomers through complete replenishment business handoffs"
+    },
+    {
+      "sha": "46fcfbd4f9bd580a0855b83669a6a42dbd5f8465",
+      "subject": "fix: preserve shared browser on startup handoff and separate login failures"
+    },
+    {
+      "sha": "f32cfe39fcd62df36505577ee076570e31a8201a",
+      "subject": "release: seal 0.48.1 shared connection handoff verification"
+    },
+    {
+      "sha": "b3b1636d9ae0eb353b0a4e00f6657ccb8b078f05",
+      "subject": "fix: keep shared connection when closing setup and restore saved fields"
+    },
+    {
+      "sha": "65e58194eea58bce133f0f4697bcee9eb667b9b0",
+      "subject": "release: seal 0.48.2 setup close and saved connection acceptance"
+    },
+    {
+      "sha": "271892ad48e1c5ff4791c9be836478a4688f2a8c",
+      "subject": "feat: filter final list by category sales stock and preview batch quantity changes"
+    },
+    {
+      "sha": "dbb7df0eb9354ddbce0a733d8cc7c05e5a9cd686",
+      "subject": "fix: cover actual export entry with absent optional focus snapshot"
+    },
+    {
+      "sha": "7742a1418a3c3bcfe245f2232c2e2478bb3044d9",
+      "subject": "release: seal 0.48.3 filter edit and actual export entry acceptance"
+    },
+    {
+      "sha": "d6ca62efbdcbfa68d640975e002e3d831788fa3b",
+      "subject": "fix: prioritize store and goods tables and guide pending signing reviews"
+    },
+    {
+      "sha": "8a724ad52cd18d1e5a5ad825c5070d03ec1af138",
+      "subject": "fix: reclaim native-window height from duplicated header and AI toolbar"
+    },
+    {
+      "sha": "7c742b53e5a87136a6c89894fb7459b856064900",
+      "subject": "release: seal 0.48.4 native layout and pure signing guidance acceptance"
+    },
+    {
+      "sha": "dca9175c7dca4d607d875106b7048e70866804f6",
+      "subject": "feat: review and confirm payments directly from generated JST results"
+    },
+    {
+      "sha": "976f71f951a74e0b45395117236d27467d9d97e8",
+      "subject": "release: seal direct JST payment review 0.48.5 acceptance"
+    },
+    {
+      "sha": "b5f77bed4c9e3161e1f14b3c56bbf35c7b26f79a",
+      "subject": "fix: recover accepted purchase verification and clarify batch workflows"
+    },
+    {
+      "sha": "19f49f2a1950e234693ec972ea928100bad8e69a",
+      "subject": "release: seal 0.48.6 purchase recovery and workflow acceptance"
+    },
+    {
+      "sha": "c71c9cbbe2d0bb3bbe29a3f8e74180aa6b5bfc14",
+      "subject": "docs: record layered payment matching and purchase status plan"
+    },
+    {
+      "sha": "ccdd38a0f7ae8e8f60b10fc676c918e16b8c6786",
+      "subject": "fix: round AX procurement unit prices to cents with explicit deltas"
+    },
+    {
+      "sha": "5d030552e5252c02f24d89e91daeef68deebe33f",
+      "subject": "release: seal 0.48.7 price rounding package and validation evidence"
+    },
+    {
+      "sha": "a0e6f41a07e18bb54555049668ce641d4bbd2864",
+      "subject": "feat: implement payment identity matching and safe procurement status synchronization"
+    },
+    {
+      "sha": "54ebb06eaadf542f818089542c3518a0b9c7a134",
+      "subject": "test: use real payment identity in queue race fixture and seal 0.49.0 evidence"
+    },
+    {
+      "sha": "fb82452cc195621d2fbd3e12e2578c99ebe020f6",
+      "subject": "docs: seal 0.49.0 local delivery, offline acceptance and measured resource evidence"
+    },
+    {
+      "sha": "b23ca977aad7dd0918c11ed85fe14c9e634cd814",
+      "subject": "fix: automatically identify payment orders from complete evidence and explicit signing numbers"
+    },
+    {
+      "sha": "ff364be083c0a2950bce8486281f0e94e97ec49f",
+      "subject": "docs: seal 0.49.1 automatic payment matching and isolated EXE acceptance"
+    },
+    {
+      "sha": "7d0ab0131fd35e32c7614ec631d63f5f059852ea",
+      "subject": "feat: add simple JST internal order number editor"
+    },
+    {
+      "sha": "9ec34c7e5f05d8b30b8b54aaaf6eed121db648d4",
+      "subject": "test: seal 0.49.2 rc1 number maintenance delivery"
+    },
+    {
+      "sha": "9ab55549d15f383653fa00f1a79d1b03c045f2af",
+      "subject": "test: retain raw 0.49.2 regression and reference logs"
+    },
+    {
+      "sha": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
+      "subject": "feat: preserve order identifiers in operating analytics"
+    },
+    {
+      "sha": "25c5093d9d715fbf9044f95e9de1aba47d3afe9a",
+      "subject": "test: seal 0.49.3 analytics identifier delivery"
+    },
+    {
+      "sha": "8cb6661343f7c55916d2137986a309af783d7c36",
+      "subject": "docs: add detailed parameter and purchase number onboarding"
+    }
+  ],
+  "tags": [
+    {
+      "tag": "v0.48.0-rc2",
+      "tag_object": "a4b5b6747591494ee18c427b17ea6cf7e13271f1",
+      "commit": "27dbc3786e21bef7f766a70003017a338c8fe81f",
+      "source_commit": "c3dda6c7488d6d443580092aed7a6e607accb6dc",
+      "report": "releases/0.48.0/rc2/交付报告.md"
+    },
+    {
+      "tag": "v0.48.1-rc1",
+      "tag_object": "abde987465561b40726d519601ad75794299a534",
+      "commit": "f32cfe39fcd62df36505577ee076570e31a8201a",
+      "source_commit": "46fcfbd4f9bd580a0855b83669a6a42dbd5f8465",
+      "report": "releases/0.48.1/rc1/交付报告.md"
+    },
+    {
+      "tag": "v0.48.2-rc1",
+      "tag_object": "e095870498c9e38cc8f44534b819008ba0eff0ad",
+      "commit": "65e58194eea58bce133f0f4697bcee9eb667b9b0",
+      "source_commit": "b3b1636d9ae0eb353b0a4e00f6657ccb8b078f05",
+      "report": "releases/0.48.2/rc1/交付报告.md"
+    },
+    {
+      "tag": "v0.48.3-rc2",
+      "tag_object": "f8310207c55077b070e7cd79d2ff9cd643e97156",
+      "commit": "7742a1418a3c3bcfe245f2232c2e2478bb3044d9",
+      "source_commit": "dbb7df0eb9354ddbce0a733d8cc7c05e5a9cd686",
+      "report": "releases/0.48.3/rc2/交付报告.md"
+    },
+    {
+      "tag": "v0.48.4-rc2",
+      "tag_object": "b9ae9026c9e34aaf0353571fe4def1afb158bfb5",
+      "commit": "7c742b53e5a87136a6c89894fb7459b856064900",
+      "source_commit": "8a724ad52cd18d1e5a5ad825c5070d03ec1af138",
+      "report": "releases/0.48.4/rc2/交付报告.md"
+    },
+    {
+      "tag": "v0.48.5-rc1",
+      "tag_object": "9544cad817f9a6f43522ddbaf3750a5efce78131",
+      "commit": "976f71f951a74e0b45395117236d27467d9d97e8",
+      "source_commit": "dca9175c7dca4d607d875106b7048e70866804f6",
+      "report": "releases/0.48.5/rc1/交付报告.md"
+    },
+    {
+      "tag": "v0.48.6-rc1",
+      "tag_object": "374939dc5f00cee9c9881e6235303de53667bc51",
+      "commit": "19f49f2a1950e234693ec972ea928100bad8e69a",
+      "source_commit": "b5f77bed4c9e3161e1f14b3c56bbf35c7b26f79a",
+      "report": "releases/0.48.6/rc1/交付报告.md"
+    },
+    {
+      "tag": "v0.48.7-rc1",
+      "tag_object": "d2eb0291765d332b2fe4bd5272fc182ca85268e5",
+      "commit": "5d030552e5252c02f24d89e91daeef68deebe33f",
+      "source_commit": "ccdd38a0f7ae8e8f60b10fc676c918e16b8c6786",
+      "report": "releases/0.48.7/rc1/交付报告.md"
+    },
+    {
+      "tag": "v0.49.0-rc1",
+      "tag_object": "cd1d2974c6a725ca0985e659e7e6e68a8d38a6f8",
+      "commit": "fb82452cc195621d2fbd3e12e2578c99ebe020f6",
+      "source_commit": "a0e6f41a07e18bb54555049668ce641d4bbd2864",
+      "report": "releases/0.49.0/rc1/交付报告.md"
+    },
+    {
+      "tag": "v0.49.1-rc1",
+      "tag_object": "e1bfa22b926175f00403aebea03349f2464dffc1",
+      "commit": "ff364be083c0a2950bce8486281f0e94e97ec49f",
+      "source_commit": "b23ca977aad7dd0918c11ed85fe14c9e634cd814",
+      "report": "releases/0.49.1/rc1/交付报告.md"
+    },
+    {
+      "tag": "v0.49.2-rc1",
+      "tag_object": "db6963f6ce441e27e5e1f78b59f46721d31fda1f",
+      "commit": "9ec34c7e5f05d8b30b8b54aaaf6eed121db648d4",
+      "source_commit": "7d0ab0131fd35e32c7614ec631d63f5f059852ea",
+      "report": "releases/0.49.2/rc1/交付报告.md"
+    },
+    {
+      "tag": "v0.49.3-rc1",
+      "tag_object": "2c8f56a13369e9d5918e1aedd178c2dccd55748e",
+      "commit": "25c5093d9d715fbf9044f95e9de1aba47d3afe9a",
+      "source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
+      "report": "releases/0.49.3/rc1/交付报告.md"
+    }
+  ],
+  "branches": [
+    {
+      "branch": "docs/newcomer-parameters-and-purchase-0493",
+      "sha": "8cb6661343f7c55916d2137986a309af783d7c36"
+    },
+    {
+      "branch": "feat/analytics-order-identifiers-0.49.3",
+      "sha": "25c5093d9d715fbf9044f95e9de1aba47d3afe9a"
+    },
+    {
+      "branch": "feat/assistant-workflow-0.48.0",
+      "sha": "987f9b076624062913860a1de99a3c2969dd6af2"
+    },
+    {
+      "branch": "feat/final-list-filters-0.48.3",
+      "sha": "7742a1418a3c3bcfe245f2232c2e2478bb3044d9"
+    },
+    {
+      "branch": "feat/jst-direct-payment-0.48.5",
+      "sha": "976f71f951a74e0b45395117236d27467d9d97e8"
+    },
+    {
+      "branch": "feature/payment-matching-and-purchase-status-0.49.0",
+      "sha": "fb82452cc195621d2fbd3e12e2578c99ebe020f6"
+    },
+    {
+      "branch": "feature/payment-reference-maintenance-0.49.2",
+      "sha": "9ab55549d15f383653fa00f1a79d1b03c045f2af"
+    },
+    {
+      "branch": "fix/browser-handoff-0.48.1",
+      "sha": "f32cfe39fcd62df36505577ee076570e31a8201a"
+    },
+    {
+      "branch": "fix/payment-auto-recognition-0.49.1",
+      "sha": "ff364be083c0a2950bce8486281f0e94e97ec49f"
+    },
+    {
+      "branch": "fix/purchase-price-rounding-0.48.7",
+      "sha": "5d030552e5252c02f24d89e91daeef68deebe33f"
+    },
+    {
+      "branch": "fix/purchase-recovery-and-workflow-0.48.6",
+      "sha": "c71c9cbbe2d0bb3bbe29a3f8e74180aa6b5bfc14"
+    },
+    {
+      "branch": "fix/setup-close-0.48.2",
+      "sha": "65e58194eea58bce133f0f4697bcee9eb667b9b0"
+    },
+    {
+      "branch": "fix/table-layout-0.48.4",
+      "sha": "7c742b53e5a87136a6c89894fb7459b856064900"
+    }
+  ],
+  "runtime_trees": {
+    "src": "2277b607bc8c15916fa03ddcbd2171562865ed99",
+    "components": "7a57ac5680f431e0bed4013599b0aa1d646f751a",
+    "tests": "c03c22545f7c39392fd8531da05977f5d228538c"
+  },
+  "release_source": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
+  "exclude_worktree": "perf/deletion-scan-0.49.4",
+  "remote_main_exclusive_commits": 0
+}

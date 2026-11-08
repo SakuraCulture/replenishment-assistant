@@ -105,7 +105,7 @@ class Bindings(QDialog):
         self.bindings={k:c.currentData() for k,c in self.combos.items()}; self.go.setEnabled(all(self.bindings.values()))
 
 class Review(QDialog):
-    def __init__(self,parent,plan):
+    def __init__(self,parent,plan,*,show_source_notices=True):
         super().__init__(parent); self.setObjectName('lifecycleReview'); self.setWindowTitle('确认保存完整单据'); self.resize(1200,740); v=QVBoxLayout(self); summary=[]; rows=[]; orders={}
         for p in plan['plans']:
             h=p['head'];payload=p['payload'];basis=payload['basis'];origins=[r['quantity_origin'] for r in payload['rows']]
@@ -113,8 +113,8 @@ class Review(QDialog):
             summary.append(head_text(h)+' · '+io.TITLES[p['stage']]+(' · 更新已有单据' if p['expected'] else ' · 新增单据')+f"\n依据：{basis_text}；系统自动读取上环节数量；{len(payload['rows'])}款；明确0 {origins.count('zero')}款、空白转0 {origins.count('blank')}款、缺行转0 {origins.count('missing')}款；清单外 {len(payload['extra'])}款；同值重复 {p['duplicates']}行"+('；上游未就绪，本次仅留存，之后须重新核对。' if payload['pending'] else '')+('；本次明确确认整单为0，不生成原始Excel。' if payload['explicit_zero'] else ''))
             source=next((r['source_order'] for r in payload['raw_rows'] if r.get('source_order')),None)
             if source:summary.append('来源店铺：'+str(source.get('店铺名称'))+'；内部订单：'+str(source.get('内部订单号'))+'；线上订单：'+str(source.get('线上订单号'))+'。请与上方所选店仓单核对。')
-            if payload.get('payment_source',{}).get('type')=='jst_import_return':
-                v.addWidget(label(h['number']+'：使用聚水潭导入单作为付款来源；聚水潭内部单号未提供，可后补。确认前请核实外部导入无异常且已经付款。','section'))
+            if show_source_notices and payload.get('payment_source',{}).get('type')=='jst_import_return':
+                v.addWidget(label(h['number']+'：使用聚水潭导入单作为付款来源；内部号可在“订单详情 → 维护聚水潭内部订单号”补填。确认前请核实外部导入无异常且已经付款。','section'))
             rows.extend([*r,io.TITLES[p['stage']]] for r in p['differences'])
             item=orders.setdefault(h['number'],[h['number'],*['本次未提供']*len(io.STAGES)])
             item[1+io.STAGES.index(p['stage'])]=('内容相同' if not p['changed'] else '拟更新' if p['expected'] else '拟新增')+(' · 仅留存待核' if payload['pending'] else '')
@@ -131,7 +131,7 @@ class Review(QDialog):
         self.search=QLineEdit();self.search.setPlaceholderText('搜索单号 / 商品编码 / 名称 / 处理说明');self.category=QComboBox();self.category.addItems(['全部','数量变化','明确填0','空白按0','缺行按0','清单外商品']);self.stage_filter=QComboBox();self.stage_filter.addItems(['全部环节',*[io.TITLES[s] for s in io.STAGES]]);filters=QHBoxLayout();filters.addWidget(self.stage_filter);filters.addWidget(self.category);filters.addWidget(self.search);v.addLayout(filters)
         self.all_rows=rows;self.table,self.model=grid(self,['补货单号','环节','商品编码','商品名称','上环节数量（自动）','本环节数量','差额（自动）','处理说明','上次保存数量（自动）','源单商品金额'],self.display_rows(rows));v.addWidget(self.table,1);self.category.currentTextChanged.connect(self.filter_rows);self.stage_filter.currentTextChanged.connect(self.filter_rows);self.search.textChanged.connect(self.filter_rows);self.overview.clicked.connect(self.select_order)
         self.table.setColumnWidth(1,120)
-        corrections=[ [p['head']['number'],*r] for p in plan['plans'] for r in p.get('calibration',[]) ]
+        corrections=[ [p['head']['number'],*r] for p in plan['plans'] for r in p.get('calibration',[]) ];correction_table=None
         if corrections:
             v.addWidget(label('与上次保存的差异（校准后保留原件和旧值；不修改仓占用或收货事实）','section'))
             correction_table,correction_model=grid(self,['补货单号','商品编码','名称','原数量','新数量','原金额','新金额','原外部单号','新外部单号'],corrections)
@@ -140,22 +140,28 @@ class Review(QDialog):
         self.extra_ack=QCheckBox('清单外商品已逐项核对，确属所选门店和仓单；完全匹配不上时已重新核对订单。');self.extra_ack.setVisible(any(p['payload']['extra'] for p in plan['plans']));self.extra_ack.setChecked(not any(p['payload']['extra'] for p in plan['plans']));v.addWidget(self.extra_ack)
         v.addWidget(label('数量与推荐不同不阻止环节完成。确认后独立留存新版本和原件，不修改签发、计算或其它环节。','muted'))
         row=QHBoxLayout(); cancel=button('取消',self.reject); cancel.setDefault(True); row.addWidget(cancel); self.save=button('确认保存完整单据',self.accept,True); self.save.setEnabled(False); self.save.setAutoDefault(False);self.complete.toggled.connect(self.allow_save);self.extra_ack.toggled.connect(self.allow_save);row.addWidget(self.save);v.addLayout(row)
+        from lifecycle_review_layout import arrange
+        arrange(self,plan,details,disclosure,filters,row,correction_table)
     def select_stat(self,index):
+        self.scope_tree.setCurrentItem(self.scope_tree.topLevelItem(0))
         row=self.stats_model.rows[self.stats_model.indices[index.row()]];self.search.setText(row[0]);self.stage_filter.setCurrentText(row[1])
         self.category.setCurrentText({3:'明确填0',4:'空白按0',5:'缺行按0',6:'清单外商品'}.get(index.column(),'全部'))
     def allow_save(self):self.save.setEnabled(self.complete.isChecked() and self.extra_ack.isChecked())
     @staticmethod
     def display_rows(rows):return [[r[0],r[-1],*r[2:-1]] for r in rows]
     def select_order(self,index):
+        self.scope_tree.setCurrentItem(self.scope_tree.topLevelItem(0))
         self.search.setText(self.overview_model.rows[index.row()][0])
         self.stage_filter.setCurrentText(io.TITLES[io.STAGES[index.column()-1]] if index.column() else '全部环节')
     def filter_rows(self):
         from decimal import Decimal
         kind=self.category.currentText();rows=self.all_rows
+        if getattr(self,'scope_numbers',None) is not None:rows=[r for r in rows if r[0] in self.scope_numbers]
         if kind=='数量变化':rows=[r for r in rows if r[6] is not None and Decimal(str(r[6]))!=0]
         elif kind!='全部':rows=[r for r in rows if kind in r[7]]
         if self.stage_filter.currentIndex():rows=[r for r in rows if r[-1]==self.stage_filter.currentText()]
         self.model.replace(self.display_rows(rows));self.model.filter(self.search.text())
+        if hasattr(self,'view_scope'):self.view_scope.setText(f'当前查看 {self.model.rowCount()} 行；确认保存范围仍为本批全部 {self.review_count} 份。切换门店、环节和筛选不会缩小保存范围。')
 
 def commit(parent,host,plan):
     task=Task(parent,service.commit,(host.work_repository.path,plan),'保存完整单据')
@@ -231,6 +237,7 @@ class LifecycleDialog(QDialog):
         v.addWidget(label('已签发 → 门店回传 → 门店付款 → 门店实际收货。新单据核对确认后空白/缺行按0；未导入整单不当作0。旧记录按旧口径保留。','muted'));search=QLineEdit();search.setPlaceholderText('筛选商品编码 / 名称 / 资料说明');v.addWidget(search);self.table,self.model=grid(self,service.HEADERS);v.addWidget(self.table,1);search.textChanged.connect(self.model.filter)
         sources=QGroupBox('单据与依据');row=QHBoxLayout(sources);row.addWidget(button('查看决策依据',on_audit or (lambda:host.open_archive(head))));self.views={}
         for s in io.STAGES:self.views[s]=button('查看'+io.TITLES[s]+'版本',lambda checked=False,k=s:self.document(k));row.addWidget(self.views[s])
+        self.payment_reference_btn=button('维护聚水潭内部订单号',self.payment_references);row.addWidget(self.payment_reference_btn)
         v.addWidget(sources)
         ax=QGroupBox('翱象采购（以已确认付款为依据）');ax_row=QHBoxLayout(ax);self.ax_purchase=button('打开翱象采购',self.open_ax_purchase);ax_row.addWidget(self.ax_purchase);ax_row.addWidget(label('生成预览、上传建单、核对原任务；建单后保留待提交。','muted'));ax_row.addStretch();v.addWidget(ax)
         self.ax_receipt=button('查看 / 同步翱象收货',self.open_ax_receipt);ax_row.addWidget(self.ax_receipt)
@@ -250,8 +257,13 @@ class LifecycleDialog(QDialog):
         for s,b in self.rechecks.items():b.setEnabled(bool(self.view['documents'][s]) and not self.head.get('deleted'))
         for s,b in self.zeros.items():b.setEnabled(not self.head.get('deleted'))
         self.imports.setEnabled(not self.head.get('deleted'));self.export_confirmation.setEnabled(not self.head.get('deleted'))
+        self.payment_reference_btn.setEnabled(not self.head.get('deleted') and bool(self.view['documents']['payment']))
         self.ax_purchase.setEnabled(not self.head.get('deleted') and bool(self.view['documents']['payment']))
         self.ax_receipt.setEnabled(not self.head.get('deleted') and bool(self.view['documents']['payment']))
+    def payment_references(self):
+        from payment_references_ui import edit_reference
+        receipt=edit_reference(self,self.host,self.head)
+        if receipt:self.note.setText('已保存聚水潭内部订单号：'+receipt['number']+'；付款和采购依据未变。')
     def open_ax_purchase(self):
         from aoxiang_purchase_ui import open_purchase
         open_purchase(self,self.host,self.head)

@@ -32,7 +32,7 @@ export class PurchaseCreateService{
     browser.adapter.onImportReceipt=r=>this.ledger.accepted(r);
     return {config,binding,adapter:browser.adapter,signal};
   }
-  async preflight(p){checkPurchaseConfiguration(p,await loadConfig(this.root));return checkPurchaseInput(p);}
+  async preflight(p,{forBinding=false}={}){checkPurchaseConfiguration(p,await loadConfig(this.root));return checkPurchaseInput(p,{requireRounded:!forBinding});}
   async prepare(p,{signal}){const {adapter}=await this.context(p,signal);return adapter.preparePurchaseCreate(p);}
   async upload(p,baseline,{signal}){const {adapter}=await this.context(p,signal);return adapter.uploadPurchaseOnce({intent:p,baseline});}
   async observe(p,receipt,{signal}){

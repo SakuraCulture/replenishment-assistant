@@ -8,6 +8,57 @@ from business_ui import grid
 from ui_controls import label,button
 from business_presenter import value_text,path_title,file_name
 
+
+class ReviewDialog(QDialog):
+    """Resizable review with the confirmation roles used by existing callers."""
+    def __init__(self,parent=None):
+        super().__init__(parent);self._clicked=None;self._escape=None
+        layout=QVBoxLayout(self);self.description=QPlainTextEdit();self.description.setReadOnly(True);self.description.setMaximumHeight(130);layout.addWidget(self.description)
+        self.information=label('');layout.addWidget(self.information);self.body=QVBoxLayout();layout.addLayout(self.body,1)
+        self.button_box=QDialogButtonBox();layout.addWidget(self.button_box);self.button_box.clicked.connect(self.choose)
+        from table_readability import fit_window
+        fit_window(self,1180,760)
+    def setText(self,text):self.description.setPlainText(text)
+    def text(self):return self.description.toPlainText()
+    def setInformativeText(self,text):self.information.setText(text)
+    def setDetailedText(self,text):
+        self._detail=text
+        if not hasattr(self,'detail_view'):
+            self.detail_view=QPlainTextEdit();self.detail_view.setReadOnly(True);self.detail_view.setMaximumHeight(150);self.detail_view.hide()
+            toggle=QCheckBox('显示技术详情（可复制）');toggle.toggled.connect(self.detail_view.setVisible)
+            self.layout().insertWidget(self.layout().count()-1,toggle);self.layout().insertWidget(self.layout().count()-1,self.detail_view)
+        self.detail_view.setPlainText(text)
+    def detailedText(self):return getattr(self,'_detail','')
+    def setIcon(self,icon):pass
+    def addButton(self,text,role):return self.button_box.addButton(text,QDialogButtonBox.ButtonRole(role.value))
+    def setDefaultButton(self,button):self._default=button;button.setDefault(True);button.setAutoDefault(False)
+    def defaultButton(self):return getattr(self,'_default',None)
+    def escapeButton(self):return self._escape
+    def buttons(self):return self.button_box.buttons()
+    def setEscapeButton(self,button):self._escape=button
+    def clickedButton(self):return self._clicked
+    def buttonRole(self,button):return QMessageBox.ButtonRole(self.button_box.buttonRole(button).value)
+    def choose(self,button):self._clicked=button;self.done(QDialog.DialogCode.Accepted if self.buttonRole(button)!=QMessageBox.ButtonRole.RejectRole else QDialog.DialogCode.Rejected)
+    def reject(self):self._clicked=self._escape;super().reject()
+    def exec(self):self._clicked=None;return super().exec()
+
+
+def details(parent,title,headers,rows,note=''):
+    dialog=QDialog(parent);dialog.setWindowTitle(title);layout=QVBoxLayout(dialog)
+    if note:layout.addWidget(label(note,'muted'))
+    search=QLineEdit();search.setPlaceholderText('搜索全部已载入内容');search.setClearButtonEnabled(True);layout.addWidget(search)
+    table,model=grid(dialog,headers,rows);layout.addWidget(table,1)
+    body=QPlainTextEdit();body.setReadOnly(True);body.setPlaceholderText('选择一行查看全部字段，可选择和复制完整文本');body.setMaximumHeight(220);layout.addWidget(body)
+    def selection(*_):
+        from table_readability import row_values
+        hs,values=row_values(table);body.setPlainText('\n\n'.join(f'{h}：\n{v if v is not None else ""}' for h,v in zip(hs,values)))
+    table.selectionModel().currentChanged.connect(selection);search.textChanged.connect(model.filter);model.modelReset.connect(body.clear)
+    layout.addWidget(button('关闭',dialog.accept))
+    from table_readability import fit_window
+    fit_window(dialog)
+    if model.rowCount():table.setCurrentIndex(model.index(0,0))
+    dialog.exec()
+
 class ReviewLayout(QObject):
     """QMessageBox rebuilds its private layout when text/buttons change."""
     def __init__(self,box,widgets):
@@ -45,14 +96,20 @@ def review_table(box,headers,rows,*,total=None):
     """Keep existing QMessageBox confirmation roles/default/escape behavior."""
     rows=list(rows);box.setDetailedText('')
     search=QLineEdit(box);search.setPlaceholderText('搜索门店 / 商品 / 参数 / 变化项');search.setClearButtonEnabled(True)
-    table,model=grid(box,headers,rows);table.setObjectName('businessReviewTable');table.setMinimumSize(760,260)
-    table.setWordWrap(True);table.verticalHeader().setDefaultSectionSize(48)
+    table,model=grid(box,headers,rows);table.setObjectName('businessReviewTable');table.setMinimumSize(300,150)
+    table.setWordWrap(False)
     table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
     for i in range(len(headers)):table.setColumnWidth(i,180 if i<2 else 150)
     caption=label(f'已载入 {len(rows)} 项'+(f' / 共 {total} 项；此处截断，请用原有完整差异导出查看全部。' if total and total>len(rows) else '；仅筛选显示，不改变确认范围。'),'muted')
-    caption.setParent(box);search.textChanged.connect(model.filter);box.setMinimumWidth(850)
+    caption.setParent(box);search.textChanged.connect(model.filter)
+    detail=button('查看当前行完整内容（Ctrl+Shift+D）',lambda:__import__('table_readability').full_row(table))
     box.business_table=table;box.business_model=model;box.business_search=search
-    box.business_layout=ReviewLayout(box,(caption,search,table))
+    if isinstance(box,ReviewDialog):
+        box.body.addWidget(caption);box.body.addWidget(search);box.body.addWidget(table,1);box.body.addWidget(detail)
+    else:
+        box.business_layout=ReviewLayout(box,(caption,search,table,detail))
+        from table_readability import fit_window
+        fit_window(box,1100,720)
     return table,model
 
 def technical(parent,text,caption='查看技术详情'):
@@ -78,6 +135,14 @@ def file_results(parent,paths,title='导出完成',note=''):
 
 def failure_message(exc):
     raw=str(exc)
+    if '门店尚有待核对的签发前调整：' in raw:
+        code=raw.split('门店尚有待核对的签发前调整：',1)[1].splitlines()[0]
+        return '门店 '+code+' 的最终清单调整尚未应用，暂不能签发导出。\n打开“最终清单 / 改量”，补齐调整原因，核对修改与预算并确认风险后，点击“应用最终数量”，再签发导出。\n“保留为待核对草稿”只暂存，不代表应用；此提示不表示文件被占用。'
+    if '导出任务与恢复' in raw and '已生成 ' in raw:
+        import re
+        amount=re.search(r'已生成 \d+/\d+ 份',raw)
+        reason='文件已生成，导出日志未写完。' if '日志写入失败' in raw else '部分文件写出未完成；请关闭占用文件或更换可写目录。'
+        return raw.splitlines()[0]+'\n'+(amount.group()+'。' if amount else '')+reason+'\n打开“显示与帮助 → 导出任务与恢复”，按原修订补导出；不要重新签发。'
     if 'UNRESOLVED_TASK' in raw or 'SUBMISSION_UNKNOWN' in raw:
         message='平台是否已受理尚未核实。请核对原任务，不要重复提交。'
     elif 'locked' in raw.lower():message='数据暂被其他操作占用。请等待当前操作结束，再重试。'

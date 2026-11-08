@@ -1,0 +1,12 @@
+test_compare_uses_same_store_sku_and_missing_days_break_streak (test_stockout_ai.StockoutAI.test_compare_uses_same_store_sku_and_missing_days_break_streak) ... ok
+test_evidence_and_filters_cannot_expand_scope (test_stockout_ai.StockoutAI.test_evidence_and_filters_cannot_expand_scope) ... ok
+test_expired_or_removed_snapshot_cannot_silently_requery (test_stockout_ai.StockoutAI.test_expired_or_removed_snapshot_cannot_silently_requery) ... ok
+test_lazy_context_never_creates_database (test_stockout_ai.StockoutAI.test_lazy_context_never_creates_database) ... ok
+test_native_equivalence_negative_unknown_and_exclusions (test_stockout_ai.StockoutAI.test_native_equivalence_negative_unknown_and_exclusions) ... ok
+test_new_publication_does_not_move_old_analysis_or_export (test_stockout_ai.StockoutAI.test_new_publication_does_not_move_old_analysis_or_export) ... ok
+test_async_page_export_idempotency_disconnect_and_reconnect (test_stockout_ai.StockoutGateway.test_async_page_export_idempotency_disconnect_and_reconnect) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 14.512s
+
+OK

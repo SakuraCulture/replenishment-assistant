@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\benchmark_payment_matching.py", line 56, in <module>
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['run','worker']);p.add_argument('--out',type=Path,required=True);p.add_argument('--mode');a=p.parse_args();run(a.out.resolve()) if a.action=='run' else worker(a.out.resolve(),a.mode)
+                                                                                                                                                                            ^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\benchmark_payment_matching.py", line 43, in run
+    if pidfile.exists():peak=max(peak,psutil.Process(int(pidfile.read_text('ascii'))).memory_info().rss)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: invalid literal for int() with base 10: ''

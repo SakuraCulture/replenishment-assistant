@@ -141,6 +141,30 @@ def main():
     if '--preissue-smoke' in sys.argv:
         from preissue_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--preissue-smoke')+1:])
+    if '--final-filters-smoke' in sys.argv:
+        from final_filters_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--final-filters-smoke')+1:])
+    if '--layout-smoke' in sys.argv:
+        from layout_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--layout-smoke')+1:])
+    if '--payment-matching-smoke' in sys.argv:
+        from payment_matching_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--payment-matching-smoke')+1:])
+    if '--payment-reference-smoke' in sys.argv:
+        from payment_reference_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--payment-reference-smoke')+1:])
+    if '--analytics-identifiers-smoke' in sys.argv:
+        from analytics_identifiers_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--analytics-identifiers-smoke')+1:])
+    if '--purchase-pricing-smoke' in sys.argv:
+        from purchase_pricing_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--purchase-pricing-smoke')+1:])
+    if '--jst-payment-smoke' in sys.argv:
+        from jst_payment_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--jst-payment-smoke')+1:])
+    if '--workflow-refinements-smoke' in sys.argv:
+        from workflow_refinements_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--workflow-refinements-smoke')+1:])
     if '--business-flows-smoke' in sys.argv:
         from business_flows_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--business-flows-smoke')+1:])

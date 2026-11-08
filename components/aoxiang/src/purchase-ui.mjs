@@ -5,6 +5,7 @@ import {SITE,parseResponse,fail,bounded,countValue,idValue,canonical,sameIdentit
 import {PURCHASE_CODES,checkPurchaseQuery,checkPurchaseReceipt,exportScope,dateBounds} from './purchase-contract.mjs';
 import {fileHash} from './workbook-validator.mjs';
 import {downloadNativePurchaseTemplate} from './purchase-template-download.mjs';
+import {selectPurchaseStore} from './purchase-store-selector.mjs';
 
 const QUERY='/saas/chain/plan/supply/purchase/order/pageQuery',CREATE='/ebai/gei/create/export/task',TASKS='/ebai/gei/task/list';
 const RESULT_ORIGIN='https://sc-gei-tc-supply-chain-portal.ele.me';
@@ -63,11 +64,25 @@ export class PurchaseUI extends AoxiangUI{
     if(canonical(await this.page.locator('#'+id+' input').evaluateAll(ns=>ns.map(n=>n.value)))!==canonical([input.from,input.to]))fail('PURCHASE_DATE_NOT_APPLIED','采购时间控件未正确应用日期');
   }
   async queryPurchase(input){
-    dateBounds(input.from,input.to);await this.open(input.identity||this.identity);
+    if(input.queryMode!=='order_id')dateBounds(input.from,input.to);await this.open(input.identity||this.identity);
     await this.click(this.page.getByRole('button',{name:'重置',exact:true}));
-    const control=this.page.locator('#storeCodeList');await this.click(control);const group=[...input.name.matchAll(/[（(]([^（）()]+)[）)]/g)].at(-1)?.[1];await control.fill(group?.replace(/(?:门店|店|仓)$/,'')||input.name);
-    const escaped=input.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),leaf=this.page.locator('.next-tree-node-label').filter({hasText:new RegExp('^'+escaped+'$')}).filter({visible:true});await leaf.first().waitFor({state:'visible'});if(await leaf.count()!==1)fail('AMBIGUOUS_TARGET','采购仓店名称未唯一匹配');await this.click(leaf);await control.press('Escape');
-    await this.setDates(input);if(input.orderId)await this.page.locator('#supplyOrderId').fill(input.orderId);
+    if(input.queryMode==='order_id'){
+      idValue(input.orderId,'采购单号');
+      for(const id of ['date','modifiedDate']){
+        const range=this.page.locator('#'+id);
+        if(!await range.count())continue;
+        const inputs=range.locator('input');
+        if((await inputs.evaluateAll(nodes=>nodes.map(n=>n.value))).some(Boolean)){
+          const clear=range.locator('.next-range-picker-symbol-clear');
+          if(await clear.count()&&await clear.first().isVisible())await this.click(clear.first());
+          else for(const field of await inputs.all())if(await field.isEditable()){await field.fill('');await field.press('Tab');}
+          if((await inputs.evaluateAll(nodes=>nodes.map(n=>n.value))).some(Boolean))fail('PURCHASE_EXACT_FILTERS_UNSUPPORTED','采购页日期筛选无法安全清空；仅可自动采用有原件依据的制单日降级查询');
+        }
+      }
+    }else{
+      await selectPurchaseStore(this.page,input,this.timeoutMs,locator=>this.click(locator));await this.setDates(input);
+    }
+    if(input.orderId)await this.page.locator('#supplyOrderId').fill(input.orderId);
     const first=await this.queryAction(()=>this.click(this.page.getByRole('button',{name:'查询',exact:true})));checkPurchaseQuery(first.request,input);
     if(first.total>3000)fail('PURCHASE_SLICE_TOO_LARGE','单日主单超过3000张工程保护值，请指定采购单号进一步缩小；此值不是平台上限');
     const orderIds=[],orderSkuCounts={};let current=first,pages=0;const seenPages=new Set();

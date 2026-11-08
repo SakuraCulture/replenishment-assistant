@@ -10,7 +10,7 @@ import {loadConfig,validateConfig} from './config.mjs';
 import {readJson,fail,sameIdentity,exists} from './common.mjs';
 import {verifyInstallation} from './integrity.mjs';
 import {assertHandoff} from './preflight.mjs';
-import {MachineSetup,recoverConfiguration} from './machine-setup.mjs';
+import {MachineSetup,recoverConfiguration,readConfiguration} from './machine-setup.mjs';
 import {MachineTemplate} from './machine-template.mjs';
 import {PurchaseCreates,purchasePublic} from './purchase-create-ledger.mjs';
 import {MachinePurchaseCreate} from './machine-purchase-create.mjs';
@@ -104,6 +104,7 @@ async function main(){
           result=receiptSync.start(request.purchase_id);break;
         }
         case 'receipt.status':result=receiptSync.status(request.purchase_id);break;
+        case 'receipt.host_void_conflict':result=receipts.hostVoidConflict(request.purchase_id,request.reason);break;
         case 'receipt.pause':result=receiptSync.pause(request.purchase_id);break;
         case 'receipt.list':{const all=receipts.list();result={total:all.length,items:all.slice(request.offset||0,(request.offset||0)+(request.limit||50))};break;}
         case 'receipt.synced':result=receipts.synced(request.purchase_id,request.manifest_sha256,request.receipt);break;
@@ -120,12 +121,15 @@ async function main(){
         case 'configuration':{
           if(!await exists(path.join(root,'config/portable.config.json'))){result={configured:false};break;}
           const config=await loadConfig(root);
+          const {binding}=await readConfiguration(root);
           result={configured:true,enabled:config.enabled,account_binding:{account_id:config.tenantBinding.accountId,merchant_code:config.tenantBinding.merchantCode},
-            display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.targets};break;
+            display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.targets,
+            browser_binding:binding?{edge_executable:binding.edgeExecutable,edge_version:binding.edgeVersion,
+              actual_profile_path:binding.actualProfilePath,profile_directory:binding.profileDirectory,output_root:binding.outputRoot}:null};break;
         }
         case 'session.release':result=await releaseSession({runtime,commands,setup,template,purchase,receiptSync,bindingCheck});break;
         case 'session.status':result={host_pid:process.pid,...browsers.status()};break;
-        case 'session.health':result={state:clientConnectionState(setup.client||browsers.browser?.client)};break;
+        case 'session.health':{const client=setup.client||browsers.browser?.client;result={state:clientConnectionState(client),login_state:client?.loginState||'UNKNOWN',login_error:client?.loginError||null};break;}
         case 'ping':result={closing:runtime.closing,active_command_id:runtime.active?.id||null,active_purchase_id:purchase.busy?purchase.job.id:null,active_receipt_id:receiptSync.busy?receiptSync.job.id:null,active_binding_id:bindingCheck.busy?bindingCheck.job.id:null};break;
         case 'list':{const records=commands.list(),offset=request.offset||0,limit=request.limit||50;result={total:records.length,items:records.slice(offset,offset+limit).map(publicRecord)};break;}
         case 'reserve':{

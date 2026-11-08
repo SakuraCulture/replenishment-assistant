@@ -3,7 +3,7 @@ import {discover} from './environment.mjs';
 import {BrowserClient} from './worker-client.mjs';
 import {fail,sameIdentity,now,writeJson,canonical} from './common.mjs';
 
-const recoverableReads=new Set(['verifyIdentity','querySingle','warehouseOptions','queryPurchase','queryCreateOrders']);
+const recoverableReads=new Set(['verifyIdentity','querySingle','warehouseOptions','queryPurchase','queryCreateOrders','purchaseImportTask','purchaseTask']);
 export async function invokeBoundRead(browser,method,args){
   try{return await browser.client[method](...args);}
   catch(error){
@@ -78,7 +78,7 @@ export class BoundBrowserPool{
   }
   async forSetup(candidate,old,onPhase){
     const b=this.browser;
-    if(b?.client&&!b.client.closed&&b.client.connectionState!=='DISCONNECTED'&&b.connected&&old.config&&old.binding&&this.key===this.keyFor(old)&&
+    if(b?.client&&!b.client.closed&&b.client.connectionState!=='DISCONNECTED'&&old.config&&old.binding&&this.key===this.keyFor(old)&&
       old.binding.actualProfilePath.toLowerCase()===candidate.actual_profile_path.toLowerCase()&&
       old.binding.edgeExecutable.toLowerCase()===candidate.edge_executable.toLowerCase()){
       b.client.onPhase=onPhase;return b.client;

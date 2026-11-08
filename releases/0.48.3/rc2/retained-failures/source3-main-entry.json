@@ -1,0 +1,21 @@
+{
+  "passed": false,
+  "checks": [
+    "Actual category/month-sales/stock filter matches two stores; missing sales excluded",
+    "Hidden checked products preserved and default batch scope excludes them",
+    "Batch dialog previews every selected row and its amount change",
+    "Cancelling batch preview leaves edits and original results unchanged",
+    "Batch dialog previews every selected row and its amount change",
+    "Actual batch modal completes without errors",
+    "Batch adds each product own minimum pack, writes reason, and protects hidden products",
+    "Background task completed",
+    "Final budget/risk review succeeds after batch reason assignment",
+    "Apply enabled only after successful review and risk acknowledgement",
+    "Background task completed",
+    "Actual apply produces final results",
+    "Real projected export preflight blocks pending adjustment before signing",
+    "Blocked export creates neither signed order nor misleading export receipt",
+    "Pending-adjustment message does not advise closing Excel"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\final_filters_smoke.py\", line 86, in exercise\n    require(bool(messages) and '应用最终数量' in messages[-1] and '关闭占用文件' not in messages[-1],'Actual main-window sign/export entry stops at preflight with actionable pending-adjustment message')\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\final_filters_smoke.py\", line 12, in require\n    if not ok:raise AssertionError(text)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Actual main-window sign/export entry stops at preflight with actionable pending-adjustment message\n"
+}

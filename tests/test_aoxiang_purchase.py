@@ -38,14 +38,17 @@ class PurchaseFixture:
 
 class PurchaseBasisTests(PurchaseFixture, unittest.TestCase):
 
-    def test_frozen_base_quantity_amount_exact_no_lifecycle_mutation(self):
+    def test_frozen_base_quantity_payment_exact_price_rounded_no_lifecycle_mutation(self):
         self.f.save('return')
         self.f.save('payment', [{'付款单商品数量': 2, '数量单位': '箱', '折合库存单位系数': 24, '换算依据': '来源写明24包/箱', '实际金额': .99}])
         before = self.f.view()
         facts = self.f.old_tables()
         plan = freeze_payment(self.f.path, self.f.h, config(), self.suppliers)
         self.assertEqual(plan['rows'][0]['quantity'], '48')
-        self.assertEqual(plan['rows'][0]['amount'], '0.99')
+        self.assertEqual(plan['rows'][0]['payment_amount'], '0.99')
+        self.assertEqual(plan['rows'][0]['unit_price'], '0.02')
+        self.assertEqual(plan['rows'][0]['amount'], '0.96')
+        self.assertEqual(plan['rows'][0]['rounding_delta'], '-0.03')
         self.assertEqual(plan['supplier_code'], '2078246')
         self.assertEqual(plan['post_creation_state'], '待提交')
         self.assertFalse(plan['create_external_order'])
@@ -121,7 +124,7 @@ class PurchaseWorkbookTests(PurchaseFixture, unittest.TestCase):
                         'contractVersion': self.contract['version'], 'schema': copy.deepcopy(self.contract['schema']),
                         'identity': {'accountId': 'A', 'merchantCode': 'M'}, 'uiProductLimit': 100}
 
-    def test_only_input_sheet_changes_text_codes_amount_authoritative(self):
+    def test_only_input_sheet_changes_text_codes_price_authoritative(self):
         import openpyxl
         plan = self.paid()
         before = file_hash(self.template)
@@ -141,7 +144,12 @@ class PurchaseWorkbookTests(PurchaseFixture, unittest.TestCase):
             ws = wb['sheet1']
             self.assertEqual(ws.max_row, 8)
             self.assertEqual([ws.cell(8, c).value for c in range(1, 13)],
-                ['T', '2078246', '0001', 7, None, .99, None, '测试商品', None, plan['head']['number'], '否', None])
+                ['T', '2078246', '0001', 7, .14, None, None, '测试商品', None, plan['head']['number'], '否', None])
+            self.assertEqual(ws['E8'].data_type, 'n')
+            with zipfile.ZipFile(out) as z:
+                raw = z.read(receipt['modified_zip_member']).decode('utf-8')
+                self.assertIn('<v>0.14</v>', raw)
+                self.assertNotIn('r="F8"', raw)
             self.assertEqual([ws[c].data_type for c in ['A8','B8','C8']], ['s', 's', 's'])
             self.assertTrue(ws['A8'].font.bold)
             self.assertEqual(wb['hidden_sheet1_col_10'].sheet_state, 'hidden')
@@ -153,16 +161,28 @@ class PurchaseWorkbookTests(PurchaseFixture, unittest.TestCase):
         out = self.f.root / 'blocked.xlsx'
         changed = copy.deepcopy(plan)
         changed['rows'][0]['quantity'] = '1.0000000000000001'
+        from aoxiang_purchase_pricing import priced_row
+        changed['rows'][0].update(priced_row(changed['rows'][0]['quantity'], changed['rows'][0]['payment_amount']))
         changed['fingerprint'] = fingerprint(changed)
         with self.assertRaisesRegex(ValueError, '数值精度'):
             generate(changed, self.receipt, self.contract_path, out)
         self.assertFalse(out.exists())
+
         bad = {**self.receipt, 'uiProductLimit': 0}
         with self.assertRaisesRegex(ValueError, '上限'):
             generate(plan, bad, self.contract_path, out)
         with self.template.open('ab') as f:
             f.write(b'changed')
         with self.assertRaisesRegex(ValueError, '模板在核验后发生变化'):
+            generate(plan, self.receipt, self.contract_path, out)
+        self.assertFalse(out.exists())
+
+    def test_rounded_price_tamper_blocked_even_with_new_plan_fingerprint(self):
+        plan = self.paid()
+        plan['rows'][0]['unit_price'] = '0.141'
+        plan['fingerprint'] = fingerprint(plan)
+        out = self.f.root / 'bad-price.xlsx'
+        with self.assertRaisesRegex(ValueError, '舍入差额'):
             generate(plan, self.receipt, self.contract_path, out)
         self.assertFalse(out.exists())
 

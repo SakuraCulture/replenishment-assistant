@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "source_commit": "b5f77bed4c9e3161e1f14b3c56bbf35c7b26f79a",
+  "python_tests": 1257,
+  "unique_test_ids": 1257,
+  "python_seconds": 467.701,
+  "focused_tests": 99,
+  "node_tests": 191,
+  "exe_checks": 22,
+  "payment_exe_checks": 12,
+  "packaged_recovery_checks": 3,
+  "geometry": [
+    {
+      "window": [
+        1366,
+        900
+      ],
+      "review_height": 823,
+      "table_height": 592,
+      "viewport_height": 536
+    },
+    {
+      "window": [
+        1280,
+        800
+      ],
+      "review_height": 723,
+      "table_height": 492,
+      "viewport_height": 436
+    }
+  ],
+  "exe_sha256": "bb0bcea12e62383b22e2c380c6de43dc96c8da0fbf9daa2aeb29acb15801a534",
+  "zip": "交付_0.48.6_rc1\\补货助手_0.48.6_rc1_采购恢复与作业交互.zip",
+  "zip_sha256": "66f09e0e9072028382d11057942fc2891019d020723b67b7b351146a547ef3c1",
+  "zip_bytes": 126074625,
+  "files": 1251,
+  "core_unchanged": 15,
+  "preserved_delivery_files": 34,
+  "component_files_verified": 870,
+  "jst_component_unchanged": true,
+  "live_platform": false
+}

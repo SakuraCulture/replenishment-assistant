@@ -40,6 +40,30 @@ test('actual receipt uses exact decimal, native row numbers and raw blank values
   const zero=await evidence(ctx,{received:'0',amount:'0'});assert.equal(zero.eligible,true);
   const partial=await evidence(ctx,{status:'待提交'});assert.equal(partial.terminal,false);assert.equal(partial.eligible,false);
 });
+test('voided blank receipts stop routine work without inventing zero or final receipt',async t=>{
+  const ctx=await setup(t),o=await evidence(ctx,{status:'已作废',received:'',amount:''});
+  // The native item-count field also has no receipt fact for this void.
+  o.main.receivedSkuCount='';
+  const sources=o.files.map((f,i)=>({...f,rows:i?o.rows:[o.main]}));
+  const v=receiptObservation(p,binding,'run1',sources);
+  assert.equal(v.terminalKind,'VOIDED');assert.equal(v.disposition,'VOIDED');assert.equal(v.eligible,false);assert.equal(v.rows[0].receivedQuantity,'');assert.equal(v.issues.length,0);
+  ctx.ledger.begin(p.id);ctx.ledger.run(p.id,'run1');const r=ctx.ledger.finish(p.id,v,{file:'void.json',sha256:'a'.repeat(64)});
+  assert.equal(r.state,'VOIDED');assert.equal(r.finalSync,'NOT_DUE');assert.equal(r.terminal,true);assert.equal(r.hostReceipt,undefined);
+  assert.throws(()=>ctx.ledger.synced(p.id,'a'.repeat(64),{number:p.basis.number,stage:'receipt',version:1}));
+});
+test('voided partial receipt and completed-to-void preserve evidence and require review',async t=>{
+  const ctx=await setup(t),partial=await evidence(ctx,{status:'已作废',received:'1',amount:'0.1'});
+  assert.equal(partial.disposition,'VOIDED_REVIEW');assert.ok(partial.issues.some(i=>i.code==='RECEIPT_VOID_WITH_RECEIPT'));
+  ctx.ledger.begin(p.id);ctx.ledger.run(p.id,'run1');let r=ctx.ledger.finish(p.id,partial,{file:'partial.json',sha256:'a'.repeat(64)});
+  assert.equal(r.state,'VOIDED_REVIEW');assert.equal(r.finalSync,'NOT_DUE');
+  const completed=await evidence(ctx);ctx.ledger.run(p.id,'run1');assert.throws(()=>ctx.ledger.finish(p.id,completed,{file:'complete.json',sha256:'b'.repeat(64)}),{code:'RECEIPT_TERMINAL_CONFLICT'});
+  const other=await setup(t);other.ledger.run(p.id,'run1');other.ledger.finish(p.id,completed,{file:'complete.json',sha256:'b'.repeat(64)});
+  other.ledger.synced(p.id,'b'.repeat(64),{number:p.basis.number,stage:'receipt',version:1});
+  const sources=partial.files.map((f,i)=>({...f,rows:structuredClone(i?partial.rows:[partial.main])}));
+  for(const s of sources)for(const row of s.rows){row.receivedQuantity='';row.receivedAmount='';row.receivedSkuCount='';}
+  const clean=receiptObservation(p,binding,'run1',sources);other.ledger.run(p.id,'run1');r=other.ledger.finish(p.id,clean,{file:'later-void.json',sha256:'c'.repeat(64)});
+  assert.equal(r.state,'VOIDED_REVIEW');assert.equal(r.hostReceipt.version,1);assert.equal(r.finalSync,'NOT_DUE');
+});
 test('status conflict, changed purchase, missing/duplicate SKU, unit and total mismatch never become formal receipt',async t=>{
   const ctx=await setup(t),o=await evidence(ctx),sources=o.files.map((f,i)=>({...f,rows:i?[...o.rows]:[o.main]}));
   for(const [change,code] of [

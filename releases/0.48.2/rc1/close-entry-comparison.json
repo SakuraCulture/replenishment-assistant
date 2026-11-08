@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "scope": "isolated actual entry callbacks, no browser or platform",
+  "versions": {
+    "0.48.1": {
+      "settings_opened": 1,
+      "login_retry_after_close": 1
+    },
+    "0.48.2": {
+      "settings_opened": 1,
+      "login_retry_after_close": 0
+    }
+  }
+}

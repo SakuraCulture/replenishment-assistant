@@ -1,0 +1,8 @@
+{
+  "not_final_acceptance": true,
+  "matching2.log": "New verified-company warehouse guard exposed an old fixture binding company 100 to SD while its first generation was HB. Fixture identity was corrected; production guard was retained. Final 35 tests pass.",
+  "regression.log": "Initial 1303-test run had one subprocess import error because the launcher omitted PYTHONPATH for src/tools. No runtime or test code changed for this error; final discovery includes two additional cases and all 1305 pass.",
+  "samples1.log": "Read-only scenario verification first selected an Excel temporary ~$ lock file and failed before case processing. Verifier now selects exactly cases 01 through 07. The original workbooks were not modified.",
+  "seal.log": "First sealing preflight incorrectly expected model_version in build_info instead of the EXE version report. Stopped before creating release evidence or ZIP; sealer now checks the actual EXE report field. Application code and executable unchanged.",
+  "other_development_evidence": "Earlier source smoke and sample runs remain in qa/payment_auto_0491. Final release uses source2, samples-final, exe1 and exe-samples1."
+}

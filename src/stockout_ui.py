@@ -68,6 +68,7 @@ class Page(QWidget):
         exclusions.addWidget(label('可与淘汰品、考核品组合；分子分母同步剔除，未知状态保留。','muted'));exclusions.addStretch()
         layout.addLayout(exclusions)
         filter_row=QHBoxLayout();self.filter_btn=button('多维筛选…',self.edit_filters);filter_row.addWidget(self.filter_btn)
+        filter_row.addWidget(button('用 AI 分析当前范围',self.ai_analysis))
         self.filter_note=label('当前筛选：全部已选门店、全部商品维度');self.filter_note.setWordWrap(True);filter_row.addWidget(self.filter_note,1);layout.addLayout(filter_row)
         self.total=label('尚未取得本范围的完整分析结果','section');layout.addWidget(self.total)
         self.coverage=label('未采日期保持空白；需要连续日快照时请单独启用每日采集。','muted');self.coverage.setWordWrap(True);layout.addWidget(self.coverage)
@@ -206,6 +207,10 @@ class Page(QWidget):
         return {'start':self.start.date().toString('yyyy-MM-dd'),'end':self.end.date().toString('yyyy-MM-dd'),
                 'view':self.view.currentData(),'filters':self.filters.copy(),
                 'exclude_stopped':self.exclude_stopped.isChecked(),'exclude_disabled':self.exclude_disabled.isChecked()}
+
+    def ai_analysis(self):
+        from stockout_ai_ui import show
+        show(self,self.options(),self.dimensions())
 
     def dimensions(self):return self.custom_dimensions or list(dict.fromkeys(k for k in (self.dimension.currentData(),self.second.currentData()) if k))
 

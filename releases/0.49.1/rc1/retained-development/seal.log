@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\seal_payment_auto.py", line 217, in <module>
+    main()
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\seal_payment_auto.py", line 43, in main
+    assert build['version'] == '0.49.1' and build['model_version'] == '0.3.4-rules'
+                                            ~~~~~^^^^^^^^^^^^^^^^^
+KeyError: 'model_version'

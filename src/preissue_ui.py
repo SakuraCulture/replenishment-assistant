@@ -4,7 +4,7 @@ from decimal import Decimal
 from PySide6.QtCore import Qt,QAbstractTableModel,QModelIndex,QPersistentModelIndex,QSortFilterProxyModel,QTimer
 from PySide6.QtGui import QValidator,QColor
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QTableView,QLineEdit,QComboBox,QCheckBox,
-    QDialog,QMessageBox,QAbstractSpinBox,QStyledItemDelegate,QTableWidget,QTableWidgetItem,QSplitter,QLabel)
+    QDialog,QMessageBox,QAbstractSpinBox,QStyledItemDelegate,QTableWidget,QTableWidgetItem,QSplitter,QLabel,QScrollArea)
 from ui_controls import button,label
 from stocking_ui import AsyncDialog,StockingDialog
 from runtime_support import checkpoint
@@ -16,6 +16,7 @@ from draft_review import DraftReview
 import review_filters as filters
 import new_product_focus
 from ui_review_filters import ReviewFilters
+import final_list_filters as business_filters
 
 HEADERS=['选择','门店','归属仓','商品编码','商品名称','可用','在途','箱规 / 单位','自动安排','拟签发数量','差额','拟签发金额','补后持有','调整原因','校验 / 风险','预测持有天数','清单目标','超过目标数量']
 
@@ -119,7 +120,7 @@ class FinalModel(QAbstractTableModel):
             self.invalid[key]=str(exc);self.dataChanged.emit(self.index(i,9),self.index(i,14));self.changed(True);return False
         prev=self.edits[s].get(d['E'],{});reason=str(value).strip() if index.column()==13 else prev.get('reason') or self.reason
         self.edits[s][d['E']]={**prev,'quantity':q,'kind':'manual','reason':reason,'warehouse':d['AU'],'sequence':self.sequence,'edited_at':wr.now()}
-        self.sequence+=1;self.invalid.pop(key,None);self.money.update(key);self.changed_keys.add(key);self.dataChanged.emit(self.index(i,9),self.index(i,14));self.changed(True);return True
+        self.sequence+=1;self.invalid.pop(key,None);self.money.update(key);self.changed_keys.add(key);self.dataChanged.emit(self.index(i,9),self.index(i,17));self.changed(True);return True
     def replace_edits(self,updates,lists=None,cleared=()):
         self.beginResetModel()
         for s,e in updates.items():self.edits[s]=copy.deepcopy(e)
@@ -133,7 +134,7 @@ class FinalModel(QAbstractTableModel):
 
 class FinalFilter(QSortFilterProxyModel):
     def __init__(self,parent):
-        super().__init__(parent);self.needle='';self.store='';self.warehouse='';self.mode='全部';self.facets={};self.focused=set();self.focus_known=False
+        super().__init__(parent);self.needle='';self.store='';self.warehouse='';self.mode='全部';self.facets={};self.business={};self.focused=set();self.focus_known=False
         # Source data may change inside delegate commit. Rebuild only after the
         # editor has closed, using Qt's full invalidation protocol.
         self.setDynamicSortFilter(False)
@@ -141,6 +142,7 @@ class FinalFilter(QSortFilterProxyModel):
         m=self.sourceModel();s,d=m.entries[i]
         if any(word not in m.searches[i] for word in self.needle.split()) or self.store and s!=self.store or self.warehouse and d.get('AU')!=self.warehouse:return False
         q=m.qty(i);key=(s,d['E'])
+        if not business_filters.accepts(d,q,self.business):return False
         if not ignore_facets and not filters.accepts(m.money.views[key],self.facets,self.focused,self.focus_known):return False
         return (self.mode=='全部' or self.mode=='可调整' and not m.blocks[i] or self.mode=='已修改' and d['E'] in m.edits[s] or self.mode=='拟签发大于0' and sem.numeric(q) and q>0 or
                 self.mode=='拟签发为0' and q==0 or self.mode=='资料待核' and bool(m.blocks[i]) and sem.work_eligible(d) and d.get('_source')!='地采商品' or self.mode=='不可安排' and (bool(sem.exclusion_reason(d)) or d.get('_source')=='地采商品') or
@@ -182,6 +184,12 @@ class FinalListDialog(AsyncDialog):
         self.setObjectName('finalListDialog');self.setWindowTitle('最终清单 · 直接改量 / 按清单补足');self.resize(1450,850)
         v=QVBoxLayout(self);self.body=QWidget();v.addWidget(self.body,1);b=QVBoxLayout(self.body)
         b.addWidget(label('最终清单：原自动安排留作对照，修改只影响所选商品；确认后按此数量签发。','section'))
+        outer=b;controls=QWidget();b=QVBoxLayout(controls);b.setContentsMargins(0,0,0,0)
+        control_scroll=QScrollArea();control_scroll.setWidgetResizable(True);control_scroll.setWidget(controls);control_scroll.setMaximumHeight(210)
+        toggle=QCheckBox('展开筛选与批量操作（收起后筛选和勾选继续有效）');toggle.toggled.connect(control_scroll.setVisible);control_scroll.hide()
+        outer.addWidget(toggle);outer.addWidget(control_scroll)
+        numeric_row=QHBoxLayout();self.business_btn=button('类目 / 销量 / 库存筛选',self.edit_business_filters);numeric_row.addWidget(self.business_btn)
+        self.business_summary=label(business_filters.description({}),'muted');self.business_summary.setWordWrap(True);numeric_row.addWidget(self.business_summary,1);outer.addLayout(numeric_row)
         top=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('商品名称 / 编码 / 条码 / 门店；空格分词');self.search.setClearButtonEnabled(True);top.addWidget(self.search,1)
         self.stores=QComboBox();self.stores.addItem('全部所选门店','')
         for s in codes:self.stores.addItem(self.results[s]['store_name'],s)
@@ -192,6 +200,7 @@ class FinalListDialog(AsyncDialog):
         actions=QHBoxLayout();actions.addWidget(button('按清单补足',self.choose_list));actions.addWidget(button('勾选当前筛选',lambda:self.check_visible(True)));actions.addWidget(button('清空全部勾选',self.clear_checks));self.bulk_btn=button('批量设数量',self.bulk);actions.addWidget(self.bulk_btn);self.restore_btn=button('恢复所选自动数量',self.restore);actions.addWidget(self.restore_btn);actions.addWidget(button('放弃所选门店全部调整',self.restore_all));b.addLayout(actions)
         selection=QHBoxLayout();selection.addWidget(label('批量操作范围'));self.selection_scope=QComboBox();self.selection_scope.addItems(['当前可见勾选','全部勾选（包含筛选外）']);selection.addWidget(self.selection_scope);selection_hint=label('直接编辑单行无需勾选；切换筛选保留勾选。','muted');selection_hint.setWordWrap(False);selection.addWidget(selection_hint);selection.addStretch();b.addLayout(selection)
         reasons=QHBoxLayout();reasons.addWidget(label('修改原因'));self.reason=QComboBox();self.reason.addItems(['请选择原因','活动备货','陈列需要','经营判断','暂不补货','其他']);reasons.addWidget(self.reason);self.reason_text=QLineEdit();self.reason_text.setPlaceholderText('其他原因必填；也可逐行编辑原因');reasons.addWidget(self.reason_text,1);reasons.addWidget(button('填入所选已修改行',self.assign_reason));b.addLayout(reasons)
+        b=outer
         self.model=FinalModel(self.results,getattr(host,'preissue_drafts',{}),self.changed,self);self.proxy=FinalFilter(self);self.proxy.setSourceModel(self.model);self.proxy.setSortRole(Qt.ItemDataRole.UserRole)
         self.proxy.focused=new_product_focus.members(getattr(host,'new_focus',None));self.proxy.focus_known=getattr(host,'new_focus',None) is not None
         self.money_table=QTableWidget(0,7);self.money_table.setHorizontalHeaderLabels(['门店 · 未应用预览','拟签发金额','人工改量金额','较自动增减','新品金额','新品较自动增减','预算剩余 / 超出'])
@@ -202,10 +211,25 @@ class FinalListDialog(AsyncDialog):
         self.filter_counter=None;self.proxy_dirty=False
         self.table=QTableView();self.table.setModel(self.proxy);self.table.setSortingEnabled(True);self.table.sortByColumn(-1,Qt.SortOrder.AscendingOrder);self.table.setItemDelegateForColumn(9,PackDelegate(self.table));self.table.setAlternatingRowColors(True)
         self.table.setEditTriggers(QTableView.EditTrigger.DoubleClicked|QTableView.EditTrigger.EditKeyPressed)
+        self.reading_identity=label('选择商品行后，这里常驻显示门店、仓及商品身份；横向滚动不丢失定位。','muted');self.reading_identity.setWordWrap(True);b.addWidget(self.reading_identity)
+        def identity_changed(index,*_):
+            values=[str(self.proxy.data(self.proxy.index(index.row(),c)) or '') for c in (1,2,3,4)] if index.isValid() else []
+            self.reading_identity.setText('当前商品：'+' · '.join(values) if values else '请选择商品行；身份随当前行更新。')
+        self.table.selectionModel().currentChanged.connect(identity_changed)
+        self.proxy.modelReset.connect(lambda:identity_changed(QModelIndex()))
         self.splitter=QSplitter(Qt.Orientation.Vertical);self.splitter.addWidget(self.table);self.review=QTableWidget(0,4);self.review.setHorizontalHeaderLabels(['确认','门店 / 商品','约束类型','内容']);self.review.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.splitter.addWidget(self.review);self.splitter.setSizes([430,130]);b.addWidget(self.splitter,1)
         for i,width in enumerate([45,140,80,145,180,60,60,85,75,95,60,95,90,125,220]):self.table.setColumnWidth(i,width)
         self.review.setColumnWidth(0,48);self.review.setColumnWidth(1,220);self.review.setColumnWidth(2,100);self.review.setColumnWidth(3,850)
         self.review.hide()
+        from table_readability import install,fit_window,full_row
+        for table in (self.table,self.review,self.money_table):install(table)
+        fit_window(self,1450,850)
+        reading=QHBoxLayout();reading.addWidget(button('查看当前商品全部字段',lambda:full_row(self.table)));reading.addWidget(button('查看选中风险全文',lambda:full_row(self.review)))
+        self.column_view=QComboBox();self.column_view.addItems(['全部字段','改量与金额','库存与覆盖','原因与风险']);reading.addWidget(self.column_view);reading.addStretch();b.addLayout(reading)
+        def columns(index):
+            visible=None if index==0 else ({0,1,2,3,4,7,8,9,10,11,13,14} if index==1 else {0,1,2,3,4,5,6,7,9,12,15,16,17} if index==2 else {0,1,2,3,4,9,10,13,14})
+            for c in range(self.model.columnCount()):self.table.setColumnHidden(c,visible is not None and c not in visible)
+        self.column_view.currentIndexChanged.connect(columns)
         self.metrics=label('','muted');b.addWidget(self.metrics)
         self.budget_note=label('','muted');b.addWidget(self.budget_note)
         bottom=QHBoxLayout();self.confirm_all=QCheckBox('已核对并确认本次列出的所有例外');bottom.addWidget(self.confirm_all);bottom.addStretch();self.preview_btn=button('核对修改与预算',self.preview,True);bottom.addWidget(self.preview_btn);self.apply_btn=button('应用最终数量',self.apply,True);self.apply_btn.setEnabled(False);bottom.addWidget(self.apply_btn);bottom.addWidget(button('保留为待核对草稿',self.keep_draft));b.addLayout(bottom)
@@ -224,14 +248,23 @@ class FinalListDialog(AsyncDialog):
     def reset_filters(self):
         from PySide6.QtCore import QSignalBlocker
         locks=[QSignalBlocker(c) for c in (self.stores,self.warehouses,self.scope,self.search,self.facets)]
-        self.search.clear();self.stores.setCurrentIndex(0);self.warehouses.setCurrentIndex(0);self.scope.setCurrentIndex(0);self.facets.reset();del locks;self.filter()
+        self.search.clear();self.stores.setCurrentIndex(0);self.warehouses.setCurrentIndex(0);self.scope.setCurrentIndex(0);self.facets.reset();self.set_business_filters({});del locks;self.filter()
+    def edit_business_filters(self):
+        from final_list_filter_ui import FilterDialog
+        dialog=FilterDialog([d for s,d in self.model.entries],self.proxy.business,self)
+        if dialog.exec()==QDialog.DialogCode.Accepted:self.set_business_filters(dialog.spec)
+        dialog.deleteLater()
+    def set_business_filters(self,spec):
+        business_filters.validate(spec);self.proxy.business=copy.deepcopy(spec)
+        self.business_summary.setText(business_filters.description(spec));self.filter()
     def changed(self,edited=True):
         if edited:
             self.dirty=True;self.prepared=None;self.apply_btn.setEnabled(False);self.review.setRowCount(0);self.review.hide();self.confirm_all.setChecked(False)
             self.model.risks.clear();self.model.confirmed.clear();self.model.reviewed=False;self.model.notify(14,14)
             self.message.setText('有修改，待重新核对；当前金额为未应用预览。')
         if hasattr(self,'refresh_timer'):self.refresh_timer.start(0)
-        if self.proxy.mode not in ('全部','可调整','资料待核','不可安排') or any(c.currentIndex()>0 for c in self.facets.fields.values()) or self.proxy.sortColumn()>=0 or self.model.all_changed:self.proxy_dirty=True
+        if self.proxy.mode not in ('全部','可调整','资料待核','不可安排') or self.proxy.business or any(c.currentIndex()>0 for c in self.facets.fields.values()) or self.proxy.sortColumn()>=0 or self.model.all_changed:self.proxy_dirty=True
+        if edited and self.proxy.business:self.filter_counter=None
         if self.proxy.mode in ('未核对修改','风险待确认','风险已确认','已勾选') or self.model.all_changed:self.filter_counter=None
         if edited:self.update_money()
         else:self.update_metrics()
@@ -246,12 +279,12 @@ class FinalListDialog(AsyncDialog):
         for key in keys:self.filter_counter.update(key,self.model.money.views[key],self.proxy.filterAcceptsRow(self.model.positions[key],QModelIndex(),True))
         self.model.changed_keys.clear();self.model.all_changed=False;self.facets.set_counts(self.filter_counter.counts)
     def update_metrics(self):
-        shown={self.model.key(self.proxy.mapToSource(self.proxy.index(i,0)).row()) for i in range(self.proxy.rowCount())} if self.model.checked else set()
+        shown={self.model.key(self.proxy.mapToSource(self.proxy.index(i,0)).row()) for i in range(self.proxy.rowCount())}
         count=sum(len(v) for v in self.model.edits.values())
-        self.metrics.setText(f'所选{len(self.codes)}店 · 显示{self.proxy.rowCount()}行 · 已勾选{len(self.model.checked)}行（筛选外{len(self.model.checked-shown)}行） · 调整记录{count}条 · 非法输入{len(self.model.invalid)}行。箱规24只能填0/24/48…')
-        count=len(self.chosen());self.bulk_btn.setText(f'批量设数量（{count}款）');self.restore_btn.setText(f'恢复自动数量（{count}款）');self.update_money()
+        self.metrics.setText(f'所选{len(self.codes)}店 · 命中{len({s for s,k in shown})}店 / {self.proxy.rowCount()}款 · 已勾选{len(self.model.checked)}款（筛选外{len(self.model.checked-shown)}款） · 调整记录{count}条 · 非法输入{len(self.model.invalid)}行。数量按库存单位；每款遵循本仓箱规。')
+        count=len(self.chosen());self.bulk_btn.setText(f'批量加减 / 设数量（{count}款）');self.restore_btn.setText(f'恢复自动数量（{count}款）');self.update_money()
     def update_money(self):
-        codes=[self.stores.currentData()] if self.stores.currentData() else self.codes;self.money_table.setRowCount(len(codes));self.money_table.setFixedHeight(42+min(3,len(codes))*36)
+        codes=[self.stores.currentData()] if self.stores.currentData() else self.codes;self.money_table.setRowCount(len(codes));height=self.money_table.fontMetrics().height()+16;self.money_table.setFixedHeight(height+min(2,len(codes))*height)
         for i,s in enumerate(codes):
             r=self.results[s];a=self.model.money.summary(s);limit=r['budget'].get('limit') if r['budget'].get('enabled') else None
             def amt(key,unknown):return ('已计价 ' if a[unknown] else '')+f'{a[key]:,.2f}'+(f'（{a[unknown]}款待核）' if a[unknown] else '')
@@ -275,26 +308,15 @@ class FinalListDialog(AsyncDialog):
             if d['E'] in self.model.edits[s]:self.model.edits[s][d['E']].update(reason=self.model.reason,edited_at=wr.now());self.model.money.update((s,d['E']))
         self.model.notify(13,14);self.changed(True)
     def bulk(self):
+        self.table.clearFocus();self.filter()
         indices=self.chosen()
         if not indices:self.message.setText('请先勾选需要修改的商品');return
-        d=QDialog(self);d.setWindowTitle('批量设数量 · 仅所选商品');v=QVBoxLayout(d);mode=QComboBox();mode.addItems(['每款设N个最小出库单位','设置相同库存单位数量']);v.addWidget(mode);qty=PackInput(1);v.addWidget(qty);v.addWidget(label(f'将修改{len(indices)}行；每行按本仓箱规校验，任意一行非法则整次不应用。'))
-        v.addWidget(button('预览并填入',d.accept,True));v.addWidget(button('取消',d.reject))
-        if d.exec()!=QDialog.DialogCode.Accepted:return
-        try:
-            value=qty.value();updates=copy.deepcopy(self.model.edits)
-            for i in indices:
-                s,row=self.model.entries[i]
-                if self.model.blocks[i]:raise ValueError(row['E']+'：'+self.model.blocks[i])
-                q=rules.quantity(rules.decimal(value)*rules.decimal(row['BD']) if mode.currentIndex()==0 else value,row['BD'])
-                from restock_policy import guard_new
-                guard_new(self.results[s],row,'manual',q)
-                ref=updates[s].get(row['E'],{}).get('list_revision')
-                if self.model.lists[s].get(ref,{}).get('kind')=='new':guard_new(self.results[s],row,'new',q)
-                updates[s][row['E']]={**updates[s].get(row['E'],{}),'quantity':q,'kind':'manual','reason':self.model.reason,'warehouse':row['AU'],'sequence':self.model.sequence,'edited_at':wr.now()};self.model.sequence+=1
-            text=self.selection_scope.currentText()+'；门店：'+'、'.join(dict.fromkeys(self.results[self.model.entries[i][0]]['store_name'] for i in indices))+'\n'+'\n'.join(f'{self.model.entries[i][0]} / {self.model.entries[i][1]["E"]}：{sem.fmt(self.model.qty(i))} → {updates[self.model.entries[i][0]][self.model.entries[i][1]["E"]]["quantity"]}' for i in indices[:20])
-            if QMessageBox.question(self,'确认批量填数',text+(f'\n共{len(indices)}行，仅展示前20行；填入后可按已修改筛选逐行核对。' if len(indices)>20 else ''),QMessageBox.StandardButton.Ok|QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)!=QMessageBox.StandardButton.Ok:return
-            self.model.replace_edits(updates,cleared=[self.model.key(i) for i in indices])
-        except Exception as exc:self.message.setText('未应用：'+str(exc))
+        from final_list_bulk_ui import BulkDialog
+        dialog=BulkDialog(self.model,indices,self.selection_scope.currentText(),self)
+        if dialog.exec()==QDialog.DialogCode.Accepted and dialog.prepared is not None:
+            self.model.sequence=dialog.prepared['sequence']
+            self.model.replace_edits(dialog.prepared['edits'],cleared=[self.model.key(i) for i in indices])
+        dialog.deleteLater()
     def restore(self):
         indices=self.chosen()
         if not indices:self.message.setText('请勾选要恢复的商品');return

@@ -47,11 +47,25 @@ export class PurchaseReceipts{
   finish(id,o,manifest){return this.change(id,r=>{
     if(o.purchaseId!==id||o.runId!==r.activeRunId||o.orderId!==r.scope.orderId)fail('RECEIPT_RUN_CONFLICT','收货结果不属于当前下载任务');
     if(r.terminal&&!o.terminal)fail('RECEIPT_TERMINAL_CONFLICT','此前已见完成状态，本次状态回退，保留停止监控并待核');
+    if(r.terminalKind==='VOIDED'&&o.terminalKind!=='VOIDED')fail('RECEIPT_TERMINAL_CONFLICT','此前已核实作废，现有状态回退；保留原作废证据并待核');
+    if(o.terminalKind==='VOIDED'){
+      const priorReceipt=r.finalSync==='SYNCED'||!!r.hostReceipt||r.summary?.status==='已完成'||r.terminal&&r.terminalKind!=='VOIDED';
+      const summary=receiptSummary(o);
+      if(priorReceipt){summary.disposition='VOIDED_REVIEW';summary.issues=[...summary.issues,{code:'RECEIPT_VOID_AFTER_COMPLETION',message:'原已完成或已保存实收，现观察到作废；原实收保留，需人工处理'}];summary.issueCount++;}
+      return {...r,state:summary.disposition==='VOIDED'?'VOIDED':'VOIDED_REVIEW',terminal:true,terminalKind:'VOIDED',
+        finalSync:'NOT_DUE',summary,manifest,activeRunId:null,error:null};
+    }
     return {...r,state:o.eligible?'READY':o.terminal||o.issues.some(i=>i.code!=='RECEIPT_NUMBER_UNKNOWN')?'NEEDS_REVIEW':'IDLE',
       terminal:r.terminal||o.terminal,finalSync:o.terminal?(o.eligible?'READY':'NEEDS_REVIEW'):r.finalSync,
       summary:receiptSummary(o),manifest,activeRunId:null,error:null};
   },'SNAPSHOT_SAVED');}
-  failed(id,error,paused=false){return this.change(id,r=>({...r,state:paused?'PAUSED':'NEEDS_REVIEW',error}),'INTERRUPTED');}
+  hostVoidConflict(id,reason){return this.change(id,r=>{
+    if(r.terminalKind!=='VOIDED'||!['VOIDED','VOIDED_REVIEW'].includes(r.state))fail('RECEIPT_VOID_CONFLICT','当前不是作废终态，不能登记作废后的业务冲突');
+    if(typeof reason!=='string'||!reason.trim()||reason.length>500)fail('RECEIPT_VOID_CONFLICT','作废核对原因无效');
+    return {...r,state:'VOIDED_REVIEW',finalSync:'NOT_DUE',hostConflict:reason,summary:{...r.summary,disposition:'VOIDED_REVIEW'}};
+  },'HOST_VOID_CONFLICT');}
+  failed(id,error,paused=false){return this.change(id,r=>({...r,state:r.terminalKind==='VOIDED'?'VOIDED_REVIEW':paused?'PAUSED':'NEEDS_REVIEW',
+    ...(r.terminalKind==='VOIDED'?{finalSync:'NOT_DUE'}:{}),error}),'INTERRUPTED');}
   synced(id,manifestSha,receipt){return this.change(id,r=>{
     if(r.manifest?.sha256!==manifestSha||!r.summary?.eligible)fail('RECEIPT_SYNC_CONFLICT','实收回执不属于本次完整终态文件');
     if(!receipt||receipt.number!==r.basis.number||receipt.stage!=='receipt'||!Number.isSafeInteger(receipt.version)||receipt.version<1)fail('RECEIPT_SYNC_CONFLICT','正式实收服务回执不完整或属于别的订单');

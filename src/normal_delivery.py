@@ -1,11 +1,13 @@
 """Background preparation and one-confirmation signed export; no Qt access."""
-import copy,hashlib
+import copy
 from pathlib import Path
 from contextlib import closing
 import work_repository as wr
 import normal_orders,normal_exports,new_product_focus as focus
 from runtime_support import checkpoint
 from io_stages import stage
+import export_receipts as receipts
+from export_files import sha256,explain_error
 
 
 def job_head(work,day):
@@ -18,6 +20,16 @@ def prepare(repository,payload,store,progress=lambda s:None,cancel=None):
     """Thin compatibility entry for a single store."""
     batch=prepare_batch(repository,payload,[store],progress=progress,cancel=cancel)
     return {**batch['plans'][0],'payload':batch['payload'],'head':batch['head']}
+
+
+def probe_payload(full,codes):
+    """Keep signing blockers when projecting the small export preflight."""
+    slim={k:full[k] for k in ('day','input_dirty')}
+    slim['new_focus']=full.get('new_focus')
+    slim.update(states={s:full['states'][s] for s in codes},results={s:full['results'][s] for s in codes},
+                model_version=full['model_version'],_draft_summary=wr.summary(full),
+                preissue_drafts={s:v for s,v in full.get('preissue_drafts',{}).items() if s in codes})
+    return slim
 
 
 def prepare_batch(repository,payload,codes,progress=lambda s:None,cancel=None):
@@ -70,32 +82,60 @@ def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=Non
     if len(paths)!=len(files):raise ValueError('多仓或多店导出请选择文件夹')
     if len({os.path.normcase(str(p.resolve())) for p in paths})!=len(paths):raise ValueError('门店文件名重复，请分次导出并指定不同文件名')
     fd,probe=tempfile.mkstemp(prefix='.delivery-check-',dir=paths[0].parent);os.close(fd);os.unlink(probe);checkpoint(cancel)
-    signed=any(not p['same'] for p in plans);completed=[];orders=[]
-    if signed:
-        progress('后台归档所选门店与完整来源（一次事务）…')
-        orders=repository.confirm(payload,[p['store'] for p in plans],batch['head']['revision'] if batch['head'] else None,{p['store']:p['old']['revision'] if p['old'] else None for p in plans},progress=progress,cancel=cancel)
-    else:
-        # The prepare step already decoded and validated these immutable revisions.
-        # Recheck current revision identities together; reuse exactly those snapshots.
-        heads={h['store']:h for h in repository.headers() if h['day']==payload['day']}
-        for p in plans:
-            head=heads.get(p['store']);order=p['old']
-            if not head or any(head[k]!=order[k] for k in ('oid','revision','digest','saved')):raise wr.Conflict('正常单已更新，请重新核对：'+p['store'])
-            orders.append(order)
+    signed=any(not p['same'] for p in plans);orders=[]
+    receipt=receipts.begin(repository.work.path,'merchant',[
+        {'path':str(path.resolve()),'state':'未执行','stage':'准备','head':None,
+         'day':payload['day'],'store':p['store'],'warehouse':f['warehouse']}
+        for (p,f),path in zip(files,paths)],signature='尚未新增签发' if signed else '归档版本未改变',signed=signed)
     try:
-        by_store={o['store']:o for o in orders}
-        for i,((plan,file),path) in enumerate(zip(files,paths),1):
-            checkpoint(cancel);order=by_store[plan['store']];warehouse=file['warehouse']
-            from archive_orders import require_active
-            with closing(repository.work.connect()) as db:require_active(db,order['oid'],warehouse)
-            with stage(f'写出确认单 {i}/{len(files)} · {warehouse}',progress):normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'文件 {i}/{len(files)} · {order["payload"]["result"]["store_name"]} · {warehouse}'),warehouse=warehouse)
-            completed.append(str(path))
-            from warehouse_orders import child_number
-            repository.log(order,'带号导出',{'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'warehouse':warehouse,'child_number':child_number(order['number'],warehouse)})
+        if signed:
+            receipt['state']='正在归档';receipt['signature']='签发结果待核';receipts.update(repository.work.path,receipt)
+            progress('后台归档所选门店与完整来源（一次事务）…')
+            orders=repository.confirm(payload,[p['store'] for p in plans],batch['head']['revision'] if batch['head'] else None,{p['store']:p['old']['revision'] if p['old'] else None for p in plans},progress=progress,cancel=cancel)
+            receipt['signature']='所选正常单已归档，修订保留'
+        else:
+            heads={h['store']:h for h in repository.headers() if h['day']==payload['day']}
+            for p in plans:
+                head=heads.get(p['store']);order=p['old']
+                if not head or any(head[k]!=order[k] for k in ('oid','revision','digest','saved')):raise wr.Conflict('正常单已更新，请重新核对：'+p['store'])
+                orders.append(order)
     except Exception as exc:
-        remaining=[str(p) for p in paths if str(p) not in completed]
-        raise RuntimeError(('所选正常单已归档，修订保留。' if signed else '归档版本未改变。')+f'已生成 {len(completed)}/{len(paths)} 份：'+('、'.join(completed) or '无')+'；未生成：'+('、'.join(remaining) or '无（日志写入失败）')+'。'+str(exc)+'；可从历史页按原修订重导未完成仓。') from exc
-    return {'paths':completed,'signed':signed,'saved':job_head(repository.work,payload['day'])['saved'] if signed else None}
+        receipt['state']='归档需核对';receipt['warnings'].append(str(exc));receipts.update(repository.work.path,receipt)
+        raise RuntimeError(receipts.summary(receipt)) from exc
+    by_store={o['store']:o for o in orders}
+    records=[]
+    for item in receipt['files']:
+        order=by_store[item['store']];item['head']=receipts.identity(order,item['warehouse']);records.append((order,item))
+    receipt['state']='归档已核实，等待导出';receipts.update(repository.work.path,receipt)
+    completed=_write_exports(repository,records,receipt,progress,cancel)
+    return {'paths':completed,'signed':signed,'saved':job_head(repository.work,payload['day'])['saved'] if signed else None,
+            'export_task':receipt['id'],'warnings':receipt['warnings']}
+
+
+def _write_exports(repository,records,receipt,progress,cancel):
+    import export_progress as ep
+    from archive_orders import require_active
+    from warehouse_orders import child_number
+    done=[];current=None
+    try:
+        for i,(order,item) in enumerate(records,1):
+            current=item;checkpoint(cancel);warehouse=item['warehouse'];path=Path(item['path'])
+            with closing(repository.work.connect()) as db:require_active(db,order['oid'],warehouse)
+            item.update(stage='写出文件',state='正在写出');receipts.update(repository.work.path,receipt)
+            with stage(f'写出确认单 {i}/{len(records)} · {warehouse}',progress):
+                normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'文件 {i}/{len(records)} · {order["payload"]["result"]["store_name"]} · {warehouse}'),warehouse=warehouse)
+            item.update(state='已生成',stage='核验文件摘要');done.append(str(path));receipts.update(repository.work.path,receipt)
+            item['sha256']=sha256(path);item['stage']='记录导出日志';receipts.update(repository.work.path,receipt)
+            repository.log(order,'带号导出',{'path':str(path),'sha256':item['sha256'],'warehouse':warehouse,'child_number':child_number(order['number'],warehouse),'export_task':receipt['id']})
+            item.update(state='已完成',stage='完成');receipts.update(repository.work.path,receipt)
+    except Exception as exc:
+        if current is not None:
+            current['error']=('文件已生成，日志写入失败：' if current['stage']=='记录导出日志' else '')+explain_error(exc)
+            if current['state'] not in ('已生成','已完成'):current['state']='未完成'
+        receipt['state']='导出未全部完成';receipts.update(repository.work.path,receipt)
+        raise RuntimeError(receipts.summary(receipt)) from exc
+    receipt['state']='已完成' if not receipt['warnings'] else '文件已完成，回执需核对';receipts.update(repository.work.path,receipt)
+    return done
 
 
 def execute(repository,plan,path,progress=lambda s:None,cancel=None):
@@ -116,14 +156,9 @@ def export_signed(repository,order,destination,warehouses,progress=lambda s:None
     selected=[w for w in available if w in warehouses];dest=Path(destination)
     paths=[dest/normal_exports.filename(order,w) for w in selected] if dest.is_dir() else [dest]
     if len(paths)!=len(selected):raise ValueError('多仓导出请选择文件夹')
-    done=[]
-    try:
-        for i,(wh,path) in enumerate(zip(selected,paths),1):
-            checkpoint(cancel)
-            from archive_orders import require_active
-            with closing(repository.work.connect()) as db:require_active(db,order['oid'],wh)
-            normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'文件 {i}/{len(paths)} · {wh}'),warehouse=wh)
-            done.append(str(path));repository.log(order,'带号导出',{'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'warehouse':wh,'child_number':child_number(order['number'],wh)})
-    except Exception as exc:
-        raise RuntimeError(f'原修订 V{order["revision"]:03d} 保留。已生成：'+('、'.join(done) or '无')+'；未生成：'+('、'.join(str(p) for p in paths if str(p) not in done) or '无（日志写入失败）')+'；'+str(exc)) from exc
-    return done
+    checkpoint(cancel)
+    receipt=receipts.begin(repository.work.path,'merchant',[
+        {'path':str(path.resolve()),'state':'未执行','stage':'准备','head':receipts.identity(order,wh),
+         'day':order['day'],'store':order['store'],'warehouse':wh} for wh,path in zip(selected,paths)],
+        signature=f'原修订 V{order["revision"]:03d} 保留',signed=False)
+    return _write_exports(repository,[(order,item) for item in receipt['files']],receipt,progress,cancel)

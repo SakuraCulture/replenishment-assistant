@@ -22,10 +22,11 @@ export function receiptObservation(p,binding,runId,sources){
   const main=sources[0].rows[0],rows=sources[1].rows,issues=[];
   const add=(code,message,sku=null)=>issues.push({code,message,sku});
   const expected=new Map(p.rows.map(r=>[r.sku,r])),seen=new Set();
-  const terminal=main.status==='已完成'||rows.some(r=>r.status==='已完成');
+  const voided=main.status==='已作废';
+  const terminal=voided||main.status==='已完成'||rows.some(r=>r.status==='已完成');
   const number=(v,field,sku)=>{try{return decimal(v);}catch{add('RECEIPT_NUMBER_UNKNOWN',field+'为空或无效',sku);return null;}};
   if(rows.some(r=>r.status!==main.status))add('RECEIPT_STATUS_CONFLICT','主单与子单的单据状态不一致');
-  if(/作废|取消|终止|关闭/.test(main.status))add('RECEIPT_ABNORMAL_STATE','平台状态需业务核对：'+main.status);
+  if(!voided&&/取消|终止|关闭/.test(main.status))add('RECEIPT_ABNORMAL_STATE','平台状态需业务核对：'+main.status);
   if(number(main.skuCount,'采购商品种数')!==String(p.rows.length)||rows.length!==p.rows.length)add('RECEIPT_COVERAGE','采购商品数与已关联付款依据不一致');
   if(number(main.quantity,'采购主单数量')!==decimal(p.totalQuantity)||number(main.amount,'采购主单金额')!==decimal(p.totalAmount))add('RECEIPT_PURCHASE_CHANGED','平台采购数量或金额已改变，不能自动沿用原付款依据');
   for(const r of rows){
@@ -33,22 +34,31 @@ export function receiptObservation(p,binding,runId,sources){
     if(!old||seen.has(r.sku)){add('RECEIPT_SKU_CONFLICT','采购商品缺失、重复或不在原关联范围',r.sku);continue;}
     seen.add(r.sku);
     if(number(r.quantity,'采购数量',r.sku)!==decimal(old.quantity)||number(r.amount,'采购金额',r.sku)!==decimal(old.amount))add('RECEIPT_PURCHASE_CHANGED','平台商品采购数量或金额改变',r.sku);
-    if(!r.unit?.trim())add('RECEIPT_UNIT_UNKNOWN','基础单位为空',r.sku);
-    number(r.receivedQuantity,'实际入库数量',r.sku);number(r.receivedAmount,'单品入库金额',r.sku);
+    if(!voided){
+      if(!r.unit?.trim())add('RECEIPT_UNIT_UNKNOWN','基础单位为空',r.sku);
+      number(r.receivedQuantity,'实际入库数量',r.sku);number(r.receivedAmount,'单品入库金额',r.sku);
+    }
   }
   for(const sku of expected.keys())if(!seen.has(sku))add('RECEIPT_SKU_MISSING','采购明细缺少原商品',sku);
-  const rq=number(main.receivedQuantity,'主单入库数量'),ra=number(main.receivedAmount,'主单入库金额');
+  const rq=voided?null:number(main.receivedQuantity,'主单入库数量'),ra=voided?null:number(main.receivedAmount,'主单入库金额');
+  if(voided)for(const r of [main,...rows])for(const field of ['receivedSkuCount','receivedQuantity','receivedAmount']){
+    if(r[field]===undefined||r[field]===null||r[field]==='')continue;
+    const value=number(r[field],field,r.sku);
+    if(value!==null&&value!=='0')add('RECEIPT_VOID_WITH_RECEIPT','采购单已作废，但原件仍有非零实收事实，需人工处理',r.sku);
+  }
   const known=(field)=>rows.every(r=>{try{decimal(r[field]);return true;}catch{return false;}});
   if(rq!==null&&known('receivedQuantity')&&rq!==sum(rows.map(r=>r.receivedQuantity)))add('RECEIPT_TOTAL_CONFLICT','主子单实际入库数量合计不一致');
   if(ra!==null&&known('receivedAmount')&&ra!==sum(rows.map(r=>r.receivedAmount)))add('RECEIPT_TOTAL_CONFLICT','主子单入库金额合计不一致');
   return {schema:1,operation:'purchase.receipt.observation',purchaseId:p.id,runId,identity:p.identity,basis:p.basis,
     orderId:binding.orderId,supplierCode:p.supplierCode,observedAt:now(),platformCompletedAt:null,
-    terminal,eligible:terminal&&main.status==='已完成'&&issues.length===0,main,rows,issues,
+    terminal,terminalKind:voided?'VOIDED':terminal?'COMPLETED':null,
+    disposition:voided?(issues.length?'VOIDED_REVIEW':'VOIDED'):main.status==='已完成'?'RECEIPT':'PENDING',
+    eligible:terminal&&main.status==='已完成'&&issues.length===0,main,rows,issues,
     files:sources.map(({rows,...file})=>file),quantityBasis:'native_actual_inventory_quantity_no_conversion'};
 }
 
 export function receiptSummary(o){
-  return {runId:o.runId,observedAt:o.observedAt,status:o.main.status,terminal:o.terminal,eligible:o.eligible,
+  return {runId:o.runId,observedAt:o.observedAt,status:o.main.status,terminal:o.terminal,terminalKind:o.terminalKind||null,disposition:o.disposition||null,eligible:o.eligible,
     skuCount:o.rows.length,receivedQuantity:o.main.receivedQuantity,receivedAmount:o.main.receivedAmount,
     issueCount:o.issues.length,issues:o.issues.slice(0,30),issuesTruncated:o.issues.length>30};
 }

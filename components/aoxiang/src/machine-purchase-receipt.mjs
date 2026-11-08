@@ -9,7 +9,7 @@ export class MachinePurchaseReceipt{
   start(id){
     if(this.busy)fail('RECEIPT_BUSY','收货同步正在执行或安全停止');
     const r=this.service.register(id);
-    if(['READY','SYNCED'].includes(r.state))return this.status(id);
+    if(['READY','SYNCED','VOIDED','VOIDED_REVIEW'].includes(r.state))return this.status(id);
     this.ledger.begin(id);this.control=new AbortController();this.job={id,cancelled:false,stage:r.terminal?'恢复最终实收文件，不恢复常规监控':'查询当前采购主单及实收明细'};
     this.pending=Promise.resolve().then(async()=>{try{
       if(this.control.signal.aborted)fail('PAUSED','已停止新动作');

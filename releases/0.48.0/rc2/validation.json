@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "source_commit": "c3dda6c7488d6d443580092aed7a6e607accb6dc",
+  "tests": 1224,
+  "unique_test_ids": 1224,
+  "test_seconds": 442.286,
+  "exe_checks": 11,
+  "files": 1239,
+  "uncompressed_bytes": 312038911,
+  "exe_sha256": "0b080bb7ea2ebc31a0833cdbc6c3da9cb078df40b1d57dcf90cb391bdc150502",
+  "ai_interface_sha256": "36080cfa2245baf7bcc108afd45ee1eeb7f1f96bc684bddc5099b85643d428f4",
+  "zip": "交付_0.48.0_rc2\\补货助手_0.48.0_rc2_AI分析与签发恢复.zip",
+  "zip_bytes": 125540232,
+  "zip_sha256": "e93dbd70b2f008d457e654fc44d41dc21394e99cf7847071dd5a868ab1452882",
+  "manual_pdf_sha256": "a155fede7bf9c66e398539551d02fa3ee2b2e2e9fe68a78a8c3a878a4762007f",
+  "core_unchanged": 15,
+  "preserved_delivery_files": 22,
+  "no_live_platform_calls": true,
+  "external_ai_client_tested": false,
+  "original_user_failure_root_cause_confirmed": false
+}

@@ -24,6 +24,8 @@ class GridModel(QAbstractTableModel):
 def grid(parent,headers,rows=()):
     model=GridModel(headers,rows,parent);table=QTableView(parent);table.setModel(model);table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     for i in range(len(headers)):table.setColumnWidth(i,200 if i else 240)
+    from table_readability import install
+    install(table)
     return table,model
 
 class Task(QDialog):

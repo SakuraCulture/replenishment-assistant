@@ -31,6 +31,8 @@ class FakeClient:
                     'profiles': [{'displayName': '测试配置', 'profileDirectory': 'Default', 'actualProfilePath': 'C:/profile'}]}
         if action == 'configuration':
             return {'configured': False}
+        if action == 'session.release':
+            return {'idle': True}
         if action == 'setup.start':
             self.job = {'id': 'setup1', 'state': 'RUNNING', 'stage': '核验', 'current': 0, 'total': len(values['targets']),
                         'identity': None, 'error': None, 'targets': [{**v, 'state': 'RUNNING', 'error': None} for v in values['targets']]}
@@ -211,6 +213,8 @@ class SetupUiTests(unittest.TestCase):
         host.results = {'S': {'sentinel': [1, 2, 3]}}
         host.preissue_drafts = {'S': {'edits': {'SKU': {'quantity': 24}}}}
         before = copy.deepcopy((host.results, host.preissue_drafts, host.sales.paths))
+        # Opening settings now reads the shared configuration, still no real platform.
+        host.aoxiang_workflows.session.factory = FakeClient
         def close_dialog():
             dialog = getattr(host, '_aoxiang_dialog', None)
             if dialog is None or dialog.worker:
@@ -226,6 +230,7 @@ class SetupUiTests(unittest.TestCase):
             host.results = {}
             host.preissue_drafts = {}
             host.close()
+            self.wait(lambda: not host.aoxiang_workflows.session_closer or not host.aoxiang_workflows.session_closer.isRunning())
             self.app.processEvents()
             shiboken6.delete(host)
 

@@ -1,0 +1,91 @@
+{
+  "passed": true,
+  "app": "补货助手",
+  "version": "0.48.4",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "8a724ad52cd18d1e5a5ad825c5070d03ec1af138",
+  "build_id": "rc2",
+  "built_at": "2026-11-08T15:03:52.227314+08:00",
+  "source_archive_sha256": "c3af4febbf4320381807a653e6a7f172f65fd9d5a2385cd3bcf2e8691d84aad7",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "8a724ad52cd18d1e5a5ad825c5070d03ec1af138",
+    "files": 869,
+    "manifest_sha256": "c4e5cb874128d5ad740a920e7ad4264f1e52dda63b4167c967f63c2962266d23",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "0f255967ecac8b189d27dd0bc2749aa8c6626ed4f0e721f6a89ecc5edb690775",
+    "files": 8,
+    "source_commit": "8a724ad52cd18d1e5a5ad825c5070d03ec1af138",
+    "contains_user_state": false
+  },
+  "checks": [
+    "Store-maintenance table owns at least 40 percent of its work page",
+    "Store-maintenance table owns at least 40 percent of its work page",
+    "Low-frequency default/data-maintenance actions are folded by default",
+    "All original maintenance controls remain reachable in expanded scroll panel",
+    "Store goods table owns at least 45 percent of its work page",
+    "Store goods table owns at least 45 percent of its work page",
+    "Full original amount and budget details remain accessible",
+    "Goods table remains usable with 12-point roomy display",
+    "Layout expand/collapse and navigation do not mutate results",
+    "sign entry explains pending store by name/code and explicit application step",
+    "sign entry can open exactly the pending store final list without applying it",
+    "sign cancellation retains pending edits",
+    "export entry explains pending store by name/code and explicit application step",
+    "export entry can open exactly the pending store final list without applying it",
+    "export cancellation retains pending edits",
+    "Blocked pure-sign and export entries create no signed orders",
+    "Actual pure-sign entry succeeds after pending edits are resolved, without exporting"
+  ],
+  "geometry": [
+    {
+      "page": "stores",
+      "window": [
+        1366,
+        900
+      ],
+      "table_height": 379,
+      "page_height": 658
+    },
+    {
+      "page": "stores",
+      "window": [
+        1280,
+        800
+      ],
+      "table_height": 279,
+      "page_height": 558
+    },
+    {
+      "page": "goods",
+      "window": [
+        1366,
+        900
+      ],
+      "table_height": 368,
+      "page_height": 660
+    },
+    {
+      "page": "goods",
+      "window": [
+        1280,
+        800
+      ],
+      "table_height": 268,
+      "page_height": 560
+    }
+  ],
+  "synthetic": true,
+  "live_platform": false
+}

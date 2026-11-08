@@ -84,3 +84,21 @@ test('invalid business form returns its exact request error and leaves the same 
   child.send(request('ping'));const answer=await child.next();assert.equal(answer.ok,true);assert.equal(answer.result.active_binding_id,null);
   child.send(request('purchase.list'));assert.equal((await child.next()).result.total,0);
 });
+
+test('configuration exposes only saved browser form fields without connecting or rewriting binding',async t=>{
+  const root=await seeded();
+  const file=path.join(root,'config/machine.binding.json');
+  const binding={edgeExecutable:'C:/saved/edge.exe',edgeVersion:'test',actualProfilePath:'C:/saved/Profile 1',
+    profileDirectory:'Profile 1',outputRoot:'C:/saved/downloads',privateSentinel:'must-not-expose'};
+  await fs.writeFile(file,JSON.stringify(binding));const before=await fs.readFile(file);
+  const child=launch(root);
+  t.after(async()=>{if(child.child.exitCode===null){child.send(request('shutdown'));await child.exit;}});
+  assert.equal((await child.next()).type,'ready');
+  child.send(request('configuration'));const frame=await child.next();assert.equal(frame.ok,true);
+  assert.deepEqual(frame.result.browser_binding,{edge_executable:binding.edgeExecutable,edge_version:'test',
+    actual_profile_path:binding.actualProfilePath,profile_directory:'Profile 1',output_root:binding.outputRoot});
+  assert.equal(JSON.stringify(frame).includes('must-not-expose'),false);
+  child.send(request('session.status'));const status=(await child.next()).result;
+  assert.equal(status.worker_pid,null);assert.equal(status.connected,false);
+  assert.deepEqual(await fs.readFile(file),before);
+});

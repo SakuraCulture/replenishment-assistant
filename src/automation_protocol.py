@@ -90,6 +90,29 @@ TOOLS = [
 ]
 SCHEMAS = {name: schema for name, _, schema in TOOLS}
 
+# This contract stays light: opening the application does not import analysis code.
+STOCKOUT_DIMS=['store','warehouse','source','mandatory','category','supplier','day','product_status','replen_status','inbound_status','tag_status','sku']
+STOCKOUT_DIM={'type':'string','enum':STOCKOUT_DIMS}
+STOCKOUT_DIMS_SCHEMA={'type':'array','items':STOCKOUT_DIM,'minItems':1,'maxItems':12,'uniqueItems':True}
+STOCKOUT_QUERY=obj({'start':TEXT,'end':TEXT,'view':{'type':'string','enum':['all','retired','assessment','both']},
+    'exclude_stopped':{'type':'boolean'},'exclude_disabled':{'type':'boolean'},
+    'filters':obj({k:{'type':'array','items':{'type':['string','integer','null']},'maxItems':1000} for k in STOCKOUT_DIMS})},['start','end'])
+TOOLS.extend([
+    ('stockout_context','只读列出独立门店缺货率资料日期与口径。不采集、不创建分析库。默认剔除门店停采/禁采及实际供货仓禁用；负库存纳入缺货。',obj(PAGE)),
+    ('query_stockout_analysis','只读分析明确日期与筛选范围的门店缺货率；固定日报修订，后台查询，task_status完成后读取结果。未采不补0，缺货率不能证明因果，不自动改参数或下单。',
+     obj({'context_token':TEXT,'operation_key':TEXT,'query':STOCKOUT_QUERY,'dimensions':STOCKOUT_DIMS_SCHEMA},['context_token','operation_key','query'])),
+    ('stockout_analysis_results','读取summary概览/趋势/同店同品变化，cuts切面，detail明细，zero缺货，excluded剔除，repeated重复缺货。分页可能返回page_pending：等待page_task_id完成后，仍用原分析task_id和相同参数再次读取；next_offset为空才读完。',
+     obj({**TASK,'level':{'type':'string','enum':['summary','cuts','detail','zero','excluded','repeated']},'dimensions':STOCKOUT_DIMS_SCHEMA,**PAGE},['task_id'])),
+    ('stockout_filter_values','读取固定分析范围内维度候选值；分页可能返回page_pending，等待page_task_id完成后用原分析task_id重复读取。不改变已固定范围。',
+     obj({**TASK,'dimension':STOCKOUT_DIM,'search':{'type':'string','maxLength':4096},**PAGE},['task_id','dimension'])),
+    ('stockout_evidence','按精确门店编码和商品编码追溯原始观测、原表行号、销量库存和资料依据；原单未明确关联时履约原因未知。分页异步约定同stockout_analysis_results。',
+     obj({**TASK,'store':TEXT,'sku':TEXT,**PAGE},['task_id','store','sku'])),
+    ('export_stockout_analysis','仅在用户要求后导出同一固定日报快照到本地Excel，每套组合一张表；不改参数、资料或采购。最多32套组合，每套最多12维。',
+     obj({**TASK,'snapshot_id':TEXT,'context_token':TEXT,'operation_key':TEXT,'directory':TEXT,'include_details':{'type':'boolean'},
+          'combinations':{'type':'array','minItems':1,'maxItems':32,'items':obj({'name':TEXT,'dimensions':STOCKOUT_DIMS_SCHEMA},['name','dimensions'])}},['task_id','snapshot_id','context_token','operation_key'])),
+])
+SCHEMAS.update({name:schema for name,_,schema in TOOLS})
+
 
 def validate(value, schema, path='参数'):
     kinds = schema.get('type'); kinds = [kinds] if isinstance(kinds, str) else kinds or []
@@ -127,6 +150,7 @@ def validate_call(name, arguments):
 
 def public_tools():
     readonly = {'query_inventory_structure','inventory_structure_results','workbench_context', 'parameter_definitions', 'find_resources', 'effective_parameters', 'task_status', 'scheduled_run_status', 'calculation_results', 'explain_decision', 'query_order_funnel', 'order_funnel_results', 'store_history_review', 'stock_diagnosis_results', 'stock_diagnosis_parameters'}
+    readonly.update({'stockout_context','query_stockout_analysis','stockout_analysis_results','stockout_filter_values','stockout_evidence'})
     return [{'name': n, 'description': d, 'inputSchema': s, 'annotations': {
         'readOnlyHint': n in readonly, 'destructiveHint': False, 'openWorldHint': False}}
         for n, d, s in TOOLS]

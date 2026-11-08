@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "app": "补货助手",
+  "version": "0.48.7",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "ccdd38a0f7ae8e8f60b10fc676c918e16b8c6786",
+  "build_id": "rc1",
+  "built_at": "2026-11-08T17:28:14.916495+08:00",
+  "source_archive_sha256": "38826b576d1ea20ea4d8931975da6c4977c43a139b1d9be57ab7d80e55605abc",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "ccdd38a0f7ae8e8f60b10fc676c918e16b8c6786",
+    "files": 870,
+    "manifest_sha256": "6cafc1db0e4c427a910047783c340d314ce671db57935627278274554d904c4c",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "0ba81247f234807e509d27a1c284d1164fd8e2c98bb3de971eec1c9b5307a52b",
+    "files": 8,
+    "source_commit": "ccdd38a0f7ae8e8f60b10fc676c918e16b8c6786",
+    "contains_user_state": false
+  },
+  "checks": [
+    "两位单价含循环小数及2.675四舍五入",
+    "采购逐项金额按两位单价计算",
+    "实际Excel数值写两位单价，非仅显示格式",
+    "金额列留空，防止金额优先导致反算高精度单价",
+    "原付款、单价、采购金额与差额各自展示",
+    "原付款和舍入差额准确显示",
+    "预览汇总保留原付款及采购差额",
+    "原上传确认框展示舍入规则与差额",
+    "取消确认未派发采购，无平台请求"
+  ],
+  "synthetic": true,
+  "live_platform": false
+}

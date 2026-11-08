@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "app": "补货助手",
+  "version": "0.48.7",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "源码运行",
+  "build_id": "未打包",
+  "checks": [
+    "两位单价含循环小数及2.675四舍五入",
+    "采购逐项金额按两位单价计算",
+    "实际Excel数值写两位单价，非仅显示格式",
+    "金额列留空，防止金额优先导致反算高精度单价",
+    "原付款、单价、采购金额与差额各自展示",
+    "原付款和舍入差额准确显示",
+    "预览汇总保留原付款及采购差额",
+    "原上传确认框展示舍入规则与差额",
+    "取消确认未派发采购，无平台请求"
+  ],
+  "synthetic": true,
+  "live_platform": false
+}

@@ -99,6 +99,16 @@ class BrowserStatus(QWidget):
                 if self.paused or getattr(self.owner(k),'client',None) is not c:return
                 try:states=states_for(k,data)
                 except (TypeError,AttributeError):self.set_group(k,'UNKNOWN');return
+                startup=getattr(self.host,'browser_startup',None)
+                if k=='ax' and startup and data.get('login_state'):
+                    from browser_startup import error_result,result
+                    if data.get('login_error'):
+                        record=error_result(data['login_error'])
+                    elif data['login_state']=='VERIFIED':
+                        record=result('READY','当前共享连接的商家身份已核验。')
+                    else:
+                        record=result('WAITING','当前连接尚未完成身份核验；不能沿用上次登录成功状态。')
+                    startup.records['翱象']={**record,'client':c}
                 for name,state in states.items():self.set_state(name,state)
             def failed(_text,k=kind,c=client):
                 if not self.paused and getattr(self.owner(k),'client',None) is c:self.set_group(k,'UNKNOWN' if c.running else 'DISCONNECTED')

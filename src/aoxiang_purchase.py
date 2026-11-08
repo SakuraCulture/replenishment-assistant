@@ -9,6 +9,7 @@ import purchases
 from purchase_io import code, number
 from runtime_support import checkpoint
 from aoxiang_jobs import encoded
+from aoxiang_purchase_pricing import POLICY, priced_row
 
 
 def fingerprint(plan):
@@ -57,7 +58,7 @@ def freeze_payment(path, head, configuration, suppliers, *, cancel=None):
             if row.get('currency', '') not in ('', 'CNY', '人民币', 'RMB'):
                 raise ValueError('采购模板按元计价，付款币种需核对，不自动换汇：' + sku)
             rows.append({'index': index, 'sku': sku, 'name': row.get('name') or '', 'quantity': qty,
-                         'amount': amount, 'currency': row.get('currency', ''),
+                         **priced_row(qty, amount), 'currency': row.get('currency', ''),
                          'source_quantity': row.get('quantity'), 'source_unit': row.get('unit'),
                          'source_factor': row.get('factor'), 'document_number': row.get('document_number'),
                          'sources': copy.deepcopy(row.get('sources', []))})
@@ -73,7 +74,9 @@ def freeze_payment(path, head, configuration, suppliers, *, cancel=None):
                 'total_quantity': str(sum((Decimal(r['quantity']) for r in rows), Decimal(0))),
                 'total_amount': str(sum((Decimal(r['amount']) for r in rows), Decimal(0))),
                 'quantity_basis': 'confirmed_base_quantity_no_additional_conversion',
-                'price_basis': 'confirmed_payment_amount_column_F_price_left_blank',
+                'price_basis': POLICY,
+                'payment_total_amount': str(sum((Decimal(r['payment_amount']) for r in rows), Decimal(0))),
+                'rounding_delta': str(sum((Decimal(r['rounding_delta']) for r in rows), Decimal(0))),
                 'create_external_order': False, 'post_creation_state': '待提交'}
     plan['fingerprint'] = fingerprint(plan)
     return plan

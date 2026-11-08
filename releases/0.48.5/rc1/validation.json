@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "source_commit": "dca9175c7dca4d607d875106b7048e70866804f6",
+  "python_tests": 1253,
+  "unique_test_ids": 1253,
+  "python_seconds": 472.177,
+  "focused_tests": 82,
+  "exe_checks": 12,
+  "exe_distinct_checks": 12,
+  "exe_sha256": "60b03a104d33c070f9839f6b65886534c82ab7ac1601294b9370e03b3c88898d",
+  "zip": "交付_0.48.5_rc1\\补货助手_0.48.5_rc1_生成单直达付款核对.zip",
+  "zip_sha256": "d29fcd9bd9dfe1c3a5284016393b79af3745310a4d54ed236d564cd0a8873133",
+  "zip_bytes": 125639137,
+  "files": 1245,
+  "core_unchanged": 15,
+  "preserved_delivery_files": 32,
+  "components_unchanged": true,
+  "live_platform": false
+}

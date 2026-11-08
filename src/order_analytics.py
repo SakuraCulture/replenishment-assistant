@@ -23,7 +23,7 @@ import storage_chunks as chunks
 from runtime_support import checkpoint
 from export_progress import RowProgress
 
-VERSION = 'funnel-1'
+VERSION = 'funnel-2'
 STAGES = ('model', 'signed', 'return', 'payment', 'receipt')
 NAMES = dict(model='模型建议', signed='签发', **{'return':'门店确认'}, payment='实际下单', receipt='实际收货')
 GROUPS = ('必采', '非必采', '属性待核')
@@ -224,6 +224,7 @@ def aggregate(rows):
 
 
 def summaries(rows,level):
+    from analytics_identifiers import summary
     groups=OrderedDict()
     for r in rows:
         key=(r['store'],r['warehouse'],r['order']) if level=='order' else (r['store'],r['warehouse']) if level=='warehouse' else (r['store'],)
@@ -231,6 +232,7 @@ def summaries(rows,level):
     return [{'key':key,'store':rs[0]['store'],'name':rs[0]['store_name'],
              'warehouse':rs[0]['warehouse'] if level!='store' else ' / '.join(dict.fromkeys(r['warehouse'] for r in rs)),
              'order':rs[0]['order'] if level=='order' else '',
+             'order_links':summary(rs),
              'days':sorted({r['day'] for r in rs}),'metrics':aggregate(rs),
              'groups':{g:aggregate([r for r in rs if r['group']==g]) for g in GROUPS}} for key,rs in groups.items()]
 
@@ -255,11 +257,15 @@ def validate_basis(path,report,progress=lambda _:None,cancel=None):
         db.execute('BEGIN')
         if data_stamp(db,report['query'])!=report['data_stamp']:
             raise ValueError('订单或履约数据已更新，请重新查询；原报告数据未混入本次结果')
+        from analytics_identifiers import token
+        if token(path,db,report['heads'],cancel)!=report.get('identifier_token'):
+            raise ValueError('订单关联单号已更新，请重新查询；原报告中的单号未自动替换')
     checkpoint(cancel)
 
 
 def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
-    spec=query_spec(spec);path=Path(path).resolve();rows=[];tokens=[];heads=[];payments=[]
+    from analytics_identifiers import local, attach
+    spec=query_spec(spec);path=Path(path).resolve();rows=[];tokens=[];heads=[];payments=[];identifiers=[]
     with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as db:
         db.execute('BEGIN')
         stamp=data_stamp(db,spec)
@@ -284,6 +290,8 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
                 h.update(number=child,parent_number=number,warehouse=wh,visibility_token=visibility.get((oid,wh),{}).get('token',0))
                 view=lifecycle.snapshot(path,h,db=db,order=order,cancel=cancel)
                 payment=view['documents']['payment']
+                references=local(db,h,payment)
+                identifiers.append({'day':day,'store':store,'store_name':result['store_name'],'warehouse':wh,'order':child,'references':references})
                 if payment:
                     totals={}
                     for raw in payment['payload'].get('raw_rows',payment['payload']['rows']):
@@ -296,6 +304,7 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
                 tokens.append([h,[(s,d['version'],d['digest']) if d else [s,None] for s,d in view['documents'].items()],view.get('legacy_return')])
                 heads.append(h);seen_stores.add(store);seen_orders.add(child)
                 for row in build_facts(order,h,view,evidence,cancel):
+                    row['references']=references
                     if spec.get('group') and row['group']!=spec['group']:continue
                     if spec.get('category') and row['category']!=spec['category']:continue
                     terms=spec.get('search','').casefold().split()
@@ -303,9 +312,11 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
                     rows.append(row)
         if set(spec['stores'])-seen_stores:raise ValueError('所选门店在日期和仓范围内没有有效签发：'+'、'.join(sorted(set(spec['stores'])-seen_stores)))
         if set(spec['orders'])-seen_orders:raise ValueError('所选订单不存在、已删除或不在查询范围，请重新查询')
+        identifier_token=attach(path,db,heads,identifiers,cancel)
     checkpoint(cancel)
     report={'schema':VERSION,'query':spec,'as_of':datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds'),
-            'snapshot_id':digest([VERSION,spec,tokens,rows,payments]),'data_stamp':stamp,'heads':heads,'rows':rows,'payments':payments,
+            'snapshot_id':digest([VERSION,spec,tokens,rows,payments,identifiers]),'data_stamp':stamp,'identifier_token':identifier_token,
+            'heads':heads,'rows':rows,'payments':payments,'identifiers':identifiers,
             'metrics':aggregate(rows),'groups':{g:aggregate([r for r in rows if r['group']==g]) for g in GROUPS},
             'stores':summaries(rows,'store'),'warehouses':summaries(rows,'warehouse'),'orders':summaries(rows,'order')}
     from history_diagnostics import review

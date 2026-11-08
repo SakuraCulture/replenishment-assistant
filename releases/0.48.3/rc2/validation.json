@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "source_commit": "dbb7df0eb9354ddbce0a733d8cc7c05e5a9cd686",
+  "python_tests": 1242,
+  "unique_test_ids": 1242,
+  "python_seconds": 445.158,
+  "focused_tests": 65,
+  "exe_checks": 20,
+  "exe_distinct_checks": 17,
+  "exe_sha256": "a2b819e012e68475f99e9f50016a483ed748155b23a31df12d9498a2e224cb29",
+  "zip": "交付_0.48.3_rc2\\补货助手_0.48.3_rc2_最终清单筛选与批量加减.zip",
+  "zip_sha256": "0cb37f8abb43ba3f54ba791a2b6b99aceb55964aca9fc5ceab053aeb27189e57",
+  "zip_bytes": 125610234,
+  "files": 1243,
+  "core_unchanged": 15,
+  "preserved_delivery_files": 28,
+  "components_unchanged": true,
+  "live_platform": false
+}

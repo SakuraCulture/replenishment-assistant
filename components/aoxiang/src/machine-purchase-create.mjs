@@ -42,8 +42,18 @@ export class MachinePurchaseCreate{
         await this.preflight(r.intent);this.check();
         this.progress('正在上传采购文件；此后只查询原任务，不重复上传');
         r=this.ledger.update(id,r.sequence,'SUBMITTING',{uploadAttempted:true});
-        const receipt=await this.adapter.upload(r.intent,baseline,{signal:this.control.signal});
-        this.ledger.accepted(receipt); // Persist a successful receipt even when pause arrived in flight.
+        try{
+          const receipt=await this.adapter.upload(r.intent,baseline,{signal:this.control.signal});
+          this.ledger.accepted(receipt); // Persist even when pause arrived in flight.
+        }catch(error){
+          // The guard has aborted the extra request, while its exact successful
+          // upload receipt may already be durably recorded. Continue ONLY the
+          // normal complete proof of that original task; never replay the upload.
+          r=this.ledger.get(id);
+          if(error.code!=='IMPORT_SIDE_EFFECT_BLOCKED'||!r.receipt||r.additionalTaskIds?.length)throw error;
+          r=this.ledger.update(id,r.sequence,'NEEDS_REVIEW',{uploadWarning:errorInfo(error),error:errorInfo(error)},'BLOCKED_REQUEST_RECOVERY');
+          this.progress('额外请求已阻断，原上传回执已保存；仅继续核验原任务和采购明细');
+        }
       }
       this.check();r=this.ledger.get(id);this.progress('核对原导入任务、采购主单和商品数量金额');
       r=this.ledger.update(id,r.sequence,'VERIFYING',{error:null});

@@ -35,7 +35,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         except Exception as exc:self.config_warning=str(exc)
         self.setWindowTitle(f'补货助手 {VERSION} · 多店工作台');self.resize(1380,900);self.setMinimumSize(1080,720)
         root=QWidget();self.setCentralWidget(root);v=QVBoxLayout(root);v.setContentsMargins(16,10,16,10);v.setSpacing(6)
-        head=QHBoxLayout();head.addWidget(label('补货出单','section'));subtitle=label('多店独立预算 · 必卖优先','muted');subtitle.setWordWrap(False);head.addWidget(subtitle);head.addStretch();head.addWidget(button('版本信息',self.about));v.addLayout(head)
+        self.work_header=QWidget();head=QHBoxLayout(self.work_header);head.setContentsMargins(0,0,0,0);head.addWidget(label('补货出单','section'));subtitle=label('多店独立预算 · 必卖优先','muted');subtitle.setWordWrap(False);head.addWidget(subtitle);head.addStretch();self.version_btn=button('版本信息',self.about);head.addWidget(self.version_btn);v.addWidget(self.work_header)
         nav=QHBoxLayout();self.nav=[]
         for i,text in enumerate(['① 准备数据','② 门店与预算','③ 计算进度','④ 查看与导出']):
             b=button(text,lambda checked=False,n=i:self.navigate(n));self.nav.append(b);nav.addWidget(b)
@@ -49,6 +49,8 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.initializing=False;self.restore_master();self.update_controls()
         self.store_table.verticalHeader().setDefaultSectionSize(56)
         for table in [self.task_table,self.overview,self.file_report]:table.verticalHeader().setDefaultSectionSize(46)
+        from display_settings import install
+        install(self)
     def page(self):
         p=QWidget();v=QVBoxLayout(p);v.setContentsMargins(0,0,0,0);v.setSpacing(12);self.pages.addWidget(p);return p,v
     def make_import(self):
@@ -63,13 +65,16 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.file_report=QTableWidget(0,4);self.file_report.setHorizontalHeaderLabels(['文件','商品行数','门店数','读取结果 / 处理办法']);self.file_report.horizontalHeader().setSectionResizeMode(3,QHeaderView.ResizeMode.Stretch);self.file_report.setColumnWidth(0,300);self.file_report.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);v.addWidget(self.file_report,1)
         actions=QHBoxLayout();self.load_btn=button('检查文件',self.start_load);actions.addWidget(self.load_btn);self.conflict_btn=button('处理重复冲突',self.resolve_conflicts);actions.addWidget(self.conflict_btn);actions.addStretch();self.next_btn=button('下一步：选择门店',lambda:self.navigate(1),True);actions.addWidget(self.next_btn);outer.addLayout(actions)
     def make_stores(self):
-        self.store_page,v=self.page();v.addWidget(label('选择本次门店，分别设置可用资金','section'));v.addWidget(label('按设定预算优先保必卖；末尾最多补足一个最小出库单位，整店超支不超过5%。0元仍不补；不限预算按模型建议，各店资金独立。','muted'))
+        self.store_page,v=self.page();v.setSpacing(5);v.addWidget(label('选择门店、供货仓与每店预算','section'))
+        hint=label('各店预算独立；0元不补，不限预算按模型建议。完整预算与参数说明见“更多维护”。','muted');hint.setToolTip('按设定预算优先保必卖；末尾最多补足一个最小出库单位，整店超支不超过5%。');v.addWidget(hint)
         row=QHBoxLayout();self.store_search=QLineEdit();self.store_search.setPlaceholderText('搜索门店名称或编码');self.store_search.textChanged.connect(self.filter_stores);row.addWidget(self.store_search,1)
         self.only_issues=QCheckBox('只看需处理');self.only_issues.toggled.connect(self.filter_stores);row.addWidget(self.only_issues);row.addWidget(button('全选当前筛选',lambda:self.select_all(True,True)));row.addWidget(button('全选本批可计算',lambda:self.select_all(True)));row.addWidget(button('清空全部勾选',lambda:self.select_all(False)));row.addWidget(button('查看已选门店',self.show_selected_stores));v.addLayout(row)
-        row=QHBoxLayout();row.addWidget(button('批量设置主从仓',self.bulk_routes));row.addWidget(button('批量设置每店预算',self.bulk_budget));row.addStretch();v.addLayout(row)
+        row=QHBoxLayout();row.addWidget(button('批量设置主从仓',self.bulk_routes));row.addWidget(button('批量设置每店预算',self.bulk_budget));row.addStretch()
         from business_flow_ui import disclosure
-        toggle,advanced,av=disclosure('更多参数设置 · 仅在本次需要调整时展开',self.store_page)
-        self.store_parameters_toggle=toggle;v.addWidget(toggle);v.addWidget(advanced)
+        toggle,advanced,av=disclosure('更多维护：保存默认、导入导出与详细参数',self.store_page)
+        self.store_advanced_layout=av;av.addLayout(row)
+        self.store_parameters_toggle=toggle;v.addWidget(toggle)
+        maintenance_scroll=QScrollArea();maintenance_scroll.setWidgetResizable(True);maintenance_scroll.setFrameShape(QFrame.Shape.NoFrame);maintenance_scroll.setWidget(advanced);maintenance_scroll.setMaximumHeight(165);maintenance_scroll.hide();toggle.toggled.connect(maintenance_scroll.setVisible);v.addWidget(maintenance_scroll)
         advanced_row=QHBoxLayout();advanced_row.addWidget(button('批量编辑本次完整参数',self.bulk_parameters));advanced_row.addWidget(button('管理参数方案',self.show_parameters));av.addLayout(advanced_row)
         av.addWidget(label('当前表格的“参数”可逐店查看实际值。默认参数与预案在顶部“参数设置”维护；保存默认不会暗中修改本次作业。','muted'))
         self.store_table=QTableWidget(0,9);self.store_table.setHorizontalHeaderLabels(['选择','门店','数据检查','主仓','从仓','预算方式','本次预算（元）','参数','配置提示']);self.store_table.verticalHeader().hide();self.store_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.store_table.setAlternatingRowColors(True)
@@ -152,7 +157,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
             if saved:mode.setCurrentIndex(2 if saved['enabled'] else 1);amount.setText(f"{saved['amount']:.2f}")
             amount.setEnabled(mode.currentIndex()==2)
             self.store_table.setCellWidget(i,5,mode);self.store_table.setCellWidget(i,6,amount)
-            p=button('编辑参数',lambda checked=False,code=s:self.edit_parameters([code]));cell=QWidget();pv=QVBoxLayout(cell);pv.setContentsMargins(3,3,3,3);state_label=label('');pv.addWidget(state_label);pr=QHBoxLayout();pr.addWidget(p);pr.addWidget(button('查看生效参数',lambda checked=False,code=s:self.view_parameters(code)));pv.addLayout(pr);self.store_table.setCellWidget(i,7,cell);self.store_table.setRowHeight(i,88)
+            p=button('编辑参数',lambda checked=False,code=s:self.edit_parameters([code]));cell=QWidget();pv=QVBoxLayout(cell);pv.setContentsMargins(3,3,3,3);pv.setSpacing(2);state_label=label('');state_label.setWordWrap(False);pv.addWidget(state_label);pr=QHBoxLayout();pr.addWidget(p);pr.addWidget(button('查看生效参数',lambda checked=False,code=s:self.view_parameters(code)));pv.addLayout(pr);self.store_table.setCellWidget(i,7,cell);self.store_table.setRowHeight(i,72)
             self.store_table.setItem(i,8,QTableWidgetItem('沿用上次预算' if saved else '请选择预算方式'))
             self.store_widgets[s]={'row':i,'check':check,'mode':mode,'amount':amount,'params':p,'param_status':state_label,'saved':bool(saved)}
             self.install_route_widgets(s,i,routes)

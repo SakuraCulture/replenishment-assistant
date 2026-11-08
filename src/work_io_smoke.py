@@ -37,7 +37,7 @@ def start_smoke(app,win,args):
             box=QApplication.activeModalWidget()
             if action=='cancel' and isinstance(box,Progress):timer.stop();box.reject()
             elif action=='close' and isinstance(box,Progress):timer.stop();win.close()
-            elif isinstance(box,QMessageBox) and box.objectName() in ('dailyOverwrite','normalConfirm'):
+            elif box is not None and box.objectName() in ('dailyOverwrite','normalConfirm'):
                 assert box.defaultButton().text()=='取消';text='取消' if action=='reject' else '覆盖当天记录' if box.objectName()=='dailyOverwrite' else '确认并归档';next(b for b in box.buttons() if b.text()==text).click()
         timer.timeout.connect(act);timer.start();return timer
     def finish(error=None):

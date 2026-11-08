@@ -15,6 +15,7 @@ from xml.sax.saxutils import escape, quoteattr
 from aoxiang_directory import file_hash
 from aoxiang_purchase import fingerprint
 from runtime_support import checkpoint
+from aoxiang_purchase_pricing import POLICY, priced_row
 
 MAIN = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
 REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
@@ -69,7 +70,11 @@ def build_input_sheet(raw, plan, spec, *, note=None):
     if removed != [v['row'] for v in spec['sampleRows']]:
         raise ValueError('模板样例清除范围不符')
     for index, row in enumerate(plan['rows'], start):
-        values = [plan['head']['store'], plan['supplier_code'], row['sku'], row['quantity'], None, row['amount'],
+        rounded = plan.get('price_basis') == POLICY
+        if rounded and any(row.get(k) != v for k, v in priced_row(row['quantity'], row['payment_amount']).items()):
+            raise ValueError('采购单价、金额或舍入差额与原付款不符：' + row['sku'])
+        values = [plan['head']['store'], plan['supplier_code'], row['sku'], row['quantity'],
+                  row['unit_price'] if rounded else None, None if rounded else row['amount'],
                   None, row['name'], None, plan['head']['number'] if note is None else note, '否', None]
         attrs = {k: v for k, v in (samples[0].attrib if samples else {}).items() if k not in ('r', 'spans')}
         attrs['r'] = str(index)
@@ -79,8 +84,9 @@ def build_input_sheet(raw, plan, spec, *, note=None):
                 continue
             style = '' if styles.get(column) is None else ' s=' + quoteattr(styles[column])
             ref = f'{column}{index}'
-            if column in ('D', 'F'):
-                # Decimal text is written directly, with no intermediate binary float or price rounding.
+            if column in ('D', 'E', 'F'):
+                # E is explicit HALF_UP cents; F stays blank so amount priority
+                # cannot cause the platform to derive a higher-precision price.
                 decimal = Decimal(value)
                 if (not decimal.is_finite() or decimal < 0 or len(decimal.normalize().as_tuple().digits) > 15
                         or Decimal(str(float(decimal))) != decimal):

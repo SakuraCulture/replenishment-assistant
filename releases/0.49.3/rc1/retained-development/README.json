@@ -1,0 +1,4 @@
+{
+  "not_final_acceptance": true,
+  "identifiers1.log": "16-case first run had one test-fixture error: the mutation callback ran during the initial read transaction, producing SQLite database-is-locked. It was moved to the first completed-sheet callback to inject a true mid-export update; the strict no-publication assertion was retained. Final 44-case group and complete regression pass."
+}

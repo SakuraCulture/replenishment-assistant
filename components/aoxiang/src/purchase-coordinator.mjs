@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {constants} from 'node:fs';
-import {uid,now,fail,sameIdentity,canonical,exists,writeJson,safeName,countValue,AppError,wait} from './common.mjs';
+import {uid,now,fail,sameIdentity,canonical,exists,writeJson,safeName,countValue,AppError,wait,businessDate} from './common.mjs';
 import {purchaseScopeHash,purchaseScope,checkPurchaseReceipt,purchaseContract,dateBounds,PURCHASE_CODES,PURCHASE_LABELS,purchaseSkuCount} from './purchase-contract.mjs';
 import {validateWorkbook,fileHash} from './workbook-validator.mjs';
 import {outputPath} from './publisher.mjs';
@@ -16,14 +16,15 @@ export function validatePurchasePair(run,main,detail){
   const expected=new Set(run.query.orderIds),parents=new Map();
   for(const r of main.capturedRows){if(parents.has(r.orderId))fail('PURCHASE_PARENT_DUPLICATE','主单文件包含重复采购单号');if(!expected.has(r.orderId))fail('PURCHASE_PARENT_COVERAGE','主单文件包含查询范围之外的采购单');parents.set(r.orderId,purchaseSkuCount(r.skuCount));}
   if(parents.size!==expected.size||main.rows!==run.query.total)fail('PURCHASE_PARENT_COVERAGE','主单文件没有完整覆盖本次查询单号');
-  const childSku=new Map(),bounds=dateBounds(run.from,run.to),field=run.dateBasis==='updated'?'updatedAt':'createdAt';
+  const childSku=new Map(),bounds=run.queryMode==='order_id'?null:dateBounds(run.from,run.to),field=run.dateBasis==='updated'?'updatedAt':'createdAt',createdDays=new Set();
   for(const r of detail.capturedRows){
     if(!parents.has(r.orderId))fail('PURCHASE_CHILD_ORPHAN','商品明细存在主单文件以外的采购单');
-    const ms=dateCell(r[field]);if(!Number.isFinite(ms)||ms<Number(bounds.start)||ms>Number(bounds.end))fail('PURCHASE_FILE_DATE','商品明细的'+(run.dateBasis==='updated'?'更新时间':'创建时间')+'超出筛选日期',{orderId:r.orderId});
+    const ms=dateCell(r[field]);if(!Number.isFinite(ms)||bounds&&(ms<Number(bounds.start)||ms>Number(bounds.end)))fail('PURCHASE_FILE_DATE','商品明细的'+(run.dateBasis==='updated'?'更新时间':'创建时间')+'无效或超出筛选日期',{orderId:r.orderId});
+    if(run.queryMode==='order_id'){if(r.orderId!==run.orderId)fail('PURCHASE_CHILD_ORPHAN','单号精查原件混入其他采购单');createdDays.add(businessDate(new Date(dateCell(r.createdAt))));}
     if(!childSku.has(r.orderId))childSku.set(r.orderId,new Set());childSku.get(r.orderId).add(r.skuCode);
   }
   for(const [id,skuCount] of parents)if(skuCount!==run.query.orderSkuCounts[id]||(childSku.get(id)?.size||0)!==skuCount)fail('PURCHASE_CHILD_COVERAGE','商品明细的逐单商品种数与查询或主单不一致',{orderId:id,querySkuCount:run.query.orderSkuCounts[id],mainSkuCount:skuCount,detailDistinctSku:childSku.get(id)?.size||0});
-  return {status:'VALIDATED',queryParents:expected.size,mainRows:main.rows,detailRows:detail.rows,linkedParents:childSku.size,orphanRows:0,parentCoverage:'EXACT_SET',skuCoverage:'DISTINCT_SKU_PER_ORDER',duplicatesPreserved:true,dateBasis:run.dateBasis};
+  return {status:'VALIDATED',queryParents:expected.size,mainRows:main.rows,detailRows:detail.rows,linkedParents:childSku.size,orphanRows:0,parentCoverage:'EXACT_SET',skuCoverage:'DISTINCT_SKU_PER_ORDER',duplicatesPreserved:true,dateBasis:run.dateBasis,...(run.queryMode==='order_id'?{queryMode:'order_id',createdDay:createdDays.size===1?[...createdDays][0]:null}:{})};
 }
 export class PurchaseCoordinator{
   constructor({state,config,binding,adapter,onProgress=()=>{},onSourceValidated=null,signal}){Object.assign(this,{state,config,binding,adapter,onProgress,onSourceValidated,signal});}
@@ -33,12 +34,14 @@ export class PurchaseCoordinator{
   async sourceFile(run,sourceId){
     const e=run.exports[sourceId],file=await outputPath(this.binding.outputRoot,e.asset.relativePath);if(!await exists(file)||await fileHash(file)!==e.asset.sha256)fail('PURCHASE_ASSET_CHANGED','已验收采购文件缺失或已修改，保留文件并等待恢复',{sourceId,file});return file;
   }
-  async run({target,from,to,dateBasis='created',orderId=null,runId,rerun=false}={}){
+  async run({target,from,to,dateBasis='created',orderId=null,queryMode,runId,rerun=false}={}){
     if(!this.config?.enabled||!this.binding?.outputRoot)fail('SETUP_REQUIRED','请先完成Edge与业务配置');await assertHandoff(this.state.root,this.config.tenantBinding);await checkOutput(this.binding.outputRoot);await this.state.enablePurchases();
     let run=runId?this.state.getPurchase(runId):null;if(runId&&!run)fail('PURCHASE_RUN_NOT_FOUND','未找到采购作业');
     if(!run){
-      if(from!==to)fail('PURCHASE_DAILY_SLICE','执行器按一个仓店一个自然日创建一组主单及明细');dateBounds(from,to);if(!['created','updated'].includes(dateBasis))fail('PURCHASE_DATE_BASIS','时间口径无效');
-      const input={buyerWarehouseCode:target.buyerWarehouseCode,from,to,dateBasis,orderId},hash=purchaseScopeHash(input);
+      if(queryMode==='order_id'){if(!orderId||from!=null||to!=null)fail('PURCHASE_EXACT_SCOPE','单号精查必须有准确单号，且不能混入日期范围');from=null;to=null;}
+      else{if(from!==to)fail('PURCHASE_DAILY_SLICE','执行器按一个仓店一个自然日创建一组主单及明细');dateBounds(from,to);}
+      if(!['created','updated'].includes(dateBasis))fail('PURCHASE_DATE_BASIS','时间口径无效');
+      const input={buyerWarehouseCode:target.buyerWarehouseCode,from,to,dateBasis,orderId,...(queryMode==='order_id'?{queryMode}:{})},hash=purchaseScopeHash(input);
       const prior=this.state.rows('purchase_runs').filter(r=>sameIdentity(r.identity,this.config.tenantBinding)&&r.scopeHash===hash).at(-1);
       if(prior&&!rerun)run=prior;
       else{
@@ -47,19 +50,20 @@ export class PurchaseCoordinator{
         const unresolved=priorUnfinished.filter(r=>!safeSupersede(r));
         if(unresolved.length)fail('PURCHASE_UNRESOLVED','该仓店存在未完成采购作业，请先继续原作业',{runIds:unresolved.map(r=>r.id)});
         const id=uid();for(const old of priorUnfinished.filter(safeSupersede))this.save({...old,status:'SUPERSEDED',supersededBy:id});
-        run=this.save({id,identity:{...this.config.tenantBinding},target:{buyerWarehouseCode:target.buyerWarehouseCode,displayName:target.displayName},from,to,dateBasis,orderId,scopeHash:hash,createdAt:now(),status:'PLANNED',exports:{D16:{sourceId:'D16',stage:'PLANNED'},D17:{sourceId:'D17',stage:'PLANNED'}}});
+        run=this.save({id,identity:{...this.config.tenantBinding},target:{buyerWarehouseCode:target.buyerWarehouseCode,displayName:target.displayName},from:from??null,to:to??null,dateBasis,orderId,...(queryMode==='order_id'?{queryMode}:{}),scopeHash:hash,createdAt:now(),status:'PLANNED',exports:{D16:{sourceId:'D16',stage:'PLANNED'},D17:{sourceId:'D17',stage:'PLANNED'}}});
       }
     }
     if(!sameIdentity(run.identity,this.config.tenantBinding))fail('WRONG_IDENTITY','采购作业与当前商家隔离域不同');
     if(run.status==='EMPTY'){await this.progress('PURCHASE_EMPTY',{runId:run.id,warehouseCode:run.target.buyerWarehouseCode,day:run.from});return run;}
     await this.progress('PURCHASE_RUNNING',{runId:run.id,warehouseCode:run.target.buyerWarehouseCode,day:run.from});
+    const scopeLabel=run.queryMode==='order_id'?'单号_'+safeName(run.orderId):run.from;
     const update=(sourceId,changes)=>{run=this.state.getPurchase(run.id);run.exports[sourceId]={...run.exports[sourceId],...changes};this.save(run);};
     try{
       this.stopped();
       if(!run.query){
         const q=await this.adapter.queryPurchase({...purchaseScope({...run,buyerWarehouseCode:run.target.buyerWarehouseCode}),name:run.target.displayName,identity:run.identity});
         if(!sameIdentity(q.identity,run.identity))fail('WRONG_IDENTITY','采购查询身份不同');run=this.save({...run,query:q,status:q.total?'RUNNING':'EMPTY',errorCode:undefined});
-        if(!q.total){const file=await outputPath(this.binding.outputRoot,`采购单/${safeName(run.identity.merchantCode)}/${safeName(run.target.buyerWarehouseCode)}/${run.from}_${run.dateBasis}/${run.id}/验收记录.json`);await writeJson(file,{...run,note:'本次权限及筛选下无可见采购主单；未提交导出，未生成空Excel'});await this.progress('PURCHASE_EMPTY',{runId:run.id,warehouseCode:run.target.buyerWarehouseCode,day:run.from});return run;}
+        if(!q.total){const file=await outputPath(this.binding.outputRoot,`采购单/${safeName(run.identity.merchantCode)}/${safeName(run.target.buyerWarehouseCode)}/${scopeLabel}_${run.dateBasis}/${run.id}/验收记录.json`);await writeJson(file,{...run,note:'本次权限及筛选下无可见采购主单；未提交导出，未生成空Excel'});await this.progress('PURCHASE_EMPTY',{runId:run.id,warehouseCode:run.target.buyerWarehouseCode,day:run.from});return run;}
       }
       for(const sourceId of ['D16','D17']){
         this.stopped();let e=this.state.getPurchase(run.id).exports[sourceId];
@@ -98,10 +102,10 @@ export class PurchaseCoordinator{
       }
       run=this.state.getPurchase(run.id);this.stopped();const validations={};
       for(const sourceId of ['D16','D17']){const e=run.exports[sourceId],file=e.stage==='SUCCEEDED'?await this.sourceFile(run,sourceId):e.downloaded.file;validations[sourceId]=await validateWorkbook(file,{warehouseCode:run.target.buyerWarehouseCode,expectedRows:e.taskSummary.successCount,contract:purchaseContract(sourceId),maxCompressedBytes:67108864});}
-      const pair=validatePurchasePair(run,validations.D16,validations.D17),folder=`采购单/${safeName(run.identity.merchantCode)}/${safeName(run.target.buyerWarehouseCode)}/${run.from}_${run.dateBasis}/${run.id}`;
+      const pair=validatePurchasePair(run,validations.D16,validations.D17),folder=`采购单/${safeName(run.identity.merchantCode)}/${safeName(run.target.buyerWarehouseCode)}/${scopeLabel}_${run.dateBasis}/${run.id}`;
       run=this.save({...run,pairValidation:pair,status:'PUBLISHING'});
       for(const sourceId of ['D16','D17']){
-        this.stopped();const e=run.exports[sourceId],v=validations[sourceId],relativePath=e.asset?.relativePath||`${folder}/${safeName(run.target.displayName)}_${run.from}_${PURCHASE_LABELS[sourceId]}.xlsx`,destination=await outputPath(this.binding.outputRoot,relativePath);
+        this.stopped();const e=run.exports[sourceId],v=validations[sourceId],relativePath=e.asset?.relativePath||`${folder}/${safeName(run.target.displayName)}_${scopeLabel}_${PURCHASE_LABELS[sourceId]}.xlsx`,destination=await outputPath(this.binding.outputRoot,relativePath);
         if(await exists(destination)){if(await fileHash(destination)!==v.sha256)fail('PURCHASE_ASSET_CHANGED','采购输出目标已被修改，不能覆盖');}
         else{
           const tempRelative=relativePath+'.'+uid()+'.pending',temp=await outputPath(this.binding.outputRoot,tempRelative);await fs.copyFile(e.downloaded.file,temp,constants.COPYFILE_EXCL);const h=await fs.open(temp,'r+');try{await h.sync();}finally{await h.close();}if(await fileHash(temp)!==v.sha256)fail('STAGING_COPY_FAILED','采购文件保存校验失败');

@@ -1,0 +1,26 @@
+{
+  "passed": false,
+  "app": "补货助手",
+  "version": "0.48.6",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "源码运行",
+  "build_id": "未打包",
+  "checks": [
+    "只操作新目录的隔离数据库",
+    "两店四仓单夹具已生成",
+    "实际新批预览成功",
+    "回传时间预览结果与上方可见执行顺序一致",
+    "真实Qt列表完成移动",
+    "拖动自动采用人工顺序并使旧预览失效，无需再勾选",
+    "人工预览沿用上方顺序",
+    "恢复回传顺序并重新预览，不保存生成"
+  ],
+  "geometry": [],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\workflow_refinements_smoke.py\", line 52, in execute\n    if state.get('error') or d.completed.count()!=4:raise AssertionError(f'生成未完成：{state.get(\"error\")}；{d.completed.count()}单；{d.status.text()}；{d.receipt}')\n                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 生成未完成：None；0单；已保存0单，零分配4单，失败/未处理0项，停止：False。；{'generated': [], 'skipped': [], 'zero': ['BH-S1-ZC-HB', 'BH-S1-ZC-SD', 'BH-T-ZC-HB', 'BH-T-ZC-SD'], 'cancelled': False, 'errors': [], 'batch_id': 'bb6a2cda5b5b4afe818aba980deee28e'}\n"
+}

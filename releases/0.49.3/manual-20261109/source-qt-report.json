@@ -1,0 +1,84 @@
+{
+  "synthetic": true,
+  "live_platform_tested": false,
+  "images": [
+    {
+      "file": "parameter-selected-fields.png",
+      "sha256": "b23ea02bc82444c421a6a350724930806424ed2004dae96fa920abf5df254e65",
+      "source": "source Qt; synthetic; no live platform"
+    },
+    {
+      "file": "parameter-weights.png",
+      "sha256": "795d54c5f7338cd7c2f866003f4ff9975691a89df0e18277a27291c27fe7d36f",
+      "source": "source Qt; synthetic; no live platform"
+    },
+    {
+      "file": "parameter-effective-values.png",
+      "sha256": "8262dead4881437b79defe7b27442873983534ebeb3f15f58dfa4c8b223f8ba1",
+      "source": "source Qt; synthetic; no live platform"
+    },
+    {
+      "file": "parameter-import-invalid.png",
+      "sha256": "13a03b52a59c2ee151cb5022285c39d87b8b6cb53d2ea8301f48ef8446850158",
+      "source": "source Qt; synthetic; no live platform"
+    },
+    {
+      "file": "parameter-import-error-detail.png",
+      "sha256": "0b099b91a5ebf858e36ab5ab26a75244039a5d19004e56350cda530a7ae73246",
+      "source": "source Qt; synthetic; no live platform"
+    },
+    {
+      "file": "parameter-import-valid.png",
+      "sha256": "27c51335ad26991a939d624f1e661407ad9e124d60137ff2c9505f1741dc7258",
+      "source": "source Qt; synthetic; no live platform"
+    },
+    {
+      "file": "purchase-binding-entry.png",
+      "sha256": "67a7cc5e65f1ae09863e9a10973d44fa6f72e5efb207905c920c6db5f09b625a",
+      "source": "source Qt; synthetic; no live platform"
+    },
+    {
+      "file": "purchase-binding-request.png",
+      "sha256": "df29d129c89156bd45001d858d96897d903eaf0e0258a31ae2f0ae81b599d7aa",
+      "source": "source Qt; synthetic; no live platform"
+    },
+    {
+      "file": "purchase-binding-ready.png",
+      "sha256": "ae584c585e3accc726e721f0cba8ae9959bf58c87cc55f099b8854e0496f5ec7",
+      "source": "source Qt; synthetic; no live platform"
+    },
+    {
+      "file": "purchase-binding-rows.png",
+      "sha256": "3c77f3efb2738ae1b40a2ec4262e7ced6d5c23cfb91506444c7ee94f152407f9",
+      "source": "source Qt; synthetic; no live platform"
+    }
+  ],
+  "checks": [
+    {
+      "case": "w1=.6,w2=.6",
+      "errors": [
+        "synthetic-weights.xlsx / 分仓周期 / 第2行；synthetic-weights.xlsx / 分仓周期 / 第3行；synthetic-weights.xlsx / 分类参数 / 第2行；synthetic-weights.xlsx / 分类参数 / 第3行 / QA001：日百：alpha、w1、w2须非负，w1+w2不能超过1",
+        "synthetic-weights.xlsx / 分仓周期 / 第2行；synthetic-weights.xlsx / 分仓周期 / 第3行；synthetic-weights.xlsx / 分类参数 / 第2行；synthetic-weights.xlsx / 分类参数 / 第3行 / QA001：日百：alpha、w1、w2须非负，w1+w2不能超过1"
+      ],
+      "apply_enabled": false
+    },
+    {
+      "case": "w1=.6,w2=.4",
+      "errors": [],
+      "apply_enabled": true,
+      "w3": 0
+    },
+    {
+      "case": "AX existing binding forms",
+      "client_actions": [
+        "configuration",
+        "purchase.list",
+        "configuration",
+        "purchase.list",
+        "configuration"
+      ],
+      "live_platform": false,
+      "binding_confirm_clicked": false
+    }
+  ]
+}
