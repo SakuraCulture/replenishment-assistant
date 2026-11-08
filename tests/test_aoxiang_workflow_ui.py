@@ -49,6 +49,10 @@ class WorkflowUiTests(unittest.TestCase):
         self.assertTrue(predicate())
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory();self.root = Path(self.tmp.name)
+        # This suite exercises UI/gate behavior with minimal fake identities.
+        # Real local payment/warehouse validity is covered in ReceiptScopeTests.
+        self.receipt_scope=patch('aoxiang_receipt_scope.assess',side_effect=lambda path,items,**kw:{r.get('key',r.get('id')):{'eligible':True,'reason':'','head':r.get('basis')} for r in items})
+        self.receipt_scope.start()
         Client.instances = []
         self.selections = []
         self.host = QWidget();self.host.repository = SimpleNamespace(folder=self.root)
@@ -66,7 +70,7 @@ class WorkflowUiTests(unittest.TestCase):
         self.m.prepare_close()
         for c in Client.instances:c.allow_close.set()
         self.wait(lambda:self.m.worker is None)
-        self.m.shutdown();self.warning.stop()
+        self.m.shutdown();self.warning.stop();self.receipt_scope.stop()
         import shiboken6
         shiboken6.delete(self.host);self.tmp.cleanup()
     def start_waiting(self):

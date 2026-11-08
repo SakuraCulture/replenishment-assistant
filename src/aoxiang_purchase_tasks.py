@@ -38,6 +38,7 @@ def prepare(path, head, configuration, suppliers, receipt, directory, contract_p
               'identity': {'accountId': plan['account_binding']['account_id'], 'merchantCode': plan['account_binding']['merchant_code']},
               'mappingVersion': plan['store_mapping_version'],
               'basis': {'number': plan['head']['number'], 'warehouse': plan['head']['warehouse'], 'store': plan['head']['store'],
+                        'oid':plan['head']['oid'],'revision':plan['head']['revision'],'signedDigest':plan['head']['digest'],'visibilityToken':plan['head']['visibility_token'],
                         'planFingerprint': plan['fingerprint'], 'paymentVersion': plan['payment']['version'], 'paymentDigest': plan['payment']['digest']},
               'target': copy.deepcopy(plan['platform_store']), 'supplierCode': plan['supplier_code'],
               'marker': marker, 'note': note, 'createExternalOrder': False, 'postCreationState': '待提交',

@@ -39,7 +39,7 @@ def deletion_issue(job, item):
         if item['state'] in ('FAILED','REVIEW','SKIPPED') or (job['state']=='CANCELLED' and item['state']=='PENDING'):
             return None
         return '结束本地任务', '本地准备尚未结束，请先明确结束'
-    if item['state'] in ('BOUND','SYNCED','OBSERVED','PREPARED','SKIPPED'):
+    if item['state'] in ('BOUND','SYNCED','VOIDED','OBSERVED','PREPARED','SKIPPED'):
         return None
     return '平台结果待核', '已有采购身份或平台任务，结果尚未核实；不能按未上传清理'
 

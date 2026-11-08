@@ -104,6 +104,7 @@ async function main(){
           result=receiptSync.start(request.purchase_id);break;
         }
         case 'receipt.status':result=receiptSync.status(request.purchase_id);break;
+        case 'receipt.host_void_conflict':result=receipts.hostVoidConflict(request.purchase_id,request.reason);break;
         case 'receipt.pause':result=receiptSync.pause(request.purchase_id);break;
         case 'receipt.list':{const all=receipts.list();result={total:all.length,items:all.slice(request.offset||0,(request.offset||0)+(request.limit||50))};break;}
         case 'receipt.synced':result=receipts.synced(request.purchase_id,request.manifest_sha256,request.receipt);break;

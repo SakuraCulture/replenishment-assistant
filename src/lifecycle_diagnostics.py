@@ -2,6 +2,7 @@
 
 
 def binding(document, heads, *, scoped=False):
+    if document.get('payment_match') is not None:return document['payment_match']
     rows = document['scan']['rows']
     candidates, rejected = [], []
     for head in heads:

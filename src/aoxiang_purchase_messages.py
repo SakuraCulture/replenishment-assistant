@@ -12,7 +12,7 @@ def waiting(item, kind):
 
 
 def voided(item):
-    return item['state'] == 'BOUND' and ((item.get('result') or {}).get('binding') or {}).get('status') == '已作废'
+    return item['state']=='VOIDED' or (item.get('platform_observation') or {}).get('status')=='已作废' or (item['state'] == 'BOUND' and ((item.get('result') or {}).get('binding') or {}).get('status') == '已作废')
 
 
 def explain(error, known=None):
@@ -45,6 +45,7 @@ def explain(error, known=None):
 
 
 def item_message(item, kind):
+    if item['state']=='VOIDED':return '平台已作废，常规同步与最终实收待办已停止；原签发、付款和平台关联保留，未记收货0。'
     if kind != 'upload':
         if kind == 'prepare' and (item.get('error') or {}).get('code') == 'PURCHASE_ALREADY_RESERVED':
             return '已有原采购任务，本次重复预览未建立新任务。可勾选后结束本地准备；原上传结果仍须到原采购上传批次继续核对。'

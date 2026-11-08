@@ -147,6 +147,9 @@ def main():
     if '--layout-smoke' in sys.argv:
         from layout_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--layout-smoke')+1:])
+    if '--payment-matching-smoke' in sys.argv:
+        from payment_matching_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--payment-matching-smoke')+1:])
     if '--purchase-pricing-smoke' in sys.argv:
         from purchase_pricing_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--purchase-pricing-smoke')+1:])

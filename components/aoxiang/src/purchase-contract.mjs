@@ -26,10 +26,18 @@ export function purchaseDays(from,to){
   dateBounds(from,to);const days=[];for(let ms=Date.parse(from+'T00:00:00Z');ms<=Date.parse(to+'T00:00:00Z');ms+=86400000){days.push(new Date(ms).toISOString().slice(0,10));if(days.length>366)fail('PURCHASE_DATE','单次最多规划366个自然日');}return days;
 }
 export const previousPurchaseDay=()=>businessDate(new Date(Date.now()-86400000));
-export function purchaseScope(input){return {buyerWarehouseCode:idValue(input.buyerWarehouseCode),from:input.from,to:input.to,dateBasis:input.dateBasis||'created',orderId:input.orderId||null};}
+export function purchaseScope(input){return {buyerWarehouseCode:idValue(input.buyerWarehouseCode),from:input.from,to:input.to,dateBasis:input.dateBasis||'created',orderId:input.orderId||null,...(input.queryMode==='order_id'?{queryMode:'order_id'}:{})};}
 export const purchaseScopeHash=input=>sha256(canonical(purchaseScope(input)));
 export function exportScope(request){return Object.fromEntries(Object.entries(request).filter(([k])=>!['pageIndex','pageSize','sort'].includes(k)));}
 export function checkPurchaseQuery(request,input){
+  if(input.queryMode==='order_id'){
+    idValue(input.orderId,'采购单号');
+    const actual={...exportScope(request)};
+    for(const key of ['storeCodeList','start','end','modifiedStart','modifiedEnd'])if(actual[key]===null||actual[key]===''||Array.isArray(actual[key])&&actual[key].length===0)delete actual[key];
+    const expected={orderType:'3',merchantSubBizType:'CONSIGNEE',supplyOrderId:input.orderId};
+    if(canonical(actual)!==canonical(expected))fail('PURCHASE_SCOPE_MISMATCH','按单号查询仍携带日期、门店或其他筛选，未采用结果',{expected,actual});
+    return expected;
+  }
   const {start,end}=dateBounds(input.from,input.to),basis=input.dateBasis||'created';if(!['created','updated'].includes(basis))fail('PURCHASE_DATE_BASIS','时间口径仅支持created制单时间或updated更新时间');
   const expected={storeCodeList:[input.buyerWarehouseCode],orderType:'3',merchantSubBizType:'CONSIGNEE',...(basis==='created'?{start,end}:{modifiedStart:start,modifiedEnd:end}),...(input.orderId?{supplyOrderId:input.orderId}:{})};
   if(canonical(exportScope(request))!==canonical(expected))fail('PURCHASE_SCOPE_MISMATCH','采购页实际筛选与指定仓店、时间口径或单号不同',{expected,actual:exportScope(request)});

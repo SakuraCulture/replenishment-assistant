@@ -163,6 +163,8 @@ class LifecycleWidget(QWidget):
         for i,h in enumerate(self.records):
             c=QTableWidgetItem();c.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);c.setCheckState(Qt.CheckState.Checked if service.key(h) in self.checked else Qt.CheckState.Unchecked);self.table.setItem(i,0,c)
             notices=[h['note']] if h.get('note') else []
+            platform=h.get('platform_purchase')
+            if platform:notices.append('翱象 '+platform['orderId']+'：'+platform['status']+'（观察 '+platform.get('observedAt','未知')+'）'+('；作废后实收待处理' if platform.get('receipt_state')=='VOIDED_REVIEW' else ''))
             if h.get('locked'):notices.append('已下单锁定：后续不再分配')
             if h.get('generation_summary'):notices.append('聚水潭生成 '+h['generation_summary']['amount']+' 元')
             if h.get('generation_task'):notices.append(h['generation_task']['message'])

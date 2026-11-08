@@ -100,8 +100,8 @@ export function checkNativePurchase(p,e,{status,requireNote}){
 
 export function bindingRequest(request){
   if(!request||Object.keys(request).sort().join(',')!=='created_day,order_id,reason'||typeof request.order_id!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(request.order_id))fail('BINDING_INPUT','请填写准确采购单号，不支持模糊匹配或多单');
-  dateBounds(request.created_day,request.created_day);
-  if(request.created_day>businessDate()||typeof request.reason!=='string'||request.reason!==request.reason.trim()||request.reason.length<2||request.reason.length>500||/[\x00-\x1f]/.test(request.reason))fail('BINDING_INPUT','请填写实际制单日及2至500字核对原因');
+  if(request.created_day!==''&&request.created_day!==null)dateBounds(request.created_day,request.created_day);
+  if(request.created_day&&request.created_day>businessDate()||typeof request.reason!=='string'||request.reason!==request.reason.trim()||request.reason.length<2||request.reason.length>500||/[\x00-\x1f]/.test(request.reason))fail('BINDING_INPUT','请填写准确采购单号及2至500字核对原因；制单日可留空按单号精查');
   return request;
 }
 export function bindingEligible(r){return ['RESERVED','PAUSED','FAILED_PRECHECK','NEEDS_REVIEW'].includes(r.state)&&!r.receipt&&!r.additionalTaskIds?.length;}
@@ -116,5 +116,5 @@ export function checkedBinding(r,proof){
   checkNativePurchase(r.intent,e,{status:e.main?.status,requireNote:r.uploadAttempted});
   if(r.uploadAttempted&&(proof.uniqueMarkedOrders?.length!==1||proof.uniqueMarkedOrders[0]!==proof.request.order_id))fail('PURCHASE_NOT_UNIQUE','原上传标记下未唯一核实一张采购单，不能人工跳过多单待核');
   return {orderId:proof.request.order_id,status:e.main.status,taskId:null,files:e.files,verifiedAt:e.observedAt,
-          method:'operator_confirmed_exact_native_rows',createdDay:proof.request.created_day,reason:proof.request.reason};
+          method:'operator_confirmed_exact_native_rows',createdDay:proof.request.created_day||proof.nativeCreatedDay||null,reason:proof.request.reason};
 }

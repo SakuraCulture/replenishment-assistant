@@ -19,7 +19,7 @@ class Client:
         self.running = False
         self.calls = []
         self.receipt = {'id': 'p1', 'state': 'IDLE', 'sequence': 1, 'terminal': False, 'scope': {'orderId': 'PO1'}, 'active': False,
-                        'summary': None, 'manifest': None, 'error': None}
+                        'summary': None, 'manifest': None, 'error': None,'basis':{'number':'BH-1','warehouse':'河北仓','store':'T'}}
 
     def start(self): self.running = True
     def close(self, timeout=10): self.running = False; return True
@@ -48,6 +48,9 @@ class ReceiptUiTests(unittest.TestCase):
         self.assertTrue(predicate())
 
     def setUp(self):
+        # UI transport fixture has no business snapshots. Guard integration has
+        # real isolated database coverage in test_aoxiang_receipt_scope.
+        self.receipt_scope=patch('aoxiang_receipt_scope.require',return_value={});self.receipt_scope.start()
         from aoxiang_receipt_ui import ReceiptDialog
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
@@ -65,7 +68,7 @@ class ReceiptUiTests(unittest.TestCase):
         self.d.close()
         self.wait(lambda: self.d._can_close and self.d.worker is None)
         shiboken6.delete(self.d)
-        self.warning.stop(); self.temp.cleanup()
+        self.warning.stop();self.receipt_scope.stop(); self.temp.cleanup()
 
     def proof(self, known=True):
         o = {'rows': [{'sku': '0001', 'name': '合成商品', 'unit': '包', 'quantity': '7', 'receivedQuantity': '0' if known else '', 'receivedAmount': '0' if known else ''}], 'issues': []}

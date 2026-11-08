@@ -49,10 +49,10 @@ class BindingActions:
 
     def binding_start(self):
         dialog=QDialog(self);dialog.setWindowTitle('核对已有翱象采购单');dialog.resize(590,280)
-        v=QVBoxLayout(dialog);v.addWidget(label('请从翱象核对准确单号及制单日；本次只查询并取得原件，核对后还需确认关联。'))
+        v=QVBoxLayout(dialog);v.addWidget(label('填写准确采购单号即可精查，无需填写店名或日期；本次只查询原件，核对后确认关联。'))
         form=QFormLayout();order=QLineEdit();day=QLineEdit();reason=QLineEdit()
-        order.setPlaceholderText('必填，精确采购单号');day.setPlaceholderText('必填，平台制单日 YYYY-MM-DD');reason.setPlaceholderText('必填，例如上传回执丢失，已在平台核实')
-        for text,field in [('采购单号（必填）',order),('平台制单日（必填）',day),('核对原因（必填）',reason)]:form.addRow(text,field)
+        order.setPlaceholderText('必填，精确采购单号');day.setPlaceholderText('可留空；仅平台要求时填已核对的原生制单日');reason.setPlaceholderText('必填，例如上传回执丢失，已在平台核实')
+        for text,field in [('采购单号（必填）',order),('制单日（选填）',day),('核对原因（必填）',reason)]:form.addRow(text,field)
         v.addLayout(form);row=QHBoxLayout();row.addWidget(button('开始核对',dialog.accept));cancel=button('取消',dialog.reject);cancel.setDefault(True);row.addWidget(cancel);v.addLayout(row)
         accepted=dialog.exec();request={'order_id':order.text().strip(),'created_day':day.text().strip(),'reason':reason.text().strip()};dialog.deleteLater()
         if accepted!=QDialog.DialogCode.Accepted:return

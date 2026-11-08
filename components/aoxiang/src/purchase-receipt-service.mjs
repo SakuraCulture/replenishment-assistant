@@ -3,6 +3,7 @@ import path from 'node:path';
 import {fail,sameIdentity,canonical,sha256} from './common.mjs';
 import {PurchaseCoordinator} from './purchase-coordinator.mjs';
 import {readReceiptSource,receiptObservation} from './purchase-receipts.mjs';
+import {runKnownPurchase} from './purchase-known-scope.mjs';
 
 export class PurchaseReceiptService{
   constructor({state,creates,ledger,creationService,progress=()=>{}}){Object.assign(this,{state,creates,ledger,creationService,progress});}
@@ -11,7 +12,7 @@ export class PurchaseReceiptService{
     if(c.state!=='BOUND')fail('RECEIPT_NOT_BOUND','必须先核验唯一采购单，才能同步收货');
     const original=this.state.rows('purchase_runs').filter(r=>r.status==='SUCCEEDED'&&r.orderId===c.binding.orderId&&r.dateBasis==='created'&&sameIdentity(r.identity,c.intent.identity)&&c.binding.files.every(f=>r.exports[f.source]?.asset?.sha256===f.sha256));
     if(!original.length||new Set(original.map(r=>r.from)).size!==1)fail('RECEIPT_CREATION_PROOF','缺少原采购单已验收的制单日与主子原件依据，不按本地日期猜测');
-    const registered=this.ledger.register(c,original[0].from);
+    const registered=this.ledger.register(c,original[0].from||original[0].pairValidation?.createdDay||null);
     if(c.binding.status==='已完成'&&!registered.terminal){
       const main=c.binding.files.find(f=>f.source==='D16');
       return this.ledger.terminal(id,main);
@@ -27,13 +28,16 @@ export class PurchaseReceiptService{
         // The latch is written before any following export/download, including D17 failures.
         if(source.rows.some(r=>r.status==='已完成'))this.ledger.terminal(id,source);
       }});
-    const run=await engine.run(record.activeRunId?{runId:record.activeRunId}:{target:c.intent.target,from:record.scope.createdDay,to:record.scope.createdDay,dateBasis:'created',orderId:record.scope.orderId,rerun:true});
+    const run=await runKnownPurchase(engine,this.state,{target:c.intent.target,orderId:record.scope.orderId,rerun:true,...(record.activeRunId?{runId:record.activeRunId}:{})},
+      {createdDay:record.scope.createdDay,onFallback:async runId=>{this.ledger.change(id,r=>{if(r.activeRunId!==runId)fail('RECEIPT_RUN_CONFLICT','降级查询与原任务不符');return {...r,activeRunId:null};},'QUERY_MODE_FALLBACK_BEFORE_EXPORT');}});
     if(run.status!=='SUCCEEDED')fail('RECEIPT_ORDER_NOT_FOUND','指定采购单本次没有可见完整数据；不记作收货为0');
     const sources=[];
     for(const source of ['D16','D17'])sources.push(await readReceiptSource(await engine.sourceFile(run,source),source,record.scope,run.exports[source].asset.rows,run.exports[source].asset.sha256));
     const observation=receiptObservation(c.intent,c.binding,run.id,sources);
     const directory=path.join(this.state.root,'receipt-observations');await fs.mkdir(directory,{recursive:true});
-    const file=path.join(directory,run.id+'.json'),content=canonical(observation)+'\n';
+    let file=path.join(directory,run.id+'.json');
+    try{const old=JSON.parse(await fs.readFile(file,'utf8'));if(!Object.hasOwn(old,'terminalKind'))file=path.join(directory,run.id+'-status-v2.json');}catch(e){if(e.code!=='ENOENT')throw e;}
+    const content=canonical(observation)+'\n';
     // A crash after saving the file but before the ledger update resumes this exact proof.
     let saved=observation;
     try{const h=await fs.open(file,'wx');try{await h.writeFile(content,'utf8');await h.sync();}finally{await h.close();}}

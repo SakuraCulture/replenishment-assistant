@@ -105,17 +105,33 @@ class Runner:
             raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'), error.get('message', '原采购任务尚未核实成功，不能重传'), error.get('details'))
 
     def receipt_item(self, item, configuration, suppliers):
+        from aoxiang_receipt_scope import require,formal_receipt_exists
+        initial=require(self.business_path,[item])[item['key']]
+        guard_item={**item,'basis':{**item['basis'],**initial['head']}}
         id = item['purchase_id']
         def observe(r):
             if r['scope']['orderId'] != item['order_id'] or r['basis'] != item['basis']:
                 raise ValueError('收货任务关联变化，停止采用')
+            from aoxiang_receipt_scope import assess
+            current=assess(self.business_path,[guard_item])[item['key']]
+            if not current['eligible']:
+                self.client.request('receipt.pause',purchase_id=id)
+                raise ComponentError('RECEIPT_SOURCE_RETIRED',current['reason']+'；已请求安全停止，原受理任务及文件保留')
             self.store.observe_schedule(id, r)
         record = self.client.request('receipt.status', purchase_id=id)
         observe(record)
-        if record['state'] not in ('READY', 'SYNCED'):
+        if record['state'] not in ('READY', 'SYNCED', 'VOIDED', 'VOIDED_REVIEW'):
             checkpoint(self.cancel)
+            require(self.business_path,[item])
             self.client.request('receipt.start', purchase_id=id)
             record = self.wait_status('receipt.status', 'purchase_id', id, cancel_action='receipt.pause', notify=observe)
+        if record['state']=='VOIDED' and formal_receipt_exists(self.business_path,item['basis']):
+            record=self.client.request('receipt.host_void_conflict',purchase_id=id,reason='本机已有正式收货记录，平台现已作废；保留原实收，需人工核对后续处理')
+            observe(record)
+        if record['state']=='VOIDED':return 'VOIDED',{'summary':record.get('summary')}
+        if record['state']=='VOIDED_REVIEW':
+            issues=(record.get('summary') or {}).get('issues') or []
+            raise ComponentError('RECEIPT_VOID_REVIEW',record.get('hostConflict') or '；'.join(i['message'] for i in issues) or '平台已作废，但存在实收或状态冲突；原事实保留，请核对处理')
         if record['state'] == 'READY':
             index = self.store.folder / 'purchase-packages' / id / '本地任务索引.json'
             if not index.is_file():
@@ -142,6 +158,13 @@ class Runner:
             checkpoint(self.cancel)
             position = item['position']
             from aoxiang_order_guard import deleted_orders
+            if job['kind']=='receipt':
+                from aoxiang_receipt_scope import assess
+                eligibility=assess(self.business_path,[item])[item['key']]
+                if not eligibility['eligible']:
+                    self.store.observe_schedule(item['purchase_id'],None,error={'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']},review=True)
+                    self.store.update(id,position=position,changes={'state':'SKIPPED','source_retired':True,'error':{'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']}})
+                    continue
             missing=deleted_orders(self.business_path,[item]) if job['kind']=='prepare' else {}
             if missing:
                 from aoxiang_workflow_state import local_preparation

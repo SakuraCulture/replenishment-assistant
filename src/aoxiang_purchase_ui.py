@@ -192,6 +192,9 @@ class PurchaseDialog(BindingActions, ComponentDialog):
             text = STATES.get(r['state'], r['state'])
             if r.get('binding'):
                 text += ' · 采购单号：' + r['binding']['orderId'] + ' · ' + (r['binding'].get('status') or '平台状态未提供')
+                from aoxiang_receipt_scope import saved_observations
+                latest=saved_observations(self.folder,[r['id']]).get(r['id'])
+                if latest:text+='\n最新平台观察：'+latest['status']+' · '+latest.get('observedAt','未知时间')+('；作废后实收待处理' if latest.get('receipt_state')=='VOIDED_REVIEW' else '')
             elif r.get('taskId'):
                 text += '\n原导入任务号：' + r['taskId']
             if r.get('error'):

@@ -64,10 +64,25 @@ export class PurchaseUI extends AoxiangUI{
     if(canonical(await this.page.locator('#'+id+' input').evaluateAll(ns=>ns.map(n=>n.value)))!==canonical([input.from,input.to]))fail('PURCHASE_DATE_NOT_APPLIED','采购时间控件未正确应用日期');
   }
   async queryPurchase(input){
-    dateBounds(input.from,input.to);await this.open(input.identity||this.identity);
+    if(input.queryMode!=='order_id')dateBounds(input.from,input.to);await this.open(input.identity||this.identity);
     await this.click(this.page.getByRole('button',{name:'重置',exact:true}));
-    await selectPurchaseStore(this.page,input,this.timeoutMs,locator=>this.click(locator));
-    await this.setDates(input);if(input.orderId)await this.page.locator('#supplyOrderId').fill(input.orderId);
+    if(input.queryMode==='order_id'){
+      idValue(input.orderId,'采购单号');
+      for(const id of ['date','modifiedDate']){
+        const range=this.page.locator('#'+id);
+        if(!await range.count())continue;
+        const inputs=range.locator('input');
+        if((await inputs.evaluateAll(nodes=>nodes.map(n=>n.value))).some(Boolean)){
+          const clear=range.locator('.next-range-picker-symbol-clear');
+          if(await clear.count()&&await clear.first().isVisible())await this.click(clear.first());
+          else for(const field of await inputs.all())if(await field.isEditable()){await field.fill('');await field.press('Tab');}
+          if((await inputs.evaluateAll(nodes=>nodes.map(n=>n.value))).some(Boolean))fail('PURCHASE_EXACT_FILTERS_UNSUPPORTED','采购页日期筛选无法安全清空；仅可自动采用有原件依据的制单日降级查询');
+        }
+      }
+    }else{
+      await selectPurchaseStore(this.page,input,this.timeoutMs,locator=>this.click(locator));await this.setDates(input);
+    }
+    if(input.orderId)await this.page.locator('#supplyOrderId').fill(input.orderId);
     const first=await this.queryAction(()=>this.click(this.page.getByRole('button',{name:'查询',exact:true})));checkPurchaseQuery(first.request,input);
     if(first.total>3000)fail('PURCHASE_SLICE_TOO_LARGE','单日主单超过3000张工程保护值，请指定采购单号进一步缩小；此值不是平台上限');
     const orderIds=[],orderSkuCounts={};let current=first,pages=0;const seenPages=new Set();
