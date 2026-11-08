@@ -111,7 +111,6 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
     def open_aoxiang_setup(self):
         from aoxiang_setup_ui import open_setup
         open_setup(self)
-        if self.browser_startup.started:self.browser_startup.retry(['翱象'])
 
     def check_added_files(self):
         if not self.worker and not self.closing and not self.readonly and self.sales.paths and (self.products.path if self.master_legacy.isChecked() else self.catalogs):self.start_load()

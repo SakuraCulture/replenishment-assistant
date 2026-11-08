@@ -10,7 +10,7 @@ import {loadConfig,validateConfig} from './config.mjs';
 import {readJson,fail,sameIdentity,exists} from './common.mjs';
 import {verifyInstallation} from './integrity.mjs';
 import {assertHandoff} from './preflight.mjs';
-import {MachineSetup,recoverConfiguration} from './machine-setup.mjs';
+import {MachineSetup,recoverConfiguration,readConfiguration} from './machine-setup.mjs';
 import {MachineTemplate} from './machine-template.mjs';
 import {PurchaseCreates,purchasePublic} from './purchase-create-ledger.mjs';
 import {MachinePurchaseCreate} from './machine-purchase-create.mjs';
@@ -120,8 +120,11 @@ async function main(){
         case 'configuration':{
           if(!await exists(path.join(root,'config/portable.config.json'))){result={configured:false};break;}
           const config=await loadConfig(root);
+          const {binding}=await readConfiguration(root);
           result={configured:true,enabled:config.enabled,account_binding:{account_id:config.tenantBinding.accountId,merchant_code:config.tenantBinding.merchantCode},
-            display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.targets};break;
+            display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.targets,
+            browser_binding:binding?{edge_executable:binding.edgeExecutable,edge_version:binding.edgeVersion,
+              actual_profile_path:binding.actualProfilePath,profile_directory:binding.profileDirectory,output_root:binding.outputRoot}:null};break;
         }
         case 'session.release':result=await releaseSession({runtime,commands,setup,template,purchase,receiptSync,bindingCheck});break;
         case 'session.status':result={host_pid:process.pid,...browsers.status()};break;

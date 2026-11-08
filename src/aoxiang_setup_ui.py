@@ -38,6 +38,7 @@ class SetupDialog(ComponentDialog):
         self.last_status = None
         self.status_received = time.monotonic()
         self.data = None
+        self.saved_configuration = {}
         self.checks = []
         self.poll = QTimer(self)
         self.poll.setInterval(600)
@@ -46,7 +47,7 @@ class SetupDialog(ComponentDialog):
         self.clock.setInterval(1000)
         self.clock.timeout.connect(self.render_status)
         layout = QVBoxLayout(self)
-        layout.addWidget(label('先维护门店目录，再核验登录和所选门店，最后保存。此处只查询，不创建导出或采购单。', 'section'))
+        layout.addWidget(label('已保存连接直接复用；仅首次配置或新增、变更门店时核验后保存。此处不创建导出或采购单。', 'section'))
         self.note = label('门店按编码关联，名称用于辅助定位。未核验的目录不作为已验证平台绑定。', 'muted')
         layout.addWidget(self.note)
         row = QHBoxLayout()
@@ -100,7 +101,7 @@ class SetupDialog(ComponentDialog):
         self.progress.setRange(0, 1)
         self.progress.setValue(0)
         layout.addWidget(self.progress)
-        self.status = label('尚未连接。请导入目录，勾选本次门店，再检测浏览器。', 'muted')
+        self.status = label('正在读取已保存的全局连接配置与状态…', 'muted')
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
         actions = QHBoxLayout()
@@ -116,13 +117,45 @@ class SetupDialog(ComponentDialog):
         self.run(self.initial_data, self.initial_loaded)
 
     def initial_data(self, progress):
-        return self.directory.load(), self.directory.suppliers()
+        data, suppliers = self.directory.load(), self.directory.suppliers()
+        self.ensure_client()
+        configured = self.client.request('configuration')
+        health = self.client.request('session.health') if configured.get('configured') else {}
+        return data, suppliers, configured, health
 
     def initial_loaded(self, result):
-        self.data, suppliers = result
+        self.data, suppliers, configured, health = result
         for warehouse, value in suppliers.items():
             self.supplier_edits[warehouse].setText(value)
         self.fill_directory()
+        self.saved_configuration = configured
+        binding = configured.get('browser_binding') or {}
+        if binding.get('edge_executable'):
+            self.edge.addItem('Microsoft Edge · ' + (binding.get('edge_version') or '已保存'), binding['edge_executable'])
+            self.edge.setItemData(0, binding['edge_executable'], Qt.ItemDataRole.ToolTipRole)
+        if binding.get('actual_profile_path'):
+            self.profile.addItem((binding.get('profile_directory') or '已保存用户配置') + ' · 已保存', binding['actual_profile_path'])
+            self.profile.setItemData(0, binding['actual_profile_path'], Qt.ItemDataRole.ToolTipRole)
+        if binding.get('output_root'):
+            self.output.setText(binding['output_root'])
+        self.render_saved_targets()
+        if not configured.get('configured'):
+            message = '尚未保存连接配置；首次使用请检测浏览器，勾选门店后核验并保存。'
+        elif health.get('state') == 'CONNECTED' and health.get('login_state') == 'VERIFIED':
+            message = '正在复用全局连接，登录已核验；无需重新配置。关闭本窗口不重新检查或断开连接。'
+        else:
+            message = '已读取全局连接配置；当前登录状态尚未核验通过。请在“连接检查 / 修复”查看原因，无需重新绑定。'
+            if health.get('login_error'):
+                message += ' ' + health['login_error'].get('message', '')
+        self.status.setText(message)
+        self.progress.setFormat('已保存配置已读取；未发起新的门店核验' if configured.get('configured') else '等待首次配置')
+
+    def render_saved_targets(self):
+        verified = {item['buyerWarehouseCode']: item for item in self.saved_configuration.get('targets', [])}
+        for row, item in enumerate((self.data or {}).get('items', [])):
+            old = verified.get(item['code'])
+            if old and old['displayName'] == item['name']:
+                self.table.item(row, 3).setText('已保存核验 · ' + old.get('mappingVerifiedAt', ''))
 
     def on_idle(self):
         if self.detect_pending:
@@ -166,6 +199,7 @@ class SetupDialog(ComponentDialog):
             for col, value in [(1, item['name']), (2, item['code']), (3, '尚未核验')]:
                 self.table.setItem(row, col, QTableWidgetItem(value))
         self.filter_rows()
+        self.render_saved_targets()
 
     def filter_rows(self, *_):
         search = self.search.text().casefold().strip()
@@ -194,21 +228,24 @@ class SetupDialog(ComponentDialog):
 
     def discovered(self, result):
         found, configured = result
+        self.saved_configuration = configured
         self.edge.clear()
         self.profile.clear()
         for item in found['installations']:
             self.edge.addItem('Microsoft Edge · ' + item['version'], item['executable']);self.edge.setItemData(self.edge.count()-1,item['executable'],Qt.ItemDataRole.ToolTipRole)
         for item in found['profiles']:
             self.profile.addItem(item['displayName'] + ' · ' + item['profileDirectory'], item['actualProfilePath'])
-        verified = {item['buyerWarehouseCode']: item for item in configured.get('targets', [])}
-        for row, item in enumerate((self.data or {}).get('items', [])):
-            old = verified.get(item['code'])
-            if old and old['displayName'] == item['name']:
-                self.table.item(row, 3).setText('已保存核验 · ' + old['mappingVerifiedAt'])
+        binding = configured.get('browser_binding') or {}
+        for combo, key in [(self.edge, 'edge_executable'), (self.profile, 'actual_profile_path')]:
+            saved = binding.get(key)
+            if saved:
+                matched = next((i for i in range(combo.count()) if str(combo.itemData(i)).replace('\\', '/').casefold() == saved.replace('\\', '/').casefold()), -1)
+                combo.setCurrentIndex(matched)
+        self.render_saved_targets()
         self.progress.setRange(0, 1)
         self.progress.setValue(0)
         self.progress.setFormat('浏览器检测完成；门店核验尚未开始')
-        self.status.setText('请先勾选门店，再核验登录。已找到浏览器不代表已经连接或登录；Edge 弹出调试连接请求时需允许。')
+        self.status.setText('本机浏览器检测完成；优先选用已保存绑定。此操作不改变全局连接；如原绑定未找到，请检查路径后明确选择。勾选门店后可核验新增或变更的绑定。')
 
     def verify(self):
         targets = self.selected()

@@ -57,6 +57,38 @@ def start_smoke(app,win,args):
             require(axowner.client is ax and jowner.client is jst and ax.running and jst.running,'Successful startup retains the original shared clients')
             require(jowner.lease is None and win.aoxiang_workflows.gate.background is None,'Startup releases business operation ownership')
             win.resize(1200,850);app.processEvents();win.grab().save(str(out/'01-startup-ready.png'))
+            # Exercise the actual main-window settings entry, including its return
+            # callback. Directly constructing a dialog missed the old forced retry.
+            saved_request=ax.request
+            saved_config={'configured':True,'enabled':True,'display_name':'隔离商家','account_binding':{'merchant_code':'QA'},
+                'browser_binding':{'edge_executable':'C:/QA/edge.exe','edge_version':'隔离验收','actual_profile_path':'C:/QA/Profile 1','profile_directory':'Profile 1','output_root':'C:/QA/downloads'},
+                'targets':[{'buyerWarehouseCode':'QA1','displayName':'隔离门店','mappingVerifiedAt':'2026-11-08'}]}
+            def saved_state(action,**values):
+                if action=='configuration':ax.calls.append((action,values));return saved_config
+                if action=='session.health':return {'state':'CONNECTED','login_state':'VERIFIED'}
+                return saved_request(action,**values)
+            ax.request=saved_state;settings_seen=[];settings_errors=[]
+            before_checks=sum(a=='setup.check_login' for a,v in ax.calls)
+            def inspect_and_close():
+                dialog=getattr(win,'_aoxiang_dialog',None)
+                if dialog is None or dialog.worker:
+                    QTimer.singleShot(20,inspect_and_close);return
+                try:
+                    require(dialog.edge.currentData()=='C:/QA/edge.exe' and dialog.profile.currentData()=='C:/QA/Profile 1','Settings automatically displays the saved global browser and profile')
+                    require('登录已核验' in dialog.status.text(),'Settings displays current shared login status without another browser probe')
+                    dialog.data={'items':[{'code':'QA1','name':'隔离门店'}]};dialog.fill_directory()
+                    require('已保存核验' in dialog.table.item(0,3).text(),'Saved store verification is restored rather than reset to unverified')
+                    dialog.grab().save(str(out/'03-settings-restored.png'));settings_seen.append(True)
+                except Exception:settings_errors.append(traceback.format_exc())
+                finally:dialog.close()
+            QTimer.singleShot(20,inspect_and_close);win.open_aoxiang_setup();app.processEvents()
+            require(settings_seen==[True] and not settings_errors,'Actual settings entry opens and closes safely without edits')
+            require(not startup.workers and sum(a=='setup.check_login' for a,v in ax.calls)==before_checks,'Closing settings does not trigger another login check')
+            require(axowner.client is ax and ax.running and not win.aoxiang_workflows.gate.yielding,'Closing settings retains the original global connection and releases only operation ownership')
+            from aoxiang_fetch_ui import FetchDialog
+            fetch=FetchDialog(win,win.repository.folder,win.job_day);fetch.show();wait(lambda:fetch.worker is None)
+            require(fetch.configuration['configured'] and fetch.stores.rowCount()==1 and axowner.client is ax,'Opening replenishment after settings close reuses the same saved account and store binding')
+            fetch.close();wait(lambda:fetch._can_close and fetch.worker is None);fetch.deleteLater();ax.request=saved_request
             original_request=ax.request;settled=threading.Event();polled=threading.Event()
             def handoff_request(action,**values):
                 if action=='setup.check_login':
