@@ -1,0 +1,221 @@
+test_legacy_file_still_checks_exactly_for_binding_but_cannot_be_uploaded (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_legacy_file_still_checks_exactly_for_binding_but_cannot_be_uploaded) ... FAIL
+test_missing_browser_fails_precheck_then_retry_and_cancel_never_upload (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_missing_browser_fails_precheck_then_retry_and_cancel_never_upload) ... FAIL
+test_native_package_durable_reserve_restart_no_business_writes (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_native_package_durable_reserve_restart_no_business_writes) ... FAIL
+test_new_refusal_after_preview_prevents_upload_without_changing_payment (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_new_refusal_after_preview_prevents_upload_without_changing_payment) ... FAIL
+test_payment_change_stops_host_dispatch_and_reserved_order_remains_unique (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_payment_change_stops_host_dispatch_and_reserved_order_remains_unique) ... FAIL
+test_template_latest_pointer_change_blocks_before_reservation (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_template_latest_pointer_change_blocks_before_reservation) ... FAIL
+test_three_decimal_upload_price_and_legacy_unuploaded_preview_are_rejected (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_three_decimal_upload_price_and_legacy_unuploaded_preview_are_rejected) ... FAIL
+test_wrong_excel_values_are_blocked_even_if_caller_rehashes (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_wrong_excel_values_are_blocked_even_if_caller_rehashes) ... FAIL
+
+======================================================================
+FAIL: test_legacy_file_still_checks_exactly_for_binding_but_cannot_be_uploaded (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_legacy_file_still_checks_exactly_for_binding_but_cannot_be_uploaded)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 43, in setUp
+    receipt = json.loads(self.node(script, str(template)))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 59, in node
+    self.fail(r.stderr)
+AssertionError: node:internal/fs/promises:1750
+  const result = await PromisePrototypeThen(
+                 ^
+
+Error: ENOENT: no such file or directory, stat 'D:\优团工作文件夹\outputs\replenishment_mvp_20261029\交付_0.48.7_rc1\补货助手\_internal\components\aoxiang\test\fixtures\purchase-import-template.xlsx'
+    at async Object.stat (node:internal/fs/promises:1750:18)
+    at async inspectPurchaseTemplate (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/src/purchase-template.mjs:56:12)
+    at async file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/[eval1]:1:117 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.48.7_rc1\\补货助手\\_internal\\components\\aoxiang\\test\\fixtures\\purchase-import-template.xlsx'
+}
+
+Node.js v24.22.1
+
+
+======================================================================
+FAIL: test_missing_browser_fails_precheck_then_retry_and_cancel_never_upload (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_missing_browser_fails_precheck_then_retry_and_cancel_never_upload)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 43, in setUp
+    receipt = json.loads(self.node(script, str(template)))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 59, in node
+    self.fail(r.stderr)
+AssertionError: node:internal/fs/promises:1750
+  const result = await PromisePrototypeThen(
+                 ^
+
+Error: ENOENT: no such file or directory, stat 'D:\优团工作文件夹\outputs\replenishment_mvp_20261029\交付_0.48.7_rc1\补货助手\_internal\components\aoxiang\test\fixtures\purchase-import-template.xlsx'
+    at async Object.stat (node:internal/fs/promises:1750:18)
+    at async inspectPurchaseTemplate (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/src/purchase-template.mjs:56:12)
+    at async file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/[eval1]:1:117 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.48.7_rc1\\补货助手\\_internal\\components\\aoxiang\\test\\fixtures\\purchase-import-template.xlsx'
+}
+
+Node.js v24.22.1
+
+
+======================================================================
+FAIL: test_native_package_durable_reserve_restart_no_business_writes (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_native_package_durable_reserve_restart_no_business_writes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 43, in setUp
+    receipt = json.loads(self.node(script, str(template)))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 59, in node
+    self.fail(r.stderr)
+AssertionError: node:internal/fs/promises:1750
+  const result = await PromisePrototypeThen(
+                 ^
+
+Error: ENOENT: no such file or directory, stat 'D:\优团工作文件夹\outputs\replenishment_mvp_20261029\交付_0.48.7_rc1\补货助手\_internal\components\aoxiang\test\fixtures\purchase-import-template.xlsx'
+    at async Object.stat (node:internal/fs/promises:1750:18)
+    at async inspectPurchaseTemplate (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/src/purchase-template.mjs:56:12)
+    at async file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/[eval1]:1:117 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.48.7_rc1\\补货助手\\_internal\\components\\aoxiang\\test\\fixtures\\purchase-import-template.xlsx'
+}
+
+Node.js v24.22.1
+
+
+======================================================================
+FAIL: test_new_refusal_after_preview_prevents_upload_without_changing_payment (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_new_refusal_after_preview_prevents_upload_without_changing_payment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 43, in setUp
+    receipt = json.loads(self.node(script, str(template)))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 59, in node
+    self.fail(r.stderr)
+AssertionError: node:internal/fs/promises:1750
+  const result = await PromisePrototypeThen(
+                 ^
+
+Error: ENOENT: no such file or directory, stat 'D:\优团工作文件夹\outputs\replenishment_mvp_20261029\交付_0.48.7_rc1\补货助手\_internal\components\aoxiang\test\fixtures\purchase-import-template.xlsx'
+    at async Object.stat (node:internal/fs/promises:1750:18)
+    at async inspectPurchaseTemplate (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/src/purchase-template.mjs:56:12)
+    at async file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/[eval1]:1:117 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.48.7_rc1\\补货助手\\_internal\\components\\aoxiang\\test\\fixtures\\purchase-import-template.xlsx'
+}
+
+Node.js v24.22.1
+
+
+======================================================================
+FAIL: test_payment_change_stops_host_dispatch_and_reserved_order_remains_unique (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_payment_change_stops_host_dispatch_and_reserved_order_remains_unique)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 43, in setUp
+    receipt = json.loads(self.node(script, str(template)))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 59, in node
+    self.fail(r.stderr)
+AssertionError: node:internal/fs/promises:1750
+  const result = await PromisePrototypeThen(
+                 ^
+
+Error: ENOENT: no such file or directory, stat 'D:\优团工作文件夹\outputs\replenishment_mvp_20261029\交付_0.48.7_rc1\补货助手\_internal\components\aoxiang\test\fixtures\purchase-import-template.xlsx'
+    at async Object.stat (node:internal/fs/promises:1750:18)
+    at async inspectPurchaseTemplate (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/src/purchase-template.mjs:56:12)
+    at async file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/[eval1]:1:117 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.48.7_rc1\\补货助手\\_internal\\components\\aoxiang\\test\\fixtures\\purchase-import-template.xlsx'
+}
+
+Node.js v24.22.1
+
+
+======================================================================
+FAIL: test_template_latest_pointer_change_blocks_before_reservation (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_template_latest_pointer_change_blocks_before_reservation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 43, in setUp
+    receipt = json.loads(self.node(script, str(template)))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 59, in node
+    self.fail(r.stderr)
+AssertionError: node:internal/fs/promises:1750
+  const result = await PromisePrototypeThen(
+                 ^
+
+Error: ENOENT: no such file or directory, stat 'D:\优团工作文件夹\outputs\replenishment_mvp_20261029\交付_0.48.7_rc1\补货助手\_internal\components\aoxiang\test\fixtures\purchase-import-template.xlsx'
+    at async Object.stat (node:internal/fs/promises:1750:18)
+    at async inspectPurchaseTemplate (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/src/purchase-template.mjs:56:12)
+    at async file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/[eval1]:1:117 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.48.7_rc1\\补货助手\\_internal\\components\\aoxiang\\test\\fixtures\\purchase-import-template.xlsx'
+}
+
+Node.js v24.22.1
+
+
+======================================================================
+FAIL: test_three_decimal_upload_price_and_legacy_unuploaded_preview_are_rejected (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_three_decimal_upload_price_and_legacy_unuploaded_preview_are_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 43, in setUp
+    receipt = json.loads(self.node(script, str(template)))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 59, in node
+    self.fail(r.stderr)
+AssertionError: node:internal/fs/promises:1750
+  const result = await PromisePrototypeThen(
+                 ^
+
+Error: ENOENT: no such file or directory, stat 'D:\优团工作文件夹\outputs\replenishment_mvp_20261029\交付_0.48.7_rc1\补货助手\_internal\components\aoxiang\test\fixtures\purchase-import-template.xlsx'
+    at async Object.stat (node:internal/fs/promises:1750:18)
+    at async inspectPurchaseTemplate (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/src/purchase-template.mjs:56:12)
+    at async file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/[eval1]:1:117 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.48.7_rc1\\补货助手\\_internal\\components\\aoxiang\\test\\fixtures\\purchase-import-template.xlsx'
+}
+
+Node.js v24.22.1
+
+
+======================================================================
+FAIL: test_wrong_excel_values_are_blocked_even_if_caller_rehashes (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_wrong_excel_values_are_blocked_even_if_caller_rehashes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 43, in setUp
+    receipt = json.loads(self.node(script, str(template)))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_purchase_tasks.py", line 59, in node
+    self.fail(r.stderr)
+AssertionError: node:internal/fs/promises:1750
+  const result = await PromisePrototypeThen(
+                 ^
+
+Error: ENOENT: no such file or directory, stat 'D:\优团工作文件夹\outputs\replenishment_mvp_20261029\交付_0.48.7_rc1\补货助手\_internal\components\aoxiang\test\fixtures\purchase-import-template.xlsx'
+    at async Object.stat (node:internal/fs/promises:1750:18)
+    at async inspectPurchaseTemplate (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/src/purchase-template.mjs:56:12)
+    at async file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/%E4%BA%A4%E4%BB%98_0.48.7_rc1/%E8%A1%A5%E8%B4%A7%E5%8A%A9%E6%89%8B/_internal/components/aoxiang/[eval1]:1:117 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.48.7_rc1\\补货助手\\_internal\\components\\aoxiang\\test\\fixtures\\purchase-import-template.xlsx'
+}
+
+Node.js v24.22.1
+
+
+----------------------------------------------------------------------
+Ran 8 tests in 12.161s
+
+FAILED (failures=8)
