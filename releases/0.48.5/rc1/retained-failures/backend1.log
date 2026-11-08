@@ -1,0 +1,116 @@
+test_batch_exact_saved_source_no_export_atomic_save_and_idempotent_repeat (test_jst_payment.DirectPayment.test_batch_exact_saved_source_no_export_atomic_save_and_idempotent_repeat) ... ERROR
+test_cancel_during_prepare_and_before_commit_never_writes (test_jst_payment.DirectPayment.test_cancel_during_prepare_and_before_commit_never_writes) ... ERROR
+test_exact_checked_subset_and_no_selection_never_falls_back_to_all (test_jst_payment.DirectPayment.test_exact_checked_subset_and_no_selection_never_falls_back_to_all) ... ERROR
+test_invalid_member_blocks_whole_scope_with_order_identity (test_jst_payment.DirectPayment.test_invalid_member_blocks_whole_scope_with_order_identity) ... ERROR
+test_missing_positive_price_is_not_invented (test_jst_payment.DirectPayment.test_missing_positive_price_is_not_invented) ... ERROR
+test_payment_modified_after_review_rolls_back_other_orders (test_jst_payment.DirectPayment.test_payment_modified_after_review_rolls_back_other_orders) ... ERROR
+test_reallocation_after_review_rolls_back_all_payments (test_jst_payment.DirectPayment.test_reallocation_after_review_rolls_back_all_payments) ... ERROR
+test_stale_display_generation_cannot_silently_switch_to_new_active (test_jst_payment.DirectPayment.test_stale_display_generation_cannot_silently_switch_to_new_active) ... ERROR
+
+======================================================================
+ERROR: test_batch_exact_saved_source_no_export_atomic_save_and_idempotent_repeat (test_jst_payment.DirectPayment.test_batch_exact_saved_source_no_export_atomic_save_and_idempotent_repeat)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 29, in test_batch_exact_saved_source_no_export_atomic_save_and_idempotent_repeat
+    self.assertEqual(len(plan['plans']),4);self.assertTrue(self.unpaid());self.assertEqual(plan['files'],[])
+                                                           ^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 26, in unpaid
+    def unpaid(self):return all(lc.current_targets(self.path)[i]['present']['payment'] is False for i in range(4))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 26, in <genexpr>
+    def unpaid(self):return all(lc.current_targets(self.path)[i]['present']['payment'] is False for i in range(4))
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+KeyError: 'present'
+
+======================================================================
+ERROR: test_cancel_during_prepare_and_before_commit_never_writes (test_jst_payment.DirectPayment.test_cancel_during_prepare_and_before_commit_never_writes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 71, in test_cancel_during_prepare_and_before_commit_never_writes
+    self.assertTrue(self.unpaid())
+                    ^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 26, in unpaid
+    def unpaid(self):return all(lc.current_targets(self.path)[i]['present']['payment'] is False for i in range(4))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 26, in <genexpr>
+    def unpaid(self):return all(lc.current_targets(self.path)[i]['present']['payment'] is False for i in range(4))
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+KeyError: 'present'
+
+======================================================================
+ERROR: test_exact_checked_subset_and_no_selection_never_falls_back_to_all (test_jst_payment.DirectPayment.test_exact_checked_subset_and_no_selection_never_falls_back_to_all)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 43, in test_exact_checked_subset_and_no_selection_never_falls_back_to_all
+    paid=[h for h in lc.current_targets(self.path) if h['present']['payment']]
+                                                      ~^^^^^^^^^^^
+KeyError: 'present'
+
+======================================================================
+ERROR: test_invalid_member_blocks_whole_scope_with_order_identity (test_jst_payment.DirectPayment.test_invalid_member_blocks_whole_scope_with_order_identity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 50, in test_invalid_member_blocks_whole_scope_with_order_identity
+    self.assertTrue(self.unpaid())
+                    ^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 26, in unpaid
+    def unpaid(self):return all(lc.current_targets(self.path)[i]['present']['payment'] is False for i in range(4))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 26, in <genexpr>
+    def unpaid(self):return all(lc.current_targets(self.path)[i]['present']['payment'] is False for i in range(4))
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+KeyError: 'present'
+
+======================================================================
+ERROR: test_missing_positive_price_is_not_invented (test_jst_payment.DirectPayment.test_missing_positive_price_is_not_invented)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 78, in test_missing_positive_price_is_not_invented
+    self.assertTrue(self.unpaid())
+                    ^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 26, in unpaid
+    def unpaid(self):return all(lc.current_targets(self.path)[i]['present']['payment'] is False for i in range(4))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 26, in <genexpr>
+    def unpaid(self):return all(lc.current_targets(self.path)[i]['present']['payment'] is False for i in range(4))
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+KeyError: 'present'
+
+======================================================================
+ERROR: test_payment_modified_after_review_rolls_back_other_orders (test_jst_payment.DirectPayment.test_payment_modified_after_review_rolls_back_other_orders)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 65, in test_payment_modified_after_review_rolls_back_other_orders
+    self.assertEqual(sum(h['present']['payment'] for h in lc.current_targets(self.path)),1)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 65, in <genexpr>
+    self.assertEqual(sum(h['present']['payment'] for h in lc.current_targets(self.path)),1)
+                         ~^^^^^^^^^^^
+KeyError: 'present'
+
+======================================================================
+ERROR: test_reallocation_after_review_rolls_back_all_payments (test_jst_payment.DirectPayment.test_reallocation_after_review_rolls_back_all_payments)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 58, in test_reallocation_after_review_rolls_back_all_payments
+    orders.commit(self.path,orders.prepare(self.path,[self.entries[-1]['head']],correction=True))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\jst_orders.py", line 234, in prepare
+    raise ValueError('重新分配须选齐该仓全部未锁已生成订单，避免改变其它订单占用')
+ValueError: 重新分配须选齐该仓全部未锁已生成订单，避免改变其它订单占用
+
+======================================================================
+ERROR: test_stale_display_generation_cannot_silently_switch_to_new_active (test_jst_payment.DirectPayment.test_stale_display_generation_cannot_silently_switch_to_new_active)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_jst_payment.py", line 53, in test_stale_display_generation_cannot_silently_switch_to_new_active
+    h=self.entries[-1]['head'];orders.commit(self.path,orders.prepare(self.path,[h],correction=True))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\jst_orders.py", line 234, in prepare
+    raise ValueError('重新分配须选齐该仓全部未锁已生成订单，避免改变其它订单占用')
+ValueError: 重新分配须选齐该仓全部未锁已生成订单，避免改变其它订单占用
+
+----------------------------------------------------------------------
+Ran 8 tests in 2.794s
+
+FAILED (errors=8)

@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "app": "补货助手",
+  "version": "0.48.5",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "源码运行",
+  "build_id": "未打包",
+  "checks": [
+    "仅使用本轮隔离数据库",
+    "两店四仓单均已有生成结果",
+    "生成不自动确认付款",
+    "当前筛选四单可直接核对，未勾选时勾选入口禁用",
+    "取消四单付款核对不写入",
+    "实际勾选按钮只保存一张仓单，未选订单不变",
+    "当前筛选按钮只保存山东仓两单，另一仓未选单不变",
+    "直接完成四单付款，不退出结果页、不导入Excel",
+    "相同生成明细再次确认不新增重复付款版本",
+    "付款确认不改库存占用、生成单、锁单和仓资料",
+    "整个直达付款流程无需中间Excel导出",
+    "五次核对范围准确，包含取消和重复确认"
+  ],
+  "synthetic": true,
+  "live_platform": false
+}
