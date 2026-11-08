@@ -59,6 +59,8 @@ class Runner:
             atomic_json(Path(p['package_file']).parent / '本地任务索引.json', p)
             summary = {'quantity': p['intent']['totalQuantity'], 'amount': p['intent']['totalAmount'],
                        'sku_count': len(p['intent']['rows']), 'supplier': p['intent']['supplierCode']}
+            if p['intent'].get('pricePolicy'):
+                summary.update(payment_amount=p['intent']['paymentTotalAmount'], rounding_delta=p['intent']['roundingDelta'])
             # Save exact package identity before the separate component reservation.
             self.store.update(job['id'], position=item['position'], changes={'package': package_ref(p), 'summary': summary})
         checkpoint(self.cancel)

@@ -11,6 +11,7 @@ from aoxiang_directory import file_hash
 from aoxiang_purchase import freeze_payment, validate_basis
 from aoxiang_purchase_excel import generate
 from runtime_support import checkpoint
+from aoxiang_purchase_pricing import POLICY
 
 
 def _write_new(path, value):
@@ -44,6 +45,10 @@ def prepare(path, head, configuration, suppliers, receipt, directory, contract_p
               'template': {'recordFile': receipt['recordFile'], 'sha256': receipt['sha256'], 'attemptId': receipt['attemptId']},
               'rows': [{k: format(Decimal(r[k]), 'f') if k in ('quantity', 'amount') else r[k] for k in ('sku', 'name', 'quantity', 'amount')} for r in plan['rows']],
               'totalQuantity': format(Decimal(plan['total_quantity']), 'f'), 'totalAmount': format(Decimal(plan['total_amount']), 'f')}
+    if plan.get('price_basis') == POLICY:
+        intent.update(pricePolicy=POLICY, paymentTotalAmount=plan['payment_total_amount'], roundingDelta=plan['rounding_delta'])
+        for output, row in zip(intent['rows'], plan['rows']):
+            output.update(unitPrice=row['unit_price'], paymentAmount=row['payment_amount'], roundingDelta=row['rounding_delta'])
     validate_basis(path, plan, configuration, suppliers, cancel=cancel)
     _write_new(target / '付款采购依据.json', plan)
     _write_new(target / '采购文件核验.json', generated)
@@ -53,7 +58,7 @@ def prepare(path, head, configuration, suppliers, receipt, directory, contract_p
             'plan_sha256': file_hash(target / '付款采购依据.json'), 'file': generated, 'intent': intent}
 
 
-def validate_for_upload(path, package, configuration, suppliers, *, cancel=None):
+def validate_for_upload(path, package, configuration, suppliers, *, cancel=None, for_binding=False):
     """Called by the host immediately before dispatch. No automatic resends on timeout."""
     checkpoint(cancel)
     for field in ('package', 'plan'):
@@ -61,6 +66,8 @@ def validate_for_upload(path, package, configuration, suppliers, *, cancel=None)
             raise ValueError('采购冻结依据已发生变化，请核对，不能上传')
     intent = json.loads(Path(package['package_file']).read_text(encoding='utf-8'))
     plan = json.loads(Path(package['plan_file']).read_text(encoding='utf-8'))
+    if not for_binding and (plan.get('price_basis') != POLICY or intent.get('pricePolicy') != POLICY):
+        raise ValueError('旧预览未按两位采购单价生成；未上传任务请取消原预览后重新生成，已上传任务只继续原任务核对')
     if intent['id'] != package['id'] or intent['basis']['planFingerprint'] != plan['fingerprint']:
         raise ValueError('采购任务和付款依据关联不符')
     if file_hash(intent['file']['path']) != intent['file']['sha256']:

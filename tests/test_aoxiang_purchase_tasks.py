@@ -80,7 +80,9 @@ const root=process.argv[1],s=await StateStore.open(root);await saveConfig(root,f
         self.assertTrue(first['created'])
         self.assertEqual(first['record']['state'], 'RESERVED')
         self.assertEqual(first['record']['totalQuantity'], '7')
-        self.assertEqual(first['record']['totalAmount'], '0.99')
+        self.assertEqual(first['record']['totalAmount'], '0.98')
+        self.assertEqual(p['intent']['paymentTotalAmount'], '0.99')
+        self.assertEqual(p['intent']['roundingDelta'], '-0.01')
         self.assertFalse(self.reserve(p)['created'])
         self.assertEqual(self.client.request('purchase.list')['total'], 1)
         self.assertTrue(self.client.close())
@@ -145,6 +147,58 @@ const root=process.argv[1],s=await StateStore.open(root);await saveConfig(root,f
             self.reserve(p)
         self.assertEqual(result.exception.code, 'PURCHASE_TEMPLATE_STALE')
         self.assertEqual(self.client.request('purchase.list')['total'], 0)
+
+    def test_three_decimal_upload_price_and_legacy_unuploaded_preview_are_rejected(self):
+        import zipfile
+        for mode in ('three_decimal_price', 'legacy'):
+            p = self.package()
+            if mode == 'legacy':
+                del p['intent']['pricePolicy']
+            else:
+                file = Path(p['file']['file'])
+                with zipfile.ZipFile(file) as z:
+                    entries = [(i, z.read(i.filename)) for i in z.infolist()]
+                member = p['file']['modified_zip_member']
+                with zipfile.ZipFile(file, 'w') as z:
+                    for i, raw in entries:
+                        if i.filename == member:
+                            self.assertIn(b'<v>0.14</v>', raw)
+                            raw = raw.replace(b'<v>0.14</v>', b'<v>0.141</v>')
+                        z.writestr(i, raw)
+                p['intent']['file'].update(sha256=file_hash(file), bytes=file.stat().st_size)
+            atomic_json(p['package_file'], p['intent'])
+            p['package_sha256'] = file_hash(p['package_file'])
+            with self.subTest(mode=mode), self.assertRaises(ComponentError) as error:
+                self.reserve(p)
+            self.assertEqual(error.exception.code, 'PURCHASE_PRICE_POLICY' if mode == 'legacy' else 'PURCHASE_INPUT_MISMATCH')
+            self.assertEqual(self.client.request('purchase.list')['total'], 0)
+
+    def test_legacy_file_still_checks_exactly_for_binding_but_cannot_be_uploaded(self):
+        from aoxiang_purchase import fingerprint
+        from aoxiang_purchase_excel import generate
+        p = self.package()
+        plan = json.loads(Path(p['plan_file']).read_text('utf-8'))
+        plan['price_basis'] = 'confirmed_payment_amount_column_F_price_left_blank'
+        for r in plan['rows']:
+            r['amount'] = r.pop('payment_amount')
+            del r['unit_price'], r['rounding_delta']
+        plan['total_amount'] = '0.99'
+        del plan['payment_total_amount'], plan['rounding_delta']
+        plan['fingerprint'] = fingerprint(plan)
+        generated = generate(plan, self.receipt, CONTRACT, Path(p['plan_file']).parent/'legacy.xlsx', note=p['intent']['note'])
+        intent = p['intent'];intent['basis']['planFingerprint'] = plan['fingerprint']
+        for r in intent['rows']:
+            r['amount'] = r.pop('paymentAmount')
+            del r['unitPrice'], r['roundingDelta']
+        intent['totalAmount'] = '0.99'
+        for k in ('pricePolicy', 'paymentTotalAmount', 'roundingDelta'):del intent[k]
+        intent['file'] = {'path':generated['file'],'sha256':generated['sha256'],'bytes':generated['bytes']}
+        atomic_json(p['plan_file'],plan);p['plan_sha256'] = file_hash(p['plan_file'])
+        atomic_json(p['package_file'],intent);p['package_sha256'] = file_hash(p['package_file'])
+        self.assertTrue(validate_for_upload(self.f.path,p,self.config,self.suppliers,for_binding=True))
+        with self.assertRaisesRegex(ValueError,'旧预览'):
+            validate_for_upload(self.f.path,p,self.config,self.suppliers)
+        self.node("import fs from 'node:fs';import {checkPurchaseInput} from './src/purchase-create-artifacts.mjs';const p=JSON.parse(fs.readFileSync(process.argv[1]));await checkPurchaseInput(p,{requireRounded:false});",p['package_file'])
 
 
 if __name__ == '__main__':

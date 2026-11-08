@@ -30,7 +30,9 @@ class ReceiptTests(unittest.TestCase):
 
     def observation(self, quantity='5', amount='0.70'):
         scope = {'orderId': 'PO1', 'store': 'T', 'supplier': '2078246', 'status': '已完成',
-                 'quantity': '7', 'amount': '0.99', 'receivedQuantity': quantity, 'receivedAmount': amount}
+                 # 0.99 / 7 -> 0.14, so the platform order is 0.98;
+                 # the immutable confirmed payment remains 0.99.
+                 'quantity': '7', 'amount': '0.98', 'receivedQuantity': quantity, 'receivedAmount': amount}
         main = {**scope, 'skuCount': '1', '_sourceRow': 5}
         row = {**scope, 'sku': self.p['rows'][0]['sku'], 'name': '合成商品', 'unit': '包', '_sourceRow': 5,
                'createdAt': '2026-11-01 12:00:00', 'updatedAt': '2026-11-02 12:00:00'}

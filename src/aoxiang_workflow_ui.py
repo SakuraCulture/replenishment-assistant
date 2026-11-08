@@ -254,7 +254,7 @@ class QueueDialog(QDialog):
         self.summary.setWordWrap(True)
         v.addWidget(self.summary)
         self.table = QTableWidget(0, 8)
-        self.table.setHorizontalHeaderLabels(['选择', '门店', '仓', '补货单号', '本项状态', '款数 / 付款金额', '平台采购单', '提示'])
+        self.table.setHorizontalHeaderLabels(['选择', '门店', '仓', '补货单号', '本项状态', '款数 / 采购金额', '平台采购单', '提示'])
         self.table.setColumnCount(9);self.table.setHorizontalHeaderItem(8,QTableWidgetItem('单项操作'))
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.cellDoubleClicked.connect(lambda *_:self.details())
@@ -418,11 +418,12 @@ class QueueDialog(QDialog):
             plan = run(self, read, (), '读取已冻结付款采购明细')
             d = QDialog(self);d.setWindowTitle('采购预览 · ' + plan['head']['number']);d.resize(950, 650)
             v = QVBoxLayout(d)
-            v.addWidget(label(plan['head']['name'] + ' · ' + plan['head']['warehouse'] + ' · 付款数量 ' + plan['total_quantity'] + ' · 金额 ' + plan['total_amount'] + ' 元', 'section'))
+            from aoxiang_purchase_pricing import HEADERS, preview_rows
+            v.addWidget(label(plan['head']['name'] + ' · ' + plan['head']['warehouse'] + ' · 付款数量 ' + plan['total_quantity'] + ' · 采购金额 ' + plan['total_amount'] + ' 元', 'section'))
             search = QLineEdit();search.setPlaceholderText('查找商品编码或名称');v.addWidget(search)
-            table, model = grid(d, ['商品编码', '商品名称', '付款基础数量', '付款商品金额（元）'], [[r['sku'], r['name'], r['quantity'], r['amount']] for r in plan['rows']])
+            table, model = grid(d, HEADERS, preview_rows(plan['rows']))
             search.textChanged.connect(model.filter);v.addWidget(table, 1)
-            v.addWidget(label('逐项取自已确认付款快照；不换算基础数量，不用最新价格替代付款金额。', 'muted'))
+            v.addWidget(label('单价按原付款金额÷基础数量四舍五入到两位；采购金额按两位单价计算并四舍五入到分。逐项展示差额，原付款不变。', 'muted'))
             v.addWidget(button('关闭预览', d.accept));d.exec();d.deleteLater()
         except Exception as exc:QMessageBox.warning(self, '未打开采购明细', str(exc))
 
@@ -438,7 +439,8 @@ class QueueDialog(QDialog):
         amount = sum((Decimal(i['summary']['amount']) for i in items), Decimal(0))
         names = '\n'.join(i['head']['name'] + ' · ' + i['head']['warehouse'] + ' · ' + i['head']['number'] for i in items[:12])
         if len(items) > 12: names += f'\n其余 {len(items)-12} 单见已勾选列表。'
-        text = f'将上传勾选的 {len(items)} 张采购单，付款商品金额合计 {amount} 元。\n{names}\n\n仅创建为待提交，不自动提交或审核；未勾选及失败项不会上传。'
+        payment_amount = sum((Decimal(i['summary'].get('payment_amount', i['summary']['amount'])) for i in items), Decimal(0))
+        text = f'将上传勾选的 {len(items)} 张采购单，原付款金额 {payment_amount} 元，采购金额 {amount} 元，舍入差额 {amount-payment_amount} 元。\n{names}\n\n单价四舍五入到两位，原付款记录不变。仅创建为待提交，不自动提交或审核；未勾选及失败项不会上传。'
         if QMessageBox.question(self, '确认批量上传采购', text, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:return
         try:
             self.manager.ensure_owner()

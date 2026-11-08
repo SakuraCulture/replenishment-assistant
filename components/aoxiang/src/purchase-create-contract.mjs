@@ -16,6 +16,22 @@ export function sum(values){
   const total=parts.reduce((a,[i,f=''])=>a+BigInt(i+f.padEnd(scale,'0')),0n).toString().padStart(scale+1,'0');
   return decimal(scale?total.slice(0,-scale)+'.'+total.slice(-scale):total);
 }
+export const PRICE_POLICY='unit_price_half_up_2_v1';
+function fixed(n,scale){
+  const sign=n<0n?'-':'';const s=(n<0n?-n:n).toString().padStart(scale+1,'0');
+  return sign+(scale?s.slice(0,-scale)+'.'+s.slice(-scale):s);
+}
+function signed(v){return v.startsWith('-')&&decimal(v.slice(1))!=='0'?'-'+decimal(v.slice(1)):decimal(v.replace(/^\-/,''));}
+export function roundedPurchaseRow(quantity,paymentAmount){
+  const [qi,qf='']=decimal(quantity).split('.'),[ai,af='']=decimal(paymentAmount).split('.');
+  const q=BigInt(qi+qf),a=BigInt(ai+af),qs=10n**BigInt(qf.length),as=10n**BigInt(af.length);
+  if(!q)fail('PURCHASE_DECIMAL','采购数量必须大于0');
+  const numerator=a*qs*100n,denominator=as*q;
+  const cents=numerator/denominator+(2n*(numerator%denominator)>=denominator?1n:0n);
+  const product=cents*q,amount=product/qs+(2n*(product%qs)>=qs?1n:0n);
+  const scale=Math.max(2,af.length),delta=amount*10n**BigInt(scale-2)-a*10n**BigInt(scale-af.length);
+  return {unitPrice:fixed(cents,2),amount:fixed(amount,2),roundingDelta:signed(fixed(delta,scale))};
+}
 export function validatePurchaseIntent(p){
   if(!p||p.schema!==1||p.operation!=='purchase.create'||!text(p.id,80)||!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(p.id))fail('PURCHASE_INTENT_SCHEMA','采购创建任务格式或编号无效');
   if(!p.identity||Object.keys(p.identity).sort().join(',')!=='accountId,merchantCode'||!text(p.identity.accountId)||!text(p.identity.merchantCode)||!hash.test(p.mappingVersion||''))fail('PURCHASE_INTENT_SCHEMA','采购任务缺少已核验商家与门店版本');
@@ -26,11 +42,23 @@ export function validatePurchaseIntent(p){
   if(!p.file||!text(p.file.path,2048)||!hash.test(p.file.sha256||'')||!Number.isSafeInteger(p.file.bytes)||p.file.bytes<100||p.file.bytes>10485760)fail('PURCHASE_INTENT_SCHEMA','采购文件凭据无效');
   if(!p.template||!text(p.template.recordFile,2048)||!hash.test(p.template.sha256||'')||!text(p.template.attemptId,80))fail('PURCHASE_INTENT_SCHEMA','缺少最新原生模板获取记录');
   if(!Array.isArray(p.rows)||!p.rows.length||p.rows.length>20000)fail('PURCHASE_INTENT_SCHEMA','采购商品数无效或超出本机保护值');
+  if(p.pricePolicy!==undefined&&p.pricePolicy!==PRICE_POLICY)fail('PURCHASE_PRICE_POLICY','采购单价舍入规则未支持');
   const seen=new Set();for(const r of p.rows){
     if(!r||!text(r.sku)||seen.has(r.sku)||typeof r.name!=='string'||r.name.length>1024||decimal(r.quantity)==='0')fail('PURCHASE_INTENT_SCHEMA','采购商品编码、名称或数量不符，不能合并猜测');
-    decimal(r.amount);seen.add(r.sku);
+    decimal(r.amount);
+    if(p.pricePolicy===PRICE_POLICY){
+      const expected=roundedPurchaseRow(r.quantity,r.paymentAmount);
+      if(r.unitPrice!==expected.unitPrice||decimal(r.amount)!==decimal(expected.amount)||typeof r.roundingDelta!=='string'||signed(r.roundingDelta)!==expected.roundingDelta)fail('PURCHASE_PRICE_POLICY','采购单价、金额及舍入差额与原付款不符');
+    }
+    seen.add(r.sku);
   }
   if(sum(p.rows.map(r=>r.quantity))!==decimal(p.totalQuantity)||sum(p.rows.map(r=>r.amount))!==decimal(p.totalAmount))fail('PURCHASE_INTENT_SCHEMA','采购逐项数量金额与汇总不一致');
+  if(p.pricePolicy===PRICE_POLICY){
+    if(sum(p.rows.map(r=>r.paymentAmount))!==decimal(p.paymentTotalAmount))fail('PURCHASE_PRICE_POLICY','原付款汇总不符');
+    const [ai,af='']=decimal(p.totalAmount).split('.'),[bi,bf='']=decimal(p.paymentTotalAmount).split('.'),scale=Math.max(af.length,bf.length);
+    const delta=BigInt(ai+af.padEnd(scale,'0'))-BigInt(bi+bf.padEnd(scale,'0'));
+    if(typeof p.roundingDelta!=='string'||signed(p.roundingDelta)!==signed(fixed(delta,scale)))fail('PURCHASE_PRICE_POLICY','采购舍入差额汇总不符');
+  }
   return p;
 }
 export const orderKey=p=>sha256(canonical({identity:p.identity,number:p.basis.number,warehouse:p.basis.warehouse,store:p.basis.store}));

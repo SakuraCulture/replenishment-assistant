@@ -20,7 +20,7 @@ export class PurchaseBindingService{
   async observe(id,proposal,{signal}){
     const r=this.creates.get(id);canBind(r);
     const p=r.intent,request=bindingRequest(proposal.request),context=await this.creationService.context(p,signal);
-    await this.creationService.preflight(p);
+    await this.creationService.preflight(p,{forBinding:true});
     const stop=()=>{if(signal?.aborted)fail('PAUSED','已停止核对；原采购任务和已受理导出保留');};stop();
     let marked=[];
     if(r.uploadAttempted){
@@ -60,7 +60,7 @@ export class PurchaseBindingService{
     if(r.state==='BOUND'&&r.binding.proposalId===proposalId&&r.binding.proofSha256===hash)return r;
     if(r.sequence!==sequence||proposal?.id!==proposalId||proposal.state!=='READY'||proposal.manifest.sha256!==hash)fail('BINDING_PREVIEW_STALE','关联预览已变化，请重新核对');
     const proof=await checkedFile(proposal.manifest);checkedBinding(r,proof);
-    await this.creationService.preflight(r.intent);
+    await this.creationService.preflight(r.intent,{forBinding:true});
     return this.creates.confirmBinding(id,sequence,proof,proposalId,hash);
   }
 }

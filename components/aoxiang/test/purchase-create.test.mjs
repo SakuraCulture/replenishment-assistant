@@ -6,11 +6,32 @@ import path from 'node:path';
 import {StateStore} from '../src/state.mjs';
 import {PurchaseCreates,purchasePublic} from '../src/purchase-create-ledger.mjs';
 import {MachinePurchaseCreate} from '../src/machine-purchase-create.mjs';
-import {IMPORT_CODE,validatePurchaseIntent,checkCreatedPurchase,decimal,sum} from '../src/purchase-create-contract.mjs';
+import {IMPORT_CODE,validatePurchaseIntent,checkCreatedPurchase,decimal,sum,roundedPurchaseRow,PRICE_POLICY} from '../src/purchase-create-contract.mjs';
 import {sha256} from '../src/common.mjs';
 import {exportMigration} from '../src/migration.mjs';
 
 const h='a'.repeat(64);
+test('HALF_UP price cents, fractional quantity amount, and exact rational boundaries',()=>{
+  for(const [q,a,unitPrice,amount,roundingDelta] of [
+    ['1','1.005','1.01','1.01','0.005'],['1','1.0049','1.00','1.00','-0.0049'],
+    ['2','5.35','2.68','5.36','0.01'],['3','10','3.33','9.99','-0.01'],
+    ['7','0.99','0.14','0.98','-0.01'],['0.5','0.005','0.01','0.01','0.005'],
+    ['10000','1','0.00','0.00','-1'],['2','0','0.00','0.00','0'],['200','201','1.01','202.00','1']]){
+    assert.deepEqual(roundedPurchaseRow(q,a),{unitPrice,amount,roundingDelta});
+  }
+  assert.equal(roundedPurchaseRow('1','1.004'+'9'.repeat(80)).unitPrice,'1.00');
+});
+test('rounded intent validates original payment, all row deltas and strict native procurement amounts',()=>{
+  const p=intent();p.pricePolicy=PRICE_POLICY;
+  p.rows=p.rows.map(r=>({...r,paymentAmount:r.amount,...roundedPurchaseRow(r.quantity,r.amount)}));
+  p.totalAmount='3.01';p.paymentTotalAmount='3';p.roundingDelta='0.01';
+  assert.equal(validatePurchaseIntent(p),p);
+  const e=evidence(p);e.main.amount='3.01';assert.equal(checkCreatedPurchase(p,receipt(p),e).orderId,'PO-1');
+  e.main.amount='3';assert.throws(()=>checkCreatedPurchase(p,receipt(p),e),{code:'PURCHASE_CREATED_MISMATCH'});
+  for(const mutate of [x=>x.rows[0].unitPrice='0.495',x=>x.rows[0].unitPrice='0.49',x=>x.rows[0].amount='0.99',x=>x.rows[0].roundingDelta='0',x=>x.paymentTotalAmount='3.01',x=>x.roundingDelta='0',x=>x.pricePolicy='unknown']){
+    const x=structuredClone(p);mutate(x);assert.throws(()=>validatePurchaseIntent(x));
+  }
+});
 function intent(id='create-one'){
   const marker='AX_CREATE:'+id;
   return {schema:1,operation:'purchase.create',id,identity:{accountId:'A',merchantCode:'M'},mappingVersion:h,
