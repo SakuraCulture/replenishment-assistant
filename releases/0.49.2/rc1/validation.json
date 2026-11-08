@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "source_commit": "7d0ab0131fd35e32c7614ec631d63f5f059852ea",
+  "python_regression": {
+    "tests": 1317,
+    "unique_test_ids": 1317,
+    "seconds": 463.524
+  },
+  "reference_tests": {
+    "tests": 12,
+    "unique_test_ids": 12,
+    "seconds": 3.948
+  },
+  "exe_checks": 17,
+  "core_unchanged": 15,
+  "preserved_delivery_files": 42,
+  "exe_sha256": "3ce63e7d9057b147c4ce68a44753e133a0ed3db0c67be89126cd561f65adb274",
+  "zip": "交付_0.49.2_rc1/补货助手_0.49.2_rc1_内部订单号维护.zip",
+  "zip_sha256": "f9e377b10fd99269caf08ae313481111e21c03eacc1e34eaa05cec931d082a17",
+  "zip_bytes": 125790654,
+  "files": 1248,
+  "live_database_written": false,
+  "live_platform": false,
+  "components_unchanged_from": "v0.49.1-rc1",
+  "component_files_verified": 871,
+  "node_tests_rerun": false
+}
