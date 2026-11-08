@@ -44,5 +44,29 @@ class AnalyticsUiTests(unittest.TestCase):
         deadline=time.monotonic()+10
         while w.basis_worker and time.monotonic()<deadline:self.app.processEvents();time.sleep(.005)
         self.assertIsNone(w.basis_worker);self.assertIs(w.report,snapshot);self.assertTrue(w.stale);self.assertFalse(w.export_btn.isEnabled())
+    def test_identifiers_appear_in_all_summary_views_and_coverage_view(self):
+        from test_analytics_identifiers import seed_purchase
+        import order_lifecycle as lc
+        import payment_references as refs
+        self.f.f.save('return');self.f.f.save('payment');head=next(h for h in self.f.report()['heads'] if h['number']==self.f.f.h['number'])
+        refs.save(self.f.path,refs.read(self.f.path,head),'000JST1')
+        seed_purchase(self.f.path,head,lc.snapshot(self.f.path,head)['documents']['payment'])
+        w=self.widget;w.show_report(self.f.report())
+        for index,key in enumerate(('store','warehouse','order')):
+            w.tabs.setCurrentIndex(index)
+            self.assertEqual(w.models[key].headers[2:5],['签发单号','聚水潭内部订单号','翱象采购单号'])
+            self.assertTrue(any('000JST1' in str(r[3]) and 'PO00001' in str(r[4]) for r in w.models[key].rows))
+        w.metric_choice.setCurrentIndex(3)
+        self.assertEqual(w.models['order'].headers[2:5],['签发单号','聚水潭内部订单号','翱象采购单号'])
+        self.assertTrue(any('PO00001' in str(r[4]) for r in w.models['order'].rows))
+    def test_number_maintenance_marks_existing_report_stale(self):
+        import payment_references as refs
+        self.f.f.save('return');self.f.f.save('payment');w=self.widget;w.show_report(self.f.report());snapshot=w.report
+        head=next(h for h in snapshot['heads'] if h['number']==self.f.f.h['number'])
+        refs.save(self.f.path,refs.read(self.f.path,head),'NEW-JST')
+        self.host.show();w.show();self.app.processEvents();w.check_update()
+        deadline=time.monotonic()+10
+        while w.basis_worker and time.monotonic()<deadline:self.app.processEvents();time.sleep(.005)
+        self.assertIs(w.report,snapshot);self.assertTrue(w.stale);self.assertFalse(w.export_btn.isEnabled())
 
 if __name__=='__main__':unittest.main()

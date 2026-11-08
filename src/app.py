@@ -153,6 +153,9 @@ def main():
     if '--payment-reference-smoke' in sys.argv:
         from payment_reference_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--payment-reference-smoke')+1:])
+    if '--analytics-identifiers-smoke' in sys.argv:
+        from analytics_identifiers_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--analytics-identifiers-smoke')+1:])
     if '--purchase-pricing-smoke' in sys.argv:
         from purchase_pricing_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--purchase-pricing-smoke')+1:])

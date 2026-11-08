@@ -9,16 +9,17 @@ import order_analytics as service
 from runtime_support import checkpoint
 from xlsx_exports import stream_book, write_table
 from funnel_compact_export import write_summary, HEADERS as SUMMARY_HEADERS
+from analytics_identifiers import HEADERS as ID_HEADERS, LINK_HEADERS, cells,link_rows
 
 IDENTITY=['业务日期','门店编码','门店名称','供货仓','补货单号']
-DETAIL_HEADERS=IDENTITY+['商品编码','商品名称','库存单位','分类','必采属性','签发时单价']+[service.NAMES[s]+'数量' for s in service.STAGES]+[service.NAMES[s]+'资料状态' for s in service.STAGES]+['付款实际行金额','付款币种','付款依据','预算说明','人工调整原因','资料提示','源行号']
+DETAIL_HEADERS=IDENTITY+['商品编码','商品名称','库存单位','分类','必采属性','签发时单价']+[service.NAMES[s]+'数量' for s in service.STAGES]+[service.NAMES[s]+'资料状态' for s in service.STAGES]+['付款实际行金额','付款币种','付款依据','预算说明','人工调整原因','资料提示','源行号']+ID_HEADERS
 def detail_rows(rows):
     for r in rows:
         yield [r['day'],r['store'],r['store_name'],r['warehouse'],r['order'],r['sku'],r['name'],r['unit'],r['category'],r['group'],r['price'],
                *[r['quantities'][s] if r['valid'][s] else None for s in service.STAGES],
                *[r['states'][s] if r['valid'][s] else r['states'][s]+' / 数量不可比' for s in service.STAGES],
                r['payment_amount'] if r['valid']['payment'] else None,r['payment_currency'],r['payment_source'],
-               r['decision'].get('budget'),r['decision'].get('manual'),'；'.join(r['reasons']+[v for v in r['notes'].values() if v]),r['source_row']]
+               r['decision'].get('budget'),r['decision'].get('manual'),'；'.join(r['reasons']+[v for v in r['notes'].values() if v]),r['source_row'],*cells([r])]
 
 
 def export(path,report,target,level='store',orders=None,progress=lambda _:None,cancel=None):
@@ -37,13 +38,21 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
     fd,tmp=tempfile.mkstemp(dir=target.parent,prefix='.analytics-',suffix='.xlsx');os.close(fd)
     try:
         with stream_book() as book:
-            monitor = write_summary(book,rows,level,progress,cancel,coverage=True) if level in ('store','order') else []
+            monitor = write_summary(book,rows,level,progress,cancel,coverage=True,references=True) if level in ('store','order') else []
             for name,headers,values in tabs:
                 checkpoint(cancel)
                 write_table(book,name,headers,([float(v) if isinstance(v,Decimal) else v for v in row] for row in values),
                     style='single',cancel=cancel,progress=progress,row_count=len(values))
             from coverage_exports import append_sheets
             extra=append_sheets(book,rows,detail=level=='detail',rounds=level in ('store','coverage_rounds'),cancel=cancel,progress=progress)
+            from funnel_monitor_export import Sheet
+            associations=Sheet(book,'单号关联明细',[18,26,38,18,46,36,36,22,26,44,22,28],cancel)
+            associations.ws.freeze_panes='H2';associations.ws.print_title_rows='1:1'
+            associations.row(LINK_HEADERS,'header',height=48,comments={4:'签发单号即原补货仓单号。按当前本机签发身份、修订和仓关联。',
+                5:'优先使用本机维护的聚水潭内部号；否则使用当前付款原表的内部订单号。',
+                8:'本机已留存状态，不表示本次在线查询；已作废号码仍留存。'})
+            for values in link_rows(rows,cancel):associations.row(values,height=34)
+            associations.ws.auto_filter.ref=f'A1:L{associations.count}';extra.append('单号关联明细')
             progress('压缩保存报表，完成后响应取消…');book.save(tmp)
         checkpoint(cancel)
         # A confirmed/deleted order while writing must not publish an obsolete report.
