@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "chapters": 16,
+  "pages": 36,
+  "images": 13,
+  "characters_outside_pages": [],
+  "rendered_pages": [
+    1,
+    2,
+    22
+  ],
+  "pdf_sha256": "07ffb9011e5a76b9427eec29aea818f9fee05ba047a2a2cd967d4597cf649e3d"
+}

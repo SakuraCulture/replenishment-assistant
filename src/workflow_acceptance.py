@@ -166,14 +166,14 @@ def exercise(app,win,out,codes,checks):
     import user_help
     from PySide6.QtGui import QAction
     manual=user_help.location();html=manual.read_text('utf-8')
-    assert html.count('<section id=')==26
+    assert html.count('<section id=')==16
     assert (manual.parent/'补货助手_0.48.0_新人使用手册.pdf').is_file()
     assert len(list((manual.parent/'images').glob('*.png')))==13
     action=next(a for a in win.findChildren(QAction) if a.text()=='图文使用手册')
     with patch('PySide6.QtGui.QDesktopServices.openUrl',return_value=True) as opened:
         action.trigger()
         assert Path(opened.call_args.args[0].toLocalFile())==manual
-    checks.append('packaged help menu resolves bundled offline HTML, 26 chapters, 13 real EXE screenshots and PDF; HTML browser behavior validated separately')
+    checks.append('packaged help menu resolves bundled offline HTML, 16 business stages, 13 real EXE screenshots and PDF; HTML browser behavior validated separately')
     win.show_section(1);QTest.qWait(150);assert win.stockout.page is None
     assert win.results==before
     (out/'screenshot-index.json').write_text(json.dumps({'source':'actual EXE' if getattr(__import__('sys'),'frozen',False) else 'source application',
