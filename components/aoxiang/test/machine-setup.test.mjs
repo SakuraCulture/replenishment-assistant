@@ -12,6 +12,18 @@ import {BoundBrowserPool} from '../src/bound-browser.mjs';
 const identity={accountId:'001',merchantCode:'M',displayName:'测试商家'};
 const target=code=>({buyerWarehouseCode:code,displayName:code,operatingStores:[],mappingSource:'fixture',mappingVerifiedAt:'2026-11-01T00:00:00Z'});
 const params=root=>({candidate:{edge_executable:'C:/Edge/msedge.exe',actual_profile_path:'C:/EdgeData/Profile1'},output_root:path.join(root,'output'),targets:[{code:'W2',name:'门店2'},{code:'W1',name:'门店1'}]});
+test('startup identity failure hands off same transport without claiming verified identity',async t=>{
+  const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};t.after(()=>c.setup.browsers.close());
+  const job=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(job.id);
+  const before=await readConfiguration(c.root),client=c.setup.browsers.browser.client,original=client.recheckLogin.bind(client);
+  client.recheckLogin=async()=>{throw new AppError('IDENTITY_CHECK_FAILED','page timed out');};
+  await c.setup.verifySaved([]);await c.setup.promise;
+  assert.equal(c.setup.job.state,'FAILED');assert.equal(client.closed,undefined);
+  await c.setup.handoffLogin();assert.equal(c.setup.client,null);assert.equal(c.setup.browsers.browser.client,client);assert.equal(c.setup.browsers.browser.connected,null);
+  client.recheckLogin=original;c.calls.length=0;
+  await c.setup.verifySaved([]);await c.setup.promise;
+  assert.deepEqual(c.calls,['recheck']);assert.equal(c.setup.job.state,'VERIFIED');assert.deepEqual(await readConfiguration(c.root),before);
+});
 test('startup checks saved login without querying stores, changing mappings or committing configuration',async t=>{
   const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};
   t.after(()=>c.setup.browsers.close());

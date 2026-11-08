@@ -11,6 +11,7 @@ import {browserConnectionState,watchBrowserConnection} from './browser-connectio
 const bridge=new EdgeBridge();let ui=null,modules=null,lock=null,busy=false,closing=false,unwatch=null;
 async function sourceUI(source){ui=await modules.open(source);}
 function send(message){if(process.connected)process.send(message);}
+function loginResult(error=null){send({event:'login',state:error?'FAILED':'VERIFIED',error:error?redact({code:error.code||'IDENTITY_CHECK_FAILED',message:error.message}):null});}
 async function close(){
   if(closing)return;closing=true;
   unwatch?.();send({event:'connection',state:'DISCONNECTED'});
@@ -25,7 +26,7 @@ process.on('message',async message=>{
   try{
     let result;
     if(method==='connect'){
-      if(modules){ui=await modules.open(params.source==='purchase'?'purchase':'D13',params.expectedIdentity,{force:true});result={facts:bridge.facts,identity:modules.identity};send({id,result});return;}
+      if(modules){ui=await modules.open(params.source==='purchase'?'purchase':'D13',params.expectedIdentity,{force:true});result={facts:bridge.facts,identity:modules.identity};loginResult();send({id,result});return;}
       send({event:'connection',state:'CONNECTING'});
       if(!lock)lock=await ExclusiveLock.acquire(path.join(params.stateRoot,'runner.lock.sqlite'));
       const facts=await bridge.bind(params.candidate,{timeout:params.timeout||60000,mode:params.mode||'background_tab',onPhase:phase=>send({event:'phase',phase})});
@@ -62,8 +63,10 @@ process.on('message',async message=>{
         const t=await ui.findTask(params.taskId);result={taskId:String(t.taskId),taskStatus:t.taskStatus,code:t.code||t.taskCode,successCount:t.successCount,failCount:t.failCount,fileUrl:t.fileUrl,startTime:t.startTime,doneTime:t.doneTime};
       }else throw Object.assign(new Error('未允许的浏览器操作'),{code:'UNKNOWN_WORKER_METHOD'});
     }
+    if(['connect','recheckLogin','verifyIdentity'].includes(method))loginResult();
     send({id,result});
   }catch(e){
+    if(['connect','recheckLogin','verifyIdentity'].includes(method)||['WAIT_LOGIN','WRONG_IDENTITY','IDENTITY_CHECK_FAILED','IDENTITY_RESPONSE_TIMEOUT'].includes(e.code))loginResult(e);
     if(e.code==='WAIT_LOGIN'&&['connect','recheckLogin'].includes(method))await bridge.page?.bringToFront().catch(()=>{});
     send({event:'connection',state:browserConnectionState(bridge)});send({id,error:redact({code:e.code||'BROWSER_OPERATION_FAILED',message:e.message,details:e.details})});
   }

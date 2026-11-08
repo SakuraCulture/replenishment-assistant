@@ -15,6 +15,31 @@ from browser_status_ui import BrowserStatus
 
 
 class Checks(unittest.TestCase):
+    def test_foreground_handoff_drains_read_without_cancel_or_second_start(self):
+        c=AxFixture();cancel=threading.Event();calls=[]
+        def request(action,**kw):
+            calls.append(action)
+            if action=='configuration':return {'configured':True}
+            if action=='setup.check_login':
+                cancel.handoff=True;cancel.set();return {'id':'original','state':'RUNNING'}
+            if action=='setup.status':return {'id':'original','state':'VERIFIED'}
+            raise AssertionError(action)
+        c.request=request
+        check_ax(c,cancel,lambda *_:None)
+        self.assertEqual(calls,['configuration','setup.check_login','setup.status'])
+
+    def test_explicit_close_still_cancels_read(self):
+        c=AxFixture();cancel=threading.Event();calls=[]
+        def request(action,**kw):
+            calls.append(action)
+            if action=='configuration':return {'configured':True}
+            if action=='setup.check_login':cancel.set();return {'id':'x','state':'RUNNING'}
+            if action=='setup.cancel':return {}
+            if action=='setup.status':return {'id':'x','state':'CANCELLED'}
+            raise AssertionError(action)
+        c.request=request;check_ax(c,cancel,lambda *_:None)
+        self.assertIn('setup.cancel',calls)
+
     def test_login_errors_are_actionable_and_identity_errors_are_distinct(self):
         for code in ['WAIT_LOGIN','LOGIN_REQUIRED']:
             self.assertEqual(error_result({'code':code,'message':'test'})['state'],'LOGIN_REQUIRED')
@@ -54,6 +79,14 @@ class Checks(unittest.TestCase):
 
 
 class StartupUi(unittest.TestCase):
+    def test_business_identity_failure_replaces_previous_green_status(self):
+        self.ui.start();self.wait(lambda:not self.ui.workers)
+        original=self.ax.request
+        self.ax.request=lambda action,**kw:({'state':'CONNECTED','login_state':'FAILED','login_error':{'code':'IDENTITY_CHECK_FAILED','message':'身份查询失败，不代表未登录'}} if action=='session.health' else original(action,**kw))
+        self.bar.refresh();self.wait(lambda:not self.bar.workers)
+        self.assertEqual(self.ui.records['翱象']['state'],'FAILED')
+        self.assertNotIn('登录已核验',self.bar.labels['翱象'].text())
+
     @classmethod
     def setUpClass(cls):cls.app=QApplication.instance() or QApplication([])
     def setUp(self):

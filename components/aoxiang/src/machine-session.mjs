@@ -4,5 +4,6 @@ export async function releaseSession({runtime,commands,setup,template,purchase,r
   for(const record of commands.list())if(['QUEUED','RUNNING'].includes(record.state))runtime.pause(record.id);
   if(template.busy)template.cancel(template.job.id);
   if(setup.busy)await setup.cancel(setup.job.id);
+  else await setup.handoffLogin?.();
   return {idle:!runtime.active&&!setup.busy&&!template.busy&&!purchase.busy&&!receiptSync.busy&&!bindingCheck.busy};
 }

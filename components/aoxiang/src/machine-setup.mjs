@@ -56,7 +56,7 @@ export class MachineSetup{
     }).finally(async()=>{
       this.job.cleanup_pending=true;
       try{
-        const waitingLogin=params.verificationOnly&&!params.targets.length&&this.job.error?.code==='WAIT_LOGIN'&&
+        const waitingLogin=params.verificationOnly&&!params.targets.length&&['WAIT_LOGIN','IDENTITY_CHECK_FAILED','IDENTITY_RESPONSE_TIMEOUT'].includes(this.job.error?.code)&&
           !this.control.signal.aborted&&this.client&&!this.client.closed;
         if(waitingLogin)this.pendingLogin={candidate:params.candidate,hash:configurationHash(params.saved)};
         else if(!this.browsers||!this.preview||this.control.signal.aborted)await this.closeClient();
@@ -105,6 +105,15 @@ export class MachineSetup{
   async closeClient({healthy=false}={}){
     if(!(healthy&&this.borrowed))await this.client?.stop();
     this.client=null;this.borrowed=false;this.pendingLogin=null;
+  }
+  async handoffLogin(){
+    // Only an idle startup read may hand over its transport. Identity is NOT
+    // considered verified: BoundBrowser.ensure must recheck on the same worker.
+    if(this.busy||!this.pendingLogin||!this.browsers||!this.client||this.client.closed)return;
+    const saved=await readConfiguration(this.root);
+    if(configurationHash(saved)!==this.pendingLogin.hash){await this.closeClient();return;}
+    this.browsers.adopt({...saved,state:this.state},this.client,null);
+    this.client=null;this.pendingLogin=null;this.borrowed=false;this.connected=null;
   }
   async cancel(id){
     this.status(id);this.control.abort();this.job.cancel_requested=true;this.job.updated_at=now();

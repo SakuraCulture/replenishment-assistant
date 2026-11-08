@@ -57,6 +57,24 @@ def start_smoke(app,win,args):
             require(axowner.client is ax and jowner.client is jst and ax.running and jst.running,'Successful startup retains the original shared clients')
             require(jowner.lease is None and win.aoxiang_workflows.gate.background is None,'Startup releases business operation ownership')
             win.resize(1200,850);app.processEvents();win.grab().save(str(out/'01-startup-ready.png'))
+            original_request=ax.request;settled=threading.Event();polled=threading.Event()
+            def handoff_request(action,**values):
+                if action=='setup.check_login':
+                    ax.calls.append((action,values));return {'id':'handoff','state':'RUNNING'}
+                if action=='setup.status':
+                    polled.set();ax.calls.append((action,values));return {'id':'handoff','state':'VERIFIED' if settled.is_set() else 'RUNNING'}
+                return original_request(action,**values)
+            ax.request=handoff_request;startup.retry(['翱象']);wait(polled.is_set)
+            ticket=win.aoxiang_workflows.gate.request_foreground();settled.set();wait(lambda:not startup.workers)
+            lease=axowner.lease(ticket);lease.start()
+            require(axowner.client is ax and ax.running and not ax.stopped,'Foreground handoff keeps original transport and never cancels the in-flight startup read')
+            require(lease.close(),'Foreground lease safely releases after handoff')
+            ax.request=original_request;startup.retry(['翱象']);wait(lambda:not startup.workers)
+            ax.request=lambda action,**kw:({'state':'CONNECTED','login_state':'FAILED','login_error':{'code':'IDENTITY_CHECK_FAILED','message':'身份查询失败，尚不能判断登录失效'}} if action=='session.health' else original_request(action,**kw))
+            bar.refresh();wait(lambda:not bar.workers)
+            require(startup.records['翱象']['state']=='FAILED' and '登录已核验' not in bar.labels['翱象'].text(),'Business identity failure clears stale verified footer while retaining the live socket')
+            win.grab().save(str(out/'02-identity-query-failed.png'))
+            ax.request=original_request;startup.retry(['翱象']);wait(lambda:not startup.workers)
             jst.errors['山东仓']={'code':'LOGIN_REQUIRED','message':'本仓登录已过期'}
             jst.errors['河北仓']={'code':'WRONG_ACCOUNT','message':'与本仓原绑定身份不同'}
             startup.retry(['山东仓','河北仓']);wait(lambda:not startup.workers);bar.refresh();wait(lambda:not bar.workers)
@@ -76,7 +94,7 @@ def start_smoke(app,win,args):
             require(not (Path(win.repository.folder)/'analysis/stockout').exists() and win.stockout.page is None,'Startup does not create or load the stockout business database or page')
             require(not any(n in sys.modules for n in ['stockout_repository','stockout_ui','stockout_facts']),'Startup avoids heavy stockout module imports')
             require(signature(win.work_repository.path)==before,'All original business tables retain exact logical contents')
-            require(all(a in {'configuration','setup.check_login','session.release','session.health'} for a,v in ax.calls),'AX startup issues no store scans, exports, purchases or setup commits')
+            require(all(a in {'configuration','setup.check_login','setup.status','session.release','session.health'} for a,v in ax.calls),'AX startup issues no store scans, exports, purchases or setup commits')
             require(all(a in {'sync.status','accounts.ensure','session.release','session.health'} for a,v in jst.calls),'Warehouse startup issues no catalogue export or adoption')
             # Closing with a read-only check in flight must drain it before window disposal.
             axowner.close();ax.gate=threading.Event();startup.retry(['翱象']);wait(lambda:ax.running)

@@ -6,6 +6,14 @@ import {BoundBrowserPool,invokeBoundRead} from '../src/bound-browser.mjs';
 import {AoxiangUI} from '../src/aoxiang-ui.mjs';
 const identity={accountId:'a',merchantCode:'m',displayName:'fixture'};
 const error=code=>Object.assign(new Error(code),{code});
+test('page/navigation failure is not mislabeled as an expired login',async()=>{
+  const context={activate:async()=>{},identityAfter:async()=>{throw new Error('navigation timeout');}};
+  await assert.rejects(()=>AoxiangUI.prototype.open.call(context,identity),{code:'IDENTITY_CHECK_FAILED'});
+  context.identityAfter=async()=>{throw error('WAIT_LOGIN');};
+  await assert.rejects(()=>AoxiangUI.prototype.open.call(context,identity),{code:'WAIT_LOGIN'});
+  context.identityAfter=async()=>{throw error('WRONG_IDENTITY');};
+  await assert.rejects(()=>AoxiangUI.prototype.open.call(context,identity),{code:'WRONG_IDENTITY'});
+});
 test('identity body is captured before navigation completes; expired or invalid body never uses cached identity',async()=>{
   let valid=true,read=false;
   const response={text:async()=>{if(!valid)throw Error('response discarded');read=true;return JSON.stringify({status:true,success:true,data:{account:{accountId:'a'},user:{accountId:'a',userId:'u',merchantCode:'m'}}});}};

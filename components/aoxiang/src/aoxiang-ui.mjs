@@ -76,7 +76,7 @@ export class AoxiangUI {
   async open(expected){
     await this.activate();
     this.identity=null;this.lastIdentityError=null;
-    try{this.identity=await this.identityAfter(()=>this.page.goto(SITE+'/#/replenish/list',{waitUntil:'domcontentloaded',timeout:this.timeoutMs}));}catch(e){if(e.code)throw e;fail('WAIT_LOGIN','未取得有效翱象身份，请完成登录后再继续');}
+    try{this.identity=await this.identityAfter(()=>this.page.goto(SITE+'/#/replenish/list',{waitUntil:'domcontentloaded',timeout:this.timeoutMs}));}catch(e){if(e.code)throw e;fail('IDENTITY_CHECK_FAILED','未完成翱象页面或身份查询，尚不能判断登录已失效；请检查页面加载和网络，再继续原任务，不要重新提交导出');}
     if(expected&&!sameIdentity(this.identity,expected))fail('WRONG_IDENTITY','当前Edge登录的翱象账号/商家与配置不符');
     await this.page.locator('#buyerWarehouseCodeList').waitFor({state:'visible',timeout:this.timeoutMs});
     return this.identity;
