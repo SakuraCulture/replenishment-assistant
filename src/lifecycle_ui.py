@@ -105,7 +105,7 @@ class Bindings(QDialog):
         self.bindings={k:c.currentData() for k,c in self.combos.items()}; self.go.setEnabled(all(self.bindings.values()))
 
 class Review(QDialog):
-    def __init__(self,parent,plan):
+    def __init__(self,parent,plan,*,show_source_notices=True):
         super().__init__(parent); self.setObjectName('lifecycleReview'); self.setWindowTitle('确认保存完整单据'); self.resize(1200,740); v=QVBoxLayout(self); summary=[]; rows=[]; orders={}
         for p in plan['plans']:
             h=p['head'];payload=p['payload'];basis=payload['basis'];origins=[r['quantity_origin'] for r in payload['rows']]
@@ -113,7 +113,7 @@ class Review(QDialog):
             summary.append(head_text(h)+' · '+io.TITLES[p['stage']]+(' · 更新已有单据' if p['expected'] else ' · 新增单据')+f"\n依据：{basis_text}；系统自动读取上环节数量；{len(payload['rows'])}款；明确0 {origins.count('zero')}款、空白转0 {origins.count('blank')}款、缺行转0 {origins.count('missing')}款；清单外 {len(payload['extra'])}款；同值重复 {p['duplicates']}行"+('；上游未就绪，本次仅留存，之后须重新核对。' if payload['pending'] else '')+('；本次明确确认整单为0，不生成原始Excel。' if payload['explicit_zero'] else ''))
             source=next((r['source_order'] for r in payload['raw_rows'] if r.get('source_order')),None)
             if source:summary.append('来源店铺：'+str(source.get('店铺名称'))+'；内部订单：'+str(source.get('内部订单号'))+'；线上订单：'+str(source.get('线上订单号'))+'。请与上方所选店仓单核对。')
-            if payload.get('payment_source',{}).get('type')=='jst_import_return':
+            if show_source_notices and payload.get('payment_source',{}).get('type')=='jst_import_return':
                 v.addWidget(label(h['number']+'：使用聚水潭导入单作为付款来源；聚水潭内部单号未提供，可后补。确认前请核实外部导入无异常且已经付款。','section'))
             rows.extend([*r,io.TITLES[p['stage']]] for r in p['differences'])
             item=orders.setdefault(h['number'],[h['number'],*['本次未提供']*len(io.STAGES)])
