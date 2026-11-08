@@ -1,0 +1,719 @@
+{
+  "version": "0.49.3",
+  "pdf": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\docs\\manual\\补货助手_0.49.3_新人业务上手手册.pdf",
+  "pages": 62,
+  "characters": 31592,
+  "chapters": 19,
+  "locations": [
+    {
+      "id": "c01",
+      "title": "01 接到工作后，先选对业务路线",
+      "page": 3,
+      "level": 0
+    },
+    {
+      "id": "c01-s01",
+      "title": "今天要给门店补货",
+      "page": 3,
+      "level": 1
+    },
+    {
+      "id": "c01-s02",
+      "title": "今天只想查门店为什么缺货",
+      "page": 3,
+      "level": 1
+    },
+    {
+      "id": "c01-s03",
+      "title": "手上已经有文件或未完成任务",
+      "page": 3,
+      "level": 1
+    },
+    {
+      "id": "c02",
+      "title": "02 开始今天这一批：定门店、供货仓和准备责任",
+      "page": 4,
+      "level": 0
+    },
+    {
+      "id": "c02-s01",
+      "title": "第一次接手这台电脑",
+      "page": 4,
+      "level": 1
+    },
+    {
+      "id": "c02-s02",
+      "title": "确认取数通道可用",
+      "page": 4,
+      "level": 1
+    },
+    {
+      "id": "c02-s03",
+      "title": "落实本次门店供货和预算",
+      "page": 4,
+      "level": 1
+    },
+    {
+      "id": "c02-pic-01",
+      "title": "首页与主要入口",
+      "page": 6,
+      "level": 1
+    },
+    {
+      "image": "images/home.png",
+      "page": 6
+    },
+    {
+      "id": "c03",
+      "title": "03 拿到当天资料，形成每家门店的补货建议",
+      "page": 7,
+      "level": 0
+    },
+    {
+      "id": "c03-s01",
+      "title": "取得本批输入并采用",
+      "page": 7,
+      "level": 1
+    },
+    {
+      "id": "c03-s02",
+      "title": "检查后计算",
+      "page": 7,
+      "level": 1
+    },
+    {
+      "id": "c04",
+      "title": "04 审一批建议：决定哪些商品、多少数量可以发给门店",
+      "page": 8,
+      "level": 0
+    },
+    {
+      "id": "c04-s01",
+      "title": "先看整店，再看例外商品",
+      "page": 8,
+      "level": 1
+    },
+    {
+      "id": "c04-s02",
+      "title": "表格看不全时，这样阅读",
+      "page": 8,
+      "level": 1
+    },
+    {
+      "id": "c04-s03",
+      "title": "确有业务理由再调整",
+      "page": 8,
+      "level": 1
+    },
+    {
+      "id": "c04-pic-01",
+      "title": "人工核对表格",
+      "page": 10,
+      "level": 1
+    },
+    {
+      "image": "images/audit-10pt.png",
+      "page": 10
+    },
+    {
+      "id": "c04-pic-02",
+      "title": "较大字号与当前行身份",
+      "page": 11,
+      "level": 1
+    },
+    {
+      "image": "images/audit-12pt.png",
+      "page": 11
+    },
+    {
+      "id": "c05",
+      "title": "05 发给门店确认：签发、检查文件、交接回传要求",
+      "page": 12,
+      "level": 0
+    },
+    {
+      "id": "c05-s01",
+      "title": "在软件中签发并取得文件",
+      "page": 12,
+      "level": 1
+    },
+    {
+      "id": "c05-s02",
+      "title": "给门店时，一起说明怎么回传",
+      "page": 12,
+      "level": 1
+    },
+    {
+      "id": "c05-s03",
+      "title": "为什么要保留原工作簿",
+      "page": 12,
+      "level": 1
+    },
+    {
+      "id": "c05-pic-01",
+      "title": "签发核对窗口",
+      "page": 14,
+      "level": 1
+    },
+    {
+      "image": "images/confirm-confirmation.png",
+      "page": 14
+    },
+    {
+      "id": "c05-pic-02",
+      "title": "签发与导出结果",
+      "page": 15,
+      "level": 1
+    },
+    {
+      "image": "images/export-result.png",
+      "page": 15
+    },
+    {
+      "id": "c05-pic-03",
+      "title": "文件关联信息只读查看",
+      "page": 16,
+      "level": 1
+    },
+    {
+      "image": "images/return-identity.png",
+      "page": 16
+    },
+    {
+      "id": "c06",
+      "title": "06 签发后文件没齐：补齐交接文件，不重做整批业务",
+      "page": 17,
+      "level": 0
+    },
+    {
+      "id": "c06-pic-01",
+      "title": "文件占用后的业务提示",
+      "page": 18,
+      "level": 1
+    },
+    {
+      "image": "images/export-locked-error.png",
+      "page": 18
+    },
+    {
+      "id": "c06-pic-02",
+      "title": "逐文件恢复核对",
+      "page": 19,
+      "level": 1
+    },
+    {
+      "image": "images/export-recovery.png",
+      "page": 19
+    },
+    {
+      "id": "c07",
+      "title": "07 收到门店反馈：把回传落到正确原单上",
+      "page": 20,
+      "level": 0
+    },
+    {
+      "id": "c07-s01",
+      "title": "识别后核对，再保存",
+      "page": 20,
+      "level": 1
+    },
+    {
+      "id": "c07-s02",
+      "title": "软件不知道该绑定谁时",
+      "page": 20,
+      "level": 1
+    },
+    {
+      "id": "c07-pic-01",
+      "title": "回传识别工作区",
+      "page": 21,
+      "level": 1
+    },
+    {
+      "image": "images/return-binding.png",
+      "page": 21
+    },
+    {
+      "id": "c07-pic-02",
+      "title": "回传保存前核对",
+      "page": 22,
+      "level": 1
+    },
+    {
+      "image": "images/return-review.png",
+      "page": 22
+    },
+    {
+      "id": "c08",
+      "title": "08 按门店确认量安排仓货：分配、复核、交执行",
+      "page": 23,
+      "level": 0
+    },
+    {
+      "id": "c09",
+      "title": "09 核实付款后安排采购：找到平台单号才算关联完成",
+      "page": 24,
+      "level": 0
+    },
+    {
+      "id": "c09-s01",
+      "title": "先把付款事实落到单据上",
+      "page": 24,
+      "level": 1
+    },
+    {
+      "id": "c09-s02",
+      "title": "再预览采购并核对平台结果",
+      "page": 24,
+      "level": 1
+    },
+    {
+      "id": "c10",
+      "title": "10 货到了以后：记录实收，找出这一批损失在哪一步",
+      "page": 25,
+      "level": 0
+    },
+    {
+      "id": "c11",
+      "title": "11 每日巡店：先得到可信的门店缺货清单",
+      "page": 26,
+      "level": 0
+    },
+    {
+      "id": "c11-s01",
+      "title": "留存当天观察",
+      "page": 26,
+      "level": 1
+    },
+    {
+      "id": "c11-s02",
+      "title": "看懂结果再作判断",
+      "page": 26,
+      "level": 1
+    },
+    {
+      "id": "c11-pic-01",
+      "title": "缺货率分析概览",
+      "page": 27,
+      "level": 1
+    },
+    {
+      "image": "images/stockout-overview.png",
+      "page": 27
+    },
+    {
+      "id": "c12",
+      "title": "12 拿缺货清单安排跟进：拆原因、交责任、看下一次结果",
+      "page": 28,
+      "level": 0
+    },
+    {
+      "id": "c12-s01",
+      "title": "按业务问题选择视角",
+      "page": 28,
+      "level": 1
+    },
+    {
+      "id": "c12-s02",
+      "title": "把范围整理成可交接报表",
+      "page": 28,
+      "level": 1
+    },
+    {
+      "id": "c12-s03",
+      "title": "需要 AI 帮你整理证据时",
+      "page": 28,
+      "level": 1
+    },
+    {
+      "id": "c12-s04",
+      "title": "决定是否进入参数试算",
+      "page": 29,
+      "level": 1
+    },
+    {
+      "id": "c12-pic-01",
+      "title": "自定义组合的切面",
+      "page": 30,
+      "level": 1
+    },
+    {
+      "image": "images/stockout-cuts.png",
+      "page": 30
+    },
+    {
+      "id": "c12-pic-02",
+      "title": "复制精确范围给 AI",
+      "page": 31,
+      "level": 1
+    },
+    {
+      "image": "images/ai-stockout.png",
+      "page": 31
+    },
+    {
+      "id": "c13",
+      "title": "13 今天收尾、明天接班：保留进度，区分旧单与新需求",
+      "page": 32,
+      "level": 0
+    },
+    {
+      "id": "c13-s01",
+      "title": "下班前做一次交接",
+      "page": 32,
+      "level": 1
+    },
+    {
+      "id": "c13-s02",
+      "title": "第二天如何接着处理",
+      "page": 32,
+      "level": 1
+    },
+    {
+      "id": "c14",
+      "title": "14 资料有误或测试数据要清理：先确定纠正范围",
+      "page": 33,
+      "level": 0
+    },
+    {
+      "id": "c14-s01",
+      "title": "缺货率资料需要纠正",
+      "page": 33,
+      "level": 1
+    },
+    {
+      "id": "c14-s02",
+      "title": "订单或测试数据确需清理",
+      "page": 33,
+      "level": 1
+    },
+    {
+      "id": "c15",
+      "title": "15 流程卡住时：按已发生的业务事实恢复",
+      "page": 34,
+      "level": 0
+    },
+    {
+      "id": "c15-s01",
+      "title": "卡在获取门店数据",
+      "page": 34,
+      "level": 1
+    },
+    {
+      "id": "c15-s02",
+      "title": "按业务阶段查报错",
+      "page": 34,
+      "level": 1
+    },
+    {
+      "id": "c15-s03",
+      "title": "交给维护人员的最小问题单",
+      "page": 34,
+      "level": 1
+    },
+    {
+      "id": "c16",
+      "title": "16 新人练一整批：用交接结果证明自己会做",
+      "page": 36,
+      "level": 0
+    },
+    {
+      "id": "c17",
+      "title": "17 第一次给门店配参数：从业务要求到验证生效",
+      "page": 37,
+      "level": 0
+    },
+    {
+      "id": "c17-s01",
+      "title": "17.1 先认清四类设置，避免走错入口",
+      "page": 37,
+      "level": 1
+    },
+    {
+      "id": "c17-s02",
+      "title": "17.2 定位门店，再确认主从仓和预算",
+      "page": 37,
+      "level": 1
+    },
+    {
+      "id": "c17-s03",
+      "title": "17.3 只改一个仓的周期，不覆盖其他门店差异",
+      "page": 38,
+      "level": 1
+    },
+    {
+      "id": "c17-s04",
+      "title": "17.4 选清生效范围：本次、默认、两者都改",
+      "page": 38,
+      "level": 1
+    },
+    {
+      "id": "c17-s05",
+      "title": "17.5 调分类权重：先算第三段，再填写",
+      "page": 38,
+      "level": 1
+    },
+    {
+      "id": "c17-s06",
+      "title": "17.6 用当前 V3 Excel 批量维护",
+      "page": 39,
+      "level": 1
+    },
+    {
+      "id": "c17-s07",
+      "title": "17.7 这次“导不进去”的错误怎么看",
+      "page": 40,
+      "level": 1
+    },
+    {
+      "id": "c17-s08",
+      "title": "17.8 分类映射、通用值与分类专用值怎样配合",
+      "page": 40,
+      "level": 1
+    },
+    {
+      "id": "c17-s09",
+      "title": "17.9 验证确实生效，避免“保存了但没变化”",
+      "page": 41,
+      "level": 1
+    },
+    {
+      "id": "c17-pic-01",
+      "title": "0.49.3 参数设置入口",
+      "page": 42,
+      "level": 1
+    },
+    {
+      "image": "images/parameter-entry.png",
+      "page": 42
+    },
+    {
+      "id": "c17-pic-02",
+      "title": "仅修改选定参数字段",
+      "page": 43,
+      "level": 1
+    },
+    {
+      "image": "images/parameter-selected-fields.png",
+      "page": 43
+    },
+    {
+      "id": "c17-pic-03",
+      "title": "预测权重与自动计算的第三段",
+      "page": 44,
+      "level": 1
+    },
+    {
+      "image": "images/parameter-weights.png",
+      "page": 44
+    },
+    {
+      "id": "c17-pic-04",
+      "title": "权重超限时整批不能应用",
+      "page": 45,
+      "level": 1
+    },
+    {
+      "image": "images/parameter-import-invalid.png",
+      "page": 45
+    },
+    {
+      "id": "c17-pic-05",
+      "title": "在完整内容窗口阅读具体权重错误",
+      "page": 46,
+      "level": 1
+    },
+    {
+      "image": "images/parameter-import-error-detail.png",
+      "page": 46
+    },
+    {
+      "id": "c17-pic-06",
+      "title": "修正权重并重新读取后的预览",
+      "page": 47,
+      "level": 1
+    },
+    {
+      "image": "images/parameter-import-valid.png",
+      "page": 47
+    },
+    {
+      "id": "c17-pic-07",
+      "title": "检查参数有效值与适用范围",
+      "page": 48,
+      "level": 1
+    },
+    {
+      "image": "images/parameter-effective-values.png",
+      "page": 48
+    },
+    {
+      "id": "c18",
+      "title": "18 参数逐项速查：默认值、含义、边界和易错点",
+      "page": 49,
+      "level": 0
+    },
+    {
+      "id": "c18-s01",
+      "title": "18.1 分仓周期：2 项，逐仓维护",
+      "page": 49,
+      "level": 1
+    },
+    {
+      "id": "c18-s02",
+      "title": "18.2 分类预测权重：4 项",
+      "page": 49,
+      "level": 1
+    },
+    {
+      "id": "c18-s03",
+      "title": "18.3 门店通用参数：15 项",
+      "page": 49,
+      "level": 1
+    },
+    {
+      "id": "c18-s04",
+      "title": "18.4 分类专用覆盖：3 项，不另造一套通用参数",
+      "page": 50,
+      "level": 1
+    },
+    {
+      "id": "c18-s05",
+      "title": "18.5 补货策略：3 个开关",
+      "page": 51,
+      "level": 1
+    },
+    {
+      "id": "c18-s06",
+      "title": "18.6 全局分类映射：1 项规则配置",
+      "page": 51,
+      "level": 1
+    },
+    {
+      "id": "c18-s07",
+      "title": "18.7 参数维护交付检查",
+      "page": 52,
+      "level": 1
+    },
+    {
+      "id": "c19",
+      "title": "19 三种单号怎么维护，翱象已有采购单怎么关联",
+      "page": 53,
+      "level": 0
+    },
+    {
+      "id": "c19-s01",
+      "title": "19.1 先分清三种号",
+      "page": 53,
+      "level": 1
+    },
+    {
+      "id": "c19-s02",
+      "title": "19.2 已有单据，先选对下一步",
+      "page": 53,
+      "level": 1
+    },
+    {
+      "id": "c19-s03",
+      "title": "19.3 正常上传后，采购单号自动取得",
+      "page": 53,
+      "level": 1
+    },
+    {
+      "id": "c19-s04",
+      "title": "19.4 平台成功、本地没认到：继续核对原任务",
+      "page": 54,
+      "level": 1
+    },
+    {
+      "id": "c19-s05",
+      "title": "19.5 已有准确 PO 号且无原回执：核对后关联",
+      "page": 54,
+      "level": 1
+    },
+    {
+      "id": "c19-s06",
+      "title": "19.6 按钮灰了或核对失败，去哪里查",
+      "page": 55,
+      "level": 1
+    },
+    {
+      "id": "c19-s07",
+      "title": "19.7 平台已作废，号码怎样保留",
+      "page": 55,
+      "level": 1
+    },
+    {
+      "id": "c19-s08",
+      "title": "19.8 已导入付款，补维护聚水潭内部号",
+      "page": 55,
+      "level": 1
+    },
+    {
+      "id": "c19-s09",
+      "title": "19.9 做完交接前，逐单检查",
+      "page": 56,
+      "level": 1
+    },
+    {
+      "id": "c19-pic-01",
+      "title": "翱象已有采购单关联入口",
+      "page": 57,
+      "level": 1
+    },
+    {
+      "image": "images/purchase-binding-entry.png",
+      "page": 57
+    },
+    {
+      "id": "c19-pic-02",
+      "title": "只填准确采购单号和核对原因",
+      "page": 58,
+      "level": 1
+    },
+    {
+      "image": "images/purchase-binding-request.png",
+      "page": 58
+    },
+    {
+      "id": "c19-pic-03",
+      "title": "核对一致后仍需要确认关联",
+      "page": 59,
+      "level": 1
+    },
+    {
+      "image": "images/purchase-binding-ready.png",
+      "page": 59
+    },
+    {
+      "id": "c19-pic-04",
+      "title": "逐商品核对原采购证据",
+      "page": 60,
+      "level": 1
+    },
+    {
+      "image": "images/purchase-binding-rows.png",
+      "page": 60
+    },
+    {
+      "id": "c19-pic-05",
+      "title": "维护聚水潭内部订单号",
+      "page": 61,
+      "level": 1
+    },
+    {
+      "image": "images/jst-number-edit.png",
+      "page": 61
+    },
+    {
+      "id": "c19-pic-06",
+      "title": "号码保存及修改记录",
+      "page": 62,
+      "level": 1
+    },
+    {
+      "image": "images/jst-number-history.png",
+      "page": 62
+    }
+  ]
+}

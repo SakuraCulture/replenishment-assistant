@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "chapters": 19,
+  "image_count": 26,
+  "checks": [
+    "local images load",
+    "chapter and subsection anchors",
+    "search found/zero/reset",
+    "weight valid/invalid/blank/boundary",
+    "image zoom open/close",
+    "mobile table contained scroll",
+    "no page errors",
+    "no external requests"
+  ],
+  "overflow": {
+    "width": 390,
+    "content": 390,
+    "tables": 11
+  },
+  "browser": "157.0.4341.42",
+  "errors": [],
+  "external_requests": [],
+  "files": [
+    "desktop-index.png",
+    "desktop-purchase-steps.png",
+    "desktop-weight-practice.png",
+    "mobile-purchase-steps.png",
+    "mobile-scopes.png"
+  ],
+  "html_sha256": "cdbe013d1d6ca3c3939f4ec0d90e9fc2b8209e61cbf212bd32c2f3abb56a35bd"
+}

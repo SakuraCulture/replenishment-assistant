@@ -1,6 +1,9 @@
 {
-  "application": "0.48.0",
-  "build": {
+  "application": "0.49.3",
+  "edition": "2026-11-09",
+  "source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
+  "source": "Mixed-version actual EXE and current-source Qt; captions distinguish provenance",
+  "legacy_0480_build": {
     "source_commit": "c12feff48eb81008a2643b2ce61d636b56fae980",
     "build_id": "rc1",
     "version": "0.48.0",
@@ -23,60 +26,204 @@
       "contains_user_state": false
     }
   },
-  "source": "actual Windows EXE; isolated synthetic data; no live platform calls",
-  "acceptance_note": "GUI steps passed individually; complete rc1 walkthrough failed in CLI test-driver pipe buffering. Retained failure report; final candidate reruns complete flow.",
+  "legacy_acceptance_note": "GUI steps passed individually; complete rc1 walkthrough failed in CLI test-driver pipe buffering. Retained failure report; final candidate reruns complete flow.",
   "images": [
     {
       "name": "home.png",
-      "sha256": "de2e8ed2b7b376f176e0706d4d3fd7097c42afbc3b2534816936c381a51a66e9"
+      "sha256": "de2e8ed2b7b376f176e0706d4d3fd7097c42afbc3b2534816936c381a51a66e9",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "audit-10pt.png",
-      "sha256": "6d14003218936d668e979b6753c0eb044936ecd76ef177731c6be301e2ed9b1e"
+      "sha256": "6d14003218936d668e979b6753c0eb044936ecd76ef177731c6be301e2ed9b1e",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "audit-12pt.png",
-      "sha256": "b0fdeb52be04d658c8a99e3329a75147d12664126241d84c7cddfe8c69626c2c"
+      "sha256": "b0fdeb52be04d658c8a99e3329a75147d12664126241d84c7cddfe8c69626c2c",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "confirm-confirmation.png",
-      "sha256": "5516394d47b1cf96a99d6dc61bc91caff2e3bdca06ca15bcc6497cc85519290a"
+      "sha256": "5516394d47b1cf96a99d6dc61bc91caff2e3bdca06ca15bcc6497cc85519290a",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "export-result.png",
-      "sha256": "9bdf2ddb9f504e2ac05304d79a0d150e086dbe6fe0be1e7037dcffd9515ab6af"
+      "sha256": "9bdf2ddb9f504e2ac05304d79a0d150e086dbe6fe0be1e7037dcffd9515ab6af",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "export-locked-error.png",
-      "sha256": "bfeb766757b1cb28a5ebdc476ce32e6cfdfb38e9af40ee20e98d868c3663f4fe"
+      "sha256": "bfeb766757b1cb28a5ebdc476ce32e6cfdfb38e9af40ee20e98d868c3663f4fe",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "export-recovery.png",
-      "sha256": "85d23401121c7795c2c161d493b74f1761a99ba07cd48ec2786daa127934d1be"
+      "sha256": "85d23401121c7795c2c161d493b74f1761a99ba07cd48ec2786daa127934d1be",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "return-identity.png",
-      "sha256": "2557c056f33587030cc2236e27eff5d60a1f3a4b586f6b754e52e3efdb22facd"
+      "sha256": "2557c056f33587030cc2236e27eff5d60a1f3a4b586f6b754e52e3efdb22facd",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "return-binding.png",
-      "sha256": "ef507f5a6dd313f16d1cc4d0851ecca570f8c9f056d80ee96ffa5ce49cda8f1b"
+      "sha256": "ef507f5a6dd313f16d1cc4d0851ecca570f8c9f056d80ee96ffa5ce49cda8f1b",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "return-review.png",
-      "sha256": "0b3150e7c731b05331f6a5cfbcab4947af797f23a2348b60c84d88809ba0e2c8"
+      "sha256": "0b3150e7c731b05331f6a5cfbcab4947af797f23a2348b60c84d88809ba0e2c8",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "stockout-overview.png",
-      "sha256": "22a391dfed5557c0f3649b325e8f36170de9008f8c6da22736b0ca2e20e990cc"
+      "sha256": "22a391dfed5557c0f3649b325e8f36170de9008f8c6da22736b0ca2e20e990cc",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "stockout-cuts.png",
-      "sha256": "8b2d208bd3273a7d73ed5d17839973a40dd88e74093d030117c85058fdbeb0c6"
+      "sha256": "8b2d208bd3273a7d73ed5d17839973a40dd88e74093d030117c85058fdbeb0c6",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
     },
     {
       "name": "ai-stockout.png",
-      "sha256": "37e670415626b834edc680e3211f6e37b439c53710023ce3483b5faf8b1aeb4d"
+      "sha256": "37e670415626b834edc680e3211f6e37b439c53710023ce3483b5faf8b1aeb4d",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition"
+    },
+    {
+      "name": "parameter-entry.png",
+      "sha256": "353461a0db364264b57933eafab27a822c03d1a9d0e2ef1d64af73c51e7ceac6",
+      "version": "0.49.3",
+      "source": "actual EXE",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/parameter-exe/01-参数入口.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "jst-number-edit.png",
+      "sha256": "6c7b8ccb05566d403e27278a7ff6c76d7e4440a520e2ef606f22f386338abcec",
+      "version": "0.49.2",
+      "source": "actual EXE",
+      "evidence": "qa/payment_reference_0492/exe1/填写内部订单号.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "jst-number-history.png",
+      "sha256": "fb5cd57b3226941a3b8df6cb3b3c82f95b51941f0f5c34c0407eba072e862d2c",
+      "version": "0.49.2",
+      "source": "actual EXE",
+      "evidence": "qa/payment_reference_0492/exe1/号码修改记录.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "parameter-effective-values.png",
+      "sha256": "8262dead4881437b79defe7b27442873983534ebeb3f15f58dfa4c8b223f8ba1",
+      "version": "0.49.3",
+      "source": "source Qt",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/parameter-effective-values.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "parameter-import-invalid.png",
+      "sha256": "13a03b52a59c2ee151cb5022285c39d87b8b6cb53d2ea8301f48ef8446850158",
+      "version": "0.49.3",
+      "source": "source Qt",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/parameter-import-invalid.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "parameter-import-valid.png",
+      "sha256": "27c51335ad26991a939d624f1e661407ad9e124d60137ff2c9505f1741dc7258",
+      "version": "0.49.3",
+      "source": "source Qt",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/parameter-import-valid.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "parameter-selected-fields.png",
+      "sha256": "b23ea02bc82444c421a6a350724930806424ed2004dae96fa920abf5df254e65",
+      "version": "0.49.3",
+      "source": "source Qt",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/parameter-selected-fields.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "parameter-weights.png",
+      "sha256": "795d54c5f7338cd7c2f866003f4ff9975691a89df0e18277a27291c27fe7d36f",
+      "version": "0.49.3",
+      "source": "source Qt",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/parameter-weights.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "purchase-binding-entry.png",
+      "sha256": "67a7cc5e65f1ae09863e9a10973d44fa6f72e5efb207905c920c6db5f09b625a",
+      "version": "0.49.3",
+      "source": "source Qt",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/purchase-binding-entry.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "purchase-binding-ready.png",
+      "sha256": "ae584c585e3accc726e721f0cba8ae9959bf58c87cc55f099b8854e0496f5ec7",
+      "version": "0.49.3",
+      "source": "source Qt",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/purchase-binding-ready.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "purchase-binding-request.png",
+      "sha256": "df29d129c89156bd45001d858d96897d903eaf0e0258a31ae2f0ae81b599d7aa",
+      "version": "0.49.3",
+      "source": "source Qt",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/purchase-binding-request.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "purchase-binding-rows.png",
+      "sha256": "3c77f3efb2738ae1b40a2ec4262e7ced6d5c23cfb91506444c7ee94f152407f9",
+      "version": "0.49.3",
+      "source": "source Qt",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/purchase-binding-rows.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "parameter-import-error-detail.png",
+      "sha256": "0b099b91a5ebf858e36ab5ab26a75244039a5d19004e56350cda530a7ae73246",
+      "version": "0.49.3",
+      "source": "source Qt",
+      "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/parameter-import-error-detail.png",
+      "synthetic": true,
+      "live_platform_tested": false
     }
-  ]
+  ],
+  "live_platform_tested": false,
+  "binding_ready_state": "synthetic demonstration only; never queried or confirmed a real purchase"
 }
