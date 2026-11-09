@@ -128,6 +128,13 @@ class ProcessClient:
         with self._retire_lock:
             for plan in deletion_barrier.pending(self.business_path):
                 complete=True
+                try:
+                    import export_receipts
+                    export_receipts.prune_deleted(self.business_path)
+                except (OSError,ValueError,sqlite3.Error,KeyError,TypeError):
+                    import logging
+                    logging.warning('业务已删除，导出回执清理待重试；原回执保留',exc_info=True)
+                    complete=False
                 for start in range(0,len(plan['oids']),256):
                     r=self.request('orders.retire',operation_id=plan['operation_id'],oids=plan['oids'][start:start+256])
                     complete=complete and not r.get('pending_files') and not r.get('pending_actions')

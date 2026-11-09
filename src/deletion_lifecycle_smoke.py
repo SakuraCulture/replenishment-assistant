@@ -41,6 +41,8 @@ def start_smoke(app,win,args):
             private.write_text('{"synthetic_private_payment":true}','utf-8')
             legacy_id='purchase-'+'b'*32;legacy=private.parent.parent/legacy_id/'采购任务.json';legacy.parent.mkdir()
             legacy.write_text(json.dumps({'id':legacy_id,'basis':{'oid':'oid'},'rows':[{'name':'synthetic product'}]}),'utf-8')
+            import export_receipts
+            export_receipt=export_receipts.begin(win.work_repository.path,'archive',[{'path':str(out/'external-original.xlsx'),'state':'已完成','heads':[gone,kept]}])
             job=manager.store.prepare([gone,kept]);calls=[]
             class ClosedClient:
                 def request(self,action,**kw):
@@ -77,6 +79,10 @@ def start_smoke(app,win,args):
             assert client.request('purchase.list')['total']==0
             assert deletion_barrier.pending(win.work_repository.path)==[]
             assert not private.exists() and not legacy.exists()
+            export_receipts.save(win.work_repository.path,export_receipt)
+            saved_receipt=json.loads((export_receipts.directory(win.work_repository.path)/(export_receipt['id']+'.json')).read_text('utf-8'))
+            assert saved_receipt['files'][0]['heads']==[kept]
+            checks.append('共享导出回执保留未选身份，晚到回执不能恢复已删单')
             checks.append('未提交组件的预览包及旧格式原生身份预览包完整清理')
             private.write_text('{"late_local_producer":true}','utf-8');deletion_barrier.package_finished(win.work_repository.path,'oid',package_id)
             client.request('purchase.list');assert not private.exists() and deletion_barrier.pending(win.work_repository.path)==[]

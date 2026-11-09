@@ -81,7 +81,7 @@ def connect(path):
     db=sqlite3.connect(path,timeout=.2);db.execute('PRAGMA secure_delete=ON')
     ax=Path(path).parent/'aoxiang/workflows.sqlite3'
     if ax.exists():db.execute('ATTACH DATABASE ? AS ax',(str(ax),))
-    for n,name in enumerate(('archive_index.sqlite3','lifecycle_index.sqlite3')):
+    for n,name in enumerate(('archive_index.sqlite3','lifecycle_index.sqlite3','payment_matching/index-v1.sqlite3')):
         cache=Path(path).parent/name
         if cache.exists():db.execute(f'ATTACH DATABASE ? AS cache{n}',(str(cache),))
     return db
@@ -376,6 +376,17 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
             import deletion_barrier
             operation_id=deletion_barrier.mark(db,latest['parents'])
             available=tables(db);oids=set(plan['oids']);progress('正在删除关联单据，提交前仍可取消…')
+            # Payment recognition stores exact order bindings separately from
+            # lifecycle versions. Store aliases are shared configuration.
+            if 'lifecycle_mappings' in available:
+                for stage,name,raw in db.execute('SELECT stage,name,payload FROM lifecycle_mappings').fetchall():
+                    if wr.loads(raw).get('head',{}).get('oid') in oids:db.execute('DELETE FROM lifecycle_mappings WHERE stage=? AND name=?',(stage,name))
+            aliases={r[1] for r in db.execute('PRAGMA database_list')}
+            if 'cache2' in aliases and db.execute("SELECT 1 FROM cache2.sqlite_master WHERE name='candidates'").fetchone():
+                for oid in oids:
+                    keys=[digest(['signed',oid,rev,h]) for rev,h in db.execute('SELECT revision,digest FROM normal_revisions WHERE oid=?',(oid,))]
+                    if 'jst_generations' in available:keys.extend(digest(['generation-v2',gid,h]) for gid,h in db.execute('SELECT gid,digest FROM jst_generations WHERE oid=?',(oid,)))
+                    for key in keys:db.execute('DELETE FROM cache2.candidates WHERE k=?',(key,))
             # Locked external orders must not release stock in the currently selected baseline.
             if 'jst_active' in available:
                 import jst_orders as jst

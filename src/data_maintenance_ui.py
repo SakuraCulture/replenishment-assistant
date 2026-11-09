@@ -34,7 +34,7 @@ def retirements(host):
         return len(pending(host.work_repository.path))
     try:
         remaining=run(host,cleanup,(),'组件本地清理',cancellable=False)
-        QMessageBox.information(host,'业务已删除',f'组件清理待办：{remaining} 批。'+('仍有在途动作或文件占用，连接可用时将继续重试。' if remaining else '组件清理已完成。'))
+        QMessageBox.information(host,'业务已删除',f'本地关联清理待办：{remaining} 批。'+('仍有在途动作、文件占用或导出回执需核对；详见应用日志，连接可用时会重试。' if remaining else '本地关联清理已完成。'))
     except Exception as exc:QMessageBox.warning(host,'业务已删除，组件待清理','订单不会恢复；稍后可在此重试。\n'+str(exc))
 
 def remove_job(host,record):

@@ -160,6 +160,27 @@ class LifecycleDeletion(unittest.TestCase):
         with patch.object(aoxiang_purchase_tasks,'_prepare',side_effect=generate):
             aoxiang_purchase_tasks.prepare(self.path,self.head,{}, {},{},self.root,self.root)
         self.assertEqual(fence.pending(self.path)[0]['generation'],1)
+    def test_payment_bindings_and_candidate_cache_pruned_but_shared_alias_kept(self):
+        import order_lifecycle as lc,payment_matching as pm
+        other=self.other();removed_key=pm.checksum(['signed','oid',1,self.head['digest']]);kept_key=pm.checksum(['signed','other',1,other['digest']])
+        with closing(self.work.connect()) as db,db:
+            lc.schema(db)
+            for name,value in [('payment_match.order.deleted',{'head':self.head}),('jst_order_reference.deleted',{'head':self.head,'number':'JST-X'}),('payment_match.order.keep',{'head':other}),('payment_match.store.shared',{'store':'T','original_name':'别称'})]:db.execute('INSERT INTO lifecycle_mappings VALUES(?,?,?)',('payment',name,wr.dumps(value)))
+        with closing(pm.Cache(self.path)) as cache:cache.put(removed_key,{'name':'已删店'});cache.put(kept_key,{'name':'保留店'})
+        self.remove()
+        with closing(self.work.connect()) as db:self.assertEqual({r[0] for r in db.execute('SELECT name FROM lifecycle_mappings')},{'payment_match.order.keep','payment_match.store.shared'})
+        with closing(pm.Cache(self.path)) as cache:self.assertIsNone(cache.get(removed_key));self.assertEqual(cache.get(kept_key),{'name':'保留店'})
+    def test_export_receipt_crops_shared_heads_and_late_save_cannot_restore(self):
+        import export_receipts as er
+        other=self.other();external=self.root/'user-output.xlsx';external.write_bytes(b'keep original output')
+        receipt=er.begin(self.path,'archive',[{'path':str(external),'state':'已完成','heads':[self.head,other]},{'path':str(external),'state':'已完成','head':self.head}])
+        self.remove();er.prune_deleted(self.path)
+        er.save(self.path,receipt)  # stale in-memory callback
+        saved=json.loads((er.directory(self.path)/(receipt['id']+'.json')).read_text('utf-8'))
+        self.assertEqual(len(saved['files']),1);self.assertEqual(saved['files'][0]['heads'],[other]);self.assertEqual(len(receipt['files']),2)
+        only=er.begin(self.path,'merchant',[{'path':str(external),'state':'已完成','head':self.head}])
+        self.assertFalse((er.directory(self.path)/(only['id']+'.json')).exists());self.assertEqual(external.read_bytes(),b'keep original output')
+        with self.assertRaises(ValueError):er.save(self.path,{**only,'id':'../outside'})
     def test_interrupted_isolated_process_recovers_main_and_attached_queue(self):
         # Controlled process loss before COMMIT and after COMMIT, not a physical
         # power cut or a claim to inject torn disk sectors during COMMIT.
