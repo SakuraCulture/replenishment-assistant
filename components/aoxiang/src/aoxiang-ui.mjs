@@ -16,7 +16,24 @@ export async function guardedClick(locator,timeout=15000){
   // UI.activate keeps only the tool-owned target's rendering active. A failed
   // click is never automatically replayed: the coordinator preserves UNKNOWN.
   await locator.click({timeout});
-  }catch(e){if(e.name==='TimeoutError')fail('UI_ACTION_TIMEOUT','页面操作等待超时；原作业已保留，请处理页面弹窗后继续原作业',{control:locator.toString(),diagnostic:e.message});throw e;}
+  }catch(e){if(e.name==='TimeoutError')fail('UI_ACTION_TIMEOUT','页面控件点击超时，可能未就绪、菜单收起或被遮挡；原任务已保留，结果待核时不会重发',{control:locator.toString(),diagnostic:e.message.replace(/\x1b\[[0-9;]*m/g,'')});throw e;}
+}
+// The only write is dispatched synchronously after the final visibility check.
+// An exception after entering evaluate is ambiguous and must NEVER authorize replay.
+export async function dispatchExportOption(locator,timeout=15000){
+  try{
+    await locator.waitFor({state:'visible',timeout});
+    if(await locator.count()!==1)fail('AMBIGUOUS_CONTROL','导出选项不唯一，未提交');
+    if(!await locator.isEnabled())fail('CONTROL_DISABLED','导出选项不可用，未提交');
+  }catch(e){fail('EXPORT_NOT_DISPATCHED','导出菜单尚未就绪，本次未点击提交；可以继续原采集任务',{cause:e.code||e.name});}
+  const dispatched=await locator.evaluate(e=>{
+    const r=e.getBoundingClientRect(),s=getComputedStyle(e);
+    if(!e.isConnected||!r.width||!r.height||s.visibility==='hidden'||s.display==='none'||e.matches(':disabled')||e.closest('[aria-disabled="true"]'))return false;
+    const top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+    if(!top||!e.contains(top))return false; // Never click through another dialog.
+    e.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));return true;
+  });
+  if(!dispatched)fail('EXPORT_NOT_DISPATCHED','导出菜单已收起，本次未点击提交；可以继续原采集任务');
 }
 export function identityFrom(j) {
   if(j.status!==true||j.success!==true||!j.data?.account||!j.data?.user)fail('WAIT_LOGIN','请在所选Edge配置中完成翱象登录');
@@ -225,7 +242,13 @@ export class AoxiangUI {
     try{
     const response=this.waitResponse(CREATE);
     const receiptCount=this.receipts.length;
-    await this.click(this.page.getByText('全部信息导出',{exact:true}).filter({visible:true}));
+    // prepareExport returns across IPC and durable intent writes. Its hover may
+    // already have disappeared; reopen now, without retrying a write click.
+    try{
+      await this.activate();
+      await this.page.locator('#suggestTable').getByRole('button',{name:/^导出/}).hover({timeout:10000});
+    }catch(e){fail('EXPORT_NOT_DISPATCHED','未能展开导出菜单，本次未点击提交；请继续原采集任务',{cause:e.code||e.name});}
+    await dispatchExportOption(this.page.getByText('全部信息导出',{exact:true}).filter({visible:true}),this.timeoutMs);
     // Current UI may either accept at the menu item or show a confirmation.
     // Keep one response listener and click a confirmation only if it actually exists.
     const confirm=this.page.locator('.ant-modal-confirm').filter({visible:true}).filter({hasText:'确认现在导出吗？'}).getByRole('button',{name:/^确\s*认$/});
@@ -245,6 +268,10 @@ export class AoxiangUI {
     // next actionable history click; do not treat an immediate isVisible=false
     // as proof that the modal will not appear.
     return {taskId,code:request.code,scope,acceptedAt:new Date().toISOString(),receiptCountBefore:receiptCount};
+    }catch(e){
+      if(e.code==='EXPORT_NOT_DISPATCHED'&&[...this.requestIntents.values()].includes(intentId))
+        fail('SUBMISSION_UNKNOWN','已观察到导出请求，但尚未取得可靠回执；保留原意图，禁止重发');
+      throw e;
     }finally{this.activeIntentId=null;}
   }
   async dispose(){this.page.off('request',this.requestListener);this.page.off('response',this.listener);if(this.noticeGuardInstalled){try{await this.page.removeLocatorHandler(this.exportNotice);}catch{}this.noticeGuardInstalled=false;}if(this.focusSession){try{await this.focusSession.detach();}catch{}this.focusSession=null;}}

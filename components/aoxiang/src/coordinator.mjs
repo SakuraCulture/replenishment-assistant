@@ -51,6 +51,9 @@ export class Coordinator{
       for(let item of this.state.getItems(run.id)){
         if(DONE.has(item.stage))continue;this.stopped();
         let attempt=item.attemptId?this.state.getAttempt(item.attemptId):null;
+         if(attempt?.stage==='CANCELLED_BEFORE_SUBMIT'){
+           item={...item,stage:'PLANNED',attemptId:null};this.state.putItem(item);attempt=null;
+         }
         const identity=run.identity,target=item.target,semanticVersion=attempt?.semanticVersion||this.config.exportPolicy.semanticVersion,scope=attempt?.scopeHash||scopeHash(target.buyerWarehouseCode,semanticVersion);
         const key=assetKey({...identity,buyerWarehouseCode:target.buyerWarehouseCode,acquisitionDate:run.day,scopeHash:scope,semanticVersion});
         const existing=this.state.getAsset(key);
@@ -100,6 +103,10 @@ export class Coordinator{
           }catch(e){
             const current=this.state.getAttempt(attempt.id);
             const positive=current.taskId&&!current.additionalTaskIds?.length&&matchesReceipt(current.receipt,target.buyerWarehouseCode,semanticVersion);
+             if(e.code==='EXPORT_NOT_DISPATCHED'&&!current.taskId&&!current.additionalTaskIds?.length){
+               this.state.putAttempt({...current,stage:'CANCELLED_BEFORE_SUBMIT',errorCode:e.code});
+               this.state.putItem({...item,stage:'PLANNED',attemptId:null});throw e;
+             }
             attempt={...current,stage:e.code==='WRONG_SCOPE_ACCEPTED'||current.stage==='WRONG_SCOPE_ACCEPTED'?'WRONG_SCOPE_ACCEPTED':positive?'ACCEPTED':'SUBMISSION_UNKNOWN',taskId:e.details?.taskId||current.taskId||null,errorCode:e.code||'SUBMISSION_ERROR'};this.state.putAttempt(attempt);throw e;
           }
           }

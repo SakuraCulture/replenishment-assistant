@@ -49,7 +49,7 @@ class FakeClient:
         if action == 'pause':
             record['sequence'] += 1
             record['state'] = 'PAUSED'
-        elif action == 'resume':
+        elif action in ('resume', 'collection.continue'):
             record['sequence'] += 1
             record['state'] = 'RUNNING'
         elif action == 'status' and self.finish:
@@ -143,7 +143,7 @@ class FetchUiTests(unittest.TestCase):
         self.assertEqual([f['warehouse_code'] for f in d.adoption['files']], ['W2', 'W1'])
         self.assertFalse(self.errors)
 
-    def test_unknown_receipt_has_no_resume_but_successful_files_stay_available(self):
+    def test_review_uses_dedicated_continue_without_replaying_unknown_item(self):
         d = self.dialog
         d.select_visible()
         d.start_fetch()
@@ -151,10 +151,20 @@ class FetchUiTests(unittest.TestCase):
         job = copy.deepcopy(d.current)
         job['state'] = job['record']['state'] = 'NEEDS_REVIEW'
         job['record']['items'][0]['state'] = 'NEEDS_REVIEW'
+        job['record']['sequence'] += 1
+        d.client.records[job['id']] = copy.deepcopy(job['record'])
+        d.jobs.observe(job['id'],job['record'])
+        job=d.jobs.get(job['id'])
         d.show_job(job)
-        self.assertFalse(d.resume_btn.isEnabled())
+        self.assertTrue(d.resume_btn.isEnabled())
         self.assertFalse(d.adopt_btn.isEnabled())
         self.assertFalse(d.poll.isActive())
+        d.resume_btn.click()
+        self.wait(lambda:d.worker is None and d.current['state']=='RUNNING')
+        self.assertEqual(d.current['record']['items'][0]['state'],'NEEDS_REVIEW')
+        self.assertEqual(len([a for a,_ in d.client.calls if a=='collection.continue']),1)
+        self.assertFalse(any(a in ('resume','retry') for a,_ in d.client.calls))
+        self.assertEqual(len([a for a,_ in d.client.calls if a=='reserve']),1)
 
 
 class AdoptionUiTests(unittest.TestCase):

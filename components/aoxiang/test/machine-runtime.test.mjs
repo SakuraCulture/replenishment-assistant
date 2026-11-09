@@ -22,6 +22,28 @@ async function context(t,executeItem,options={}){
     basis_versions:{store_mapping:mappingVersion(config)},policy:{freshness:'reuse'}},config);
   return {root,state,commands,runtime,reserve};
 }
+test('一店受理未知不拦其他店；无回执不可重发，迟到确切回执只恢复原项',async t=>{
+  const visits=[];let receipt=false;
+  const c=await context(t,async({item})=>{
+    visits.push(item.index);
+    if(item.index===0&&!receipt)throw new AppError('SUBMISSION_UNKNOWN','缺少回执');
+    return {file:item.warehouse_code+'.xlsx'};
+  },{canResumeReview:item=>item.index===0&&receipt});
+  await c.reserve();c.runtime.kick();await c.runtime.idle();
+  assert.deepEqual(c.commands.get('job-1').items.map(i=>i.state),['NEEDS_REVIEW','PENDING','PENDING']);
+  c.runtime.continueReviewed('job-1');c.runtime.kick();await c.runtime.idle();
+  const before=c.commands.get('job-1');assert.equal(before.state,'NEEDS_REVIEW');
+  assert.deepEqual(before.items.map(i=>i.state),['NEEDS_REVIEW','SUCCEEDED','SUCCEEDED']);
+  assert.throws(()=>c.runtime.continueReviewed('job-1'),{code:'COMMAND_TRANSITION'});assert.deepEqual(visits,[0,1,2]);
+  const forged=structuredClone(before.items);forged[0].state='PENDING';
+  assert.throws(()=>c.commands.advance('job-1',before.sequence,'QUEUED',{kind:'RESUME_WITH_REVIEW_RETAINED',items:forged}),{code:'COMMAND_TRANSITION'});
+  const source=c.state.getItems(before.items[0].run_id)[0];
+  c.state.putAttempt({id:'late-receipt',itemId:source.id,runId:source.runId,...identity,buyerWarehouseCode:'W2',scopeHash:'fixture',stage:'ACCEPTED',taskId:'exact-original-task'});
+  c.state.putItem({...source,attemptId:'late-receipt'});
+  receipt=true;c.runtime.continueReviewed('job-1');c.runtime.kick();await c.runtime.idle();
+  const after=c.commands.get('job-1');assert.equal(after.state,'SUCCEEDED');assert.deepEqual(visits,[0,1,2,0]);
+  assert.deepEqual(after.items.slice(1),before.items.slice(1));assert.equal(after.items[0].run_id,before.items[0].run_id);
+});
 
 test('显式单项重跑保留成功文件和原任务号，旧预览与重复点击被拒绝',async t=>{
   let failed=true;const visited=[];

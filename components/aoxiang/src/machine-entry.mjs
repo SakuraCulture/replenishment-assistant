@@ -48,6 +48,11 @@ async function main(){
   bindingCheck=new MachinePurchaseBinding({creates:purchases,service:bindingService,onFatal:error=>{void fatal(error);}});
   const recovered=commands.recoverInterrupted();
   runtime=new MachineRuntime({commands,pipeline:true,onFatal:error=>{void fatal(error);},
+    canResumeReview:item=>{
+      const items=state.getItems(item.run_id);
+      return items.length===1&&items.every(i=>{const a=state.getAttempt(i.attemptId);return a&&!a.additionalTaskIds?.length&&
+        (a.stage==='CANCELLED_BEFORE_SUBMIT'||a.taskId&&['ACCEPTED','RUNNING','FINISHED','DOWNLOADED','VALIDATED','PUBLISHING','SUCCEEDED'].includes(a.stage));});
+    },
     needsReview:item=>state.getItems(item.run_id).some(i=>['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED'].includes(state.getAttempt(i.attemptId)?.stage)),
     executeItem:async({record,item,phase,signal,onProgress})=>{
       const current=await loadConfig(root),config=record.config_snapshot;
@@ -141,6 +146,9 @@ async function main(){
         }
         case 'status':result=publicRecord(commands.get(request.command_id));if(!result)fail('COMMAND_NOT_FOUND','未找到自动化作业');break;
         case 'collection.preview':result=maintenance.preview(request.command_id,request.operation);break;
+        case 'collection.continue':
+          if(setup.busy||template.busy||purchase.busy||receiptSync.busy||bindingCheck.busy)fail('COMPONENT_BUSY','先完成或停止当前连接、模板、采购或收货任务');
+          result=publicRecord(runtime.continueReviewed(request.command_id));kick=true;break;
         case 'collection.apply':result=maintenance.apply(request.command_id,request.operation,request.token);break;
         case 'events':result={events:commands.events(request.command_id,request.after||0,request.limit||50)};break;
         case 'pause':result=publicRecord(runtime.pause(request.command_id));break;

@@ -8,7 +8,7 @@ const idPattern=/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 // A valid envelope can receive a correlated validation error without dispatching its body.
 export const correlationId=value=>value?.protocol_version===1&&typeof value.request_id==='string'&&idPattern.test(value.request_id)?value.request_id:null;
 const fields={ping:[],'session.release':[],'session.status':[],'session.health':[],configuration:[],list:['offset','limit'],reserve:['command'],status:['command_id'],
-  'collection.preview':['command_id','operation'],'collection.apply':['command_id','operation','token'],
+  'collection.preview':['command_id','operation'],'collection.apply':['command_id','operation','token'],'collection.continue':['command_id'],
   events:['command_id','after','limit'],pause:['command_id'],resume:['command_id'],retry:['command_id','indices','sequence'],shutdown:[],
   discover:[],'setup.check_login':[],'setup.verify_saved':['codes'],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
   'setup.cancel':['setup_id'],'setup.commit':['setup_id'],
@@ -23,7 +23,7 @@ export function validateRequest(value){
   if(!value||typeof value!=='object'||Array.isArray(value)||value.protocol_version!==1||
     typeof value.request_id!=='string'||!idPattern.test(value.request_id)||!Object.hasOwn(fields,value.action))fail('REQUEST_SCHEMA','机器请求版本、编号或动作无效');
   const allowed=['protocol_version','request_id','action',...fields[value.action]];
-  if(value.action.startsWith('collection.')&&(!['end','delete'].includes(value.operation)||(value.action==='collection.apply'&&!/^[a-f0-9]{64}$/.test(value.token||''))))fail('REQUEST_SCHEMA','采集维护动作或确认凭据无效');
+  if(['collection.preview','collection.apply'].includes(value.action)&&(!['end','delete'].includes(value.operation)||(value.action==='collection.apply'&&!/^[a-f0-9]{64}$/.test(value.token||''))))fail('REQUEST_SCHEMA','采集维护动作或确认凭据无效');
   if(value.action==='retry'&&(!Number.isInteger(value.sequence)||value.sequence<1||!Array.isArray(value.indices)||!value.indices.length||value.indices.length>256||value.indices.some(i=>!Number.isInteger(i)||i<0)||new Set(value.indices).size!==value.indices.length))fail('REQUEST_SCHEMA','重跑序号与范围无效');
   if(value.action==='setup.verify_saved'&&(!Array.isArray(value.codes)||!value.codes.length||value.codes.length>256||value.codes.some(c=>typeof c!=='string'||!c||c.length>128)||new Set(value.codes).size!==value.codes.length))fail('REQUEST_SCHEMA','核验门店范围无效');
   if(Object.keys(value).some(k=>!allowed.includes(k)))fail('REQUEST_SCHEMA','机器请求包含未知字段');

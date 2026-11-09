@@ -117,7 +117,16 @@ export class MachineCommands{
       const current=this.get(id);
       if(!current)fail('COMMAND_NOT_FOUND','未找到自动化作业');
       if(current.sequence!==expectedSequence)fail('STALE_COMMAND','作业状态已更新，请重新读取');
-      if(!transitions[current.state]?.includes(next))fail('COMMAND_TRANSITION','该作业状态不能执行此操作');
+      const reviewResume=current.state==='NEEDS_REVIEW'&&next==='QUEUED'&&kind==='RESUME_WITH_REVIEW_RETAINED'&&items&&items.length===current.items.length&&
+        items.every((item,index)=>{
+          const old=current.items[index];
+          if(old.state!=='NEEDS_REVIEW')return item.state===old.state;
+          if(item.state==='NEEDS_REVIEW')return true;
+          const source=this.state.getItems(old.run_id);
+          return item.state==='PENDING'&&source.length===1&&source.every(i=>{const a=this.state.getAttempt(i.attemptId);return a&&!a.additionalTaskIds?.length&&
+            (a.stage==='CANCELLED_BEFORE_SUBMIT'||a.taskId&&['ACCEPTED','RUNNING','FINISHED','DOWNLOADED','VALIDATED','PUBLISHING','SUCCEEDED'].includes(a.stage));});
+        });
+      if(!transitions[current.state]?.includes(next)&&!reviewResume)fail('COMMAND_TRANSITION','该作业状态不能执行此操作');
       const record={...current,state:next,sequence:current.sequence+1,updated_at:now()};
       if(next==='QUEUED'&&this.db.prepare("SELECT COUNT(*) AS n FROM machine_commands WHERE state IN ('QUEUED','RUNNING','PAUSE_REQUESTED')").get().n>=32)fail('QUEUE_FULL','自动化等待队列已满');
       if(items!==undefined){

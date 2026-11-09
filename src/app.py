@@ -90,6 +90,9 @@ def main():
     if '--collection-maintenance-smoke' in sys.argv:
         from collection_maintenance_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--collection-maintenance-smoke')+1:])
+    if '--export-menu-smoke' in sys.argv:
+        from export_menu_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--export-menu-smoke')+1:])
     if '--jst-batch-smoke' in sys.argv:
         from jst_batch_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--jst-batch-smoke')+1:])

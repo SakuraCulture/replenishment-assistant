@@ -250,6 +250,8 @@ class FetchDialog(ComponentDialog):
         self.progress.setRange(0, max(len(items), 1))
         self.progress.setValue(finished)
         error = job.get('last_error') or record.get('error') or {}
+        if job['state']=='NEEDS_REVIEW':
+            self.last_phase='点击“核对原回执 / 继续其他门店”；待核项不会重发。无回执时保留记录，核对平台历史或手动导入已核对文件。'
         accepted = sum(bool(i.get('task_id')) for i in items)
         self.progress.setFormat('%v / %m 家已处理')
         self.status.setText(f'{STATES[job["state"]]} · 已受理导出 {accepted} 家 · 已处理 {finished}/{len(items)} 家 · {self.last_phase}' +
@@ -330,8 +332,8 @@ class FetchDialog(ComponentDialog):
             latest=self.jobs.refresh(self.client,command_id) if state!='PREPARED' else self.jobs.get(command_id)
             if latest['state'] == 'PREPARED':
                 return self.jobs.dispatch(self.client, command_id)
-            if latest['state'] not in RESUMABLE:return latest
-            self.jobs.observe(command_id, self.client.request('resume', command_id=command_id))
+            if latest['state'] not in RESUMABLE | {'NEEDS_REVIEW'}:return latest
+            self.jobs.observe(command_id, self.client.request('collection.continue' if latest['state']=='NEEDS_REVIEW' else 'resume', command_id=command_id))
             return self.jobs.get(command_id)
         self.run(operation, self.show_job)
 
@@ -446,7 +448,9 @@ class FetchDialog(ComponentDialog):
         self.pause_btn.setEnabled(not self._closing and state in {'QUEUED', 'RUNNING'} and not self.pause_pending)
         self.pause_btn.setText('已停止取数' if state in RESUMABLE else '停止后续取数')
         self.pause_btn.setToolTip('本地取数已停止。可以继续原任务，或结束本次采集后新建；已受理平台任务保留。' if state in RESUMABLE else '等待当前动作安全结束，保留原平台任务。')
-        self.resume_btn.setEnabled(available and state in RESUMABLE | {'PREPARED'})
+        self.resume_btn.setText('核对原回执 / 继续其他门店' if state == 'NEEDS_REVIEW' else '继续原采集任务')
+        self.resume_btn.setToolTip('已有确切回执的项接回原任务；其余待核项保持保护，不会重发。等待中的其他门店可以继续。')
+        self.resume_btn.setEnabled(available and state in RESUMABLE | {'PREPARED', 'NEEDS_REVIEW'})
         self.retry_items_btn.setEnabled(available and state in {'PAUSED','INTERRUPTED','COMPLETED_WITH_ERRORS'} and any(i['state']=='FAILED' for i in ((self.current or {}).get('record') or {}).get('items',[])))
         self.cancel_request_btn.setEnabled(available and state == 'PREPARED')
         successes = any(i['state'] == 'SUCCEEDED' for i in (self.current or {}).get('record', {}).get('items', [])) if self.current and self.current.get('record') else False

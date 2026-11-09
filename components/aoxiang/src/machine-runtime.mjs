@@ -6,8 +6,8 @@ export const errorInfo=e=>({code:e.code||'FAILED',message:redact(e.message||'自
 
 // Serial browser queue; control requests remain independent of awaited browser I/O.
 export class MachineRuntime{
-  constructor({commands,executeItem,onEvent=()=>{},needsReview=()=>false,onFatal=()=>{},pipeline=false}){
-    Object.assign(this,{commands,executeItem,onEvent,needsReview,onFatal,pipeline});
+  constructor({commands,executeItem,onEvent=()=>{},needsReview=()=>false,canResumeReview=()=>false,onFatal=()=>{},pipeline=false}){
+    Object.assign(this,{commands,executeItem,onEvent,needsReview,canResumeReview,onFatal,pipeline});
     this.active=null;this.pumping=null;this.closing=false;
   }
   change(id,next,options){
@@ -43,8 +43,22 @@ export class MachineRuntime{
   resume(id){
     if(this.closing)fail('SHUTTING_DOWN','组件正在安全退出');
     const record=this.commands.get(id);
-    if(!['PAUSED','INTERRUPTED'].includes(record?.state))fail('COMMAND_TRANSITION','请使用重跑失败项，不能直接重派终态作业');
+    if(!['PAUSED','INTERRUPTED'].includes(record?.state))fail('COMMAND_TRANSITION','请使用核对原回执或重跑失败项，不能直接重派终态作业');
     return this.change(id,'QUEUED',{error:null});
+  }
+  continueReviewed(id){
+    if(this.closing)fail('SHUTTING_DOWN','组件正在安全退出');
+    const record=this.commands.get(id);
+    if(record?.state==='NEEDS_REVIEW'){
+      const items=structuredClone(record.items);
+      for(const item of items)if(item.state==='NEEDS_REVIEW'&&this.canResumeReview(item))item.state='PENDING';
+      // Missing receipts stay blocked. Only independently runnable stores or
+      // exact receipts already persisted by the component may resume.
+      if(!items.some(i=>!['SUCCEEDED','FAILED','ENDED','NEEDS_REVIEW'].includes(i.state)))
+        fail('COMMAND_TRANSITION','待核门店尚无可靠受理回执，不能重发。其他门店已处理完；请保留此记录，核对原平台任务或手动导入已核对的补货建议文件。');
+      return this.change(id,'QUEUED',{kind:'RESUME_WITH_REVIEW_RETAINED',items,error:null});
+    }
+    fail('COMMAND_TRANSITION','仅可核对待核原采集，请刷新当前记录');
   }
   retry(id,indices,sequence){
     if(this.closing)fail('SHUTTING_DOWN','组件正在安全退出');
@@ -87,7 +101,7 @@ export class MachineRuntime{
       const missing=new Map();
       do{
       for(const initial of this.commands.get(id).items){
-        if(['SUCCEEDED','FAILED','ENDED'].includes(initial.state)||missing.has(initial.index))continue;
+        if(['SUCCEEDED','FAILED','ENDED','NEEDS_REVIEW'].includes(initial.state)||missing.has(initial.index))continue;
         if(control.signal.aborted){this.change(id,'PAUSED');return;}
         this.updateItem(id,initial.index,{state:'RUNNING',error:null});
         try{
@@ -123,7 +137,7 @@ export class MachineRuntime{
         }
       }
       if(control.signal.aborted){this.change(id,'PAUSED');return;}
-      const pending=this.commands.get(id).items.some(i=>!['SUCCEEDED','FAILED','ENDED'].includes(i.state)&&!missing.has(i.index));
+      const pending=this.commands.get(id).items.some(i=>!['SUCCEEDED','FAILED','ENDED','NEEDS_REVIEW'].includes(i.state)&&!missing.has(i.index));
       if(!pending&&missing.size){this.change(id,'INTERRUPTED',{error:missing.values().next().value});return;}
       if(phase!=='collect'||!pending)break;
       if(Date.now()>=deadline){this.change(id,'INTERRUPTED',{error:{code:'TASK_PENDING',message:'平台仍在生成部分文件；已完成文件保留，请继续原采集任务',details:{}}});return;}
@@ -137,7 +151,7 @@ export class MachineRuntime{
       }while(true);
       }
       const items=this.commands.get(id).items;
-      this.change(id,items.some(i=>['FAILED','ENDED'].includes(i.state))?'COMPLETED_WITH_ERRORS':'SUCCEEDED',{
+      this.change(id,items.some(i=>i.state==='NEEDS_REVIEW')?'NEEDS_REVIEW':items.some(i=>['FAILED','ENDED'].includes(i.state))?'COMPLETED_WITH_ERRORS':'SUCCEEDED',{
         result:{items,succeeded:items.filter(i=>i.state==='SUCCEEDED').length,failed:items.filter(i=>i.state==='FAILED').length}
       });
     }finally{this.active=null;}
