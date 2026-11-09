@@ -21,6 +21,9 @@ def main():
     env={**os.environ,'REPLENISHMENT_DATA_DIR':str(out/'settings'),'PYTHONUTF8':'1'}
     with (out/'process.log').open('w',encoding='utf-8') as f:
         r=subprocess.run(cmd+['--export-menu-smoke',str(out)],stdout=f,stderr=subprocess.STDOUT,env=env,timeout=90,creationflags=subprocess.CREATE_NO_WINDOW)
-    report=json.loads((out/'acceptance.json').read_text('utf-8'));assert r.returncode==0 and report['passed'],report
+    report=json.loads((out/'acceptance.json').read_text('utf-8'))
+    report.update(process_exit=r.returncode,accepted=r.returncode==0 and report['passed'])
+    (out/'process-acceptance.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
+    assert report['accepted'],report
     print(json.dumps(report,ensure_ascii=False))
 if __name__=='__main__':main()

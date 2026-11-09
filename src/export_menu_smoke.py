@@ -32,7 +32,7 @@ def start_smoke(app,win,args):
             while not check() and time.monotonic()<until:app.processEvents();QTest.qWait(10)
             if not check():raise TimeoutError('UI wait')
         try:
-            d=FetchDialog(None,out/'settings',fixture['day'],client_factory=Client);d.show()
+            d=FetchDialog(win,out/'settings',fixture['day'],client_factory=Client);d.show()
             wait(lambda:d.worker is None and d.current is not None)
             assert d.current['state']=='NEEDS_REVIEW' and d.resume_btn.isEnabled()
             report['checks'].append('待核记录提供专用恢复按钮')
@@ -50,8 +50,14 @@ def start_smoke(app,win,args):
         finally:
             if d and not d._can_close:
                 d.close();wait(lambda:d._can_close and d.worker is None)
+            if d:d.deleteLater()
+            win.job_dirty=False;win._discard_close=True;win.close()
+            try:
+                wait(lambda:win.aoxiang_workflows.session.client is None and win.aoxiang_workflows.session_closer is None and win.aoxiang_workflows.owner is None)
+                report['shutdown_complete']=True
+            except Exception:report['passed']=False;report['shutdown_error']=traceback.format_exc()
             build=Path(getattr(sys,'_MEIPASS',Path(__file__).parent))/'build_info.json'
             if build.exists():report['source_commit']=json.loads(build.read_text('utf-8'))['source_commit']
             (out/'acceptance.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
-            app.exit(0 if report['passed'] else 1)
+            QTimer.singleShot(100,lambda:app.exit(0 if report['passed'] else 1))
     QTimer.singleShot(100,run)
