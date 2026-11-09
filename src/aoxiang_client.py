@@ -132,7 +132,7 @@ class ProcessClient:
                     r=self.request('orders.retire',operation_id=plan['operation_id'],oids=plan['oids'][start:start+256])
                     complete=complete and not r.get('pending_files') and not r.get('pending_actions')
                 if complete:
-                    try:deletion_barrier.acknowledge(self.business_path,plan['operation_id'])
+                    try:deletion_barrier.acknowledge(self.business_path,plan['operation_id'],plan['generation'])
                     except sqlite3.OperationalError:pass  # main writer busy; idempotent local cleanup resumes later
 
     def request(self, action: str, *, timeout: float = 30, **values) -> Any:

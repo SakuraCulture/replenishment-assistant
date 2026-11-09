@@ -56,7 +56,10 @@ class Runner:
             p = prepare(self.business_path, item['head'], configuration, suppliers, template,
                         self.store.folder / 'purchase-packages', self.component_root / 'assets/purchase-import-template-contract.json',
                         cancel=self.cancel, progress=self.progress)
-            atomic_json(Path(p['package_file']).parent / '本地任务索引.json', p)
+            try:atomic_json(Path(p['package_file']).parent / '本地任务索引.json', p)
+            finally:
+                from deletion_barrier import package_finished
+                package_finished(self.business_path,item['head']['oid'],p['id'])
             summary = {'quantity': p['intent']['totalQuantity'], 'amount': p['intent']['totalAmount'],
                        'sku_count': len(p['intent']['rows']), 'supplier': p['intent']['supplierCode']}
             if p['intent'].get('pricePolicy'):

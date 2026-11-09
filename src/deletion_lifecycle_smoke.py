@@ -35,6 +35,12 @@ def start_smoke(app,win,args):
             manager=win.aoxiang_workflows;manager.stopping=True;manager.timer.stop()
             heads=purchases.targets(win.work_repository.path);gone=next(h for h in heads if h['oid']=='oid');kept=next(h for h in heads if h['oid']=='other')
             before=no.Repository(win.work_repository).get(kept['day'],kept['store'])
+            package_id='purchase-'+'a'*32
+            deletion_barrier.register_package(win.work_repository.path,'oid',package_id)
+            private=out/'settings/aoxiang/purchase-packages'/package_id/'付款采购依据.json';private.parent.mkdir(parents=True)
+            private.write_text('{"synthetic_private_payment":true}','utf-8')
+            legacy_id='purchase-'+'b'*32;legacy=private.parent.parent/legacy_id/'采购任务.json';legacy.parent.mkdir()
+            legacy.write_text(json.dumps({'id':legacy_id,'basis':{'oid':'oid'},'rows':[{'name':'synthetic product'}]}),'utf-8')
             job=manager.store.prepare([gone,kept]);calls=[]
             class ClosedClient:
                 def request(self,action,**kw):
@@ -70,6 +76,11 @@ def start_smoke(app,win,args):
             client=ProcessClient(component_root(),out/'settings/aoxiang/component-state');client.start()
             assert client.request('purchase.list')['total']==0
             assert deletion_barrier.pending(win.work_repository.path)==[]
+            assert not private.exists() and not legacy.exists()
+            checks.append('未提交组件的预览包及旧格式原生身份预览包完整清理')
+            private.write_text('{"late_local_producer":true}','utf-8');deletion_barrier.package_finished(win.work_repository.path,'oid',package_id)
+            client.request('purchase.list');assert not private.exists() and deletion_barrier.pending(win.work_repository.path)==[]
+            checks.append('清理确认后晚到文件重新入队，旧确认不能丢失清理请求')
             try:client.request('orders.retire',operation_id='f'*32,oids=['other']);raise AssertionError('live order retirement accepted')
             except ComponentError as e:assert e.code=='RETIREMENT_NOT_CONFIRMED'
             assert client.close(timeout=20);client=None

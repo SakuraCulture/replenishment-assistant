@@ -12,8 +12,10 @@ def has(db,table):
 def schema(db):
     db.execute('CREATE TABLE IF NOT EXISTS deleted_order_tokens(oid TEXT PRIMARY KEY,operation_id TEXT NOT NULL)')
     db.execute('CREATE TABLE IF NOT EXISTS deletion_generations(day TEXT,store TEXT,generation INTEGER NOT NULL,PRIMARY KEY(day,store))')
-    db.execute('CREATE TABLE IF NOT EXISTS deletion_component_outbox(operation_id TEXT PRIMARY KEY,oids TEXT NOT NULL,completed INTEGER NOT NULL DEFAULT 0)')
+    db.execute('CREATE TABLE IF NOT EXISTS deletion_component_outbox(operation_id TEXT PRIMARY KEY,oids TEXT NOT NULL,completed INTEGER NOT NULL DEFAULT 0,generation INTEGER NOT NULL DEFAULT 0)')
+    if 'generation' not in {r[1] for r in db.execute('PRAGMA table_info(deletion_component_outbox)')}:db.execute('ALTER TABLE deletion_component_outbox ADD COLUMN generation INTEGER NOT NULL DEFAULT 0')
     db.execute('CREATE TABLE IF NOT EXISTS deleted_jst_steps(operation TEXT PRIMARY KEY,runid TEXT NOT NULL,warehouse TEXT NOT NULL,bid TEXT NOT NULL)')
+    db.execute('CREATE TABLE IF NOT EXISTS order_component_packages(package_id TEXT PRIMARY KEY,oid TEXT NOT NULL)')
 
 def active(db,oid):
     if has(db,'deleted_order_tokens') and db.execute('SELECT 1 FROM deleted_order_tokens WHERE oid=?',(oid,)).fetchone():return False
@@ -46,13 +48,29 @@ def mark(db,parents):
     for h in parents:
         db.execute('INSERT INTO deleted_order_tokens VALUES(?,?)',(h['oid'],operation))
         db.execute('INSERT INTO deletion_generations VALUES(?,?,1) ON CONFLICT(day,store) DO UPDATE SET generation=generation+1',(h['day'],h['store']))
-    db.execute('INSERT INTO deletion_component_outbox VALUES(?,?,0)',(operation,json.dumps([h['oid'] for h in parents])))
+    db.execute('INSERT INTO deletion_component_outbox(operation_id,oids) VALUES(?,?)',(operation,json.dumps([h['oid'] for h in parents])))
     return operation
 
 def pending(path):
     with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True,timeout=.2)) as db:
         if not has(db,'deletion_component_outbox'):return []
-        return [{'operation_id':o,'oids':json.loads(ids)} for o,ids in db.execute('SELECT operation_id,oids FROM deletion_component_outbox WHERE completed=0')]
+        generation='generation' if 'generation' in {r[1] for r in db.execute('PRAGMA table_info(deletion_component_outbox)')} else '0'
+        return [{'operation_id':o,'oids':json.loads(ids),'generation':g} for o,ids,g in db.execute('SELECT operation_id,oids,'+generation+' FROM deletion_component_outbox WHERE completed=0')]
 
-def acknowledge(path,operation):
-    with closing(sqlite3.connect(path,timeout=.2)) as db,db:db.execute('UPDATE deletion_component_outbox SET completed=1 WHERE operation_id=?',(operation,))
+def acknowledge(path,operation,generation):
+    with closing(sqlite3.connect(path,timeout=.2)) as db,db:db.execute('UPDATE deletion_component_outbox SET completed=1 WHERE operation_id=? AND generation=?',(operation,generation))
+
+def register_package(path,oid,package):
+    with closing(sqlite3.connect(path,timeout=10)) as db,db:
+        db.execute('BEGIN IMMEDIATE');require(db,oid)
+        db.execute('CREATE TABLE IF NOT EXISTS order_component_packages(package_id TEXT PRIMARY KEY,oid TEXT NOT NULL)')
+        db.execute('INSERT INTO order_component_packages VALUES(?,?)',(package,oid))
+
+def package_finished(path,oid,package):
+    # A local writer may finish after component cleanup was acknowledged. Re-arm
+    # the durable outbox so its late files are removed on the next local pass.
+    with closing(sqlite3.connect(path,timeout=10)) as db,db:
+        db.execute('BEGIN IMMEDIATE')
+        if not has(db,'deleted_order_tokens'):return
+        row=db.execute('SELECT operation_id FROM deleted_order_tokens WHERE oid=?',(oid,)).fetchone()
+        if row:db.execute('UPDATE deletion_component_outbox SET completed=0,generation=generation+1 WHERE operation_id=?',(row[0],))

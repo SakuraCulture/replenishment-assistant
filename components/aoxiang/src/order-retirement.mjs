@@ -1,6 +1,6 @@
 // Independent local retirement. Never opens a browser or queries a platform.
 import fs from 'node:fs/promises';
-import {unlinkSync} from 'node:fs';
+import {unlinkSync,readdirSync,lstatSync} from 'node:fs';
 import path from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {fail,now,sameIdentity} from './common.mjs';
@@ -43,6 +43,10 @@ export function requireDeletedHostOrders(operation,oids){
     if(!has)fail('RETIREMENT_NOT_CONFIRMED','主库没有已提交的删除依据');
     for(const oid of oids)if(db.prepare('SELECT operation_id FROM deleted_order_tokens WHERE oid=?').get(oid)?.operation_id!==operation)
       fail('RETIREMENT_NOT_CONFIRMED','该订单不属于已提交的删除范围，未退役');
+    const packages=[];
+    if(db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='order_component_packages'").get())for(const oid of oids)
+      for(const r of db.prepare('SELECT package_id FROM order_component_packages WHERE oid=?').all(oid))packages.push(r.package_id);
+    return packages;
   }finally{db.close();}
 }
 export function retiredRecord(db,id){
@@ -86,11 +90,32 @@ export class OrderRetirement{
   constructor(state){this.state=state;this.db=state.db;retirementSchema(this.db);}
   async apply(operation,oids){
     if(!/^[a-f0-9]{32}$/.test(operation)||!Array.isArray(oids)||!oids.length||oids.length>256||oids.some(o=>typeof o!=='string'||!o||o.length>100))fail('RETIREMENT_SCOPE','退役操作号或订单身份无效');
-    requireDeletedHostOrders(operation,oids);
+    const packages=new Set(requireDeletedHostOrders(operation,oids));
     const db=this.db,owned=new Set(oids),candidates=new Set();
+    // Pre-upgrade packages may never have reached the component reservation.
+    // Inspect only native intent ownership in this managed folder, one file at
+    // a time; a store/date/name match is never sufficient evidence.
+    const scan=oids.filter(oid=>!db.prepare('SELECT 1 FROM metadata WHERE key=?').get('retirementScanned:'+oid));
+    if(scan.length){
+      const root=path.resolve(this.state.root,'../purchase-packages');let directory;
+      try{directory=await fs.opendir(root);}catch(e){if(e.code!=='ENOENT')throw e;}
+      if(directory){
+        const realRoot=canonicalPath(await fs.realpath(root))+path.sep;
+        for await(const entry of directory){
+          if(!entry.isDirectory()||!/^purchase-[a-f0-9]{32}$/.test(entry.name))continue;
+          const file=path.join(root,entry.name,'采购任务.json');
+          try{
+            const stat=await fs.lstat(file);if(!stat.isFile()||stat.isSymbolicLink()||stat.size>10485760||!canonicalPath(await fs.realpath(file)).startsWith(realRoot))continue;
+            const p=JSON.parse(await fs.readFile(file,'utf8'));
+            if(p.id===entry.name&&scan.includes(p.basis?.oid))packages.add(entry.name);
+          }catch(e){if(!['ENOENT'].includes(e.code)&&!(e instanceof SyntaxError))throw e;}
+        }
+      }
+    }
     const exists=t=>!!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(t);
     db.exec('PRAGMA secure_delete=ON');
     this.state.write(()=>{
+      for(const oid of scan)db.prepare('INSERT OR IGNORE INTO metadata VALUES(?,?)').run('retirementScanned:'+oid,'1');
       for(const oid of oids)db.prepare('INSERT OR IGNORE INTO retired_host_orders VALUES(?,?)').run(oid,operation);
       for(const oid of oids){for(const r of db.prepare('SELECT path FROM order_owned_files WHERE oid=?').all(oid))candidates.add(r.path);db.prepare('DELETE FROM order_owned_files WHERE oid=?').run(oid);}
       const removed=[];
@@ -98,7 +123,7 @@ export class OrderRetirement{
       if(exists('purchase_creates'))for(const {id} of db.prepare('SELECT id FROM purchase_creates').all()){
         const row=db.prepare('SELECT id,payload FROM purchase_creates WHERE id=?').get(id);
         const r=JSON.parse(row.payload);if(!owned.has(r.intent?.basis?.oid))continue;
-        removed.push(proofHint(r));strings(r,candidates);
+        removed.push(proofHint(r));strings(r,candidates);packages.add(r.id);
         db.prepare('INSERT OR IGNORE INTO retired_purchase_tokens VALUES(?,?,?,?,?,?)').run(r.id,r.intent.basis.oid,operation,r.requestHash,Number(!!r.uploadAttempted),JSON.stringify([r.receipt?.taskId,...r.additionalTaskIds||[]].filter(Boolean)));
         if(exists('purchase_receipts')){const receipt=db.prepare('SELECT payload FROM purchase_receipts WHERE id=?').get(r.id);if(receipt)strings(JSON.parse(receipt.payload),candidates);}
         for(const table of ['purchase_receipt_events','purchase_receipts','purchase_create_events'])if(exists(table))db.prepare('DELETE FROM '+table+' WHERE id=?').run(r.id);
@@ -124,6 +149,15 @@ export class OrderRetirement{
         }
       }
       const roots=[path.resolve(this.state.root)+path.sep,path.resolve(this.state.root,'../purchase-packages')+path.sep];
+      // UUID-owned, flat host package folders also own interrupted temporary
+      // files. Enumerate files only, never recurse or infer ownership by store.
+      for(const id of packages)if(/^purchase-[a-f0-9]{32}$/.test(id)){
+        const directory=path.resolve(this.state.root,'../purchase-packages',id);
+        try{
+          const stat=lstatSync(directory);if(!stat.isDirectory()||stat.isSymbolicLink())continue;
+          for(const entry of readdirSync(directory,{withFileTypes:true}))if(entry.isFile())candidates.add(path.join(directory,entry.name));
+        }catch(e){if(e.code!=='ENOENT')throw e;}
+      }
       for(const file of candidates){
         if(survivors.has(file)||!path.isAbsolute(file))continue;
         const resolved=path.resolve(file);

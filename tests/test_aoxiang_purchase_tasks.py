@@ -90,7 +90,8 @@ const root=process.argv[1],s=await StateStore.open(root);await saveConfig(root,f
         self.client.start()
         self.assertEqual(self.client.request('purchase.status', purchase_id=p['id'])['sequence'], first['record']['sequence'])
         self.assertFalse(self.reserve(p)['created'])
-        self.assertEqual(self.f.old_tables(), before)
+        after=self.f.old_tables();self.assertEqual(after.pop('order_component_packages'),[(p['id'],self.f.h['oid'])])
+        self.assertEqual(after, before)
         self.assertEqual(self.f.view(), view)
 
     def test_wrong_excel_values_are_blocked_even_if_caller_rehashes(self):

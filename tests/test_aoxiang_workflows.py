@@ -160,7 +160,8 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(any(a=='purchase.start' for a,_ in calls))
         p=result['items'][0]['package'];self.assertNotIn('intent',p)
         self.assertEqual(real.request('purchase.status',purchase_id=p['id'])['state'],'RESERVED')
-        self.assertEqual(self.f.f.old_tables(),before)
+        after=self.f.f.old_tables();self.assertEqual(after.pop('order_component_packages'),[(p['id'],self.f.f.h['oid'])])
+        self.assertEqual(after,before)
         self.runner(Client()).run(job['id']);self.assertEqual(sum(a=='template.start' for a,_ in calls),1)
 
     def test_unknown_upload_response_is_not_replayed_and_payment_stale_rejected_before_upload(self):

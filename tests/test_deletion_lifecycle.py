@@ -143,6 +143,23 @@ class LifecycleDeletion(unittest.TestCase):
         with self.assertRaises(CommandError):journal.get(task['task_id'])
         with self.assertRaises(CommandError):journal.update(task['task_id'],state='completed',order_ref='oid')
         self.assertEqual(journal.events(task['task_id']),[]);self.assertEqual(journal.get(other['task_id']),other)
+    def test_late_local_package_rearms_outbox_without_lost_acknowledgment(self):
+        package='purchase-'+'a'*32;fence.register_package(self.path,'oid',package)
+        result=self.remove();p=fence.pending(self.path)[0]
+        fence.acknowledge(self.path,p['operation_id'],p['generation']);self.assertEqual(fence.pending(self.path),[])
+        fence.package_finished(self.path,'oid',package)
+        fence.acknowledge(self.path,p['operation_id'],p['generation'])
+        newer=fence.pending(self.path)[0];self.assertEqual(newer['generation'],1)
+        fence.acknowledge(self.path,newer['operation_id'],newer['generation']);self.assertEqual(fence.pending(self.path),[])
+        with self.assertRaises(fence.SourceDeleted):fence.register_package(self.path,'oid','purchase-'+'b'*32)
+    def test_preview_package_finishing_after_deletion_rearms_local_cleanup(self):
+        import aoxiang_purchase_tasks
+        def generate(*args,**kwargs):
+            self.remove();p=fence.pending(self.path)[0];fence.acknowledge(self.path,p['operation_id'],p['generation'])
+            return {'id':args[7]}
+        with patch.object(aoxiang_purchase_tasks,'_prepare',side_effect=generate):
+            aoxiang_purchase_tasks.prepare(self.path,self.head,{}, {},{},self.root,self.root)
+        self.assertEqual(fence.pending(self.path)[0]['generation'],1)
     def test_interrupted_isolated_process_recovers_main_and_attached_queue(self):
         # Controlled process loss before COMMIT and after COMMIT, not a physical
         # power cut or a claim to inject torn disk sectors during COMMIT.

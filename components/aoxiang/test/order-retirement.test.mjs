@@ -78,6 +78,18 @@ test('retirement markers survive reopen and a missing marker table fails closed'
  f.state.db.exec('DROP TABLE retired_host_orders');
  assert.throws(()=>new OrderRetirement(f.state),{code:'RETIREMENT_STATE_CORRUPT'});
 });
+test('unreserved native and registered private packages are retired, including interrupted and late files',async t=>{
+ const f=await fixture(t),registered='purchase-'+'a'.repeat(32),legacy='purchase-'+'b'.repeat(32),keep='purchase-'+'c'.repeat(32);
+ f.main.exec('CREATE TABLE order_component_packages(package_id TEXT PRIMARY KEY,oid TEXT)');f.main.prepare('INSERT INTO order_component_packages VALUES(?,?)').run(registered,'gone');
+ const directory=id=>path.join(f.root,'purchase-packages',id);
+ for(const id of [registered,legacy,keep])await fs.mkdir(directory(id),{recursive:true});
+ const privateFile=path.join(directory(registered),'付款采购依据.json'),temp=path.join(directory(registered),'.aoxiang-interrupted');await fs.writeFile(privateFile,'private');await fs.writeFile(temp,'interrupted');
+ for(const [id,oid] of [[legacy,'gone'],[keep,'keep']]){await fs.writeFile(path.join(directory(id),'采购任务.json'),JSON.stringify({id,basis:{oid},rows:[{name:'private product'}]}));await fs.writeFile(path.join(directory(id),'采购上传.xlsx'),'synthetic');}
+ f.del();assert.equal((await f.retirement.apply(op,['gone'])).pending_files,0);
+ for(const file of [privateFile,temp,path.join(directory(legacy),'采购任务.json'),path.join(directory(legacy),'采购上传.xlsx')])await assert.rejects(fs.stat(file),{code:'ENOENT'});
+ await fs.stat(path.join(directory(keep),'采购任务.json'));await fs.stat(path.join(directory(keep),'采购上传.xlsx'));
+ await fs.writeFile(privateFile,'late producer');await f.retirement.apply(op,['gone']);await assert.rejects(fs.stat(privateFile),{code:'ENOENT'});
+});
 test('Windows exclusive file lock leaves a recoverable pending cleanup after business retirement',{skip:process.platform!=='win32'},async t=>{
  const f=await fixture(t);reserve(f,'p1','gone');const file=path.join(f.state.root,'locked.xlsx');await fs.writeFile(file,'locked synthetic');captureOwnedFiles(f.state,'gone',{file});
  const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-Command',"$stream=[System.IO.File]::Open($env:RETIREMENT_TEST_FILE,'Open','ReadWrite','None');[Console]::WriteLine('READY');[Console]::ReadLine() | Out-Null;$stream.Dispose()"],{windowsHide:true,env:{...process.env,RETIREMENT_TEST_FILE:file},stdio:['pipe','pipe','pipe']});
