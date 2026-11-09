@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "frozen": false,
+  "live_platform": false,
+  "checks": [
+    "待核记录提供专用恢复按钮",
+    "按钮调用专用核对协议，不调用重发",
+    "原待核门店及任务身份保持",
+    "其他门店的返回状态更新到界面",
+    "窗口安全关闭且假连接已释放"
+  ],
+  "shutdown_complete": true,
+  "process_exit": 0,
+  "accepted": true
+}
