@@ -1,0 +1,99 @@
+test_budget_original_rules (test_automation.AutomationContractTests.test_budget_original_rules) ... ok
+test_mcp_initialize_discover_call_and_error (test_automation.AutomationContractTests.test_mcp_initialize_discover_call_and_error) ... ok
+test_parameter_scope_budget_route_and_priority_are_distinct (test_automation.AutomationContractTests.test_parameter_scope_budget_route_and_priority_are_distinct) ... ok
+test_public_surface_excludes_persistence_and_arbitrary_execution (test_automation.AutomationContractTests.test_public_surface_excludes_persistence_and_arbitrary_execution) ... ok
+test_recalculation_impact_exact_original_order (test_automation.AutomationContractTests.test_recalculation_impact_exact_original_order) ... ok
+test_store_order_never_sorted_and_duplicates_rejected (test_automation.AutomationContractTests.test_store_order_never_sorted_and_duplicates_rejected) ... ok
+test_types_missing_unknown_nan_and_duplicate_fields_rejected (test_automation.AutomationContractTests.test_types_missing_unknown_nan_and_duplicate_fields_rejected) ... ok
+test_events_are_ordered_incremental_and_metadata_only (test_automation.AutomationJournalTests.test_events_are_ordered_incremental_and_metadata_only) ... ok
+test_interrupted_session_not_reported_as_completed (test_automation.AutomationJournalTests.test_interrupted_session_not_reported_as_completed) ... ok
+test_operation_key_replay_is_same_task_and_changed_args_rejected (test_automation.AutomationJournalTests.test_operation_key_replay_is_same_task_and_changed_args_rejected) ... ok
+test_ai_and_manual_workbooks_equal (test_automation_analytics.AnalyticsApiTests.test_ai_and_manual_workbooks_equal) ... ok
+test_async_paging_and_idempotent_query (test_automation_analytics.AnalyticsApiTests.test_async_paging_and_idempotent_query) ... ok
+test_blank_category_from_native_query_is_valid (test_automation_analytics.AnalyticsApiTests.test_blank_category_from_native_query_is_valid) ... ok
+test_closed_socket_cleanup_is_idempotent (test_automation_analytics.AnalyticsApiTests.test_closed_socket_cleanup_is_idempotent) ... ok
+test_coverage_api_matches_native_and_excel (test_automation_analytics.AnalyticsApiTests.test_coverage_api_matches_native_and_excel) ... ok
+test_stale_no_page_or_export_and_permissions (test_automation_analytics.AnalyticsApiTests.test_stale_no_page_or_export_and_permissions) ... ok
+test_A_restore_B_then_AI_failure_retry_uses_B (test_automation_gateway.GatewayRegression.test_A_restore_B_then_AI_failure_retry_uses_B) ... ok
+test_active_plan_is_not_reapplied_over_manual_current_parameters (test_automation_gateway.GatewayRegression.test_active_plan_is_not_reapplied_over_manual_current_parameters) ... ok
+test_human_takeover_prevents_automatic_current_adoption (test_automation_gateway.GatewayRegression.test_human_takeover_prevents_automatic_current_adoption) ... ok
+test_preview_parameters_are_frozen_and_scheduler_blocks_new_AI_work (test_automation_gateway.GatewayRegression.test_preview_parameters_are_frozen_and_scheduler_blocks_new_AI_work) ... ok
+test_reconnect_and_validation_do_not_cross_workspace (test_automation_gateway.GatewayRegression.test_reconnect_and_validation_do_not_cross_workspace) ... ok
+test_result_cache_is_bounded_and_adopted_results_survive (test_automation_gateway.GatewayRegression.test_result_cache_is_bounded_and_adopted_results_survive) ... ok
+test_detail_requires_explicit_round_and_readonly_annotation (test_automation_inventory.InventoryApiTests.test_detail_requires_explicit_round_and_readonly_annotation) ... ok
+test_export_equal_and_stale_guard (test_automation_inventory.InventoryApiTests.test_export_equal_and_stale_guard) ... ok
+test_native_equal_paging_and_idempotency (test_automation_inventory.InventoryApiTests.test_native_equal_paging_and_idempotency) ... ok
+test_conflict_remains_blocked_and_cancel_is_not_success (test_automation_jobs.PreparationTests.test_conflict_remains_blocked_and_cancel_is_not_success) ... ok
+test_inherited_category_parameters_show_effective_value (test_automation_jobs.PreparationTests.test_inherited_category_parameters_show_effective_value) ... ok
+test_missing_store_unchecked_input_and_unknown_parameter_are_not_guessed (test_automation_jobs.PreparationTests.test_missing_store_unchecked_input_and_unknown_parameter_are_not_guessed) ... ok
+test_plan_only_patches_selected_parameters (test_automation_jobs.PreparationTests.test_plan_only_patches_selected_parameters) ... ok
+test_preparation_preserves_priority_B_and_does_not_mutate_source (test_automation_jobs.PreparationTests.test_preparation_preserves_priority_B_and_does_not_mutate_source) ... ok
+test_background_error_under_exclusive_lock_keeps_queryable_failure (test_automation_lock.LockTests.test_background_error_under_exclusive_lock_keeps_queryable_failure) ... ERROR:root:AI 任务失败
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 33, in run
+    try: self.result_ready.emit(self.fn(self))
+                                ^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_automation_lock.py", line 75, in fail
+    def fail(_): raise ValueError('synthetic failure')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: synthetic failure
+ERROR:root:AI 任务结果处理未完成：2842de4bf8c949198eed7f9cd86f4593
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 399, in failed
+    self.journal.update(task['task_id'], state='stopped' if code == 'CANCELLED' else 'failed', message=message, error_code=code)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 67, in update
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+test_busy_classification_does_not_treat_arbitrary_locked_text_as_database (test_automation_lock.LockTests.test_busy_classification_does_not_treat_arbitrary_locked_text_as_database) ... ok
+test_completion_commit_busy_is_not_success_and_not_replayed (test_automation_lock.LockTests.test_completion_commit_busy_is_not_success_and_not_replayed) ... ERROR:root:AI 任务结果处理未完成：6184ab6c9c5f45809360be75c3c90879
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 393, in completed
+    try: finish(value)
+         ^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_automation_lock.py", line 65, in finish
+    self.g.journal.update(self.tid,state='prepared')
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 66, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+ok
+test_progress_write_failure_stops_later_callback (test_automation_lock.LockTests.test_progress_write_failure_stops_later_callback) ... ERROR:root:AI 任务结果处理未完成：7fb0d7c8b42d4fdc84063dc2211d8e00
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 382, in progress
+    self.last_stage = time.monotonic(); self.journal.update(task['task_id'], message=message); self.changed.emit()
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 66, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+ok
+test_store_event_write_failure_does_not_adopt (test_automation_lock.LockTests.test_store_event_write_failure_does_not_adopt) ... ERROR:root:AI 任务结果处理未完成：642e01bd74484bcd88969ff008b5597f
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 388, in store_event
+    try: store_handler(*args)
+         ^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_automation_lock.py", line 84, in <lambda>
+    lambda *args:self.g.journal.update(self.tid,message='门店已完成'))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 66, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+ok
+test_codes_keep_order_and_exact_identity (test_automation_playbooks.RecipeContract.test_codes_keep_order_and_exact_identity) ... ok
+test_compare_and_adopt_are_distinct_authorizations (test_automation_playbooks.RecipeContract.test_compare_and_adopt_are_distinct_authorizations) ... ok
+test_every_recipe_is_bound_and_does_not_authorize_formal_writes (test_automation_playbooks.RecipeContract.test_every_recipe_is_bound_and_does_not_authorize_formal_writes) ... ok
+test_history_never_falls_back_to_current_parameters (test_automation_playbooks.RecipeContract.test_history_never_falls_back_to_current_parameters) ... ok
+test_scope_cannot_silently_expand (test_automation_playbooks.RecipeContract.test_scope_cannot_silently_expand) ... ok
+test_cli_and_legacy_mcp_offline (test_automation_refresh.RefreshTests.test_cli_and_legacy_mcp_offline) ... ok
+test_current_and_saved_parameters_have_distinct_values_and_scope (test_automation_refresh.RefreshTests.test_current_and_saved_parameters_have_distinct_values_and_scope) ... ok
+test_file_registration_is_not_validation (test_automation_refresh.RefreshTests.test_file_registration_is_not_validation) ... ok
+test_no_new_scheduler_write_contract (test_automation_refresh.RefreshTests.test_no_new_scheduler_write_contract) ... ok
+test_schedule_pages_events_order_and_readonly (test_automation_refresh.RefreshTests.test_schedule_pages_events_order_and_readonly) ... ok
+test_schedule_query_absent_does_not_create_schema (test_automation_refresh.RefreshTests.test_schedule_query_absent_does_not_create_schema) ... ok
+
+----------------------------------------------------------------------
+Ran 46 tests in 65.177s
+
+OK

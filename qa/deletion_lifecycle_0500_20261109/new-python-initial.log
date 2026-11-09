@@ -1,0 +1,28 @@
+test_actual_runner_late_result_does_not_shift_to_other_order (test_deletion_lifecycle.LifecycleDeletion.test_actual_runner_late_result_does_not_shift_to_other_order) ... ok
+test_all_lifecycle_states_are_not_deletion_gates (test_deletion_lifecycle.LifecycleDeletion.test_all_lifecycle_states_are_not_deletion_gates) ... ERROR
+test_all_removed_runner_exits_and_schedule_cannot_reappear (test_deletion_lifecycle.LifecycleDeletion.test_all_removed_runner_exits_and_schedule_cannot_reappear) ... ok
+test_deletion_during_sign_preparation_rejected_under_writer (test_deletion_lifecycle.LifecycleDeletion.test_deletion_during_sign_preparation_rejected_under_writer) ... ok
+test_interrupted_isolated_process_recovers_main_and_attached_queue (test_deletion_lifecycle.LifecycleDeletion.test_interrupted_isolated_process_recovers_main_and_attached_queue) ... ok
+test_old_draft_repreview_and_unselected_sign_cannot_revive_deleted_store (test_deletion_lifecycle.LifecycleDeletion.test_old_draft_repreview_and_unselected_sign_cannot_revive_deleted_store) ... ok
+test_shared_purchase_all_versions_keep_unselected_quantities_and_raw_facts (test_deletion_lifecycle.LifecycleDeletion.test_shared_purchase_all_versions_keep_unselected_quantities_and_raw_facts) ... ok
+test_stable_item_and_execution_fences_preserve_remaining_queue (test_deletion_lifecycle.LifecycleDeletion.test_stable_item_and_execution_fences_preserve_remaining_queue) ... ok
+test_wal_rejected_before_mutation_and_outbox_rollback (test_deletion_lifecycle.LifecycleDeletion.test_wal_rejected_before_mutation_and_outbox_rollback) ... ok
+
+======================================================================
+ERROR: test_all_lifecycle_states_are_not_deletion_gates (test_deletion_lifecycle.LifecycleDeletion.test_all_lifecycle_states_are_not_deletion_gates)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_deletion_lifecycle.py", line 28, in test_all_lifecycle_states_are_not_deletion_gates
+    j=w.prepare([self.head]);w.update(j['id'],state='RUNNING' if state=='RUNNING' else 'PAUSED',position=0,changes={'state':state,'purchase_id':'p-'+state,'error':{'code':'TASK_PENDING'}})
+      ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflows.py", line 119, in prepare
+    return self._new(db, 'prepare', items)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\aoxiang_workflows.py", line 103, in _new
+    raise ValueError('所选订单已有未完成同类作业，请继续原批次：' + old['id'])
+ValueError: 所选订单已有未完成同类作业，请继续原批次：axbatch-e83f9ab01c194cc5a183a6f2b17e96b0
+
+----------------------------------------------------------------------
+Ran 9 tests in 2.843s
+
+FAILED (errors=1)

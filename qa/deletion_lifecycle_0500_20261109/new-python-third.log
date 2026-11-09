@@ -1,0 +1,16 @@
+test_delete_after_first_commit_remaining_original_quantity_and_replay (test_deletion_lifecycle.FrozenAllocationDeletion.test_delete_after_first_commit_remaining_original_quantity_and_replay) ... ok
+test_delete_before_first_commit_keeps_other_frozen_allocation (test_deletion_lifecycle.FrozenAllocationDeletion.test_delete_before_first_commit_keeps_other_frozen_allocation) ... ok
+test_actual_runner_late_result_does_not_shift_to_other_order (test_deletion_lifecycle.LifecycleDeletion.test_actual_runner_late_result_does_not_shift_to_other_order) ... ok
+test_all_lifecycle_states_are_not_deletion_gates (test_deletion_lifecycle.LifecycleDeletion.test_all_lifecycle_states_are_not_deletion_gates) ... ok
+test_all_removed_runner_exits_and_schedule_cannot_reappear (test_deletion_lifecycle.LifecycleDeletion.test_all_removed_runner_exits_and_schedule_cannot_reappear) ... ok
+test_deletion_during_sign_preparation_rejected_under_writer (test_deletion_lifecycle.LifecycleDeletion.test_deletion_during_sign_preparation_rejected_under_writer) ... ok
+test_interrupted_isolated_process_recovers_main_and_attached_queue (test_deletion_lifecycle.LifecycleDeletion.test_interrupted_isolated_process_recovers_main_and_attached_queue) ... ok
+test_old_draft_repreview_and_unselected_sign_cannot_revive_deleted_store (test_deletion_lifecycle.LifecycleDeletion.test_old_draft_repreview_and_unselected_sign_cannot_revive_deleted_store) ... ok
+test_shared_purchase_all_versions_keep_unselected_quantities_and_raw_facts (test_deletion_lifecycle.LifecycleDeletion.test_shared_purchase_all_versions_keep_unselected_quantities_and_raw_facts) ... ok
+test_stable_item_and_execution_fences_preserve_remaining_queue (test_deletion_lifecycle.LifecycleDeletion.test_stable_item_and_execution_fences_preserve_remaining_queue) ... ok
+test_wal_rejected_before_mutation_and_outbox_rollback (test_deletion_lifecycle.LifecycleDeletion.test_wal_rejected_before_mutation_and_outbox_rollback) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 3.117s
+
+OK

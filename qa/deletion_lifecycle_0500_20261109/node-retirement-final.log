@@ -1,0 +1,16 @@
+(node:28352) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ retirement requires a committed matching main deletion and never retires live orders (66.9508ms)
+✔ delete frees active reservation but old command and old oid cannot replay; new oid independent (65.437ms)
+✔ owned files removed, shared and external original files retained; later files retry locally (71.7399ms)
+✔ shared exact native evidence remains while deleted host ownership is removed (62.404ms)
+✔ retirement markers survive reopen and a missing marker table fails closed (70.5145ms)
+✔ Windows exclusive file lock leaves a recoverable pending cleanup after business retirement (442.6927ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 887.1604

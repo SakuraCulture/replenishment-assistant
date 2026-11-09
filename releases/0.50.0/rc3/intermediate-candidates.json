@@ -1,0 +1,16 @@
+[
+  {
+    "build_id": "rc1",
+    "source_commit": "e14463d5a64aaf51ca5a1d7b47547b8f5902c93b",
+    "distributed": false,
+    "exe_accepted": false,
+    "notice": "交付_0.50.0_rc1\\勿分发.txt"
+  },
+  {
+    "build_id": "rc2",
+    "source_commit": "0d04c190b6c8565ce95ab677acf773c0b81e02c4",
+    "distributed": false,
+    "exe_accepted": false,
+    "notice": "交付_0.50.0_rc2\\勿分发.txt"
+  }
+]

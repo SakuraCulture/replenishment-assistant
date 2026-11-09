@@ -1,0 +1,306 @@
+{
+  "source_commit": "9f92313dae7bc165f542e52316c02c2ff995bbdd",
+  "purpose": "Allowlisted isolated evidence; fixture business databases and complete build trees remain local, not added to Git. Initial failures preserved.",
+  "files": [
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/associations-python.log",
+      "sha256": "ffdfc5ba884a8a63d80eebc28e1b376abaa93a0bf7e0bc344d499152262bff45",
+      "bytes": 3416
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/automation-final.log",
+      "sha256": "e21c30883e6a9b86faab2e23dfd39aef52f096da41b601210aa9aed37bcd24dd",
+      "bytes": 10454
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/build-rc1.log",
+      "sha256": "c037738bd5f40e9a365157e2c374e0a3998c056d9f7860bedd67a11505f6a39e",
+      "bytes": 262
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/build-rc2.log",
+      "sha256": "9be79a611390cce99c99037e92ecaf3a88d0f72ba61a0e46a20fec810ab9d05d",
+      "bytes": 262
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/build-rc3.log",
+      "sha256": "1d9eede70b36ef8b72eb021b6ba68649d24160ba54009bb78aabec5ff82e1d7f",
+      "bytes": 262
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/delivery-final.log",
+      "sha256": "b0281afc5a8f851fedc2bba09c88d720f4dcc47a2a487e40928c779cb967ff8c",
+      "bytes": 113
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/environment.json",
+      "sha256": "210c41860bfe5aecd1885898acc44ea9fa37da37e2a14ec5942141a547b60c22",
+      "bytes": 1230
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/equivalence-and-protection.json",
+      "sha256": "3693ce0325af3f8add2187edb54fc85529cfdcf4d893ab83b0654426c842f7a1",
+      "bytes": 3253
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/exe-rc3/acceptance.json",
+      "sha256": "06673f14d870c47955a81f2193f3819e64e4373bc9cfa4445a3b9167e7ae8bde",
+      "bytes": 1120
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/exe-rc3/fixture.json",
+      "sha256": "c0c783caad5e4abbf5eacf43ca6a65c77c025dcbb1f08713beeed6c3dc76efe7",
+      "bytes": 45
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/exe-rc3/process.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/exe-rc3/settings/app.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/exe-rc3/剩余批次.png",
+      "sha256": "4eb7d8ae717eec376b53aa70d5735d2deaffbb669eed4a934606ffaf743ce9cc",
+      "bytes": 104963
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/exe-rc3.log",
+      "sha256": "fd3349fdb642999aae13969925e73ce33aaf364d59d16833ac5f6cf1624c1d0f",
+      "bytes": 1011
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/exports-final.log",
+      "sha256": "cdb5eb016d9b68001472c9f5b58c0ea9a7624e62c84e74f3318dd2f3abc133b7",
+      "bytes": 2213
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/formal-lifecycle-delete.json",
+      "sha256": "5ee6d9005115052a0168ae9628727438da7aa78b8b99541d2224e852c1023378",
+      "bytes": 443
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/new-python-initial.log",
+      "sha256": "cc05384232ac7b1e2c971fedc9b9dd59f3a333456399618b123598d8fdc491a0",
+      "bytes": 2965
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/new-python-third.log",
+      "sha256": "6b4ff83819b3637baa68c62025a322cecf1e2d5276778ec75637c6388628c9f8",
+      "bytes": 2076
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/node-full-final.log",
+      "sha256": "149bec7b67297e1873a9e5dc8a8087e9062018c2ccf2ddf587af0dc17278da36",
+      "bytes": 24403
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/node-full-initial.log",
+      "sha256": "dbcee6e7cc9bc94aa0d79f895dd061a74e738eee6c232649290fc02de71c440c",
+      "bytes": 24411
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/node-rc2.log",
+      "sha256": "9632f0a1d80706309ef5f27f7413edc8840917fe840dcdf777f2ed05e104dcaa",
+      "bytes": 24616
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/node-rc3.log",
+      "sha256": "bb1489f53c1c486cef35f61ad041e5184ea13bb421e01fb05aa14ac97e117c13",
+      "bytes": 24626
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/node-retirement-final.log",
+      "sha256": "3d3f165aa68e785690dffbe8babf9adfbfa5f9c6f9f42f987813b19cfd519218",
+      "bytes": 907
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/node-retirement-initial.log",
+      "sha256": "e9063bd6e6d6cda07af16637a5f2ac10b1956aceddaab179c3b3a2e7aa56ff26",
+      "bytes": 1325
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/node-retirement-second.log",
+      "sha256": "751783e7fd707f0dcfc6d4f9a89b9d3918905602f58104e01926ad8ecbb13c3a",
+      "bytes": 7890
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/node-retirement-third.log",
+      "sha256": "f8c03e3d1b05c39cc78c7a1e553394f322de3314983934da1d4ffa6708ef3bd4",
+      "bytes": 1978
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/node-sealed.log",
+      "sha256": "2bbf1b17e34165ed2ba07ff98650ab1f475e560850ca676d8816df3106d565b1",
+      "bytes": 24519
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/package-race-node.log",
+      "sha256": "719ac8733a4238d4ff8ed092e695f2d6efc253da5e70a3641f25bda46bcaf2d3",
+      "bytes": 1025
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/package-race-python-final.log",
+      "sha256": "d1350cb143d4d0248517f3fbc929d359df2dae8b007a46a8fd35bd19ec7d812b",
+      "bytes": 8503
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/package-race-python.log",
+      "sha256": "864fce8c78d7be981603c9df2a4f3e55bf237e433243eba47505607cd4c0e3f0",
+      "bytes": 6570
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/regression-final.log",
+      "sha256": "321497a9aa39bb4da3d1c615f92ec165b15de14ec8e4f902046a5f7ed8f48ef1",
+      "bytes": 218426
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/regression-initial.log",
+      "sha256": "0790062f5fef10b7d4742a95e6ea56479e6c3f6a925ad1263f4bcbc5259a8452",
+      "bytes": 227700
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/regression-rc2.log",
+      "sha256": "3034076d9dc11e48575f1610f9b80ca2d65ed0a7ff9432532fab575f472b56e8",
+      "bytes": 219384
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/regression-rc3.log",
+      "sha256": "c969ea357f3d04d42b853d6b85cb74f56116fadd661f5abcaa687162e219909c",
+      "bytes": 219766
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/regression-sealed.log",
+      "sha256": "b0873a73ed1ecc77c9fc29e750e0c27fedf3f05e83ecee8b5757ca33237f9e81",
+      "bytes": 219014
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-1/acceptance.json",
+      "sha256": "c60858c9b8c7b497133187594346209711b2e1ecc5e01dfb4af17287d51a22ea",
+      "bytes": 516
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-1/fixture.json",
+      "sha256": "c0c783caad5e4abbf5eacf43ca6a65c77c025dcbb1f08713beeed6c3dc76efe7",
+      "bytes": 45
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-1/process.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-1/settings/app.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-1.log",
+      "sha256": "a7732a2fe61e6719d63748227c115519b2d93ca3e20914d4877e863782e8defa",
+      "bytes": 1118
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-2/acceptance.json",
+      "sha256": "56a8d222b6adae1a111c9003db171b3634a2cdf5015500b8127c233cb6e7e254",
+      "bytes": 811
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-2/fixture.json",
+      "sha256": "c0c783caad5e4abbf5eacf43ca6a65c77c025dcbb1f08713beeed6c3dc76efe7",
+      "bytes": 45
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-2/process.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-2/settings/app.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-2/剩余批次.png",
+      "sha256": "2ab4cc63d76169a22d07d680ffd91b1ef699b056b8bff423103a1012ce27ab51",
+      "bytes": 104706
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-2.log",
+      "sha256": "b1b4ccbd4ed96335e4c1100eb4e6fc31831f799531bb3aa26831eec9fa79c6fe",
+      "bytes": 720
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-3/acceptance.json",
+      "sha256": "8cfc1fb9df3467f2dc66b2a6d9c4968845854fdfa62da9e50d65f6eb480e669e",
+      "bytes": 977
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-3/fixture.json",
+      "sha256": "c0c783caad5e4abbf5eacf43ca6a65c77c025dcbb1f08713beeed6c3dc76efe7",
+      "bytes": 45
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-3/process.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-3/settings/app.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-3/剩余批次.png",
+      "sha256": "4a079db5dfae2c138aff9bdd99ac06819a969bd3fad8b20354d0ebe5fe0482d8",
+      "bytes": 104879
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-3.log",
+      "sha256": "4bbb5e151b4f3b4a42250361ae91d9e85bcf8e7335e6d40d3a368e4c9f02bc44",
+      "bytes": 876
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-4/acceptance.json",
+      "sha256": "1a76b3727b28af266c799243435d3543d08c23b467328bc32fd4498df2fc96f7",
+      "bytes": 1058
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-4/fixture.json",
+      "sha256": "c0c783caad5e4abbf5eacf43ca6a65c77c025dcbb1f08713beeed6c3dc76efe7",
+      "bytes": 45
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-4/process.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-4/settings/app.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-4/剩余批次.png",
+      "sha256": "011a815208bbb71e5e4711cbeaedd3dd54c8130f9d11009271a8e41364deaffe",
+      "bytes": 104908
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/source-gui-4.log",
+      "sha256": "0106598d1be3e0e417a21081334ee20ee4dc9a4ec76349cf291c8b0f924bc4f8",
+      "bytes": 952
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/targeted-final.log",
+      "sha256": "831749b9b8f6ffae34b37830c6029f11d50e88e187ffc7747d8a94dbc1892a0a",
+      "bytes": 21049
+    },
+    {
+      "path": "qa/deletion_lifecycle_0500_20261109/targeted-second.log",
+      "sha256": "c7172a444199b2a623b97d076b3c06c91e8275a22daf8fe1bed57270af426d96",
+      "bytes": 20079
+    }
+  ]
+}

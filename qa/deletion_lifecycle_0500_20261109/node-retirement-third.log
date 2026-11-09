@@ -1,0 +1,31 @@
+(node:46644) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ retirement requires a committed matching main deletion and never retires live orders (54.3441ms)
+✔ delete frees active reservation but old command and old oid cannot replay; new oid independent (51.3437ms)
+✔ owned files removed, shared and external original files retained; later files retry locally (57.5643ms)
+✖ shared exact native evidence remains while deleted host ownership is removed (42.7644ms)
+✔ retirement markers survive reopen and a missing marker table fails closed (44.6088ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 342.1774
+
+✖ failing tests:
+
+test at components\aoxiang\test\order-retirement.test.mjs:62:1
+✖ shared exact native evidence remains while deleted host ownership is removed (42.7644ms)
+  Error: no such table: purchase_runs
+      at file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/state.mjs:84:28
+      at StateStore.write (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/state.mjs:65:62)
+      at StateStore.putPurchase (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/state.mjs:84:10)
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:66:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    code: 'ERR_SQLITE_ERROR',
+    errcode: 1,
+    errstr: 'SQL logic error'
+  }

@@ -1,0 +1,10 @@
+{
+  "passed": false,
+  "frozen_exe": false,
+  "live_platform": false,
+  "checks": [],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\deletion_lifecycle_smoke.py\", line 53, in execute\n    Directory(manager.store.folder).save_suppliers('ZXC2025','2078246')\nTypeError: Directory.save_suppliers() takes 2 positional arguments but 3 were given\n",
+  "shutdown_complete": true,
+  "process_exit": 1,
+  "seconds": 4.031999999999243
+}

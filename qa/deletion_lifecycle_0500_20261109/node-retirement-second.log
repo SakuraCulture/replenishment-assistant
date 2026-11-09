@@ -1,0 +1,87 @@
+(node:21772) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ retirement requires a committed matching main deletion and never retires live orders (41.089ms)
+✖ delete frees active reservation but old command and old oid cannot replay; new oid independent (40.0326ms)
+✖ owned files removed, shared and external original files retained; later files retry locally (37.2582ms)
+✖ shared exact native evidence remains while deleted host ownership is removed (36.2749ms)
+✖ retirement markers survive reopen and a missing marker table fails closed (37.8243ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 0
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 289.2705
+
+✖ failing tests:
+
+test at components\aoxiang\test\order-retirement.test.mjs:27:1
+✖ retirement requires a committed matching main deletion and never retires live orders (41.089ms)
+  Error: 采购创建范围不符：不得创建外部订单或自动提交
+      at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)
+      at validatePurchaseIntent (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-contract.mjs:41:131)
+      at PurchaseCreates.reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-ledger.mjs:36:5)
+      at reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:26:74)
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:28:27)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    code: 'PURCHASE_INTENT_SCHEMA',
+    details: {}
+  }
+
+test at components\aoxiang\test\order-retirement.test.mjs:34:1
+✖ delete frees active reservation but old command and old oid cannot replay; new oid independent (40.0326ms)
+  Error: 采购创建范围不符：不得创建外部订单或自动提交
+      at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)
+      at validatePurchaseIntent (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-contract.mjs:41:131)
+      at PurchaseCreates.reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-ledger.mjs:36:5)
+      at reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:26:74)
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:35:29)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    code: 'PURCHASE_INTENT_SCHEMA',
+    details: {}
+  }
+
+test at components\aoxiang\test\order-retirement.test.mjs:50:1
+✖ owned files removed, shared and external original files retained; later files retry locally (37.2582ms)
+  Error: 采购创建范围不符：不得创建外部订单或自动提交
+      at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)
+      at validatePurchaseIntent (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-contract.mjs:41:131)
+      at PurchaseCreates.reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-ledger.mjs:36:5)
+      at reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:26:74)
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:51:27)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    code: 'PURCHASE_INTENT_SCHEMA',
+    details: {}
+  }
+
+test at components\aoxiang\test\order-retirement.test.mjs:62:1
+✖ shared exact native evidence remains while deleted host ownership is removed (36.2749ms)
+  Error: 采购创建范围不符：不得创建外部订单或自动提交
+      at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)
+      at validatePurchaseIntent (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-contract.mjs:41:131)
+      at PurchaseCreates.reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-ledger.mjs:36:5)
+      at reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:26:74)
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:63:27)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    code: 'PURCHASE_INTENT_SCHEMA',
+    details: {}
+  }
+
+test at components\aoxiang\test\order-retirement.test.mjs:71:1
+✖ retirement markers survive reopen and a missing marker table fails closed (37.8243ms)
+  Error: 采购创建范围不符：不得创建外部订单或自动提交
+      at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)
+      at validatePurchaseIntent (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-contract.mjs:41:131)
+      at PurchaseCreates.reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-ledger.mjs:36:5)
+      at reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:26:74)
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:72:27)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    code: 'PURCHASE_INTENT_SCHEMA',
+    details: {}
+  }
