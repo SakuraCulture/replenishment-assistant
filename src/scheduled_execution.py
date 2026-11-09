@@ -46,7 +46,9 @@ def freeze(folder, schedule, day):
                 if w and w not in warehouses:warehouses.append(w)
     if not warehouses:raise ValueError('预案门店尚未设置供货仓')
     from version_info import MODEL_VERSION, VERSION
-    return {'plan':plan,'records':records,'jobs':settings,'profile':profile,'new_focus':new_product_focus.Repository(folder).load(),'mapping':mapping,
+    from deletion_barrier import read_epochs
+    generations=read_epochs(path,day,records)
+    return {'deletion_generations':generations,'plan':plan,'records':records,'jobs':settings,'profile':profile,'new_focus':new_product_focus.Repository(folder).load(),'mapping':mapping,
             'warehouses':warehouses,'catalog_digests':{w:master.current_digest(w) for w in warehouses},
             'day':day,'model_version':MODEL_VERSION,'app_version':VERSION,'workers':schedule['workers']}
 
@@ -162,7 +164,7 @@ def workbench_record(repo,rid):
     if not results:raise ValueError('尚无计算完成的门店')
     records=basis['records'];codes=[s['code'] for s in run['stores'] if s['code'] in loaded['stores']]
     loaded['stores']={s:loaded['stores'][s] for s in codes}
-    payload={'schema':1,'day':run['day'],'app_version':VERSION,'model_version':basis['model_version'],
+    payload={'deletion_generations':basis.get('deletion_generations',{}),'schema':1,'day':run['day'],'app_version':VERSION,'model_version':basis['model_version'],
         'active_plan':basis['plan'],'admission_required':True,'loaded':loaded,'catalogs':repo.value(rid,'catalogs'),
         'profile':basis['profile'],'new_focus':basis.get('new_focus'),'results':results,
         'states':{s:{'name':loaded['stores'][s],'state':'已完成' if s in results else '计算失败','error':'' if s in results else '定时任务尚未完成；请在运行记录重试'} for s in codes},

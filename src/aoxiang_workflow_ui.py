@@ -39,17 +39,18 @@ class QueueWorker(QThread):
 
     def run(self):
         m = self.manager
-        client = None
+        client = None;runner=None
         try:
             if self.token.is_set():
                 raise Cancelled('任务尚未开始，已请求停止')
             client = m.session.lease()
             client.start()
-            Runner(m.store, client, component_root(), m.host.work_repository.path, cancel=self.token, progress=self.progress.emit).run(self.job['id'])
+            runner=Runner(m.store, client, component_root(), m.host.work_repository.path, cancel=self.token, progress=self.progress.emit)
+            runner.run(self.job['id'])
         except Exception as exc:
             state = 'YIELDED' if isinstance(exc, Cancelled) and m.gate.yielding and not m.explicit_stop else 'PAUSED'
             try:
-                m.store.update(self.job['id'], state=state, message=str(exc))
+                m.store.update(self.job['id'], execution_token=getattr(runner,'execution_token',None), state=state, message=str(exc))
             except Exception as failed:
                 self.progress.emit('队列状态保存失败，请保留原记录：' + str(failed))
         finally:

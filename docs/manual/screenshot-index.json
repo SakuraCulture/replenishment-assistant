@@ -1,8 +1,8 @@
 {
-  "application": "0.49.3",
+  "application": "0.50.0",
   "edition": "2026-11-09",
   "source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
-  "source": "Mixed-version actual EXE and current-source Qt; captions distinguish provenance",
+  "source": "Mixed-version evidence; per-image provenance is authoritative; current deletion chapter uses source Qt",
   "legacy_0480_build": {
     "source_commit": "c12feff48eb81008a2643b2ce61d636b56fae980",
     "build_id": "rc1",
@@ -220,6 +220,15 @@
       "version": "0.49.3",
       "source": "source Qt",
       "evidence": "qa/manual_parameters_orders_0493_20261108/source-qt-4/parameter-import-error-detail.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "deletion-remaining-0500.png",
+      "sha256": "2ab4cc63d76169a22d07d680ffd91b1ef699b056b8bff423103a1012ce27ab51",
+      "version": "0.50.0",
+      "source": "source Qt",
+      "evidence": "qa/deletion_lifecycle_0500_20261109/source-gui-2/剩余批次.png",
       "synthetic": true,
       "live_platform_tested": false
     }

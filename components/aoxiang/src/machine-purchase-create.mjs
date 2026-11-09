@@ -13,6 +13,7 @@ export class MachinePurchaseCreate{
   start(id){
     if(this.busy)fail('PURCHASE_CREATE_BUSY','当前采购任务仍在安全结束，请勿重复执行');
     const r=this.ledger.get(id);if(r.state==='BOUND')return this.status(id);
+    if(r.state==='RETIRED')fail('SOURCE_ORDER_DELETED','来源订单已删除，任务已退役');
     if(r.state==='CANCELLED_BEFORE_UPLOAD')fail('PURCHASE_CANCELLED','该任务已在上传前取消');
     if(r.uploadAttempted&&!r.receipt)fail('SUBMISSION_UNKNOWN','已进入上传边界但无唯一受理任务号，只能核对，不允许重新上传');
     if(r.additionalTaskIds?.length)fail('MULTIPLE_IMPORT_TASKS','导入任务不唯一，请人工核对');
@@ -61,6 +62,7 @@ export class MachinePurchaseCreate{
       const bound=this.ledger.bind(id,evidence);this.progress(bound.binding.status==='已作废'?'已核实原采购单已作废，可返回本地删除页重新核对':'采购单已核验并关联，保留待提交');
     }catch(e){
       r=this.ledger.get(id);const error=errorInfo(e);
+      if(r.state==='RETIRED'){this.progress('来源订单已删除；当前动作已结束，不建立本地业务关联');return;}
       if(['BOUND','CANCELLED_BEFORE_UPLOAD'].includes(r.state))throw e;
       if(!r.uploadAttempted)this.ledger.update(id,r.sequence,this.job.cancelled?'PAUSED':'FAILED_PRECHECK',{error});
       else if(r.state==='SUBMITTING')this.ledger.update(id,r.sequence,'NEEDS_REVIEW',{error});

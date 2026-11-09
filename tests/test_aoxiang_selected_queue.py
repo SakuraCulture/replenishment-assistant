@@ -75,8 +75,8 @@ class SelectedQueueTests(unittest.TestCase):
         j=self.s.prepare([head(1),head(2)]);self.delete_order('1')
         with self.assertRaisesRegex(ValueError,'已删除'):self.s.prepare([head(1)])
         out=self.execute(j)
-        self.assertEqual(self.called,['BH-2']);self.assertEqual(out['items'][0]['state'],'SKIPPED')
-        self.assertEqual(out['items'][0]['error']['code'],'SOURCE_ORDER_DELETED')
+        self.assertEqual(self.called,['BH-2']);self.assertEqual(len(out['items']),1)
+        self.assertEqual(out['items'][0]['key'],'BH-2');self.assertEqual(out['state'],'READY')
 
     def test_reconcile_prunes_stale_local_only_and_preserves_platform_evidence(self):
         j=self.s.prepare([head(1),head(2),head(3)])

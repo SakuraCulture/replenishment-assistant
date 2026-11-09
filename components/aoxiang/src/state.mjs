@@ -3,6 +3,7 @@ import path from 'node:path';
 import {DatabaseSync,backup} from 'node:sqlite';
 import {fail,uid,now,canonical,sha256,scopeHash,exists,writeJson,sameIdentity} from './common.mjs';
 import {checkPurchaseReceipt} from './purchase-contract.mjs';
+import {retirementSchema,requireUnretired,requireHostOrder} from './order-retirement.mjs';
 
 export class ExclusiveLock{
   static async acquire(file){
@@ -23,6 +24,15 @@ export class StateStore{
     await fs.mkdir(root,{recursive:true});
     const present=await exists(path.join(root,'state.sqlite'));
     if(!present&&(await exists(path.join(root,'state.guard.json'))||await exists(path.join(root,'config/portable.config.json'))))fail('STATE_MISSING','本机作业状态库缺失，不能作为全新状态重复提交；请恢复状态备份');
+    if(present){
+      const prior=new DatabaseSync(path.join(root,'state.sqlite'),{readOnly:true});
+      try{
+        if(prior.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='metadata'").get()&&!prior.prepare("SELECT value FROM metadata WHERE key='orderRetirementProtocol'").get()){
+          const file=path.join(root,'recovery','before-order-retirement-'+uid()+'.sqlite');await fs.mkdir(path.dirname(file),{recursive:true});await backup(prior,file);
+          const check=new DatabaseSync(file,{readOnly:true});try{if(check.prepare('PRAGMA quick_check').get().quick_check!=='ok')fail('STATE_BACKUP_FAILED','退役升级前备份校验失败');}finally{check.close();}
+        }
+      }finally{prior.close();}
+    }
     const state=new StateStore(root);
     if(!await exists(path.join(root,'state.guard.json')))await writeJson(path.join(root,'state.guard.json'),{stateId:uid(),createdAt:now()});
     return state;
@@ -49,6 +59,7 @@ export class StateStore{
     `);
     if(!['1','2'].includes(this.db.prepare("SELECT value FROM metadata WHERE key='schemaVersion'").get().value)){this.db.close();fail('STATE_VERSION','状态库版本不兼容，不能自动重建');}
     if(this.db.prepare('PRAGMA quick_check').get().quick_check!=='ok'){this.db.close();fail('STATE_CORRUPT','本地状态库需要恢复，不能新提交导出');}
+    retirementSchema(this.db);
   }
   close(){this.db.close();}
   write(fn){this.db.exec('BEGIN IMMEDIATE');try{const result=fn();this.db.prepare("UPDATE metadata SET value=CAST(value AS INTEGER)+1 WHERE key='generation'").run();this.db.exec('COMMIT');return result;}catch(e){this.db.exec('ROLLBACK');throw e;}}
@@ -62,6 +73,9 @@ export class StateStore{
   }
   getPurchase(id){return this.rows('purchase_runs').find(r=>r.id===id)||null;}
   putPurchase(record){
+    requireUnretired(this.db,record.hostPurchaseId,record.hostOrderId);
+    if(this.db.prepare('SELECT 1 FROM retired_purchase_runs WHERE id=?').get(record.id))fail('SOURCE_ORDER_DELETED','原采购取数任务已退役，不接受晚到回写');
+    if(record.hostOrderId)requireHostOrder(record.hostOrderId);
     const old=this.getPurchase(record.id);
     if(old){
       for(const key of ['identity','target','from','to','dateBasis','orderId','scopeHash','createdAt'])if(canonical(old[key]??null)!==canonical(record[key]??null))fail('PURCHASE_RECORD_CHANGED','已有采购作业的身份或冻结范围不能修改');
@@ -79,6 +93,9 @@ export class StateStore{
   }
   importPurchases(records){
     const merged=[];for(const r of records){
+      requireUnretired(this.db,r.hostPurchaseId,r.hostOrderId);
+      if(this.db.prepare('SELECT 1 FROM retired_purchase_runs WHERE id=?').get(r.id))fail('SOURCE_ORDER_DELETED','迁入记录属于已退役任务，不能恢复');
+      if(r.hostOrderId)requireHostOrder(r.hostOrderId);
       const old=this.getPurchase(r.id);if(!old){merged.push(r);continue;}
       if(old.scopeHash!==r.scopeHash||!sameIdentity(old.identity,r.identity))fail('MIGRATION_PURCHASE_CONFLICT','同一采购作业ID对应不同范围');
       const selected={...old,query:old.query||r.query,exports:{...old.exports}},rank=['PLANNED','INTENT_RECORDED','SUBMITTING','ACCEPTED','RUNNING','FINISHED','DOWNLOADED','VALIDATED','SUCCEEDED','FAILED_CONFIRMED'];

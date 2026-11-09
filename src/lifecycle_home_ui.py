@@ -153,7 +153,18 @@ class LifecycleWidget(QWidget):
         self.applied_request=dict(request);self.ready(data)
     def progress(self,p):self.bar.setRange(0,max(1,p['total']));self.bar.setValue(p['done']);self.note.setText(f"读取归档 {p['done']} / {p['total']}")
     def ready(self,data):
+        from contextlib import closing
+        import archive_orders
+        invalid=[]
+        with closing(self.host.work_repository.connect()) as db:
+            visibility=archive_orders.states(db)
+            for key,h in list(self.checked.items()):
+                row=db.execute('SELECT o.current,r.digest FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE o.oid=?',(h['oid'],)).fetchone()
+                gone=visibility.get((h['oid'],h['warehouse']),{}).get('deleted')
+                if not row or row!=(h.get('current_revision',h['revision']),h['digest']) or gone:invalid.append(key)
+        for key in invalid:self.checked.pop(key,None)
         self.records=data['records'];self.page=data['page'];self.count=data['count'];self.bar.hide();self.table.setEnabled(True);self.note.setText(f"查询范围 {data['scope']} 单 · 当前筛选 {data['count']} 单 · 第 {self.page+1}/{max(1,(data['count']+49)//50)} 页；每页50单，阶段计数不重复。")
+        if invalid:self.note.setText(self.note.text()+f'；已移除{len(invalid)}条失效勾选，请重新核对选择。')
         self.empty_actions.setVisible(not data['count'])
         if not data['count']:
             from business_flow import empty_message

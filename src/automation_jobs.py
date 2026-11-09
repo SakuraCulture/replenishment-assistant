@@ -122,6 +122,8 @@ def historical_explanation(path, head, arguments, cancel):
 
 
 def calculate(prepared, codes, notify, cancel):
+    from deletion_barrier import read_epochs
+    prepared['deletion_generations']=read_epochs(prepared['dbpath'],prepared['day'],codes)
     jobs = {s: prepared['jobs'][s] for s in codes}
     return batch_service.run(prepared['loaded'], jobs, prepared['profile'], prepared['workers'], notify, cancel)
 

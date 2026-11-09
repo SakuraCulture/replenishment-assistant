@@ -18,8 +18,24 @@ def hub(host):
     v.addWidget(button('结束当前计算批次并新建',lambda:go(host.end_batch)))
     v.addWidget(button('查看或删除每日草稿',lambda:go(host.history)))
     v.addWidget(button('查询并彻底删除订单',lambda:go(lambda:host.show_section(2))))
+    v.addWidget(button('查看 / 重试组件本地清理（不连接平台）',lambda:go(lambda:retirements(host))))
     v.addWidget(button('备份与存储维护',lambda:go(host.storage_copy)))
     v.addWidget(button('关闭',d.reject));d.exec()
+
+def retirements(host):
+    from deletion_barrier import pending
+    count=len(pending(host.work_repository.path))
+    if not count:
+        QMessageBox.information(host,'本地清理','没有待处理的组件清理；业务删除均已生效。');return
+    def cleanup(progress=lambda _:None,cancel=None):
+        progress('业务订单已经删除，正在重试组件本地清理；不查询平台…')
+        host.aoxiang_workflows.session.start()
+        host.aoxiang_workflows.session.client.flush_retirements()
+        return len(pending(host.work_repository.path))
+    try:
+        remaining=run(host,cleanup,(),'组件本地清理',cancellable=False)
+        QMessageBox.information(host,'业务已删除',f'组件清理待办：{remaining} 批。'+('仍有在途动作或文件占用，连接可用时将继续重试。' if remaining else '组件清理已完成。'))
+    except Exception as exc:QMessageBox.warning(host,'业务已删除，组件待清理','订单不会恢复；稍后可在此重试。\n'+str(exc))
 
 def remove_job(host,record):
     return guarded(host,host,lambda:_remove_job(host,record))
@@ -47,7 +63,7 @@ def _remove_job(host,record):
     except Exception as exc:QMessageBox.warning(host,'未删除草稿',str(exc))
 
 def remove(parent,host,heads):
-    result=guarded(parent,host,lambda:_remove(parent,host,heads))
+    result=_remove(parent,host,heads)
     # Release the maintenance pause before opening a task that may need to run.
     if isinstance(result,tuple) and result[0]=='open_task':host.aoxiang_workflows.open_queue(result[1])
     return result
@@ -83,28 +99,20 @@ def review_blockers(parent,host,plan):
 def _remove(parent,host,heads):
     if not heads:QMessageBox.information(parent,'请选择订单','先勾选需要清理的订单。');return
     generator=getattr(host,'jst_generator',None);manager=getattr(host,'aoxiang_workflows',None)
-    if host.worker or (generator and generator.worker) or (manager and manager.worker) or getattr(host,'_aoxiang_dialog',None):
-        QMessageBox.information(parent,'请先停止任务','请先停止当前计算、生成或平台任务，等待安全退出后再删除，避免旧任务继续写回。');return
     try:
-        while True:
-            with Session(host.work_repository.path) as session:plan=request(parent,session,'delete_preview',heads)
-            if not plan.get('blockers'):break
-            follow=review_blockers(parent,host,plan)
-            if isinstance(follow,tuple):return follow
-            if not follow:return
+        with Session(host.work_repository.path) as session:plan=request(parent,session,'delete_preview',heads)
         d=QDialog(parent);d.setWindowTitle('彻底删除订单及关联数据');d.resize(1050,650);v=QVBoxLayout(d)
         v.addWidget(label('永久删除，不进入回收站。请核对完整关联范围。','section'))
         v.addWidget(label('同一门店当天两仓共享原始计算快照，因此本次按门店当天整单删除，包含下列全部仓单、回传、付款、收货、生成结果和相关草稿数据。未选择的其他门店保留。'))
         table,model=grid(d,['日期','门店','补货父单号','包含的仓单'],[[h['day'],h['name'],h['number'],'、'.join(h['warehouses'])] for h in plan['parents']]);v.addWidget(table,1)
-        if plan.get('tasks'):v.addWidget(label(f"将同时清理 {len(plan['tasks'])} 条已停止的关联任务；同批未选订单的任务保持。"))
+        if plan.get('tasks'):v.addWidget(label(f"将同时清理 {len(plan['tasks'])} 条关联任务（含运行中和待核项）；同批未选订单的任务保持。"))
         v.addWidget(label('磁盘原Excel、已经导出的文件、旧备份与外部平台订单不删除。其他订单或当前资料维护仍在引用的原文件保留；外部采购身份防重复记录保留，不再列为本地业务订单。'))
-        ack=QCheckBox('已核对外部订单：本地删除不代表外部作废，也不恢复实际仓库存')
-        ack.setVisible(bool(plan['external']));v.addWidget(ack)
+        v.addWidget(label('本地删除不撤销平台订单：已发出的请求可能继续完成。无需等待采购、付款或收货状态；同批其他订单保留。'))
         if plan['external']:v.addWidget(label('\n'.join(plan['external'])))
-        scope=QCheckBox('确认删除上述完整范围（包括同店另一仓），无法在软件中恢复');v.addWidget(scope)
+        scope=QCheckBox('确认删除上述完整范围（包括同店另一仓）；本地无法恢复，外部订单不撤销');v.addWidget(scope);ack=scope
         row=QHBoxLayout();row.addWidget(button('取消',d.reject));go=button('永久删除上述订单',d.accept);go.setStyleSheet('color:#A52A2A;');go.setEnabled(False);row.addWidget(go);v.addLayout(row)
-        def enabled():go.setEnabled(scope.isChecked() and (not plan['external'] or ack.isChecked()))
-        scope.toggled.connect(enabled);ack.toggled.connect(enabled)
+        def enabled():go.setEnabled(scope.isChecked())
+        scope.toggled.connect(enabled)
         if d.exec()!=QDialog.DialogCode.Accepted:return
         # Readers own no business writes; stopping them prevents stale UI/cache publication.
         readers=[host.history_reader]
@@ -116,14 +124,34 @@ def _remove(parent,host,heads):
     except Exception as exc:QMessageBox.warning(parent,'未完成删除',str(exc));return
     # Commit is complete. Refresh failure must never claim the deletion rolled back.
     try:
-        codes={h['store'] for h in plan['parents'] if h['day']==host.job_day}
+        from deletion_barrier import read_epochs
+        selected={h['store'] for h in plan['parents'] if h['day']==host.job_day}
+        epochs=read_epochs(host.work_repository.path,host.job_day,selected)
+        def stale_codes():return {s for s in selected if getattr(host,'deletion_generations',{}).get(s,0)<epochs[s]}
+        codes=stale_codes()
         if codes:
             fields=('loaded','states','results','store_presets','overrides','default_by_store','preissue_drafts','export_log')
-            current={key:getattr(host,key,None) for key in fields};current['new_product_bases']=host.new_bases
-            p=run(parent,maintenance.strip_current,(current,codes),'更新当前工作区',cancellable=False)
-            for key in fields:setattr(host,key,p.get(key))
-            host.new_bases=p['new_product_bases'];host.pending_copy=None
-            host.reset_calculation_snapshot()
+            # The modal worker pumps UI callbacks. Rebase if a newer input was
+            # adopted or a legitimate fresh calculation started while pruning.
+            while True:
+                current={key:getattr(host,key,None) for key in fields};current['new_product_bases']=host.new_bases
+                p=run(parent,maintenance.strip_current,(current,codes),'更新当前工作区',cancellable=False)
+                fresh=stale_codes()
+                if host.loaded is current['loaded'] and fresh==codes:break
+                codes=fresh
+            for key in fields:
+                if key=='loaded':setattr(host,key,p.get(key))
+                elif key=='export_log':host.export_log=maintenance.strip_current({'export_log':host.export_log},codes)['export_log']
+                else:
+                    value=getattr(host,key,None)
+                    if isinstance(value,dict):
+                        for code in codes:value.pop(code,None)
+            for code in codes:host.new_bases.pop(code,None)
+            for code in codes:getattr(host,'deletion_generations',{}).pop(code,None)
+            host.pending_copy=None
+            # Keep frozen input/settings for unselected in-flight stores.
+            for code in codes:getattr(host,'_calculation_settings',{}).pop(code,None)
+            host._queued_retries=[s for s in getattr(host,'_queued_retries',[]) if s not in codes]
             host.run_codes=[s for s in host.run_codes if s not in codes]
             previous=host.initializing;host.initializing=True
             try:
@@ -135,9 +163,16 @@ def _remove(parent,host,heads):
             finally:host.initializing=previous
             if host.current_store in codes:host.current_store=None;host.result=None;host.dirty=True;host.navigate(3)
             host.saved_time='';host.touch();host.refresh_tables();host.selection_changed();host.update_controls()
-        host.archive_checked.clear();host.refresh_archive();host.followup.query(keep_page=True)
+        deleted=set(plan['oids'])
+        for widget in [host,*host.findChildren(__import__('PySide6.QtWidgets',fromlist=['QWidget']).QWidget)]:
+            for attr in ('checked','archive_checked'):
+                selected=getattr(widget,attr,None)
+                if isinstance(selected,dict):
+                    for key,head in list(selected.items()):
+                        if isinstance(head,dict) and head.get('oid') in deleted:selected.pop(key,None)
+        host.refresh_archive();host.followup.query(keep_page=True)
         if manager:manager.changed.emit()
-        QMessageBox.information(parent,'已彻底删除',f"已删除 {result['deleted']} 个门店当天正常单及关联业务记录。没有移入回收站。")
+        QMessageBox.information(parent,'已彻底删除',f"已删除 {result['deleted']} 个门店当天正常单及关联业务记录。没有移入回收站。组件本地清理已登记，将在连接可用时自动处理；不等待平台结果。")
     except Exception as exc:
         logging.exception('删除已提交，但界面刷新失败')
         host.input_dirty=True;host.update_controls()

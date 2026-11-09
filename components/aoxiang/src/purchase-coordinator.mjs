@@ -27,10 +27,10 @@ export function validatePurchasePair(run,main,detail){
   return {status:'VALIDATED',queryParents:expected.size,mainRows:main.rows,detailRows:detail.rows,linkedParents:childSku.size,orphanRows:0,parentCoverage:'EXACT_SET',skuCoverage:'DISTINCT_SKU_PER_ORDER',duplicatesPreserved:true,dateBasis:run.dateBasis,...(run.queryMode==='order_id'?{queryMode:'order_id',createdDay:createdDays.size===1?[...createdDays][0]:null}:{})};
 }
 export class PurchaseCoordinator{
-  constructor({state,config,binding,adapter,onProgress=()=>{},onSourceValidated=null,signal}){Object.assign(this,{state,config,binding,adapter,onProgress,onSourceValidated,signal});}
+  constructor({state,config,binding,adapter,onProgress=()=>{},onSourceValidated=null,signal,hostOrderId=null,hostPurchaseId=null}){Object.assign(this,{state,config,binding,adapter,onProgress,onSourceValidated,signal,hostOrderId,hostPurchaseId});}
   stopped(){if(this.signal?.aborted)fail('PAUSED','采购作业已暂停；继续时恢复原任务');}
   async progress(stage,body={}){await this.onProgress({stage,...body});}
-  save(run){this.state.putPurchase(run);return run;}
+  save(run){if(this.hostOrderId)run={...run,hostOrderId:this.hostOrderId,hostPurchaseId:this.hostPurchaseId};this.state.putPurchase(run);return run;}
   async sourceFile(run,sourceId){
     const e=run.exports[sourceId],file=await outputPath(this.binding.outputRoot,e.asset.relativePath);if(!await exists(file)||await fileHash(file)!==e.asset.sha256)fail('PURCHASE_ASSET_CHANGED','已验收采购文件缺失或已修改，保留文件并等待恢复',{sourceId,file});return file;
   }
@@ -45,7 +45,9 @@ export class PurchaseCoordinator{
       const prior=this.state.rows('purchase_runs').filter(r=>sameIdentity(r.identity,this.config.tenantBinding)&&r.scopeHash===hash).at(-1);
       if(prior&&!rerun)run=prior;
       else{
-        const priorUnfinished=this.state.rows('purchase_runs').filter(r=>sameIdentity(r.identity,this.config.tenantBinding)&&r.target.buyerWarehouseCode===target.buyerWarehouseCode&&(Object.values(r.exports).some(e=>BAD.has(e.stage))||!['SUCCEEDED','EMPTY','SUPERSEDED'].includes(r.status)));
+        const priorUnfinished=this.state.rows('purchase_runs').filter(r=>sameIdentity(r.identity,this.config.tenantBinding)&&r.target.buyerWarehouseCode===target.buyerWarehouseCode&&
+          (!this.hostOrderId||(r.hostOrderId?r.hostOrderId===this.hostOrderId:r.scopeHash===hash))&&
+          (Object.values(r.exports).some(e=>BAD.has(e.stage))||!['SUCCEEDED','EMPTY','SUPERSEDED'].includes(r.status)));
         const safeSupersede=r=>rerun&&r.scopeHash===hash&&Object.values(r.exports).every(e=>!BAD.has(e.stage)&&(e.asset||['PLANNED','FAILED_CONFIRMED','SUCCEEDED'].includes(e.stage)))&&Object.values(r.exports).some(e=>e.asset||e.stage==='FAILED_CONFIRMED');
         const unresolved=priorUnfinished.filter(r=>!safeSupersede(r));
         if(unresolved.length)fail('PURCHASE_UNRESOLVED','该仓店存在未完成采购作业，请先继续原作业',{runIds:unresolved.map(r=>r.id)});

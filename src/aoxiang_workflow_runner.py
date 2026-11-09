@@ -46,7 +46,7 @@ class Runner:
         if r['state'] != 'READY':
             error = r.get('error') or {}
             raise ComponentError(error.get('code', 'TEMPLATE_FAILED'), error.get('message', '最新采购模板未验收'))
-        self.store.update(job['id'], template_receipt=r['receipt'])
+        self.store.update(job['id'], execution_token=job.get('execution_token'), template_receipt=r['receipt'])
         return r['receipt']
 
     def prepare_item(self, job, item, configuration, suppliers):
@@ -62,7 +62,7 @@ class Runner:
             if p['intent'].get('pricePolicy'):
                 summary.update(payment_amount=p['intent']['paymentTotalAmount'], rounding_delta=p['intent']['roundingDelta'])
             # Save exact package identity before the separate component reservation.
-            self.store.update(job['id'], position=item['position'], changes={'package': package_ref(p), 'summary': summary})
+            self.store.update(job['id'], item_id=item['item_id'], oid=(item.get('head') or item.get('basis') or {}).get('oid'), execution_token=job.get('execution_token'), changes={'package': package_ref(p), 'summary': summary})
         checkpoint(self.cancel)
         from aoxiang_order_guard import require_orders
         require_orders(self.business_path,[item])
@@ -148,72 +148,84 @@ class Runner:
         raise ComponentError(error.get('code', 'RECEIPT_NEEDS_REVIEW'), error.get('message', '实收字段或主子状态未通过；保留原件待核'))
 
     def run(self, id):
-        job = self.store.update(id, state='RUNNING', message='读取本地配置及原任务状态')
-        for position in range(len(job['items'])):
-            item=self.store.get(id)['items'][position]
-            if item['state'] in DONE_ITEM:
-                continue
-            scope=self.store.get(id).get('dispatch_keys')
-            if scope is not None and item['key'] not in scope:continue
-            checkpoint(self.cancel)
-            position = item['position']
-            from aoxiang_order_guard import deleted_orders
-            if job['kind']=='receipt':
-                from aoxiang_receipt_scope import assess
-                eligibility=assess(self.business_path,[item])[item['key']]
-                if not eligibility['eligible']:
-                    self.store.observe_schedule(item['purchase_id'],None,error={'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']},review=True)
-                    self.store.update(id,position=position,changes={'state':'SKIPPED','source_retired':True,'error':{'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']}})
-                    continue
-            missing=deleted_orders(self.business_path,[item]) if job['kind']=='prepare' else {}
-            if missing:
-                from aoxiang_workflow_state import local_preparation
-                local=local_preparation(item,job['kind'])
-                self.store.update(id,position=position,changes={'state':'SKIPPED' if local else 'REVIEW','source_deleted':True,
-                    'ended_locally':local,'error':{'code':'SOURCE_ORDER_DELETED','message':missing[item['key']]+'；已停止本地后续动作，未向平台提交'}})
-                continue
-            if job.get('automatic'):
-                schedule = self.store.schedule(item['purchase_id'])
-                if not schedule or schedule.get('automation_paused'):
-                    self.store.update(id, position=position, changes={'state': 'SKIPPED', 'error': None})
-                    continue
-            # Read again at each dispatch: a batch never silently adopts stale host mappings.
-            configuration = self.client.request('configuration')
-            suppliers = Directory(self.store.folder).suppliers()
-            basis = item.get('head') or item.get('basis') or {}
-            text = f"{position+1}/{len(job['items'])} · {item.get('display_name') or basis.get('name') or basis.get('number')} · {basis.get('warehouse', '')}"
-            self.progress(text)
-            self.store.update(id, position=position, changes={'state': 'RUNNING', 'error': None}, message=text)
+        job = self.store.claim(id)
+        self.execution_token=job['execution_token']
+        from deletion_barrier import SourceDeleted
+        for identity in [i['item_id'] for i in job['items']]:
+            try:current=self.store.get(id)
+            except SourceDeleted:return None
+            item=next((i for i in current['items'] if i['item_id']==identity),None)
+            if item is None:continue
+            def update(_identity=identity,_oid=(item.get('head') or item.get('basis') or {}).get('oid'),**kw):
+                return self.store.update(id,item_id=_identity,oid=_oid,execution_token=self.execution_token,**kw)
             try:
-                if job['kind'] == 'prepare':
-                    state, result = self.prepare_item(job, item, configuration, suppliers)
-                elif job['kind'] == 'upload':
-                    from aoxiang_purchase_messages import observation
-                    state, result = self.upload_item(item, configuration, suppliers,
-                        notify=lambda r: self.store.update(id, position=position, changes={'purchase_observation': observation(r)}))
-                else:
-                    state, result = self.receipt_item(item, configuration, suppliers)
-                self.store.update(id, position=position, changes={'state': state, 'result': result, 'error': None})
-            except Cancelled:
-                self.store.update(id, position=position, changes={'state': 'PENDING'})
-                raise
-            except Exception as exc:
-                code = getattr(exc, 'code', 'BUSINESS_REVIEW')
-                error = {'code': code, 'message': str(exc)}
-                if getattr(exc, 'details', None):error['details'] = exc.details
-                if job['kind'] == 'receipt':
-                    self.store.observe_schedule(item['purchase_id'], None, error=error, review=code not in RETRYABLE)
-                if code in SESSION_ERRORS:
-                    self.store.update(id, position=position, changes={'state': 'PENDING', 'error': error})
+                if item['state'] in DONE_ITEM:
+                    continue
+                scope=self.store.get(id).get('dispatch_keys')
+                if scope is not None and item['key'] not in scope:continue
+                checkpoint(self.cancel)
+                position = item['position']
+                if job.get('automatic'):
+                    schedule = self.store.schedule(item['purchase_id'])
+                    if not schedule or schedule.get('automation_paused'):
+                        update(changes={'state': 'SKIPPED', 'error': None})
+                        continue
+                from aoxiang_order_guard import deleted_orders
+                if job['kind']=='receipt':
+                    from aoxiang_receipt_scope import assess
+                    eligibility=assess(self.business_path,[item])[item['key']]
+                    if not eligibility['eligible']:
+                        self.store.observe_schedule(item['purchase_id'],None,error={'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']},review=True)
+                        update(changes={'state':'SKIPPED','source_retired':True,'error':{'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']}})
+                        continue
+                missing=deleted_orders(self.business_path,[item]) if job['kind']!='receipt' else {}
+                if missing:
+                    basis=item.get('head') or item.get('basis') or {}
+                    if not self.store.forget_missing(id,identity,basis.get('oid'),self.execution_token,self.business_path):
+                        update(changes={'state':'SKIPPED','error':{'code':'SOURCE_ORDER_DELETED','message':'来源不可用，未派发平台动作'}})
+                    continue
+                # Read again at each dispatch: a batch never silently adopts stale host mappings.
+                configuration = self.client.request('configuration')
+                suppliers = Directory(self.store.folder).suppliers()
+                basis = item.get('head') or item.get('basis') or {}
+                text = f"{position+1}/{len(job['items'])} · {item.get('display_name') or basis.get('name') or basis.get('number')} · {basis.get('warehouse', '')}"
+                self.progress(text)
+                update(changes={'state': 'RUNNING', 'error': None}, message=text)
+                try:
+                    if job['kind'] == 'prepare':
+                        state, result = self.prepare_item(job, item, configuration, suppliers)
+                    elif job['kind'] == 'upload':
+                        from aoxiang_purchase_messages import observation
+                        state, result = self.upload_item(item, configuration, suppliers,
+                            notify=lambda r,update_item=update: update_item(changes={'purchase_observation': observation(r)}))
+                    else:
+                        state, result = self.receipt_item(item, configuration, suppliers)
+                    update(changes={'state': state, 'result': result, 'error': None})
+                except SourceDeleted:
+                    continue
+                except Cancelled:
+                    update(changes={'state': 'PENDING'})
                     raise
-                self.store.update(id, position=position, changes={'state': 'FAILED' if code in RETRYABLE else 'REVIEW', 'error': error})
-        current = self.store.get(id)
+                except Exception as exc:
+                    code = getattr(exc, 'code', 'BUSINESS_REVIEW')
+                    error = {'code': code, 'message': str(exc)}
+                    if getattr(exc, 'details', None):error['details'] = exc.details
+                    if job['kind'] == 'receipt':
+                        self.store.observe_schedule(item['purchase_id'], None, error=error, review=code not in RETRYABLE)
+                    if code in SESSION_ERRORS:
+                        update(changes={'state': 'PENDING', 'error': error})
+                        raise
+                    update(changes={'state': 'FAILED' if code in RETRYABLE else 'REVIEW', 'error': error})
+            except SourceDeleted:
+                continue
+        try:current = self.store.get(id)
+        except SourceDeleted:return None
         if any(i['state']=='PENDING' for i in current['items']):
             scope=current.get('dispatch_keys')
             if scope is not None and not any(i['state']=='PENDING' and i['key'] in scope for i in current['items']):
-                return self.store.update(id,state='PAUSED',message='勾选范围已处理；未勾选项保留，等待另行选择，不自动执行')
-            return self.store.update(id,state='QUEUED',message='继续处理本批执行范围中新排入的失败重跑项')
+                return self.store.update(id,execution_token=self.execution_token,state='PAUSED',message='勾选范围已处理；未勾选项保留，等待另行选择，不自动执行')
+            return self.store.update(id,execution_token=self.execution_token,state='QUEUED',message='继续处理本批执行范围中新排入的失败重跑项')
         bad = sum(i['state'] in ('FAILED', 'REVIEW') for i in current['items'])
         from aoxiang_workflow_state import summary
         final = {**current, 'state': 'COMPLETED_WITH_ERRORS' if bad else 'READY' if job['kind'] == 'prepare' else 'COMPLETED'}
-        return self.store.update(id, state=final['state'], message=summary(final))
+        return self.store.update(id, execution_token=self.execution_token, state=final['state'], message=summary(final))

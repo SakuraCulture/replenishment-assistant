@@ -346,6 +346,12 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.new_bases={};super().loaded_ok(loaded)
         if not self.closing:self.navigate(1)
     def task_changed(self,store,state,result,error):
+        if store not in self.states:return
+        worker=self.sender()
+        captured=getattr(worker,'deletion_generations',{})
+        if store in captured:
+            from deletion_barrier import read_epochs
+            if read_epochs(self.work_repository.path,self.job_day,[store])[store]!=captured[store]:return
         if result:self.new_bases.pop(store,None)
         super().task_changed(store,state,result,error)
 

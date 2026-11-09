@@ -13,6 +13,7 @@ import {assertHandoff} from './preflight.mjs';
 import {MachineSetup,recoverConfiguration,readConfiguration} from './machine-setup.mjs';
 import {MachineTemplate} from './machine-template.mjs';
 import {PurchaseCreates,purchasePublic} from './purchase-create-ledger.mjs';
+import {OrderRetirement,requireDeletedHostOrders} from './order-retirement.mjs';
 import {MachinePurchaseCreate} from './machine-purchase-create.mjs';
 import {PurchaseCreateService} from './purchase-create-service.mjs';
 import {readPurchasePackage,checkPurchaseConfiguration,checkPurchaseInput,freezePurchaseInput} from './purchase-create-artifacts.mjs';
@@ -37,6 +38,7 @@ async function main(){
   const configurationRecovered=await recoverConfiguration(root);setup=new MachineSetup({root,browsers,state});
   template=new MachineTemplate({root,state,browsers});
   const purchases=await PurchaseCreates.open(state);purchases.recover();
+  const retirement=new OrderRetirement(state);
   const purchaseService=new PurchaseCreateService({root,state,ledger:purchases,browsers,progress:stage=>{
     const active=[bindingCheck,receiptSync,purchase].find(controller=>controller?.busy);active?.progress(stage);
   }});
@@ -77,6 +79,19 @@ async function main(){
       if(configurationActions.includes(request.action)&&(runtime.active||commands.list().some(r=>r.state==='QUEUED')))fail('COMPONENT_BUSY','先暂停或完成当前取数任务，再修改连接与目录');
       if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
       switch(request.action){
+        case 'orders.retire':{
+          requireDeletedHostOrders(request.operation_id,request.oids);
+          const resultPending=[];
+          for(const controller of [purchase,receiptSync,bindingCheck]){
+            const active=controller?.job?.id;if(!active||!controller.busy)continue;
+            const original=purchases.get(active),basis=original.intent?.basis||{oid:original.oid};
+            if(basis&&request.oids.includes(basis.oid)){
+              controller.job.cancelled=true;controller.control?.abort();resultPending.push(active);
+            }
+          }
+          result=await retirement.apply(request.operation_id,request.oids);
+          result.pending_actions=resultPending.length;break;
+        }
         case 'discover':result=await setup.discover();break;
         case 'setup.start':result=setup.begin(request);break;
         case 'setup.check_login':result=await setup.verifySaved([]);break;

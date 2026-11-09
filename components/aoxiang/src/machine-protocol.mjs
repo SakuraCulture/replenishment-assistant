@@ -8,7 +8,7 @@ const idPattern=/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 // A valid envelope can receive a correlated validation error without dispatching its body.
 export const correlationId=value=>value?.protocol_version===1&&typeof value.request_id==='string'&&idPattern.test(value.request_id)?value.request_id:null;
 const fields={ping:[],'session.release':[],'session.status':[],'session.health':[],configuration:[],list:['offset','limit'],reserve:['command'],status:['command_id'],
-  'collection.preview':['command_id','operation'],'collection.apply':['command_id','operation','token'],'collection.continue':['command_id'],
+  'collection.preview':['command_id','operation'],'collection.apply':['command_id','operation','token'],'collection.continue':['command_id'],'orders.retire':['operation_id','oids'],
   events:['command_id','after','limit'],pause:['command_id'],resume:['command_id'],retry:['command_id','indices','sequence'],shutdown:[],
   discover:[],'setup.check_login':[],'setup.verify_saved':['codes'],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
   'setup.cancel':['setup_id'],'setup.commit':['setup_id'],
@@ -25,6 +25,7 @@ export function validateRequest(value){
   const allowed=['protocol_version','request_id','action',...fields[value.action]];
   if(['collection.preview','collection.apply'].includes(value.action)&&(!['end','delete'].includes(value.operation)||(value.action==='collection.apply'&&!/^[a-f0-9]{64}$/.test(value.token||''))))fail('REQUEST_SCHEMA','采集维护动作或确认凭据无效');
   if(value.action==='retry'&&(!Number.isInteger(value.sequence)||value.sequence<1||!Array.isArray(value.indices)||!value.indices.length||value.indices.length>256||value.indices.some(i=>!Number.isInteger(i)||i<0)||new Set(value.indices).size!==value.indices.length))fail('REQUEST_SCHEMA','重跑序号与范围无效');
+  if(value.action==='orders.retire'&&(!/^[a-f0-9]{32}$/.test(value.operation_id)||!Array.isArray(value.oids)||!value.oids.length||value.oids.length>256||new Set(value.oids).size!==value.oids.length||value.oids.some(o=>typeof o!=='string'||!o||o.length>100)))fail('REQUEST_SCHEMA','删除操作号或原订单身份无效');
   if(value.action==='setup.verify_saved'&&(!Array.isArray(value.codes)||!value.codes.length||value.codes.length>256||value.codes.some(c=>typeof c!=='string'||!c||c.length>128)||new Set(value.codes).size!==value.codes.length))fail('REQUEST_SCHEMA','核验门店范围无效');
   if(Object.keys(value).some(k=>!allowed.includes(k)))fail('REQUEST_SCHEMA','机器请求包含未知字段');
   if(fields[value.action].includes('command_id')&&(typeof value.command_id!=='string'||!idPattern.test(value.command_id)))fail('REQUEST_SCHEMA','命令编号不能为空且必须符合契约');

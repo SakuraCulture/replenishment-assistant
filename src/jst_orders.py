@@ -334,6 +334,20 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
             # Parse/validate at most once, before opening the write transaction.
             with catalog_check.guard(any(p.get('admission') for p in group),cancel) as catalog_revisions, closing(sqlite3.connect(path,timeout=.1)) as db,db:
                 lc.begin(db,cancel);schema(db)
+                from deletion_barrier import has
+                removed={r[0] for r in db.execute('SELECT oid FROM deleted_order_tokens')} if has(db,'deleted_order_tokens') else set()
+                # Replaying a frozen shared run must account for its own earlier
+                # committed steps even when those source orders were deleted.
+                # Never adopt another run's inventory serial or new baseline.
+                advanced=set()
+                if has(db,'deleted_jst_steps'):
+                    for p in group:
+                        w=p['head']['warehouse']
+                        if p['head']['oid'] in removed and db.execute('SELECT 1 FROM deleted_jst_steps WHERE operation=? AND runid=? AND warehouse=? AND bid=?',(p['operation'],v['runid'],w,expected[w][0])).fetchone():advanced.add(w)
+                for w in advanced:expected[w]=(expected[w][0],expected[w][1]+1)
+                group=[p for p in group if p['head']['oid'] not in removed]
+                if not group:continue
+                whs={p['head']['warehouse'] for p in group}
                 existing=[db.execute('SELECT result FROM jst_steps WHERE operation=?',(p['operation'],)).fetchone() for p in group]
                 if all(existing):
                     if v.get('batch_id'):
@@ -358,7 +372,8 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                 for w in whs:
                     if v.get('batch_id'):db.execute('UPDATE jst_batch_stock SET serial=serial+1 WHERE batch_id=? AND warehouse=?',(v['batch_id'],w))
                     else:db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(w,))
-                db.execute('INSERT OR IGNORE INTO jst_runs VALUES(?,?,?,?)',(v['runid'],wr.now(),run_raw,plan['digest']))
+                clean={**v,'plans':[p for p in v['plans'] if p['head']['oid'] not in removed],'skipped':[p for p in v.get('skipped',[]) if p.get('head',{}).get('oid') not in removed]}
+                db.execute('INSERT OR IGNORE INTO jst_runs VALUES(?,?,?,?)',(v['runid'],wr.now(),wr.dumps(clean),digest(clean)))
                 if catalog_revisions is not None:catalog_check.verify()
                 checkpoint(cancel);progress(CommitProgress(True));db.commit()
                 # Advance only our own transaction; never adopt a concurrent refresh after COMMIT.
@@ -380,7 +395,9 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
         try:
             with closing(sqlite3.connect(path,timeout=.1)) as db,db:
                 db.execute('BEGIN IMMEDIATE')
+                from deletion_barrier import active
                 for h in [p['head'] for p in v['plans']]:
+                    if not active(db,h['oid']):continue
                     event(db,h,'批次停止' if result['cancelled'] else '批次存在未完成订单',{'runid':v['runid'],'result':result})
         except sqlite3.Error as exc:
             import logging

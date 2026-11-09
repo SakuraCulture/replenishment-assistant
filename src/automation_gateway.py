@@ -573,9 +573,12 @@ class Gateway(QObject):
                     heads.append(h)
             if len(heads)!=1:raise CommandError('ORDER_NOT_FOUND','请使用查询到的准确订单编号')
             head=heads[0]; key='history:'+digest([head,args])
-            task,created=self.journal.create(key,{'head':head,'arguments':args},'explanation')
+            task,created=self.journal.create(key,{'head':head,'arguments':args},'explanation',order_ref=head['oid'])
             if created:
                 def finish(value):
+                    from deletion_barrier import require
+                    from contextlib import closing
+                    with closing(self.host.work_repository.connect()) as db:require(db,head['oid'])
                     self.explanations[task['task_id']] = value
                     self.journal.update(task['task_id'], state='completed', message='已读取当时记录；解释仅当前会话有效', order_ref=head['oid'])
                 self.start_job(task,lambda w:automation_jobs.historical_explanation(self.host.work_repository.path,head,args,w.cancel),
@@ -594,6 +597,10 @@ class Gateway(QObject):
         from workbench_actions import recalculation_impact
         h = self.host
         if h.readonly: raise CommandError('READONLY', '历史作业只读')
+        import deletion_barrier
+        from contextlib import closing
+        with closing(h.work_repository.connect()) as db:
+            deletion_barrier.validate(db,{'day':p['day'],'generations':{s:p.get('deletion_generations',{}).get(s,0) for s in p['codes']}})
         impact = recalculation_impact(h.results, p['codes'])
         if impact['new_products'] or impact['manual']:
             raise CommandError('NEEDS_REVIEW', '重算涉及已有新品选择或人工调整，请先在原工作台核对后重新准备',
@@ -634,6 +641,7 @@ class Gateway(QObject):
                 h.loaded_ok(p['loaded'])
             h.initializing = True
             try:
+                h.__dict__.setdefault('deletion_generations',{}).update(p.get('deletion_generations',{}))
                 for s in r['codes']:
                     record = p['records'][s]
                     h.store_presets[s] = copy.deepcopy(record['preset']); h.overrides[s] = copy.deepcopy(record['preset']['config']['warehouses'])

@@ -169,7 +169,7 @@ class Workbench(ParameterUi,BatchWindow):
         loaded=None
         if self.loaded:
             loaded={**self.loaded,'intake':{k:v for k,v in self.loaded['intake'].items() if k!='frozen'}}
-        return {'admission_required':True,'active_plan':copy.deepcopy(self.active_plan),'schema':1,'day':self.job_day,'app_version':VERSION,'model_version':MODEL_VERSION,'loaded':loaded,'states':self.states,'results':self.results,'catalogs':self.catalogs,'profile':self.profile,'input_dirty':self.input_dirty,'store_presets':{s:self.preset_for(s) for s in self.store_widgets},'overrides':self.overrides,'default_by_store':self.default_by_store,'store_ui':{s:self.store_ui(s) for s in self.store_widgets},'sales':self.sales.paths,'products':self.products.path,'legacy':self.master_legacy.isChecked(),'concurrency':self.concurrency.value(),'exception':self.exception.isChecked(),'export_log':self.export_log,'pending_copy':getattr(self,'pending_copy',None)}
+        return {'deletion_generations':copy.deepcopy(getattr(self,'deletion_generations',{})),'admission_required':True,'active_plan':copy.deepcopy(self.active_plan),'schema':1,'day':self.job_day,'app_version':VERSION,'model_version':MODEL_VERSION,'loaded':loaded,'states':self.states,'results':self.results,'catalogs':self.catalogs,'profile':self.profile,'input_dirty':self.input_dirty,'store_presets':{s:self.preset_for(s) for s in self.store_widgets},'overrides':self.overrides,'default_by_store':self.default_by_store,'store_ui':{s:self.store_ui(s) for s in self.store_widgets},'sales':self.sales.paths,'products':self.products.path,'legacy':self.master_legacy.isChecked(),'concurrency':self.concurrency.value(),'exception':self.exception.isChecked(),'export_log':self.export_log,'pending_copy':getattr(self,'pending_copy',None)}
     def confirm_overwrite(self,old,new):
         a=old['summary'];b=wr.summary(new);oldstores=a['stores'];newstores=b['stores']
         removed=set(oldstores)-set(newstores);added=set(newstores)-set(oldstores);lost=[s for s in oldstores.keys()&newstores.keys() if oldstores[s]['state']=='已完成' and newstores[s]['state']!='已完成']
@@ -223,7 +223,7 @@ class Workbench(ParameterUi,BatchWindow):
         self._store_parameter_origins={}
         self.reset_calculation_snapshot()
         try:
-            self.readonly=False;self.job_day=wr.today();self.saved_time='';self.loaded=None;self.results={};self.states={};self.store_widgets={};self.store_presets={};self.overrides={};self.default_by_store={};self.run_codes=[];self.current_store=None;self.result=None;self.input_dirty=True;self.dirty=True;self.export_log=[];self.pending_copy=None
+            self.deletion_generations={};self.readonly=False;self.job_day=wr.today();self.saved_time='';self.loaded=None;self.results={};self.states={};self.store_widgets={};self.store_presets={};self.overrides={};self.default_by_store={};self.run_codes=[];self.current_store=None;self.result=None;self.input_dirty=True;self.dirty=True;self.export_log=[];self.pending_copy=None
             self.sales.paths=[];self.sales.refresh();self.catalogs=self.catalog_repository.catalogs();self.profile=self.repository.profile();self.refresh_catalog_labels();self.refresh_profile_label();self.store_table.setRowCount(0);self.file_report.setRowCount(0);self.refresh_tables();self.navigate(0)
         finally:self.initializing=False;self._hydrating=False;self.job_dirty=False;self.update_controls()
         __import__('replenishment_plans').refresh(self)
@@ -231,6 +231,10 @@ class Workbench(ParameterUi,BatchWindow):
         # UI reader transfers an exclusively owned tree; external callers retain copy semantics.
         clone=(lambda value:value) if owned else copy.deepcopy
         p=record['payload']
+        import deletion_barrier
+        from contextlib import closing
+        with closing(self.work_repository.connect()) as db:deletion_barrier.validate(db,deletion_barrier.basis(p))
+        self.deletion_generations=copy.deepcopy(p.get('deletion_generations',{}))
         if p.get('schema')!=1:raise ValueError('不支持的作业格式')
         self.reset_calculation_snapshot()
         self.active_plan=clone(p.get('active_plan'))

@@ -118,14 +118,15 @@ class DeletionRaces(unittest.TestCase):
             if getattr(s,'active',False):event.set()
         result=m.execute(self.path,plan,progress=progress,cancel=event)
         self.assertEqual(result['deleted'],1);self.assertEqual(self.r.headers(),[])
-    def test_new_shared_work_added_after_prepare_rejected(self):
+    def test_new_shared_work_added_after_prepare_rebased_without_reviving_order(self):
         plan=m.prepare(self.path,self.heads);original=m.prepare_rewrites
         def add(db,plan,scratch,progress,cancel):
             result=original(db,plan,scratch,progress,cancel)
-            with closing(sqlite3.connect(self.path)) as other,other:other.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('other',wr.today(),__import__('normal_orders').encode({}, other)))
+            if not db.in_transaction:
+                with closing(sqlite3.connect(self.path)) as other,other:other.execute('INSERT INTO normal_work_revisions VALUES(?,?,?)',('other',wr.today(),__import__('normal_orders').encode({}, other)))
             return result
-        with patch.object(m,'prepare_rewrites',side_effect=add),self.assertRaises(wr.Conflict):m.execute(self.path,plan)
-        self.assertEqual(len(self.r.headers()),1)
+        with patch.object(m,'prepare_rewrites',side_effect=add):m.execute(self.path,plan)
+        self.assertEqual(self.r.headers(),[])
     def test_cancel_before_lock_leaves_no_business_or_cache_writes(self):
         plan=m.prepare(self.path,self.heads);event=threading.Event()
         def progress(s):

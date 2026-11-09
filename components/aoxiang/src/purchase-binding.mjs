@@ -82,6 +82,7 @@ export class MachinePurchaseBinding{
     this.job={id,stage:'核对指定采购单，未上传或修改平台单据'};this.control=new AbortController();
     this.pending=Promise.resolve().then(()=>this.service.observe(id,proposal,{signal:this.control.signal})).catch(e=>{
       const latest=this.creates.get(id);
+      if(latest.state==='RETIRED')return;
       const superseded=!bindingEligible(latest);
       this.creates.putBindingProposal(id,latest.sequence,{...latest.bindingProposal,state:superseded?'SUPERSEDED':this.control.signal.aborted?'PAUSED':'FAILED',error:superseded?{code:'BINDING_SUPERSEDED',message:'原采购任务状态已变化，已保留原回执或取消记录；请刷新本单记录继续原任务'}:errorInfo(e)},'BINDING_CHECK_STOPPED');
     }).catch(this.onFatal).finally(()=>{this.pending=null;});

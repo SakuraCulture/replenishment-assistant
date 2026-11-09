@@ -108,6 +108,8 @@ class Repository:
 
     def log(self,order,action,detail):
         with closing(self.work.connect()) as db,db:
+            import deletion_barrier
+            db.execute('BEGIN IMMEDIATE');deletion_barrier.require(db,order['oid'])
             db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(wr.now(),order['oid'],order['revision'],action,wr.dumps(detail)))
 
     def confirm(self,payload,codes,expected_job,expected_orders,*,progress=lambda _:None,headers_only=False,cancel=None):
@@ -137,6 +139,8 @@ class Repository:
             planned_job=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
             from admission import verify_result
             for s in codes:verify_result(db,payload['results'][s],required=bool(payload.get('admission_required')))
+            import deletion_barrier
+            deletion_barrier.validate(db,deletion_barrier.basis(payload))
             planned={}
             for s in codes:
                 planned[s]=db.execute("SELECT o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE o.day=? AND o.store=? AND o.kind='normal_model'",(day,s)).fetchone()
@@ -176,6 +180,9 @@ class Repository:
                     if 'locked' not in str(exc).lower() or time.monotonic()>=deadline:raise
             progress('已取得写锁，校验修订并准备事务内容（可取消）…')
             checkpoint(cancel)
+            # Guard the complete day payload again under the commit lock: a
+            # deletion during preparation must not revive an unselected store.
+            deletion_barrier.validate(db,deletion_barrier.basis(payload))
             for s in codes:verify_result(db,payload['results'][s],required=bool(payload.get('admission_required')))
             old=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
             if (old[0] if old else None)!=expected_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')

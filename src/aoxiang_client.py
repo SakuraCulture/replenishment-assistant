@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sqlite3
 import queue
 import subprocess
 import threading
@@ -23,6 +25,8 @@ class ProcessClient:
 
     def __init__(self, component_root: Path, state_root: Path):
         self.component_root, self.state_root = Path(component_root).resolve(), Path(state_root).resolve()
+        self.business_path=self.state_root.parent.parent/'workbench.sqlite3'
+        self._retire_lock=threading.RLock()
         self._pending: dict[str, queue.Queue] = {}
         self._lock, self._write_lock = threading.Lock(), threading.Lock()
         self._ready = threading.Event()
@@ -40,6 +44,7 @@ class ProcessClient:
         self._process = subprocess.Popen(
             [str(node), str(entry), '--state-root', str(self.state_root)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            env={**os.environ,**({'REPLENISHMENT_BUSINESS_DB':str(self.business_path)} if self.business_path.is_file() else {})},
             cwd=self.component_root, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
         )
         self._reader = threading.Thread(target=self._read_stdout, name='aoxiang-protocol', daemon=True)
@@ -117,7 +122,21 @@ class ProcessClient:
                 self._stderr.extend(chunk)
                 del self._stderr[:-65536]
 
+    def flush_retirements(self):
+        if not self.business_path.is_file():return
+        import deletion_barrier
+        with self._retire_lock:
+            for plan in deletion_barrier.pending(self.business_path):
+                complete=True
+                for start in range(0,len(plan['oids']),256):
+                    r=self.request('orders.retire',operation_id=plan['operation_id'],oids=plan['oids'][start:start+256])
+                    complete=complete and not r.get('pending_files') and not r.get('pending_actions')
+                if complete:
+                    try:deletion_barrier.acknowledge(self.business_path,plan['operation_id'])
+                    except sqlite3.OperationalError:pass  # main writer busy; idempotent local cleanup resumes later
+
     def request(self, action: str, *, timeout: float = 30, **values) -> Any:
+        if action not in ('orders.retire','shutdown') and self.running and self._hello is not None:self.flush_retirements()
         if self._failure:
             raise self._failure
         if not self.running or self._hello is None:

@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import {DatabaseSync,backup} from 'node:sqlite';
 import {canonical,sha256,now,uid,fail} from './common.mjs';
 import {orderKey,validatePurchaseIntent,checkImportReceipt,checkCreatedPurchase,canBind,bindingEligible,checkedBinding} from './purchase-create-contract.mjs';
+import {requireUnretired,requireHostOrder,retiredRecord,lateRetiredReceipt} from './order-retirement.mjs';
 
 const transitions={
   RESERVED:['PREPARING','PAUSED','CANCELLED_BEFORE_UPLOAD'],PREPARING:['READY','PAUSED','FAILED_PRECHECK'],
@@ -27,10 +28,11 @@ export class PurchaseCreates{
     return new PurchaseCreates(state);
   }
   constructor(state){this.state=state;this.db=state.db;}
-  get(id){const r=this.db.prepare('SELECT payload FROM purchase_creates WHERE id=?').get(id);if(!r)fail('PURCHASE_CREATE_NOT_FOUND','未找到采购创建记录');return JSON.parse(r.payload);}
+  get(id){const r=this.db.prepare('SELECT payload FROM purchase_creates WHERE id=?').get(id);if(!r){const gone=retiredRecord(this.db,id);if(gone)return gone;fail('PURCHASE_CREATE_NOT_FOUND','未找到采购创建记录');}return JSON.parse(r.payload);}
   list(){return this.db.prepare('SELECT payload FROM purchase_creates ORDER BY rowid').all().map(r=>JSON.parse(r.payload));}
   events(id){return this.db.prepare('SELECT payload FROM purchase_create_events WHERE id=? ORDER BY sequence').all(id).map(r=>JSON.parse(r.payload));}
   reserve(intent,requestHash){
+    requireUnretired(this.db,intent.id,intent.basis?.oid);requireHostOrder(intent.basis?.oid);
     validatePurchaseIntent(intent);const key=orderKey(intent);
     return this.state.write(()=>{
       const existing=this.db.prepare('SELECT request_hash FROM purchase_creates WHERE id=?').get(intent.id);
@@ -46,6 +48,7 @@ export class PurchaseCreates{
   update(id,sequence,next,changes={},kind=next){
     return this.state.write(()=>{
       const old=this.get(id);if(old.sequence!==sequence)fail('PURCHASE_STATE_CONFLICT','采购任务已更新，请读取原记录');
+      requireUnretired(this.db,id,old.intent?.basis?.oid);
       if(!transitions[old.state]?.includes(next))fail('PURCHASE_STATE_TRANSITION','采购任务不允许从 '+old.state+' 进入 '+next);
       if(Object.keys(changes).some(k=>!['baseline','uploadAttempted','receipt','binding','error','evidence','additionalTaskIds','uploadWarning'].includes(k)))fail('PURCHASE_STATE_IMMUTABLE','不能修改采购冻结依据');
       if(old.uploadAttempted&&changes.uploadAttempted===false)fail('PURCHASE_STATE_IMMUTABLE','已进入上传边界，不能清除提交事实');
@@ -55,6 +58,7 @@ export class PurchaseCreates{
     });
   }
   accepted(receipt){
+    if(lateRetiredReceipt(this.db,receipt))return this.get(receipt.intentId);
     const r=this.get(receipt.intentId);checkImportReceipt(r.intent,receipt);
     if(r.receipt?.taskId===receipt.taskId)return r;
     if(r.receipt){return this.update(r.id,r.sequence,'NEEDS_REVIEW',{additionalTaskIds:[...new Set([...(r.additionalTaskIds||[]),receipt.taskId])],error:{code:'MULTIPLE_IMPORT_TASKS',message:'发现不同导入任务号，禁止自动关联或重传'}},'CONFLICTING_RECEIPT');}
@@ -70,6 +74,7 @@ export class PurchaseCreates{
     return this.update(r.id,r.sequence,'ACCEPTED',{receipt,error:null},'ACCEPTED');
   }
   putBindingProposal(id,sequence,proposal,kind){
+    requireUnretired(this.db,id);
     return this.state.write(()=>{
       const r=this.get(id);
       if(r.sequence!==sequence)fail('PURCHASE_STATE_CONFLICT','采购记录已变化，请重新核对');
@@ -84,6 +89,7 @@ export class PurchaseCreates{
     });
   }
   confirmBinding(id,sequence,proof,proposalId,proofHash){
+    requireUnretired(this.db,id);
     return this.state.write(()=>{
       const r=this.get(id);
       if(r.sequence!==sequence||r.bindingProposal?.id!==proposalId||r.bindingProposal.state!=='READY'||r.bindingProposal.manifest.sha256!==proofHash)fail('BINDING_PREVIEW_STALE','关联核对期间记录已更新，请重新预览');
@@ -94,6 +100,7 @@ export class PurchaseCreates{
     });
   }
   bind(id,evidence){
+    requireUnretired(this.db,id);
     const r=this.get(id);if(r.additionalTaskIds?.length)fail('MULTIPLE_IMPORT_TASKS','导入任务不唯一，需人工核对');
     const binding=checkCreatedPurchase(r.intent,r.receipt,evidence);
     return this.update(id,r.sequence,'BOUND',{binding,evidence,error:null},'EXACT_ORDER_BOUND');
@@ -109,6 +116,7 @@ export class PurchaseCreates{
   }
 }
 export function purchasePublic(r){
+  if(r.state==='RETIRED')return {id:r.id,state:'RETIRED',sourceDeleted:true,uploadAttempted:r.uploadAttempted,taskIds:r.taskIds};
   return {id:r.id,state:r.state,sequence:r.sequence,createdAt:r.createdAt,updatedAt:r.updatedAt,
     basis:r.intent.basis,target:r.intent.target,supplierCode:r.intent.supplierCode,rows:r.intent.rows.length,totalQuantity:r.intent.totalQuantity,totalAmount:r.intent.totalAmount,
     uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding:r.binding,error:r.error,uploadWarning:r.uploadWarning||null,additionalTaskIds:r.additionalTaskIds||[],

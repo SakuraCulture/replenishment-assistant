@@ -1,12 +1,14 @@
 import {fail} from './common.mjs';
 import {errorInfo} from './machine-runtime.mjs';
+import {retired} from './order-retirement.mjs';
 
 export class MachinePurchaseReceipt{
   constructor({ledger,service,onFatal=()=>{}}){Object.assign(this,{ledger,service,onFatal});this.pending=null;this.job=null;}
   get busy(){return !!this.pending;}
-  status(id){const r=this.ledger.get(id)||this.service.register(id);return {...r,active:this.busy&&this.job?.id===id,stage:this.job?.id===id?this.job.stage:null,pauseRequested:this.job?.id===id?this.job.cancelled:false};}
+  status(id){if(retired(this.ledger.db,id))return {id,state:'RETIRED',sourceDeleted:true,active:false};const r=this.ledger.get(id)||this.service.register(id);return {...r,active:this.busy&&this.job?.id===id,stage:this.job?.id===id?this.job.stage:null,pauseRequested:this.job?.id===id?this.job.cancelled:false};}
   progress(stage){if(this.job)this.job.stage=stage;}
   start(id){
+    if(retired(this.ledger.db,id))fail('SOURCE_ORDER_DELETED','来源订单已删除，不再启动收货同步');
     if(this.busy)fail('RECEIPT_BUSY','收货同步正在执行或安全停止');
     const r=this.service.register(id);
     if(['READY','SYNCED','VOIDED','VOIDED_REVIEW'].includes(r.state))return this.status(id);

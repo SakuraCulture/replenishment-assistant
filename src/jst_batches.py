@@ -236,8 +236,10 @@ def deleting_order(db,oid):
             for sku,qty in db.execute('SELECT sku,quantity FROM jst_reservations WHERE gid=?',(gid,)):
                 old=db.execute('SELECT quantity FROM jst_batch_retired WHERE batch_id=? AND warehouse=? AND sku=?',(bid,wh,sku)).fetchone()
                 db.execute('INSERT OR REPLACE INTO jst_batch_retired VALUES(?,?,?,?)',(bid,wh,sku,str(Decimal(qty)+(Decimal(old[0]) if old else 0))))
-        db.execute('UPDATE jst_batch_stock SET serial=serial+1 WHERE batch_id=? AND warehouse=?',(bid,wh))
-        db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE batch_id=?",(bid,))
+        # Removing an unlocked member only releases capacity; a locked member's
+        # reservation was transferred to retired stock above. Neither decreases
+        # available stock or changes another member's frozen allocation.
+        # Keep the surviving batch's execution epoch and control state.
     db.execute('DELETE FROM jst_generation_batches WHERE gid IN (SELECT gid FROM jst_generations WHERE oid=?)',(oid,))
     db.execute('DELETE FROM jst_batch_members WHERE oid=?',(oid,))
     for bid,wh in members:

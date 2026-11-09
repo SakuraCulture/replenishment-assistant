@@ -36,6 +36,9 @@ def main():
     # startup; normal launches always attempt connection after the first paint.
     from browser_startup_ui import start_application_connections
     start_application_connections(win, sys.argv)
+    if '--deletion-lifecycle-smoke' in sys.argv:
+        from deletion_lifecycle_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--deletion-lifecycle-smoke')+1:])
     if '--reset-selected-smoke' in sys.argv:
         from reset_selected_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--reset-selected-smoke')+1:])

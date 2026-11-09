@@ -4,7 +4,7 @@ import json
 import sqlite3
 import time
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager,closing
 from pathlib import Path
 
 from aoxiang_jobs import encoded
@@ -61,8 +61,13 @@ class Workflows:
     def _get(self, db, id):
         row = db.execute('SELECT payload FROM ax_workflows WHERE id=?', (id,)).fetchone()
         if not row:
-            raise ValueError('未找到原翱象批次作业')
-        return json.loads(row[0])
+            from deletion_barrier import SourceDeleted
+            raise SourceDeleted('原翱象批次已删除；不接受旧任务回写')
+        job=json.loads(row[0])
+        for item in job['items']:
+            basis=item.get('head') or item.get('basis') or {}
+            item.setdefault('item_id',uuid.uuid5(uuid.NAMESPACE_URL,id+'|'+item['key']+'|'+str(basis.get('oid'))).hex)
+        return job
 
     def get(self, id):
         with self.db() as db:
@@ -77,10 +82,13 @@ class Workflows:
             row=db.execute("SELECT payload FROM ax_workflows WHERE state IN ('QUEUED','YIELDED') ORDER BY rowid LIMIT 1").fetchone()
             return json.loads(row[0]) if row else None
 
-    def _save(self, db, job, event):
+    def _save(self, db, job, event, *, item_id=None):
+        for item in job['items']:
+            basis=item.get('head') or item.get('basis') or {}
+            item.setdefault('item_id',uuid.uuid5(uuid.NAMESPACE_URL,job['id']+'|'+item['key']+'|'+str(basis.get('oid'))).hex)
         job = {**job, 'sequence': job.get('sequence', 0) + 1, 'updated_at': self.clock()}
         db.execute('INSERT INTO ax_workflows VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,payload=excluded.payload', (job['id'], job['state'], encoded(job)))
-        db.execute('INSERT INTO ax_workflow_events VALUES(?,?,?)', (job['id'], job['sequence'], encoded({'at': job['updated_at'], 'event': event, 'state': job['state'], 'message': job.get('message')})))
+        db.execute('INSERT INTO ax_workflow_events VALUES(?,?,?)', (job['id'], job['sequence'], encoded({'at': job['updated_at'], 'event': event, 'state': job['state'], 'message': job.get('message'),'item_id':item_id})))
         return job
 
     def _new(self, db, kind, items, **kw):
@@ -143,17 +151,58 @@ class Workflows:
                 require(self.business_path,items)
             return self._new(db, 'receipt', items)
 
-    def update(self, id, *, state=None, message=None, position=None, changes=None, **job_changes):
+    def claim(self,id):
+        with self.db(True) as db:
+            job=self._get(db,id);job.update(state='RUNNING',execution_token=uuid.uuid4().hex)
+            return self._save(db,job,'CLAIMED_EXECUTION')
+
+    def forget_missing(self,id,item_id,oid,execution_token,path):
+        """Legacy orphan repair by stable identity; never touches a live source."""
+        from deletion_barrier import active,SourceDeleted
+        from aoxiang_workflow_state import reconcile
+        with self.db(True) as db:
+            job=self._get(db,id)
+            if job.get('execution_token')!=execution_token:raise SourceDeleted('原执行已失效')
+            with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as source:
+                if active(source,oid):return False
+            found=[i for i in job['items'] if i['item_id']==item_id and (i.get('head') or i.get('basis') or {}).get('oid')==oid]
+            if not found:return True
+            job['items']=[i for i in job['items'] if i not in found]
+            for i in found:
+                if i.get('purchase_id'):db.execute('DELETE FROM ax_schedules WHERE id=?',(i['purchase_id'],))
+            db.execute('DELETE FROM ax_workflow_events WHERE id=? AND json_extract(payload,\'$.item_id\')=?',(id,item_id))
+            if not job['items']:
+                db.execute('DELETE FROM ax_workflow_events WHERE id=?',(id,));db.execute('DELETE FROM ax_workflows WHERE id=?',(id,));return True
+            for n,i in enumerate(job['items']):i['position']=n
+            if 'dispatch_keys' in job:job['dispatch_keys']=[k for k in job['dispatch_keys'] if k in {i['key'] for i in job['items']}]
+            self._save(db,reconcile(job),'REMOVED_MISSING_SOURCE');return True
+
+    def update(self, id, *, state=None, message=None, position=None, item_id=None, oid=None, execution_token=None, changes=None, **job_changes):
+        if set(changes or {}) & {'item_id','key','head','basis','position'}:
+            raise ValueError('不能修改任务项的稳定身份或来源依据')
+        if set(job_changes) & {'id','items','execution_token'}:
+            raise ValueError('不能通过回写替换批次身份或执行令牌')
         with self.db(True) as db:
             job = self._get(db, id)
+            from deletion_barrier import SourceDeleted
+            if execution_token is not None and job.get('execution_token')!=execution_token:raise SourceDeleted('原执行令牌已失效；忽略旧任务回写')
+            if item_id is not None:
+                matches=[i for i in job['items'] if i['item_id']==item_id]
+                if len(matches)!=1:raise SourceDeleted('来源任务项已删除；不按位置写入其他订单')
+                item=matches[0];head=item.get('head') or item.get('basis') or {}
+                if head.get('oid')!=oid:raise SourceDeleted('来源订单身份不符')
+                if self.business_path:
+                    from aoxiang_order_guard import deleted_orders
+                    if deleted_orders(self.business_path,[item]):raise SourceDeleted('来源订单已删除；忽略晚到回写')
+                item.update(copy.deepcopy(changes or {}))
             if state:
                 job['state'] = state
             if message is not None:
                 job['message'] = message
-            if position is not None:
+            if position is not None and item_id is None:
                 job['items'][position].update(copy.deepcopy(changes or {}))
             job.update(copy.deepcopy(job_changes))
-            return self._save(db, job, 'UPDATED')
+            return self._save(db, job, 'UPDATED',item_id=item_id)
 
     def resume(self, id):
         with self.db(True) as db:
@@ -379,6 +428,9 @@ class Workflows:
                 s={'id':purchase_id,'basis':record['basis'],'order_id':record['scope']['orderId'],'terminal':False,'final_pending':False,'failures':0,
                    'active_job':None,'created_at':self.clock(),'enabled':False,'automation_paused':True,'interval_seconds':1800}
             else:s = json.loads(row[0])
+            if self.business_path:
+                from aoxiang_order_guard import deleted_orders
+                if deleted_orders(self.business_path,[{'key':purchase_id,'basis':s['basis']}]):return
             terminal = s['terminal'] or bool((record or {}).get('terminal'))
             if record:
                 s['last_state'] = record['state']
