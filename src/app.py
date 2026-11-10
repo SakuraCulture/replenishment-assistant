@@ -57,6 +57,9 @@ def main():
     if '--purchase-pipeline-smoke' in sys.argv:
         from purchase_pipeline_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--purchase-pipeline-smoke')+1:])
+    if '--catalog-lifetime-smoke' in sys.argv:
+        from catalog_lifetime_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--catalog-lifetime-smoke')+1:])
     if '--admission-overview-smoke' in sys.argv:
         from admission_overview_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--admission-overview-smoke')+1:])
@@ -260,6 +263,9 @@ def __getattr__(name):
 if __name__=="__main__":
     import multiprocessing
     multiprocessing.freeze_support()
+    if '--catalog-lifetime-helper' in sys.argv:
+        from catalog_lifetime_smoke import parent_helper
+        parent_helper(sys.argv[sys.argv.index('--catalog-lifetime-helper')+1:])
     if '--catalog-validate' in sys.argv:
         from catalog_sync_validation import cli
         sys.exit(cli(sys.argv[sys.argv.index('--catalog-validate')+1:]))

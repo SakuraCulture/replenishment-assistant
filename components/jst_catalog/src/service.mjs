@@ -5,12 +5,13 @@ import {JobStore} from './job-store.mjs';
 import {AccountSessions,accountId,validateIdentity} from './accounts.mjs';
 import * as native from './product-export.mjs';
 import {CatalogError,check,now,sha,canonical,safeError,WAREHOUSES} from './common.mjs';
+import {disconnectBounded} from './service-lifetime.mjs';
 
 const businessAccount=a=>({id:a.id,warehouse:a.warehouse,expectedCompany:a.expectedCompany,expectedCoid:a.expectedCoid,expectedUid:a.expectedUid,mappingVerified:a.mappingVerified,bindingVersion:a.bindingVersion,binding:a.binding});
 const unresolved=i=>(i.native?.submissions>0||i.native?.nativeTaskRef)&&!['FAILED_CONFIRMED','DOWNLOADED'].includes(i.native.stage)&&!i.adoption;
 
 export class CatalogService {
-  static async open(options){return new CatalogService({...options,store:await JobStore.open(options.stateRoot)});}
+  static async open(options){return new CatalogService({...options,store:await JobStore.open(options.stateRoot,{parentPid:options.parentPid})});}
   constructor({store,stateRoot,bridgeRoot,lockRoot,forbiddenRoots,validator,driver}){
     Object.assign(this,{store,stateRoot,validator});this.active=null;this.shuttingDown=false;this.sequence=0;this.controlTail=Promise.resolve();
     this.sessions=driver?null:new AccountSessions({stateRoot,bridgeRoot,lockRoot,forbiddenRoots,phase:(phase,message)=>{if(this.active)this.active.phase={phase,message,at:now()};}});
@@ -235,7 +236,19 @@ export class CatalogService {
     }
     await this.store.write(d=>{const b=d.batches[batchId];b.state=signal.aborted?'STOPPED':b.items.every(i=>i.receipt||i.adoption)?'FILES_READY':'NEEDS_ATTENTION';b.finishedAt=now();});
   }
-  async close(){
-    this.shuttingDown=true;this.active?.controller.abort();await this.controlTail.catch(()=>{});this.active?.controller.abort();await this.active?.promise;await this.driver.close();await this.store.close();
+  close({disconnectTimeout=3000}={}){
+    if(this.closePromise)return this.closePromise;
+    this.shuttingDown=true;this.active?.controller.abort();
+    this.closePromise=Promise.resolve().then(async()=>{
+      await this.controlTail.catch(()=>{});this.active?.controller.abort();
+      try{await this.active?.promise;}
+      finally{
+        // No timeout applies to a running task or state commit. Only disconnect
+        // cleanup, after all work has settled, is bounded; failures cannot skip
+        // the unconditional task-store release.
+        try{await disconnectBounded(()=>this.driver.close(),disconnectTimeout);}
+        finally{await this.store.close();}
+      }
+    });return this.closePromise;
   }
 }

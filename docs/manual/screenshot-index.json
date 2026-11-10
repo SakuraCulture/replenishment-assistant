@@ -249,6 +249,24 @@
       "evidence": "qa/purchase_recovery_pipeline_0502_20261110/source-ui-03/02-新预览就绪未上传.png",
       "synthetic": true,
       "live_platform_tested": false
+    },
+    {
+      "name": "catalog-reopen-0503.png",
+      "sha256": "82a2817205b5faaf0d4159410e252360b041278e30441aac6934940078656d06",
+      "version": "0.50.3",
+      "source": "source Qt; real local service ownership",
+      "evidence": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/01-异常退出后原任务保留.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "catalog-owner-0503.png",
+      "sha256": "775090619df67a14ceb7b5d6944329b1480dd883747e196d5e16a7a21b2499cc",
+      "version": "0.50.3",
+      "source": "source Qt; real local service ownership",
+      "evidence": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/02-占用者与恢复提示.png",
+      "synthetic": true,
+      "live_platform_tested": false
     }
   ],
   "live_platform_tested": false,
