@@ -1,0 +1,40 @@
+{
+  "source_commit": "b91c9d088a7f053d12c8026b3fdcdac31906d13e",
+  "files": [
+    {
+      "path": "qa\\bridge_fix_0501_rc2_20261110\\artifacts-hashes.json",
+      "bytes": 596,
+      "sha256": "fdbf8fd0b4dba812a16c9c191f8a5c1cb8ea980322b0a55dbf1183a6fee9c714"
+    },
+    {
+      "path": "qa\\bridge_fix_0501_rc2_20261110\\build-rc2.log",
+      "bytes": 269,
+      "sha256": "9dfda8e6b6a85854ae82218a5a72f7c7e99bb34585b1dd940ec0deef22fe72f7"
+    },
+    {
+      "path": "qa\\bridge_fix_0501_rc2_20261110\\exe-deletion-process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "qa\\bridge_fix_0501_rc2_20261110\\exe-startup-process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "qa\\bridge_fix_0501_rc2_20261110\\node-final.log",
+      "bytes": 54586,
+      "sha256": "53e89bd44231d6eb361a5ff220f6a265c370c5e709641e0da6d2a9b1f073bdd7"
+    },
+    {
+      "path": "qa\\bridge_fix_0501_rc2_20261110\\python-final-02.log",
+      "bytes": 222033,
+      "sha256": "7b8e5c87b7449c2e1db944bd105caa8be88908ebfc51b2427090cbfb36afa173"
+    },
+    {
+      "path": "qa\\bridge_fix_0501_rc2_20261110\\python-final.log",
+      "bytes": 223176,
+      "sha256": "378c5df1d33ce52e9212f710e871c663e9d3c1dc3e194544f000ec52ff5464a3"
+    }
+  ]
+}
