@@ -1,0 +1,48 @@
+(node:32984) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ HALF_UP price cents, fractional quantity amount, and exact rational boundaries (1.2881ms)
+✔ rounded intent validates original payment, all row deltas and strict native procurement amounts (1.7487ms)
+✔ decimal facts retain precision and reject null/number/exponent/negative (0.2449ms)
+✔ reserve idempotent; changed payment and different ID cannot duplicate an order (31.943ms)
+✖ changing login account cannot bypass same-merchant unknown-upload reservation (29.0412ms)
+✔ pre-upload cancel releases reservation; post-boundary cancel cannot release it (32.5646ms)
+✔ crash before upload pauses; crash after boundary needs review and never retries (51.4129ms)
+✔ pause during preparation never uploads; retry uses original intent safely (33.2269ms)
+✔ pause in upload persists returned receipt; next start only observes it (29.0981ms)
+✔ timeout no receipt forbids replay; late exact receipt can recover (29.0652ms)
+✔ strict per-SKU proof catches equal-total swaps, wrong scope, null, split, status and external order (0.5742ms)
+✔ receipt identity cannot change; conflicting task retained for review (27.0705ms)
+✔ recovered verification repeats read-only observation and protects unique platform order (47.2566ms)
+✔ missing durable table or duplicate protection index fails closed and keeps backup (25.1773ms)
+✔ legacy component migration cannot silently omit a reserved or submitted creation identity (25.9648ms)
+✔ immediate close before preparation microtask pauses without upload or lost task (32.8385ms)
+✔ native Excel whole-valued decimal SKU count binds without weakening quantity or amount checks (0.485ms)
+✔ blocked extra request after a durable receipt continues full original-task proof, never uploads twice (36.7917ms)
+✔ blocked request without receipt cannot start proof or replay upload (27.0047ms)
+✔ conflicting receipts after upload cannot recover into an automatic binding (31.4259ms)
+✔ accepted interrupted upload still rejects every invalid SKU and identity proof (111.1384ms)
+✔ voided original purchase still needs exact receipt, identity, marker and every native SKU (0.8206ms)
+✔ observing a void retains the original receipt and prevents duplicate upload after restart (33.915ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 22
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 832.4365
+
+✖ failing tests:
+
+test at test\purchase-create.test.mjs:72:1
+✖ changing login account cannot bypass same-merchant unknown-upload reservation (29.0412ms)
+  Error: 采购创建范围不符：不得创建外部订单或自动提交
+      at fail (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/common.mjs:12:54)
+      at validatePurchaseIntent (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-contract.mjs:41:131)
+      at PurchaseCreates.reserve (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/src/purchase-create-ledger.mjs:36:5)
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/purchase-create.test.mjs:79:25)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    code: 'PURCHASE_INTENT_SCHEMA',
+    details: {}
+  }

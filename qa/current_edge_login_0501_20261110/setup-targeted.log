@@ -1,0 +1,29 @@
+✔ startup identity failure hands off same transport without claiming verified identity (73.0185ms)
+✔ startup checks saved login without querying stores, changing mappings or committing configuration (22.3239ms)
+✔ startup follows current merchant without another connection; previous targets require explicit verification (41.5975ms)
+✔ same merchant account switch automatically updates observed login and retains stores on the same worker (39.3523ms)
+✔ only the operator userId changes: login succeeds without rewriting business configuration (34.2737ms)
+✔ login recheck rebuilds a disconnected browser worker instead of borrowing a stale successful connection (21.3633ms)
+✔ startup keeps the login page for the user and retries the same client without changing bindings (27.0467ms)
+✔ scheduled preflight reads saved binding and cancels preview without modifying configuration (22.4715ms)
+✔ shared setup keeps verified worker until explicit save, then reuses it for subsequent setup (18.7168ms)
+✔ uncommitted new setup releases connection on cancel; failed borrowed setup stops unsafe worker (17.7128ms)
+✔ shared setup recovers one query identity timeout on same worker without starting another connection (1.9018ms)
+✔ 配置动作严格校验编码、列表与已发现浏览器路径，不允许未知字段 (1.258ms)
+✔ 核验仅查询、保留选店顺序，明确保存前配置不变；保存后可读取复用 (16.0679ms)
+✔ 部分门店编码不符只保存已核验项，不按名字猜编码 (16.7621ms)
+✔ 显式核验当前商家门店，保存前旧参数不变；保存时只采用新核验的门店 (19.7182ms)
+✔ observed-login update detects concurrent configuration changes and releases the unsafe worker (21.908ms)
+✔ 身份超时和未分类浏览器异常停止整次核验，不逐店重复等待 (2.6685ms)
+✔ 停止只读核验立即释放执行器，不再等挂起查询或核验下一店，不保存半成品 (1.425ms)
+✔ 挂起查询到达步骤上限后失败退出、释放连接，重试不被旧结果污染 (55.9751ms)
+✔ 核验后被其他操作更新时拒绝覆盖；重试不受旧取消状态影响 (9.1461ms)
+✔ 配置双文件中断恢复到已确认组合；外部修改不静默覆盖 (21.5719ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 703.9345

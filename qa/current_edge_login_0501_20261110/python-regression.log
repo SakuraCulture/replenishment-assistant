@@ -1,0 +1,238 @@
+........................................WARNING:root:�����ǼǸ���δ��ɣ���������/�޸��������ӣ���ǰ����̨�����Կ�ʹ�á�
+......................................................................................................................................................WARNING:root:�����������ʼ��ʧ��: C:\Users\lenovo\AppData\Local\Temp\tmpokhi1lbu\aoxiang
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 86, in __init__
+    self.owner.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+...............FEF...............................................................ERROR:root:AI ����ʧ��
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 33, in run
+    try: self.result_ready.emit(self.fn(self))
+                                ^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_automation_lock.py", line 75, in fail
+    def fail(_): raise ValueError('synthetic failure')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: synthetic failure
+ERROR:root:AI ����������δ��ɣ�2fb17ef7b3344dd6b99f5c26d1a22132
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 399, in failed
+    self.journal.update(task['task_id'], state='stopped' if code == 'CANCELLED' else 'failed', message=message, error_code=code)
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 67, in update
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+..ERROR:root:AI ����������δ��ɣ�250cb1281ea64bea8706d0d51ae7a60d
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 393, in completed
+    try: finish(value)
+         ^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_automation_lock.py", line 65, in finish
+    self.g.journal.update(self.tid,state='prepared')
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 66, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+.ERROR:root:AI ����������δ��ɣ�2e35bf06a6504c9fa35c2977a0820d2e
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 382, in progress
+    self.last_stage = time.monotonic(); self.journal.update(task['task_id'], message=message); self.changed.emit()
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 66, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+.ERROR:root:AI ����������δ��ɣ�30a01c6c408647aaabfbf2858198bf7e
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\automation_gateway.py", line 388, in store_event
+    try: store_handler(*args)
+         ^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_automation_lock.py", line 84, in <lambda>
+    lambda *args:self.g.journal.update(self.tid,message='�ŵ������'))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\automation_tasks.py", line 66, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+......................................................................................................................FF..........................................................................................................................................................................................................................................ERROR:root:���ݿ�æ��δ�ܱ���ֹͣ��ʧ����־��database is locked
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\jst_orders.py", line 397, in commit
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+....................................................................................................................................................ERROR:root:����ʧ��
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\order_analytics.py", line 262, in validate_basis
+    raise ValueError('�������������Ѹ��£������²�ѯ��ԭ�����еĵ���δ�Զ��滻')
+ValueError: �������������Ѹ��£������²�ѯ��ԭ�����еĵ���δ�Զ��滻
+..ERROR:root:����ʧ��
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\order_analytics.py", line 259, in validate_basis
+    raise ValueError('��������Լ�����Ѹ��£������²�ѯ��ԭ��������δ���뱾�ν��')
+ValueError: ��������Լ�����Ѹ��£������²�ѯ��ԭ��������δ���뱾�ν��
+........................................................................................................................................................................................ERROR:root:����ʧ��
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\order_analytics.py", line 256, in validate_basis
+    with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: unable to open database file
+ERROR:root:����ʧ��
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\order_analytics.py", line 256, in validate_basis
+    with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: unable to open database file
+......................................................................ERROR:root:������й���: C:\Users\lenovo\AppData\Local\Temp\tmp30tvk2rq\settings\aoxiang\workflows.sqlite3
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 119, in tick
+    self.store.enqueue_due(timeout=0)
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+ValueError: �ϳɽṹ����
+..WARNING:root:����������ݿⷱæ�����ز�ԭ����: C:\Users\lenovo\AppData\Local\Temp\tmpddltaaoz\settings\aoxiang\workflows.sqlite3
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 118, in tick
+    self.reconcile_orders()
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 231, in reconcile_orders
+    self.store.reconcile_deleted();self.store.retire_receipt_sources();self.order_signature=signature
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_workflows.py", line 463, in retire_receipt_sources
+    with self.db(True,timeout=0) as db:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_workflows.py", line 32, in db
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+.WARNING:root:�����������ʼ��ʧ��: C:\Users\lenovo\AppData\Local\Temp\tmpl6lm4ydd\settings\aoxiang
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 86, in __init__
+    self.owner.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+.........................................................................ERROR:root:��� dd35faa5c2a8 �׶�=��Ʒ���� �ŵ�=T ��Ʒ=SKU �ļ�= ��=2
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\input_adapter.py", line 185, in execute_one
+    try:d=calculate(inp,rules,extreme_restore=extreme_restore)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\model.py", line 262, in calculate
+    raise ValueError('����֧���޷�ȷ����ǰ7���վ�ZΪ0��������������ֵ��0����˶�����/����/�������ȣ����Զ�����Ԥ��')
+ValueError: ����֧���޷�ȷ����ǰ7���վ�ZΪ0��������������ֵ��0����˶�����/����/�������ȣ����Զ�����Ԥ��
+.......................ERROR:root:��ʱ��������δ��� 7225e28ca4e7409d91d8ccbe58583bfc
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\scheduled_execution.py", line 98, in execute
+    codes=[i['code'] for i in frozen['plan']['stores']];overlap(self.repo,run,codes)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\scheduled_execution.py", line 74, in overlap
+    if selected.intersection(codes):raise ValueError('ͬ���ŵ������Զ��������Ⱥ˶Ի����ԭ����'+other['schedule']['name'])
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: ͬ���ŵ������Զ��������Ⱥ˶Ի����ԭ�������
+.ERROR:root:��ʱ��������δ��� a6e5a4a235544acb8d6ba962615827ca
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\scheduled_execution.py", line 97, in execute
+    raise ValueError('Ԥ����Ĭ�ϲ�����׼�������ѱ仯�������¼�������������½�����')
+ValueError: Ԥ����Ĭ�ϲ�����׼�������ѱ仯�������¼�������������½�����
+...............................................................D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\stocking_ui.py:247: DeprecationWarning: Function: 'QSortFilterProxyModel.invalidateFilter()' is marked as deprecated, please check the documentation for more information.
+  if refresh:self.proxy.invalidateFilter()
+D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\stocking_ui.py:244: DeprecationWarning: Function: 'QSortFilterProxyModel.invalidateFilter()' is marked as deprecated, please check the documentation for more information.
+  self.proxy.needle=self.search.text().strip();self.proxy.warehouse=self.warehouse.currentData() or '';self.proxy.category=self.category.currentData() or '';self.proxy.only_selected=self.only_selected.isChecked();self.proxy.invalidateFilter();self.changed(False)
+..................................Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'automation_gateway'
+E...................................................................ERROR:root:�ŵ�ȱ���� query; ȡ����Դ=δ��ҳ������: isolated failure fixture
+...............................................................
+======================================================================
+ERROR: test_batch_template_once_actual_native_package_and_real_component_reservation (test_aoxiang_workflows.RunnerTests.test_batch_template_once_actual_native_package_and_real_component_reservation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_aoxiang_workflows.py", line 157, in test_batch_template_once_actual_native_package_and_real_component_reservation
+    result=self.runner(Client()).run(job['id'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_runner.py", line 195, in run
+    configuration = current_configuration(self.client,self.progress,self.cancel)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_current_login.py", line 13, in current_configuration
+    job=client.request('setup.check_login');deadline=time.monotonic()+180;stopped=False
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_aoxiang_workflows.py", line 155, in request
+    return real.request(action,**kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_client.py", line 177, in request
+    raise ComponentError(error.get('code', 'COMPONENT_FAILED'), error.get('message', '�������ʧ��'), error.get('details'))
+aoxiang_client.ComponentError: ����ѡ��Edge���ò������ŵ꣬���������˺�ID
+
+======================================================================
+ERROR: test_lazy_context_never_creates_database (test_stockout_ai.StockoutAI.test_lazy_context_never_creates_database)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_stockout_ai.py", line 31, in test_lazy_context_never_creates_database
+    subprocess.run([sys.executable,'-c',command],check=True)
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['D:\\���Ź����ļ���\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe', '-c', "import automation_gateway,sys;assert 'stockout_ai' not in sys.modules;assert 'stockout_repository' not in sys.modules"]' returned non-zero exit status 1.
+
+======================================================================
+FAIL: test_formal_receipt_saved_then_ack_lost_reuses_same_observation_no_duplicate_receipt (test_aoxiang_workflows.ReceiptBatchTests.test_formal_receipt_saved_then_ack_lost_reuses_same_observation_no_duplicate_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_aoxiang_workflows.py", line 211, in test_formal_receipt_saved_then_ack_lost_reuses_same_observation_no_duplicate_receipt
+    with self.assertRaises(ComponentError):runner.run(job['id'])
+                                           ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_workflow_runner.py", line 195, in run
+    configuration = current_configuration(self.client,self.progress,self.cancel)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\src\aoxiang_current_login.py", line 13, in current_configuration
+    job=client.request('setup.check_login');deadline=time.monotonic()+180;stopped=False
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_aoxiang_workflows.py", line 208, in request
+    raise AssertionError(action)
+AssertionError: setup.check_login
+
+======================================================================
+FAIL: test_unknown_upload_response_is_not_replayed_and_payment_stale_rejected_before_upload (test_aoxiang_workflows.RunnerTests.test_unknown_upload_response_is_not_replayed_and_payment_stale_rejected_before_upload)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_aoxiang_workflows.py", line 178, in test_unknown_upload_response_is_not_replayed_and_payment_stale_rejected_before_upload
+    self.assertEqual(calls.count('purchase.start'),1)
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_cancel_end_confirm_delete_and_reopen_scope (test_collection_maintenance.MaintenanceUiTests.test_cancel_end_confirm_delete_and_reopen_scope)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_collection_maintenance.py", line 108, in test_cancel_end_confirm_delete_and_reopen_scope
+    d.select_visible();d.start_btn.click();self.wait(lambda:d.worker is None and d.current['id'].startswith('rep-'))
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_collection_maintenance.py", line 89, in wait
+    self.assertTrue(predicate())
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_component_exit_does_not_disable_end_and_new_collection (test_collection_maintenance.MaintenanceUiTests.test_component_exit_does_not_disable_end_and_new_collection)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_collection_maintenance.py", line 118, in test_component_exit_does_not_disable_end_and_new_collection
+    self.wait(lambda:d.worker is None and d.current['id'].startswith('rep-'))
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tests\test_collection_maintenance.py", line 89, in wait
+    self.assertTrue(predicate())
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 1361 tests in 514.476s
+
+FAILED (failures=4, errors=2)

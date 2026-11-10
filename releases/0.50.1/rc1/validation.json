@@ -1,0 +1,36 @@
+{
+  "source_commit": "6c730672dcb2d7a82c2e9d2bb9b024f516237faf",
+  "python": {
+    "tests": 1362,
+    "passed": true,
+    "seconds": 483.462,
+    "log": "qa\\current_edge_login_0501_20261110\\python-final.log"
+  },
+  "component": {
+    "tests": 216,
+    "passed": true,
+    "log": "qa\\current_edge_login_0501_20261110\\node-final.log"
+  },
+  "source_startup": {
+    "checks": 39,
+    "passed": true,
+    "process_exit": 0
+  },
+  "exe_startup": {
+    "checks": 39,
+    "passed": true,
+    "process_exit": 0,
+    "live_platform": false
+  },
+  "exe_deletion": {
+    "checks": 9,
+    "passed": true,
+    "process_exit": 0,
+    "live_platform": false
+  },
+  "initial_failures_retained": [
+    "python-regression.log",
+    "purchase-targeted.log"
+  ],
+  "field_account_switch_tested": false
+}

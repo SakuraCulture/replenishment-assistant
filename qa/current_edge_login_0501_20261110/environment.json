@@ -1,0 +1,12 @@
+{
+  "system": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "pyside6": "6.12.0",
+  "component_node": "v24.22.1",
+  "source_commit": "6c730672dcb2d7a82c2e9d2bb9b024f516237faf",
+  "date": "2026-11-10",
+  "scope": "isolated temporary databases and closed platform fixtures; no real platform or business data",
+  "source_gui_checks": 39,
+  "frozen_startup_checks": 39,
+  "frozen_deletion_checks": 9
+}
