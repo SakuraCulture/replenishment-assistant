@@ -106,6 +106,11 @@ class MandatoryHoldingTests(unittest.TestCase):
         d=calculate(loaded({'meta_product_tags_known':False}))['rows'][0]
         self.assertEqual(d['_mandatory_holding']['state'],'待核')
         self.assertFalse(sem.orderable(d))
+        self.assertEqual(sem.order_status(d),'待核')
+        r=calculate(loaded({'V':0}))
+        self.assertEqual(r['summary']['issues'],1)
+        self.assertIn('基本售价待核',sem.issue_text(r['rows'][0]))
+        self.assertEqual(sem.order_status(r['rows'][0]),'待核')
     def test_known_local_item_does_not_become_warehouse_order(self):
         d=calculate(loaded({'_source':'地采商品'}))['rows'][0]
         self.assertFalse(sem.orderable(d));self.assertEqual(d['_mandatory_holding']['state'],'待核')

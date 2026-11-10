@@ -12,13 +12,13 @@ def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--qa',type=Path,required=True);a=p.parse_args();qa=a.qa.resolve()
-    build=ROOT/'build_0.50.5_rc1';delivery=ROOT/'交付_0.50.5_rc1';app=delivery/'补货助手';release=ROOT/'releases/0.50.5/rc1'
+    build=ROOT/'build_0.50.5_rc2';delivery=ROOT/'交付_0.50.5_rc2';app=delivery/'补货助手';release=ROOT/'releases/0.50.5/rc2'
     if release.exists():raise FileExistsError('Release evidence already exists')
     info=read(build/'build_info.json');source=info['source_commit'];base='385444c'
     assert info['version']=='0.50.5' and info['source_mode']=='immutable git archive; no working-tree overlay'
     version=read(app/'_internal/version.json');assert version['version']=='0.50.5' and version['model_version']=='0.3.5-rules'
-    python=(qa/'python-full-final.log').read_text('utf-8');match=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\b',python);assert match,'Full regression not passed'
-    special=(qa/'final-special-02.log').read_text('utf-8');target=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\b',special);assert target
+    python=(qa/'python-full-sealed.log').read_text('utf-8');match=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\b',python);assert match,'Full regression not passed'
+    special=(qa/'final-special-03.log').read_text('utf-8');target=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\b',special);assert target
     proof=read(qa/'exe-mandatory/report.json');assert proof['passed'] and proof['frozen_exe'] and proof['exit_code']==0
     assert proof['exe_sha256']==sha(app/'补货助手.exe') and proof['source_commit']==source and not proof['live_platform']
     preissue=read(qa/'exe-preissue/report.json');assert preissue['passed']
@@ -37,7 +37,7 @@ def main():
     edition=read(ROOT/'docs/manual/business-edition.json')
     for name,digest in edition['files'].items():assert sha(ROOT/'docs/manual'/name)==digest,('manual hash',name)
     files=sorted(f for f in app.rglob('*') if f.is_file());assert not any(f.suffix in ('.db','.sqlite','.sqlite3') for f in files)
-    archive=delivery/'补货助手_0.50.5_rc1.zip'
+    archive=delivery/'补货助手_0.50.5_rc2.zip'
     with zipfile.ZipFile(archive,'x',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         for f in files:z.write(f,f.relative_to(delivery).as_posix())
     with zipfile.ZipFile(archive) as z:assert z.testzip() is None and len(z.infolist())==len(files)
@@ -53,10 +53,10 @@ def main():
     write(release/'artifacts.json',dict(source_commit=source,files=[dict(path=str(f.relative_to(ROOT)),bytes=f.stat().st_size,sha256=sha(f)) for f in (app/'补货助手.exe',archive)]))
     write(release/'delivery-files.json',[dict(path=f.relative_to(app).as_posix(),bytes=f.stat().st_size,sha256=sha(f)) for f in files])
     shutil.copyfile(build/'build_info.json',release/'build_info.json')
-    for name in ('python-full-final.log','final-special-02.log','target-01.log','target-03.log'):shutil.copyfile(qa/name,release/(name.replace('.log','.txt')))
+    for name in ('python-full-sealed.log','final-special-03.log','target-01.log','target-03.log'):shutil.copyfile(qa/name,release/(name.replace('.log','.txt')))
     shots=release/'screenshots';shots.mkdir()
     for image in (qa/'exe-mandatory').glob('*.png'):shutil.copyfile(image,shots/image.name)
-    report=f'''# 0.50.5 rc1 必采最低持有与日配排除交付
+    report=f'''# 0.50.5 rc2 必采最低持有与日配排除交付
 
 补货中的必卖清单以前只提高预算优先级，零销量、零库存且无缺货天数的商品仍可能为零建议。现在用户确认以现有最低可售参考量（默认1个库存单位）作为必采最低持有基数；可用及在途不足时，向上按最小出库单位补足。先分配各必采最低量，再分配追加和普通需求；预算不足保留缺口，预算零与末尾一个出库单位且不超过105%的边界不变。
 
@@ -79,7 +79,7 @@ def main():
 
 正常退出旧版，完整解压新ZIP运行；未签发旧结果重新计算。默认基数1个库存单位不是默认一箱；例如箱规6、无覆盖时补6，已有1件时不因保底多补一箱。实际在途到店时间、中心仓可供量、预算及人工例外仍需业务判断。本轮只用隔离数据，没有调用真实平台或修改用户业务库；尚未在业务电脑现场验证。
 
-构建源码提交：`{source}`。证据在本目录，原始记录在`{qa.relative_to(ROOT)}`；独立包`交付_0.50.5_rc1/补货助手_0.50.5_rc1.zip`，应用`交付_0.50.5_rc1/补货助手/补货助手.exe`。未推送、未合并。各文件大小与SHA256见artifacts.json。
+构建源码提交：`{source}`。证据在本目录，原始记录在`{qa.relative_to(ROOT)}`；独立包`交付_0.50.5_rc2/补货助手_0.50.5_rc2.zip`，应用`交付_0.50.5_rc2/补货助手/补货助手.exe`。未推送、未合并。各文件大小与SHA256见artifacts.json。
 '''
     (release/'交付报告.md').write_text(report,'utf-8',newline='\n')
     print(json.dumps(validation,ensure_ascii=False))

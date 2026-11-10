@@ -13,6 +13,8 @@ def fmt(v,digits=2):
 
 def issue_text(d):
     m=d['_meta'];issues=[s for s in m['blocking'] if not (d['_source']=='地采商品' and s=='待补商品资料')]
+    floor=d.get('_mandatory_holding',{})
+    if floor.get('state')=='待核' and floor.get('reason') and floor['reason'] not in issues:issues.append('必采最低持有待核：'+floor['reason'])
     return '；'.join(issues)
 
 
@@ -81,6 +83,7 @@ def orderable(d):
 def order_status(d):
     if exclusion_reason(d):return '已排除'
     if d.get('_preview'):return '待计算'
+    if d.get('_mandatory_holding',{}).get('state')=='待核':return '待核'
     if d.get('_preissue',{}).get('delta') or d.get('_preissue',{}).get('kind')=='manual' and d['_preissue'].get('quantity')==0:
         return '人工不补' if order_quantity(d)==0 else '签发前调整'
     if d.get('_budget_gap',0)>0:return '预算部分分配' if numeric(order_quantity(d)) and order_quantity(d)>0 else '预算暂缓'
