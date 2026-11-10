@@ -16,6 +16,12 @@ def main():
     import openpyxl
     for name in ('sales.xlsx','河北仓.xlsx','山东仓.xlsx'):
         path=out/name;book=openpyxl.load_workbook(path);ws=book.active;headers=[c.value for c in ws[1]]
+        # These pre-0.43 synthetic masters predate tag evidence. Explicit blank
+        # labels are part of this fixture, never inferred for user catalog data.
+        if name!='sales.xlsx' and '商品标签' not in headers:
+            column=len(headers)+1;ws.cell(1,column,'商品标签')
+            for row in range(2,ws.max_row+1):ws.cell(row,column,'')
+            headers.append('商品标签')
         sku=headers.index('商品编码');title=headers.index('商品名称')
         prototypes=[list(r) for r in ws.iter_rows(min_row=2,values_only=True) if r[sku]=='both']
         for values in prototypes:

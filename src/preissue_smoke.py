@@ -22,6 +22,7 @@ def start_smoke(app,win,args):
         now=time.perf_counter();ticks.append(now-last[0]);last[0]=now
         d=QApplication.activeModalWidget()
         if d is None:return
+        expected={'dailyOverwrite':'覆盖当天记录','deliveryConfirm':'确认签发并导出','newBudgetPreview':'应用到本店草稿'}
         try:
             if isinstance(d,ProductPicker):
                 if d.task or d.model is None:return
@@ -48,11 +49,12 @@ def start_smoke(app,win,args):
                 if not d.confirm_all.isChecked():d.confirm_all.setChecked(True)
                 d.grab().save(str(out/('final-'+mode+'.png')));d.apply()
             elif isinstance(d,MerchantSelection):d.accept()
+            elif d.objectName() in expected:
+                # Readable previews are QDialogs, not the historical QMessageBox.
+                next(b for b in d.findChildren(QPushButton) if b.text()==expected[d.objectName()]).click()
             elif isinstance(d,QMessageBox):
-                expected={'dailyOverwrite':'覆盖当天记录','deliveryConfirm':'确认签发并导出','newBudgetPreview':'应用到本店草稿'}
                 title=d.windowTitle()
-                if d.objectName() in expected:next(b for b in d.buttons() if b.text()==expected[d.objectName()]).click()
-                elif title=='清单遇到已人工修改商品':next(b for b in d.buttons() if b.text()=='保留人工修改').click()
+                if title=='清单遇到已人工修改商品':next(b for b in d.buttons() if b.text()=='保留人工修改').click()
                 elif title in ('导出已签发版本','导出签发单'):d.button(QMessageBox.StandardButton.Yes).click()
                 elif title=='签发单已导出':d.accept()
                 else:raise AssertionError(title+': '+d.text())
