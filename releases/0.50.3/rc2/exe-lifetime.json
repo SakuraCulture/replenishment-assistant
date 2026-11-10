@@ -1,0 +1,52 @@
+{
+  "passed": true,
+  "frozen": true,
+  "live_platform": false,
+  "checks": [
+    "异常退出的主进程由外部工具确认后，实际资料页重开成功，原采集任务及文件摘要保持",
+    "关闭并重开资料窗口复用同一个健康采集进程，不重复启动服务",
+    "真实第二服务占用错误显示中文原因与持锁进程号，失败窗口释放租用，不动原任务",
+    "正常退出主软件后真实Node进程退出、本地任务锁释放，无需重启Windows",
+    "退出后新服务立即打开同一目录，原受理号与完整任务文件逐字节保持",
+    "启动、占用错误与退出收尾均在后台执行，Qt事件循环持续响应"
+  ],
+  "version": {
+    "app": "补货助手",
+    "version": "0.50.3",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.2",
+    "model_version": "0.3.4-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "8d9f267074075fa10fac49e8a528bddb9bbb6d46",
+    "build_id": "rc2",
+    "built_at": "2026-11-10T23:40:34.624598+08:00",
+    "source_archive_sha256": "d8c3288346b469b89a7005215b4f728eac63b65a2e8429ff27f2564044b49a44",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "8d9f267074075fa10fac49e8a528bddb9bbb6d46",
+      "files": 872,
+      "manifest_sha256": "bb4e9b4f298d610d5cd6c1f1d22c22028db2a6f67b1865ae0b5be29a7c25db4a",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "36bba5c3ccc4dd14b842312011f75cdfc72bb22369986dbde81627619750ddf2",
+      "files": 9,
+      "source_commit": "8d9f267074075fa10fac49e8a528bddb9bbb6d46",
+      "contains_user_state": false
+    }
+  },
+  "component_exited": true,
+  "retained_component_pid": 50664,
+  "jobs_unchanged": true,
+  "heartbeat_ticks": 62,
+  "process_exit": 0,
+  "parent_crash_recovered": true,
+  "exe_sha256": "baa4eba6a2b6ce182df68cfa772d23a3755e98f707bd73aefe21d1dde797ba78",
+  "accepted": true
+}

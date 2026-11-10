@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "simulated_parent_exit": 23,
+  "frozen": true,
+  "owned_child_exited": true,
+  "jobs_unchanged": true,
+  "pids": {
+    "parent_pid": 44252,
+    "child_pid": 8860,
+    "frozen": true
+  },
+  "live_platform": false
+}

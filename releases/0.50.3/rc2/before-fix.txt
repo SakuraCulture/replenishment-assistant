@@ -1,0 +1,26 @@
+(node:39516) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ browser disconnect failure must still release the task-state guard and preserve jobs (49.7608ms)
+✔ shutdown waits for the in-flight state commit before releasing ownership (79.7954ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 212.8681
+
+✖ failing tests:
+
+test at components\jst_catalog\test\shutdown.test.mjs:19:1
+✖ browser disconnect failure must still release the task-state guard and preserve jobs (49.7608ms)
+  Error: database is locked
+      at JobStore.open (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/job-store.mjs:16:13)
+      at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/shutdown.test.mjs:23:18)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    code: 'ERR_SQLITE_ERROR',
+    errcode: 5,
+    errstr: 'database is locked'
+  }
