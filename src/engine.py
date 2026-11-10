@@ -9,6 +9,8 @@ import model
 import input_adapter as adapter
 from one_box_exception import apply_one_box_exception
 import allocation
+import mandatory_holding
+from admission import default_exclusions
 
 from version_info import VERSION,MODEL_VERSION,diagnostic
 from runtime_support import Cancelled,checkpoint
@@ -159,6 +161,9 @@ def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabl
             else:d.update(AG=depth,AH=lead)
         name='快销' if d.get('U')=='无分类' else d.get('U')
         row_rules=profile_rules.get(name,p) if d['_source']=='资料匹配' else p
+        exclusions=default_exclusions(m)
+        if exclusions:m['execution_exclusions']=exclusions
+        else:m.pop('execution_exclusions',None)
         if d['_source']=='资料匹配' and 'probability' in profile_parameters.get(name,{}):d['_effective_probability']=row_rules.probability
         try:b=adapter.execute_one(d,m,row_rules,extreme_restore=extreme_restore)
         except Exception as exc:
@@ -188,19 +193,22 @@ def apply_budget(result,budget=None,profile=None,progress=lambda s:None,cancel=N
     if profile is not None:priority_list.validate_profile(profile)
     if budget is not None and profile is None:raise ValueError('启用预算前请先导入有效必卖清单')
     members={d['sku']:d for d in profile['items']} if profile else {}
-    for d in result['rows']:
+    minimum=result['config'].get('parameters',{}).get('minimum_reference_units',model.Rules().minimum_reference_units)
+    for i,d in enumerate(result['rows']):
+        if i%200==0:checkpoint(cancel)
         for k in list(d):
-            if k.startswith(('_budget_','_allocated_','_holding_','_candidate_','_must_')):d.pop(k)
+            if k.startswith(('_budget_','_allocated_','_holding_','_candidate_','_must_','_mandatory_')):d.pop(k)
         d['_must_sell']=d.get('E') in members
         d['_candidate_qty']=0 if exclusion_reason(d) else quantity(d)
         d['_candidate_amount']=0 if exclusion_reason(d) else amount_value(d)
+        mandatory_holding.apply(d,minimum)
     progress('正在按门店预算分配必卖与其他商品…' if budget is not None else '正在标记必卖清单…')
     result['budget']=allocation.apply(result['rows'],budget,lambda:checkpoint(cancel)) if budget is not None else {'enabled':False}
     by_code={d['E']:d for d in result['rows']}
     audit=[]
     for sku,item in members.items():
         d=by_code.get(sku)
-        state='未出现在本次门店导出' if d is None else '已排除：'+exclusion_reason(d) if exclusion_reason(d) else '地采，资料未匹配' if d['_source']=='地采商品' else '数据待核' if issue_text(d) else '有补货需求' if numeric(d.get('AS')) and d['AS']>0 else '当前无补货建议'
+        state='未出现在本次门店导出' if d is None else '已排除：'+exclusion_reason(d) if exclusion_reason(d) else '地采，资料未匹配' if d['_source']=='地采商品' else '数据待核' if issue_text(d) or d.get('_mandatory_holding',{}).get('state')=='待核' else '有补货需求' if numeric(d.get('_candidate_qty')) and d['_candidate_qty']>0 else '已满足最低持有，无需补货'
         audit.append({'sku':sku,'name':item.get('name',''),'state':state})
     result['must_list']={'name':profile['name'],'revision':profile['revision'],'source_sha256':profile.get('source_sha256',''),'total':len(members),
         'matched':sum(d['_must_sell'] for d in result['rows']),'missing':sum(x['state']=='未出现在本次门店导出' for x in audit)} if profile else None

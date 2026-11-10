@@ -49,7 +49,10 @@ def apply(base, selections, cancel=None, progress=lambda s:None):
         if reason:raise ValueError(sku+'：'+reason)
         if isinstance(q,bool) or not sem.numeric(q) or q<=0:raise ValueError('首铺数量必须为正数：'+sku)
         if Decimal(str(q)) % Decimal(str(d['BD'])) != 0:raise ValueError('首铺数量须为最小出库单位倍数：'+sku)
-        d['_new_requested']=q;d['_candidate_qty']=q
+        requested=q
+        floor=d.get('_mandatory_holding',{})
+        if floor.get('state')=='已核验':q=max(q,floor['required_quantity'])
+        d['_new_requested']=requested;d['_candidate_qty']=q
         d['_new_stockout_basis']='原缺货天数为空，按用户确认口径视为0识别新品' if d.get('N') in (None,'') else '原缺货天数为0'
         d['_candidate_amount']=float(Decimal(str(q))*Decimal(str(d['V'])))
         # Unlimited execution is explicit; AS/BV retain the model's zero suggestion.

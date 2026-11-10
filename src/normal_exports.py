@@ -43,6 +43,8 @@ def decision(d):
     if '二类医疗资质' in excluded:return '资质不符'
     if '商品标签资料不完整' in excluded:return '资料待核'
     if '门店拒收' in excluded:return '门店拒收'
+    if '日配' in excluded:return '日配不补'
+    if '禁采' in excluded:return '禁采不补'
     if excluded:return '禁用不补' if '禁用' in excluded else '停采不补'
     if sem.issue_text(d):return '资料待核'
     adjustment=d.get('_preissue',{})
@@ -52,6 +54,7 @@ def decision(d):
     if adjustment.get('kind')=='manual' and adjustment.get('quantity')==0:return '人工不补'
     if d.get('_budget_overrun'):return '预算补足'
     if d.get('_budget_gap',0)>0:return '预算限量' if sem.orderable(d) else '预算暂缓'
+    if d.get('_mandatory_holding',{}).get('added_quantity',0)>0 and sem.orderable(d):return '必采最低持有'
     if new_products.is_new(d):
         if d.get('_new_requested',0)>0:return '必卖首铺' if d.get('_must_sell') else '新品首铺'
         return '新品未选'

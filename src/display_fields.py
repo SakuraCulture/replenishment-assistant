@@ -8,7 +8,7 @@ COLUMNS=[('商品名称',lambda d:d.get('D')),('商品编码',lambda d:d.get('E'
  ('执行状态',order_status),('排除原因',exclusion_reason),('计算建议',quantity),('计算金额',amount_value),
  ('优先清单',lambda d:'必卖' if d.get('_must_sell') else '普通'),('预算前执行量',lambda d:d.get('_candidate_qty',quantity(d))),
  ('预算前金额',lambda d:d.get('_candidate_amount',amount_value(d))),('预算缺口数量',lambda d:d.get('_budget_gap',0)),
- ('最低持有缺口',lambda d:'有销量且无可用/在途，本次资金未覆盖' if d.get('_holding_gap') else ''),('资金分配说明',lambda d:d.get('_budget_reason','未启用总预算'))]
+ ('最低持有缺口',lambda d:('必采最低持有未覆盖' if d.get('_mandatory_holding') else '有销量且无可用/在途，本次资金未覆盖') if d.get('_holding_gap') else ''),('资金分配说明',lambda d:d.get('_budget_reason','未启用总预算'))]
 
 COLUMNS.extend([('主仓',lambda d:routing(d).get('primary')),('从仓',lambda d:routing(d).get('secondary')),('需求归属说明',lambda d:routing(d).get('reason')),('主仓可用数',lambda d:routing(d).get('primary_stock')),('从仓可用数',lambda d:routing(d).get('secondary_stock')),('主仓判断',lambda d:routing(d).get('primary_state')),('从仓判断',lambda d:routing(d).get('secondary_state')),('商品资料来源',lambda d:d.get('_meta',{}).get('product_file')),('仓资料版本',lambda d:d.get('_meta',{}).get('product_revision'))])
 

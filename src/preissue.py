@@ -10,6 +10,7 @@ import math
 from decimal import Decimal, DecimalException, InvalidOperation, ROUND_CEILING, ROUND_FLOOR
 import result_semantics as sem
 import work_repository as wr
+from mandatory_holding import gap as mandatory_gap
 from runtime_support import checkpoint
 from export_progress import RowProgress
 
@@ -144,7 +145,9 @@ def _risk(kind, result, row, q, source, text):
 
 def row_risks(base, row, q, source):
     risks = []; before = decimal(sem.order_quantity(row)); amount = decimal(q)
-    if amount == 0 and holding(row) == 0 and any(sem.numeric(row.get(k)) and row[k]>0 for k in ('H','I','J')):
+    if mandatory_gap(row,q):
+        risks.append(_risk('mandatory_holding',base,row,q,source,'低于必采最低持有基数；即使零月销仍有缺货风险，请核对本次人工例外'))
+    elif amount == 0 and holding(row) == 0 and any(sem.numeric(row.get(k)) and row[k]>0 for k in ('H','I','J')):
         risks.append(_risk('zero', base, row, q, source, '取消最低持有：有销量且可用/在途双零，存在缺货风险'))
     if amount > before:
         params = base.get('effective_settings',{}).get('parameter_config',{}).get('parameters') or base.get('config',{}).get('parameters',{})
@@ -215,7 +218,7 @@ def preview(result, edits, day, *, lists=None, expected=None, cancel=None, progr
                'original_order':list(d)}
         if changed_qty:
             x.update(_candidate_qty=q,_candidate_amount=money_value(money),_execution_qty=q,_execution_amount=money_value(money),
-                     _budget_gap=0,_holding_gap=bool(q==0 and holding(d)==0 and any(sem.numeric(d.get(k)) and d[k]>0 for k in ('H','I','J'))),
+                     _budget_gap=0,_holding_gap=mandatory_gap(d,q) or bool(q==0 and holding(d)==0 and any(sem.numeric(d.get(k)) and d[k]>0 for k in ('H','I','J'))),
                      _budget_reason='签发前明确人工调整；未重新分配其他商品')
             if d.get('_budget_active'):x.update(_allocated_qty=q,_allocated_amount=money_value(money),_allocated_amount_exact=str(money))
             x.pop('_budget_overrun',None);x.pop('_quantity_normalization',None)

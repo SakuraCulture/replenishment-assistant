@@ -1,8 +1,8 @@
 {
-  "application": "0.50.4",
+  "application": "0.50.5",
   "edition": "2026-11-11",
   "source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
-  "source": "Mixed-version evidence; per-image provenance is authoritative; 0.50.4 recovery images use source Qt",
+  "source": "Mixed-version evidence; per-image provenance authoritative; 0.50.5 holding image uses isolated source Qt",
   "legacy_0480_build": {
     "source_commit": "c12feff48eb81008a2643b2ce61d636b56fae980",
     "build_id": "rc1",
@@ -283,6 +283,15 @@
       "version": "0.50.4",
       "source": "source Qt; real isolated local component",
       "evidence": "qa/collection_reexport_0504_20261111/source-ui-03/02-重导新任务与旧记录.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "mandatory-holding-0505.png",
+      "sha256": "bec170d2c70c560b88b9a38e25e70eb4a85f9f3633323bda1acaeb45a62a5782",
+      "version": "0.50.5",
+      "source": "source Qt; synthetic Excel and isolated local database",
+      "evidence": "qa/mandatory_holding_0505_20261111/source-ui-01/必采最低持有详情.png",
       "synthetic": true,
       "live_platform_tested": false
     }

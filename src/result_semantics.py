@@ -18,9 +18,10 @@ def issue_text(d):
 
 def exclusion_reason(d):
     reasons=list(d.get('_meta',{}).get('admission',{}).get('reasons',[]))
+    reasons.extend(d.get('_meta',{}).get('execution_exclusions',[]))
     if str(d.get('S') or '').strip()=='禁用':reasons.append('商品资料禁用')
     if str(d.get('_meta',{}).get('export_status') or '').strip()=='停采':reasons.append('补货建议停采')
-    return '；'.join(reasons)
+    return '；'.join(dict.fromkeys(reasons))
 
 
 def work_eligible(d):
@@ -62,11 +63,15 @@ def export_projection(result,excluded_keys=()):
 
 
 def order_quantity(d):
-    return 0 if exclusion_reason(d) else d.get('_allocated_qty') if d.get('_budget_active') else d.get('_execution_qty',quantity(d))
+    if exclusion_reason(d):return 0
+    candidate=d.get('_candidate_qty') if d.get('_mandatory_holding',{}).get('state')=='已核验' else quantity(d)
+    return d.get('_allocated_qty') if d.get('_budget_active') else d.get('_execution_qty',candidate)
 
 
 def order_amount(d):
-    return 0 if exclusion_reason(d) else d.get('_allocated_amount') if d.get('_budget_active') else d.get('_execution_amount',amount_value(d))
+    if exclusion_reason(d):return 0
+    candidate=d.get('_candidate_amount') if d.get('_mandatory_holding',{}).get('state')=='已核验' else amount_value(d)
+    return d.get('_allocated_amount') if d.get('_budget_active') else d.get('_execution_amount',candidate)
 
 
 def orderable(d):
@@ -128,8 +133,13 @@ def explanation(d):
     if adjustment.get('delta') or adjustment.get('kind')=='manual' and adjustment.get('quantity')==0:
         return f"签发前调整：自动{fmt(adjustment['automatic_quantity'])} → 最终{fmt(adjustment['quantity'])}；{adjustment['reason']}"
     if d.get('_budget_overrun'):return d['_budget_reason']+f"；本店超预算{d['_budget_overrun']['overspend']:.2f}元（上限5%）"
-    if d.get('_new_requested',0)>0:return '新品首铺 · 人工选择 '+fmt(d['_new_requested'])+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))
-    if d.get('_budget_gap',0)>0:return ('必卖：' if d.get('_must_sell') else '普通：')+d.get('_budget_reason','')
+    if d.get('_new_requested',0)>0:
+        return '新品首铺 · 人工选择 '+fmt(d['_new_requested'])+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))+('；保留必采最低持有量' if d.get('_mandatory_holding',{}).get('required_quantity',0)>d['_new_requested'] else '')
+    if d.get('_budget_gap',0)>0:
+        return ('必卖：' if d.get('_must_sell') else '普通：')+d.get('_budget_reason','')+('；必采最低持有仍有缺口' if d.get('_holding_gap') and d.get('_mandatory_holding') else '')
+    if d.get('_mandatory_holding') and (d['_mandatory_holding'].get('state')!='已核验' or d['_mandatory_holding'].get('added_quantity',0)>0):
+        from mandatory_holding import explanation as holding_explanation
+        return holding_explanation(d)
     if d['_source']=='地采商品':return '商品资料未匹配，按地采单列；保留销量库存，本版不补造价格或数量'
     if d.get('_preview'):return '已匹配，等待计算'
     return d.get('BM','')

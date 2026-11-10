@@ -51,6 +51,9 @@ def main():
     if '--collection-reexport-smoke' in sys.argv:
         from collection_reexport_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--collection-reexport-smoke')+1:])
+    if '--mandatory-holding-smoke' in sys.argv:
+        from mandatory_holding_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--mandatory-holding-smoke')+1:])
     if '--deletion-void-smoke' in sys.argv:
         from deletion_void_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--deletion-void-smoke')+1:])
