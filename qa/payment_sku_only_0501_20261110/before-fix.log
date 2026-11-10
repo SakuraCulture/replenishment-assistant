@@ -1,0 +1,68 @@
+.FF.EEE
+======================================================================
+ERROR: test_unknown_sku_with_ambiguous_auxiliary_code_remains_unmatched (test_payment_sku_only.SkuOnlyTests.test_unknown_sku_with_ambiguous_auxiliary_code_remains_unmatched)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_sku_only.py", line 37, in test_unknown_sku_with_ambiguous_auxiliary_code_remains_unmatched
+    self.assertEqual(self.match('UNKNOWN','shared')['sku'],'UNKNOWN')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_sku_only.py", line 25, in match
+    lc.match_payment_rows('unused-isolated.sqlite3',self.head,rows)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\order_lifecycle.py", line 198, in match_payment_rows
+    elif len(hits)>1:raise ValueError('辅助码对应多个商品，请核对：'+original)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: 辅助码对应多个商品，请核对：UNKNOWN
+
+======================================================================
+ERROR: test_valid_sku_ignores_conflicting_ambiguous_and_other_warehouse_auxiliary_codes (test_payment_sku_only.SkuOnlyTests.test_valid_sku_ignores_conflicting_ambiguous_and_other_warehouse_auxiliary_codes) (aux='b-barcode')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_sku_only.py", line 30, in test_valid_sku_ignores_conflicting_ambiguous_and_other_warehouse_auxiliary_codes
+    row=self.match('A',aux)
+        ^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_sku_only.py", line 25, in match
+    lc.match_payment_rows('unused-isolated.sqlite3',self.head,rows)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\order_lifecycle.py", line 194, in match_payment_rows
+    if hits and hits!={original}:raise ValueError('商品编码与辅助码指向不同商品：'+original)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: 商品编码与辅助码指向不同商品：A
+
+======================================================================
+ERROR: test_valid_sku_ignores_conflicting_ambiguous_and_other_warehouse_auxiliary_codes (test_payment_sku_only.SkuOnlyTests.test_valid_sku_ignores_conflicting_ambiguous_and_other_warehouse_auxiliary_codes) (aux='shared')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_sku_only.py", line 30, in test_valid_sku_ignores_conflicting_ambiguous_and_other_warehouse_auxiliary_codes
+    row=self.match('A',aux)
+        ^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_sku_only.py", line 25, in match
+    lc.match_payment_rows('unused-isolated.sqlite3',self.head,rows)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\order_lifecycle.py", line 194, in match_payment_rows
+    if hits and hits!={original}:raise ValueError('商品编码与辅助码指向不同商品：'+original)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: 商品编码与辅助码指向不同商品：A
+
+======================================================================
+FAIL: test_auxiliary_code_cannot_rewrite_an_unknown_product_code (test_payment_sku_only.SkuOnlyTests.test_auxiliary_code_cannot_rewrite_an_unknown_product_code)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_sku_only.py", line 34, in test_auxiliary_code_cannot_rewrite_an_unknown_product_code
+    self.assertEqual(row['sku'],'UNKNOWN');self.assertNotIn('source_sku',row)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'A' != 'UNKNOWN'
+- A
++ UNKNOWN
+
+
+======================================================================
+FAIL: test_other_warehouse_product_is_still_rejected_by_product_code (test_payment_sku_only.SkuOnlyTests.test_other_warehouse_product_is_still_rejected_by_product_code)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_payment_sku_only.py", line 39, in test_other_warehouse_product_is_still_rejected_by_product_code
+    with self.assertRaisesRegex(ValueError,'商品属于另一供货仓'):self.match('C','a-barcode')
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.609s
+
+FAILED (failures=2, errors=3)

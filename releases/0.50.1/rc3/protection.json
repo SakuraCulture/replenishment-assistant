@@ -1,0 +1,19 @@
+{
+  "preserved_rc2": [
+    {
+      "path": "交付_0.50.1_rc2\\补货助手\\补货助手.exe",
+      "sha256": "2ac9710cf3e4467e9028678851efaa3c56ed98e36fc3c2228bdaa5281562c996"
+    },
+    {
+      "path": "交付_0.50.1_rc2\\补货助手_0.50.1_rc2.zip",
+      "sha256": "7954cde50c6ad8e7c8193068b647f850a680b166628d5a7b6a5159553e18ac7d"
+    }
+  ],
+  "unchanged_source_files_sha256": {
+    "src/model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+  },
+  "real_platform_calls": false,
+  "real_business_data_changes": false
+}

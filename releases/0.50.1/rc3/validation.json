@@ -1,0 +1,27 @@
+{
+  "source_commit": "a62d61691da869b6c8677cd8e6662a4789e630e7",
+  "payment_lifecycle_regression": {
+    "passed": true,
+    "tests": 138,
+    "seconds": 35.821,
+    "new_sku_only_tests_included": 7
+  },
+  "source_payment_gui": {
+    "passed": true,
+    "checks": 27,
+    "process_exit": 0
+  },
+  "exe_payment_gui": {
+    "passed": true,
+    "checks": 27,
+    "process_exit": 0
+  },
+  "exe_stockout": {
+    "passed": true,
+    "checks": 63,
+    "process_exit": 0
+  },
+  "full_project_regression_rerun": false,
+  "live_platform_calls": false,
+  "actual_user_excel_tested": false
+}
