@@ -19,7 +19,7 @@ def main():
     version=read(app/'_internal/version.json');assert version['version']=='0.50.5' and version['model_version']=='0.3.5-rules'
     python=(qa/'python-full-sealed.log').read_text('utf-8');match=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\b',python);assert match,'Full regression not passed'
     special=(qa/'final-special-03.log').read_text('utf-8');target=re.search(r'Ran (\d+) tests in ([\d.]+)s\s+OK\b',special);assert target
-    proof=read(qa/'exe-mandatory-rc3/report.json');assert proof['passed'] and proof['frozen_exe'] and proof['exit_code']==0
+    proof=read(qa/'exe-mandatory-rc3-02/report.json');assert proof['passed'] and proof['frozen_exe'] and proof['exit_code']==0
     assert proof['exe_sha256']==sha(app/'补货助手.exe') and proof['source_commit']==source and not proof['live_platform']
     preissue=read(qa/'exe-preissue-03/report.json');assert preissue['passed']
     for run in preissue['runs']:assert run['passed'] and run['exit_code']==0 and not run['remaining_children'] and run['exe_sha256']==proof['exe_sha256']
@@ -59,10 +59,11 @@ def main():
     shutil.copyfile(build/'build_info.json',release/'build_info.json')
     for name in ('python-full-sealed.log','final-special-03.log','target-01.log','target-03.log'):shutil.copyfile(qa/name,release/(name.replace('.log','.txt')))
     shots=release/'screenshots';shots.mkdir()
-    for image in (qa/'exe-mandatory-rc3').glob('*.png'):shutil.copyfile(image,shots/image.name)
+    for image in (qa/'exe-mandatory-rc3-02').glob('*.png'):shutil.copyfile(image,shots/image.name)
     failures=release/'failure-evidence';failures.mkdir()
     for folder in ('exe-preissue','exe-preissue-02'):
         shutil.copyfile(qa/folder/'ui-exercise.json',failures/(folder+'.json'))
+    shutil.copyfile(qa/'exe-mandatory-rc3/report.json',failures/'exe-mandatory-initial-lock.json')
     report=f'''# 0.50.5 rc3 必采最低持有与日配排除交付
 
 补货中的必卖清单以前只提高预算优先级，零销量、零库存且无缺货天数的商品仍可能为零建议。现在用户确认以现有最低可售参考量（默认1个库存单位）作为必采最低持有基数；可用及在途不足时，向上按最小出库单位补足。先分配各必采最低量，再分配追加和普通需求；预算不足保留缺口，预算零与末尾一个出库单位且不超过105%的边界不变。
@@ -83,6 +84,8 @@ def main():
 过程失败证据仍保留：target-01是单行全部待核的合成夹具触发既有整店拒算，补充有效对照行后专项通过；target-03是专项命令误写模块名，改正入口后通过。这两次未修改或放宽业务校验。全量日志中的故意注入异常不等于测试失败；既有Qt回调/弃用告警不在本次修复范围。
 
 原人工改量EXE验收的首轮使用0.18时代合成仓资料，缺少0.43以来必需的商品标签列，触发现有“标签资料不完整”排除而未通过旧数量断言。仅对新输出目录中复制的合成资料显式补空白标签列，保留原样本和首轮失败记录`exe-preissue`。第二轮`exe-preissue-02`又因旧驱动只识别QMessageBox、未识别新版通用预算预览QDialog而超时；只对隔离窗口作本地核查，未强杀任务，该轮最终退出并保留失败结果。适配验收入口后从新提交独立构建rc3，`exe-preissue-03`保留原有完整断言，不放宽业务校验。失败JSON另收录于failure-evidence。
+
+rc3新规则首次EXE验收在直接服务调用的首次快照备份初始化处出现一次`database is locked`（六项已完成，签发未完成）；同一EXE在全新隔离目录`exe-mandatory-rc3-02`完整12项通过。该偶发情况未定因，本轮没有修改存储或把它宣称为已修复；原失败与新目录重测分别保留。完整界面异步签发的验证结果另见上述人工改量两阶段报告。
 
 ## 使用与限制
 

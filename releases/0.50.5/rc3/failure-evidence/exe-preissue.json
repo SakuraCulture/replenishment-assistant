@@ -1,0 +1,52 @@
+{
+  "passed": false,
+  "error": "Traceback (most recent call last):\n  File \"preissue_smoke.py\", line 121, in exercise\nAssertionError: ('warehouse fallback', 'QA_A', {'A': '合成门店QA_A', 'B': 'QA_A', 'C': None, 'D': '合成测试-child_missing', 'E': 'child_missing', 'F': None, 'G': '个', 'H': 2, 'I': 14, 'J': 60, 'K': 0, 'L': 0, 'M': None, 'N': 0, 'T': None, 'P': 0.0, 'AT': '无有效拒收记录', 'AU': '河北仓', 'AV': None, 'U': '快销', 'AB': 0.4, 'AC': 0.6, 'AD': 0.2, 'O': 1, 'V': 2, 'S': '启用', '_category': '饮品', '_source': '资料匹配', 'AI': 12, 'AJ': 6, 'AG': 8.0, 'AH': 4.0, 'AF': 1.28, '14天累计销量（重组）': 28.0, 'AE': 0.2, 'BB': '正常', 'BA': 0, 'AX': 7, 'AY': 7, 'AZ': 16, 'AW': '可计算', 'W': 2.0, 'X': 2.0, 'Y': 2.0, 'Z': 2.0, 'AA': 2.0, 'AK': 0.0, 'AL': 6.0, 'AM': 1.0, 'AN': 2.0, 'AO': 24.0, 'AP': 24.0, 'AQ': 30.0, 'BE': 27, 'BF': 30, 'BG': '通过', 'BH': 2.0, 'BN': 2.0, 'BC': 2.0, 'BL': '三段日均一致', 'BD': 1, 'Q': '', 'R': '危险', 'BI': 1, 'BO': '', 'BJ': 30, '库存额度目标量': 42.0, 'BK': 42, 'AR': 30, 'BP': 30, 'BQ': 1, 'BR': 30, 'BS': 28.0, 'BT': 86.0, 'BU': 30, 'AS': 30, 'BX': 0, 'BV': 60, 'BW': '', 'BM': '三段日均一致；月销达到10.，新增资金层退出；实际补货30.；最低恢复量1.；净需求30.', 'CV': 0.0, '诊断销售状态': '三段日均一致', '三段日均极差率': 0.0, '_meta': {'export_row': 8, 'product_row': 7, 'match': '商品编码精确匹配', 'blocking': [], 'notes': [], 'category': '饮品', 'export_status': '正常', 'export_updated': None, 'profile_override': None, 'product_file': 'D:\\\\优团工作文件夹\\\\outputs\\\\replenishment_mvp_20261029\\\\qa\\\\mandatory_holding_0505_20261111\\\\exe-preissue\\\\河北仓.xlsx', 'product_sheet': '补货建议', 'product_revision': '45e6ee4e068d928c', 'warehouse_available': 0, 'export_file': 'D:\\\\优团工作文件夹\\\\outputs\\\\replenishment_mvp_20261029\\\\qa\\\\mandatory_holding_0505_20261111\\\\exe-preissue\\\\sales.xlsx', 'export_sheet': '补货建议', 'routing': {'primary': '河北仓', 'secondary': '山东仓', 'assigned': '河北仓', 'primary_state': '无货', 'secondary_state': '无该商品', 'primary_stock': 0, 'secondary_stock': None, 'reason': '主仓无货，从仓无该商品，保留主仓归属及资料', 'version': '0.5.1'}, 'admission': {'version': 'admission-2', 'store': 'QA_A', 'checked_day': '2026-11-11', 'settings_revision': '44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a', 'requires_medical': False, 'tags_raw': None, 'tags': [], 'tag_field_known': False, 'medical_sources': [], 'qualification': {}, 'refusal': None, 'reasons': ['商品标签资料不完整，待补资料']}}, '_audit': {'rule_version': 'one-box-arrival-exception-v1', 'eligible': False, 'applied': False, 'reason': '原模型已有补货建议，不额外加箱', 'original_quantity': 30, 'original_amount': 60}, '_base_qty': 30, '_base_amount': 60, '_preview': False, '_must_sell': False, '_candidate_qty': 0, '_candidate_amount': 0})\n",
+  "phase": "exercise",
+  "checks": [],
+  "timings": {
+    "check_seconds": 0.4981543000030797,
+    "calculate_seconds": 0.4344128000011551
+  },
+  "max_ui_gap_seconds": 0.07501239999692189,
+  "ui_ticks": 47,
+  "version": {
+    "app": "补货助手",
+    "version": "0.50.5",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.2",
+    "model_version": "0.3.5-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "7cf1a5853c73f7d905747ecb63bc55f119b5b95f",
+    "build_id": "rc2",
+    "built_at": "2026-11-11T01:34:50.258548+08:00",
+    "source_archive_sha256": "6d8598a9970abbaa943955e72f8f85331f45b3cbf44c2deb0f0ef33c2641375d",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "7cf1a5853c73f7d905747ecb63bc55f119b5b95f",
+      "files": 872,
+      "manifest_sha256": "38818d5752680fe8d05ba2cd5a95c4ee86cfd29ce66d384ca7c19824bfde1870",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "4ddad3f3eec26b52cfa0348c6f4e78ef29a4f6de9c825c4387cc4ee9d898e597",
+      "files": 9,
+      "source_commit": "7cf1a5853c73f7d905747ecb63bc55f119b5b95f",
+      "contains_user_state": false
+    }
+  },
+  "synthetic": true,
+  "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+  "exit_code": 1,
+  "remaining_children": [],
+  "source_only": false,
+  "elapsed_seconds": 4.01600000000326,
+  "peak_tree_mib": 309.08203125,
+  "sample_ms": 50,
+  "exe_sha256": "8db0a2de143afe5a4b02e68484d228186bda1d186574718fc6487f6395103d42"
+}

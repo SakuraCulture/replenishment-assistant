@@ -1,0 +1,44 @@
+test_daily_catalog_uses_attributed_warehouse (test_mandatory_holding.DailyExclusionTests.test_daily_catalog_uses_attributed_warehouse) ... ok
+test_daily_tag_exact_membership_and_raw_preservation (test_mandatory_holding.DailyExclusionTests.test_daily_tag_exact_membership_and_raw_preservation) ... ok
+test_mandatory_never_overrides_disable_stop_forbid_or_refusal (test_mandatory_holding.DailyExclusionTests.test_mandatory_never_overrides_disable_stop_forbid_or_refusal) ... ok
+test_new_and_manual_paths_cannot_bypass_daily (test_mandatory_holding.DailyExclusionTests.test_new_and_manual_paths_cannot_bypass_daily) ... ok
+test_budget_zero_and_shortfall_not_hidden (test_mandatory_holding.MandatoryHoldingTests.test_budget_zero_and_shortfall_not_hidden) ... ok
+test_cancel_still_propagates (test_mandatory_holding.MandatoryHoldingTests.test_cancel_still_propagates) ... ok
+test_existing_available_or_inbound_coverage (test_mandatory_holding.MandatoryHoldingTests.test_existing_available_or_inbound_coverage) ... ok
+test_floor_precedes_other_mandatory_growth (test_mandatory_holding.MandatoryHoldingTests.test_floor_precedes_other_mandatory_growth) ... ok
+test_historical_rows_are_not_reinterpreted (test_mandatory_holding.MandatoryHoldingTests.test_historical_rows_are_not_reinterpreted) ... ok
+test_known_local_item_does_not_become_warehouse_order (test_mandatory_holding.MandatoryHoldingTests.test_known_local_item_does_not_become_warehouse_order) ... ok
+test_manual_exception_has_explicit_risk_and_restores_exactly (test_mandatory_holding.MandatoryHoldingTests.test_manual_exception_has_explicit_risk_and_restores_exactly) ... ok
+test_missing_price_stock_or_step_cannot_be_guessed (test_mandatory_holding.MandatoryHoldingTests.test_missing_price_stock_or_step_cannot_be_guessed) ... ok
+test_new_and_extreme_switches_do_not_cancel_default_must_sell_floor (test_mandatory_holding.MandatoryHoldingTests.test_new_and_extreme_switches_do_not_cancel_default_must_sell_floor) ... ok
+test_new_product_reallocation_keeps_mandatory_floor (test_mandatory_holding.MandatoryHoldingTests.test_new_product_reallocation_keeps_mandatory_floor) ... ok
+test_normal_suggestion_is_not_reduced (test_mandatory_holding.MandatoryHoldingTests.test_normal_suggestion_is_not_reduced) ... ok
+test_ordinary_sku_and_absent_mandatory_not_manufactured (test_mandatory_holding.MandatoryHoldingTests.test_ordinary_sku_and_absent_mandatory_not_manufactured) ... ok
+test_partial_coverage_and_carton_rounding (test_mandatory_holding.MandatoryHoldingTests.test_partial_coverage_and_carton_rounding) ... ok
+test_reapply_and_clear_membership_are_deterministic (test_mandatory_holding.MandatoryHoldingTests.test_reapply_and_clear_membership_are_deterministic) ... ok
+test_zero_sales_zero_stock_without_new_product_selection (test_mandatory_holding.MandatoryHoldingTests.test_zero_sales_zero_stock_without_new_product_selection) ... ok
+test_all_editable_paths_resolve_without_mutating_config (test_parameter_guidance.GuidanceTests.test_all_editable_paths_resolve_without_mutating_config) ... ok
+test_catalog_pages_search_and_unknown_fields (test_parameter_guidance.GuidanceTests.test_catalog_pages_search_and_unknown_fields) ... ok
+test_common_constraints_agree_with_existing_validator (test_parameter_guidance.GuidanceTests.test_common_constraints_agree_with_existing_validator) ... ok
+test_dependencies_warehouse_weights_and_monthly_thresholds (test_parameter_guidance.GuidanceTests.test_dependencies_warehouse_weights_and_monthly_thresholds) ... ok
+test_fixed_derived_policy_and_mapping_cannot_be_trial_writes (test_parameter_guidance.GuidanceTests.test_fixed_derived_policy_and_mapping_cannot_be_trial_writes) ... ok
+test_original_help_is_the_single_business_explanation_source (test_parameter_guidance.GuidanceTests.test_original_help_is_the_single_business_explanation_source) ... ok
+test_probability_encoding_and_category_inheritance (test_parameter_guidance.GuidanceTests.test_probability_encoding_and_category_inheritance) ... ok
+test_shared_response_not_repeated_per_store (test_parameter_guidance.GuidanceTests.test_shared_response_not_repeated_per_store) ... ok
+test_business_presenter (unittest.loader._FailedTest.test_business_presenter) ... ERROR
+
+======================================================================
+ERROR: test_business_presenter (unittest.loader._FailedTest.test_business_presenter)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_business_presenter
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'test_business_presenter'
+
+
+----------------------------------------------------------------------
+Ran 28 tests in 0.083s
+
+FAILED (errors=1)
