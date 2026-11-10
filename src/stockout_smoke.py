@@ -51,6 +51,19 @@ def start_smoke(app,win,args):
             # Deliberately reject every bridge request; this acceptance cannot reach a real platform.
             import stockout_task
             original_request=stockout_task.Bridge.request
+            login_calls=[]
+            class LoginTransport:
+                def request(self,action,**values):
+                    login_calls.append(action)
+                    if action=='configuration':return {'configured':True,'enabled':True,'login_policy':'current_edge',
+                        'account_binding':{'account_id':'offline','merchant_code':'QA'},'store_mapping_version':'offline-v1',
+                        'targets':[{'buyerWarehouseCode':s,'displayName':'测试'+s} for s in ('S','T')]}
+                    if action=='setup.check_login':return {'id':'offline-login','state':'RUNNING'}
+                    if action=='setup.status':
+                        assert values=={'setup_id':'offline-login'}
+                        return {'id':'offline-login','state':'VERIFIED'}
+                    raise AssertionError('Unexpected offline login action: '+action)
+                def close(self,timeout=.5):return True
             forbidden=lambda *a,**k:(_ for _ in ()).throw(AssertionError('Live RPC forbidden in synthetic smoke'))
             stockout_task.Bridge.request=forbidden
             entry.enter();wait(idle)
@@ -90,8 +103,9 @@ def start_smoke(app,win,args):
                     raise AssertionError('Unexpected offline JST action: '+action)
                 if service!='ax':raise AssertionError('Live platform service forbidden: '+service)
                 action=payload['action'];values=payload.get('values',{})
-                if action=='configuration':return {'configured':True,'enabled':True,'account_binding':{'account_id':'offline','merchant_code':'QA'},
-                    'store_mapping_version':'offline-v1','targets':[{'buyerWarehouseCode':s,'displayName':'测试'+s} for s in ('S','T')]}
+                if action in {'configuration','setup.check_login','setup.status'}:
+                    if bridge.ax is None:bridge.ax=LoginTransport()
+                    return original_request(bridge,payload)
                 if action=='reserve':
                     command=values['command'];cid=command['command_id']
                     assert command['operation']=='replenishment.export'
@@ -115,6 +129,8 @@ def start_smoke(app,win,args):
             collected=request('collect',{'resume':batch['id']})
             stockout_task.Bridge.request=forbidden
             require(collected['state']=='COMPLETE','Actual acquisition worker publishes all selected stores')
+            require('setup.check_login' in login_calls and 'setup.status' in login_calls,
+                    'Production analysis bridge forwards current Edge login and polling before native export')
             require(len(native)==1 and next(iter(native.values()))['request']['scope']['warehouse_codes']==['S','T'],
                     'All selected stores use one native batch command in their selected order')
             require(len(set(collected['external']['ax_commands'].values()))==1,'Analysis persists the shared command association for every store')
