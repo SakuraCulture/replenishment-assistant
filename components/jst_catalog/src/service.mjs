@@ -240,15 +240,19 @@ export class CatalogService {
     if(this.closePromise)return this.closePromise;
     this.shuttingDown=true;this.active?.controller.abort();
     this.closePromise=Promise.resolve().then(async()=>{
-      await this.controlTail.catch(()=>{});this.active?.controller.abort();
-      try{await this.active?.promise;}
-      finally{
-        // No timeout applies to a running task or state commit. Only disconnect
-        // cleanup, after all work has settled, is bounded; failures cannot skip
-        // the unconditional task-store release.
-        try{await disconnectBounded(()=>this.driver.close(),disconnectTimeout);}
-        finally{await this.store.close();}
-      }
+      // A pending Promise alone does not keep Node alive after stdin is gone.
+      // Keep the transport alive until its safe drain has actually completed.
+      const keepAlive=setInterval(()=>{},1000);
+      try{
+        await this.controlTail.catch(()=>{});this.active?.controller.abort();
+        try{await this.active?.promise;}
+        finally{
+          // No timeout applies to a running task or state commit. Only idle
+          // disconnect cleanup is bounded; failures cannot skip store release.
+          try{await disconnectBounded(()=>this.driver.close(),disconnectTimeout);}
+          finally{await this.store.close();}
+        }
+      }finally{clearInterval(keepAlive);}
     });return this.closePromise;
   }
 }

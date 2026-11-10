@@ -6,6 +6,8 @@ import path from 'node:path';
 import {CatalogService} from '../src/service.mjs';
 import {JobStore} from '../src/job-store.mjs';
 import {watchParent} from '../src/service-lifetime.mjs';
+import {spawn} from 'node:child_process';
+import {once} from 'node:events';
 
 async function fixture(t,driver){
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'jst-shutdown-'));
@@ -69,4 +71,17 @@ test('parent loss during a commit only requests cooperative shutdown, preserves 
     await service.store.write(d=>{d.batches.original.nativeTaskRef='PERSIST-BEFORE-EXIT';});finish();await closing;
     const reopened=await JobStore.open(root);try{assert.equal(reopened.batch('original').nativeTaskRef,'PERSIST-BEFORE-EXIT');}finally{await reopened.close();}
   }finally{stop();finish();await closing;}
+});
+
+test('safe drain keeps a real Node process alive even with only an unreferenced pending commit',async t=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'jst-drain-live-'));
+  t.after(async()=>{assert.equal(path.dirname(root),path.resolve(os.tmpdir()));await fs.rm(root,{recursive:true,force:true});});
+  const module=new URL('../src/service.mjs',import.meta.url).href;
+  const script=`import {CatalogService} from ${JSON.stringify(module)};
+const service=await CatalogService.open({stateRoot:process.argv[1],driver:{close:async()=>{}}});
+service.active={controller:new AbortController(),promise:new Promise(resolve=>{setTimeout(async()=>{await service.store.write(d=>{d.batches.kept={id:'kept',nativeTaskRef:'PERSISTED-LATE'};});resolve();},50).unref();})};
+await service.close();`;
+  const child=spawn(process.execPath,['--input-type=module','-e',script,root],{stdio:'ignore',windowsHide:true});
+  const [code]=await once(child,'exit');assert.equal(code,0);
+  const reopened=await JobStore.open(root);try{assert.equal(reopened.batch('kept').nativeTaskRef,'PERSISTED-LATE');}finally{await reopened.close();}
 });
