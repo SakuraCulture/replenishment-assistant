@@ -1,0 +1,11 @@
+{
+  "passed": false,
+  "frozen_exe": false,
+  "live_platform": false,
+  "checks": [],
+  "source_commit": "source",
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\purchase_recovery_smoke.py\", line 80, in run\n    job=batch(range(6),['REVIEW']*5+['BOUND']);successful=copy.deepcopy(job['items'][5])\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\purchase_recovery_smoke.py\", line 58, in batch\n    p=manager.store.prepare(heads)\n      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\aoxiang_workflows.py\", line 120, in prepare\n    require_orders(self.business_path,items)\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\aoxiang_order_guard.py\", line 27, in require_orders\n    missing=deleted_orders(path,items)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\aoxiang_order_guard.py\", line 9, in deleted_orders\n    if not path.is_file():raise ValueError('订单数据库不存在，未执行采购；请检查当前数据目录')\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: 订单数据库不存在，未执行采购；请检查当前数据目录\n",
+  "heartbeat_ticks": 0,
+  "process_exit": 0,
+  "accepted": false
+}
