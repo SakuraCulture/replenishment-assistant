@@ -57,6 +57,18 @@ function fixture(){
   const page={isClosed:()=>false},session=new ModuleSession({page,adapters:{D13:UI,purchase:UI,purchase_create:UI},onPhase:x=>events.push(x)});
   return {session,page,events,setFailures:x=>{fail=x;},setIdentity:x=>{who=x;}};
 }
+
+test('explicit observation follows current Edge login on the same page; original task checks remain strict',async()=>{
+  const f=fixture();await f.session.open('D13',identity);
+  const current={...identity,accountId:'new-account',userId:'new-user'};f.setIdentity(current);
+  await assert.rejects(()=>f.session.open('purchase',identity),{code:'WRONG_IDENTITY'});
+  await f.session.open('D13',null,{force:true,observeCurrent:true});
+  assert.deepEqual(f.session.identity,current);assert.equal(f.session.ui.page,f.page);
+  await assert.rejects(()=>f.session.open('purchase',identity),{code:'WRONG_IDENTITY'});
+  await f.session.open('purchase',current);assert.equal(f.session.ready,true);
+  f.setFailures(['WAIT_LOGIN']);await assert.rejects(()=>f.session.open('D13',null,{force:true,observeCurrent:true}),{code:'WAIT_LOGIN'});
+  assert.equal(f.session.ready,false);assert.deepEqual(f.session.identity,current);
+});
 test('one page D13 -> purchase -> purchase_create -> D13; listeners disposed, fixed identity',async()=>{
   const f=fixture();let first;
   for(const source of ['D13','purchase','purchase_create','D13']){

@@ -37,9 +37,12 @@ class Runner:
                 self.client.request(cancel_action, **{id_field: id})
                 raise Cancelled('已停止新动作；当前任务安全结束后保留原记录')
 
-    def template(self, job):
-        if job.get('template_receipt'):
-            return job['template_receipt']
+    def template(self, job, configuration):
+        receipt=job.get('template_receipt')
+        identity=(receipt or {}).get('identity') or {}
+        current=configuration.get('account_binding') or {}
+        if receipt and identity.get('accountId')==current.get('account_id') and identity.get('merchantCode')==current.get('merchant_code'):
+            return receipt
         checkpoint(self.cancel)
         r = self.client.request('template.start')
         r = self.wait_status('template.status', 'template_id', r['id'], cancel_action='template.cancel')
@@ -52,7 +55,7 @@ class Runner:
     def prepare_item(self, job, item, configuration, suppliers):
         p = item.get('package')
         if not p:
-            template = self.template(self.store.get(job['id']))
+            template = self.template(self.store.get(job['id']),configuration)
             p = prepare(self.business_path, item['head'], configuration, suppliers, template,
                         self.store.folder / 'purchase-packages', self.component_root / 'assets/purchase-import-template-contract.json',
                         cancel=self.cancel, progress=self.progress)
@@ -188,7 +191,9 @@ class Runner:
                         update(changes={'state':'SKIPPED','error':{'code':'SOURCE_ORDER_DELETED','message':'来源不可用，未派发平台动作'}})
                     continue
                 # Read again at each dispatch: a batch never silently adopts stale host mappings.
-                configuration = self.client.request('configuration')
+                from aoxiang_current_login import current_configuration
+                configuration = (current_configuration(self.client,self.progress,self.cancel)
+                                 if job['kind']=='prepare' and not item.get('package') else self.client.request('configuration'))
                 suppliers = Directory(self.store.folder).suppliers()
                 basis = item.get('head') or item.get('basis') or {}
                 text = f"{position+1}/{len(job['items'])} · {item.get('display_name') or basis.get('name') or basis.get('number')} · {basis.get('warehouse', '')}"

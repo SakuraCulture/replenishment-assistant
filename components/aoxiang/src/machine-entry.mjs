@@ -142,8 +142,8 @@ async function main(){
           if(!await exists(path.join(root,'config/portable.config.json'))){result={configured:false};break;}
           const config=await loadConfig(root);
           const {binding}=await readConfiguration(root);
-          result={configured:true,enabled:config.enabled,account_binding:{account_id:config.tenantBinding.accountId,merchant_code:config.tenantBinding.merchantCode},
-            display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.targets,
+          result={configured:true,enabled:config.enabled,login_policy:'current_edge',needs_store_verification:!config.enabled,account_binding:{account_id:config.tenantBinding.accountId,merchant_code:config.tenantBinding.merchantCode},
+            display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.enabled?config.targets:[],
             browser_binding:binding?{edge_executable:binding.edgeExecutable,edge_version:binding.edgeVersion,
               actual_profile_path:binding.actualProfilePath,profile_directory:binding.profileDirectory,output_root:binding.outputRoot}:null};break;
         }

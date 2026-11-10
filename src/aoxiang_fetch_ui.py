@@ -195,17 +195,22 @@ class FetchDialog(ComponentDialog):
         def operation(progress):
             self.ensure_client()
             self.jobs.synchronize(self.client)
-            job = prepare(self.jobs, self.configuration, codes, policy, day=self.day)
+            from aoxiang_current_login import current_configuration
+            configuration=current_configuration(self.client,progress)
+            job = prepare(self.jobs, configuration, codes, policy, day=self.day)
             try:
                 self.jobs.dispatch(self.client, job['id'])
             except ComponentError:
                 # The intention and transport error remain available; next action queries/replays this exact ID.
                 pass
-            return self.jobs.get(job['id']), self.jobs.recent(include_unfinished=True,exclude_analysis=True)
+            return self.jobs.get(job['id']), self.jobs.recent(include_unfinished=True,exclude_analysis=True),configuration
         self.run(operation, self.created)
 
     def created(self, data):
-        job, history = data
+        job, history, *configuration = data
+        if configuration:
+            self.configuration=configuration[0]
+            self.identity.setText(self.configuration['display_name']+' · '+self.configuration['account_binding']['merchant_code'])
         self.fill_history(history, job['id'])
         self.show_job(job)
 

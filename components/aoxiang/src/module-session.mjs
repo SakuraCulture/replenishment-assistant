@@ -1,14 +1,14 @@
 import {sameIdentity,fail} from './common.mjs';
 
-// One owned page, fixed identity, replaceable UI adapters. No platform writes here.
+// One owned page, explicit current-login observation, strict original-task checks.
 export class ModuleSession {
   constructor({page,adapters,timeoutMs=30000,focusSession,onReceipt=()=>{},onImportReceipt=()=>{},onPhase=()=>{}}){
     Object.assign(this,{page,adapters,timeoutMs,focusSession,onReceipt,onImportReceipt,onPhase});
     this.ui=null;this.source=null;this.ready=false;this.identity=null;
   }
-  async open(source,expected=this.identity,{force=false}={}){
-    if(this.identity&&expected&&!sameIdentity(this.identity,expected))fail('WRONG_IDENTITY','共享连接已绑定另一商家，不能切换身份');
-    if(!this.identity&&expected)this.identity=structuredClone(expected);
+  async open(source,expected=this.identity,{force=false,observeCurrent=false}={}){
+    if(!observeCurrent&&this.identity&&expected&&!sameIdentity(this.identity,expected))fail('WRONG_IDENTITY','原作业身份与当前连接不同，请先读取当前Edge登录；原任务未重发');
+    if(!observeCurrent&&!this.identity&&expected)this.identity=structuredClone(expected);
     if(this.ready&&this.source===source&&!force)return this.ui;
     this.ready=false;
     const old=this.ui;this.ui=null;this.source=null;
@@ -17,7 +17,7 @@ export class ModuleSession {
     const ui=new Adapter(this.page,{timeoutMs:this.timeoutMs,focusSession:this.focusSession});
     this.focusSession=null;this.ui=ui;
     ui.onReceipt=this.onReceipt;ui.onImportReceipt=this.onImportReceipt;
-    const fixed=this.identity||expected;
+    const fixed=observeCurrent?null:this.identity||expected;
     for(let attempt=0;;attempt++){
       try{
         const identity=await ui.open(fixed);

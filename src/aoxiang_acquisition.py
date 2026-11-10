@@ -23,7 +23,7 @@ def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=N
         raise ValueError('所选门店不在已核验绑定中，请重新核验')
     for pending in jobs.unfinished():
         old = pending['command']
-        if (old['operation'] == 'replenishment.export' and old['account_binding'] == configuration['account_binding']
+        if (old['operation'] == 'replenishment.export' and old['account_binding']['merchant_code'] == configuration['account_binding']['merchant_code']
                 and set(codes).intersection(old['scope']['warehouse_codes'])):
             raise ValueError('所选门店还有未完成或待核对的原采集，不能另建任务。请继续原采集，或先“结束本次采集”再新建；已受理平台任务将保留接续：' + pending['id'])
     command = {'protocol_version': 1, 'command_id': 'rep-' + uuid.uuid4().hex,

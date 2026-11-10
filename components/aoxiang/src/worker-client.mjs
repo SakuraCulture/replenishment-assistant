@@ -33,6 +33,7 @@ export class BrowserClient{
   }
   connect(params){this.pageTimeoutMs=params.pageTimeoutMs||30000;return this.call('connect',params,(params.timeout||60000)+this.pageTimeoutMs*2);}
   recheckLogin(expectedIdentity){return this.call('recheckLogin',{expectedIdentity});}
+  observeLogin(){return this.call('observeLogin');}
   verifyIdentity(expected){return this.call('verifyIdentity',{expected});}
   querySingle(code,name){return this.call('querySingle',{code,name},Math.max(90000,(this.pageTimeoutMs||30000)*6));}
   warehouseOptions(term){return this.call('warehouseOptions',{term});}

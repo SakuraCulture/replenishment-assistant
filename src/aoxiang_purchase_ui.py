@@ -205,7 +205,11 @@ class PurchaseDialog(BindingActions, ComponentDialog):
 
     def fetch_template(self):
         self.began = time.monotonic()
-        self.run(lambda _: self.client.request('template.start'), self.template_started)
+        def operation(progress):
+            from aoxiang_current_login import current_configuration
+            current_configuration(self.client,progress)
+            return self.client.request('template.start')
+        self.run(operation, self.template_started)
 
     def template_started(self, result):
         self.template_id = result['id']
@@ -257,7 +261,9 @@ class PurchaseDialog(BindingActions, ComponentDialog):
             self.update_buttons()
 
     def prepare_package(self, progress):
-        config = self.client.request('configuration')
+        from aoxiang_current_login import current_configuration,current_template
+        config = current_configuration(self.client,progress)
+        self.receipt=current_template(self.client,self.receipt,config,progress)
         suppliers = Directory(self.folder).suppliers()
         p = prepare(self.host.work_repository.path, self.head, config, suppliers, self.receipt,
                     self.folder / 'purchase-packages', component_root() / 'assets/purchase-import-template-contract.json', progress=progress)

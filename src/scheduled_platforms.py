@@ -48,9 +48,11 @@ class Platforms:
             self.jst=None
 
     def preflight(self,basis,progress):
-        """Actual read-only login/store checks; never exports or commits a configuration."""
+        """Read-only platform checks; refresh observed login, never export or change store mappings."""
         try:
             ax=self.ax_client();progress('正在核验翱象登录与预案门店；如需授权，请在浏览器允许')
+            from aoxiang_current_login import current_configuration
+            current_configuration(ax,progress,self.cancel)
             job=ax.request('setup.verify_saved',codes=[i['code'] for i in basis['plan']['stores']])
             ident=job['id'];deadline=time.monotonic()+600
             try:
@@ -79,7 +81,8 @@ class Platforms:
         jobs=Jobs(self.folder/'aoxiang'/'jobs.sqlite3');client=self.ax_client()
         cid=external.get('ax')
         if cid is None:
-            config=client.request('configuration')
+            from aoxiang_current_login import current_configuration
+            config=current_configuration(client,lambda message:runner.update('获取补货建议',message),self.cancel)
             job=prepare(jobs,config,[i['code'] for i in basis['plan']['stores']],'refresh',day=run['day'])
             cid=job['id'];external['ax']=cid;repo.change(rid,epoch=runner.epoch,external=external)
             # Intent is linked before dispatch; same command has a durable idempotency contract.

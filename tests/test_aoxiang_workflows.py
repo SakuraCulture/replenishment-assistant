@@ -150,6 +150,9 @@ class RunnerTests(unittest.TestCase):
         class Client:
             def request(self,action,**kw):
                 calls.append((action,kw))
+                # Browser login is closed fixture evidence here; real setup and
+                # current-login observation are covered by their own tests.
+                if action=='setup.check_login':return {'id':'offline-login','state':'VERIFIED'}
                 if action=='template.start':return {'id':'tpl','state':'RUNNING'}
                 if action=='template.status':return {'id':'tpl','state':'READY','receipt':f.receipt}
                 return real.request(action,**kw)

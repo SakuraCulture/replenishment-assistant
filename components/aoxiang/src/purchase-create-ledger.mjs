@@ -39,6 +39,14 @@ export class PurchaseCreates{
       if(existing){if(existing.request_hash!==requestHash)fail('PURCHASE_INTENT_CHANGED','同一采购命令不能替换付款依据或文件');return {created:false,record:this.get(intent.id)};}
       const prior=this.db.prepare("SELECT id FROM purchase_creates WHERE order_key=? AND state<>'CANCELLED_BEFORE_UPLOAD'").get(key);
       if(prior)fail('PURCHASE_ALREADY_RESERVED','此订单已有采购任务；付款变化也不能自动重建，请先核对原任务',{id:prior.id});
+      // Login observation may change the operator account. The same merchant's
+      // original local order still owns its reservation, including unknown uploads.
+      const otherAccount=this.db.prepare(`SELECT id FROM purchase_creates WHERE state<>'CANCELLED_BEFORE_UPLOAD'
+        AND json_extract(payload,'$.intent.identity.merchantCode')=?
+        AND json_extract(payload,'$.intent.basis.number')=?
+        AND json_extract(payload,'$.intent.basis.warehouse')=?
+        AND json_extract(payload,'$.intent.basis.store')=? LIMIT 1`).get(intent.identity.merchantCode,intent.basis.number,intent.basis.warehouse,intent.basis.store);
+      if(otherAccount)fail('PURCHASE_ALREADY_RESERVED','同一商家的这张订单已有原采购任务；换登录人不会解除防重，请核对原采购结果',{id:otherAccount.id});
       const at=now(),r={id:intent.id,intent:structuredClone(intent),requestHash,state:'RESERVED',sequence:1,createdAt:at,updatedAt:at,uploadAttempted:false,receipt:null,binding:null,error:null};
       this.db.prepare('INSERT INTO purchase_creates VALUES(?,?,?,?,?,?,?,?)').run(r.id,key,sha256(canonical(intent.identity)),requestHash,r.state,r.sequence,null,JSON.stringify(r));this.event(r,'RESERVED');return {created:true,record:r};
     });

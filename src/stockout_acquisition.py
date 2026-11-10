@@ -192,7 +192,8 @@ def execute(repo,rid,rpc,cancel,progress=lambda _:None):
     repo.change(rid,state='RUNNING',message='核对分析已采用设置及平台身份')
     try:
         basis=repo.settings(run['basis']);checkpoint(cancel);resource_check(repo.folder)
-        client=Client(rpc,'ax');configuration=client.request('configuration')
+        from aoxiang_current_login import current_configuration
+        client=Client(rpc,'ax');configuration=current_configuration(client,progress,cancel)
         if not configuration.get('configured') or not configuration.get('enabled'):
             raise ValueError('翱象连接尚未启用，请在原连接配置完成核验')
         available={s['buyerWarehouseCode'] for s in configuration['targets']}

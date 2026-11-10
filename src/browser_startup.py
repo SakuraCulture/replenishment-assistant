@@ -27,7 +27,7 @@ def error_result(error):
     if code in {'LOGIN_REQUIRED', 'LOGIN_TIMEOUT', 'NOT_LOGGED_IN', 'WAIT_LOGIN'}:
         return result('LOGIN_REQUIRED', '请在对应浏览器完成登录；程序会自动复核。' + message, code)
     if code in {'WRONG_ACCOUNT', 'WRONG_IDENTITY'}:
-        return result('WRONG_ACCOUNT', '当前登录账号与原绑定不同，请切回原账号后重新检查。' + message, code)
+        return result('WRONG_ACCOUNT', '核验期间Edge登录发生变化，请重新检查当前登录；无需手动填写账号ID。' + message, code)
     if code in {'NOT_CONFIGURED', 'SETUP_REQUIRED', 'MACHINE_REBIND_REQUIRED', 'COMPANY_REQUIRED'}:
         return result('CONFIG_REQUIRED', message, code)
     return result('FAILED', message or '连接检查未完成，请查看详情后重试。', code)
@@ -40,7 +40,7 @@ def check_ax(client, cancel, report):
     if cancel.is_set():
         return
     config = client.request('configuration')
-    if not config.get('configured') or not config.get('enabled', True):
+    if not config.get('configured') or (not config.get('enabled', True) and config.get('login_policy')!='current_edge'):
         report(name, result('CONFIG_REQUIRED', '尚未保存翱象商家与门店绑定。请在“翱象配置”完成首次业务绑定；已保存后每次启动自动连接。', 'NOT_CONFIGURED'))
         return
     job = client.request('setup.check_login')
@@ -57,7 +57,8 @@ def check_ax(client, cancel, report):
         return
     if job['state'] == 'VERIFIED' and not stopped:
         account = (job.get('identity') or {}).get('display_name', '')
-        report(name, result('READY', '商家登录已核验' + ('：' + account if account else '') + '；共享连接可供原业务复用。'))
+        suffix='；请核验当前商家的门店。' if job.get('merchant_changed') else '；共享连接可供原业务复用。'
+        report(name, result('READY', '当前Edge商家登录已核验' + ('：' + account if account else '') + suffix))
     else:
         report(name, error_result(job.get('error') or {'code': 'CHECK_TIMEOUT', 'message': '连接检查已停止或超时，请检查浏览器授权和网络。'}))
 

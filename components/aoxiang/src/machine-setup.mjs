@@ -64,26 +64,34 @@ export class MachineSetup{
         else if(this.preview&&this.job.state==='RUNNING'){
           if(params.verificationOnly){
             if(configurationHash(await readConfiguration(this.root))!==configurationHash(params.saved))fail('STALE_CONFIGURATION','核验期间连接配置已变化');
-            if(this.browsers){this.browsers.adopt({...params.saved,state:this.state},this.client,this.connected);this.client=null;this.borrowed=false;}
+            const desired=this.preview.desired;
+            this.check();
+            if(configurationHash(desired)!==configurationHash(params.saved)){
+              await saveConfiguration(this.root,configurationHash(params.saved),desired);
+              this.job.identity_updated=true;
+            }
+            if(this.browsers){this.browsers.adopt({...desired,state:this.state},this.client,this.connected);this.client=null;this.borrowed=false;}
             else await this.closeClient();
-            this.preview=null;this.job.state='VERIFIED';this.job.stage='原配置只读核验通过，共享连接保留';
+            this.preview=null;this.job.state='VERIFIED';this.job.stage=this.job.merchant_changed?'当前Edge登录已识别；请核验当前商家的门店':this.job.identity_updated?'当前Edge登录已识别并自动更新，共享连接保留':'当前Edge登录核验通过，共享连接保留';
           }else{this.job.state='READY';this.job.stage='核验完成，等待保存';}
         }
       }
-      catch(error){this.job={...this.job,state:'FAILED',error:errorInfo(error),updated_at:now()};}
+      catch(error){await this.closeClient();this.preview=null;this.job={...this.job,state:'FAILED',error:errorInfo(error),updated_at:now()};}
       finally{this.job.cleanup_pending=false;this.promise=null;}
     });
     return this.status(this.job.id);
   }
   async verifySaved(codes){
     const old=await readConfiguration(this.root);
-    if(!old.config?.enabled||!old.binding?.enabled)fail('NOT_CONFIGURED','请先核验并保存翱象连接');
+    if(!old.config||!old.binding?.enabled)fail('NOT_CONFIGURED','请先选择Edge配置并核验门店，无需手填账号ID');
+    if(codes.length&&!old.config.enabled)fail('TARGET_UNVERIFIED','请先核验当前Edge商家下的门店对应');
     const targets=codes.map(code=>{
       const t=old.config.targets.find(t=>t.buyerWarehouseCode===code);
       if(!t)fail('TARGET_UNVERIFIED','预案门店尚未核验');
       return {code,name:t.displayName};
     });
-    // Read-only verification. The caller cancels the READY preview; never commits it.
+    // Read-only platform verification. Observed login metadata follows Edge;
+    // selected store mappings are only committed by explicit setup/save.
     return this.begin({candidate:{edge_executable:old.binding.edgeExecutable,actual_profile_path:old.binding.actualProfilePath},output_root:old.binding.outputRoot,targets,verificationOnly:true,saved:old});
   }
   status(id){if(this.job?.id!==id)fail('SETUP_NOT_FOUND','当前连接核验已失效，请重新核验');return structuredClone(this.job);}
@@ -141,16 +149,20 @@ export class MachineSetup{
     this.pendingLogin=null;
     if(!this.client)this.client=new this.Client({onPhase});
     this.job.stage='核验登录与商家';
-    const result=await this.readStep(()=>this.borrowed||waiting?this.client.recheckLogin(old.config.tenantBinding):this.client.connect({candidate:{...profile,edgeExecutable:edge.executable},expectedIdentity:old.config?.tenantBinding,
+    const result=await this.readStep(()=>this.borrowed||waiting?(this.client.observeLogin?this.client.observeLogin():this.client.recheckLogin()):this.client.connect({candidate:{...profile,edgeExecutable:edge.executable},
       stateRoot:this.root,timeout:old.config?.resourceLimits.connectTimeoutMs||60000,pageTimeoutMs:old.config?.resourceLimits.pageTimeoutMs||30000,
       mode:'background_tab',source:'D13'}),(old.config?.resourceLimits.connectTimeoutMs||60000)+(old.config?.resourceLimits.pageTimeoutMs||30000)*2);this.check();
     this.connected=result;
-    if(old.config&&!sameIdentity(old.config.tenantBinding,result.identity))fail('WRONG_IDENTITY','当前商家与已保存账号不同；原配置保持不变');
+    const changed=old.config&&!sameIdentity(old.config.tenantBinding,result.identity);
+    const merchantChanged=!!old.config&&old.config.tenantBinding.merchantCode!==result.identity.merchantCode;
     this.job.identity={account_id:result.identity.accountId,merchant_code:result.identity.merchantCode,display_name:result.identity.displayName};
-    // Startup only verifies the saved browser and tenant. Store verification stays
-    // explicit; no catalogue scan, export or mapping-version rewrite is needed.
+    this.job.merchant_changed=merchantChanged;
+    const observed=changed?{config:{...structuredClone(old.config),tenantBinding:{accountId:result.identity.accountId,merchantCode:result.identity.merchantCode,displayName:result.identity.displayName},enabled:merchantChanged?false:old.config.enabled},
+      binding:{...old.binding,edgeVersion:result.facts?.edgeVersion||old.binding?.edgeVersion,actualProfilePath:result.facts?.actualProfilePath||old.binding?.actualProfilePath,identityVerifiedAt:now()}}:old;
+    // Login observation never scans stores or creates exports. Only the observed
+    // identity is refreshed; original tasks retain their frozen identities.
     if(params.verificationOnly&&!this.job.targets.length){
-      this.preview={expectedHash:configurationHash(old),desired:old};
+      this.preview={expectedHash:configurationHash(old),desired:observed};
       this.job.verified=0;this.job.failed=0;
       return;
     }
@@ -175,6 +187,9 @@ export class MachineSetup{
     }
     this.check();if(!verified.length)fail('NO_VERIFIED_TARGET','没有门店通过编码核验，请检查目录和当前账号权限');
     const config=old.config?structuredClone(old.config):freshConfig(result.identity,verified);
+    config.tenantBinding={accountId:result.identity.accountId,merchantCode:result.identity.merchantCode,displayName:result.identity.displayName};
+    if(merchantChanged||old.config&&!old.config.enabled){config.targets=[];config.batches=config.batches.slice(0,1);config.batches[0].targetWarehouseCodes=[];}
+    config.enabled=true;
     const byCode=new Map(verified.map(t=>[t.buyerWarehouseCode,t]));
     config.targets=config.targets.map(t=>byCode.get(t.buyerWarehouseCode)||t);
     for(const target of verified)if(!config.targets.some(t=>t.buyerWarehouseCode===target.buyerWarehouseCode))config.targets.push(target);
@@ -184,7 +199,7 @@ export class MachineSetup{
       edgeExecutable:edge.executable,edgeVersion:result.facts.edgeVersion,userDataRoot:profile.userDataRoot,profileDirectory:profile.profileDirectory,
       actualProfilePath:result.facts.actualProfilePath,outputRoot:output.root,identityVerifiedAt:now(),compatibilityResult:'PASSED'};
     await validateConfig('portable.config',config);await validateConfig('machine.binding',binding);
-    this.preview={expectedHash:configurationHash(old),desired:{config,binding}};
+    this.preview={expectedHash:configurationHash(old),desired:params.verificationOnly?observed:{config,binding}};
     this.job={...this.job,state:'RUNNING',stage:'核验完成，正在释放只读连接',verified:verified.length,failed:this.job.targets.length-verified.length,
       store_mapping_version:mappingVersion(config),output_root:binding.outputRoot,updated_at:now()};
   }
