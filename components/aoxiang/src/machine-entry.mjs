@@ -75,7 +75,7 @@ async function main(){
     try{
       request=validateRequest(raw);
       const configurationActions=['discover','setup.start','setup.check_login','setup.verify_saved','setup.commit','template.start'];
-      if((configurationActions.includes(request.action)||['reserve','resume','purchase.start','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&(purchase.busy||receiptSync.busy||bindingCheck.busy))fail('PURCHASE_CREATE_BUSY','当前采购、关联核对或收货动作正在运行或安全停止，请等待后再执行其他作业');
+      if((configurationActions.includes(request.action)||['reserve','resume','purchase.start','purchase.submit','purchase.rebuild','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&(purchase.busy||receiptSync.busy||bindingCheck.busy))fail('PURCHASE_CREATE_BUSY','当前采购、关联核对或收货动作正在运行或安全停止，请等待后再执行其他作业');
       if(configurationActions.includes(request.action)&&(runtime.active||commands.list().some(r=>r.state==='QUEUED')))fail('COMPONENT_BUSY','先暂停或完成当前取数任务，再修改连接与目录');
       if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
       switch(request.action){
@@ -111,9 +111,17 @@ async function main(){
           const accepted=purchases.reserve(await freezePurchaseInput(root,p),request.package_sha256);
           result={created:accepted.created,record:purchasePublic(accepted.record)};break;
         }
+        case 'purchase.rebuild':{
+          if(runtime.closing)fail('SHUTTING_DOWN','组件正在安全退出');
+          const p=await readPurchasePackage(request.package_file,request.package_sha256);
+          const config=await loadConfig(root);checkPurchaseConfiguration(p,config);await assertHandoff(root,config.tenantBinding);await checkPurchaseInput(p);
+          const accepted=purchases.rebuild(request.purchase_id,request.sequence,await freezePurchaseInput(root,p),request.package_sha256,request.operation_id,request.reason);
+          result={created:accepted.created,record:purchasePublic(accepted.record)};break;
+        }
+        case 'purchase.submit':
         case 'purchase.start':{
           if(runtime.closing||runtime.active||commands.list().some(r=>r.state==='QUEUED')||setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止当前取数、模板或连接任务');
-          result=purchase.start(request.purchase_id);break;
+          result=purchase.start(request.purchase_id,{submitOnly:request.action==='purchase.submit'});break;
         }
         case 'purchase.status':result=purchase.status(request.purchase_id);break;
         case 'purchase.pause':result=purchase.pause(request.purchase_id);break;
@@ -142,7 +150,7 @@ async function main(){
           if(!await exists(path.join(root,'config/portable.config.json'))){result={configured:false};break;}
           const config=await loadConfig(root);
           const {binding}=await readConfiguration(root);
-          result={configured:true,enabled:config.enabled,login_policy:'current_edge',needs_store_verification:!config.enabled,account_binding:{account_id:config.tenantBinding.accountId,merchant_code:config.tenantBinding.merchantCode},
+          result={configured:true,enabled:config.enabled,login_policy:'current_edge',purchase_pipeline:true,purchase_rebuild:true,needs_store_verification:!config.enabled,account_binding:{account_id:config.tenantBinding.accountId,merchant_code:config.tenantBinding.merchantCode},
             display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.enabled?config.targets:[],
             browser_binding:binding?{edge_executable:binding.edgeExecutable,edge_version:binding.edgeVersion,
               actual_profile_path:binding.actualProfilePath,profile_directory:binding.profileDirectory,output_root:binding.outputRoot}:null};break;

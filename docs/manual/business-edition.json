@@ -1,20 +1,20 @@
 {
-  "edition": "2026-11-09",
-  "application": "0.49.3",
-  "chapters": 19,
+  "edition": "2026-11-10",
+  "application": "0.50.2",
+  "chapters": 20,
   "pdf_pages": 62,
-  "images": 26,
+  "images": 29,
   "parameter_definitions": 28,
-  "runtime_logic_changed": false,
+  "runtime_logic_changed": true,
   "sealed_0493_changed": false,
   "legacy_pdf_preserved": true,
   "live_platform_tested": false,
   "newcomer_field_acceptance": false,
-  "validation": "source definitions; isolated frozen EXE 8 checks; Qt synthetic forms; offline HTML interactions; PDF every-page character bounds and layout review",
+  "validation": "Existing business guide retained; 0.50.2 source Qt and real local component rebuild; isolated scheduler simulation; PDF remains 0.49.3 archive, not re-rendered",
   "files": {
-    "guide.md": "745f1bf6268b4712f5f9f4df7458ea5b0293ac70491f56debc8de1f237b4bbb0",
-    "index.html": "cdbe013d1d6ca3c3939f4ec0d90e9fc2b8209e61cbf212bd32c2f3abb56a35bd",
-    "screenshot-index.json": "7f26c5fc0b023dd1519807561cd073a97a34a2f9277ffdcfd03a8d2965e65d74",
+    "guide.md": "fed49c949ef3124b0fb9ddc21e935ab0206c6185c8522a80125ffb9bf7fe87cc",
+    "index.html": "524d03a29b0145d9f9f7a5956f358145eae458275fac12e1aaf1510976c2069c",
+    "screenshot-index.json": "f86e1b1ce8ba0e7ab19095eba5c7a621ae38e5093e6e80e8f62cbaea26f7fa29",
     "parameter-reference.json": "ae1fe60d3749abe67f0407af4cf3faeb64647f893b976c378119e2539a9f2738",
     "补货助手_0.49.3_新人业务上手手册.pdf": "e2f494ed73817a561a87265811d2474c054e39f87b31ec60092ef1bac44e7326",
     "images/ai-stockout.png": "37e670415626b834edc680e3211f6e37b439c53710023ce3483b5faf8b1aeb4d",
@@ -42,6 +42,10 @@
     "images/return-identity.png": "2557c056f33587030cc2236e27eff5d60a1f3a4b586f6b754e52e3efdb22facd",
     "images/return-review.png": "0b3150e7c731b05331f6a5cfbcab4947af797f23a2348b60c84d88809ba0e2c8",
     "images/stockout-cuts.png": "8b2d208bd3273a7d73ed5d17839973a40dd88e74093d030117c85058fdbeb0c6",
-    "images/stockout-overview.png": "22a391dfed5557c0f3649b325e8f36170de9008f8c6da22736b0ca2e20e990cc"
-  }
+    "images/stockout-overview.png": "22a391dfed5557c0f3649b325e8f36170de9008f8c6da22736b0ca2e20e990cc",
+    "images/purchase-rebuild-confirm-0502.png": "3fc15a8bf3fe5ba2c38273d5e4c85f795d91860349cc5cf264f93eda2fb33080",
+    "images/purchase-rebuild-ready-0502.png": "949ee2fb6a3d682af40b1ce19432bbfa29107d8531cb217b5613812d4c82d661"
+  },
+  "pdf_application": "0.49.3",
+  "pdf_status": "historical archive; current changes in HTML"
 }

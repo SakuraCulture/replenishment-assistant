@@ -72,7 +72,18 @@ class Runner:
         checkpoint(self.cancel)
         from aoxiang_order_guard import require_orders
         require_orders(self.business_path,[item])
-        accepted = self.client.request('purchase.reserve', package_file=p['package_file'], package_sha256=p['package_sha256'])
+        rebuild=item.get('rebuild') or {}
+        if rebuild.get('purchase_id'):
+            if not configuration.get('purchase_rebuild'):raise ValueError('当前组件不支持采购重建，请使用完整新版程序')
+            try:old=self.client.request('purchase.status',purchase_id=rebuild['purchase_id'])
+            except ComponentError as exc:
+                if exc.code!='PURCHASE_CREATE_NOT_FOUND':raise
+                old={'sequence':1}
+            accepted=self.client.request('purchase.rebuild',purchase_id=rebuild['purchase_id'],sequence=old['sequence'],
+                package_file=p['package_file'],package_sha256=p['package_sha256'],operation_id=rebuild['operation_id'],
+                reason='业务确认结束原任务并重新生成采购预览；原平台采购单由业务处理',acknowledge_uncertainty=True)
+        else:
+            accepted = self.client.request('purchase.reserve', package_file=p['package_file'], package_sha256=p['package_sha256'])
         if accepted['record']['uploadAttempted']:
             raise ValueError('此预览已进入上传；请核对原采购任务，不重复列为待上传')
         return 'PREPARED', {'purchase_id': p['id']}
@@ -156,6 +167,9 @@ class Runner:
     def run(self, id):
         job = self.store.claim(id)
         self.execution_token=job['execution_token']
+        if job['kind']=='upload' and self.client.request('configuration').get('purchase_pipeline'):
+            from aoxiang_upload_pipeline import run_upload
+            return run_upload(self,job)
         from deletion_barrier import SourceDeleted
         for identity in [i['item_id'] for i in job['items']]:
             try:current=self.store.get(id)

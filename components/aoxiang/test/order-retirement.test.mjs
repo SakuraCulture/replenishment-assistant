@@ -40,6 +40,7 @@ test('delete frees active reservation but old command and old oid cannot replay;
  assert.equal(f.ledger.get('p1').state,'RETIRED');assert.equal(f.ledger.get('p1').uploadAttempted,true);
  assert.deepEqual(f.ledger.get('p1').intent,undefined);assert.equal(f.ledger.events('p1').length,0);assert.equal(f.ledger.list().length,1);
  assert.throws(()=>f.ledger.reserve(p,h),{code:'SOURCE_ORDER_DELETED'});
+ assert.throws(()=>f.ledger.rebuild('p1',1,intent('rebuilt-deleted','gone','BH-20261109'),h,'b'.repeat(32),'explicit rebuild'),{code:'SOURCE_ORDER_DELETED'});
  assert.throws(()=>reserve(f,'another-command','gone'),{code:'SOURCE_ORDER_DELETED'});
  assert.throws(()=>requireHostOrder('gone'),{code:'SOURCE_ORDER_DELETED'});
  reserve(f,'new-command','new','BH-20261109');assert.equal(f.ledger.list().length,2);

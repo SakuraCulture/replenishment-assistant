@@ -13,7 +13,8 @@ const fields={ping:[],'session.release':[],'session.status':[],'session.health':
   discover:[],'setup.check_login':[],'setup.verify_saved':['codes'],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
   'setup.cancel':['setup_id'],'setup.commit':['setup_id'],
   'template.start':[],'template.status':['template_id'],'template.cancel':['template_id'],
-  'purchase.reserve':['package_file','package_sha256'],'purchase.start':['purchase_id'],
+  'purchase.reserve':['package_file','package_sha256'],'purchase.start':['purchase_id'],'purchase.submit':['purchase_id'],
+  'purchase.rebuild':['purchase_id','sequence','package_file','package_sha256','operation_id','reason','acknowledge_uncertainty'],
   'purchase.status':['purchase_id'],'purchase.pause':['purchase_id'],'purchase.cancel':['purchase_id'],'purchase.list':['offset','limit'],
   'binding.start':['purchase_id','binding_request'],'binding.status':['purchase_id'],'binding.pause':['purchase_id'],
   'binding.confirm':['purchase_id','proposal_id','sequence','manifest_sha256'],
@@ -36,7 +37,9 @@ export function validateRequest(value){
   if(value.action==='binding.start')bindingRequest(value.binding_request);
   if(value.action==='binding.confirm'&&(!idPattern.test(value.proposal_id||'')||!Number.isSafeInteger(value.sequence)||value.sequence<1||!/^[a-f0-9]{64}$/.test(value.manifest_sha256||'')))fail('REQUEST_SCHEMA','关联预览编号、版本或哈希无效');
   if(value.action==='receipt.synced'&&(!/^[a-f0-9]{64}$/.test(value.manifest_sha256||'')||!value.receipt||Object.keys(value.receipt).some(k=>!['number','revision','stage','version','changed'].includes(k))))fail('REQUEST_SCHEMA','正式实收回执或快照哈希无效');
-  if(value.action==='purchase.reserve'&&(typeof value.package_file!=='string'||!value.package_file||value.package_file.length>2048||!(/^[a-f0-9]{64}$/).test(value.package_sha256||'')))fail('REQUEST_SCHEMA','采购任务文件及哈希无效');
+  if(['purchase.reserve','purchase.rebuild'].includes(value.action)&&(typeof value.package_file!=='string'||!value.package_file||value.package_file.length>2048||!(/^[a-f0-9]{64}$/).test(value.package_sha256||'')))fail('REQUEST_SCHEMA','采购任务文件及哈希无效');
+  if(value.action==='purchase.rebuild'&&(!Number.isSafeInteger(value.sequence)||value.sequence<1||!/^[a-f0-9]{32}$/.test(value.operation_id||'')||
+    typeof value.reason!=='string'||!value.reason.trim()||value.reason.length>200||value.acknowledge_uncertainty!==true))fail('REQUEST_SCHEMA','请明确确认旧结果可能未核清并提供有效重建范围');
   if(value.action==='setup.start'){
     const text=v=>typeof v==='string'&&v.trim().length>0&&v.length<=1024;
     const candidate=value.candidate;

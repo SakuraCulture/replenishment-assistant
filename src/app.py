@@ -54,6 +54,9 @@ def main():
     if '--purchase-recovery-smoke' in sys.argv:
         from purchase_recovery_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--purchase-recovery-smoke')+1:])
+    if '--purchase-pipeline-smoke' in sys.argv:
+        from purchase_pipeline_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--purchase-pipeline-smoke')+1:])
     if '--admission-overview-smoke' in sys.argv:
         from admission_overview_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--admission-overview-smoke')+1:])

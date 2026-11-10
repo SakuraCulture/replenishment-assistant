@@ -34,24 +34,63 @@ export class PurchaseCreates{
   reserve(intent,requestHash){
     requireUnretired(this.db,intent.id,intent.basis?.oid);requireHostOrder(intent.basis?.oid);
     validatePurchaseIntent(intent);const key=orderKey(intent);
-    return this.state.write(()=>{
+    return this.state.write(()=>this.reserveWithin(intent,requestHash,key));
+  }
+  reserveWithin(intent,requestHash,key=orderKey(intent),rebuild={}){
       const existing=this.db.prepare('SELECT request_hash FROM purchase_creates WHERE id=?').get(intent.id);
       if(existing){if(existing.request_hash!==requestHash)fail('PURCHASE_INTENT_CHANGED','同一采购命令不能替换付款依据或文件');return {created:false,record:this.get(intent.id)};}
-      const prior=this.db.prepare("SELECT id FROM purchase_creates WHERE order_key=? AND state<>'CANCELLED_BEFORE_UPLOAD'").get(key);
+      const prior=this.db.prepare("SELECT id FROM purchase_creates WHERE order_key=? AND state NOT IN ('CANCELLED_BEFORE_UPLOAD','SUPERSEDED')").get(key);
       if(prior)fail('PURCHASE_ALREADY_RESERVED','此订单已有采购任务；付款变化也不能自动重建，请先核对原任务',{id:prior.id});
       // Login observation may change the operator account. The same merchant's
       // original local order still owns its reservation, including unknown uploads.
-      const otherAccount=this.db.prepare(`SELECT id FROM purchase_creates WHERE state<>'CANCELLED_BEFORE_UPLOAD'
+      const otherAccount=this.db.prepare(`SELECT id FROM purchase_creates WHERE state NOT IN ('CANCELLED_BEFORE_UPLOAD','SUPERSEDED')
         AND json_extract(payload,'$.intent.identity.merchantCode')=?
         AND json_extract(payload,'$.intent.basis.number')=?
         AND json_extract(payload,'$.intent.basis.warehouse')=?
         AND json_extract(payload,'$.intent.basis.store')=? LIMIT 1`).get(intent.identity.merchantCode,intent.basis.number,intent.basis.warehouse,intent.basis.store);
       if(otherAccount)fail('PURCHASE_ALREADY_RESERVED','同一商家的这张订单已有原采购任务；换登录人不会解除防重，请核对原采购结果',{id:otherAccount.id});
-      const at=now(),r={id:intent.id,intent:structuredClone(intent),requestHash,state:'RESERVED',sequence:1,createdAt:at,updatedAt:at,uploadAttempted:false,receipt:null,binding:null,error:null};
+      const at=now(),r={id:intent.id,intent:structuredClone(intent),requestHash,state:'RESERVED',sequence:1,createdAt:at,updatedAt:at,uploadAttempted:false,receipt:null,binding:null,error:null,...rebuild};
       this.db.prepare('INSERT INTO purchase_creates VALUES(?,?,?,?,?,?,?,?)').run(r.id,key,sha256(canonical(intent.identity)),requestHash,r.state,r.sequence,null,JSON.stringify(r));this.event(r,'RESERVED');return {created:true,record:r};
+  }
+  rebuild(id,sequence,intent,requestHash,operationId,reason){
+    requireUnretired(this.db,id);requireUnretired(this.db,intent.id,intent.basis?.oid);requireHostOrder(intent.basis?.oid);validatePurchaseIntent(intent);
+    if(id===intent.id)fail('PURCHASE_REBUILD_SCOPE','重建必须生成新的采购命令，不能覆盖原记录');
+    return this.state.write(()=>{
+      const successor=this.db.prepare('SELECT payload FROM purchase_creates WHERE id=?').get(intent.id);
+      if(successor){
+        const known=JSON.parse(successor.payload);
+        if(known.rebuildOf!==id||known.rebuildOperationId!==operationId)fail('PURCHASE_REBUILD_STALE','已有新任务的重建关系不同，不能覆盖');
+        return this.reserveWithin(intent,requestHash);
+      }
+      const row=this.db.prepare('SELECT payload FROM purchase_creates WHERE id=?').get(id);
+      const old=row?JSON.parse(row.payload):null;
+      if(old?.state==='SUPERSEDED'){
+        if(old.successorId!==intent.id||old.rebuildOperationId!==operationId)fail('PURCHASE_REBUILD_STALE','原任务已重建，请打开已有后继任务');
+        return this.reserveWithin(intent,requestHash);
+      }
+      if(old&&old.sequence!==sequence)fail('PURCHASE_STATE_CONFLICT','原采购状态已更新，请刷新后再确认重建');
+      if(old&&(!old.intent.basis.oid||old.intent.identity.merchantCode!==intent.identity.merchantCode||
+        ['oid','number','store','warehouse'].some(k=>old.intent.basis[k]!==intent.basis[k])))fail('PURCHASE_REBUILD_SCOPE','只能为同一商家、同一本机原仓单重建，不能换绑其他订单');
+      const also=[],candidates=this.db.prepare(`SELECT payload FROM purchase_creates WHERE state NOT IN ('CANCELLED_BEFORE_UPLOAD','SUPERSEDED')
+        AND json_extract(payload,'$.intent.identity.merchantCode')=? AND json_extract(payload,'$.intent.basis.number')=?
+        AND json_extract(payload,'$.intent.basis.store')=? AND json_extract(payload,'$.intent.basis.warehouse')=?`).all(intent.identity.merchantCode,intent.basis.number,intent.basis.store,intent.basis.warehouse).map(r=>JSON.parse(r.payload));
+      if(old&&!candidates.some(r=>r.id===old.id))candidates.push(old);
+      for(const extra of candidates){
+        if(extra.intent.basis.oid!==intent.basis.oid)continue;
+        if(['PREPARING','READY','SUBMITTING','VERIFYING'].includes(extra.state))fail('PURCHASE_CREATE_BUSY','同一原仓单还有动作未安全退出');
+        // Rotate only the retired reservation key; preserve frozen intent,
+        // platform-order uniqueness and every historical event.
+        const replaced={...extra,state:'SUPERSEDED',supersededFromState:extra.state,successorId:intent.id,rebuildOperationId:operationId,rebuildReason:reason,sequence:extra.sequence+1,updatedAt:now()};
+        this.db.prepare('UPDATE purchase_creates SET order_key=?,state=?,sequence=?,payload=? WHERE id=?')
+          .run(sha256(canonical({retiredOrderKey:orderKey(extra.intent),id:extra.id})),replaced.state,replaced.sequence,JSON.stringify(replaced),extra.id);
+        this.event(replaced,extra.id===id?'OPERATOR_REBUILD':'OPERATOR_REBUILD_RELATED');if(extra.id!==id)also.push(extra.id);
+      }
+      return this.reserveWithin(intent,requestHash,orderKey(intent),{rebuildOf:id,rebuildAlso:also,rebuildOperationId:operationId,
+        ...(!old?{predecessorMissing:true}:{}),previousOrderId:old?.binding?.orderId||null,previousTaskId:old?.receipt?.taskId||null});
     });
   }
   event(r,kind){this.db.prepare('INSERT INTO purchase_create_events VALUES(?,?,?)').run(r.id,r.sequence,JSON.stringify({id:r.id,sequence:r.sequence,state:r.state,at:r.updatedAt,kind,error:r.error,taskId:r.receipt?.taskId||null,orderId:r.binding?.orderId||null,
+    ...(r.rebuildOperationId?{rebuildOperationId:r.rebuildOperationId,rebuildOf:r.rebuildOf,successorId:r.successorId,reason:r.rebuildReason}:{}),
     ...(r.bindingProposal?{proposalId:r.bindingProposal.id,proposalState:r.bindingProposal.state,proofSha256:r.bindingProposal.manifest?.sha256||null,proposalError:r.bindingProposal.error}:{} )}));}
   update(id,sequence,next,changes={},kind=next){
     return this.state.write(()=>{
@@ -68,6 +107,16 @@ export class PurchaseCreates{
   accepted(receipt){
     if(lateRetiredReceipt(this.db,receipt))return this.get(receipt.intentId);
     const r=this.get(receipt.intentId);checkImportReceipt(r.intent,receipt);
+    if(r.state==='SUPERSEDED'){
+      if(!r.uploadAttempted)fail('UNEXPECTED_IMPORT_RECEIPT','原任务未进入上传边界，不能接受意外受理记录');
+      if(r.receipt?.taskId===receipt.taskId||(r.additionalTaskIds||[]).includes(receipt.taskId))return r;
+      return this.state.write(()=>{
+        const current=this.get(r.id),next={...current,sequence:current.sequence+1,updatedAt:now(),
+          ...(current.receipt?{additionalTaskIds:[...(current.additionalTaskIds||[]),receipt.taskId]}:{receipt})};
+        this.db.prepare('UPDATE purchase_creates SET sequence=?,payload=? WHERE id=?').run(next.sequence,JSON.stringify(next),r.id);
+        this.event(next,'LATE_RECEIPT_AFTER_REBUILD');return next;
+      });
+    }
     if(r.receipt?.taskId===receipt.taskId)return r;
     if(r.receipt){return this.update(r.id,r.sequence,'NEEDS_REVIEW',{additionalTaskIds:[...new Set([...(r.additionalTaskIds||[]),receipt.taskId])],error:{code:'MULTIPLE_IMPORT_TASKS',message:'发现不同导入任务号，禁止自动关联或重传'}},'CONFLICTING_RECEIPT');}
     if(!r.uploadAttempted)fail('UNEXPECTED_IMPORT_RECEIPT','未进入上传边界却收到受理记录');
@@ -128,5 +177,6 @@ export function purchasePublic(r){
   return {id:r.id,state:r.state,sequence:r.sequence,createdAt:r.createdAt,updatedAt:r.updatedAt,
     basis:r.intent.basis,target:r.intent.target,supplierCode:r.intent.supplierCode,rows:r.intent.rows.length,totalQuantity:r.intent.totalQuantity,totalAmount:r.intent.totalAmount,
     uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding:r.binding,error:r.error,uploadWarning:r.uploadWarning||null,additionalTaskIds:r.additionalTaskIds||[],
+    ...(r.rebuildOperationId?{rebuildOperationId:r.rebuildOperationId,rebuildOf:r.rebuildOf,rebuildAlso:r.rebuildAlso,successorId:r.successorId,previousOrderId:r.previousOrderId,previousTaskId:r.previousTaskId}:{}),
     ...(r.bindingProposal?{bindingProposal:r.bindingProposal}:{})};
 }

@@ -10,14 +10,15 @@ export class MachinePurchaseCreate{
   status(id){return {...purchasePublic(this.ledger.get(id)),active:this.job?.id===id&&this.busy,stage:this.job?.id===id?this.job.stage:null,pauseRequested:this.job?.id===id?this.job.cancelled:false};}
   check(){if(this.job.cancelled)fail('PAUSED','已停止新动作；已受理任务和采购单不会撤销');}
   progress(stage){this.job.stage=stage;this.job.updatedAt=now();}
-  start(id){
+  start(id,{submitOnly=false}={}){
     if(this.busy)fail('PURCHASE_CREATE_BUSY','当前采购任务仍在安全结束，请勿重复执行');
     const r=this.ledger.get(id);if(r.state==='BOUND')return this.status(id);
     if(r.state==='RETIRED')fail('SOURCE_ORDER_DELETED','来源订单已删除，任务已退役');
+    if(r.state==='SUPERSEDED')fail('PURCHASE_SUPERSEDED','旧任务已结束并重建，请打开后继任务；原平台单未撤销',{successorId:r.successorId});
     if(r.state==='CANCELLED_BEFORE_UPLOAD')fail('PURCHASE_CANCELLED','该任务已在上传前取消');
     if(r.uploadAttempted&&!r.receipt)fail('SUBMISSION_UNKNOWN','已进入上传边界但无唯一受理任务号，只能核对，不允许重新上传');
     if(r.additionalTaskIds?.length)fail('MULTIPLE_IMPORT_TASKS','导入任务不唯一，请人工核对');
-    this.job={id,stage:r.uploadAttempted?'核对原导入任务':'核验已确认付款及采购文件',cancelled:false,updatedAt:now()};
+    this.job={id,submitOnly,stage:r.uploadAttempted?'核对原导入任务':'核验已确认付款及采购文件',cancelled:false,updatedAt:now()};
     this.control=new AbortController();
     this.pending=Promise.resolve().then(()=>this.run(id)).catch(e=>{this.onFatal(e);}).finally(()=>{this.pending=null;});
     return this.status(id);
@@ -56,7 +57,9 @@ export class MachinePurchaseCreate{
           this.progress('额外请求已阻断，原上传回执已保存；仅继续核验原任务和采购明细');
         }
       }
-      this.check();r=this.ledger.get(id);this.progress('核对原导入任务、采购主单和商品数量金额');
+      this.check();r=this.ledger.get(id);
+      if(this.job.submitOnly){this.progress('平台已受理；可继续提交其他订单，原任务等待核对');return;}
+      this.progress('核对原导入任务、采购主单和商品数量金额');
       r=this.ledger.update(id,r.sequence,'VERIFYING',{error:null});
       const evidence=await this.adapter.observe(r.intent,r.receipt,{signal:this.control.signal});this.check();
       const bound=this.ledger.bind(id,evidence);this.progress(bound.binding.status==='已作废'?'已核实原采购单已作废，可返回本地删除页重新核对':'采购单已核验并关联，保留待提交');

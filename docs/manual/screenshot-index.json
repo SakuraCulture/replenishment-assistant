@@ -231,6 +231,24 @@
       "evidence": "qa/deletion_lifecycle_0500_20261109/source-gui-2/剩余批次.png",
       "synthetic": true,
       "live_platform_tested": false
+    },
+    {
+      "name": "purchase-rebuild-confirm-0502.png",
+      "sha256": "3fc15a8bf3fe5ba2c38273d5e4c85f795d91860349cc5cf264f93eda2fb33080",
+      "version": "0.50.2",
+      "source": "source Qt",
+      "evidence": "qa/purchase_recovery_pipeline_0502_20261110/source-ui-03/01-明确重建范围.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "purchase-rebuild-ready-0502.png",
+      "sha256": "949ee2fb6a3d682af40b1ce19432bbfa29107d8531cb217b5613812d4c82d661",
+      "version": "0.50.2",
+      "source": "source Qt",
+      "evidence": "qa/purchase_recovery_pipeline_0502_20261110/source-ui-03/02-新预览就绪未上传.png",
+      "synthetic": true,
+      "live_platform_tested": false
     }
   ],
   "live_platform_tested": false,

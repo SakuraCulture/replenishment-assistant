@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const {pathToFileURL} = require('url');
-const {chromium} = require('playwright');
+const {chromium} = require('playwright-core');
 
 async function main() {
   const out = path.resolve(process.argv[2]);
@@ -23,7 +23,10 @@ async function main() {
     await page.goto(url);
     await page.evaluate(() => document.querySelectorAll('img[loading]').forEach(i => i.loading = 'eager'));
     await page.waitForFunction(() => [...document.querySelectorAll('figure img')].every(i => i.complete && i.naturalWidth > 0));
-    assert.strictEqual(await page.locator('section').count(), 19);
+    assert.strictEqual(await page.locator('section').count(), 20);
+    assert((await page.locator('#c20').innerText()).includes('结束所选任务并重建预览'));
+    const pdfLink = await page.locator('header a[href$=".pdf"]').getAttribute('href');
+    assert(fs.existsSync(path.join(root,'docs/manual',pdfLink)));
     const links = await page.evaluate(() => [...document.querySelectorAll('a[href^="#"]')].map(a => a.getAttribute('href')).filter(h => !document.getElementById(h.slice(1))));
     assert.deepStrictEqual(links, []);
     await page.screenshot({path: path.join(out, 'desktop-index.png')});
@@ -63,7 +66,7 @@ async function main() {
     await page.screenshot({path: path.join(out, 'mobile-purchase-steps.png')});
     assert.deepStrictEqual(errors, []);
     assert.deepStrictEqual(requests.filter(u => /^https?:/i.test(u)), []);
-    const report = {passed: true, chapters: 19, image_count: await page.locator('figure img').count(), checks: ['local images load', 'chapter and subsection anchors', 'search found/zero/reset', 'weight valid/invalid/blank/boundary', 'image zoom open/close', 'mobile table contained scroll', 'no page errors', 'no external requests'], overflow, browser: await browser.version(), errors, external_requests: [], files: fs.readdirSync(out)};
+    const report = {passed: true, chapters: 20, image_count: await page.locator('figure img').count(), checks: ['local images load', 'new recovery chapter and archived PDF link', 'chapter and subsection anchors', 'search found/zero/reset', 'weight valid/invalid/blank/boundary', 'image zoom open/close', 'mobile table contained scroll', 'no page errors', 'no external requests'], overflow, browser: await browser.version(), errors, external_requests: [], files: fs.readdirSync(out)};
     fs.writeFileSync(path.join(out, 'html-report.json'), JSON.stringify(report, null, 2));
     console.log(JSON.stringify(report));
   } finally { await browser.close(); }

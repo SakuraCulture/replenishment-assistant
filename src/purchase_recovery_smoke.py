@@ -1,5 +1,6 @@
 """Frozen Qt acceptance with synthetic accepted tasks; never connects to a platform."""
-import copy,json,os,sys,time,traceback
+import copy,json,os,sys,time,traceback,sqlite3
+from contextlib import closing
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -55,6 +56,9 @@ def start_smoke(app,win,args):
             heads=[{'oid':'OID-'+str(n),'day':'2026-11-07','store':'TEST-'+str(n),'name':'合成门店'+str(n),
                     'warehouse':'山东仓','number':'BH-QA-'+str(n),'revision':'R1','current_revision':'R1',
                     'digest':'0'*64,'visibility_token':None} for n in ids]
+            with closing(sqlite3.connect(host.work_repository.path)) as db,db:
+                db.execute('CREATE TABLE IF NOT EXISTS normal_orders(oid TEXT PRIMARY KEY,day TEXT,store TEXT)')
+                for h in heads:db.execute('INSERT OR REPLACE INTO normal_orders VALUES(?,?,?)',(h['oid'],h['day'],h['store']))
             p=manager.store.prepare(heads)
             for pos,n in enumerate(ids):
                 id='synthetic-'+str(n)
@@ -102,7 +106,7 @@ def start_smoke(app,win,args):
             dialog.retry_btn.click();wait(lambda:manager.worker is None and manager.store.get(unknown['id'])['state']=='COMPLETED_WITH_ERRORS')
             dialog.refresh();assert len(starts)==before
             dialog.table.selectRow(0)
-            box_action(dialog.reason_btn.click,['可能已建单','单据详情','不要重新导入'],'04-无回执处理方法.png')
+            box_action(dialog.reason_btn.click,['可能已建单','结束所选任务并重建预览','新预览仍需确认上传'],'04-无回执处理方法.png')
             checks.append('真正没有回执时保持保护，弹框说明可能已建单及核对路径')
             dialog.accept();dialogs.remove(dialog);dialog.deleteLater()
             reopened=QueueDialog(host,manager,job['id']);dialogs.append(reopened);reopened.show();app.processEvents()
