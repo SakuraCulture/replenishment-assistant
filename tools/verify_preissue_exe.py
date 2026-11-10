@@ -7,6 +7,7 @@ import psutil
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--exe',type=Path);ap.add_argument('--native-source',action='store_true');ap.add_argument('--output',type=Path,required=True);a=ap.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=False)
+    (out/'synthetic.json').write_text(json.dumps({'synthetic':True,'live_platform':False}),encoding='utf-8')
     import warehouse_catalog as wc,work_repository as wr,parameter_schema as ps,store_defaults,new_product_focus,export_settings
     (out/'exports').mkdir();repo=wr.Repository(out/'settings');export_settings.save(out/'settings/export_settings.json',str(out/'exports'))
     source=ROOT/'qa/preissue_0180/inputs'
