@@ -27,6 +27,20 @@ def start_smoke(app,win,args):
             from aoxiang_workflows import Workflows
             from aoxiang_receipt_scope import assess
             f=json.loads((out/'matching-fixture.json').read_text('utf-8'))
+            # Verify the frozen matching function itself, including conflicting
+            # auxiliary data that formerly rejected an exact product code.
+            head={**f['head'],'products':{'SKU':{},'OTHER':{}}}
+            order={'digest':head['digest'],'payload':{'result':{'rows':[
+                {'E':'SKU','F':'SKU-BARCODE','AU':head['warehouse']},
+                {'E':'OTHER','F':'CONFLICTING-AUX','AU':head['warehouse']}]}}}
+            rows=[{'adapter':'paid_order','sku':'SKU','source_order':{'内部订单号':'J-SKU','辅助码':'CONFLICTING-AUX'}}]
+            with patch('order_lifecycle.repository') as original:
+                original.return_value.get.return_value=order
+                lc.match_payment_rows(path,head,rows)
+                require(rows[0]['sku']=='SKU' and rows[0]['matching_basis']=='商品编码精确匹配','商品编码准确时，辅助码指向其他条码不拦截')
+                rows[0]['sku']='UNKNOWN';rows[0]['source_order']['辅助码']='SKU-BARCODE'
+                lc.match_payment_rows(path,head,rows)
+                require(rows[0]['sku']=='UNKNOWN' and rows[0]['matching_basis']=='清单外商品，需确认','辅助码不能将未知商品编码改成签发商品')
             dialog=BatchImport(win,win,'payment');dialog.show();dialog.add_paths([f['payment']])
             require(dialog.read_ready and len(dialog.documents)==1 and dialog.source_company.currentData() is None,'默认自动模式完整读取付款表，无需选择来源企业')
             require(dialog.targets[0].currentData()['number']==f['head']['number'],'未选择企业或目标单即完整识别原仓单')

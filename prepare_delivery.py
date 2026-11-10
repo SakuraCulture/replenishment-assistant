@@ -13,6 +13,7 @@ if version['version'] in {'0.50.0','0.50.1'}:
     shutil.copy2(root/'docs/0.50.0订单删除与任务失效.md',dest/'docs/0.50.0订单删除与任务失效.md')
 if version['version']=='0.50.1':
     shutil.copy2(root/'docs/0.50.1当前Edge登录与共享连接.md',dest/'docs/0.50.1当前Edge登录与共享连接.md')
+    shutil.copy2(root/'docs/0.50.1付款按商品编码认单.md',dest/'docs/0.50.1付款按商品编码认单.md')
 if (root/'docs/manual/index.html').is_file():
     shutil.copytree(root/'docs/manual',dest/'使用手册')
 if version['version'] in {'0.9.1','0.9.2','0.10.0','0.11.0','0.12.0','0.13.0','0.14.0','0.15.0','0.15.1'}:
