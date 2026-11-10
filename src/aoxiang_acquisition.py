@@ -24,13 +24,16 @@ def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=N
     for pending in jobs.unfinished():
         old = pending['command']
         if (old['operation'] == 'replenishment.export' and old['account_binding']['merchant_code'] == configuration['account_binding']['merchant_code']
+                and pending.get('purpose','replenishment') == (purpose or 'replenishment')
                 and set(codes).intersection(old['scope']['warehouse_codes'])):
-            raise ValueError('所选门店还有未完成或待核对的原采集，不能另建任务。请继续原采集，或先“结束本次采集”再新建；已受理平台任务将保留接续：' + pending['id'])
+            raise ValueError('所选门店还有未完成或待核对的原采集，不能另建任务。可继续原任务，或点击“重新导出所选门店”结束所选旧项并获取新文件：' + pending['id'])
     command = {'protocol_version': 1, 'command_id': 'rep-' + uuid.uuid4().hex,
                'operation': 'replenishment.export', 'account_binding': configuration['account_binding'],
                'scope': {'warehouse_codes': list(codes)},
                'basis_versions': {'store_mapping': configuration['store_mapping_version']},
                'policy': {'freshness': freshness}}
+    command['consumer']={'purpose':purpose or 'replenishment'}
+    if owner:command['consumer']['owner']=owner
     context = {'day': day, 'created': now(), 'stores': [available[code] for code in codes]}
     if purpose is not None:
         if purpose != 'stockout_analysis' or not isinstance(owner,str) or not owner:

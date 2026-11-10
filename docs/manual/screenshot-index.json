@@ -1,8 +1,8 @@
 {
-  "application": "0.50.0",
-  "edition": "2026-11-09",
+  "application": "0.50.4",
+  "edition": "2026-11-11",
   "source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
-  "source": "Mixed-version evidence; per-image provenance is authoritative; current deletion chapter uses source Qt",
+  "source": "Mixed-version evidence; per-image provenance is authoritative; 0.50.4 recovery images use source Qt",
   "legacy_0480_build": {
     "source_commit": "c12feff48eb81008a2643b2ce61d636b56fae980",
     "build_id": "rc1",
@@ -265,6 +265,24 @@
       "version": "0.50.3",
       "source": "source Qt; real local service ownership",
       "evidence": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/02-占用者与恢复提示.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "collection-reexport-scope-0504.png",
+      "sha256": "68d32aa457df97f98241f8d9a5bcbdd9ba647c96750208b31cc62eb7810ef107",
+      "version": "0.50.4",
+      "source": "source Qt; real isolated local component",
+      "evidence": "qa/collection_reexport_0504_20261111/source-ui-03/01-选中门店重导.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "collection-reexport-result-0504.png",
+      "sha256": "7544f266365c852c230b7df813ebb2c82cead301c206746a9a7b840e9e30959e",
+      "version": "0.50.4",
+      "source": "source Qt; real isolated local component",
+      "evidence": "qa/collection_reexport_0504_20261111/source-ui-03/02-重导新任务与旧记录.png",
       "synthetic": true,
       "live_platform_tested": false
     }

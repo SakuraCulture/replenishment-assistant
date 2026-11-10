@@ -169,6 +169,9 @@ async function main(){
         }
         case 'status':result=publicRecord(commands.get(request.command_id));if(!result)fail('COMMAND_NOT_FOUND','未找到自动化作业');break;
         case 'collection.preview':result=maintenance.preview(request.command_id,request.operation);break;
+        case 'collection.consumer':result=maintenance.classify(request.command_id,request.fingerprint,request.purpose,request.owner);break;
+        case 'collection.reexport.preview':result=maintenance.reexportPreview(await loadConfig(root),request.operation_id,request.warehouse_codes,request.purpose);break;
+        case 'collection.reexport.apply':result=maintenance.reexportApply(await loadConfig(root),request.operation_id,request.warehouse_codes,request.purpose,request.token);break;
         case 'collection.continue':
           if(setup.busy||template.busy||purchase.busy||receiptSync.busy||bindingCheck.busy)fail('COMPONENT_BUSY','先完成或停止当前连接、模板、采购或收货任务');
           result=publicRecord(runtime.continueReviewed(request.command_id));kick=true;break;

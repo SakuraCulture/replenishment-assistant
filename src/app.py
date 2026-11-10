@@ -48,6 +48,9 @@ def main():
     if '--stockout-smoke' in sys.argv:
         from stockout_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--stockout-smoke')+1:])
+    if '--collection-reexport-smoke' in sys.argv:
+        from collection_reexport_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--collection-reexport-smoke')+1:])
     if '--deletion-void-smoke' in sys.argv:
         from deletion_void_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--deletion-void-smoke')+1:])

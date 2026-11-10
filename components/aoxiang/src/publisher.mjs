@@ -28,33 +28,41 @@ export function dailyRelative(identity,target,date,layout){
 
 export async function publishAsset({state,outputRoot,sourceFile,asset,attemptId,replace=false,rename=fs.rename}){
   const key=assetKey(asset),old=state.getAsset(key);
-  const relative=old?.relativePath||asset.relativePath;
+  if(attemptId&&!state.getAttempt(attemptId))fail('RUN_ENDED','原提交记录已移除，不能保存晚到文件');
+  state.requireCollection(asset.runId||asset.sourceRunId||state.getAttempt(attemptId)?.runId);
+  if(await fileHash(sourceFile)!==asset.sha256)fail('STAGING_HASH_CHANGED','待保存文件与核验记录不一致');
+  const relative=asset.runId?asset.relativePath:old?.relativePath||asset.relativePath;
   const target=await outputPath(outputRoot,relative);
   if(await exists(target)){
+    if(asset.runId){
+      if(await fileHash(target)!==asset.sha256)fail('EXISTING_ASSET_CHANGED','本次采集原件已变化，不能覆盖');
+      state.putAsset(asset,{replace});return {...asset,assetKey:key};
+    }
     if(!old)fail('UNTRACKED_FILE_EXISTS','目标文件已存在但不属于本机已验收资产，不覆盖');
     if(await fileHash(target)!==old.sha256)fail('EXISTING_ASSET_CHANGED','现有日文件被修改，保留现文件并等待核对');
     if(!replace){if(old.sha256===asset.sha256)return old;fail('ASSET_CONFLICT','已有不同日文件，需要明确重跑');}
   }
-  if(await fileHash(sourceFile)!==asset.sha256)fail('STAGING_HASH_CHANGED','待保存文件与核验记录不一致');
   const id=uid();const tempRelative=path.posix.dirname(relative)+'/.pending-'+id+'.xlsx';const temp=await outputPath(outputRoot,tempRelative);
   await fs.copyFile(sourceFile,temp,constants.COPYFILE_EXCL);
   if(await fileHash(temp)!==asset.sha256)fail('STAGING_COPY_FAILED','暂存复制内容不一致');
   const handle=await fs.open(temp,'r+');try{await handle.sync();}finally{await handle.close();}
-  if(old&&await exists(target)){
+  if(old&&!asset.runId&&await exists(target)){
     const backup=await outputPath(outputRoot,'.staging/backups/'+old.sha256+'.xlsx');
     if(!await exists(backup))await fs.copyFile(target,backup,constants.COPYFILE_EXCL);
     if(await fileHash(backup)!==old.sha256)fail('BACKUP_HASH_FAILED','原日文件备份校验失败，暂不替换');
   }
   const published={...asset,assetKey:key,relativePath:relative,publishedAt:now()};
-  const intent={id,attemptId:attemptId||null,outputRoot:path.resolve(outputRoot),relativePath:relative,tempRelative,oldSha256:old?.sha256||null,newSha256:asset.sha256,asset:published,createdAt:now()};
+  const intent={id,attemptId:attemptId||null,outputRoot:path.resolve(outputRoot),relativePath:relative,tempRelative,oldSha256:asset.runId?null:old?.sha256||null,newSha256:asset.sha256,asset:published,createdAt:now()};
   state.putPublish(intent);
   try{await rename(temp,target);}catch(e){fail('SAVE_BLOCKED','日文件未能替换，旧文件已保留；继续时只恢复本地保存',{publishId:id,systemCode:e.code});}
   if(await fileHash(target)!==asset.sha256)fail('FINAL_HASH_FAILED','最终文件与核验结果不一致，保留恢复记录');
   state.putAsset(published,{replace});state.deletePublish(id);return published;
 }
-export async function recoverPublications({state,outputRoot,identity}){
+export async function recoverPublications({state,outputRoot,identity,runId}){
   const restored=[];
   for(const intent of state.rows('publishes')){
+    const origin=intent.originRunId||intent.asset.runId||intent.asset.sourceRunId||state.getAttempt(intent.attemptId)?.runId;
+    if(intent.retiredAt||state.collectionEnded(origin)||runId&&origin!==runId)continue;
     if(identity&&!sameIdentity(intent.asset,identity))continue;
     if(path.resolve(outputRoot)!==intent.outputRoot)fail('OUTPUT_ROOT_CHANGED','存在旧输出目录的保存记录，请先核对目录');
     const target=await outputPath(outputRoot,intent.relativePath),temp=await outputPath(outputRoot,intent.tempRelative);

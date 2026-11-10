@@ -1,6 +1,8 @@
 import {fail,redact} from './common.mjs';
 
-const ordinaryFailures=new Set(['EMPTY_UNVERIFIED','TASK_HAS_FAILURES','QUERY_FILE_COUNT_DIFF','TASK_TYPE_MISMATCH']);
+const ordinaryFailures=new Set(['EMPTY_UNVERIFIED','TASK_HAS_FAILURES','QUERY_FILE_COUNT_DIFF','TASK_TYPE_MISMATCH',
+  'SCHEMA_DRIFT','ENTITY_MISMATCH','ROW_COUNT_MISMATCH','NULL_KEYS','UNSAFE_NATIVE_ID','NOT_XLSX','SHEET_MISMATCH','HEADER_MISSING',
+  'INVALID_SHARED_STRING','FILE_SIZE','ASSET_NOT_REUSABLE','EXISTING_ASSET_CHANGED','SAVE_BLOCKED','STAGING_HASH_CHANGED','FINAL_HASH_FAILED']);
 const reviewFailures=new Set(['SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED','UNRESOLVED_TASK']);
 export const errorInfo=e=>({code:e.code||'FAILED',message:redact(e.message||'自动化操作失败'),details:redact(e.details||{})});
 
@@ -20,6 +22,7 @@ export class MachineRuntime{
     const record=this.commands.get(id);
     const items=structuredClone(record.items);
     if(Number.isInteger(detail.index)&&items[detail.index]){
+      if(items[detail.index].state==='ENDED')return record;
       if(detail.stage)items[detail.index].phase=detail.stage;
       if(detail.taskId)items[detail.index].task_id=detail.taskId;
     }
@@ -55,7 +58,7 @@ export class MachineRuntime{
       // Missing receipts stay blocked. Only independently runnable stores or
       // exact receipts already persisted by the component may resume.
       if(!items.some(i=>!['SUCCEEDED','FAILED','ENDED','NEEDS_REVIEW'].includes(i.state)))
-        fail('COMMAND_TRANSITION','待核门店尚无可靠受理回执，不能重发。其他门店已处理完；请保留此记录，核对原平台任务或手动导入已核对的补货建议文件。');
+        fail('COMMAND_TRANSITION','原任务尚无可靠受理回执，自动继续不会重发。需要新文件时请勾选门店，点击“重新导出所选门店”；旧记录和原件保留。');
       return this.change(id,'QUEUED',{kind:'RESUME_WITH_REVIEW_RETAINED',items,error:null});
     }
     fail('COMMAND_TRANSITION','仅可核对待核原采集，请刷新当前记录');
@@ -106,9 +109,16 @@ export class MachineRuntime{
         this.updateItem(id,initial.index,{state:'RUNNING',error:null});
         try{
           const record=this.commands.get(id);
-          const result=await this.executeItem({record,item:initial,phase,signal:control.signal,onProgress:e=>{
+          const execute=()=>this.executeItem({record,item:initial,phase,signal:control.signal,onProgress:e=>{
             this.progress(id,{index:initial.index,...e});
           }});
+          let result;
+          for(let retry=0;;retry++){
+            try{result=await execute();break;}catch(e){
+              if(retry||control.signal.aborted||!(e.code==='EXPORT_NOT_DISPATCHED'||this.canResumeReview(initial)&&!['WRONG_IDENTITY','WAIT_LOGIN','QUERY_SCOPE_MISMATCH','WRONG_SCOPE_ACCEPTED'].includes(e.code)))throw e;
+              this.progress(id,{index:initial.index,stage:'RECOVERING',message:'重新核验原范围并恢复一次；没有可靠未提交证据时不新建导出'});
+            }
+          }
           if(this.pipeline&&result?.pending){
             this.updateItem(id,initial.index,{state:'RUNNING',phase:'WAIT_TASK',error:null});
             continue;
@@ -119,7 +129,11 @@ export class MachineRuntime{
           // An unknown platform acceptance always outranks a local pause request.
           if(reviewFailures.has(info.code)||this.needsReview(initial)){
             this.updateItem(id,initial.index,{state:'NEEDS_REVIEW',error:info});
-            this.change(id,'NEEDS_REVIEW',{error:info});return;
+            if(!this.pipeline||control.signal.aborted||['WRONG_IDENTITY','WAIT_LOGIN','IDENTITY_CHECK_FAILED','IDENTITY_RESPONSE_TIMEOUT'].includes(info.code)){
+              this.change(id,'NEEDS_REVIEW',{error:info});return;
+            }
+            // Keep this item frozen; each following store must independently re-query and verify scope.
+            continue;
           }
           if(control.signal.aborted||info.code==='PAUSED'){
             this.updateItem(id,initial.index,{state:'PAUSED',error:info});

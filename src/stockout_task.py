@@ -6,7 +6,8 @@ from pathlib import Path
 
 
 class Bridge:
-    AX_ACTIONS={'configuration','reserve','status','resume','retry','pause','setup.check_login','setup.status','setup.cancel'}
+    AX_ACTIONS={'configuration','reserve','status','resume','retry','pause','setup.check_login','setup.status','setup.cancel',
+                'collection.continue','collection.consumer','collection.preview','collection.apply','collection.reexport.preview','collection.reexport.apply'}
     JST_ACTIONS={'sync.start','sync.status','sync.resume','sync.stop','sync.provide_observation','sync.acknowledge_adoption'}
 
     def __init__(self,host,cancel,progress):

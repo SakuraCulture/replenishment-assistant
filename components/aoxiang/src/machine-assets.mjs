@@ -7,6 +7,7 @@ import {fileHash} from './workbook-validator.mjs';
 
 // Return a command-owned immutable copy, never a mutable daily export path.
 export async function freezeRunAsset({state,binding,commandId,item}){
+  state.requireCollection(item.run_id);
   const run=state.getRun(item.run_id),entries=state.getItems(item.run_id);
   if(run?.status!=='SUCCEEDED'||entries.length!==1)fail('RUN_NOT_COMPLETE','原导出作业尚未完整通过验收');
   const entry=entries[0],asset=entry.assetSnapshot;

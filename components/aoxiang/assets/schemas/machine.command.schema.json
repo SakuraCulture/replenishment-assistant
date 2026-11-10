@@ -8,6 +8,11 @@
     "protocol_version": {"const": 1},
     "command_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"},
     "operation": {"const": "replenishment.export"},
+    "consumer": {
+      "type": "object", "additionalProperties": false, "required": ["purpose"],
+      "properties": {"purpose": {"enum": ["replenishment", "stockout_analysis"]},
+        "owner": {"type": "string", "minLength": 1, "maxLength": 128}}
+    },
     "account_binding": {
       "type": "object", "additionalProperties": false,
       "required": ["account_id", "merchant_code"],

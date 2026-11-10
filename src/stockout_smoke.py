@@ -106,6 +106,11 @@ def start_smoke(app,win,args):
                 if action in {'configuration','setup.check_login','setup.status'}:
                     if bridge.ax is None:bridge.ax=LoginTransport()
                     return original_request(bridge,payload)
+                if action=='collection.reexport.preview':
+                    return {'id':values['operation_id'],'action':'reexport','token':'a'*64,'purpose':values['purpose'],
+                            'stores':[{'code':c,'name':'测试门店'+c} for c in values['warehouse_codes']], 'related':[],'retained':[],'blocked':[]}
+                if action=='collection.reexport.apply':
+                    return {'id':values['operation_id'],'records':[]}
                 if action=='reserve':
                     command=values['command'];cid=command['command_id']
                     assert command['operation']=='replenishment.export'
@@ -202,6 +207,20 @@ def start_smoke(app,win,args):
             require(fresh['external']['ax_commands']!=collected['external']['ax_commands'] and len(jst_batches)==1,
                     'Explicit rerun gets new platform command and warehouse receipt without changing original task')
             page.runs.setCurrentIndex(page.runs.findData(fresh['id']));wait(idle)
+            retained_t=next(s['snapshot'] for s in fresh['stores'] if s['store']=='T')
+            page.run_table.selectRow(0);stockout_task.Bridge.request=native_request
+            with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Yes):
+                page.reexport_stores_btn.click();wait(idle)
+            stockout_task.Bridge.request=forbidden
+            reexported=repo.run(repo.recent()[0]['id'])
+            require(reexported['trigger'].startswith('reexport:') and reexported['state']=='COMPLETE' and reexported['id']!=fresh['id'],
+                    'Selected-store reexport button creates a complete independent analysis revision')
+            require(next(s['snapshot'] for s in reexported['stores'] if s['store']=='T')==retained_t and len(jst_batches)==1,
+                    'Selected reexport retains the unselected store snapshot and frozen warehouse originals')
+            require(list(native.values())[-1]['request']['scope']['warehouse_codes']==['S'],
+                    'Selected reexport submits only the selected store through the actual worker')
+            fresh=reexported
+            page.runs.setCurrentIndex(page.runs.findData(fresh['id']));wait(idle)
             with patch.object(QInputDialog,'getItem',return_value=('原作业当时设置',True)),patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Yes):
                 page.recalculate_btn.click();wait(idle)
             recalculated=repo.run(repo.recent()[0]['id'])
@@ -225,7 +244,7 @@ def start_smoke(app,win,args):
                 page.delete_data_btn.click();wait(idle)
             require('缺货 0 / 有销 0' in page.total.text() and page.details.rowCount()==0,
                     'Date-scoped data deletion refreshes empty state with no stale results')
-            require(all(Path(f['file']).is_file() for f in spec['files']) and len(native)==2,
+            require(all(Path(f['file']).is_file() for f in spec['files']) and len(native)==3,
                     'Analysis data deletion preserves input originals and platform command records')
             for n in range(3):
                 page.refresh();win.show_section(0);wait(idle)

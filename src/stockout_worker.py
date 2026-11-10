@@ -96,6 +96,12 @@ def execute(repo,operation,args,cancel,progress,rpc):
     if operation=='end':
         from stockout_acquisition import finish_local
         return finish_local(repo,args['run'],rpc,cancel)
+    if operation=='reexport_preview':
+        from stockout_acquisition import reexport_preview
+        return reexport_preview(repo,args['run'],args['codes'],rpc,cancel,progress)
+    if operation=='reexport':
+        from stockout_acquisition import reexport
+        return reexport(repo,args['plan'],rpc,cancel,progress)
     if operation=='run':return repo.run(args['run'])
     if operation=='run_action_preview':
         from stockout_lifecycle import preview

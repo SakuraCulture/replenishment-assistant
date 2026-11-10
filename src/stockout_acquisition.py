@@ -95,6 +95,7 @@ def collect_stores(repo,rid,configuration,rpc,cancel,progress):
     stores={s['code']:s for s in basis['stores']}
     states={s['store']:s['state'] for s in run['stores']}
     external=run['external'];commands=dict(external.get('ax_commands',{}))
+    if commands:jobs.classify_consumers(client,list(dict.fromkeys(commands.values())))
     if set(commands)-set(stores):raise ValueError('原命令关联包含本分析范围外门店，未启动导出')
 
     def failed(codes,message):
@@ -107,7 +108,8 @@ def collect_stores(repo,rid,configuration,rpc,cancel,progress):
     blocked={}
     for pending in jobs.unfinished():
         command=pending['command']
-        if command['operation']=='replenishment.export' and command['account_binding']==configuration['account_binding']:
+        if (command['operation']=='replenishment.export' and command['account_binding']==configuration['account_binding']
+                and pending.get('purpose')=='stockout_analysis'):
             for code in command['scope']['warehouse_codes']:blocked[code]=pending['id']
     fresh=[]
     for code in stores:
@@ -138,7 +140,7 @@ def collect_stores(repo,rid,configuration,rpc,cancel,progress):
         try:
             job=jobs.get(cid);command=job['command']
             if (job['context'].get('purpose')!='stockout_analysis' or command['operation']!='replenishment.export'
-                    or command['scope']['warehouse_codes']!=codes
+                    or [c for c in command['scope']['warehouse_codes'] if c in codes]!=codes
                     or command['account_binding']!=configuration['account_binding']
                     or command['basis_versions']['store_mapping']!=configuration['store_mapping_version']):
                 raise ValueError('原命令用途、门店范围或连接身份不符，未重试')
@@ -148,6 +150,8 @@ def collect_stores(repo,rid,configuration,rpc,cancel,progress):
                 job=refresh_job(jobs,client,cid)
                 if job['state'] in ('PAUSED','INTERRUPTED'):
                     jobs.observe(cid,client.request('resume',command_id=cid))
+                elif job['state']=='NEEDS_REVIEW':
+                    jobs.observe(cid,client.request('collection.continue',command_id=cid))
                 elif job['state']=='COMPLETED_WITH_ERRORS':
                     indices=[i['index'] for i in job['record']['items'] if i['state']=='FAILED' and i['warehouse_code'] in wanted]
                     if indices:jobs.observe(cid,client.request('retry',command_id=cid,indices=indices,sequence=job['sequence']))
@@ -232,8 +236,15 @@ def finish_local(repo,rid,rpc,cancel):
         jobs=Jobs(repo.root/'aoxiang'/'jobs.sqlite3');client=Client(rpc,'ax')
         for cid in dict.fromkeys(run['external']['ax_commands'].values()):
             checkpoint(cancel);job=refresh_job(jobs,client,cid)
-            if job['state'] not in {'SUCCEEDED','COMPLETED_WITH_ERRORS','ENDED','CANCELLED'}:
-                raise ValueError('原平台任务尚未结束，请先继续核对原任务；暂不解除防重保护')
+            if job['state'] not in {'ENDED','CANCELLED'}:
+                if job['state'] in {'QUEUED','RUNNING','PAUSE_REQUESTED'}:
+                    client.request('pause',command_id=cid)
+                    deadline=time.monotonic()+90
+                    while job['state'] in {'QUEUED','RUNNING','PAUSE_REQUESTED'}:
+                        checkpoint(cancel)
+                        if time.monotonic()>deadline:raise ValueError('原页面动作仍在安全收尾，未强杀；请稍后结束')
+                        time.sleep(.15);job=refresh_job(jobs,client,cid)
+                jobs.maintenance_apply(client,jobs.maintenance_preview(client,cid,'end',purpose='stockout_analysis',owner=job['context'].get('owner')))
     with repo.connect(write=True) as db:
         db.execute('BEGIN IMMEDIATE')
         current=db.execute('SELECT state,updated FROM runs WHERE id=?',(rid,)).fetchone()
@@ -243,3 +254,43 @@ def finish_local(repo,rid,rpc,cancel):
         db.execute("UPDATE runs SET state='ENDED',message=?,updated=?,external=? WHERE id=?",
                    ('已结束本地分析；成功原件及平台证据保留',now(),encoded(external),rid))
     return repo.run(rid)
+
+
+def reexport_preview(repo,rid,codes,rpc,cancel,progress):
+    from aoxiang_jobs import Jobs
+    from stockout_common import digest
+    run=repo.run(rid)
+    if run['day']!=today():raise ValueError('历史观测不能混入今日库存，请使用“重新采集今日资料”建立今日作业')
+    if run['external'].get('recalculate'):raise ValueError('这是离线重算作业；请在原采集作业中选择门店重导，或采集今日资料')
+    if not codes or not set(codes).issubset({s['store'] for s in run['stores']}):raise ValueError('请选择本作业要重新导出的门店')
+    with repo.connect() as db:
+        publication=db.execute('SELECT d.publication,p.run FROM current_days d JOIN publications p ON p.id=d.publication WHERE d.day=?',(today(),)).fetchone()
+        if publication and publication['run']!=rid:raise ValueError('今日日报已有后续作业，请选择当前日报对应作业重导，避免替换后来结果')
+        dates={r[0] for r in db.execute('SELECT s.day FROM run_stores r JOIN store_snapshots s ON s.id=r.snapshot WHERE r.run=? AND r.store NOT IN ('+','.join('?' for _ in codes)+')',(rid,*codes))}
+        if dates-{today()}:raise ValueError('未选门店包含其他日期的观测，不能与今日库存混合；请重新采集今日资料')
+    client=Client(rpc,'ax');configuration=client.request('configuration')
+    if (run['external'].get('identity') or {}).get('account',configuration['account_binding'])['merchant_code']!=configuration['account_binding']['merchant_code']:
+        raise ValueError('原分析商家与当前商家不同，未结束原任务')
+    plan=Jobs(repo.root/'aoxiang'/'jobs.sqlite3').reexport_preview(client,configuration,codes,purpose='stockout_analysis',progress=progress,cancel=cancel.is_set)
+    plan.update(run=rid,updated=run['updated'],source_digest=digest(run),configuration=configuration,publications={today():publication['publication'] if publication else None})
+    return plan
+
+
+def reexport(repo,plan,rpc,cancel,progress):
+    from aoxiang_jobs import Jobs
+    from stockout_common import now,digest
+    run=repo.run(plan['run'])
+    if digest(run)!=plan['source_digest'] or run['day']!=today():raise ValueError('分析作业或日期已变化，请重新核对重导范围')
+    with repo.connect() as db:
+        for day,expected in plan['publications'].items():
+            current=db.execute('SELECT publication FROM current_days WHERE day=?',(day,)).fetchone()
+            if (current['publication'] if current else None)!=expected:raise ValueError('今日日报已变化，未重导；请重新核对当前作业')
+    checkpoint(cancel)
+    Jobs(repo.root/'aoxiang'/'jobs.sqlite3').reexport_apply(Client(rpc,'ax'),plan)
+    # Freeze the former analysis revision; original snapshots/publications stay available.
+    if run['state'] not in {'COMPLETE','PARTIAL','ENDED'}:
+        with repo.connect(write=True) as db:
+            db.execute("UPDATE runs SET state='ENDED',updated=?,message=? WHERE id=? AND updated=?",(now(),'所选门店已转入重导修订，原件及其他门店任务保留',run['id'],run['updated']))
+    new=repo.new_run(source_run=run['id'],trigger='reexport:'+plan['id'],reexport_scope=plan['codes'],reexport_publications=plan['publications'])
+    progress('所选门店重新导出；其他已完成门店沿用原快照，未完成门店接续原任务')
+    return execute(repo,new['id'],rpc,cancel,progress)
