@@ -1,5 +1,6 @@
 """One query contract for cards, cuts, detail and exports; weighted ratios only."""
 from datetime import date
+from math import isfinite
 from stockout_common import VIEWS, today, encoded
 from stockout_facts import exclusion
 
@@ -30,7 +31,22 @@ def dimension_value(value,key):
 def canonical_record(row):
     value=dict(row)
     if value.get('source')=='local':value['warehouse']='地采'
+    value.update(expected_sales_days(value))
     return value
+
+
+def expected_sales_days(row):
+    """Per store/SKU/day only. Keep raw negative stocks and the requested formula."""
+    from stockout_common import number
+    month,stock,inbound=(number(row.get(k+'_raw',row.get(k))) for k in ('month','stock','inbound'))
+    reason=''
+    if month is None:reason='月销缺失或无效，无法折算'
+    elif month<=0:reason='月销不大于0，无法折算'
+    elif stock is None or inbound is None:reason='可用或在途库存缺失，无法折算'
+    if reason:return {'expected_sales_days':None,'expected_sales_days_reason':reason}
+    value=(stock+inbound)/month*30
+    if not isfinite(value):return {'expected_sales_days':None,'expected_sales_days_reason':'数值超过安全范围，无法折算'}
+    return {'expected_sales_days':value,'expected_sales_days_reason':''}
 
 
 def cut_columns(dimensions):

@@ -4,6 +4,7 @@ import {constants} from 'node:fs';
 import {exists,fail,uid} from './common.mjs';
 import {outputPath} from './publisher.mjs';
 import {fileHash} from './workbook-validator.mjs';
+import {portablePath} from './portable-assets.mjs';
 
 // Return a command-owned immutable copy, never a mutable daily export path.
 export async function freezeRunAsset({state,binding,commandId,item}){
@@ -20,7 +21,7 @@ export async function freezeRunAsset({state,binding,commandId,item}){
       await outputPath(binding.outputRoot,asset.relativePath),
       await outputPath(binding.outputRoot,`.staging/backups/${asset.sha256}.xlsx`)];
     let source=null;
-    for(const file of candidates)if(file&&await exists(file)&&await fileHash(file)===asset.sha256){source=file;break;}
+    for(const file of candidates){const candidate=file&&await portablePath(file,{sha256:asset.sha256});if(candidate&&await exists(candidate)&&await fileHash(candidate)===asset.sha256){source=candidate;break;}}
     if(!source)fail('ASSET_VERSION_MISSING','原命令已验收的文件版本缺失；保留任务，不能改用更新后的文件');
     const temp=destination+'.'+uid()+'.tmp';
     try{

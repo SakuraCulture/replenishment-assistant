@@ -77,7 +77,7 @@ def reference(repo,order,wh,cancel):
     return hs,values(),len(needed)
 
 def table(repo,order,wh,kind,cancel):
-    if kind=='calculation':return legacy.calculation(order,wh)
+    if kind=='calculation':return legacy.calculation(order,wh,repo,cancel)
     if kind=='signed':return signed(order,wh)
     if kind=='reference':return reference(repo,order,wh,cancel)
     raise ValueError('未知导出内容')

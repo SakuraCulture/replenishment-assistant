@@ -4,6 +4,7 @@ import {constants} from 'node:fs';
 import {fileHash} from './workbook-validator.mjs';
 import {relativeSafe,safeName,uid,exists,fail,now,sameIdentity} from './common.mjs';
 import {assetKey} from './state.mjs';
+import {portablePath} from './portable-assets.mjs';
 
 function below(root,candidate){const r=path.relative(root,candidate);return r===''||(!r.startsWith('..'+path.sep)&&r!=='..'&&!path.isAbsolute(r));}
 export async function outputPath(root,relative){
@@ -27,6 +28,7 @@ export function dailyRelative(identity,target,date,layout){
 }
 
 export async function publishAsset({state,outputRoot,sourceFile,asset,attemptId,replace=false,rename=fs.rename}){
+  sourceFile=await portablePath(sourceFile,{sha256:asset.sha256});
   const key=assetKey(asset),old=state.getAsset(key);
   if(attemptId&&!state.getAttempt(attemptId))fail('RUN_ENDED','原提交记录已移除，不能保存晚到文件');
   state.requireCollection(asset.runId||asset.sourceRunId||state.getAttempt(attemptId)?.runId);

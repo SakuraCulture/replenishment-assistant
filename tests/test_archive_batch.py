@@ -39,14 +39,22 @@ class BatchTests(unittest.TestCase):
     def plan(self,kind='calculation',mode='separate',heads=None):return ab.prepare(self.work.path,heads or self.heads,kind,mode)
     def execute(self,plan,**kw):return ab.execute(self.work.path,plan,self.root,**kw)
     def test_separate_and_combined_values_types_order_and_baseline(self):
-        for kind,sheet in [('calculation',0),('signed',2)]:
+        for kind in ('calculation','signed'):
             separate=self.execute(self.plan(kind));combined=self.execute(self.plan(kind,'combined'))
             self.assertEqual(len(separate['files']),4);self.assertEqual(len(combined['files']),2)
             baseline={}
             for f in separate['files']:
                 h=f['heads'][0];name,data=cells(f['path']);self.assertEqual(len(name),1)
-                target=self.root/(kind+h['oid']+h['warehouse']+'.xlsx');ae.export(self.work.path,h,target)
-                b=openpyxl.load_workbook(target);old=[[(c.value,c.data_type,c.number_format) for c in r] for r in b.worksheets[sheet]];b.close()
+                target=self.root/(kind+h['oid']+h['warehouse']+'.xlsx')
+                if kind=='calculation':ae.export(self.work.path,h,target)
+                else:
+                    # The independent signed-template export keeps its old
+                    # values/types; it is no longer an extra calculation sheet.
+                    order=self.repo.get(h['day'],h['store'],h['revision'])
+                    with ae.stream_book() as book:
+                        ae.write_table(book,'签发明细',['推荐类型']+ae.ne.HEADERS+ae.ne.AUDIT_HEADERS,ae.signed_rows(order,h['warehouse']))
+                        book.save(target)
+                b=openpyxl.load_workbook(target);old=[[(c.value,c.data_type,c.number_format) for c in r] for r in b.worksheets[0]];b.close()
                 self.assertEqual([r[6:] for r in data],old)
                 baseline[ab.key(h)]=data
             for f in combined['files']:

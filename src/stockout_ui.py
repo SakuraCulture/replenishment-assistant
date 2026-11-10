@@ -15,6 +15,7 @@ STATES={'PREPARED':'待开始','RUNNING':'进行中','PAUSED':'已安全暂停',
 
 def display(value,key=''):
     if key=='rate':return '—' if value is None else f'{value:.2%}'
+    if key=='expected_sales_days':return '—' if value is None else f'{value:.2f}'
     if key=='mandatory':return {1:'必采',0:'非必采',None:'属性待核'}[value]
     if key=='source':return {'center':'中心仓','local':'地采','pending':'归属待核'}.get(value,value)
     return '待核' if value is None else str(value)
@@ -289,15 +290,16 @@ class Page(QWidget):
                [[*[display(r[key],key) for key,_ in columns],r['base'],r['zero'],display(r['rate'],'rate'),r['unknown_tags'],r['bad']] for r in self.cut_rows])
         self.cut_note.setText(f"第 {self.cut_offset+1 if self.cut_rows else 0} 起，当前 {len(self.cut_rows)} 组 / 共 {cuts['total']} 组；导出包含全部分组")
         rows=value['details']['items'];self.detail_rows=rows
-        render(self.details,['日期','门店编码','门店名称','商品编码','商品名称','月销','可用库存','供货来源','仓','必采','类目','上游供货商','虚拟分类','补货状态','仓商品状态','说明'],
-               [[r['day'],r['store'],r['store_name'],r['sku'],r['name'],r['month_raw'],r['stock_raw'],display(r['source'],'source'),r['warehouse'],
-                 display(r['mandatory'],'mandatory'),r['category'],r['supplier'],display(r['tags']),r['replen_status'],r['product_status'],r['error']] for r in rows])
+        render(self.details,['日期','门店编码','门店名称','商品编码','商品名称','月销','可用库存','在途库存','预计销售天数','供货来源','仓','必采','类目','上游供货商','虚拟分类','补货状态','仓商品状态','说明'],
+               [[r['day'],r['store'],r['store_name'],r['sku'],r['name'],r['month_raw'],r['stock_raw'],r['inbound_raw'],display(r['expected_sales_days'],'expected_sales_days'),display(r['source'],'source'),r['warehouse'],
+                 display(r['mandatory'],'mandatory'),r['category'],r['supplier'],display(r['tags']),r['replen_status'],r['product_status'],'；'.join(filter(None,[r['error'],r['expected_sales_days_reason']]))] for r in rows])
         self.page_note.setText(f"第 {self.offset+1} 起，当前 {len(rows)} 条 / 共 {value['details']['total']} 条；每页最多200条")
 
     def explain(self,index,column):
         if index>=len(self.detail_rows):return
         r=self.detail_rows[index]
         text=f"门店：{r['store_name']}（{r['store']}）\n商品：{r['name']}（{r['sku']}）\n观测时间：{r['observed']}\n原件行号：{r['rownum']}\n日报修订：{r['revision']}\n原件哈希：{r['source_sha']}\n\n月销：{r['month_raw']}；可用库存：{r['stock_raw']}；在途：{r['inbound_raw']}\n仓商品状态：{r['product_status']}；翱象补货状态：{r['replen_status']}\n来源：{display(r['source'],'source')}；仓：{r['warehouse']}\n虚拟分类：{display(r['tags'])}\n\n{r['error']}"
+        text+='\n预计销售天数：'+display(r['expected_sales_days'],'expected_sales_days')+'\n（可用库存＋在途库存）÷月销×30；'+r['expected_sales_days_reason']
         QMessageBox.information(self,'商品口径与原件依据',text)
 
     def select_cut(self,index,column):

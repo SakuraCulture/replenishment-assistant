@@ -1,8 +1,8 @@
 {
-  "application": "0.50.5",
+  "application": "0.51.0",
   "edition": "2026-11-11",
   "source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
-  "source": "Mixed-version evidence; per-image provenance authoritative; 0.50.5 holding image uses isolated source Qt",
+  "source": "Historical immutable EXE images retained; new source Qt images have per-image provenance",
   "legacy_0480_build": {
     "source_commit": "c12feff48eb81008a2643b2ce61d636b56fae980",
     "build_id": "rc1",
@@ -292,6 +292,33 @@
       "version": "0.50.5",
       "source": "source Qt; synthetic Excel and isolated local database",
       "evidence": "qa/mandatory_holding_0505_20261111/source-ui-01/必采最低持有详情.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "warehouse-stockout-0510.png",
+      "sha256": "3d4951c782fafefc16d3370781d579d416fcaac943d5178533b7dbb1ca192ec7",
+      "version": "0.51.0",
+      "source": "source Qt; synthetic Excel, real child workers, simulated native JST replies",
+      "evidence": "qa/operations_0510_20261111/source-04/warehouse-ui.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "store-sales-days-0510.png",
+      "sha256": "8d50ea632f280b1d46f62be6a9b03d97074d7c64f94a45b8c2741acae991b0c2",
+      "version": "0.51.0",
+      "source": "source Qt; synthetic Excel, real child workers, simulated native JST replies",
+      "evidence": "qa/operations_0510_20261111/source-04/store-days-ui.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "order-migration-0510.png",
+      "sha256": "2cd0b8b668bf2856eed972b487a8b1320030b7b65c38cc19c52528e828812bef",
+      "version": "0.51.0",
+      "source": "source Qt; synthetic Excel, real child workers, simulated native JST replies",
+      "evidence": "qa/operations_0510_20261111/source-04/migration-ui.png",
       "synthetic": true,
       "live_platform_tested": false
     }

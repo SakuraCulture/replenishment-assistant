@@ -34,6 +34,8 @@ class LifecycleWidget(QWidget):
         self.export_btn=button('导出勾选单商品级明细',self.export);row.addWidget(self.export_btn);v.addLayout(row)
         self.actions=QTabWidget();self.primary_actions=[]
         if stage is None:
+            from order_migration_ui import open_migration
+            v.addWidget(button('完整订单迁移／导入与参数导出（全部本地资料）',lambda:open_migration(self,host)))
             row=QHBoxLayout()
             for key,title in self.STAGES.items():
                 if key!='jst':row.addWidget(button('进入'+title,lambda checked=False,k=key:self.open_stage(k)))

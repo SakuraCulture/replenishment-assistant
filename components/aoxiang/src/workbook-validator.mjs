@@ -5,9 +5,10 @@ import crypto from 'node:crypto';
 import {StringDecoder} from 'node:string_decoder';
 import {SaxesParser} from 'saxes';
 import {openArchive} from './zip.mjs';
+import {portablePath} from './portable-assets.mjs';
 import {fail,countValue} from './common.mjs';
 
-export async function fileHash(file){const h=crypto.createHash('sha256');for await(const b of createReadStream(file))h.update(b);return h.digest('hex');}
+export async function fileHash(file){const h=crypto.createHash('sha256');for await(const b of createReadStream(await portablePath(file)))h.update(b);return h.digest('hex');}
 const local = s => s.split(':').at(-1);
 async function parseXml(zip,name,handlers){
   const parser=new SaxesParser({xmlns:false});
@@ -19,6 +20,7 @@ async function parseXml(zip,name,handlers){
 function columnIndex(reference){const letters=/^[A-Z]+/.exec(reference)?.[0];if(!letters)fail('CELL_REFERENCE','工作簿缺少合法单元格坐标');let n=0;for(const x of letters)n=n*26+x.charCodeAt(0)-64;return n-1;}
 
 export async function validateWorkbook(file,{warehouseCode,expectedRows,contract,maxCompressedBytes=1073741824}={}){
+  file=await portablePath(file);
   const stat=await fs.stat(file);if(stat.size<100||stat.size>maxCompressedBytes)fail('FILE_SIZE','Excel文件大小不符合保护条件');
   const fh=await fs.open(file,'r');const signature=Buffer.alloc(4);await fh.read(signature,0,4,0);await fh.close();
   if(signature.toString('hex')!=='504b0304')fail('NOT_XLSX','文件不是有效XLSX，可能是登录页或错误响应');

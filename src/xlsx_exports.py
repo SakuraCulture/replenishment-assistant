@@ -36,7 +36,7 @@ def stream_book():
         book.close()
 
 
-def write_table(book,name,headers,rows,*,widths=None,style='batch',cancel=None,progress=lambda s:None,row_count=None):
+def write_table(book,name,headers,rows,*,widths=None,style='batch',cancel=None,progress=lambda s:None,row_count=None,formats=None):
     """Same safe text cells, with explicit historical single/batch formatting policies."""
     ws=book.create_sheet(name);ws.freeze_panes='C2';single=style=='single'
     if single:ws.sheet_view.showGridLines=False
@@ -50,7 +50,7 @@ def write_table(book,name,headers,rows,*,widths=None,style='batch',cancel=None,p
     for values in _with_header(headers,() if rows is None else rows):
         checkpoint(cancel)
         cells=[]
-        for value in values:
+        for index,value in enumerate(values):
             c=WriteOnlyCell(ws,value)
             if isinstance(value,str):c.data_type='s'
             if count==0:
@@ -59,6 +59,7 @@ def write_table(book,name,headers,rows,*,widths=None,style='batch',cancel=None,p
                 if single:c.alignment=_HEADER_ALIGN
             else:
                 if numeric(value):c.number_format='0.##########'
+                if formats and index<len(headers) and headers[index] in formats:c.number_format=formats[headers[index]]
                 if single:c.font=_SINGLE_FONT;c.alignment=_SINGLE_ALIGN
             cells.append(c)
         ws.append(cells);count+=1

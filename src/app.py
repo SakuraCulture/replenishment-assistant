@@ -14,9 +14,20 @@ def main():
     icon=Path(__file__).parent/'app.ico'
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
     logs=Path(os.environ.get('REPLENISHMENT_DATA_DIR') or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation))
+    from single_instance import SingleInstance,scope
+    primary=SingleInstance(scope(sys.argv,logs),parent=app)
+    try:
+        if not primary.acquire():return 0
+    except Exception as exc:
+        QMessageBox.warning(None,'补货助手已在运行',str(exc));return 1
     from application_reset import recover,InstanceLease
     try:
-        recover(logs);instance_lease=InstanceLease(logs)
+        recover(logs)
+        from order_migration import recover as recover_orders
+        recover_orders(logs)
+        if (logs/'迁入原文件映射.json').is_file():os.environ['REPLENISHMENT_PORTABLE_PATHS']=str(logs/'迁入原文件映射.json')
+        else:os.environ.pop('REPLENISHMENT_PORTABLE_PATHS',None)
+        instance_lease=InstanceLease(logs)
     except Exception as exc:
         QMessageBox.warning(None,'资料目录未打开',str(exc));return 1
     app.data_root=logs
@@ -32,10 +43,14 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    primary.bind(win)
     # GUI acceptance installs isolated transports before explicitly exercising
     # startup; normal launches always attempt connection after the first paint.
     from browser_startup_ui import start_application_connections
     start_application_connections(win, sys.argv)
+    if '--operations-0510-smoke' in sys.argv:
+        from operations_0510_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--operations-0510-smoke')+1:])
     if '--deletion-lifecycle-smoke' in sys.argv:
         from deletion_lifecycle_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--deletion-lifecycle-smoke')+1:])
@@ -242,12 +257,21 @@ def main():
         start_smoke(app,win,sys.argv[sys.argv.index('--intake-smoke')+1:])
     code=app.exec()
     reset_request=getattr(win,'_factory_reset_request',None)
+    order_import_request=getattr(win,'_order_import_request',None)
     # Dispose the entire widget tree while QApplication is still alive. The new
     # archive dialogs retain callbacks; interpreter-finalization order is unsafe
     # for Qt objects in the frozen Windows runtime.
     import shiboken6
     if shiboken6.isValid(win):shiboken6.delete(win)
     instance_lease.close()
+    if order_import_request:
+        logging.shutdown()
+        from order_migration import apply
+        try:
+            result=apply(order_import_request)
+        except Exception as exc:
+            QMessageBox.warning(None,'订单迁入未完成',str(exc)+'\n原资料或完整备份已保留，重新打开时会核对恢复记录。');return 1
+        QMessageBox.information(None,'订单已迁入','完整订单已迁入，作业和计划保持暂停。重新打开软件后先核验连接和原平台结果。\n原本机完整备份：'+result['backup'])
     if reset_request:
         logging.shutdown()
         from application_reset import perform
@@ -256,6 +280,7 @@ def main():
         except Exception as exc:
             QMessageBox.warning(None,'初始化未完成',str(exc)+'\n重新打开程序前，请查看资料及备份目录。');return 1
         QMessageBox.information(None,'全部初始化完成','本机应用资料已初始化。重新打开程序即可使用初始设置。\n完整备份：'+result['backup'])
+    primary.close()
     return code
 
 

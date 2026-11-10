@@ -125,14 +125,9 @@ def _check_other_processes():
     # Old releases predate the shared instance lease. Only inspect application
     # process identities, and never terminate a process or print command lines.
     if os.name != 'nt': return
-    import subprocess
-    script = ("$ErrorActionPreference='Stop'; @(Get-CimInstance Win32_Process -Filter \"Name = '补货助手.exe' OR Name LIKE 'python%.exe'\" | "
-              "Where-Object { $_.ProcessId -ne " + str(os.getpid()) + " -and ($_.Name -eq '补货助手.exe' -or $_.CommandLine -match '(?i)[\\\\/\\s\"]app\\.py([\\s\"]|$)') } | "
-              "Select-Object -ExpandProperty ProcessId) | ConvertTo-Json -Compress")
-    result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', script],
-                            capture_output=True, timeout=20, creationflags=subprocess.CREATE_NO_WINDOW)
-    if result.returncode: raise ValueError('未能核实其他补货助手进程，资料未清空；请关闭其他版本后重试')
-    if result.stdout.strip(): raise ValueError('其他补货助手窗口仍在运行（可能是旧版），请先正常关闭；资料未清空')
+    from application_processes import discover
+    matches=discover()
+    if matches:raise ValueError('其他补货助手进程仍在运行，请先正常关闭；资料未替换。进程号：'+','.join(str(p['pid']) for p in matches))
 
 
 def perform(value):

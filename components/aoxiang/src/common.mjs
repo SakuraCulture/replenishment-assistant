@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {parse as parseLossless} from 'lossless-json';
+import {portablePath} from './portable-assets.mjs';
 
 export const APP_VERSION = '0.2.1';
 export const SITE = 'https://saas-retail.ele.me';
@@ -45,7 +46,7 @@ export async function writeJson(file, value) {
   try { await h.writeFile(JSON.stringify(value,null,2)+'\n','utf8'); await h.sync(); } finally { await h.close(); }
   await fs.rename(tmp,file);
 }
-export async function readJson(file) { return JSON.parse((await fs.readFile(file,'utf8')).replace(/^\uFEFF/,'')); }
+export async function readJson(file) { return JSON.parse((await fs.readFile(await portablePath(file),'utf8')).replace(/^\uFEFF/,'')); }
 export async function exists(file) { try { await fs.access(file); return true; } catch { return false; } }
 export function safeName(s) {
   const clean = String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').replace(/[. ]+$/g,'').slice(0,75);

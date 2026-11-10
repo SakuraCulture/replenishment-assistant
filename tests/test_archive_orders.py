@@ -60,18 +60,21 @@ class ArchiveTests(unittest.TestCase):
         with closing(self.work.connect()) as db,db:self.assertEqual(ao.states(db),{});db.execute('UPDATE normal_orders SET current=2')
         with self.assertRaises(wr.Conflict):ao.change(self.work.path,h,True)
         with closing(self.work.connect()) as db,db:self.assertEqual(ao.states(db),{})
-    def test_three_sheets_raw_source_and_signed_rows(self):
+    def test_business_calculation_and_separate_raw_source(self):
         before=copy.deepcopy(self.repo.get(wr.today(),'T'));h=self.listing()['records'][0];path=self.root/'archive.xlsx';ae.export(self.work.path,h,path)
         b=openpyxl.load_workbook(path);self.assertEqual(b.sheetnames,ae.SHEETS)
         calc=list(b.worksheets[0].values);self.assertEqual(len(calc),2);self.assertIn('最终签发执行数',calc[0]);self.assertEqual(calc[1][-3],sem.order_quantity(self.p['result']['rows'][0]))
-        raw=list(b.worksheets[1].values);self.assertEqual(raw[0][:4],('商品编码','备注','重复','重复'));self.assertEqual(raw[1][:4],('0001','=保留原文字',None,0));self.assertEqual(raw[2][0],'原表未入选商品')
-        self.assertEqual(b.worksheets[1]['B2'].data_type,'s');signed=list(b.worksheets[2].values);self.assertEqual(signed[1][5],'0001');self.assertEqual(signed[1][-2],'BH-T-ZC-HB');b.close()
+        self.assertEqual(b.sheetnames,['完整计算建议表','字段与口径说明']);self.assertLess(len(calc[0]),125)
+        self.assertIn('近30天销量',calc[0]);self.assertIn('供货仓可用库存',calc[0]);self.assertNotIn('config.parameters.depth',calc[0]);b.close()
+        raw_headers,raw_values=ae.original(self.repo,before,'河北仓',self.cancel);raw=list(raw_values)
+        self.assertEqual(raw_headers[:4],['商品编码','备注','重复','重复']);self.assertEqual(raw[0][:4],['0001','=保留原文字',None,0]);self.assertEqual(raw[1][0],'原表未入选商品')
+        signed=ae.signed_rows(before,'河北仓');self.assertEqual(signed[0][5],'0001');self.assertEqual(signed[0][-2],'BH-T-ZC-HB')
         self.assertEqual(self.repo.get(wr.today(),'T'),before)
         with self.assertRaises(FileExistsError):ae.export(self.work.path,h,path)
     def test_missing_source_explicit_and_cancel_no_file(self):
         h=self.listing()['records'][0]
         with closing(self.work.connect()) as db,db:db.execute('DELETE FROM source_files')
-        path=self.root/'missing.xlsx';ae.export(self.work.path,h,path);b=openpyxl.load_workbook(path);self.assertIn('未留存',b.worksheets[1]['A2'].value);b.close()
+        path=self.root/'missing.xlsx';ae.export(self.work.path,h,path);b=openpyxl.load_workbook(path);values=list(b.worksheets[0].values);self.assertIn('未留存',values[1][values[0].index('资料说明')]);b.close()
         self.cancel.set()
         with self.assertRaises(Exception):ae.export(self.work.path,h,self.root/'cancel.xlsx',cancel=self.cancel)
         self.assertFalse((self.root/'cancel.xlsx').exists())

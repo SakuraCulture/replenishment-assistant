@@ -24,6 +24,7 @@ SHEETS={
 KINDS={'warehouse_cycles':['分仓周期'], 'classified_parameters':['分仓周期','分类参数'],
        'common_parameters':['门店通用参数'],
        'store_policy':['补货策略'],'store_routes':['供货关系'],'store_budget':['门店预算']}
+KINDS['complete_parameters']=list(SHEETS)
 
 def numeric(value, key):
     if isinstance(value,str) and value.endswith('%'):
@@ -155,6 +156,7 @@ def write(path,kind='warehouse_cycles',records=None,progress=lambda _:None,cance
     if scoped:
         info.cell(3,2,'空白、缺列、缺行保持原值；填写“系统默认”明确恢复。分类专用参数填“系统默认”表示沿用门店通用值；0是实际数值。')
         info.append(['模板范围','完整门店参数仅分仓周期和分类参数；门店通用参数另表维护；分类映射全局集中维护。'])
+        if kind=='complete_parameters':info.cell(info.max_row,2,'本文件包含全部门店默认：周期、通用参数、分类参数、分类映射、补货策略、供货关系与预算；辅助清单页用于查阅，不自动写回。')
     marker=wb.create_sheet(MARKER);marker.append([FORMAT_SCOPED if scoped else FORMAT]);marker.sheet_state='hidden'
     from parameter_template_help import instructions
     instructions(info)

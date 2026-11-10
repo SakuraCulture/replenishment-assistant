@@ -11,7 +11,8 @@ from priority_list import atomic_json
 
 
 def digest(path):
-    with Path(path).open('rb') as f:
+    from portable_assets import resolve
+    with resolve(path).open('rb') as f:
         return hashlib.file_digest(f, 'sha256').hexdigest()
 
 
@@ -49,7 +50,8 @@ def validate(request, progress=lambda _: None, cancel=None):
 def candidate(receipt):
     if receipt.get('status') != 'VALIDATED' or receipt.get('validator') != 'catalog.v1':
         raise ValueError('商品资料尚未通过当前校验')
-    path = Path(receipt['candidate'])
+    from portable_assets import resolve
+    path = resolve(receipt['candidate'])
     if digest(path) != receipt['candidate_sha256']:
         raise ValueError('商品资料校验候选已变化')
     data = wc.validate(json.loads(path.read_text('utf-8')))

@@ -25,8 +25,9 @@ HERE = Path(__file__).resolve().parent
 
 
 def digest(path):
+    from portable_assets import resolve
     h=hashlib.sha256()
-    with Path(path).open('rb') as f:
+    with resolve(path).open('rb') as f:
         for block in iter(lambda:f.read(1024*1024),b''):h.update(block)
     return h.hexdigest()
 
@@ -58,7 +59,8 @@ def read_table(path, sheet, required, *, _cells=None):
         header,values=_cells
         return table_records(header,values,sheet,required)
     warnings.filterwarnings('ignore',message='Workbook contains no default style')
-    book=openpyxl.load_workbook(path,read_only=True,data_only=True,keep_links=False)
+    from portable_assets import resolve
+    book=openpyxl.load_workbook(resolve(path),read_only=True,data_only=True,keep_links=False)
     try:
         if sheet is not None:
             if sheet not in book.sheetnames:raise ValueError(f'找不到工作表：{sheet}')

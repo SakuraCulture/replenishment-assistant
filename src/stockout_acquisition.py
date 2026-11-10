@@ -22,9 +22,9 @@ def refresh_job(jobs,client,cid):
     return jobs.get(cid)
 
 
-def collect_catalogs(repo,rid,rpc,cancel,progress):
+def collect_catalogs(repo,rid,rpc,cancel,progress,*,warehouses=None,loader=load_catalog):
     run=repo.run(rid);basis=repo.settings(run['basis'])
-    warehouses=sorted({w for route in basis['routes'].values() for w in (route['primary'],route.get('secondary')) if w})
+    warehouses=warehouses if warehouses is not None else sorted({w for route in basis['routes'].values() for w in (route['primary'],route.get('secondary')) if w})
     if not warehouses:return {}
     external=dict(run['external']);client=Client(rpc,'jst')
     if not external.get('catalog_operation'):
@@ -69,7 +69,7 @@ def collect_catalogs(repo,rid,rpc,cancel,progress):
         from catalog_sync_validation import candidate
         validated=candidate(receipt)
         del validated
-        sha=load_catalog(repo,receipt['source'],wh,expected=receipt['source_sha256'],expected_rows=receipt['rows'],cancel=cancel,progress=progress)
+        sha=loader(repo,receipt['source'],wh,expected=receipt['source_sha256'],expected_rows=receipt['rows'],cancel=cancel,progress=progress)
         catalogs[wh]=sha
         repo.change(rid,catalogs=catalogs)
         ack={'warehouse':wh,'source_sha256':sha,'purpose':'stockout_analysis','run_id':external['catalog_owner']}
