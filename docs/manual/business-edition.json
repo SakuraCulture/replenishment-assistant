@@ -5,15 +5,15 @@
   "pdf_pages": 62,
   "images": 36,
   "parameter_definitions": 28,
-  "runtime_logic_changed": true,
+  "runtime_logic_changed": false,
   "sealed_0493_changed": false,
   "legacy_pdf_preserved": true,
   "live_platform_tested": false,
   "newcomer_field_acceptance": false,
-  "validation": "21-chapter HTML verified offline; source Qt 23 synthetic checks passed; frozen acceptance is recorded in releases/0.51.0; PDF remains 0.49.3 archive",
+  "validation": "Daily-tag documentation update only; offline HTML 21 chapters / 36 images passed. Runtime acceptance remains in releases/0.51.0/rc1; PDF remains 0.49.3 archive.",
   "files": {
-    "guide.md": "0bb2499441e9e0cafa81c3dc5c25666b0a15fe884f8370dd56dda234cca46157",
-    "index.html": "838b53e6d89396b72ec3319ab8f3a2365868958682b5a5788cfea7f7577a898a",
+    "guide.md": "564ac2e17fb8e6904dd0dc032b98fa271cf7d9fc0c9df76789b5c34a70558287",
+    "index.html": "e8c3e1cf78c69fed3c0b675feb436eded69a1e2178843a3825ae32fa3c94d7fb",
     "screenshot-index.json": "556bd449c0f54afdc40b606bfb3984b77d67fa90310b0bf2cf6a89daf04b727d",
     "parameter-reference.json": "08905e215c7f66245816eb8e31f5b3c04b1ea8dfde488cd6bfd3ec7cf52a895b",
     "补货助手_0.49.3_新人业务上手手册.pdf": "e2f494ed73817a561a87265811d2474c054e39f87b31ec60092ef1bac44e7326",
@@ -55,5 +55,15 @@
     "images/order-migration-0510.png": "2cd0b8b668bf2856eed972b487a8b1320030b7b65c38cc19c52528e828812bef"
   },
   "pdf_application": "0.49.3",
-  "pdf_status": "historical archive; current changes in HTML"
+  "pdf_status": "historical archive; current changes in HTML",
+  "sealed_0510_rc1_changed": false,
+  "daily_tag_guide": {
+    "updated": "2026-11-11",
+    "chapters": [
+      "03",
+      "21"
+    ],
+    "anchor": "c03-s04",
+    "validation": "qa/manual_daily_20261111_01/html-report.json"
+  }
 }
