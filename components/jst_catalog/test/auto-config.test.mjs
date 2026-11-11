@@ -65,7 +65,7 @@ test('startup does not enable a disabled account or replace a mismatched login',
   assert.equal(c.service.status().operations[ack.operation_id].error.code,'WRONG_ACCOUNT');
   await c.service.command({action:'accounts.set_enabled',warehouse:'山东仓',expected_version:1,enabled:false});
   const before=c.service.store.accounts();
-  ack=await c.service.command({action:'accounts.ensure',warehouse:'山东仓',expected_version:2});await c.service.active.promise;
+  ack=await c.service.command({action:'accounts.ensure',warehouse:'山东仓',expected_version:1});await c.service.active.promise;
   assert.equal(c.service.status().operations[ack.operation_id].error.code,'ACCOUNT_DISABLED');
   assert.deepEqual(c.service.store.accounts(),before);
 });

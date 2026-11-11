@@ -11,7 +11,8 @@ from math import exp, log, sqrt, floor, ceil, lgamma, isfinite
 from statistics import NormalDist, stdev
 from typing import Any
 
-VERSION = "2026-10-22-8+5-v1"
+VERSION = "2026-10-22-8+5-v1+sales-floor-zero-v1"
+FLOOR_RULE = 'sales-floor-zero-v1'
 PENDING = "待复核"
 CONFLICTS = {"销量窗口异常", "缺货销量冲突"}
 GROWTH_STATES = {"持续上升", "平稳后上升", "新近动销（试补候选）", "低位回升",
@@ -21,6 +22,34 @@ CALCULATED = "W X Y Z AA AE AK AL AM AN AO AP AQ AR AS AW AX AY AZ BA BB BC BD B
 
 def number(x: Any) -> bool:
     return isinstance(x, (int, float)) and not isinstance(x, bool) and isfinite(x)
+
+
+def sales_floor_eligible(d: dict) -> bool:
+    """A positive/negative cancellation is not a genuinely empty position."""
+    return (all(number(d.get(c)) for c in ('H','I','J','K','L'))
+            and d['K']==0 and d['L']==0 and max(d['H'],d['I'],d['J'])>0)
+
+
+def floor_reason(d: dict) -> str | None:
+    """Explain new, frozen results without reinterpreting historical snapshots."""
+    if d.get('_floor_rule')!=FLOOR_RULE or d.get('AW')!='可计算' or not number(d.get('AS')):return None
+    q=d['AS']
+    if q==0:
+        if number(d.get('AQ')) and d['AQ']==0:
+            return '目标已覆盖' if max(d['H'],d['I'],d['J'])>0 else '无需补货'
+        if d.get('BI')==0:return '普通补货资格未通过'
+        if number(d.get('BJ')) and d['BJ']>0 and d.get('BK')==0:return '库存额度限制'
+        if number(d.get('BR')) and d['BR']>0 and d.get('BU')==0:return '资金约束未安排'
+        return '无需补货'
+    ordinary=d.get('AR') if d.get('BI')==1 else 0
+    if number(ordinary) and number(d.get('BU')):
+        without_floor=max(0,min(ordinary,d['BU']))
+    elif ordinary==0:without_floor=0
+    else:without_floor=None
+    if without_floor is not None and q>without_floor:
+        if d.get('_zero_monthly_restore'):return '零销恢复'
+        if sales_floor_eligible(d):return '断货保底'
+    return '正常需求补货'
 
 
 def text(x: Any) -> bool:
@@ -180,6 +209,8 @@ def calculate(inputs: dict, rules: Rules | None = None, *, extreme_restore: bool
     d = dict(inputs)
     d.pop('_extreme_restore',None)
     d.pop('_inbound_cap',None)  # Recalculation must not retain a prior cap decision.
+    d.pop('_zero_monthly_restore',None)
+    d['_floor_rule']=FLOOR_RULE
     for c in "H I J K L N O P S V AB AC AD".split():
         d.setdefault(c, None)
     d.setdefault("AG", p.depth); d.setdefault("AH", p.lead)
@@ -321,12 +352,12 @@ def calculate(inputs: dict, rules: Rules | None = None, *, extreme_restore: bool
         d["BP"] = d["AR"]
     else:
         ordinary = d["AR"] if d["BI"]==1 else 0
-        sales_floor = k<=0 and max(h,i,j)>0 and (l<=0 or aq>0)
+        sales_floor = sales_floor_eligible(d)
         zero_restore = j==0 and number(n) and 0<n<p.extreme_days and k<=0 and max(l,0)<min(p.minimum_reference_units,step)
+        if zero_restore:d['_zero_monthly_restore']=True
         d["BP"] = max(ordinary,step) if sales_floor or zero_restore else ordinary
-        # Positive inbound already represents a holding. A later floor must
-        # not undo the original inventory-cap/carton decision. Keep the L<=0
-        # minimum holding and the separate extreme-restoration branch intact.
+        # Sales floors never enter this positive-inbound branch now. Retain
+        # the existing cap for the separate zero-monthly restoration rule.
         if l>0 and p.cap_days>0 and d["BP"]>d["BK"]:
             # BP>BK can only be the one-step floor (AR<=BK). In the old chain
             # it survives only above the monthly exit or as strict BQ holding;
@@ -340,7 +371,7 @@ def calculate(inputs: dict, rules: Rules | None = None, *, extreme_restore: bool
     elif aw == "极端缺货自动拉回":
         d["BQ"] = d["BO"]
     else:
-        d["BQ"] = step if (d["BP"]>0 and k<=0 and (max(h,i,j)>0 or j==0 and number(n) and 0<n<p.extreme_days)
+        d["BQ"] = step if (d["BP"]>0 and k<=0 and (sales_floor or zero_restore)
                               and max(l,0)<min(p.minimum_reference_units,step)) else 0
     if text(d["BP"]):
         d["BR"] = d["BP"]
@@ -432,6 +463,11 @@ def explanation(d: dict, p: Rules) -> str:
     if d["AW"] not in {"可计算","极端缺货自动拉回"}:
         return prefix+d["AW"]
     out = d["BL"]+"；"
+    cause=floor_reason(d)
+    if cause=='断货保底':out+='可用与在途均为0，销售型断货保底；'
+    elif q==0 and cause:
+        if max(d['H'],d['I'],d['J'])>0 and not sales_floor_eligible(d):out+='可用与在途未同时为0，不触发销售型断货保底；'
+        return prefix+out+cause+'；实际补货0'+('；净需求'+fmt(d['AQ']) if number(d.get('AQ')) else '')
     if j==0 and number(n) and 0<n<p.extreme_days and number(bq) and bq>0:
         out += "零月销缺货按最低有货恢复，不上调销量预测；"
     if text(q):

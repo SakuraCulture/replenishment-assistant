@@ -112,6 +112,8 @@ class QuickActions(unittest.TestCase):
             path=self.root/(kind+'.xlsx');tables.write(path,kind,scoped=True)
             w=load_workbook(path)
             for title in tables.KINDS[kind]:
+                if kind=='complete_parameters' and title=='分类映射':
+                    ws=w[tables.MAPPING_REFERENCE];self.assertEqual([c.value for c in ws[1]],tables.SHEETS[title]);self.assertTrue(ws.protection.sheet);self.assertIn('只读',ws['A1'].comment.text);continue
                 ws=w[title];self.assertEqual([c.value for c in ws[1]],tables.SHEETS[title]);self.assertIn('必填',ws['A1'].comment.text)
                 for dv in ws.data_validations.dataValidation:self.assertFalse(dv.showDropDown);self.assertTrue(dv.showInputMessage)
                 if title=='门店预算':self.assertTrue(any('不限预算' in (d.formula1 or '') for d in ws.data_validations.dataValidation))

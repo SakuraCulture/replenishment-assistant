@@ -1,0 +1,16 @@
+======================================================================
+ERROR: test_analysis_receipt_cannot_adopt_business (test_stockout_acquisition.PipelineTests.test_analysis_receipt_cannot_adopt_business)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 299, in test_analysis_receipt_cannot_adopt_business
+    with self.assertRaisesRegex(ValueError,'分析资料'):adoption.apply({'purpose':'stockout_analysis'}, {})
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_sync.py", line 62, in apply
+    with adoption_guard(self.state_root,batch,item,cancel):
+                        ^^^^^^^^^^^^^^^
+AttributeError: 'Adoptions' object has no attribute 'state_root'
+
+----------------------------------------------------------------------
+Ran 59 tests in 16.666s
+
+FAILED (errors=1)

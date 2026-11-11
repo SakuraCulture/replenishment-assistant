@@ -42,24 +42,28 @@ def start_smoke(app,win,args):
             require(len(receipts)==1 and Path(receipts[0]).is_file(),'实际点击导出当前范围保存经营分析文件')
             full=Path(receipts[0]);book=openpyxl.load_workbook(full)
             try:
-                for name in ('门店经营对比','门店分仓对比','订单五段漏斗'):
-                    require(book[name].max_column==45 and list(next(book[name].values))[-3:]==ids.HEADERS,'导出追加三种单号，原指标位置保留：'+name)
+                from funnel_dimension_export import NAMES,headers
+                require(book.sheetnames[:8]==NAMES and '门店SKU供应商类目' not in book.sheetnames,'按截图六表及供应商、类目两切面重排导出')
+                for name in NAMES:
+                    require(list(next(book[name].values))==headers(name) and list(next(book[name].values))[-3:]==ids.HEADERS,'每日切面保存三种单号：'+name)
                 records=list(book['单号关联明细'].values)[1:]
                 require({(r[4],r[5],r[6]) for r in records}=={(e['order'],e['jst'],e['po']) for e in f['expected']},'单号关联明细保存两日两仓的完整对应')
                 require(any(r[8]=='已作废' for r in records),'已作废采购单保留原号和已留存状态')
                 require(all(c.data_type=='s' for row in list(book['单号关联明细'])[1:] for c in row[4:7] if c.value is not None),'三种编号按文本保存，聚水潭号前导零保留')
                 if f.get('dimension_export'):
                     from decimal import Decimal
-                    from funnel_dimension_export import NAME,HEADERS
-                    values=list(book[NAME].values);require(list(values[0])==HEADERS,'门店经营分析包含SKU×门店×上游供应商×原类目的完整组合表')
+                    values=list(book['日期-店-SKU-仓'].values)
                     data=[dict(zip(values[0],r)) for r in values[1:]]
                     require({(r['商品编码'],r['供货仓'],r['大仓上游供应商'],r['商品类目']) for r in data}=={('0001','河北仓','上游甲','饮品'),('0002','山东仓','上游乙','食品')},'两仓商品精确关联签发当时的上游供应商和原类目')
-                    require(all(r['涉及签发仓单数']==2 and len(r['签发单号'].splitlines())==2 for r in data),'同组合跨两日汇总，保留每张签发单及外部编号的对应关系')
+                    require(len(data)==len(f['expected']) and all(r['涉及签发仓单数']==1 for r in data) and len({r['业务日期'] for r in data})==2,'同店SKU按日分开，不把两日混成期间一行')
                     for stage in service.STAGES:
                         known=[r[service.NAMES[stage]+'商品货值'] for r in data if r[service.NAMES[stage]+'商品货值'] is not None]
                         total=sum((Decimal(str(v)) for v in known),Decimal(0)) if known else None
                         require(total==snapshot['metrics']['stages'][stage]['value'],'组合明细与原门店汇总货值一致：'+stage)
-                    require(all(c.data_type not in ('f','e') for row in book[NAME] for c in row),'新组合字段和编号保持文本，不生成公式或错误单元格')
+                    for name,key in [('店-供应商-日期-必采-仓','大仓上游供应商'),('店-类目-日期-必采-仓','商品类目')]:
+                        records=list(book[name].values);data2=[dict(zip(records[0],r)) for r in records[1:]]
+                        require(len(data2)==len(f['expected']) and all(r[key] and r['业务日期'] and r['必采属性'] and r['供货仓'] for r in data2),'独立切面按门店、日期、必采和仓汇总：'+name)
+                    require(all(c.data_type not in ('f','e') for name in NAMES for row in book[name] for c in row),'切面字段和编号保持文本，不生成公式或错误单元格')
             finally:book.close()
             w.tabs.setCurrentIndex(2);w.tables['order'].selectRow(0);chosen=next(iter(w.selected));selected=[]
             with patch('readable_ui.file_results',side_effect=lambda parent,files,*args,**kwargs:selected.extend(files)):
@@ -68,9 +72,9 @@ def start_smoke(app,win,args):
             try:
                 require({r[4] for r in list(book['单号关联明细'].values)[1:]}=={chosen},'勾选导出只保存所选原单的对应关系')
                 if f.get('dimension_export'):
-                    from funnel_dimension_export import NAME
-                    values=list(book[NAME].values);data=[dict(zip(values[0],r)) for r in values[1:]]
-                    require(len(data)==1 and data[0]['签发单号']==chosen and data[0]['涉及签发仓单数']==1,'新组合明细同样只导出所选订单，不带入未选日期或仓')
+                    values=list(book['日期-店-SKU-仓'].values);data=[dict(zip(values[0],r)) for r in values[1:]]
+                    require(len(data)==1 and data[0]['签发单号']==chosen and data[0]['涉及签发仓单数']==1,'每日SKU切面只导出所选订单，不带入未选日期或仓')
+                    require(all({r[-3] for r in list(book[name].values)[1:]}<={chosen} for name in NAMES),'全部八个切面均遵守勾选订单范围')
             finally:book.close()
             require((sha(path),sha(component))==before,'查询和两次导出未修改业务库或翱象组件库')
             head=next(h for h in snapshot['heads'] if h['number']==chosen);refs.save(path,refs.read(path,head),'000-UPDATED')

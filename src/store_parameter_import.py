@@ -167,6 +167,12 @@ def base(preset=None, ui=None):
 def patch(row, original):
     value = copy.deepcopy(original)
     c, ui = value['preset']['config'], value['ui']
+    if row.get('allow_new_profiles'):
+        groups={f[1] for f in row['values'] if f[0]=='weight_profiles'}-set(c['weight_profiles'])
+        for group in groups:
+            fields={k:row['values'].get(('weight_profiles',group,k)) for k in WEIGHTS}
+            if any(v is None for v in fields.values()):raise ValueError('完整导入的新分类组须填写全部权重：'+group)
+            c['weight_profiles'][group]={k:number(v) for k,v in fields.items()}
     if any(f[0] not in ('主仓','从仓','预算方式','预算金额','category_profiles') for f in row['values']):value['preset'].pop('implicit_default',None)
     for f, raw in row['values'].items():
         if f[0] in ('主仓', '从仓'):

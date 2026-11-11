@@ -72,11 +72,14 @@ def check_jst(client, names, cancel, report):
         if state.get('running'):
             raise RuntimeError('原聚水潭操作尚未结束，稍后重新检查连接；未启动采集。')
         account = next((a for a in state.get('accounts', []) if a['warehouse'] == name), None)
+        if state.get('rebind_required',{}).get(name):
+            report(name,result('CONFIG_REQUIRED','本仓正在纠正绑定；请在商品资料窗口核验正确公司并保存，未自动沿用旧账号。'))
+            continue
         if account and not account.get('enabled'):
             report(name, result('DISABLED', '本仓自动同步已停用，保留原设置；需要时在仓配置中启用。'))
             continue
         report(name, result('CHECKING', '正在复用本仓专用浏览器并核验账号…' if account else '正在自动准备本仓独立浏览器，登录后自动核验保存…'))
-        ack = client.request('accounts.ensure', warehouse=name, expected_version=account['bindingVersion'] if account else 0)
+        ack = client.request('accounts.ensure', warehouse=name, expected_version=account['bindingVersion'] if account else state.get('binding_epochs',{}).get(name,0))
         ident = ack['operation_id']; stopped = False; deadline = time.monotonic() + 150
         while True:
             state = client.request('sync.status')

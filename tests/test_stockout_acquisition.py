@@ -45,7 +45,7 @@ class NativeFixture:
                       'stage':'READY' if self.observation else 'WAIT_HOST','observationRequest':'token','observation':self.observation,
                       'native':{'scope':{'coid':'C','uid':'U'},'sha256':self.receipt['source_sha256']},
                       'receipt':self.receipt if self.observation else None,'adoption':self.ack}
-                return {'running':not bool(self.observation),'batches':[{'id':'batch','operation_id':self.operation,'purpose':'stockout_analysis','items':[item]}]}
+                return {'running':not bool(self.observation),'accounts':[copy.deepcopy(item['account'])],'batches':[{'id':'batch','operation_id':self.operation,'purpose':'stockout_analysis','items':[item]}]}
             if action=='sync.provide_observation':
                 assert self.observation is None;assert v['token']=='token';self.observation=v['observation'];return {'accepted':True}
             if action=='sync.acknowledge_adoption':self.ack=v['receipt'];return {'accepted':True}

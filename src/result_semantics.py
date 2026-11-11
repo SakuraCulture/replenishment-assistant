@@ -34,11 +34,17 @@ def work_eligible(d):
 def inbound_risk(d):
     """Warning only. 3.5 days is a review scenario, never a model override.
 
-    Historical snapshots without the new cap audit stay uninterpreted. Existing
+    Historical snapshots without either rule or cap audit stay uninterpreted. Existing
     inbound has no ETA; quantity coverage cannot establish shelf availability.
     """
     cap=d.get('_inbound_cap',{});wrapper=d.get('_audit',{}).get('inbound_cap_blocked',False)
-    if not (cap.get('previous_suggestion',0)>0 or wrapper) or not work_eligible(d) or d.get('_source')!='资料匹配':return None
+    # New sales floors no longer create the old cap audit. Keep a warning for
+    # a genuine inbound/cap gap, without treating the warning as an order.
+    new_cap_gap=(d.get('_floor_rule')==model.FLOOR_RULE and d.get('AW')=='可计算'
+        and all(numeric(d.get(k)) for k in ('K','L','H','I','J','BJ','BK','AR','AS'))
+        and d['K']<=0 and d['L']>0 and max(d['H'],d['I'],d['J'])>0
+        and d['BJ']>0 and d['BK']==d['AR']==d['AS']==0)
+    if not (cap.get('previous_suggestion',0)>0 or wrapper or new_cap_gap) or not work_eligible(d) or d.get('_source')!='资料匹配':return None
     if not all(numeric(d.get(k)) for k in ('K','L','AN','AM','AH')):return None
     rate=d['AN']*d['AM']
     if rate<=0 or d['L']<=0:return None

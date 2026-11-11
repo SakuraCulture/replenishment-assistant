@@ -1,0 +1,104 @@
+✔ 按所选仓自动准备、核验和保存；两仓绑定独立且重复配置不改变版本 (63.5927ms)
+✔ startup reuses a saved custom binding and version even with pending exports; never migrates it (47.0912ms)
+✔ startup automatically binds a new dedicated account after login, and leaves missing login unbound (36.6278ms)
+✔ startup does not enable a disabled account or replace a mismatched login (48.9568ms)
+✔ 账号不同或两个仓使用同一身份时不会自动覆盖绑定 (44.0263ms)
+✔ 待收取任务可复用原绑定；自动迁移新目录仍受待处理任务保护 (46.9407ms)
+✔ 取消登录等待不保存；自动保存完成前不返回成功 (66.1925ms)
+✔ 自动目录可复用且按仓隔离，启动前阻止正常浏览器和其他仓目录 (35.7218ms)
+✔ ambiguous controls are never activated (1.1802ms)
+✔ hidden or disabled controls are not dispatched (0.214ms)
+✔ dispatch errors are not retried as another possible export (0.3304ms)
+✔ not-ready controls cannot record a dispatched export attempt (0.282ms)
+✔ restart keeps selected dedicated profile and exposes only an ephemeral loopback endpoint (1.54ms)
+✔ ordinary browser bindings cannot use dedicated startup (0.6097ms)
+✔ native download callback must identify exactly the original task and action (0.9379ms)
+✔ callback requires native success and the allowlisted XLSX address (0.6692ms)
+✔ native five-minute limit is a recoverable wait, not a new export (0.1247ms)
+✔ pending exports and unadopted files do not block disabling; all records and the other warehouse stay intact (122.6977ms)
+✔ disable then reenable preserves the frozen account and resumes the original downloaded file (50.6892ms)
+✔ a disabled original task reports disabled rather than an account identity change (38.468ms)
+✖ binding protection and separate switch CAS still reject stale requests without changing data (28.5285ms)
+✔ disabling during an active operation changes only future enablement and never aborts that operation (29.3055ms)
+✔ disabled setting persists across service restart; startup does not turn it on or launch a browser (43.0911ms)
+✔ disabled warehouse cannot start a new automatic export and invalid flag inputs do not mutate it (29.7383ms)
+✔ native pending row may have no count; completed original row must match (0.9494ms)
+✔ completed mismatched count/type and failed native tasks remain failures (0.5418ms)
+✔ captured native all-status all-data request passes (0.9753ms)
+✔ enabled-only request is blocked before transmission (0.133ms)
+✔ selected-row range is blocked (0.0996ms)
+✔ foreign company is blocked (0.0729ms)
+✔ additional supplier restriction is blocked (0.1185ms)
+✔ unknown export options are blocked (0.1225ms)
+✔ order mutation is not exposed by the integrated catalog-only service (0.9362ms)
+✔ normal browser root and sibling profile cannot become dedicated JST (10.1705ms)
+✔ two warehouses cannot use sibling profiles in one instance root (6.0761ms)
+✔ exact task without unique bound native link never takes recent downloads (1.9261ms)
+✔ scheduled catalogs have separate adoption scope and durable replay (199.4371ms)
+✔ stockout analysis owns native receipts and cannot replay as default catalog (202.1447ms)
+✔ same driver handles both accounts in user order and repeated intent never resubmits (176.3428ms)
+✔ login required only pauses one account; resume does not export successful account again (175.5738ms)
+✔ accepted download failure resumes the original task number (184.9252ms)
+✔ legacy accepted task with zero submission counter still blocks a new export (125.737ms)
+✔ unknown acceptance blocks new intent and resume; other account still completes (173.9536ms)
+✔ stop responds while work waits, starts no additional accounts, later resume works (259.1392ms)
+✔ observation token and adopted hash cannot target another item (186.808ms)
+✔ concurrent starts cannot launch two browser workers (200.7678ms)
+✔ task IDs and download paths are strict; URLs with secrets are not task IDs (0.392ms)
+✔ two warehouses retain independent bridges across repeated operations (2.3201ms)
+✔ explicit reconnect affects only selected warehouse and not task store (0.5606ms)
+✔ disconnected socket is not advertised or reused as healthy (0.3679ms)
+✔ closing owned page recreates only its own session (0.4779ms)
+✔ service release aborts current operation but retains browser pool and task records (0.7403ms)
+✔ reset is refused during active work; cannot touch another platform (0.4863ms)
+✔ lightweight health does not read full jobs or queue behind mutations (0.25ms)
+✔ browser disconnect failure must still release the task-state guard and preserve jobs (57.293ms)
+✔ shutdown waits for the in-flight state commit before releasing ownership (108.4675ms)
+✔ stuck idle browser cleanup is bounded after work settles and cannot retain the store (65.927ms)
+✔ simultaneous shutdown signals share one drain and one browser cleanup (36.4352ms)
+✔ busy errors identify the original service; never delete or reset its records (46.8513ms)
+✔ parent loss notifies once; alive or unknown parent never requests shutdown (57.4047ms)
+✔ parent loss during a commit only requests cooperative shutdown, preserves its late receipt (102.0576ms)
+✔ safe drain keeps a real Node process alive even with only an unreferenced pending commit (177.6204ms)
+✔ native route matches the same path with query parameters (0.5488ms)
+✔ accepted native response retains one durable attempt without relying on route hook (6.6488ms)
+✔ lost response or mismatched observed scope remains unresolved, never zero attempts (3.9338ms)
+ℹ tests 65
+ℹ suites 0
+ℹ pass 64
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2136.5639
+
+✖ failing tests:
+
+test at test\enabled-state.test.mjs:55:1
+✖ binding protection and separate switch CAS still reject stale requests without changing data (28.5285ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + Comparison {}
+  - Comparison {
+  -   code: 'PENDING_TASK'
+  - }
+  
+      at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:59:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: 请完成本仓账号核验并确认库存范围
+        at CatalogService.configure (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:128:170)
+        at CatalogService.dispatch (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:89:19)
+        at file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:49:59
+        at async waitForActual (node:assert:646:5)
+        at async strict.rejects (node:assert:769:25)
+        at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:59:3)
+        at async Test.run (node:internal/test_runner/test:1409:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:974:7),
+    expected: { code: 'PENDING_TASK' },
+    operator: 'rejects',
+    diff: 'simple'
+  }

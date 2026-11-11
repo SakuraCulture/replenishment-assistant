@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/p) for p in ('src','tests','tools')]
 
-def fixture(out):
+def fixture(out,floor_comparison=None):
     from test_first_fill import warehouse_fixture,base,monthly
     out.mkdir(parents=True,exist_ok=False);(out/'inputs').mkdir();(out/'settings').mkdir()
     loaded,catalogs=warehouse_fixture(out/'inputs')
@@ -12,12 +12,23 @@ def fixture(out):
     missing=copy.deepcopy(sd);missing['rows'][0]['_meta']['first_fill']['known']=False
     invalid=copy.deepcopy(hb);invalid['rows'][0]['_meta']['first_fill']['raw']=31
     data={'synthetic':True,'live_platform':False,'monthly':monthly(),'bases':{'山东单仓':sd,'河北单仓':hb,'山东主河北从':fallback,'缺少首铺数':missing,'不合箱规':invalid}}
+    if floor_comparison:
+        from test_sales_floor import prepared
+        import priority_list
+        comparison=json.loads(floor_comparison.read_text('utf-8'));assert comparison['synthetic'] and not comparison['live_platform']
+        cases=[]
+        for case in comparison['cases']:
+            options=dict(case['options']);exception=options.pop('exception',False);must=options.pop('must',False);budget=options.pop('budget',None)
+            profile=priority_list.make_profile([{'sku':'QA001' if must else 'NOT_PRESENT','name':'隔离必采'}],'隔离必采清单') if must or budget is not None else None
+            cases.append({'name':case['name'],'inputs':prepared(case['input_changes'],**options),'exception':exception,'budget':budget,'profile':profile,
+                          'expected':{k:case['after'][k] for k in ('AQ','BI','AR','BP','BQ','AS','execution','short_reason')}})
+        assert len(cases)==30;data['floor_cases']=cases
     (out/'fixture.json').write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8',newline='\n')
     (out/'synthetic.json').write_text(json.dumps({'synthetic':True,'live_platform':False}),encoding='utf-8')
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--out',required=True,type=Path);p.add_argument('--exe',type=Path);a=p.parse_args()
-    out=a.out.resolve();out.relative_to(ROOT/'qa');fixture(out)
+    p=argparse.ArgumentParser();p.add_argument('--out',required=True,type=Path);p.add_argument('--exe',type=Path);p.add_argument('--floor-comparison',type=Path);a=p.parse_args()
+    out=a.out.resolve();out.relative_to(ROOT/'qa');fixture(out,a.floor_comparison)
     env={**os.environ,'PYTHONUTF8':'1','QT_QPA_PLATFORM':'windows','REPLENISHMENT_DATA_DIR':str(out/'settings'),'LOCALAPPDATA':str(out/'localappdata')}
     command=[str(a.exe.resolve())] if a.exe else [sys.executable,str(ROOT/'src/app.py')]
     with (out/'process.log').open('wb') as log:

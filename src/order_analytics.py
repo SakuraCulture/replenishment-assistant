@@ -209,9 +209,10 @@ def aggregate(rows):
     for s in STAGES:
         valid=[r for r in eligible if r['valid'][s]]
         values=[amount(r['quantities'][s],r['price']) for r in valid]
-        out['stages'][s]={'value':sum((v for v in values if v is not None),Decimal(0)) if valid else None,
+        priced=[v for v in values if v is not None]
+        out['stages'][s]={'value':sum(priced,Decimal(0)) if priced else None,
             'valid_rows':len(valid),'unpriced':sum(v is None for v in values),
-            'skus':len({r['sku'] for r in valid if r['quantities'][s]>0}),
+            'skus':len({r['sku'] for r in valid if r['quantities'][s]>0}) if valid else None,
             'orders':len({r['order'] for r in valid})}
     for a,b in PAIRS:
         before=after=up=down=Decimal(0);count=0;changed=0;orders=set()

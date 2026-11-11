@@ -29,7 +29,7 @@ def owned(name):
     if len(parts)>=3 and parts[:2]==('aoxiang','component-state'):
         excluded={'config','recovery','temporary','logs','browser','profiles','profile','user-data','Cache','Code Cache','node_modules'}
         return (len(parts)==3 and parts[2] in STATE_FILES) or (len(parts)>3 and not set(parts[2:-1])&excluded and p.suffix.lower() in SUFFIXES|{'.json','.html','.png','.txt'})
-    if len(parts)>=2 and parts[0]=='jst_catalog':return (len(parts)==2 and parts[1] in JST_FILES) or (parts[1]=='downloads' and p.suffix.lower() in SUFFIXES|{'.json'})
+    if len(parts)>=2 and parts[0] in ('jst_catalog','jst_catalog_sync'):return (len(parts)==2 and parts[1] in JST_FILES) or (parts[1]=='downloads' and p.suffix.lower() in SUFFIXES|{'.json'})
     return False
 
 def tree(root):
@@ -37,9 +37,9 @@ def tree(root):
     for folder,dirs,files in os.walk(root,followlinks=False):
         parent=Path(folder);parts=parent.relative_to(root).parts
         def include(name):
-            if not parts:return name in {'warehouse_catalogs','aoxiang','jst_catalog','migration-assets'}
+            if not parts:return name in {'warehouse_catalogs','aoxiang','jst_catalog','jst_catalog_sync','migration-assets'}
             if parts==('aoxiang',):return name=='component-state'
-            if parts==('jst_catalog',):return name=='downloads'
+            if parts in (('jst_catalog',),('jst_catalog_sync',)):return name=='downloads'
             return name not in {'config','recovery','temporary','logs','browser','profiles','profile','user-data','Cache','Code Cache','node_modules'}
         dirs[:]=[n for n in dirs if include(n) and not (parent/n).is_symlink() and not (parent/n).is_junction()]
         for name in files:
@@ -113,7 +113,7 @@ def referenced_files(root,dbpath,cancel):
                         if isinstance(raw,str):scan(json.loads(raw))
     return result
 
-def export(root,destination,progress=lambda _:None,cancel=None):
+def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=None):
     from version_info import VERSION,MODEL_VERSION
     root=validate_root(root);target=Path(destination).resolve()
     if target.exists() or target.suffix.lower()!='.zip':raise ValueError('请选择尚不存在的.zip迁移包')
@@ -125,6 +125,9 @@ def export(root,destination,progress=lambda _:None,cancel=None):
     try:
         with tempfile.TemporaryDirectory(prefix='orders-',dir=target.parent) as working,ExitStack() as stack:
             work=Path(working);entries=[];external={};missing=[]
+            from catalog_migration import freeze
+            catalogs={name:freeze(root,stack,catalog_state if name=='jst_catalog_sync' else None,folder_name=name)
+                      for name in ('jst_catalog_sync','jst_catalog')}
             # Freeze writers in every included SQLite file before the first copy.
             # Independent read-only connections can then use SQLite backup in
             # rollback-journal or WAL mode without copying a live WAL file.
@@ -133,7 +136,10 @@ def export(root,destination,progress=lambda _:None,cancel=None):
                     db=stack.enter_context(closing(sqlite3.connect(path.as_uri()+'?mode=rw',uri=True,timeout=1,isolation_level=None)));db.execute('BEGIN IMMEDIATE')
             for path in sources:
                 checkpoint(cancel);name=path.relative_to(root).as_posix();dest=work/name;dest.parent.mkdir(parents=True,exist_ok=True);progress('留存：'+name)
-                if name in DBS:db_copy(path,dest,main=name=='workbench.sqlite3',cancel=cancel,progress=progress)
+                catalog=catalogs.get(path.relative_to(root).parts[0])
+                if catalog is not None and path.name=='jobs.json' and len(path.relative_to(root).parts)==2:atomic_json(dest,catalog)
+                elif catalog is not None and path.name=='store.guard.json' and len(path.relative_to(root).parts)==2:atomic_json(dest,{'schemaVersion':1,'storeId':catalog['storeId']})
+                elif name in DBS:db_copy(path,dest,main=name=='workbench.sqlite3',cancel=cancel,progress=progress)
                 else:
                     before=file_hash(path);shutil.copyfile(path,dest)
                     if file_hash(dest)!=before or file_hash(path)!=before:raise ValueError('文件在导出期间变化，请安全停止原任务后重试：'+name)
@@ -285,6 +291,8 @@ def apply(plan):
         if file_hash(stage/entry['path'])!=entry['sha256']:raise ValueError('准备的迁入文件已变化，未替换资料')
     with _exclusive(root):
         _check_other_processes();resource_check(root.parent,sum(p.stat().st_size for p in root.rglob('*') if p.is_file()))
+        from catalog_migration import local_connections,restore as restore_catalog
+        catalog_local=local_connections(root)
         connections=[]
         try:
             for name in sorted(DBS):
@@ -309,6 +317,7 @@ def apply(plan):
             for entry in plan['manifest']['entries']:
                 target=new/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(stage/entry['path'],target)
             shutil.copyfile(stage/'迁入原文件映射.json',new/'迁入原文件映射.json');pause_imported(new)
+            restore_catalog(new,root,plan['manifest'],catalog_local)
             atomic_json(new/'订单迁入完成.json',{'nonce':plan['nonce'],'at':now(),'package_sha256':plan['package_sha256'],'backup':str(backup),'scope':plan['manifest']['scope']})
             atomic_json(journal(root),plan)
             root.rename(backup);new.rename(root)

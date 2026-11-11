@@ -109,7 +109,7 @@ class NewProductDialog(QDialog):
         self.cur={d['E']:d for d in current['rows']};self.needles=[filters.search_text(d) for d in self.rows]
         selected=current.get('new_products',{}).get('selection',{});v=QVBoxLayout(self)
         v.addWidget(label('月销、可用、在途均为0，缺货天数为0或空白。空白按0识别并保留原值；默认不选，预览应用后生效。禁用/停采商品已筛除。','muted'))
-        hint=label('本月新品的首铺数量默认使用归属仓商品资料“新店新品首铺数”（库存单位）；已维护数量保留。来源缺失或箱规不符请在“资料待核”中维护，不自动补成1箱。','muted');hint.setWordWrap(True);v.addWidget(hint)
+        hint=label('本月新品默认使用归属仓“新店新品首铺数”（库存单位）；缺失/无效用最小出库单位，有值向上对齐箱规。已有人工数量保留；默认不勾选，预览应用后生效。','muted');hint.setWordWrap(True);v.addWidget(hint)
         tools=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('商品名称 / 编码 / 条码；空格分词');self.search.setClearButtonEnabled(True);tools.addWidget(self.search,1)
         self.scope=QComboBox();self.scope.addItems(['全部新品','可选','资料待核']);self.scope.setCurrentText('可选');tools.addWidget(self.scope)
         self.warehouse=QComboBox();self.warehouse.addItems(['全部仓']+sorted({str(d.get('AU','')) for d in self.rows}));tools.addWidget(self.warehouse)

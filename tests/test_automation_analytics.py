@@ -71,9 +71,9 @@ class AnalyticsApiTests(unittest.TestCase):
         target=self.data.root/'coverage.xlsx';exports.export(self.data.path,native,target)
         book=openpyxl.load_workbook(target)
         try:
-            ws=book['订单五段漏斗']
-            self.assertEqual(ws['AM2'].value,12);self.assertEqual(ws['AM2'].data_type,'n')
-            self.assertEqual(ws['AM2'].number_format,'0.0');self.assertIn('可售天数口径',book.sheetnames)
+            ws=book['日期-店-SKU-仓'];column=list(next(ws.values)).index('签发新增可售天数')+1;cell=ws.cell(2,column)
+            self.assertEqual(cell.value,12);self.assertEqual(cell.data_type,'n')
+            self.assertEqual(cell.number_format,'0.0');self.assertIn('可售天数口径',book.sheetnames)
         finally:book.close()
 
     def test_stale_no_page_or_export_and_permissions(self):

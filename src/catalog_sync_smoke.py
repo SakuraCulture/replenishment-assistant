@@ -24,6 +24,24 @@ def start_smoke(app,win,args):
    from catalog_sync_ui import Dialog
    win.jst_generator.timer.stop();win.jst_generator.stopped=True;win.aoxiang_workflows.timer.stop()
    d=Dialog(win);d.show();require(d.resume_btn.isEnabled(),'原下载任务可恢复');require(not d.bind_btn.isEnabled(),'未核验不能保存账号');require(not d.stop.isEnabled(),'空闲不能停止')
+   if not real:
+    import hashlib
+    d.warehouse.setCurrentText('山东仓')
+    before=d.client.request('sync.status');account=d.account_data();pid=d.client.owner.client.process.pid
+    native=before['batches'][0]['items'][0]['native'];saved_hash=hashlib.sha256(Path(native['file']).read_bytes()).hexdigest()
+    d.manual.show();d.disable_btn.click()
+    state=d.client.request('sync.status');disabled=next(a for a in state['accounts'] if a['warehouse']==account['warehouse'])
+    require(not disabled['enabled'] and disabled['bindingVersion']==account['bindingVersion'],'有待处理原任务仍可停用，不改变账号绑定版本')
+    require(state['batches']==before['batches'],'停用保留原批次、平台任务号和下载证据')
+    require([a for a in state['accounts'] if a['warehouse']!=account['warehouse']]==[a for a in before['accounts'] if a['warehouse']!=account['warehouse']],'停用仅影响所选仓，另一仓保持不变')
+    require(d.enable_btn.isEnabled() and not d.fetch.isEnabled(),'停用后按钮与手动刷新状态同步')
+    require(d.client.owner.client.process.pid==pid,'停用未关闭或重启原连接进程')
+    require('原任务' in d.note.text() and '保留' in d.note.text(),'停用结果清楚说明原任务与连接保留')
+    d.grab().save(str(out/'disabled.png'));screens.append('disabled.png');d.reject();d.deleteLater();d=None
+    d=Dialog(win);d.show();d.warehouse.setCurrentText(account['warehouse']);d.manual.show();require(not d.account_data()['enabled'],'关闭并重开窗口仍保留停用状态')
+    d.enable_btn.click();restored=d.client.request('sync.status')
+    require(d.account_data()['enabled'] and d.account_data()['bindingVersion']==account['bindingVersion'],'再次启用保留原账号身份，原任务可继续')
+    require(restored['batches']==before['batches'] and hashlib.sha256(Path(native['file']).read_bytes()).hexdigest()==saved_hash,'启停往返不改写原任务或下载原件')
    d.grab().save(str(out/'before.png'));screens.append('before.png');d.resume_btn.click();d.stop.click();wait(lambda:d.worker is None);require(not d.adopted,'立即停止保留下载任务，不采用资料');d.resume_btn.click();require(d.worker is not None,'真实按钮启动后台任务');require(not d.fetch.isEnabled(),'运行时禁止重复提交');wait(lambda:d.worker is None)
    if real:
     require(len(d.adopted)==2,'两仓真实下载文件由 EXE 校验及采用')

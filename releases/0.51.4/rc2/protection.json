@@ -1,0 +1,51 @@
+{
+  "preexisting_preserved": [
+    "docs/manual/images/first-fill-rounded-0514.png",
+    "docs/manual/images/first-fill-warehouse-0514.png",
+    "docs/manual/screenshot-index.json",
+    "docs/plans/断货保底核查与调整方案_20261111.md",
+    "src/analytics_identifiers_smoke.py",
+    "src/coverage_smoke.py",
+    "src/first_fill.py",
+    "src/funnel_dimension_export.py",
+    "src/import_templates.py",
+    "src/input_adapter.py",
+    "src/model.py",
+    "src/new_product_ui.py",
+    "src/normal_exports.py",
+    "src/order_analytics_exports.py",
+    "src/parameter_schema.py",
+    "src/result_semantics.py",
+    "src/version.json",
+    "tests/test_analytics_identifiers.py",
+    "tests/test_automation_analytics.py",
+    "tests/test_first_fill.py",
+    "tests/test_funnel_dimensions.py",
+    "tests/test_rules.py",
+    "tests/test_sales_floor.py",
+    "tools/verify_sales_floor.py"
+  ],
+  "preexisting_intentionally_extended": [
+    "README.md",
+    "docs/0.51.4断货保底双零修复.md",
+    "docs/0.51.4首铺默认量与经营分析日切面.md",
+    "docs/manual/business-edition.json",
+    "docs/manual/guide.md",
+    "docs/manual/index.html",
+    "src/first_fill_smoke.py"
+  ],
+  "old_artifacts_unchanged": {
+    "交付_0.51.3_rc1/补货助手/补货助手.exe": "462ddd893bd814b3f98aa6dc87edd374aa2da4d482f4528a2915d6873b67d3d8",
+    "交付_0.51.3_rc1/补货助手_0.51.3_rc1.zip": "bfa6d4ca40ee6b1929c1e76bd630bcaef6882ba87bb2521984bf51baa5813429"
+  },
+  "head_unchanged": "edf459b79c271d3a43b76f31d874947f1714471a",
+  "staged_empty": true,
+  "source_manifest_sha256": "e1e63bbd1f6b95958aa8cfc399fef35034468d1beab7f14d1ba572e18722efef",
+  "no_user_state_in_component": true,
+  "post_seal_changes": "README and two prior phase documents only, to link the completed local delivery; runtime and package bytes unchanged",
+  "updated_document_hashes": {
+    "README.md": "deb49a7a5e503214ba55d3860ac073a05bfd8e789ec35af37141b2354f1ae103",
+    "docs/0.51.4断货保底双零修复.md": "0c1199078bdd77274b887eb88be990a4124651407c2e4f8682608a2d4c9b4460",
+    "docs/0.51.4首铺默认量与经营分析日切面.md": "aef2dbde487aa01cb99abba63b18656302ceabd94c8056d3046d9776c7aedda7"
+  }
+}

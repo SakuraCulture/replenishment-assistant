@@ -12,6 +12,7 @@ from app_defaults import WAREHOUSES
 MARKER='参数模板信息'
 FORMAT='补货助手分类参数/2'
 FORMAT_SCOPED='补货助手分类参数/3'
+MAPPING_REFERENCE='分类映射（只读）'
 SHEETS={
  '分仓周期':['门店编码','门店名称','属仓','备货天数','到货天数'],
  '门店通用参数':['门店编码','门店名称']+[n for k,(n,_,_) in schema.HELP.items() if k not in legacy.FIXED],
@@ -25,6 +26,7 @@ KINDS={'warehouse_cycles':['分仓周期'], 'classified_parameters':['分仓周�
        'common_parameters':['门店通用参数'],
        'store_policy':['补货策略'],'store_routes':['供货关系'],'store_budget':['门店预算']}
 KINDS['complete_parameters']=list(SHEETS)
+COMPLETE_EDITABLE=tuple(s for s in SHEETS if s!='分类映射')
 
 def numeric(value, key):
     if isinstance(value,str) and value.endswith('%'):
@@ -32,10 +34,13 @@ def numeric(value, key):
         return legacy.number(value[:-1])/100
     return legacy.number(value)
 
-def parse_book(wb,path,cancel,scoped=False):
+def parse_book(wb,path,cancel,scoped=False,complete=False):
     standard=schema.standard(); rows=[];seen={}
     for ws in wb:
         if ws.title not in SHEETS:continue
+        # Old full V3 exports included per-store mapping evidence as a business
+        # sheet. Treat it as reference only, just like the new named sheet.
+        if scoped and complete and ws.title=='分类映射':continue
         ws.reset_dimensions(); header=None
         for rn,cells in enumerate(ws.iter_rows(),1):
             legacy.checkpoint(cancel)
@@ -94,7 +99,7 @@ def parse_book(wb,path,cancel,scoped=False):
     return rows
 
 def read(paths,progress=lambda _:None,cancel=None):
-    allrows=[];sources={};formats=[]
+    allrows=[];sources={};formats=[];notices=[];complete_files=[]
     for path in dict.fromkeys(str(Path(p).resolve()) for p in paths):
         legacy.checkpoint(cancel);before=legacy.digest(path);progress('读取参数：'+Path(path).name)
         wb=load_workbook(path,read_only=True,data_only=False)
@@ -102,7 +107,13 @@ def read(paths,progress=lambda _:None,cancel=None):
             marker=wb[MARKER]['A1'].value if MARKER in wb.sheetnames else None
             if marker is not None and marker not in (FORMAT,FORMAT_SCOPED):raise ValueError('参数模板版本无法识别，请使用本版模板')
             if marker in (FORMAT,FORMAT_SCOPED):
-                rows=parse_book(wb,path,cancel,marker==FORMAT_SCOPED);formats.append('分组参数V3：空白保持，填写系统默认可恢复' if marker==FORMAT_SCOPED else '分类参数V2：可选参数空白恢复系统默认')
+                complete=marker==FORMAT_SCOPED and (wb[MARKER]['B1'].value=='complete_parameters' or set(COMPLETE_EDITABLE)<=set(wb.sheetnames))
+                rows=parse_book(wb,path,cancel,marker==FORMAT_SCOPED,complete);formats.append('分组参数V3：空白保持，填写系统默认可恢复' if marker==FORMAT_SCOPED else '分类参数V2：可选参数空白恢复系统默认')
+                if complete:
+                    complete_files.append(path)
+                    for row in rows:row['allow_new_profiles']=True
+                if complete or MAPPING_REFERENCE in wb.sheetnames:
+                    notices.append('分类映射及辅助清单页仅供查阅，不写回；全局分类映射请从独立入口维护。')
             else:
                 old=legacy.read_legacy([path],progress,cancel,_book=wb,_before=before)
                 rows=old['rows'];formats.append('旧模板：空白保持原值')
@@ -120,8 +131,12 @@ def read(paths,progress=lambda _:None,cancel=None):
         if old['name'] and row['name'] and old['name']!=row['name']:raise ValueError('同码不同门店名称：'+row['source'])
         if any(k in old['values'] and old['values'][k]!=v for k,v in row['values'].items()):raise ValueError('多表或多文件参数冲突：'+row['source']+'；首次在'+old['source'])
         old['values'].update(row['values']);old['name']=old['name'] or row['name'];old['source']+='；'+row['source']
+        if row.get('allow_new_profiles'):old['allow_new_profiles']=True
         old.setdefault('reset_fields',[]).extend(row.get('reset_fields',[]))
-    return {'rows':list(merged.values()),'sources':sources,'formats':list(dict.fromkeys(formats)),**({'scoped':True} if any(f.startswith('分组参数V3') for f in formats) else {})}
+    return {'rows':list(merged.values()),'sources':sources,'formats':list(dict.fromkeys(formats)),
+            **({'notices':list(dict.fromkeys(notices))} if notices else {}),
+            **({'complete':True} if complete_files else {}),
+            **({'scoped':True} if any(f.startswith('分组参数V3') for f in formats) else {})}
 
 def write(path,kind='warehouse_cycles',records=None,progress=lambda _:None,cancel=None,*,scoped=False):
     """Application template generator; same Excel library as existing exports."""
@@ -129,14 +144,15 @@ def write(path,kind='warehouse_cycles',records=None,progress=lambda _:None,cance
     if target.exists():raise FileExistsError('目标已存在，请另存为新文件')
     wb=Workbook();wb.remove(wb.active)
     titles=['分仓周期','门店通用参数','分类参数','分类映射'] if kind=='classified_parameters' and not scoped else KINDS[kind]
+    if scoped and kind=='complete_parameters':titles=[MAPPING_REFERENCE if t=='分类映射' else t for t in titles]
     for title in titles:
-        ws=wb.create_sheet(title);headers=SHEETS[title];ws.append(headers);ws.freeze_panes='C2'
+        ws=wb.create_sheet(title);headers=SHEETS['分类映射' if title==MAPPING_REFERENCE else title];ws.append(headers);ws.freeze_panes='C2'
         for code,record in (records or {}).items():
             legacy.checkpoint(cancel);c=record['preset']['config'];ui=record['ui'];common={'门店编码':code,'门店名称':record.get('name','')}
             if title=='分仓周期':rows=[{**common,'属仓':w,'备货天数':v[0],'到货天数':v[1]} for w,v in c['warehouses'].items()]
             elif title=='门店通用参数':rows=[{**common,**{schema.HELP[k][0]:v for k,v in c['parameters'].items() if k not in legacy.FIXED}}]
             elif title=='分类参数':rows=[{**common,'分类组':g,**{n:weights[k] for k,n in legacy.WEIGHTS.items()},**{schema.HELP[k][0]:c.get('profile_parameters',{}).get(g,{}).get(k,'系统默认' if scoped else None) for k in schema.PROFILE_KEYS}} for g,weights in c['weight_profiles'].items()]
-            elif title=='分类映射':rows=[{**common,'商品分类':k,'目标分类组':v} for k,v in c['category_profiles'].items()]
+            elif title in ('分类映射',MAPPING_REFERENCE):rows=[{**common,'商品分类':k,'目标分类组':v} for k,v in c['category_profiles'].items()]
             elif title=='补货策略':rows=[{**common,'启用一箱例外':'是' if c['exception'] else '否',**{legacy.policy.LABELS[k]:'开启' if v else '关闭' for k,v in legacy.policy.values(c).items()}}]
             elif title=='供货关系':rows=[{**common,'主仓':ui.get('primary') or '未指定','从仓':ui.get('secondary') or '无从仓'}]
             else:rows=[{**common,'预算方式':('未指定','不限预算','限定预算')[ui.get('mode',0)],'预算金额':float(ui['amount']) if ui.get('mode')==2 else None}]
@@ -148,16 +164,21 @@ def write(path,kind='warehouse_cycles',records=None,progress=lambda _:None,cance
             for cell in row:
                 if isinstance(cell.value,str):cell.data_type='s'
         for rn in range(2,max(ws.max_row+1,102)):ws.cell(rn,1).number_format='@'
-        from parameter_template_help import decorate
-        decorate(ws,headers,scoped=scoped,groups=schema.standard()['weight_profiles'])
+        if title==MAPPING_REFERENCE:
+            from openpyxl.comments import Comment
+            ws.protection.sheet=True
+            for cell in ws[1]:cell.comment=Comment('只读证据，不随门店参数导入；请在全局分类映射入口维护。','补货助手')
+        else:
+            from parameter_template_help import decorate
+            decorate(ws,headers,scoped=scoped,groups=schema.standard()['weight_profiles'])
     info=wb.create_sheet('填写说明')
     for pair in [('事项','说明'),('必填','门店编码；分仓周期另填属仓，分类参数另填分类组，分类映射另填商品分类。其他字段选填。'),('空白参数','已有列的空白恢复系统默认；分类专用参数空白沿用门店通用值；缺列、缺行不修改。0是实际值。'),('其他设置','供货关系、预算、策略空白保持；这些设置使用独立模板，不随周期模板改变。'),('编码','按文本填写原始编码，不能使用公式；列顺序可调整。'),('概率和权重','可填90%或0.9。分类权重两仓共用；属仓只维护周期，不启用供货。'),('确认范围','核对差异后才应用；本次作业和长期默认分别选择。')]:info.append(pair)
     info.column_dimensions['A'].width=20;info.column_dimensions['B'].width=100
     if scoped:
         info.cell(3,2,'空白、缺列、缺行保持原值；填写“系统默认”明确恢复。分类专用参数填“系统默认”表示沿用门店通用值；0是实际数值。')
-        info.append(['模板范围','完整门店参数仅分仓周期和分类参数；门店通用参数另表维护；分类映射全局集中维护。'])
-        if kind=='complete_parameters':info.cell(info.max_row,2,'本文件包含全部门店默认：周期、通用参数、分类参数、分类映射、补货策略、供货关系与预算；辅助清单页用于查阅，不自动写回。')
-    marker=wb.create_sheet(MARKER);marker.append([FORMAT_SCOPED if scoped else FORMAT]);marker.sheet_state='hidden'
+        info.append(['模板范围','分组补货参数包含分仓周期和分类参数；门店通用参数另表维护；完整导入请使用“完整门店参数”模板。分类映射全局集中维护。'])
+        if kind=='complete_parameters':info.cell(info.max_row,2,'可回导六类门店设置：周期、通用参数、分类参数、补货策略、供货关系与预算。分类映射（只读）、预案及清单辅助页不导入；全局分类映射从独立入口维护。')
+    marker=wb.create_sheet(MARKER);marker.append([FORMAT_SCOPED if scoped else FORMAT,kind]);marker.sheet_state='hidden'
     from parameter_template_help import instructions
     instructions(info)
     fd,tmp=tempfile.mkstemp(dir=target.parent,suffix='.xlsx');os.close(fd)

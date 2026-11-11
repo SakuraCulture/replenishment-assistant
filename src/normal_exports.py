@@ -60,6 +60,9 @@ def decision(d):
         return '新品未选'
     if d.get('_audit',{}).get('applied'):return '一箱恢复'
     if d.get('AW')=='极端缺货自动拉回':return '极端恢复已关闭' if d.get('_extreme_restore',{}).get('enabled') is False else '极端缺货恢复'
+    from model import floor_reason
+    reason=floor_reason(d)
+    if reason:return ('必卖补货' if d.get('_must_sell') else '动销补货') if reason=='正常需求补货' else reason
     # Counterfactual quantity without the holding floor, from persisted model
     # intermediates. Do not re-run prediction or infer from AS == BQ alone.
     keys=('AR','BI','BP','BQ','BR','BU','AS')

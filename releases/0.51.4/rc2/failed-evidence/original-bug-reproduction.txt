@@ -1,0 +1,120 @@
+✖ pending exports and unadopted files do not block disabling; all records and the other warehouse stay intact (38.2217ms)
+✖ disable then reenable preserves the frozen account and resumes the original downloaded file (49.8575ms)
+✖ a disabled original task reports disabled rather than an account identity change (33.8698ms)
+✖ binding protection and separate switch CAS still reject stale requests without changing data (28.9215ms)
+✖ disabling during an active operation changes only future enablement and never aborts that operation (25.7697ms)
+✖ disabled setting persists across service restart; startup does not turn it on or launch a browser (33.0393ms)
+✖ disabled warehouse cannot start a new automatic export and invalid flag inputs do not mutate it (31.7571ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 0
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 335.3553
+
+✖ failing tests:
+
+test at components\jst_catalog\test\enabled-state.test.mjs:25:1
+✖ pending exports and unadopted files do not block disabling; all records and the other warehouse stay intact (38.2217ms)
+  Error: 该仓有原任务或待采用文件，请先处理原记录再改账号设置
+      at CatalogService.configure (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:105:13)
+      at CatalogService.dispatch (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:81:19)
+      at file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:46:59
+      at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:30:55)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    code: 'PENDING_TASK'
+  }
+
+test at components\jst_catalog\test\enabled-state.test.mjs:37:1
+✖ disable then reenable preserves the frozen account and resumes the original downloaded file (49.8575ms)
+  Error: 账号设置已由其他窗口更新，请重新核对
+      at CatalogService.configure (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:103:60)
+      at CatalogService.dispatch (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:81:19)
+      at file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:46:59
+      at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:42:25)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    code: 'CONFIG_CONFLICT'
+  }
+
+test at components\jst_catalog\test\enabled-state.test.mjs:49:1
+✖ a disabled original task reports disabled rather than an account identity change (33.8698ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'CONFIG_CHANGED'
+  - 'ACCOUNT_DISABLED'
+  
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:52:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'CONFIG_CHANGED',
+    expected: 'ACCOUNT_DISABLED',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at components\jst_catalog\test\enabled-state.test.mjs:55:1
+✖ binding protection and separate switch CAS still reject stale requests without changing data (28.9215ms)
+  Error: 该仓有原任务或待采用文件，请先处理原记录再改账号设置
+      at CatalogService.configure (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:105:13)
+      at CatalogService.dispatch (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:81:19)
+      at file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:46:59
+      at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:57:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    code: 'PENDING_TASK'
+  }
+
+test at components\jst_catalog\test\enabled-state.test.mjs:64:1
+✖ disabling during an active operation changes only future enablement and never aborts that operation (25.7697ms)
+  Error: 请先结束当前采集或核验
+      at CatalogService.dispatch (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:80:28)
+      at file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:46:59
+      at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:67:7)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    code: 'BUSY'
+  }
+
+test at components\jst_catalog\test\enabled-state.test.mjs:71:1
+✖ disabled setting persists across service restart; startup does not turn it on or launch a browser (33.0393ms)
+  Error: 账号设置已更新，请刷新后重试
+      at CatalogService.accountOperation (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:133:13)
+      at CatalogService.dispatch (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:92:130)
+      at file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:46:59
+      at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:75:13)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    code: 'CONFIG_CONFLICT'
+  }
+
+test at components\jst_catalog\test\enabled-state.test.mjs:79:1
+✖ disabled warehouse cannot start a new automatic export and invalid flag inputs do not mutate it (31.7571ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /尚未启用/. Input:
+  
+  'Error: 同步意图缺少稳定编号或用途'
+  
+      at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:81:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: 同步意图缺少稳定编号或用途
+        at CatalogService.start (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:173:175)
+        at CatalogService.dispatch (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:83:42)
+        at file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/src/service.mjs:46:59
+        at async waitForActual (node:assert:646:5)
+        at async strict.rejects (node:assert:769:25)
+        at async TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:81:3)
+        at async Test.run (node:internal/test_runner/test:1409:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:974:7),
+    expected: /尚未启用/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

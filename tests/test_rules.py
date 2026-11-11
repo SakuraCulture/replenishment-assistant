@@ -11,7 +11,8 @@ META={'match':'商品编码精确匹配','blocking':[],'export_status':'正常'}
 
 class ModelTests(unittest.TestCase):
     def test_screenshot(self):
-        d=model.calculate(row());self.assertEqual((d['BJ'],d['BK'],d['AR'],d['BP'],d['AS']),(24,0,0,0,0));self.assertEqual(d['_inbound_cap']['floor_before'],24)
+        d=model.calculate(row());self.assertEqual((d['BJ'],d['BK'],d['AR'],d['BP'],d['BQ'],d['AS']),(24,0,0,0,0,0))
+        self.assertFalse(model.sales_floor_eligible(d));self.assertNotIn('_inbound_cap',d)
     def test_both_zero_holding_and_cartons(self):
         for step in (1,2,6,24,40):
             for sales in ((.07,1,1),(1.71,14,38),(5,35,150)):
@@ -35,7 +36,7 @@ class ModelTests(unittest.TestCase):
     def test_small_inbound_cap_agrees_with_post_validation(self):
         import input_adapter
         d=model.calculate(row(H=.1,I=1,J=1,L=.5,O=24));d['_meta']={'export_row':2}
-        self.assertIn('_inbound_cap',d);self.assertEqual(d['AS'],0)
+        self.assertNotIn('_inbound_cap',d);self.assertEqual((d['BP'],d['BQ'],d['AS']),(0,0,0));self.assertFalse(model.sales_floor_eligible(d))
         self.assertEqual(input_adapter.business_checks([d],model.Rules())['failures'],[])
         d['AS']=24;self.assertTrue(input_adapter.business_checks([d],model.Rules())['failures'])
     def test_fractional_multiples_generated_by_model(self):

@@ -24,7 +24,12 @@ def open_migration(parent,host):
             path,_=QFileDialog.getSaveFileName(d,'导出完整订单迁移包','补货助手_完整订单迁移.zip','Zip (*.zip)')
             if not path:return
             try:
-                idle(host);result=run(d,export,(host.repository.folder,path),'生成并校验完整订单迁移包')
+                idle(host)
+                def export_with_snapshot(root,target,progress,cancel):
+                    sessions=getattr(host,'catalog_sessions',None);client=sessions.session.client if sessions else None
+                    snapshot=client.request('sync.migration_snapshot') if client else None
+                    return export(root,target,progress,cancel,catalog_state=snapshot)
+                result=run(d,export_with_snapshot,(host.repository.folder,path),'生成并校验完整订单迁移包')
                 missing=len(result['manifest']['missing_external']);QMessageBox.information(d,'迁移包已导出',result['path']+f'\n未找到的外部路径 {missing} 项，清单已保留；数据库内已留存原件随包保存。\n校验摘要：'+result['sha256'])
             except Cancelled:return
             except Exception as exc:QMessageBox.warning(d,'迁移包未导出',str(exc))
@@ -40,13 +45,19 @@ def open_migration(parent,host):
                       f'将完整替换本机订单、草稿、关联平台记录及门店参数/清单，不与现有订单混合。\n本机完整备份：{plan["backup"]}\n'
                       '本机浏览器连接、登录及独立分析资料保留。平台订单不会撤销；迁入作业和计划暂停，先核验原平台结果后逐项继续。\n未保存的界面内容不保存。确认后安全退出，迁入完成后重新打开软件。')
                 if QMessageBox.question(d,'核对完整恢复范围',text,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:discard(plan);return
+                # False here also means a normal asynchronous safe shutdown.
+                # Keep the accepted request until app.exec() ends and app.py
+                # consumes it; do not mistake a pending close for cancellation.
                 host._order_import_request=plan;host._discard_close=True;d.accept()
-                if not host.close():
-                    host._order_import_request=None;host._discard_close=False;discard(plan);QMessageBox.information(parent,'尚未替换资料','正在安全结束后台作业；请等待后重新打开迁移入口。')
+                host.setEnabled(False)
+                if not host.close():host.status.setText('迁入已确认，正在等待后台连接安全退出；退出后自动完成迁入，请勿重复操作。')
             except Cancelled:
                 if plan:discard(plan)
             except Exception as exc:
-                if plan:discard(plan)
+                if plan:
+                    if getattr(host,'_order_import_request',None) is plan:
+                        host._order_import_request=None;host._discard_close=False;host.setEnabled(True)
+                    discard(plan)
                 QMessageBox.warning(d,'订单未迁入',str(exc))
         def parameters():
             from parameter_snapshot import export

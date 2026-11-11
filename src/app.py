@@ -48,6 +48,9 @@ def main():
     # startup; normal launches always attempt connection after the first paint.
     from browser_startup_ui import start_application_connections
     start_application_connections(win, sys.argv)
+    if '--business-repairs-smoke' in sys.argv:
+        from business_repairs_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--business-repairs-smoke')+1:])
     if '--operations-0510-smoke' in sys.argv:
         from operations_0510_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--operations-0510-smoke')+1:])
@@ -144,6 +147,9 @@ def main():
     if '--catalog-sync-smoke' in sys.argv:
         from catalog_sync_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--catalog-sync-smoke')+1:])
+    if '--catalog-rebind-smoke' in sys.argv:
+        from catalog_rebind_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--catalog-rebind-smoke')+1:])
     if '--lifecycle-comparison-smoke' in sys.argv:
         from lifecycle_comparison_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-comparison-smoke')+1:])

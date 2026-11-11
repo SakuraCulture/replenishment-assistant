@@ -1,7 +1,7 @@
 {
-  "application": "0.51.3",
-  "edition": "2026-11-11",
-  "source": "Per-image provenance: historical immutable EXE images plus 0.51.1 source Qt isolated acceptance",
+  "application": "0.51.6",
+  "edition": "2026-11-12",
+  "source": "Historical versioned screenshots plus isolated source Qt acceptance; identity probes simulated, no live platform",
   "legacy_0480_build": {
     "source_commit": "c12feff48eb81008a2643b2ce61d636b56fae980",
     "build_id": "rc1",
@@ -223,15 +223,6 @@
       "live_platform_tested": false
     },
     {
-      "name": "deletion-remaining-0500.png",
-      "sha256": "2ab4cc63d76169a22d07d680ffd91b1ef699b056b8bff423103a1012ce27ab51",
-      "version": "0.50.0",
-      "source": "source Qt",
-      "evidence": "qa/deletion_lifecycle_0500_20261109/source-gui-2/剩余批次.png",
-      "synthetic": true,
-      "live_platform_tested": false
-    },
-    {
       "name": "purchase-rebuild-confirm-0502.png",
       "sha256": "3fc15a8bf3fe5ba2c38273d5e4c85f795d91860349cc5cf264f93eda2fb33080",
       "version": "0.50.2",
@@ -340,17 +331,79 @@
       "live_platform_tested": false
     },
     {
+      "path": "images/first-fill-rounded-0514.png",
+      "application": "0.51.4",
+      "source": "qa/daily_views_0514_20261111_01/source-first-fill/首铺数向上对齐.png",
+      "sha256": "d0101599746e7111a2af84358584fe99a183a895a809b95ca31bbaac679b1e22",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "源码Qt：首铺31向上对齐箱规6为36，原值留存，默认不选"
+    },
+    {
+      "path": "images/first-fill-warehouse-0514.png",
+      "application": "0.51.4",
+      "source": "qa/daily_views_0514_20261111_01/source-first-fill/山东单仓.png",
+      "sha256": "cefc7481f333a26bde4c9d05c5be6127227f4dd9aa2110be7f1daf69e8f7b406",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "源码Qt：按实际仓首铺18，未选不增加采购"
+    },
+    {
+      "path": "images/catalog-rebind-retired-0515.png",
+      "application": "0.51.5",
+      "source": "qa/catalog_rebind_0515_20261111_01/source-rebind-01/retired.png",
+      "sha256": "d22ab659497f12ae0157a74f05a6f2311e112538c2d461856d868448325ce788",
+      "synthetic": true,
+      "identity_probes_simulated": true,
+      "live_platform": false,
+      "description": "源码Qt：取消不变更；确认两仓纠错后旧任务和原件保留，本地已结束"
+    },
+    {
+      "path": "images/catalog-rebind-saved-0515.png",
+      "application": "0.51.5",
+      "source": "qa/catalog_rebind_0515_20261111_01/source-rebind-01/rebound.png",
+      "sha256": "8a1522ceee2d66d1d30b71f0fa3e0c2dc9662ce06a110bdbd857ea617c1897c8",
+      "synthetic": true,
+      "identity_probes_simulated": true,
+      "live_platform": false,
+      "description": "源码Qt与真实本地组件：两仓交换账号及浏览器，核验身份使用模拟资料"
+    },
+    {
+      "path": "images/catalog-disabled-0514.png",
+      "application": "0.51.4",
+      "source": "qa/catalog_sync_disable_0514_20261111_01/source-ui-03/disabled.png",
+      "sha256": "2c2094c89c2bed5638706ba212f1f68328efb03b06937742c9a2e7f5eff6facd",
+      "synthetic": true,
+      "identity_probes_simulated": true,
+      "live_platform": false,
+      "description": "源码Qt：待采用文件不拦停用，原任务、原件与组件连接保留。"
+    }
+  ],
+  "live_platform_tested": false,
+  "binding_ready_state": "synthetic demonstration only; never queried or confirmed a real purchase",
+  "historical_source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
+  "source_base_commit": "edf459b79c271d3a43b76f31d874947f1714471a",
+  "source_mode": "mixed historical images and uncommitted 0.51.4 source Qt images",
+  "archived_images": [
+    {
+      "name": "deletion-remaining-0500.png",
+      "sha256": "2ab4cc63d76169a22d07d680ffd91b1ef699b056b8bff423103a1012ce27ab51",
+      "version": "0.50.0",
+      "source": "source Qt",
+      "evidence": "qa/deletion_lifecycle_0500_20261109/source-gui-2/剩余批次.png",
+      "synthetic": true,
+      "live_platform_tested": false,
+      "archive_reason": "历史图片保留；当前教程已使用后续版本截图，不再引用本图。"
+    },
+    {
       "name": "first-fill-warehouse-0513.png",
       "sha256": "cd5615fde06915fbca6eddb54bccd54e202212c94edc96d5ced274758edfa8d9",
       "version": "0.51.3",
       "source": "source Qt with synthetic imported warehouse catalogs; no platform",
       "evidence": "qa/first_fill_0513_20261111_01/source-02/山东单仓.png",
       "synthetic": true,
-      "live_platform_tested": false
+      "live_platform_tested": false,
+      "archive_reason": "历史图片保留；当前教程已使用后续版本截图，不再引用本图。"
     }
-  ],
-  "live_platform_tested": false,
-  "binding_ready_state": "synthetic demonstration only; never queried or confirmed a real purchase",
-  "historical_source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
-  "source_base_commit": "8fc7ef8aad8177d66d751728f58e4d393bca52d8"
+  ]
 }

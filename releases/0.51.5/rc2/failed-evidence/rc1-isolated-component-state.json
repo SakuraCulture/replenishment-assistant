@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "storeId": "27fe85ee-1e72-435a-baab-822fd0d939c6",
+  "batches": {
+    "batch": {
+      "id": "batch",
+      "purpose": "default_catalog",
+      "createdAt": "2026-11-03T00:00:00Z",
+      "state": "NEEDS_ATTENTION",
+      "items": [
+        {
+          "id": "item-sd",
+          "index": 0,
+          "account": {
+            "id": "sd",
+            "warehouse": "山东仓",
+            "expectedCompany": "SYNTHETIC QA sd",
+            "expectedCoid": "1",
+            "expectedUid": "2",
+            "mappingVerified": true,
+            "bindingVersion": 1,
+            "binding": {
+              "actualProfilePath": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\catalog_rebind_0515_20261111_01\\exe-catalog\\nonexistent\\sd\\Default"
+            }
+          },
+          "expected_catalog_digest": null,
+          "stage": "READY_TO_ADOPT",
+          "native": {
+            "stage": "DOWNLOADED",
+            "submissions": 1,
+            "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\catalog_rebind_0515_20261111_01\\exe-catalog\\user\\jst_catalog_sync\\downloads\\batch\\item-sd\\synthetic.xlsx",
+            "sha256": "fcd5991ccf48344d5487c25af2fc584f79fea3a297a0519e188a1cb473f4c59f",
+            "nativeTaskRef": "123",
+            "scope": {
+              "expectedRows": 2,
+              "coid": "1",
+              "uid": "2"
+            }
+          },
+          "receipt": {
+            "schema": 1,
+            "status": "VALIDATED",
+            "validator": "catalog.v1",
+            "warehouse": "山东仓",
+            "source_sha256": "fcd5991ccf48344d5487c25af2fc584f79fea3a297a0519e188a1cb473f4c59f",
+            "rows": 2,
+            "unique_skus": 2,
+            "states": {
+              "启用": 1,
+              "禁用": 1
+            },
+            "missing": {
+              "商品编码": 0,
+              "分类": 0,
+              "基本售价": 1,
+              "出库箱规": 1,
+              "商品状态": 0,
+              "可用数": 0
+            },
+            "revision": "03a90b8193a92f42",
+            "candidate": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\catalog_rebind_0515_20261111_01\\exe-catalog\\user\\jst_catalog_sync\\downloads\\batch\\item-sd\\candidate-898eff21-8739-4d86-8579-6918bb98db76.json",
+            "candidate_sha256": "096d6a75a67f90e22a7851d0ec314eac03dbde893fdddd2c8937ec128be5fdbb",
+            "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\catalog_rebind_0515_20261111_01\\exe-catalog\\user\\jst_catalog_sync\\downloads\\batch\\item-sd\\synthetic.xlsx",
+            "qt_imported": false
+          },
+          "adoption": null,
+          "observation": null,
+          "error": null,
+          "updatedAt": "2026-11-11T14:04:51.257Z",
+          "adoption_error": "[Errno 13] Permission denied: 'D:\\\\优团工作文件夹\\\\outputs\\\\replenishment_mvp_20261029\\\\qa\\\\catalog_rebind_0515_20261111_01\\\\exe-catalog\\\\user\\\\jst_catalog_sync\\\\jobs.json'"
+        },
+        {
+          "id": "item-hb",
+          "index": 1,
+          "account": {
+            "id": "hb",
+            "warehouse": "河北仓",
+            "expectedCompany": "SYNTHETIC QA hb",
+            "expectedCoid": "3",
+            "expectedUid": "4",
+            "mappingVerified": true,
+            "bindingVersion": 1,
+            "binding": {
+              "actualProfilePath": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\catalog_rebind_0515_20261111_01\\exe-catalog\\nonexistent\\hb\\Default"
+            }
+          },
+          "expected_catalog_digest": null,
+          "stage": "QUEUED",
+          "native": null,
+          "receipt": null,
+          "adoption": null,
+          "observation": null,
+          "error": {
+            "code": "PROFILE_MISSING",
+            "message": "专用浏览器目录不存在，请在连接设置中重新选择；未连接其他浏览器"
+          },
+          "stopped": false,
+          "updatedAt": "2026-11-11T14:04:51.253Z"
+        }
+      ],
+      "error": null,
+      "finishedAt": "2026-11-11T14:04:51.256Z",
+      "updatedAt": "2026-11-11T14:04:51.257Z",
+      "sequence": 3
+    }
+  },
+  "assets": {},
+  "accounts": {
+    "山东仓": {
+      "id": "sd",
+      "warehouse": "山东仓",
+      "expectedCompany": "SYNTHETIC QA sd",
+      "expectedCoid": "1",
+      "expectedUid": "2",
+      "mappingVerified": true,
+      "bindingVersion": 1,
+      "binding": {
+        "actualProfilePath": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\catalog_rebind_0515_20261111_01\\exe-catalog\\nonexistent\\sd\\Default"
+      },
+      "enabled": true,
+      "enabledVersion": 2
+    },
+    "河北仓": {
+      "id": "hb",
+      "warehouse": "河北仓",
+      "expectedCompany": "SYNTHETIC QA hb",
+      "expectedCoid": "3",
+      "expectedUid": "4",
+      "mappingVerified": true,
+      "bindingVersion": 1,
+      "binding": {
+        "actualProfilePath": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\catalog_rebind_0515_20261111_01\\exe-catalog\\nonexistent\\hb\\Default"
+      },
+      "enabled": true
+    }
+  }
+}

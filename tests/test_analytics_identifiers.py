@@ -120,12 +120,12 @@ class IdentifierTests(unittest.TestCase):
         from xlsx_exports import stream_book
         refs.save(self.path,refs.read(self.path,self.head),'000994021108001'); seed_purchase(self.path,self.head,self.payment)
         report=self.f.report(); target=self.f.root/'with-ids.xlsx'; before=self.path.read_bytes()
-        ex.export(self.path,report,target)
+        ex.export(self.path,report,target,level='order')
         stream=io.BytesIO()
-        with stream_book() as book:write_summary(book,report['rows'],'store',coverage=True);book.save(stream)
+        with stream_book() as book:write_summary(book,report['rows'],'order',coverage=True);book.save(stream)
         old=openpyxl.load_workbook(io.BytesIO(stream.getvalue())); new=openpyxl.load_workbook(target)
         try:
-            for name in ('门店经营对比','门店分仓对比','订单五段漏斗'):
+            for name in ('订单五段漏斗',):
                 ws=new[name]; self.assertEqual(ws.max_column,45);self.assertEqual(list(next(ws.values))[-3:],ids.HEADERS)
                 for arow,brow in zip(old[name],ws):
                     self.assertEqual([(c.value,c.data_type,c.number_format) for c in arow],[(c.value,c.data_type,c.number_format) for c in list(brow)[:42]])
@@ -143,8 +143,11 @@ class IdentifierTests(unittest.TestCase):
         b=openpyxl.load_workbook(target)
         try:
             self.assertEqual({r[4] for r in list(b['单号关联明细'].values)[1:]},{self.head['number']})
-            for name in ('门店经营对比','门店分仓对比','订单五段漏斗'):
-                self.assertEqual({r[-3] for r in list(b[name].values)[1:]},{self.head['number']})
+            from funnel_dimension_export import NAMES
+            for name in NAMES:
+                records=list(b[name].values)[1:]
+                self.assertEqual({r[-3] for r in records},{self.head['number']} if records else set())
+                if not records:self.assertEqual(name,'已剔除SKU明细')
         finally:b.close()
 
     def test_id_changes_during_export_prevent_publication_and_retry_uses_new_values(self):

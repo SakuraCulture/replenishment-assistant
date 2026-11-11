@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\catalog_sync_disable_0514_20261111_01\build_snapshot.py", line 64, in <module>
+    ns['jst_catalog_bundle'].verify_component(jst,ns['staged'])
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'jst_catalog_bundle' has no attribute 'verify_component'

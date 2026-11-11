@@ -93,7 +93,7 @@ class AnalyticsTests(unittest.TestCase):
         b=openpyxl.load_workbook(target);self.assertEqual(b.sheetnames,receipt['sheets'])
         self.assertEqual(b['全量商品五段'].max_row,3);self.assertEqual(b['全量商品五段']['F2'].value,'0001')
         self.assertEqual(b['全量商品五段']['F2'].data_type,'s');self.assertEqual(b['全量商品五段']['L2'].data_type,'n')
-        self.assertEqual(list(b['全量商品五段'].values)[0],tuple(ex.DETAIL_HEADERS));b.close()
+        self.assertEqual(list(b['全量商品五段'].values)[0],tuple(ex.EXPORT_DETAIL_HEADERS));b.close()
         self.assertEqual(self.path.read_bytes(),before)
     def test_cancel_and_retry(self):
         stop=threading.Event();stop.set()

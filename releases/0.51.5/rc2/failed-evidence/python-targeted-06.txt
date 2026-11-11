@@ -1,0 +1,372 @@
+======================================================================
+ERROR: test_all_stores_share_one_ordered_command_linked_before_dispatch (test_stockout_acquisition.PipelineTests.test_all_stores_share_one_ordered_command_linked_before_dispatch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 130, in test_all_stores_share_one_ordered_command_linked_before_dispatch
+    result=self.run_it(rid)
+           ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_bad_store_data_does_not_discard_other_complete_files (test_stockout_acquisition.PipelineTests.test_bad_store_data_does_not_discard_other_complete_files)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 237, in test_bad_store_data_does_not_discard_other_complete_files
+    result=self.run_it(rid);self.assertEqual(result['state'],'PARTIAL')
+           ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_business_pending_stays_untouched_and_does_not_lock_analysis (test_stockout_acquisition.PipelineTests.test_business_pending_stays_untouched_and_does_not_lock_analysis)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 198, in test_business_pending_stays_untouched_and_does_not_lock_analysis
+    result=self.run_it(rid);self.assertEqual(result['state'],'COMPLETE')
+           ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_cancel_during_projection_preserves_ready_store_and_original_files (test_stockout_acquisition.PipelineTests.test_cancel_during_projection_preserves_ready_store_and_original_files)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 174, in test_cancel_during_projection_preserves_ready_store_and_original_files
+    with self.assertRaises(Cancelled):self.run_it(rid)
+                                      ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_cancel_then_resume_keeps_native_command_and_catalog (test_stockout_acquisition.PipelineTests.test_cancel_then_resume_keeps_native_command_and_catalog)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 273, in test_cancel_then_resume_keeps_native_command_and_catalog
+    with self.assertRaises(Cancelled):self.run_it(rid)
+                                      ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_changed_original_still_rejects_manifest_without_adoption (test_stockout_acquisition.PipelineTests.test_changed_original_still_rejects_manifest_without_adoption)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 243, in test_changed_original_still_rejects_manifest_without_adoption
+    with self.assertRaises(Cancelled):self.run_it(rid)
+                                      ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_existing_single_store_commands_resume_without_merging_or_recreating (test_stockout_acquisition.PipelineTests.test_existing_single_store_commands_resume_without_merging_or_recreating)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 187, in test_existing_single_store_commands_resume_without_merging_or_recreating
+    result=self.run_it(rid);self.assertEqual(result['state'],'COMPLETE')
+           ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_identity_change_blocks_before_new_export (test_stockout_acquisition.PipelineTests.test_identity_change_blocks_before_new_export)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 291, in test_identity_change_blocks_before_new_export
+    with self.assertRaises(Cancelled):self.run_it(rid)
+                                      ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_incomplete_batch_association_cannot_dispatch_broader_scope (test_stockout_acquisition.PipelineTests.test_incomplete_batch_association_cannot_dispatch_broader_scope)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 257, in test_incomplete_batch_association_cannot_dispatch_broader_scope
+    with self.assertRaises(ValueError):self.run_it(rid)
+                                       ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_multistore_cancel_keeps_batch_identity (test_stockout_acquisition.PipelineTests.test_multistore_cancel_keeps_batch_identity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 152, in test_multistore_cancel_keeps_batch_identity
+    with self.assertRaises(Cancelled):self.run_it(rid)
+                                      ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_multistore_unknown_response_reconciles_same_batch (test_stockout_acquisition.PipelineTests.test_multistore_unknown_response_reconciles_same_batch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 160, in test_multistore_unknown_response_reconciles_same_batch
+    with self.assertRaises(ValueError):self.run_it(rid)
+                                       ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_native_handshake_complete_and_no_business_publication (test_stockout_acquisition.PipelineTests.test_native_handshake_complete_and_no_business_publication)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 261, in test_native_handshake_complete_and_no_business_publication
+    rid=self.repo.new_run()['id'];result=self.run_it(rid)
+                                         ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_partial_batch_revision_retries_only_failed_store_same_command (test_stockout_acquisition.PipelineTests.test_partial_batch_revision_retries_only_failed_store_same_command)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 140, in test_partial_batch_revision_retries_only_failed_store_same_command
+    first=self.run_it(rid);self.assertEqual(first['state'],'PARTIAL')
+          ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_reexport_preview_becomes_stale_when_current_report_changes_before_apply (test_stockout_acquisition.PipelineTests.test_reexport_preview_becomes_stale_when_current_report_changes_before_apply)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 224, in test_reexport_preview_becomes_stale_when_current_report_changes_before_apply
+    old=self.run_it(self.repo.new_run(day='2026-11-07')['id'])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_selected_analysis_reexport_creates_revision_and_keeps_other_ready_snapshot (test_stockout_acquisition.PipelineTests.test_selected_analysis_reexport_creates_revision_and_keeps_other_ready_snapshot)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 207, in test_selected_analysis_reexport_creates_revision_and_keeps_other_ready_snapshot
+    old=self.run_it(self.repo.new_run(day='2026-11-07')['id']);self.assertEqual(old['state'],'PARTIAL')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+======================================================================
+ERROR: test_unknown_accepted_response_reconciles_same_id (test_stockout_acquisition.PipelineTests.test_unknown_accepted_response_reconciles_same_id)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 283, in test_unknown_accepted_response_reconciles_same_id
+    with self.assertRaises(ValueError):self.run_it(rid)
+                                       ^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_stockout_acquisition.py", line 118, in run_it
+    def run_it(self,rid):return execute(self.repo,rid,self.native.rpc,self.cancel)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 216, in execute
+    collect_catalogs(repo,rid,rpc,cancel,progress)
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\stockout_acquisition.py", line 74, in collect_catalogs
+    with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 28, in adoption_guard
+    account=next((a for a in data['accounts'] if a['warehouse']==item['account']['warehouse']),None)
+                             ~~~~^^^^^^^^^^^^
+KeyError: 'accounts'
+
+----------------------------------------------------------------------
+Ran 62 tests in 11.031s
+
+FAILED (errors=16)
