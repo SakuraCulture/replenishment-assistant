@@ -1,0 +1,34 @@
+{
+  "source_commit": "90d244defdbeed279a2feb1912a3e93ce868f1c2",
+  "baseline": "66f6c4f45a4816041d2bacf6d692a4640529e69c",
+  "sealed_at": "2026-11-11T12:37:12.012483+08:00",
+  "full_python": {
+    "source_commit": "90d244defdbeed279a2feb1912a3e93ce868f1c2",
+    "command": [
+      "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ],
+    "cwd": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+    "exit_code": 0,
+    "seconds": 564.594,
+    "passed": true,
+    "live_platform": false,
+    "tests": 1469,
+    "test_seconds": 560.199
+  },
+  "targeted_tests": 57,
+  "exe_checks": 29,
+  "exe_sha256": "2fefec1d1d28ab7741639df435d329acd31674b0ff3f89ac370a63f7a1d66e36",
+  "html_chapters": 21,
+  "html_images": 38,
+  "live_platform": false,
+  "business_computer_tested": false,
+  "business_data_modified": false,
+  "pushed": false,
+  "merged": false
+}

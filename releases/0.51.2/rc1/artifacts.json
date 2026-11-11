@@ -1,0 +1,15 @@
+{
+  "source_commit": "90d244defdbeed279a2feb1912a3e93ce868f1c2",
+  "files": [
+    {
+      "path": "交付_0.51.2_rc1\\补货助手\\补货助手.exe",
+      "bytes": 7116061,
+      "sha256": "2fefec1d1d28ab7741639df435d329acd31674b0ff3f89ac370a63f7a1d66e36"
+    },
+    {
+      "path": "交付_0.51.2_rc1\\补货助手_0.51.2_rc1.zip",
+      "bytes": 130194585,
+      "sha256": "1046cc8dd2064f4852364f0707d0beee6344c48a2260dbee2a7c1069bbf51fc8"
+    }
+  ]
+}
