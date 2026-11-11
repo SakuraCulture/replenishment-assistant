@@ -68,6 +68,17 @@ test('reserve idempotent; changed payment and different ID cannot duplicate an o
   const q=intent('different-id');q.basis.paymentVersion=2;assert.throws(()=>reserve(f,q),{code:'PURCHASE_ALREADY_RESERVED'});
   assert.equal(f.ledger.events(p.id).length,1);assert.equal(purchasePublic(f.ledger.get(p.id)).rows,2);
 });
+
+test('changing login account cannot bypass same-merchant unknown-upload reservation',async t=>{
+  const f=await fixture(t),p=reserve(f);sent(f,p);
+  let r=f.ledger.get(p.id);f.ledger.update(p.id,r.sequence,'NEEDS_REVIEW',{error:{code:'SUBMISSION_UNKNOWN'}});
+  const changed=intent('new-login');changed.identity.accountId='CURRENT-LOGIN';
+  assert.throws(()=>reserve(f,changed),{code:'PURCHASE_ALREADY_RESERVED'});
+  assert.equal(f.ledger.get(p.id).uploadAttempted,true);assert.equal(f.ledger.get(p.id).intent.identity.accountId,'A');
+  const nextDay=intent('new-day');nextDay.identity.accountId='CURRENT-LOGIN';nextDay.basis.number='BH-NEXT-DAY';nextDay.note=nextDay.marker+' 本地单:BH-NEXT-DAY';
+  assert.equal(f.ledger.reserve(nextDay,sha256(JSON.stringify(nextDay))).created,true);
+  const other=intent('other-merchant');other.identity.merchantCode='OTHER-MERCHANT';assert.equal(f.ledger.reserve(other,sha256(JSON.stringify(other))).created,true);
+});
 test('pre-upload cancel releases reservation; post-boundary cancel cannot release it',async t=>{
   const f=await fixture(t),p=reserve(f),controller=new MachinePurchaseCreate({ledger:f.ledger,adapter:{}});
   controller.cancelBeforeUpload(p.id);const q=reserve(f,intent('second'));sent(f,q);

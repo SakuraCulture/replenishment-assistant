@@ -1,0 +1,44 @@
+test_delete_after_first_commit_remaining_original_quantity_and_replay (test_deletion_lifecycle.FrozenAllocationDeletion.test_delete_after_first_commit_remaining_original_quantity_and_replay) ... ok
+test_delete_before_first_commit_keeps_other_frozen_allocation (test_deletion_lifecycle.FrozenAllocationDeletion.test_delete_before_first_commit_keeps_other_frozen_allocation) ... ok
+test_actual_runner_late_result_does_not_shift_to_other_order (test_deletion_lifecycle.LifecycleDeletion.test_actual_runner_late_result_does_not_shift_to_other_order) ... ok
+test_all_lifecycle_states_are_not_deletion_gates (test_deletion_lifecycle.LifecycleDeletion.test_all_lifecycle_states_are_not_deletion_gates) ... ok
+test_all_removed_runner_exits_and_schedule_cannot_reappear (test_deletion_lifecycle.LifecycleDeletion.test_all_removed_runner_exits_and_schedule_cannot_reappear) ... ok
+test_deletion_during_sign_preparation_rejected_under_writer (test_deletion_lifecycle.LifecycleDeletion.test_deletion_during_sign_preparation_rejected_under_writer) ... ok
+test_interrupted_isolated_process_recovers_main_and_attached_queue (test_deletion_lifecycle.LifecycleDeletion.test_interrupted_isolated_process_recovers_main_and_attached_queue) ... ok
+test_journal_mode_changed_after_preparation_is_rechecked_under_writer (test_deletion_lifecycle.LifecycleDeletion.test_journal_mode_changed_after_preparation_is_rechecked_under_writer) ... ok
+test_late_local_package_rearms_outbox_without_lost_acknowledgment (test_deletion_lifecycle.LifecycleDeletion.test_late_local_package_rearms_outbox_without_lost_acknowledgment) ... ok
+test_old_draft_repreview_and_unselected_sign_cannot_revive_deleted_store (test_deletion_lifecycle.LifecycleDeletion.test_old_draft_repreview_and_unselected_sign_cannot_revive_deleted_store) ... ok
+test_order_explanation_journal_removed_and_late_update_cannot_restore (test_deletion_lifecycle.LifecycleDeletion.test_order_explanation_journal_removed_and_late_update_cannot_restore) ... ok
+test_preview_package_finishing_after_deletion_rearms_local_cleanup (test_deletion_lifecycle.LifecycleDeletion.test_preview_package_finishing_after_deletion_rearms_local_cleanup) ... ok
+test_shared_purchase_all_versions_keep_unselected_quantities_and_raw_facts (test_deletion_lifecycle.LifecycleDeletion.test_shared_purchase_all_versions_keep_unselected_quantities_and_raw_facts) ... ok
+test_sign_other_store_cannot_save_whole_day_with_deleted_unselected_content (test_deletion_lifecycle.LifecycleDeletion.test_sign_other_store_cannot_save_whole_day_with_deleted_unselected_content) ... ok
+test_stable_item_and_execution_fences_preserve_remaining_queue (test_deletion_lifecycle.LifecycleDeletion.test_stable_item_and_execution_fences_preserve_remaining_queue) ... ok
+test_wal_rejected_before_mutation_and_outbox_rollback (test_deletion_lifecycle.LifecycleDeletion.test_wal_rejected_before_mutation_and_outbox_rollback) ... ok
+test_cancel_never_erases_packages_and_corrupt_tables_not_recreated (test_aoxiang_workflows.QueueTests.test_cancel_never_erases_packages_and_corrupt_tables_not_recreated) ... ok
+test_disable_after_enqueued_skips_without_starting_platform_and_item_failures_isolated (test_aoxiang_workflows.QueueTests.test_disable_after_enqueued_skips_without_starting_platform_and_item_failures_isolated) ... ok
+test_foreground_cancel_does_not_release_ongoing_background (test_aoxiang_workflows.QueueTests.test_foreground_cancel_does_not_release_ongoing_background) ... ok
+test_foreground_preempts_then_waits_for_real_release_and_blocks_new_background (test_aoxiang_workflows.QueueTests.test_foreground_preempts_then_waits_for_real_release_and_blocks_new_background) ... ok
+test_history_window_keeps_all_active_and_oldest_queued_not_last_completion (test_aoxiang_workflows.QueueTests.test_history_window_keeps_all_active_and_oldest_queued_not_last_completion) ... ok
+test_many_busy_schedules_do_not_starve_later_due_orders (test_aoxiang_workflows.QueueTests.test_many_busy_schedules_do_not_starve_later_due_orders) ... ok
+test_order_duplicates_preview_gate_stale_confirmation_and_idempotent_upload (test_aoxiang_workflows.QueueTests.test_order_duplicates_preview_gate_stale_confirmation_and_idempotent_upload) ... ok
+test_pause_in_poll_targets_original_task_and_prevents_next_store (test_aoxiang_workflows.QueueTests.test_pause_in_poll_targets_original_task_and_prevents_next_store) ... ok
+test_periodic_opt_in_order_duplicate_exclusion_backoff_and_manual_pause (test_aoxiang_workflows.QueueTests.test_periodic_opt_in_order_duplicate_exclusion_backoff_and_manual_pause) ... ok
+test_review_stops_automatic_retry_and_multi_record_config_rolls_back (test_aoxiang_workflows.QueueTests.test_review_stops_automatic_retry_and_multi_record_config_rolls_back) ... ok
+test_terminal_latch_stops_routine_but_retries_final_task_and_keeps_after_restart (test_aoxiang_workflows.QueueTests.test_terminal_latch_stops_routine_but_retries_final_task_and_keeps_after_restart) ... ok
+test_formal_receipt_saved_then_ack_lost_reuses_same_observation_no_duplicate_receipt (test_aoxiang_workflows.ReceiptBatchTests.test_formal_receipt_saved_then_ack_lost_reuses_same_observation_no_duplicate_receipt) ... ok
+test_batch_template_once_actual_native_package_and_real_component_reservation (test_aoxiang_workflows.RunnerTests.test_batch_template_once_actual_native_package_and_real_component_reservation) ... FAIL
+test_unknown_upload_response_is_not_replayed_and_payment_stale_rejected_before_upload (test_aoxiang_workflows.RunnerTests.test_unknown_upload_response_is_not_replayed_and_payment_stale_rejected_before_upload) ... ok
+
+======================================================================
+FAIL: test_batch_template_once_actual_native_package_and_real_component_reservation (test_aoxiang_workflows.RunnerTests.test_batch_template_once_actual_native_package_and_real_component_reservation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_workflows.py", line 163, in test_batch_template_once_actual_native_package_and_real_component_reservation
+    self.assertEqual(self.f.f.old_tables(),before)
+AssertionError: {'job[29092 chars]00')], 'deleted_order_tokens': [], 'deletion_g[153 chars]d')]} != {'job[29092 chars]00')]}
+Diff is 45186 characters long. Set self.maxDiff to None to see it.
+
+----------------------------------------------------------------------
+Ran 30 tests in 7.243s
+
+FAILED (failures=1)

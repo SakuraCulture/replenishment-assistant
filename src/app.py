@@ -14,9 +14,20 @@ def main():
     icon=Path(__file__).parent/'app.ico'
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
     logs=Path(os.environ.get('REPLENISHMENT_DATA_DIR') or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation))
+    from single_instance import SingleInstance,scope
+    primary=SingleInstance(scope(sys.argv,logs),parent=app)
+    try:
+        if not primary.acquire():return 0
+    except Exception as exc:
+        QMessageBox.warning(None,'补货助手已在运行',str(exc));return 1
     from application_reset import recover,InstanceLease
     try:
-        recover(logs);instance_lease=InstanceLease(logs)
+        recover(logs)
+        from order_migration import recover as recover_orders
+        recover_orders(logs)
+        if (logs/'迁入原文件映射.json').is_file():os.environ['REPLENISHMENT_PORTABLE_PATHS']=str(logs/'迁入原文件映射.json')
+        else:os.environ.pop('REPLENISHMENT_PORTABLE_PATHS',None)
+        instance_lease=InstanceLease(logs)
     except Exception as exc:
         QMessageBox.warning(None,'资料目录未打开',str(exc));return 1
     app.data_root=logs
@@ -32,10 +43,20 @@ def main():
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     win.show()
+    primary.bind(win)
     # GUI acceptance installs isolated transports before explicitly exercising
     # startup; normal launches always attempt connection after the first paint.
     from browser_startup_ui import start_application_connections
     start_application_connections(win, sys.argv)
+    if '--business-repairs-smoke' in sys.argv:
+        from business_repairs_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--business-repairs-smoke')+1:])
+    if '--operations-0510-smoke' in sys.argv:
+        from operations_0510_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--operations-0510-smoke')+1:])
+    if '--deletion-lifecycle-smoke' in sys.argv:
+        from deletion_lifecycle_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--deletion-lifecycle-smoke')+1:])
     if '--reset-selected-smoke' in sys.argv:
         from reset_selected_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--reset-selected-smoke')+1:])
@@ -45,12 +66,27 @@ def main():
     if '--stockout-smoke' in sys.argv:
         from stockout_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--stockout-smoke')+1:])
+    if '--collection-reexport-smoke' in sys.argv:
+        from collection_reexport_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--collection-reexport-smoke')+1:])
+    if '--collection-ended-smoke' in sys.argv:
+        from collection_ended_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--collection-ended-smoke')+1:])
+    if '--mandatory-holding-smoke' in sys.argv:
+        from mandatory_holding_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--mandatory-holding-smoke')+1:])
     if '--deletion-void-smoke' in sys.argv:
         from deletion_void_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--deletion-void-smoke')+1:])
     if '--purchase-recovery-smoke' in sys.argv:
         from purchase_recovery_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--purchase-recovery-smoke')+1:])
+    if '--purchase-pipeline-smoke' in sys.argv:
+        from purchase_pipeline_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--purchase-pipeline-smoke')+1:])
+    if '--catalog-lifetime-smoke' in sys.argv:
+        from catalog_lifetime_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--catalog-lifetime-smoke')+1:])
     if '--admission-overview-smoke' in sys.argv:
         from admission_overview_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--admission-overview-smoke')+1:])
@@ -90,6 +126,9 @@ def main():
     if '--collection-maintenance-smoke' in sys.argv:
         from collection_maintenance_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--collection-maintenance-smoke')+1:])
+    if '--export-menu-smoke' in sys.argv:
+        from export_menu_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--export-menu-smoke')+1:])
     if '--jst-batch-smoke' in sys.argv:
         from jst_batch_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--jst-batch-smoke')+1:])
@@ -108,6 +147,9 @@ def main():
     if '--catalog-sync-smoke' in sys.argv:
         from catalog_sync_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--catalog-sync-smoke')+1:])
+    if '--catalog-rebind-smoke' in sys.argv:
+        from catalog_rebind_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--catalog-rebind-smoke')+1:])
     if '--lifecycle-comparison-smoke' in sys.argv:
         from lifecycle_comparison_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-comparison-smoke')+1:])
@@ -156,6 +198,9 @@ def main():
     if '--analytics-identifiers-smoke' in sys.argv:
         from analytics_identifiers_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--analytics-identifiers-smoke')+1:])
+    if '--first-fill-smoke' in sys.argv:
+        from first_fill_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--first-fill-smoke')+1:])
     if '--purchase-pricing-smoke' in sys.argv:
         from purchase_pricing_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--purchase-pricing-smoke')+1:])
@@ -224,12 +269,21 @@ def main():
         start_smoke(app,win,sys.argv[sys.argv.index('--intake-smoke')+1:])
     code=app.exec()
     reset_request=getattr(win,'_factory_reset_request',None)
+    order_import_request=getattr(win,'_order_import_request',None)
     # Dispose the entire widget tree while QApplication is still alive. The new
     # archive dialogs retain callbacks; interpreter-finalization order is unsafe
     # for Qt objects in the frozen Windows runtime.
     import shiboken6
     if shiboken6.isValid(win):shiboken6.delete(win)
     instance_lease.close()
+    if order_import_request:
+        logging.shutdown()
+        from order_migration import apply
+        try:
+            result=apply(order_import_request)
+        except Exception as exc:
+            QMessageBox.warning(None,'订单迁入未完成',str(exc)+'\n原资料或完整备份已保留，重新打开时会核对恢复记录。');return 1
+        QMessageBox.information(None,'订单已迁入','完整订单已迁入，作业和计划保持暂停。重新打开软件后先核验连接和原平台结果。\n原本机完整备份：'+result['backup'])
     if reset_request:
         logging.shutdown()
         from application_reset import perform
@@ -238,6 +292,7 @@ def main():
         except Exception as exc:
             QMessageBox.warning(None,'初始化未完成',str(exc)+'\n重新打开程序前，请查看资料及备份目录。');return 1
         QMessageBox.information(None,'全部初始化完成','本机应用资料已初始化。重新打开程序即可使用初始设置。\n完整备份：'+result['backup'])
+    primary.close()
     return code
 
 
@@ -251,6 +306,9 @@ def __getattr__(name):
 if __name__=="__main__":
     import multiprocessing
     multiprocessing.freeze_support()
+    if '--catalog-lifetime-helper' in sys.argv:
+        from catalog_lifetime_smoke import parent_helper
+        parent_helper(sys.argv[sys.argv.index('--catalog-lifetime-helper')+1:])
     if '--catalog-validate' in sys.argv:
         from catalog_sync_validation import cli
         sys.exit(cli(sys.argv[sys.argv.index('--catalog-validate')+1:]))

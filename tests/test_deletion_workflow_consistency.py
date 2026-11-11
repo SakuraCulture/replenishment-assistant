@@ -47,14 +47,15 @@ class Consistency(unittest.TestCase):
         with self.store.db() as db:self.assertEqual(db.execute('SELECT state FROM ax_workflows WHERE id=?',(j['id'],)).fetchone()[0],'READY')
         self.assertEqual(self.r.get(wr.today(),'U'),self.before_b)
 
-    def test_inspection_lists_all_blockers_and_never_writes(self):
+    def test_inspection_lists_all_related_tasks_without_veto_or_writes(self):
         j=self.store.prepare([self.a,self.b]);before=self.store.get(j['id'])
         plan=m.inspect_deletion(self.path,[self.a,self.b])
-        self.assertEqual([b['order'] for b in plan['blockers']],[self.a['number'],self.b['number']])
-        self.assertTrue(all(b['can_end'] for b in plan['blockers']))
+        self.assertEqual(plan['blockers'],[])
+        self.assertEqual([b['order'] for b in plan['tasks']],[self.a['number'],self.b['number']])
+        self.assertTrue(all(b['can_end'] for b in plan['tasks']))
         self.assertEqual(self.store.get(j['id']),before)
-        with self.assertRaises(ValueError):m.execute(self.path,plan)
-        self.assertIsNotNone(self.r.get(wr.today(),'T'))
+        m.execute(self.path,plan)
+        self.assertEqual(self.r.headers(),[]);self.assertEqual(self.store.list(),[])
 
     def test_end_only_selected_then_delete_preserves_queued_other_and_new_task_allowed(self):
         j=self.store.prepare([self.a,self.b]);other=copy.deepcopy(j['items'][1]);other['position']=0
@@ -76,18 +77,21 @@ class Consistency(unittest.TestCase):
             with self.assertRaises(ValueError):self.store.end_local_items(j['id'],[self.a['number']],seq)
         self.assertEqual(self.store.get(j['id']),current)
 
-    def test_preview_then_execution_start_rejects_all_deletion(self):
+    def test_preview_then_execution_start_preserves_running_unselected_item(self):
         j=self.failed();plan=m.prepare(self.path,[self.a]);self.store.update(j['id'],state='RUNNING')
-        with self.assertRaises(ValueError):m.execute(self.path,plan)
-        self.assertIsNotNone(self.r.get(wr.today(),'T'));self.assertEqual(self.r.get(wr.today(),'U'),self.before_b)
+        m.execute(self.path,plan)
+        self.assertIsNone(self.r.get(wr.today(),'T'));self.assertEqual(self.r.get(wr.today(),'U'),self.before_b)
+        kept=self.store.get(j['id']);self.assertEqual(kept['state'],'RUNNING');self.assertEqual([i['head']['oid'] for i in kept['items']],['other'])
 
-    def test_upload_unknown_cannot_be_cleared_by_cancel_or_missing_browser(self):
+    def test_upload_unknown_cannot_be_cancelled_before_upload_but_can_be_deleted_locally(self):
         j=self.failed([self.a]);j=self.store.update(j['id'],state='CANCELLED',kind='upload',position=0,changes={'package':{'id':'purchase-unknown'},'error':{'code':'SUBMISSION_UNKNOWN','message':'平台受理待核'}})
-        plan=m.inspect_deletion(self.path,[self.a]);self.assertEqual(plan['blockers'][0]['action'],'平台结果待核')
-        self.assertFalse(plan['blockers'][0]['can_end'])
+        plan=m.inspect_deletion(self.path,[self.a]);self.assertEqual(plan['tasks'][0]['action'],'平台结果待核')
+        self.assertFalse(plan['tasks'][0]['can_end']);self.assertFalse(plan['blockers'])
         with self.assertRaises(ValueError):self.store.end_local_items(j['id'],[self.a['number']],j['sequence'])
-        with self.assertRaises(ValueError):m.execute(self.path,plan,True)
-        self.assertEqual(self.store.get(j['id']),j)
+        m.execute(self.path,plan,True)
+        self.assertEqual(self.store.list(),[]);self.assertIsNone(self.r.get(wr.today(),'T'))
+        import deletion_barrier
+        self.assertEqual(deletion_barrier.pending(self.path)[0]['oids'],['oid'])
 
     def test_purchase_identity_never_treated_as_local_failure(self):
         for changes in ({'package':{'id':'p'}},{'purchase_id':'p'},{'result':{'binding':{'orderId':'PO'}}},{'error':{'code':'SUBMISSION_UNKNOWN'}},{'uploadAttempted':True}):
@@ -95,23 +99,18 @@ class Consistency(unittest.TestCase):
                 item={'state':'REVIEW',**changes};job={'state':'COMPLETED_WITH_ERRORS','kind':'prepare'}
                 self.assertFalse(can_end_local(job,item));self.assertIsNotNone(deletion_issue(job,item))
 
-    def test_duplicate_package_does_not_block_but_original_upload_still_does(self):
+    def test_duplicate_and_original_upload_crop_selected_only_without_platform_query(self):
         duplicate=self.failed();duplicate=self.store.update(duplicate['id'],position=0,changes={
             'package':{'id':'never-reserved'},'error':{'code':'PURCHASE_ALREADY_RESERVED','message':'原任务存在'}})
         original=self.failed([self.a]);original=self.store.update(original['id'],kind='upload',position=0,changes={
             'package':{'id':'original'},'error':{'code':'PURCHASE_CREATED_MISMATCH'},
             'purchase_observation':{'taskId':'original-task','uploadAttempted':True}})
         other=copy.deepcopy(duplicate['items'][1])
-        plan=m.inspect_deletion(self.path,[self.a]);self.assertEqual(len(plan['blockers']),1)
-        self.assertEqual(plan['blockers'][0]['id'],original['id'])
+        plan=m.inspect_deletion(self.path,[self.a]);self.assertFalse(plan['blockers'])
+        self.assertEqual({i['id'] for i in plan['tasks']},{original['id'],duplicate['id']})
         self.assertTrue(can_end_local(duplicate,duplicate['items'][0]))
         ended=self.store.end_local_items(duplicate['id'],[self.a['number']],duplicate['sequence'])
         self.assertEqual(ended['items'][1],other)
-        with self.assertRaises(ValueError):m.execute(self.path,m.inspect_deletion(self.path,[self.a]),True)
-        # The isolated component boundary reports full native verification; no direct
-        # production DB modification or screenshot is used as terminal evidence.
-        self.store.update(original['id'],position=0,changes={'state':'BOUND','error':None,
-            'result':{'binding':{'orderId':'PO-original','status':'已作废','method':'known_import_task_and_exact_native_rows'}}})
         plan=m.prepare(self.path,[self.a]);self.assertFalse(plan['blockers'])
         self.assertEqual(len(plan['parents'][0]['warehouses']),2)
         m.execute(self.path,plan,True)

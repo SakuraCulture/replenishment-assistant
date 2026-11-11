@@ -1,0 +1,14 @@
+E.......................................................
+======================================================================
+ERROR: test_disabled_or_daily_products_are_not_made_eligible_by_first_fill_quantity (test_first_fill.FirstFillUi.test_disabled_or_daily_products_are_not_made_eligible_by_first_fill_quantity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_first_fill.py", line 79, in test_disabled_or_daily_products_are_not_made_eligible_by_first_fill_quantity
+    self.assertFalse(d.widgets[0][0].isEnabled());self.assertTrue(d.model.reasons[0]);self.assertEqual(d.model.rowCount(),0)
+                     ~~~~~~~~~^^^
+IndexError: list index out of range
+
+----------------------------------------------------------------------
+Ran 56 tests in 3.345s
+
+FAILED (errors=1)

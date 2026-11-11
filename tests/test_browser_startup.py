@@ -57,6 +57,17 @@ class Checks(unittest.TestCase):
         self.assertEqual(updates['山东仓']['state'],'DISABLED');self.assertEqual(updates['河北仓']['state'],'READY')
         self.assertEqual([v['warehouse'] for a,v in c.calls if a=='accounts.ensure'],['河北仓'])
 
+    def test_binding_recovery_waits_for_explicit_mapping_and_does_not_rebind_at_startup(self):
+        c=JstFixture();original=c.request;updates={}
+        def request(action,**values):
+            result=original(action,**values)
+            if action=='sync.status':result['rebind_required']={'山东仓':True,'河北仓':True}
+            return result
+        c.request=request
+        check_jst(c,['山东仓','河北仓'],threading.Event(),lambda n,r:updates.update({n:r}))
+        self.assertEqual([updates[n]['state'] for n in ['山东仓','河北仓']],['CONFIG_REQUIRED']*2)
+        self.assertFalse(any(a=='accounts.ensure' for a,v in c.calls))
+
     def test_partial_login_failure_does_not_block_the_other_warehouse(self):
         c=JstFixture();c.errors['山东仓']={'code':'LOGIN_REQUIRED','message':'login'};updates={}
         check_jst(c,['山东仓','河北仓'],threading.Event(),lambda n,r:updates.update({n:r}))

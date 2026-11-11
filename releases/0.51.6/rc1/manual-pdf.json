@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "pages": 88,
+  "chapters": 21,
+  "images": 43,
+  "all_pages_rendered": 88,
+  "bounds_issues": [],
+  "contacts": [
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\manual-qa\\contact-1.png",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\manual-qa\\contact-2.png",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\manual-qa\\contact-3.png",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\manual-qa\\contact-4.png"
+  ],
+  "affected": [
+    {
+      "page": 36,
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\manual-qa\\affected-36.png"
+    },
+    {
+      "page": 46,
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\manual-qa\\affected-46.png"
+    },
+    {
+      "page": 84,
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\manual-qa\\affected-84.png"
+    }
+  ],
+  "pdf_sha256": "83f197a3178f3030ef87a2aa3d616753579d2aaf6050ccc8575bce321f9a8375"
+}

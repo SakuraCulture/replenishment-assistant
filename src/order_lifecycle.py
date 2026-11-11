@@ -175,28 +175,16 @@ def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=Fals
     return {'head':head,'stage':stage,'expected':old['version'] if old else None,'digest':digest,'payload':payload,'changed':not old or old['digest']!=digest,'differences':differences,'duplicates':duplicates,'calibration':calibration}
 
 def match_payment_rows(path, head, rows):
-    import re
     if not any(r.get('adapter')=='paid_order' for r in rows):return
     identities={tuple(str(r['source_order'].get(k) or '') for k in ('内部订单号','线上订单号','店铺名称','买家账号','平台站点')) for r in rows if r.get('adapter')=='paid_order'}
     if len(identities)!=1:raise ValueError('付款文件含多个来源订单/店铺，请分别导入，不自动合并')
     order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
     if order['digest']!=head['digest']:raise wr.Conflict('签发快照已变化')
-    barcodes={};other_codes=set()
-    for d in order['payload']['result']['rows']:
-        if ao.warehouse(d)!=head['warehouse']:other_codes.add(d['E']);continue
-        for code in re.split(r'[,，;；\s]+',str(d.get('F') or '')):
-            if code:barcodes.setdefault(code,set()).add(d['E'])
     for row in rows:
         if row.get('adapter')!='paid_order':continue
-        original=row['sku'];aux=str(row['source_order'].get('辅助码') or '');hits=set()
-        for code in re.split(r'[,，;；\s]+',aux):hits.update(barcodes.get(code,set()))
+        original=row['sku']
         if original in head['products']:
-            if hits and hits!={original}:raise ValueError('商品编码与辅助码指向不同商品：'+original)
             row['matching_basis']='商品编码精确匹配'
-        elif len(hits)==1:
-            row['source_sku']=original;row['sku']=next(iter(hits));row['matching_basis']='辅助码唯一对应原签发条码'
-        elif len(hits)>1:raise ValueError('辅助码对应多个商品，请核对：'+original)
-        elif original in other_codes:raise ValueError('商品属于另一供货仓，请核对目标仓单：'+original)
         else:row['matching_basis']='清单外商品，需确认'
 
 def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None, *, staged=None):

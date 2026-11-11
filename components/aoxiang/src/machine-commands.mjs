@@ -4,6 +4,7 @@ import {canonical,sha256,now,fail} from './common.mjs';
 import {validateConfig} from './config.mjs';
 import {planReplenishmentRun,insertRunPlan} from './run-plan.mjs';
 import {resumableTask} from './collection-recovery.mjs';
+import {collectionPurpose} from './state.mjs';
 
 export const PROTOCOL_VERSION=1;
 export const MAX_FRAME_BYTES=1024*1024;
@@ -87,11 +88,12 @@ export class MachineCommands{
       const plans=command.scope.warehouse_codes.map(warehouseCode=>planReplenishmentRun(config,{
         warehouseCode,mode:command.policy.freshness==='refresh'?'rerun':'normal'
       }));
+      for(const plan of plans)Object.assign(plan.run,{purpose:collectionPurpose(command),consumer:command.consumer||{purpose:'replenishment'}});
       const recovered=plans.map(plan=>{
-        const pending=this.state.pending(config.tenantBinding,plan.run.targets[0].buyerWarehouseCode);
+        const pending=this.state.pending(config.tenantBinding,plan.run.targets[0].buyerWarehouseCode,undefined,collectionPurpose(command));
         if(pending.length!==1||!resumableTask(pending[0]))return null;
         const attempt=pending[0],run=this.state.getRun(attempt.runId),items=this.state.getItems(attempt.runId);
-        if(run?.status!=='ENDED'||!run.resumePending)return null;
+        if(run?.status!=='ENDED'||!run.resumePending||this.state.collectionEnded(run.id))return null;
         if(items.length!==1||items[0].attemptId!==attempt.id||attempt.semanticVersion!==config.exportPolicy.semanticVersion)
           fail('RECOVERY_SCOPE','原平台任务范围或版本不同，请核对原任务后继续');
         return {run,attempt};
@@ -117,10 +119,20 @@ export class MachineCommands{
       const current=this.get(id);
       if(!current)fail('COMMAND_NOT_FOUND','未找到自动化作业');
       if(current.sequence!==expectedSequence)fail('STALE_COMMAND','作业状态已更新，请重新读取');
-      if(!transitions[current.state]?.includes(next))fail('COMMAND_TRANSITION','该作业状态不能执行此操作');
+      const reviewResume=current.state==='NEEDS_REVIEW'&&next==='QUEUED'&&kind==='RESUME_WITH_REVIEW_RETAINED'&&items&&items.length===current.items.length&&
+        items.every((item,index)=>{
+          const old=current.items[index];
+          if(old.state!=='NEEDS_REVIEW')return item.state===old.state;
+          if(item.state==='NEEDS_REVIEW')return true;
+          const source=this.state.getItems(old.run_id);
+          return item.state==='PENDING'&&source.length===1&&source.every(i=>{const a=this.state.getAttempt(i.attemptId);return a&&!a.additionalTaskIds?.length&&
+            (a.stage==='CANCELLED_BEFORE_SUBMIT'||a.taskId&&['ACCEPTED','RUNNING','FINISHED','DOWNLOADED','VALIDATED','PUBLISHING','SUCCEEDED'].includes(a.stage));});
+        });
+      if(!transitions[current.state]?.includes(next)&&!reviewResume)fail('COMMAND_TRANSITION','该作业状态不能执行此操作');
       const record={...current,state:next,sequence:current.sequence+1,updated_at:now()};
       if(next==='QUEUED'&&this.db.prepare("SELECT COUNT(*) AS n FROM machine_commands WHERE state IN ('QUEUED','RUNNING','PAUSE_REQUESTED')").get().n>=32)fail('QUEUE_FULL','自动化等待队列已满');
       if(items!==undefined){
+        if(items.some((item,index)=>current.items[index]?.state==='ENDED'&&canonical(item)!==canonical(current.items[index])))fail('COLLECTION_ENDED','所选旧采集项已结束，不能由晚到结果恢复');
         if(items.length!==current.items.length||items.some((item,index)=>['index','warehouse_code','run_id'].some(key=>item[key]!==current.items[index][key])))fail('COMMAND_ITEMS_CHANGED','命令的门店顺序及原作业关联不能改变');
         record.items=structuredClone(items);
       }

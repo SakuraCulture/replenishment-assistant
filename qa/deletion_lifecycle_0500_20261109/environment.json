@@ -1,0 +1,29 @@
+{
+  "actual_local_metadata": [
+    {
+      "path": "C:\\Users\\lenovo\\AppData\\Local\\YoutuanTools\\补货助手\\settings\\workbench.sqlite3",
+      "journal_mode": "delete",
+      "read_only": true
+    },
+    {
+      "path": "C:\\Users\\lenovo\\AppData\\Local\\YoutuanTools\\补货助手\\settings\\aoxiang\\workflows.sqlite3",
+      "journal_mode": "delete",
+      "read_only": true
+    },
+    {
+      "path": "C:\\Users\\lenovo\\AppData\\Local\\YoutuanTools\\补货助手\\settings\\archive_index.sqlite3",
+      "journal_mode": "delete",
+      "read_only": true
+    },
+    {
+      "path": "C:\\Users\\lenovo\\AppData\\Local\\YoutuanTools\\补货助手\\settings\\lifecycle_index.sqlite3",
+      "journal_mode": "delete",
+      "read_only": true
+    }
+  ],
+  "no_business_rows_read_or_written": true,
+  "protected": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.49.5_rc2\\补货助手\\补货助手.exe": "f1f3fbfea9b53608287c068207a4a26af37c1b74c198b6f4a54557dcc996f8af",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.49.5_rc2\\补货助手_0.49.5_rc2.zip": "ad6eb43c276b2e18fddeb8082ce07232f43d79ba17c185b8d7ca5e1900d2b140"
+  }
+}

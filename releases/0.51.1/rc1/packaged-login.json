@@ -1,0 +1,9 @@
+{
+  "live_platform": false,
+  "all_requests_intercepted": true,
+  "fresh_browser_no_user_profile": true,
+  "runtime_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+  "adapter_sha256": "c329d73191445fd25c2d6782f68d01b7cd11b2238987ed5d9b16ffe3ec5a34d4",
+  "passed": true,
+  "exit_code": 0
+}

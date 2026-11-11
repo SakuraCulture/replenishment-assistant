@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "frozen": false,
+  "live_platform": false,
+  "checks": [
+    "异常退出的主进程由外部工具确认后，实际资料页重开成功，原采集任务及文件摘要保持",
+    "关闭并重开资料窗口复用同一个健康采集进程，不重复启动服务",
+    "真实第二服务占用错误显示中文原因与持锁进程号，失败窗口释放租用，不动原任务",
+    "正常退出主软件后真实Node进程退出、本地任务锁释放，无需重启Windows",
+    "退出后新服务立即打开同一目录，原受理号与完整任务文件逐字节保持",
+    "启动、占用错误与退出收尾均在后台执行，Qt事件循环持续响应"
+  ],
+  "version": {
+    "app": "补货助手",
+    "version": "0.50.3",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.2",
+    "model_version": "0.3.4-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "源码运行",
+    "build_id": "未打包"
+  },
+  "component_exited": true,
+  "retained_component_pid": 37200,
+  "jobs_unchanged": true,
+  "heartbeat_ticks": 10,
+  "process_exit": 0,
+  "parent_crash_recovered": true,
+  "accepted": true
+}

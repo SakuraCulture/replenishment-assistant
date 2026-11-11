@@ -1,0 +1,32 @@
+file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/order-retirement.test.mjs:77
+
+
+
+SyntaxError: Unexpected end of input
+    at compileSourceTextModule (node:internal/modules/esm/utils:318:16)
+    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:99:18)
+    at #translate (node:internal/modules/esm/loader:473:20)
+    at afterLoad (node:internal/modules/esm/loader:529:29)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:534:12)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:577:36)
+    at afterResolve (node:internal/modules/esm/loader:625:52)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:631:12)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:650:32)
+    at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+
+Node.js v24.14.0
+✖ components\aoxiang\test\order-retirement.test.mjs (54.2326ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 60.1335
+
+✖ failing tests:
+
+test at components\aoxiang\test\order-retirement.test.mjs:1:1
+✖ components\aoxiang\test\order-retirement.test.mjs (54.2326ms)
+  'test failed'

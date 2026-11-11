@@ -8,6 +8,8 @@ import json
 import os
 import tempfile
 import uuid
+import copy,sqlite3
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
@@ -28,7 +30,7 @@ def identity(order, warehouse):
     return result
 
 
-def save(database, receipt):
+def _save(database, receipt):
     root = directory(database)
     root.mkdir(parents=True, exist_ok=True)
     task_id = receipt['id']
@@ -44,6 +46,46 @@ def save(database, receipt):
         os.replace(temporary, root / (task_id + '.json'))
     finally:
         Path(temporary).unlink(missing_ok=True)
+
+def _pruned(db,receipt):
+    import deletion_barrier
+    if not deletion_barrier.has(db,'deleted_order_tokens'):return receipt,False
+    files=[];changed=False
+    for item in receipt['files']:
+        heads=item.get('heads') or ([item['head']] if item.get('head') else [])
+        kept=[h for h in heads if not db.execute('SELECT 1 FROM deleted_order_tokens WHERE oid=?',(h['oid'],)).fetchone()]
+        if heads and not kept:changed=True;continue
+        if heads!=kept:
+            item=copy.deepcopy(item);item['heads']=kept;item.pop('head',None);changed=True
+        files.append(item)
+    return ({**receipt,'files':files} if changed else receipt),changed
+
+def save(database,receipt):
+    # Serialize the final file publication with deletion; keep the caller's
+    # in-flight receipt unchanged, while old callbacks cannot restore its heads.
+    task_id=receipt['id']
+    if not isinstance(task_id,str) or len(task_id)!=32 or any(c not in '0123456789abcdef' for c in task_id):raise ValueError('导出任务编号无效')
+    if not Path(database).is_file():return _save(database,receipt)
+    with closing(sqlite3.connect(Path(database).resolve().as_uri()+'?mode=rw',uri=True,timeout=10)) as db,db:
+        db.execute('BEGIN IMMEDIATE');value,changed=_pruned(db,receipt)
+        if changed and not value['files']:(directory(database)/(receipt['id']+'.json')).unlink(missing_ok=True)
+        else:_save(database,value)
+
+def prune_deleted(database):
+    root=directory(database)
+    if not root.exists():return
+    for file in root.glob('*.json'):
+        if len(file.stem)!=32 or any(c not in '0123456789abcdef' for c in file.stem):continue
+        with closing(sqlite3.connect(Path(database).resolve().as_uri()+'?mode=rw',uri=True,timeout=.2)) as db,db:
+            db.execute('BEGIN IMMEDIATE')
+            try:value=json.loads(file.read_text('utf-8'))
+            except FileNotFoundError:continue
+            if value.get('schema')!=1 or value.get('database')!=str(Path(database).resolve()):continue
+            if value.get('id')!=file.stem:raise ValueError('导出回执文件与任务身份不一致，保留待核')
+            value,changed=_pruned(db,value)
+            if not changed:continue
+            if not value['files']:file.unlink(missing_ok=True)
+            else:_save(database,value)
 
 
 def begin(database, kind, files, **extra):

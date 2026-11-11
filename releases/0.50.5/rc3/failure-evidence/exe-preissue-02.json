@@ -1,0 +1,47 @@
+{
+  "passed": false,
+  "error": "Traceback (most recent call last):\n  File \"preissue_smoke.py\", line 130, in exercise\nAssertionError: positive new selection did not apply\n",
+  "phase": "exercise",
+  "checks": [
+    "actual spawn: secondary missing retains primary catalog, price, carton and demand; disabled/stopped/local boundaries preserved"
+  ],
+  "timings": {
+    "check_seconds": 0.5586868000027607,
+    "calculate_seconds": 0.4501423999972758
+  },
+  "max_ui_gap_seconds": 0.24058420000073966,
+  "ui_ticks": 12811,
+  "version": {
+    "app": "补货助手",
+    "version": "0.50.5",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.2",
+    "model_version": "0.3.5-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "7cf1a5853c73f7d905747ecb63bc55f119b5b95f",
+    "build_id": "rc2",
+    "built_at": "2026-11-11T01:34:50.258548+08:00",
+    "source_archive_sha256": "6d8598a9970abbaa943955e72f8f85331f45b3cbf44c2deb0f0ef33c2641375d",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "7cf1a5853c73f7d905747ecb63bc55f119b5b95f",
+      "files": 872,
+      "manifest_sha256": "38818d5752680fe8d05ba2cd5a95c4ee86cfd29ce66d384ca7c19824bfde1870",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "4ddad3f3eec26b52cfa0348c6f4e78ef29a4f6de9c825c4387cc4ee9d898e597",
+      "files": 9,
+      "source_commit": "7cf1a5853c73f7d905747ecb63bc55f119b5b95f",
+      "contains_user_state": false
+    }
+  },
+  "synthetic": true,
+  "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study."
+}

@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {portablePath} from './portable-assets.mjs';
 import path from 'node:path';
 import {PurchaseUI} from './purchase-ui.mjs';
 import {IMPORT_CODE,taskPattern} from './purchase-create-contract.mjs';
@@ -77,7 +78,7 @@ export class PurchaseCreateUI extends PurchaseUI{
   async uploadPurchaseOnce({intent:p,baseline}){
     if(this.usedImports.has(p.id)||this.createPrepared?.id!==p.id||this.createPrepared.preparedAt!==baseline.preparedAt||!sameIdentity(this.identity,p.identity))fail('IMPORT_NOT_PREPARED','采购上传未在当前会话准备或已使用');
     await this.preflightScope(baseline.query);
-    const bytes=await fs.readFile(p.file.path);if(bytes.length!==p.file.bytes||sha256(bytes)!==p.file.sha256)fail('PURCHASE_FILE_CHANGED','采购文件变化，停止上传');
+    const bytes=await fs.readFile(await portablePath(p.file.path));if(bytes.length!==p.file.bytes||sha256(bytes)!==p.file.sha256)fail('PURCHASE_FILE_CHANGED','采购文件变化，停止上传');
     const modal=this.importModal(),input=modal.locator('input[type=file]');if(await input.count()!==1)fail('IMPORT_VIEW','上传窗口已变化');
     const guard=new NativeImportGuard(this.page,p,bytes,r=>this.onImportReceipt?.(r));
     this.usedImports.add(p.id);await guard.install();

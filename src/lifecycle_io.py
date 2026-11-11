@@ -54,7 +54,7 @@ def payment_specs(info):
         normalized=[{'买家帐号':'买家账号'}.get(field_key(h),field_key(h)) for h in hs]
         if not all(normalized.count(h)==1 for h in ('内部订单号','商品编码','数量','商品金额')):continue
         normalized=[{'签发单号':'补货单号'}.get(h,h) for h in normalized]
-        duplicates=[h for h in dict.fromkeys(PAYMENT_HEADERS+COMMON) if normalized.count(h)>1]
+        duplicates=[h for h in dict.fromkeys(PAYMENT_HEADERS+COMMON) if h!='辅助码' and normalized.count(h)>1]
         if duplicates:raise ValueError('付款表存在重复或同义表头，不能自动选列：'+'、'.join(duplicates))
         columns={h:normalized.index(h) for h in PAYMENT_HEADERS if h in normalized}
         aliases={'商品编码':'商品编码','商品名称':'商品名称','付款单商品数量':'数量','付款单号':'内部订单号','实际金额':'商品金额'}

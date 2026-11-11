@@ -32,46 +32,26 @@ test('结束与删除回执可重复查询；删除防重标识阻止旧命令�
   await assert.rejects(()=>c.commands.reserve(c.command('blocked'),c.config),{code:'COMMAND_RETIRED'});
   assert.equal(c.maintenance.preview('blocked','delete').already_deleted,true);
 });
-for(const stage of ['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED'])
-test('未核清状态不能结束或释放：'+stage,async t=>{
-  const c=await ctx(t),a=c.state.getAttempt('attempt-W2');c.state.putAttempt({...a,stage});
-  const p=c.maintenance.preview('blocked','end'),before=c.state.rows('attempts');assert.ok(p.blocked.length);
-  assert.throws(()=>c.maintenance.apply('blocked','end',p.token),{code:'COLLECTION_UNRESOLVED'});
-  assert.deepEqual(c.state.rows('attempts'),before);assert.equal(c.commands.get('blocked').state,'NEEDS_REVIEW');
-});
-for(const stage of ['ACCEPTED','RUNNING'])test('结束本地采集保留已受理原任务，新批次只接续不重新导出：'+stage,async t=>{
-  const c=await ctx(t),a={...c.state.getAttempt('attempt-W2'),stage,downloaded:null};c.state.putAttempt(a);
-  const original=c.state.getRun(a.runId),plan=c.maintenance.preview('blocked','end');
-  assert.equal(plan.blocked.length,0);assert.equal(plan.retained[0].task_id,a.taskId);
+// 0.50.4 deliberately replaces the former platform-state lock with explicit local retirement.
+for(const stage of ['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED','ACCEPTED','RUNNING','DOWNLOADED'])
+test('明确结束不等待平台状态，保留原证据并允许独立新作业：'+stage,async t=>{
+  const c=await ctx(t),a={...c.state.getAttempt('attempt-W2'),stage,taskSummary:null};c.state.putAttempt(a);
+  const plan=c.maintenance.preview('blocked','end');assert.deepEqual(plan.blocked,[]);
   c.maintenance.apply('blocked','end',plan.token);
-  assert.deepEqual(c.state.pending(c.identity,'W2'),[a]);
-  const d=c.maintenance.preview('old-failed','delete');assert.ok(d.blocked.length);
-  assert.throws(()=>c.maintenance.apply('old-failed','delete',d.token),{code:'COLLECTION_UNRESOLVED'});
-  const command=c.command('resume-in-new',['W2']);const first=await c.commands.reserve(command,c.config);
-  assert.equal((await c.commands.reserve(command,c.config)).created,false);
-  assert.equal(first.record.items[0].run_id,a.runId);assert.equal(first.record.items[0].task_id,a.taskId);
-  assert.equal(c.state.getRun(a.runId).day,original.day);assert.deepEqual(c.state.getAttempt(a.id),a);
-  c.commands.advance(first.record.id,first.record.sequence,'PAUSED');
-  assert.throws(()=>c.maintenance.preview('blocked','end'),{code:'COLLECTION_ALREADY_ENDED'});
-  const calls=[],coordinator=new Coordinator({state:c.state,config:c.config,binding:{outputRoot:c.root},adapter:{
-    querySingle:async()=>{assert.fail('must not query a new export');},submitOnce:async()=>{assert.fail('must not submit');},
-    findTask:async id=>{calls.push(id);return {taskStatus:'RUNNING'};}
-  }});
-  await coordinator.run({runId:a.runId,phase:'submit'});
-  assert.equal((await coordinator.run({runId:a.runId,phase:'collect'})).pending,true);
-  assert.deepEqual(calls,[a.taskId]);assert.equal(c.state.pending(c.identity,'W2').length,1);
+  const ended=c.state.getAttempt(a.id);assert.equal(ended.stage,'ABANDONED');assert.equal(ended.previousStage,stage);
+  assert.equal(ended.taskId,a.taskId);assert.deepEqual(ended.downloaded,a.downloaded);assert.deepEqual(c.state.pending(c.identity,'W2'),[]);
+  const next=await c.commands.reserve(c.command('new-after-end',['W2']),c.config);
+  assert.notEqual(next.record.items[0].run_id,a.runId);assert.equal(next.record.items[0].task_id,undefined);
+  await assert.rejects(()=>new Coordinator({state:c.state,config:c.config,binding:{outputRoot:c.root}}).run({runId:a.runId}),{code:'RUN_ENDED'});
 });
-for(const patch of [{taskId:null},{additionalTaskIds:['another-task']}])test('已受理状态但身份不确定仍禁止结束：'+JSON.stringify(patch),async t=>{
+for(const patch of [{taskId:null},{additionalTaskIds:['another-task']}])test('回执不完整仍可明确结束，原不确定事实不伪装为成功：'+JSON.stringify(patch),async t=>{
   const c=await ctx(t),a={...c.state.getAttempt('attempt-W2'),stage:'ACCEPTED',...patch};
-  // Seed an inconsistent legacy row without relaxing putAttempt's immutable identity guard.
   c.state.db.prepare('UPDATE attempts SET stage=?,payload=? WHERE id=?').run(a.stage,JSON.stringify(a),a.id);
-  const p=c.maintenance.preview('blocked','end');assert.ok(p.blocked.length);
-  assert.throws(()=>c.maintenance.apply('blocked','end',p.token),{code:'COLLECTION_UNRESOLVED'});
+  apply(c,'blocked');const ended=c.state.getAttempt(a.id);
+  assert.equal(ended.stage,'ABANDONED');assert.equal(ended.taskId,a.taskId);assert.deepEqual(ended.additionalTaskIds,a.additionalTaskIds);
+  assert.deepEqual(c.state.pending(c.identity,'W2'),[]);
 });
-test('下载字段不足不能猜测平台已完成',async t=>{
-  const c=await ctx(t),a=c.state.getAttempt('attempt-W2');c.state.putAttempt({...a,taskSummary:null});
-  assert.ok(c.maintenance.preview('blocked','end').blocked.length);
-});
+
 test('预览后版本变化或重新运行时拒绝；事务写入失败完整回滚',async t=>{
   const c=await ctx(t),p=c.maintenance.preview('blocked','end');
   c.state.putAttempt({...c.state.getAttempt('attempt-W2'),newEvidence:'changed'});

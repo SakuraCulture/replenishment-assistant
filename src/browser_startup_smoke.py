@@ -89,6 +89,36 @@ def start_smoke(app,win,args):
             fetch=FetchDialog(win,win.repository.folder,win.job_day);fetch.show();wait(lambda:fetch.worker is None)
             require(fetch.configuration['configured'] and fetch.stores.rowCount()==1 and axowner.client is ax,'Opening replenishment after settings close reuses the same saved account and store binding')
             fetch.close();wait(lambda:fetch._can_close and fetch.worker is None);fetch.deleteLater();ax.request=saved_request
+            # Simulate a current-login component; Node setup/session tests cover
+            # actual identity observation and atomic metadata update separately.
+            from aoxiang_current_login import current_configuration
+            from aoxiang_client import ComponentError
+            observed=dict(saved_config,login_policy='current_edge',account_binding={'account_id':'OLD','merchant_code':'QA'})
+            live={'account_id':'NEW-OPERATOR','merchant_code':'QA'}
+            def current_login_request(action,**values):
+                if action=='configuration':ax.calls.append((action,values));return observed.copy()
+                if action=='setup.check_login':
+                    require(not values,'Current login probe sends no manually configured account or merchant ID')
+                    observed['account_binding']=live.copy()
+                    observed['needs_store_verification']=live['merchant_code']!='QA'
+                    observed['enabled']=not observed['needs_store_verification']
+                    return {'id':'current-login','state':'VERIFIED','merchant_changed':observed['needs_store_verification'],
+                            'identity':{'display_name':'隔离商家 · 当前登录人'}}
+                return saved_request(action,**values)
+            ax.request=current_login_request
+            ticket=win.aoxiang_workflows.gate.request_foreground();lease=axowner.lease(ticket);lease.start()
+            try:
+                current=current_configuration(lease)
+                require(current['account_binding']['account_id']=='NEW-OPERATOR' and current['targets']==saved_config['targets'],'New business reads current Edge login and keeps same-merchant stores')
+                live['merchant_code']='OTHER-MERCHANT'
+                try:current_configuration(lease)
+                except ComponentError as error:require(error.code=='TARGET_UNVERIFIED','Different merchant connects but cannot reuse old merchant stores')
+                else:raise AssertionError('Old store mappings must not be used for another merchant')
+            finally:lease.close()
+            require(axowner.client is ax and ax.running,'Observing a changed login reuses the original global component transport')
+            live['merchant_code']='QA';startup.retry(['翱象']);wait(lambda:not startup.workers)
+            require(startup.records['翱象']['state']=='READY' and axowner.client is ax,'Automatic startup recheck uses current Edge login on the same transport')
+            ax.request=saved_request
             original_request=ax.request;settled=threading.Event();polled=threading.Event()
             def handoff_request(action,**values):
                 if action=='setup.check_login':

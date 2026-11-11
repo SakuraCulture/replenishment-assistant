@@ -52,6 +52,7 @@ class FetchDialog(ComponentDialog):
         self.pause_pending = False
         self.event_cursors = {}
         self.last_phase = ''
+        self._checking_new_fetch=False
         self.began = time.monotonic()
         self.poll = QTimer(self)
         self.poll.setInterval(900)
@@ -86,6 +87,9 @@ class FetchDialog(ComponentDialog):
         options.addWidget(self.policy, 1)
         self.start_btn = button('获取所选门店补货建议', self.start_fetch, True)
         options.addWidget(self.start_btn)
+        self.reexport_btn=button('重新导出所选门店',self.reexport_fetch)
+        self.reexport_btn.setToolTip('安全结束所选门店的旧采集项，再创建新导出；其他门店、旧文件和已采用数据保留。')
+        options.addWidget(self.reexport_btn)
         layout.addLayout(options)
         history = QHBoxLayout()
         history.addWidget(QLabel('本机采集记录'))
@@ -192,22 +196,53 @@ class FetchDialog(ComponentDialog):
         self.poll.stop()
         self.began = time.monotonic()
         self.last_phase = ''
+        self._checking_new_fetch=True
+        self.progress.setRange(0,0);self.status.setText('正在核验本次登录；尚未创建所选门店的采集任务。下方为历史记录。')
         def operation(progress):
             self.ensure_client()
             self.jobs.synchronize(self.client)
-            job = prepare(self.jobs, self.configuration, codes, policy, day=self.day)
+            from aoxiang_current_login import current_configuration
+            configuration=current_configuration(self.client,progress)
+            from aoxiang_acquisition import PendingAcquisition
+            try:job = prepare(self.jobs, configuration, codes, policy, day=self.day)
+            except PendingAcquisition as exc:
+                return {'blockers':exc.blockers,'message':str(exc),'configuration':configuration,
+                        'history':self.jobs.recent(include_unfinished=True,exclude_analysis=True)}
             try:
                 self.jobs.dispatch(self.client, job['id'])
             except ComponentError:
                 # The intention and transport error remain available; next action queries/replays this exact ID.
                 pass
-            return self.jobs.get(job['id']), self.jobs.recent(include_unfinished=True,exclude_analysis=True)
-        self.run(operation, self.created)
+            return self.jobs.get(job['id']), self.jobs.recent(include_unfinished=True,exclude_analysis=True),configuration
+        self.run(operation, self.start_checked)
+
+    def start_checked(self,data):
+        self._checking_new_fetch=False
+        if not isinstance(data,dict) or 'blockers' not in data:return self.created(data)
+        self.configuration=data['configuration'];first=data['blockers'][0]['id']
+        self.fill_history(data['history'],first)
+        self.show_job(self.jobs.get(first))
+        self.failure(data['message'])
 
     def created(self, data):
-        job, history = data
+        job, history, *configuration = data
+        if configuration:
+            self.configuration=configuration[0]
+            self.identity.setText(self.configuration['display_name']+' · '+self.configuration['account_binding']['merchant_code'])
         self.fill_history(history, job['id'])
         self.show_job(job)
+
+    def reexport_fetch(self):
+        if self.worker or self._closing or not self.selected_codes():return
+        codes=self.selected_codes();self.poll.stop()
+        def operation(progress):
+            self.ensure_client()
+            from aoxiang_current_login import current_configuration
+            configuration=current_configuration(self.client,progress)
+            plan=self.jobs.reexport_preview(self.client,configuration,codes,progress=progress,cancel=lambda:self._closing)
+            plan['configuration']=configuration
+            return plan
+        self.run(operation,self.maintenance_previewed)
 
     def choose_job(self):
         if self.worker or self._closing or not self.history.currentData():
@@ -225,6 +260,9 @@ class FetchDialog(ComponentDialog):
             self.history.setItemText(history_index, history_label(job))
         record = job.get('record') or {}
         items = record.get('items', [])
+        if not record and job['state']=='PREPARED':
+            # Display the original local scope without inventing a platform receipt.
+            items=[{'warehouse_code':code,'state':'PENDING'} for code in job['command']['scope']['warehouse_codes']]
         names = {i['buyerWarehouseCode']: i['displayName'] for i in job['context']['stores']}
         self.details.setRowCount(len(items))
         for row, item in enumerate(items):
@@ -234,9 +272,11 @@ class FetchDialog(ComponentDialog):
                       result.get('rows', '—'), ('今日复用' if result.get('reused') else '本次下载') if result else '—',
                       failure_message(str(error.get('code',''))+'：'+str(error.get('message',''))) if error else PHASES.get(item.get('phase'), '')]
             if item['state'] == 'ENDED':
-                values[4] = '本地采集已结束；已受理平台任务保留，新采集接续原任务。' if item.get('retained_platform_task') else '本地采集已结束，可重新获取；原错误见双击详情。'
+                values[4] = '本地采集已结束；旧平台任务可能继续完成，后续采集使用独立新任务。' if item.get('retained_platform_task') else '本地采集已结束，可重新获取；原错误见双击详情。'
             elif item.get('resumed_accepted_task') and not error:
                 values[4] = '接续原平台任务；文件保留原采集时间。' + values[4]
+            elif not record and job['state']=='PREPARED':
+                values[4] = '本地请求已登记，平台受理情况尚未核对；可继续原任务或按所选门店重导。'
             elif job['state'] not in ACTIVE and item['state']=='RUNNING':
                 values[1] = '已停止本地取数'
             for column, value in enumerate(values):
@@ -250,6 +290,8 @@ class FetchDialog(ComponentDialog):
         self.progress.setRange(0, max(len(items), 1))
         self.progress.setValue(finished)
         error = job.get('last_error') or record.get('error') or {}
+        if job['state']=='NEEDS_REVIEW':
+            self.last_phase='可核对原回执并继续其他门店；需要新文件时勾选上方门店，点击“重新导出所选门店”。旧记录和原件保留。'
         accepted = sum(bool(i.get('task_id')) for i in items)
         self.progress.setFormat('%v / %m 家已处理')
         self.status.setText(f'{STATES[job["state"]]} · 已受理导出 {accepted} 家 · 已处理 {finished}/{len(items)} 家 · {self.last_phase}' +
@@ -310,6 +352,15 @@ class FetchDialog(ComponentDialog):
     def on_idle(self):
         if self.pending_maintenance is not None:
             plan, self.pending_maintenance = self.pending_maintenance, None
+            if plan['action']=='reexport':
+                def operation(progress):
+                    self.ensure_client();self.jobs.reexport_apply(self.client,plan)
+                    job=prepare(self.jobs,plan['configuration'],plan['codes'],'refresh',day=self.day)
+                    try:self.jobs.dispatch(self.client,job['id'])
+                    except ComponentError:pass  # Original new ID is durable; never create another on lost acknowledgement.
+                    return self.jobs.get(job['id']),self.jobs.recent(include_unfinished=True,exclude_analysis=True),plan['configuration']
+                self.run(operation,self.created)
+                return
             def operation(progress):
                 progress('正在结束采集并释放门店…' if plan['action'] == 'end' else '正在删除采集记录，保留已采用文件…')
                 job = self.jobs.maintenance_apply(self.client, plan)
@@ -330,8 +381,8 @@ class FetchDialog(ComponentDialog):
             latest=self.jobs.refresh(self.client,command_id) if state!='PREPARED' else self.jobs.get(command_id)
             if latest['state'] == 'PREPARED':
                 return self.jobs.dispatch(self.client, command_id)
-            if latest['state'] not in RESUMABLE:return latest
-            self.jobs.observe(command_id, self.client.request('resume', command_id=command_id))
+            if latest['state'] not in RESUMABLE | {'NEEDS_REVIEW'}:return latest
+            self.jobs.observe(command_id, self.client.request('collection.continue' if latest['state']=='NEEDS_REVIEW' else 'resume', command_id=command_id))
             return self.jobs.get(command_id)
         self.run(operation, self.show_job)
 
@@ -377,6 +428,14 @@ class FetchDialog(ComponentDialog):
         self.poll.stop()
         def operation(progress):
             self.ensure_client()
+            if action=='end':
+                latest=self.jobs.refresh(self.client,command_id) if self.current['record'] else self.jobs.get(command_id)
+                if latest['state'] in ACTIVE:
+                    self.jobs.observe(command_id,self.client.request('pause',command_id=command_id));deadline=time.monotonic()+90
+                    while self.jobs.get(command_id)['state'] in ACTIVE:
+                        progress('等待当前页面动作安全结束，不等待平台生成完成…')
+                        if self._closing or time.monotonic()>=deadline:raise ValueError('当前动作仍在安全收尾，未强杀任务；稍后可继续结束')
+                        time.sleep(.15);self.jobs.refresh(self.client,command_id)
             return self.jobs.maintenance_preview(self.client, command_id, action)
         self.run(operation, self.maintenance_previewed)
 
@@ -392,19 +451,20 @@ class FetchDialog(ComponentDialog):
                 QTimer.singleShot(0, self.on_idle)
 
     def confirm_maintenance(self, plan):
-        ending = plan['action'] == 'end'
-        title = '结束本次采集' if ending else '删除采集记录'
+        reexport=plan['action']=='reexport'
+        ending = plan['action'] in {'end','reexport'}
+        title = '重新导出所选门店' if reexport else '结束本次采集' if ending else '删除采集记录'
         stores = [s['name'] for s in plan['stores']]
-        text = ('结束后不再继续本次采集，相关门店可新建任务。' if ending else '这条采集记录将从本机列表删除，不能恢复。')
+        text = ('结束所选门店旧采集项，并创建新的导出。' if reexport else '结束后不再继续本次本地采集，相关门店可新建任务。' if ending else '这条采集记录将从本机列表删除，不能恢复。')
         text += '\n门店：' + '、'.join(stores[:8]) + (f' 等 {len(stores)} 家（完整范围见详细信息）' if len(stores)>8 else '')
         if plan.get('related'):
             text += f"\n同时结束 {len(plan['related'])} 条旧记录中阻塞这些门店的任务；旧记录的其他门店保持不变。"
         if plan.get('retained'):
-            text += f"\n其中 {len(plan['retained'])} 个已受理平台任务保留。新建采集会继续收取原任务，文件按原采集时间记录。"
+            text += '\n旧平台任务可能继续完成，重新导出可能产生重复文件；旧回执和原件保留，不会覆盖新结果。'
         text += '\n\n已采用文件、草稿、签发数据及原下载文件均保留。不会删除翱象平台任务。'
         box = QMessageBox(QMessageBox.Icon.Warning, title, text, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, self)
         box.setDefaultButton(QMessageBox.StandardButton.No)
-        box.button(QMessageBox.StandardButton.Yes).setText('确认结束' if ending else '确认删除')
+        box.button(QMessageBox.StandardButton.Yes).setText('确认重新导出' if reexport else '确认结束' if ending else '确认删除')
         box.button(QMessageBox.StandardButton.No).setText('取消')
         details = '\n'.join(f"{s['name']}（{s['code']}）" for s in plan['stores'])
         if plan.get('related'):
@@ -428,6 +488,8 @@ class FetchDialog(ComponentDialog):
 
     def failure(self, text):
         self.poll.stop()
+        if self._checking_new_fetch:
+            self._checking_new_fetch=False;self.progress.setRange(0,1);self.progress.setValue(0)
         super().failure(text)
 
     def update_buttons(self, *_):
@@ -439,14 +501,17 @@ class FetchDialog(ComponentDialog):
         for widget in [self.stores, self.policy, self.all_btn, self.none_btn]:
             widget.setEnabled(available and not active)
         self.start_btn.setEnabled(available and not active and bool(count) and bool((self.configuration or {}).get('enabled')))
+        self.reexport_btn.setEnabled(available and bool(count) and bool((self.configuration or {}).get('enabled')))
         self.history.setEnabled(available and not active)
         self.refresh_btn.setEnabled(available and bool(self.current))
-        self.end_btn.setEnabled(available and bool(self.current) and not active and state not in {'ENDED', 'CANCELLED', 'SUCCEEDED'})
+        self.end_btn.setEnabled(available and bool(self.current) and state not in {'ENDED', 'CANCELLED', 'SUCCEEDED'})
         self.delete_btn.setEnabled(available and state in {'ENDED', 'CANCELLED', 'SUCCEEDED'})
         self.pause_btn.setEnabled(not self._closing and state in {'QUEUED', 'RUNNING'} and not self.pause_pending)
         self.pause_btn.setText('已停止取数' if state in RESUMABLE else '停止后续取数')
         self.pause_btn.setToolTip('本地取数已停止。可以继续原任务，或结束本次采集后新建；已受理平台任务保留。' if state in RESUMABLE else '等待当前动作安全结束，保留原平台任务。')
-        self.resume_btn.setEnabled(available and state in RESUMABLE | {'PREPARED'})
+        self.resume_btn.setText('核对原回执 / 继续其他门店' if state == 'NEEDS_REVIEW' else '继续原采集任务')
+        self.resume_btn.setToolTip('已有确切回执的项接回原任务；其余待核项保持保护，不会重发。等待中的其他门店可以继续。')
+        self.resume_btn.setEnabled(available and state in RESUMABLE | {'PREPARED', 'NEEDS_REVIEW'})
         self.retry_items_btn.setEnabled(available and state in {'PAUSED','INTERRUPTED','COMPLETED_WITH_ERRORS'} and any(i['state']=='FAILED' for i in ((self.current or {}).get('record') or {}).get('items',[])))
         self.cancel_request_btn.setEnabled(available and state == 'PREPARED')
         successes = any(i['state'] == 'SUCCEEDED' for i in (self.current or {}).get('record', {}).get('items', [])) if self.current and self.current.get('record') else False

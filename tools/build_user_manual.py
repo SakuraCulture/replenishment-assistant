@@ -121,7 +121,10 @@ def html_manual():
     page = '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     page += f'<title>补货助手 {VERSION} · 新人业务上手手册</title><style>{style}</style><aside><strong>新人从这里开始</strong><p>补货助手 · {VERSION}</p>{nav}</aside><main id="top"><header><span class="tag">业务引导 / 参数详解 / 单号维护 / 离线可用</span>'
     page += content(intro) + '<div class="flow"><span>定门店与参数</span><span>→ 备数与审核</span><span>→ 签发交门店</span><span>→ 回传与仓分配</span><span>→ 付款与采购</span><span>→ 实收与复盘</span></div>'
-    page += f'<input id="manual-search" aria-label="搜索任务或报错" type="search" placeholder="输入：参数、权重、系统默认、翱象采购单号、TASK_NOT_FOUND"><div id="count">共 {len(chapters)} 个业务阶段，所有内容可离线阅读</div><p><a href="{PDF_NAME}">打开可搜索 PDF</a> · <a href="screenshot-index.json">截图来源索引</a></p></header>'
+    pdf=FOLDER/PDF_NAME
+    if not pdf.is_file():pdf=max(FOLDER.glob('*.pdf'),key=lambda p:p.stat().st_mtime,default=None)
+    pdf_link=(f'<a href="{pdf.name}">'+('打开可搜索 PDF' if pdf.name==PDF_NAME else '历史 PDF 归档（新版变更见本页）')+'</a> · ') if pdf else ''
+    page += f'<input id="manual-search" aria-label="搜索任务或报错" type="search" placeholder="输入：参数、权重、重建预览、翱象采购单号、TASK_NOT_FOUND"><div id="count">共 {len(chapters)} 个业务阶段，所有内容可离线阅读</div><p>{pdf_link}<a href="screenshot-index.json">截图来源索引</a></p></header>'
     page += ''.join(bodies) + '</main><dialog aria-label="原图预览"><button>关闭原图</button><div class="scroll"><img alt=""></div></dialog><script>' + script + '</script></html>'
     (FOLDER / 'index.html').write_text(page, encoding='utf-8', newline='\n')
 

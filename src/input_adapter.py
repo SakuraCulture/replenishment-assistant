@@ -18,15 +18,16 @@ from openpyxl.cell import WriteOnlyCell
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 
-from model import VERSION, Rules, calculate, number, blank, turnover
+from model import VERSION, Rules, calculate, number, blank, turnover, sales_floor_eligible, FLOOR_RULE
 from table_records import table_records,require_headers
 
 HERE = Path(__file__).resolve().parent
 
 
 def digest(path):
+    from portable_assets import resolve
     h=hashlib.sha256()
-    with Path(path).open('rb') as f:
+    with resolve(path).open('rb') as f:
         for block in iter(lambda:f.read(1024*1024),b''):h.update(block)
     return h.hexdigest()
 
@@ -58,7 +59,8 @@ def read_table(path, sheet, required, *, _cells=None):
         header,values=_cells
         return table_records(header,values,sheet,required)
     warnings.filterwarnings('ignore',message='Workbook contains no default style')
-    book=openpyxl.load_workbook(path,read_only=True,data_only=True,keep_links=False)
+    from portable_assets import resolve
+    book=openpyxl.load_workbook(resolve(path),read_only=True,data_only=True,keep_links=False)
     try:
         if sheet is not None:
             if sheet not in book.sheetnames:raise ValueError(f'找不到工作表：{sheet}')
@@ -209,6 +211,14 @@ def business_checks(results,rules,*,extreme_restore=True):
             try:packs(q,step)
             except ValueError:failures.append([rn,'未满足出库倍数',q,step])
         if number(d.get('BQ')) and q<d['BQ']:failures.append([rn,'最低恢复量未兑现',q,d['BQ']])
+        new_floor=d.get('_floor_rule')==FLOOR_RULE
+        if new_floor and d.get('AW')=='可计算':
+            ordinary=d.get('AR') if d.get('BI')==1 else 0
+            if not sales_floor_eligible(d) and not d.get('_zero_monthly_restore'):
+                if number(ordinary) and number(d.get('BP')) and d['BP']>ordinary:failures.append([rn,'非双零仍追加销售型保底',d['BP'],ordinary])
+                if number(d.get('BQ')) and d['BQ']>0:failures.append([rn,'非双零仍保留销售型最低恢复量',d['BQ']])
+            if number(d.get('BR')) and q>d['BR'] and not d.get('_audit',{}).get('applied'):
+                failures.append([rn,'最终数量超过计算候选且非一箱例外',q,d['BR']])
         inbound_capped=bool(d.get('_inbound_cap') and number(d.get('L')) and d['L']>0)
         extreme_disabled=(not extreme_restore and d.get('AW')=='极端缺货自动拉回' and number(d.get('BA')) and d['BA']>=30)
         if extreme_disabled and number(d.get('BO')) and (d['BO']!=0 or q!=0):failures.append([rn,'极端恢复关闭仍自动补货',q])
@@ -217,7 +227,7 @@ def business_checks(results,rules,*,extreme_restore=True):
             and not inbound_capped
             and not extreme_disabled
             and d['K']<=0 and max(d['L'],0)<min(rules.minimum_reference_units,step)
-            and (max(d['H'],d['I'],d['J'])>0 or d['J']==0 and number(d['N']) and d['N']>0)):
+            and ((sales_floor_eligible(d) if new_floor else max(d['H'],d['I'],d['J'])>0) or d['J']==0 and number(d['N']) and d['N']>0)):
             checks['应最低恢复行数']+=1
             if q<step:failures.append([rn,'有销或缺货零库存漏补',q,step])
         if number(d.get('BQ')) and number(step) and max(d['L'],0)>=min(rules.minimum_reference_units,step) and d['BQ']>0:
@@ -303,9 +313,9 @@ def write_workbook(path,results,report,config,all_headers):
     for k,v in config['category_profiles'].items():entries.append(['分类映射：'+k,v,'从商品资料分类映射；更细的品类权重尚未引入'])
     for section in ['sales_fields','product_fields']:
         for k,v in config[section].items():entries.append([section+'.'+k,v,'字段映射接口'])
-    entries.extend([['原资格门槛','P≤12且P≠-1，或月销≤5且V<6','最低有货恢复仍可豁免原资格门槛'],
+    entries.extend([['原资格门槛','P≤12且P≠-1，或月销≤5且V<6','销售型断货保底仅在可用、在途各自为0且有销量时可独立触发；正常需求仍扣足在途'],
                     ['周转P','ROUND(MAX(K+0.7L,0)/(I/7或J/30),0)','周销优先，周销为0时用月销；沿用原P，0.7仅用于资格参考，AQ在途仍只扣一次'],
-                    ['最低有货','缺货且无足够在途时，优先恢复一个实际出库单位','月销0且0<N<30、极端缺货也保留；原首铺数量不作为永久库存下限'],
+                    ['最低有货','销售型断货保底：有效可用库存=0、在途库存=0且有销量；其他限制保留','零月销且0<N<30、极端缺货按各自原规则恢复；必采最低持有和一箱例外独立，不因正负库存相抵触发销售型保底'],
                     ['供货/停采状态','保留说明，不新增自动停补门槛','数量是模型建议；核验供货可用性和导出停采状态后再执行'],
                     ['资金金额','仅汇总BV为数值的结果','未知价格与未定数量不当作0计入完整资金；另有计数提示'],
                     ['使用方式','每次更换输入后重新运行Python','在结果工作簿中手动改输入不会触发Python重算'],

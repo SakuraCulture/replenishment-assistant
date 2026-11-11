@@ -6,8 +6,10 @@ import yazl from 'yazl';
 import {pipeline} from 'node:stream/promises';
 import {createWriteStream} from 'node:fs';
 import {relativeSafe,fail} from './common.mjs';
+import {portablePath} from './portable-assets.mjs';
 
 export async function openArchive(file,{maxUncompressedBytes=4294967296,maxEntries=20000}={}){
+  file=await portablePath(file);
   const zip=await new Promise((resolve,reject)=>yauzl.open(file,{lazyEntries:true,autoClose:false,strictFileNames:true},(e,z)=>e?reject(e):resolve(z)));
   const entries=new Map();let total=0;
   try{

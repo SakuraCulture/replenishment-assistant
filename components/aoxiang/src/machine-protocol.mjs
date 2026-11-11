@@ -8,12 +8,15 @@ const idPattern=/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 // A valid envelope can receive a correlated validation error without dispatching its body.
 export const correlationId=value=>value?.protocol_version===1&&typeof value.request_id==='string'&&idPattern.test(value.request_id)?value.request_id:null;
 const fields={ping:[],'session.release':[],'session.status':[],'session.health':[],configuration:[],list:['offset','limit'],reserve:['command'],status:['command_id'],
-  'collection.preview':['command_id','operation'],'collection.apply':['command_id','operation','token'],
+  'collection.preview':['command_id','operation'],'collection.apply':['command_id','operation','token'],'collection.continue':['command_id'],'orders.retire':['operation_id','oids'],
+  'collection.reexport.preview':['operation_id','warehouse_codes','purpose'],'collection.reexport.apply':['operation_id','warehouse_codes','purpose','token'],
+  'collection.consumer':['command_id','fingerprint','purpose','owner'],
   events:['command_id','after','limit'],pause:['command_id'],resume:['command_id'],retry:['command_id','indices','sequence'],shutdown:[],
   discover:[],'setup.check_login':[],'setup.verify_saved':['codes'],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
   'setup.cancel':['setup_id'],'setup.commit':['setup_id'],
   'template.start':[],'template.status':['template_id'],'template.cancel':['template_id'],
-  'purchase.reserve':['package_file','package_sha256'],'purchase.start':['purchase_id'],
+  'purchase.reserve':['package_file','package_sha256'],'purchase.start':['purchase_id'],'purchase.submit':['purchase_id'],
+  'purchase.rebuild':['purchase_id','sequence','package_file','package_sha256','operation_id','reason','acknowledge_uncertainty'],
   'purchase.status':['purchase_id'],'purchase.pause':['purchase_id'],'purchase.cancel':['purchase_id'],'purchase.list':['offset','limit'],
   'binding.start':['purchase_id','binding_request'],'binding.status':['purchase_id'],'binding.pause':['purchase_id'],
   'binding.confirm':['purchase_id','proposal_id','sequence','manifest_sha256'],
@@ -23,8 +26,13 @@ export function validateRequest(value){
   if(!value||typeof value!=='object'||Array.isArray(value)||value.protocol_version!==1||
     typeof value.request_id!=='string'||!idPattern.test(value.request_id)||!Object.hasOwn(fields,value.action))fail('REQUEST_SCHEMA','机器请求版本、编号或动作无效');
   const allowed=['protocol_version','request_id','action',...fields[value.action]];
-  if(value.action.startsWith('collection.')&&(!['end','delete'].includes(value.operation)||(value.action==='collection.apply'&&!/^[a-f0-9]{64}$/.test(value.token||''))))fail('REQUEST_SCHEMA','采集维护动作或确认凭据无效');
+  if(value.action==='collection.consumer'&&(!/^[a-f0-9]{64}$/.test(value.fingerprint||'')||!['replenishment','stockout_analysis'].includes(value.purpose)||typeof value.owner!=='string'||value.owner.length>128||value.purpose==='stockout_analysis'&&!value.owner))fail('REQUEST_SCHEMA','旧采集用途、校验值或原拥有者无效');
+  if(value.action.startsWith('collection.reexport.')&&(!idPattern.test(value.operation_id||'')||!['replenishment','stockout_analysis'].includes(value.purpose)||
+    !Array.isArray(value.warehouse_codes)||!value.warehouse_codes.length||value.warehouse_codes.length>256||new Set(value.warehouse_codes).size!==value.warehouse_codes.length||
+    value.warehouse_codes.some(c=>typeof c!=='string'||!c||c.length>128)||(value.action.endsWith('.apply')&&!/^[a-f0-9]{64}$/.test(value.token||''))))fail('REQUEST_SCHEMA','重导操作编号、用途、门店范围或确认凭据无效');
+  if(['collection.preview','collection.apply'].includes(value.action)&&(!['end','delete'].includes(value.operation)||(value.action==='collection.apply'&&!/^[a-f0-9]{64}$/.test(value.token||''))))fail('REQUEST_SCHEMA','采集维护动作或确认凭据无效');
   if(value.action==='retry'&&(!Number.isInteger(value.sequence)||value.sequence<1||!Array.isArray(value.indices)||!value.indices.length||value.indices.length>256||value.indices.some(i=>!Number.isInteger(i)||i<0)||new Set(value.indices).size!==value.indices.length))fail('REQUEST_SCHEMA','重跑序号与范围无效');
+  if(value.action==='orders.retire'&&(!/^[a-f0-9]{32}$/.test(value.operation_id)||!Array.isArray(value.oids)||!value.oids.length||value.oids.length>256||new Set(value.oids).size!==value.oids.length||value.oids.some(o=>typeof o!=='string'||!o||o.length>100)))fail('REQUEST_SCHEMA','删除操作号或原订单身份无效');
   if(value.action==='setup.verify_saved'&&(!Array.isArray(value.codes)||!value.codes.length||value.codes.length>256||value.codes.some(c=>typeof c!=='string'||!c||c.length>128)||new Set(value.codes).size!==value.codes.length))fail('REQUEST_SCHEMA','核验门店范围无效');
   if(Object.keys(value).some(k=>!allowed.includes(k)))fail('REQUEST_SCHEMA','机器请求包含未知字段');
   if(fields[value.action].includes('command_id')&&(typeof value.command_id!=='string'||!idPattern.test(value.command_id)))fail('REQUEST_SCHEMA','命令编号不能为空且必须符合契约');
@@ -35,7 +43,9 @@ export function validateRequest(value){
   if(value.action==='binding.start')bindingRequest(value.binding_request);
   if(value.action==='binding.confirm'&&(!idPattern.test(value.proposal_id||'')||!Number.isSafeInteger(value.sequence)||value.sequence<1||!/^[a-f0-9]{64}$/.test(value.manifest_sha256||'')))fail('REQUEST_SCHEMA','关联预览编号、版本或哈希无效');
   if(value.action==='receipt.synced'&&(!/^[a-f0-9]{64}$/.test(value.manifest_sha256||'')||!value.receipt||Object.keys(value.receipt).some(k=>!['number','revision','stage','version','changed'].includes(k))))fail('REQUEST_SCHEMA','正式实收回执或快照哈希无效');
-  if(value.action==='purchase.reserve'&&(typeof value.package_file!=='string'||!value.package_file||value.package_file.length>2048||!(/^[a-f0-9]{64}$/).test(value.package_sha256||'')))fail('REQUEST_SCHEMA','采购任务文件及哈希无效');
+  if(['purchase.reserve','purchase.rebuild'].includes(value.action)&&(typeof value.package_file!=='string'||!value.package_file||value.package_file.length>2048||!(/^[a-f0-9]{64}$/).test(value.package_sha256||'')))fail('REQUEST_SCHEMA','采购任务文件及哈希无效');
+  if(value.action==='purchase.rebuild'&&(!Number.isSafeInteger(value.sequence)||value.sequence<1||!/^[a-f0-9]{32}$/.test(value.operation_id||'')||
+    typeof value.reason!=='string'||!value.reason.trim()||value.reason.length>200||value.acknowledge_uncertainty!==true))fail('REQUEST_SCHEMA','请明确确认旧结果可能未核清并提供有效重建范围');
   if(value.action==='setup.start'){
     const text=v=>typeof v==='string'&&v.trim().length>0&&v.length<=1024;
     const candidate=value.candidate;

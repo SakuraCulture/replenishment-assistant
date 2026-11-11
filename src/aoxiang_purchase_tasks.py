@@ -22,11 +22,17 @@ def _write_new(path, value):
 
 
 def prepare(path, head, configuration, suppliers, receipt, directory, contract_path, *, cancel=None, progress=lambda _: None):
+    import deletion_barrier
+    command_id='purchase-'+uuid.uuid4().hex
+    deletion_barrier.register_package(path,head['oid'],command_id)
+    try:return _prepare(path,head,configuration,suppliers,receipt,directory,contract_path,command_id,cancel=cancel,progress=progress)
+    finally:deletion_barrier.package_finished(path,head['oid'],command_id)
+
+def _prepare(path, head, configuration, suppliers, receipt, directory, contract_path, command_id, *, cancel=None, progress=lambda _: None):
     plan = freeze_payment(path, head, configuration, suppliers, cancel=cancel)
     plan['admission']=check_admission(path,plan)
     from aoxiang_purchase import fingerprint
     plan['fingerprint']=fingerprint(plan)
-    command_id = 'purchase-' + uuid.uuid4().hex
     target = Path(directory) / command_id
     target.mkdir(parents=True, exist_ok=False)
     marker = 'AX_CREATE:' + command_id

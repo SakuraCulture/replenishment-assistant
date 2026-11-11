@@ -1,0 +1,1024 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "baseline": "385444cdf9a2cb1c9f2de62fd9c2e282da6e9d50",
+  "cases": 1164,
+  "forecast_zero_differences": true,
+  "ordinary_outside_scope_unchanged": 577,
+  "unchanged_execution": 1118,
+  "changed_execution": 46,
+  "changes": [
+    {
+      "index": 576,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": null,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 578,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": null,
+        "budget": 5,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 579,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": null,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 580,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 582,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": 5,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 583,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 584,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 6,
+        "n": null,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 587,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 6,
+        "n": null,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 588,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 6,
+        "n": 0,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 591,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 6,
+        "n": 0,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 592,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 0.3,
+        "n": null,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.2,
+      "before_amount": 0,
+      "after_amount": 2.4
+    },
+    {
+      "index": 594,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 0.3,
+        "n": null,
+        "budget": 5,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.2,
+      "before_amount": 0,
+      "after_amount": 2.4
+    },
+    {
+      "index": 595,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 0.3,
+        "n": null,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.2,
+      "before_amount": 0,
+      "after_amount": 2.4
+    },
+    {
+      "index": 596,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 0.3,
+        "n": 0,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.2,
+      "before_amount": 0,
+      "after_amount": 2.4
+    },
+    {
+      "index": 598,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 0.3,
+        "n": 0,
+        "budget": 5,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.2,
+      "before_amount": 0,
+      "after_amount": 2.4
+    },
+    {
+      "index": 599,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 0.3,
+        "n": 0,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.2,
+      "before_amount": 0,
+      "after_amount": 2.4
+    },
+    {
+      "index": 624,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 1,
+        "n": null,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 626,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 1,
+        "n": null,
+        "budget": 5,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 627,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 1,
+        "n": null,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 628,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 630,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": 5,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 631,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 1.0,
+      "before_amount": 0,
+      "after_amount": 2.0
+    },
+    {
+      "index": 632,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 6,
+        "n": null,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 635,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 6,
+        "n": null,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 636,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 6,
+        "n": 0,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 639,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 6,
+        "n": 0,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 640,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 0.3,
+        "n": null,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 0.6,
+      "before_amount": 0,
+      "after_amount": 1.2
+    },
+    {
+      "index": 642,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 0.3,
+        "n": null,
+        "budget": 5,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 0.6,
+      "before_amount": 0,
+      "after_amount": 1.2
+    },
+    {
+      "index": 643,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 0.3,
+        "n": null,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 0.6,
+      "before_amount": 0,
+      "after_amount": 1.2
+    },
+    {
+      "index": 644,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 0.3,
+        "n": 0,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 0.6,
+      "before_amount": 0,
+      "after_amount": 1.2
+    },
+    {
+      "index": 646,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 0.3,
+        "n": 0,
+        "budget": 5,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 0.6,
+      "before_amount": 0,
+      "after_amount": 1.2
+    },
+    {
+      "index": 647,
+      "case": {
+        "must": true,
+        "sales": [
+          0,
+          0,
+          0
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 0.3,
+        "n": 0,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 0.6,
+      "before_amount": 0,
+      "after_amount": 1.2
+    },
+    {
+      "index": 824,
+      "case": {
+        "must": true,
+        "sales": [
+          0.1,
+          1,
+          4
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 6,
+        "n": null,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 827,
+      "case": {
+        "must": true,
+        "sales": [
+          0.1,
+          1,
+          4
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 6,
+        "n": null,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 828,
+      "case": {
+        "must": true,
+        "sales": [
+          0.1,
+          1,
+          4
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 6,
+        "n": 0,
+        "budget": null,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 831,
+      "case": {
+        "must": true,
+        "sales": [
+          0.1,
+          1,
+          4
+        ],
+        "stock": 0.5,
+        "inbound": 0,
+        "step": 6,
+        "n": 0,
+        "budget": 100,
+        "tags": "",
+        "status": "正常"
+      },
+      "before_quantity": 0,
+      "after_quantity": 6.0,
+      "before_amount": 0,
+      "after_amount": 12.0
+    },
+    {
+      "index": 1152,
+      "case": {
+        "must": false,
+        "sales": [
+          2,
+          14,
+          60
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "日配",
+        "status": "正常"
+      },
+      "before_quantity": 33,
+      "after_quantity": 0,
+      "before_amount": 66,
+      "after_amount": 0
+    },
+    {
+      "index": 1153,
+      "case": {
+        "must": false,
+        "sales": [
+          2,
+          14,
+          60
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "日配",
+        "status": "禁采"
+      },
+      "before_quantity": 33,
+      "after_quantity": 0,
+      "before_amount": 66,
+      "after_amount": 0
+    },
+    {
+      "index": 1154,
+      "case": {
+        "must": false,
+        "sales": [
+          2,
+          14,
+          60
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "必卖；日配，活动",
+        "status": "正常"
+      },
+      "before_quantity": 33,
+      "after_quantity": 0,
+      "before_amount": 66,
+      "after_amount": 0
+    },
+    {
+      "index": 1155,
+      "case": {
+        "must": false,
+        "sales": [
+          2,
+          14,
+          60
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "必卖；日配，活动",
+        "status": "禁采"
+      },
+      "before_quantity": 33,
+      "after_quantity": 0,
+      "before_amount": 66,
+      "after_amount": 0
+    },
+    {
+      "index": 1157,
+      "case": {
+        "must": false,
+        "sales": [
+          2,
+          14,
+          60
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "非日配",
+        "status": "禁采"
+      },
+      "before_quantity": 33,
+      "after_quantity": 0,
+      "before_amount": 66,
+      "after_amount": 0
+    },
+    {
+      "index": 1158,
+      "case": {
+        "must": true,
+        "sales": [
+          2,
+          14,
+          60
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "日配",
+        "status": "正常"
+      },
+      "before_quantity": 33,
+      "after_quantity": 0,
+      "before_amount": 66,
+      "after_amount": 0
+    },
+    {
+      "index": 1159,
+      "case": {
+        "must": true,
+        "sales": [
+          2,
+          14,
+          60
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "日配",
+        "status": "禁采"
+      },
+      "before_quantity": 33,
+      "after_quantity": 0,
+      "before_amount": 66,
+      "after_amount": 0
+    },
+    {
+      "index": 1160,
+      "case": {
+        "must": true,
+        "sales": [
+          2,
+          14,
+          60
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "必卖；日配，活动",
+        "status": "正常"
+      },
+      "before_quantity": 33,
+      "after_quantity": 0,
+      "before_amount": 66,
+      "after_amount": 0
+    },
+    {
+      "index": 1161,
+      "case": {
+        "must": true,
+        "sales": [
+          2,
+          14,
+          60
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "必卖；日配，活动",
+        "status": "禁采"
+      },
+      "before_quantity": 33,
+      "after_quantity": 0,
+      "before_amount": 66,
+      "after_amount": 0
+    },
+    {
+      "index": 1163,
+      "case": {
+        "must": true,
+        "sales": [
+          2,
+          14,
+          60
+        ],
+        "stock": 0,
+        "inbound": 0,
+        "step": 1,
+        "n": 0,
+        "budget": null,
+        "tags": "非日配",
+        "status": "禁采"
+      },
+      "before_quantity": 33,
+      "after_quantity": 0,
+      "before_amount": 66,
+      "after_amount": 0
+    }
+  ]
+}

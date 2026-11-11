@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "live_platform": false,
+  "checks": [
+    "取消重建确认不改变旧任务、采购记录或未选项",
+    "真实Qt按钮重建无回执任务：只处理勾选仓单，未选已成功仓单逐字段保持",
+    "固定Node实际释放旧预约并原子登记后继；旧命令拒绝派发，重试不重复建立新预览",
+    "旧冻结文件及上传边界事实保留；新预览仍须单独确认上传",
+    "应用内生产调度：模拟A等待时B已提交，最多2单已受理并行处理，3单各归原单",
+    "重建与等待使用后台Worker，Qt事件循环持续响应"
+  ],
+  "component_calls": [
+    "configuration",
+    "setup.check_login",
+    "configuration",
+    "template.start",
+    "template.status",
+    "session.health",
+    "purchase.status",
+    "purchase.rebuild",
+    "session.release",
+    "purchase.status",
+    "purchase.status",
+    "purchase.start",
+    "purchase.list",
+    "session.release",
+    "shutdown"
+  ],
+  "simulation_events": [
+    [
+      "submit",
+      "SYNTHETIC-0"
+    ],
+    [
+      "submit",
+      "SYNTHETIC-1"
+    ],
+    [
+      "observe",
+      "SYNTHETIC-0"
+    ],
+    [
+      "submit",
+      "SYNTHETIC-2"
+    ],
+    [
+      "observe",
+      "SYNTHETIC-1"
+    ],
+    [
+      "observe",
+      "SYNTHETIC-2"
+    ]
+  ],
+  "simulation_max_inflight": 2,
+  "heartbeat_ticks": 116,
+  "process_exit": 0,
+  "exe_sha256": "baa4eba6a2b6ce182df68cfa772d23a3755e98f707bd73aefe21d1dde797ba78",
+  "accepted": true
+}

@@ -6,7 +6,8 @@ from pathlib import Path
 
 
 class Bridge:
-    AX_ACTIONS={'configuration','reserve','status','resume','retry','pause'}
+    AX_ACTIONS={'configuration','reserve','status','resume','retry','pause','setup.check_login','setup.status','setup.cancel',
+                'collection.continue','collection.consumer','collection.preview','collection.apply','collection.reexport.preview','collection.reexport.apply'}
     JST_ACTIONS={'sync.start','sync.status','sync.resume','sync.stop','sync.provide_observation','sync.acknowledge_adoption'}
 
     def __init__(self,host,cancel,progress):
@@ -87,17 +88,17 @@ class Task(QThread):
     succeeded=Signal(object)
     failed=Signal(str)
 
-    def __init__(self,host,operation,arguments,*,bridge_factory=Bridge):
+    def __init__(self,host,operation,arguments,*,bridge_factory=Bridge,worker_target=None):
         super().__init__(host)
         self.host,self.operation,self.arguments=host,operation,arguments
         self.ctx=multiprocessing.get_context('spawn');self.cancel=self.ctx.Event()
-        self.bridge_factory=bridge_factory;self.pid=None;self.diagnostic=None;self.cancel_reason=''
+        self.bridge_factory=bridge_factory;self.worker_target=worker_target;self.pid=None;self.diagnostic=None;self.cancel_reason=''
 
     def run(self):
         from stockout_worker import serve
         parent,child=self.ctx.Pipe()
         bridge=self.bridge_factory(self.host,self.cancel,self.progress.emit)
-        process=self.ctx.Process(target=serve,args=(child,str(self.host.repository.folder),self.operation,self.arguments,self.cancel))
+        process=self.ctx.Process(target=self.worker_target or serve,args=(child,str(self.host.repository.folder),self.operation,self.arguments,self.cancel))
         result=None;error=None;received=False
         try:
             process.start();self.pid=process.pid;child.close()

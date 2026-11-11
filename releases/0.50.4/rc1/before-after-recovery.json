@@ -1,0 +1,39 @@
+{
+  "baseline_0503": {
+    "blocked": [
+      {
+        "store": "W2",
+        "task_id": null,
+        "reason": "平台受理情况未核清，不能丢弃防重记录；请核对原平台任务"
+      }
+    ],
+    "stores": [
+      {
+        "code": "W2",
+        "name": "合成琅琊店"
+      },
+      {
+        "code": "W1",
+        "name": "合成乳山店"
+      }
+    ],
+    "applied": false
+  },
+  "candidate_0504": {
+    "blocked": [],
+    "stores": [
+      {
+        "code": "W2",
+        "name": "合成琅琊店"
+      },
+      {
+        "code": "W1",
+        "name": "合成乳山店"
+      }
+    ],
+    "applied": false
+  },
+  "synthetic": true,
+  "live_platform": false,
+  "operation": "pure local end preview; no browser binding, no platform calls"
+}

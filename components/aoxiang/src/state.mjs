@@ -3,6 +3,8 @@ import path from 'node:path';
 import {DatabaseSync,backup} from 'node:sqlite';
 import {fail,uid,now,canonical,sha256,scopeHash,exists,writeJson,sameIdentity} from './common.mjs';
 import {checkPurchaseReceipt} from './purchase-contract.mjs';
+import {retirementSchema,requireUnretired,requireHostOrder} from './order-retirement.mjs';
+import {legacyEndedCollections} from './collection-ended.mjs';
 
 export class ExclusiveLock{
   static async acquire(file){
@@ -14,7 +16,8 @@ export class ExclusiveLock{
   }
 }
 export const tenantKey = identity=>sha256(canonical({accountId:identity.accountId,merchantCode:identity.merchantCode}));
-export const assetKey = x=>sha256(canonical({accountId:x.accountId,merchantCode:x.merchantCode,buyerWarehouseCode:x.buyerWarehouseCode,acquisitionDate:x.acquisitionDate,scopeHash:x.scopeHash,semanticVersion:x.semanticVersion}));
+export const collectionPurpose = x=>x?.consumer?.purpose||x?.purpose||'replenishment';
+export const assetKey = x=>sha256(canonical({accountId:x.accountId,merchantCode:x.merchantCode,buyerWarehouseCode:x.buyerWarehouseCode,acquisitionDate:x.acquisitionDate,scopeHash:x.scopeHash,semanticVersion:x.semanticVersion,...(collectionPurpose(x)==='stockout_analysis'?{purpose:'stockout_analysis'}:{})}));
 export const pendingKey = p=>sha256(canonical({accountId:p.accountId,merchantCode:p.merchantCode,sourceAttemptId:p.sourceAttemptId,buyerWarehouseCode:p.buyerWarehouseCode,scopeHash:p.scopeHash}));
 const TERMINAL=new Set(['SUCCEEDED','REUSED','FAILED_CONFIRMED','CANCELLED_BEFORE_SUBMIT','ABANDONED']);
 
@@ -23,6 +26,18 @@ export class StateStore{
     await fs.mkdir(root,{recursive:true});
     const present=await exists(path.join(root,'state.sqlite'));
     if(!present&&(await exists(path.join(root,'state.guard.json'))||await exists(path.join(root,'config/portable.config.json'))))fail('STATE_MISSING','本机作业状态库缺失，不能作为全新状态重复提交；请恢复状态备份');
+    if(present){
+      const prior=new DatabaseSync(path.join(root,'state.sqlite'),{readOnly:true});
+      try{
+        const has=name=>!!prior.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name);
+        const orderUpgrade=has('metadata')&&!prior.prepare("SELECT value FROM metadata WHERE key='orderRetirementProtocol'").get();
+        const endedRepair=legacyEndedCollections(prior).length>0;
+        if(orderUpgrade||endedRepair){
+          const file=path.join(root,'recovery',(orderUpgrade?'before-order-retirement-':'before-ended-collection-')+uid()+'.sqlite');await fs.mkdir(path.dirname(file),{recursive:true});await backup(prior,file);
+          const check=new DatabaseSync(file,{readOnly:true});try{if(check.prepare('PRAGMA quick_check').get().quick_check!=='ok')fail('STATE_BACKUP_FAILED','退役升级前备份校验失败');}finally{check.close();}
+        }
+      }finally{prior.close();}
+    }
     const state=new StateStore(root);
     if(!await exists(path.join(root,'state.guard.json')))await writeJson(path.join(root,'state.guard.json'),{stateId:uid(),createdAt:now()});
     return state;
@@ -33,6 +48,10 @@ export class StateStore{
       const version=this.db.prepare("SELECT value FROM metadata WHERE key='schemaVersion'").get()?.value;
       if(!['1','2'].includes(version)){this.db.close();fail('STATE_VERSION','状态库版本不兼容，原库未升级或重建');}
       if(version==='2'&&!this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='purchase_runs'").get()){this.db.close();fail('STATE_CORRUPT','采购作业表缺失，不能重建空表后重提');}
+      const isolated=this.db.prepare("SELECT value FROM metadata WHERE key='collectionIsolation'").get();
+      const tables=['retired_collections','collection_reexports','collection_consumers'];
+      const present=tables.filter(name=>this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(name));
+      if((isolated&&(isolated.value!=='1'||present.length!==tables.length))||(!isolated&&present.length&&present.length!==tables.length)){this.db.close();fail('STATE_CORRUPT','采集失效或重导记录不完整，不能重建空表后重复派发');}
     }
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
       CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -46,9 +65,14 @@ export class StateStore{
       CREATE TABLE IF NOT EXISTS imported_pending(record_key TEXT PRIMARY KEY,tenant_key TEXT NOT NULL,warehouse_code TEXT NOT NULL,scope_hash TEXT NOT NULL,payload TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS migration_imports(migration_id TEXT PRIMARY KEY,package_hash TEXT NOT NULL,payload TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS conflicts(id TEXT PRIMARY KEY,payload TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS retired_collections(run_id TEXT PRIMARY KEY,ended_at TEXT NOT NULL,operation_id TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS collection_reexports(id TEXT PRIMARY KEY,payload TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS collection_consumers(run_id TEXT PRIMARY KEY,purpose TEXT NOT NULL,owner TEXT,command_id TEXT NOT NULL);
+      INSERT OR IGNORE INTO metadata VALUES('collectionIsolation','1');
     `);
     if(!['1','2'].includes(this.db.prepare("SELECT value FROM metadata WHERE key='schemaVersion'").get().value)){this.db.close();fail('STATE_VERSION','状态库版本不兼容，不能自动重建');}
     if(this.db.prepare('PRAGMA quick_check').get().quick_check!=='ok'){this.db.close();fail('STATE_CORRUPT','本地状态库需要恢复，不能新提交导出');}
+    retirementSchema(this.db);
   }
   close(){this.db.close();}
   write(fn){this.db.exec('BEGIN IMMEDIATE');try{const result=fn();this.db.prepare("UPDATE metadata SET value=CAST(value AS INTEGER)+1 WHERE key='generation'").run();this.db.exec('COMMIT');return result;}catch(e){this.db.exec('ROLLBACK');throw e;}}
@@ -62,6 +86,9 @@ export class StateStore{
   }
   getPurchase(id){return this.rows('purchase_runs').find(r=>r.id===id)||null;}
   putPurchase(record){
+    requireUnretired(this.db,record.hostPurchaseId,record.hostOrderId);
+    if(this.db.prepare('SELECT 1 FROM retired_purchase_runs WHERE id=?').get(record.id))fail('SOURCE_ORDER_DELETED','原采购取数任务已退役，不接受晚到回写');
+    if(record.hostOrderId)requireHostOrder(record.hostOrderId);
     const old=this.getPurchase(record.id);
     if(old){
       for(const key of ['identity','target','from','to','dateBasis','orderId','scopeHash','createdAt'])if(canonical(old[key]??null)!==canonical(record[key]??null))fail('PURCHASE_RECORD_CHANGED','已有采购作业的身份或冻结范围不能修改');
@@ -79,6 +106,9 @@ export class StateStore{
   }
   importPurchases(records){
     const merged=[];for(const r of records){
+      requireUnretired(this.db,r.hostPurchaseId,r.hostOrderId);
+      if(this.db.prepare('SELECT 1 FROM retired_purchase_runs WHERE id=?').get(r.id))fail('SOURCE_ORDER_DELETED','迁入记录属于已退役任务，不能恢复');
+      if(r.hostOrderId)requireHostOrder(r.hostOrderId);
       const old=this.getPurchase(r.id);if(!old){merged.push(r);continue;}
       if(old.scopeHash!==r.scopeHash||!sameIdentity(old.identity,r.identity))fail('MIGRATION_PURCHASE_CONFLICT','同一采购作业ID对应不同范围');
       const selected={...old,query:old.query||r.query,exports:{...old.exports}},rank=['PLANNED','INTENT_RECORDED','SUBMITTING','ACCEPTED','RUNNING','FINISHED','DOWNLOADED','VALIDATED','SUCCEEDED','FAILED_CONFIRMED'];
@@ -87,39 +117,54 @@ export class StateStore{
     }
     this.write(()=>{for(const r of merged)this.db.prepare('INSERT OR REPLACE INTO purchase_runs VALUES(?,?)').run(r.id,JSON.stringify(r));});return merged.length;
   }
-  putRun(run){this.write(()=>this.db.prepare('INSERT OR REPLACE INTO runs VALUES(?,?)').run(run.id,JSON.stringify(run)));}
+  collectionEnded(runId){return !!(runId&&this.db.prepare('SELECT 1 FROM retired_collections WHERE run_id=?').get(runId));}
+  collectionPurposeForRun(runId,fallback){return (runId&&this.db.prepare('SELECT purpose FROM collection_consumers WHERE run_id=?').get(runId)?.purpose)||collectionPurpose(fallback);}
+  requireCollection(runId){if(this.collectionEnded(runId))fail('RUN_ENDED','原采集已在本地结束；晚到结果仅保留在原记录，不接入新采集');}
+  putRun(run){this.requireCollection(run.id);this.write(()=>this.db.prepare('INSERT OR REPLACE INTO runs VALUES(?,?)').run(run.id,JSON.stringify(run)));}
   getRun(id){const r=this.db.prepare('SELECT payload FROM runs WHERE id=?').get(id);return r?JSON.parse(r.payload):null;}
-  putItem(item){this.write(()=>this.db.prepare('INSERT OR REPLACE INTO items VALUES(?,?,?)').run(item.id,item.runId,JSON.stringify(item)));}
+  putItem(item){this.requireCollection(item.runId);const old=this.db.prepare('SELECT run_id FROM items WHERE id=?').get(item.id);if(old&&old.run_id!==item.runId)fail('ITEM_ID_CHANGED','原采集明细不能改属其他作业');this.write(()=>this.db.prepare('INSERT OR REPLACE INTO items VALUES(?,?,?)').run(item.id,item.runId,JSON.stringify(item)));}
   getItems(runId){return this.db.prepare('SELECT payload FROM items WHERE run_id=?').all(runId).map(r=>JSON.parse(r.payload));}
   putAttempt(attempt){
+    this.requireCollection(attempt.runId);
     const old=this.getAttempt(attempt.id);
+    if(old){this.requireCollection(old.runId);for(const key of ['runId','itemId','accountId','merchantCode','buyerWarehouseCode','scopeHash'])if(old[key]!==attempt[key])fail('ATTEMPT_ID_CHANGED','原提交身份或门店归属不能更换');}
     if(old?.taskId&&attempt.taskId!==old.taskId)fail('TASK_ID_CHANGED','既有任务身份不能被重写');
     if(old?.stage==='SUBMISSION_UNKNOWN'&&attempt.stage==='SUBMITTING')fail('UNKNOWN_SUBMISSION','未决提交不能再次发送');
     this.write(()=>this.db.prepare('INSERT OR REPLACE INTO attempts VALUES(?,?,?,?,?,?,?,?)').run(attempt.id,attempt.itemId,tenantKey(attempt),attempt.buyerWarehouseCode,attempt.scopeHash,attempt.stage,attempt.taskId||null,JSON.stringify(attempt)));
   }
-  getAttempt(id){const r=this.db.prepare('SELECT payload FROM attempts WHERE id=?').get(id);return r?JSON.parse(r.payload):null;}
+  getAttempt(id){if(!id)return null;const r=this.db.prepare('SELECT payload FROM attempts WHERE id=?').get(id);return r?JSON.parse(r.payload):null;}
   recordReceipt(receipt){
     const a=receipt?.intentId?this.getAttempt(receipt.intentId):null;if(!a)return false;
+    if(this.collectionEnded(a.runId)){
+      const late=[...(a.lateReceipts||[])];
+      if(!late.some(r=>r.taskId===receipt.taskId))late.push({...receipt,observedAt:now()});
+      this.write(()=>this.db.prepare('UPDATE attempts SET payload=? WHERE id=?').run(JSON.stringify({...a,lateReceipts:late}),a.id));return true;
+    }
     if(a.taskId&&a.taskId!==receipt.taskId){this.putAttempt({...a,stage:'SUBMISSION_UNKNOWN',additionalTaskIds:[...new Set([...(a.additionalTaskIds||[]),receipt.taskId])]});return true;}
     const expected=a.semanticVersion==='D13-all-info-1'?'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT':'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2',s=receipt.scope;
     const extras=s?.extraKeys||Object.keys(s||{}).filter(k=>k!=='buyerWarehouseCodeList');
     const correct=receipt.code===expected&&JSON.stringify(s?.buyerWarehouseCodeList)===JSON.stringify([a.buyerWarehouseCode])&&!extras.length;
     this.putAttempt({...a,stage:['SUCCEEDED','ABANDONED'].includes(a.stage)?a.stage:correct?'ACCEPTED':'WRONG_SCOPE_ACCEPTED',taskId:receipt.taskId,receipt});return true;
   }
-  pending(identity,warehouseCode,scope){
+  pending(identity,warehouseCode,scope,purpose){
     const key=tenantKey(identity);
     // This product exports full warehouse scopes. A schema/version change does not
     // prove disjointness, so any unresolved D13 attempt on the warehouse blocks it.
     return [...this.db.prepare('SELECT payload,stage FROM attempts WHERE tenant_key=? AND warehouse_code=?').all(key,warehouseCode).filter(r=>!TERMINAL.has(r.stage)).map(r=>JSON.parse(r.payload)),
-      ...this.db.prepare('SELECT payload FROM imported_pending WHERE tenant_key=? AND warehouse_code=?').all(key,warehouseCode).map(r=>JSON.parse(r.payload))];
+      ...this.db.prepare('SELECT payload FROM imported_pending WHERE tenant_key=? AND warehouse_code=?').all(key,warehouseCode).map(r=>JSON.parse(r.payload))]
+      .filter(a=>!a.retiredAt&&!this.collectionEnded(a.runId)&&(purpose===undefined||this.collectionPurposeForRun(a.runId,a)===purpose));
   }
   putAsset(asset,{replace=false}={}){
+    this.requireCollection(asset.runId||asset.sourceRunId);
     const key=assetKey(asset),old=this.getAsset(key);
     if(old&&old.sha256!==asset.sha256&&!replace)fail('ASSET_CONFLICT','同日同范围已有不同内容的资产，需要明确重跑或处理冲突');
+    // A delayed older valid run may retain its own original, but cannot move the current pointer back.
+    const ordinal=id=>id?this.db.prepare('SELECT rowid AS n FROM runs WHERE id=?').get(id)?.n||0:0;
+    if(old?.runId&&asset.runId&&ordinal(old.runId)>ordinal(asset.runId))return key;
     this.write(()=>this.db.prepare('INSERT OR REPLACE INTO assets VALUES(?,?,?)').run(key,asset.sha256,JSON.stringify({...asset,assetKey:key})));return key;
   }
   getAsset(key){const r=this.db.prepare('SELECT payload FROM assets WHERE asset_key=?').get(key);return r?JSON.parse(r.payload):null;}
-  putPublish(p){this.write(()=>this.db.prepare('INSERT OR REPLACE INTO publishes VALUES(?,?)').run(p.id,JSON.stringify(p)));}
+  putPublish(p){this.requireCollection(p.originRunId||p.asset?.runId||p.asset?.sourceRunId||this.getAttempt(p.attemptId)?.runId);this.write(()=>this.db.prepare('INSERT OR REPLACE INTO publishes VALUES(?,?)').run(p.id,JSON.stringify(p)));}
   deletePublish(id){this.write(()=>this.db.prepare('DELETE FROM publishes WHERE id=?').run(id));}
   importRecords(manifest,packageHash,{assetRecords=[]}={}){
     const existing=this.db.prepare('SELECT package_hash,payload FROM migration_imports WHERE migration_id=?').get(manifest.migrationId);
@@ -147,7 +192,7 @@ export class StateStore{
   }
   addConflict(conflict){const r={id:uid(),createdAt:now(),...conflict};this.write(()=>this.db.prepare('INSERT INTO conflicts VALUES(?,?)').run(r.id,JSON.stringify(r)));return r;}
   adoptImported(recordId,config){
-    const candidates=this.rows('imported_pending').filter(r=>r.recordId===recordId&&sameIdentity(r,config.tenantBinding));
+    const candidates=this.rows('imported_pending').filter(r=>!r.retiredAt&&r.recordId===recordId&&sameIdentity(r,config.tenantBinding));
     if(candidates.length!==1)fail('MIGRATED_RECORD_NOT_UNIQUE','迁入记录未唯一匹配当前商家');
     const p=candidates[0],target=config.targets.find(t=>t.buyerWarehouseCode===p.buyerWarehouseCode);
     if(!p.taskId||!['ACCEPTED','RUNNING','FINISHED','DOWNLOADED','VALIDATED','PUBLISHING'].includes(p.state))fail('SUBMISSION_UNKNOWN','该迁入记录仍待消歧，不能重建任务');

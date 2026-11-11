@@ -20,7 +20,7 @@ class NativeFixture:
     def __init__(self,root,cancel):
         self.root=root;self.cancel=cancel;self.calls=[];self.commands={};self.observation=None
         self.ack=None;self.operation=None;self.pause_on_reserve=False;self.unknown_once=False;self.mapping='m1'
-        self.codes=['S'];self.fail_codes=set();self.bad_store_codes=set();self.results={};self.before_reserve=None
+        self.codes=['S'];self.fail_codes=set();self.bad_store_codes=set();self.results={};self.before_reserve=None;self.reexports={}
         folder=root/'jst/downloads/batch/item';folder.mkdir(parents=True)
         source=workbook(folder/'source.xlsx',['商品编码','分类','基本售价','出库箱规','商品状态','可用数','供应商名称','虚拟分类'],
                         [['A','饮品',2,1,'启用',0,'供应商甲',''],['B','饮品',2,1,'禁用',0,'供应商乙','淘便考核']])
@@ -45,7 +45,7 @@ class NativeFixture:
                       'stage':'READY' if self.observation else 'WAIT_HOST','observationRequest':'token','observation':self.observation,
                       'native':{'scope':{'coid':'C','uid':'U'},'sha256':self.receipt['source_sha256']},
                       'receipt':self.receipt if self.observation else None,'adoption':self.ack}
-                return {'running':not bool(self.observation),'batches':[{'id':'batch','operation_id':self.operation,'purpose':'stockout_analysis','items':[item]}]}
+                return {'running':not bool(self.observation),'accounts':[copy.deepcopy(item['account'])],'batches':[{'id':'batch','operation_id':self.operation,'purpose':'stockout_analysis','items':[item]}]}
             if action=='sync.provide_observation':
                 assert self.observation is None;assert v['token']=='token';self.observation=v['observation'];return {'accepted':True}
             if action=='sync.acknowledge_adoption':self.ack=v['receipt'];return {'accepted':True}
@@ -54,6 +54,23 @@ class NativeFixture:
             raise AssertionError(action)
         if action=='configuration':return {'configured':True,'enabled':True,'account_binding':{'account_id':'A','merchant_code':'M'},
             'store_mapping_version':self.mapping,'targets':[{'buyerWarehouseCode':code,'displayName':'测试门店'+code} for code in self.codes]}
+        if action=='collection.reexport.preview':
+            return {'id':v['operation_id'],'action':'reexport','token':'a'*64,'stores':[{'code':c,'name':'测试门店'+c} for c in v['warehouse_codes']],
+                    'purpose':v['purpose'],'blocked':[],'related':[],'retained':[]}
+        if action=='collection.reexport.apply':
+            if v['operation_id'] in self.reexports:return self.reexports[v['operation_id']]
+            records=[]
+            for row in self.commands.values():
+                if row['request'].get('consumer',{}).get('purpose')!=v['purpose']:continue
+                touched=False
+                for i in row['items']:
+                    if i['warehouse_code'] in v['warehouse_codes'] and i['state'] not in {'SUCCEEDED','ENDED'}:
+                        i['state']='ENDED';touched=True
+                if touched:
+                    row['sequence']+=1
+                    if all(i['state'] in {'SUCCEEDED','ENDED'} for i in row['items']):row['state']='ENDED'
+                    records.append(copy.deepcopy(row))
+            receipt={'id':v['operation_id'],'records':records};self.reexports[v['operation_id']]=receipt;return receipt
         if action=='reserve':
             command=v['command'];cid=command['command_id']
             if self.before_reserve:self.before_reserve(command)
@@ -173,15 +190,47 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(self.native.commands[cid]['request']['scope']['warehouse_codes'],[code])
         self.assertEqual(len(self.native.commands),3)
 
-    def test_business_conflict_only_blocks_affected_store(self):
+    def test_business_pending_stays_untouched_and_does_not_lock_analysis(self):
         from aoxiang_acquisition import prepare
         self.select(['S','T','U']);rid=self.repo.new_run()['id'];jobs=Jobs(self.repo.root/'aoxiang/jobs.sqlite3')
         config=self.native.rpc('ax',action='configuration',values={})
         business=prepare(jobs,config,['T'],'refresh',day='2026-11-07')
-        result=self.run_it(rid);self.assertEqual(result['state'],'PARTIAL')
-        self.assertEqual([s['state'] for s in result['stores']],['READY','FAILED','READY'])
-        self.assertIn(business['id'],result['stores'][1]['error']);self.assertEqual(jobs.get(business['id']),business)
-        self.assertEqual(next(iter(self.native.commands.values()))['request']['scope']['warehouse_codes'],['S','U'])
+        result=self.run_it(rid);self.assertEqual(result['state'],'COMPLETE')
+        self.assertEqual([s['state'] for s in result['stores']],['READY','READY','READY'])
+        self.assertEqual(jobs.get(business['id']),business)
+        self.assertEqual(next(iter(self.native.commands.values()))['request']['scope']['warehouse_codes'],['S','T','U'])
+
+    def test_selected_analysis_reexport_creates_revision_and_keeps_other_ready_snapshot(self):
+        from stockout_acquisition import reexport_preview,reexport
+        from unittest.mock import patch
+        self.select(['S','T']);self.native.fail_codes={'T'}
+        old=self.run_it(self.repo.new_run(day='2026-11-07')['id']);self.assertEqual(old['state'],'PARTIAL')
+        snapshot=old['stores'][0]['snapshot'];old_id=old['id'];commands=copy.deepcopy(old['external']['ax_commands'])
+        with patch('stockout_acquisition.today',return_value='2026-11-07'),patch('stockout_repository.today',return_value='2026-11-07'):
+            plan=reexport_preview(self.repo,old_id,['T'],self.native.rpc,self.cancel,lambda _:None)
+            self.native.fail_codes.clear();new=reexport(self.repo,plan,self.native.rpc,self.cancel,lambda _:None)
+        self.assertEqual(new['state'],'COMPLETE');self.assertNotEqual(new['id'],old_id)
+        self.assertEqual(new['stores'][0]['snapshot'],snapshot)
+        self.assertEqual(self.repo.run(old_id)['stores'][0]['snapshot'],snapshot)
+        self.assertEqual(new['external']['ax_commands']['S'],commands['S'])
+        submissions=[p['values']['command']['scope']['warehouse_codes'] for s,p in self.native.calls if s=='ax' and p.get('action')=='reserve']
+        self.assertEqual(submissions,[['S','T'],['T']])
+        self.assertNotEqual(new['external']['ax_commands']['T'],commands['T'])
+
+    def test_reexport_preview_becomes_stale_when_current_report_changes_before_apply(self):
+        from stockout_acquisition import reexport_preview,reexport
+        from unittest.mock import patch
+        self.select(['S','T']);self.native.fail_codes={'T'}
+        old=self.run_it(self.repo.new_run(day='2026-11-07')['id'])
+        with patch('stockout_acquisition.today',return_value='2026-11-07'):
+            plan=reexport_preview(self.repo,old['id'],['T'],self.native.rpc,self.cancel,lambda _:None)
+            newer=self.repo.new_run(source_run=old['id'])
+            with self.repo.connect(write=True) as db:
+                cursor=db.execute('INSERT INTO publications(day,run,created) VALUES(?,?,?)',('2026-11-07',newer['id'],'synthetic-new-pointer'))
+                db.execute('UPDATE current_days SET publication=? WHERE day=?',(cursor.lastrowid,'2026-11-07'))
+            before=len(self.native.calls)
+            with self.assertRaisesRegex(ValueError,'日报已变化'):reexport(self.repo,plan,self.native.rpc,self.cancel,lambda _:None)
+            self.assertEqual(len(self.native.calls),before)
 
     def test_bad_store_data_does_not_discard_other_complete_files(self):
         self.select(['S','T','U']);self.native.bad_store_codes={'T'};rid=self.repo.new_run()['id']

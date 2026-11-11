@@ -17,7 +17,7 @@ from aoxiang_purchase_pricing import HEADERS, preview_rows, intent_summary
 STATES = {'RESERVED': '已准备，尚未上传', 'PREPARING': '核验上传准备', 'READY': '准备就绪',
           'SUBMITTING': '正在上传，等待唯一回执', 'ACCEPTED': '已受理，待核对原任务', 'VERIFYING': '正在核对采购单',
           'BOUND': '已关联采购单', 'PAUSED': '已停止，尚未上传', 'FAILED_PRECHECK': '准备未通过，尚未上传',
-          'NEEDS_REVIEW': '上传结果待核，禁止重传', 'CANCELLED_BEFORE_UPLOAD': '已在上传前取消'}
+          'NEEDS_REVIEW': '结果待核，可继续核对或从批次重建', 'CANCELLED_BEFORE_UPLOAD': '已在上传前取消', 'SUPERSEDED':'已结束并重建，旧平台单保留'}
 
 
 class PurchaseDialog(BindingActions, ComponentDialog):
@@ -98,13 +98,13 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         idle = not self.worker and not self._closing
         active = bool(self.template_id or (self.current or {}).get('active') or self.binding_active())
         available = bool((self.configuration or {}).get('enabled'))
-        pending = any(r['state'] != 'CANCELLED_BEFORE_UPLOAD' for r in self.records)
+        pending = any(r['state'] not in ('CANCELLED_BEFORE_UPLOAD','SUPERSEDED') for r in self.records)
         attempted = bool((self.current or {}).get('uploadAttempted'))
         self.preview_btn.setEnabled(idle and not active and available and not pending and not self.head.get('deleted'))
         self.upload_btn.setEnabled(idle and not active and available and bool(self.package) and bool((self.basis_state or {}).get('valid')) and not attempted
-                                   and (self.current or {}).get('state') != 'CANCELLED_BEFORE_UPLOAD' and not self.head.get('deleted'))
+                                   and (self.current or {}).get('state') not in ('CANCELLED_BEFORE_UPLOAD','SUPERSEDED') and not self.head.get('deleted'))
         self.verify_btn.setEnabled(idle and not active and bool((self.current or {}).get('taskId'))
-                                   and (self.current or {}).get('state') != 'BOUND' and not (self.current or {}).get('additionalTaskIds'))
+                                   and (self.current or {}).get('state') not in ('BOUND','SUPERSEDED') and not (self.current or {}).get('additionalTaskIds'))
         self.stop_btn.setEnabled(idle and active)
         self.cancel_btn.setEnabled(idle and not active and bool(self.current) and not attempted
                                   and self.current['state'] in ('RESERVED', 'PAUSED', 'FAILED_PRECHECK'))
@@ -205,7 +205,11 @@ class PurchaseDialog(BindingActions, ComponentDialog):
 
     def fetch_template(self):
         self.began = time.monotonic()
-        self.run(lambda _: self.client.request('template.start'), self.template_started)
+        def operation(progress):
+            from aoxiang_current_login import current_configuration
+            current_configuration(self.client,progress)
+            return self.client.request('template.start')
+        self.run(operation, self.template_started)
 
     def template_started(self, result):
         self.template_id = result['id']
@@ -257,7 +261,9 @@ class PurchaseDialog(BindingActions, ComponentDialog):
             self.update_buttons()
 
     def prepare_package(self, progress):
-        config = self.client.request('configuration')
+        from aoxiang_current_login import current_configuration,current_template
+        config = current_configuration(self.client,progress)
+        self.receipt=current_template(self.client,self.receipt,config,progress)
         suppliers = Directory(self.folder).suppliers()
         p = prepare(self.host.work_repository.path, self.head, config, suppliers, self.receipt,
                     self.folder / 'purchase-packages', component_root() / 'assets/purchase-import-template-contract.json', progress=progress)

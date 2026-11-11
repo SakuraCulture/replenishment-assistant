@@ -1,0 +1,123 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "phase": "exercise",
+      "checks": [
+        "actual spawn: secondary missing retains primary catalog, price, carton and demand; disabled/stopped/local boundaries preserved",
+        "money-new-applied: amount columns, manual delta, zero-quantity drilldown, new export grouping and nonmutation",
+        "30 actual delegate edits: Tab/mouse/Enter, both sort orders, source identity, live money, stale risk and hidden selection scope",
+        "actual final-list cancel, pending draft saved, signing pending rejected, zero risk checkbox and atomic apply; original result exactly restorable",
+        "money-manual-applied: amount columns, manual delta, zero-quantity drilldown, new export grouping and nonmutation",
+        "reordered-header list drag/drop, explicit mapping, reusable save, target gap fill, manual zero protected, unselected rows/stores unchanged",
+        "actual search/select keeps hidden checks, cancels without side effects, direct preview creates temporary list without Excel or mandatory save",
+        "query append preserves file targets, saves V2, applies existing carton/budget/risk preview and keeps original model/other store intact",
+        "actual split-warehouse signed Excel includes restored product only under Hebei",
+        "actual spawn work I/O confirms/signs split-warehouse Excel and stores final quantity plus original audit"
+      ],
+      "timings": {
+        "check_seconds": 0.5255828999943333,
+        "calculate_seconds": 0.41784219999681227,
+        "manual_preview_apply_seconds": 0.30068710000341525,
+        "sign_export_seconds": 1.2352160000009462
+      },
+      "max_ui_gap_seconds": 5.870673099998385,
+      "ui_ticks": 118,
+      "version": {
+        "app": "补货助手",
+        "version": "0.50.5",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.5-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "38390d2790699922ec79e34103d7dc55b7c38963",
+        "build_id": "rc3",
+        "built_at": "2026-11-11T01:47:44.395164+08:00",
+        "source_archive_sha256": "089a62fc2c5188cb0c18769bbc7cdf5686f9f9ec98459becf88c0d12213c5ade",
+        "source_mode": "immutable git archive; no working-tree overlay",
+        "aoxiang": {
+          "source_commit": "38390d2790699922ec79e34103d7dc55b7c38963",
+          "files": 872,
+          "manifest_sha256": "e2e1212429a601f43cf661942ea2efe5727e665bc11797a1d10d90add39865c8",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false
+        },
+        "jst_catalog": {
+          "manifest_sha256": "0a77cdfd4203bfadaed489f227ee2dddd6b3d9e67cf146fc38b3ba445e5bd26b",
+          "files": 9,
+          "source_commit": "38390d2790699922ec79e34103d7dc55b7c38963",
+          "contains_user_state": false
+        }
+      },
+      "synthetic": true,
+      "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 14.296999999998661,
+      "peak_tree_mib": 470.18359375,
+      "sample_ms": 50,
+      "exe_sha256": "c67c4880c432bfc3f81cefe23e77685f6bd2e6f7fb83f8dab87441a4a670e4a4"
+    },
+    {
+      "passed": true,
+      "error": null,
+      "phase": "reopen",
+      "checks": [
+        "fresh process restored final edits, reusable list and historical adjustment business form",
+        "query-selected SKU, catalog revision and source rows visible after packaged restart",
+        "money-restored: amount columns, manual delta, zero-quantity drilldown, new export grouping and nonmutation"
+      ],
+      "timings": {},
+      "max_ui_gap_seconds": 0.42466190000413917,
+      "ui_ticks": 43,
+      "version": {
+        "app": "补货助手",
+        "version": "0.50.5",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.5-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "38390d2790699922ec79e34103d7dc55b7c38963",
+        "build_id": "rc3",
+        "built_at": "2026-11-11T01:47:44.395164+08:00",
+        "source_archive_sha256": "089a62fc2c5188cb0c18769bbc7cdf5686f9f9ec98459becf88c0d12213c5ade",
+        "source_mode": "immutable git archive; no working-tree overlay",
+        "aoxiang": {
+          "source_commit": "38390d2790699922ec79e34103d7dc55b7c38963",
+          "files": 872,
+          "manifest_sha256": "e2e1212429a601f43cf661942ea2efe5727e665bc11797a1d10d90add39865c8",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false
+        },
+        "jst_catalog": {
+          "manifest_sha256": "0a77cdfd4203bfadaed489f227ee2dddd6b3d9e67cf146fc38b3ba445e5bd26b",
+          "files": 9,
+          "source_commit": "38390d2790699922ec79e34103d7dc55b7c38963",
+          "contains_user_state": false
+        }
+      },
+      "synthetic": true,
+      "limits": "Automated Qt interaction in actual process; synthetic two-store input, not a human usability study.",
+      "exit_code": 0,
+      "remaining_children": [],
+      "source_only": false,
+      "elapsed_seconds": 4.578000000001339,
+      "peak_tree_mib": 313.10546875,
+      "sample_ms": 50,
+      "exe_sha256": "c67c4880c432bfc3f81cefe23e77685f6bd2e6f7fb83f8dab87441a4a670e4a4"
+    }
+  ]
+}

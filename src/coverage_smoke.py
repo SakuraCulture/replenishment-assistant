@@ -74,8 +74,10 @@ def start_smoke(app, win, args):
             import openpyxl
             b=openpyxl.load_workbook(out/'store.xlsx')
             try:
-                require(b['订单五段漏斗']['AM2'].value==12 and b['订单五段漏斗']['AM2'].number_format=='0.0','Excel numeric days equal native displayed value')
-                require(b['订单五段漏斗'].max_column==42,'Excel retains37 and appends5 columns')
+                sheet=b['日期-店-SKU-仓'];column=list(next(sheet.values)).index('签发新增可售天数')+1
+                require(sheet.cell(2,column).value==12 and sheet.cell(2,column).number_format=='0.0','Excel numeric days equal native displayed value')
+                from funnel_dimension_export import NAMES
+                require(b.sheetnames[:8]==NAMES,'Excel daily views retain five-stage days and identifiers')
             finally:b.close()
             win.automation.enable();client=MCP();ctx=client.call('workbench_context')
             task=client.call('query_order_funnel',{'context_token':ctx['context_token'],'operation_key':'coverage-exe-query','query':widget.report['query']})

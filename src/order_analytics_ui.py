@@ -70,7 +70,7 @@ class AnalyticsWidget(QWidget):
         row=QHBoxLayout();row.addWidget(button('← 返回全部',self.back));row.addWidget(button('◀ 上一页',lambda:self.turn(-1)));row.addWidget(button('下一页 ▶',lambda:self.turn(1)));self.page_note=label('');row.addWidget(self.page_note,1)
         row.addWidget(button('清空订单勾选',self.clear_selected));v.addLayout(row)
         row=QHBoxLayout();self.export_kind=QComboBox()
-        for title,k in [('门店经营分析（含可售天数）','store'),('订单经营分析（含可售天数）','order'),('当前商品明细','detail'),('门店逐轮天数','coverage_rounds')]:self.export_kind.addItem(title,k)
+        for title,k in [('门店经营分析（含商品切面与天数）','store'),('订单经营分析（含商品切面与天数）','order'),('当前商品明细','detail'),('门店逐轮天数','coverage_rounds')]:self.export_kind.addItem(title,k)
         row.addWidget(self.export_kind);self.export_btn=button('导出当前范围',lambda:self.export(False),True);row.addWidget(self.export_btn)
         self.selected_btn=button('导出所选订单',lambda:self.export(True));row.addWidget(self.selected_btn)
         row.addWidget(button('保存常用视图',self.save_view));row.addWidget(button('复制 AI 分析指令',self.copy_prompt));self.cancel_btn=button('■ 停止当前任务',self.cancel);row.addWidget(self.cancel_btn);v.addLayout(row)
@@ -176,9 +176,10 @@ class AnalyticsWidget(QWidget):
                 elif mode=='quantity':
                     from funnel_compact_export import metrics
                     value=metrics(eligible,stage)[1];text=formatted(value)+' 个库存单位';tip='不同商品单位合计，仅作执行数量统计。'
-                elif mode=='skus':text=str(metric['skus'])+'款';tip='本环节数量大于0的去重商品编码款数。'
+                elif mode=='skus':text=('未确认' if metric['skus'] is None else str(metric['skus'])+'款');tip='本环节数量大于0的去重商品编码款数；未取得资料不算0。'
                 else:
-                    text=f"{formatted(metric['value'])} 元\n{metric['skus']}款 / {metric['orders']}单";tip=f"已计价部分；缺价{metric['unpriced']}条；不同环节有效范围可能不同。"
+                    sku_text='未确认' if metric['skus'] is None else str(metric['skus'])+'款'
+                    text=f"{formatted(metric['value'])} 元\n{sku_text} / {metric['orders']}单";tip=f"已计价部分；缺价{metric['unpriced']}条；不同环节有效范围可能不同。"
                 cell=QTableWidgetItem(text);cell.setToolTip(tip);self.funnel.setItem(i,j,cell)
             self.funnel.setRowHeight(i,46)
         m=coverage['overview']

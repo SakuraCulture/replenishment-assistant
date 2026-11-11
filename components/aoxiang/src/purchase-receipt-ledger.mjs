@@ -3,6 +3,7 @@ import path from 'node:path';
 import {DatabaseSync,backup} from 'node:sqlite';
 import {canonical,fail,now,uid} from './common.mjs';
 import {receiptSummary} from './purchase-receipts.mjs';
+import {retired} from './order-retirement.mjs';
 
 export class PurchaseReceipts{
   static async open(state){
@@ -30,11 +31,12 @@ export class PurchaseReceipts{
     });
   }
   save(r,kind){
+    if(retired(this.db,r.id))return {id:r.id,state:'RETIRED',sourceDeleted:true};
     const next={...r,sequence:r.sequence+1,updatedAt:now()};
     this.db.prepare('INSERT INTO purchase_receipts VALUES(?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload').run(r.id,JSON.stringify(next));
     this.db.prepare('INSERT INTO purchase_receipt_events VALUES(?,?,?)').run(r.id,next.sequence,JSON.stringify({sequence:next.sequence,kind,at:next.updatedAt,state:next.state,terminal:next.terminal,finalSync:next.finalSync,runId:next.activeRunId,error:next.error}));return next;
   }
-  change(id,fn,kind){return this.state.write(()=>{const r=this.get(id);if(!r)fail('RECEIPT_NOT_FOUND','尚无本单收货同步记录');return this.save(fn(r),kind);});}
+  change(id,fn,kind){return this.state.write(()=>{if(retired(this.db,id))return {id,state:'RETIRED',sourceDeleted:true};const r=this.get(id);if(!r)fail('RECEIPT_NOT_FOUND','尚无本单收货同步记录');return this.save(fn(r),kind);});}
   begin(id){return this.change(id,r=>({...r,state:'RUNNING',error:null}),'STARTED');}
   run(id,runId){return this.change(id,r=>{if(r.activeRunId&&r.activeRunId!==runId)fail('RECEIPT_RUN_CONFLICT','必须先恢复原下载任务');return {...r,activeRunId:runId};},'RUN_ATTACHED');}
   terminal(id,source){

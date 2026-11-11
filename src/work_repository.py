@@ -116,6 +116,10 @@ class Repository:
         chunks.backup_before_write(self.path,progress)
         with stage('提交每日作业（提交期间不可取消）',progress),closing(self.connect()) as db,db:
             db.execute('BEGIN IMMEDIATE');old=db.execute('SELECT revision,digest,saved FROM jobs WHERE day=?',(day,)).fetchone()
+            import deletion_barrier
+            info=dict(info);guard=info.pop('_deletion_guard',None)
+            if guard is None:raise Conflict('保存快照缺少删除失效校验依据，请重新准备')
+            deletion_barrier.validate(db,guard)
             if old and expected_revision!=old[0]:raise Conflict('该日期已有记录或已被另一窗口更新，请重新查看差异并确认覆盖')
             if not old and expected_revision is not None:raise Conflict('原记录已发生变化，请重新保存')
             if old and digest==old[1]:return {'revision':old[0],'saved':old[2],'digest':digest}
@@ -129,5 +133,7 @@ def prepare_job(day,payload,progress=lambda _:None,*,known=()):
         if date.fromisoformat(day).isoformat()!=day:raise ValueError('日期须为YYYY-MM-DD')
         if payload.get('schema')!=1 or payload.get('day')!=day:raise ValueError('作业快照与日期不一致')
         info=summary(payload)
+        import deletion_barrier
+        info['_deletion_guard']=deletion_barrier.basis(payload)
         prepared=chunks.prepare(payload,known,progress)
         return info,prepared,prepared.digest

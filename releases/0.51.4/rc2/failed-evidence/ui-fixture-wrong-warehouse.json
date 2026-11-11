@@ -1,0 +1,18 @@
+{
+  "passed": false,
+  "checks": [
+    "原下载任务可恢复",
+    "未核验不能保存账号",
+    "空闲不能停止",
+    "有待处理原任务仍可停用，不改变账号绑定版本",
+    "停用保留原批次、平台任务号和下载证据",
+    "停用仅影响所选仓，另一仓保持不变",
+    "停用后按钮与手动刷新状态同步",
+    "停用未关闭或重启原连接进程",
+    "停用结果清楚说明原任务与连接保留"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\catalog_sync_smoke.py\", line 41, in execute\n    d=Dialog(win);d.show();d.manual.show();require(not d.account_data()['enabled'],'关闭并重开窗口仍保留停用状态')\n                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\catalog_sync_smoke.py\", line 13, in require\n    if not ok:raise AssertionError(message)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 关闭并重开窗口仍保留停用状态\n",
+  "frozen": false,
+  "process_exit": 1,
+  "exe_sha256": null
+}

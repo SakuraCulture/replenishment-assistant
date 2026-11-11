@@ -4,13 +4,19 @@ from contextlib import closing
 from datetime import datetime,date,timezone,timedelta
 from pathlib import Path
 
-VERSION='admission-1'
+VERSION='admission-2'
 STATES=('待核验','无资质','已核验')
 def today():return datetime.now(timezone(timedelta(hours=8))).date().isoformat()
 def digest(value):return hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,allow_nan=False,separators=(',',':')).encode()).hexdigest()
 def tags(raw):
     return list(dict.fromkeys(s.strip() for s in re.split(r'[,，;；\r\n]+',str(raw or '')) if s.strip()))
 def medical(raw):return any('二类医疗' in t for t in tags(raw))
+
+def default_exclusions(meta):
+    reasons=[]
+    if meta.get('product_tags_known') and '日配' in tags(meta.get('product_tags')):reasons.append('商品标签日配（默认排除）')
+    if str(meta.get('export_status') or '').strip()=='禁采':reasons.append('补货建议禁采')
+    return reasons
 def date_value(value):
     if value in (None,''):return None
     if isinstance(value,datetime):value=value.date().isoformat()
@@ -66,6 +72,7 @@ def check(context,sku,meta):
     if not meta.get('product_tags_known',False):reasons.append('商品标签资料不完整，待补资料')
     refusal=context['record'].get('refusals',{}).get(sku)
     if refusal and refusal.get('active',True) and (not refusal.get('expires') or refusal['expires']>=day):reasons.append('门店拒收：'+refusal['reason'])
+    reasons.extend(default_exclusions(meta))
     return {'version':VERSION,'store':context['store'],'checked_day':day,'settings_revision':context['revision'],
             'requires_medical':requires,'tags_raw':raw,'tags':tags(raw),'tag_field_known':bool(meta.get('product_tags_known',False)),
             'medical_sources':copy.deepcopy(medical_sources),'qualification':copy.deepcopy(q),'refusal':copy.deepcopy(refusal),'reasons':reasons}

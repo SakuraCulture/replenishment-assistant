@@ -1,0 +1,55 @@
+"""One combination per sheet, whole filtered result, typed values, no page truncation."""
+from pathlib import Path
+import os,uuid
+from xlsx_exports import stream_book,write_table
+from export_files import publish_new
+from runtime_support import checkpoint
+from stockout_common import now,resource_check
+import warehouse_stockout as metrics
+from warehouse_stockout_views import combinations
+
+DETAIL=[('day','观测日期'),('warehouse','供货仓'),('sku','商品编码'),('name','商品名称'),('stock_raw','可用库存原值'),
+        ('stock','可用库存'),('status','商品状态'),('virtual_tags','虚拟分类'),('product_tags','商品标签'),('category','商品分类'),
+        ('category1','一级分类'),('category2','二级分类'),('category3','三级分类'),('supplier_code','供应商编码'),('supplier','供应商名称'),
+        ('excluded','已剔除'),('bad','待核'),('reason','说明'),('observed','观测时间')]
+COUNTS=[('base','剩余商品支数'),('zero','缺货商品支数'),('rate','大仓缺货率'),('excluded','剔除支数'),('pending','待核支数')]
+
+def export(repo,options,destination,combos,*,include_detail=True,cancel=None,progress=lambda _:None):
+    import re
+    options=metrics.validate(options);combos=combinations(combos);target=Path(destination).resolve()
+    if target.suffix.lower()!='.xlsx' or target.exists():raise ValueError('请选择尚不存在的.xlsx文件')
+    target.parent.mkdir(parents=True,exist_ok=True);resource_check(target.parent)
+    temp=target.with_name('.warehouse-'+uuid.uuid4().hex+'.xlsx')
+    totals=metrics.query(repo,options)
+    try:
+        with stream_book() as book:
+            names=set()
+            def write(name,headers,rows):
+                clean=re.sub(r'[\\/*?:\[\]\x00-\x1f]','_',name).strip(" '") or '切面';base=clean[:28];name=base;n=1
+                while name.casefold() in names:n+=1;name=base+'_'+str(n)
+                names.add(name.casefold());write_table(book,name,headers,rows,cancel=cancel,progress=progress,style='single',formats={'大仓缺货率':'0.00%'})
+            def paged(name,headers,rows):
+                from itertools import chain,islice
+                iterator=iter(rows);index=1
+                while True:
+                    first=next(iterator,None)
+                    if first is None:
+                        if index==1:write(name,headers,[])
+                        break
+                    write(name+str(index),headers,chain([first],islice(iterator,999999)));index+=1
+            write('口径与覆盖',['项目','说明'],[
+                ['导出时间',now()],['日期范围',options['start']+' 至 '+options['end']],['筛选',__import__('json').dumps(options,ensure_ascii=False)],
+                ['分母','剔除虚拟分类所有淘汰品、仓禁用品、商品标签精确日配后的商品支数；不要求有月销。'],
+                ['分子','分母范围中可用库存≤0的商品支数；负库存计缺货。'],['待核','资料缺失不当作0；存在影响统计的待核行时不出百分比。'],
+                ['期间','按仓商品日加权；不同日期不合并为一次库存，未采日期不补0。'],['覆盖仓日数',len(totals['coverage'])],
+                ['独立性','原件和分析库独立，不更新补货业务或门店缺货率资料。']])
+            write('已观测范围',['观测日期','供货仓','观测时间','原件商品支数'],([r[k] for k in ('day','warehouse','observed','rows')] for r in totals['coverage']))
+            for combination in combos:
+                keys=metrics.dimensions(combination['dimensions']);columns=keys+[k for k,_ in COUNTS]
+                paged(combination['name'],[metrics.DIMENSIONS[k][1] for k in keys]+[v for _,v in COUNTS],([r[k] for k in columns] for r in metrics.iter_cuts(repo,options,keys,cancel=cancel)))
+            if include_detail:
+                # Roll over explicitly rather than silently losing Excel overflow.
+                paged('商品明细',[v for _,v in DETAIL],([row.get(k) for k,_ in DETAIL] for row in metrics.iter_details(repo,options,cancel=cancel)))
+            checkpoint(cancel);book.save(temp);checkpoint(cancel);publish_new(temp,target)
+    finally:temp.unlink(missing_ok=True)
+    return str(target)

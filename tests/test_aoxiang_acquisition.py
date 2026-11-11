@@ -47,6 +47,17 @@ class AcquisitionTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def test_conflict_carries_exact_original_day_and_overlapping_stores_without_creating_a_job(self):
+        from aoxiang_acquisition import PendingAcquisition
+        old=prepare(self.jobs,configuration(),['W2'],'refresh',day='2026-11-01')
+        with self.assertRaises(PendingAcquisition) as caught:prepare(self.jobs,configuration(),['W2','W1'],'refresh',day='2026-11-11')
+        error=caught.exception
+        self.assertEqual(error.blockers[0]['id'],old['id']);self.assertEqual(error.blockers[0]['day'],'2026-11-01')
+        self.assertEqual(error.blockers[0]['overlap'],['W2']);self.assertIn('门店二（W2）',str(error))
+        self.assertIn('重新导出所选门店',str(error));self.assertEqual(len(self.jobs.recent()),1)
+        other=prepare(self.jobs,configuration(),['W1'],'refresh',day='2026-11-11')
+        self.assertNotEqual(old['id'],other['id'])
+
     def make(self, codes=('W2', 'W1'), states=('SUCCEEDED', 'SUCCEEDED')):
         job = prepare(self.jobs, configuration(), codes, 'reuse', day='2026-11-02')
         return complete(self.jobs, self.root, job, states)

@@ -1,0 +1,23 @@
+{
+  "source_commit": "6c730672dcb2d7a82c2e9d2bb9b024f516237faf",
+  "build_id": "rc1",
+  "version": "0.50.1",
+  "built_at": "2026-11-10T10:16:37.879107+08:00",
+  "source_archive_sha256": "4169a5262de88359fb57cf1ae13024fda1e91532c5cfe3736696bc3824c5072e",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "6c730672dcb2d7a82c2e9d2bb9b024f516237faf",
+    "files": 872,
+    "manifest_sha256": "53e12e0c9ea6e0ad13d1a45eaf592c8c755cd8fa12547f529118bc9feee75027",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "4846e71b93fbdd70ef1192f29cf294afe6aa52df06044d67779b76537f6803cd",
+    "files": 8,
+    "source_commit": "6c730672dcb2d7a82c2e9d2bb9b024f516237faf",
+    "contains_user_state": false
+  }
+}

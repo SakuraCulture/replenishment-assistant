@@ -31,6 +31,17 @@ async function context(){
   const args={state,adapter,config:freshConfig(identity,[target]),binding:{outputRoot:path.join(root,'output')},download:async()=>{downloads++;return {file,sha256:sha256(bytes),bytes:bytes.length,taskId:'task123'};}};
   return {root,state,adapter,args,counts:()=>({submits,downloads})};
 }
+test('明确未派发的菜单失败可继续原作业，原意图留档且不变成受理未知',async t=>{
+  const c=await context();t.after(()=>c.state.close());let calls=0;
+  const original=c.adapter.submitOnce;
+  c.adapter.submitOnce=async function(p){calls++;if(calls===1)throw new AppError('EXPORT_NOT_DISPATCHED','菜单收起，未派发');return original.call(this,p);};
+  await assert.rejects(()=>new Coordinator(c.args).run(),{code:'EXPORT_NOT_DISPATCHED'});
+  const run=c.state.rows('runs')[0],old=c.state.rows('attempts')[0];
+  assert.equal(old.stage,'CANCELLED_BEFORE_SUBMIT');assert.equal(c.state.pending(identity,'WARE01').length,0);
+  const done=await new Coordinator(c.args).run({runId:run.id});
+  assert.equal(done.status,'SUCCEEDED');assert.equal(c.counts().submits,1);
+  assert.equal(c.state.getAttempt(old.id).stage,'CANCELLED_BEFORE_SUBMIT');
+});
 test('完整作业只提交一次；当日再次正常运行复用合格资产',async()=>{
   const c=await context();const first=await new Coordinator(c.args).run();assert.equal(first.status,'SUCCEEDED');assert.deepEqual(c.counts(),{submits:1,downloads:1});
   const second=await new Coordinator(c.args).run();assert.equal(second.status,'SUCCEEDED');assert.deepEqual(c.counts(),{submits:1,downloads:1});assert.equal(c.state.getItems(second.id)[0].stage,'REUSED');c.state.close();

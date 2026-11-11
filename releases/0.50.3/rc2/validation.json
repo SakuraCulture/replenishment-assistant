@@ -1,0 +1,17 @@
+{
+  "source_commit": "8d9f267074075fa10fac49e8a528bddb9bbb6d46",
+  "base": "51193fa",
+  "python_full_tests": 1390,
+  "python_full_seconds": 547.159,
+  "final_python_catalog_tests": 26,
+  "node_jst_tests": 58,
+  "node_aoxiang_tests": 228,
+  "exe_checks": 12,
+  "parent_crash_recovered": true,
+  "original_jobs_unchanged": true,
+  "old_0502_preserved": true,
+  "live_platform_tested": false,
+  "business_pc_retested": false,
+  "pushed": false,
+  "merged": false
+}

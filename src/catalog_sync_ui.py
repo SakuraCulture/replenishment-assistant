@@ -1,5 +1,5 @@
 """Warehouse-scoped sync dialog. All I/O runs on workers; no AX workflow calls."""
-import time
+import time,uuid
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import (QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QLineEdit,QFileDialog,QCheckBox,QMessageBox,QProgressBar,QWidget)
 from ui_controls import button,label
@@ -20,7 +20,7 @@ def connect(client,progress=lambda _:None,cancel=None):
 
 def action(client,command,values,progress=lambda _:None,cancel=None):
     ack=client.request(command,**values)
-    if 'operation_id' not in ack:return ack
+    if command not in {'accounts.auto','accounts.ensure','accounts.probe','accounts.verify','accounts.open_login'} or 'operation_id' not in ack:return ack
     stopped=False
     while True:
         state=client.request('sync.status');op=state['operations'][ack['operation_id']]
@@ -50,6 +50,8 @@ class Dialog(QDialog):
         self.profile=QLineEdit();self.profile.setPlaceholderText('已有专用浏览器的 Default 或 Profile 目录');row=QHBoxLayout();row.addWidget(self.profile,1);self.pick=button('选择专用浏览器',self.choose);row.addWidget(self.pick);manual.addLayout(row)
         self.company=QLineEdit();self.company.setPlaceholderText('公司名称（无法自动识别时填写聚水潭页顶部公司名）');manual.addWidget(self.company)
         row=QHBoxLayout();self.probe_btn=button('核验所选浏览器',self.probe_account);row.addWidget(self.probe_btn);self.login_btn=button('打开登录页',self.login);row.addWidget(self.login_btn);self.bind_btn=button('确认对应仓并保存',self.bind);row.addWidget(self.bind_btn);self.disable_btn=button('停用本仓自动同步',lambda:self.enable(False));row.addWidget(self.disable_btn);self.enable_btn=button('启用本仓自动同步',lambda:self.enable(True));row.addWidget(self.enable_btn);manual.addLayout(row)
+        row=QHBoxLayout();self.rebind_btn=button('纠正本仓绑定',lambda:self.reset_bindings([self.warehouse.currentText()]));row.addWidget(self.rebind_btn)
+        self.rebind_both_btn=button('纠正两仓错绑',lambda:self.reset_bindings(list(WAREHOUSES)));row.addWidget(self.rebind_both_btn);manual.addLayout(row)
         self.identity=label('选择仓库后点击自动配置，在打开的专用浏览器登录该仓账号即可。','muted');self.identity.setWordWrap(True);v.addWidget(self.identity)
         row=QHBoxLayout();self.connection=label('尚未连接浏览器','muted');self.connection.setWordWrap(True);row.addWidget(self.connection,1)
         self.reconnect_btn=button('重新连接本仓',self.reconnect);row.addWidget(self.reconnect_btn);v.addLayout(row)
@@ -69,13 +71,29 @@ class Dialog(QDialog):
         p=QFileDialog.getExistingDirectory(self,'选择已有的专用浏览器配置目录')
         if p:self.profile.setText(p)
     def auto_configure(self):
-        account=self.account_data()
-        op=self.invoke('accounts.auto',warehouse=self.warehouse.currentText(),expected_version=account['bindingVersion'] if account else 0)
+        op=self.invoke('accounts.auto',warehouse=self.warehouse.currentText(),expected_version=self.binding_version())
         if op and op['state']=='SUCCEEDED':
-            self.reload();self.identity.setText('本仓专用浏览器和账号已自动配置，可直接刷新仓资料。')
+            if op.get('result',{}).get('requires_confirmation'):
+                result=op['result'];self.profile.setText(result['binding']['actualProfilePath']);self.company.setText(result['scope']['company'])
+                self.probe=op;self.identity.setText('纠错后仅核验，尚未保存：'+result['scope']['company']+'。确认是本物理仓后，勾选确认并保存。');self.controls()
+            else:self.reload();self.identity.setText('本仓专用浏览器和账号已自动配置，可直接刷新仓资料。')
         elif op:self.identity.setText(op.get('error',{}).get('message','自动配置未完成'))
     def clear_probe(self,*_):self.probe=None;self.mapping.setChecked(False);self.controls()
     def account_data(self):return next((a for a in self.state.get('accounts',[]) if a['warehouse']==self.warehouse.currentText()),None)
+    def binding_version(self):
+        a=self.account_data();return a['bindingVersion'] if a else self.state.get('binding_epochs',{}).get(self.warehouse.currentText(),0)
+    def reset_bindings(self,warehouses):
+        if self.worker:return
+        plan=self.invoke('accounts.reset_preview',warehouses=warehouses)
+        if not plan:return
+        scope='\n'.join(r['warehouse']+'：'+r['company']+'；未完成 '+str(r['unfinished'])+' 项' for r in plan['rows'])
+        text=scope+f"\n\n将结束以上范围的 {plan['unfinished']} 项本地旧采集并解除绑定。旧记录、平台任务号、文件和浏览器均保留；不会撤销平台任务。\n随后逐仓核验正确公司并保存，重新获取资料、检查计算。另一仓（若未选）、订单和历史签发不改。"
+        if not confirm(self,'核对纠正绑定范围',text):return
+        result=self.invoke('accounts.reset_bindings',warehouses=warehouses,expected_fingerprint=plan['fingerprint'],operation_id=uuid.uuid4().hex,confirmed=True)
+        if result:
+            self.reload();self.clear_probe();self.host.file_changed()
+            message='旧本地采集已结束，所选绑定已解除；浏览器和文件保留。请逐仓核验正确公司，勾选确认后保存，再重新获取资料。备份：'+result['backup_path']
+            self.identity.setText(message);self.note.setText(message)
     def select_account(self,*_):
         self.clear_probe();a=self.account_data();self.account.setText((a['expectedCompany']+' · '+('已启用' if a['enabled'] else '已停用')) if a else '尚未绑定，可继续使用手动资料')
         self.profile.setText(a['binding']['actualProfilePath'] if a else '');self.company.setText(a['expectedCompany'] if a else '');self.show_connection();self.controls()
@@ -112,11 +130,16 @@ class Dialog(QDialog):
         if op:self.identity.setText('请在该仓专用浏览器正常登录，完成后重新核验。' if op['state']=='SUCCEEDED' else op.get('error',{}).get('message','打开失败'))
     def bind(self):
         if not self.probe or self.probe['state']!='SUCCEEDED' or not self.mapping.isChecked():return
-        a=self.account_data();op=self.invoke('accounts.bind',warehouse=self.warehouse.currentText(),expected_version=a['bindingVersion'] if a else 0,probe_id=self.probe['id'],mapping_verified=True)
-        if op:self.reload()
+        version=self.binding_version();op=self.invoke('accounts.bind',warehouse=self.warehouse.currentText(),expected_version=version,probe_id=self.probe['id'],mapping_verified=True)
+        if op:
+            self.reload();self.identity.setText('账号及浏览器未变化，原任务和绑定版本保留。' if op['bindingVersion']==version else '本仓绑定已保存；请获取正确仓资料后重新检查计算。')
     def enable(self,value):
         a=self.account_data()
-        if a and self.invoke('accounts.set_enabled',warehouse=a['warehouse'],expected_version=a['bindingVersion'],enabled=value):self.reload()
+        if a and self.invoke('accounts.set_enabled',warehouse=a['warehouse'],expected_version=a['bindingVersion'],expected_enabled_version=a.get('enabledVersion',0),enabled=value):
+            self.reload()
+            message=('本仓自动同步已启用，可继续原任务；原账号及文件保留。' if value else
+                     '本仓自动同步已停用；原任务、文件和浏览器连接保留。运行中的任务需用“停止本次同步”安全停止，继续原任务前先启用本仓。')
+            self.identity.setText(message);self.note.setText(message)
     def reload(self):self.refresh(run(self,connect,(self.client,),'读取采集状态'))
     def refresh(self,state):
         previous=self.records.currentData();self.state=state;self.records.blockSignals(True);self.records.clear()
@@ -126,7 +149,7 @@ class Dialog(QDialog):
         b=next((b for b in self.state.get('batches',[]) if b['id']==self.records.currentData()),None);rows=[]
         for i in (b or {}).get('items',[]):
             receipt=i.get('receipt') or {};error=i.get('adoption_error') or (i.get('error') or {}).get('message','');a=i['account']
-            rows.append([a['warehouse'],a['expectedCompany'],('未完成，需处理' if error else STAGES.get(i['stage'],i['stage'])),receipt.get('row_count') or receipt.get('count') or (i.get('native') or {}).get('scope',{}).get('expectedRows','—'),'已采用' if i.get('adoption') else error or '等待处理'])
+            ended=i.get('retirement');rows.append([a['warehouse'],a['expectedCompany'],('本地已结束' if ended else '未完成，需处理' if error else STAGES.get(i['stage'],i['stage'])),receipt.get('row_count') or receipt.get('count') or (i.get('native') or {}).get('scope',{}).get('expectedRows','—'),'纠正绑定时已归档；平台任务和文件保留' if ended else '已采用' if i.get('adoption') else error or '等待处理'])
         self.model.replace(rows);self.controls()
     def controls(self,*_):
         busy=self.worker is not None
@@ -134,13 +157,14 @@ class Dialog(QDialog):
         for widget in [self.warehouse,self.profile,self.company,self.pick,self.probe_btn,self.login_btn,self.mapping,self.records]:widget.setEnabled(not busy)
         a=self.account_data();self.fetch.setEnabled(not busy and bool(a and a['enabled']));self.both.setEnabled(not busy and any(a['enabled'] for a in self.state.get('accounts',[])))
         self.reconnect_btn.setEnabled(not busy and bool(a))
+        self.rebind_btn.setEnabled(not busy);self.rebind_both_btn.setEnabled(not busy)
         self.bind_btn.setEnabled(not busy and bool(self.probe and self.probe['state']=='SUCCEEDED' and self.mapping.isChecked()));self.disable_btn.setEnabled(not busy and bool(a and a['enabled']));self.enable_btn.setEnabled(not busy and bool(a and not a['enabled']))
-        b=next((b for b in self.state.get('batches',[]) if b['id']==self.records.currentData()),None);self.resume_btn.setEnabled(not busy and bool(b and b['purpose']==self.purpose and any(not i.get('adoption') for i in b['items'])))
-        self.resume_one.setEnabled(self.resume_btn.isEnabled() and any(not i.get('adoption') and i['account']['warehouse']==self.warehouse.currentText() for i in (b or {}).get('items',[])))
+        b=next((b for b in self.state.get('batches',[]) if b['id']==self.records.currentData()),None);self.resume_btn.setEnabled(not busy and bool(b and b['purpose']==self.purpose and any(not i.get('adoption') and not i.get('retirement') for i in b['items'])))
+        self.resume_one.setEnabled(self.resume_btn.isEnabled() and any(not i.get('adoption') and not i.get('retirement') and i['account']['warehouse']==self.warehouse.currentText() for i in (b or {}).get('items',[])))
         self.stop.setEnabled(busy and not self.committing and not self.worker.cancel.is_set())
     def start_enabled(self):self.start([a['warehouse'] for a in self.state.get('accounts',[]) if a['enabled']])
     def resume(self,only_selected=False):
-        b=next(b for b in self.state['batches'] if b['id']==self.records.currentData());ids=[i['id'] for i in b['items'] if not i.get('adoption') and (not only_selected or i['account']['warehouse']==self.warehouse.currentText())]
+        b=next(b for b in self.state['batches'] if b['id']==self.records.currentData());ids=[i['id'] for i in b['items'] if not i.get('adoption') and not i.get('retirement') and (not only_selected or i['account']['warehouse']==self.warehouse.currentText())]
         if ids:self.start([],{'batch_id':b['id'],'item_ids':ids})
     def start(self,warehouses,resume=None):
         if self.worker:return

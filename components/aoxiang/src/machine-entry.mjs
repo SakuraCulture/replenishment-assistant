@@ -13,6 +13,7 @@ import {assertHandoff} from './preflight.mjs';
 import {MachineSetup,recoverConfiguration,readConfiguration} from './machine-setup.mjs';
 import {MachineTemplate} from './machine-template.mjs';
 import {PurchaseCreates,purchasePublic} from './purchase-create-ledger.mjs';
+import {OrderRetirement,requireDeletedHostOrders} from './order-retirement.mjs';
 import {MachinePurchaseCreate} from './machine-purchase-create.mjs';
 import {PurchaseCreateService} from './purchase-create-service.mjs';
 import {readPurchasePackage,checkPurchaseConfiguration,checkPurchaseInput,freezePurchaseInput} from './purchase-create-artifacts.mjs';
@@ -37,6 +38,7 @@ async function main(){
   const configurationRecovered=await recoverConfiguration(root);setup=new MachineSetup({root,browsers,state});
   template=new MachineTemplate({root,state,browsers});
   const purchases=await PurchaseCreates.open(state);purchases.recover();
+  const retirement=new OrderRetirement(state);
   const purchaseService=new PurchaseCreateService({root,state,ledger:purchases,browsers,progress:stage=>{
     const active=[bindingCheck,receiptSync,purchase].find(controller=>controller?.busy);active?.progress(stage);
   }});
@@ -48,6 +50,11 @@ async function main(){
   bindingCheck=new MachinePurchaseBinding({creates:purchases,service:bindingService,onFatal:error=>{void fatal(error);}});
   const recovered=commands.recoverInterrupted();
   runtime=new MachineRuntime({commands,pipeline:true,onFatal:error=>{void fatal(error);},
+    canResumeReview:item=>{
+      const items=state.getItems(item.run_id);
+      return items.length===1&&items.every(i=>{const a=state.getAttempt(i.attemptId);return a&&!a.additionalTaskIds?.length&&
+        (a.stage==='CANCELLED_BEFORE_SUBMIT'||a.taskId&&['ACCEPTED','RUNNING','FINISHED','DOWNLOADED','VALIDATED','PUBLISHING','SUCCEEDED'].includes(a.stage));});
+    },
     needsReview:item=>state.getItems(item.run_id).some(i=>['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED'].includes(state.getAttempt(i.attemptId)?.stage)),
     executeItem:async({record,item,phase,signal,onProgress})=>{
       const current=await loadConfig(root),config=record.config_snapshot;
@@ -68,10 +75,23 @@ async function main(){
     try{
       request=validateRequest(raw);
       const configurationActions=['discover','setup.start','setup.check_login','setup.verify_saved','setup.commit','template.start'];
-      if((configurationActions.includes(request.action)||['reserve','resume','purchase.start','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&(purchase.busy||receiptSync.busy||bindingCheck.busy))fail('PURCHASE_CREATE_BUSY','当前采购、关联核对或收货动作正在运行或安全停止，请等待后再执行其他作业');
+      if((configurationActions.includes(request.action)||['reserve','resume','purchase.start','purchase.submit','purchase.rebuild','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&(purchase.busy||receiptSync.busy||bindingCheck.busy))fail('PURCHASE_CREATE_BUSY','当前采购、关联核对或收货动作正在运行或安全停止，请等待后再执行其他作业');
       if(configurationActions.includes(request.action)&&(runtime.active||commands.list().some(r=>r.state==='QUEUED')))fail('COMPONENT_BUSY','先暂停或完成当前取数任务，再修改连接与目录');
       if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
       switch(request.action){
+        case 'orders.retire':{
+          requireDeletedHostOrders(request.operation_id,request.oids);
+          const resultPending=[];
+          for(const controller of [purchase,receiptSync,bindingCheck]){
+            const active=controller?.job?.id;if(!active||!controller.busy)continue;
+            const original=purchases.get(active),basis=original.intent?.basis||{oid:original.oid};
+            if(basis&&request.oids.includes(basis.oid)){
+              controller.job.cancelled=true;controller.control?.abort();resultPending.push(active);
+            }
+          }
+          result=await retirement.apply(request.operation_id,request.oids);
+          result.pending_actions=resultPending.length;break;
+        }
         case 'discover':result=await setup.discover();break;
         case 'setup.start':result=setup.begin(request);break;
         case 'setup.check_login':result=await setup.verifySaved([]);break;
@@ -91,9 +111,17 @@ async function main(){
           const accepted=purchases.reserve(await freezePurchaseInput(root,p),request.package_sha256);
           result={created:accepted.created,record:purchasePublic(accepted.record)};break;
         }
+        case 'purchase.rebuild':{
+          if(runtime.closing)fail('SHUTTING_DOWN','组件正在安全退出');
+          const p=await readPurchasePackage(request.package_file,request.package_sha256);
+          const config=await loadConfig(root);checkPurchaseConfiguration(p,config);await assertHandoff(root,config.tenantBinding);await checkPurchaseInput(p);
+          const accepted=purchases.rebuild(request.purchase_id,request.sequence,await freezePurchaseInput(root,p),request.package_sha256,request.operation_id,request.reason);
+          result={created:accepted.created,record:purchasePublic(accepted.record)};break;
+        }
+        case 'purchase.submit':
         case 'purchase.start':{
           if(runtime.closing||runtime.active||commands.list().some(r=>r.state==='QUEUED')||setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止当前取数、模板或连接任务');
-          result=purchase.start(request.purchase_id);break;
+          result=purchase.start(request.purchase_id,{submitOnly:request.action==='purchase.submit'});break;
         }
         case 'purchase.status':result=purchase.status(request.purchase_id);break;
         case 'purchase.pause':result=purchase.pause(request.purchase_id);break;
@@ -122,8 +150,8 @@ async function main(){
           if(!await exists(path.join(root,'config/portable.config.json'))){result={configured:false};break;}
           const config=await loadConfig(root);
           const {binding}=await readConfiguration(root);
-          result={configured:true,enabled:config.enabled,account_binding:{account_id:config.tenantBinding.accountId,merchant_code:config.tenantBinding.merchantCode},
-            display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.targets,
+          result={configured:true,enabled:config.enabled,login_policy:'current_edge',purchase_pipeline:true,purchase_rebuild:true,needs_store_verification:!config.enabled,account_binding:{account_id:config.tenantBinding.accountId,merchant_code:config.tenantBinding.merchantCode},
+            display_name:config.tenantBinding.displayName,store_mapping_version:mappingVersion(config),targets:config.enabled?config.targets:[],
             browser_binding:binding?{edge_executable:binding.edgeExecutable,edge_version:binding.edgeVersion,
               actual_profile_path:binding.actualProfilePath,profile_directory:binding.profileDirectory,output_root:binding.outputRoot}:null};break;
         }
@@ -141,6 +169,12 @@ async function main(){
         }
         case 'status':result=publicRecord(commands.get(request.command_id));if(!result)fail('COMMAND_NOT_FOUND','未找到自动化作业');break;
         case 'collection.preview':result=maintenance.preview(request.command_id,request.operation);break;
+        case 'collection.consumer':result=maintenance.classify(request.command_id,request.fingerprint,request.purpose,request.owner);break;
+        case 'collection.reexport.preview':result=maintenance.reexportPreview(await loadConfig(root),request.operation_id,request.warehouse_codes,request.purpose);break;
+        case 'collection.reexport.apply':result=maintenance.reexportApply(await loadConfig(root),request.operation_id,request.warehouse_codes,request.purpose,request.token);break;
+        case 'collection.continue':
+          if(setup.busy||template.busy||purchase.busy||receiptSync.busy||bindingCheck.busy)fail('COMPONENT_BUSY','先完成或停止当前连接、模板、采购或收货任务');
+          result=publicRecord(runtime.continueReviewed(request.command_id));kick=true;break;
         case 'collection.apply':result=maintenance.apply(request.command_id,request.operation,request.token);break;
         case 'events':result={events:commands.events(request.command_id,request.after||0,request.limit||50)};break;
         case 'pause':result=publicRecord(runtime.pause(request.command_id));break;

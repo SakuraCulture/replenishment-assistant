@@ -1,0 +1,41 @@
+{
+  "source_commit": "b91c9d088a7f053d12c8026b3fdcdac31906d13e",
+  "fix_scope": [
+    "src/stockout_task.py:Bridge.AX_ACTIONS + setup.check_login/setup.status/setup.cancel",
+    "src/stockout_smoke.py: bridge assertions",
+    "tests/test_stockout_login_bridge.py: 4 new tests"
+  ],
+  "python": {
+    "tests": 1366,
+    "passed": true,
+    "seconds": 565.614,
+    "env_note": "PYTHONPATH=src required by subprocess-import test (same prerequisite as rc1 run)",
+    "log": "qa/bridge_fix_0501_rc2_20261110/python-final-02.log"
+  },
+  "component": {
+    "tests": 216,
+    "passed": true,
+    "log": "qa/bridge_fix_0501_rc2_20261110/node-final.log"
+  },
+  "exe_startup": {
+    "checks": 39,
+    "passed": true,
+    "process_exit": 0,
+    "live_platform": false
+  },
+  "exe_deletion": {
+    "checks": 9,
+    "passed": true,
+    "process_exit": 0,
+    "live_platform": false
+  },
+  "exe_stockout": {
+    "checks": 63,
+    "passed": true,
+    "process_exit": 0,
+    "seconds": 31.36,
+    "key_check": "Production analysis bridge forwards current Edge login and polling before native export"
+  },
+  "field_account_switch_tested": false,
+  "previous_run_note": "First full run without PYTHONPATH=src: 1366 ran, 1 subprocess-import env error (test_lazy_context_never_creates_database); rerun with rc1-identical prerequisite passed."
+}

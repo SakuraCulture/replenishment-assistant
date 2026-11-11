@@ -1,0 +1,14 @@
+======================================================================
+ERROR: test_state_reader_does_not_block_atomic_node_style_replacement (test_catalog_binding_recovery.BindingRecovery.test_state_reader_does_not_block_atomic_node_style_replacement)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_catalog_binding_recovery.py", line 42, in test_state_reader_does_not_block_atomic_node_style_replacement
+    replacement.replace(file)
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1376, in replace
+    os.replace(self, target)
+PermissionError: [WinError 5] 拒绝访问。: 'C:\\Users\\lenovo\\AppData\\Local\\Temp\\tmpjjem32bw\\node\\jobs.next.json' -> 'C:\\Users\\lenovo\\AppData\\Local\\Temp\\tmpjjem32bw\\node\\jobs.json'
+
+----------------------------------------------------------------------
+Ran 62 tests in 16.536s
+
+FAILED (errors=1)

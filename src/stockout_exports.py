@@ -81,6 +81,7 @@ def _write(book,repo,options,include_detail,combinations,cancel,progress):
                 ('查询范围',__import__('json').dumps(totals['query'],ensure_ascii=False))]:append(meta,row)
     append(meta,['筛选逻辑','同一维度多选为或，不同维度为且；各切面采用同一日期、剔除视角和筛选。各表是同一批数据的不同汇总，不跨表加总。'])
     append(meta,['地采显示','地采商品的供货仓统一显示地采；历史原始归属记录保持不变。'])
+    append(meta,['预计销售天数','商品明细按（可用库存＋在途库存）÷月销×30计算；月销不大于0或必要字段缺失留空并说明，不混加不同商品的库存单位。'])
     coverage=sheet('日报覆盖',['观测日期','日报修订','已完成门店','所选门店','发布时间'])
     for row in totals['coverage']:append(coverage,[row[k] for k in ('day','revision','completed','selected','created')])
     evidence=sheet('快照依据',['观测日期','门店编码','门店名称','观测时间','原件哈希','设置版本','仓资料哈希集合','日报修订','采集任务','当时应用与规则版本'])
@@ -119,9 +120,9 @@ def _write(book,repo,options,include_detail,combinations,cancel,progress):
     if include_detail:
         query=metrics.validate(options);condition,args=metrics.where(query)
         # A streaming cursor, not OFFSET pagination, keeps large exports linear.
-        fields=['day','store','store_name','sku','name','month_raw','stock_raw','inbound_raw','source','warehouse',
+        fields=['day','store','store_name','sku','name','month_raw','stock_raw','inbound_raw','expected_sales_days','expected_sales_days_reason','source','warehouse',
                 'mandatory','category','supplier','tags','retired','assessment','eligible','zero','bad','excluded','observed','source_sha','revision','rownum','error','product_status','replen_status']
-        headers=['观测日期','门店编码','门店名称','商品编码','商品名称','原月销','原可用库存','原在途','供货来源','归属仓','必采标记',
+        headers=['观测日期','门店编码','门店名称','商品编码','商品名称','原月销','原可用库存','原在途','预计销售天数','销售天数说明','供货来源','归属仓','必采标记',
                  '类目','仓库上游供货商','虚拟分类原文','淘汰标记','考核标记','有销资格','缺货标记','指标待核','本视角剔除','观测时间','原件哈希','日报修订','原件行号','说明','仓商品状态','翱象补货状态']
         part=1;count=0;ws=sheet('商品明细1',headers)
         with repo.connect() as db:

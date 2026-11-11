@@ -1,0 +1,647 @@
+[
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/before-fix.log",
+    "bytes": 1325,
+    "sha256": "5e34b9bf846582322b857407b6b8572855b221d63b35cd4b44475fcb3302762c"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/build-launch.log",
+    "bytes": 294,
+    "sha256": "f0da94a7a54f49ce2eb5a228de22b358af9a44d74dcf4dbbc7f2d5574193e669"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/build-rc2-launch.log",
+    "bytes": 294,
+    "sha256": "93d341164b07c25a8f8679b68a31d9afadb13082ea52cb1da5eeaca37ad6dcb0"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/.settings.instances.sqlite3",
+    "bytes": 8192,
+    "sha256": "950ca57b646e54e8764235488aaa7fb2bc1f67943b8b7eb03574c1ff20125496"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/01-异常退出后原任务保留.png",
+    "bytes": 91485,
+    "sha256": "82a2817205b5faaf0d4159410e252360b041278e30441aac6934940078656d06"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/02-占用者与恢复提示.png",
+    "bytes": 16202,
+    "sha256": "00bc7ce2c41ae2286aa0730195026c1f13956c86de431ef8d5b1c5dba0a2dcc6"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/exe-report.json",
+    "bytes": 2190,
+    "sha256": "e3d5bc74d0a609165a162515142ad98e88461e0484f077d2931026f893348ede"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/fixture.json",
+    "bytes": 183,
+    "sha256": "44633fbc1b11a0dbd72e9759eb58885ef189fedcb7ccc7f5434eb7dedaed54c7"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/helper.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/parent-crash-recovery.json",
+    "bytes": 247,
+    "sha256": "a0603fd030f2181c234e8c25de9177cee20e620b4d4cc229c43b3192ff725769"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/parent-started.json",
+    "bytes": 68,
+    "sha256": "94d40a3de72d6651950d8cece325ce559b74833e93e28f8bea7a604f88ef8cde"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/process-acceptance.json",
+    "bytes": 2353,
+    "sha256": "9374ba98acb321c1ddff42a0b443ff5bba133d0361c478d1d7c6f35251212453"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/process.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/aoxiang/scheduler.lock.sqlite3",
+    "bytes": 8192,
+    "sha256": "b55dd78f4b073c9ba5fceddc48797071f70b714af366794eaaa66603d1466879"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/aoxiang/workflows.sqlite3",
+    "bytes": 36864,
+    "sha256": "8ef8a362e3b35a0ad1ebacb55187094dbd1971fb5bcaff80cfd46c8afae300f0"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/app.log",
+    "bytes": 585,
+    "sha256": "ef0125d1bab7fd0bb04eba7fd1634e10efb6fbcbdf876ed24efd23a8259ba43b"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/jst_catalog_sync/jobs.json",
+    "bytes": 814,
+    "sha256": "afff2b6e31b9efd0dc1e141ddda7f3344e0e6b87e376e16f083d8e4e0b61aa5c"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/jst_catalog_sync/runtime-options-79512a0d2d314dd4936f9cca9c301b36.json",
+    "bytes": 755,
+    "sha256": "e0c2d264704a4aa63acf40f6b5529c1ab7eab082f2defeb5f88f1705f7a16203"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/jst_catalog_sync/store.guard.json",
+    "bytes": 76,
+    "sha256": "4cdefd2367023a7896d2df4a6bdb2f0ab0169029ddd588dc108d63dcf0ddfc44"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/jst_catalog_sync/writer.lock.sqlite",
+    "bytes": 8192,
+    "sha256": "7b10e2d52e677e4b7ac9ccc2bbe460ce7b9f0e0657c0e93a1870be082397e226"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/lifecycle_index.sqlite3",
+    "bytes": 12288,
+    "sha256": "5db8423955ec0054f56c1da9f043775989a910570d7b03db71eeb733091684a1"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/must_sell.json",
+    "bytes": 383946,
+    "sha256": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/scheduled_replenishment.lock.sqlite3",
+    "bytes": 8192,
+    "sha256": "6a9127532a780486304c8b890f43399f032e9cf58ae487913181bef8430eb474"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/workbench.before-normal-orders.3418969b478344ad9922116f50b6a257.sqlite3",
+    "bytes": 28672,
+    "sha256": "921e0cf28451344a9334cf79bc160feb0b9da1a3cf0161cb63affad8acb99194"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime/settings/workbench.sqlite3",
+    "bytes": 69632,
+    "sha256": "75cc56507125b3674937fdf467e2964dcd3c284456e2c2330ba26b4f0443972c"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-lifetime.log",
+    "bytes": 2102,
+    "sha256": "00ec6e9fdcfee00d7f321cf274bfe708263f24d9a539c59a5bc462cbbe697144"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/.settings.instances.sqlite3",
+    "bytes": 8192,
+    "sha256": "950ca57b646e54e8764235488aaa7fb2bc1f67943b8b7eb03574c1ff20125496"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/01-明确重建范围.png",
+    "bytes": 36726,
+    "sha256": "3fc15a8bf3fe5ba2c38273d5e4c85f795d91860349cc5cf264f93eda2fb33080"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/02-新预览就绪未上传.png",
+    "bytes": 113594,
+    "sha256": "ee6908b61ed17941d54f317d897f2c4f01cc38fee46cf47b43e90a05e2e7efb8"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/business-fixture.json",
+    "bytes": 9508,
+    "sha256": "f41d968688dc74f8c9988713711c86c05b330509e1bfccb4006487367df5e750"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/exe-report.json",
+    "bytes": 1447,
+    "sha256": "a8218c37682ef92ef223c4eba781ca0dfda9e95eda7cc3cf4ca5ef7dfea098f2"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/payment.xlsx",
+    "bytes": 5210,
+    "sha256": "7949d92596304bb497f22f9c2bf7e95bf6b607a98a6095db9eca57c7c2735b7f"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/pipeline-fixture.json",
+    "bytes": 13862,
+    "sha256": "34d4e99715f11fc10e1546ed1ae5e7a7abd59b2446fd8e0e31b2e2b28ba378cc"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/pipeline-simulation/workflows.sqlite3",
+    "bytes": 36864,
+    "sha256": "2c0e587856d3bfa0863acd16899251eb03da1457c502309dd6552474df6349c6"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/process-acceptance.json",
+    "bytes": 1516,
+    "sha256": "b1ecaa1fc5ea3b00dde4117f2a2f6427e6802dfb4ae9d3c8aa7f0b8f75f720a2"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/process.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/return.xlsx",
+    "bytes": 5181,
+    "sha256": "2a5d520d3013ade9b4d9616d349620422d0040e21fa96c78140514bd90cef1c4"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/command-files/rep-aab4ae94cedf4a95b378ac45563693bc/0-7872718036ab1c5af48fc4904c58ef9bbbd2c36768c7c91aa8e55d6f04158c0d.xlsx",
+    "bytes": 5167,
+    "sha256": "7872718036ab1c5af48fc4904c58ef9bbbd2c36768c7c91aa8e55d6f04158c0d"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/command-files/rep-aab4ae94cedf4a95b378ac45563693bc/1-7059ae17259bee1110a78eaf22e759a5b05acdf2262ea5e44560fb4071175099.xlsx",
+    "bytes": 5168,
+    "sha256": "7059ae17259bee1110a78eaf22e759a5b05acdf2262ea5e44560fb4071175099"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/config/portable.config.json",
+    "bytes": 1399,
+    "sha256": "d9fc391a24c33c90daf53efc0e63dd5eb3141d5b6e766e33106f3ba85dd13e49"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/coordinator.lock.sqlite",
+    "bytes": 8192,
+    "sha256": "7b10e2d52e677e4b7ac9ccc2bbe460ce7b9f0e0657c0e93a1870be082397e226"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/purchase-create-files/purchase-36db5f0243a54ac895ff2eb49610c674/639a281be5edd2d516eb53847d5813301fcfd72d09bb233fb1a5cad1b2f23290.xlsx",
+    "bytes": 6724,
+    "sha256": "639a281be5edd2d516eb53847d5813301fcfd72d09bb233fb1a5cad1b2f23290"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/purchase-create-files/purchase-82e45f7a2e414c738108f8ff3a7d41d9/d4587843e27b765ddb14df5718c84254b1f741e4a48212ff5081d8b29e36fad5.xlsx",
+    "bytes": 6724,
+    "sha256": "d4587843e27b765ddb14df5718c84254b1f741e4a48212ff5081d8b29e36fad5"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/recovery/before-purchase-create-ccacbae8-07e5-46c4-9055-8764809d0546.sqlite",
+    "bytes": 139264,
+    "sha256": "b7fe6e80d89ef0a3cb52c0f0e49c8b4db0db88b455adb81fe9e17584a0345ef9"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/recovery/before-purchase-create-ccacbae8-07e5-46c4-9055-8764809d0546.sqlite-shm",
+    "bytes": 32768,
+    "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/recovery/before-purchase-create-ccacbae8-07e5-46c4-9055-8764809d0546.sqlite-wal",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/recovery/before-purchase-receipt-65ea3590-5c6a-47b1-8681-588b67ba891f.sqlite",
+    "bytes": 172032,
+    "sha256": "fb14a160b97d479ba489d4bea3764e78872c5ca605f959e37c066b986a702456"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/recovery/before-purchase-receipt-65ea3590-5c6a-47b1-8681-588b67ba891f.sqlite-shm",
+    "bytes": 32768,
+    "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/recovery/before-purchase-receipt-65ea3590-5c6a-47b1-8681-588b67ba891f.sqlite-wal",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/state.guard.json",
+    "bytes": 99,
+    "sha256": "b046e51892d98a6f29e21bad49960a1e3e3b9f55251538f8db7172cb5f14a39b"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/component-state/state.sqlite",
+    "bytes": 204800,
+    "sha256": "b4d18427e98d3ccb518ccbe8ae9c63e51db779383e561d295f9f19d955dd8ca2"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/jobs.sqlite3",
+    "bytes": 16384,
+    "sha256": "32499e8b57834bb22c41c8a1ef8a1c755bf89bf07e10801e42f007bb2030085b"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/jobs.sqlite3.guard",
+    "bytes": 22,
+    "sha256": "52ed1c1ea9cf720c7319d9febd1b06b7827e7e9bceb87049d3030d3dc6d4d9e9"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/purchase-packages/purchase-36db5f0243a54ac895ff2eb49610c674/付款采购依据.json",
+    "bytes": 4408,
+    "sha256": "2d5ad8cd420a6c5a75068f052119c801a9d381598b807585082bf2892cad09a2"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/purchase-packages/purchase-36db5f0243a54ac895ff2eb49610c674/本地任务索引.json",
+    "bytes": 4164,
+    "sha256": "a33b718b4b48aa4f14793e59f2649d909bfab989e43d49c08f0e0b49abd64078"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/purchase-packages/purchase-36db5f0243a54ac895ff2eb49610c674/采购上传.xlsx",
+    "bytes": 6724,
+    "sha256": "639a281be5edd2d516eb53847d5813301fcfd72d09bb233fb1a5cad1b2f23290"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/purchase-packages/purchase-36db5f0243a54ac895ff2eb49610c674/采购任务.json",
+    "bytes": 1881,
+    "sha256": "7b618e73c4371de845ebfa967df80dad80ca6d89c09b8d781f81523614128d20"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/purchase-packages/purchase-36db5f0243a54ac895ff2eb49610c674/采购文件核验.json",
+    "bytes": 979,
+    "sha256": "41576b7a1a21aa7bf051c627af00b39225577146434a592e8237ca3eb355dc39"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/purchase-packages/purchase-82e45f7a2e414c738108f8ff3a7d41d9/付款采购依据.json",
+    "bytes": 4408,
+    "sha256": "2d5ad8cd420a6c5a75068f052119c801a9d381598b807585082bf2892cad09a2"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/purchase-packages/purchase-82e45f7a2e414c738108f8ff3a7d41d9/本地任务索引.json",
+    "bytes": 4164,
+    "sha256": "353b5ea1960ddf899ec8d84e65840c7df3c00196dac04f2ba2af5f8278b129fb"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/purchase-packages/purchase-82e45f7a2e414c738108f8ff3a7d41d9/采购上传.xlsx",
+    "bytes": 6724,
+    "sha256": "d4587843e27b765ddb14df5718c84254b1f741e4a48212ff5081d8b29e36fad5"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/purchase-packages/purchase-82e45f7a2e414c738108f8ff3a7d41d9/采购任务.json",
+    "bytes": 1881,
+    "sha256": "cd2cdc9855a36df350b67360bade280de67e741a98fdb149bb54af6b1d853874"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/purchase-packages/purchase-82e45f7a2e414c738108f8ff3a7d41d9/采购文件核验.json",
+    "bytes": 979,
+    "sha256": "4984469bfc7171dce445e1d8e9e837fc99777b740d88528300d1b9902bb22775"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/scheduler.lock.sqlite3",
+    "bytes": 8192,
+    "sha256": "b55dd78f4b073c9ba5fceddc48797071f70b714af366794eaaa66603d1466879"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/aoxiang/workflows.sqlite3",
+    "bytes": 57344,
+    "sha256": "98b9f4531a74af954fcc4210eaffbc497151d16ae711cf22289eba32098fe896"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/app.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/archive_index.sqlite3",
+    "bytes": 12288,
+    "sha256": "bb78037bc1f98c43bfc60ac79b5c780a5e3eb9673695abc1b5fcd25cc74abd80"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/lifecycle_index.sqlite3",
+    "bytes": 12288,
+    "sha256": "63dc0338a57180ee3510013c38419c0d274c8920879401d9c014c8cd3969ce16"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/must_sell.json",
+    "bytes": 383946,
+    "sha256": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/scheduled_replenishment.lock.sqlite3",
+    "bytes": 8192,
+    "sha256": "6a9127532a780486304c8b890f43399f032e9cf58ae487913181bef8430eb474"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/warehouse_catalogs/.山东仓.write-lock",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/warehouse_catalogs/.河北仓.write-lock",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/warehouse_catalogs/history/山东仓/2fdc8cc6fba6d00725a0845f3cd0f0483d87e1f8a15e05f90fa81979025ce27a.json",
+    "bytes": 1300,
+    "sha256": "bc5de031f3d14efe95e4600d2ed3e89fb02572007f49b393fecfa9019d501b45"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/warehouse_catalogs/history/河北仓/7c707f65c1d3699ac5a44a1318c7282a0975f6010c728de08efd6646ce21822d.json",
+    "bytes": 1300,
+    "sha256": "383c2553194d77f1cc16a8b047ce52db8b0ca35e95a33fa059f41fde21c17906"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/warehouse_catalogs/山东仓.json",
+    "bytes": 1300,
+    "sha256": "bc5de031f3d14efe95e4600d2ed3e89fb02572007f49b393fecfa9019d501b45"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/warehouse_catalogs/河北仓.json",
+    "bytes": 1300,
+    "sha256": "383c2553194d77f1cc16a8b047ce52db8b0ca35e95a33fa059f41fde21c17906"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/workbench.before-chunks-4111f27a1127f05e6d0186aaac3e107f.sqlite3",
+    "bytes": 122880,
+    "sha256": "c7134da2784ef75dc67f4a67d9b79c59453d46b84256b87754dac0aa85965963"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/workbench.before-normal-orders.e2d27b60250f45f3ae2e87a943af8d42.sqlite3",
+    "bytes": 28672,
+    "sha256": "921e0cf28451344a9334cf79bc160feb0b9da1a3cf0161cb63affad8acb99194"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/settings/workbench.sqlite3",
+    "bytes": 184320,
+    "sha256": "b3df2f8603848e1eac954bea5f9f06b767986b5f479a5e605468bc962604c75b"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/SYNTHETIC-current-山东仓.xlsx",
+    "bytes": 5084,
+    "sha256": "25b5e70c133ed6ef620083747c8d91f88e139d76a11a4ab41ec84bcf721fe249"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/SYNTHETIC-current-河北仓.xlsx",
+    "bytes": 5084,
+    "sha256": "25b5e70c133ed6ef620083747c8d91f88e139d76a11a4ab41ec84bcf721fe249"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/synthetic-native-template.xlsx",
+    "bytes": 6953,
+    "sha256": "44c4f65dbbb82ae03244c9a2e1427b8a1c44cddbb8eef8857017c8009902eefa"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/template-latest.json",
+    "bytes": 6143,
+    "sha256": "693b94e5ed3baaa1280a24a2b39945ea9a7c3cd0d3f2b72e0ab040615696e5cc"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/template-record.json",
+    "bytes": 6143,
+    "sha256": "693b94e5ed3baaa1280a24a2b39945ea9a7c3cd0d3f2b72e0ab040615696e5cc"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/W1.xlsx",
+    "bytes": 5168,
+    "sha256": "7059ae17259bee1110a78eaf22e759a5b05acdf2262ea5e44560fb4071175099"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/W2.xlsx",
+    "bytes": 5167,
+    "sha256": "7872718036ab1c5af48fc4904c58ef9bbbd2c36768c7c91aa8e55d6f04158c0d"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/合成商品资料.xlsx",
+    "bytes": 5076,
+    "sha256": "48fcbcd44feaba4c487999fb2e7fc4806b98ab88e0f1b15e73334de8b4077c7d"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/山东仓.xlsx",
+    "bytes": 5029,
+    "sha256": "1f7c0fe7010d3acd248f4ef61e46b891267185c567f9fdce950cc54c513cde2b"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline/河北仓.xlsx",
+    "bytes": 5029,
+    "sha256": "1f7c0fe7010d3acd248f4ef61e46b891267185c567f9fdce950cc54c513cde2b"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/exe-pipeline.log",
+    "bytes": 1265,
+    "sha256": "22c1199bf6339f076d85db74a6c567432581cf616580eaf8b95ad76cd68cf675"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/manual-html/desktop-index.png",
+    "bytes": 181632,
+    "sha256": "9d195373a98e47ee1401098326cd4bdb8e4c54cbeaf70d5e1206ccc690a372a1"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/manual-html/desktop-purchase-steps.png",
+    "bytes": 198465,
+    "sha256": "0e8f26298dbaa2b1fe5c975c1540327e29e46b5fa669e419682cc6d94cb9e4e2"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/manual-html/desktop-weight-practice.png",
+    "bytes": 145770,
+    "sha256": "afbdefe3afc286dddc2840ff0aac1b5fa7bbcae11c380b3d99262b18b38808af"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/manual-html/html-report.json",
+    "bytes": 698,
+    "sha256": "098de29e85f03e8a367d0c61ef4e8c2f63de52db0d323c2ae3db6e2fc3f91fbc"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/manual-html/mobile-purchase-steps.png",
+    "bytes": 67083,
+    "sha256": "9363631d825d0eb3e6456bedb9f89d2ed6313deafdd907d8e08ae8b6a52e9b9b"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/manual-html/mobile-scopes.png",
+    "bytes": 52457,
+    "sha256": "8bcfd553741a35b3c879c24b9595ab4c6ec147b7fd5160795487a9b40e59d7b0"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/manual-html.log",
+    "bytes": 566,
+    "sha256": "861175c9d1d33c87fea3799e7c5e328bac9cc490d30ea12c8f1a3fa410ee2fb5"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/node-aoxiang-full.log",
+    "bytes": 26645,
+    "sha256": "35e8186a9c9ebb02c71a7bc287bb24c53634cfc9d1a626d8ee9dc6152e195d25"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/node-jst-final.log",
+    "bytes": 5960,
+    "sha256": "bf855a5379b27d03fb3223912687c0c7585aa7af1f7d7cb232690e9f7647fae4"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/node-jst-full.log",
+    "bytes": 5845,
+    "sha256": "48c517dde909031a785fe54ccbfbba0e2086809d803fcc80a0d9b17de17e89b3"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/protection.json",
+    "bytes": 1119,
+    "sha256": "ef4a55500a60fbf0391fca79e4739db14051d3099b289b3c2fab24d5d5b10a31"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/python-catalog-final.log",
+    "bytes": 4344,
+    "sha256": "a0b71ea29f44a77827146def92b243167dffeb47283e075a9db1229eac3e6515"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/python-catalog-initial.log",
+    "bytes": 4614,
+    "sha256": "ca19cb1d12bffd10844f9b74a2cf30fc3f6f654a05897a490e8af23397bae78e"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/python-catalog-sealed.log",
+    "bytes": 4344,
+    "sha256": "b825c8c70004b5e744450d1572d9cf4876ce1e834bc5eb9615c40edd92aec838"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/python-full.log",
+    "bytes": 226584,
+    "sha256": "3efba605222803078e16c071301a65b89af1187f6a226455ad5483a460c418bc"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/shutdown-after.log",
+    "bytes": 964,
+    "sha256": "f98889b1b79e9a73a5f74e2b248712969255074d972979439a316b68895e037c"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/.settings.instances.sqlite3",
+    "bytes": 8192,
+    "sha256": "950ca57b646e54e8764235488aaa7fb2bc1f67943b8b7eb03574c1ff20125496"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/01-异常退出后原任务保留.png",
+    "bytes": 91485,
+    "sha256": "82a2817205b5faaf0d4159410e252360b041278e30441aac6934940078656d06"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/02-占用者与恢复提示.png",
+    "bytes": 16161,
+    "sha256": "775090619df67a14ceb7b5d6944329b1480dd883747e196d5e16a7a21b2499cc"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/exe-report.json",
+    "bytes": 1230,
+    "sha256": "ae6c995f8e343671271f100a647024fddfe248db3c9c670db83e00d2fd949873"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/fixture.json",
+    "bytes": 183,
+    "sha256": "589b7527b1775f9016d4acaf397c697b86d1de66841cc656c949f231f43c1842"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/helper.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/parent-crash-recovery.json",
+    "bytes": 249,
+    "sha256": "63ec7100a52f425c28330e068c164ad284110cedc0864aec9f41535d7c4d5ac6"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/parent-started.json",
+    "bytes": 69,
+    "sha256": "5037074e141d6723d210d9106e80c3c029a62a9ee20757aa3ad579a091cca8fe"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/process-acceptance.json",
+    "bytes": 1308,
+    "sha256": "2cfbcb3d9426bd9f6f446897ace153cd9a0894cb01666584cac5a67fd813dc3a"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/process.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/aoxiang/scheduler.lock.sqlite3",
+    "bytes": 8192,
+    "sha256": "b55dd78f4b073c9ba5fceddc48797071f70b714af366794eaaa66603d1466879"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/aoxiang/workflows.sqlite3",
+    "bytes": 36864,
+    "sha256": "8ef8a362e3b35a0ad1ebacb55187094dbd1971fb5bcaff80cfd46c8afae300f0"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/app.log",
+    "bytes": 1576,
+    "sha256": "ae050e218d799b4e684a6ff14daa389761555644562e791d77de5a64f2c04227"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/jst_catalog_sync/jobs.json",
+    "bytes": 814,
+    "sha256": "30bcd65432806188539256f07c203f5268a308282968979826ca91dceaf77ab4"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/jst_catalog_sync/runtime-options-7aa98b10388249d7999e2429728adc32.json",
+    "bytes": 774,
+    "sha256": "14a5f8b60d1ed089753463b348083e21d85c87a9762248e5280c2e9092c1c9e2"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/jst_catalog_sync/store.guard.json",
+    "bytes": 76,
+    "sha256": "8605325de6343c238abc9c20ec035a8478d25e0b712f01527af50d64984223f6"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/jst_catalog_sync/writer.lock.sqlite",
+    "bytes": 8192,
+    "sha256": "7b10e2d52e677e4b7ac9ccc2bbe460ce7b9f0e0657c0e93a1870be082397e226"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/lifecycle_index.sqlite3",
+    "bytes": 12288,
+    "sha256": "5db8423955ec0054f56c1da9f043775989a910570d7b03db71eeb733091684a1"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/must_sell.json",
+    "bytes": 383946,
+    "sha256": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/scheduled_replenishment.lock.sqlite3",
+    "bytes": 8192,
+    "sha256": "6a9127532a780486304c8b890f43399f032e9cf58ae487913181bef8430eb474"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/workbench.before-normal-orders.255883d777724e7f980f6c48d05cb350.sqlite3",
+    "bytes": 28672,
+    "sha256": "921e0cf28451344a9334cf79bc160feb0b9da1a3cf0161cb63affad8acb99194"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01/settings/workbench.sqlite3",
+    "bytes": 69632,
+    "sha256": "75cc56507125b3674937fdf467e2964dcd3c284456e2c2330ba26b4f0443972c"
+  },
+  {
+    "path": "qa/catalog_service_lifetime_0503_20261110/source-ui-01.log",
+    "bytes": 1176,
+    "sha256": "8f992f461bd33ad209d0f604628c6f44e27e0d2087d60be7d42433e9d1788cdc"
+  }
+]

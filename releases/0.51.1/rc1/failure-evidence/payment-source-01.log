@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_payment_matching.py", line 58, in <module>
+    if __name__=='__main__':sys.exit(main())
+                                     ^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_payment_matching.py", line 45, in main
+    out=a.out.resolve();out.relative_to(ROOT/'qa');fixture(out)
+                                                   ^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_payment_matching.py", line 34, in fixture
+    other=next(r for r in signed['payload']['result']['rows'] if r.get('AU') in {'山东仓','河北仓'} and r['AU']!=g['head']['warehouse'] and r['E'] not in g['head']['products'])
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_payment_matching.py", line 34, in <genexpr>
+    other=next(r for r in signed['payload']['result']['rows'] if r.get('AU') in {'山东仓','河北仓'} and r['AU']!=g['head']['warehouse'] and r['E'] not in g['head']['products'])
+                                                                                                                                                          ~~~~~~~~~^^^^^^^^^^^^
+KeyError: 'products'

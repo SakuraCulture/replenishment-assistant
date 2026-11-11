@@ -1,6 +1,7 @@
 """Dedicated JST process transport. Independent of AX session, queue and cancellation."""
 from __future__ import annotations
 import json
+import os
 import queue
 import subprocess
 import sys
@@ -13,8 +14,8 @@ PROTOCOL='jst.catalog.v1'
 
 
 class ComponentError(RuntimeError):
-    def __init__(self, code, message):
-        super().__init__(message); self.code=code
+    def __init__(self, code, message, details=None):
+        super().__init__(message); self.code=code;self.details=details or {}
 
 
 def components():
@@ -28,7 +29,7 @@ class Client:
         self.folder=Path(folder).resolve(); self.roots=component_roots or components()
         self.forbidden_roots=list(map(str,forbidden_roots)); self.process=None; self.pending={}
         self.lock=threading.Lock(); self.write_lock=threading.Lock(); self.ready=threading.Event(); self.error=None
-        self.started=False; self.stderr=bytearray()
+        self.started=False; self.stderr=bytearray();self.options_file=None
     @property
     def running(self):return self.process is not None and self.process.poll() is None
     def start(self):
@@ -46,8 +47,8 @@ class Client:
             binding=json.loads(ax_binding.read_text('utf-8'))
             if binding.get('userDataRoot'):forbidden.append(binding['userDataRoot'])
         options={'stateRoot':str(self.folder),'bridgeRoot':str(ax),'lockRoot':str(self.folder.parent/'jst_catalog_browser_locks'),
-                 'forbiddenRoots':forbidden,'validator':validator}
-        opts=self.folder/'runtime-options.json';atomic_json(opts,options)
+                 'forbiddenRoots':forbidden,'validator':validator,'parentPid':os.getpid()}
+        opts=self.folder/('runtime-options-'+uuid.uuid4().hex+'.json');atomic_json(opts,options);self.options_file=opts
         self.process=subprocess.Popen([str(node),str(entry),'--options',str(opts)],cwd=jst,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
         self.reader=threading.Thread(target=self._read,daemon=True,name='jst-catalog-protocol');self.reader.start()
         self.diagnostics=threading.Thread(target=self._stderr,daemon=True,name='jst-catalog-diagnostics');self.diagnostics.start()
@@ -70,7 +71,7 @@ class Client:
                 frame=json.loads(line)
                 if frame.get('protocol')!=PROTOCOL:raise ValueError('协议版本不匹配')
                 if frame['type']=='ready':self.ready.set()
-                elif frame['type']=='fatal':raise ComponentError(frame['error']['code'],frame['error']['message'])
+                elif frame['type']=='fatal':raise ComponentError(frame['error']['code'],frame['error']['message'],frame['error'].get('details'))
                 elif frame['type']=='response':
                     with self.lock:q=self.pending.get(frame.get('request_id'))
                     if q:q.put_nowait(frame)
@@ -92,22 +93,27 @@ class Client:
             except queue.Empty:raise ComponentError('RESPONSE_UNKNOWN','响应超时；请查询原任务，不能据此重复提交')
             if isinstance(frame,Exception):raise frame
             if frame.get('ok') is not True:
-                e=frame.get('error',{});raise ComponentError(e.get('code','FAILED'),e.get('message','采集操作失败'))
+                e=frame.get('error',{});raise ComponentError(e.get('code','FAILED'),e.get('message','采集操作失败'),e.get('details'))
             return frame.get('result')
         finally:
             with self.lock:self.pending.pop(ident,None)
     def close(self,timeout=3):
-        if self.process is None:return True
-        if self.running:
+        if self.process is None:
+            if self.options_file:self.options_file.unlink(missing_ok=True)
+            return True
+        if self.running and not self.process.stdin.closed and not self.error:
+            try:self.request('shutdown',timeout=min(timeout,2))
+            except Exception:pass
+        # Also close the writer when the child exited first (parent-watch,
+        # startup error or protocol failure), otherwise the host leaks handles.
+        with self.write_lock:
             if not self.process.stdin.closed:
-                if not self.error:
-                    try:self.request('shutdown',timeout=min(timeout,2))
-                    except Exception:pass
-                with self.write_lock:
-                    try:self.process.stdin.close()
-                    except OSError:pass
+                try:self.process.stdin.close()
+                except OSError:pass
+        if self.running:
             try:self.process.wait(timeout=timeout)
             except subprocess.TimeoutExpired:return False
         self.reader.join(timeout=1);self.diagnostics.join(timeout=1)
         for pipe in (self.process.stdout,self.process.stderr):pipe.close()
+        if self.options_file:self.options_file.unlink(missing_ok=True)
         return True

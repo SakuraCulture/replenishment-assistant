@@ -7,8 +7,10 @@ import {fileHash,validateWorkbook} from './workbook-validator.mjs';
 import {inspectPurchaseTemplate,templateContract} from './purchase-template.mjs';
 import {validatePurchaseIntent,decimal,PRICE_POLICY} from './purchase-create-contract.mjs';
 import {mappingVersion} from './machine-commands.mjs';
+import {portablePath} from './portable-assets.mjs';
 
 export async function readPurchasePackage(file,hash){
+  file=await portablePath(file);
   if(!path.isAbsolute(file)||file.startsWith('\\\\'))fail('PURCHASE_PACKAGE_PATH','采购任务必须使用本机绝对文件路径');
   const stat=await fs.stat(file);if(!stat.isFile()||stat.size>4194304)fail('PURCHASE_PACKAGE_SIZE','采购任务超过4MiB本机保护值');
   const bytes=await fs.readFile(file);if(sha256(bytes)!==hash)fail('PURCHASE_PACKAGE_CHANGED','采购任务文件已变化');
@@ -26,7 +28,7 @@ export async function checkPurchaseInput(p,{latest=true,requireRounded=true}={})
   if(receipt.status!=='SUPPORTED'||receipt.attemptId!==p.template.attemptId||receipt.sha256!==p.template.sha256||!sameIdentity(receipt.identity,p.identity)||receipt.contractVersion!==contract.version||canonical(receipt.schema)!==canonical(contract.schema)||receipt.importSubmissions!==0)fail('PURCHASE_TEMPLATE_PROOF','本次模板获取记录未通过核验');
   if(latest){const last=await readJson(receipt.latestFile);if(last.attemptId!==receipt.attemptId||last.status!=='SUPPORTED'||last.sha256!==receipt.sha256)fail('PURCHASE_TEMPLATE_STALE','采购模板获取记录已变化，请重新获取并预览');}
   if(receipt.uiProductLimit!==null&&receipt.uiProductLimit!==undefined&&(!Number.isSafeInteger(receipt.uiProductLimit)||p.rows.length>receipt.uiProductLimit||receipt.uiProductLimit<1))fail('PURCHASE_LIMIT','采购商品超过本次平台上限，本期不拆单');
-  if(await fileHash(receipt.file)!==p.template.sha256||await fileHash(p.file.path)!==p.file.sha256||(await fs.stat(p.file.path)).size!==p.file.bytes)fail('PURCHASE_FILE_CHANGED','采购原模板或待上传文件发生变化');
+  if(await fileHash(receipt.file)!==p.template.sha256||await fileHash(p.file.path)!==p.file.sha256||(await fs.stat(await portablePath(p.file.path))).size!==p.file.bytes)fail('PURCHASE_FILE_CHANGED','采购原模板或待上传文件发生变化');
   const input=await inspectPurchaseTemplate(p.file.path),visible=contract.schema.sheets.find(s=>s.state==='visible'),actual=input.schema.sheets.find(s=>s.name===visible.name);
   if(!actual||actual.sampleRows.length!==p.rows.length||actual.sampleRows.some((r,i)=>r.row!==visible.inputStartRow+i||r.isExample||r.hasFormula))fail('PURCHASE_INPUT_ROWS','采购文件行号、样例或公式不符合冻结内容');
   const expectedSchema=structuredClone(contract.schema);expectedSchema.sheets.find(s=>s.name===visible.name).sampleRows=actual.sampleRows;
@@ -50,7 +52,7 @@ export async function checkPurchaseInput(p,{latest=true,requireRounded=true}={})
 export async function freezePurchaseInput(root,p){
   const directory=path.join(root,'purchase-create-files',p.id);await fs.mkdir(directory,{recursive:true});
   const file=path.join(directory,p.file.sha256+'.xlsx');
-  try{await fs.copyFile(p.file.path,file,constants.COPYFILE_EXCL);const h=await fs.open(file,'r+');try{await h.sync();}finally{await h.close();}}catch(e){if(e.code!=='EEXIST')throw e;}
+  try{await fs.copyFile(await portablePath(p.file.path),file,constants.COPYFILE_EXCL);const h=await fs.open(file,'r+');try{await h.sync();}finally{await h.close();}}catch(e){if(e.code!=='EEXIST')throw e;}
   if(await fileHash(file)!==p.file.sha256)fail('PURCHASE_FILE_CHANGED','采购任务原件留存不一致，未覆盖');
   return {...p,file:{...p.file,sourcePath:p.file.path,path:file}};
 }

@@ -25,6 +25,8 @@ test('NDJSON按字节分帧，支持分段中文、CRLF，多帧且拒绝超长/
   await assert.rejects(()=>collect(['not-json\n']),{code:'FRAME_JSON'});
 });
 test('机器动作字段严格校验，不接受未知开关和无效游标；内部配置不传入UI',()=>{
+  validateRequest(request('collection.continue',{command_id:'job-1'}));
+  assert.throws(()=>validateRequest(request('collection.continue',{command_id:'job-1',force:true})),{code:'REQUEST_SCHEMA'});
   validateRequest(request('status',{command_id:'job-1'}));
   for(const bad of [request('unknown'),request('status'),request('ping',{cookie:'x'}),request('events',{command_id:'x',after:-1}),request('list',{limit:101}),{...request('ping'),protocol_version:2}])assert.throws(()=>validateRequest(bad),{code:'REQUEST_SCHEMA'});
   assert.deepEqual(publicRecord({id:'x',config_snapshot:{large:'private'},state:'PAUSED'}),{id:'x',state:'PAUSED'});

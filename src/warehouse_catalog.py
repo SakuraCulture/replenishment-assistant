@@ -9,6 +9,7 @@ import openpyxl
 from openpyxl.cell import WriteOnlyCell
 import engine
 from priority_list import atomic_json
+from first_fill import FIELD as FIRST_FILL_FIELD
 
 from app_defaults import WAREHOUSES
 from data_contracts import InputBatch
@@ -38,6 +39,8 @@ def import_catalog(path,warehouse,progress=lambda s:None,cancel=None):
         if sku in items:raise ValueError(f"本仓商品编码重复：{sku}，第{items[sku]['_row']}和{raw['_row']}行；请处理后导入")
         row={k:raw.get(k) for k in FIELDS};row.update(商品编码=sku,_row=raw['_row']);items[sku]=row
         if '商品标签' in heads:row['商品标签']=raw.get('商品标签')
+        if FIRST_FILL_FIELD in info['duplicate_unused_headers']:row['_first_fill_issue']='“'+FIRST_FILL_FIELD+'”表头重复，未自动择一'
+        elif FIRST_FILL_FIELD in heads:row[FIRST_FILL_FIELD]=raw.get(FIRST_FILL_FIELD)
     if before!=engine.adapter.digest(path):raise ValueError('读取期间文件发生变化，请重新导入')
     data={'schema':1,'warehouse':warehouse,'source_path':str(path),'source_sha256':before,'sheet':sheet,'imported_at':datetime.now().isoformat(timespec='seconds'),'items':items,'revision':revision(items)}
     return validate(data)
@@ -143,10 +146,11 @@ def validate_route(route,catalogs):
     return route
 
 def write_catalog(catalog,path):
-    book=openpyxl.Workbook(write_only=True);ws=book.create_sheet('商品资料');ws.append(FIELDS+['仓归属'])
+    fields=FIELDS+([FIRST_FILL_FIELD] if any(FIRST_FILL_FIELD in r for r in catalog['items'].values()) else [])
+    book=openpyxl.Workbook(write_only=True);ws=book.create_sheet('商品资料');ws.append(fields+['仓归属'])
     for row in catalog['items'].values():
         cells=[]
-        for value in [row.get(k) for k in FIELDS]+[catalog['warehouse']]:
+        for value in [row.get(k) for k in fields]+[catalog['warehouse']]:
             cell=WriteOnlyCell(ws,value)
             if isinstance(value,str):cell.data_type='s'
             cells.append(cell)
@@ -166,7 +170,8 @@ def prepare_records(sales_table,catalogs,progress=lambda s:None,cancel=None):
     from table_records import bridge_table
     def load(wh,catalog):
         raw=({**row,'仓归属':wh} for row in catalog['items'].values())
-        table=bridge_table(FIELDS+['仓归属'],raw,'商品资料')
+        fields=FIELDS+([FIRST_FILL_FIELD] if any(FIRST_FILL_FIELD in r for r in catalog['items'].values()) else [])
+        table=bridge_table(fields+['仓归属'],raw,'商品资料')
         return engine.load_records(sales_table,table,sales_ref='memory:batch.xlsx',product_ref='memory:'+wh+'.xlsx',progress=progress,cancel=cancel)
     return _prepare_catalogs(catalogs,load)
 
@@ -178,6 +183,8 @@ def _prepare_catalogs(catalogs,load):
         for d,m in loaded['normalized']:
             row=catalog['items'].get(d['E'])
             m.update(product_file=catalog['source_path'],product_sheet=catalog['sheet'],product_revision=catalog['revision'])
+            from first_fill import basis
+            m['first_fill']=basis(catalog,wh,d['E'])
             if row:
                 m.update(product_row=row['_row'],warehouse_available=engine.adapter.numeric(row.get('可用数')))
                 if any('商品标签' in c['items'].get(d['E'],{}) for c in catalogs.values()):

@@ -22,6 +22,28 @@ async function context(t,executeItem,options={}){
     basis_versions:{store_mapping:mappingVersion(config)},policy:{freshness:'reuse'}},config);
   return {root,state,commands,runtime,reserve};
 }
+test('一店受理未知不拦其他店；无回执不可重发，迟到确切回执只恢复原项',async t=>{
+  const visits=[];let receipt=false;
+  const c=await context(t,async({item})=>{
+    visits.push(item.index);
+    if(item.index===0&&!receipt)throw new AppError('SUBMISSION_UNKNOWN','缺少回执');
+    return {file:item.warehouse_code+'.xlsx'};
+  },{canResumeReview:item=>item.index===0&&receipt});
+  await c.reserve();c.runtime.kick();await c.runtime.idle();
+  assert.deepEqual(c.commands.get('job-1').items.map(i=>i.state),['NEEDS_REVIEW','PENDING','PENDING']);
+  c.runtime.continueReviewed('job-1');c.runtime.kick();await c.runtime.idle();
+  const before=c.commands.get('job-1');assert.equal(before.state,'NEEDS_REVIEW');
+  assert.deepEqual(before.items.map(i=>i.state),['NEEDS_REVIEW','SUCCEEDED','SUCCEEDED']);
+  assert.throws(()=>c.runtime.continueReviewed('job-1'),{code:'COMMAND_TRANSITION'});assert.deepEqual(visits,[0,1,2]);
+  const forged=structuredClone(before.items);forged[0].state='PENDING';
+  assert.throws(()=>c.commands.advance('job-1',before.sequence,'QUEUED',{kind:'RESUME_WITH_REVIEW_RETAINED',items:forged}),{code:'COMMAND_TRANSITION'});
+  const source=c.state.getItems(before.items[0].run_id)[0];
+  c.state.putAttempt({id:'late-receipt',itemId:source.id,runId:source.runId,...identity,buyerWarehouseCode:'W2',scopeHash:'fixture',stage:'ACCEPTED',taskId:'exact-original-task'});
+  c.state.putItem({...source,attemptId:'late-receipt'});
+  receipt=true;c.runtime.continueReviewed('job-1');c.runtime.kick();await c.runtime.idle();
+  const after=c.commands.get('job-1');assert.equal(after.state,'SUCCEEDED');assert.deepEqual(visits,[0,1,2,0]);
+  assert.deepEqual(after.items.slice(1),before.items.slice(1));assert.equal(after.items[0].run_id,before.items[0].run_id);
+});
 
 test('显式单项重跑保留成功文件和原任务号，旧预览与重复点击被拒绝',async t=>{
   let failed=true;const visited=[];
@@ -44,6 +66,35 @@ test('平台受理不明不可用重跑绕过核对',async t=>{
   const c=await context(t,async()=>{throw new AppError('SUBMISSION_UNKNOWN','fixture');});
   await c.reserve();c.runtime.kick();await c.runtime.idle();const r=c.commands.get('job-1');
   assert.equal(r.state,'NEEDS_REVIEW');assert.throws(()=>c.runtime.retry(r.id,[0],r.sequence));assert.throws(()=>c.runtime.resume(r.id));
+});
+
+test('菜单明确未提交仅自动恢复一次，其余门店各自提交并收取',async t=>{
+  const calls=new Map();
+  const c=await context(t,async({item,phase})=>{
+    const key=phase+item.index,n=(calls.get(key)||0)+1;calls.set(key,n);
+    if(item.index===0&&phase==='submit'&&n===1)throw new AppError('EXPORT_NOT_DISPATCHED','未点击');
+    return phase==='submit'?{pending:true}:{file:item.warehouse_code};
+  },{pipeline:true});
+  await c.reserve();c.runtime.kick();await c.runtime.idle();assert.equal(c.commands.get('job-1').state,'SUCCEEDED');
+  assert.equal(calls.get('submit0'),2);assert.equal(calls.get('submit1'),1);assert.equal(calls.get('collect0'),1);
+});
+
+test('登录全局异常即使伴随受理未知也停止后续门店',async t=>{
+  let calls=0;
+  const c=await context(t,async()=>{calls++;throw new AppError('WAIT_LOGIN','请登录');},{pipeline:true,needsReview:()=>true});
+  await c.reserve();c.runtime.kick();await c.runtime.idle();assert.equal(calls,1);assert.equal(c.commands.get('job-1').state,'NEEDS_REVIEW');
+});
+
+test('一店文件校验失败保留失败，不混入结果，其余门店继续收取',async t=>{
+  const seen=[];
+  const c=await context(t,async({item,phase})=>{
+    seen.push([item.index,phase]);if(phase==='submit')return {pending:true};
+    if(item.index===0)throw new AppError('ENTITY_MISMATCH','文件门店不符');return {file:item.warehouse_code};
+  },{pipeline:true});
+  await c.reserve();c.runtime.kick();await c.runtime.idle();
+  const done=c.commands.get('job-1');assert.equal(done.state,'COMPLETED_WITH_ERRORS');
+  assert.deepEqual(done.items.map(i=>i.state),['FAILED','SUCCEEDED','SUCCEEDED']);assert.equal(done.items[0].result,null);
+  assert.deepEqual(seen.filter(i=>i[1]==='collect').map(i=>i[0]),[0,1,2]);
 });
 
 test('浏览器任务严格串行，单店普通失败保留原顺序并继续其他店',async t=>{
@@ -80,11 +131,11 @@ test('先提交全部门店，慢首店不阻塞后店完成；结果保留所�
   assert.deepEqual(done.items.map(i=>i.task_id),['task-W2','task-W1','task-W3']);
 });
 
-test('流水线未知受理立即停后续提交，不因已受理数量相等就取最新任务',async t=>{
+test('流水线未知受理项不重发，其余门店独立提交收取，不猜最新任务',async t=>{
   const seen=[];
-  const c=await context(t,async({item})=>{seen.push(item.warehouse_code);if(item.index===1)throw new AppError('SUBMISSION_UNKNOWN','受理不明');return {pending:true};},{pipeline:true});
+  const c=await context(t,async({item,phase})=>{seen.push([item.warehouse_code,phase]);if(item.index===1)throw new AppError('SUBMISSION_UNKNOWN','受理不明');return phase==='submit'?{pending:true}:{file:item.warehouse_code};},{pipeline:true});
   await c.reserve();c.runtime.kick();await c.runtime.idle();
-  assert.deepEqual(seen,['W2','W1']);assert.equal(c.commands.get('job-1').state,'NEEDS_REVIEW');
+  assert.deepEqual(seen,[['W2','submit'],['W1','submit'],['W3','submit'],['W2','collect'],['W3','collect']]);assert.equal(c.commands.get('job-1').state,'NEEDS_REVIEW');
   assert.throws(()=>c.runtime.resume('job-1'),{code:'COMMAND_TRANSITION'});
 });
 test('首店任务暂未找到不阻塞后店多轮收取，继续仍使用原任务身份',async t=>{

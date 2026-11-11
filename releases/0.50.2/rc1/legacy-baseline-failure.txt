@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tools\audit_baseline.py", line 28, in <module>
+    if __name__=='__main__':print(json.dumps(audit(),ensure_ascii=False,indent=2))
+                                             ^^^^^^^
+  File "D:\���Ź����ļ���\outputs\replenishment_mvp_20261029\tools\audit_baseline.py", line 11, in audit
+    assert expected==actual,'0.3 delivery changed'
+           ^^^^^^^^^^^^^^^^
+AssertionError: 0.3 delivery changed

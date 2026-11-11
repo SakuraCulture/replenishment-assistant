@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "chapters": 21,
+  "image_count": 39,
+  "checks": [
+    "local images load",
+    "order migration and warehouse analysis chapter",
+    "new recovery chapter and archived PDF link",
+    "chapter and subsection anchors",
+    "search found/zero/reset",
+    "weight valid/invalid/blank/boundary",
+    "image zoom open/close",
+    "mobile table contained scroll",
+    "no page errors",
+    "no external requests"
+  ],
+  "overflow": {
+    "width": 390,
+    "content": 390,
+    "tables": 12
+  },
+  "browser": "157.0.4341.42",
+  "errors": [],
+  "external_requests": [],
+  "files": [
+    "desktop-index.png",
+    "desktop-purchase-steps.png",
+    "desktop-weight-practice.png",
+    "mobile-purchase-steps.png",
+    "mobile-scopes.png"
+  ]
+}

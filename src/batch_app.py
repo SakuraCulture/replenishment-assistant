@@ -298,6 +298,10 @@ class BatchWindow(WarehouseUi,SessionWindow):
             self.reset_calculation_snapshot()
             self._calculation_input=self.loaded;self._calculation_profile=copy.deepcopy(self.profile)
         self._calculation_settings.update(copy.deepcopy(jobs))
+        if hasattr(self,'work_repository') and not reuse:
+            from deletion_barrier import read_epochs
+            epochs=read_epochs(self.work_repository.path,self.job_day,jobs)
+            self.__dict__.setdefault('deletion_generations',{}).update(epochs)
         for s,settings in jobs.items():
             self.states[s].update(state='排队中',error='');self.results.pop(s,None)
             if s==self.current_store:self.dirty=True;self.result=None
@@ -307,6 +311,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
                     if settings.get('supply_route'):self.catalog_repository.save_route(s,settings['supply_route'])
             except Exception as exc:self.states[s]['error']='本次设置未能保存：'+str(exc)
         worker=BatchWorker(self._calculation_input,jobs,self._calculation_profile,self.concurrency.value(),self);self.worker=worker
+        worker.deletion_generations={s:getattr(self,'deletion_generations',{}).get(s,0) for s in jobs}
         worker.changed.connect(self.task_changed);worker.failed.connect(self.batch_failed);worker.finished.connect(self.job_finished)
         self.pages.setCurrentIndex(2);self.refresh_tables();self.update_controls();worker.start()
     def task_changed(self,store,state,result,error):

@@ -200,7 +200,9 @@ class WorkflowUiTests(unittest.TestCase):
         for n in range(3):self.m.store.update(j['id'],position=n,changes={'state':'PREPARED','package':{'id':'p'+str(n)}})
         j=self.m.store.update(j['id'],state='READY');d=QueueDialog(self.host,self.m,j['id']);d.timer.stop()
         d.table.item(1,0).setCheckState(Qt.CheckState.Checked)
-        self.m.store.update(j['id'],items=j['items'][1:]);d.refresh()
+        # Simulate a committed maintenance crop, not a background result write.
+        with self.m.store.db(True) as db:self.m.store._save(db,{**j,'items':j['items'][1:]},'TEST_MAINTENANCE_CROP')
+        d.refresh()
         self.assertEqual(d.table.item(0,0).checkState(),Qt.CheckState.Checked)
         self.assertEqual(d.table.item(1,0).checkState(),Qt.CheckState.Unchecked)
         d.accept();d.deleteLater()

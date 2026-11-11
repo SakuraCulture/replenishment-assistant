@@ -1,0 +1,38 @@
+{
+  "source_commit": "4abebb2305529133c045a309e94527688a6c6154",
+  "baseline": "a91a8114f8d9daaa408c0a298ca53ccbc8f8c5b1",
+  "python_full": {
+    "passed": true,
+    "tests": 1454,
+    "seconds": 509.961,
+    "file": "python-full-sealed-14.log",
+    "sha256": "64ae304dccc8b89867eb5438c8e8539c9d0b1a12ef81a16b406130a5d8125e9a"
+  },
+  "final_special": {
+    "passed": true,
+    "tests": 50,
+    "seconds": 11.174,
+    "file": "final-target-13.log",
+    "sha256": "6458e93aa229874e4bea694fb000ccf46777419c91b9263ddd431b2a16e05dbd"
+  },
+  "node": {
+    "aoxiang": {
+      "tests": 244,
+      "passed": true,
+      "sha256": "1437cb8af54316d4173f1e2ecf965e42390677477208c49508f062f7195908b4"
+    },
+    "jst": {
+      "tests": 58,
+      "passed": true,
+      "sha256": "ea2a260f0697a23571b9d15d469441c1f8377dffd7af1f5dbc24973670304ead"
+    }
+  },
+  "exe_checks": 23,
+  "preissue_phases": 2,
+  "manual_chapters": 21,
+  "manual_images": 36,
+  "live_platform_tested": false,
+  "business_pc_tested": false,
+  "pushed": false,
+  "merged": false
+}

@@ -1,0 +1,20 @@
+{
+  "version": "0.50.0",
+  "build_id": "rc3",
+  "source_commit": "9f92313dae7bc165f542e52316c02c2ff995bbdd",
+  "zip": {
+    "path": "交付_0.50.0_rc3/补货助手_0.50.0_rc3.zip",
+    "sha256": "dcd063b8953dfc158000c2e6d3f85198963e4a960618cb0a73ab9645401aa935",
+    "bytes": 128793091
+  },
+  "exe": {
+    "path": "交付_0.50.0_rc3/补货助手/补货助手.exe",
+    "sha256": "c3edd04f739b09c95255d45b35fa271a08d16f10ea51ce9776a4d84cfea3f8a8"
+  },
+  "zip_crc_passed": true,
+  "contains_business_databases": false,
+  "protected_old_deliveries_unchanged": true,
+  "build_source_mode": "immutable git archive; no working-tree overlay",
+  "pushed": false,
+  "merged": false
+}

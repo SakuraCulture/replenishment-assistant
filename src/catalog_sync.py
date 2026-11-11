@@ -30,8 +30,9 @@ def stock_observation(dbpath,warehouse):
 
 
 class Adoptions:
-    def __init__(self,folder,dbpath,state_root):
+    def __init__(self,folder,dbpath,state_root,*,state_reader=None):
         self.folder=Path(folder);self.path=Path(dbpath);self.state_root=Path(state_root).resolve();self.catalogs=wc.Repository(folder)
+        self.state_reader=state_reader
     def connect(self):
         return sqlite3.connect(self.path,timeout=5)
     def ensure(self,progress=lambda _:None):
@@ -58,6 +59,12 @@ class Adoptions:
                 self.mark(row['id'],state);results.append({'id':row['id'],'state':state,'warehouse':row['warehouse']})
         return results
     def apply(self,batch,item,progress=lambda _:None,cancel=None):
+        checkpoint(cancel)
+        if batch.get('purpose')=='stockout_analysis':raise ValueError('分析资料只能在门店缺货率分析中留存，不能发布到补货默认资料')
+        from catalog_binding_guard import adoption_guard
+        with adoption_guard(self.state_root,batch,item,cancel,state_reader=self.state_reader):
+            return self._apply(batch,item,progress,cancel)
+    def _apply(self,batch,item,progress=lambda _:None,cancel=None):
         checkpoint(cancel)
         if batch.get('purpose')=='stockout_analysis':
             raise ValueError('分析资料只能在门店缺货率分析中留存，不能发布到补货默认资料')
@@ -125,7 +132,7 @@ class Adoptions:
 
 def run_sync(client,folder,dbpath,warehouses,purpose='default_catalog',resume=None,progress=lambda _:None,cancel=None):
     """One worker coordinates Node, pre-query observation and local adoption."""
-    adoptions=Adoptions(folder,dbpath,client.folder);adoptions.recover(progress,cancel)
+    adoptions=Adoptions(folder,dbpath,client.folder,state_reader=lambda bid:client.request('sync.status',batch_id=bid));adoptions.recover(progress,cancel)
     if not client.running:client.start()
     if resume:
         result=client.request('sync.resume',batch_id=resume['batch_id'],item_ids=resume['item_ids']);bid=result['batch_id']
@@ -138,6 +145,7 @@ def run_sync(client,folder,dbpath,warehouses,purpose='default_catalog',resume=No
             client.request('sync.stop',batch_id=bid);sent_stop=True
         state=client.request('sync.status',batch_id=bid);batch=state['batches'][0]
         for item in batch['items']:
+            if item.get('retirement'):continue
             if item['stage']=='WAIT_HOST' and not item.get('observation') and not sent_stop:
                 token=item['observationRequest']
                 if token not in observations:

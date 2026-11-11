@@ -1,0 +1,19 @@
+{
+  "baseline": "de838dcb21153b85a6179470d63b143306a10db5",
+  "source_commit": "6c730672dcb2d7a82c2e9d2bb9b024f516237faf",
+  "unchanged_business_rule_blobs": {
+    "src/model.py": "dc1dcb25562a921f3077d31467f43c0bc88cb323",
+    "src/default_config.json": "3bc6a30fdb05755e401897ac21bc236546e6a970",
+    "src/default_must_sell.json": "8b6abad22596d90d615a5bb6ff6902c09f8a236a"
+  },
+  "preserved_deliveries_sha256": {
+    "交付_0.50.0_rc3/补货助手/补货助手.exe": "c3edd04f739b09c95255d45b35fa271a08d16f10ea51ce9776a4d84cfea3f8a8",
+    "交付_0.50.0_rc3/补货助手_0.50.0_rc3.zip": "dcd063b8953dfc158000c2e6d3f85198963e4a960618cb0a73ab9645401aa935",
+    "交付_0.49.5_rc2/补货助手/补货助手.exe": "f1f3fbfea9b53608287c068207a4a26af37c1b74c198b6f4a54557dcc996f8af",
+    "交付_0.49.5_rc2/补货助手_0.49.5_rc2.zip": "ad6eb43c276b2e18fddeb8082ce07232f43d79ba17c185b8d7ca5e1900d2b140"
+  },
+  "real_platform_calls": false,
+  "real_business_data_changes": false,
+  "pushed": false,
+  "merged": false
+}

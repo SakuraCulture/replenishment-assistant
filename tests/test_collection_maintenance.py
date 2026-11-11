@@ -81,6 +81,9 @@ class MaintenanceUiTests(unittest.TestCase):
         from aoxiang_fetch_ui import FetchDialog
         self.tmp=tempfile.TemporaryDirectory();self.out=Path(self.tmp.name)/'qa';self.fixture=seed(self.out)
         self.errors=[];self.error_patch=patch('readable_ui.failure',side_effect=lambda *args:self.errors.append(args[-1]));self.error_patch.start()
+        # This fixture covers local maintenance using the real component DB but
+        # has no Edge binding. Current-login/browser behavior is tested separately.
+        self.login_patch=patch('aoxiang_current_login.current_configuration',side_effect=lambda client,*a,**kw:client.request('configuration'));self.login_patch.start()
         self.d=FetchDialog(None,self.out/'settings','2026-11-04');self.d.show();self.wait(lambda:self.d.worker is None)
     def wait(self,predicate):
         from PySide6.QtTest import QTest
@@ -90,7 +93,7 @@ class MaintenanceUiTests(unittest.TestCase):
     def tearDown(self):
         import shiboken6
         self.d.close();self.wait(lambda:self.d._can_close and self.d.worker is None);shiboken6.delete(self.d)
-        self.error_patch.stop();self.tmp.cleanup()
+        self.login_patch.stop();self.error_patch.stop();self.tmp.cleanup()
     def test_cancel_end_confirm_delete_and_reopen_scope(self):
         d=self.d;self.assertEqual(d.current['id'],'blocked');self.assertTrue(d.end_btn.isEnabled());self.assertFalse(d.delete_btn.isEnabled())
         with patch.object(d,'confirm_maintenance',return_value=False):

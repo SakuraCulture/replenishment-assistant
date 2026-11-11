@@ -1,0 +1,16 @@
+{
+  "version": "0.51.6",
+  "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+  "exe": {
+    "path": "交付_0.51.6_rc1\\补货助手\\补货助手.exe",
+    "bytes": 7168516,
+    "sha256": "e211162d44884cb22d87313f1c5e4bc0712bccc297facf6e2af53d39afe2fc14"
+  },
+  "zip": {
+    "path": "交付_0.51.6_rc1\\补货助手_0.51.6_rc1.zip",
+    "bytes": 136575159,
+    "sha256": "0e82ce6d9ebe8cbe52dee8abc5bae1be3db746c3cb7748b7be57824ddec47f31",
+    "entries": 1287,
+    "crc_verified": true
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "source_commit": "758ca2b03e651f5b422f0789fc649f7fb01b68d4",
+  "command": [
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-v"
+  ],
+  "cwd": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+  "exit_code": 1,
+  "seconds": 551.891,
+  "passed": false,
+  "live_platform": false,
+  "tests": 1477,
+  "test_seconds": 549.371
+}

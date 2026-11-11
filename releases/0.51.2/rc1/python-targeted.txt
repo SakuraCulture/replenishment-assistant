@@ -1,0 +1,21 @@
+...........................ERROR:root:操作失败
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\order_analytics.py", line 274, in validate_basis
+    raise ValueError('订单关联单号已更新，请重新查询；原报告中的单号未自动替换')
+ValueError: 订单关联单号已更新，请重新查询；原报告中的单号未自动替换
+..ERROR:root:操作失败
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\order_analytics.py", line 271, in validate_basis
+    raise ValueError('订单或履约数据已更新，请重新查询；原报告数据未混入本次结果')
+ValueError: 订单或履约数据已更新，请重新查询；原报告数据未混入本次结果
+............................
+----------------------------------------------------------------------
+Ran 57 tests in 21.455s
+
+OK

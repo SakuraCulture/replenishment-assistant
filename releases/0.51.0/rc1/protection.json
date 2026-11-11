@@ -1,0 +1,28 @@
+{
+  "unchanged_source": {
+    "model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "warehouse_routing.py": "a0f2c7b448234df22aeb2bdc8c02e8c0869a6602e1f390fd3d74fa9774627f0a",
+    "mandatory_holding.py": "d2ea0e98fbd9fb637298be7fd03300cc6922279137ee843a79446e412a11888f",
+    "admission.py": "b35845ca11d31d04619224330347cc53a52afbedc2fa5aa81bad2496abc1a835",
+    "normal_orders.py": "343681fbbdbd2ed8b70e5f88c461504bffdd1e437605adf21576ad482f04eee7",
+    "preissue.py": "0660e457cce3d239a5dbb1fdecf4f91b2ff5775ff86c0f6f56d4b683af386eec",
+    "purchases.py": "964b8dbc8ebcd8c740c8c2dc69195e6bb2e755700e54467f37044efe9669a5f8",
+    "order_lifecycle.py": "50bce3866e96a82c471e56e41fb1ee32de11f19afd08b4d42c71c2800c04f61e"
+  },
+  "jst_component_unchanged": true,
+  "old_delivery": [
+    {
+      "path": "交付_0.50.5_rc3\\补货助手\\补货助手.exe",
+      "bytes": 6972215,
+      "sha256": "c67c4880c432bfc3f81cefe23e77685f6bd2e6f7fb83f8dab87441a4a670e4a4"
+    },
+    {
+      "path": "交付_0.50.5_rc3\\补货助手_0.50.5_rc3.zip",
+      "bytes": 129510611,
+      "sha256": "97d6beeb44b5803c81dc4a8cb9f39b5ba323745a6c4b1615afc02bf856b35d7f"
+    }
+  ]
+}

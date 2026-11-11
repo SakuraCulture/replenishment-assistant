@@ -49,7 +49,7 @@ def counts(job):
     return {'total':len(items),'success':sum(i['state'] in SUCCESS and not voided(i) for i in items),
             'voided':sum(voided(i) for i in items),
             'review':sum(i['state'] in ('REVIEW','FAILED') and not waiting(i,job['kind']) for i in items),
-            'waiting':sum(waiting(i,job['kind']) for i in items),
+            'waiting':sum(i['state']=='ACCEPTED' or waiting(i,job['kind']) for i in items),
             'pending':sum(i['state'] in ('PENDING','RUNNING') for i in items),
             'observed':sum(i['state']=='OBSERVED' for i in items),
             'skipped':sum(i['state']=='SKIPPED' for i in items)}
@@ -57,7 +57,7 @@ def counts(job):
 
 def summary(job):
     c=counts(job)
-    prefix='正在处理' if job['state']=='RUNNING' else '等待处理' if c['pending'] and job['state']!='CANCELLED' else '检查结束'
+    prefix='正在处理' if job['state']=='RUNNING' else '等待处理' if (c['pending'] or c['waiting']) and job['state']!='CANCELLED' else '检查结束'
     success='预览就绪' if job['kind']=='prepare' else '已关联采购' if job['kind']=='upload' else '实收已同步'
     wait=f"，已受理待核对{c['waiting']}单" if job['kind']=='upload' else ''
     void=f"，已核实作废{c['voided']}单" if c['voided'] else ''
@@ -69,7 +69,7 @@ def reconcile(job):
     out=copy.deepcopy(job)
     states=[i['state'] for i in out['items']]
     if out['state'] not in ACTIVE and out['state']!='CANCELLED':
-        if any(s in ('PENDING','RUNNING') for s in states):out['state']='PAUSED'
+        if any(s in ('PENDING','RUNNING','ACCEPTED') for s in states):out['state']='PAUSED'
         elif any(s in ('REVIEW','FAILED') for s in states):out['state']='COMPLETED_WITH_ERRORS'
         elif states and all(s=='SKIPPED' for s in states):out['state']='CANCELLED'
         elif out['kind']=='prepare' and 'PREPARED' in states:out['state']='READY'

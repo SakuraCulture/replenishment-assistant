@@ -1,0 +1,136 @@
+======================================================================
+ERROR: test_actual_node_reset_and_python_adoption_share_the_commit_gate (test_catalog_binding_recovery.BindingRecovery.test_actual_node_reset_and_python_adoption_share_the_commit_gate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_catalog_binding_recovery.py", line 63, in test_actual_node_reset_and_python_adoption_share_the_commit_gate
+    with adoption_guard(self.root,self.batch,self.item):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 43, in adoption_guard
+    data=_read_state(file,cancel);current=next((i for i in data.get('batches',{}).get(batch['id'],{}).get('items',[]) if i['id']==item['id']),None)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 23, in _read_state
+    with _open_state(file) as stream:return json.load(stream)
+         ^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 12, in _open_state
+    handle=_winapi.CreateFile(str(file),0x80000000,7,None,3,0x80,None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: CreateFile() argument 4 must be int, not None
+
+======================================================================
+ERROR: test_cached_old_item_cannot_apply_after_retirement (test_catalog_binding_recovery.BindingRecovery.test_cached_old_item_cannot_apply_after_retirement)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_catalog_binding_recovery.py", line 24, in test_cached_old_item_cannot_apply_after_retirement
+    with self.assertRaisesRegex(ValueError,'本地结束'):self.ad.apply(self.batch,self.item)
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_sync.py", line 64, in apply
+    with adoption_guard(self.state_root,batch,item,cancel):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 43, in adoption_guard
+    data=_read_state(file,cancel);current=next((i for i in data.get('batches',{}).get(batch['id'],{}).get('items',[]) if i['id']==item['id']),None)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 23, in _read_state
+    with _open_state(file) as stream:return json.load(stream)
+         ^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 12, in _open_state
+    handle=_winapi.CreateFile(str(file),0x80000000,7,None,3,0x80,None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: CreateFile() argument 4 must be int, not None
+
+======================================================================
+ERROR: test_changed_binding_blocks_cached_receipt_before_writes (test_catalog_binding_recovery.BindingRecovery.test_changed_binding_blocks_cached_receipt_before_writes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_catalog_binding_recovery.py", line 30, in test_changed_binding_blocks_cached_receipt_before_writes
+    with self.assertRaisesRegex(ValueError,'绑定已变化'):self.ad.apply(self.batch,self.item)
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_sync.py", line 64, in apply
+    with adoption_guard(self.state_root,batch,item,cancel):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 43, in adoption_guard
+    data=_read_state(file,cancel);current=next((i for i in data.get('batches',{}).get(batch['id'],{}).get('items',[]) if i['id']==item['id']),None)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 23, in _read_state
+    with _open_state(file) as stream:return json.load(stream)
+         ^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 12, in _open_state
+    handle=_winapi.CreateFile(str(file),0x80000000,7,None,3,0x80,None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: CreateFile() argument 4 must be int, not None
+
+======================================================================
+ERROR: test_live_managed_receipt_keeps_normal_adoption (test_catalog_binding_recovery.BindingRecovery.test_live_managed_receipt_keeps_normal_adoption)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_catalog_binding_recovery.py", line 33, in test_live_managed_receipt_keeps_normal_adoption
+    self.managed();ack=self.ad.apply(self.batch,self.item);self.assertEqual(ack['warehouse'],'山东仓');self.assertIsNotNone(self.ad.catalogs.current_digest('山东仓'))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_sync.py", line 64, in apply
+    with adoption_guard(self.state_root,batch,item,cancel):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 43, in adoption_guard
+    data=_read_state(file,cancel);current=next((i for i in data.get('batches',{}).get(batch['id'],{}).get('items',[]) if i['id']==item['id']),None)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 23, in _read_state
+    with _open_state(file) as stream:return json.load(stream)
+         ^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 12, in _open_state
+    handle=_winapi.CreateFile(str(file),0x80000000,7,None,3,0x80,None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: CreateFile() argument 4 must be int, not None
+
+======================================================================
+ERROR: test_state_reader_does_not_block_atomic_node_style_replacement (test_catalog_binding_recovery.BindingRecovery.test_state_reader_does_not_block_atomic_node_style_replacement)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_catalog_binding_recovery.py", line 41, in test_state_reader_does_not_block_atomic_node_style_replacement
+    with guard._open_state(file) as stream:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 12, in _open_state
+    handle=_winapi.CreateFile(str(file),0x80000000,7,None,3,0x80,None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: CreateFile() argument 4 must be int, not None
+
+======================================================================
+ERROR: test_transient_state_read_conflict_retries_and_still_rejects_retirement (test_catalog_binding_recovery.BindingRecovery.test_transient_state_read_conflict_retries_and_still_rejects_retirement)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_catalog_binding_recovery.py", line 52, in test_transient_state_read_conflict_retries_and_still_rejects_retirement
+    with self.assertRaisesRegex(ValueError,'本地结束'):self.ad.apply(self.batch,self.item)
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_sync.py", line 64, in apply
+    with adoption_guard(self.state_root,batch,item,cancel):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 43, in adoption_guard
+    data=_read_state(file,cancel);current=next((i for i in data.get('batches',{}).get(batch['id'],{}).get('items',[]) if i['id']==item['id']),None)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 23, in _read_state
+    with _open_state(file) as stream:return json.load(stream)
+         ^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_catalog_binding_recovery.py", line 50, in open_state
+    return original(file)
+           ^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\catalog_binding_guard.py", line 12, in _open_state
+    handle=_winapi.CreateFile(str(file),0x80000000,7,None,3,0x80,None)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: CreateFile() argument 4 must be int, not None
+
+----------------------------------------------------------------------
+Ran 62 tests in 16.445s
+
+FAILED (errors=6)

@@ -14,6 +14,8 @@ def fixture(out):
     out.mkdir(parents=True,exist_ok=False); settings=out/'settings'; settings.mkdir()
     f=seed.AnalyticsTests(); f.setUp(); path=settings/'workbench.sqlite3'
     try:
+        from test_funnel_dimensions import enrich
+        enrich(f)
         with closing(sqlite3.connect(f.path)) as source,closing(sqlite3.connect(path)) as target:source.backup(target)
     finally:f.tearDown()
     yesterday=(date.fromisoformat(wr.today())-timedelta(days=1)).isoformat()
@@ -41,7 +43,8 @@ def fixture(out):
     with closing(sqlite3.connect(component)) as db,db:
         db.execute('INSERT INTO purchase_receipts VALUES(?,?)',('purchase-1',json.dumps({'state':'VOIDED','summary':{'status':'已作废'}})))
     (out/'exports').mkdir();export_settings.save(settings/export_settings.FILENAME,str(out/'exports'))
-    (out/'fixture.json').write_text(json.dumps({'from':yesterday,'to':wr.today(),'expected':expected,'synthetic':True,'live_platform':False},ensure_ascii=False,indent=2),'utf-8')
+    (out/'fixture.json').write_text(json.dumps({'from':yesterday,'to':wr.today(),'expected':expected,'dimension_export':True,'synthetic':True,'live_platform':False},ensure_ascii=False,indent=2),'utf-8')
+    (out/'synthetic.json').write_text(json.dumps({'synthetic':True,'live_platform':False}),encoding='utf-8')
 
 
 def main():

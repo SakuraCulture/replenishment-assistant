@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "live_platform": false,
+  "formal_stages_saved_before_delete": [
+    "return",
+    "payment",
+    "receipt"
+  ],
+  "old_chain_rows_after_delete": {
+    "normal_orders": 0,
+    "normal_revisions": 0,
+    "lifecycle_versions": 0,
+    "lifecycle_events": 0
+  },
+  "old_receipt_commit_rejected": true,
+  "fresh_computation_same_store_same_day_new_oid_allowed": true,
+  "no_business_database_used": true
+}

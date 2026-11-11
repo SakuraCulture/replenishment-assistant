@@ -65,7 +65,8 @@ class VerifiedReferences(unittest.TestCase):
         self.keep_job();plan=m.prepare(self.path,self.heads);original=m.prepare_rewrites;gc=m.collect_shared
         def prepare(*args):
             result=original(*args)
-            with closing(sqlite3.connect(self.path)) as other,other:other.execute("INSERT INTO stores VALUES('other','{}')")
+            if not args[0].in_transaction:
+                with closing(sqlite3.connect(self.path)) as other,other:other.execute("INSERT INTO stores VALUES('other','{}')")
             return result
         def collect(*args,**kwargs):
             self.assertIsNone(kwargs['verified']);return gc(*args,**kwargs)
@@ -85,16 +86,17 @@ class VerifiedReferences(unittest.TestCase):
             prepared=m.prepare_rewrites(db,plan,scratch,lambda _:None,None)
             self.assertTrue(prepared)
             for _,_,token,_,_ in prepared:self.assertIsInstance(token,bytes);self.assertEqual(len(token),32)
-    def test_payload_change_after_prepare_still_rejects(self):
+    def test_valid_shared_payload_change_after_prepare_is_rebased(self):
         plan=m.prepare(self.path,self.heads);original=m.prepare_rewrites
         def prepare(*args):
             result=original(*args)
-            with closing(sqlite3.connect(self.path)) as other,other:
-                import normal_orders
-                other.execute('UPDATE normal_work_revisions SET payload=?',(normal_orders.encode({'new':'content'}, other),))
+            if not args[0].in_transaction:
+                with closing(sqlite3.connect(self.path)) as other,other:
+                    import normal_orders
+                    other.execute('UPDATE normal_work_revisions SET payload=?',(normal_orders.encode({'new':'content'}, other),))
             return result
-        with patch.object(m,'prepare_rewrites',side_effect=prepare),self.assertRaises(wr.Conflict):m.execute(self.path,plan)
-        self.assertEqual(len(self.r.headers()),1)
+        with patch.object(m,'prepare_rewrites',side_effect=prepare):m.execute(self.path,plan)
+        self.assertEqual(self.r.headers(),[])
 
 class DuplicateWorkRewrites(unittest.TestCase):
     setUp=fixtures.DeleteOrders.setUp

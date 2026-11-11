@@ -77,6 +77,14 @@ class SessionTests(unittest.TestCase):
     def test_unused_window_releases_without_starting_component(self):
         lease=self.owner.acquire();self.assertTrue(lease.close());self.assertEqual(self.created,[])
 
+    def test_open_after_protocol_failure_drains_owned_old_host_then_starts_once(self):
+        lease=self.lease();lease.close();old=self.owner.client;old.error=RuntimeError('protocol failed');old.can_close=False
+        again=self.owner.acquire()
+        with self.assertRaises(ComponentError):again.start()
+        self.assertEqual(len(self.created),1);self.assertTrue(old.running)
+        old.can_close=True;again.start();self.assertEqual(len(self.created),2);self.assertFalse(old.running)
+        again.close()
+
     def test_download_and_adoption_keep_the_same_absolute_state_directory(self):
         lease=self.lease()
         self.assertEqual(lease.folder,Path('isolated').resolve())

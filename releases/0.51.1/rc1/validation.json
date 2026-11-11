@@ -1,0 +1,77 @@
+{
+  "source_commit": "dc8efe14dabc3ec681114a4977655483ae446c3d",
+  "baseline": "8fc7ef8aad8177d66d751728f58e4d393bca52d8",
+  "sealed_at": "2026-11-11T11:15:53.761668+08:00",
+  "regressions": {
+    "full-python": {
+      "source_commit": "dc8efe14dabc3ec681114a4977655483ae446c3d",
+      "command": [
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "cwd": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+      "exit_code": 0,
+      "seconds": 595.484,
+      "passed": true,
+      "live_platform": false,
+      "tests": 1461,
+      "test_seconds": 587.586
+    },
+    "full-aoxiang": {
+      "source_commit": "dc8efe14dabc3ec681114a4977655483ae446c3d",
+      "command": [
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\components\\aoxiang\\runtime\\node.exe",
+        "--test",
+        "test/*.test.mjs"
+      ],
+      "cwd": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\components\\aoxiang",
+      "exit_code": 0,
+      "seconds": 24.343,
+      "passed": true,
+      "live_platform": false,
+      "tests": 250,
+      "pass": 250,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "full-jst": {
+      "source_commit": "dc8efe14dabc3ec681114a4977655483ae446c3d",
+      "command": [
+        "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\components\\aoxiang\\runtime\\node.exe",
+        "--test",
+        "test/*.test.mjs"
+      ],
+      "cwd": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\components\\jst_catalog",
+      "exit_code": 0,
+      "seconds": 6.515,
+      "passed": true,
+      "live_platform": false,
+      "tests": 58,
+      "pass": 58,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    }
+  },
+  "exe_checks": {
+    "payment": 32,
+    "legacy_collection": 13,
+    "selected_reexport": 6
+  },
+  "packaged_login_tests": 5,
+  "exe_sha256": "d345922886b9ecca644868c151ca5443ed20f22ee625ce0b9c401387d4c5b20a",
+  "manual_chapters": 21,
+  "manual_images": 38,
+  "live_platform": false,
+  "business_pc_tested": false,
+  "pushed": false,
+  "merged": false
+}

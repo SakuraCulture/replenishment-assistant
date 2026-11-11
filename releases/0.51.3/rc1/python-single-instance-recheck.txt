@@ -1,0 +1,7 @@
+test_main_is_user_global_and_smoke_isolated (test_single_instance.SingleInstanceTests.test_main_is_user_global_and_smoke_isolated) ... ok
+test_second_launch_and_crash_recovery (test_single_instance.SingleInstanceTests.test_second_launch_and_crash_recovery) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 1.550s
+
+OK

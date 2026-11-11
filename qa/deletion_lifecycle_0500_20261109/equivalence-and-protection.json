@@ -1,0 +1,73 @@
+{
+  "baseline_commit": "07cbead4b40bc32bb593f9fbe47e72fab303858d",
+  "source_commit": "9f92313dae7bc165f542e52316c02c2ff995bbdd",
+  "model_and_rule_files": {
+    "src/model.py": {
+      "baseline": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "current": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+      "equal": true
+    },
+    "src/engine.py": {
+      "baseline": "a2c5005367550167019f4cd07bd0dcfe572346ebbef0b11a84166ea0905d2525",
+      "current": "a2c5005367550167019f4cd07bd0dcfe572346ebbef0b11a84166ea0905d2525",
+      "equal": true
+    },
+    "src/allocation.py": {
+      "baseline": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "current": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+      "equal": true
+    },
+    "src/one_box_exception.py": {
+      "baseline": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "current": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+      "equal": true
+    },
+    "src/default_config.json": {
+      "baseline": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "current": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+      "equal": true
+    },
+    "src/default_must_sell.json": {
+      "baseline": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "current": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+      "equal": true
+    },
+    "src/normal_exports.py": {
+      "baseline": "39e2ee93d7c5ed5abf05b7de9004e0ff5a3048b275e32ae1346ab8bc0b9d4521",
+      "current": "39e2ee93d7c5ed5abf05b7de9004e0ff5a3048b275e32ae1346ab8bc0b9d4521",
+      "equal": true
+    },
+    "src/parameter_schema.py": {
+      "baseline": "e56631c53580168b00901356aef15732b34d8856243cff4c4c5538af1c0282f4",
+      "current": "e56631c53580168b00901356aef15732b34d8856243cff4c4c5538af1c0282f4",
+      "equal": true
+    },
+    "src/warehouse_orders.py": {
+      "baseline": "5f86073f3a717d196f07b1432e251544f7345776d7da8c37be64415a8cee5bff",
+      "current": "5f86073f3a717d196f07b1432e251544f7345776d7da8c37be64415a8cee5bff",
+      "equal": true
+    },
+    "src/result_semantics.py": {
+      "baseline": "f1c565b25b8592cf0fe5cb243e11ecd725bc406888279da64368ceb82fe2baeb",
+      "current": "f1c565b25b8592cf0fe5cb243e11ecd725bc406888279da64368ceb82fe2baeb",
+      "equal": true
+    },
+    "src/preissue.py": {
+      "baseline": "ded4da791b42070340c4cd2111213deef990dfa793f87962f28c2f8b3a201987",
+      "current": "ded4da791b42070340c4cd2111213deef990dfa793f87962f28c2f8b3a201987",
+      "equal": true
+    }
+  },
+  "protected_original_deliveries": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.49.5_rc2\\补货助手\\补货助手.exe": true,
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.49.5_rc2\\补货助手_0.49.5_rc2.zip": true
+  },
+  "actual_payment_index_metadata": {
+    "path": "C:\\Users\\lenovo\\AppData\\Local\\YoutuanTools\\补货助手\\settings\\payment_matching\\index-v1.sqlite3",
+    "exists": true,
+    "read_only": true,
+    "journal_mode": "delete"
+  },
+  "passed": true,
+  "no_business_data_mutated": true
+}

@@ -1,0 +1,17 @@
+{
+  "source_commit": "f11ab100213050d5bd10124ee284e463d915b590",
+  "base_commit": "cebb79426872865ad1bc5de0ee886f8afca1decb",
+  "python_tests": 1387,
+  "python_seconds": 535.309,
+  "node_tests": 228,
+  "exe_checks": 15,
+  "manual_chapters": 20,
+  "manual_images": 28,
+  "live_platform_tested": false,
+  "real_platform_speed_measured": false,
+  "legacy_030_audit_passed": false,
+  "old_delivery_preserved": true,
+  "model_unchanged": true,
+  "pushed": false,
+  "merged": false
+}

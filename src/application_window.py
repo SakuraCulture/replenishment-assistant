@@ -69,6 +69,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         install_scenes(self,hv)
         from stockout_entry import install as install_stockout
         install_stockout(self)
+        from warehouse_stockout_entry import install as install_warehouse_stockout
+        install_warehouse_stockout(self)
         from jst_task_ui import Generator
         self.jst_generator=Generator(self,self.followup.layout())
         self.final_list_btn=button('最终清单 / 改量',self.open_final_list)
@@ -248,6 +250,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if startup and not startup.prepare_close():event.ignore();return
         stockout=getattr(self,'stockout',None)
         if stockout and not stockout.prepare_close():event.ignore();return
+        warehouse_stockout=getattr(self,'warehouse_stockout',None)
+        if warehouse_stockout and not warehouse_stockout.prepare_close():event.ignore();return
         inventory=getattr(self,'inventory',None)
         if inventory and not inventory.prepare_close():event.ignore();return
         analytics=getattr(self,'analytics',None)
@@ -289,6 +293,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         elif axmanager:
             if startup:startup.resume()
             if stockout:stockout.resume_after_cancelled_close()
+            if warehouse_stockout:warehouse_stockout.resume_after_cancelled_close()
             if scheduled:scheduled.resume_after_cancelled_close()
             axmanager.resume_after_cancelled_close()
             if indicator:indicator.resume()
@@ -346,6 +351,12 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.new_bases={};super().loaded_ok(loaded)
         if not self.closing:self.navigate(1)
     def task_changed(self,store,state,result,error):
+        if store not in self.states:return
+        worker=self.sender()
+        captured=getattr(worker,'deletion_generations',{})
+        if store in captured:
+            from deletion_barrier import read_epochs
+            if read_epochs(self.work_repository.path,self.job_day,[store])[store]!=captured[store]:return
         if result:self.new_bases.pop(store,None)
         super().task_changed(store,state,result,error)
 

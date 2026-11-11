@@ -1,0 +1,18 @@
+{
+  "passed": false,
+  "checks": [
+    "旧版已结束记录仍可查看，未伪造平台任务成功",
+    "第一次升级前已自动保存可校验的组件库备份",
+    "已明确结束的旧采集不再占用门店：attempt-W2",
+    "原平台任务号及未核实事实完整保留：attempt-W2",
+    "已明确结束的旧采集不再占用门店：attempt-W1",
+    "原平台任务号及未核实事实完整保留：attempt-W1",
+    "旧已结束记录的删除按钮可用",
+    "取消删除保留原记录"
+  ],
+  "frozen_exe": false,
+  "live_platform": false,
+  "source_commit": "source",
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\collection_ended_smoke.py\", line 51, in execute\n    require(all(j['id']!='blocked' for j in dialog.jobs.recent()),'确认后旧采集日志真正删除，不再因平台未完成而拦截')\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\collection_ended_smoke.py\", line 17, in require\n    if not ok:raise AssertionError(text)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 确认后旧采集日志真正删除，不再因平台未完成而拦截\n",
+  "shared_component_closed": true
+}

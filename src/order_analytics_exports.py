@@ -10,16 +10,27 @@ from runtime_support import checkpoint
 from xlsx_exports import stream_book, write_table
 from funnel_compact_export import write_summary, HEADERS as SUMMARY_HEADERS
 from analytics_identifiers import HEADERS as ID_HEADERS, LINK_HEADERS, cells,link_rows
+from funnel_dimension_export import OMITTED_HEADERS
 
 IDENTITY=['业务日期','门店编码','门店名称','供货仓','补货单号']
-DETAIL_HEADERS=IDENTITY+['商品编码','商品名称','库存单位','分类','必采属性','签发时单价']+[service.NAMES[s]+'数量' for s in service.STAGES]+[service.NAMES[s]+'资料状态' for s in service.STAGES]+['付款实际行金额','付款币种','付款依据','预算说明','人工调整原因','资料提示','源行号']+ID_HEADERS
+DIMENSION_HEADERS=['大仓上游供应商','商品类目','供应商资料状态','类目资料状态','维度资料提示','维度资料依据']
+DETAIL_HEADERS=IDENTITY+['商品编码','商品名称','库存单位','计算分类组','必采属性','签发时单价']+[service.NAMES[s]+'数量' for s in service.STAGES]+[service.NAMES[s]+'资料状态' for s in service.STAGES]+['付款实际行金额','付款币种','付款依据','预算说明','人工调整原因','资料提示','源行号']+DIMENSION_HEADERS+ID_HEADERS
+# Keep the existing read-only on-screen detail contract. Only Excel omits the
+# four fields requested by the business; quantities and identities stay aligned.
+EXPORT_DETAIL_INDEXES=tuple(i for i,h in enumerate(DETAIL_HEADERS) if h not in OMITTED_HEADERS)
+EXPORT_DETAIL_HEADERS=[DETAIL_HEADERS[i] for i in EXPORT_DETAIL_INDEXES]
+
+def export_detail_rows(rows):
+    for row in detail_rows(rows):yield [row[i] for i in EXPORT_DETAIL_INDEXES]
 def detail_rows(rows):
     for r in rows:
         yield [r['day'],r['store'],r['store_name'],r['warehouse'],r['order'],r['sku'],r['name'],r['unit'],r['category'],r['group'],r['price'],
                *[r['quantities'][s] if r['valid'][s] else None for s in service.STAGES],
                *[r['states'][s] if r['valid'][s] else r['states'][s]+' / 数量不可比' for s in service.STAGES],
                r['payment_amount'] if r['valid']['payment'] else None,r['payment_currency'],r['payment_source'],
-               r['decision'].get('budget'),r['decision'].get('manual'),'；'.join(r['reasons']+[v for v in r['notes'].values() if v]),r['source_row'],*cells([r])]
+               r['decision'].get('budget'),r['decision'].get('manual'),'；'.join(r['reasons']+[v for v in r['notes'].values() if v]),r['source_row'],
+               r.get('upstream_supplier') or '供应商待核',r.get('product_category') or '类目待核',r.get('supplier_state','供应商待核'),r.get('category_state','类目待核'),
+               '；'.join(r.get('dimension_notes',[])),r.get('dimension_sources'),*cells([r])]
 
 
 def export(path,report,target,level='store',orders=None,progress=lambda _:None,cancel=None):
@@ -33,12 +44,15 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
     included=[r for r in rows if r['scope']=='纳入'];pending=[r for r in rows if r['scope']=='待核']
     tabs=[]
     if level=='detail':
-        tabs=[('全量商品五段',DETAIL_HEADERS,list(detail_rows(included))),
-              ('资料待核',DETAIL_HEADERS,list(detail_rows(pending)))]
+        tabs=[('全量商品五段',EXPORT_DETAIL_HEADERS,list(export_detail_rows(included))),
+              ('资料待核',EXPORT_DETAIL_HEADERS,list(export_detail_rows(pending)))]
     fd,tmp=tempfile.mkstemp(dir=target.parent,prefix='.analytics-',suffix='.xlsx');os.close(fd)
     try:
         with stream_book() as book:
-            monitor = write_summary(book,rows,level,progress,cancel,coverage=True,references=True) if level in ('store','order') else []
+            monitor = write_summary(book,rows,level,progress,cancel,coverage=True,references=True) if level=='order' else []
+            if level in ('store','order'):
+                from funnel_dimension_export import write
+                monitor.extend(write(book,rows,progress,cancel))
             for name,headers,values in tabs:
                 checkpoint(cancel)
                 write_table(book,name,headers,([float(v) if isinstance(v,Decimal) else v for v in row] for row in values),

@@ -17,6 +17,8 @@ def schema(db):
 
 
 def enqueue(db, head, token):
+    from deletion_barrier import require
+    require(db,head['oid'])
     schema(db)
     h={k:v for k,v in head.items() if k!='products'}
     identity=j.digest([lc.key(h),token])

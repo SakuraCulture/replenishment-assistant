@@ -1,0 +1,15 @@
+{
+  "base": "0c34ac35fed1108b93ee54a3469c029f9b5ba0bc",
+  "source_commit": "b3c1e4cacacdc5a118cc690b222ee93ab5907c2d",
+  "python_full_tests": 1396,
+  "python_full_seconds": 513.801,
+  "node_aoxiang_tests": 239,
+  "node_jst_tests": 58,
+  "exe_checks": 84,
+  "model_unchanged": true,
+  "old_0503_preserved": true,
+  "live_platform_tested": false,
+  "business_pc_retested": false,
+  "pushed": false,
+  "merged": false
+}

@@ -1,0 +1,24 @@
+{
+  "base": "0c34ac35fed1108b93ee54a3469c029f9b5ba0bc",
+  "model_unchanged": {
+    "model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "allocation.py": "a80f72214706946c7371f12c57c78c60d06fe85d026bb0d291e025af891511eb",
+    "engine.py": "a2c5005367550167019f4cd07bd0dcfe572346ebbef0b11a84166ea0905d2525",
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "warehouse_routing.py": "a0f2c7b448234df22aeb2bdc8c02e8c0869a6602e1f390fd3d74fa9774627f0a"
+  },
+  "old_0503_artifacts": [
+    {
+      "path": "交付_0.50.3_rc2\\补货助手\\补货助手.exe",
+      "bytes": 6940027,
+      "sha256": "baa4eba6a2b6ce182df68cfa772d23a3755e98f707bd73aefe21d1dde797ba78"
+    },
+    {
+      "path": "交付_0.50.3_rc2\\补货助手_0.50.3_rc2.zip",
+      "bytes": 129082187,
+      "sha256": "5f61f2f6774c935988056c8d9528f23ad80db8db4967675843176bbb575a9419"
+    }
+  ]
+}

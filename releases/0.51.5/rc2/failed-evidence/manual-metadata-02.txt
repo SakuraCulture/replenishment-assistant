@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\catalog_rebind_0515_20261111_01\update_manual.py", line 23, in <module>
+    assert edition['chapters']==21 and edition['images']==43
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

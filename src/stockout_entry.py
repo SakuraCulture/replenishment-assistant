@@ -5,12 +5,15 @@ from ui_controls import button
 
 
 class Entry(QObject):
+    nav_text='门店缺货率'
+    page_module='stockout_ui'
+    trigger_module='stockout_trigger'
     def __init__(self,host):
         super().__init__(host)
         self.host=host;self.page=None;self.index=None;self.generation=0
         self.worker=None;self.callback=None;self.queued=None;self.watch=None;self.timer=None
         self.closing=False;self.background=False;self.message='按需进入；每日采集默认关闭'
-        self.nav=button('门店缺货率',self.enter)
+        self.nav=button(self.nav_text,self.enter)
         host.centralWidget().layout().itemAt(0).layout().insertWidget(5,self.nav)
         host.sections.currentChanged.connect(self.section_changed)
         self.arm()
@@ -19,7 +22,7 @@ class Entry(QObject):
         if self.timer:self.timer.stop();self.timer.deleteLater();self.timer=None
         if self.closing:return
         try:
-            from stockout_trigger import load
+            load=self.trigger().load
             from stockout_common import TZ
             plan=load(self.host.repository.folder)
             if not plan['enabled']:return
@@ -31,7 +34,7 @@ class Entry(QObject):
     def due(self):
         if self.closing:return
         try:
-            from stockout_trigger import due
+            due=self.trigger().due
             value=due(self.host.repository.folder)
             if value and value.get('missed'):self.status(value['message'])
             elif value:
@@ -43,8 +46,7 @@ class Entry(QObject):
     def enter(self):
         if self.closing:return
         if self.page is None:
-            from stockout_ui import Page
-            self.generation+=1;self.page=Page(self.host,self)
+            self.generation+=1;self.page=self.make_page()
             self.index=self.host.sections.addWidget(self.page)
         self.host.show_section(self.index)
         self.page.refresh_metadata()
@@ -66,7 +68,8 @@ class Entry(QObject):
     def busy(self):
         h=self.host;scheduled=getattr(h,'scheduled',None);ax=getattr(h,'aoxiang_workflows',None)
         io=getattr(h,'_large_io_dialog',None);generator=getattr(h,'jst_generator',None)
-        return bool(getattr(h,'worker',None) or getattr(h,'closing',False)
+        other=any(e is not self and getattr(e,'worker',None) for e in (getattr(h,'stockout',None),getattr(h,'warehouse_stockout',None)) if e is not None)
+        return bool(other or getattr(h,'worker',None) or getattr(h,'closing',False)
                     or io is not None and not getattr(io,'_completed',False)
                     or getattr(h,'_aoxiang_dialog',None)
                     or scheduled and (scheduled.worker or scheduled.publisher or getattr(scheduled,'queued_for_execution',False))
@@ -89,16 +92,27 @@ class Entry(QObject):
         self.watch.start()
 
     def begin(self,request):
-        from stockout_task import Task
         operation,args,callback,background,generation=request
         self.background=background;self.callback=(generation,callback)
-        task=Task(self.host,operation,args);self.worker=task
+        task=self.make_task(operation,args);self.worker=task
         task.progress.connect(self.status)
         task.succeeded.connect(self.success)
         task.failed.connect(self.failure)
         task.finished.connect(self.finished)
         self.status('正在处理分析请求…');self.ensure_watch();task.start()
         if self.page:self.page.controls()
+
+    def make_task(self,operation,args):
+        from stockout_task import Task
+        return Task(self.host,operation,args)
+
+    def trigger(self):
+        import stockout_trigger
+        return stockout_trigger
+
+    def make_page(self):
+        from stockout_ui import Page
+        return Page(self.host,self)
 
     def tick(self):
         if self.worker:
@@ -147,7 +161,7 @@ class Entry(QObject):
         self.closing=False;self.arm()
 
     def set_schedule(self,enabled,at):
-        from stockout_trigger import save
+        save=self.trigger().save
         save(self.host.repository.folder,enabled,at)
         if not enabled and self.queued and self.queued[1].get('trigger','').startswith('schedule:'):self.queued=None
         self.arm()

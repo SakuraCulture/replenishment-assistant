@@ -35,6 +35,9 @@ class Journal:
         signature = digest(arguments)
         with closing(self.connect()) as db, db:
             db.execute('BEGIN IMMEDIATE')
+            if values.get('order_ref'):
+                from deletion_barrier import require
+                require(db,values['order_ref'])
             row = db.execute('SELECT id,signature,payload FROM automation_tasks WHERE operation_key=?', (operation_key,)).fetchone()
             if row:
                 if row[1] != signature: raise CommandError('OPERATION_CONFLICT', '同一操作键的内容已改变，请先查询原任务')
@@ -65,6 +68,9 @@ class Journal:
             row = db.execute('SELECT payload FROM automation_tasks WHERE id=?', (task_id,)).fetchone()
             if not row: raise CommandError('TASK_NOT_FOUND', '任务不存在')
             p = json.loads(row[0]); p.update(values); p['updated'] = stamp()
+            if p.get('order_ref'):
+                from deletion_barrier import require
+                require(db,p['order_ref'])
             db.execute('UPDATE automation_tasks SET payload=? WHERE id=?', (self.dumps(p), task_id))
             db.execute('INSERT INTO automation_events(task,at,payload) VALUES(?,?,?)', (task_id, p['updated'], self.dumps(values)))
         return p

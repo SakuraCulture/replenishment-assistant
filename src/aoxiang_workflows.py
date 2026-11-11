@@ -4,7 +4,7 @@ import json
 import sqlite3
 import time
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager,closing
 from pathlib import Path
 
 from aoxiang_jobs import encoded
@@ -61,8 +61,13 @@ class Workflows:
     def _get(self, db, id):
         row = db.execute('SELECT payload FROM ax_workflows WHERE id=?', (id,)).fetchone()
         if not row:
-            raise ValueError('未找到原翱象批次作业')
-        return json.loads(row[0])
+            from deletion_barrier import SourceDeleted
+            raise SourceDeleted('原翱象批次已删除；不接受旧任务回写')
+        job=json.loads(row[0])
+        for item in job['items']:
+            basis=item.get('head') or item.get('basis') or {}
+            item.setdefault('item_id',uuid.uuid5(uuid.NAMESPACE_URL,id+'|'+item['key']+'|'+str(basis.get('oid'))).hex)
+        return job
 
     def get(self, id):
         with self.db() as db:
@@ -74,13 +79,18 @@ class Workflows:
 
     def next_queued(self, *, timeout=10):
         with self.db(timeout=timeout) as db:
-            row=db.execute("SELECT payload FROM ax_workflows WHERE state IN ('QUEUED','YIELDED') ORDER BY rowid LIMIT 1").fetchone()
-            return json.loads(row[0]) if row else None
+            for row in db.execute("SELECT payload FROM ax_workflows WHERE state IN ('QUEUED','YIELDED') ORDER BY rowid"):
+                job=json.loads(row[0])
+                if job.get('next_poll_at',0)<=self.clock():return job
+            return None
 
-    def _save(self, db, job, event):
+    def _save(self, db, job, event, *, item_id=None):
+        for item in job['items']:
+            basis=item.get('head') or item.get('basis') or {}
+            item.setdefault('item_id',uuid.uuid5(uuid.NAMESPACE_URL,job['id']+'|'+item['key']+'|'+str(basis.get('oid'))).hex)
         job = {**job, 'sequence': job.get('sequence', 0) + 1, 'updated_at': self.clock()}
         db.execute('INSERT INTO ax_workflows VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,payload=excluded.payload', (job['id'], job['state'], encoded(job)))
-        db.execute('INSERT INTO ax_workflow_events VALUES(?,?,?)', (job['id'], job['sequence'], encoded({'at': job['updated_at'], 'event': event, 'state': job['state'], 'message': job.get('message')})))
+        db.execute('INSERT INTO ax_workflow_events VALUES(?,?,?)', (job['id'], job['sequence'], encoded({'at': job['updated_at'], 'event': event, 'state': job['state'], 'message': job.get('message'),'item_id':item_id})))
         return job
 
     def _new(self, db, kind, items, **kw):
@@ -110,7 +120,8 @@ class Workflows:
                 require_orders(self.business_path,items)
             return self._new(db, 'prepare', items)
 
-    def upload(self, prepared_id, positions, expected_sequence):
+    def upload(self, prepared_id, positions, expected_sequence, *, max_inflight=2):
+        if type(max_inflight) is not int or not 1<=max_inflight<=4:raise ValueError('本批平台处理上限应为1至4单')
         with self.db(True) as db:
             original = self._get(db, prepared_id)
             scoped_pause=(original['state']=='PAUSED' and 'dispatch_keys' in original and not any(
@@ -131,7 +142,84 @@ class Workflows:
                         return old
                     if set(previous) & set(current):
                         raise ValueError('部分预览已确认上传，请继续原上传批次；剩余单据须单独选择')
-            return self._new(db, 'upload', items, prepared_id=prepared_id, confirmed_sequence=expected_sequence)
+            return self._new(db, 'upload', items, prepared_id=prepared_id, confirmed_sequence=expected_sequence,max_inflight=max_inflight)
+
+    def rebuild_selected(self,id,keys,expected_sequence,heads):
+        """Durable explicit replacement plan; never silently repeats an upload."""
+        from aoxiang_workflow_state import reconcile
+        with self.db(True) as db:
+            old=self._get(db,id)
+            if old['kind'] not in ('prepare','upload'):raise ValueError('仅采购准备或上传任务可重建')
+            if old['state']=='RUNNING':raise ValueError('请先停止所选原任务并等待当前动作安全退出')
+            selected=[i for i in old['items'] if i['key'] in keys]
+            if not keys or len(set(keys))!=len(keys) or len(selected)!=len(keys):raise ValueError('所选任务范围已变化')
+            successors={i.get('rebuild_to') for i in selected}
+            if len(successors)==1 and None not in successors:return self._get(db,next(iter(successors)))
+            if any(successors):raise ValueError('部分所选任务已有后继预览，请分别打开后继批次；未改变任何任务')
+            if old['sequence']!=expected_sequence:raise ValueError('原任务状态已变化，请刷新后确认')
+            fresh={(h['oid'],h['warehouse']):h for h in heads};items=[];prior_ids=set()
+            for item in selected:
+                basis=item.get('head') or item.get('basis') or {}
+                h=fresh.get((basis.get('oid'),basis.get('warehouse')))
+                if not h or any(h[k]!=basis.get(k) for k in ('number','store','warehouse')):raise ValueError('原仓单已删除或身份不符，不能按同名新单重建')
+                purchase_id=(item.get('error') or {}).get('details',{}).get('id') if (item.get('error') or {}).get('code')=='PURCHASE_ALREADY_RESERVED' else None
+                purchase_id=purchase_id or item.get('purchase_id') or (item.get('package') or {}).get('id')
+                if purchase_id:prior_ids.add(purchase_id)
+                items.append({'key':h['number'],'head':{k:copy.deepcopy(h[k]) for k in HEAD_FIELDS},
+                              'rebuild':{'operation_id':uuid.uuid4().hex,'purchase_id':purchase_id,'batch_id':id,'item_id':item['item_id']}})
+            if self.business_path:
+                from aoxiang_order_guard import require_orders
+                require_orders(self.business_path,items)
+            others=[json.loads(r[0]) for r in db.execute('SELECT payload FROM ax_workflows').fetchall()]
+            scopes={(i['head']['oid'],i['head']['warehouse']) for i in items};related=[]
+            for row in db.execute('SELECT payload FROM ax_schedules'):
+                s=json.loads(row[0]);b=s.get('basis') or {}
+                if (b.get('oid'),b.get('warehouse')) in scopes:prior_ids.add(s['id'])
+            for job in others:
+                if job['id']!=id and job['kind'] in ('prepare','upload'):
+                    matching=[i for i in job['items'] if ((i.get('head') or i.get('basis') or {}).get('oid'),(i.get('head') or i.get('basis') or {}).get('warehouse')) in scopes and not i.get('rebuild_to')]
+                    if matching and job['state']=='RUNNING':raise ValueError('所选仓单仍有原动作运行，请等待安全退出')
+                    if matching:
+                        for i in matching:
+                            pid=i.get('purchase_id') or (i.get('package') or {}).get('id')
+                            if pid:prior_ids.add(pid)
+                            i.update(state='SKIPPED',rebuild_pending=True)
+                        job['execution_token']=uuid.uuid4().hex
+                        if not any(i['state'] in ('PENDING','ACCEPTED') for i in job['items']):job=reconcile({**job,'state':'COMPLETED'})
+                        self._save(db,job,'REBUILD_ENDED_RELATED_ITEMS');related.append(job['id'])
+            if any(job['kind']=='receipt' and job['state']=='RUNNING' and any(i.get('purchase_id') in prior_ids for i in job['items'] if i['state'] in ('PENDING','RUNNING')) for job in others):
+                raise ValueError('所选采购仍在收货核对，请等待原动作安全退出')
+            for item in selected:item.update(state='SKIPPED',rebuild_pending=True)
+            old['execution_token']=uuid.uuid4().hex
+            if not any(i['state'] in ('PENDING','RUNNING','ACCEPTED') for i in old['items']):old=reconcile({**old,'state':'COMPLETED'})
+            self._save(db,old,'REBUILD_REQUESTED')
+            new=self._new(db,'prepare',items,rebuild_from=id)
+            old=self._get(db,id)
+            for item in old['items']:
+                if item['key'] in keys:item['rebuild_to']=new['id']
+            self._save(db,old,'LINKED_REBUILD')
+            for related_id in related:
+                j=self._get(db,related_id)
+                for i in j['items']:
+                    b=i.get('head') or i.get('basis') or {}
+                    if i.get('rebuild_pending') and (b.get('oid'),b.get('warehouse')) in scopes:i['rebuild_to']=new['id']
+                self._save(db,j,'LINKED_REBUILD')
+            for pid in prior_ids:
+                row=db.execute('SELECT payload FROM ax_schedules WHERE id=?',(pid,)).fetchone()
+                if row:
+                    schedule=json.loads(row[0]);schedule.update(enabled=False,automation_paused=True,final_pending=False,rebuild_to=new['id'])
+                    db.execute('UPDATE ax_schedules SET payload=? WHERE id=?',(encoded(schedule),pid))
+            for job in others:
+                if job['kind']!='receipt' or job['state']=='RUNNING':continue
+                changed=False
+                for item in job['items']:
+                    if item.get('purchase_id') in prior_ids and item['state'] not in ('SYNCED','SKIPPED'):
+                        item.update(state='SKIPPED',rebuild_to=new['id']);changed=True
+                if changed:
+                    job['execution_token']=uuid.uuid4().hex
+                    if not any(i['state']=='PENDING' for i in job['items']):job=reconcile({**job,'state':'COMPLETED'})
+                    self._save(db,job,'REBUILD_PAUSED_OLD_RECEIPTS')
+            return new
 
     def receipt(self, records):
         if any(r.get('receipt_terminal') or (r.get('receipt_summary') or {}).get('status')=='已作废' for r in records):
@@ -143,17 +231,58 @@ class Workflows:
                 require(self.business_path,items)
             return self._new(db, 'receipt', items)
 
-    def update(self, id, *, state=None, message=None, position=None, changes=None, **job_changes):
+    def claim(self,id):
+        with self.db(True) as db:
+            job=self._get(db,id);job.update(state='RUNNING',execution_token=uuid.uuid4().hex)
+            return self._save(db,job,'CLAIMED_EXECUTION')
+
+    def forget_missing(self,id,item_id,oid,execution_token,path):
+        """Legacy orphan repair by stable identity; never touches a live source."""
+        from deletion_barrier import active,SourceDeleted
+        from aoxiang_workflow_state import reconcile
+        with self.db(True) as db:
+            job=self._get(db,id)
+            if job.get('execution_token')!=execution_token:raise SourceDeleted('原执行已失效')
+            with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as source:
+                if active(source,oid):return False
+            found=[i for i in job['items'] if i['item_id']==item_id and (i.get('head') or i.get('basis') or {}).get('oid')==oid]
+            if not found:return True
+            job['items']=[i for i in job['items'] if i not in found]
+            for i in found:
+                if i.get('purchase_id'):db.execute('DELETE FROM ax_schedules WHERE id=?',(i['purchase_id'],))
+            db.execute('DELETE FROM ax_workflow_events WHERE id=? AND json_extract(payload,\'$.item_id\')=?',(id,item_id))
+            if not job['items']:
+                db.execute('DELETE FROM ax_workflow_events WHERE id=?',(id,));db.execute('DELETE FROM ax_workflows WHERE id=?',(id,));return True
+            for n,i in enumerate(job['items']):i['position']=n
+            if 'dispatch_keys' in job:job['dispatch_keys']=[k for k in job['dispatch_keys'] if k in {i['key'] for i in job['items']}]
+            self._save(db,reconcile(job),'REMOVED_MISSING_SOURCE');return True
+
+    def update(self, id, *, state=None, message=None, position=None, item_id=None, oid=None, execution_token=None, changes=None, **job_changes):
+        if set(changes or {}) & {'item_id','key','head','basis','position'}:
+            raise ValueError('不能修改任务项的稳定身份或来源依据')
+        if set(job_changes) & {'id','items','execution_token'}:
+            raise ValueError('不能通过回写替换批次身份或执行令牌')
         with self.db(True) as db:
             job = self._get(db, id)
+            from deletion_barrier import SourceDeleted
+            if execution_token is not None and job.get('execution_token')!=execution_token:raise SourceDeleted('原执行令牌已失效；忽略旧任务回写')
+            if item_id is not None:
+                matches=[i for i in job['items'] if i['item_id']==item_id]
+                if len(matches)!=1:raise SourceDeleted('来源任务项已删除；不按位置写入其他订单')
+                item=matches[0];head=item.get('head') or item.get('basis') or {}
+                if head.get('oid')!=oid:raise SourceDeleted('来源订单身份不符')
+                if self.business_path:
+                    from aoxiang_order_guard import deleted_orders
+                    if deleted_orders(self.business_path,[item]):raise SourceDeleted('来源订单已删除；忽略晚到回写')
+                item.update(copy.deepcopy(changes or {}))
             if state:
                 job['state'] = state
             if message is not None:
                 job['message'] = message
-            if position is not None:
+            if position is not None and item_id is None:
                 job['items'][position].update(copy.deepcopy(changes or {}))
             job.update(copy.deepcopy(job_changes))
-            return self._save(db, job, 'UPDATED')
+            return self._save(db, job, 'UPDATED',item_id=item_id)
 
     def resume(self, id):
         with self.db(True) as db:
@@ -379,6 +508,9 @@ class Workflows:
                 s={'id':purchase_id,'basis':record['basis'],'order_id':record['scope']['orderId'],'terminal':False,'final_pending':False,'failures':0,
                    'active_job':None,'created_at':self.clock(),'enabled':False,'automation_paused':True,'interval_seconds':1800}
             else:s = json.loads(row[0])
+            if self.business_path:
+                from aoxiang_order_guard import deleted_orders
+                if deleted_orders(self.business_path,[{'key':purchase_id,'basis':s['basis']}]):return
             terminal = s['terminal'] or bool((record or {}).get('terminal'))
             if record:
                 s['last_state'] = record['state']

@@ -23,6 +23,7 @@ NAMES = {
     'CV':'阶段波动诊断','_category':'商品分类','_source':'资料匹配结果',
     '_meta':'来源与校验','_audit':'一箱例外依据','_inbound_cap':'在途保底限制',
     '_preissue':'签发前调整','_budget_overrun':'预算末尾补足','_new_requested':'新品首铺申请量',
+    '_mandatory_holding':'必采最低持有依据',
     'effective_settings':'实际设置','parameter_config':'参数配置','parameters':'模型参数',
     'weight_profiles':'分类权重','profile_parameters':'分类超参','category_profiles':'分类映射',
     'warehouses':'仓周期','exception':'一箱例外','budget':'门店预算','supply_route':'供货设置',
@@ -125,6 +126,9 @@ def stage_rows(d,final_label='最终签发量'):
             ('自动安排量',automatic,'预算与排除后的自动安排；不含签发前人工调整'),
             (final_label,sem.order_quantity(d),adjust.get('reason') or sem.explanation(d))]
     out=[];previous=None
+    if d.get('_mandatory_holding'):
+        from mandatory_holding import explanation
+        stages[2]=('预算前候选量',candidate,explanation(d))
     for label,v,why in stages:
         delta='；较上一阶段 '+format(Decimal(str(v))-Decimal(str(previous)),'+f')+unit if sem.numeric(v) and sem.numeric(previous) else ''
         out.append([label,value_text(v,missing=MISSING),unit,str(why)+delta]);previous=v

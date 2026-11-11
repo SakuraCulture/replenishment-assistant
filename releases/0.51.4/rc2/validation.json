@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "sealed_at": "2026-11-11T19:52:42.822057+08:00",
+  "source_reference": "snapshot-6eecf60f601d72ae4b20a57123e13a6832c8bb3978b0e9831c0c4a40b4465b65",
+  "source_commit_kind": "workspace_snapshot_not_git_commit",
+  "base_commit": "edf459b79c271d3a43b76f31d874947f1714471a",
+  "source_snapshot_sha256": "6eecf60f601d72ae4b20a57123e13a6832c8bb3978b0e9831c0c4a40b4465b65",
+  "full_python": {
+    "tests": 1495,
+    "unittest_seconds": 561.576,
+    "passed": true,
+    "source_and_tests_unchanged": true,
+    "log_sha256": "0f83a7bc45c50bc5447c6a9ab4aae4f38640dced602ecd04b45a3679d0c8bfc3"
+  },
+  "jst_node_tests": 65,
+  "exe_catalog_checks": 39,
+  "exe_first_fill_and_floor_checks": 55,
+  "exe_floor_cases": 30,
+  "exe_analytics_checks": 37,
+  "exe_preissue_phases": 2,
+  "exe_preissue_checks": 13,
+  "manual_chapters": 21,
+  "manual_images": 41,
+  "exe_sha256": "431d0bee3e305bd0dc4715d4e06e9419fd508fad758ffa9bdaa0ebb8532dcc96",
+  "live_platform": false,
+  "business_computer_tested": false,
+  "business_data_modified": false,
+  "committed": false,
+  "tagged": false,
+  "pushed": false,
+  "merged": false
+}

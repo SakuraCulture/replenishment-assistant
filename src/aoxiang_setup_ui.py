@@ -141,6 +141,8 @@ class SetupDialog(ComponentDialog):
         self.render_saved_targets()
         if not configured.get('configured'):
             message = '尚未保存连接配置；首次使用请检测浏览器，勾选门店后核验并保存。'
+        elif configured.get('needs_store_verification'):
+            message = '当前Edge商家已识别；请勾选并核验该商家的门店后保存。账号ID由当前登录自动读取，无需手填。'
         elif health.get('state') == 'CONNECTED' and health.get('login_state') == 'VERIFIED':
             message = '正在复用全局连接，登录已核验；无需重新配置。关闭本窗口不重新检查或断开连接。'
         else:

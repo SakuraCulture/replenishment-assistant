@@ -1,0 +1,120 @@
+{
+  "source_commit": "a62d61691da869b6c8677cd8e6662a4789e630e7",
+  "files": [
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\after-fix.log",
+      "bytes": 110,
+      "sha256": "c89a7f3508a4c340506c59c91f38a755214309cedc25386042156eadf6eec806"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\before-fix.log",
+      "bytes": 5251,
+      "sha256": "de86057b3f90f068ba60f0f5e4cc191cd8b1ed234e55acb7b9391e6fcc68d34c"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\build-rc3.log",
+      "bytes": 262,
+      "sha256": "27cb453f16945685e6aca1589c8840e0cd10606762a6bc6864bdef3f17b0e873"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\exe-payment\\acceptance.json",
+      "bytes": 3065,
+      "sha256": "118fc605abdc61ea4b47fcfe3f3233318a0184c4f4670a6a7f397959c7dd0bf4"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\exe-payment\\process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\exe-payment\\report.json",
+      "bytes": 2958,
+      "sha256": "13f42cde71d4936b806ea0237887e9c4bd32b9a709d6ff8615063631f5b2204d"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\exe-payment.log",
+      "bytes": 2796,
+      "sha256": "f0574755940e90e1cf6490fd695e2ca6a6e695246f26a0c3ac77c9687f8d9c49"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\exe-stockout\\process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\exe-stockout\\report.json",
+      "bytes": 22772,
+      "sha256": "59ff80c7255329ea9a2242a64b99972b7756e6e9e79238810fdfa8e3cd92ed0c"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\exe-stockout.log",
+      "bytes": 142,
+      "sha256": "ba551d0cca20e173999e55db8d4c7e337331c8b79cc75217b7185142212ce775"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\payment-lifecycle-regression.log",
+      "bytes": 244,
+      "sha256": "412c1f00aa09cd3f9e2be60037ec86183d04a93e2a4d55f8be504f21024c3673"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\source-smoke\\acceptance.json",
+      "bytes": 2055,
+      "sha256": "4b43dd3e5ea92487da17f0dc206994b7c74b4e1f78af9ed4b577f46fded73fba"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\source-smoke\\process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\source-smoke\\report.json",
+      "bytes": 2033,
+      "sha256": "41d00046603969843838c91f956f18ee3270b4a4214f80c67f2dfa1ca1354a9d"
+    },
+    {
+      "path": "qa\\payment_sku_only_0501_20261110\\source-smoke.log",
+      "bytes": 1869,
+      "sha256": "10615c2077b49c423eda4e6d76573a8ec087705a82fbf004796950efd41dc41a"
+    },
+    {
+      "path": "releases\\0.50.1\\rc3\\artifacts.json",
+      "bytes": 471,
+      "sha256": "a94fa9143121ad4cd8d967489648627b7d8cf4377156e00000d1e8cda61cbfe7"
+    },
+    {
+      "path": "releases\\0.50.1\\rc3\\build_info.json",
+      "bytes": 1016,
+      "sha256": "ff7ead0651e53f2c7fcb2b24ad4d426a3551f8dd53cef80d784941d51585b9ab"
+    },
+    {
+      "path": "releases\\0.50.1\\rc3\\exe-payment.json",
+      "bytes": 3065,
+      "sha256": "118fc605abdc61ea4b47fcfe3f3233318a0184c4f4670a6a7f397959c7dd0bf4"
+    },
+    {
+      "path": "releases\\0.50.1\\rc3\\exe-stockout.json",
+      "bytes": 22772,
+      "sha256": "59ff80c7255329ea9a2242a64b99972b7756e6e9e79238810fdfa8e3cd92ed0c"
+    },
+    {
+      "path": "releases\\0.50.1\\rc3\\protection.json",
+      "bytes": 771,
+      "sha256": "a4d6c4c38e8581fbcec39228c17b2c434583189ad1998260f21413cb69126f37"
+    },
+    {
+      "path": "releases\\0.50.1\\rc3\\source-payment.json",
+      "bytes": 2055,
+      "sha256": "4b43dd3e5ea92487da17f0dc206994b7c74b4e1f78af9ed4b577f46fded73fba"
+    },
+    {
+      "path": "releases\\0.50.1\\rc3\\validation.json",
+      "bytes": 580,
+      "sha256": "9c82e58035eb759e81151860c884b14f1ac9879a87c1a02911b0552aa8e4abfa"
+    },
+    {
+      "path": "releases\\0.50.1\\rc3\\交付报告.md",
+      "bytes": 3482,
+      "sha256": "10e072455248934fa038e614eedf60873c0e4a0c542f884b6e089f7db47d4353"
+    }
+  ]
+}

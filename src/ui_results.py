@@ -128,9 +128,9 @@ class ResultsView:
             self.budget_caption.setText(f"预算 {b['limit']:,.2f} 元 · 已用 {b['spent']:,.2f} · 剩余 {b['remaining']:,.2f} · 必卖 {b['must_spent']:,.2f} / 普通 {b['other_spent']:,.2f} · 未满足 {b['deferred']} 款 · 最低持有缺口 {b['holding_gaps']} 款")
             over=b.get('overrun',{})
             if over.get('amount',0)>0:self.budget_caption.setText(self.budget_caption.text()+f"\n有限超支 {over['amount']:.2f} 元；商品 {over['sku']} 追加 {over['quantity']:g} 个库存单位；本店金额上限 {over['ceiling']:.2f} 元。")
-        else:self.budget_caption.setText('总预算未启用；保持原执行建议。' if calculated else '预算分配在原计算和禁用/停采排除之后执行。')
+        else:self.budget_caption.setText('不限预算；按执行排除及必采最低持有后的数量安排。' if calculated else '预算分配在原计算及执行排除之后执行。')
         if calculated and self.result.get('must_list'):
-            ml=self.result['must_list'];self.budget_caption.setText(self.budget_caption.text()+f"\n必卖清单 {ml['total']} 款，本店命中 {ml['matched']} 款，{ml['missing']} 款未出现在本店导出；不自动新增补货。")
+            ml=self.result['must_list'];self.budget_caption.setText(self.budget_caption.text()+f"\n必卖清单 {ml['total']} 款，本店命中 {ml['matched']} 款，{ml['missing']} 款未出现在本店导出；命中的有效商品默认保护最低持有，未出现的商品不补造。")
 
     def apply_column_group(self,*_):
         group=self.column_choice.currentText()
@@ -219,6 +219,9 @@ class ResultsView:
         content=f'<h2>{esc(d.get("D"))}</h2><p>{esc(d.get("E"))} · {d["_source"]}</p>'
         content+='<p><b>'+esc(semantics.order_status(d))+'</b> '+esc(semantics.exclusion_reason(d))+'</p>'
         content+='<p>优先清单：'+('必卖商品' if d.get('_must_sell') else '普通商品')+'</p>'
+        if d.get('_mandatory_holding'):
+            from mandatory_holding import explanation
+            content+='<h3>必采最低持有</h3><p>'+esc(explanation(d))+'</p>'
         risk=semantics.inbound_risk(d)
         if risk:content+='<h3>需人工复核</h3><p>'+esc(risk['text'])+'</p>'
         elif d.get('_inbound_cap'):content+='<p>已有在途：追加保底已受库存额度限制，不重新补回。原库存额度口径保持不变。</p>'

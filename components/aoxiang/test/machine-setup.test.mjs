@@ -37,14 +37,43 @@ test('startup checks saved login without querying stores, changing mappings or c
   assert.equal(c.setup.status(job.id).state,'VERIFIED');assert.deepEqual(c.calls,['recheck']);
   assert.deepEqual(await readConfiguration(c.root),before);assert.equal(c.setup.browsers.browser.client,client);
 });
-test('startup rejects missing configuration and changed login without saving a replacement identity',async t=>{
+test('startup follows current merchant without another connection; previous targets require explicit verification',async t=>{
   const c=await context(t);await assert.rejects(c.setup.verifySaved([]),{code:'NOT_CONFIGURED'});
   c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};t.after(()=>c.setup.browsers.close());
   const job=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(job.id);
   const before=await readConfiguration(c.root);
-  c.setup.browsers.browser.client.recheckLogin=async()=>({identity:{...identity,merchantCode:'different'}});
+  const client=c.setup.browsers.browser.client;
+  client.observeLogin=async()=>({identity:{...identity,accountId:'new',merchantCode:'different'}});
+  client.recheckLogin=async()=>{throw Error('must observe actual login without old identity');};
   await c.setup.verifySaved([]);await c.setup.promise;
-  assert.equal(c.setup.job.error.code,'WRONG_IDENTITY');assert.deepEqual(await readConfiguration(c.root),before);
+  const after=await readConfiguration(c.root);
+  assert.equal(c.setup.job.state,'VERIFIED');assert.equal(after.config.tenantBinding.accountId,'new');
+  assert.equal(after.config.enabled,false);assert.deepEqual(after.config.targets,before.config.targets);
+  assert.equal(c.setup.browsers.browser.client,client);assert.notEqual(client.closed,true);
+  await assert.rejects(c.setup.verifySaved(['W1']),{code:'TARGET_UNVERIFIED'});
+  await c.setup.verifySaved([]);await c.setup.promise;assert.equal(c.setup.job.state,'VERIFIED');
+});
+
+test('same merchant account switch automatically updates observed login and retains stores on the same worker',async t=>{
+  const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};t.after(()=>c.setup.browsers.close());
+  const first=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(first.id);
+  const before=await readConfiguration(c.root),client=c.setup.browsers.browser.client;
+  client.observeLogin=async()=>({identity:{...identity,accountId:'002',userId:'new-person'},facts:{actualProfilePath:'C:/EdgeData/Profile1',edgeVersion:'test'}});
+  await c.setup.verifySaved([]);await c.setup.promise;const after=await readConfiguration(c.root);
+  assert.equal(c.setup.job.state,'VERIFIED');assert.equal(c.setup.job.identity_updated,true);assert.equal(after.config.enabled,true);
+  assert.equal(after.config.tenantBinding.accountId,'002');assert.deepEqual(after.config.targets,before.config.targets);
+  assert.equal(c.setup.browsers.browser.client,client);assert.equal(c.calls.filter(x=>x==='new').length,1);
+  await c.setup.close();assert.notEqual(client.closed,true);
+});
+
+test('only the operator userId changes: login succeeds without rewriting business configuration',async t=>{
+  const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};t.after(()=>c.setup.browsers.close());
+  const first=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(first.id);
+  const before=await readConfiguration(c.root),client=c.setup.browsers.browser.client;
+  client.observeLogin=async()=>({identity:{...identity,userId:'someone-else'}});
+  await c.setup.verifySaved([]);await c.setup.promise;
+  assert.equal(c.setup.job.state,'VERIFIED');assert.deepEqual(await readConfiguration(c.root),before);
+  assert.equal(c.setup.browsers.browser.client,client);
 });
 test('login recheck rebuilds a disconnected browser worker instead of borrowing a stale successful connection',async t=>{
   const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};t.after(()=>c.setup.browsers.close());
@@ -80,7 +109,7 @@ async function context(t,behavior={}){
   class Client{
     constructor(){calls.push('new');}
     async connect(){calls.push('connect');return {identity:behavior.identity||identity,facts:{edgeVersion:'test',actualProfilePath:'C:/EdgeData/Profile1'}};}
-    async querySingle(code,name){calls.push(code);if(behavior.query)return behavior.query(code,name);return {identity,warehouseCode:code,name,total:1,observedAt:'2026-11-01T00:00:00Z'};}
+    async querySingle(code,name){calls.push(code);if(behavior.query)return behavior.query(code,name);return {identity:behavior.identity||identity,warehouseCode:code,name,total:1,observedAt:'2026-11-01T00:00:00Z'};}
     async stop(){calls.push('stop');this.closed=true;}
     async recheckLogin(){calls.push('recheck');return {identity,facts:{edgeVersion:'test',actualProfilePath:'C:/EdgeData/Profile1'}};}
   }
@@ -141,11 +170,27 @@ test('部分门店编码不符只保存已核验项，不按名字猜编码',asy
   assert.equal(status.verified,1);assert.equal(status.failed,1);assert.equal(status.targets[1].error.code,'TARGET_CODE_MISMATCH');
   await c.setup.commit(job.id);assert.deepEqual((await readConfiguration(c.root)).config.targets.map(t=>t.buyerWarehouseCode),['W2']);
 });
-test('换商家阻断查询和保存，旧参数保持',async t=>{
+test('显式核验当前商家门店，保存前旧参数不变；保存时只采用新核验的门店',async t=>{
   const c=await context(t,{identity:{...identity,merchantCode:'other'}}),old=freshConfig(identity,[target('old')]);
+  old.batches.push({...old.batches[0],id:'old-second-batch',targetWarehouseCodes:['old']});
   await writeJson(path.join(c.root,'config/portable.config.json'),old);c.setup.begin(params(c.root));await c.setup.promise;
-  assert.equal(c.setup.job.state,'FAILED');assert.equal(c.setup.job.error.code,'WRONG_IDENTITY');assert.deepEqual(c.calls,['new','connect','stop']);
+  assert.equal(c.setup.job.state,'READY');assert.deepEqual(c.calls,['new','connect','W2','W1','stop']);
   assert.deepEqual((await readConfiguration(c.root)).config,old);
+  await c.setup.commit(c.setup.job.id);const config=(await readConfiguration(c.root)).config;
+  assert.equal(config.tenantBinding.merchantCode,'other');assert.equal(config.enabled,true);
+  assert.deepEqual(config.targets.map(t=>t.buyerWarehouseCode),['W2','W1']);
+  assert.equal(config.batches.length,1);assert.deepEqual(config.batches[0].targetWarehouseCodes,['W2','W1']);
+});
+
+test('observed-login update detects concurrent configuration changes and releases the unsafe worker',async t=>{
+  const c=await context(t);c.setup.browsers=new BoundBrowserPool();c.setup.state={root:c.root,recordReceipt:()=>true};t.after(()=>c.setup.browsers.close());
+  const first=c.setup.begin(params(c.root));await c.setup.promise;await c.setup.commit(first.id);
+  const client=c.setup.browsers.browser.client,before=await readConfiguration(c.root);
+  const external={...before.config,tenantBinding:{...identity,displayName:'external-edit'}};
+  client.observeLogin=async()=>{await writeJson(path.join(c.root,'config/portable.config.json'),external);return {identity:{...identity,accountId:'new'}};};
+  await c.setup.verifySaved([]);await c.setup.promise;
+  assert.equal(c.setup.job.state,'FAILED');assert.equal(c.setup.job.error.code,'STALE_CONFIGURATION');
+  assert.deepEqual((await readConfiguration(c.root)).config,external);assert.equal(client.closed,true);
 });
 
 test('身份超时和未分类浏览器异常停止整次核验，不逐店重复等待',async t=>{

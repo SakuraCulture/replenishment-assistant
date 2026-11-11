@@ -15,6 +15,7 @@ STATES={'PREPARED':'待开始','RUNNING':'进行中','PAUSED':'已安全暂停',
 
 def display(value,key=''):
     if key=='rate':return '—' if value is None else f'{value:.2%}'
+    if key=='expected_sales_days':return '—' if value is None else f'{value:.2f}'
     if key=='mandatory':return {1:'必采',0:'非必采',None:'属性待核'}[value]
     if key=='source':return {'center':'中心仓','local':'地采','pending':'归属待核'}.get(value,value)
     return '待核' if value is None else str(value)
@@ -105,8 +106,12 @@ class Page(QWidget):
         self.result_links=QCheckBox('显示已删日志的日报依据（可重算，已删日志不恢复）')
         self.result_links.toggled.connect(self.refresh_metadata);tv.addWidget(self.result_links)
         self.run_table=QTableWidget();tv.addWidget(self.run_table)
+        self.reexport_stores_btn=button('重新导出选中门店',self.reexport_stores)
+        self.run_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.run_table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
+        tv.addWidget(self.reexport_stores_btn)
         self.runs.currentIndexChanged.connect(self.load_run)
-        tv.addWidget(label('已有任务先继续原任务；平台受理未知时只核对原结果，不重新导出。停止分析不会撤销平台导出。','muted'))
+        tv.addWidget(label('继续原任务先收取原结果；需重新导出时在表中选择门店。旧平台任务可能继续完成，原件和已保存结果保留。','muted'))
         operations=QHBoxLayout()
         self.rerun_btn=button('重新采集今日资料',lambda:self.run_action('rerun'))
         self.recalculate_btn=button('用留存原件重算',lambda:self.run_action('recalculate'))
@@ -133,7 +138,7 @@ class Page(QWidget):
 
     def controls(self):
         active=self.entry.worker is not None
-        for widget in (self.adopt,self.collect,self.resume,self.end_run_btn,self.rerun_btn,self.recalculate_btn,self.delete_log_btn,self.delete_data_btn,self.export_btn,self.filter_btn,self.manage_views_btn):widget.setEnabled(not active)
+        for widget in (self.adopt,self.collect,self.resume,self.end_run_btn,self.reexport_stores_btn,self.rerun_btn,self.recalculate_btn,self.delete_log_btn,self.delete_data_btn,self.export_btn,self.filter_btn,self.manage_views_btn):widget.setEnabled(not active)
         self.collect.setEnabled(not active and self.settings is not None)
         self.stop.setEnabled(active or self.entry.queued is not None)
         if self.filter_dialog:self.filter_dialog.controls()
@@ -285,15 +290,16 @@ class Page(QWidget):
                [[*[display(r[key],key) for key,_ in columns],r['base'],r['zero'],display(r['rate'],'rate'),r['unknown_tags'],r['bad']] for r in self.cut_rows])
         self.cut_note.setText(f"第 {self.cut_offset+1 if self.cut_rows else 0} 起，当前 {len(self.cut_rows)} 组 / 共 {cuts['total']} 组；导出包含全部分组")
         rows=value['details']['items'];self.detail_rows=rows
-        render(self.details,['日期','门店编码','门店名称','商品编码','商品名称','月销','可用库存','供货来源','仓','必采','类目','上游供货商','虚拟分类','补货状态','仓商品状态','说明'],
-               [[r['day'],r['store'],r['store_name'],r['sku'],r['name'],r['month_raw'],r['stock_raw'],display(r['source'],'source'),r['warehouse'],
-                 display(r['mandatory'],'mandatory'),r['category'],r['supplier'],display(r['tags']),r['replen_status'],r['product_status'],r['error']] for r in rows])
+        render(self.details,['日期','门店编码','门店名称','商品编码','商品名称','月销','可用库存','在途库存','预计销售天数','供货来源','仓','必采','类目','上游供货商','虚拟分类','补货状态','仓商品状态','说明'],
+               [[r['day'],r['store'],r['store_name'],r['sku'],r['name'],r['month_raw'],r['stock_raw'],r['inbound_raw'],display(r['expected_sales_days'],'expected_sales_days'),display(r['source'],'source'),r['warehouse'],
+                 display(r['mandatory'],'mandatory'),r['category'],r['supplier'],display(r['tags']),r['replen_status'],r['product_status'],'；'.join(filter(None,[r['error'],r['expected_sales_days_reason']]))] for r in rows])
         self.page_note.setText(f"第 {self.offset+1} 起，当前 {len(rows)} 条 / 共 {value['details']['total']} 条；每页最多200条")
 
     def explain(self,index,column):
         if index>=len(self.detail_rows):return
         r=self.detail_rows[index]
         text=f"门店：{r['store_name']}（{r['store']}）\n商品：{r['name']}（{r['sku']}）\n观测时间：{r['observed']}\n原件行号：{r['rownum']}\n日报修订：{r['revision']}\n原件哈希：{r['source_sha']}\n\n月销：{r['month_raw']}；可用库存：{r['stock_raw']}；在途：{r['inbound_raw']}\n仓商品状态：{r['product_status']}；翱象补货状态：{r['replen_status']}\n来源：{display(r['source'],'source')}；仓：{r['warehouse']}\n虚拟分类：{display(r['tags'])}\n\n{r['error']}"
+        text+='\n预计销售天数：'+display(r['expected_sales_days'],'expected_sales_days')+'\n（可用库存＋在途库存）÷月销×30；'+r['expected_sales_days_reason']
         QMessageBox.information(self,'商品口径与原件依据',text)
 
     def select_cut(self,index,column):
@@ -388,6 +394,17 @@ class Page(QWidget):
     def end_run(self):
         rid=self.runs.currentData()
         if rid:self.entry.start('end',{'run':rid},lambda _:self.refresh_metadata())
+
+    def reexport_stores(self):
+        rid=self.runs.currentData()
+        codes=[self.run_table.item(i.row(),1).text() for i in self.run_table.selectionModel().selectedRows()]
+        if not rid or not codes:
+            QMessageBox.information(self,'请选择门店','请先在采集记录表中选中需要重新导出的门店；可按 Ctrl 多选。');return
+        def ready(plan):
+            names='、'.join(s['name']+'（'+s['code']+'）' for s in plan['stores'])
+            if QMessageBox.question(self,'重新导出选中门店','门店：'+names+'\n结束这些门店的旧采集项并获取新文件；其他门店保留。旧平台任务可能继续完成，可能产生重复导出文件。',QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)!=QMessageBox.StandardButton.Yes:return
+            self.entry.start('reexport',{'plan':plan},lambda _:self.refresh_metadata(),background=self.background.isChecked())
+        self.entry.start('reexport_preview',{'run':rid,'codes':codes},ready)
 
     def configure_schedule(self):
         from stockout_trigger import load

@@ -5,6 +5,10 @@ const LOGIN='/account/session/getLoginInfo';
 const QUERY='/saas/chain/plan/replenish/advice/query';
 const TASKS='/ebai/gei/task/list';
 const CREATE='/ebai/gei/create/export/task';
+function identityDetails(error,phase,timeoutMs){
+  const diagnostic=String(error.message||error).replace(/https?:\/\/[^\s]+/g,value=>{try{const u=new URL(value);return u.origin+u.pathname;}catch{return '[页面地址]';}}).slice(0,1800);
+  return {phase,cause:error.name||'Error',timeout_ms:timeoutMs,diagnostic};
+}
 export async function guardedClick(locator,timeout=15000){
   try{
   let matches=await locator.count();
@@ -16,7 +20,24 @@ export async function guardedClick(locator,timeout=15000){
   // UI.activate keeps only the tool-owned target's rendering active. A failed
   // click is never automatically replayed: the coordinator preserves UNKNOWN.
   await locator.click({timeout});
-  }catch(e){if(e.name==='TimeoutError')fail('UI_ACTION_TIMEOUT','页面操作等待超时；原作业已保留，请处理页面弹窗后继续原作业',{control:locator.toString(),diagnostic:e.message});throw e;}
+  }catch(e){if(e.name==='TimeoutError')fail('UI_ACTION_TIMEOUT','页面控件点击超时，可能未就绪、菜单收起或被遮挡；原任务已保留，结果待核时不会重发',{control:locator.toString(),diagnostic:e.message.replace(/\x1b\[[0-9;]*m/g,'')});throw e;}
+}
+// The only write is dispatched synchronously after the final visibility check.
+// An exception after entering evaluate is ambiguous and must NEVER authorize replay.
+export async function dispatchExportOption(locator,timeout=15000){
+  try{
+    await locator.waitFor({state:'visible',timeout});
+    if(await locator.count()!==1)fail('AMBIGUOUS_CONTROL','导出选项不唯一，未提交');
+    if(!await locator.isEnabled())fail('CONTROL_DISABLED','导出选项不可用，未提交');
+  }catch(e){fail('EXPORT_NOT_DISPATCHED','导出菜单尚未就绪，本次未点击提交；可以继续原采集任务',{cause:e.code||e.name});}
+  const dispatched=await locator.evaluate(e=>{
+    const r=e.getBoundingClientRect(),s=getComputedStyle(e);
+    if(!e.isConnected||!r.width||!r.height||s.visibility==='hidden'||s.display==='none'||e.matches(':disabled')||e.closest('[aria-disabled="true"]'))return false;
+    const top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+    if(!top||!e.contains(top))return false; // Never click through another dialog.
+    e.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));return true;
+  });
+  if(!dispatched)fail('EXPORT_NOT_DISPATCHED','导出菜单已收起，本次未点击提交；可以继续原采集任务');
 }
 export function identityFrom(j) {
   if(j.status!==true||j.success!==true||!j.data?.account||!j.data?.user)fail('WAIT_LOGIN','请在所选Edge配置中完成翱象登录');
@@ -31,10 +52,11 @@ export function safeTask(t) {
   return {taskId:String(t.taskId),taskStatus:t.taskStatus,successCount:t.successCount??null,failCount:t.failCount??null,startTime:t.startTime??null,doneTime:t.doneTime??null,code:t.code??t.taskCode??null,downloadHost,fileObject};
 }
 export class AoxiangUI {
-  constructor(page,{timeoutMs=30000,focusSession=null}={}){
+  constructor(page,{timeoutMs=30000,focusSession=null,onPhase=()=>{}}={}){
     this.page=page;this.identity=null;this.lastIdentityError=null;this.taskCache=new Map();this.lastQuery=null;this.observations=[];this.receipts=[];this.spentIntents=new Set();this.requestIntents=new WeakMap();
     this.timeoutMs=timeoutMs;page.setDefaultTimeout(timeoutMs);page.setDefaultNavigationTimeout(timeoutMs);
     this.focusSession=focusSession;
+    this.onPhase=onPhase;
     this.exportNotice=page.getByRole('dialog').filter({hasText:/正在导出数据|请点击\s*历史记录\s*查看结果/});
     this.noticeDismissals=0;
     this.requestListener=r=>{try{const u=new URL(r.url());if(platformProfile.businessOrigins.includes(u.origin)&&u.pathname.endsWith(CREATE))this.requestIntents.set(r,this.activeIntentId||null);}catch{}};
@@ -63,22 +85,40 @@ export class AoxiangUI {
   isBusinessResponse(r,p){try{const u=new URL(r.url());return platformProfile.businessOrigins.includes(u.origin)&&u.pathname.endsWith(p);}catch{return false;}}
   waitResponse(p,timeout=this.timeoutMs){const w=this.page.waitForResponse(r=>this.isBusinessResponse(r,p),{timeout});w.catch(()=>{});return w;}
   async identityAfter(action){
-    const sent=this.page.waitForRequest(r=>this.isBusinessResponse(r,LOGIN),{timeout:this.timeoutMs});sent.catch(()=>{});
+    const sent=this.page.waitForRequest(r=>this.isBusinessResponse(r,LOGIN),{timeout:this.timeoutMs}).catch(error=>{
+      fail('IDENTITY_RESPONSE_TIMEOUT','当前页面未发出新的登录身份查询，尚未完成核验；未创建本次导出',identityDetails(error,'等待身份请求',this.timeoutMs));
+    });sent.catch(()=>{});
     // Consume the exact observed response immediately, before the navigation/action
     // completes: Chromium can discard its body on a subsequent redirect/reload.
     const identity=sent.then(async request=>{
       const response=await bounded(request.response(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份查询没有取得响应');
       if(!response)fail('IDENTITY_RESPONSE_TIMEOUT','本次身份查询失败');
       return identityFrom(parseResponse(await bounded(response.text(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份响应未读取完成')));
+    }).catch(error=>{
+      if(error.code==='IDENTITY_RESPONSE_TIMEOUT'&&!error.details)
+        fail(error.code,error.message,identityDetails(error,'读取身份响应',this.timeoutMs));
+      throw error;
     });identity.catch(()=>{});
     await action();return identity;
   }
   async open(expected){
     await this.activate();
     this.identity=null;this.lastIdentityError=null;
-    try{this.identity=await this.identityAfter(()=>this.page.goto(SITE+'/#/replenish/list',{waitUntil:'domcontentloaded',timeout:this.timeoutMs}));}catch(e){if(e.code)throw e;fail('IDENTITY_CHECK_FAILED','未完成翱象页面或身份查询，尚不能判断登录已失效；请检查页面加载和网络，再继续原任务，不要重新提交导出');}
+    const target=SITE+'/#/replenish/list',navigation={waitUntil:'domcontentloaded',timeout:this.timeoutMs};
+    try{
+      let sameDocument=false;
+      try{const current=new URL(this.page?.url?.()||''),destination=new URL(target);sameDocument=current.origin===destination.origin&&current.pathname===destination.pathname&&current.search===destination.search;}catch{}
+      this.onPhase?.(sameDocument?'当前页面已打开，正在刷新页面并读取当前登录身份；尚未创建导出':'正在打开补货建议页并读取当前登录身份；尚未创建导出');
+      // A hash-only SPA navigation does not request getLoginInfo again. Reload
+      // the already-open document under a fresh listener instead of waiting for
+      // an identity request that will never be sent. No cached identity is used.
+      if(sameDocument&&this.page.url()!==target)await this.page.goto(target,navigation);
+      this.identity=await this.identityAfter(()=>sameDocument?this.page.reload(navigation):this.page.goto(target,navigation));
+    }catch(e){if(e.code)throw e;fail('IDENTITY_CHECK_FAILED','打开翱象页面或读取当前登录身份未完成；原连接保留，未创建本次导出',identityDetails(e,'页面导航或身份响应读取',this.timeoutMs));}
     if(expected&&!sameIdentity(this.identity,expected))fail('WRONG_IDENTITY','当前Edge登录的翱象账号/商家与配置不符');
-    await this.page.locator('#buyerWarehouseCodeList').waitFor({state:'visible',timeout:this.timeoutMs});
+    this.onPhase?.('已读取当前登录，正在等待补货建议页加载；尚未创建导出');
+    try{await this.page.locator('#buyerWarehouseCodeList').waitFor({state:'visible',timeout:this.timeoutMs});}
+    catch(e){fail('IDENTITY_CHECK_FAILED','已读取登录身份，但补货建议页面尚未就绪；请检查页面加载或访问权限，未创建本次导出',identityDetails(e,'补货建议页就绪',this.timeoutMs));}
     return this.identity;
   }
   async verifyIdentity(expected=this.identity){
@@ -225,7 +265,13 @@ export class AoxiangUI {
     try{
     const response=this.waitResponse(CREATE);
     const receiptCount=this.receipts.length;
-    await this.click(this.page.getByText('全部信息导出',{exact:true}).filter({visible:true}));
+    // prepareExport returns across IPC and durable intent writes. Its hover may
+    // already have disappeared; reopen now, without retrying a write click.
+    try{
+      await this.activate();
+      await this.page.locator('#suggestTable').getByRole('button',{name:/^导出/}).hover({timeout:10000});
+    }catch(e){fail('EXPORT_NOT_DISPATCHED','未能展开导出菜单，本次未点击提交；请继续原采集任务',{cause:e.code||e.name});}
+    await dispatchExportOption(this.page.getByText('全部信息导出',{exact:true}).filter({visible:true}),this.timeoutMs);
     // Current UI may either accept at the menu item or show a confirmation.
     // Keep one response listener and click a confirmation only if it actually exists.
     const confirm=this.page.locator('.ant-modal-confirm').filter({visible:true}).filter({hasText:'确认现在导出吗？'}).getByRole('button',{name:/^确\s*认$/});
@@ -245,6 +291,10 @@ export class AoxiangUI {
     // next actionable history click; do not treat an immediate isVisible=false
     // as proof that the modal will not appear.
     return {taskId,code:request.code,scope,acceptedAt:new Date().toISOString(),receiptCountBefore:receiptCount};
+    }catch(e){
+      if(e.code==='EXPORT_NOT_DISPATCHED'&&[...this.requestIntents.values()].includes(intentId))
+        fail('SUBMISSION_UNKNOWN','已观察到导出请求，但尚未取得可靠回执；保留原意图，禁止重发');
+      throw e;
     }finally{this.activeIntentId=null;}
   }
   async dispose(){this.page.off('request',this.requestListener);this.page.off('response',this.listener);if(this.noticeGuardInstalled){try{await this.page.removeLocatorHandler(this.exportNotice);}catch{}this.noticeGuardInstalled=false;}if(this.focusSession){try{await this.focusSession.detach();}catch{}this.focusSession=null;}}

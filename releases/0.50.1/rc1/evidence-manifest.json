@@ -1,0 +1,175 @@
+{
+  "source_commit": "6c730672dcb2d7a82c2e9d2bb9b024f516237faf",
+  "files": [
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\build-rc1.log",
+      "bytes": 294,
+      "sha256": "cdccc288e186d5abdac7598b8d10db948b251172049a08ae2fe36599e4a65950"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\environment.json",
+      "bytes": 475,
+      "sha256": "d10c15edd7f9b0ea14533100427f15d4dba33ed2ae868d582ef303f17af408f9"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\exe-deletion\\acceptance.json",
+      "bytes": 1121,
+      "sha256": "cd7e37f5d50743c51994c0f4a3159c38523418beea8396bcdaa8460ad3ae9986"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\exe-deletion\\process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\exe-deletion\\剩余批次.png",
+      "bytes": 104875,
+      "sha256": "90ff2a0315453a70eb59a284d3f77248006bcf63c6fb566afd6fee835a106980"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\exe-deletion.log",
+      "bytes": 1012,
+      "sha256": "d23a300d4a0fe64221b2be055c00af03cda3f4df353285fc489f65561f2513ef"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\exe-startup\\01-startup-ready.png",
+      "bytes": 14491,
+      "sha256": "af55a89763de1a5be56cdaf5e4311fc733b5bb73feed4a1585d2a8ae07061f4e"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\exe-startup\\02-identity-query-failed.png",
+      "bytes": 14524,
+      "sha256": "a2cc9825efc2d5df1d07df50246e3096a9175198c818090920005d493898512e"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\exe-startup\\02-login-repair.png",
+      "bytes": 4528,
+      "sha256": "57612ebfbcd1cecf78c5f31274d58ae9f2ab740d38aa9b145dfffaae625de18e"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\exe-startup\\03-settings-restored.png",
+      "bytes": 9855,
+      "sha256": "bce9d63dac2b9b2471ba59e3cde385e0d8a1aa50dfc03d5fd1798a99b5789663"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\exe-startup\\report.json",
+      "bytes": 4461,
+      "sha256": "ffe42260ee72fdcdb78a8c01185ee98e6a0a77af4cc4168e1efaa04e1cd679f8"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\exe-startup-process.log",
+      "bytes": 21,
+      "sha256": "b9040536a0f72556f85ce54cae2ccd005cb5fb8aac66b74a5c8340a0f7342e88"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\maintenance-targeted.log",
+      "bytes": 109,
+      "sha256": "8e2c9c9113a58959a4fe20498303b91a92a2a948f91984c0cb050681909798fd"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\node-final.log",
+      "bytes": 25230,
+      "sha256": "9c3b5c11aee5a286f87201dd89efea2d41b33dddc74c198ccd6d800ee8e9b75d"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\node-regression.log",
+      "bytes": 25022,
+      "sha256": "15897fc2ddd5e7a0106e73e2ecf9535fa4fe5cbd26ef80c80f60ae6cad4292fe"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\purchase-targeted.log",
+      "bytes": 3780,
+      "sha256": "e400fb645508c26e3b2b3be22913d9265c4cf370644f50e01a266df535233ff1"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\python-final.log",
+      "bytes": 221272,
+      "sha256": "cc1f4e0bd6318e34db34e930fda776371c71dc65bdd765847c9b98e73ce755fc"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\python-regression.log",
+      "bytes": 22023,
+      "sha256": "c777d7b4d9975da619a5fc7b6c583100200c96285a84365eccc1082a8d571840"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\setup-targeted.log",
+      "bytes": 2416,
+      "sha256": "f1f3f0f72302c375ee1cd08b099f9ac0ece941b17e5bdc3362d596724701d806"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\source-startup\\01-startup-ready.png",
+      "bytes": 14909,
+      "sha256": "987ef0c3fcb46f1fe6fb7aab82c826dbe96a598f125be10d4542b232224374e4"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\source-startup\\02-identity-query-failed.png",
+      "bytes": 14524,
+      "sha256": "a2cc9825efc2d5df1d07df50246e3096a9175198c818090920005d493898512e"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\source-startup\\02-login-repair.png",
+      "bytes": 4528,
+      "sha256": "57612ebfbcd1cecf78c5f31274d58ae9f2ab740d38aa9b145dfffaae625de18e"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\source-startup\\03-settings-restored.png",
+      "bytes": 9855,
+      "sha256": "bce9d63dac2b9b2471ba59e3cde385e0d8a1aa50dfc03d5fd1798a99b5789663"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\source-startup\\report.json",
+      "bytes": 3537,
+      "sha256": "08ae4cb4903759e86939b398b5117c88debdf7b6d9f1c935523da9df14b4b5f9"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\source-startup.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "qa\\current_edge_login_0501_20261110\\workflows-targeted.log",
+      "bytes": 118,
+      "sha256": "f668fd2aa899436c35d5f0b7dd526eee0c718a64dfe01eee0a9f738ecc4bc835"
+    },
+    {
+      "path": "releases\\0.50.1\\rc1\\artifacts.json",
+      "bytes": 471,
+      "sha256": "9b3d7b612cd0ebc438c0ca6cc41546eaba07c68bb0e474cf60514b7200abe237"
+    },
+    {
+      "path": "releases\\0.50.1\\rc1\\build_info.json",
+      "bytes": 1016,
+      "sha256": "16070fd3ce6219e1906cf2458ec118b1a26bb122d53ad8a114166443ef022a8c"
+    },
+    {
+      "path": "releases\\0.50.1\\rc1\\exe-deletion.json",
+      "bytes": 1121,
+      "sha256": "cd7e37f5d50743c51994c0f4a3159c38523418beea8396bcdaa8460ad3ae9986"
+    },
+    {
+      "path": "releases\\0.50.1\\rc1\\exe-startup.json",
+      "bytes": 4483,
+      "sha256": "a3a34e4d668665ed000b68dd51bec345eeec6692e5cc8f231ac91269ac712775"
+    },
+    {
+      "path": "releases\\0.50.1\\rc1\\protection.json",
+      "bytes": 1037,
+      "sha256": "c24ccf77935dec9e911acecca9cf063618d4f237f5582e007ec3c63ecc754e38"
+    },
+    {
+      "path": "releases\\0.50.1\\rc1\\source-startup.json",
+      "bytes": 3537,
+      "sha256": "08ae4cb4903759e86939b398b5117c88debdf7b6d9f1c935523da9df14b4b5f9"
+    },
+    {
+      "path": "releases\\0.50.1\\rc1\\validation.json",
+      "bytes": 824,
+      "sha256": "2cc1b45e49e34b84e4fcf6865359e1deb88dc9938bc32af297707cab5cff0d8a"
+    },
+    {
+      "path": "releases\\0.50.1\\rc1\\交付报告.md",
+      "bytes": 6479,
+      "sha256": "c0bf5b90aeb70ee4c8ecc076b7c9f7d8cfc3e29937962dcb9846435760391cd9"
+    }
+  ]
+}

@@ -156,8 +156,8 @@ class Preview(QDialog):
         target = '保存的默认参数；未保存门店从标准方案开始' if scope == 'defaults' else '本次门店实际生效参数'
         resets=sum(len(r.get('reset_fields',[])) for r in self.data['rows'])
         self.note.setText(f'以{target}为原值。共{len(self.data["rows"])}店，{len(self.prepared["changed"])}店有变更/新增；空白默认/继承项 {resets} 项，请逐项核对。\n'
-                          + ('本次作业及已有结果不改变。' if scope == 'defaults' else '仅变化门店的结果失效，重算后生效。') + '历史签发不变。')
-        self.error.setText(f'{len(errors)}项错误，整批不能应用；完整错误在上表中，可搜索“校验错误”。' if errors else '校验通过；请核对生效范围和逐店差异。')
+                          + ('本次作业及已有结果不改变。' if scope == 'defaults' else '仅变化门店的结果失效，重算后生效。') + '历史签发不变。\n'+'\n'.join(self.data.get('notices',[])))
+        self.error.setText(f'{len(errors)}项错误，整批不能应用；完整错误在上表中，可搜索“校验错误”。' if errors else '校验通过；请核对生效范围和逐店差异。' if self.prepared['changed'] else '当前范围没有参数变化，无需重复应用；如要修改本次作业，请核对上方生效范围。')
         self.go.setText({'defaults': '确认保存门店默认', 'current': '确认应用本次作业', 'both': '确认应用并保存默认'}[scope])
         self.go.setEnabled(not errors and bool(self.prepared['changed']))
 
@@ -180,7 +180,11 @@ def import_parameters(parent, host, scope='defaults',kind='warehouse_cycles'):
                 (host.work_repository, values, expected), '保存门店默认参数', cancellable=False))
         if hasattr(parent, 'refresh'):
             parent.refresh()
-        QMessageBox.information(parent, '批量参数已应用', f'已处理{len(codes)}家门店。\n' + check.note.text())
+        scope=check.scope.currentData();prepared=check.prepared
+        current_count=len(prepared.get('current_changed',prepared['changed'])) if scope!='defaults' else 0
+        saved_count=len(prepared.get('saved_plan',prepared)['changed']) if scope!='current' else 0
+        QMessageBox.information(parent, '批量参数已应用', f'已处理{len(codes)}家门店：本次作业变化{current_count}家，保存默认{saved_count}家。\n'
+            +('请重新计算变化门店后查看结果。\n' if current_count else '本次计算结果不改变。\n')+check.note.text())
     except Cancelled:
         return
     except Exception as exc:

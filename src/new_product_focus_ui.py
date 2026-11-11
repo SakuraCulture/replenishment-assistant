@@ -7,7 +7,7 @@ import new_product_focus as focus
 class FocusMapping(QDialog):
     def __init__(self,parent,info,month):
         super().__init__(parent);self.setObjectName('focusMapping');self.setWindowTitle('导入新品明细 · 指定关注字段');self.resize(650,380);v=QVBoxLayout(self);self.info=info
-        v.addWidget(label('按商品编码精确匹配本店新品候选；关注只决定导出分组，不会自动选品或变成必卖。','muted'))
+        hint=label('按商品编码匹配本店新品候选。关注用于本月/往期分组，不自动选品或变成必卖；选择窗口内，本月新品默认首铺量取归属仓资料。','muted');hint.setWordWrap(True);v.addWidget(hint)
         self.month=QLineEdit(month);v.addWidget(label('适用月份（YYYY-MM）'));v.addWidget(self.month)
         self.sheet=QComboBox();self.sheet.addItems(info['sheets']);v.addWidget(label('工作表（首行为表头）'));v.addWidget(self.sheet)
         self.sku=QComboBox();self.focus=QComboBox()

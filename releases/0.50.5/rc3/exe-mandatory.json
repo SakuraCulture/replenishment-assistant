@@ -1,0 +1,50 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "live_platform": false,
+  "checks": [
+    "零销零库存必采默认补一箱，原模型零建议保留",
+    "已有覆盖不重补，不足基数按出库单位补足",
+    "日配、禁用、停采、禁采优先排除必采品",
+    "普通零销及普通动销原规则保留",
+    "仅采用商品资料日配标签，不误用补货建议同名字段",
+    "实际Qt商品详情可读到最低持有依据",
+    "签发Excel保存有效数量及必采理由，排除商品不混入",
+    "签发归档及重新读取保持最低持有执行量",
+    "预算零不超支，零销必采缺口仍显式保留",
+    "人工取消必采保底可定位风险，不能默默丢失保护",
+    "人工例外撤销后精确恢复自动数量和依据",
+    "旧快照没有新规则依据时不追溯补算或改写"
+  ],
+  "app": "补货助手",
+  "version": "0.50.5",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.5-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "38390d2790699922ec79e34103d7dc55b7c38963",
+  "build_id": "rc3",
+  "built_at": "2026-11-11T01:47:44.395164+08:00",
+  "source_archive_sha256": "089a62fc2c5188cb0c18769bbc7cdf5686f9f9ec98459becf88c0d12213c5ade",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "38390d2790699922ec79e34103d7dc55b7c38963",
+    "files": 872,
+    "manifest_sha256": "e2e1212429a601f43cf661942ea2efe5727e665bc11797a1d10d90add39865c8",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "0a77cdfd4203bfadaed489f227ee2dddd6b3d9e67cf146fc38b3ba445e5bd26b",
+    "files": 9,
+    "source_commit": "38390d2790699922ec79e34103d7dc55b7c38963",
+    "contains_user_state": false
+  },
+  "exit_code": 0,
+  "exe_sha256": "c67c4880c432bfc3f81cefe23e77685f6bd2e6f7fb83f8dab87441a4a670e4a4"
+}

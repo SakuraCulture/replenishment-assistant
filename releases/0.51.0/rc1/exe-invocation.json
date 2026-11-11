@@ -1,0 +1,10 @@
+{
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.51.0_rc1\\补货助手\\补货助手.exe",
+  "source_commit": "4abebb2305529133c045a309e94527688a6c6154",
+  "began": "2026-11-11T04:03:29.6679783+08:00",
+  "ended": "2026-11-11T04:03:47.5281443+08:00",
+  "exit_code": 0,
+  "exe_sha256_before": "c74f5162b24cbc3e8c3e1d50e81a3f0556777dcb24a09f6c16d9b70d6832855d",
+  "exe_sha256_after": "c74f5162b24cbc3e8c3e1d50e81a3f0556777dcb24a09f6c16d9b70d6832855d",
+  "command": "tools/verify_operations_0510.py --out qa/operations_0510_20261111/exe-01 --exe <fixed exe>"
+}

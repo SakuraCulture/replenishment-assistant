@@ -1,5 +1,5 @@
 {
-  "application": "0.49.3",
+  "application": "0.50.5",
   "system_standard_version": "2026-11-03.1",
   "standard": {
     "parameters": {
@@ -621,13 +621,13 @@
       "id": "parameters.minimum_reference_units",
       "group": "parameters",
       "group_name": "门店通用参数",
-      "name": "最低覆盖判断量",
+      "name": "最低可售参考量",
       "unit": "库存单位",
       "path_template": [
         "parameters",
         "minimum_reference_units"
       ],
-      "explanation": "在途与本值与最小出库数量中的较小值比较。调高可能增加恢复触发；不是补货目标数量，触发后仍按最小出库单位补。",
+      "explanation": "必采商品的最低持有基数，默认1；可用与在途不足时，缺口按最小出库单位向上取整，零月销也补。优先满足保底，仍服从排除与门店预算。普通商品继续将此值用于在途与最小出库单位的覆盖比较。",
       "constraints": {
         "type": "number",
         "finite": true,

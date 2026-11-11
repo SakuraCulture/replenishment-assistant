@@ -23,7 +23,7 @@ class SessionOwner:
             if self.client is not None:
                 if self.ready and self.client.running and not self.client.error:
                     return
-                if self.client.running:
+                if self.client.running and not self.client.error:
                     raise ComponentError('CONNECTION_NEEDS_REVIEW', '原采集连接未就绪；请先安全结束原连接，不重复启动')
                 if not self.close():
                     raise ComponentError('CLOSING', '原采集进程尚未安全退出')

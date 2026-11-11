@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "live_platform": false,
+  "metric_comparisons": 390,
+  "views": 7,
+  "boundaries": [
+    {
+      "case": "all-unpriced",
+      "frontend_value": null,
+      "frontend_skus": 2,
+      "missing_receipt_skus": null,
+      "native_export_matches": true
+    },
+    {
+      "case": "confirmed-zero",
+      "frontend_value": "0",
+      "frontend_skus": 0,
+      "missing_receipt_skus": null,
+      "native_export_matches": true
+    }
+  ],
+  "four_fields_absent": true,
+  "source_database_unchanged": true
+}

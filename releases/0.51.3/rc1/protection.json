@@ -1,0 +1,38 @@
+{
+  "unchanged_sources": {
+    "model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "warehouse_routing.py": "a0f2c7b448234df22aeb2bdc8c02e8c0869a6602e1f390fd3d74fa9774627f0a",
+    "mandatory_holding.py": "d2ea0e98fbd9fb637298be7fd03300cc6922279137ee843a79446e412a11888f",
+    "admission.py": "b35845ca11d31d04619224330347cc53a52afbedc2fa5aa81bad2496abc1a835",
+    "new_products.py": "67c84f04229941e4c39d653a5b4b8e158cf440f0d49e24669a8215e45132062c",
+    "preissue.py": "0660e457cce3d239a5dbb1fdecf4f91b2ff5775ff86c0f6f56d4b683af386eec",
+    "normal_orders.py": "343681fbbdbd2ed8b70e5f88c461504bffdd1e437605adf21576ad482f04eee7",
+    "purchases.py": "964b8dbc8ebcd8c740c8c2dc69195e6bb2e755700e54467f37044efe9669a5f8",
+    "order_lifecycle.py": "2b25bb94bb37798ad48dc41c5f53053fd13c282fbaea345fb1f0eda3833019d6",
+    "work_repository.py": "bcd5a4ee5b6c44e84dc973aefa0ba36f9c92b6be6079c062a5a243d66e0e7f43",
+    "data_maintenance.py": "c2ee51dd57d0a370d4214f5e692fc8ca443020efe51331f9c23ca697de48f222",
+    "maintenance_storage.py": "5ab8d0279605fed7e744e1d25bf7e4903f9809ee3daf012c66e1faaeb1671b06",
+    "input_adapter.py": "c5b75e2bb23c3471d1575d1df2f73a5d0f7f3788261adbcff09107354fa4d9bf",
+    "allocation.py": "eaad9d27238c3b532ac6c14a4e5091287157aa2f1e722a627d82b8e956ac4cd4"
+  },
+  "components_identical_to_0512": true,
+  "component_validation_reused": "releases/0.51.1/rc1/validation.json",
+  "old_0512_artifacts_unchanged": {
+    "source_commit": "90d244defdbeed279a2feb1912a3e93ce868f1c2",
+    "files": [
+      {
+        "path": "交付_0.51.2_rc1\\补货助手\\补货助手.exe",
+        "bytes": 7116061,
+        "sha256": "2fefec1d1d28ab7741639df435d329acd31674b0ff3f89ac370a63f7a1d66e36"
+      },
+      {
+        "path": "交付_0.51.2_rc1\\补货助手_0.51.2_rc1.zip",
+        "bytes": 130194585,
+        "sha256": "1046cc8dd2064f4852364f0707d0beee6344c48a2260dbee2a7c1069bbf51fc8"
+      }
+    ]
+  },
+  "old_pdf_sha256": "e2f494ed73817a561a87265811d2474c054e39f87b31ec60092ef1bac44e7326"
+}

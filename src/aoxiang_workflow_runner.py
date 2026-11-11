@@ -37,36 +37,53 @@ class Runner:
                 self.client.request(cancel_action, **{id_field: id})
                 raise Cancelled('已停止新动作；当前任务安全结束后保留原记录')
 
-    def template(self, job):
-        if job.get('template_receipt'):
-            return job['template_receipt']
+    def template(self, job, configuration):
+        receipt=job.get('template_receipt')
+        identity=(receipt or {}).get('identity') or {}
+        current=configuration.get('account_binding') or {}
+        if receipt and identity.get('accountId')==current.get('account_id') and identity.get('merchantCode')==current.get('merchant_code'):
+            return receipt
         checkpoint(self.cancel)
         r = self.client.request('template.start')
         r = self.wait_status('template.status', 'template_id', r['id'], cancel_action='template.cancel')
         if r['state'] != 'READY':
             error = r.get('error') or {}
             raise ComponentError(error.get('code', 'TEMPLATE_FAILED'), error.get('message', '最新采购模板未验收'))
-        self.store.update(job['id'], template_receipt=r['receipt'])
+        self.store.update(job['id'], execution_token=job.get('execution_token'), template_receipt=r['receipt'])
         return r['receipt']
 
     def prepare_item(self, job, item, configuration, suppliers):
         p = item.get('package')
         if not p:
-            template = self.template(self.store.get(job['id']))
+            template = self.template(self.store.get(job['id']),configuration)
             p = prepare(self.business_path, item['head'], configuration, suppliers, template,
                         self.store.folder / 'purchase-packages', self.component_root / 'assets/purchase-import-template-contract.json',
                         cancel=self.cancel, progress=self.progress)
-            atomic_json(Path(p['package_file']).parent / '本地任务索引.json', p)
+            try:atomic_json(Path(p['package_file']).parent / '本地任务索引.json', p)
+            finally:
+                from deletion_barrier import package_finished
+                package_finished(self.business_path,item['head']['oid'],p['id'])
             summary = {'quantity': p['intent']['totalQuantity'], 'amount': p['intent']['totalAmount'],
                        'sku_count': len(p['intent']['rows']), 'supplier': p['intent']['supplierCode']}
             if p['intent'].get('pricePolicy'):
                 summary.update(payment_amount=p['intent']['paymentTotalAmount'], rounding_delta=p['intent']['roundingDelta'])
             # Save exact package identity before the separate component reservation.
-            self.store.update(job['id'], position=item['position'], changes={'package': package_ref(p), 'summary': summary})
+            self.store.update(job['id'], item_id=item['item_id'], oid=(item.get('head') or item.get('basis') or {}).get('oid'), execution_token=job.get('execution_token'), changes={'package': package_ref(p), 'summary': summary})
         checkpoint(self.cancel)
         from aoxiang_order_guard import require_orders
         require_orders(self.business_path,[item])
-        accepted = self.client.request('purchase.reserve', package_file=p['package_file'], package_sha256=p['package_sha256'])
+        rebuild=item.get('rebuild') or {}
+        if rebuild.get('purchase_id'):
+            if not configuration.get('purchase_rebuild'):raise ValueError('当前组件不支持采购重建，请使用完整新版程序')
+            try:old=self.client.request('purchase.status',purchase_id=rebuild['purchase_id'])
+            except ComponentError as exc:
+                if exc.code!='PURCHASE_CREATE_NOT_FOUND':raise
+                old={'sequence':1}
+            accepted=self.client.request('purchase.rebuild',purchase_id=rebuild['purchase_id'],sequence=old['sequence'],
+                package_file=p['package_file'],package_sha256=p['package_sha256'],operation_id=rebuild['operation_id'],
+                reason='业务确认结束原任务并重新生成采购预览；原平台采购单由业务处理',acknowledge_uncertainty=True)
+        else:
+            accepted = self.client.request('purchase.reserve', package_file=p['package_file'], package_sha256=p['package_sha256'])
         if accepted['record']['uploadAttempted']:
             raise ValueError('此预览已进入上传；请核对原采购任务，不重复列为待上传')
         return 'PREPARED', {'purchase_id': p['id']}
@@ -148,72 +165,89 @@ class Runner:
         raise ComponentError(error.get('code', 'RECEIPT_NEEDS_REVIEW'), error.get('message', '实收字段或主子状态未通过；保留原件待核'))
 
     def run(self, id):
-        job = self.store.update(id, state='RUNNING', message='读取本地配置及原任务状态')
-        for position in range(len(job['items'])):
-            item=self.store.get(id)['items'][position]
-            if item['state'] in DONE_ITEM:
-                continue
-            scope=self.store.get(id).get('dispatch_keys')
-            if scope is not None and item['key'] not in scope:continue
-            checkpoint(self.cancel)
-            position = item['position']
-            from aoxiang_order_guard import deleted_orders
-            if job['kind']=='receipt':
-                from aoxiang_receipt_scope import assess
-                eligibility=assess(self.business_path,[item])[item['key']]
-                if not eligibility['eligible']:
-                    self.store.observe_schedule(item['purchase_id'],None,error={'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']},review=True)
-                    self.store.update(id,position=position,changes={'state':'SKIPPED','source_retired':True,'error':{'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']}})
-                    continue
-            missing=deleted_orders(self.business_path,[item]) if job['kind']=='prepare' else {}
-            if missing:
-                from aoxiang_workflow_state import local_preparation
-                local=local_preparation(item,job['kind'])
-                self.store.update(id,position=position,changes={'state':'SKIPPED' if local else 'REVIEW','source_deleted':True,
-                    'ended_locally':local,'error':{'code':'SOURCE_ORDER_DELETED','message':missing[item['key']]+'；已停止本地后续动作，未向平台提交'}})
-                continue
-            if job.get('automatic'):
-                schedule = self.store.schedule(item['purchase_id'])
-                if not schedule or schedule.get('automation_paused'):
-                    self.store.update(id, position=position, changes={'state': 'SKIPPED', 'error': None})
-                    continue
-            # Read again at each dispatch: a batch never silently adopts stale host mappings.
-            configuration = self.client.request('configuration')
-            suppliers = Directory(self.store.folder).suppliers()
-            basis = item.get('head') or item.get('basis') or {}
-            text = f"{position+1}/{len(job['items'])} · {item.get('display_name') or basis.get('name') or basis.get('number')} · {basis.get('warehouse', '')}"
-            self.progress(text)
-            self.store.update(id, position=position, changes={'state': 'RUNNING', 'error': None}, message=text)
+        job = self.store.claim(id)
+        self.execution_token=job['execution_token']
+        if job['kind']=='upload' and self.client.request('configuration').get('purchase_pipeline'):
+            from aoxiang_upload_pipeline import run_upload
+            return run_upload(self,job)
+        from deletion_barrier import SourceDeleted
+        for identity in [i['item_id'] for i in job['items']]:
+            try:current=self.store.get(id)
+            except SourceDeleted:return None
+            item=next((i for i in current['items'] if i['item_id']==identity),None)
+            if item is None:continue
+            def update(_identity=identity,_oid=(item.get('head') or item.get('basis') or {}).get('oid'),**kw):
+                return self.store.update(id,item_id=_identity,oid=_oid,execution_token=self.execution_token,**kw)
             try:
-                if job['kind'] == 'prepare':
-                    state, result = self.prepare_item(job, item, configuration, suppliers)
-                elif job['kind'] == 'upload':
-                    from aoxiang_purchase_messages import observation
-                    state, result = self.upload_item(item, configuration, suppliers,
-                        notify=lambda r: self.store.update(id, position=position, changes={'purchase_observation': observation(r)}))
-                else:
-                    state, result = self.receipt_item(item, configuration, suppliers)
-                self.store.update(id, position=position, changes={'state': state, 'result': result, 'error': None})
-            except Cancelled:
-                self.store.update(id, position=position, changes={'state': 'PENDING'})
-                raise
-            except Exception as exc:
-                code = getattr(exc, 'code', 'BUSINESS_REVIEW')
-                error = {'code': code, 'message': str(exc)}
-                if getattr(exc, 'details', None):error['details'] = exc.details
-                if job['kind'] == 'receipt':
-                    self.store.observe_schedule(item['purchase_id'], None, error=error, review=code not in RETRYABLE)
-                if code in SESSION_ERRORS:
-                    self.store.update(id, position=position, changes={'state': 'PENDING', 'error': error})
+                if item['state'] in DONE_ITEM:
+                    continue
+                scope=self.store.get(id).get('dispatch_keys')
+                if scope is not None and item['key'] not in scope:continue
+                checkpoint(self.cancel)
+                position = item['position']
+                if job.get('automatic'):
+                    schedule = self.store.schedule(item['purchase_id'])
+                    if not schedule or schedule.get('automation_paused'):
+                        update(changes={'state': 'SKIPPED', 'error': None})
+                        continue
+                from aoxiang_order_guard import deleted_orders
+                if job['kind']=='receipt':
+                    from aoxiang_receipt_scope import assess
+                    eligibility=assess(self.business_path,[item])[item['key']]
+                    if not eligibility['eligible']:
+                        self.store.observe_schedule(item['purchase_id'],None,error={'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']},review=True)
+                        update(changes={'state':'SKIPPED','source_retired':True,'error':{'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']}})
+                        continue
+                missing=deleted_orders(self.business_path,[item]) if job['kind']!='receipt' else {}
+                if missing:
+                    basis=item.get('head') or item.get('basis') or {}
+                    if not self.store.forget_missing(id,identity,basis.get('oid'),self.execution_token,self.business_path):
+                        update(changes={'state':'SKIPPED','error':{'code':'SOURCE_ORDER_DELETED','message':'来源不可用，未派发平台动作'}})
+                    continue
+                # Read again at each dispatch: a batch never silently adopts stale host mappings.
+                from aoxiang_current_login import current_configuration
+                configuration = (current_configuration(self.client,self.progress,self.cancel)
+                                 if job['kind']=='prepare' and not item.get('package') else self.client.request('configuration'))
+                suppliers = Directory(self.store.folder).suppliers()
+                basis = item.get('head') or item.get('basis') or {}
+                text = f"{position+1}/{len(job['items'])} · {item.get('display_name') or basis.get('name') or basis.get('number')} · {basis.get('warehouse', '')}"
+                self.progress(text)
+                update(changes={'state': 'RUNNING', 'error': None}, message=text)
+                try:
+                    if job['kind'] == 'prepare':
+                        state, result = self.prepare_item(job, item, configuration, suppliers)
+                    elif job['kind'] == 'upload':
+                        from aoxiang_purchase_messages import observation
+                        state, result = self.upload_item(item, configuration, suppliers,
+                            notify=lambda r,update_item=update: update_item(changes={'purchase_observation': observation(r)}))
+                    else:
+                        state, result = self.receipt_item(item, configuration, suppliers)
+                    update(changes={'state': state, 'result': result, 'error': None})
+                except SourceDeleted:
+                    continue
+                except Cancelled:
+                    update(changes={'state': 'PENDING'})
                     raise
-                self.store.update(id, position=position, changes={'state': 'FAILED' if code in RETRYABLE else 'REVIEW', 'error': error})
-        current = self.store.get(id)
+                except Exception as exc:
+                    code = getattr(exc, 'code', 'BUSINESS_REVIEW')
+                    error = {'code': code, 'message': str(exc)}
+                    if getattr(exc, 'details', None):error['details'] = exc.details
+                    if job['kind'] == 'receipt':
+                        self.store.observe_schedule(item['purchase_id'], None, error=error, review=code not in RETRYABLE)
+                    if code in SESSION_ERRORS:
+                        update(changes={'state': 'PENDING', 'error': error})
+                        raise
+                    update(changes={'state': 'FAILED' if code in RETRYABLE else 'REVIEW', 'error': error})
+            except SourceDeleted:
+                continue
+        try:current = self.store.get(id)
+        except SourceDeleted:return None
         if any(i['state']=='PENDING' for i in current['items']):
             scope=current.get('dispatch_keys')
             if scope is not None and not any(i['state']=='PENDING' and i['key'] in scope for i in current['items']):
-                return self.store.update(id,state='PAUSED',message='勾选范围已处理；未勾选项保留，等待另行选择，不自动执行')
-            return self.store.update(id,state='QUEUED',message='继续处理本批执行范围中新排入的失败重跑项')
+                return self.store.update(id,execution_token=self.execution_token,state='PAUSED',message='勾选范围已处理；未勾选项保留，等待另行选择，不自动执行')
+            return self.store.update(id,execution_token=self.execution_token,state='QUEUED',message='继续处理本批执行范围中新排入的失败重跑项')
         bad = sum(i['state'] in ('FAILED', 'REVIEW') for i in current['items'])
         from aoxiang_workflow_state import summary
         final = {**current, 'state': 'COMPLETED_WITH_ERRORS' if bad else 'READY' if job['kind'] == 'prepare' else 'COMPLETED'}
-        return self.store.update(id, state=final['state'], message=summary(final))
+        return self.store.update(id, execution_token=self.execution_token, state=final['state'], message=summary(final))

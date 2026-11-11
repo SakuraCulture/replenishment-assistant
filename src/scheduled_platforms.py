@@ -48,9 +48,11 @@ class Platforms:
             self.jst=None
 
     def preflight(self,basis,progress):
-        """Actual read-only login/store checks; never exports or commits a configuration."""
+        """Read-only platform checks; refresh observed login, never export or change store mappings."""
         try:
             ax=self.ax_client();progress('正在核验翱象登录与预案门店；如需授权，请在浏览器允许')
+            from aoxiang_current_login import current_configuration
+            current_configuration(ax,progress,self.cancel)
             job=ax.request('setup.verify_saved',codes=[i['code'] for i in basis['plan']['stores']])
             ident=job['id'];deadline=time.monotonic()+600
             try:
@@ -79,7 +81,8 @@ class Platforms:
         jobs=Jobs(self.folder/'aoxiang'/'jobs.sqlite3');client=self.ax_client()
         cid=external.get('ax')
         if cid is None:
-            config=client.request('configuration')
+            from aoxiang_current_login import current_configuration
+            config=current_configuration(client,lambda message:runner.update('获取补货建议',message),self.cancel)
             job=prepare(jobs,config,[i['code'] for i in basis['plan']['stores']],'refresh',day=run['day'])
             cid=job['id'];external['ax']=cid;repo.change(rid,epoch=runner.epoch,external=external)
             # Intent is linked before dispatch; same command has a durable idempotency contract.
@@ -147,10 +150,13 @@ class Platforms:
         catalogs={};states={}
         for item in batch['items']:
             checkpoint(self.cancel);wh=item['account']['warehouse'];name='catalog:'+wh
+            if item.get('retirement'):raise ValueError('原仓采集已在纠正绑定时本地结束，请明确新建定时任务')
             prior=repo.value(rid,name)
             if prior is not None:
-                if not item.get('adoption'):
-                    client.request('sync.acknowledge_adoption',batch_id=bid,item_id=item['id'],receipt={'warehouse':wh,'source_sha256':prior['source_sha256'],'purpose':'scheduled_replenishment','run_id':rid})
+                from catalog_binding_guard import adoption_guard
+                with adoption_guard(client.folder,batch,item,self.cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+                    if not item.get('adoption'):
+                        client.request('sync.acknowledge_adoption',batch_id=bid,item_id=item['id'],receipt={'warehouse':wh,'source_sha256':prior['source_sha256'],'purpose':'scheduled_replenishment','run_id':rid})
                 catalogs[wh]=prior;states[wh]='本任务资料已留存';continue
             if not item.get('receipt'):states[wh]=str(item.get('error') or '采集未完成');continue
             receipt=item['receipt'];account=item['account'];native=item.get('native') or {}
@@ -159,10 +165,12 @@ class Platforms:
             root=(client.folder/'downloads'/bid/item['id']).resolve()
             if any(not Path(receipt[k]).resolve().is_relative_to(root) for k in ('source','candidate')):raise ValueError('仓资料不在原任务目录')
             catalog=validation.candidate(receipt)
-            capture(repo.path,catalog['source_path'],catalog['source_sha256'],runner.progress,self.cancel)
-            repo.save_value(rid,name,catalog,runner.epoch)
-            ack={'warehouse':wh,'source_sha256':catalog['source_sha256'],'purpose':'scheduled_replenishment','run_id':rid}
-            client.request('sync.acknowledge_adoption',batch_id=bid,item_id=item['id'],receipt=ack)
+            from catalog_binding_guard import adoption_guard
+            with adoption_guard(client.folder,batch,item,self.cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+                capture(repo.path,catalog['source_path'],catalog['source_sha256'],runner.progress,self.cancel)
+                repo.save_value(rid,name,catalog,runner.epoch)
+                ack={'warehouse':wh,'source_sha256':catalog['source_sha256'],'purpose':'scheduled_replenishment','run_id':rid}
+                client.request('sync.acknowledge_adoption',batch_id=bid,item_id=item['id'],receipt=ack)
             catalogs[wh]=catalog;states[wh]='本任务资料已留存；默认资料待工作台空闲时更新'
         repo.change(rid,epoch=runner.epoch,warehouses=states)
         return catalogs

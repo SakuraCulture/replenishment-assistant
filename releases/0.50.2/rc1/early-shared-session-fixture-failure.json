@@ -1,0 +1,13 @@
+{
+  "passed": false,
+  "frozen_exe": false,
+  "live_platform": false,
+  "checks": [
+    "取消重建确认不改变旧任务、采购记录或未选项",
+    "真实Qt按钮重建无回执任务：只处理勾选仓单，未选已成功仓单逐字段保持"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\purchase_pipeline_smoke.py\", line 82, in run\n    client.start();old=client.request('purchase.status',purchase_id=old_package['id']);fresh=client.request('purchase.status',purchase_id=new['items'][0]['package']['id'])\n    ^^^^^^^^^^^^^^\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\aoxiang_client.py\", line 57, in start\n    raise self._failure\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\aoxiang_client.py\", line 98, in _read_stdout\n    raise ComponentError(error.get('code', 'COMPONENT_FAILED'), error.get('message', '组件执行失败'), error.get('details'))\naoxiang_client.ComponentError: 已有补货建议助手进程正在使用本机状态或浏览器\n",
+  "heartbeat_ticks": 95,
+  "process_exit": 1,
+  "accepted": false
+}

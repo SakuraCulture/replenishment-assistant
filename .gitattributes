@@ -31,3 +31,12 @@ releases/0.45.0/rc1/*.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,
 # Preserve original Windows deletion performance and acceptance evidence bytes.
 releases/0.45.1/rc1/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 releases/0.45.1/rc1/*.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# Preserve original Windows evidence bytes for the locally sealed 0.51.x builds.
+releases/0.51.4/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.51.5/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.51.6/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# Failed-run transcripts retain their original console spacing for evidence hashes.
+releases/0.51.4/rc2/failed-evidence/*.txt whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+releases/0.51.5/rc2/failed-evidence/*.txt whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol

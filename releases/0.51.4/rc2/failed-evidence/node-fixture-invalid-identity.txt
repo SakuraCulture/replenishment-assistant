@@ -1,0 +1,45 @@
+✔ 按所选仓自动准备、核验和保存；两仓绑定独立且重复配置不改变版本 (51.9498ms)
+✔ startup reuses a saved custom binding and version even with pending exports; never migrates it (33.3494ms)
+✔ startup automatically binds a new dedicated account after login, and leaves missing login unbound (34.5186ms)
+✔ startup does not enable a disabled account or replace a mismatched login (33.8686ms)
+✔ 账号不同或两个仓使用同一身份时不会自动覆盖绑定 (32.1824ms)
+✔ 待收取任务可复用原绑定；自动迁移新目录仍受待处理任务保护 (41.5343ms)
+✔ 取消登录等待不保存；自动保存完成前不返回成功 (55.9256ms)
+✔ 自动目录可复用且按仓隔离，启动前阻止正常浏览器和其他仓目录 (38.8968ms)
+✔ pending exports and unadopted files do not block disabling; all records and the other warehouse stay intact (82.5551ms)
+✔ disable then reenable preserves the frozen account and resumes the original downloaded file (37.9485ms)
+✔ a disabled original task reports disabled rather than an account identity change (32.8991ms)
+✔ binding protection and separate switch CAS still reject stale requests without changing data (28.1565ms)
+✔ disabling during an active operation changes only future enablement and never aborts that operation (35.4351ms)
+✖ disabled setting persists across service restart; startup does not turn it on or launch a browser (43.5768ms)
+✔ disabled warehouse cannot start a new automatic export and invalid flag inputs do not mutate it (31.4715ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 14
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 408.5901
+
+✖ failing tests:
+
+test at components\jst_catalog\test\enabled-state.test.mjs:71:1
+✖ disabled setting persists across service restart; startup does not turn it on or launch a browser (43.5768ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'ACCOUNT_UNVERIFIED'
+  - 'ACCOUNT_DISABLED'
+             ^
+  
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/jst_catalog/test/enabled-state.test.mjs:77:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'ACCOUNT_UNVERIFIED',
+    expected: 'ACCOUNT_DISABLED',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

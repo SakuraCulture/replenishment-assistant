@@ -141,7 +141,7 @@ class Repository:
                 db.execute('INSERT INTO settings_current VALUES(1,?) ON CONFLICT(id) DO UPDATE SET version=excluded.version', (version,))
         return self.settings(version)
 
-    def new_run(self, *, trigger='manual', day=None, source_run=None, fresh_source=None):
+    def new_run(self, *, trigger='manual', day=None, source_run=None, fresh_source=None, reexport_scope=None, reexport_publications=None):
         if source_run and fresh_source:raise ValueError('继续原任务与重新采集不能同时选择')
         basis = self.settings()
         old = self.run(source_run or fresh_source) if source_run or fresh_source else None
@@ -155,6 +155,11 @@ class Repository:
         from version_info import INFO
         external=dict(old['external'] if old and not fresh_source else {})
         external.pop('log_deleted_at',None)
+        if reexport_scope is not None:
+            if not source_run or not reexport_scope or not set(reexport_scope).issubset({s['store'] for s in old['stores']}):raise ValueError('重导修订必须来自原作业的明确门店范围')
+            external['ax_commands']={c:v for c,v in external.get('ax_commands',{}).items() if c not in reexport_scope}
+            external.pop('identity',None)
+            external['reexport_publications']=reexport_publications or {}
         if fresh_source:external['rerun']=True
         external.setdefault('versions',{k:INFO[k] for k in ('version','model_version','routing_version')})
         with self.connect(write=True) as db:
@@ -170,6 +175,9 @@ class Repository:
                         encoded(external), encoded(old['catalogs'] if old and not fresh_source else {})))
             for store in basis['stores']:
                 db.execute('INSERT INTO run_stores(run,store,name,state) VALUES(?,?,?,?)', (rid, store['code'], store['name'], 'PENDING'))
+                if reexport_scope is not None and store['code'] not in reexport_scope:
+                    prior=next((s for s in old['stores'] if s['store']==store['code'] and s['state']=='READY'),None)
+                    if prior:db.execute("UPDATE run_stores SET snapshot=?,state='READY' WHERE run=? AND store=?",(prior['snapshot'],rid,store['code']))
         return self.run(rid)
 
     def run(self, rid):
@@ -216,6 +224,9 @@ class Repository:
             if not run or run[0] in {'COMPLETE','PARTIAL','ENDED'}:
                 raise ValueError('该任务已发布或已结束')
             external=json.loads(db.execute('SELECT external FROM runs WHERE id=?',(rid,)).fetchone()[0])
+            for day,expected in external.get('reexport_publications',{}).items():
+                current=db.execute('SELECT publication FROM current_days WHERE day=?',(day,)).fetchone()
+                if (current[0] if current else None)!=expected:raise ValueError('重导期间该日期日报已变化，未覆盖；请核对当前日报作业')
             for day,expected in external.get('recalculate',{}).get('publications',{}).items():
                 current=db.execute('SELECT publication FROM current_days WHERE day=?',(day,)).fetchone()
                 if not current or current[0]!=expected:raise ValueError('重算期间该日期日报已变化，未覆盖；请结束本次重算后选择当前作业')

@@ -1,0 +1,180 @@
+{
+  "passed": true,
+  "frozen_exe": true,
+  "exe_sha256": "e211162d44884cb22d87313f1c5e4bc0712bccc297facf6e2af53d39afe2fc14",
+  "checks": [
+    "释放窗口操作权并保留真实组件连接",
+    "全部缺价货值保留未知",
+    "未取得实收资料的SKU数保留未知",
+    "已确认零数量仍显示零货值",
+    "真实Qt五段表显示未确认",
+    "EXE原生导出不包含四个冗余字段",
+    "实际完整参数按钮、文件读取、差异预览及保存完成：",
+    "默认参数实际保存为3",
+    "仅保存默认不偷偷改变本次参数",
+    "EXE完整参数导出可原样回导且无虚假变化",
+    "映射和辅助页不写回的提示保留",
+    "实际点击导出完整订单迁移包…",
+    "保留组件写锁时通过原服务快照导出完整包",
+    "实际点击校验并导入完整订单迁移包…",
+    "等待安全退出时迁入请求仍被保留",
+    "窗口尚未关闭时不提前替换资料",
+    "已确认迁入计划跨过真实异步安全退出，并在app主入口完成替换",
+    "释放窗口操作权并保留真实组件连接",
+    "重开只显示迁入来源任务，未混入目标旧任务",
+    "平台原任务号与一次提交事实保留",
+    "迁入任务暂停，等待本机明确核验",
+    "本机浏览器配置保留，自动同步暂停",
+    "迁入来源门店参数，未混合旧目标参数",
+    "应用退出链路已实际完成整体迁入"
+  ],
+  "version": {
+    "app": "补货助手",
+    "version": "0.51.6",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.2",
+    "model_version": "0.3.6-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+    "build_id": "rc1",
+    "built_at": "2026-11-12T00:51:33.530265+08:00",
+    "source_archive_sha256": "59dca12c9bc56de19a7401e4b241b2785c2ed003318d5b4c95d4dc4de1774ab2",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+      "files": 874,
+      "manifest_sha256": "421c9a8442bf4ed4c16c51ec15547b478ec316f3f2ded7f242208776cb41081f",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "c06d3cc9b46dac39bf4aed4bb47679e489ac1a5638d1b525464c5463046351ae",
+      "files": 10,
+      "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+      "contains_user_state": false
+    }
+  },
+  "synthetic": true,
+  "live_platform": false,
+  "phases": [
+    {
+      "passed": true,
+      "phase": "exercise",
+      "frozen_exe": true,
+      "checks": [
+        "释放窗口操作权并保留真实组件连接",
+        "全部缺价货值保留未知",
+        "未取得实收资料的SKU数保留未知",
+        "已确认零数量仍显示零货值",
+        "真实Qt五段表显示未确认",
+        "EXE原生导出不包含四个冗余字段",
+        "实际完整参数按钮、文件读取、差异预览及保存完成：",
+        "默认参数实际保存为3",
+        "仅保存默认不偷偷改变本次参数",
+        "EXE完整参数导出可原样回导且无虚假变化",
+        "映射和辅助页不写回的提示保留",
+        "实际点击导出完整订单迁移包…",
+        "保留组件写锁时通过原服务快照导出完整包",
+        "实际点击校验并导入完整订单迁移包…",
+        "等待安全退出时迁入请求仍被保留",
+        "窗口尚未关闭时不提前替换资料",
+        "已确认迁入计划跨过真实异步安全退出，并在app主入口完成替换"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.51.6",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+        "build_id": "rc1",
+        "built_at": "2026-11-12T00:51:33.530265+08:00",
+        "source_archive_sha256": "59dca12c9bc56de19a7401e4b241b2785c2ed003318d5b4c95d4dc4de1774ab2",
+        "source_mode": "immutable git archive; no working-tree overlay",
+        "aoxiang": {
+          "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+          "files": 874,
+          "manifest_sha256": "421c9a8442bf4ed4c16c51ec15547b478ec316f3f2ded7f242208776cb41081f",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false
+        },
+        "jst_catalog": {
+          "manifest_sha256": "c06d3cc9b46dac39bf4aed4bb47679e489ac1a5638d1b525464c5463046351ae",
+          "files": 10,
+          "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+          "contains_user_state": false
+        }
+      },
+      "synthetic": true,
+      "live_platform": false,
+      "messages": [
+        {
+          "title": "迁移包已导出",
+          "text": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\exe-repairs\\live-component-export.zip\n未找到的外部路径 2 项，清单已保留；数据库内已留存原件随包保存。\n校验摘要：b7c02fbd1b5f1c2c8a7bd95bbbe4ded88b5ff5e6658d27c84ebc7e75d6315edf"
+        },
+        {
+          "title": "订单已迁入",
+          "text": "完整订单已迁入，作业和计划保持暂停。重新打开软件后先核验连接和原平台结果。\n原本机完整备份：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\exe-repairs\\settings.订单导入备份-5044c54d421d49ce8b225dac3ce669b9"
+        }
+      ]
+    },
+    {
+      "passed": true,
+      "phase": "reopen",
+      "frozen_exe": true,
+      "checks": [
+        "释放窗口操作权并保留真实组件连接",
+        "重开只显示迁入来源任务，未混入目标旧任务",
+        "平台原任务号与一次提交事实保留",
+        "迁入任务暂停，等待本机明确核验",
+        "本机浏览器配置保留，自动同步暂停",
+        "迁入来源门店参数，未混合旧目标参数",
+        "应用退出链路已实际完成整体迁入"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.51.6",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+        "build_id": "rc1",
+        "built_at": "2026-11-12T00:51:33.530265+08:00",
+        "source_archive_sha256": "59dca12c9bc56de19a7401e4b241b2785c2ed003318d5b4c95d4dc4de1774ab2",
+        "source_mode": "immutable git archive; no working-tree overlay",
+        "aoxiang": {
+          "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+          "files": 874,
+          "manifest_sha256": "421c9a8442bf4ed4c16c51ec15547b478ec316f3f2ded7f242208776cb41081f",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false
+        },
+        "jst_catalog": {
+          "manifest_sha256": "c06d3cc9b46dac39bf4aed4bb47679e489ac1a5638d1b525464c5463046351ae",
+          "files": 10,
+          "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+          "contains_user_state": false
+        }
+      },
+      "synthetic": true,
+      "live_platform": false
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "base": "385444cdf9a2cb1c9f2de62fd9c2e282da6e9d50",
+  "source_commit": "38390d2790699922ec79e34103d7dc55b7c38963",
+  "python_full": 1415,
+  "python_full_seconds": 511.311,
+  "final_special": 104,
+  "comparison_cases": 1164,
+  "ordinary_equivalence": 577,
+  "forecast_zero_differences": true,
+  "exe_mandatory_checks": 12,
+  "exe_preissue_phases": 2,
+  "node_suites_rerun": false,
+  "component_sources_unchanged": true,
+  "manual_images": 33,
+  "old_0504_preserved": true,
+  "full_regression_business_source": "7cf1a5853c73f7d905747ecb63bc55f119b5b95f",
+  "late_source_change": "only opt-in preissue smoke dialog adaptation",
+  "live_platform_tested": false,
+  "business_pc_tested": false,
+  "pushed": false,
+  "merged": false
+}

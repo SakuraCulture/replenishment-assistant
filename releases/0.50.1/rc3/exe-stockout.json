@@ -1,0 +1,881 @@
+{
+  "passed": true,
+  "app": "补货助手",
+  "version": "0.50.1",
+  "parameter_schema_version": 3,
+  "job_schema_version": 1,
+  "routing_version": "0.5.2",
+  "model_version": "0.3.4-rules",
+  "model_baseline": "v0.3.0-baseline",
+  "entry": "补货助手.exe",
+  "storage_format_version": 2,
+  "source_commit": "a62d61691da869b6c8677cd8e6662a4789e630e7",
+  "build_id": "rc3",
+  "built_at": "2026-11-10T21:34:09.379571+08:00",
+  "source_archive_sha256": "1e678e372a792c1088e74a6212b97e4979e1a19e8aa050d596eb8b8d74143f1d",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "a62d61691da869b6c8677cd8e6662a4789e630e7",
+    "files": 872,
+    "manifest_sha256": "5066670736fb8565a79f2dc3202ce71e219e36e2e3d1916897528dea7a2d56c2",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "656e3000f416dfcda9e4d0632406688bc43924cdd386480a138c4a1aadd90eca",
+    "files": 8,
+    "source_commit": "a62d61691da869b6c8677cd8e6662a4789e630e7",
+    "contains_user_state": false
+  },
+  "application_pid": 38056,
+  "frozen_exe": true,
+  "checks": [
+    "Unentered page has no page, worker or schedule timer",
+    "No analysis directory or database on ordinary startup",
+    "No heavy analysis imports before entry",
+    "First entry lazily creates independent database",
+    "Analysis adopts supply routes from the saved parameter-page database",
+    "Same worker projection publishes complete synthetic daily snapshot",
+    "Actual acquisition worker publishes all selected stores",
+    "Production analysis bridge forwards current Edge login and polling before native export",
+    "All selected stores use one native batch command in their selected order",
+    "Analysis persists the shared command association for every store",
+    "Default view excludes stopped and disabled items from both numerator and denominator",
+    "Actual page shows weighted numerator and denominator",
+    "Negative available stock counts as zero in both stores while the raw negative value is preserved",
+    "Negative stock contributes to the displayed weighted stockout rate",
+    "Store cuts display both exact code and saved snapshot name",
+    "Details display both store and product code and name",
+    "Product and store cross-cut includes both identities",
+    "Readable filter labels preserve exact code-only selection",
+    "View all updates numerator and denominator",
+    "View retired updates numerator and denominator",
+    "View assessment updates numerator and denominator",
+    "View both updates numerator and denominator",
+    "Source and mandatory cross-cut reconciles with total",
+    "Double-click cut applies exact filters",
+    "Actual worker exports independent detailed workbook",
+    "Workbook and actual page agree",
+    "Status filters apply to current cards and product details",
+    "Status-filtered export equals visible totals",
+    "Actual custom editor saves and applies six ordered dimensions",
+    "Saved combinations persist in analysis-only preferences",
+    "One cut row contains all chosen dimensions with store and product identities",
+    "Six-dimension cuts conserve the default status-filtered totals",
+    "Local product warehouse reads as local purchase",
+    "Multi-select store candidates show code and name",
+    "Selected-only filter view retains chosen warehouse",
+    "Actual filter dialog applies OR within stores and AND across warehouse",
+    "Cards, cuts and detail honor the same multi-dimension filter",
+    "Actual export button writes the selected combination workbook",
+    "门店六维组合 sheet reconciles with the filtered page",
+    "门店六维组合 sheet contains a real Excel filter and frozen header",
+    "门店总览 sheet reconciles with the filtered page",
+    "门店总览 sheet contains a real Excel filter and frozen header",
+    "Unselected cut combinations are not exported",
+    "Closing an in-flight filter and clearing selection leaves the page usable",
+    "Rerun button creates a fresh successful native collection with both stores",
+    "Explicit rerun gets new platform command and warehouse receipt without changing original task",
+    "Recalculate button publishes new revision with live RPC forbidden",
+    "Recalculation creates fresh snapshots and preserves original metric",
+    "Delete-log button removes task from list while preserving current analysis",
+    "Deleted-log result links remain available for future recalculation without restoring logs",
+    "Cancelling deletion confirmation preserves analysis results",
+    "Date-scoped data deletion refreshes empty state with no stale results",
+    "Analysis data deletion preserves input originals and platform command records",
+    "Leave cancels query and releases page 0",
+    "Leave cancels query and releases page 1",
+    "Leave cancels query and releases page 2",
+    "Spawned workers never create/import Qt application",
+    "All original business tables retain exact ordered signatures",
+    "Original route and mandatory profile bytes unchanged",
+    "Entering and collecting do not enable daily schedule",
+    "No worker or polling remains after leaving",
+    "Corrupt analysis database produces an analysis error",
+    "Original business remains available after analysis corruption"
+  ],
+  "workers": [
+    {
+      "pid": 50220,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 23660,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 28504,
+      "qt_loaded": false,
+      "operation": "adopt"
+    },
+    {
+      "pid": 28504,
+      "qt_loaded": false,
+      "operation": "adopt"
+    },
+    {
+      "pid": 37108,
+      "qt_loaded": false,
+      "operation": "ingest"
+    },
+    {
+      "pid": 37108,
+      "qt_loaded": false,
+      "operation": "ingest"
+    },
+    {
+      "pid": 10376,
+      "qt_loaded": false,
+      "operation": "collect"
+    },
+    {
+      "pid": 27724,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 44896,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 10376,
+      "qt_loaded": false,
+      "operation": "collect"
+    },
+    {
+      "pid": 36272,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 20492,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 28636,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 30052,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 16880,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 41684,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 47604,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 29416,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 36564,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 41492,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 9492,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 44376,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 37748,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 13696,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 49904,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 49904,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 28424,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 29288,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 29288,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 57828,
+      "qt_loaded": false,
+      "operation": "save_views"
+    },
+    {
+      "pid": 14416,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 29408,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 29408,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 5560,
+      "qt_loaded": false,
+      "operation": "filter_values"
+    },
+    {
+      "pid": 56072,
+      "qt_loaded": false,
+      "operation": "filter_values"
+    },
+    {
+      "pid": 29340,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 54180,
+      "qt_loaded": false,
+      "operation": "export"
+    },
+    {
+      "pid": 53452,
+      "qt_loaded": false,
+      "operation": "filter_values"
+    },
+    {
+      "pid": 50432,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 55876,
+      "qt_loaded": false,
+      "operation": "run"
+    },
+    {
+      "pid": 47088,
+      "qt_loaded": false,
+      "operation": "run_action_preview"
+    },
+    {
+      "pid": 8848,
+      "qt_loaded": false,
+      "operation": "rerun"
+    },
+    {
+      "pid": 37612,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 36588,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 56564,
+      "qt_loaded": false,
+      "operation": "run"
+    },
+    {
+      "pid": 50972,
+      "qt_loaded": false,
+      "operation": "run_action_preview"
+    },
+    {
+      "pid": 17568,
+      "qt_loaded": false,
+      "operation": "recalculate"
+    },
+    {
+      "pid": 27868,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 34492,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 39320,
+      "qt_loaded": false,
+      "operation": "run"
+    },
+    {
+      "pid": 37324,
+      "qt_loaded": false,
+      "operation": "run_action_preview"
+    },
+    {
+      "pid": 4576,
+      "qt_loaded": false,
+      "operation": "delete_run_log"
+    },
+    {
+      "pid": 47960,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 51604,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 12344,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 9248,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 42668,
+      "qt_loaded": false,
+      "operation": "cleanup_preview"
+    },
+    {
+      "pid": 37116,
+      "qt_loaded": false,
+      "operation": "cleanup_preview"
+    },
+    {
+      "pid": 22160,
+      "qt_loaded": false,
+      "operation": "cleanup"
+    },
+    {
+      "pid": 55524,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 56484,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 40760,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 42736,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 20996,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 54084,
+      "qt_loaded": false,
+      "operation": "query"
+    },
+    {
+      "pid": 57048,
+      "qt_loaded": false,
+      "operation": "open"
+    },
+    {
+      "pid": 45776,
+      "qt_loaded": false,
+      "operation": "query"
+    }
+  ],
+  "pipeline_scopes": [
+    {
+      "warehouse_codes": [
+        "S",
+        "T"
+      ]
+    },
+    {
+      "warehouse_codes": [
+        "S",
+        "T"
+      ]
+    }
+  ],
+  "business_signatures": {
+    "jobs": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_orders": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_revisions": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normal_work_revisions": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "presets": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sqlite_sequence": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stores": "c674421c1734bd3cdbf1589b2ccacf5d21102ac827ea251a34c01670eb8ccb60"
+  },
+  "heartbeat_ticks": 503,
+  "max_heartbeat_gap_seconds": 0.125,
+  "limits": "Marked synthetic originals; real Qt, spawned worker and Excel. No live platform requests. Not a low-spec business-PC measurement.",
+  "process_exit": 0,
+  "seconds": 23.39100000000326,
+  "tree_peak_rss": 313958400,
+  "children_peak_rss": 105197568,
+  "temporary_peak_bytes": 15418,
+  "processes": {
+    "38056": {
+      "peak_rss": 221376512,
+      "read_bytes": 9604743,
+      "write_bytes": 1954990,
+      "cpu_seconds": 5.546875
+    },
+    "52892": {
+      "peak_rss": 34328576,
+      "read_bytes": 4596921,
+      "write_bytes": 366,
+      "cpu_seconds": 0.390625
+    },
+    "56712": {
+      "peak_rss": 35135488,
+      "read_bytes": 4929651,
+      "write_bytes": 13502,
+      "cpu_seconds": 0.390625
+    },
+    "50220": {
+      "peak_rss": 24137728,
+      "read_bytes": 2245812,
+      "write_bytes": 379880,
+      "cpu_seconds": 0.09375
+    },
+    "23660": {
+      "peak_rss": 24137728,
+      "read_bytes": 2202476,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "28504": {
+      "peak_rss": 32784384,
+      "read_bytes": 4541923,
+      "write_bytes": 34403,
+      "cpu_seconds": 0.296875
+    },
+    "37108": {
+      "peak_rss": 35373056,
+      "read_bytes": 5219942,
+      "write_bytes": 367597,
+      "cpu_seconds": 0.34375
+    },
+    "10376": {
+      "peak_rss": 35217408,
+      "read_bytes": 5279602,
+      "write_bytes": 191054,
+      "cpu_seconds": 0.34375
+    },
+    "27724": {
+      "peak_rss": 24158208,
+      "read_bytes": 2230227,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "44896": {
+      "peak_rss": 20004864,
+      "read_bytes": 1978918,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "36272": {
+      "peak_rss": 22679552,
+      "read_bytes": 2068865,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "20492": {
+      "peak_rss": 24014848,
+      "read_bytes": 2381125,
+      "write_bytes": 5028,
+      "cpu_seconds": 0.09375
+    },
+    "28636": {
+      "peak_rss": 23924736,
+      "read_bytes": 2249625,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "30052": {
+      "peak_rss": 18038784,
+      "read_bytes": 1651241,
+      "write_bytes": 0,
+      "cpu_seconds": 0.03125
+    },
+    "16880": {
+      "peak_rss": 21811200,
+      "read_bytes": 2044463,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "41684": {
+      "peak_rss": 24072192,
+      "read_bytes": 2143018,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "47604": {
+      "peak_rss": 24489984,
+      "read_bytes": 2245552,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "29416": {
+      "peak_rss": 19689472,
+      "read_bytes": 1987119,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "36564": {
+      "peak_rss": 18735104,
+      "read_bytes": 1847859,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "41492": {
+      "peak_rss": 19099648,
+      "read_bytes": 2372945,
+      "write_bytes": 5388,
+      "cpu_seconds": 0.09375
+    },
+    "9492": {
+      "peak_rss": 23220224,
+      "read_bytes": 2372941,
+      "write_bytes": 5002,
+      "cpu_seconds": 0.09375
+    },
+    "44376": {
+      "peak_rss": 18608128,
+      "read_bytes": 1684028,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "37748": {
+      "peak_rss": 18812928,
+      "read_bytes": 1692258,
+      "write_bytes": 0,
+      "cpu_seconds": 0.046875
+    },
+    "13696": {
+      "peak_rss": 22097920,
+      "read_bytes": 2011703,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "49904": {
+      "peak_rss": 34586624,
+      "read_bytes": 4807739,
+      "write_bytes": 52342,
+      "cpu_seconds": 0.3125
+    },
+    "28424": {
+      "peak_rss": 22388736,
+      "read_bytes": 2077238,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "29288": {
+      "peak_rss": 34549760,
+      "read_bytes": 4847465,
+      "write_bytes": 58600,
+      "cpu_seconds": 0.296875
+    },
+    "57828": {
+      "peak_rss": 19263488,
+      "read_bytes": 1913657,
+      "write_bytes": 0,
+      "cpu_seconds": 0.046875
+    },
+    "14416": {
+      "peak_rss": 20090880,
+      "read_bytes": 1978974,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "29408": {
+      "peak_rss": 23236608,
+      "read_bytes": 2077032,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "5560": {
+      "peak_rss": 18792448,
+      "read_bytes": 1659405,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "56072": {
+      "peak_rss": 18546688,
+      "read_bytes": 1684011,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "29340": {
+      "peak_rss": 23805952,
+      "read_bytes": 2200552,
+      "write_bytes": 0,
+      "cpu_seconds": 0.125
+    },
+    "54180": {
+      "peak_rss": 33972224,
+      "read_bytes": 4723531,
+      "write_bytes": 33739,
+      "cpu_seconds": 0.296875
+    },
+    "53452": {
+      "peak_rss": 17612800,
+      "read_bytes": 1569339,
+      "write_bytes": 0,
+      "cpu_seconds": 0.046875
+    },
+    "50432": {
+      "peak_rss": 22069248,
+      "read_bytes": 2003552,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "55876": {
+      "peak_rss": 23232512,
+      "read_bytes": 2171525,
+      "write_bytes": 1106,
+      "cpu_seconds": 0.09375
+    },
+    "47088": {
+      "peak_rss": 24240128,
+      "read_bytes": 2188058,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "8848": {
+      "peak_rss": 35794944,
+      "read_bytes": 5890334,
+      "write_bytes": 288534,
+      "cpu_seconds": 0.34375
+    },
+    "37612": {
+      "peak_rss": 23126016,
+      "read_bytes": 2254252,
+      "write_bytes": 2330,
+      "cpu_seconds": 0.109375
+    },
+    "36588": {
+      "peak_rss": 22351872,
+      "read_bytes": 2052706,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "56564": {
+      "peak_rss": 17567744,
+      "read_bytes": 1536392,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "50972": {
+      "peak_rss": 22634496,
+      "read_bytes": 2270182,
+      "write_bytes": 2441,
+      "cpu_seconds": 0.09375
+    },
+    "17568": {
+      "peak_rss": 35487744,
+      "read_bytes": 5348571,
+      "write_bytes": 213442,
+      "cpu_seconds": 0.328125
+    },
+    "27868": {
+      "peak_rss": 24023040,
+      "read_bytes": 2150900,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "34492": {
+      "peak_rss": 23334912,
+      "read_bytes": 2381174,
+      "write_bytes": 6438,
+      "cpu_seconds": 0.0625
+    },
+    "39320": {
+      "peak_rss": 19492864,
+      "read_bytes": 1945992,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "37324": {
+      "peak_rss": 24195072,
+      "read_bytes": 2216752,
+      "write_bytes": 674,
+      "cpu_seconds": 0.09375
+    },
+    "4576": {
+      "peak_rss": 23662592,
+      "read_bytes": 2283026,
+      "write_bytes": 17227,
+      "cpu_seconds": 0.09375
+    },
+    "47960": {
+      "peak_rss": 18698240,
+      "read_bytes": 1692030,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "51604": {
+      "peak_rss": 19210240,
+      "read_bytes": 1946210,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "12344": {
+      "peak_rss": 24555520,
+      "read_bytes": 2266524,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "9248": {
+      "peak_rss": 24166400,
+      "read_bytes": 2340197,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "42668": {
+      "peak_rss": 18862080,
+      "read_bytes": 1749401,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "37116": {
+      "peak_rss": 24129536,
+      "read_bytes": 2151024,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "22160": {
+      "peak_rss": 22441984,
+      "read_bytes": 2069143,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "55524": {
+      "peak_rss": 19156992,
+      "read_bytes": 1921409,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "56484": {
+      "peak_rss": 24305664,
+      "read_bytes": 2225361,
+      "write_bytes": 588,
+      "cpu_seconds": 0.09375
+    },
+    "17352": {
+      "peak_rss": 20168704,
+      "read_bytes": 1987166,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "40760": {
+      "peak_rss": 22036480,
+      "read_bytes": 1986945,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "42736": {
+      "peak_rss": 22278144,
+      "read_bytes": 2052706,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "9464": {
+      "peak_rss": 18542592,
+      "read_bytes": 1659489,
+      "write_bytes": 0,
+      "cpu_seconds": 0.09375
+    },
+    "20996": {
+      "peak_rss": 19369984,
+      "read_bytes": 1913212,
+      "write_bytes": 0,
+      "cpu_seconds": 0.078125
+    },
+    "54084": {
+      "peak_rss": 24477696,
+      "read_bytes": 2188252,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "57716": {
+      "peak_rss": 18599936,
+      "read_bytes": 1692258,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "57048": {
+      "peak_rss": 23728128,
+      "read_bytes": 2188464,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "45776": {
+      "peak_rss": 22274048,
+      "read_bytes": 2052706,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    },
+    "59384": {
+      "peak_rss": 18526208,
+      "read_bytes": 1651073,
+      "write_bytes": 0,
+      "cpu_seconds": 0.0625
+    }
+  },
+  "application_peak_rss": 221376512,
+  "analysis_worker_peak_rss": 35794944,
+  "exe_sha256": "ca463245e5507e2a8e9395529360570616daf8aea64c8aff10a6dadb03b775e2"
+}

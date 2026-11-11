@@ -24,7 +24,7 @@ from aoxiang_workflow_state import can_end_local,local_preparation,summary as ta
 from aoxiang_purchase_messages import waiting, item_message, voided
 STATES = {'QUEUED': '排队', 'RUNNING': '正在处理', 'YIELDED': '等待人工操作结束', 'PAUSED': '已停止，可继续原任务',
           'FAILED': '批次未完成', 'READY': '预览完成，尚未上传', 'COMPLETED': '完成', 'COMPLETED_WITH_ERRORS': '已处理，有待核项', 'CANCELLED': '剩余任务已取消',
-          'PENDING': '未处理', 'PREPARED': '预览就绪，未上传', 'BOUND': '已关联采购单', 'OBSERVED': '已观察，尚未完成', 'SYNCED': '正式实收已保存', 'VOIDED':'平台已作废，常规同步已停止', 'REVIEW': '待核，不自动重试', 'SKIPPED': '周期已停止，本次跳过'}
+          'PENDING': '未处理', 'ACCEPTED':'平台处理中，未重传', 'PREPARED': '预览就绪，未上传', 'BOUND': '已关联采购单', 'OBSERVED': '已观察，尚未完成', 'SYNCED': '正式实收已保存', 'VOIDED':'平台已作废，常规同步已停止', 'REVIEW': '待核，可继续核对或重建', 'SKIPPED': '本项已结束／跳过'}
 
 
 def database_busy(exc):
@@ -39,17 +39,18 @@ class QueueWorker(QThread):
 
     def run(self):
         m = self.manager
-        client = None
+        client = None;runner=None
         try:
             if self.token.is_set():
                 raise Cancelled('任务尚未开始，已请求停止')
             client = m.session.lease()
             client.start()
-            Runner(m.store, client, component_root(), m.host.work_repository.path, cancel=self.token, progress=self.progress.emit).run(self.job['id'])
+            runner=Runner(m.store, client, component_root(), m.host.work_repository.path, cancel=self.token, progress=self.progress.emit)
+            runner.run(self.job['id'])
         except Exception as exc:
             state = 'YIELDED' if isinstance(exc, Cancelled) and m.gate.yielding and not m.explicit_stop else 'PAUSED'
             try:
-                m.store.update(self.job['id'], state=state, message=str(exc))
+                m.store.update(self.job['id'], execution_token=getattr(runner,'execution_token',None), state=state, message=str(exc))
             except Exception as failed:
                 self.progress.emit('队列状态保存失败，请保留原记录：' + str(failed))
         finally:
@@ -246,7 +247,7 @@ class QueueDialog(QDialog):
         self.setWindowTitle('翱象批次作业 · 按门店和仓查看')
         self.resize(1160, 720)
         v = QVBoxLayout(self)
-        v.addWidget(label('采购先预览再确认上传；收货按原采购单查询。各订单按选择顺序串行处理。', 'section'))
+        v.addWidget(label('采购先预览再确认上传；上传依次进行，平台处理可重叠；收货按原采购单查询。', 'section'))
         self.jobs = QComboBox()
         self.jobs.currentIndexChanged.connect(self.selected)
         v.addWidget(self.jobs)
@@ -279,7 +280,10 @@ class QueueDialog(QDialog):
         v.addLayout(row)
         row=QHBoxLayout();row.addWidget(self.selected_btn)
         self.delete_local_btn=button('删除勾选本地任务',self.delete_local);row.addWidget(self.delete_local_btn)
-        row.addWidget(label('勾选后只处理所选项；未勾选项保留。'));row.addStretch();v.addLayout(row)
+        self.rebuild_btn=button('结束所选任务并重建预览',self.rebuild_selected);row.addWidget(self.rebuild_btn)
+        row.addWidget(label('本批平台同时处理上限'))
+        self.inflight=QSpinBox();self.inflight.setRange(1,4);self.inflight.setValue(2);self.inflight.setToolTip('上传依次进行；平台处理等待可重叠。仅影响下一次确认上传的批次。');row.addWidget(self.inflight)
+        row.addStretch();v.addLayout(row)
         self.bar = QProgressBar();v.addWidget(self.bar)
         self.note = label('');self.note.setWordWrap(True);v.addWidget(self.note)
         self.timer = QTimer(self);self.timer.setInterval(1000);self.timer.timeout.connect(self.refresh);self.timer.start()
@@ -325,6 +329,7 @@ class QueueDialog(QDialog):
             self.cancel_btn.setEnabled(bool(job and job['state'] in ('QUEUED', 'PAUSED', 'YIELDED', 'FAILED')) and not active)
             self.upload_btn.setEnabled(bool(job and job['kind'] == 'prepare' and not active and (job['state'] in ('READY', 'COMPLETED_WITH_ERRORS', 'CANCELLED') or (job['state']=='PAUSED' and 'dispatch_keys' in job and not any(i['key'] in job['dispatch_keys'] and i['state'] not in DONE_ITEM for i in job['items']))) and any(i['state']=='PREPARED' for i in job['items'])))
             self.end_local_btn.setEnabled(bool(job and not active and any(can_end_local(job,i) for i in job['items'])))
+            self.rebuild_btn.setEnabled(bool(job and job['kind'] in ('prepare','upload') and job['state']!='RUNNING' and not self.manager.worker))
             if not job:
                 self.current=None;self.preview_btn.setEnabled(False);self.reason_btn.setEnabled(False)
                 self.summary.setText('尚无批次。付款核对页可勾选订单后批量生成采购预览。')
@@ -348,11 +353,12 @@ class QueueDialog(QDialog):
                 h = i.get('head') or i.get('basis') or {}
                 check = QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
                 check.setCheckState(Qt.CheckState.Checked if i['key'] in checked else Qt.CheckState.Unchecked)
-                if i['state'] not in ('PREPARED','PENDING','FAILED','REVIEW') and not local_preparation(i,job['kind']): check.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                if i['state'] not in ('PREPARED','PENDING','FAILED','REVIEW','BOUND','ACCEPTED','VOIDED') and not i.get('rebuild_to') and not local_preparation(i,job['kind']): check.setFlags(Qt.ItemFlag.ItemIsEnabled)
                 self.table.setItem(n, 0, check)
                 summary = i.get('summary') or {}
                 state_text='本地准备未通过，未生成采购预览' if local_preparation(i,job['kind']) and i['state'] in ('FAILED','REVIEW') else '本地准备已结束' if i.get('ended_locally') else STATES.get(i['state'], i['state'])
-                if waiting(i,job['kind']):state_text='已受理，等待核对'
+                if i.get('rebuild_to'):state_text='已结束并转入新预览'
+                elif waiting(i,job['kind']):state_text='已受理，等待核对'
                 elif job['kind']=='upload' and i['state'] in ('FAILED','REVIEW'):state_text='采购结果需核对'
                 elif voided(i):state_text='平台已作废；常规同步已停止'
                 elif i.get('source_deleted'):state_text='原订单已删，平台记录保留'
@@ -455,9 +461,28 @@ class QueueDialog(QDialog):
         if QMessageBox.question(self, '确认批量上传采购', text, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:return
         try:
             self.manager.ensure_owner()
-            job = self.manager.store.upload(prepared_id, positions, expected_sequence)
+            job = self.manager.store.upload(prepared_id, positions, expected_sequence,max_inflight=self.inflight.value())
             self.id = job['id'];self.current = None;self.manager.tick();self.refresh()
         except Exception as exc:QMessageBox.warning(self, '未开始上传', str(exc))
+
+    def rebuild_selected(self):
+        if not self.current:return
+        selected=[i for n,i in enumerate(self.current['items']) if self.table.item(n,0).checkState()==Qt.CheckState.Checked]
+        if not selected:
+            QMessageBox.information(self,'选择重建范围','请先勾选需要结束并重建的采购任务。');return
+        names='\n'.join((i.get('head') or i.get('basis') or {}).get('name','')+' · '+i['key']+' · '+STATES.get(i['state'],i['state'])+
+            '\n原任务号：'+str((i.get('purchase_observation') or {}).get('taskId') or '未取得')+'；原采购单号：'+str((i.get('result') or {}).get('binding',{}).get('orderId') or '未关联') for i in selected)
+        text='将结束以下本地旧任务，按当前有效签发和付款生成新采购预览：\n'+names+'\n\n旧上传结果可能未核清，重建后再次确认上传可能在平台产生重复单。原平台单不会撤销，请业务核对并作废多余单。旧记录及晚到回执保留；未勾选项不变。本次只生成预览，不直接上传。'
+        if QMessageBox.question(self,'确认结束并重建采购预览',text,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return
+        try:
+            from business_ui import run
+            from aoxiang_rebuild import current_heads
+            batch_id,sequence,keys=self.current['id'],self.current['sequence'],[i['key'] for i in selected]
+            with self.manager.maintenance():
+                heads=run(self,current_heads,(self.manager.host.work_repository.path,selected),'核对仍有效的原仓单')
+                job=self.manager.store.rebuild_selected(batch_id,keys,sequence,heads)
+            self.id=job['id'];self.current=None;self.manager.retry_queue();self.refresh()
+        except Exception as exc:QMessageBox.warning(self,'未重建',str(exc))
 
     def retry(self,positions):
         try:

@@ -1,0 +1,23 @@
+{
+  "source_commit": "4abebb2305529133c045a309e94527688a6c6154",
+  "build_id": "rc1",
+  "version": "0.51.0",
+  "built_at": "2026-11-11T03:54:40.115139+08:00",
+  "source_archive_sha256": "64f2043ae1d70317f6b14ca0988b7b24e79232efc82b699e50806ec876c7039a",
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "aoxiang": {
+    "source_commit": "4abebb2305529133c045a309e94527688a6c6154",
+    "files": 873,
+    "manifest_sha256": "5629d943bfebdf8fb409fd7eab638ee490beea15b25eb81a084656dbb5110509",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "14f9878f83d1bf9036d4ed7cbe6beb94382fa8f9c0d6900f8bf3773cc9638e62",
+    "files": 9,
+    "source_commit": "4abebb2305529133c045a309e94527688a6c6154",
+    "contains_user_state": false
+  }
+}

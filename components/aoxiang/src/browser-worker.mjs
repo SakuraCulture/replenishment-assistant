@@ -42,7 +42,8 @@ process.on('message',async message=>{
       if(['queryPurchase','preparePurchase','submitPurchase','purchaseTask','downloadPurchase','downloadPurchaseTemplate'].includes(method))await sourceUI('purchase');
       else if(['preparePurchaseCreate','uploadPurchaseOnce','purchaseImportTask','queryCreateOrders'].includes(method))await sourceUI('purchase_create');
       else if(['querySingle','warehouseOptions','prepareExport','submitOnce','findTask'].includes(method))await sourceUI('D13');
-      if(method==='recheckLogin'){ui=await modules.open(modules.source||'D13',params.expectedIdentity,{force:true});result={facts:bridge.facts,identity:modules.identity};}
+      if(method==='observeLogin'){ui=await modules.open('D13',null,{force:true,observeCurrent:true});result={facts:bridge.facts,identity:modules.identity};}
+      else if(method==='recheckLogin'){ui=await modules.open(modules.source||'D13',params.expectedIdentity,{force:true});result={facts:bridge.facts,identity:modules.identity};}
       else if(method==='verifyIdentity'){ui=await modules.open(modules.source||'D13',params.expected);result=await ui.verifyIdentity(params.expected);}
       else if(method==='querySingle')result=await ui.querySingle(params.code??null,params.name);
       else if(method==='warehouseOptions')result=await ui.warehouseOptions(params.term);
@@ -63,11 +64,11 @@ process.on('message',async message=>{
         const t=await ui.findTask(params.taskId);result={taskId:String(t.taskId),taskStatus:t.taskStatus,code:t.code||t.taskCode,successCount:t.successCount,failCount:t.failCount,fileUrl:t.fileUrl,startTime:t.startTime,doneTime:t.doneTime};
       }else throw Object.assign(new Error('未允许的浏览器操作'),{code:'UNKNOWN_WORKER_METHOD'});
     }
-    if(['connect','recheckLogin','verifyIdentity'].includes(method))loginResult();
+    if(['connect','observeLogin','recheckLogin','verifyIdentity'].includes(method))loginResult();
     send({id,result});
   }catch(e){
-    if(['connect','recheckLogin','verifyIdentity'].includes(method)||['WAIT_LOGIN','WRONG_IDENTITY','IDENTITY_CHECK_FAILED','IDENTITY_RESPONSE_TIMEOUT'].includes(e.code))loginResult(e);
-    if(e.code==='WAIT_LOGIN'&&['connect','recheckLogin'].includes(method))await bridge.page?.bringToFront().catch(()=>{});
+    if(['connect','observeLogin','recheckLogin','verifyIdentity'].includes(method)||['WAIT_LOGIN','WRONG_IDENTITY','IDENTITY_CHECK_FAILED','IDENTITY_RESPONSE_TIMEOUT'].includes(e.code))loginResult(e);
+    if(e.code==='WAIT_LOGIN'&&['connect','observeLogin','recheckLogin'].includes(method))await bridge.page?.bringToFront().catch(()=>{});
     send({event:'connection',state:browserConnectionState(bridge)});send({id,error:redact({code:e.code||'BROWSER_OPERATION_FAILED',message:e.message,details:e.details})});
   }
   finally{busy=false;}

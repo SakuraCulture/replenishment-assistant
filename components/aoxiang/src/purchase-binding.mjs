@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {portablePath} from './portable-assets.mjs';
 import path from 'node:path';
 import {canonical,sha256,fail,now,uid,businessDate,sameIdentity} from './common.mjs';
 import {PurchaseCoordinator} from './purchase-coordinator.mjs';
@@ -9,7 +10,7 @@ import {errorInfo} from './machine-runtime.mjs';
 import {runKnownPurchase} from './purchase-known-scope.mjs';
 
 async function checkedFile(manifest){
-  const bytes=await fs.readFile(manifest.file);
+  const bytes=await fs.readFile(await portablePath(manifest.file));
   if(sha256(bytes)!==manifest.sha256)fail('BINDING_PROOF_CHANGED','关联核对文件已变化，请重新核对');
   const proof=JSON.parse(bytes);
   for(const f of proof.evidence.files)if(await fileHash(f.file)!==f.sha256)fail('BINDING_PROOF_CHANGED','关联主子单原件已变化，请重新核对');
@@ -82,6 +83,7 @@ export class MachinePurchaseBinding{
     this.job={id,stage:'核对指定采购单，未上传或修改平台单据'};this.control=new AbortController();
     this.pending=Promise.resolve().then(()=>this.service.observe(id,proposal,{signal:this.control.signal})).catch(e=>{
       const latest=this.creates.get(id);
+      if(latest.state==='RETIRED')return;
       const superseded=!bindingEligible(latest);
       this.creates.putBindingProposal(id,latest.sequence,{...latest.bindingProposal,state:superseded?'SUPERSEDED':this.control.signal.aborted?'PAUSED':'FAILED',error:superseded?{code:'BINDING_SUPERSEDED',message:'原采购任务状态已变化，已保留原回执或取消记录；请刷新本单记录继续原任务'}:errorInfo(e)},'BINDING_CHECK_STOPPED');
     }).catch(this.onFatal).finally(()=>{this.pending=null;});

@@ -5,12 +5,14 @@ import {JobStore} from './job-store.mjs';
 import {AccountSessions,accountId,validateIdentity} from './accounts.mjs';
 import * as native from './product-export.mjs';
 import {CatalogError,check,now,sha,canonical,safeError,WAREHOUSES} from './common.mjs';
+import {disconnectBounded} from './service-lifetime.mjs';
+import {version as bindingVersion,retired,requireLive,resetPlan,resetBindings} from './binding-recovery.mjs';
 
 const businessAccount=a=>({id:a.id,warehouse:a.warehouse,expectedCompany:a.expectedCompany,expectedCoid:a.expectedCoid,expectedUid:a.expectedUid,mappingVerified:a.mappingVerified,bindingVersion:a.bindingVersion,binding:a.binding});
-const unresolved=i=>(i.native?.submissions>0||i.native?.nativeTaskRef)&&!['FAILED_CONFIRMED','DOWNLOADED'].includes(i.native.stage)&&!i.adoption;
+const unresolved=i=>!retired(i)&&(i.native?.submissions>0||i.native?.nativeTaskRef)&&!['FAILED_CONFIRMED','DOWNLOADED'].includes(i.native.stage)&&!i.adoption;
 
 export class CatalogService {
-  static async open(options){return new CatalogService({...options,store:await JobStore.open(options.stateRoot)});}
+  static async open(options){return new CatalogService({...options,store:await JobStore.open(options.stateRoot,{parentPid:options.parentPid})});}
   constructor({store,stateRoot,bridgeRoot,lockRoot,forbiddenRoots,validator,driver}){
     Object.assign(this,{store,stateRoot,validator});this.active=null;this.shuttingDown=false;this.sequence=0;this.controlTail=Promise.resolve();
     this.sessions=driver?null:new AccountSessions({stateRoot,bridgeRoot,lockRoot,forbiddenRoots,phase:(phase,message)=>{if(this.active)this.active.phase={phase,message,at:now()};}});
@@ -29,14 +31,16 @@ export class CatalogService {
   async patch(batchId,itemId,change){
     await this.store.write(data=>{
       const b=data.batches[batchId],i=b?.items.find(i=>i.id===itemId);if(!i)throw Error('原任务不存在');
+      requireLive(i);
       Object.assign(i,change,{updatedAt:now()});b.updatedAt=now();b.sequence=(b.sequence||0)+1;
     });
   }
-  current(batch,item){return this.store.batch(batch).items.find(i=>i.id===item);}
+  current(batch,item){return requireLive(this.store.batch(batch).items.find(i=>i.id===item));}
   status(batchId){
     const data=this.store.read();return {protocol:'jst.catalog.v1',running:!!this.active,
       active:this.active?{id:this.active.id,kind:this.active.kind,stopRequested:this.active.controller.signal.aborted,phase:this.active.phase}:null,
       accounts:Object.values(data.accounts||{}),operations:data.operations||{},
+      binding_epochs:data.bindingEpochs||{},rebind_required:data.rebindRequired||{},
       connections:this.sessions?.status(Object.values(data.accounts||{}))||[],
       batches:batchId?[this.store.batch(batchId)]:Object.values(data.batches).slice(-50).reverse()};
   }
@@ -48,6 +52,10 @@ export class CatalogService {
     const action=c.action;
     if(action==='capabilities')return {protocol:'jst.catalog.v1',component_version:'0.31.0',dedicated_browser:true,password_login:false};
     if(action==='sync.status')return this.status(c.batch_id);
+    if(action==='sync.migration_snapshot'){
+      if(this.active)throw new CatalogError('BUSY','请先安全结束聚水潭采集或核验，再导出迁移包');
+      await this.store.tail.catch(()=>{});return this.store.read();
+    }
     if(action==='session.health')return {connections:this.sessions?.status(this.store.accounts())||[]};
     if(action==='session.release'){
       this.active?.controller.abort();
@@ -75,8 +83,13 @@ export class CatalogService {
       await this.patch(c.batch_id,c.item_id,{adoption:c.receipt,stage:'APPLIED',error:null,adoption_error:null});return {accepted:true};
     }
     if(this.shuttingDown)throw new CatalogError('CLOSING','采集服务正在安全关闭');
+    if(action==='accounts.reset_preview'){
+      if(this.active)throw new CatalogError('BUSY','请先安全停止当前采集或核验');
+      const {basis,...plan}=resetPlan(this.store.read(),c.warehouses);return plan;
+    }
+    if(action==='accounts.reset_bindings')return resetBindings(this,c);
     if(action==='accounts.bind'||action==='accounts.set_enabled'){
-      if(this.active)throw new CatalogError('BUSY','请先结束当前采集或核验');
+      if(this.active&&(action!=='accounts.set_enabled'||this.active.kind!=='batch'))throw new CatalogError('BUSY','请先结束当前采集或核验');
       return this.configure(c);
     }
     if(action==='sync.start')return this.start(c);
@@ -90,8 +103,10 @@ export class CatalogService {
     }
     if(['accounts.ensure','accounts.auto','accounts.probe','accounts.verify','accounts.open_login'].includes(action))return this.accountOperation(c);
     if(action==='sync.resume'||action==='sync.retry_unsubmitted'){
-      const b=this.store.batch(c.batch_id),ids=c.item_ids||b.items.filter(i=>!i.adoption).map(i=>i.id);
+      const b=this.store.batch(c.batch_id),ids=c.item_ids||b.items.filter(i=>!i.adoption&&!retired(i)).map(i=>i.id);
+      if(b.items.some(i=>ids.includes(i.id)&&i.migration?.needs_binding))throw new CatalogError('MIGRATION_BINDING_REQUIRED','迁入任务已暂停；请先在本机核验相同仓账号并确认保存，再继续原任务，不会重发已受理导出');
       if(!ids.length||new Set(ids).size!==ids.length||ids.some(id=>!b.items.some(i=>i.id===id)))throw Error('恢复项无效');
+      ids.forEach(id=>requireLive(b.items.find(i=>i.id===id)));
       if(action==='sync.retry_unsubmitted'&&ids.some(id=>b.items.find(i=>i.id===id).native?.submissions>0))throw Error('该项已经提交，只能恢复原任务');
       this.launch(b.id,'batch',signal=>this.run(b.id,ids,signal));return {batch_id:b.id};
     }
@@ -99,38 +114,59 @@ export class CatalogService {
   }
   async configure(c,verified=null){
     const data=this.store.read(),old=data.accounts?.[c.warehouse];if(!WAREHOUSES.includes(c.warehouse))throw Error('未知仓库');
-    if((old?.bindingVersion||0)!==c.expected_version)throw new CatalogError('CONFIG_CONFLICT','账号设置已由其他窗口更新，请重新核对');
-    if(Object.values(data.batches).some(b=>b.items.some(i=>i.account.warehouse===c.warehouse&&(unresolved(i)||!i.adoption&&i.receipt))))
-      throw new CatalogError('PENDING_TASK','该仓有原任务或待采用文件，请先处理原记录再改账号设置');
-    let next;
+    const epoch=bindingVersion(data,c.warehouse);
+    if(epoch!==c.expected_version)throw new CatalogError('CONFIG_CONFLICT','账号设置已由其他窗口更新，请重新核对');
     if(c.action==='accounts.set_enabled'){
-      if(!old||typeof c.enabled!=='boolean')throw Error('账号或启用状态无效');next={...old,enabled:c.enabled};
-    }else{
+      if(!old||typeof c.enabled!=='boolean')throw Error('账号或启用状态无效');
+      if(c.expected_enabled_version!==undefined&&c.expected_enabled_version!==(old.enabledVersion||0))
+        throw new CatalogError('CONFIG_CONFLICT','本仓启停状态已由其他窗口更新，请刷新后重试');
+      if(old.enabled===c.enabled)return old;
+      // This switch controls future work, not the identity of frozen tasks.
+      // Keep bindingVersion and pending evidence intact; never abort a commit.
+      const next={...old,enabled:c.enabled,enabledVersion:(old.enabledVersion||0)+1};
+      await this.store.write(d=>{d.accounts[c.warehouse]=next;});return next;
+    }
+    let next;
+    {
       const op=verified||data.operations?.[c.probe_id];
+      if(op?.retirement||(op?.bindingEpoch!==undefined&&op.bindingEpoch!==epoch))throw new CatalogError('PROBE_STALE','原核验已随绑定纠错失效，请重新核验浏览器');
       if(op?.state!=='SUCCEEDED'||!['accounts.probe','accounts.auto','accounts.ensure'].includes(op.action)||op.warehouse!==c.warehouse||c.mapping_verified!==true)throw Error('请完成本仓账号核验并确认库存范围');
       const r=op.result;next={id:accountId(c.warehouse),warehouse:c.warehouse,expectedCompany:r.scope.company,
         expectedCoid:r.scope.coid,expectedUid:r.scope.uid,binding:r.binding,mappingVerified:true,enabled:true,
         mappingEvidence:op.action==='accounts.ensure'?'应用启动自动准备'+c.warehouse+'专用浏览器，登录身份核验后保存':
           op.action==='accounts.auto'?'用户选择'+c.warehouse+'专用浏览器自动配置，登录账号核验后保存':'业务在本机确认该账号资料对应'+c.warehouse,verifiedAt:op.finishedAt};
+      const imported=Object.values(data.batches).flatMap(b=>b.items).filter(i=>!retired(i)&&!i.adoption&&i.account.warehouse===c.warehouse&&i.migration?.needs_binding);
+      if(imported.some(i=>i.account.expectedCoid!==next.expectedCoid||i.account.expectedUid!==next.expectedUid))throw new CatalogError('MIGRATION_ACCOUNT_MISMATCH','本机核验账号与迁入原采集账号不同；原任务和文件保留，请使用原仓账号核验，不会用新账号重发原任务');
+      if(!imported.length&&old&&old.mappingVerified&&old.expectedCompany===next.expectedCompany&&old.expectedCoid===next.expectedCoid&&old.expectedUid===next.expectedUid&&canonical(old.binding)===canonical(next.binding))return old;
+      if(Object.values(data.batches).some(b=>b.items.some(i=>!retired(i)&&!i.migration?.needs_binding&&i.account.warehouse===c.warehouse&&(unresolved(i)||!i.adoption&&i.receipt))))
+        throw new CatalogError('PENDING_TASK','本仓旧采集占用当前绑定。请先用“纠正本仓绑定”归档旧采集；两仓互换时用“纠正两仓错绑”');
       for(const a of Object.values(data.accounts||{}))if(a.warehouse!==c.warehouse&&(
           a.expectedCoid===next.expectedCoid&&a.expectedUid===next.expectedUid||canonical(a.binding)===canonical(next.binding)))throw Error('两个仓不能使用同一账号或浏览器绑定');
     }
-    next.bindingVersion=(old?.bindingVersion||0)+1;
+    next.bindingVersion=epoch+1;
     if(this.sessions&&old?.binding&&canonical(old.binding)!==canonical(next.binding))await this.sessions.disconnect(old.binding);
-    await this.store.write(d=>{d.accounts||={};d.accounts[c.warehouse]=next;});return next;
+    await this.store.write(d=>{
+      d.accounts||={};d.accounts[c.warehouse]=next;if(d.bindingEpochs)d.bindingEpochs[c.warehouse]=next.bindingVersion;if(d.rebindRequired)delete d.rebindRequired[c.warehouse];
+      if(c.action==='accounts.bind')for(const b of Object.values(d.batches))for(const i of b.items)
+        if(i.migration?.needs_binding&&!i.adoption&&!retired(i)&&i.account.warehouse===c.warehouse){
+          i.account=businessAccount(next);i.migration={...i.migration,needs_binding:false,verified_at:now()};
+        }
+    });return next;
   }
   launch(id,kind,fn){
     if(this.shuttingDown)throw new CatalogError('CLOSING','正在安全关闭，未开始新动作');
     const active={id,kind,controller:new AbortController(),phase:{phase:'STARTING',message:'准备中',at:now()}};
     this.active=active;active.promise=Promise.resolve().then(()=>fn(active.controller.signal)).catch(async e=>{
-      await this.store.write(d=>{if(kind==='batch'){d.batches[id].error=safeError(e);d.batches[id].state='NEEDS_ATTENTION';}else if(d.operations?.[id])Object.assign(d.operations[id],{state:'FAILED',error:safeError(e)});});
+      await this.store.write(d=>{if(kind==='batch'){if(d.batches[id].items.every(i=>i.adoption||retired(i)))return;d.batches[id].error=safeError(e);d.batches[id].state='NEEDS_ATTENTION';}else if(d.operations?.[id]&&!d.operations[id].retirement)Object.assign(d.operations[id],{state:'FAILED',error:safeError(e)});});
     }).finally(()=>{if(this.active===active)this.active=null;});
   }
   async accountOperation(c){
     if(!WAREHOUSES.includes(c.warehouse))throw Error('未知仓库');
-    if(['accounts.ensure','accounts.auto'].includes(c.action)&&(this.store.read().accounts?.[c.warehouse]?.bindingVersion||0)!==c.expected_version)
+    const initial=this.store.read(),epoch=bindingVersion(initial,c.warehouse);
+    if(c.action==='accounts.ensure'&&initial.rebindRequired?.[c.warehouse])throw new CatalogError('ACCOUNT_REBIND_REQUIRED','本仓绑定已解除，请在商品资料窗口核验正确公司并确认保存；未自动沿用旧绑定');
+    if(['accounts.ensure','accounts.auto'].includes(c.action)&&epoch!==c.expected_version)
       throw new CatalogError('CONFIG_CONFLICT','账号设置已更新，请刷新后重试');
-    const id=crypto.randomUUID();await this.store.write(d=>{d.operations||={};d.operations[id]={id,action:c.action,warehouse:c.warehouse,state:'RUNNING',createdAt:now()};});
+    const id=crypto.randomUUID();await this.store.write(d=>{d.operations||={};d.operations[id]={id,action:c.action,warehouse:c.warehouse,bindingEpoch:epoch,state:'RUNNING',createdAt:now()};});
     this.launch(id,'account',async signal=>{
       const data=this.store.read(),a=data.accounts?.[c.warehouse];let binding,result;
       try{
@@ -155,7 +191,8 @@ export class CatalogService {
         check(signal);
         if(['accounts.auto','accounts.ensure'].includes(c.action)){
           // An unchanged verified binding must not invalidate pending batch versions.
-          if(a&&canonical(a.binding)===canonical(binding)){
+          if(data.rebindRequired?.[c.warehouse]){result.requires_confirmation=true;}
+          else if(a&&canonical(a.binding)===canonical(binding)){
             result.account=a;
           }else{
             result.account=await this.configure({action:'accounts.bind',warehouse:c.warehouse,expected_version:c.expected_version,mapping_verified:true},
@@ -173,7 +210,7 @@ export class CatalogService {
     if(!Array.isArray(c.items)||!c.items.length||c.items.length>2||new Set(c.items.map(i=>i.warehouse)).size!==c.items.length)throw Error('请选择一仓或两仓，不可重复');
     const data=this.store.read(),fingerprint=sha(canonical({operation_id:c.operation_id,purpose:c.purpose,items:c.items}));
     const existing=Object.values(data.batches).find(b=>b.operation_id===c.operation_id);
-    if(existing){if(existing.fingerprint!==fingerprint)throw Error('同一同步编号对应不同范围');return {batch_id:existing.id,reused:true};}
+    if(existing){if(existing.fingerprint!==fingerprint)throw Error('同一同步编号对应不同范围');if(existing.items.some(retired))throw new CatalogError('ITEM_RETIRED','原采集已在本地结束，请明确新建采集；未重放旧导出');return {batch_id:existing.id,reused:true};}
     if(this.active)throw new CatalogError('BUSY','已有采集或账号核验在运行，可查看状态或停止');
     const items=c.items.map((i,index)=>{
       const a=data.accounts?.[i.warehouse];if(!a?.enabled)throw Error(i.warehouse+'尚未启用自动同步');validateIdentity(a);
@@ -189,15 +226,16 @@ export class CatalogService {
     while(!this.current(batchId,itemId).observation){check(signal);if(Date.now()>until)throw new CatalogError('HOST_TIMEOUT','主应用未提供查询前库存依据，未提交导出');await new Promise(r=>setTimeout(r,50));}
   }
   async run(batchId,ids,signal){
-    await this.store.write(d=>{d.batches[batchId].state='RUNNING';d.batches[batchId].error=null;});
+    await this.store.write(d=>{const b=d.batches[batchId];b.items.filter(i=>ids.includes(i.id)).forEach(requireLive);b.state='RUNNING';b.error=null;});
     for(const initial of this.store.batch(batchId).items){
-      if(!ids.includes(initial.id)||initial.adoption)continue;
+      if(!ids.includes(initial.id)||initial.adoption||retired(initial))continue;
       if(signal.aborted)break;
       const id=initial.id,a=initial.account;let item=this.current(batchId,id);
       const phase=async(stage,message)=>{this.active.phase={phase:stage,message,warehouse:a.warehouse,at:now()};};
       try{
         const latest=this.store.read().accounts?.[a.warehouse];
-        if(!latest||!latest.enabled||canonical(businessAccount(latest))!==canonical(a))throw new CatalogError('CONFIG_CHANGED','原任务账号配置已变化，未使用新账号执行');
+        if(!latest||canonical(businessAccount(latest))!==canonical(a))throw new CatalogError('CONFIG_CHANGED','原任务账号配置已变化，未使用新账号执行');
+        if(!latest.enabled)throw new CatalogError('ACCOUNT_DISABLED','本仓自动同步已停用；请先启用本仓再继续原任务，原任务和文件已保留');
         if(['SUBMITTING','SUBMISSION_UNKNOWN'].includes(item.native?.stage))throw new CatalogError('SUBMISSION_UNKNOWN','原导出受理不明，请核对原任务，不自动重提');
         let validFile=false;
         if(item.native?.file)validFile=await fs.readFile(item.native.file).then(b=>sha(b)===item.native.sha256,()=>false);
@@ -235,7 +273,23 @@ export class CatalogService {
     }
     await this.store.write(d=>{const b=d.batches[batchId];b.state=signal.aborted?'STOPPED':b.items.every(i=>i.receipt||i.adoption)?'FILES_READY':'NEEDS_ATTENTION';b.finishedAt=now();});
   }
-  async close(){
-    this.shuttingDown=true;this.active?.controller.abort();await this.controlTail.catch(()=>{});this.active?.controller.abort();await this.active?.promise;await this.driver.close();await this.store.close();
+  close({disconnectTimeout=3000}={}){
+    if(this.closePromise)return this.closePromise;
+    this.shuttingDown=true;this.active?.controller.abort();
+    this.closePromise=Promise.resolve().then(async()=>{
+      // A pending Promise alone does not keep Node alive after stdin is gone.
+      // Keep the transport alive until its safe drain has actually completed.
+      const keepAlive=setInterval(()=>{},1000);
+      try{
+        await this.controlTail.catch(()=>{});this.active?.controller.abort();
+        try{await this.active?.promise;}
+        finally{
+          // No timeout applies to a running task or state commit. Only idle
+          // disconnect cleanup is bounded; failures cannot skip store release.
+          try{await disconnectBounded(()=>this.driver.close(),disconnectTimeout);}
+          finally{await this.store.close();}
+        }
+      }finally{clearInterval(keepAlive);}
+    });return this.closePromise;
   }
 }

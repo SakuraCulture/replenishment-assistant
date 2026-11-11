@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {portablePath} from './portable-assets.mjs';
 import path from 'node:path';
 import {constants} from 'node:fs';
 import {uid,now,fail,sameIdentity,canonical,exists,writeJson,safeName,countValue,AppError,wait,businessDate} from './common.mjs';
@@ -27,12 +28,12 @@ export function validatePurchasePair(run,main,detail){
   return {status:'VALIDATED',queryParents:expected.size,mainRows:main.rows,detailRows:detail.rows,linkedParents:childSku.size,orphanRows:0,parentCoverage:'EXACT_SET',skuCoverage:'DISTINCT_SKU_PER_ORDER',duplicatesPreserved:true,dateBasis:run.dateBasis,...(run.queryMode==='order_id'?{queryMode:'order_id',createdDay:createdDays.size===1?[...createdDays][0]:null}:{})};
 }
 export class PurchaseCoordinator{
-  constructor({state,config,binding,adapter,onProgress=()=>{},onSourceValidated=null,signal}){Object.assign(this,{state,config,binding,adapter,onProgress,onSourceValidated,signal});}
+  constructor({state,config,binding,adapter,onProgress=()=>{},onSourceValidated=null,signal,hostOrderId=null,hostPurchaseId=null}){Object.assign(this,{state,config,binding,adapter,onProgress,onSourceValidated,signal,hostOrderId,hostPurchaseId});}
   stopped(){if(this.signal?.aborted)fail('PAUSED','采购作业已暂停；继续时恢复原任务');}
   async progress(stage,body={}){await this.onProgress({stage,...body});}
-  save(run){this.state.putPurchase(run);return run;}
+  save(run){if(this.hostOrderId)run={...run,hostOrderId:this.hostOrderId,hostPurchaseId:this.hostPurchaseId};this.state.putPurchase(run);return run;}
   async sourceFile(run,sourceId){
-    const e=run.exports[sourceId],file=await outputPath(this.binding.outputRoot,e.asset.relativePath);if(!await exists(file)||await fileHash(file)!==e.asset.sha256)fail('PURCHASE_ASSET_CHANGED','已验收采购文件缺失或已修改，保留文件并等待恢复',{sourceId,file});return file;
+    const e=run.exports[sourceId],file=await portablePath(await outputPath(this.binding.outputRoot,e.asset.relativePath),{sha256:e.asset.sha256});if(!await exists(file)||await fileHash(file)!==e.asset.sha256)fail('PURCHASE_ASSET_CHANGED','已验收采购文件缺失或已修改，保留文件并等待恢复',{sourceId,file});return file;
   }
   async run({target,from,to,dateBasis='created',orderId=null,queryMode,runId,rerun=false}={}){
     if(!this.config?.enabled||!this.binding?.outputRoot)fail('SETUP_REQUIRED','请先完成Edge与业务配置');await assertHandoff(this.state.root,this.config.tenantBinding);await checkOutput(this.binding.outputRoot);await this.state.enablePurchases();
@@ -45,7 +46,9 @@ export class PurchaseCoordinator{
       const prior=this.state.rows('purchase_runs').filter(r=>sameIdentity(r.identity,this.config.tenantBinding)&&r.scopeHash===hash).at(-1);
       if(prior&&!rerun)run=prior;
       else{
-        const priorUnfinished=this.state.rows('purchase_runs').filter(r=>sameIdentity(r.identity,this.config.tenantBinding)&&r.target.buyerWarehouseCode===target.buyerWarehouseCode&&(Object.values(r.exports).some(e=>BAD.has(e.stage))||!['SUCCEEDED','EMPTY','SUPERSEDED'].includes(r.status)));
+        const priorUnfinished=this.state.rows('purchase_runs').filter(r=>sameIdentity(r.identity,this.config.tenantBinding)&&r.target.buyerWarehouseCode===target.buyerWarehouseCode&&
+          (!this.hostOrderId||(r.hostOrderId?r.hostOrderId===this.hostOrderId:r.scopeHash===hash))&&
+          (Object.values(r.exports).some(e=>BAD.has(e.stage))||!['SUCCEEDED','EMPTY','SUPERSEDED'].includes(r.status)));
         const safeSupersede=r=>rerun&&r.scopeHash===hash&&Object.values(r.exports).every(e=>!BAD.has(e.stage)&&(e.asset||['PLANNED','FAILED_CONFIRMED','SUCCEEDED'].includes(e.stage)))&&Object.values(r.exports).some(e=>e.asset||e.stage==='FAILED_CONFIRMED');
         const unresolved=priorUnfinished.filter(r=>!safeSupersede(r));
         if(unresolved.length)fail('PURCHASE_UNRESOLVED','该仓店存在未完成采购作业，请先继续原作业',{runIds:unresolved.map(r=>r.id)});
@@ -108,7 +111,7 @@ export class PurchaseCoordinator{
         this.stopped();const e=run.exports[sourceId],v=validations[sourceId],relativePath=e.asset?.relativePath||`${folder}/${safeName(run.target.displayName)}_${scopeLabel}_${PURCHASE_LABELS[sourceId]}.xlsx`,destination=await outputPath(this.binding.outputRoot,relativePath);
         if(await exists(destination)){if(await fileHash(destination)!==v.sha256)fail('PURCHASE_ASSET_CHANGED','采购输出目标已被修改，不能覆盖');}
         else{
-          const tempRelative=relativePath+'.'+uid()+'.pending',temp=await outputPath(this.binding.outputRoot,tempRelative);await fs.copyFile(e.downloaded.file,temp,constants.COPYFILE_EXCL);const h=await fs.open(temp,'r+');try{await h.sync();}finally{await h.close();}if(await fileHash(temp)!==v.sha256)fail('STAGING_COPY_FAILED','采购文件保存校验失败');
+          const tempRelative=relativePath+'.'+uid()+'.pending',temp=await outputPath(this.binding.outputRoot,tempRelative);await fs.copyFile(await portablePath(e.downloaded.file,{sha256:v.sha256}),temp,constants.COPYFILE_EXCL);const h=await fs.open(temp,'r+');try{await h.sync();}finally{await h.close();}if(await fileHash(temp)!==v.sha256)fail('STAGING_COPY_FAILED','采购文件保存校验失败');
           // Link with no overwrite. Crash recovery validates the final hash and
           // resumes local publication, never creates another platform task.
           try{await fs.link(temp,destination);}catch(error){if(error.code!=='EEXIST'||await fileHash(destination)!==v.sha256)fail('SAVE_BLOCKED','采购文件本地保存受阻，原任务和暂存文件保留',{systemCode:error.code});}await fs.unlink(temp);

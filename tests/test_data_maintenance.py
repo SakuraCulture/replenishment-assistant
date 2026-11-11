@@ -27,9 +27,16 @@ class DeleteOrders(unittest.TestCase):
         with self.assertRaises(Cancelled):m.execute(self.path,plan,progress=progress,cancel=cancel)
         self.assertEqual(self.r.get(wr.today(),'T'),before)
         m.execute(self.path,plan);self.assertEqual(self.r.headers(),[])
-    def test_late_change_rejects_entire_delete(self):
+    def test_unrelated_audit_progress_does_not_invalidate_confirmation(self):
         plan=m.prepare(self.path,self.heads)
         with closing(sqlite3.connect(self.path)) as db,db:db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(wr.now(),'oid',1,'changed','{}'))
+        m.execute(self.path,plan)
+        self.assertEqual(self.r.headers(),[])
+    def test_selected_revision_change_rejects_entire_delete(self):
+        plan=m.prepare(self.path,self.heads)
+        with closing(sqlite3.connect(self.path)) as db,db:
+            db.execute('INSERT INTO normal_revisions SELECT oid,2,digest,saved,payload FROM normal_revisions WHERE revision=1')
+            db.execute('UPDATE normal_orders SET current=2')
         with self.assertRaises(wr.Conflict):m.execute(self.path,plan)
         self.assertEqual(len(self.r.headers()),1)
     def test_other_store_unchanged_and_shared_source_kept(self):

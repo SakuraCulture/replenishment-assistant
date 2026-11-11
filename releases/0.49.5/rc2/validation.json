@@ -1,0 +1,19 @@
+{
+  "version": "0.49.5",
+  "source_commit": "2ab8dba22be3e51364a6d91b56c7674e1f5eb9c0",
+  "regression": {
+    "tests": 1335,
+    "unique_test_ids": 1335,
+    "seconds": 487.465
+  },
+  "node_tests": 204,
+  "exe_checks": 5,
+  "packaged_edge_tests": 3,
+  "core_preserved": 15,
+  "old_deliveries_preserved": 153,
+  "exe_sha256": "f1f3fbfea9b53608287c068207a4a26af37c1b74c198b6f4a54557dcc996f8af",
+  "zip": "交付_0.49.5_rc2\\补货助手_0.49.5_rc2.zip",
+  "zip_sha256": "ad6eb43c276b2e18fddeb8082ce07232f43d79ba17c185b8d7ca5e1900d2b140",
+  "live_platform": false,
+  "remote_records_modified": false
+}

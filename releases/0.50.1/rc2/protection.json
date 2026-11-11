@@ -1,0 +1,19 @@
+{
+  "source_commit": "b91c9d088a7f053d12c8026b3fdcdac31906d13e",
+  "rule_blobs_unchanged_vs_rc1_commit": {
+    "src/model.py": "1f91695934b4c6a349e64ffee04d96c615816df4263cafd56337e4303cc6b595",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd"
+  },
+  "evidence_note": "rc1 protection.json recorded src/model.py sha256 dc1dcb25... which is not reproducible from any tracked blob; rc1 and rc2 build archives both hash 1f916959... Actual protection goal (rule files byte-identical between rc1 and rc2) verified.",
+  "preserved_deliveries_sha256": {
+    "交付_0.50.0_rc3/补货助手/补货助手.exe": "c3edd04f739b09c95255d45b35fa271a08d16f10ea51ce9776a4d84cfea3f8a8",
+    "交付_0.50.0_rc3/补货助手_0.50.0_rc3.zip": "dcd063b8953dfc158000c2e6d3f85198963e4a960618cb0a73ab9645401aa935",
+    "交付_0.49.5_rc2/补货助手/补货助手.exe": "f1f3fbfea9b53608287c068207a4a26af37c1b74c198b6f4a54557dcc996f8af",
+    "交付_0.49.5_rc2/补货助手_0.49.5_rc2.zip": "ad6eb43c276b2e18fddeb8082ce07232f43d79ba17c185b8d7ca5e1900d2b140"
+  },
+  "real_platform_calls": false,
+  "real_business_data_changes": false,
+  "pushed": false,
+  "merged": false
+}
