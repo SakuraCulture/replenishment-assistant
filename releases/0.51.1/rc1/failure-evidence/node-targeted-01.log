@@ -1,0 +1,73 @@
+✔ 旧版明确结束自动释放占用，保留回执原件及其他门店；删除后晚到回执不复活 (103.6813ms)
+✖ 存在活动接管者或缺少身份、范围证据时不擅自结束 (52.5289ms)
+✔ 修复事务失败不留下半个失效屏障 (73.0761ms)
+✖ 实际打开旧库前自动备份，修复后重开不重复备份 (85.2126ms)
+✔ 已登录SPA只切hash时主动刷新并取得新身份，连续核验均不导出 (2717.6161ms)
+✔ 新页面正常核验一次；临时身份响应失败仅恢复一次只读查询 (1517.8035ms)
+✔ 持续未发身份请求有界失败，不沿用旧成功身份、不提交导出 (3126.0458ms)
+✔ 确认未登录或身份不符不重试，也不拿缓存冒充成功 (1398.2011ms)
+✔ 结束当前受阻任务同时释放同门店旧失败；新批次可正常建立，文件和成功项不变 (130.7062ms)
+✔ 结束与删除回执可重复查询；删除防重标识阻止旧命令重放 (48.8028ms)
+✔ 明确结束不等待平台状态，保留原证据并允许独立新作业：INTENT_RECORDED (75.1122ms)
+✔ 明确结束不等待平台状态，保留原证据并允许独立新作业：SUBMITTING (63.3973ms)
+✔ 明确结束不等待平台状态，保留原证据并允许独立新作业：SUBMISSION_UNKNOWN (85.4087ms)
+✔ 明确结束不等待平台状态，保留原证据并允许独立新作业：WRONG_SCOPE_ACCEPTED (70.3785ms)
+✔ 明确结束不等待平台状态，保留原证据并允许独立新作业：ACCEPTED (66.843ms)
+✔ 明确结束不等待平台状态，保留原证据并允许独立新作业：RUNNING (72.7718ms)
+✔ 明确结束不等待平台状态，保留原证据并允许独立新作业：DOWNLOADED (55.9008ms)
+✔ 回执不完整仍可明确结束，原不确定事实不伪装为成功：{"taskId":null} (59.3864ms)
+✔ 回执不完整仍可明确结束，原不确定事实不伪装为成功：{"additionalTaskIds":["another-task"]} (45.0213ms)
+✔ 预览后版本变化或重新运行时拒绝；事务写入失败完整回滚 (41.2543ms)
+✔ 只结束涉及门店；同旧批次其他失败门店仍可重跑，原顺序不变 (50.2482ms)
+✔ 原作业结束后不能从旧 run 恢复，旧回执不复活占用 (39.9623ms)
+✔ 成功记录删除保留原件及日资产；未结束记录不能删除 (36.6326ms)
+✔ 维护协议严格验证动作与预览凭据 (0.5028ms)
+✔ page/navigation failure is not mislabeled as an expired login (1.9169ms)
+✔ exact original import and export task reads recover once without replaying any write (0.6267ms)
+✔ identity body is captured before navigation completes; expired or invalid body never uses cached identity (17.3507ms)
+✔ read-only query identity timeout can recover once; writes and uncertain response never replay (0.3953ms)
+✔ explicit observation follows current Edge login on the same page; original task checks remain strict (1.0601ms)
+✔ one page D13 -> purchase -> purchase_create -> D13; listeners disposed, fixed identity (0.2271ms)
+✔ failed module switch never marked ready, next attempt reopens with original identity (0.2351ms)
+✔ identity read timeout retries once on same page; second timeout/unknown acceptance not retried (0.2083ms)
+✔ failed initial identity remains pinned across retries, never adopts another merchant (0.1738ms)
+✔ handoff pauses all actors, waits for actual settlement, no browser close or resume (0.2864ms)
+✔ setup adopts same worker; callback routing updated once; different profile closes old worker (0.5551ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 33
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9074.6839
+
+✖ failing tests:
+
+test at test\collection-ended.test.mjs:45:1
+✖ 存在活动接管者或缺少身份、范围证据时不擅自结束 (52.5289ms)
+  Error: FOREIGN KEY constraint failed
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/collection-ended.test.mjs:52:65)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    code: 'ERR_SQLITE_ERROR',
+    errcode: 787,
+    errstr: 'constraint failed'
+  }
+
+test at test\collection-ended.test.mjs:63:1
+✖ 实际打开旧库前自动备份，修复后重开不重复备份 (85.2126ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  3 !== 1
+  
+      at TestContext.<anonymous> (file:///D:/%E4%BC%98%E5%9B%A2%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/outputs/replenishment_mvp_20261029/components/aoxiang/test/collection-ended.test.mjs:65:123)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 3,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

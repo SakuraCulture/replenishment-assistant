@@ -1,0 +1,26 @@
+.........ERROR:root:操作失败
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\src\payment_matching.py", line 313, in prepare
+    if d.get('target') is None:raise ValueError(result['state']+'：'+result['reason'])
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: 没有完整匹配订单：没有找到逐商品明细完全一致的有效分配单。合成门店1 / 河北仓：少 1 款、多 1 款、数量不同 0 款、金额不同 0 款；缺少编码 0001；清单外编码 0002；合成门店1 / 山东仓：少 0 款、多 0 款、数量不同 0 款、金额不同 1 款；测试店 / 河北仓：少 1 款、多 1 款、数量不同 0 款、金额不同 0 款；缺少编码 0001；清单外编码 0002
+........................F..
+======================================================================
+FAIL: test_new_start_locates_hidden_original_blocker_without_registering_another_job (test_aoxiang_fetch_ui.FetchUiTests.test_new_start_locates_hidden_original_blocker_without_registering_another_job)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tests\test_aoxiang_fetch_ui.py", line 153, in test_new_start_locates_hidden_original_blocker_without_registering_another_job
+    self.assertEqual(d.current['id'],old['id']);self.assertEqual(d.history.currentData(),old['id'])
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'rep-0e34ca7f0c9040f1a90b9fca2cee78d8' != 'rep-e5826a7e7dea4bcebf8f0bcf434d1186'
+- rep-0e34ca7f0c9040f1a90b9fca2cee78d8
++ rep-e5826a7e7dea4bcebf8f0bcf434d1186
+
+
+----------------------------------------------------------------------
+Ran 36 tests in 10.345s
+
+FAILED (failures=1)
