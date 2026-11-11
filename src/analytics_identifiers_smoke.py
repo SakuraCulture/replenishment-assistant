@@ -48,12 +48,29 @@ def start_smoke(app,win,args):
                 require({(r[4],r[5],r[6]) for r in records}=={(e['order'],e['jst'],e['po']) for e in f['expected']},'单号关联明细保存两日两仓的完整对应')
                 require(any(r[8]=='已作废' for r in records),'已作废采购单保留原号和已留存状态')
                 require(all(c.data_type=='s' for row in list(book['单号关联明细'])[1:] for c in row[4:7] if c.value is not None),'三种编号按文本保存，聚水潭号前导零保留')
+                if f.get('dimension_export'):
+                    from decimal import Decimal
+                    from funnel_dimension_export import NAME,HEADERS
+                    values=list(book[NAME].values);require(list(values[0])==HEADERS,'门店经营分析包含SKU×门店×上游供应商×原类目的完整组合表')
+                    data=[dict(zip(values[0],r)) for r in values[1:]]
+                    require({(r['商品编码'],r['供货仓'],r['大仓上游供应商'],r['商品类目']) for r in data}=={('0001','河北仓','上游甲','饮品'),('0002','山东仓','上游乙','食品')},'两仓商品精确关联签发当时的上游供应商和原类目')
+                    require(all(r['涉及签发仓单数']==2 and len(r['签发单号'].splitlines())==2 for r in data),'同组合跨两日汇总，保留每张签发单及外部编号的对应关系')
+                    for stage in service.STAGES:
+                        known=[r[service.NAMES[stage]+'商品货值'] for r in data if r[service.NAMES[stage]+'商品货值'] is not None]
+                        total=sum((Decimal(str(v)) for v in known),Decimal(0)) if known else None
+                        require(total==snapshot['metrics']['stages'][stage]['value'],'组合明细与原门店汇总货值一致：'+stage)
+                    require(all(c.data_type not in ('f','e') for row in book[NAME] for c in row),'新组合字段和编号保持文本，不生成公式或错误单元格')
             finally:book.close()
             w.tabs.setCurrentIndex(2);w.tables['order'].selectRow(0);chosen=next(iter(w.selected));selected=[]
             with patch('readable_ui.file_results',side_effect=lambda parent,files,*args,**kwargs:selected.extend(files)):
                 w.selected_btn.click();wait(lambda:w.worker is not None)
             book=openpyxl.load_workbook(selected[0])
-            try:require({r[4] for r in list(book['单号关联明细'].values)[1:]}=={chosen},'勾选导出只保存所选原单的对应关系')
+            try:
+                require({r[4] for r in list(book['单号关联明细'].values)[1:]}=={chosen},'勾选导出只保存所选原单的对应关系')
+                if f.get('dimension_export'):
+                    from funnel_dimension_export import NAME
+                    values=list(book[NAME].values);data=[dict(zip(values[0],r)) for r in values[1:]]
+                    require(len(data)==1 and data[0]['签发单号']==chosen and data[0]['涉及签发仓单数']==1,'新组合明细同样只导出所选订单，不带入未选日期或仓')
             finally:book.close()
             require((sha(path),sha(component))==before,'查询和两次导出未修改业务库或翱象组件库')
             head=next(h for h in snapshot['heads'] if h['number']==chosen);refs.save(path,refs.read(path,head),'000-UPDATED')

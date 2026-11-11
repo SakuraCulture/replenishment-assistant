@@ -23,7 +23,7 @@ import storage_chunks as chunks
 from runtime_support import checkpoint
 from export_progress import RowProgress
 
-VERSION = 'funnel-2'
+VERSION = 'funnel-3'
 STAGES = ('model', 'signed', 'return', 'payment', 'receipt')
 NAMES = dict(model='模型建议', signed='签发', **{'return':'门店确认'}, payment='实际下单', receipt='实际收货')
 GROUPS = ('必采', '非必采', '属性待核')
@@ -76,12 +76,12 @@ class Evidence:
     def catalog(self, order, warehouse):
         return self.catalogs(order['payload'].get('work_revision')).get(warehouse, {})
 
-    def original(self, catalog):
+    def source(self, catalog):
         sha, sheet = catalog.get('source_sha256'), catalog.get('sheet')
         key = (sha, sheet)
         if key not in self.sources:
             record = source_archive.read(self.db, sha) if sha else None
-            result = {}
+            result = {};heads=[]
             if record:
                 import openpyxl
                 from input_adapter import identifier
@@ -90,9 +90,9 @@ class Evidence:
                     if sheet not in book.sheetnames: raise ValueError('当时仓资料工作表不一致')
                     ws=book[sheet];ws.reset_dimensions();it=ws.iter_rows(values_only=True)
                     heads=[str(v).strip() if v is not None else '' for v in next(it,())]
-                    fields=('商品编码','商品状态','虚拟分类')
-                    if all(heads.count(k)==1 for k in fields):
-                        indexes={k:heads.index(k) for k in fields}
+                    fields=('商品编码','商品状态','虚拟分类','供应商名称','分类')
+                    if heads.count('商品编码')==1:
+                        indexes={k:heads.index(k) for k in fields if heads.count(k)==1}
                         for rownum, values in enumerate(it,2):
                             checkpoint(self.cancel)
                             raw={k:values[i] if i<len(values) else None for k,i in indexes.items()}
@@ -100,10 +100,21 @@ class Evidence:
                             if error: continue
                             result[sku] = None if sku in result else {**raw,'source_row':rownum}
                 finally: book.close()
-            self.sources[key]=result
+            self.sources[key]={'items':result,'headers':heads,'present':bool(record)}
             if len(self.sources)>4:self.sources.popitem(last=False)
         self.sources.move_to_end(key)
         return self.sources[key]
+
+    def original(self,catalog):
+        source=self.source(catalog)
+        # Preserve the original admission evidence contract independently of
+        # optional supplier/category enrichment.
+        return source['items'] if all(source['headers'].count(k)==1 for k in ('商品编码','商品状态','虚拟分类')) else {}
+
+    def dimensions(self,order,warehouse,sku,row):
+        from funnel_dimensions import attributes
+        catalog=self.catalog(order,warehouse)
+        return attributes(row,catalog,sku,self.source(catalog))
 
     def item(self, order, warehouse, sku):
         c=self.catalog(order,warehouse)
@@ -183,7 +194,8 @@ def build_facts(order, head, view, evidence, cancel=None):
             'payment_amount':num(maps['payment'].get(sku,{}).get('amount')),
             'payment_currency':maps['payment'].get(sku,{}).get('currency') or '未标币种',
             'payment_source':view['documents']['payment']['payload'].get('source_kind','原付款单据') if view['documents']['payment'] else None,
-            'notes':{s:maps[s].get(sku,{}).get('processing_note','') for s in lifecycle.STAGES}})
+            'notes':{s:maps[s].get(sku,{}).get('processing_note','') for s in lifecycle.STAGES},
+            **evidence.dimensions(order,head['warehouse'],sku,r)})
     return rows
 
 

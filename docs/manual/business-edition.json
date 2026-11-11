@@ -1,6 +1,6 @@
 {
   "edition": "2026-11-11",
-  "application": "0.51.1",
+  "application": "0.51.2",
   "chapters": 21,
   "pdf_pages": 62,
   "images": 38,
@@ -10,9 +10,9 @@
   "legacy_pdf_preserved": true,
   "live_platform_tested": false,
   "newcomer_field_acceptance": false,
-  "validation": "0.51.1 source Qt payment and collection acceptance; offline HTML 21 chapters / 38 images passed (qa/repair_0511_20261111_01/manual-html-01/html-report.json). PDF remains the 0.49.3 historical archive.",
+  "validation": "0.51.2 dimension export guide; offline HTML 21 chapters / 38 images retained; PDF remains historical",
   "files": {
-    "guide.md": "c6d0c505b8a0c29b5a7872585202f0acea04fcae290886eae6b40e82c93f48a0",
+    "guide.md": "e61f4b294ad953d6a3d8c91c5c92882c46daefa3a6105cb1c6282e40c510c766",
     "images/ai-stockout.png": "37e670415626b834edc680e3211f6e37b439c53710023ce3483b5faf8b1aeb4d",
     "images/audit-10pt.png": "6d14003218936d668e979b6753c0eb044936ecd76ef177731c6be301e2ed9b1e",
     "images/audit-12pt.png": "b0fdeb52be04d658c8a99e3329a75147d12664126241d84c7cddfe8c69626c2c",
@@ -52,7 +52,7 @@
     "images/stockout-overview.png": "22a391dfed5557c0f3649b325e8f36170de9008f8c6da22736b0ca2e20e990cc",
     "images/store-sales-days-0510.png": "8d50ea632f280b1d46f62be6a9b03d97074d7c64f94a45b8c2741acae991b0c2",
     "images/warehouse-stockout-0510.png": "3d4951c782fafefc16d3370781d579d416fcaac943d5178533b7dbb1ca192ec7",
-    "index.html": "c6d9b70f2adf1a54f5931b8a0b5bd92893745fa1e9f0999c82c536b0b7a7e3f1",
+    "index.html": "89c5d19f00891a8b01d2ec129d20f1d67afdbd2e2153ded1f6af2d9f5c9766db",
     "parameter-reference.json": "08905e215c7f66245816eb8e31f5b3c04b1ea8dfde488cd6bfd3ec7cf52a895b",
     "screenshot-index.json": "3f98fcceeb8a81f152cf02856496473c97c259cd61c6f21c1a1694914af9253d",
     "validation_20261108/html-report.json": "c7de56a12ca067f9b9dcba24aa8099b7a595b9683384817f987bd79ec419de37",
@@ -78,5 +78,9 @@
       "20"
     ],
     "evidence": "qa/repair_0511_20261111_01"
+  },
+  "store_dimension_guide": {
+    "chapter": "12",
+    "version": "0.51.2"
   }
 }
