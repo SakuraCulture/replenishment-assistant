@@ -137,6 +137,13 @@ class ExportUiTests(ExportFixture):
         page,entry=self.page();entry.worker=SimpleNamespace(operation='export');before=len(self.calls);page.controls();page.query();page.view();page.refresh_metadata()
         self.assertEqual(len(self.calls),before);self.assertFalse(page.export_btn.isEnabled());self.assertFalse(page.tabs.isEnabled());self.assertTrue(page.pause.isEnabled())
         entry.worker=None;page.controls();self.assertTrue(page.export_btn.isEnabled());self.assertTrue(page.tabs.isEnabled())
+    def test_export_dialog_reserves_space_on_small_screens(self):
+        from PySide6.QtCore import QRect,Qt
+        from warehouse_stockout_ui import ExportDialog
+        screen=SimpleNamespace(availableGeometry=lambda:QRect(0,0,900,520))
+        with patch.object(ExportDialog,'screen',return_value=screen):dialog=ExportDialog(None,defaults(),['warehouse'],self.options)
+        self.assertLessEqual(dialog.width(),868);self.assertLessEqual(dialog.height(),456)
+        self.assertTrue(dialog.windowFlags()&Qt.WindowType.WindowMaximizeButtonHint);dialog.deleteLater();self.app.processEvents()
 
 
 if __name__=='__main__':unittest.main()

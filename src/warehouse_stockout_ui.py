@@ -78,6 +78,8 @@ class ExportDialog(QDialog):
         note=label('每个切面一张表，商品和供应商同时保留编码、名称。明细范围只影响明细，汇总缺货率保持当前统计口径。可只选明细。');note.setWordWrap(True);v.addWidget(note)
         buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);buttons.button(QDialogButtonBox.StandardButton.Ok).setText('选择保存位置');buttons.button(QDialogButtonBox.StandardButton.Cancel).setText('取消')
         buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);v.addWidget(buttons)
+        from table_readability import fit_window
+        fit_window(self,860,660)
     def check_all(self,value):
         for i in range(self.listing.count()):self.listing.item(i).setCheckState(Qt.CheckState.Checked if value else Qt.CheckState.Unchecked)
     def accept(self):

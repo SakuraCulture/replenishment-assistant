@@ -10,7 +10,7 @@
   "legacy_pdf_preserved": true,
   "live_platform_tested": false,
   "newcomer_field_acceptance": false,
-  "validation": "0.51.5: explicit warehouse binding correction, unchanged verified save, retired-item and adoption race protection; isolated acceptance only; source fixes for unknown funnel values, complete parameter roundtrip and catalog-aware shutdown restore; isolated acceptance only; 0.51.7 warehouse export: source native 35 checks, warehouse tests 25 pass; frozen acceptance recorded in releases/0.51.7/rc1",
+  "validation": "0.51.5: explicit warehouse binding correction, unchanged verified save, retired-item and adoption race protection; isolated acceptance only; source fixes for unknown funnel values, complete parameter roundtrip and catalog-aware shutdown restore; isolated acceptance only; 0.51.7 warehouse export: source native 35 checks, warehouse tests 25 pass; frozen acceptance recorded in releases/0.51.7/rc2",
   "files": {
     "guide.md": "f61c0aee7b135c37fcf6740fd122aeb3a6d0647b32ac7363bb042d5e9a85442b",
     "images/ai-stockout.png": "37e670415626b834edc680e3211f6e37b439c53710023ce3483b5faf8b1aeb4d",

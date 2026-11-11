@@ -41,7 +41,9 @@ def start_smoke(app,win,args):
                     dialog=QApplication.activeModalWidget()
                     try:
                         require(isinstance(dialog,ExportDialog),'实际点击按钮打开大仓报表选择窗口')
-                        configure(dialog);app.processEvents();dialog.grab().save(str(out/('export-'+str(len(targets))+'.png')));dialogs.append(dialog.windowTitle())
+                        configure(dialog);app.processEvents();area=dialog.screen().availableGeometry();frame=dialog.frameGeometry()
+                        require(area.contains(frame),'导出窗口完整位于当前屏幕可用区域')
+                        dialog.grab().save(str(out/('export-'+str(len(targets))+'.png')));dialogs.append(dialog.windowTitle())
                         dialog.reject() if reject else dialog.accept()
                     except Exception as exc:
                         errors.append(exc)
