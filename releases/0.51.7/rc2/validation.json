@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "sealed_at": "2026-11-12T02:02:16.463579+08:00",
+  "source_commit": "0efcc021b5095008b682356bded75458bdcaabbb",
+  "full_regression": {
+    "source_commit": "bdc736b61a7cb57a07f7353a799306b7f20207c4",
+    "tests": 1533,
+    "seconds": 557.368,
+    "passed": true
+  },
+  "post_full_change": "Only ExportDialog screen fitting plus QA checks and documentation; runtime AST equivalence after removing the two fit statements is confirmed. Final geometry covered by targeted tests and both frozen runs.",
+  "final_warehouse_tests": 26,
+  "frozen_checks": {
+    "normal": 39,
+    "scale_factor_1_75": 39
+  },
+  "manual_pages": 91,
+  "manual_images": 45,
+  "manual_chapters": 21,
+  "model": "0.3.6-rules",
+  "business_computer_tested": false,
+  "live_platform": false,
+  "components_changed": false,
+  "components_retested_this_round": false,
+  "pushed": false,
+  "merged": false,
+  "exe_sha256": "44c92cdd14f868f98d904f1cae766e5268acae038a7900febc50731bd089837f"
+}

@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "pages": 91,
+  "chapters": 21,
+  "images": 45,
+  "all_pages_rendered": 91,
+  "bounds_issues": [],
+  "contacts": [
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_stockout_export_0517_20261112_01\\manual-qa\\contact-1.png",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_stockout_export_0517_20261112_01\\manual-qa\\contact-2.png",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_stockout_export_0517_20261112_01\\manual-qa\\contact-3.png",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_stockout_export_0517_20261112_01\\manual-qa\\contact-4.png"
+  ],
+  "affected": [
+    {
+      "page": 36,
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_stockout_export_0517_20261112_01\\manual-qa\\affected-36.png"
+    },
+    {
+      "page": 46,
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_stockout_export_0517_20261112_01\\manual-qa\\affected-46.png"
+    },
+    {
+      "page": 84,
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_stockout_export_0517_20261112_01\\manual-qa\\affected-84.png"
+    },
+    {
+      "page": 85,
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_stockout_export_0517_20261112_01\\manual-qa\\affected-85.png"
+    }
+  ],
+  "pdf_sha256": "48d15e761e72ce10068b57ea847fd75512fbb59eb7227df149c05578c580b3c7"
+}

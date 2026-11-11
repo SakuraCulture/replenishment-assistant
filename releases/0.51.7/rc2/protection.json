@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "unchanged_from_0516": {
+    "model.py": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+    "input_adapter.py": "c1ad68090da857de92d03f31965ae7e5508167566f66fa779956dcd891b09b07",
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "allocation.py": "eaad9d27238c3b532ac6c14a4e5091287157aa2f1e722a627d82b8e956ac4cd4",
+    "warehouse_routing.py": "a0f2c7b448234df22aeb2bdc8c02e8c0869a6602e1f390fd3d74fa9774627f0a",
+    "mandatory_holding.py": "d2ea0e98fbd9fb637298be7fd03300cc6922279137ee843a79446e412a11888f",
+    "one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "stockout_metrics.py": "fc79851c21e8fe1bc962a0e2081989f83f5f2bc5f0eb6055b462bb2ef467af3c",
+    "xlsx_exports.py": "3db456979581e55015f757266667036257e9cb72cfea2ede5dcb0b1def166928",
+    "stockout_entry.py": "70a383b547f89e237a589cb0b4b407a1ac7c1b70b88c7c872edb6b1d94324db1"
+  },
+  "components_unchanged": true,
+  "manual_matches_fixed_source": true,
+  "old_0516_exe": "e211162d44884cb22d87313f1c5e4bc0712bccc297facf6e2af53d39afe2fc14",
+  "old_0516_zip": "0e82ce6d9ebe8cbe52dee8abc5bae1be3db746c3cb7748b7be57824ddec47f31",
+  "no_real_platform_calls": true,
+  "no_business_data_modified": true
+}

@@ -1,0 +1,8 @@
+{
+  "head": "f73c60a874f945134a9b7ed914a1bf3cbc98bb2e",
+  "branch": "main",
+  "status": "",
+  "recorded": "2026-11-12T01:19:12.150246+08:00",
+  "old_exe_sha256": "e211162d44884cb22d87313f1c5e4bc0712bccc297facf6e2af53d39afe2fc14",
+  "scope": "warehouse stockout export only; no platform calls or business data edits"
+}
