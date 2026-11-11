@@ -192,6 +192,9 @@ def main():
     if '--analytics-identifiers-smoke' in sys.argv:
         from analytics_identifiers_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--analytics-identifiers-smoke')+1:])
+    if '--first-fill-smoke' in sys.argv:
+        from first_fill_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--first-fill-smoke')+1:])
     if '--purchase-pricing-smoke' in sys.argv:
         from purchase_pricing_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--purchase-pricing-smoke')+1:])

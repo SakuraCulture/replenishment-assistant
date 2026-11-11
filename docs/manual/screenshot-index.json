@@ -1,5 +1,5 @@
 {
-  "application": "0.51.1",
+  "application": "0.51.3",
   "edition": "2026-11-11",
   "source": "Per-image provenance: historical immutable EXE images plus 0.51.1 source Qt isolated acceptance",
   "legacy_0480_build": {
@@ -336,6 +336,15 @@
       "version": "0.51.1",
       "source": "source Qt and real local component; synthetic isolated data",
       "evidence": "qa/repair_0511_20261111_01/collection-source-03/定位真实待处理记录.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "first-fill-warehouse-0513.png",
+      "sha256": "cd5615fde06915fbca6eddb54bccd54e202212c94edc96d5ced274758edfa8d9",
+      "version": "0.51.3",
+      "source": "source Qt with synthetic imported warehouse catalogs; no platform",
+      "evidence": "qa/first_fill_0513_20261111_01/source-02/山东单仓.png",
       "synthetic": true,
       "live_platform_tested": false
     }

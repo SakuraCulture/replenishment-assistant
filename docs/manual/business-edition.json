@@ -1,18 +1,18 @@
 {
   "edition": "2026-11-11",
-  "application": "0.51.2",
+  "application": "0.51.3",
   "chapters": 21,
   "pdf_pages": 62,
-  "images": 38,
+  "images": 39,
   "parameter_definitions": 28,
   "runtime_logic_changed": true,
   "sealed_0493_changed": false,
   "legacy_pdf_preserved": true,
   "live_platform_tested": false,
   "newcomer_field_acceptance": false,
-  "validation": "0.51.2 dimension export guide; offline HTML 21 chapters / 38 images retained; PDF remains historical",
+  "validation": "0.51.3 monthly first-fill warehouse defaults guide; historical images and PDFs preserved",
   "files": {
-    "guide.md": "e61f4b294ad953d6a3d8c91c5c92882c46daefa3a6105cb1c6282e40c510c766",
+    "guide.md": "e94d01052c8a5c95263d1ec1a8918aa85f095c637a598d12c9ea4390dc3d54e0",
     "images/ai-stockout.png": "37e670415626b834edc680e3211f6e37b439c53710023ce3483b5faf8b1aeb4d",
     "images/audit-10pt.png": "6d14003218936d668e979b6753c0eb044936ecd76ef177731c6be301e2ed9b1e",
     "images/audit-12pt.png": "b0fdeb52be04d658c8a99e3329a75147d12664126241d84c7cddfe8c69626c2c",
@@ -26,6 +26,7 @@
     "images/export-locked-error.png": "bfeb766757b1cb28a5ebdc476ce32e6cfdfb38e9af40ee20e98d868c3663f4fe",
     "images/export-recovery.png": "85d23401121c7795c2c161d493b74f1761a99ba07cd48ec2786daa127934d1be",
     "images/export-result.png": "9bdf2ddb9f504e2ac05304d79a0d150e086dbe6fe0be1e7037dcffd9515ab6af",
+    "images/first-fill-warehouse-0513.png": "cd5615fde06915fbca6eddb54bccd54e202212c94edc96d5ced274758edfa8d9",
     "images/home.png": "de2e8ed2b7b376f176e0706d4d3fd7097c42afbc3b2534816936c381a51a66e9",
     "images/jst-number-edit.png": "6c7b8ccb05566d403e27278a7ff6c76d7e4440a520e2ef606f22f386338abcec",
     "images/jst-number-history.png": "fb5cd57b3226941a3b8df6cb3b3c82f95b51941f0f5c34c0407eba072e862d2c",
@@ -52,9 +53,9 @@
     "images/stockout-overview.png": "22a391dfed5557c0f3649b325e8f36170de9008f8c6da22736b0ca2e20e990cc",
     "images/store-sales-days-0510.png": "8d50ea632f280b1d46f62be6a9b03d97074d7c64f94a45b8c2741acae991b0c2",
     "images/warehouse-stockout-0510.png": "3d4951c782fafefc16d3370781d579d416fcaac943d5178533b7dbb1ca192ec7",
-    "index.html": "89c5d19f00891a8b01d2ec129d20f1d67afdbd2e2153ded1f6af2d9f5c9766db",
+    "index.html": "a538ed81492d90479790f6d8e47667733afa0bd49fd8e46874ddd7a1504b555a",
     "parameter-reference.json": "08905e215c7f66245816eb8e31f5b3c04b1ea8dfde488cd6bfd3ec7cf52a895b",
-    "screenshot-index.json": "3f98fcceeb8a81f152cf02856496473c97c259cd61c6f21c1a1694914af9253d",
+    "screenshot-index.json": "c82533a80ea9831efbe69e745a7589c84ff92269b37126aad56df8f2eaf8416a",
     "validation_20261108/html-report.json": "c7de56a12ca067f9b9dcba24aa8099b7a595b9683384817f987bd79ec419de37",
     "validation_20261108/pdf-report.json": "3fecf4e60338c59360f666f24e1b0d73690c9463c20fb2e7b3d1fa77bf0e2e60",
     "补货助手_0.48.0_新人使用手册.pdf": "07ffb9011e5a76b9427eec29aea818f9fee05ba047a2a2cd967d4597cf649e3d",
@@ -82,5 +83,10 @@
   "store_dimension_guide": {
     "chapter": "12",
     "version": "0.51.2"
+  },
+  "first_fill_guide": {
+    "chapter": "04",
+    "field": "新店新品首铺数",
+    "source": "assigned warehouse frozen catalog"
   }
 }
