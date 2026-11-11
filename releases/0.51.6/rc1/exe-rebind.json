@@ -1,0 +1,63 @@
+{
+  "passed": true,
+  "checks": [
+    "原样保存通过且没有改变未完成采集",
+    "原样保存不递增绑定版本",
+    "确认对话框明确两仓和保留文件的范围",
+    "取消纠错不改账号、任务或核验记录",
+    "确认对话框明确两仓和保留文件的范围",
+    "两仓绑定一次解除，等待明确重新核验",
+    "两仓未完成项在本地结束，仍保留历史行",
+    "原平台任务与下载回执完整保留",
+    "原Excel原路径及字节不变",
+    "窗口明确已结束，不能恢复旧项",
+    "已有输入需重新检查，历史签发不回写",
+    "真实组件拒绝旧命令：sync.resume",
+    "真实组件拒绝旧命令：sync.acknowledge_adoption",
+    "自动连接不能把旧错绑重新建回来",
+    "后台连接安全结束",
+    "交换绑定后版本递增且成功保存：山东仓",
+    "交换绑定后版本递增且成功保存：河北仓",
+    "两仓账号和浏览器可互换，唯一性保护仍成立",
+    "明确保存后解除自动连接等待状态",
+    "重新绑定仍不改原件",
+    "后台连接安全结束"
+  ],
+  "synthetic": true,
+  "identity_probes_simulated": true,
+  "live_platform": false,
+  "frozen": true,
+  "version": {
+    "app": "补货助手",
+    "version": "0.51.6",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.2",
+    "model_version": "0.3.6-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+    "build_id": "rc1",
+    "built_at": "2026-11-12T00:51:33.530265+08:00",
+    "source_archive_sha256": "59dca12c9bc56de19a7401e4b241b2785c2ed003318d5b4c95d4dc4de1774ab2",
+    "source_mode": "immutable git archive; no working-tree overlay",
+    "aoxiang": {
+      "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+      "files": 874,
+      "manifest_sha256": "421c9a8442bf4ed4c16c51ec15547b478ec316f3f2ded7f242208776cb41081f",
+      "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+      "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+      "contains_user_state": false,
+      "live_platform_tested": false
+    },
+    "jst_catalog": {
+      "manifest_sha256": "c06d3cc9b46dac39bf4aed4bb47679e489ac1a5638d1b525464c5463046351ae",
+      "files": 10,
+      "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+      "contains_user_state": false
+    }
+  },
+  "process_exit": 0,
+  "exe_sha256": "e211162d44884cb22d87313f1c5e4bc0712bccc297facf6e2af53d39afe2fc14"
+}

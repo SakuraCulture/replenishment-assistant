@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_business_repairs.py", line 48, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_business_repairs.py", line 41, in main
+    if time.monotonic()-started>180:raise TimeoutError(f'Isolated QA PID {proc.pid} retained; no forced termination')
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: Isolated QA PID 25120 retained; no forced termination

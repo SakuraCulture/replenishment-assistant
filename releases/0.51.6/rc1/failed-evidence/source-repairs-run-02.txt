@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_business_repairs.py", line 48, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\tools\verify_business_repairs.py", line 43, in main
+    report=json.loads((out/(phase+'-report.json')).read_text('utf-8'));assert proc.returncode==0 and report['passed'],report
+                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'passed': False, 'phase': 'exercise', 'frozen_exe': False, 'checks': ['释放窗口操作权并保留真实组件连接', '全部缺价货值保留未知', '未取得实收资料的SKU数保留未知', '已确认零数量仍显示零货值'], 'version': {'app': '补货助手', 'version': '0.51.6', 'parameter_schema_version': 3, 'job_schema_version': 1, 'routing_version': '0.5.2', 'model_version': '0.3.6-rules', 'model_baseline': 'v0.3.0-baseline', 'entry': '补货助手.exe', 'storage_format_version': 2, 'source_commit': '源码运行', 'build_id': '未打包'}, 'synthetic': True, 'live_platform': False, 'error': 'Traceback (most recent call last):\n  File "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\src\\business_repairs_smoke.py", line 54, in run\n    screen=AnalyticsWidget(win);screen.apply(frozen)\n                                ^^^^^^^^^^^^\nAttributeError: \'AnalyticsWidget\' object has no attribute \'apply\'\n'}

@@ -1,0 +1,35 @@
+8dea2c4e1f74807ce35e0c041448cd364e1f457c fix: recover export menu failures without replaying unknown submissions
+2ab8dba22be3e51364a6d91b56c7674e1f5eb9c0 test: drain application owners before frozen export recovery probe exits
+07cbead4b40bc32bb593f9fbe47e72fab303858d test: seal 0.49.5 rc2 export recovery delivery
+e14463d5a64aaf51ca5a1d7b47547b8f5902c93b feat: delete local order chains independently of platform lifecycle
+0d04c190b6c8565ce95ab677acf773c0b81e02c4 fix: retire unreserved purchase packages and rearm late-file cleanup
+9f92313dae7bc165f542e52316c02c2ff995bbdd fix: remove owned payment bindings and fence export receipt callbacks
+de838dcb21153b85a6179470d63b143306a10db5 test: seal 0.50.0 rc3 deletion lifecycle acceptance and delivery
+6c730672dcb2d7a82c2e9d2bb9b024f516237faf fix(aoxiang): follow current Edge login without fixed account binding
+3de3eac93bd8ab5f0ddfbb6c4aa2fb023187dd08 docs(release): seal 0.50.1 current Edge login acceptance
+b91c9d088a7f053d12c8026b3fdcdac31906d13e fix(stockout): allow current-login checks through analysis bridge
+71ab7edaf0dd44d8d98a40e183d0e67bcc8518f1 docs: seal 0.50.1 rc2 stockout login bridge acceptance and delivery
+a62d61691da869b6c8677cd8e6662a4789e630e7 fix(payment): match product codes without auxiliary or barcode inference
+cebb79426872865ad1bc5de0ee886f8afca1decb docs(release): seal rc3 product-code-only payment matching
+f11ab100213050d5bd10124ee284e463d915b590 feat: recover purchase tasks and overlap platform import waits
+51193fa6425c5d8d87728bd4e65ef8839b9973b3 test: seal 0.50.2 recovery and pipeline acceptance
+d708dec6a6edc2324377cc6475636bf0fac9a1ad fix: drain catalog service safely and release stale ownership
+8d9f267074075fa10fac49e8a528bddb9bbb6d46 fix: keep catalog transport alive until in-flight state is saved
+0c34ac35fed1108b93ee54a3469c029f9b5ba0bc test: seal catalog shutdown and restart recovery acceptance
+b3c1e4cacacdc5a118cc690b222ee93ab5907c2d feat: recover replenishment exports with scoped reexport and isolated originals
+385444cdf9a2cb1c9f2de62fd9c2e282da6e9d50 test: seal 0.50.4 scoped reexport and frozen workflow acceptance
+c3afd893975035048a3a1cb708b7fffbb2addfb2 feat: default mandatory stock floor and daily SKU exclusion (0.50.5)
+7cf1a5853c73f7d905747ecb63bc55f119b5b95f fix: expose pending mandatory stock evidence in review status
+38390d2790699922ec79e34103d7dc55b7c38963 test: refresh isolated final-quantity EXE fixtures and dialog driver
+a91a8114f8d9daaa408c0a298ca53ccbc8f8c5b1 release: seal 0.50.5 rc3 mandatory holding acceptance
+4abebb2305529133c045a309e94527688a6c6154 feat: add complete order migration and isolated warehouse stockout analysis
+01eeffca7932ce9fff6ca352b9c0fe8b0ea2d499 docs: seal 0.51.0 rc1 delivery and acceptance evidence
+8fc7ef8aad8177d66d751728f58e4d393bca52d8 docs: explain daily-delivery tag matching in newcomer guide
+dc8efe14dabc3ec681114a4977655483ae446c3d fix: repair payment binding and legacy collection login recovery in 0.51.1
+79f87b4fe2e039c82542fdd69bc03a19d73a1d12 test: seal 0.51.1 rc1 payment collection and login acceptance
+66f6c4f45a4816041d2bacf6d692a4640529e69c test: retain original failed fixture logs with 0.51.1 evidence
+90d244defdbeed279a2feb1912a3e93ce868f1c2 fix: complete store SKU supplier category analytics exports in 0.51.2
+a4d4a74814bfa1f25ed62f5355aa325cf7508770 test: seal 0.51.2 store dimension exports and synthetic workbook
+fb02565a4401028a22461dfa447c6077882752a6 chore: normalize imported 0.51.2 evidence text line endings
+758ca2b03e651f5b422f0789fc649f7fb01b68d4 feat: 本月新品首铺量采用对应仓商品资料
+edf459b79c271d3a43b76f31d874947f1714471a test: 封存0.51.3分仓首铺数验收与独立交付

@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "sealed_at": "2026-11-12T01:01:15.982795+08:00",
+  "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+  "python": {
+    "tests": 1523,
+    "seconds": 567.26,
+    "log_sha256": "b1d0944a999a35a52c9bce4951cd91cf0a1b1e48034196e40167227cfa6ea427"
+  },
+  "node": {
+    "aoxiang": 250,
+    "jst_catalog": 80
+  },
+  "exe_checks": {
+    "repairs": 24,
+    "analytics": 37,
+    "catalog": 39,
+    "rebind": 21,
+    "floor": 55,
+    "preissue": 13
+  },
+  "exe_total": 189,
+  "export_comparisons": 390,
+  "export_views": 7,
+  "floor_cases": 30,
+  "manual_pages": 88,
+  "manual_chapters": 21,
+  "manual_images": 43,
+  "exe_sha256": "e211162d44884cb22d87313f1c5e4bc0712bccc297facf6e2af53d39afe2fc14",
+  "live_platform": false,
+  "business_computer_tested": false,
+  "business_data_modified": false,
+  "remote_public": true,
+  "publication_scope": "source, documentation and verified synthetic acceptance evidence only; binaries remain local",
+  "model": "0.3.6-rules",
+  "build_source_unchanged": true
+}

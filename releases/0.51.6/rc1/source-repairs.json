@@ -1,0 +1,126 @@
+{
+  "passed": true,
+  "frozen_exe": false,
+  "exe_sha256": null,
+  "checks": [
+    "释放窗口操作权并保留真实组件连接",
+    "全部缺价货值保留未知",
+    "未取得实收资料的SKU数保留未知",
+    "已确认零数量仍显示零货值",
+    "真实Qt五段表显示未确认",
+    "EXE原生导出不包含四个冗余字段",
+    "实际完整参数按钮、文件读取、差异预览及保存完成：",
+    "默认参数实际保存为3",
+    "仅保存默认不偷偷改变本次参数",
+    "EXE完整参数导出可原样回导且无虚假变化",
+    "映射和辅助页不写回的提示保留",
+    "实际点击导出完整订单迁移包…",
+    "保留组件写锁时通过原服务快照导出完整包",
+    "实际点击校验并导入完整订单迁移包…",
+    "等待安全退出时迁入请求仍被保留",
+    "窗口尚未关闭时不提前替换资料",
+    "已确认迁入计划跨过真实异步安全退出，并在app主入口完成替换",
+    "释放窗口操作权并保留真实组件连接",
+    "重开只显示迁入来源任务，未混入目标旧任务",
+    "平台原任务号与一次提交事实保留",
+    "迁入任务暂停，等待本机明确核验",
+    "本机浏览器配置保留，自动同步暂停",
+    "迁入来源门店参数，未混合旧目标参数",
+    "应用退出链路已实际完成整体迁入"
+  ],
+  "version": {
+    "app": "补货助手",
+    "version": "0.51.6",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.2",
+    "model_version": "0.3.6-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2,
+    "source_commit": "源码运行",
+    "build_id": "未打包"
+  },
+  "synthetic": true,
+  "live_platform": false,
+  "phases": [
+    {
+      "passed": true,
+      "phase": "exercise",
+      "frozen_exe": false,
+      "checks": [
+        "释放窗口操作权并保留真实组件连接",
+        "全部缺价货值保留未知",
+        "未取得实收资料的SKU数保留未知",
+        "已确认零数量仍显示零货值",
+        "真实Qt五段表显示未确认",
+        "EXE原生导出不包含四个冗余字段",
+        "实际完整参数按钮、文件读取、差异预览及保存完成：",
+        "默认参数实际保存为3",
+        "仅保存默认不偷偷改变本次参数",
+        "EXE完整参数导出可原样回导且无虚假变化",
+        "映射和辅助页不写回的提示保留",
+        "实际点击导出完整订单迁移包…",
+        "保留组件写锁时通过原服务快照导出完整包",
+        "实际点击校验并导入完整订单迁移包…",
+        "等待安全退出时迁入请求仍被保留",
+        "窗口尚未关闭时不提前替换资料",
+        "已确认迁入计划跨过真实异步安全退出，并在app主入口完成替换"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.51.6",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "源码运行",
+        "build_id": "未打包"
+      },
+      "synthetic": true,
+      "live_platform": false,
+      "messages": [
+        {
+          "title": "迁移包已导出",
+          "text": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\source-repairs-03\\live-component-export.zip\n未找到的外部路径 2 项，清单已保留；数据库内已留存原件随包保存。\n校验摘要：4c0b20e09197ec5797b2717dd57913ce0e6a72834fc8ddd6b45966a999bd535c"
+        },
+        {
+          "title": "订单已迁入",
+          "text": "完整订单已迁入，作业和计划保持暂停。重新打开软件后先核验连接和原平台结果。\n原本机完整备份：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\release_0516_20261112_01\\source-repairs-03\\settings.订单导入备份-ab553a1a3c094d4395ea075b29d1fbc6"
+        }
+      ]
+    },
+    {
+      "passed": true,
+      "phase": "reopen",
+      "frozen_exe": false,
+      "checks": [
+        "释放窗口操作权并保留真实组件连接",
+        "重开只显示迁入来源任务，未混入目标旧任务",
+        "平台原任务号与一次提交事实保留",
+        "迁入任务暂停，等待本机明确核验",
+        "本机浏览器配置保留，自动同步暂停",
+        "迁入来源门店参数，未混合旧目标参数",
+        "应用退出链路已实际完成整体迁入"
+      ],
+      "version": {
+        "app": "补货助手",
+        "version": "0.51.6",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "源码运行",
+        "build_id": "未打包"
+      },
+      "synthetic": true,
+      "live_platform": false
+    }
+  ]
+}

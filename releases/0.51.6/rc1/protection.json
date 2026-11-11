@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "older_deliveries": [
+    {
+      "path": "交付_0.51.5_rc2\\补货助手\\补货助手.exe",
+      "sha256": "8a2310ea0db23c7c8042e4751d72e9ba4a4e27f2a00a08e28ee481ba50c8f35d",
+      "unchanged": true
+    },
+    {
+      "path": "交付_0.51.5_rc2\\补货助手_0.51.5_rc2.zip",
+      "sha256": "69f8d8858cd04de1ed046bc4a425db8eb2b028dba6289e556a6d98b63d864ec3",
+      "unchanged": true
+    },
+    {
+      "path": "交付_0.51.4_rc2\\补货助手\\补货助手.exe",
+      "sha256": "431d0bee3e305bd0dc4715d4e06e9419fd508fad758ffa9bdaa0ebb8532dcc96",
+      "unchanged": true
+    },
+    {
+      "path": "交付_0.51.4_rc2\\补货助手_0.51.4_rc2.zip",
+      "sha256": "f1c5cbe675bb349bc3a1357899475874e339ab9e36b689220b1e6c9886bc48ed",
+      "unchanged": true
+    }
+  ],
+  "independent_deletion_worktree_untouched": true,
+  "package_files": 1286,
+  "manual_matches_fixed_source": true,
+  "contains_user_state": false,
+  "model": "0.3.6-rules",
+  "source_commit": "477e4b4154f4cea564394155764235cff132e42f"
+}

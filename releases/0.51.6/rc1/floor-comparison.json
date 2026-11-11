@@ -1,0 +1,4434 @@
+{
+  "baseline": "edf459b79c271d3a43b76f31d874947f1714471a",
+  "source_mode": "current uncommitted workspace",
+  "synthetic": true,
+  "original_order_parameters_known": false,
+  "live_platform": false,
+  "forecast_net_qualification_and_cap_unchanged": true,
+  "unchanged_sources": {
+    "engine.py": "dea8d33aee68f597d0bdeabe7bf221c53f1bc9319127da0f015058b55e73d80c",
+    "one_box_exception.py": "ebdba874f41f1b54baff0c033bab188ff4fbcec598310c019247300163096d0f",
+    "mandatory_holding.py": "d2ea0e98fbd9fb637298be7fd03300cc6922279137ee843a79446e412a11888f",
+    "allocation.py": "eaad9d27238c3b532ac6c14a4e5091287157aa2f1e722a627d82b8e956ac4cd4",
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "new_products.py": "67c84f04229941e4c39d653a5b4b8e158cf440f0d49e24669a8215e45132062c",
+    "warehouse_routing.py": "a0f2c7b448234df22aeb2bdc8c02e8c0869a6602e1f390fd3d74fa9774627f0a"
+  },
+  "cases": [
+    {
+      "name": "A_双零有销量",
+      "input_changes": {
+        "L": 0
+      },
+      "options": {},
+      "before": {
+        "K": 0,
+        "L": 0,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 52.0,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 60,
+        "AR": 60,
+        "BP": 60,
+        "BQ": 20,
+        "BR": 60,
+        "BU": 60,
+        "AS": 60,
+        "BV": 45.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货60.；最低恢复量20.；净需求52.",
+        "AW": "可计算",
+        "ordinary": 60,
+        "execution": 60,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货60.；最低恢复量20.；净需求52.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 0,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 52.0,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 60,
+        "AR": 60,
+        "BP": 60,
+        "BQ": 20,
+        "BR": 60,
+        "BU": 60,
+        "AS": 60,
+        "BV": 45.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货60.；最低恢复量20.；净需求52.",
+        "AW": "可计算",
+        "ordinary": 60,
+        "execution": 60,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货60.；最低恢复量20.；净需求52.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "A2_双零保底必需",
+      "input_changes": {
+        "H": 0.07,
+        "I": 1,
+        "J": 1,
+        "L": 0
+      },
+      "options": {},
+      "before": {
+        "K": 0,
+        "L": 0,
+        "P": 0.0,
+        "AN": 0.08571428571428572,
+        "AM": 1.6666666666666665,
+        "AP": 1.857142857142857,
+        "AL": 2.1428571428571432,
+        "AQ": 4.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 0,
+        "AR": 0,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "新近动销（试补候选）；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求4.；补货超过历史月销；",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20,
+        "short_reason": "最低持有",
+        "export_reason": "新近动销（试补候选）；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求4.；补货超过历史月销；",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 0,
+        "P": 0.0,
+        "AN": 0.08571428571428572,
+        "AM": 1.6666666666666665,
+        "AP": 1.857142857142857,
+        "AL": 2.1428571428571432,
+        "AQ": 4.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 0,
+        "AR": 0,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "新近动销（试补候选）；可用与在途均为0，销售型断货保底；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求4.；补货超过历史月销；",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20,
+        "short_reason": "断货保底",
+        "export_reason": "新近动销（试补候选）；可用与在途均为0，销售型断货保底；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求4.；补货超过历史月销；",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "B_在途40资格不通过",
+      "input_changes": {},
+      "options": {
+        "moq": 0
+      },
+      "before": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 0,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.；最低恢复豁免原资格门槛",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20,
+        "short_reason": "断货保底",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.；最低恢复豁免原资格门槛",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 0,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 0,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "持续上升；可用与在途未同时为0，不触发销售型断货保底；普通补货资格未通过；实际补货0；净需求12.",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 0,
+        "short_reason": "普通补货资格未通过",
+        "export_reason": "持续上升；可用与在途未同时为0，不触发销售型断货保底；普通补货资格未通过；实际补货0；净需求12.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 0,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "B2_资格不通过开例外",
+      "input_changes": {},
+      "options": {
+        "moq": 0,
+        "exception": true
+      },
+      "before": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 0,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.；最低恢复豁免原资格门槛",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20,
+        "short_reason": "断货保底",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.；最低恢复豁免原资格门槛",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "未通过原计算或原补货资格",
+          "original_quantity": 20,
+          "original_amount": 15.0
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 0,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 0,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "持续上升；可用与在途未同时为0，不触发销售型断货保底；普通补货资格未通过；实际补货0；净需求12.",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 0,
+        "short_reason": "普通补货资格未通过",
+        "export_reason": "持续上升；可用与在途未同时为0，不触发销售型断货保底；普通补货资格未通过；实际补货0；净需求12.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "未通过原计算或原补货资格",
+          "original_quantity": 0,
+          "original_amount": 0
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 0,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "C_在途40正常缺口",
+      "input_changes": {},
+      "options": {},
+      "before": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 20,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 20,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "D1_在途覆盖目标",
+      "input_changes": {
+        "L": 80
+      },
+      "options": {
+        "moq": 100
+      },
+      "before": {
+        "K": 0,
+        "L": 80,
+        "P": 16.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 0,
+        "BI": 1,
+        "BJ": 0,
+        "BK": 0,
+        "AR": 0,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "持续上升；在途已有最低覆盖，常规候选为0；实际补货0.；净需求0.",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 0,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；在途已有最低覆盖，常规候选为0；实际补货0.；净需求0.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 100,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 80,
+        "P": 16.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 0,
+        "BI": 1,
+        "BJ": 0,
+        "BK": 0,
+        "AR": 0,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "持续上升；可用与在途未同时为0，不触发销售型断货保底；目标已覆盖；实际补货0；净需求0.",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 0,
+        "short_reason": "目标已覆盖",
+        "export_reason": "持续上升；可用与在途未同时为0，不触发销售型断货保底；目标已覆盖；实际补货0；净需求0.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 100,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "D2_现货覆盖目标",
+      "input_changes": {
+        "K": 80,
+        "L": 0
+      },
+      "options": {
+        "moq": 100
+      },
+      "before": {
+        "K": 80,
+        "L": 0,
+        "P": 23.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 0,
+        "BI": 1,
+        "BJ": 0,
+        "BK": 0,
+        "AR": 0,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "持续上升；常规候选为0；实际补货0.；净需求0.",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 0,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；常规候选为0；实际补货0.；净需求0.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 100,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 80,
+        "L": 0,
+        "P": 23.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 0,
+        "BI": 1,
+        "BJ": 0,
+        "BK": 0,
+        "AR": 0,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "持续上升；可用与在途未同时为0，不触发销售型断货保底；目标已覆盖；实际补货0；净需求0.",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 0,
+        "short_reason": "目标已覆盖",
+        "export_reason": "持续上升；可用与在途未同时为0，不触发销售型断货保底；目标已覆盖；实际补货0；净需求0.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 100,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E_有现货",
+      "input_changes": {
+        "K": 1,
+        "L": 0
+      },
+      "options": {},
+      "before": {
+        "K": 1,
+        "L": 0,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 51.0,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 40,
+        "AR": 40,
+        "BP": 40,
+        "BQ": 0,
+        "BR": 40,
+        "BU": 40,
+        "AS": 40,
+        "BV": 30.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货40.；净需求51.",
+        "AW": "可计算",
+        "ordinary": 40,
+        "execution": 40,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货40.；净需求51.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 1,
+        "L": 0,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 51.0,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 40,
+        "AR": 40,
+        "BP": 40,
+        "BQ": 0,
+        "BR": 40,
+        "BU": 40,
+        "AS": 40,
+        "BV": 30.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货40.；净需求51.",
+        "AW": "可计算",
+        "ordinary": 40,
+        "execution": 40,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货40.；净需求51.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E2_无销量无缺货",
+      "input_changes": {
+        "H": 0,
+        "I": 0,
+        "J": 0,
+        "L": 0
+      },
+      "options": {},
+      "before": {
+        "K": 0,
+        "L": 0,
+        "P": "无动销",
+        "AN": 0.0,
+        "AM": 1,
+        "AP": 0.0,
+        "AL": 0.0,
+        "AQ": 0.0,
+        "BI": 1,
+        "BJ": 0,
+        "BK": 0,
+        "AR": 0,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "30天无动销；常规候选为0；实际补货0.；净需求0.",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 0,
+        "short_reason": "新品未选",
+        "export_reason": "30天无动销；常规候选为0；实际补货0.；净需求0.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 0,
+        "P": "无动销",
+        "AN": 0.0,
+        "AM": 1,
+        "AP": 0.0,
+        "AL": 0.0,
+        "AQ": 0.0,
+        "BI": 1,
+        "BJ": 0,
+        "BK": 0,
+        "AR": 0,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "30天无动销；无需补货；实际补货0；净需求0.",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 0,
+        "short_reason": "新品未选",
+        "export_reason": "30天无动销；无需补货；实际补货0；净需求0.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E3_零销短期恢复",
+      "input_changes": {
+        "H": 0,
+        "I": 0,
+        "J": 0,
+        "L": 0,
+        "N": 4
+      },
+      "options": {},
+      "before": {
+        "K": 0,
+        "L": 0,
+        "P": "无动销",
+        "AN": 0.0,
+        "AM": 1,
+        "AP": 0.0,
+        "AL": 0.0,
+        "AQ": 0.0,
+        "BI": 1,
+        "BJ": 0,
+        "BK": 0,
+        "AR": 0,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "30天无动销；零月销缺货按最低有货恢复，不上调销量预测；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求0.；零月销缺货恢复；",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20,
+        "short_reason": "零销恢复",
+        "export_reason": "30天无动销；零月销缺货按最低有货恢复，不上调销量预测；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求0.；零月销缺货恢复；",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 0,
+        "P": "无动销",
+        "AN": 0.0,
+        "AM": 1,
+        "AP": 0.0,
+        "AL": 0.0,
+        "AQ": 0.0,
+        "BI": 1,
+        "BJ": 0,
+        "BK": 0,
+        "AR": 0,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "30天无动销；零月销缺货按最低有货恢复，不上调销量预测；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求0.；零月销缺货恢复；",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20,
+        "short_reason": "零销恢复",
+        "export_reason": "30天无动销；零月销缺货按最低有货恢复，不上调销量预测；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求0.；零月销缺货恢复；",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E4_极端恢复",
+      "input_changes": {
+        "H": 0,
+        "I": 0,
+        "J": 0,
+        "L": 0,
+        "N": 30
+      },
+      "options": {},
+      "before": {
+        "K": 0,
+        "L": 0,
+        "P": "无动销",
+        "AN": "待复核",
+        "AM": "待复核",
+        "AP": "待复核",
+        "AL": "待复核",
+        "AQ": 20,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "极端缺货自动拉回；恢复一个出库单位；首铺价档数量不作为永久持有下限；实际补货20.；最低恢复量20.",
+        "AW": "极端缺货自动拉回",
+        "ordinary": 20,
+        "execution": 20,
+        "short_reason": "极端缺货恢复",
+        "export_reason": "极端缺货自动拉回；恢复一个出库单位；首铺价档数量不作为永久持有下限；实际补货20.；最低恢复量20.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 0,
+        "P": "无动销",
+        "AN": "待复核",
+        "AM": "待复核",
+        "AP": "待复核",
+        "AL": "待复核",
+        "AQ": 20,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "极端缺货自动拉回；恢复一个出库单位；首铺价档数量不作为永久持有下限；实际补货20.；最低恢复量20.",
+        "AW": "极端缺货自动拉回",
+        "ordinary": 20,
+        "execution": 20,
+        "short_reason": "极端缺货恢复",
+        "export_reason": "极端缺货自动拉回；恢复一个出库单位；首铺价档数量不作为永久持有下限；实际补货20.；最低恢复量20.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E5_负可用抵消正在途",
+      "input_changes": {
+        "K": -40,
+        "L": 40
+      },
+      "options": {},
+      "before": {
+        "K": -40,
+        "L": 40,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 52.0,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 60,
+        "AR": 60,
+        "BP": 60,
+        "BQ": 0,
+        "BR": 60,
+        "BU": 60,
+        "AS": 60,
+        "BV": 45.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货60.；净需求52.；净需求沿用原负库存，资金口径负库存按0",
+        "AW": "可计算",
+        "ordinary": 60,
+        "execution": 60,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货60.；净需求52.；净需求沿用原负库存，资金口径负库存按0",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": -40,
+        "L": 40,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 52.0,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 60,
+        "AR": 60,
+        "BP": 60,
+        "BQ": 0,
+        "BR": 60,
+        "BU": 60,
+        "AS": 60,
+        "BV": 45.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货60.；净需求52.；净需求沿用原负库存，资金口径负库存按0",
+        "AW": "可计算",
+        "ordinary": 60,
+        "execution": 60,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货60.；净需求52.；净需求沿用原负库存，资金口径负库存按0",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E6_负可用无在途",
+      "input_changes": {
+        "K": -5,
+        "L": 0
+      },
+      "options": {},
+      "before": {
+        "K": -5,
+        "L": 0,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 57.0,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 60,
+        "AR": 60,
+        "BP": 60,
+        "BQ": 20,
+        "BR": 60,
+        "BU": 60,
+        "AS": 60,
+        "BV": 45.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货60.；最低恢复量20.；净需求57.；净需求沿用原负库存，资金口径负库存按0",
+        "AW": "可计算",
+        "ordinary": 60,
+        "execution": 60,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货60.；最低恢复量20.；净需求57.；净需求沿用原负库存，资金口径负库存按0",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": -5,
+        "L": 0,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 57.0,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 60,
+        "AR": 60,
+        "BP": 60,
+        "BQ": 0,
+        "BR": 60,
+        "BU": 60,
+        "AS": 60,
+        "BV": 45.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货60.；净需求57.；净需求沿用原负库存，资金口径负库存按0",
+        "AW": "可计算",
+        "ordinary": 60,
+        "execution": 60,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货60.；净需求57.；净需求沿用原负库存，资金口径负库存按0",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E7_缺失可用",
+      "input_changes": {
+        "K": null
+      },
+      "options": {},
+      "before": {
+        "K": null,
+        "L": 40,
+        "P": "待复核",
+        "AN": "待复核",
+        "AM": "待复核",
+        "AP": "待复核",
+        "AL": "待复核",
+        "AQ": "待复核",
+        "BI": 0,
+        "BJ": "待复核",
+        "BK": "待复核",
+        "AR": "待复核",
+        "BP": "待复核",
+        "BQ": "待复核",
+        "BR": "待复核",
+        "BU": "待复核",
+        "AS": "输入待核",
+        "BV": "数量未定",
+        "BM": "可用库存缺失或格式无效",
+        "AW": "输入缺失",
+        "ordinary": 0,
+        "execution": "待核",
+        "short_reason": "资料待核",
+        "export_reason": "可用库存缺失或格式无效",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数量未定行数": 1,
+            "数值结果行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": null,
+        "L": 40,
+        "P": "待复核",
+        "AN": "待复核",
+        "AM": "待复核",
+        "AP": "待复核",
+        "AL": "待复核",
+        "AQ": "待复核",
+        "BI": 0,
+        "BJ": "待复核",
+        "BK": "待复核",
+        "AR": "待复核",
+        "BP": "待复核",
+        "BQ": "待复核",
+        "BR": "待复核",
+        "BU": "待复核",
+        "AS": "输入待核",
+        "BV": "数量未定",
+        "BM": "可用库存缺失或格式无效",
+        "AW": "输入缺失",
+        "ordinary": 0,
+        "execution": "待核",
+        "short_reason": "资料待核",
+        "export_reason": "可用库存缺失或格式无效",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数量未定行数": 1,
+            "数值结果行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E8_缺失在途",
+      "input_changes": {
+        "L": null
+      },
+      "options": {},
+      "before": {
+        "K": 0,
+        "L": null,
+        "P": "待复核",
+        "AN": "待复核",
+        "AM": "待复核",
+        "AP": "待复核",
+        "AL": "待复核",
+        "AQ": "待复核",
+        "BI": 0,
+        "BJ": "待复核",
+        "BK": "待复核",
+        "AR": "待复核",
+        "BP": "待复核",
+        "BQ": "待复核",
+        "BR": "待复核",
+        "BU": "待复核",
+        "AS": "输入待核",
+        "BV": "数量未定",
+        "BM": "在途库存缺失或格式无效",
+        "AW": "输入缺失",
+        "ordinary": 0,
+        "execution": "待核",
+        "short_reason": "资料待核",
+        "export_reason": "在途库存缺失或格式无效",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数量未定行数": 1,
+            "数值结果行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": null,
+        "P": "待复核",
+        "AN": "待复核",
+        "AM": "待复核",
+        "AP": "待复核",
+        "AL": "待复核",
+        "AQ": "待复核",
+        "BI": 0,
+        "BJ": "待复核",
+        "BK": "待复核",
+        "AR": "待复核",
+        "BP": "待复核",
+        "BQ": "待复核",
+        "BR": "待复核",
+        "BU": "待复核",
+        "AS": "输入待核",
+        "BV": "数量未定",
+        "BM": "在途库存缺失或格式无效",
+        "AW": "输入缺失",
+        "ordinary": 0,
+        "execution": "待核",
+        "short_reason": "资料待核",
+        "export_reason": "在途库存缺失或格式无效",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数量未定行数": 1,
+            "数值结果行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E9_在途非法",
+      "input_changes": {
+        "L": "未知"
+      },
+      "options": {},
+      "before": {
+        "K": 0,
+        "L": "未知",
+        "P": "待复核",
+        "AN": "待复核",
+        "AM": "待复核",
+        "AP": "待复核",
+        "AL": "待复核",
+        "AQ": "待复核",
+        "BI": 0,
+        "BJ": "待复核",
+        "BK": "待复核",
+        "AR": "待复核",
+        "BP": "待复核",
+        "BQ": "待复核",
+        "BR": "待复核",
+        "BU": "待复核",
+        "AS": "输入待核",
+        "BV": "数量未定",
+        "BM": "在途库存缺失或格式无效",
+        "AW": "输入缺失",
+        "ordinary": 0,
+        "execution": "待核",
+        "short_reason": "资料待核",
+        "export_reason": "在途库存缺失或格式无效",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数量未定行数": 1,
+            "数值结果行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": "未知",
+        "P": "待复核",
+        "AN": "待复核",
+        "AM": "待复核",
+        "AP": "待复核",
+        "AL": "待复核",
+        "AQ": "待复核",
+        "BI": 0,
+        "BJ": "待复核",
+        "BK": "待复核",
+        "AR": "待复核",
+        "BP": "待复核",
+        "BQ": "待复核",
+        "BR": "待复核",
+        "BU": "待复核",
+        "AS": "输入待核",
+        "BV": "数量未定",
+        "BM": "在途库存缺失或格式无效",
+        "AW": "输入缺失",
+        "ordinary": 0,
+        "execution": "待核",
+        "short_reason": "资料待核",
+        "export_reason": "在途库存缺失或格式无效",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数量未定行数": 1,
+            "数值结果行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E10_负在途",
+      "input_changes": {
+        "K": 0,
+        "L": -1
+      },
+      "options": {},
+      "before": {
+        "K": 0,
+        "L": -1,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 53.0,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 60,
+        "AR": 60,
+        "BP": 60,
+        "BQ": 20,
+        "BR": 60,
+        "BU": 60,
+        "AS": 60,
+        "BV": 45.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货60.；最低恢复量20.；净需求53.；净需求沿用原负库存，资金口径负库存按0",
+        "AW": "可计算",
+        "ordinary": 60,
+        "execution": 60,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货60.；最低恢复量20.；净需求53.；净需求沿用原负库存，资金口径负库存按0",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": -1,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 53.0,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 60,
+        "AR": 60,
+        "BP": 60,
+        "BQ": 0,
+        "BR": 60,
+        "BU": 60,
+        "AS": 60,
+        "BV": 45.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货60.；净需求53.；净需求沿用原负库存，资金口径负库存按0",
+        "AW": "可计算",
+        "ordinary": 60,
+        "execution": 60,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货60.；净需求53.；净需求沿用原负库存，资金口径负库存按0",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "E11_微量在途",
+      "input_changes": {
+        "L": 1e-10
+      },
+      "options": {},
+      "before": {
+        "K": 0,
+        "L": 1e-10,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 51.9999999999,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 60,
+        "AR": 60,
+        "BP": 60,
+        "BQ": 20,
+        "BR": 60,
+        "BU": 60,
+        "AS": 60,
+        "BV": 45.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货60.；最低恢复量20.；净需求51.9999999999",
+        "AW": "可计算",
+        "ordinary": 60,
+        "execution": 60,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货60.；最低恢复量20.；净需求51.9999999999",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 1e-10,
+        "P": 0.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 51.9999999999,
+        "BI": 1,
+        "BJ": 60,
+        "BK": 60,
+        "AR": 60,
+        "BP": 60,
+        "BQ": 0,
+        "BR": 60,
+        "BU": 60,
+        "AS": 60,
+        "BV": 45.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货60.；净需求51.9999999999",
+        "AW": "可计算",
+        "ordinary": 60,
+        "execution": 60,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货60.；净需求51.9999999999",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F1_小在途资金约束",
+      "input_changes": {
+        "H": 0.07,
+        "I": 1,
+        "J": 1,
+        "L": 0.5
+      },
+      "options": {
+        "cap": 0
+      },
+      "before": {
+        "K": 0,
+        "L": 0.5,
+        "P": 2.0,
+        "AN": 0.08571428571428572,
+        "AM": 1.6666666666666665,
+        "AP": 1.857142857142857,
+        "AL": 2.1428571428571432,
+        "AQ": 3.5,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 0,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "新近动销（试补候选）；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求3.5；最低有货优先于资金上限；补货超过历史月销；",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 20,
+        "short_reason": "最低持有",
+        "export_reason": "新近动销（试补候选）；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求3.5；最低有货优先于资金上限；补货超过历史月销；",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 0,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 0.5,
+        "P": 2.0,
+        "AN": 0.08571428571428572,
+        "AM": 1.6666666666666665,
+        "AP": 1.857142857142857,
+        "AL": 2.1428571428571432,
+        "AQ": 3.5,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "新近动销（试补候选）；可用与在途未同时为0，不触发销售型断货保底；资金约束未安排；实际补货0；净需求3.5",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0,
+        "short_reason": "资金约束未安排",
+        "export_reason": "新近动销（试补候选）；可用与在途未同时为0，不触发销售型断货保底；资金约束未安排；实际补货0；净需求3.5",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 0,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F2_独立一箱例外",
+      "input_changes": {
+        "H": 0.07,
+        "I": 1,
+        "J": 1,
+        "L": 0.5
+      },
+      "options": {
+        "cap": 0,
+        "exception": true
+      },
+      "before": {
+        "K": 0,
+        "L": 0.5,
+        "P": 2.0,
+        "AN": 0.08571428571428572,
+        "AM": 1.6666666666666665,
+        "AP": 1.857142857142857,
+        "AL": 2.1428571428571432,
+        "AQ": 3.5,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 0,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "新近动销（试补候选）；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求3.5；最低有货优先于资金上限；补货超过历史月销；",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 20,
+        "short_reason": "最低持有",
+        "export_reason": "新近动销（试补候选）；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求3.5；最低有货优先于资金上限；补货超过历史月销；",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "原模型已有补货建议，不额外加箱",
+          "original_quantity": 20,
+          "original_amount": 15.0
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 0,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 0.5,
+        "P": 2.0,
+        "AN": 0.08571428571428572,
+        "AM": 1.6666666666666665,
+        "AP": 1.857142857142857,
+        "AL": 2.1428571428571432,
+        "AQ": 3.5,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 0,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "一箱例外：原建议0；最终补货20个库存单位；现有可售3.5000天，小于到货5天；原拦截为资金约束；仅一箱豁免库存额度和资金约束",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 20,
+        "short_reason": "一箱恢复",
+        "export_reason": "一箱例外：原建议0；最终补货20个库存单位；现有可售3.5000天，小于到货5天；原拦截为资金约束；仅一箱豁免库存额度和资金约束",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": true,
+          "applied": true,
+          "reason": "符合一箱例外",
+          "original_quantity": 0,
+          "original_amount": 0,
+          "forecast_daily": 0.14285714285714285,
+          "current_days": 3.5,
+          "lead_days": 5,
+          "step": 20,
+          "blocked_by": "资金约束",
+          "final_quantity": 20,
+          "final_amount": 15.0,
+          "incremental_amount": 15.0,
+          "baseline_reason": "新近动销（试补候选）；可用与在途未同时为0，不触发销售型断货保底；资金约束未安排；实际补货0；净需求3.5",
+          "post_days": 143.5
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 0,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F3_必采最低持有",
+      "input_changes": {
+        "H": 0.07,
+        "I": 1,
+        "J": 1,
+        "L": 0.5
+      },
+      "options": {
+        "must": true
+      },
+      "before": {
+        "K": 0,
+        "L": 0.5,
+        "P": 2.0,
+        "AN": 0.08571428571428572,
+        "AM": 1.6666666666666665,
+        "AP": 1.857142857142857,
+        "AL": 2.1428571428571432,
+        "AQ": 3.5,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 0,
+        "AR": 0,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "新近动销（试补候选）；常规候选为0；实际补货0.；净需求3.5",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20.0,
+        "short_reason": "必采最低持有",
+        "export_reason": "必采最低持有 1 个库存单位；可用及在途覆盖 0.5；按出库单位补足至少 20，较原建议追加 20",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": {
+          "version": "mandatory-holding-1",
+          "minimum": 1,
+          "state": "已核验",
+          "holding": 0.5,
+          "required_quantity": 20.0,
+          "candidate_before": 0,
+          "added_quantity": 20.0
+        },
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 0.5,
+        "P": 2.0,
+        "AN": 0.08571428571428572,
+        "AM": 1.6666666666666665,
+        "AP": 1.857142857142857,
+        "AL": 2.1428571428571432,
+        "AQ": 3.5,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 0,
+        "AR": 0,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "新近动销（试补候选）；可用与在途未同时为0，不触发销售型断货保底；库存额度限制；实际补货0；净需求3.5",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20.0,
+        "short_reason": "必采最低持有",
+        "export_reason": "必采最低持有 1 个库存单位；可用及在途覆盖 0.5；按出库单位补足至少 20，较原建议追加 20",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": {
+          "version": "mandatory-holding-1",
+          "minimum": 1,
+          "state": "已核验",
+          "holding": 0.5,
+          "required_quantity": 20.0,
+          "candidate_before": 0,
+          "added_quantity": 20.0
+        },
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F4_必采在途已覆盖",
+      "input_changes": {},
+      "options": {
+        "moq": 0,
+        "must": true
+      },
+      "before": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 0,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.；最低恢复豁免原资格门槛",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20,
+        "short_reason": "断货保底",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.；最低恢复豁免原资格门槛",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": {
+          "version": "mandatory-holding-1",
+          "minimum": 1,
+          "state": "已核验",
+          "holding": 40.0,
+          "required_quantity": 0.0,
+          "candidate_before": 20,
+          "added_quantity": 0.0
+        },
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 0,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 0,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 0,
+        "BQ": 0,
+        "BR": 0,
+        "BU": 0,
+        "AS": 0,
+        "BV": 0,
+        "BM": "持续上升；可用与在途未同时为0，不触发销售型断货保底；普通补货资格未通过；实际补货0；净需求12.",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 0,
+        "short_reason": "普通补货资格未通过",
+        "export_reason": "持续上升；可用与在途未同时为0，不触发销售型断货保底；普通补货资格未通过；实际补货0；净需求12.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": {
+          "version": "mandatory-holding-1",
+          "minimum": 1,
+          "state": "已核验",
+          "holding": 40.0,
+          "required_quantity": 0.0,
+          "candidate_before": 0,
+          "added_quantity": 0.0
+        },
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 0,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F5_预算为0",
+      "input_changes": {},
+      "options": {
+        "budget": 0
+      },
+      "before": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0.0,
+        "short_reason": "预算暂缓",
+        "export_reason": "普通：预算不足或剩余资金不足一个最小出库单位，暂缓",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0.0,
+        "short_reason": "预算暂缓",
+        "export_reason": "普通：预算不足或剩余资金不足一个最小出库单位，暂缓",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F6_预算充足",
+      "input_changes": {},
+      "options": {
+        "budget": 100
+      },
+      "before": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 20.0,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 20.0,
+        "short_reason": "动销补货",
+        "export_reason": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F7_禁用",
+      "input_changes": {},
+      "options": {
+        "status": "禁用"
+      },
+      "before": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.；中心仓禁用；",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0,
+        "short_reason": "禁用不补",
+        "export_reason": "默认不补：商品资料禁用；计算结果仅供参考",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.；中心仓禁用；",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0,
+        "short_reason": "禁用不补",
+        "export_reason": "默认不补：商品资料禁用；计算结果仅供参考",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F8_日配",
+      "input_changes": {},
+      "options": {
+        "tags": "日配"
+      },
+      "before": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0,
+        "short_reason": "日配不补",
+        "export_reason": "默认不补：商品标签日配（默认排除）；计算结果仅供参考",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0,
+        "short_reason": "日配不补",
+        "export_reason": "默认不补：商品标签日配（默认排除）；计算结果仅供参考",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F9_停采",
+      "input_changes": {},
+      "options": {
+        "export_status": "停采"
+      },
+      "before": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0,
+        "short_reason": "停采不补",
+        "export_reason": "默认不补：补货建议停采；计算结果仅供参考",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0,
+        "short_reason": "停采不补",
+        "export_reason": "默认不补：补货建议停采；计算结果仅供参考",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F10_禁采",
+      "input_changes": {},
+      "options": {
+        "export_status": "禁采"
+      },
+      "before": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0,
+        "short_reason": "禁采不补",
+        "export_reason": "默认不补：补货建议禁采；计算结果仅供参考",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 40,
+        "P": 8.0,
+        "AN": 2.9267857142857143,
+        "AM": 1.147,
+        "AP": 43.64130178571429,
+        "AL": 8.35869821428571,
+        "AQ": 12.0,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 0,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "持续上升；月销达到10.，新增资金层退出；实际补货20.；净需求12.",
+        "AW": "可计算",
+        "ordinary": 20,
+        "execution": 0,
+        "short_reason": "禁采不补",
+        "export_reason": "默认不补：补货建议禁采；计算结果仅供参考",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 21,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F11_小在途零销恢复",
+      "input_changes": {
+        "H": 0,
+        "I": 0,
+        "J": 0,
+        "L": 0.5,
+        "N": 4
+      },
+      "options": {
+        "cap": 0
+      },
+      "before": {
+        "K": 0,
+        "L": 0.5,
+        "P": "无动销",
+        "AN": 0.0,
+        "AM": 1,
+        "AP": 0.0,
+        "AL": 0.0,
+        "AQ": 0,
+        "BI": 1,
+        "BJ": 0,
+        "BK": 0,
+        "AR": 0,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 0,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "30天无动销；零月销缺货按最低有货恢复，不上调销量预测；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求0.；最低有货优先于资金上限；零月销缺货恢复；",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20,
+        "short_reason": "零销恢复",
+        "export_reason": "30天无动销；零月销缺货按最低有货恢复，不上调销量预测；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求0.；最低有货优先于资金上限；零月销缺货恢复；",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 0,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 0.5,
+        "P": "无动销",
+        "AN": 0.0,
+        "AM": 1,
+        "AP": 0.0,
+        "AL": 0.0,
+        "AQ": 0,
+        "BI": 1,
+        "BJ": 0,
+        "BK": 0,
+        "AR": 0,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 0,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "30天无动销；零月销缺货按最低有货恢复，不上调销量预测；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求0.；最低有货优先于资金上限；零月销缺货恢复；",
+        "AW": "可计算",
+        "ordinary": 0,
+        "execution": 20,
+        "short_reason": "零销恢复",
+        "export_reason": "30天无动销；零月销缺货按最低有货恢复，不上调销量预测；保留资金约束候选数量；实际补货20.；最低恢复量20.；净需求0.；最低有货优先于资金上限；零月销缺货恢复；",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 0,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    },
+    {
+      "name": "F12_小在途极端恢复",
+      "input_changes": {
+        "H": 0,
+        "I": 0,
+        "J": 0,
+        "L": 0.5,
+        "N": 30
+      },
+      "options": {
+        "cap": 0
+      },
+      "before": {
+        "K": 0,
+        "L": 0.5,
+        "P": "无动销",
+        "AN": "待复核",
+        "AM": "待复核",
+        "AP": "待复核",
+        "AL": "待复核",
+        "AQ": 20,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "极端缺货自动拉回；恢复一个出库单位；首铺价档数量不作为永久持有下限；实际补货20.；最低恢复量20.",
+        "AW": "极端缺货自动拉回",
+        "ordinary": 20,
+        "execution": 20,
+        "short_reason": "极端缺货恢复",
+        "export_reason": "极端缺货自动拉回；恢复一个出库单位；首铺价档数量不作为永久持有下限；实际补货20.；最低恢复量20.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 0,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": null
+      },
+      "after": {
+        "K": 0,
+        "L": 0.5,
+        "P": "无动销",
+        "AN": "待复核",
+        "AM": "待复核",
+        "AP": "待复核",
+        "AL": "待复核",
+        "AQ": 20,
+        "BI": 1,
+        "BJ": 20,
+        "BK": 20,
+        "AR": 20,
+        "BP": 20,
+        "BQ": 20,
+        "BR": 20,
+        "BU": 20,
+        "AS": 20,
+        "BV": 15.0,
+        "BM": "极端缺货自动拉回；恢复一个出库单位；首铺价档数量不作为永久持有下限；实际补货20.；最低恢复量20.",
+        "AW": "极端缺货自动拉回",
+        "ordinary": 20,
+        "execution": 20,
+        "short_reason": "极端缺货恢复",
+        "export_reason": "极端缺货自动拉回；恢复一个出库单位；首铺价档数量不作为永久持有下限；实际补货20.；最低恢复量20.",
+        "exception": {
+          "rule_version": "one-box-arrival-exception-v1",
+          "eligible": false,
+          "applied": false,
+          "reason": "开关关闭"
+        },
+        "mandatory": null,
+        "checks": {
+          "counts": {
+            "数值结果行数": 2,
+            "应最低恢复行数": 1
+          },
+          "failures": []
+        },
+        "weights": {
+          "alpha": 0.4,
+          "w1": 0.6,
+          "w2": 0.2
+        },
+        "parameters": {
+          "depth": 8,
+          "lead": 5,
+          "cap_days": 0,
+          "probability": 0.9,
+          "single_sample_multiple": 1.5,
+          "strict_monthly": 3,
+          "exit_monthly": 10,
+          "monthly_extra_money": 6,
+          "weak_extra_money": 30,
+          "historical_reference_days": 13,
+          "extreme_days": 30,
+          "minimum_reference_units": 1,
+          "growth_reference_days": 4,
+          "moq_days": 12,
+          "moq_price": 6
+        },
+        "warehouse_days": {
+          "山东仓": [
+            8,
+            5
+          ]
+        },
+        "floor_rule": "sales-floor-zero-v1"
+      }
+    }
+  ]
+}
