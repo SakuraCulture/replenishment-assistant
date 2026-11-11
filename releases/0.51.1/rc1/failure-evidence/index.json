@@ -1,0 +1,22 @@
+{
+  "not_deleted": true,
+  "items": [
+    {
+      "file": "node-targeted-01.log",
+      "reason": "New test fixture deleted a command before its FK events; backup file glob also counted SQLite sidecars. Fixed fixture and exact .sqlite selection; 35 targeted and 250 full component tests then passed."
+    },
+    {
+      "file": "python-targeted-02.log",
+      "reason": "Fake client raised KeyError rather than the actual COMMAND_NOT_FOUND contract for an unaccepted local intention. Corrected test transport; final 36 targeted tests passed."
+    },
+    {
+      "file": "payment-source-01.log",
+      "reason": "QA generator read products from the generated-order header; canonical lifecycle head contains that field. Corrected fixture; source and EXE then passed 32 checks."
+    },
+    {
+      "file": "collection-source-01-exe-report.json",
+      "reason": "QA wait returned before the confirmed delete was dispatched on the next Qt event. Added pending-maintenance settlement; source and EXE then passed 13 checks."
+    }
+  ],
+  "earlier_diagnosis": "qa/diagnose_binding_collection_20261111_01, _02, _03 and qa/diagnose_login_20261111_01 are retained; initial failed probes were fixture/transport mistakes and corrected before implementation."
+}

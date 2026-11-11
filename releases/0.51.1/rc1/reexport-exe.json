@@ -1,0 +1,18 @@
+{
+  "frozen_exe": true,
+  "live_platform": false,
+  "passed": true,
+  "checks": [
+    "真实重导确认框默认取消，列明所选范围和可能重复文件；取消不退役",
+    "受理未知旧项可明确退役并建立独立新任务；无Edge绑定，在平台动作前停止",
+    "同批未选门店的身份、位置、状态和错误保持不变",
+    "新任务可安全结束，不等待平台生命周期或删除旧记录",
+    "关闭重开保持所选退役与新任务记录，旧成功文件仍可检查采用",
+    "草稿/签发逐行逻辑数据、既有采用清单和原件哈希不变"
+  ],
+  "source_commit": "dc8efe14dabc3ec681114a4977655483ae446c3d",
+  "shared_component_closed": true,
+  "process_exit_code": 0,
+  "accepted": true,
+  "exe_sha256": "d345922886b9ecca644868c151ca5443ed20f22ee625ce0b9c401387d4c5b20a"
+}
