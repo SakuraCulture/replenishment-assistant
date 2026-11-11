@@ -1,0 +1,194 @@
+{
+  "push_verified": true,
+  "pull_request": "https://github.com/SakuraCulture/replenishment-assistant/pull/8",
+  "pull_request_number": 8,
+  "published_refs": [
+    {
+      "ref": "refs/heads/feat/collection-reexport-0.50.4",
+      "object": "385444cdf9a2cb1c9f2de62fd9c2e282da6e9d50",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/feat/deletion-lifecycle-0.50.0",
+      "object": "de838dcb21153b85a6179470d63b143306a10db5",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/feat/first-fill-and-funnel-0.51.4",
+      "object": "edf459b79c271d3a43b76f31d874947f1714471a",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/feat/migration-and-warehouse-analysis-0.51.0",
+      "object": "8fc7ef8aad8177d66d751728f58e4d393bca52d8",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/feat/purchase-recovery-pipeline-0.50.2",
+      "object": "51193fa6425c5d8d87728bd4e65ef8839b9973b3",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/feat/replenishment-daily-mandatory-0.50.5",
+      "object": "a91a8114f8d9daaa408c0a298ca53ccbc8f8c5b1",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/feat/warehouse-first-fill-0.51.3",
+      "object": "edf459b79c271d3a43b76f31d874947f1714471a",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/fix/aoxiang-current-edge-login-0.50.1",
+      "object": "3de3eac93bd8ab5f0ddfbb6c4aa2fb023187dd08",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/fix/aoxiang-export-recovery-0.49.5",
+      "object": "07cbead4b40bc32bb593f9fbe47e72fab303858d",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/fix/catalog-service-lifetime-0.50.3",
+      "object": "0c34ac35fed1108b93ee54a3469c029f9b5ba0bc",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/fix/payment-collection-login-0.51.1",
+      "object": "66f6c4f45a4816041d2bacf6d692a4640529e69c",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/fix/payment-sku-only-0.50.1",
+      "object": "cebb79426872865ad1bc5de0ee886f8afca1decb",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/fix/stockout-login-bridge-0.50.1",
+      "object": "71ab7edaf0dd44d8d98a40e183d0e67bcc8518f1",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/fix/store-analytics-dimensions-0.51.2",
+      "object": "fb02565a4401028a22461dfa447c6077882752a6",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/heads/release/0.51.6",
+      "object": "10defa3c2bf8178a11be7d099af671805cddcce5",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.49.5-rc2",
+      "object": "2ed049ecd941d72b80bd594340018f4a48b52e46",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.50.0-rc3",
+      "object": "de838dcb21153b85a6179470d63b143306a10db5",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.50.1-rc1",
+      "object": "3de3eac93bd8ab5f0ddfbb6c4aa2fb023187dd08",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.50.1-rc3",
+      "object": "cebb79426872865ad1bc5de0ee886f8afca1decb",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.50.2-rc1",
+      "object": "0c8057f62f733873dafe7a210663b87ff4741488",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.50.3-rc2",
+      "object": "d016990a6c49d591656a589168b7c9b8d37ea8b4",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.50.4-rc1",
+      "object": "9ed71d33831a7bfe43ee66a765e53396be58b17e",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.50.5-rc3",
+      "object": "955988db44c38f41613d07a9433898aca5453106",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.51.0-rc1",
+      "object": "1fbaec4e3f07f5fd8637025aa046a1c746cabddc",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.51.1-rc1",
+      "object": "89f8b584045b9f50dda59a271b0287b0586326e0",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.51.1-rc1-evidence",
+      "object": "e5be9718cf4786f88d8595db84b43133c8c70a67",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.51.2-rc1",
+      "object": "9947210776a4a05aa4d6abbfb609b142496ff0af",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.51.2-rc1-evidence",
+      "object": "e0916b67d297fc6635b6f6ae395863a7e03e5959",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.51.3-rc1",
+      "object": "f6b0ee165a78600f0183a088cd8c15f294e198bd",
+      "remote_before": null,
+      "push_needed": true
+    },
+    {
+      "ref": "refs/tags/v0.51.6-rc1",
+      "object": "1f14fe812dedb79d0bc5c155e48e98f27dcd0450",
+      "remote_before": null,
+      "push_needed": true
+    }
+  ],
+  "evidence_commit": "10defa3c2bf8178a11be7d099af671805cddcce5",
+  "source_commit": "477e4b4154f4cea564394155764235cff132e42f",
+  "tag": "v0.51.6-rc1",
+  "main_before_merge": "bfca5338f80ac837779c8dc1a5da2a77844d1744",
+  "merge_result_authority": "GitHub pull request and final remote main; local receipt retained under qa/release_0516_20261112_01",
+  "remote_public": true,
+  "server_notice": "Push response for pre-merge default branch reported Dependabot advisories; this release did not assess or fix dependency advisories."
+}
