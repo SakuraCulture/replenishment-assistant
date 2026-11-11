@@ -49,6 +49,16 @@ class CurrentLoginTests(unittest.TestCase):
         with self.assertRaisesRegex(ComponentError,'请登录'):current_configuration(c)
         self.assertEqual([x[0] for x in c.calls],['configuration','setup.check_login'])
 
+    def test_failure_keeps_phase_and_diagnostics_and_progress_identifies_new_probe(self):
+        details={'phase':'等待身份请求','timeout_ms':30000,'diagnostic':'offline timeout'}
+        c=Client(states=[{'id':'check','state':'RUNNING','stage':'正在刷新页面'},
+                         {'id':'check','state':'FAILED','error':{'code':'IDENTITY_RESPONSE_TIMEOUT','message':'本次核验未完成','details':details}}])
+        progress=[]
+        with patch('aoxiang_current_login.time.sleep'),self.assertRaises(ComponentError) as caught:current_configuration(c,progress.append)
+        self.assertEqual(caught.exception.details,details);self.assertIn('等待身份请求',str(caught.exception))
+        self.assertTrue(any('正在刷新页面' in p and '尚未开始本次取数' in p and '秒' in p for p in progress))
+        self.assertFalse(any(action in {'reserve','resume'} for action,_ in c.calls))
+
     def test_cancelled_probe_is_settled_without_creating_business_tasks(self):
         cancel=threading.Event();c=Client(states=[{'id':'check','state':'RUNNING'},{'id':'check','state':'CANCELLED'}])
         def progress(message):cancel.set()

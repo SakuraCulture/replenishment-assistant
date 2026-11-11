@@ -114,7 +114,8 @@ class Jobs:
             context=json.loads(row[4]);ended.update(context.get('local_ended_codes',[]))
             command['scope']['warehouse_codes'] = [c for c in command['scope']['warehouse_codes'] if c not in ended]
             if command['scope']['warehouse_codes']:
-                result.append({'id': row[0], 'command': command, 'state': row[2], 'purpose':context.get('purpose','replenishment')})
+                result.append({'id': row[0], 'command': command, 'state': row[2], 'purpose':context.get('purpose','replenishment'),
+                               'day':context.get('day',''), 'stores':context.get('stores',[])})
         return result
 
     def observe(self, command_id: str, record: dict) -> bool:

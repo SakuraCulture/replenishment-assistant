@@ -30,7 +30,15 @@ def fixture(out,count=2):
             if Decimal(r['quantity'])<=0:continue
             sheet.append([internal,r['sku'],r['quantity'],str(Decimal(r['amount'])+Decimal(str(amount_delta if first else 0))),alias,number]+(['IGNORED-1','IGNORED-2'] if name=='辅助码列不参与认单' else []));first=False
         book.save(f);book.close();cases.append({'name':name,'path':str(f),'expected_number':None if name=='签发单号填错' else g['head']['number'],'reason':'签发单号与明细冲突' if name=='签发单号填错' else '', 'screenshot':'自动认单_'+name+'.png'})
-    (out/'matching-fixture.json').write_text(json.dumps({'payment':str(file),'head':g['head'],'gids':gids,'automatic_cases':cases,'synthetic':True,'live_platform':False},ensure_ascii=False),'utf-8')
+    signed=lc.repository(path).get(g['head']['day'],g['head']['store'],g['head']['revision'],view='export')
+    target=next(h for h in lc.current_targets(path) if h['number']==g['head']['number'])
+    other=next(r for r in signed['payload']['result']['rows'] if r.get('AU') in {'山东仓','河北仓'} and r['AU']!=g['head']['warehouse'] and r['E'] not in target['products'])
+    feedback=out/'人工选择原仓单_不按SKU旧仓归属拦截.xlsx';book=openpyxl.Workbook();sheet=book.active
+    sheet.append(['内部订单号','商品编码','数量','商品金额','店铺名称'])
+    sheet.append(['J-MANUAL-FACT',other['E'],1,'123.45',g['head']['name']]);book.save(feedback);book.close()
+    (out/'synthetic.json').write_text(json.dumps({'synthetic':True,'live_platform':False}),'utf-8')
+    (out/'matching-fixture.json').write_text(json.dumps({'payment':str(file),'head':g['head'],'gids':gids,'automatic_cases':cases,
+        'feedback_case':{'file':str(feedback),'sku':other['E'],'old_warehouse':other['AU']},'synthetic':True,'live_platform':False},ensure_ascii=False),'utf-8')
     return path
 
 def main():

@@ -5,6 +5,10 @@ const LOGIN='/account/session/getLoginInfo';
 const QUERY='/saas/chain/plan/replenish/advice/query';
 const TASKS='/ebai/gei/task/list';
 const CREATE='/ebai/gei/create/export/task';
+function identityDetails(error,phase,timeoutMs){
+  const diagnostic=String(error.message||error).replace(/https?:\/\/[^\s]+/g,value=>{try{const u=new URL(value);return u.origin+u.pathname;}catch{return '[页面地址]';}}).slice(0,1800);
+  return {phase,cause:error.name||'Error',timeout_ms:timeoutMs,diagnostic};
+}
 export async function guardedClick(locator,timeout=15000){
   try{
   let matches=await locator.count();
@@ -48,10 +52,11 @@ export function safeTask(t) {
   return {taskId:String(t.taskId),taskStatus:t.taskStatus,successCount:t.successCount??null,failCount:t.failCount??null,startTime:t.startTime??null,doneTime:t.doneTime??null,code:t.code??t.taskCode??null,downloadHost,fileObject};
 }
 export class AoxiangUI {
-  constructor(page,{timeoutMs=30000,focusSession=null}={}){
+  constructor(page,{timeoutMs=30000,focusSession=null,onPhase=()=>{}}={}){
     this.page=page;this.identity=null;this.lastIdentityError=null;this.taskCache=new Map();this.lastQuery=null;this.observations=[];this.receipts=[];this.spentIntents=new Set();this.requestIntents=new WeakMap();
     this.timeoutMs=timeoutMs;page.setDefaultTimeout(timeoutMs);page.setDefaultNavigationTimeout(timeoutMs);
     this.focusSession=focusSession;
+    this.onPhase=onPhase;
     this.exportNotice=page.getByRole('dialog').filter({hasText:/正在导出数据|请点击\s*历史记录\s*查看结果/});
     this.noticeDismissals=0;
     this.requestListener=r=>{try{const u=new URL(r.url());if(platformProfile.businessOrigins.includes(u.origin)&&u.pathname.endsWith(CREATE))this.requestIntents.set(r,this.activeIntentId||null);}catch{}};
@@ -80,22 +85,40 @@ export class AoxiangUI {
   isBusinessResponse(r,p){try{const u=new URL(r.url());return platformProfile.businessOrigins.includes(u.origin)&&u.pathname.endsWith(p);}catch{return false;}}
   waitResponse(p,timeout=this.timeoutMs){const w=this.page.waitForResponse(r=>this.isBusinessResponse(r,p),{timeout});w.catch(()=>{});return w;}
   async identityAfter(action){
-    const sent=this.page.waitForRequest(r=>this.isBusinessResponse(r,LOGIN),{timeout:this.timeoutMs});sent.catch(()=>{});
+    const sent=this.page.waitForRequest(r=>this.isBusinessResponse(r,LOGIN),{timeout:this.timeoutMs}).catch(error=>{
+      fail('IDENTITY_RESPONSE_TIMEOUT','当前页面未发出新的登录身份查询，尚未完成核验；未创建本次导出',identityDetails(error,'等待身份请求',this.timeoutMs));
+    });sent.catch(()=>{});
     // Consume the exact observed response immediately, before the navigation/action
     // completes: Chromium can discard its body on a subsequent redirect/reload.
     const identity=sent.then(async request=>{
       const response=await bounded(request.response(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份查询没有取得响应');
       if(!response)fail('IDENTITY_RESPONSE_TIMEOUT','本次身份查询失败');
       return identityFrom(parseResponse(await bounded(response.text(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份响应未读取完成')));
+    }).catch(error=>{
+      if(error.code==='IDENTITY_RESPONSE_TIMEOUT'&&!error.details)
+        fail(error.code,error.message,identityDetails(error,'读取身份响应',this.timeoutMs));
+      throw error;
     });identity.catch(()=>{});
     await action();return identity;
   }
   async open(expected){
     await this.activate();
     this.identity=null;this.lastIdentityError=null;
-    try{this.identity=await this.identityAfter(()=>this.page.goto(SITE+'/#/replenish/list',{waitUntil:'domcontentloaded',timeout:this.timeoutMs}));}catch(e){if(e.code)throw e;fail('IDENTITY_CHECK_FAILED','未完成翱象页面或身份查询，尚不能判断登录已失效；请检查页面加载和网络，再继续原任务，不要重新提交导出');}
+    const target=SITE+'/#/replenish/list',navigation={waitUntil:'domcontentloaded',timeout:this.timeoutMs};
+    try{
+      let sameDocument=false;
+      try{const current=new URL(this.page?.url?.()||''),destination=new URL(target);sameDocument=current.origin===destination.origin&&current.pathname===destination.pathname&&current.search===destination.search;}catch{}
+      this.onPhase?.(sameDocument?'当前页面已打开，正在刷新页面并读取当前登录身份；尚未创建导出':'正在打开补货建议页并读取当前登录身份；尚未创建导出');
+      // A hash-only SPA navigation does not request getLoginInfo again. Reload
+      // the already-open document under a fresh listener instead of waiting for
+      // an identity request that will never be sent. No cached identity is used.
+      if(sameDocument&&this.page.url()!==target)await this.page.goto(target,navigation);
+      this.identity=await this.identityAfter(()=>sameDocument?this.page.reload(navigation):this.page.goto(target,navigation));
+    }catch(e){if(e.code)throw e;fail('IDENTITY_CHECK_FAILED','打开翱象页面或读取当前登录身份未完成；原连接保留，未创建本次导出',identityDetails(e,'页面导航或身份响应读取',this.timeoutMs));}
     if(expected&&!sameIdentity(this.identity,expected))fail('WRONG_IDENTITY','当前Edge登录的翱象账号/商家与配置不符');
-    await this.page.locator('#buyerWarehouseCodeList').waitFor({state:'visible',timeout:this.timeoutMs});
+    this.onPhase?.('已读取当前登录，正在等待补货建议页加载；尚未创建导出');
+    try{await this.page.locator('#buyerWarehouseCodeList').waitFor({state:'visible',timeout:this.timeoutMs});}
+    catch(e){fail('IDENTITY_CHECK_FAILED','已读取登录身份，但补货建议页面尚未就绪；请检查页面加载或访问权限，未创建本次导出',identityDetails(e,'补货建议页就绪',this.timeoutMs));}
     return this.identity;
   }
   async verifyIdentity(expected=this.identity){

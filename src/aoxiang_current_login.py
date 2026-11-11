@@ -10,16 +10,18 @@ def current_configuration(client,progress=lambda _:None,cancel=None):
     # capability. Never send an unrecognised command or infer a current identity.
     if not config.get('configured') or config.get('login_policy')!='current_edge':return config
     progress('正在读取当前Edge登录；不要求配置账号ID，也不创建平台任务…')
-    job=client.request('setup.check_login');deadline=time.monotonic()+180;stopped=False
+    began=time.monotonic();job=client.request('setup.check_login');deadline=began+180;stopped=False
     while job['state']=='RUNNING' or job.get('cleanup_pending'):
         if ((cancel is not None and cancel.is_set()) or time.monotonic()>deadline) and not stopped:
             client.request('setup.cancel',setup_id=job['id']);stopped=True
-        progress(job.get('stage') or '核验当前Edge登录')
+        progress((job.get('stage') or '核验当前Edge登录')+f' · 已用 {int(time.monotonic()-began)} 秒 · 尚未开始本次取数')
         time.sleep(.15);job=client.request('setup.status',setup_id=job['id'])
     if cancel is not None and cancel.is_set():raise Cancelled('已停止当前登录核验；未创建平台任务')
     if stopped or job['state']!='VERIFIED':
         e=job.get('error') or {}
-        raise ComponentError(e.get('code','LOGIN_CHECK_INCOMPLETE'),e.get('message','当前Edge登录尚未核验完成，请检查浏览器中的登录和连接许可'))
+        detail=e.get('details') or {};message=e.get('message','当前Edge登录尚未核验完成，请检查浏览器中的登录和连接许可')
+        if detail.get('phase'):message+='\n核验环节：'+str(detail['phase'])
+        raise ComponentError(e.get('code','LOGIN_CHECK_INCOMPLETE'),message,detail)
     config=client.request('configuration')
     if config.get('needs_store_verification'):
         raise ComponentError('TARGET_UNVERIFIED','当前Edge登录已接通：'+str(config.get('display_name') or '当前商家')+'。请在“翱象连接与门店配置”核验该商家的门店；无需填写平台账号ID。')

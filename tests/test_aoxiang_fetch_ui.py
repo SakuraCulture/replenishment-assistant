@@ -45,6 +45,9 @@ class FakeClient:
             self.records.setdefault(record['id'], record)
             return {'record': copy.deepcopy(self.records[record['id']]), 'created': True}
         command_id = params['command_id']
+        if command_id not in self.records:
+            from aoxiang_client import ComponentError
+            raise ComponentError('COMMAND_NOT_FOUND','没有该本机命令')
         record = self.records[command_id]
         if action == 'pause':
             record['sequence'] += 1
@@ -142,6 +145,28 @@ class FetchUiTests(unittest.TestCase):
         self.wait(lambda: d._can_close and d.worker is None)
         self.assertEqual([f['warehouse_code'] for f in d.adoption['files']], ['W2', 'W1'])
         self.assertFalse(self.errors)
+
+    def test_new_start_locates_hidden_original_blocker_without_registering_another_job(self):
+        from aoxiang_acquisition import prepare
+        d=self.dialog;old=prepare(d.jobs,configuration(),['W1'],'refresh',day='2026-11-01')
+        displayed=prepare(d.jobs,configuration(),['W2'],'refresh',day='2026-11-02')
+        d.show_job(displayed)
+        for row,check in enumerate(d.checks):check.setChecked(d.stores.item(row,2).text()=='W1')
+        d.start_fetch();self.wait(lambda:d.worker is None)
+        self.assertEqual(d.current['id'],old['id']);self.assertEqual(d.history.currentData(),old['id'])
+        self.assertEqual(d.details.rowCount(),1);self.assertIn('W1',d.details.item(0,0).text());self.assertIn('受理情况尚未核对',d.details.item(0,4).text())
+        self.assertEqual(d.selected_codes(),['W1']);self.assertEqual(len(d.jobs.recent()),2)
+        self.assertTrue(any(old['id'] in e and '2026-11-01' in e and '门店一' in e for e in self.errors))
+        self.assertFalse(any(action=='reserve' for action,_ in d.client.calls));self.assertGreater(d.progress.maximum(),0)
+
+    def test_new_login_failure_stops_indeterminate_progress_and_preserves_selected_stores(self):
+        from aoxiang_client import ComponentError
+        d=self.dialog;d.select_visible()
+        with patch('aoxiang_current_login.current_configuration',side_effect=ComponentError('IDENTITY_RESPONSE_TIMEOUT','本次身份查询未完成')):
+            d.start_fetch();self.assertEqual(d.progress.maximum(),0);self.wait(lambda:d.worker is None)
+        self.assertEqual(d.progress.maximum(),1);self.assertEqual(d.progress.value(),0);self.assertFalse(d._checking_new_fetch)
+        self.assertEqual(d.selected_codes(),['W2','W1']);self.assertTrue(d.start_btn.isEnabled());self.assertEqual(d.jobs.recent(),[])
+        self.assertTrue(any('本次身份查询未完成' in e for e in self.errors))
 
     def test_review_uses_dedicated_continue_without_replaying_unknown_item(self):
         d = self.dialog

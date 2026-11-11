@@ -180,13 +180,11 @@ def match_payment_rows(path, head, rows):
     if len(identities)!=1:raise ValueError('付款文件含多个来源订单/店铺，请分别导入，不自动合并')
     order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
     if order['digest']!=head['digest']:raise wr.Conflict('签发快照已变化')
-    other_codes={d['E'] for d in order['payload']['result']['rows'] if ao.warehouse(d)!=head['warehouse']}
     for row in rows:
         if row.get('adapter')!='paid_order':continue
         original=row['sku']
         if original in head['products']:
             row['matching_basis']='商品编码精确匹配'
-        elif original in other_codes:raise ValueError('商品属于另一供货仓，请核对目标仓单：'+original)
         else:row['matching_basis']='清单外商品，需确认'
 
 def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None, *, staged=None):

@@ -14,7 +14,7 @@ export class ModuleSession {
     const old=this.ui;this.ui=null;this.source=null;
     await old?.dispose();
     const Adapter=this.adapters[source];if(!Adapter)fail('UNKNOWN_SOURCE','未知的翱象页面模块');
-    const ui=new Adapter(this.page,{timeoutMs:this.timeoutMs,focusSession:this.focusSession});
+    const ui=new Adapter(this.page,{timeoutMs:this.timeoutMs,focusSession:this.focusSession,onPhase:this.onPhase});
     this.focusSession=null;this.ui=ui;
     ui.onReceipt=this.onReceipt;ui.onImportReceipt=this.onImportReceipt;
     const fixed=observeCurrent?null:this.identity||expected;
@@ -26,8 +26,8 @@ export class ModuleSession {
       }catch(error){
         // Only the read-only identity/page-open step can retry, once, on this same page.
         // Unknown acceptance and write requests never enter this recovery path.
-        if(attempt||error.code!=='IDENTITY_RESPONSE_TIMEOUT'||this.page.isClosed?.())throw error;
-        this.onPhase('身份响应超时，正在复用原连接核验一次；不会重新上传或创建导出');
+        if(attempt||!['IDENTITY_RESPONSE_TIMEOUT','IDENTITY_CHECK_FAILED'].includes(error.code)||this.page.isClosed?.())throw error;
+        this.onPhase('页面或身份读取未完成，正在复用原连接核验一次；不会重新上传或创建导出');
       }
     }
   }

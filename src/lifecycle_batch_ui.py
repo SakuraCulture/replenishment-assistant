@@ -50,7 +50,7 @@ class BatchImport(QDialog):
         self.table.setColumnWidth(6,420)
         self.issue_note=label('需要处理');v.addWidget(self.issue_note)
         self.issue_table=QTableWidget(0,4);self.issue_table.setHorizontalHeaderLabels(['问题文件 / 原因','环节','修正映射','本次不纳入']);self.issue_table.setColumnWidth(0,600);self.issue_table.setMaximumHeight(180);self.issue_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);v.addWidget(self.issue_table)
-        self.note=label('同单同环节有多份文件时只能选择一份，不按到达时间覆盖，也不累加。','muted');v.addWidget(self.note)
+        self.note=label('同单同环节有多份文件时只能选择一份，不按到达时间覆盖，也不累加。','muted');self.note.setWordWrap(True);self.note.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse);v.addWidget(self.note)
         row=QHBoxLayout();row.addWidget(button('取消',self.reject));self.preview_btn=button('核对并准备保存',self.preview,True);row.addWidget(self.preview_btn);v.addLayout(row)
         from table_readability import fit_window,install
         fit_window(self,1240,820)
@@ -267,8 +267,8 @@ class BatchImport(QDialog):
         except Exception as exc:self.note.setText('映射未通过：'+str(exc))
     def preview(self):
         if self.busy:return
-        if not self.read_ready:self.note.setText('文件读取或识别尚未完成，请重新读取后再核对；未保存任何单据');return
-        if self.issues:self.note.setText('请先处理上方问题文件，或明确选择本次不纳入；不会悄悄跳过。');return
+        if not self.read_ready:self.problem('尚未进入核对页','文件读取或识别尚未完成，请重新读取后再核对；未保存任何单据。');return
+        if self.issues:self.problem('尚未进入核对页','请先处理上方问题文件，或明确选择本次不纳入；不会悄悄跳过。');return
         self.capture();self.busy=True
         try:
             if self.payment_index:
@@ -288,8 +288,18 @@ class BatchImport(QDialog):
                 if b.text()=='取消':b.setText('返回文件范围');b.clicked.disconnect();b.clicked.connect(lambda:self.pages.setCurrentIndex(0))
             self.pages.addWidget(self.review);self.pages.setCurrentWidget(self.review)
         except Cancelled:self.note.setText('预览已取消，未保存。')
-        except Exception as exc:self.note.setText('需要处理：'+str(exc))
+        except Exception as exc:self.problem('尚未进入核对页',str(exc))
         finally:self.busy=False
+    def problem(self,title,reason):
+        self.pages.setCurrentIndex(0);self.note.setText(title+'：'+(reason if len(reason)<=220 else reason[:220]+'…完整原因见上方说明或弹窗详情。'))
+        self.describe_selection()
+        context=self.selection_note.toPlainText()
+        detail=title+'\n'+reason+('\n\n'+context if context else '')
+        self.selection_note.setPlainText(detail)
+        box=QMessageBox(self);box.setIcon(QMessageBox.Icon.Warning);box.setWindowTitle(title)
+        box.setText('本次核对未完成，尚未保存单据。' if title=='尚未进入核对页' else '保存未完成，请核对单据历史和以下原因后再重试。')
+        box.setInformativeText(reason if len(reason)<=420 else reason[:420]+'…\n完整原因可展开详细信息查看。')
+        box.setDetailedText(detail);box.setStandardButtons(QMessageBox.StandardButton.Ok);box.exec()
     def save(self):
         from lifecycle_ui import commit
         try:
@@ -298,7 +308,7 @@ class BatchImport(QDialog):
             self.note.setText('本批已保存：'+ '；'.join(r['number']+' / '+io.TITLES[r['stage']]+(' 已保存' if r['changed'] else ' 内容相同') for r in self.receipt))
             self.accept()
         except Cancelled:self.pages.setCurrentIndex(0);self.note.setText('已安全取消，未保存；可重新核对。')
-        except Exception as exc:self.pages.setCurrentIndex(0);self.note.setText('整批未保存：'+str(exc)+'；请重新核对。')
+        except Exception as exc:self.problem('保存未完成',str(exc)+'；请重新核对。')
         finally:self.busy=False
     def reject(self):
         if not self.busy:super().reject()

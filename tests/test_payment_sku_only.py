@@ -36,8 +36,9 @@ class SkuOnlyTests(unittest.TestCase):
         self.assertEqual(row['matching_basis'],'清单外商品，需确认')
     def test_unknown_sku_with_ambiguous_auxiliary_code_remains_unmatched(self):
         self.assertEqual(self.match('UNKNOWN','shared')['sku'],'UNKNOWN')
-    def test_other_warehouse_product_is_still_rejected_by_product_code(self):
-        with self.assertRaisesRegex(ValueError,'商品属于另一供货仓'):self.match('C','a-barcode')
+    def test_previous_signed_warehouse_does_not_decide_a_payment_skus_warehouse(self):
+        row=self.match('C','a-barcode')
+        self.assertEqual(row['sku'],'C');self.assertEqual(row['matching_basis'],'清单外商品，需确认')
     def test_stale_signed_revision_still_fails(self):
         self.order['digest']='different'
         with self.assertRaises(lc.wr.Conflict):self.match('A','a-barcode')

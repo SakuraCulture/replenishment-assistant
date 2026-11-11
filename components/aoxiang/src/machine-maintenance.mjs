@@ -3,6 +3,7 @@ import {canonical,sha256,now,fail,sameIdentity} from './common.mjs';
 import {publicRecord} from './machine-protocol.mjs';
 import {resumableTask} from './collection-recovery.mjs';
 import {collectionPurpose} from './state.mjs';
+import {legacyEndedCollections} from './collection-ended.mjs';
 
 const ACTIVE=new Set(['QUEUED','RUNNING','PAUSE_REQUESTED']);
 const DONE=new Set(['SUCCEEDED','REUSED','FAILED_CONFIRMED','CANCELLED_BEFORE_SUBMIT','ABANDONED']);
@@ -11,6 +12,24 @@ export class CollectionMaintenance{
   constructor(state,commands,runtime){
     Object.assign(this,{state,commands,runtime});this.db=state.db;
     this.db.exec('CREATE TABLE IF NOT EXISTS machine_retired(id TEXT PRIMARY KEY,fingerprint TEXT NOT NULL,token TEXT NOT NULL,deleted_at TEXT NOT NULL)');
+    this.reconcileEnded();
+  }
+  reconcileEnded(){
+    // Old versions closed the local command but retained a resumable platform
+    // attempt. Honour only a proven, already-ended run; never retire an active
+    // command, an unowned import or a store inferred from dates/names.
+    const candidates=legacyEndedCollections(this.db);
+    if(!candidates.length)return;
+    this.state.write(()=>{
+      const at=now();
+      for(const {run,owners} of candidates){
+        this.db.prepare('INSERT OR IGNORE INTO retired_collections VALUES(?,?,?)').run(run.id,run.endedAt,'legacy-ended:'+owners[0].id);
+        this.retirePublications(run.id,at);
+        this.db.prepare('UPDATE runs SET payload=? WHERE id=?').run(JSON.stringify({...run,resumePending:false,legacyEndReconciledAt:at}),run.id);
+        this.db.prepare('INSERT OR IGNORE INTO metadata VALUES(?,?)').run('legacyCollectionEnd:'+run.id,JSON.stringify({
+          at,command_id:owners[0].id,previous_resume_pending:!!run.resumePending,task_ids:this.state.rows('attempts').filter(a=>a.runId===run.id).map(a=>a.taskId).filter(Boolean)}));
+      }
+    });
   }
   purpose(command){return command.request.consumer?.purpose||this.state.collectionPurposeForRun(command.items[0]?.run_id,command.request);}
   retirePublications(runId,at){

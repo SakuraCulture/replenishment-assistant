@@ -1,8 +1,7 @@
 {
-  "application": "0.51.0",
+  "application": "0.51.1",
   "edition": "2026-11-11",
-  "source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
-  "source": "Historical immutable EXE images retained; new source Qt images have per-image provenance",
+  "source": "Per-image provenance: historical immutable EXE images plus 0.51.1 source Qt isolated acceptance",
   "legacy_0480_build": {
     "source_commit": "c12feff48eb81008a2643b2ce61d636b56fae980",
     "build_id": "rc1",
@@ -321,8 +320,28 @@
       "evidence": "qa/operations_0510_20261111/source-04/migration-ui.png",
       "synthetic": true,
       "live_platform_tested": false
+    },
+    {
+      "name": "payment-binding-feedback-0511.png",
+      "sha256": "5f235e7996c3d25407eb88d39e025e8c4d7ac85641b95fa8768993930860fda6",
+      "version": "0.51.1",
+      "source": "source Qt and real local component; synthetic isolated data",
+      "evidence": "qa/repair_0511_20261111_01/payment-source-02/付款核对失败完整原因.png",
+      "synthetic": true,
+      "live_platform_tested": false
+    },
+    {
+      "name": "collection-blocker-0511.png",
+      "sha256": "020d9896776b78cdb7a8d244ae6b5d5da9e18a128b1a32206f323e698f9c090c",
+      "version": "0.51.1",
+      "source": "source Qt and real local component; synthetic isolated data",
+      "evidence": "qa/repair_0511_20261111_01/collection-source-03/定位真实待处理记录.png",
+      "synthetic": true,
+      "live_platform_tested": false
     }
   ],
   "live_platform_tested": false,
-  "binding_ready_state": "synthetic demonstration only; never queried or confirmed a real purchase"
+  "binding_ready_state": "synthetic demonstration only; never queried or confirmed a real purchase",
+  "historical_source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
+  "source_base_commit": "8fc7ef8aad8177d66d751728f58e4d393bca52d8"
 }

@@ -4,6 +4,7 @@ import {DatabaseSync,backup} from 'node:sqlite';
 import {fail,uid,now,canonical,sha256,scopeHash,exists,writeJson,sameIdentity} from './common.mjs';
 import {checkPurchaseReceipt} from './purchase-contract.mjs';
 import {retirementSchema,requireUnretired,requireHostOrder} from './order-retirement.mjs';
+import {legacyEndedCollections} from './collection-ended.mjs';
 
 export class ExclusiveLock{
   static async acquire(file){
@@ -28,8 +29,11 @@ export class StateStore{
     if(present){
       const prior=new DatabaseSync(path.join(root,'state.sqlite'),{readOnly:true});
       try{
-        if(prior.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='metadata'").get()&&!prior.prepare("SELECT value FROM metadata WHERE key='orderRetirementProtocol'").get()){
-          const file=path.join(root,'recovery','before-order-retirement-'+uid()+'.sqlite');await fs.mkdir(path.dirname(file),{recursive:true});await backup(prior,file);
+        const has=name=>!!prior.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name);
+        const orderUpgrade=has('metadata')&&!prior.prepare("SELECT value FROM metadata WHERE key='orderRetirementProtocol'").get();
+        const endedRepair=legacyEndedCollections(prior).length>0;
+        if(orderUpgrade||endedRepair){
+          const file=path.join(root,'recovery',(orderUpgrade?'before-order-retirement-':'before-ended-collection-')+uid()+'.sqlite');await fs.mkdir(path.dirname(file),{recursive:true});await backup(prior,file);
           const check=new DatabaseSync(file,{readOnly:true});try{if(check.prepare('PRAGMA quick_check').get().quick_check!=='ok')fail('STATE_BACKUP_FAILED','退役升级前备份校验失败');}finally{check.close();}
         }
       }finally{prior.close();}

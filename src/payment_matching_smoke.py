@@ -85,6 +85,27 @@ def start_smoke(app,win,args):
             selection.history_view.setChecked(True);wait(lambda:selection.worker is None and len(selection.records)==3);selection.select_visible()
             require([r['id'] for r in selection.selected()]==[record['id']],'历史只读记录不能勾选执行；未选采购不被带入')
             selection.grab().save(str(out/'同步历史只读.png'));selection.close();wait(lambda:selection._close_done);selection.deleteLater()
+            if f.get('feedback_case'):
+                from PySide6.QtWidgets import QMessageBox,QApplication
+                dialog.deleteLater();dialog=BatchImport(win,win,'payment');dialog.show();dialog.add_paths([f['feedback_case']['file']])
+                require(dialog.targets[0].currentData() is None,'不同商品金额不强行自动认单，保留人工整单关联')
+                boxes=[];answer=QTimer();answer.setInterval(20)
+                def dismiss():
+                    box=QApplication.activeModalWidget()
+                    if isinstance(box,QMessageBox):
+                        boxes.append(box.detailedText());box.grab().save(str(out/'付款核对失败完整原因.png'));box.accept();answer.stop()
+                answer.timeout.connect(dismiss);answer.start();dialog.preview_btn.click();answer.stop()
+                require(len(boxes)==1 and '没有完整匹配订单' in boxes[0] and dialog.pages.currentIndex()==0,'核对未通过弹出完整原因，文件和目标选择界面仍保留')
+                head=f['head'];combo=dialog.targets[0]
+                combo.setCurrentIndex(next(i for i in range(combo.count()) if combo.itemData(i) and combo.itemData(i)['number']==head['number']))
+                signed_before=lc.repository(path).get(head['day'],head['store'],head['revision'],view='export')['digest']
+                other_before=lc.snapshot(path,lc.current_targets(path)[-1])['documents']['payment']
+                dialog.preview_btn.click()
+                require(dialog.pages.currentIndex()>0 and dialog.review.extra_ack.isVisible(),'手动指定整张仓单后可核对，SKU旧仓归属不拦截；清单外事实仍明确展示')
+                dialog.grab().save(str(out/'手动整单关联可保存.png'));dialog.review.complete.setChecked(True);dialog.review.extra_ack.setChecked(True);dialog.review.save.click()
+                payload=lc.snapshot(path,head)['documents']['payment']['payload'];raw=payload['raw_rows'][0]
+                require(raw['sku']==f['feedback_case']['sku'] and raw['amount']=='123.45','保存实际付款商品及金额，不按旧仓改写或丢弃')
+                require(lc.repository(path).get(head['day'],head['store'],head['revision'],view='export')['digest']==signed_before and lc.snapshot(path,lc.current_targets(path)[-1])['documents']['payment']==other_before,'签发快照及未选订单付款内容不变')
             dialog.deleteLater();dialog=BatchImport(win,win,'payment');dialog.show();dialog.add_paths([f['payment']])
             with patch('payment_matching.build',side_effect=Cancelled('isolated cancellation')):dialog.refresh_payment_index()
             require(not dialog.read_ready and not dialog.preview_btn.isEnabled(),'识别刷新取消后不能沿用过期预览保存')

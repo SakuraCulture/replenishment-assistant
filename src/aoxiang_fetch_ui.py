@@ -52,6 +52,7 @@ class FetchDialog(ComponentDialog):
         self.pause_pending = False
         self.event_cursors = {}
         self.last_phase = ''
+        self._checking_new_fetch=False
         self.began = time.monotonic()
         self.poll = QTimer(self)
         self.poll.setInterval(900)
@@ -195,19 +196,33 @@ class FetchDialog(ComponentDialog):
         self.poll.stop()
         self.began = time.monotonic()
         self.last_phase = ''
+        self._checking_new_fetch=True
+        self.progress.setRange(0,0);self.status.setText('正在核验本次登录；尚未创建所选门店的采集任务。下方为历史记录。')
         def operation(progress):
             self.ensure_client()
             self.jobs.synchronize(self.client)
             from aoxiang_current_login import current_configuration
             configuration=current_configuration(self.client,progress)
-            job = prepare(self.jobs, configuration, codes, policy, day=self.day)
+            from aoxiang_acquisition import PendingAcquisition
+            try:job = prepare(self.jobs, configuration, codes, policy, day=self.day)
+            except PendingAcquisition as exc:
+                return {'blockers':exc.blockers,'message':str(exc),'configuration':configuration,
+                        'history':self.jobs.recent(include_unfinished=True,exclude_analysis=True)}
             try:
                 self.jobs.dispatch(self.client, job['id'])
             except ComponentError:
                 # The intention and transport error remain available; next action queries/replays this exact ID.
                 pass
             return self.jobs.get(job['id']), self.jobs.recent(include_unfinished=True,exclude_analysis=True),configuration
-        self.run(operation, self.created)
+        self.run(operation, self.start_checked)
+
+    def start_checked(self,data):
+        self._checking_new_fetch=False
+        if not isinstance(data,dict) or 'blockers' not in data:return self.created(data)
+        self.configuration=data['configuration'];first=data['blockers'][0]['id']
+        self.fill_history(data['history'],first)
+        self.show_job(self.jobs.get(first))
+        self.failure(data['message'])
 
     def created(self, data):
         job, history, *configuration = data
@@ -245,6 +260,9 @@ class FetchDialog(ComponentDialog):
             self.history.setItemText(history_index, history_label(job))
         record = job.get('record') or {}
         items = record.get('items', [])
+        if not record and job['state']=='PREPARED':
+            # Display the original local scope without inventing a platform receipt.
+            items=[{'warehouse_code':code,'state':'PENDING'} for code in job['command']['scope']['warehouse_codes']]
         names = {i['buyerWarehouseCode']: i['displayName'] for i in job['context']['stores']}
         self.details.setRowCount(len(items))
         for row, item in enumerate(items):
@@ -254,9 +272,11 @@ class FetchDialog(ComponentDialog):
                       result.get('rows', '—'), ('今日复用' if result.get('reused') else '本次下载') if result else '—',
                       failure_message(str(error.get('code',''))+'：'+str(error.get('message',''))) if error else PHASES.get(item.get('phase'), '')]
             if item['state'] == 'ENDED':
-                values[4] = '本地采集已结束；已受理平台任务保留，新采集接续原任务。' if item.get('retained_platform_task') else '本地采集已结束，可重新获取；原错误见双击详情。'
+                values[4] = '本地采集已结束；旧平台任务可能继续完成，后续采集使用独立新任务。' if item.get('retained_platform_task') else '本地采集已结束，可重新获取；原错误见双击详情。'
             elif item.get('resumed_accepted_task') and not error:
                 values[4] = '接续原平台任务；文件保留原采集时间。' + values[4]
+            elif not record and job['state']=='PREPARED':
+                values[4] = '本地请求已登记，平台受理情况尚未核对；可继续原任务或按所选门店重导。'
             elif job['state'] not in ACTIVE and item['state']=='RUNNING':
                 values[1] = '已停止本地取数'
             for column, value in enumerate(values):
@@ -468,6 +488,8 @@ class FetchDialog(ComponentDialog):
 
     def failure(self, text):
         self.poll.stop()
+        if self._checking_new_fetch:
+            self._checking_new_fetch=False;self.progress.setRange(0,1);self.progress.setValue(0)
         super().failure(text)
 
     def update_buttons(self, *_):
