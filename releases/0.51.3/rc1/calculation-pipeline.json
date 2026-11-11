@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "live_platform": false,
+  "synthetic": true,
+  "checks": [
+    {
+      "primary": "山东仓",
+      "secondary": null,
+      "assigned": "山东仓",
+      "first_fill": 18.0,
+      "model_AS": 0,
+      "is_new": true
+    },
+    {
+      "primary": "河北仓",
+      "secondary": null,
+      "assigned": "河北仓",
+      "first_fill": 30.0,
+      "model_AS": 0,
+      "is_new": true
+    },
+    {
+      "primary": "山东仓",
+      "secondary": "河北仓",
+      "assigned": "河北仓",
+      "first_fill": 30.0,
+      "model_AS": 0,
+      "is_new": true
+    }
+  ]
+}

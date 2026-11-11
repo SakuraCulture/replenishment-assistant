@@ -1,0 +1,83 @@
+{
+  "source_commit": "758ca2b03e651f5b422f0789fc649f7fb01b68d4",
+  "baseline": "fb02565a4401028a22461dfa447c6077882752a6",
+  "sealed_at": "2026-11-11T14:34:07.265525+08:00",
+  "full_python": {
+    "source_commit": "758ca2b03e651f5b422f0789fc649f7fb01b68d4",
+    "command": [
+      "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ],
+    "cwd": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+    "exit_code": 0,
+    "seconds": 545.953,
+    "passed": true,
+    "live_platform": false,
+    "tests": 1477,
+    "test_seconds": 543.612
+  },
+  "targeted_tests": 57,
+  "exe_checks": 23,
+  "preissue_phases": 2,
+  "single_instance_recheck": {
+    "source_commit": "758ca2b03e651f5b422f0789fc649f7fb01b68d4",
+    "command": [
+      "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+      "-m",
+      "unittest",
+      "test_single_instance",
+      "-v"
+    ],
+    "cwd": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+    "exit_code": 0,
+    "seconds": 1.906,
+    "passed": true,
+    "live_platform": false,
+    "tests": 2,
+    "test_seconds": 1.55
+  },
+  "actual_calculation_pipeline": {
+    "passed": true,
+    "live_platform": false,
+    "synthetic": true,
+    "checks": [
+      {
+        "primary": "山东仓",
+        "secondary": null,
+        "assigned": "山东仓",
+        "first_fill": 18.0,
+        "model_AS": 0,
+        "is_new": true
+      },
+      {
+        "primary": "河北仓",
+        "secondary": null,
+        "assigned": "河北仓",
+        "first_fill": 30.0,
+        "model_AS": 0,
+        "is_new": true
+      },
+      {
+        "primary": "山东仓",
+        "secondary": "河北仓",
+        "assigned": "河北仓",
+        "first_fill": 30.0,
+        "model_AS": 0,
+        "is_new": true
+      }
+    ]
+  },
+  "exe_sha256": "462ddd893bd814b3f98aa6dc87edd374aa2da4d482f4528a2915d6873b67d3d8",
+  "html_chapters": 21,
+  "html_images": 39,
+  "live_platform": false,
+  "business_computer_tested": false,
+  "business_data_modified": false,
+  "pushed": false,
+  "merged": false
+}
