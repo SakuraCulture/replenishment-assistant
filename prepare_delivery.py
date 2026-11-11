@@ -8,9 +8,11 @@ version=json.loads((root/'src/version.json').read_text(encoding='utf-8'))
 build=json.loads((dest/'_internal/build_info.json').read_text(encoding='utf-8-sig'))
 assert build['version']==version['version']
 shutil.copy2(root/'使用说明.txt',dest/'使用说明.txt')
-if version['version']=='0.51.6':
+if version['version'] in {'0.51.6','0.51.7'}:
     (dest/'docs').mkdir(exist_ok=True)
     shutil.copy2(root/'docs/0.51.6经营分析参数迁移修复.md',dest/'docs/0.51.6经营分析参数迁移修复.md')
+if version['version']=='0.51.7':
+    shutil.copy2(root/'docs/0.51.7大仓缺货率导出.md',dest/'docs/0.51.7大仓缺货率导出.md')
 if version['version'] in {'0.50.0','0.50.1','0.50.2','0.50.3'}:
     (dest/'docs').mkdir(exist_ok=True)
     shutil.copy2(root/'docs/0.50.0订单删除与任务失效.md',dest/'docs/0.50.0订单删除与任务失效.md')

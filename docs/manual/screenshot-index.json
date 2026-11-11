@@ -1,5 +1,5 @@
 {
-  "application": "0.51.6",
+  "application": "0.51.7",
   "edition": "2026-11-12",
   "source": "Historical versioned screenshots plus isolated source Qt acceptance; identity probes simulated, no live platform",
   "legacy_0480_build": {
@@ -377,6 +377,24 @@
       "identity_probes_simulated": true,
       "live_platform": false,
       "description": "源码Qt：待采用文件不拦停用，原任务、原件与组件连接保留。"
+    },
+    {
+      "path": "images/warehouse-export-page-0517.png",
+      "application": "0.51.7",
+      "source": "qa/warehouse_stockout_export_0517_20261112_01/source-02/warehouse-page.png",
+      "sha256": "181f62df593c99483c445bcac4d1e9231dba6c0bd05dea69ebd6af6439265cca",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "筛选后从大仓页面进入报表导出，独立分析，不调用真实平台。"
+    },
+    {
+      "path": "images/warehouse-export-0517.png",
+      "application": "0.51.7",
+      "source": "qa/warehouse_stockout_export_0517_20261112_01/source-02/export-1.png",
+      "sha256": "1d8ffe824781ba935ed560aa649baba2117b71c1b3db7ca86f82d978dedf9613",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "选择切面和商品明细范围；源码Qt隔离演练。"
     }
   ],
   "live_platform_tested": false,

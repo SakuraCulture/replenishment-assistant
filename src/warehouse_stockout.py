@@ -161,8 +161,8 @@ def where(options):
     text=options.get('search','').strip()
     if text:
         if len(text)>200:raise ValueError('搜索内容过长')
-        escaped=text.replace('\\','\\\\').replace('%','\\%').replace('_','\\_')
-        parts.append("(f.sku LIKE ? ESCAPE '\' OR f.name LIKE ? ESCAPE '\' OR f.supplier LIKE ? ESCAPE '\')");values.extend(['%'+escaped+'%']*3)
+        escaped=text.replace('!','!!').replace('%','!%').replace('_','!_')
+        parts.append("(f.sku LIKE ? ESCAPE '!' OR f.name LIKE ? ESCAPE '!' OR f.supplier LIKE ? ESCAPE '!')");values.extend(['%'+escaped+'%']*3)
     mode=options.get('mode','all')
     if mode=='included':parts.append('f.excluded=0')
     if mode=='excluded':parts.append('f.excluded=1')

@@ -3,12 +3,12 @@ import copy,json
 from datetime import date,timedelta
 from PySide6.QtCore import Qt,QDate
 from PySide6.QtWidgets import (QWidget,QDialog,QVBoxLayout,QHBoxLayout,QTableWidget,QTableWidgetItem,QTabWidget,
-    QComboBox,QCheckBox,QDateEdit,QLineEdit,QLabel,QMessageBox,QFileDialog,QInputDialog,QListWidget,QListWidgetItem,QAbstractItemView)
+    QComboBox,QCheckBox,QDateEdit,QLineEdit,QLabel,QMessageBox,QFileDialog,QInputDialog,QListWidget,QListWidgetItem,QAbstractItemView,QDialogButtonBox)
 from ui_controls import button,label
 from stockout_common import WAREHOUSES,today
 from warehouse_stockout import DIMENSIONS,dimensions
 from warehouse_stockout_views import validate,combinations
-from warehouse_stockout_exports import COUNTS,DETAIL
+from warehouse_stockout_exports import COUNTS,DETAIL,DETAIL_MODES,selected_combinations
 
 def show(table,headers,rows):
     table.clear();table.setColumnCount(len(headers));table.setHorizontalHeaderLabels(headers);table.setRowCount(len(rows));table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -51,6 +51,41 @@ class Combinations(QDialog):
         except ValueError as exc:QMessageBox.information(self,'请完善组合',str(exc));return
         super().accept()
 
+class ExportDialog(QDialog):
+    def __init__(self,parent,config,current,options,*,detail_mode='all',detail_only=False):
+        super().__init__(parent);self.setWindowTitle('导出大仓缺货率');self.resize(860,660)
+        v=QVBoxLayout(self);v.addWidget(label('选择报表切面和商品明细','section'))
+        scope=label('日期：'+options['start']+' 至 '+options['end']+'；按当前搜索及多维筛选导出全部结果，不限当前页。');scope.setWordWrap(True);v.addWidget(scope)
+        self.listing=QListWidget();v.addWidget(self.listing,1)
+        values=copy.deepcopy(config['combinations'])
+        presets=[('大仓总览',['warehouse']),('每日趋势',['day','warehouse']),('按供应商',['warehouse','supplier']),
+                 ('按类目',['warehouse','category']),('供应商类目',['warehouse','supplier','category']),('按商品',['warehouse','sku'])]
+        if not any(dimensions(c['dimensions'])==dimensions(current) for c in values) and not any(dimensions(keys)==dimensions(current) for _,keys in presets):presets.insert(0,('当前页面组合',current))
+        for name,keys in presets:
+            if any(dimensions(c['dimensions'])==dimensions(keys) for c in values):continue
+            original=name;n=1
+            while any(c['name'].casefold()==name.casefold() for c in values):n+=1;name=original+f'（{n}）'
+            values.append({'name':name,'dimensions':keys})
+        selected=False
+        for c in values:
+            active=not detail_only and not selected and dimensions(c['dimensions'])==dimensions(current);selected=selected or active
+            item(self.listing,c['name']+'\n'+'、'.join(DIMENSIONS[k][1] for k in dimensions(c['dimensions'])),c,active)
+        row=QHBoxLayout();row.addWidget(button('全部勾选',lambda:self.check_all(True)));row.addWidget(button('清空切面勾选',lambda:self.check_all(False)));v.addLayout(row)
+        self.details=QCheckBox('附带商品明细');self.details.setChecked(True);v.addWidget(self.details)
+        row=QHBoxLayout();row.addWidget(label('明细范围'));self.mode=QComboBox()
+        for key,name in DETAIL_MODES.items():self.mode.addItem(name,key)
+        self.mode.setCurrentIndex(self.mode.findData(detail_mode));row.addWidget(self.mode,1);v.addLayout(row);self.details.toggled.connect(self.mode.setEnabled)
+        note=label('每个切面一张表，商品和供应商同时保留编码、名称。明细范围只影响明细，汇总缺货率保持当前统计口径。可只选明细。');note.setWordWrap(True);v.addWidget(note)
+        buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);buttons.button(QDialogButtonBox.StandardButton.Ok).setText('选择保存位置');buttons.button(QDialogButtonBox.StandardButton.Cancel).setText('取消')
+        buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);v.addWidget(buttons)
+    def check_all(self,value):
+        for i in range(self.listing.count()):self.listing.item(i).setCheckState(Qt.CheckState.Checked if value else Qt.CheckState.Unchecked)
+    def accept(self):
+        try:self.combinations=selected_combinations(checked(self.listing),self.details.isChecked())
+        except ValueError as exc:QMessageBox.information(self,'请选择导出内容',str(exc));return
+        super().accept()
+
+
 class Filters(QDialog):
     def __init__(self,page):
         super().__init__(page);self.page=page;self.filters=copy.deepcopy(page.filters);self.key=None;self.token=0;self.active=True;self.setWindowTitle('大仓多维筛选');self.resize(800,620)
@@ -90,7 +125,10 @@ class Page(QWidget):
         self.collect=button('采集今日大仓资料',self.collect_today,True);row.addWidget(self.collect);self.pause=button('安全暂停',lambda:entry.pause());row.addWidget(self.pause);self.background=QCheckBox('离开后继续采集');self.background.toggled.connect(self.leave_setting);row.addWidget(self.background);row.addWidget(button('每日采集计划',self.schedule));row.addWidget(button('导入独立仓原表',self.ingest));v.addLayout(row)
         row=QHBoxLayout();self.start=QDateEdit(QDate.fromString((date.fromisoformat(today())-timedelta(days=29)).isoformat(),'yyyy-MM-dd'));self.end=QDateEdit(QDate.currentDate())
         for field in (self.start,self.end):field.setCalendarPopup(True);field.setDisplayFormat('yyyy-MM-dd')
-        row.addWidget(label('观测日期'));row.addWidget(self.start);row.addWidget(label('至'));row.addWidget(self.end);self.search=QLineEdit();self.search.setPlaceholderText('商品编码／名称／上游供应商');row.addWidget(self.search,1);row.addWidget(button('查询',self.query));row.addWidget(button('多维筛选',self.filter_dialog));row.addWidget(button('清空筛选',self.clear_filters));row.addWidget(button('导出本视角 Excel',self.export));v.addLayout(row)
+        row.addWidget(label('观测日期'));row.addWidget(self.start);row.addWidget(label('至'));row.addWidget(self.end);self.search=QLineEdit();self.search.setPlaceholderText('商品编码／名称／上游供应商');row.addWidget(self.search,1)
+        self.query_btn=button('查询',self.query);self.filter_btn=button('多维筛选',self.filter_dialog);self.clear_btn=button('清空筛选',self.clear_filters);self.export_btn=button('导出大仓报表…',self.export);self.export_btn.setEnabled(False)
+        for b in (self.query_btn,self.filter_btn,self.clear_btn,self.export_btn):row.addWidget(b)
+        v.addLayout(row)
         self.total=label('尚未查询','section');v.addWidget(self.total);self.coverage=label('','muted');v.addWidget(self.coverage);self.filter_note=label('当前筛选：全部','muted');v.addWidget(self.filter_note)
         self.tabs=QTabWidget();self.tables=[]
         for name in ('总览与趋势','切面分析','商品与待核','采集与快照'):
@@ -112,11 +150,15 @@ class Page(QWidget):
 
     def controls(self):
         active=self.entry.worker is not None;self.collect.setEnabled(not active);self.pause.setEnabled(active)
+        exporting=self.exporting();self.export_btn.setEnabled(not active and self.views is not None)
+        for w in (self.start,self.end,self.search,self.query_btn,self.filter_btn,self.clear_btn,self.tabs):w.setEnabled(not exporting)
+    def exporting(self):return getattr(self.entry.worker,'operation',None)=='export'
     def leave_setting(self,value):
         if self.entry.worker:self.entry.background=value
     def selected(self):return [wh for wh,box in self.warehouses.items() if box.isChecked()]
     def options(self):return {'start':self.start.date().toString('yyyy-MM-dd'),'end':self.end.date().toString('yyyy-MM-dd'),'filters':copy.deepcopy(self.filters),'search':self.search.text().strip()}
-    def refresh_metadata(self):self.entry.start('open',{},self.metadata)
+    def refresh_metadata(self):
+        if not self.exporting():self.entry.start('open',{},self.metadata)
     def metadata(self,value):
         self.views=value['views'];self.runs=value['runs'];self.combo.clear()
         for combo in self.views['combinations']:self.combo.addItem(combo['name'],combo['dimensions'])
@@ -124,8 +166,9 @@ class Page(QWidget):
         for run in self.runs:self.logs.addItem(run['day']+' · '+run['state']+' · '+run['message'],run['id'])
         self.note.setText(f'大仓独立分析库 {value["database_bytes"]/1024**2:.1f} MiB；原件待清理 {value["pending_cleanup"]} 份')
         for wh,box in self.warehouses.items():box.setChecked(wh in value['selected'])
-        show(self.tables[3],['日期','仓范围','状态','说明','作业编号'],[[r['day'],'、'.join(json.loads(r['basis'])['warehouses']),r['state'],r['message'],r['id']] for r in self.runs]);self.query()
+        show(self.tables[3],['日期','仓范围','状态','说明','作业编号'],[[r['day'],'、'.join(json.loads(r['basis'])['warehouses']),r['state'],r['message'],r['id']] for r in self.runs]);self.controls();self.query()
     def query(self):
+        if self.exporting():return
         self.offset=0
         def done(result):
             rate='—' if result['rate'] is None else f'{result["rate"]:.2%}'
@@ -135,6 +178,7 @@ class Page(QWidget):
         self.entry.start('query',self.options(),done)
     def changed_tab(self):self.offset=0;self.view()
     def view(self):
+        if self.exporting():return
         index=self.tabs.currentIndex()
         if index==3:self.previous.setEnabled(False);self.next.setEnabled(False);return
         options=self.options()
@@ -188,12 +232,10 @@ class Page(QWidget):
                 except ValueError as exc:QMessageBox.information(self,'计划未保存',str(exc))
             self.entry.start('select',{'warehouses':self.selected()},saved)
     def export(self):
-        if not self.views:return
-        d=QDialog(self);d.setWindowTitle('选择导出组合');v=QVBoxLayout(d);listing=QListWidget();v.addWidget(listing)
-        for c in self.views['combinations']:item(listing,c['name'],c,True)
-        details=QCheckBox('附带全部筛选商品明细');details.setChecked(True);v.addWidget(details);v.addWidget(button('选择保存位置',d.accept,True));v.addWidget(button('取消',d.reject))
+        if not self.views or self.exporting():return
+        options=self.options();index=self.tabs.currentIndex();current=['day','warehouse'] if index==0 else self.combo.currentData() or ['warehouse']
+        d=ExportDialog(self,self.views,current,options,detail_mode=self.mode.currentData() if index==2 else 'all',detail_only=index==2)
         if d.exec()!=QDialog.DialogCode.Accepted:return
-        try:combos=combinations(checked(listing))
-        except ValueError as exc:QMessageBox.information(self,'请选择组合',str(exc));return
-        path,_=QFileDialog.getSaveFileName(self,'导出大仓缺货率视角','大仓缺货率_'+today()+'.xlsx','Excel (*.xlsx)')
-        if path:self.entry.start('export',{'options':self.options(),'destination':path,'combinations':combos,'include_detail':details.isChecked()},lambda value:QMessageBox.information(self,'导出完成',value))
+        from export_locations import save_file
+        path,_=save_file(self,'导出大仓缺货率','大仓缺货率_'+today()+'.xlsx','Excel (*.xlsx)')
+        if path:self.entry.start('export',{'options':options,'destination':path,'combinations':d.combinations,'include_detail':d.details.isChecked(),'detail_mode':d.mode.currentData()},lambda value:QMessageBox.information(self,'导出完成','已导出全部筛选结果。\n'+value))

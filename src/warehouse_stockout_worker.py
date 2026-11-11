@@ -42,7 +42,7 @@ def execute(repo,operation,args,cancel,progress,rpc):
     if operation=='save_views':return views.save(repo,args['views'],args['expected'])
     if operation=='export':
         from warehouse_stockout_exports import export
-        return export(repo,args['options'],args['destination'],args['combinations'],include_detail=args.get('include_detail',True),cancel=cancel,progress=progress)
+        return export(repo,args['options'],args['destination'],args['combinations'],include_detail=args.get('include_detail',True),detail_mode=args.get('detail_mode'),cancel=cancel,progress=progress)
     if operation=='delete_preview':return preview(repo,args['start'],args['end'])
     if operation=='cleanup':return remove(repo,args['plan'],cancel)
     if operation=='cleanup_retry':return cleanup(repo,cancel)
