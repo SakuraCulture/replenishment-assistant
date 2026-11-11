@@ -40,7 +40,9 @@ def main():
     write(release/'artifacts.json',{'source_commit':SOURCE,'files':[{'path':str(p.relative_to(ROOT)),'bytes':p.stat().st_size,'sha256':sha(p)} for p in [app/'补货助手.exe',archive]]})
     write(release/'validation.json',{'source_commit':SOURCE,'baseline':git('rev-parse',BASE).decode().strip(),'sealed_at':datetime.now().astimezone().isoformat(),'full_python':full,'targeted_tests':57,'exe_checks':29,'exe_sha256':exe_sha,'html_chapters':21,'html_images':38,'live_platform':False,'business_computer_tested':False,'business_data_modified':False,'pushed':False,'merged':False})
     write(release/'protection.json',{'unchanged_sources':stable,'components_identical_to_0511':True,'component_validation_reused':'releases/0.51.1/rc1/validation.json','old_0511_artifacts_unchanged':old,'old_pdf_unchanged':True})
-    for source,destination in [('full-python.log','python-full.txt'),('targeted-final.log','python-targeted.txt'),('exe-01/acceptance.json','exe-report.json'),('source-01/acceptance.json','source-report.json'),('manual-html-01/html-report.json','manual-html.json')]:shutil.copy2(qa/source,release/destination)
+    for source,destination in [('full-python.log','python-full.txt'),('targeted-final.log','python-targeted.txt'),('exe-01/acceptance.json','exe-report.json'),('source-01/acceptance.json','source-report.json'),('manual-html-01/html-report.json','manual-html.json')]:
+        # Keep the original QA bytes; repository text copies use LF consistently.
+        (release/destination).write_text((qa/source).read_text('utf-8'),encoding='utf-8',newline='\n')
     example=release/'组合导出_隔离合成示例.xlsx';shutil.copy2(Path(exe['workbook']),example)
     write(release/'example.json',{'synthetic':True,'live_platform':False,'path':example.name,'sha256':sha(example),'business_data':False})
     for file in (qa/'exe-01').glob('*.png'):
