@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "pages": 94,
+  "images": 47,
+  "chapters": 21,
+  "all_pages_rendered": 94,
+  "pdf_sha256": "5cb149eb433c10e61fc261b85069c43ddaf081cb7c072f1f37f683ee396f44cc",
+  "text_bounds_issues": [],
+  "visual_review": "all final contact sheets and affected pages inspected; no layout defects",
+  "html": {
+    "passed": true,
+    "chapters": 21,
+    "image_count": 47,
+    "checks": [
+      "local images load",
+      "order migration and warehouse analysis chapter",
+      "new recovery chapter and archived PDF link",
+      "chapter and subsection anchors",
+      "search found/zero/reset",
+      "weight valid/invalid/blank/boundary",
+      "image zoom open/close",
+      "mobile table contained scroll",
+      "no page errors",
+      "no external requests"
+    ],
+    "overflow": {
+      "width": 390,
+      "content": 390,
+      "tables": 13
+    },
+    "browser": "157.0.4341.46",
+    "errors": [],
+    "external_requests": [],
+    "files": [
+      "desktop-index.png",
+      "desktop-purchase-steps.png",
+      "desktop-weight-practice.png",
+      "mobile-purchase-steps.png",
+      "mobile-scopes.png"
+    ]
+  }
+}

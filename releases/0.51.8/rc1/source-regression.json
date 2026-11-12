@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "tests": 1579,
+  "seconds": 611.944,
+  "exit_code": 0,
+  "log_sha256": "a50bbb6fc2c45822275699ff4fee2717b1b0a74c2a123406aa47d3ecdeca03f4",
+  "source_commit": "3ffd4168900397f8326bc0a4905db166c1257a9e",
+  "provenance_note": "All final business logic was present at full-suite start. After the snapshot, one template help string changed with normalized AST equality; the two opt-in QA modules only changed layout settling and screenshot navigation. Frozen EXE acceptance separately covers final QA modules.",
+  "source_changes_after_start": [
+    "src\\monthly_first_fill_smoke.py",
+    "src\\paid_return_reallocation_smoke.py",
+    "src\\store_parameter_import.py"
+  ],
+  "business_changes_after_start": false,
+  "components_changed": false
+}

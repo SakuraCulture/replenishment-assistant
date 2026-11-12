@@ -1,0 +1,19 @@
+{
+  "source_commit": "3ffd4168900397f8326bc0a4905db166c1257a9e",
+  "exe": {
+    "path": "交付_0.51.8_rc1/补货助手/补货助手.exe",
+    "sha256": "d0fea437b31c79fe0beba66e14dd114c919d546c61f301bb3ca730b6b624602f",
+    "size": 7207490
+  },
+  "zip": {
+    "path": "交付_0.51.8_rc1/补货助手_0.51.8_rc1.zip",
+    "sha256": "2654e70164315f583c0449d1d5bc8808030de0906b0a407b53f30a3a1de079b4",
+    "size": 144022899
+  },
+  "files": 1299,
+  "zip_crc_verified": true,
+  "source_mode": "immutable git archive; no working-tree overlay",
+  "old_deliveries_preserved": true,
+  "pushed": false,
+  "merged": false
+}
