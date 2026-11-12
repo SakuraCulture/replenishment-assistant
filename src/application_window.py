@@ -67,10 +67,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         install(self,hv)
         from business_scenes import install as install_scenes
         install_scenes(self,hv)
-        from stockout_entry import install as install_stockout
+        from stockout_hub import install as install_stockout
         install_stockout(self)
-        from warehouse_stockout_entry import install as install_warehouse_stockout
-        install_warehouse_stockout(self)
         from jst_task_ui import Generator
         self.jst_generator=Generator(self,self.followup.layout())
         self.final_list_btn=button('最终清单 / 改量',self.open_final_list)
@@ -251,9 +249,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
     def closeEvent(self,event):
         startup=getattr(self,'browser_startup',None)
         if startup and not startup.prepare_close():event.ignore();return
-        stockout=getattr(self,'stockout',None)
+        stockout=getattr(self,'stockout_hub',None) or getattr(self,'stockout',None)
         if stockout and not stockout.prepare_close():event.ignore();return
-        warehouse_stockout=getattr(self,'warehouse_stockout',None)
+        warehouse_stockout=None if getattr(self,'stockout_hub',None) else getattr(self,'warehouse_stockout',None)
         if warehouse_stockout and not warehouse_stockout.prepare_close():event.ignore();return
         inventory=getattr(self,'inventory',None)
         if inventory and not inventory.prepare_close():event.ignore();return
@@ -278,6 +276,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             self.closing=True;generator.cancel();event.ignore();return
         super().closeEvent(event)
         if event.isAccepted():
+            from application_runtime import current
+            runtime=current()
+            if runtime:runtime.transition('SHUTTING_DOWN')
             if scheduled:scheduled.shutdown()
             # Accepted close must also block already-queued timer callbacks.
             # Otherwise an idle generator can start a thread after close, just
@@ -333,6 +334,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
 
     def snapshot(self):
         p=super().snapshot()
+        p['lifecycle_flow']=2
         if self.new_focus is not None:p["new_focus"]=copy.deepcopy(self.new_focus)
         if self.new_bases:p['new_product_bases']=dict(self.new_bases)
         if self.preissue_drafts:p['preissue_drafts']=copy.deepcopy(self.preissue_drafts)

@@ -57,5 +57,7 @@ def install(host):
         show(host,host.work_repository.path)
     menu.addSeparator();menu.addAction('图文使用手册',help_page)
     menu.addAction('导出任务与恢复',recovery)
+    menu.addSeparator()
+    menu.addAction('数据保存位置…',lambda:__import__('data_location_ui').show(host))
     from table_readability import fit_window
     fit_window(host,1380,900)

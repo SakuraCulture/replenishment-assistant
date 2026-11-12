@@ -4,6 +4,7 @@ import {spawn} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
 import {CatalogError,check,sleep,sha,canonical,inside,samePath} from './common.mjs';
 import {queryAll} from './product-export.mjs';
+import {sameBinding} from './storage-paths.mjs';
 
 export const accountId=wh=>({'山东仓':'sd','河北仓':'hb'})[wh];
 export function dedicatedLaunchArgs(binding){
@@ -19,8 +20,8 @@ export function validateIdentity(a){
 }
 
 export class AccountSessions {
-  constructor({bridgeRoot,stateRoot,lockRoot,forbiddenRoots=[],phase=()=>{}}){
-    Object.assign(this,{bridgeRoot,stateRoot,lockRoot,forbiddenRoots,phase});
+  constructor({bridgeRoot,stateRoot,lockRoot,forbiddenRoots=[],storageAliases=[],phase=()=>{}}){
+    Object.assign(this,{bridgeRoot,stateRoot,lockRoot,forbiddenRoots,storageAliases,phase});
     this.sessions=new Map();this.instanceLocks=new Map();this.connectionStates=new Map();this.closed=false;
   }
   async initialize(){
@@ -51,7 +52,7 @@ export class AccountSessions {
       if(inside(f.toLowerCase(),root.toLowerCase())||inside(root.toLowerCase(),f.toLowerCase()))
         throw new CatalogError('BROWSER_ISOLATION','此目录属于正常浏览器；聚水潭必须使用专用独立浏览器，未连接翱象');
     }
-    for(const a of others)if(a.binding&&samePath(a.binding.userDataRoot,root))
+    for(const a of others)if(a.binding&&samePath(await fs.realpath(a.binding.userDataRoot).catch(()=>a.binding.userDataRoot),root))
       throw new CatalogError('ACCOUNT_ISOLATION','两仓不能绑定同一个浏览器资料根');
   }
   async automaticBinding(warehouse,others,signal){
@@ -96,8 +97,8 @@ export class AccountSessions {
     if(this.closed)throw new CatalogError('SESSION_CLOSED','采集服务已关闭');
     await this.initialize();check(signal);
     const binding=await this.binding({profilePath:account.binding.actualProfilePath,edgeExecutable:account.binding.edgeExecutable});
-    if(canonical(binding)!==canonical(account.binding))throw new CatalogError('BINDING_CHANGED','本机专用浏览器绑定已变化，请重新核验');
-    const key=sha(canonical(binding));let cached=this.sessions.get(key);
+    if(!sameBinding(binding,account.binding,this.storageAliases))throw new CatalogError('BINDING_CHANGED','本机专用浏览器绑定已变化，请重新核验');
+    const key=sha(canonical(account.binding));let cached=this.sessions.get(key);
     if(cached&&this.healthy(cached))return cached;
     if(cached){await cached.close().catch(()=>{});this.sessions.delete(key);}
     if(!this.instanceLocks.has(key)){

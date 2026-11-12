@@ -48,7 +48,8 @@ def open_migration(parent,host):
                 # False here also means a normal asynchronous safe shutdown.
                 # Keep the accepted request until app.exec() ends and app.py
                 # consumes it; do not mistake a pending close for cancellation.
-                host._order_import_request=plan;host._discard_close=True;d.accept()
+                from migration_status import waiting
+                waiting(host,plan);host._discard_close=True;d.accept()
                 host.setEnabled(False)
                 if not host.close():host.status.setText('迁入已确认，正在等待后台连接安全退出；退出后自动完成迁入，请勿重复操作。')
             except Cancelled:
@@ -56,8 +57,9 @@ def open_migration(parent,host):
             except Exception as exc:
                 if plan:
                     if getattr(host,'_order_import_request',None) is plan:
-                        host._order_import_request=None;host._discard_close=False;host.setEnabled(True)
-                    discard(plan)
+                        from migration_status import shutdown_failed
+                        shutdown_failed(host,exc)
+                    else:discard(plan)
                 QMessageBox.warning(d,'订单未迁入',str(exc))
         def parameters():
             from parameter_snapshot import export
@@ -66,5 +68,9 @@ def open_migration(parent,host):
                 try:result=run(d,export,(host.work_repository,path),'导出完整门店参数');QMessageBox.information(d,'参数已导出',result)
                 except Cancelled:return
                 except Exception as exc:QMessageBox.warning(d,'参数未导出',str(exc))
-        v.addWidget(button('导出完整订单迁移包…',save,True));v.addWidget(button('校验并导入完整订单迁移包…',restore));v.addWidget(button('导出全部门店参数与预案…',parameters));v.addWidget(button('关闭',d.reject));d.exec()
+        def previous():
+            from migration_status import latest,folder
+            value=latest(host.repository.folder)
+            QMessageBox.information(d,'上次迁入结果',('尚无新的迁入状态记录。旧的临时目录不代表迁入完成。' if value is None else f"状态：{value['state']} / {value['phase']}\n"+value.get('error',{}).get('message','')+f"\n迁入材料：{value['stage']}\n完整备份：{value['backup']}")+f'\n诊断：{folder(host.repository.folder)}\n失败后可重新校验原迁移包；不会自动重放。')
+        v.addWidget(button('导出完整订单迁移包…',save,True));v.addWidget(button('校验并导入完整订单迁移包…',restore));v.addWidget(button('查看上次迁入结果与原始错误',previous));v.addWidget(button('导出全部门店参数与预案…',parameters));v.addWidget(button('关闭',d.reject));d.exec()
     return guarded(parent,host,show)

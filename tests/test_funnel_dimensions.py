@@ -29,7 +29,9 @@ class HistoricalDimensions(unittest.TestCase):
         target=f.root/'complete.xlsx';receipt=export.export(f.path,report,target)
         b=openpyxl.load_workbook(target)
         try:
-            self.assertEqual(receipt['sheets'][:8],dims.NAMES);self.assertNotIn('门店SKU供应商类目',b.sheetnames)
+            self.assertEqual(receipt['sheets'][0],'漏斗总览')
+            start=receipt['sheets'].index(dims.NAMES[0]);self.assertEqual(receipt['sheets'][start:start+8],dims.NAMES)
+            self.assertNotIn('门店SKU供应商类目',b.sheetnames)
             ws=b['日期-店-SKU-仓'];rows=list(ws.values);self.assertEqual(list(rows[0]),dims.headers(ws.title))
             records=[dict(zip(rows[0],r)) for r in rows[1:]]
             self.assertEqual({r['大仓上游供应商'] for r in records},{'上游甲','上游乙'})

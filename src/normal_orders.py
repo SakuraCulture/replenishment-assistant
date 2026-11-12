@@ -209,6 +209,10 @@ class Repository:
                 db.execute('INSERT OR IGNORE INTO normal_work_revisions SELECT revision,day,payload FROM jobs WHERE day=?',(day,))
                 db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,rev,h,stamp,chunks.put(db,encoded,cancel=cancel)))
                 db.execute('UPDATE normal_orders SET current=? WHERE oid=?',(rev,oid))
+                if payload.get('lifecycle_flow',1)>=2:
+                    import operations_flow
+                    operations_flow.schema(db)
+                    db.execute('INSERT OR REPLACE INTO lifecycle_routes VALUES(?,?,2)',(oid,rev))
                 db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,oid,rev,'确认归档' if rev==1 else '同日覆盖修订',wr.dumps({'number':number,'day':day,'store':s,'summary':summary,'previous_revision':rev-1 or None})))
             progress('事务内容准备完成，检查最终取消请求…')
             checkpoint(cancel)

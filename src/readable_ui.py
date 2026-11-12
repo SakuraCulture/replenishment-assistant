@@ -153,4 +153,11 @@ def failure_message(exc):
 
 
 def failure(parent,title,exc):
+    from application_runtime import ui_allowed,current
+    if not ui_allowed():
+        runtime=current()
+        if runtime:
+            if isinstance(exc,BaseException):runtime.exception(type(exc),exc,exc.__traceback__,event='UI_ERROR_SUPPRESSED_DURING_SHUTDOWN')
+            else:runtime.emit('UI_ERROR_SUPPRESSED_DURING_SHUTDOWN',title=title,message=str(exc))
+        return
     box=QMessageBox(parent);box.setIcon(QMessageBox.Icon.Warning);box.setWindowTitle(title);box.setText(failure_message(exc));box.setDetailedText(str(exc));box.setStandardButtons(QMessageBox.StandardButton.Ok);box.exec()

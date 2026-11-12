@@ -1,0 +1,204 @@
+{
+  "passed": true,
+  "baseline_commit": "fa7178c96399a0dc8b45b9661942c3568bd43d0b",
+  "copies_only": true,
+  "date": "2026-11-12",
+  "scope": "two warehouse totals and one store total; local read-only query only, not platform collection or low-end PC benchmark",
+  "io_note": "Windows process logical I/O includes system caches, not physical disk utilization",
+  "median": {
+    "baseline": {
+      "seconds": 0.018606600002385676,
+      "peak_rss_mib": 24.47265625,
+      "read_mib": 7.0170135498046875,
+      "write_mib": 0.0
+    },
+    "candidate": {
+      "seconds": 0.05898680002428591,
+      "peak_rss_mib": 23.359375,
+      "read_mib": 7.065694808959961,
+      "write_mib": 0.0
+    }
+  },
+  "samples": [
+    {
+      "iteration": 1,
+      "source": "baseline",
+      "seconds": 0.025324199988972396,
+      "peak_rss_mib": 24.47265625,
+      "read_mib": 7.0170135498046875,
+      "write_mib": 0.0,
+      "store": {
+        "base": 3465,
+        "zero": 359,
+        "rate": 0.1036075036075036,
+        "bad": 0
+      },
+      "warehouses": {
+        "山东仓": {
+          "base": 5931,
+          "zero": 295,
+          "rate": 0.04973866127128646,
+          "pending": 0,
+          "excluded": 3286
+        },
+        "河北仓": {
+          "base": 2484,
+          "zero": 207,
+          "rate": 0.08333333333333333,
+          "pending": 0,
+          "excluded": 2010
+        }
+      }
+    },
+    {
+      "iteration": 1,
+      "source": "candidate",
+      "seconds": 0.05898680002428591,
+      "peak_rss_mib": 23.33984375,
+      "read_mib": 7.065694808959961,
+      "write_mib": 0.0,
+      "store": {
+        "base": 3411,
+        "zero": 351,
+        "rate": 0.10290237467018469,
+        "bad": 0
+      },
+      "warehouses": {
+        "山东仓": {
+          "base": 5779,
+          "zero": 275,
+          "rate": 0.04758608755840111,
+          "pending": 0,
+          "excluded": 3438
+        },
+        "河北仓": {
+          "base": 2484,
+          "zero": 207,
+          "rate": 0.08333333333333333,
+          "pending": 0,
+          "excluded": 2010
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "source": "baseline",
+      "seconds": 0.018205300002591684,
+      "peak_rss_mib": 24.44921875,
+      "read_mib": 7.0170135498046875,
+      "write_mib": 0.0,
+      "store": {
+        "base": 3465,
+        "zero": 359,
+        "rate": 0.1036075036075036,
+        "bad": 0
+      },
+      "warehouses": {
+        "山东仓": {
+          "base": 5931,
+          "zero": 295,
+          "rate": 0.04973866127128646,
+          "pending": 0,
+          "excluded": 3286
+        },
+        "河北仓": {
+          "base": 2484,
+          "zero": 207,
+          "rate": 0.08333333333333333,
+          "pending": 0,
+          "excluded": 2010
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "source": "candidate",
+      "seconds": 0.059639700019033626,
+      "peak_rss_mib": 23.359375,
+      "read_mib": 7.065694808959961,
+      "write_mib": 0.0,
+      "store": {
+        "base": 3411,
+        "zero": 351,
+        "rate": 0.10290237467018469,
+        "bad": 0
+      },
+      "warehouses": {
+        "山东仓": {
+          "base": 5779,
+          "zero": 275,
+          "rate": 0.04758608755840111,
+          "pending": 0,
+          "excluded": 3438
+        },
+        "河北仓": {
+          "base": 2484,
+          "zero": 207,
+          "rate": 0.08333333333333333,
+          "pending": 0,
+          "excluded": 2010
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "source": "baseline",
+      "seconds": 0.018606600002385676,
+      "peak_rss_mib": 24.61328125,
+      "read_mib": 7.0170135498046875,
+      "write_mib": 0.0,
+      "store": {
+        "base": 3465,
+        "zero": 359,
+        "rate": 0.1036075036075036,
+        "bad": 0
+      },
+      "warehouses": {
+        "山东仓": {
+          "base": 5931,
+          "zero": 295,
+          "rate": 0.04973866127128646,
+          "pending": 0,
+          "excluded": 3286
+        },
+        "河北仓": {
+          "base": 2484,
+          "zero": 207,
+          "rate": 0.08333333333333333,
+          "pending": 0,
+          "excluded": 2010
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "source": "candidate",
+      "seconds": 0.05894369998713955,
+      "peak_rss_mib": 23.40625,
+      "read_mib": 7.065694808959961,
+      "write_mib": 0.0,
+      "store": {
+        "base": 3411,
+        "zero": 351,
+        "rate": 0.10290237467018469,
+        "bad": 0
+      },
+      "warehouses": {
+        "山东仓": {
+          "base": 5779,
+          "zero": 275,
+          "rate": 0.04758608755840111,
+          "pending": 0,
+          "excluded": 3438
+        },
+        "河北仓": {
+          "base": 2484,
+          "zero": 207,
+          "rate": 0.08333333333333333,
+          "pending": 0,
+          "excluded": 2010
+        }
+      }
+    }
+  ]
+}

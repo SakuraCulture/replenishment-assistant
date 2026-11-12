@@ -13,7 +13,8 @@ def config_path(parent):
         repo = getattr(obj, 'repository', None)
         if repo is not None and hasattr(repo, 'folder'): return Path(repo.folder)/settings.FILENAME
         obj = obj.parentWidget() if hasattr(obj, 'parentWidget') else None
-    folder = os.environ.get('REPLENISHMENT_DATA_DIR') or str(Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation))/'settings')
+    from data_location import root
+    folder = root()
     return Path(folder)/settings.FILENAME
 
 def initial_directory(parent, fallback=''):

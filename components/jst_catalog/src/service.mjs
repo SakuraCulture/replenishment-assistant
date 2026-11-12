@@ -7,15 +7,16 @@ import * as native from './product-export.mjs';
 import {CatalogError,check,now,sha,canonical,safeError,WAREHOUSES} from './common.mjs';
 import {disconnectBounded} from './service-lifetime.mjs';
 import {version as bindingVersion,retired,requireLive,resetPlan,resetBindings} from './binding-recovery.mjs';
+import {sameBinding} from './storage-paths.mjs';
 
 const businessAccount=a=>({id:a.id,warehouse:a.warehouse,expectedCompany:a.expectedCompany,expectedCoid:a.expectedCoid,expectedUid:a.expectedUid,mappingVerified:a.mappingVerified,bindingVersion:a.bindingVersion,binding:a.binding});
 const unresolved=i=>!retired(i)&&(i.native?.submissions>0||i.native?.nativeTaskRef)&&!['FAILED_CONFIRMED','DOWNLOADED'].includes(i.native.stage)&&!i.adoption;
 
 export class CatalogService {
   static async open(options){return new CatalogService({...options,store:await JobStore.open(options.stateRoot,{parentPid:options.parentPid})});}
-  constructor({store,stateRoot,bridgeRoot,lockRoot,forbiddenRoots,validator,driver}){
-    Object.assign(this,{store,stateRoot,validator});this.active=null;this.shuttingDown=false;this.sequence=0;this.controlTail=Promise.resolve();
-    this.sessions=driver?null:new AccountSessions({stateRoot,bridgeRoot,lockRoot,forbiddenRoots,phase:(phase,message)=>{if(this.active)this.active.phase={phase,message,at:now()};}});
+  constructor({store,stateRoot,bridgeRoot,lockRoot,forbiddenRoots,storageAliases=[],validator,driver}){
+    Object.assign(this,{store,stateRoot,validator,storageAliases});this.active=null;this.shuttingDown=false;this.sequence=0;this.controlTail=Promise.resolve();
+    this.sessions=driver?null:new AccountSessions({stateRoot,bridgeRoot,lockRoot,forbiddenRoots,storageAliases,phase:(phase,message)=>{if(this.active)this.active.phase={phase,message,at:now()};}});
     this.driver=driver||{
       binding:(...a)=>this.sessions.binding(...a),
       automaticBinding:(...a)=>this.sessions.automaticBinding(...a),
@@ -137,14 +138,14 @@ export class CatalogService {
           op.action==='accounts.auto'?'用户选择'+c.warehouse+'专用浏览器自动配置，登录账号核验后保存':'业务在本机确认该账号资料对应'+c.warehouse,verifiedAt:op.finishedAt};
       const imported=Object.values(data.batches).flatMap(b=>b.items).filter(i=>!retired(i)&&!i.adoption&&i.account.warehouse===c.warehouse&&i.migration?.needs_binding);
       if(imported.some(i=>i.account.expectedCoid!==next.expectedCoid||i.account.expectedUid!==next.expectedUid))throw new CatalogError('MIGRATION_ACCOUNT_MISMATCH','本机核验账号与迁入原采集账号不同；原任务和文件保留，请使用原仓账号核验，不会用新账号重发原任务');
-      if(!imported.length&&old&&old.mappingVerified&&old.expectedCompany===next.expectedCompany&&old.expectedCoid===next.expectedCoid&&old.expectedUid===next.expectedUid&&canonical(old.binding)===canonical(next.binding))return old;
+      if(!imported.length&&old&&old.mappingVerified&&old.expectedCompany===next.expectedCompany&&old.expectedCoid===next.expectedCoid&&old.expectedUid===next.expectedUid&&sameBinding(old.binding,next.binding,this.storageAliases))return old;
       if(Object.values(data.batches).some(b=>b.items.some(i=>!retired(i)&&!i.migration?.needs_binding&&i.account.warehouse===c.warehouse&&(unresolved(i)||!i.adoption&&i.receipt))))
         throw new CatalogError('PENDING_TASK','本仓旧采集占用当前绑定。请先用“纠正本仓绑定”归档旧采集；两仓互换时用“纠正两仓错绑”');
       for(const a of Object.values(data.accounts||{}))if(a.warehouse!==c.warehouse&&(
-          a.expectedCoid===next.expectedCoid&&a.expectedUid===next.expectedUid||canonical(a.binding)===canonical(next.binding)))throw Error('两个仓不能使用同一账号或浏览器绑定');
+          a.expectedCoid===next.expectedCoid&&a.expectedUid===next.expectedUid||sameBinding(a.binding,next.binding,this.storageAliases)))throw Error('两个仓不能使用同一账号或浏览器绑定');
     }
     next.bindingVersion=epoch+1;
-    if(this.sessions&&old?.binding&&canonical(old.binding)!==canonical(next.binding))await this.sessions.disconnect(old.binding);
+    if(this.sessions&&old?.binding&&!sameBinding(old.binding,next.binding,this.storageAliases))await this.sessions.disconnect(old.binding);
     await this.store.write(d=>{
       d.accounts||={};d.accounts[c.warehouse]=next;if(d.bindingEpochs)d.bindingEpochs[c.warehouse]=next.bindingVersion;if(d.rebindRequired)delete d.rebindRequired[c.warehouse];
       if(c.action==='accounts.bind')for(const b of Object.values(d.batches))for(const i of b.items)
@@ -192,7 +193,7 @@ export class CatalogService {
         if(['accounts.auto','accounts.ensure'].includes(c.action)){
           // An unchanged verified binding must not invalidate pending batch versions.
           if(data.rebindRequired?.[c.warehouse]){result.requires_confirmation=true;}
-          else if(a&&canonical(a.binding)===canonical(binding)){
+          else if(a&&sameBinding(a.binding,binding,this.storageAliases)){
             result.account=a;
           }else{
             result.account=await this.configure({action:'accounts.bind',warehouse:c.warehouse,expected_version:c.expected_version,mapping_verified:true},

@@ -23,6 +23,9 @@ class Call(QThread):
         try:
             self.succeeded.emit(self.operation(self.progress.emit))
         except Exception as exc:
+            from application_runtime import current
+            runtime=current()
+            if runtime:runtime.exception(type(exc),exc,exc.__traceback__,event='COMPONENT_THREAD_EXCEPTION',blocking=False)
             code = getattr(exc, 'code', '')
             self.failed.emit((code + '：' if code else '') + str(exc))
 

@@ -25,7 +25,8 @@ def home():
     # QA/source environments do not register in the operator's normal location.
     if os.environ.get('REPLENISHMENT_AI_HOME'): return Path(os.environ['REPLENISHMENT_AI_HOME']).resolve()
     if os.environ.get('REPLENISHMENT_DATA_DIR'): return Path(os.environ['REPLENISHMENT_DATA_DIR']).resolve() / 'ai-clients'
-    return Path(os.environ.get('LOCALAPPDATA') or Path.home()/'AppData/Local')/'YoutuanTools/补货助手/AI接入'
+    from data_location import base
+    return base()/'AI接入'
 
 
 def client_path(client):

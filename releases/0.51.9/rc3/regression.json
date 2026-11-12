@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "tests": 1598,
+  "seconds": 616.285,
+  "log": "qa\\unified_stockout_0519_20261112_01\\full-regression-final.log",
+  "full_run_start_source_hashes": "qa\\unified_stockout_0519_20261112_01\\final-runtime-hashes.json",
+  "final_gui_delta": {
+    "src/stockout_hub.py": {
+      "full_run_start": "aa3bde6182bdb5484821ee33c5607fe913952d7ec2bd5867cf6e6a738d93b768",
+      "final": "f8b665206cd2ba264a28a911e0be0ad4e1e68c4e7be749fa68761af03eda6985"
+    },
+    "src/stockout_hub_ui.py": {
+      "full_run_start": "34ed0eb4c4e966d439e4f86a1956c958607f20f94d9fec2af3bf581e7b1e8d62",
+      "final": "f103fcb44fd22ac34f68b8ad1e0ac6b99900b9abfc70d493e2795a893286bd94"
+    },
+    "tests/test_stockout_hub_ui.py": {
+      "full_run_start": "00f614820bcbf162b6f2641241ddc0d05aac1d6e24929824e51fea308851ec04",
+      "final": "7b18839f07985710a685e310b065b3132a5fbcc32e2dc20aebe5950dbba50469"
+    }
+  },
+  "final_gui_validation": {
+    "tests": 1,
+    "log": "qa\\unified_stockout_0519_20261112_01\\final-pause-wiring.log",
+    "real_qt": true
+  },
+  "coverage_note": "Full regression execution overlapped only these final GUI pause-wiring edits. Statistics/acquisition/recovery logic unchanged; do not claim all 1598 were rerun under the rc3 snapshot."
+}

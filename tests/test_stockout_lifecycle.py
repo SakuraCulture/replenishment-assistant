@@ -229,7 +229,7 @@ class StatusFilterTests(unittest.TestCase):
         self.q={'start':'2026-11-07','exclude_stopped':True,'exclude_disabled':True}
 
     def test_combined_status_filters_remove_both_sides_once_keep_unknown_and_standby(self):
-        full=metrics.query(self.repo,{'start':'2026-11-07'})['total'];self.assertEqual((full['base'],full['zero'],full['bad']),(7,5,1))
+        full=metrics.query(self.repo,{'start':'2026-11-07'})['total'];self.assertEqual((full['base'],full['zero'],full['bad']),(6,4,1))
         for view in ('all','retired','assessment','both'):
             q={**self.q,'view':view};v=metrics.query(self.repo,q)['total']
             self.assertEqual((v['base'],v['zero'],v['bad'],v['removed_base'],v['removed_zero']),(4,3,0,3,2))
@@ -238,7 +238,7 @@ class StatusFilterTests(unittest.TestCase):
             self.assertEqual({r['sku'] for r in metrics.detail(self.repo,q,excluded=True)['items']},{'A','B','C','H'})
 
     def test_status_switches_independent_and_aggregate_raw_trend_cut_equal(self):
-        for stop,disable,expected in [(False,False,(7,5)),(True,False,(5,3)),(False,True,(5,4)),(True,True,(4,3))]:
+        for stop,disable,expected in [(False,False,(6,4)),(True,False,(5,3)),(False,True,(5,4)),(True,True,(4,3))]:
             q={**self.q,'exclude_stopped':stop,'exclude_disabled':disable}
             total=metrics.query(self.repo,q)['total'];self.assertEqual((total['base'],total['zero']),expected)
             cuts=metrics.cuts(self.repo,q,['source','product_status'])

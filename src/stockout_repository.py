@@ -141,9 +141,14 @@ class Repository:
                 db.execute('INSERT INTO settings_current VALUES(1,?) ON CONFLICT(id) DO UPDATE SET version=excluded.version', (version,))
         return self.settings(version)
 
-    def new_run(self, *, trigger='manual', day=None, source_run=None, fresh_source=None, reexport_scope=None, reexport_publications=None):
+    def new_run(self, *, trigger='manual', day=None, source_run=None, fresh_source=None, reexport_scope=None, reexport_publications=None, run_id=None, basis_version=None):
         if source_run and fresh_source:raise ValueError('继续原任务与重新采集不能同时选择')
-        basis = self.settings()
+        if run_id:
+            with self.connect() as db:prior=db.execute('SELECT trigger,source_run FROM runs WHERE id=?',(run_id,)).fetchone()
+            if prior:
+                if tuple(prior)!=(trigger,source_run or fresh_source):raise ValueError('分析任务身份冲突')
+                return self.run(run_id)
+        basis = self.settings(basis_version)
         old = self.run(source_run or fresh_source) if source_run or fresh_source else None
         if old:
             basis = self.settings(old['basis'])
@@ -151,7 +156,7 @@ class Repository:
             if fresh_source and old['state'] not in {'COMPLETE','PARTIAL','ENDED'}:raise ValueError('原任务尚未结束，请先继续或结束原任务')
         if not basis:
             raise ValueError('请先选择门店并采用分析供货设置及必卖清单')
-        rid = uuid.uuid4().hex
+        rid = run_id or uuid.uuid4().hex
         from version_info import INFO
         external=dict(old['external'] if old and not fresh_source else {})
         external.pop('log_deleted_at',None)

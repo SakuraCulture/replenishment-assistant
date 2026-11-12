@@ -9,10 +9,11 @@ import os
 import tempfile
 
 TZ = timezone(timedelta(hours=8))
-VERSION = 'store-stockout-2'
-TAG_VERSION = 'virtual-category-1'
+VERSION = 'store-stockout-3'
+TAG_VERSION = 'virtual-category-2'
 WAREHOUSES = ('山东仓', '河北仓')
-VIEWS = {'all': '全量', 'retired': '剔除淘汰品', 'assessment': '剔除考核品', 'both': '剔除淘汰品和考核品'}
+VIEWS = {'all': '业务统计范围（已剔除考核品）', 'retired': '另剔除淘汰品',
+         'assessment': '业务统计范围（兼容旧视角）', 'both': '另剔除淘汰品（兼容旧视角）'}
 
 
 def now():

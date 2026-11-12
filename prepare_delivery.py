@@ -8,6 +8,18 @@ version=json.loads((root/'src/version.json').read_text(encoding='utf-8'))
 build=json.loads((dest/'_internal/build_info.json').read_text(encoding='utf-8-sig'))
 assert build['version']==version['version']
 shutil.copy2(root/'使用说明.txt',dest/'使用说明.txt')
+if version['version'] in {'0.52.0','0.52.1','0.52.2','0.52.3'}:
+    (dest/'docs').mkdir(exist_ok=True)
+    shutil.copy2(root/'docs/0.52.0运营签发与分配规则.md',dest/'docs/0.52.0运营签发与分配规则.md')
+if version['version'] in {'0.51.10','0.52.0','0.52.1','0.52.2','0.52.3'}:
+    (dest/'docs').mkdir(exist_ok=True)
+    shutil.copy2(root/'docs/0.51.10迁移退出与实例识别修复.md',dest/'docs/0.51.10迁移退出与实例识别修复.md')
+if version['version'] in {'0.52.1','0.52.2','0.52.3'}:
+    shutil.copy2(root/'docs/0.52.1数据保存位置与整库搬迁.md',dest/'docs/0.52.1数据保存位置与整库搬迁.md')
+if version['version'] in {'0.52.2','0.52.3'}:
+    shutil.copy2(root/'docs/0.52.2资料搬迁可见进度.md',dest/'docs/0.52.2资料搬迁可见进度.md')
+if version['version']=='0.52.3':
+    shutil.copy2(root/'docs/0.52.3搬迁资源释放与自动连接暂停.md',dest/'docs/0.52.3搬迁资源释放与自动连接暂停.md')
 if version['version'] in {'0.51.6','0.51.7','0.51.8'}:
     (dest/'docs').mkdir(exist_ok=True)
     shutil.copy2(root/'docs/0.51.6经营分析参数迁移修复.md',dest/'docs/0.51.6经营分析参数迁移修复.md')

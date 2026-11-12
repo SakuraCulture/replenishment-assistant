@@ -8,6 +8,11 @@ from pathlib import Path
 from PySide6.QtCore import QObject,QLockFile,Qt
 from PySide6.QtNetwork import QLocalServer,QLocalSocket
 
+class DetachedGuard:
+    """QLockFile has no QObject parent and survives QApplication teardown."""
+    def __init__(self,lock):self.lock=lock
+    def close(self):
+        if self.lock is not None:self.lock.unlock();self.lock=None
 
 def scope(arguments,data_root):
     import json
@@ -15,6 +20,16 @@ def scope(arguments,data_root):
     if marker.is_file() and marker.stat().st_size<=65536:
         try:marked=json.loads(marker.read_text('utf-8')).get('synthetic') is True
         except (ValueError,OSError,AttributeError):pass
+    if '--data-location-smoke' in arguments:
+        i=arguments.index('--data-location-smoke')
+        try:
+            out=Path(arguments[i+1]).resolve()
+            spec=json.loads((out/'synthetic.json').read_text('utf-8'))
+            import re
+            local=Path(spec.get('localappdata','')).resolve()
+            if spec.get('synthetic') is True and spec.get('live_platform') is False and Path(os.environ.get('LOCALAPPDATA','')).resolve()==local and local.parent==Path(os.environ['TEMP']).resolve() and re.fullmatch('replenishment-location-[a-f0-9]{16}',local.name):
+                return 'qa-location:'+str(out).casefold()
+        except (ValueError,OSError,IndexError,AttributeError):pass
     isolated=marked and any(a.startswith('--') and (a.endswith('-smoke') or a=='--business-flow-acceptance') for a in arguments)
     return 'qa:'+str(Path(data_root).resolve()).casefold() if isolated else 'main'
 
@@ -27,7 +42,7 @@ class SingleInstance(QObject):
         key=hashlib.sha256((str(Path.home()).casefold()+'|'+scope).encode()).hexdigest()[:32]
         self.name='Youtuan-Replenishment-'+key;self.scope=scope
         self.lock=QLockFile(str(base/(key+'.lock')));self.lock.setStaleLockTime(0)
-        self.server=None;self.window=None;self.pending=False;self.owned=False;self.clients=set();self.buffers={}
+        self.server=None;self.window=None;self.pending=False;self.owned=False;self.clients=set();self.buffers={};self.closing=False
 
     def acquire(self):
         if not self.lock.tryLock(0):
@@ -56,13 +71,17 @@ class SingleInstance(QObject):
             if client.bytesAvailable():self.read(client)
 
     def drop(self,client):
-        self.clients.discard(client);self.buffers.pop(client,None);client.deleteLater()
+        from shiboken6 import isValid
+        self.clients.discard(client);self.buffers.pop(client,None)
+        if isValid(client):client.deleteLater()
 
     def read(self,client):
         data=self.buffers.get(client,b'')+bytes(client.readAll());self.buffers[client]=data
         if len(data)<6 and b'\n' not in data:return
         if data==b'focus\n':
-            self.activate();client.write(b'OK\n');client.flush();client.disconnectFromServer()
+            if self.closing:client.write(b'BUSY\n')
+            else:self.activate();client.write(b'OK\n')
+            client.flush();client.disconnectFromServer()
         elif data:client.abort()
 
     def bind(self,window):
@@ -70,6 +89,8 @@ class SingleInstance(QObject):
         if self.pending:self.activate()
 
     def activate(self):
+        from shiboken6 import isValid
+        if self.closing or self.window is not None and not isValid(self.window):return
         if self.window is None:self.pending=True;return
         self.pending=False;window=self.window
         window.setWindowState((window.windowState() & ~Qt.WindowState.WindowMinimized)|Qt.WindowState.WindowActive)
@@ -83,6 +104,9 @@ class SingleInstance(QObject):
             ctypes.windll.user32.SetForegroundWindow(handle)
 
     def activate_existing(self):
+        from data_location import pending_message
+        message=pending_message() if self.scope.startswith('qa-location:') or self.scope=='main' and not os.environ.get('REPLENISHMENT_DATA_DIR') else ''
+        if message:raise RuntimeError(message)
         deadline=time.monotonic()+12
         while time.monotonic()<deadline:
             client=QLocalSocket(self);client.connectToServer(self.name)
@@ -95,13 +119,33 @@ class SingleInstance(QObject):
                         ctypes.windll.user32.AllowSetForegroundWindow(int(pid))
                     client.write(b'focus\n');client.waitForBytesWritten(1000)
                     if not client.canReadLine():client.waitForReadyRead(5000)
-                    if bytes(client.readLine()).strip()==b'OK':client.abort();client.deleteLater();return
+                    reply=bytes(client.readLine()).strip()
+                    if reply==b'OK':client.abort();client.deleteLater();return
+                    if reply==b'BUSY':client.abort();client.deleteLater();raise RuntimeError('原实例正在安全退出或迁入资料；请等待结束，未打开第二个业务窗口')
             client.abort();client.deleteLater();time.sleep(.05)
         raise RuntimeError('补货助手已在运行，正在启动或未响应。未再打开业务窗口；请稍后再次打开以唤醒原窗口。')
 
     def close(self):
+        self.closing=True;self.window=None
         for client in list(self.clients):client.abort()
         self.clients.clear()
         self.buffers.clear()
         if self.server:self.server.close();self.server.deleteLater();self.server=None
         if self.owned:self.lock.unlock();self.owned=False
+
+    def quiesce(self):
+        # Retain the lock through apply; late activation cannot resurrect widgets.
+        self.closing=True;self.window=None
+        if self.server:self.server.close()
+
+    def take_guard(self):
+        """Transfer ownership without a moment in which another writer can enter."""
+        if not self.owned:raise RuntimeError('未持有实例保护，未执行资料搬迁')
+        self.quiesce()
+        for client in list(self.clients):client.abort()
+        self.clients.clear();self.buffers.clear()
+        if self.server:
+            from shiboken6 import delete
+            self.server.close();delete(self.server);self.server=None
+        guard=DetachedGuard(self.lock);self.lock=None;self.owned=False
+        return guard

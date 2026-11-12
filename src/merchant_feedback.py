@@ -13,9 +13,10 @@ from runtime_support import checkpoint
 
 def connect(path):return sqlite3.connect(path,timeout=10)
 
-def current(db,oid,revision):
+def current(db,oid,revision,*,as_of=None):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name='merchant_feedback'").fetchone():return None
-    row=db.execute('SELECT version,saved,payload FROM merchant_feedback WHERE oid=? AND revision=? ORDER BY version DESC LIMIT 1',(oid,revision)).fetchone()
+    row=db.execute('SELECT version,saved,payload FROM merchant_feedback WHERE oid=? AND revision=?'+(' AND julianday(saved)<=julianday(?)' if as_of else '')+' ORDER BY version DESC LIMIT 1',
+                   (oid,revision,as_of) if as_of else (oid,revision)).fetchone()
     return {'version':row[0],'saved':row[1],'payload':wr.loads(row[2])} if row else None
 
 def scan(paths,progress=lambda _:None,cancel=None):

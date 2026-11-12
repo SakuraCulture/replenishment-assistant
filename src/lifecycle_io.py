@@ -9,10 +9,13 @@ from runtime_support import checkpoint
 from export_progress import RowProgress
 
 STAGES = ('return', 'payment', 'receipt')
+ALL_STAGES = ('return', 'operations', 'payment', 'receipt')
 TITLES = {'return': '门店回传单', 'payment': '门店付款单', 'receipt': '门店实际收货单'}
 QUANTITIES = {'return': '门店确认数量', 'payment': '付款单商品数量', 'receipt': '实际收货数量'}
 DOCNUM = {'return': '回传单号', 'payment': '付款单号', 'receipt': '收货单号'}
 DOCDATE = {'return': '回传日期', 'payment': '付款日期', 'receipt': '收货日期'}
+TITLES['operations']='运营签发单'
+for mapping in (QUANTITIES,DOCNUM,DOCDATE):mapping['operations']=mapping['return']
 COMMON = ['补货单号', '签发修订', '门店编码', '供货仓', '商品编码', '商品名称', '数量单位', '折合库存单位系数', '换算依据']
 
 def fields(stage):
@@ -76,7 +79,7 @@ def inspect(paths, progress=lambda _: None, cancel=None):
             f['properties'] = {p.name: p.value for p in wb.custom_doc_props}
             f['identity']=order_identity.read(wb)
             f['sheets']=[s for s in f['sheets'] if s['sheet']!=order_identity.SHEET]
-            if f['properties'].get('补货助手最低模板') in STAGES:
+            if f['properties'].get('补货助手最低模板') in ALL_STAGES:
                 f['sheets']=[s for s in f['sheets'] if not (s['sheet']=='填写说明' and s['headers']==['项目','说明'])]
         finally: wb.close()
     return infos
@@ -148,7 +151,7 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
                         with localcontext() as ctx:
                             ctx.prec=50
                             d['实际金额']=base.number(Decimal(qty or '0')*Decimal(price or '0'))
-                    doc = base.code(d[DOCNUM[stage]], stage == 'return' or generated)
+                    doc = base.code(d[DOCNUM[stage]], stage in ('return','operations') or generated)
                     props = spec.get('properties', {}); signed = base.code(d['补货单号'], True)
                     rev = revision(d['签发修订'])
                     # Resolve from stable sheet/store/warehouse evidence, never SKU or row position.

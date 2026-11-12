@@ -8,15 +8,16 @@ class Entry(QObject):
     nav_text='门店缺货率'
     page_module='stockout_ui'
     trigger_module='stockout_trigger'
-    def __init__(self,host):
+    def __init__(self,host,*,navigation=True,schedule=True):
         super().__init__(host)
         self.host=host;self.page=None;self.index=None;self.generation=0
         self.worker=None;self.callback=None;self.queued=None;self.watch=None;self.timer=None
         self.closing=False;self.background=False;self.message='按需进入；每日采集默认关闭'
         self.nav=button(self.nav_text,self.enter)
-        host.centralWidget().layout().itemAt(0).layout().insertWidget(5,self.nav)
+        if navigation:host.centralWidget().layout().itemAt(0).layout().insertWidget(5,self.nav)
+        else:self.nav.hide()
         host.sections.currentChanged.connect(self.section_changed)
-        self.arm()
+        if schedule:self.arm()
 
     def arm(self):
         if self.timer:self.timer.stop();self.timer.deleteLater();self.timer=None
@@ -80,7 +81,7 @@ class Entry(QObject):
         if self.closing:return
         request=(operation,args or {},callback,background,self.generation)
         if self.worker or self.busy():
-            if self.worker and self.worker.operation not in {'collect','adopt','end','cleanup','ingest','cleanup_retry','delete_run_log','rerun','recalculate','save_views'}:
+            if self.worker and self.worker.operation not in {'collect','adopt','end','cleanup','ingest','cleanup_retry','delete_run_log','rerun','recalculate','save_views','hub_collect','hub_scheduled','hub_end','hub_reuse','hub_export'}:
                 self.callback=None;self.worker.cancel_reason='已按新请求取消上次查询';self.worker.cancel.set()
             self.queued=request;self.status('等待当前任务安全结束；原补货业务优先')
             self.ensure_watch();return

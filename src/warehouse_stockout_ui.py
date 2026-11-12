@@ -120,7 +120,7 @@ class Filters(QDialog):
 class Page(QWidget):
     def __init__(self,host,entry):
         super().__init__(host);self.host,self.entry=host,entry;self.filters={};self.views=None;self.runs=[];self.offset=0;self.cut_rows=[];self.cut_keys=[];self.last_error=''
-        v=QVBoxLayout(self);v.addWidget(label('大仓缺货率分析','title'));v.addWidget(label('只按大仓资料：剔除虚拟分类所有淘汰品、仓禁用品和日配标签后，可用库存≤0的商品支数占剩余支数。','muted'))
+        v=QVBoxLayout(self);v.addWidget(label('大仓缺货率分析','title'));v.addWidget(label('只按大仓资料：剔除淘汰、淘便考核、仓禁用和日配后，可用库存≤0的商品支数占剩余支数。','muted'))
         row=QHBoxLayout();self.warehouses={}
         for wh in WAREHOUSES:
             box=QCheckBox(wh);box.setChecked(True);self.warehouses[wh]=box;row.addWidget(box)

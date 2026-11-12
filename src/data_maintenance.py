@@ -429,7 +429,7 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
                     if wr.loads(raw).get('order_ref') in oids:
                         if 'automation_events' in available:db.execute('DELETE FROM automation_events WHERE task=?',(task,))
                         db.execute('DELETE FROM automation_tasks WHERE id=?',(task,))
-            for table in ('lifecycle_versions','lifecycle_events','merchant_feedback','followup_notes','archive_visibility','normal_events','normal_revisions','normal_orders','jst_active','jst_generations','jst_locks','jst_events'):
+            for table in ('lifecycle_routes','lifecycle_versions','lifecycle_events','merchant_feedback','followup_notes','archive_visibility','normal_events','normal_revisions','normal_orders','jst_active','jst_generations','jst_locks','jst_events'):
                 if table in available:
                     for oid in oids:db.execute(f'DELETE FROM {table} WHERE oid=?',(oid,))
             apply_rewrites(db,scratch,prepared,dict.fromkeys(h['day'] for h in plan['parents']),progress,cancel)

@@ -109,7 +109,8 @@ class GenerationDialog(QDialog):
         c=self.catalogs.get(self.warehouse.currentText())
         if not c:self.source.setText('该仓未提供资料；请导入或采用已保存仓资料。');return
         x=c['catalog'];self.source.setText(f"{x['warehouse']} · {Path(x.get('source_path','')).name} · 导入 {x.get('imported_at','')} · {len(x['items'])}款 · "+('本批冻结依据' if self.batch_id else '待确认采用；资料是否适合本批由业务判断')+'\n'+warehouse_catalog.execution_warning(x))
-        self.source.setToolTip(x.get('source_path',''))
+        if c.get('selection_note'):self.source.setText(self.source.text()+'\n'+c['selection_note'])
+        self.source.setToolTip(x.get('source_path','')+'\n库存修订：'+str(x.get('revision',''))+'\n'+c.get('selection_note',''))
     def invalidate(self,*_):
         self.plan=None;self.generate_btn.setEnabled(False);self.summary.setText('资料或顺序变化，请重新预览。')
         self.review.replace([],'原预览已失效，请重新预览')

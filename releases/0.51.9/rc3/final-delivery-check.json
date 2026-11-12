@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "runtime_manifest_files_checked": 1039,
+  "runtime_matches_frozen_rc3": true,
+  "zip_sha256": "d71a5566cd566fefd991792c6b7c60cbf1b79740489b0a75a4d79a1bf4dc7ee8",
+  "zip_contains_current_pdf_and_html": true,
+  "no_user_database_or_browser_state": true,
+  "git_head_unchanged": true,
+  "git_index_empty": true,
+  "git_diff_check": true,
+  "documentation_finalized_after_build": true,
+  "old_delivery_directories_preserved": 71
+}

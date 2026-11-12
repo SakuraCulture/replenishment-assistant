@@ -98,7 +98,8 @@ class AnalysisTests(unittest.TestCase):
                           ['D','启用',3,'食品','供货商','待淘汰,不淘汰'],
                           ['E','启用',3,'食品','供货商','']])
         self.publish([(s,1,0 if s in 'ACD' else 1) for s in 'ABCDE'],{'山东仓':sha})
-        expected={'all':(5,3),'retired':(3,1),'assessment':(3,2),'both':(2,1)}
+        # Assessment is mandatory in every view; retired remains optional.
+        expected={'all':(3,2),'retired':(2,1),'assessment':(3,2),'both':(2,1)}
         for view,pair in expected.items():
             with self.subTest(view=view):
                 value=self.total(view);self.assertEqual((value['base'],value['zero']),pair)
@@ -150,7 +151,7 @@ class AnalysisTests(unittest.TestCase):
         try:
             self.assertEqual(tuple(next(book['总体'].iter_rows(min_row=2,values_only=True)))[:4],(3,2,2/3,0))
             meta={row[0]:row[1] for row in book['口径与覆盖'].values}
-            self.assertEqual(meta['统计口径版本'],'store-stockout-2');self.assertIn('负库存按0',meta['指标'])
+            self.assertEqual(meta['统计口径版本'],'store-stockout-3');self.assertIn('负库存按0',meta['指标'])
             sheet=list(book['商品明细1'].values);row=dict(zip(sheet[0],sheet[1]))
             self.assertEqual((row['原可用库存'],row['缺货标记'],row['指标待核']),('-4',1,0))
         finally:book.close()

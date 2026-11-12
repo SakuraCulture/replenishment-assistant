@@ -39,6 +39,7 @@ class CheckWorker(QThread):
 
     def run(self):
         try:
+            if self.cancel.is_set():return
             if self.kind == 'ax':
                 check_ax(self.lease, self.cancel, self.publish)
             else:
@@ -63,7 +64,7 @@ class StartupConnections(QObject):
     def __init__(self, host):
         super().__init__(host)
         self.host = host; self.workers = {}; self.records = {}; self.started = False
-        self.closing = False; self.waiting = set(); self.retry_until = 0
+        self.closing = False; self.paused=False; self.waiting = set(); self.retry_until = 0
         self.timer = QTimer(self); self.timer.setInterval(15000); self.timer.timeout.connect(self.retry_pending)
 
     def start(self):
@@ -75,7 +76,7 @@ class StartupConnections(QObject):
         self.timer.start()
 
     def retry(self, names=None):
-        if self.closing or getattr(self.host, 'closing', False):
+        if self.closing or self.paused or getattr(self.host,'_data_location_preparing',False) or getattr(self.host, 'closing', False):
             return
         names = list(names or NAMES)
         self.retry_until = max(self.retry_until, time.monotonic() + 300)
@@ -134,7 +135,7 @@ class StartupConnections(QObject):
             self.host.close()
 
     def retry_pending(self):
-        if self.closing:
+        if self.closing or self.paused or getattr(self.host,'_data_location_preparing',False):
             return
         if time.monotonic() >= self.retry_until:
             for record in self.records.values():

@@ -5,14 +5,14 @@ from runtime_support import checkpoint
 def needs_attention(row):
     task = row.get('generation_task') or {}
     changed = any(row.get('present', {}).get(s) and not row.get('health', {}).get(s, True)
-                  for s in ('return', 'payment', 'receipt'))
+                  for s in ('return', 'operations', 'payment', 'receipt'))
     return bool(changed or row.get('legacy_incomplete') or row.get('old_revision')
                 or row.get('warehouse') == '旧版未标仓'
                 or task.get('status') in ('failed', 'blocked', 'needs_review'))
 
 
 def home_projection(records, batches):
-    groups = {s: [] for s in ('return', 'payment', 'receipt', 'attention')}
+    groups = {s: [] for s in ('return', 'operations', 'payment', 'receipt', 'attention')}
     for row in records:
         stage = {'jst_payment': 'payment', 'jst_generate': 'payment'}.get(row.get('next'), row.get('next'))
         if stage in groups:
@@ -34,7 +34,7 @@ def read_home(path, cache, cancel=None, progress=lambda _: None):
 
 def empty_message(stage, request, data):
     """Explain visible scope without guessing global counts or payment facts."""
-    name = {'return': '回传', 'payment': '付款', 'receipt': '收货'}.get(stage, '订单')
+    name = {'return': '回传', 'operations':'运营签发', 'payment': '付款', 'receipt': '收货'}.get(stage, '订单')
     scope = request.get('scope')
     if scope is not None:
         return f'限定所选 {len(scope)} 单，当前没有待处理的{name}记录。可查看本环节全部；进入其他环节仍保留这些订单。'
@@ -43,7 +43,7 @@ def empty_message(stage, request, data):
     if request.get('warehouse') or request.get('lock'):
         return f'当前仓或锁状态下没有适用{name}记录。可清空筛选查看；不会修改订单或自动生成单据。'
     if stage and request.get('stage_filter') == '待处理':
-        upstream = {'return': '签发', 'payment': '门店回传', 'receipt': '门店付款'}[stage]
+        upstream = {'return': '签发', 'operations':'门店回传', 'payment': '门店回传/运营签发及分配', 'receipt': '门店付款'}[stage]
         return f'当前范围没有待{name}订单。查看本环节全部可查已处理记录；尚未到本环节的订单，请先核对{upstream}。'
     return '当前条件没有适用记录。可清空筛选或返回订单跟踪，不代表订单已完成。'
 

@@ -2,7 +2,7 @@
 import sys,os,logging
 from pathlib import Path
 
-def main():
+def _main():
     from PySide6.QtCore import QStandardPaths
     from PySide6.QtGui import QColor,QIcon,QPalette
     from PySide6.QtWidgets import QApplication,QMessageBox
@@ -13,41 +13,74 @@ def main():
     app.setPalette(palette);app.setStyleSheet(STYLE)
     icon=Path(__file__).parent/'app.ico'
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
-    logs=Path(os.environ.get('REPLENISHMENT_DATA_DIR') or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation))
+    from application_runtime import Runtime,settings_root
+    import data_location
+    default_data=data_location.default_base()
+    overridden=bool(os.environ.get('REPLENISHMENT_DATA_DIR'))
+    logs=data_location.hint(default_data)
+    runtime=Runtime(logs,folder=None if overridden else data_location.control()/'diagnostics');runtime.application=app
+    if '--data-location-smoke' in sys.argv:
+        from data_location_smoke import install_startup
+        install_startup(app,sys.argv[sys.argv.index('--data-location-smoke')+1:])
+        # Refuse before constructing repositories, not only after the UI opens.
+        if logs.absolute()!=data_location.default_base()/'settings' and not data_location.config():
+            raise ValueError('Synthetic location acceptance root mismatch')
+    app.aboutToQuit.connect(lambda:runtime.transition('EVENT_LOOP_EXIT'))
     from single_instance import SingleInstance,scope
     primary=SingleInstance(scope(sys.argv,logs),parent=app)
+    runtime.primary=primary
     try:
         if not primary.acquire():return 0
     except Exception as exc:
+        from data_location_progress import show_pending
+        code=show_pending(app)
+        if code is not None:return code
         QMessageBox.warning(None,'补货助手已在运行',str(exc));return 1
     from application_reset import recover,InstanceLease
     try:
+        if not overridden:
+            from data_relocation import recover as recover_location
+            recover_location()
+        logs=settings_root(default_data)
+        runtime.route(logs.parent/('.'+logs.name+'.diagnostics'),root=logs)
         recover(logs)
         from order_migration import recover as recover_orders
         recover_orders(logs)
         if (logs/'迁入原文件映射.json').is_file():os.environ['REPLENISHMENT_PORTABLE_PATHS']=str(logs/'迁入原文件映射.json')
         else:os.environ.pop('REPLENISHMENT_PORTABLE_PATHS',None)
         instance_lease=InstanceLease(logs)
+        runtime.lease=instance_lease
     except Exception as exc:
         QMessageBox.warning(None,'资料目录未打开',str(exc));return 1
     app.data_root=logs
-    logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=logs/'app.log',level=logging.INFO,encoding='utf-8',force=True,format='%(asctime)s %(levelname)s %(message)s')
-    def unexpected(t,v,tb):
-        logging.error('界面异常',exc_info=(t,v,tb))
-        from readable_ui import failure
-        failure(None,'操作未完成',f'{t.__name__}: {v}\n日志位置：{logs}')
-    sys.excepthook=unexpected
+    logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=runtime.folder/'app.log',level=logging.INFO,encoding='utf-8',force=True,format='%(asctime)s %(levelname)s %(message)s')
     from workbench import Workbench
     if any(flag in sys.argv for flag in ['--batch-smoke','--warehouse-smoke','--work-smoke','--intake-smoke']):win=Workbench()
     else:
         from application_window import ApplicationWindow
         win=ApplicationWindow()
+    runtime.window=win
     win.show()
     primary.bind(win)
     # GUI acceptance installs isolated transports before explicitly exercising
     # startup; normal launches always attempt connection after the first paint.
     from browser_startup_ui import start_application_connections
     start_application_connections(win, sys.argv)
+    from application_exit import notice
+    from PySide6.QtCore import QTimer
+    QTimer.singleShot(0,win,lambda:notice(win,logs))
+    if '--data-location-smoke' in sys.argv:
+        from data_location_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--data-location-smoke')+1:])
+    if '--migration-shutdown-smoke' in sys.argv:
+        from migration_shutdown_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--migration-shutdown-smoke')+1:])
+    if '--operations-lifecycle-smoke' in sys.argv:
+        from operations_lifecycle_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--operations-lifecycle-smoke')+1:])
+    if '--stockout-hub-smoke' in sys.argv:
+        from stockout_hub_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--stockout-hub-smoke')+1:])
     if '--monthly-first-fill-smoke' in sys.argv:
         from monthly_first_fill_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--monthly-first-fill-smoke')+1:])
@@ -277,31 +310,42 @@ def main():
         from intake_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--intake-smoke')+1:])
     code=app.exec()
-    reset_request=getattr(win,'_factory_reset_request',None)
-    order_import_request=getattr(win,'_order_import_request',None)
-    # Dispose the entire widget tree while QApplication is still alive. The new
-    # archive dialogs retain callbacks; interpreter-finalization order is unsafe
-    # for Qt objects in the frozen Windows runtime.
-    import shiboken6
-    if shiboken6.isValid(win):shiboken6.delete(win)
-    instance_lease.close()
-    if order_import_request:
-        logging.shutdown()
-        from order_migration import apply
-        try:
-            result=apply(order_import_request)
-        except Exception as exc:
-            QMessageBox.warning(None,'订单迁入未完成',str(exc)+'\n原资料或完整备份已保留，重新打开时会核对恢复记录。');return 1
-        QMessageBox.information(None,'订单已迁入','完整订单已迁入，作业和计划保持暂停。重新打开软件后先核验连接和原平台结果。\n原本机完整备份：'+result['backup'])
-    if reset_request:
-        logging.shutdown()
-        from application_reset import perform
-        try:
-            result=perform(reset_request)
-        except Exception as exc:
-            QMessageBox.warning(None,'初始化未完成',str(exc)+'\n重新打开程序前，请查看资料及备份目录。');return 1
-        QMessageBox.information(None,'全部初始化完成','本机应用资料已初始化。重新打开程序即可使用初始设置。\n完整备份：'+result['backup'])
-    primary.close()
+    from application_exit import finish
+    return finish(runtime,code)
+
+
+def main():
+    from application_runtime import current
+    code=1;runtime=None
+    try:code=_main()
+    except BaseException as exc:
+        runtime=current()
+        if runtime:
+            runtime.exception(*sys.exc_info())
+            if runtime.request:
+                from migration_status import record,latest
+                try:
+                    prior=latest(runtime.root)
+                    if not prior or prior['nonce']!=runtime.request['nonce'] or prior['state']!='FAILED':record(runtime.request,'FAILED',phase=runtime.phase,error=exc)
+                except BaseException:runtime.exception(*sys.exc_info(),event='HANDOFF_LOG_EXCEPTION')
+            if getattr(runtime,'storage_request',None):
+                try:
+                    import data_relocation
+                    prior=data_relocation.status()
+                    if prior and prior['state'] not in ('FAILED','COMPLETED'):
+                        data_relocation.record(runtime.storage_request,'FAILED','WAITING_EXIT','安全退出或搬迁未完成，原资料与已有副本保留',error={'message':str(exc),'traceback':__import__('traceback').format_exc()})
+                    runtime.location_result=data_relocation.status()
+                except BaseException:runtime.exception(*sys.exc_info(),event='STORAGE_HANDOFF_LOG_EXCEPTION')
+        else:sys.__excepthook__(*sys.exc_info())
+        code=1
+    finally:
+        runtime=current()
+        if runtime:
+            from application_exit import release
+            release(runtime)
+    if runtime and getattr(runtime,'location_result',None):
+        from data_location_ui import reopen
+        reopen(runtime)
     return code
 
 
@@ -315,6 +359,9 @@ def __getattr__(name):
 if __name__=="__main__":
     import multiprocessing
     multiprocessing.freeze_support()
+    if '--data-location-progress' in sys.argv:
+        from data_location_progress import main as progress_main
+        sys.exit(progress_main(sys.argv[sys.argv.index('--data-location-progress')+1:]))
     if '--catalog-lifetime-helper' in sys.argv:
         from catalog_lifetime_smoke import parent_helper
         parent_helper(sys.argv[sys.argv.index('--catalog-lifetime-helper')+1:])

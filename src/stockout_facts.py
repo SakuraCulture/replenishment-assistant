@@ -7,6 +7,7 @@ from stockout_common import (digest, file_hash, number, date_of, encoded, now, r
 from runtime_support import checkpoint
 from warehouse_routing import select_warehouse
 from virtual_categories import RETIRED
+from stockout_tags import tokens as virtual_tokens, assessment as is_assessment
 
 CATALOG_FIELDS=('商品编码','商品名称','商品状态','可用数','分类','供应商名称','虚拟分类')
 STORE_FIELDS=('仓库/门店编码','商品编码','商品名称','月销','可用库存','在途库存','分类','补货状态')
@@ -53,14 +54,19 @@ def table(path, required, cancel=None, *, used=()):
         sheet,start,heads=choices[0]
         positions=[(i,h) for i,h in enumerate(heads) if h in set(required)|set(used)]
         def rows():
-            for line,values in enumerate(sheet.iter_rows(min_row=start+1,values_only=True),start+1):
-                checkpoint(cancel)
-                if not any(v is not None and v!='' for v in values):
-                    continue
-                if any(isinstance(v,str) and len(v)>65536 for v in values):
-                    raise ValueError(f'第{line}行字段异常过长，请核对原件')
-                yield line,{h:values[i] if i<len(values) else None for i,h in positions}
-        yield heads,rows()
+            iterator=sheet.iter_rows(min_row=start+1,values_only=True)
+            try:
+                for line,values in enumerate(iterator,start+1):
+                    checkpoint(cancel)
+                    if not any(v is not None and v!='' for v in values):
+                        continue
+                    if any(isinstance(v,str) and len(v)>65536 for v in values):
+                        raise ValueError(f'第{line}行字段异常过长，请核对原件')
+                    yield line,{h:values[i] if i<len(values) else None for i,h in positions}
+            finally:iterator.close()
+        records=rows()
+        try:yield heads,records
+        finally:records.close()
     finally:
         book.close()
 
@@ -137,7 +143,8 @@ def exclusion(view, prefix='', *, exclude_stopped=False, exclude_disabled=False)
         raise ValueError('未知剔除视角')
     r=f'coalesce({prefix}retired,0)=1'
     a=f'coalesce({prefix}assessment,0)=1'
-    terms=[{'all':'0','retired':r,'assessment':a,'both':f'({r} OR {a})'}[view]]
+    terms=[a]
+    if view in ('retired','both'):terms.append(r)
     if exclude_stopped:terms.append(f"{prefix}replen_status IN ('停采','禁采')")
     if exclude_disabled:terms.append(f"{prefix}product_status='禁用'")
     return '('+' OR '.join(terms)+')'
@@ -191,12 +198,13 @@ def load_store(repo,rid,store,source,*,observed,expected=None,expected_rows=None
             zero=int(eligible==1 and stock==0)
             source_type,warehouse,product,reason=classify(reader,sku,basis.get('routes',{}).get(store),run['catalogs'])
             tags=product['tags'] if product is not None else None
-            tokens={v.strip() for v in re.split(r'[,，;；\r\n]+',tags) if v.strip()} if tags is not None else None
+            tokens=virtual_tokens(tags)
             retired=int(bool(tokens & RETIRED)) if tokens is not None else None
-            assessment=int('淘便考核' in tokens) if tokens is not None else None
+            assessment=is_assessment(tags)
             category=(product['category'] if product is not None else str(row.get('分类') or '') if source_type=='local' else '') or '类目未提供'
             supplier=(warehouse+' · '+product['supplier'] if product is not None and product['supplier'] else '供货商未提供') if source_type=='center' else '不适用（地采）' if source_type=='local' else '供货商待核'
             errors=[reason]
+            if assessment:errors.append('虚拟分类淘便考核（不计入基数）')
             if not valid_month:errors.append('月销缺失、非法或负数，有销基数待核')
             if stock is None:errors.append('门店可用库存缺失或非法，不能当作0')
             if tokens is None:errors.append('虚拟分类依据未取得，剔除视角仍保留此商品')

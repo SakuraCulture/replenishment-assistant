@@ -1,5 +1,5 @@
 {
-  "application": "0.51.8",
+  "application": "0.52.2",
   "edition": "2026-11-12",
   "source": "Historical versioned screenshots plus isolated source Qt acceptance; identity probes simulated, no live platform",
   "legacy_0480_build": {
@@ -84,12 +84,6 @@
     {
       "name": "return-review.png",
       "sha256": "0b3150e7c731b05331f6a5cfbcab4947af797f23a2348b60c84d88809ba0e2c8",
-      "version": "0.48.0",
-      "source": "actual EXE; original business edition"
-    },
-    {
-      "name": "stockout-overview.png",
-      "sha256": "22a391dfed5557c0f3649b325e8f36170de9008f8c6da22736b0ca2e20e990cc",
       "version": "0.48.0",
       "source": "actual EXE; original business edition"
     },
@@ -413,12 +407,85 @@
       "synthetic": true,
       "live_platform": false,
       "description": "实际工作台计算及新品维护；源码Qt隔离演练。"
+    },
+    {
+      "path": "images/stockout-hub-store-0519.png",
+      "application": "0.51.9",
+      "source": "qa/unified_stockout_0519_20261112_01/gui-source-02/store-hub.png",
+      "sha256": "8b169196c1211c091f5c3d102312f2cd77d79f9f05284092b9f66cafd86a618e",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "源码Qt与真实工作进程隔离演练；冻结EXE验收另记。"
+    },
+    {
+      "path": "images/stockout-hub-warehouse-0519.png",
+      "application": "0.51.9",
+      "source": "qa/unified_stockout_0519_20261112_01/gui-source-02/warehouse-hub.png",
+      "sha256": "c693c7ada3ca3cea48ff8e7735988bcc395aa6557e9f23e8fabaa7870cd5bf0a",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "源码Qt与真实工作进程隔离演练；冻结EXE验收另记。"
+    },
+    {
+      "path": "images/stockout-hub-export-0519.png",
+      "application": "0.51.9",
+      "source": "qa/unified_stockout_0519_20261112_01/gui-source-02/hub-export.png",
+      "sha256": "8a11cc9aa735e16986cc2bf06ccff1767ae9ff6e131ae2a345d37ffd42827500",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "源码Qt与真实工作进程隔离演练；冻结EXE验收另记。"
+    },
+    {
+      "name": "operations-stage-0520.png",
+      "sha256": "16d78a3124382e16f30c240288e370e0be49c0b2eebc1be0164edc5d711f479b",
+      "version": "0.52.0",
+      "source": "qa/operations_lifecycle_0520_20261112_01/source-gui-04/operations-page.png",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "运营签发：复用门店回传的独立环节；实际源码Qt、隔离合成订单，无真实平台调用"
+    },
+    {
+      "name": "allocation-normalization-0520.png",
+      "sha256": "4fddca4144baf1264f1cb380ebb4a3455f4399fe3441081f497ae292ba58aba3",
+      "version": "0.52.0",
+      "source": "qa/operations_lifecycle_0520_20261112_01/source-gui-04/allocation-page.png",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "需求规整后分配，仓库尾数完整安排；实际源码Qt、隔离合成订单，无真实平台调用"
+    },
+    {
+      "name": "workflow-ratios-0520.png",
+      "sha256": "03382239cbf74d1c6492953ed9bc1fe73021442507d154c1523faca23331ef0e",
+      "version": "0.52.0",
+      "source": "qa/operations_lifecycle_0520_20261112_01/source-gui-scale125-07/workflow-trends.png",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "原五段与新增分段比率的时间趋势；实际源码Qt、隔离合成订单，无真实平台调用",
+      "evidence": "qa/operations_lifecycle_0520_20261112_01/source-gui-scale125-07/workflow-trends.png"
+    },
+    {
+      "path": "images/data-location-0521.png",
+      "application": "0.52.1",
+      "source": "qa/storage_location_0521_20261112_01/native-source-02/confirm/data-location-dialog.png",
+      "sha256": "86c01844e35e1fd03547229fd072880fde354ef1b7cf9b6c70c8a73390b3fc11",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "实际Qt窗口，合成资料C→D搬迁设置；源码窗口，最终EXE另行验收"
+    },
+    {
+      "path": "images/data-location-progress-0522.png",
+      "application": "0.52.2",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_progress_0522_20261112_01\\native-source-07\\large_file\\large_file-progress-COPYING.png",
+      "sha256": "05f847865606c65587143a3dd3c430f463e2b574676bc7f0eb4d3148f658741b",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "源码实际Qt：12MiB合成大文件，复制及核对阶段的处理量与阶段百分比；最终EXE另有独立验收。"
     }
   ],
   "live_platform_tested": false,
   "binding_ready_state": "synthetic demonstration only; never queried or confirmed a real purchase",
   "historical_source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
-  "source_base_commit": "459e5f530576a5cf1623cc8ded76cb051086211d",
+  "source_base_commit": "fa7178c96399a0dc8b45b9661942c3568bd43d0b",
   "source_mode": "source Qt isolated rehearsal; frozen EXE evidence recorded separately in releases/0.51.8/rc1",
   "archived_images": [
     {
@@ -460,6 +527,13 @@
       "live_platform": false,
       "description": "源码Qt：按实际仓首铺18，未选不增加采购",
       "archive_reason": "0.51.8已按用户要求改为本月新品自动带量；旧手工选择示意保留历史，不再作为当前用法。"
+    },
+    {
+      "name": "stockout-overview.png",
+      "sha256": "22a391dfed5557c0f3649b325e8f36170de9008f8c6da22736b0ca2e20e990cc",
+      "version": "0.48.0",
+      "source": "actual EXE; original business edition",
+      "archive_reason": "0.51.9统一入口及固定排除考核品；保留旧界面证据。"
     }
   ]
 }

@@ -106,7 +106,8 @@ def excluded_sql(options, prefix='f.'):
 
 
 def view_label(options):
-    names=[] if options['view']=='all' else [VIEWS[options['view']]]
+    names=['已剔除淘便考核']
+    if options['view'] in ('retired','both'):names.append('剔除淘汰品')
     if options.get('exclude_stopped'):names.append('剔除禁采（含停采）')
     if options.get('exclude_disabled'):names.append('剔除禁用')
     return '、'.join(names) or '全量'
@@ -146,11 +147,10 @@ def query(repo, options, *, cancel=None):
     condition,args=where(options)
     with repo.connect() as db:
         if cancel:db.set_progress_handler(lambda:int(cancel.is_set()),1000)
-        if not options['filters'] and not options.get('exclude_stopped') and not options.get('exclude_disabled'):
-            fields=','.join('coalesce(sum(m.'+k+'),0) AS '+k for k in AGG_KEYS)
-            total=db.execute(f'SELECT {fields} FROM {LINKS} JOIN summaries m ON m.snapshot=s.id AND m.view=? WHERE {condition}',[options['view'],*args]).fetchone()
-        else:
-            total=db.execute(f'SELECT {aggregation(options)} FROM {LINKS} JOIN {fact_source(options)} f ON f.snapshot=s.id WHERE {condition}',args).fetchone()
+        # Old summaries used optional assessment exclusion. The dimension summary
+        # still has the immutable assessment flag, so apply today's policy there
+        # without rewriting old facts or reading every SKU for an unfiltered card.
+        total=db.execute(f'SELECT {aggregation(options)} FROM {LINKS} JOIN {fact_source(options)} f ON f.snapshot=s.id WHERE {condition}',args).fetchone()
         # Existing immutable snapshots keep their old derived values until a
         # local recalculation publishes a new revision. Do not relabel them v2.
         needs_recalculation=bool(total['bad'] and db.execute(f'''SELECT 1 FROM {LINKS}

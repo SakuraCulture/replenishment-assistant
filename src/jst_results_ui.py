@@ -112,6 +112,24 @@ class ResultsPage(QWidget):
         elif self.last_plan is None:self.status.setText('查询完成；业务进度见各单状态。可重复导出有效结果，不重新分配。' if c['ready'] else '旧分配已失效，不能直接导出；请勾选要更正的订单，点击“按原批重新分配勾选单”。旧付款保留，新分配后需重新核对付款。' if any((r.get('gid') or r.get('original_zero')) and r['state']=='stale' for r in self.records) else '当前范围没有可导出结果：尚未回传请先确认回传；已回传请准备分配批次，或选择原批继续。')
         if self.payment_notice:self.status.setText(self.payment_notice)
         self.progress.hide();self.controls()
+        if getattr(self,'auto_payment_scope',None):QTimer.singleShot(0,self.prepare_payment_automatically)
+
+    def prepare_payment_automatically(self):
+        scope=getattr(self,'auto_payment_scope',None)
+        if not scope or self.closing or self.worker or self.reviewing or self.reading:return
+        entries=[r for r in self.records if service.key(r['head']) in scope]
+        if {service.key(r['head']) for r in entries}!=scope:return
+        if any(r['state'] not in ('ready','zero') for r in entries):return
+        self.auto_payment_scope=None
+        ready=[r for r in entries if r['state']=='ready']
+        if not ready:self.status.setText('本范围分配为0，无可转入付款的生成单；结果已保留。');return
+        self.reviewing=True;self.controls()
+        try:
+            from jst_payment_ui import review
+            result=review(self,self.host,ready)
+            self.status.setText('付款已保存；可进入收货核对。' if result else '已准备付款核对；本次未确认付款，分配结果保留，可再次点击核对付款。')
+        except Exception as exc:self.status.setText('分配结果已保留；付款准备未完成：'+str(exc)+'。可点击核对付款重试。')
+        finally:self.reviewing=False;self.controls()
     def day_changed(self,*_):
         self.reader.cancel();self.data=None;self.records=[];self.table.clear();self.clear_selection();self.remaining=[];self.last_plan=None;self.refresh()
     def clear_scope(self):self.scope=None;self.scope_btn.hide();self.day_changed()

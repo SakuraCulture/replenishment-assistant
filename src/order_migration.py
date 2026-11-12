@@ -72,7 +72,7 @@ def verify_originals(path,cancel=None):
 def info(path):
     with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")};counts={}
-        for table in ('normal_orders','normal_revisions','normal_work_revisions','jobs','lifecycle_versions','purchase_documents','purchase_versions','jst_generations','jst_baselines','source_files','stores','presets','deleted_order_tokens'):
+        for table in ('normal_orders','normal_revisions','normal_work_revisions','jobs','lifecycle_routes','lifecycle_versions','purchase_documents','purchase_versions','jst_generations','jst_baselines','source_files','stores','presets','deleted_order_tokens'):
             if table in tables:counts[table]=db.execute('SELECT count(*) FROM '+table).fetchone()[0]
     return counts
 
@@ -212,8 +212,10 @@ def prepare(root,package,progress=lambda _:None,cancel=None):
         contents={}
         for entry in value['entries']:contents.setdefault(entry['sha256'],[]).append(entry['path'])
         atomic_json(stage/'迁入原文件映射.json',{'version':1,'paths':value.get('external_map',{}),'contents':contents})
-        return {'root':str(root),'stage':str(stage),'backup':str(root.with_name(root.name+'.订单导入备份-'+nonce)),
+        plan={'root':str(root),'stage':str(stage),'backup':str(root.with_name(root.name+'.订单导入备份-'+nonce)),
                 'new':str(root.with_name('.'+root.name+'.order-new-'+nonce)),'nonce':nonce,'package':str(package),'package_sha256':before,'manifest':value}
+        from migration_status import record
+        record(plan,'PREPARED');return plan
     except BaseException:shutil.rmtree(stage);raise
 
 def checked_plan(plan):
@@ -227,6 +229,9 @@ def checked_plan(plan):
 
 def discard(plan):
     checked_plan(plan);stage=Path(plan['stage'])
+    from migration_status import latest,record
+    value=latest(plan['root'])
+    if not value or value['nonce']!=plan['nonce'] or value['state']!='COMPLETED':record(plan,'CANCELLED')
     if stage.exists():shutil.rmtree(stage)
 
 def pause_imported(root):
@@ -264,23 +269,35 @@ def pause_imported(root):
 
 def journal(root):return root.parent/('.'+root.name+'.order-import.json')
 
-def recover(root):
+def _recover(root):
     root=validate_root(root);path=journal(root)
     if not path.exists():return None
     plan=json.loads(path.read_text('utf-8'));checked_plan(plan)
     if Path(plan['root']).resolve()!=root:raise ValueError('订单导入恢复目录不一致')
     backup=Path(plan['backup']);receipt=root/'订单迁入完成.json'
     if receipt.is_file() and json.loads(receipt.read_text('utf-8')).get('nonce')==plan['nonce']:
-        path.unlink();return {'state':'COMPLETED','backup':str(backup)}
+        result={'state':'COMPLETED','backup':str(backup)}
+        from migration_status import record
+        record(plan,'COMPLETED',result=result);path.unlink();return result
     if backup.exists():
         if root.exists():
             failed=root.with_name('.'+root.name+'.order-failed-'+plan['nonce'])
             if failed.exists():raise ValueError('导入恢复证据目录已存在，请保留现场')
             root.rename(failed)
         backup.rename(root)
-    path.unlink();return {'state':'ROLLED_BACK','root':str(root)}
+    result={'state':'ROLLED_BACK','root':str(root)}
+    from migration_status import record
+    record(plan,'FAILED',phase='REPLACING',error=RuntimeError('目录替换未完成，已恢复原库；迁入材料和替换工作目录保留'),result=result)
+    path.unlink();return result
 
-def apply(plan):
+
+def recover(root):
+    root=validate_root(root)
+    if not journal(root).exists():return None
+    from application_reset import _exclusive
+    with _exclusive(root):return _recover(root)
+
+def _apply(plan):
     """Only after accepted GUI close; never deletes the target backup."""
     root=checked_plan(plan);stage=Path(plan['stage']);backup=Path(plan['backup']);new=Path(plan['new'])
     from application_reset import _exclusive,_check_other_processes
@@ -290,6 +307,8 @@ def apply(plan):
         if not (stage/entry['path']).resolve().is_relative_to(stage.resolve()):raise ValueError('准备的迁入文件越出临时目录')
         if file_hash(stage/entry['path'])!=entry['sha256']:raise ValueError('准备的迁入文件已变化，未替换资料')
     with _exclusive(root):
+        from migration_status import record
+        record(plan,'APPLYING',phase='WAITING_LOCKS')
         _check_other_processes();resource_check(root.parent,sum(p.stat().st_size for p in root.rglob('*') if p.is_file()))
         from catalog_migration import local_connections,restore as restore_catalog
         catalog_local=local_connections(root)
@@ -312,6 +331,7 @@ def apply(plan):
                 if p.is_symlink() or p.is_junction():raise ValueError('目标资料含链接，未迁入')
                 if p.is_file() and (owned(relative) or relative in DERIVED or relative in {db+suffix for db in DBS|DERIVED for suffix in ('-wal','-shm','-journal')}):ignored.append(name)
             return ignored
+        record(plan,'APPLYING',phase='COPYING')
         shutil.copytree(root,new,ignore=ignore)
         try:
             for entry in plan['manifest']['entries']:
@@ -319,9 +339,21 @@ def apply(plan):
             shutil.copyfile(stage/'迁入原文件映射.json',new/'迁入原文件映射.json');pause_imported(new)
             restore_catalog(new,root,plan['manifest'],catalog_local)
             atomic_json(new/'订单迁入完成.json',{'nonce':plan['nonce'],'at':now(),'package_sha256':plan['package_sha256'],'backup':str(backup),'scope':plan['manifest']['scope']})
-            atomic_json(journal(root),plan)
+            record(plan,'APPLYING',phase='REPLACING');atomic_json(journal(root),plan)
             root.rename(backup);new.rename(root)
         except BaseException:
-            if journal(root).exists():recover(root)
+            if journal(root).exists():_recover(root)
             raise
-        result=recover(root);discard(plan);return result
+        result=_recover(root);discard(plan);return result
+
+
+def apply(plan):
+    from migration_status import record,latest
+    checked_plan(plan);record(plan,'APPLYING',phase='VALIDATING')
+    try:return _apply(plan)
+    except BaseException as exc:
+        value=latest(plan['root'])
+        if value and value['nonce']==plan['nonce'] and value['state']=='COMPLETED':
+            record(plan,'COMPLETED',phase='CLEANUP_PENDING',error=exc,result=value['result']);return value['result']
+        record(plan,'FAILED',phase=value.get('phase','APPLYING') if value else 'APPLYING',error=exc)
+        raise

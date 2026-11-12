@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "pages": 97,
+  "chapters": 21,
+  "images": 49,
+  "character_bounds_issues": [],
+  "all_pages_rendered": 97,
+  "review_pages": [
+    35,
+    37,
+    89,
+    94,
+    95
+  ],
+  "pdf_sha256": "5c004fab83758ee8580cb90f5944909ad348ac2624239d4ee4429e9e72ce13a1",
+  "html_checks": 10,
+  "legacy_pdf_preserved": true,
+  "assets_copied_after_build": true,
+  "pdf": "docs\\manual\\补货助手_0.51.9_新人业务上手手册.pdf"
+}

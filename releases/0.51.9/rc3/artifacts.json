@@ -1,0 +1,21 @@
+{
+  "version": "0.51.9",
+  "build": "rc3",
+  "exe": {
+    "path": "交付_0.51.9_rc3\\补货助手\\补货助手.exe",
+    "sha256": "74c9e5d9c96bdcabe6bda8d02355b6dd46227053b28a68030a15fd742fdea799"
+  },
+  "zip": {
+    "path": "交付_0.51.9_rc3\\补货助手_0.51.9_rc3.zip",
+    "bytes": 147524842,
+    "sha256": "d71a5566cd566fefd991792c6b7c60cbf1b79740489b0a75a4d79a1bf4dc7ee8"
+  },
+  "source_reference": "snapshot-94451567ae33c5e59ec2496052fb8a0a80f92fdff48c20c54414f4962cfc87b1",
+  "source_snapshot_sha256": "94451567ae33c5e59ec2496052fb8a0a80f92fdff48c20c54414f4962cfc87b1",
+  "base_commit": "fa7178c96399a0dc8b45b9661942c3568bd43d0b",
+  "manifest_files": 1298,
+  "git_commit_created": false,
+  "pushed": false,
+  "merged": false,
+  "live_platform": false
+}

@@ -34,10 +34,13 @@ def detail_rows(rows):
 
 
 def export(path,report,target,level='store',orders=None,progress=lambda _:None,cancel=None):
-    if level not in ('store','order','detail','coverage_rounds'):raise ValueError('未知报表类型')
+    if level not in ('store','order','detail','coverage_rounds','workflow'):raise ValueError('未知报表类型')
     target=Path(target).resolve()
     if target.suffix.lower()!='.xlsx' or target.exists():raise ValueError('请使用新的.xlsx文件，保留已导出分析快照')
     checkpoint(cancel);service.validate_snapshot(path,report,progress,cancel)
+    if report.get('linked_stockout'):
+        import workflow_stockout
+        workflow_stockout.validate(path,report['query'],report['linked_stockout'],cancel)
     selected=set(orders or [])
     if selected-set(h['number'] for h in report['heads']):raise ValueError('勾选订单不在当前查询范围')
     rows=[r for r in report['rows'] if not selected or r['order'] in selected]
@@ -49,7 +52,11 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
     fd,tmp=tempfile.mkstemp(dir=target.parent,prefix='.analytics-',suffix='.xlsx');os.close(fd)
     try:
         with stream_book() as book:
-            monitor = write_summary(book,rows,level,progress,cancel,coverage=True,references=True) if level=='order' else []
+            monitor=[]
+            if level in ('store','order','workflow'):
+                from workflow_exports import append
+                monitor=append(book,report,rows,progress,cancel,custom=level=='workflow')
+            if level=='order':monitor.extend(write_summary(book,rows,level,progress,cancel,coverage=True,references=True))
             if level in ('store','order'):
                 from funnel_dimension_export import write
                 monitor.extend(write(book,rows,progress,cancel))
@@ -71,6 +78,7 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
         checkpoint(cancel)
         # A confirmed/deleted order while writing must not publish an obsolete report.
         service.validate_snapshot(path,report,progress,cancel)
+        if report.get('linked_stockout'):workflow_stockout.validate(path,report['query'],report['linked_stockout'],cancel)
         checkpoint(cancel);os.link(tmp,target)
     finally:Path(tmp).unlink(missing_ok=True)
     return {'path':str(target),'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),

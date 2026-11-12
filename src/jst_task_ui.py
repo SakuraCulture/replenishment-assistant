@@ -20,7 +20,7 @@ class Generator(QObject):
     def tick(self):
         h=self.host
         modal=QApplication.activeModalWidget();io=getattr(h,'_large_io_dialog',None)
-        if self.worker or self.stopped or h.closing or h.worker or (io and not io.property('jstResults')) or (modal and not modal.property('jstResults')):return
+        if self.worker or self.stopped or h.closing or getattr(h,'_data_location_preparing',False) or h.worker or (io and not io.property('jstResults')) or (modal and not modal.property('jstResults')):return
         self.active_work=False
         w=Worker(self.drain,(h.work_repository.path,h.repository.folder),self);self.worker=w
         w.status.connect(self.note.setText);w.row_progress.connect(self.progress);w.commit_state.connect(self.boundary)

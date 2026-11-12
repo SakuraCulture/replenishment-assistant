@@ -192,10 +192,12 @@ def collect_stores(repo,rid,configuration,rpc,cancel,progress):
         except Exception as exc:failed(wanted,str(exc))
 
 
-def execute(repo,rid,rpc,cancel,progress=lambda _:None):
+def execute(repo,rid,rpc,cancel,progress=lambda _:None,*,catalogs_prepared=False):
     run=repo.run(rid)
     if run['state'] in {'COMPLETE','PARTIAL','ENDED'}:
         raise ValueError('已发布任务请创建新修订，不可覆盖')
+    if (run['external'].get('hub_owner') or run['trigger'].startswith('hub:')) and not catalogs_prepared:
+        raise ValueError('这是统一缺货率作业，请在上方组合记录继续；不会另发仓导出')
     repo.change(rid,state='RUNNING',message='核对分析已采用设置及平台身份')
     try:
         basis=repo.settings(run['basis']);checkpoint(cancel);resource_check(repo.folder)
@@ -212,7 +214,7 @@ def execute(repo,rid,rpc,cancel,progress=lambda _:None):
         external['identity']=identity;repo.change(rid,external=external)
         rpc('release_ax')
         # A resumed run keeps successful catalogs. Never silently switch its basis.
-        if not external.get('catalogs_frozen'):
+        if not catalogs_prepared and not external.get('catalogs_frozen'):
             collect_catalogs(repo,rid,rpc,cancel,progress)
             external=repo.run(rid)['external'];external['catalogs_frozen']=not external.get('catalogs_pending',False);repo.change(rid,external=external)
         collect_stores(repo,rid,configuration,rpc,cancel,progress)

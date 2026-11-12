@@ -55,7 +55,8 @@ class Gateway(QObject):
         self.failure_timer.timeout.connect(self.persist_failures)
         self.folder = Path(host.work_repository.path).parent / 'automation'
         self.connection_file = self.folder / 'connection.json'
-        self.workspace = digest(str(Path(host.work_repository.path).resolve()))[:24]
+        from data_location import identity_path
+        self.workspace = digest(str(identity_path(host.work_repository.path)))[:24]
 
     def enable(self):
         if self.enabled: return

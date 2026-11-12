@@ -13,6 +13,8 @@ from history_read import repository
 from runtime_support import checkpoint, Cancelled
 from export_progress import RowProgress
 from lifecycle_io import STAGES, TITLES, QUANTITIES, DOCNUM, DOCDATE, fields
+from lifecycle_io import ALL_STAGES
+import operations_flow as flow
 
 SCHEMA = 2
 STATUSES = ('待回传', '待付款', '待收货', '已收齐')
@@ -44,10 +46,11 @@ def decode(row):
     if payload.get('schema') not in (1,SCHEMA) or fingerprint(payload) != digest: raise ValueError('生命周期单据快照校验失败')
     return {'version': version, 'saved': saved, 'digest': digest, 'payload': payload}
 
-def current(db, head, stage, version=None):
+def current(db, head, stage, version=None,*,as_of=None):
     if not exists(db): return None
     condition = ' AND version=?' if version is not None else ''
     args = (*key(head), stage, *((version,) if version is not None else ()))
+    if as_of:condition+=' AND julianday(saved)<=julianday(?)';args=(*args,as_of)
     return decode(db.execute('SELECT version,saved,digest,payload FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=?' + condition + ' ORDER BY version DESC LIMIT 1', args).fetchone())
 
 def history(path, head, stage, progress=lambda _: None, cancel=None):
@@ -133,8 +136,9 @@ def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=N
 
 def upstream(db, head, stage, staged=None):
     """Freeze every dependency; absence is also a token checked at commit."""
-    index=STAGES.index(stage); tokens={}; previous=None; valid=True
-    for s in STAGES[:index]:
+    route=flow.stages(db,head,staged,including=stage)
+    index=route.index(stage); tokens={}; previous=None; valid=True
+    for s in route[:index]:
         doc=(staged or {}).get((*key(head),s)) or current(db,head,s)
         if doc is None and s=='return':
             legacy=legacy_return(db,head,head['products'])
@@ -148,7 +152,7 @@ def upstream(db, head, stage, staged=None):
             if p.get('pending') or p.get('basis',{}).get('dependencies')!={k:v for k,v in tokens.items() if k!=s}:valid=False
         previous=doc
     products=head['products'] if stage=='return' else rules.positive(previous['payload']['rows']) if previous and valid else {}
-    return {'stage':'signed' if stage=='return' else STAGES[index-1], 'dependencies':tokens, 'signed_digest':head['digest'], 'ready':stage=='return' or valid, 'products':products}
+    return {'stage':'signed' if stage=='return' else route[index-1], 'dependencies':tokens, 'signed_digest':head['digest'], 'ready':stage=='return' or valid, 'products':products}
 
 def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False, *, staged=None):
     basis=upstream(db,head,stage,staged)
@@ -190,7 +194,7 @@ def match_payment_rows(path, head, rows):
 def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None, *, staged=None):
     """Bindings are exact whole-document heads, no per-line quantity allocations."""
     stage = scanned['stage']
-    if stage not in STAGES: raise ValueError('未知生命周期环节')
+    if stage not in ALL_STAGES: raise ValueError('未知生命周期环节')
     groups = {}; plans = []
     with closing(purchases.connect(path)) as db:
         for row in scanned['rows']:
@@ -280,7 +284,7 @@ def commit(path, plan, progress=lambda _: None, cancel=None):
         for p in plan['plans']:
             checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'])
             from jst_orders import guard_return,guard_payment
-            if p['stage']=='return' and p['changed']:guard_return(db,p['head'])
+            if p['stage'] in ('return','operations') and p['changed']:guard_return(db,p['head'])
             if p['stage']=='payment':guard_payment(db,p)
             identity=(*key(p['head']),p['stage'])
             if identity in staged:raise ValueError('同一订单同一环节只能保存一份完整单据')
@@ -296,7 +300,7 @@ def commit(path, plan, progress=lambda _: None, cancel=None):
             v = p['expected'] or 0; h = p['head']
             if p['changed']:
                 v += 1; db.execute('INSERT INTO lifecycle_versions VALUES(?,?,?,?,?,?,?,?)', (*key(h), p['stage'], v, wr.now(), p['digest'], raw))
-                if p['stage']=='return':
+                if p['stage']==flow.demand_stage(db,h):
                     from jst_tasks import enqueue
                     enqueue(db,h,{'version':v,'digest':p['digest']})
                 db.execute('INSERT INTO lifecycle_events(at,oid,revision,warehouse,stage,version,action,detail) VALUES(?,?,?,?,?,?,?,?)', (wr.now(), *key(h), p['stage'], v, '确认完整单据', wr.dumps({'number': h['number'], 'rows': len(p['payload']['rows']), 'missing': p['payload']['missing'], 'extra': p['payload']['extra']})))
@@ -316,41 +320,44 @@ def document_summary(doc):
     p=doc['payload']
     return {'version':doc['version'],'digest':doc['digest'],'schema':p.get('schema',1),'pending':p.get('pending',False),'dependencies':p.get('basis',{}).get('dependencies',{}),'positive':len(rules.positive(p['rows']))}
 
-def progress_state(summaries, legacy=None):
+def progress_state(summaries, legacy=None, operations_required=False):
     summaries=dict(summaries)
+    route=flow.CURRENT if operations_required or summaries.get('operations') else STAGES
+    labels={'return':'待回传','operations':'待运营签发','payment':'待付款','receipt':'待收货'}
     if not summaries['return'] and legacy and legacy['complete']:
         summaries['return']={'version':legacy['version'],'digest':legacy['digest'],'schema':1,'positive':sum(v>0 for v in legacy['values'].values())}
     health={};tokens={}
-    for s in STAGES:
-        d=summaries[s]
+    for s in route:
+        d=summaries.get(s)
         health[s]=bool(d) and (d['schema']==1 or not d['pending'] and d['dependencies']==tokens and all(health.values()))
         tokens[s]=rules.basis_token(d)
     if not summaries['return'] and not (legacy and legacy['complete']):return '待回传','return','',health
-    for i,s in enumerate(STAGES[1:],1):
-        prev=summaries[STAGES[i-1]]
-        if not summaries[s]:
-            if prev and health[STAGES[i-1]] and prev['schema']==SCHEMA and prev['positive']==0 and not any(summaries[k] for k in STAGES[i:]):
-                return STATUSES[-1],None,'无要货，无需付款/收货' if s=='payment' else '无付款数量，无需收货',health
-            return STATUSES[i],s,'',health
-        if not health[s]:return STATUSES[i],s,TITLES[s]+'对照依据已更新或未就绪，请重新核对',health
+    for i,s in enumerate(route[1:],1):
+        prev=summaries.get(route[i-1])
+        if not summaries.get(s):
+            if prev and health[route[i-1]] and prev['schema']==SCHEMA and prev['positive']==0 and not any(summaries.get(k) for k in route[i:]):
+                return STATUSES[-1],None,('无要货，无需后续运营、分配、付款或收货' if route[i-1] in ('return','operations') else '无付款数量，无需收货'),health
+            return labels[s],s,'',health
+        if not health[s]:return labels[s],s,TITLES[s]+'对照依据已更新或未就绪，请重新核对',health
     return STATUSES[-1],None,'单据已收齐；不代表数量完全一致',health
 
-def legacy_return(db, head, products):
-    old = merchant_feedback.current(db, head['oid'], head['revision'])
+def legacy_return(db, head, products,*,as_of=None):
+    old = merchant_feedback.current(db, head['oid'], head['revision'],as_of=as_of)
     if not old: return None
     values = old['payload'].get('values', {}); required = [s for s, p in products.items() if p['quantity'] > 0]
     supplied = {s: q for s, q in values.items() if s in products}
     complete = bool(supplied) and all(s in supplied for s in required)
     return {'version': old['version'], 'saved': old['saved'], 'complete': complete, 'values': supplied, 'legacy': True,'digest':hashlib.sha256(wr.dumps(supplied).encode()).hexdigest()}
 
-def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order=None):
+def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order=None,as_of=None):
     if db is None:
         with closing(purchases.connect(path)) as connection:
-            connection.execute('BEGIN'); return snapshot(path, head, progress, cancel, connection, order=order)
+            connection.execute('BEGIN'); return snapshot(path, head, progress, cancel, connection, order=order,as_of=as_of)
     if order is None:order = repository(path).get(head['day'], head['store'], head['revision'], view='export')
     if order['digest'] != head['digest']: raise wr.Conflict('签发快照不一致')
     eligible = {d['E']: {'sku': d['E'], 'name': d.get('D'), 'quantity': normal_exports.sem.order_quantity(d)} for rs in normal_exports.groups(order['payload']['result'], order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d) == head['warehouse']}
-    docs = {s: current(db, head, s) for s in STAGES}; legacy = legacy_return(db, head, eligible)
+    route=flow.stages(db,head,as_of=as_of)
+    docs = {s: current(db, head, s,as_of=as_of) for s in route}; legacy = legacy_return(db, head, eligible,as_of=as_of)
     maps = {s: {r['sku']: r for r in doc['payload']['rows']} if doc else {} for s, doc in docs.items()}
     if not docs['return'] and legacy: maps['return'] = {s: {'base_quantity': str(q), 'name': eligible[s]['name']} for s, q in legacy['values'].items()}
     skus = list(eligible)
@@ -368,10 +375,27 @@ def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order
         rows.append([sku, name, *nums, *diffs, maps['payment'].get(sku, {}).get('amount'), maps['payment'].get(sku, {}).get('currency'), missing])
     present = {s: bool(docs[s]) for s in STAGES}
     if not present['return'] and legacy: present['return'] = legacy['complete']
-    status,next_stage,note,health=progress_state({s:document_summary(docs[s]) for s in STAGES},legacy)
-    return {'head': head, 'rows': rows, 'documents': docs, 'legacy_return': legacy, 'present': present, 'status': status, 'next': next_stage,'note':note,'health':health}
+    if 'operations' in docs:present['operations']=bool(docs['operations'])
+    status,next_stage,note,health=progress_state({s:document_summary(docs[s]) for s in route},legacy,route==flow.CURRENT)
+    return {'head': head, 'rows': rows, 'documents': docs, 'legacy_return': legacy, 'present': present, 'status': status, 'next': next_stage,'note':note,'health':health,'flow_version':2 if route==flow.CURRENT else 1}
 
 HEADERS = ['商品编码', '商品名称', '门店推荐数（签发时）', '门店确认数', '付款单商品数量', '实际收货数', '确认−推荐', '付款−确认', '收货−付款', '付款实际金额（源单）', '币种', '资料说明']
+FLOW_HEADERS=['商品编码','商品名称','补货签发数','门店回传数','运营签发数','付款单商品数量','实际收货数','回传−签发','运营−回传','付款−运营','收货−付款','付款实际金额（源单）','币种','资料说明']
+
+def flow_rows(view):
+    doc=view['documents'].get('operations');ops={r['sku']:r for r in doc['payload']['rows']} if doc else {}
+    result=[]
+    for r in view['rows']:
+        q=ops.get(r[0],{}).get('base_quantity');q=float(Decimal(q)) if q is not None else 0 if doc and doc['payload'].get('schema')==SCHEMA else None
+        nums=[r[2],r[3],q,r[4],r[5]]
+        delta=[b-a if a is not None and b is not None else None for a,b in zip(nums,nums[1:])]
+        result.append([*r[:2],*nums,*delta,*r[9:]])
+    # Operations may explicitly add a SKU which was absent from the original
+    # signature/return. Preserve it in comparison, rather than hiding the row.
+    seen={r[0] for r in result}
+    for sku,r in ops.items():
+        if sku not in seen:result.append([sku,r.get('name',''),0,0,float(Decimal(r['base_quantity'])),None,None,0,float(Decimal(r['base_quantity'])),None,None,None,None,'运营追加商品'])
+    return result
 
 def attachment(path, head, stage, version, sha, target, progress=lambda _: None, cancel=None):
     with closing(purchases.connect(path)) as db:
@@ -388,7 +412,7 @@ def attachment(path, head, stage, version, sha, target, progress=lambda _: None,
 def export(path, heads, folder, kind='comparison', mode='separate', progress=lambda _: None, cancel=None):
     """New exports only. Existing signed/calculation/master exporters untouched."""
     from xlsx_exports import stream_book, write_table
-    if kind not in ('comparison', 'return', 'payment', 'receipt'): raise ValueError('未知导出类型')
+    if kind not in ('comparison', *ALL_STAGES): raise ValueError('未知导出类型')
     if mode not in ('separate', 'combined') or not heads: raise ValueError('请选择导出范围')
     completed = []; title = '生命周期对照' if kind == 'comparison' else TITLES[kind]
     try:
@@ -397,20 +421,22 @@ def export(path, heads, folder, kind='comparison', mode='separate', progress=lam
             db.execute('BEGIN')
             for h in heads:
                 checkpoint(cancel); ao.require_active(db, h['oid'], h['warehouse']); view = snapshot(path, h, progress, cancel, db)
-                if kind != 'comparison' and not view['documents'][kind]: raise ValueError(h['number'] + '尚未导入' + title)
+                if kind != 'comparison' and not view['documents'].get(kind): raise ValueError(h['number'] + '尚未导入' + title)
                 views.append(view)
-        if kind=='return':
+        if kind in ('return','operations'):
             from lifecycle_exports import export_returns
-            return export_returns(path,views,folder,mode,progress,cancel)
+            return export_returns(path,views,folder,mode,progress,cancel,stage=kind)
         groups = [[v] for v in views] if mode == 'separate' else [[v for v in views if v['head']['warehouse'] == wh] for wh in dict.fromkeys(v['head']['warehouse'] for v in views)]
         for group in groups:
             checkpoint(cancel); rows = []
+            full_flow=kind=='comparison' and any(v.get('flow_version')==2 for v in group)
+            compare_stages=ALL_STAGES if full_flow else STAGES
             modern=kind!='comparison' and any(v['documents'][kind]['payload'].get('schema')==SCHEMA for v in group)
             for v in group:
                 h = v['head']; prefix = [h['day'], h['store'], h['warehouse'], h['number'], h['revision']]
                 if kind == 'comparison':
-                    refs = [v['documents'][s]['version'] if v['documents'][s] else ('旧回传V' + str(v['legacy_return']['version']) if s == 'return' and v['legacy_return'] else None) for s in STAGES]
-                    rows.extend([*prefix, *refs, *r] for r in v['rows'])
+                    refs = [v['documents'][s]['version'] if v['documents'].get(s) else ('旧回传V' + str(v['legacy_return']['version']) if s == 'return' and v['legacy_return'] else None) for s in compare_stages]
+                    rows.extend([*prefix, *refs, *r] for r in (flow_rows(v) if full_flow else v['rows']))
                 else:
                     doc = v['documents'][kind]
                     for r in doc['payload']['rows']:
@@ -419,7 +445,7 @@ def export(path, heads, folder, kind='comparison', mode='separate', progress=lam
                         rows.append(values)
             body=['单据版本',DOCNUM.get(kind)]+([] if modern and kind=='payment' else [DOCDATE.get(kind)])+['商品编码','商品名称',QUANTITIES.get(kind),'数量单位','实际金额','币种','源单数量','源单单位','换算系数','换算依据','备注']
             if modern:body+=['上环节数量','与上环节差额','数量处理说明','对照依据提示']
-            headers = ['业务日期', '门店编码', '仓', '补货单号', '签发修订'] + (['回传版本', '付款版本', '收货版本'] + HEADERS if kind == 'comparison' else body)
+            headers = ['业务日期', '门店编码', '仓', '补货单号', '签发修订'] + (([TITLES[s]+'版本' for s in compare_stages] if full_flow else ['回传版本','付款版本','收货版本'])+(FLOW_HEADERS if full_flow else HEADERS) if kind == 'comparison' else body)
             target = Path(folder) / (title + '-' + (group[0]['head']['number'] if mode == 'separate' else group[0]['head']['warehouse']+'-多订单') + '-' + uuid.uuid4().hex[:8] + '.xlsx')
             fd, tmp = tempfile.mkstemp(dir=target.parent, suffix='.xlsx'); os.close(fd)
             try:

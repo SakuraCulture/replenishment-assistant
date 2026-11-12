@@ -120,6 +120,9 @@ def catalogs(path, folder=None, progress=lambda _: None, cancel=None):
             checkpoint(cancel); b = baseline(db, wh)
             if b:
                 out[wh] = {'bid': b['bid'], 'catalog': b['catalog'], 'current': True}
+                default=defaults.get(wh)
+                if default and default['revision']!=b['catalog']['revision']:
+                    out[wh]['selection_note']='默认资料与当前库存基准版本不同；默认导入 '+str(default.get('imported_at') or '时间未留存')+'。本次当前选用上方库存基准；需要默认资料时点“采用已保存仓资料”。'
             elif wh in defaults:
                 out[wh] = {'bid': None, 'catalog': defaults[wh], 'current': False}
     return out
@@ -175,9 +178,10 @@ def commit_refresh(path, plan, progress=lambda _: None, cancel=None):
 def return_basis(db, head):
     purchases.validate_head(db, head)
     basis = lc.upstream(db, head, 'payment')
+    stage=lc.flow.demand_stage(db,head)
     if not basis['ready']:
-        raise ValueError('门店回传尚未确认或依据已变化：' + head['number'])
-    doc = lc.current(db, head, 'return')
+        raise ValueError(lc.TITLES[stage]+'尚未确认或依据已变化，请核对该环节：' + head['number'])
+    doc = lc.current(db, head, stage)
     rows = doc['payload']['rows'] if doc else [dict(sku=s, name=p.get('name'), base_quantity=p['quantity'], sources=[]) for s,p in basis['products'].items()]
     legacy = lc.legacy_return(db,head,head['products']) if doc is None else None
     return basis, rows, doc['saved'] if doc else legacy['saved'], copy.deepcopy(head['products']) if doc is None else None
@@ -193,9 +197,9 @@ def previous_payment_for_return(db, head, payment):
     p=payment['payload'];basis=p.get('basis',{});dependencies=basis.get('dependencies',{})
     if (p.get('schema')!=lc.SCHEMA or p.get('pending') or not basis.get('ready')
             or basis.get('signed_digest')!=head['digest']
-            or set(dependencies)!={'return'} or not dependencies['return']):return None
-    current_return=lc.current(db,head,'return')
-    if not current_return or dependencies['return']==lc.rules.basis_token(current_return):return None
+            or not dependencies.get('return')):return None
+    expected=lc.upstream(db,{**head,'products':{}},'payment')
+    if dependencies==expected['dependencies']:return None
     if not lc.upstream(db,{**head,'products':{}},'payment')['ready']:return None
     return lc.rules.basis_token(payment)
 
@@ -339,7 +343,8 @@ def put_generation(db, p):
     h=p['head']; raw=wr.dumps(p)
     db.execute('INSERT INTO jst_generations VALUES(?,?,?,?,?,?,?,?,?)', (p['gid'],p['operation'],h['oid'],h['revision'],h['warehouse'],h['day'],p['saved'],raw,digest(p)))
     db.execute('INSERT INTO jst_active VALUES(?,?,?) ON CONFLICT(oid,warehouse) DO UPDATE SET gid=excluded.gid', (h['oid'],h['warehouse'],p['gid']))
-    db.execute('INSERT INTO jst_headers VALUES(?,?)',(p['gid'],wr.dumps({'summary':p['summary'],'return':p['basis']['dependencies'].get('return'),'revision':h['revision'],'saved':p['saved']})))
+    stage=p['basis']['stage']
+    db.execute('INSERT INTO jst_headers VALUES(?,?)',(p['gid'],wr.dumps({'summary':p['summary'],'return':p['basis']['dependencies'].get(stage),'demand_stage':stage,'revision':h['revision'],'saved':p['saved']})))
     db.executemany('INSERT INTO jst_reservations VALUES(?,?,?)', [(p['gid'],r['sku'],r['quantity']) for r in p['rows'] if Decimal(r['quantity'])>0])
     event(db,h,'生成聚水潭订单',{'gid':p['gid'],'summary':p['summary'],'old':p['old']})
 

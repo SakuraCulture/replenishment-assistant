@@ -19,7 +19,8 @@ def automatic_specs(info, stage=None):
     paid={s['sheet']:s for s in io.payment_specs(info)}
     for sheet in info['sheets']:
         choices=[]
-        for s in ([stage] if stage else io.STAGES):
+        tagged=info.get('properties',{}).get('补货助手生命周期环节') or info.get('properties',{}).get('补货助手最低模板')
+        for s in ([stage] if stage else [tagged] if tagged in io.ALL_STAGES else io.STAGES):
             if s=='payment' and sheet['sheet'] in paid:
                 choices.append((s,paid[sheet['sheet']]))
                 continue
@@ -100,7 +101,7 @@ def prepare(path, documents, scope=None, progress=lambda _:None, cancel=None):
         seen.add(identity);grouped.setdefault(number,[]).append(d)
     plans=[];files={};staged={};count=len(selected)
     for group in grouped.values():
-        for d in sorted(group,key=lambda x:io.STAGES.index(x['scan']['stage'])):
+        for d in sorted(group,key=lambda x:io.ALL_STAGES.index(x['scan']['stage'])):
             checkpoint(cancel)
             result=service.prepare_numbered(path,d['scan'],d.get('target'),progress,cancel,staged=staged)
             if len(result['plans'])!=1:raise ValueError('来源单据未按完整目标订单分组')

@@ -17,6 +17,11 @@ def remove(repo,plan,cancel=None):
         if digest(rows)!=plan['token']:raise ValueError('分析范围已变化，请重新预览删除')
         for row in rows:
             checkpoint(cancel);sid=row['id']
+            import json
+            for run in db.execute('SELECT DISTINCT u.id,u.external FROM runs u JOIN run_snapshots r ON r.run=u.id WHERE r.snapshot=?',(sid,)).fetchall():
+                ext=json.loads(run['external']);ext.setdefault('deleted_warehouses',[])
+                if row['warehouse'] not in ext['deleted_warehouses']:ext['deleted_warehouses'].append(row['warehouse'])
+                db.execute('UPDATE runs SET external=? WHERE id=?',(json.dumps(ext,ensure_ascii=False),run['id']))
             db.execute('DELETE FROM current WHERE snapshot=?',(sid,));db.execute('DELETE FROM run_snapshots WHERE snapshot=?',(sid,));db.execute('DELETE FROM snapshots WHERE id=?',(sid,))
         db.execute('INSERT OR IGNORE INTO cleanup SELECT sha,path,\'\' FROM originals WHERE sha NOT IN (SELECT source_sha FROM snapshots)')
         checkpoint(cancel)

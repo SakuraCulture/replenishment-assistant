@@ -35,11 +35,11 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
             for part in parts:
                 wh = part['warehouse']; vis = visibility.get((h['oid'], wh), {})
                 if vis.get('deleted'): continue
-                head = {**h, 'warehouse': wh}; present = {s: (h['oid'], h['revision'], wh, s) in versions for s in lifecycle.STAGES}
+                head = {**h, 'warehouse': wh}; present = {s: (h['oid'], h['revision'], wh, s) in versions for s in lifecycle.ALL_STAGES}
                 legacy = lifecycle.legacy_return(db, head, part['products']) if not present['return'] else None
                 if legacy: present['return'] = legacy['complete']
                 summaries={}
-                for s in lifecycle.STAGES:
+                for s in lifecycle.ALL_STAGES:
                     version=versions.get((h['oid'],h['revision'],wh,s))
                     if version is None:summaries[s]=None;continue
                     doc_key=wr.dumps(['lifecycle-v2',str(Path(path).resolve()),h['oid'],h['revision'],wh,s,version])
@@ -49,16 +49,17 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                         summary=lifecycle.document_summary(lifecycle.current(db,head,s,version));text=json.dumps(summary,ensure_ascii=False)
                         idx.execute('INSERT OR REPLACE INTO lifecycle_projection VALUES(?,?,?)',(doc_key,text,hashlib.sha256(text.encode()).hexdigest()));idx.commit()
                     summaries[s]=summary
-                status,next_stage,note,health=lifecycle.progress_state(summaries,legacy)
+                required=lifecycle.flow.required(db,head)
+                status,next_stage,note,health=lifecycle.progress_state(summaries,legacy,required)
                 old = any(o == h['oid'] and r != h['revision'] and w == wh for o, r, w, s in versions)
                 record = {**h, 'warehouse': wh, 'name': part['name'], 'number': ao.number(h['number'], wh), 'parent_number': h['number'], 'current_revision': h['revision'], 'visibility_token': vis.get('token', 0), 'present': present, 'status': status, 'next': next_stage, 'old_revision': old, 'legacy_return': bool(legacy), 'legacy_incomplete': bool(legacy and not legacy['complete']), 'wait_days': max(0, (date.fromisoformat(wr.today()) - date.fromisoformat(h['saved'][:10])).days)}
-                record.update(note=note,health=health)
+                record.update(note=note,health=health,flow_version=2 if required else 1)
                 query = request.get('search', '').strip().lower()
                 search = ' '.join(str(record[k]) for k in ('day', 'store', 'name', 'warehouse', 'number')).lower()
                 if all(t in search for t in query.split()): records.append(record)
             progress({'done': n+1, 'total': len(selected)})
         if heads != repo.headers(): raise wr.Conflict('签发修订在查询期间变化，请刷新')
-    counts = {s: sum(r['status'] == s for r in records) for s in lifecycle.STATUSES}
+    counts = {s: sum(r['status'] == s for r in records) for s in (*lifecycle.STATUSES,'待运营签发')}
     for i, r in enumerate(records): r['list_position'] = i
     if request.get('all_records'):return {'records':records,'counts':counts,'scope':len(records)}
     kind = request.get('status', '')

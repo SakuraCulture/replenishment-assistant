@@ -22,7 +22,7 @@ def enqueue(db, head, token):
     schema(db)
     h={k:v for k,v in head.items() if k!='products'}
     identity=j.digest([lc.key(h),token])
-    row=db.execute("SELECT saved FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage='return' AND version=?",(*lc.key(h),token['version'])).fetchone()
+    row=db.execute('SELECT saved FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=? AND version=?',(*lc.key(h),lc.flow.demand_stage(db,h),token['version'])).fetchone()
     db.execute('INSERT OR IGNORE INTO jst_tasks VALUES(?,?,?,?,?,?,?)',
                (identity,row[0] if row else wr.now(),wr.dumps(h),wr.dumps(token),'pending',None,'回传已确认，待准备分配批次'))
 

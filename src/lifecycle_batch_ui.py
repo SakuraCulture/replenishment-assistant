@@ -24,7 +24,7 @@ class BatchImport(QDialog):
         self.pages=QStackedWidget();root.addWidget(self.pages,1);queue=QWidget();v=QVBoxLayout(queue);self.pages.addWidget(queue)
         row=QHBoxLayout();row.addWidget(button('选择文件',self.choose));row.addWidget(button('重新读取全部文件',self.reload))
         from lifecycle_ui import template
-        for s in io.STAGES:row.addWidget(button('下载'+io.TITLES[s]+'模板',lambda checked=False,k=s:template(self,k)))
+        for s in io.ALL_STAGES:row.addWidget(button('下载'+io.TITLES[s]+'模板',lambda checked=False,k=s:template(self,k)))
         v.addLayout(row);self.file_note=label('拖入文件后自动识别，原文件不变。');v.addWidget(self.file_note)
         self.match_bar=QWidget();match_layout=QVBoxLayout(self.match_bar);match_layout.setContentsMargins(0,0,0,0)
         row=QHBoxLayout();row.addWidget(label('自动识别完整付款单；门店名称略有不同、同店两仓均按实际分配明细核对。'))
@@ -119,8 +119,8 @@ class BatchImport(QDialog):
         for i,issue in enumerate(self.issues):
             cell=QTableWidgetItem(str(issue.get('path') or issue['info']['name'])+'：'+diagnostics.issue(issue['message'])+'\n'+issue['message']);cell.setToolTip(cell.text());self.issue_table.setItem(i,0,cell)
             c=QComboBox()
-            for s in io.STAGES:c.addItem(io.TITLES[s],s)
-            c.setCurrentIndex(io.STAGES.index(issue.get('stage') or 'return'));self.issue_table.setCellWidget(i,1,c)
+            for s in io.ALL_STAGES:c.addItem(io.TITLES[s],s)
+            c.setCurrentIndex(io.ALL_STAGES.index(issue.get('stage') or 'return'));self.issue_table.setCellWidget(i,1,c)
             b=button('修正字段映射',lambda checked=False,n=i:self.map_issue(n));b.setEnabled('info' in issue);self.issue_table.setCellWidget(i,2,b)
             self.issue_table.setCellWidget(i,3,button('本次不读取未识别部分',lambda checked=False,n=i:self.exclude_issue(n)))
         self.issue_note.setVisible(bool(self.issues));self.issue_table.setVisible(bool(self.issues))

@@ -8,7 +8,7 @@ import order_lifecycle as lc
 import jst_orders as jst
 from runtime_support import checkpoint
 
-STATUSES=('待回传','待付款','待收货','已结束')
+STATUSES=('待回传','待运营签发','待付款','待收货','已结束')
 
 
 def read(path,cache,request,cancel=None,progress=lambda _:None):
@@ -29,7 +29,7 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
             elif r['next']=='payment':
                 r.update(status='待付款',next='payment')
                 if g:
-                    ret=lc.current(db,r,'return');token=lc.rules.basis_token(ret)
+                    ret=lc.current(db,r,lc.flow.demand_stage(db,r));token=lc.rules.basis_token(ret)
                     if token!=g[1]['return'] or r['revision']!=g[1]['revision']:
                         r['note']='回传或签发依据已变化，请核对生成单；未自动重分配'
                 else:r['note']='待生成聚水潭导入单；也可直接导入实际付款单'

@@ -5,7 +5,7 @@ from pathlib import Path
 from stockout_common import WAREHOUSES,encoded,now,today,digest,file_hash,date_of,resource_check,atomic_json,read_json
 from runtime_support import checkpoint
 
-VERSION='warehouse-stockout-1'
+VERSION='warehouse-stockout-2'
 FIELDS=('商品编码','商品名称','可用数','商品状态','虚拟分类','商品标签','分类','一级分类','二级分类','三级分类','供应商编码','供应商名称')
 DIMENSIONS={'warehouse':('warehouse','供货仓'),'supplier_code':('supplier_code','供应商编码'),'supplier':('supplier','供应商名称'),
     'category':('category','商品分类'),'category1':('category1','一级分类'),'category2':('category2','二级分类'),
@@ -21,6 +21,8 @@ class Repository:
     def connect(self,write=False):
         db=sqlite3.connect(self.path if write else self.path.resolve().as_uri()+'?mode=ro',uri=not write,timeout=10)
         db.row_factory=sqlite3.Row;db.execute('PRAGMA foreign_keys=ON');db.execute('PRAGMA cache_size=-8192');db.execute('PRAGMA temp_store=FILE')
+        from stockout_tags import assessment
+        db.create_function('analysis_assessment',1,lambda raw:assessment(raw) or 0,deterministic=True)
         try:
             if not write:db.execute('PRAGMA query_only=ON')
             yield db
@@ -50,8 +52,13 @@ class Repository:
 
     def settings(self,basis):return json.loads(basis)
 
-    def new_run(self,values,*,source=None,day=None):
-        values=warehouses(values);rid=uuid.uuid4().hex
+    def new_run(self,values,*,source=None,day=None,run_id=None):
+        values=warehouses(values);rid=run_id or uuid.uuid4().hex
+        if run_id:
+            with self.connect() as db:prior=db.execute('SELECT basis,source_run FROM runs WHERE id=?',(rid,)).fetchone()
+            if prior:
+                if (json.loads(prior['basis'])['warehouses'],prior['source_run'])!=(values,source):raise ValueError('大仓任务身份冲突')
+                return rid
         with self.connect(True) as db:db.execute('INSERT INTO runs VALUES(?,?,?,?,?,?,?,?,?,?,?)',(rid,day or today(),encoded({'warehouses':values}),'PREPARED','',now(),now(),'{}','{}',0,source))
         return rid
 
@@ -84,10 +91,19 @@ class Repository:
         with self.connect(True) as db:db.execute('INSERT OR IGNORE INTO originals VALUES(?,?,?)',(sha,str(target),target.stat().st_size))
         return target
 
-    def publish(self,rid,wh):
+    def publish(self,rid,wh,*,once=False):
         with self.connect(True) as db:
             row=db.execute('SELECT s.* FROM snapshots s JOIN run_snapshots r ON r.snapshot=s.id WHERE r.run=? AND r.warehouse=?',(rid,wh)).fetchone()
             if row is None:raise ValueError('该仓没有完整的分析快照')
+            if once:
+                ext=json.loads(db.execute('SELECT external FROM runs WHERE id=?',(rid,)).fetchone()[0])
+                if wh in ext.get('deleted_warehouses',[]):raise ValueError('原大仓分析已删除，旧任务不会恢复它')
+                published=ext.setdefault('published_warehouses',{})
+                if wh in published:
+                    if published[wh]!=row['id']:raise ValueError('原仓发布身份已变化')
+                    return  # Never rewind a later independent publication.
+                published[wh]=row['id']
+                db.execute('UPDATE runs SET external=? WHERE id=?',(encoded(ext),rid))
             db.execute('INSERT INTO current VALUES(?,?,?,?) ON CONFLICT(day,warehouse) DO UPDATE SET snapshot=excluded.snapshot,run=excluded.run',(row['day'],wh,row['id'],rid))
 
 
@@ -111,10 +127,13 @@ def load_master(repo,source,warehouse,*,run,expected=None,expected_rows=None,obs
             missing=[h for h in ('虚拟分类','商品标签','商品状态') if h not in headers]
             retired=any('淘汰' in t for t in tags(row.get('虚拟分类')));daily='日配' in tags(row.get('商品标签'))
             status=str(row.get('商品状态') or '').strip();disabled=status=='禁用';stock=number(row.get('可用数'))
-            excluded=retired or daily or disabled;reasons=[]
+            from stockout_tags import assessment
+            exam=assessment(row.get('虚拟分类') or '')
+            excluded=bool(retired or daily or disabled or exam);reasons=[]
             if retired:reasons.append('虚拟分类含淘汰')
             if daily:reasons.append('商品标签日配')
             if disabled:reasons.append('仓商品禁用')
+            if exam:reasons.append('虚拟分类淘便考核')
             if missing:reasons.append('缺少字段：'+'、'.join(missing))
             if not status:reasons.append('商品状态未填写')
             if stock is None:reasons.append('可用库存缺失或无效')
@@ -170,7 +189,14 @@ def where(options):
     return ' AND '.join(parts),values
 
 
-LINK=' FROM current c JOIN snapshots s ON c.snapshot=s.id JOIN facts f ON f.snapshot=s.id '
+EFFECTIVE_FACTS='''(SELECT snapshot,sku,name,stock_raw,stock,status,virtual_tags,product_tags,
+ category,category1,category2,category3,supplier_code,supplier,
+ CASE WHEN analysis_assessment(virtual_tags)=1 THEN 1 ELSE excluded END AS excluded,
+ CASE WHEN analysis_assessment(virtual_tags)=1 THEN 0 ELSE bad END AS bad,
+ CASE WHEN analysis_assessment(virtual_tags)=1 AND instr(coalesce(reason,''),'虚拟分类淘便考核')=0
+ THEN CASE WHEN coalesce(reason,'')='' THEN '' ELSE reason||'；' END||'虚拟分类淘便考核'
+ ELSE reason END AS reason FROM facts)'''
+LINK=' FROM current c JOIN snapshots s ON c.snapshot=s.id JOIN '+EFFECTIVE_FACTS+' f ON f.snapshot=s.id '
 SUMS='count(*) total,sum(f.excluded=0) base,sum(f.excluded=0 AND f.stock<=0) zero,sum(f.bad) pending,sum(f.excluded) excluded'
 
 

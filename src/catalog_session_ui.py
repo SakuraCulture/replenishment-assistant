@@ -11,6 +11,7 @@ class Manager(QObject):
         self.host = host
         self.session = SessionOwner(Path(host.repository.folder) / 'jst_catalog_sync')
         self.worker = None
+        self._shutdown_done=False
         host.destroyed.connect(self.shutdown)
 
     def prepare_close(self):
@@ -24,18 +25,25 @@ class Manager(QObject):
         self.host.status.setText('正在结束保留的聚水潭连接；不会关闭你的浏览器…')
         task = Call(lambda _: self.session.close(timeout=.5), self)
         self.worker = task
-        task.failed.connect(lambda text: self.host.status.setText('聚水潭连接尚未退出：' + text))
+        failed=[False]
+        def failure(text):
+            failed[0]=True
+            from migration_status import shutdown_failed
+            if not shutdown_failed(self.host,RuntimeError(text)):self.host.status.setText('聚水潭连接尚未退出：' + text)
+        task.failed.connect(failure)
         def finished():
             self.worker = None
             task.deleteLater()
-            QTimer.singleShot(200, self.host.close)
+            if not failed[0]:QTimer.singleShot(200,self.host,self.host.close)
         task.finished.connect(finished)
         task.start()
         return False
 
     def shutdown(self):
+        if self._shutdown_done:return
         if self.worker is None and self.session.client is not None:
-            self.session.close(timeout=.5)
+            if not self.session.close(timeout=.5):raise RuntimeError('聚水潭连接仍在安全退出；迁入未执行')
+        self._shutdown_done=True
 
 
 def manager(host):

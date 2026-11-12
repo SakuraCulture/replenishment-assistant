@@ -36,7 +36,7 @@ def project(p):
         bits[2] |= any(n is None for n in (want,q,price,amount))
     return {'amounts':{k:str(m[k]) for k in ('demand','allocated','reduced')},'priced_rows':m['priced_rows'],'flags':flags,
             'position':p['position'],'saved':p['saved'],'bid':p['bid'],'head':p['head'],
-            'return':p['basis']['dependencies'].get('return'),'signed_products':p.get('signed_products'),
+            'return':p['basis']['dependencies'].get(p['basis']['stage']),'demand_stage':p['basis']['stage'],'signed_products':p.get('signed_products'),
             'batch_id':p.get('batch_id')}
 
 
@@ -56,7 +56,7 @@ def aggregate(records):
 
 
 def cached_projection(idx,source_id,gid,digest,loader):
-    k=wr.dumps([2,source_id,gid,digest]);hit=idx.execute('SELECT payload,sha FROM jst_result_projection WHERE k=?',(k,)).fetchone()
+    k=wr.dumps([3,source_id,gid,digest]);hit=idx.execute('SELECT payload,sha FROM jst_result_projection WHERE k=?',(k,)).fetchone()
     if hit and hashlib.sha256(hit[0].encode()).hexdigest()==hit[1]:return wr.loads(hit[0])
     p=loader();value=project(p);raw=wr.dumps(value)
     idx.execute('INSERT OR REPLACE INTO jst_result_projection VALUES(?,?,?)',(k,raw,hashlib.sha256(raw.encode()).hexdigest()));idx.commit()
@@ -64,8 +64,9 @@ def cached_projection(idx,source_id,gid,digest,loader):
 
 
 def return_token(db,h,p=None):
+    stage=lc.flow.demand_stage(db,h)
     if lc.exists(db):
-        row=db.execute("SELECT version,digest FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage='return' ORDER BY version DESC LIMIT 1",lc.key(h)).fetchone()
+        row=db.execute('SELECT version,digest FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=? ORDER BY version DESC LIMIT 1',(*lc.key(h),stage)).fetchone()
         if row:return {'version':row[0],'digest':row[1]}
     if p and p.get('signed_products'):
         legacy=lc.legacy_return(db,h,p['signed_products'])
@@ -109,10 +110,11 @@ def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=N
             checkpoint(cancel);purchases.validate_head(db,h)
             item={'head':h,'gid':None,'projection':None,'state':'pending','reason':'等待生成','locked':False,'last_export':'—','sequence':None}
             token=return_token(db,h);task=tasks.get(key(h));hit=active.get(key(h))
-            if not h['present']['return']:
-                item.update(state='waiting',reason='尚未确认回传')
-            elif not h['health'].get('return'):
-                item.update(state='stale',reason='回传依据已变化，请重新核对')
+            demand=lc.flow.demand_stage(db,h)
+            if not h['present'].get(demand):
+                item.update(state='waiting',reason='尚未确认'+lc.TITLES[demand]+'，请先处理该环节')
+            elif not h['health'].get(demand):
+                item.update(state='stale',reason=lc.TITLES[demand]+'依据已变化，请重新核对')
             elif task and task['token']==token:
                 item['reason']=task['message']
                 if task['status'] in ('waiting','cancelled'):item['state']='waiting'
@@ -123,13 +125,13 @@ def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=N
                 p=cached_projection(idx,source_id,gid,digest,loader);lock=orders.locked(db,h)==gid
                 current=jst_batches.state(db,p['batch_id'],h['warehouse']) if p.get('batch_id') else orders.state(db,h['warehouse'])
                 token=return_token(db,h,p)
-                valid=h['revision']==p['head']['revision'] and token==p['return'] and h['health'].get('return')
+                valid=h['revision']==p['head']['revision'] and token==p['return'] and h['health'].get(demand)
                 stock_same=current and current[0]==p['bid']
                 item.update(gid=gid,generation_digest=digest,projection=p,locked=lock,sequence=seq,
                             state='ready' if valid and (stock_same or lock) else 'stale',
                             reason='可导出' if valid and (stock_same or lock) else '仓资料已更新，请核对当时分配' if valid else '回传或签发依据已变化，请重新核对',
                             last_export=last_export.get(gid,'未导出'),return_token=token,current_bid=current[0] if current else None,batch_id=p.get('batch_id'))
-                if item['state']=='stale' and h['health'].get('return') and h['revision']==p['head']['revision']:
+                if item['state']=='stale' and h['health'].get(demand) and h['revision']==p['head']['revision']:
                     blocker,previous_payment=orders.allocation_gate(db,h,gid,True)
                     item['reason']=(blocker+'；旧分配已失效') if blocker else ('回传已更新，按原批重分配后需重新核对付款；旧付款保留' if previous_payment else '旧分配依据已变化，请勾选后按原批重新分配')
             elif key(h) in events and events[key(h)][1]=='库存不足未生成':
@@ -138,9 +140,9 @@ def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=N
                 p=next((p for p in run['plans'] if key(p['head'])==key(h)),None) if run else None
                 if p and p.get('batch_id') and (not batch_id or p['batch_id']==batch_id) and h['revision']==p['head']['revision']:
                     item.update(batch_id=p['batch_id'],original_zero=True)
-                    if h['health'].get('return') and p['basis']['dependencies'].get('return')!=return_token(db,h,p):
+                    if h['health'].get(demand) and p['basis']['dependencies'].get(p['basis']['stage'])!=return_token(db,h,p):
                         item.update(state='stale',reason='回传已更新，上次为零分配，请勾选后按原批重新分配；原付款事实保留')
-                if p and (not batch_id or p.get('batch_id')==batch_id) and h['health'].get('return') and p['head']['revision']==h['revision'] and p['basis']['dependencies'].get('return')==return_token(db,h,p):
+                if p and (not batch_id or p.get('batch_id')==batch_id) and h['health'].get(demand) and p['head']['revision']==h['revision'] and p['basis']['dependencies'].get(p['basis']['stage'])==return_token(db,h,p):
                     pr=cached_projection(idx,source_id,'zero:'+str(eid),orders.digest(p),lambda:p)
                     current=jst_batches.state(db,p['batch_id'],h['warehouse']) if p.get('batch_id') else orders.state(db,h['warehouse']);valid=current and current[0]==p['bid']
                     item.update(state='zero' if valid else 'stale',reason='分配为0，无下单商品' if valid else '上次分配为0，仓资料已更新，请重新核对',projection=pr,batch_id=p.get('batch_id'))

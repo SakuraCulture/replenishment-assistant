@@ -23,7 +23,7 @@ import storage_chunks as chunks
 from runtime_support import checkpoint
 from export_progress import RowProgress
 
-VERSION = 'funnel-3'
+VERSION = 'funnel-4'
 STAGES = ('model', 'signed', 'return', 'payment', 'receipt')
 NAMES = dict(model='模型建议', signed='签发', **{'return':'门店确认'}, payment='实际下单', receipt='实际收货')
 GROUPS = ('必采', '非必采', '属性待核')
@@ -40,7 +40,7 @@ def digest(value):
 
 
 def query_spec(spec):
-    allowed = {'from','to','stores','orders','warehouse','group','search','category','rounds','coverage_through'}
+    allowed = {'from','to','stores','orders','warehouse','group','search','category','rounds','coverage_through','as_of'}
     if set(spec)-allowed: raise ValueError('存在未开放的分析筛选字段')
     out = {**spec}
     for k in ('from','to'):
@@ -56,6 +56,10 @@ def query_spec(spec):
     if out.get('group') not in (None, '', *GROUPS): raise ValueError('未知必采分组')
     if type(out.get('rounds',8)) is not int or not 1<=out.get('rounds',8)<=30:raise ValueError('复盘轮数须在1至30之间')
     if out.get('coverage_through', 'signed') not in STAGES: raise ValueError('未知天数比较环节')
+    if out.get('as_of'):
+        at=datetime.fromisoformat(out['as_of'].replace('Z','+00:00'))
+        if at.tzinfo is None:raise ValueError('历史截至时间须包含时区，例如2026-11-12T12:00:00+08:00')
+        out['as_of']=at.astimezone(timezone(timedelta(hours=8))).isoformat(timespec='seconds')
     return out
 
 
@@ -167,7 +171,7 @@ def build_facts(order, head, view, evidence, cancel=None):
     if not view['documents']['return'] and legacy:
         maps['return']={sku:{'base_quantity':q} for sku,q in legacy['values'].items()}
     skus=list(bysku)
-    for s in lifecycle.STAGES: skus.extend(sku for sku in maps[s] if sku not in skus)
+    for s in lifecycle.ALL_STAGES: skus.extend(sku for sku in maps.get(s,{}) if sku not in skus)
     states={'model':('当时自动建议',True),'signed':('已签发',True),
             **{s:comparison.stage_state(view,s) for s in lifecycle.STAGES}}
     rows=[]
@@ -181,7 +185,7 @@ def build_facts(order, head, view, evidence, cancel=None):
             elif doc and doc['payload'].get('schema')==lifecycle.SCHEMA: quantities[s]=Decimal(0)
             else: quantities[s]=None
         price=num(r.get('V')) if r else None
-        name=r.get('D') if r else next((maps[s][sku].get('name','') for s in lifecycle.STAGES if sku in maps[s]),'')
+        name=r.get('D') if r else next((maps[s][sku].get('name','') for s in lifecycle.ALL_STAGES if sku in maps.get(s,{})),'')
         rows.append({'day':head['day'],'store':head['store'],'store_name':result['store_name'],
             'warehouse':head['warehouse'],'order':head['number'],'sku':sku,'name':name,'unit':r.get('G') if r else None,
             'category':r.get('U') if r else None,'group':membership(result,r,sku),'scope':scope,'reasons':reasons,
@@ -203,8 +207,8 @@ def aggregate(rows):
     """Ratios always use the same priced valid row cohort in both stages."""
     eligible=[r for r in rows if r['scope']=='纳入']
     out={'rows':len(rows),'included':len(eligible),'included_orders':len({r['order'] for r in eligible}),
-         'complete_orders':sum(all(all(r['valid'].values()) for r in eligible if r['order']==oid) for oid in {r['order'] for r in eligible}),
-         'complete_rows':sum(all(r['valid'].values()) for r in eligible),'excluded':sum(r['scope']=='排除' for r in rows),
+         'complete_orders':sum(all(all(r['valid'][s] for s in STAGES) for r in eligible if r['order']==oid) for oid in {r['order'] for r in eligible}),
+         'complete_rows':sum(all(r['valid'][s] for s in STAGES) for r in eligible),'excluded':sum(r['scope']=='排除' for r in rows),
          'pending':sum(r['scope']=='待核' for r in rows),'stages':{},'pairs':[]}
     for s in STAGES:
         valid=[r for r in eligible if r['valid'][s]]
@@ -259,13 +263,19 @@ def data_stamp(db,spec):
     values=[db.execute('SELECT o.oid,o.day,o.store,o.current,r.digest FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid AND r.revision=o.current WHERE o.day>=? AND o.day<=? ORDER BY o.oid',args).fetchall()]
     for table,columns,order in [('lifecycle_versions','oid,revision,warehouse,stage,version,digest','oid,revision,warehouse,stage,version'),
                                ('archive_visibility','oid,warehouse,deleted,token','oid,warehouse'),
-                               ('merchant_feedback','oid,revision,version,payload','oid,revision,version')]:
-        values.append(db.execute(f'SELECT {columns} FROM {table} WHERE oid IN ({selection}) ORDER BY {order}',args).fetchall() if table in tables else [])
+                               ('merchant_feedback','oid,revision,version,payload','oid,revision,version'),
+                               ('lifecycle_routes','oid,revision,version','oid,revision'),
+                               ('jst_active','oid,warehouse,gid','oid,warehouse'),
+                               ('jst_generations','oid,revision,warehouse,gid,digest','oid,warehouse,gid'),
+                               ('jst_events','oid,warehouse,id,action,at','oid,warehouse,id')]:
+        relevant=" AND action IN ('生成聚水潭订单','库存不足未生成','撤销未下单生成单')" if table=='jst_events' else ''
+        values.append(db.execute(f'SELECT {columns} FROM {table} WHERE oid IN ({selection})'+relevant+f' ORDER BY {order}',args).fetchall() if table in tables else [])
     return digest(values)
 
 
 def validate_basis(path,report,progress=lambda _:None,cancel=None):
     checkpoint(cancel)
+    if report['query'].get('as_of'):return validate_snapshot(path,report,progress,cancel)
     with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
         db.execute('BEGIN')
         if data_stamp(db,report['query'])!=report['data_stamp']:
@@ -285,7 +295,13 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
         if not db.execute("SELECT 1 FROM sqlite_master WHERE name='normal_orders'").fetchone():
             records=[]
         else:
-            records=db.execute("SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved,r.payload FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE o.day>=? AND o.day<=? ORDER BY o.day DESC,o.store",(spec['from'],spec['to'])).fetchall()
+            where='o.current=r.revision';args=[spec['from'],spec['to']]
+            if spec.get('as_of'):
+                where='r.revision=(SELECT max(x.revision) FROM normal_revisions x WHERE x.oid=o.oid AND julianday(x.saved)<=julianday(?))'
+                args.insert(0,spec['as_of'])
+            records=db.execute('SELECT o.day,o.store,o.oid,o.number,r.revision,r.digest,r.saved,r.payload FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND '+where+' WHERE o.day>=? AND o.day<=? ORDER BY o.day DESC,o.store',args).fetchall()
+        import workflow_analysis as workflow
+        allocations=workflow.AllocationReader(db,spec,cancel)
         visibility=ao.states(db);evidence=Evidence(db,cancel);seen_stores=set();seen_orders=set()
         for i,(day,store,oid,number,revision,sha,saved,blob) in enumerate(records):
             checkpoint(cancel)
@@ -301,7 +317,8 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
                 if spec['orders'] and child not in spec['orders']:continue
                 h={k:v for k,v in order.items() if k!='payload'}
                 h.update(number=child,parent_number=number,warehouse=wh,visibility_token=visibility.get((oid,wh),{}).get('token',0))
-                view=lifecycle.snapshot(path,h,db=db,order=order,cancel=cancel)
+                view=lifecycle.snapshot(path,h,db=db,order=order,cancel=cancel,as_of=spec.get('as_of'))
+                allocation=workflow.allocation_fact(db,h,view,spec.get('as_of'),event=allocations.event(h))
                 payment=view['documents']['payment']
                 references=local(db,h,payment)
                 identifiers.append({'day':day,'store':store,'store_name':result['store_name'],'warehouse':wh,'order':child,'references':references})
@@ -314,9 +331,9 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
                     from lifecycle_comparison import stage_state
                     state,valid=stage_state(view,'payment')
                     payments.extend({'order':child,'store':store,'warehouse':wh,'currency':c,**v,'state':state,'valid':valid} for c,v in totals.items())
-                tokens.append([h,[(s,d['version'],d['digest']) if d else [s,None] for s,d in view['documents'].items()],view.get('legacy_return')])
+                tokens.append([h,[(s,d['version'],d['digest']) if d else [s,None] for s,d in view['documents'].items()],view.get('legacy_return'),allocation['digest'] if allocation else None])
                 heads.append(h);seen_stores.add(store);seen_orders.add(child)
-                for row in build_facts(order,h,view,evidence,cancel):
+                for row in workflow.enrich(build_facts(order,h,view,evidence,cancel),h,view,allocation,saved):
                     row['references']=references
                     if spec.get('group') and row['group']!=spec['group']:continue
                     if spec.get('category') and row['category']!=spec['category']:continue
@@ -327,13 +344,14 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
         if set(spec['orders'])-seen_orders:raise ValueError('所选订单不存在、已删除或不在查询范围，请重新查询')
         identifier_token=attach(path,db,heads,identifiers,cancel)
     checkpoint(cancel)
-    report={'schema':VERSION,'query':spec,'as_of':datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds'),
+    report={'schema':VERSION,'query':spec,'as_of':spec.get('as_of') or datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds'),
             'snapshot_id':digest([VERSION,spec,tokens,rows,payments,identifiers]),'data_stamp':stamp,'identifier_token':identifier_token,
             'heads':heads,'rows':rows,'payments':payments,'identifiers':identifiers,
             'metrics':aggregate(rows),'groups':{g:aggregate([r for r in rows if r['group']==g]) for g in GROUPS},
             'stores':summaries(rows,'store'),'warehouses':summaries(rows,'warehouse'),'orders':summaries(rows,'order')}
     from history_diagnostics import review
     report['history']=review(report,spec.get('rounds',8))
+    report['workflow']={mode:workflow.summary(rows,mode) for mode in workflow.METRICS}
     if _coverage:
         from coverage_metrics import projection
         progress('计算预计可售天数，固定当时预测依据…')

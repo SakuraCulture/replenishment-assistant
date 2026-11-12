@@ -1,7 +1,7 @@
 """Ordered, inventory-unit execution allocation. No model, Qt, storage or I/O."""
 from decimal import Decimal, InvalidOperation
 
-RULE = 'jst-stock-v1'
+RULE = 'jst-stock-v2'
 
 
 def number(value, label):
@@ -32,6 +32,7 @@ def allocate(rows, items, balances):
                'demand': text(demand), 'quantity': '0', 'amount': None, 'price': None,
                'step': None, 'stock': None, 'before': None, 'after': None,
                'missing': text(demand), 'reason': '', 'issue': False,
+               'carton_demand': None, 'carton_remainder': None,
                'return_sources': row.get('sources', []), 'catalog_row': (item or {}).get('_row')}
         try:
             if row.get('_admission_error'):raise ValueError(row['_admission_error'])
@@ -50,14 +51,19 @@ def allocate(rows, items, balances):
             stock = number(item.get('可用数'), '可用库存')
             before = balances.setdefault(sku, stock)
             out.update(step=text(step), price=text(price), stock=text(stock), before=text(before), after=text(before), amount='0')
-            if demand % step:
-                raise ValueError('回传数量不符合箱规倍数')
+            carton_demand = (demand // step) * step
+            remainder = demand - carton_demand
+            out.update(carton_demand=text(carton_demand), carton_remainder=text(remainder))
             if before < 0:
                 raise ValueError('库存预留超过可用数')
-            qty = (min(demand, before) // step) * step
+            # Normalize the demand once. A warehouse shortage allocates every
+            # remaining inventory unit, including a partial carton.
+            qty = min(carton_demand, before)
             balances[sku] = before - qty
-            reason = ('无可用库存' if before == 0 else '库存不足一箱' if qty == 0 and step > 1
-                      else '库存不足' if qty < demand else '按回传分配')
+            reason = ('需求不足一箱' if carton_demand == 0 else '无可用库存' if before == 0
+                      else '库存不足，按剩余可用库存分配（含不足整箱）' if qty < carton_demand else '按回传分配')
+            if remainder:
+                reason += '；回传按箱规向下取整 '+text(demand)+'→'+text(carton_demand)+'，余数'+text(remainder)+'未分配'
             out.update(quantity=text(qty), amount=text(qty * price), after=text(before-qty), missing=text(demand-qty), reason=reason)
         except ValueError as exc:
             out.update(issue=True, reason=str(exc))

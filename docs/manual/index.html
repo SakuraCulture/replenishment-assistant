@@ -1,11 +1,12 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>补货助手 0.51.8 · 新人业务上手手册</title><style>*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f3f6f7;color:#213b41;font:17px/1.85 "Microsoft YaHei","Noto Sans SC",sans-serif}a{color:#086f65}aside{position:fixed;inset:0 auto 0 0;width:285px;padding:24px 20px;background:#123b3d;color:white;overflow:auto}aside a{display:block;color:#e2efea;font-size:14px;text-decoration:none;padding:7px 0;border-bottom:1px solid #ffffff18}aside strong{font-size:24px}main{margin-left:285px;padding:34px 4vw;max-width:1550px;min-width:0}h1{font-size:38px;line-height:1.4;margin:18px 0}h2{font-size:27px;line-height:1.45;color:#0b635d;margin:0 0 22px}h3{font-size:21px;color:#145d57;margin:30px 0 12px;scroll-margin-top:22px}h4{margin:0;font-size:19px}header,section{background:white;border:1px solid #d9e5e5;border-radius:14px;padding:32px 36px;margin-bottom:28px;box-shadow:0 5px 15px #163b4210;min-width:0}section{scroll-margin-top:20px}p{margin:12px 0;overflow-wrap:anywhere}li{margin:9px 0;overflow-wrap:anywhere}code{background:#eff4f4;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}input{width:100%;min-width:0;font:inherit;padding:12px 16px;border:1px solid #aac2bf;border-radius:8px;margin:16px 0}figure{margin:24px 0 12px}.zoom{border:1px solid #cbdad8;background:white;width:100%;padding:0;cursor:zoom-in}.zoom img{width:100%;height:auto;display:block}figcaption{font-size:14px;color:#52696e;margin-top:8px}.back{display:inline-block;margin-top:18px;font-size:14px}.tag{letter-spacing:2px;color:#10776b;font-size:13px}dialog{max-width:96vw;max-height:96vh;padding:12px;border:0;border-radius:10px}dialog img{max-width:none;display:block}dialog .scroll{max-width:92vw;max-height:86vh;overflow:auto}dialog::backdrop{background:#102c34cc}button{font:inherit;border:1px solid #9cbfba;border-radius:6px;padding:6px 12px;background:white;color:#125c56;cursor:pointer}dialog button{float:right;margin-bottom:8px}#count{color:#526c70;font-size:14px}.flow{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}.flow span{background:#e2f2eb;padding:8px 12px;border-radius:6px;font-weight:bold}.chapter-nav{display:grid;gap:5px;padding:16px 20px;background:#f1f7f5;border-left:4px solid #1d7f72;margin-bottom:25px;font-size:15px}.table-scroll{overflow-x:auto;margin:20px 0;border:1px solid #cbdcd8;border-radius:8px}table{width:100%;border-collapse:collapse;font-size:15px;line-height:1.7;min-width:570px}th,td{vertical-align:top;padding:12px 14px;text-align:left;border-bottom:1px solid #dce7e4;overflow-wrap:anywhere}th{background:#e1efea;color:#124c45}tbody tr:nth-child(even){background:#f7faf9}.practice{padding:22px;border:1px solid #96bdb4;border-radius:10px;background:#f1f8f5;margin:24px 0}.practice-inputs{display:flex;gap:20px;flex-wrap:wrap}.practice-inputs label{flex:1 1 210px}.practice input{margin:6px 0 14px}output{display:block;font-weight:bold;padding:10px 0}.bars{height:14px;display:flex;background:#d9e3e0;border-radius:7px;overflow:hidden}.bars span:nth-child(1){background:#116f64}.bars span:nth-child(2){background:#66a394}.bars span:nth-child(3){background:#b7d3c7}.practice[data-valid="false"] output{color:#a63224}:focus-visible{outline:3px solid #df8d20;outline-offset:3px}@media(max-width:950px){aside{position:static;width:auto;max-height:340px}main{margin:0;padding:16px}header,section{padding:22px}h1{font-size:30px}h2{font-size:24px}}@media print{aside,input,.back,#count,dialog,.practice{display:none}main{margin:0;padding:0}header,section{box-shadow:none;border:0}body{font-size:11pt}}</style><aside><strong>新人从这里开始</strong><p>补货助手 · 0.51.8</p><a href="#c01">01 接到工作后，先选对业务路线</a><a href="#c02">02 开始今天这一批：定门店、供货仓和准备责任</a><a href="#c03">03 拿到当天资料，形成每家门店的补货建议</a><a href="#c04">04 审一批建议：决定哪些商品、多少数量可以发给门店</a><a href="#c05">05 发给门店确认：签发、检查文件、交接回传要求</a><a href="#c06">06 签发后文件没齐：补齐交接文件，不重做整批业务</a><a href="#c07">07 收到门店反馈：把回传落到正确原单上</a><a href="#c08">08 按门店确认量安排仓货：分配、复核、交执行</a><a href="#c09">09 核实付款后安排采购：找到平台单号才算关联完成</a><a href="#c10">10 货到了以后：记录实收，找出这一批损失在哪一步</a><a href="#c11">11 每日巡店：先得到可信的门店缺货清单</a><a href="#c12">12 拿缺货清单安排跟进：拆原因、交责任、看下一次结果</a><a href="#c13">13 今天收尾、明天接班：保留进度，区分旧单与新需求</a><a href="#c14">14 资料有误或测试数据要清理：先确定纠正范围</a><a href="#c15">15 流程卡住时：按已发生的业务事实恢复</a><a href="#c16">16 新人练一整批：用交接结果证明自己会做</a><a href="#c17">17 第一次给门店配参数：从业务要求到验证生效</a><a href="#c18">18 参数逐项速查：默认值、含义、边界和易错点</a><a href="#c19">19 三种单号怎么维护，翱象已有采购单怎么关联</a><a href="#c20">20. 采购卡住时恢复作业，并让后续订单继续</a><a href="#c21">21 移交电脑与跟进仓店缺货：0.51.0 新业务路线</a></aside><main id="top"><header><span class="tag">业务引导 / 参数详解 / 单号维护 / 离线可用</span><h1>补货助手 · 新人业务上手手册</h1>
-<p>适用应用：0.51.8，模型0.3.6-rules。业务流程与参数详解版：2026-11-12；成品验收状态见随包交付说明。先完成一批业务，再查具体按钮。第08章新增付款后更正回传的原批重分配路线；第21章大仓缺货率导出、付款认单、仓绑定纠错、完整参数、迁移安全退出及销售型断货保底说明继续保留。最新HTML和PDF一同更新，旧PDF保留归档。</p>
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>补货助手 0.52.3 · 新人业务上手手册</title><style>*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f3f6f7;color:#213b41;font:17px/1.85 "Microsoft YaHei","Noto Sans SC",sans-serif}a{color:#086f65}aside{position:fixed;inset:0 auto 0 0;width:285px;padding:24px 20px;background:#123b3d;color:white;overflow:auto}aside a{display:block;color:#e2efea;font-size:14px;text-decoration:none;padding:7px 0;border-bottom:1px solid #ffffff18}aside strong{font-size:24px}main{margin-left:285px;padding:34px 4vw;max-width:1550px;min-width:0}h1{font-size:38px;line-height:1.4;margin:18px 0}h2{font-size:27px;line-height:1.45;color:#0b635d;margin:0 0 22px}h3{font-size:21px;color:#145d57;margin:30px 0 12px;scroll-margin-top:22px}h4{margin:0;font-size:19px}header,section{background:white;border:1px solid #d9e5e5;border-radius:14px;padding:32px 36px;margin-bottom:28px;box-shadow:0 5px 15px #163b4210;min-width:0}section{scroll-margin-top:20px}p{margin:12px 0;overflow-wrap:anywhere}li{margin:9px 0;overflow-wrap:anywhere}code{background:#eff4f4;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}input{width:100%;min-width:0;font:inherit;padding:12px 16px;border:1px solid #aac2bf;border-radius:8px;margin:16px 0}figure{margin:24px 0 12px}.zoom{border:1px solid #cbdad8;background:white;width:100%;padding:0;cursor:zoom-in}.zoom img{width:100%;height:auto;display:block}figcaption{font-size:14px;color:#52696e;margin-top:8px}.back{display:inline-block;margin-top:18px;font-size:14px}.tag{letter-spacing:2px;color:#10776b;font-size:13px}dialog{max-width:96vw;max-height:96vh;padding:12px;border:0;border-radius:10px}dialog img{max-width:none;display:block}dialog .scroll{max-width:92vw;max-height:86vh;overflow:auto}dialog::backdrop{background:#102c34cc}button{font:inherit;border:1px solid #9cbfba;border-radius:6px;padding:6px 12px;background:white;color:#125c56;cursor:pointer}dialog button{float:right;margin-bottom:8px}#count{color:#526c70;font-size:14px}.flow{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}.flow span{background:#e2f2eb;padding:8px 12px;border-radius:6px;font-weight:bold}.chapter-nav{display:grid;gap:5px;padding:16px 20px;background:#f1f7f5;border-left:4px solid #1d7f72;margin-bottom:25px;font-size:15px}.table-scroll{overflow-x:auto;margin:20px 0;border:1px solid #cbdcd8;border-radius:8px}table{width:100%;border-collapse:collapse;font-size:15px;line-height:1.7;min-width:570px}th,td{vertical-align:top;padding:12px 14px;text-align:left;border-bottom:1px solid #dce7e4;overflow-wrap:anywhere}th{background:#e1efea;color:#124c45}tbody tr:nth-child(even){background:#f7faf9}.practice{padding:22px;border:1px solid #96bdb4;border-radius:10px;background:#f1f8f5;margin:24px 0}.practice-inputs{display:flex;gap:20px;flex-wrap:wrap}.practice-inputs label{flex:1 1 210px}.practice input{margin:6px 0 14px}output{display:block;font-weight:bold;padding:10px 0}.bars{height:14px;display:flex;background:#d9e3e0;border-radius:7px;overflow:hidden}.bars span:nth-child(1){background:#116f64}.bars span:nth-child(2){background:#66a394}.bars span:nth-child(3){background:#b7d3c7}.practice[data-valid="false"] output{color:#a63224}:focus-visible{outline:3px solid #df8d20;outline-offset:3px}@media(max-width:950px){aside{position:static;width:auto;max-height:340px}main{margin:0;padding:16px}header,section{padding:22px}h1{font-size:30px}h2{font-size:24px}}@media print{aside,input,.back,#count,dialog,.practice{display:none}main{margin:0;padding:0}header,section{box-shadow:none;border:0}body{font-size:11pt}}</style><aside><strong>新人从这里开始</strong><p>补货助手 · 0.52.3</p><a href="#c01">01 接到工作后，先选对业务路线</a><a href="#c02">02 开始今天这一批：定门店、供货仓和准备责任</a><a href="#c03">03 拿到当天资料，形成每家门店的补货建议</a><a href="#c04">04 审一批建议：决定哪些商品、多少数量可以发给门店</a><a href="#c05">05 发给门店确认：签发、检查文件、交接回传要求</a><a href="#c06">06 签发后文件没齐：补齐交接文件，不重做整批业务</a><a href="#c07">07 收到门店反馈：把回传落到正确原单上</a><a href="#c08">08 按已确认需求安排仓货：分配、复核、交执行</a><a href="#c09">09 核实付款后安排采购：找到平台单号才算关联完成</a><a href="#c10">10 货到了以后：记录实收，找出这一批损失在哪一步</a><a href="#c11">11 每日巡店：先得到可信的门店缺货清单</a><a href="#c12">12 拿缺货清单安排跟进：拆原因、交责任、看下一次结果</a><a href="#c13">13 今天收尾、明天接班：保留进度，区分旧单与新需求</a><a href="#c14">14 资料有误或测试数据要清理：先确定纠正范围</a><a href="#c15">15 流程卡住时：按已发生的业务事实恢复</a><a href="#c16">16 新人练一整批：用交接结果证明自己会做</a><a href="#c17">17 第一次给门店配参数：从业务要求到验证生效</a><a href="#c18">18 参数逐项速查：默认值、含义、边界和易错点</a><a href="#c19">19 三种单号怎么维护，翱象已有采购单怎么关联</a><a href="#c20">20. 采购卡住时恢复作业，并让后续订单继续</a><a href="#c21">21 移交电脑与跟进仓店缺货：0.51.0 新业务路线</a><a href="#c22">22 回传已收齐，运营确认后把需求交给仓库</a><a href="#c23">23 复盘这一批：看漏斗率随时间变化并定位商品</a><a href="#c24">24 C盘空间不足，把现有业务资料搬到其他磁盘</a></aside><main id="top"><header><span class="tag">业务引导 / 参数详解 / 单号维护 / 离线可用</span><h1>补货助手 · 新人业务上手手册</h1>
+<p>适用应用：0.52.3，模型0.3.6-rules。业务流程与参数详解版：2026-11-13；成品验收状态见随包交付说明。先完成一批业务，再查具体按钮。第08章付款后更正回传的原批重分配路线及第21章历史修复说明继续保留；第24章说明C盘空间不足时搬迁全部资料、维护期间暂停自动连接与独立进度窗口。当前HTML包含最新操作，0.52.1及更早PDF作为历史归档保留。</p>
 <p>这本手册陪你走两条路线：把一批补货从门店需求做到实收复盘；把每日缺货观察变成需要跟进的商品清单。每章说明开始所需资料、判断与操作、完成标志和下一步交接。</p>
 <p>第一次使用按第 01 章选路线；接手中途任务直接进入对应业务阶段。HTML 可搜索报错并放大原图；PDF 可检索文字。图片注明版本与来源：原业务路线沿用 0.48.0 EXE 演示图，新增参数入口使用 0.49.3 EXE，参数细节与采购关联使用 0.49.3 源码 Qt 表单和隔离合成资料。内部号维护图来自 0.49.2 EXE，入口已按 0.49.3 源码复核。所有示例均不是真实经营或本轮平台验收数据。</p>
-<p>本次重点补课：<a href="#c17">第一次给门店配参数</a> → <a href="#c18">28 项参数逐项查阅</a> → <a href="#c19">维护三种单号与翱象采购关联</a>。先在演示资料练习，再按已确认的业务依据操作。</p><div class="flow"><span>定门店与参数</span><span>→ 备数与审核</span><span>→ 签发交门店</span><span>→ 回传与仓分配</span><span>→ 付款与采购</span><span>→ 实收与复盘</span></div><input id="manual-search" aria-label="搜索任务或报错" type="search" placeholder="输入：参数、权重、重建预览、翱象采购单号、TASK_NOT_FOUND"><div id="count">共 21 个业务阶段，所有内容可离线阅读</div><p><a href="补货助手_0.51.8_新人业务上手手册.pdf">打开可搜索 PDF</a> · <a href="screenshot-index.json">截图来源索引</a></p></header><section id="c01"><h2>01 接到工作后，先选对业务路线</h2><p>你接到的任务可能是“给这些门店安排今天的补货”，也可能是“找出哪些门店缺货严重”。两件事使用不同资料，先选路线，再操作。</p>
+<p>0.52.0新增路线：<a href="#c22">把回传交给运营并安排仓货</a> → <a href="#c23">按时间复盘经营漏斗</a>。需求先向下对齐箱规，库存不足分配全部剩余量；原需求和未分配差额保留。</p>
+<p>本次重点补课：<a href="#c17">第一次给门店配参数</a> → <a href="#c18">28 项参数逐项查阅</a> → <a href="#c19">维护三种单号与翱象采购关联</a>。先在演示资料练习，再按已确认的业务依据操作。</p><div class="flow"><span>定门店与参数</span><span>→ 备数与审核</span><span>→ 签发交门店</span><span>→ 回传与仓分配</span><span>→ 付款与采购</span><span>→ 实收与复盘</span></div><input id="manual-search" aria-label="搜索任务或报错" type="search" placeholder="输入：参数、权重、重建预览、翱象采购单号、TASK_NOT_FOUND"><div id="count">共 24 个业务阶段，所有内容可离线阅读</div><p><a href="补货助手_0.52.1_新人业务上手手册.pdf">历史 PDF 归档（新版变更见本页）</a> · <a href="screenshot-index.json">截图来源索引</a></p></header><section id="c01"><h2>01 接到工作后，先选对业务路线</h2><p>你接到的任务可能是“给这些门店安排今天的补货”，也可能是“找出哪些门店缺货严重”。两件事使用不同资料，先选路线，再操作。</p>
 <h3 id="c01-s01">今天要给门店补货</h3>
-<p>从第 02 章开始，依次走：确定门店与供货 → 取得数据并计算 → 人工核对 → 签发给门店 → 接收门店回传 → 按回传分配仓货 → 核实付款并准备采购 → 实收到货与复盘。</p>
-<p>这条路线的关键交接物依次是：本次草稿、已签发文件、已保存回传、仓库执行文件、已确认付款、平台采购单号、有效实收。每到下一步都先核对上一份交接物。</p>
+<p>从第 02 章开始，依次走：确定门店与供货 → 取得数据并计算 → 人工核对 → 签发给门店 → 接收门店回传 → 运营签发 → 按运营量分配仓货 → 核实付款并准备采购 → 实收到货与复盘。</p>
+<p>这条路线的关键交接物依次是：本次草稿、已签发文件、已保存回传、运营签发版本、仓库执行文件、已确认付款、平台采购单号、有效实收。每到下一步都先核对上一份交接物。</p>
 <h3 id="c01-s02">今天只想查门店为什么缺货</h3>
 <p>直接从第 11 章开始：留存每日观察 → 确认统计范围与可比性 → 找门店及商品 → 核对证据 → 安排跟进。查看缺货率不自动产生补货单，也不会替你采购。</p>
 <h3 id="c01-s03">手上已经有文件或未完成任务</h3>
@@ -197,8 +198,9 @@
 </ul>
 <p>整张订单尚未回传不等于回传量为 0。完整订单内明确的空白/缺行处理沿用保存前核对规则，以预览为准。</p>
 <p>交接前检查：目标订单是否正确；来源组是否完整；数量单位是否一致；预览差异是否符合门店反馈；保存回执是否成功。不能只看文件已出现在列表，就认为回传已入账。</p>
-<p>本步产物：已保存的有效回传及待回传清单。随后只对满足前置条件的订单安排第 08 章分配。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c08"><h2>08 按门店确认量安排仓货：分配、复核、交执行</h2><p>业务目标：根据有效回传和本批仓资料，形成仓库执行文件。不要拿尚未确认的建议量冒充门店需求。</p>
+<p>本步产物：已保存的有效回传及待回传清单。随后只对满足前置条件的订单安排第 08 章分配。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c08"><h2>08 按已确认需求安排仓货：分配、复核、交执行</h2><p>业务目标：根据有效回传和本批仓资料，形成仓库执行文件。不要拿尚未确认的建议量冒充门店需求。</p>
 <p>输入：准确的门店回传单、所需仓商品与库存资料、本批门店顺序。主从仓、资料来源和顺序沿用已经确认的业务依据。</p>
+<p>新版本签发的订单先按第22章完成运营签发，再进入本章；旧订单沿用原流程。运营签发与门店回传独立保存。</p>
 <ol>
 <li>在订单跟踪定位本次准确订单，进入聚水潭导入单/分配结果业务，选择“准备新分配批次”。不要把历史批次中遗留的单默认带入。</li>
 <li>核对批次范围、门店顺序及本批仓资料；需要更新时使用“从聚水潭获取本批仓资料”。确认所用资料适用于本批，不能只凭文件名判断新旧。</li>
@@ -257,22 +259,22 @@
 <p>本步交接：本批已确认结果、未闭环订单、需要跟进的商品及其原单依据。差异是查原因的入口，不是对某个人或供应商责任的自动判定。</p>
 <p>0.49.3 的五段经营分析在门店经营分析表中保留签发单号、聚水潭内部订单号、翱象采购单号，导出汇总也包含三列，并有“单号关联明细”便于逐单追查。一店多单应逐条核对关联明细；号码为空表示本地尚无该关联，不能猜填。报表读取本地已知记录，不等于刚刚查询过平台；维护后刷新报表、重新导出。</p>
 <p>持续缺货仍需结合第 11、12 章的每日门店观察。经营分析可按签发时的上游供应商和原商品类目导出切面；缺货率使用独立的日采集资料，两者的资料与口径不能混算。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c11"><h2>11 每日巡店：先得到可信的门店缺货清单</h2><p>业务目标：回答“哪些门店、哪些在销商品此刻没货”，为当天跟进提供清单。这是一条独立分析路线，不需要先签发补货单。</p>
-<p>开始前明确：观察日期、门店范围、采用哪份供货设置、要不要剔除淘汰/考核品。补货侧更新资料不会自动覆盖这里的分析资料。</p>
+<p>开始前明确：观察日期、门店范围、采用哪份供货设置、是否额外剔除淘汰品。淘便考核为固定排除，不能撤销。补货侧更新资料不会自动覆盖这里的分析资料。</p>
 <h3 id="c11-s01">留存当天观察</h3>
 <ol>
-<li>进入“门店缺货率”，点“选门店 / 采用补货侧设置”，选择门店并核对采用的设置版本、必卖清单、单/双仓及主从顺序。</li>
+<li>进入“缺货率 → 门店缺货”，点“选门店 / 采用补货侧设置”，选择门店并核对采用的设置版本、必卖清单、单/双仓及主从顺序。</li>
 <li>点击“查看已采用供货设置”，确认分析使用的供货关系。补货侧后来改参数，不会自动覆盖这里的已采用快照。</li>
-<li>点击“采集今日分析资料”，观察采集与快照中的原任务状态。翱象采集复用并行能力；按平台实际受理状态等待。</li>
-<li>需要离开时先选择是否“离开后本次继续采集”。未进入板块时不加载分析页和查询能力；每日采集计划是明确启用后的独立安排。</li>
+<li>在上方选择“只跑门店”或“门店与大仓一起跑”，再点“按所选范围采集”。确认门店数、所需仓资料及大仓输出范围；同仓只采一次，按原任务状态等待。</li>
+<li>需要离开时先选择上方是否“离开后继续”。未进入板块时不加载分析页和查询能力；每日采集计划是明确启用后的独立安排。</li>
 <li>选择观测日期，点击“查询已留存结果”。未采日期不补 0；只对已完成的门店日覆盖作结论。</li>
 </ol>
-<figure><button class="zoom" aria-label="放大图片：缺货率分析概览"><img loading="lazy" src="images/stockout-overview.png" alt="缺货率分析概览"></button><figcaption>图 11：实际 EXE 查询隔离演示日报。标题同时显示缺货数、有销基数、比例和覆盖，便于判断是否可比较。 · 点击放大原图</figcaption></figure>
+<figure><button class="zoom" aria-label="放大图片：缺货率分析概览"><img loading="lazy" src="images/stockout-hub-store-0519.png" alt="缺货率分析概览"></button><figcaption>图 11：0.51.9源码Qt隔离演练。统一入口下，门店按有销商品计算；固定排除考核与禁用后缺货1/基数2，50%。没有查询真实平台。 · 点击放大原图</figcaption></figure>
 <h3 id="c11-s02">看懂结果再作判断</h3>
 <p>门店缺货率 = 纳入范围内“月销大于 0 且可用库存小于等于 0”的店品数 ÷ 纳入范围内“月销大于 0”的店品数。</p>
 <ul>
 <li>负库存按 0 参与统计，原负数保留在证据中；在途不是门店可用库存。</li>
 <li>默认剔除门店停采/禁采及实际供货仓禁用，同时从分子和分母剔除。</li>
-<li>淘汰品按虚拟分类“标杆淘汰”系列识别，考核品按“淘便考核”识别；四种视角可选择。</li>
+<li>固定排除虚拟分类精确“淘便考核”，同时扣除分子与分母。淘汰品仍按“标杆淘汰”系列及所选视角处理；未知标签保留待核。</li>
 <li>标签未知与指标未知不同。标签待核需要查看资料依据；指标待核或基数为 0 时不输出可靠百分比。</li>
 <li>多店、多日用缺货数合计除以有销基数合计，不平均门店百分比。跨日同店同商品计为不同店品日观测。</li>
 <li>缺货率是门店观测指标，不是仓库缺货率，也不是全天缺货时长；不能单凭它认定参数设小、没采购或仓库迟发。</li>
@@ -700,8 +702,8 @@
 <p>图32：0.50.4源码Qt与真实本地组件的隔离演示。仅勾选W2，旧记录模拟受理未知；没有连接Edge或真实平台。</p>
 <figure><button class="zoom" aria-label="放大图片：新旧采集分别保存"><img loading="lazy" src="images/collection-reexport-result-0504.png" alt="新旧采集分别保存"></button><figcaption> · 点击放大原图</figcaption></figure>
 <p>图33：重导后建立独立新任务，旧记录及未选W1保留。画面中的“未配置浏览器”是隔离验收刻意不提供浏览器绑定的结果，用来证明在真实平台动作前停止；正常业务需使用已保存且可用的连接。</p>
-<p>缺货率分析取新文件：进入“门店缺货率 → 采集与快照”，在下方门店表选中行，按Ctrl可多选，点击“重新导出选中门店”。新建当日分析修订；未选且已完成的门店保留原快照，分析供货设置和已冻结仓资料沿用。历史日期不能混入今日库存；历史数据用“用留存原件重算”，今日数据用“重新采集今日资料”。</p>
-<p>提示“商家或范围不符”时先核对当前Edge商家和门店，重导不会跳过这些校验。提示“文件行数不符、关键字段缺失、原件已变化”时保留原件查看具体原因，不能用重导按钮把不合格文件当成成功。新修订采集期间日报若被其他作业更新，程序停止覆盖并提示重新核对当前作业。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c21"><h2>21 移交电脑与跟进仓店缺货：0.51.0 新业务路线</h2><nav class="chapter-nav" aria-label="本章任务"><a href="#c21-s01">要把已有订单完整交给另一台电脑</a><a href="#c21-s02">要分析一次签发为什么安排这个数量</a><a href="#c21-s03">要判断门店一款商品大约还能卖多少天</a><a href="#c21-s04">要跟进哪个仓、哪个供应商或类目缺货最多</a><a href="#c21-s05">要把大仓缺货率交给仓库或供应商跟进</a></nav><h3 id="c21-s01">要把已有订单完整交给另一台电脑</h3>
+<p>缺货率分析取新文件：进入“缺货率 → 门店缺货 → 采集与快照”，在下方门店表选中行，按Ctrl可多选，点击“重新导出选中门店”。新建当日分析修订；未选且已完成的门店保留原快照，分析供货设置和已冻结仓资料沿用。历史日期不能混入今日库存；历史数据用“用留存原件重算”，今日数据用“重新采集今日资料”。</p>
+<p>提示“商家或范围不符”时先核对当前Edge商家和门店，重导不会跳过这些校验。提示“文件行数不符、关键字段缺失、原件已变化”时保留原件查看具体原因，不能用重导按钮把不合格文件当成成功。新修订采集期间日报若被其他作业更新，程序停止覆盖并提示重新核对当前作业。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c21"><h2>21 移交电脑与跟进仓店缺货：0.51.0 新业务路线</h2><nav class="chapter-nav" aria-label="本章任务"><a href="#c21-s01">要把已有订单完整交给另一台电脑</a><a href="#c21-s02">要分析一次签发为什么安排这个数量</a><a href="#c21-s03">要判断门店一款商品大约还能卖多少天</a><a href="#c21-s04">要跟进哪个仓、哪个供应商或类目缺货最多</a><a href="#c21-s05">同时跟进门店与大仓缺货</a><a href="#c21-s06">要把大仓缺货率交给仓库或供应商跟进</a></nav><h3 id="c21-s01">要把已有订单完整交给另一台电脑</h3>
 <p>从“订单跟踪 → 完整订单迁移／导入与参数导出（全部本地资料）”开始，先等计算、采集和后台作业安全结束。导出 ZIP 是全部本地订单，不按列表当时勾选或日期裁剪。完整签发修订、草稿、回传、库存分配、付款、实收、平台单号、防重事实、参数和留存原件一同携带。</p>
 <p>接收电脑选择“校验并导入完整订单迁移包”。先等完整性校验，核对来源版本、订单数量和完整备份目录，再确认。确认后软件会等待后台连接安全退出，期间不用再次点击；退出后整组恢复，原目录移入备份。重新打开后核对订单。迁入的未完成作业和计划暂停，先核验原平台结果再逐项继续。已有平台采购不撤销，不因导入自动重发。</p>
 <p>本机连接、登录和两个独立分析板块保留。来源电脑的 Cookie、浏览器配置、机器绑定与 AI 密钥不迁入。清单中缺失的外部文件会明确提示；不能凭空恢复来源电脑未保留的原件。原电脑绝对路径通过随包映射读取留存副本，签发与任务身份不改写。</p>
@@ -713,20 +715,30 @@
 <p>从“决策复查”选择历史仓单，导出完整计算表。从左往右看商品与门店身份、当时输入、生效参数、计算阶段和最终签发。表中保留当时销量、库存、在途、周转、标签、采购状态、分类、上游供应商和仓库存；依次对照周期、权重、预测、额度、箱规、必采保底、预算与人工改量。</p>
 <p>本版计算表固定为“完整计算建议表”和“字段与口径说明”，不再展开大量文件路径、进程和来源数组。历史缺失字段空白并注明，不能拿今天仓资料补到旧单上。需要原始商品资料时使用独立原表下载入口。</p>
 <h3 id="c21-s03">要判断门店一款商品大约还能卖多少天</h3>
-<p>进入“门店缺货率 → 商品与待核”，查看“预计销售天数”，或导出本视角的商品明细。</p>
+<p>进入“缺货率 → 门店缺货 → 商品与待核”，查看“预计销售天数”，或导出本视角的商品明细。</p>
 <p>预计销售天数 =（原可用库存 + 原在途库存）÷ 月销 × 30。月销30、可用9、在途6，等于15天。负库存按原值计算，可以出现负天数；月销为0或必要值缺失时显示空白及原因。此列逐店逐商品计算，不将不同单位商品混合平均，现有门店缺货率基数不变。</p>
 <figure><button class="zoom" aria-label="放大图片：门店商品预计销售天数"><img loading="lazy" src="images/store-sales-days-0510.png" alt="门店商品预计销售天数"></button><figcaption>图 36：合成商品演示正常15天、负库存-1天，以及零月销不折算；不是业务门店实测。 · 点击放大原图</figcaption></figure>
 <h3 id="c21-s04">要跟进哪个仓、哪个供应商或类目缺货最多</h3>
-<p>进入“大仓缺货率”，勾选所需仓后采集今日大仓资料。该板块只用聚水潭大仓商品资料，在独立目录留存；不会更新补货商品资料、分配库存基线或门店缺货率原件。没有启用计划且未进入页面时不加载分析库或扫描原件。</p>
-<p>基数是本仓全部商品，先剔除虚拟分类标签含“淘汰”、仓商品禁用，以及商品标签拆分后任一标签精确为“日配”的商品。缺货是剩余商品可用库存≤0，负库存计缺货；大仓缺货率 = 缺货支数÷剩余支数。没有月销条件；本口径没有额外剔除考核品。商品标签“非日配”“日配专区”不命中日配。</p>
+<p>进入“缺货率 → 大仓缺货”，在上方勾选输出仓，选择“只跑大仓”或“门店与大仓一起跑”，再点“按所选范围采集”。该板块只用聚水潭大仓商品资料，在独立目录留存；不会更新补货商品资料、分配库存基线或门店缺货率原件。没有启用计划且未进入页面时不加载分析库或扫描原件。</p>
+<p>基数是本仓全部商品，先剔除虚拟分类标签含“淘汰”、仓商品禁用，以及商品标签拆分后任一标签精确为“日配”的商品。缺货是剩余商品可用库存≤0，负库存计缺货；大仓缺货率 = 缺货支数÷剩余支数。没有月销条件；同时固定剔除虚拟分类精确“淘便考核”。商品标签“非日配”“日配专区”不命中日配。</p>
 <p>日配标签的识别示例见<a href="#c03-s04">第03章：日配识别与处理</a>。本仓日配商品会同时从缺货率分子、分母剔除；到“商品与待核”查看具体排除原因。若上游标签已经修正，回到本分析重采今日资料；“用留存原件重算”仍使用留存原表的旧标签，不会下载新资料。此板块采集的资料独立留存，不会顺带更新补货出单的仓商品资料。</p>
 <figure><button class="zoom" aria-label="放大图片：大仓缺货率与切面"><img loading="lazy" src="images/warehouse-stockout-0510.png" alt="大仓缺货率与切面"></button><figcaption>图 37：隔离样本8款中剔除3款，剩余5款，缺货2款，缺货率40%；真实 Qt 与工作进程，平台回执由合成模拟提供。 · 点击放大原图</figcaption></figure>
 <p>在“切面分析”选择供应商、分类等组合，也能管理自定义多套维度和顺序；商品、供应商会同时保留编码与名称。同维多选为或，不同维度同时满足；双击分组能继续缩小范围。导出时每套组合一张表，每行一个分组，导出全量筛选结果，不只导出当前200行。</p>
 <p>影响基数或库存的资料缺失时，先在“商品与待核”看具体原因；未知不当0，百分比暂空。已观测日期才参与期间统计，未采日期不补0，不同日期按仓商品日加权。</p>
 <p>“采集与快照”能继续原任务、重采今日、用留存原件离线重算、结束本地准备和删除作业日志。下方日期范围删除先核对快照和行数，删除本分析数据并清理无引用原件；不会删除其他板块。每日计划默认关闭，需显式启用且应用运行；使用保存的仓选择，业务忙时让行，跨日不补历史库存。手工导入原表时先核对原表日期，按本次导入观测留存。</p>
-<h3 id="c21-s05">要把大仓缺货率交给仓库或供应商跟进</h3>
+<h3 id="c21-s05">同时跟进门店与大仓缺货</h3>
+<p>从0.51.9起，主导航合并为“缺货率”，下设“门店缺货”“大仓缺货”。先在门店子页采用门店范围及供货设置，上方再选择只跑门店、只跑大仓或一起跑。仓勾选是大仓输出范围；门店必要的主从仓资料也会获取。开始前会列清范围，不自动扩大到全部已绑定门店。</p>
+<p>一起跑共用一次仓导出，两个指标分别保存。大仓完成而门店失败时保留大仓结果，点击上方组合记录的“继续原作业”补未完成部分。单跑大仓不需要翱象登录；已完成大仓不会因翱象异常被回滚。跨日不把今天库存补为昨天，取消等待当前事务安全结束。</p>
+<figure><button class="zoom" aria-label="放大图片：统一缺货率的大仓子页"><img loading="lazy" src="images/stockout-hub-warehouse-0519.png" alt="统一缺货率的大仓子页"></button><figcaption> · 点击放大原图</figcaption></figure>
+<p>图源：0.51.9源码Qt隔离演练。大仓不要求月销，固定剔除淘便考核；未进入的门店子页没有构建。</p>
+<p>只跑门店后，需要大仓结果时，可在上方选中该次组合记录，点击“原仓资料补算大仓”。先核对原日期与仓范围，使用该次留存原件离线补算；不刷新平台，不补出原来未采的仓。原件缺失或原结果已删时，不由旧操作恢复。</p>
+<p>“统一导出”选择门店、大仓或两者，设置共同日期，并分别勾选已保存的自定义切面。沿用两个子页最近的筛选，每套组合一张表、每行一个分组，表名用门店和大仓区分；数值、分母及覆盖分别保留。新入口不改变原子页独立导出、删除、日志或原件重算。</p>
+<figure><button class="zoom" aria-label="放大图片：统一选择门店和大仓切面导出"><img loading="lazy" src="images/stockout-hub-export-0519.png" alt="统一选择门店和大仓切面导出"></button><figcaption> · 点击放大原图</figcaption></figure>
+<p>图源：同一源码Qt隔离演练，真实按钮打开统一导出窗口；各子页50%的数值与工作表一致。不是业务电脑实测。</p>
+<p>每日计划会显示原有启用模式和时间。保存新计划将明确替换列出的旧计划，按选定模式及仓范围运行；不启用另一分析。未进入且计划关闭不加载明细，进入一个子页不预建另一页；分析资料不写回补货侧。</p>
+<h3 id="c21-s06">要把大仓缺货率交给仓库或供应商跟进</h3>
 <ol>
-<li>进入“大仓缺货率”，先设观测日期，再用搜索和“多维筛选”缩小仓、供应商或类目。核对顶部缺货支数、剩余支数和缺货率。右上角点“导出大仓报表”。</li>
+<li>进入“缺货率 → 大仓缺货”，先设观测日期，再用搜索和“多维筛选”缩小仓、供应商或类目。核对顶部缺货支数、剩余支数和缺货率。右上角点“导出大仓报表”。</li>
 <li>默认只勾选当前组合。可勾选大仓总览、每日趋势、按供应商、按类目、按商品及已有自定义组合；需要全部时点“全部勾选”。每个切面一张表，每行一组数据，商品和供应商都保留编码与名称。</li>
 <li>想逐款处理时勾选“附带商品明细”，可选全部、纳入基数、已剔除或待核。也能清空切面勾选，仅导出明细。从“商品与待核”页进入时，默认沿用该页的明细范围。</li>
 <li>选择保存位置并等待完成提示。初始位置沿用全局“导出设置”。导出所有匹配数据，不限页面200行；Excel可继续筛选，超出单表行数会续表。取消或失败不会发布残缺文件；同名文件请改新名称保存。</li>
@@ -735,4 +747,87 @@
 <figure><button class="zoom" aria-label="放大图片：大仓报表入口与筛选"><img loading="lazy" src="images/warehouse-export-page-0517.png" alt="大仓报表入口与筛选"></button><figcaption> · 点击放大原图</figcaption></figure>
 <p>图源：0.51.7源码Qt隔离演练。合成601款中缺货301款，50.08%；筛选为山东仓与测试供应商，没有查询真实平台。</p>
 <figure><button class="zoom" aria-label="放大图片：选择大仓报表切面和商品明细"><img loading="lazy" src="images/warehouse-export-0517.png" alt="选择大仓报表切面和商品明细"></button><figcaption> · 点击放大原图</figcaption></figure>
-<p>图源：同一隔离演练勾选全部切面。默认只选当前组合；勾选与明细范围均可调整，原件、补货数据和统计规则保持不变。</p><a class="back" href="#top">回到目录 ↑</a></section></main><dialog aria-label="原图预览"><button>关闭原图</button><div class="scroll"><img alt=""></div></dialog><script>const search=document.querySelector('#manual-search');const sections=[...document.querySelectorAll('section')];function filter(){const terms=search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);let count=0;sections.forEach(s=>{s.hidden=!terms.every(t=>s.textContent.toLowerCase().includes(t));if(!s.hidden)count++;});document.querySelector('#count').textContent=terms.length?'找到 '+count+' 个章节；清空搜索显示全部':'共 21 个业务阶段，所有内容可离线阅读';}search.addEventListener('input',filter);document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',()=>{search.value='';filter();}));const zoom=document.querySelector('dialog');document.querySelectorAll('.zoom').forEach(b=>b.addEventListener('click',()=>{const src=b.querySelector('img');zoom.querySelector('img').src=src.src;zoom.querySelector('img').alt=src.alt;zoom.showModal();}));zoom.querySelector('button').onclick=()=>zoom.close();document.querySelectorAll('.practice').forEach(f=>{const w1=f.elements.w1,w2=f.elements.w2;function calc(){const a=w1.valueAsNumber,b=w2.valueAsNumber,c=100-a-b;const valid=[a,b].every(v=>Number.isFinite(v)&&v>=0&&v<=100)&&c>=-1e-9;f.dataset.valid=String(valid);const r=v=>Math.round(v*100)/100;f.querySelector('output').textContent=Number.isFinite(c)?'自动 w3 = '+r(c)+'%；'+(valid?'权重合计合法；是否适合本店仍需试算。':'不合法：两段非负且合计不能超过100%。'):'请完整填写两段权重。';f.querySelectorAll('.bars span').forEach((s,i)=>s.style.width=(valid?[a,b,Math.max(0,c)][i]:0)+'%');}f.addEventListener('submit',e=>e.preventDefault());[w1,w2].forEach(x=>x.addEventListener('input',calc));f.querySelectorAll('[data-weights]').forEach(b=>b.onclick=()=>{[w1.value,w2.value]=b.dataset.weights.split(',');calc();});calc();});</script></html>
+<p>图源：同一隔离演练勾选全部切面。默认只选当前组合；勾选与明细范围均可调整，原件、补货数据和统计规则保持不变。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c22"><h2>22 回传已收齐，运营确认后把需求交给仓库</h2><nav class="chapter-nav" aria-label="本章任务"><a href="#c22-s01">回传数量就是运营决定时，一键过渡</a><a href="#c22-s02">运营有改量时，继续使用回传那套表</a><a href="#c22-s03">仓库有货却没分，先看需求规整和实际库存依据</a></nav><p>业务目标：保留门店最初回传，同时明确运营最终让仓库安排多少。新订单的顺序是“门店回传 → 运营签发 → 聚水潭分配 → 付款 → 实收”。旧订单不会因升级自动退回待运营；确需补做时可主动采用回传。</p>
+<p>开始前确认：目标补货单、门店编码、供货仓与业务日期正确，门店回传已保存。单张、批量都使用同一套动作，勾选一张就是单张，不需要另建审批流程。</p>
+<h3 id="c22-s01">回传数量就是运营决定时，一键过渡</h3>
+<ol>
+<li>在“订单跟踪 → 运营签发”勾选本次仓单。只处理勾选范围，其他门店和另一仓不受影响。</li>
+<li>点击“采用回传并运营签发”。程序读取已确认回传，保存独立运营版本；原回传不覆盖。无变化时不会多生成版本。</li>
+<li>要保留文件时，点击“导出运营签发单”。可逐仓单导出或按仓合并，隐藏关联仍带着准确原单身份。</li>
+<li>点击“分配并准备付款”，在原分配流程核对仓资料、预览并生成。结果就绪后直接进入付款核对，不必返回跟踪页导出再导入。</li>
+<li>只有确认外部实际已经付款且明细一致，才保存付款事实。生成分配文件本身不等于付款。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片：在回传之后处理运营签发"><img loading="lazy" src="images/operations-stage-0520.png" alt="在回传之后处理运营签发"></button><figcaption>图 50：0.52.0源码Qt隔离演练，演示同店两仓的运营入口。图中的门店、商品和数量均为合成资料，不是真实平台订单。 · 点击放大原图</figcaption></figure>
+<h3 id="c22-s02">运营有改量时，继续使用回传那套表</h3>
+<p>运营签发单的可见样式、字段顺序、填量、空白和缺行规则与门店回传完全一样。先导出、改量，再在运营签发页导入；可选一张或多张文件。核对后保存运营版本，正常加减量不会因不同于门店回传而被拦截。隐藏页和文件属性负责区分环节；不要删除这些关联信息。没有隐藏环节标记的外部表，直接从“导入运营签发单”入口读取，明确这次保存的环节。</p>
+<p>回传尚未确认时，先回回传页完成原单；已留存的运营文件可以按新上游重新核对。运营或回传更正后，下游原付款、原分配和收货事实仍保留；新的分配需走原批更正，付款需按新依据重新核对。已锁单和已收货的外部事实不能由重算自动撤销。单据差异只影响对应订单，不应把整批所有门店锁住。</p>
+<h3 id="c22-s03">仓库有货却没分，先看需求规整和实际库存依据</h3>
+<p>需求先按箱规向下规整，不擅自多下单。1090、箱规15，规整为1080；800、箱规24，规整为792；500、箱规12，规整为492。原需求1090/800/500继续留存，尾数列为未分配差额。</p>
+<p>库存不足时，按扣除本批已占用后的剩余量分配，尾数不足一箱也分。例如规整需求1080，可分库存1079，就分1079；前店分配后只剩14，后店有需求就分14，不再因不足整箱归零。实际库存为0才因无库存分0。禁用、缺价、无效库存、缺少商品条目仍明确列为待核，不伪造为可执行库存。</p>
+<figure><button class="zoom" aria-label="放大图片：规整需求并完整分配库存尾数"><img loading="lazy" src="images/allocation-normalization-0520.png" alt="规整需求并完整分配库存尾数"></button><figcaption>图 51：同一隔离演练中，河北仓分1079，山东仓分792。实际生成的聚水潭导入文件数量与预览一致；没有调用真实聚水潭下单。 · 点击放大原图</figcaption></figure>
+<p>刷新资料不等于原批已采用：</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="参考表"><table><thead><tr><th scope="col">你做的动作</th><th scope="col">实际影响</th><th scope="col">下一步看哪里</th></tr></thead><tbody>
+<tr><td>刷新默认商品资料</td><td>更新后续补货默认资料及执行标签</td><td>新批要用它时点“采用已保存仓资料”，核对文件和导入时间</td></tr>
+<tr><td>从聚水潭获取本批仓资料</td><td>更新待选用的分配库存基准</td><td>新批预览前核对所选仓、版本和数量</td></tr>
+<tr><td>继续原批或重新分配原批所选单</td><td>沿用原批冻结库存和已保存占用</td><td>看本批资料日期与SKU“原可用、分配前、分配后、原因”</td></tr>
+<tr><td>只重新导出已生成单</td><td>读取该次已保存分配数量</td><td>不重新读取平台库存，也不重新占用</td></tr>
+</tbody></table></div>
+<p>两份版本不同时，窗口会提示“默认资料与当前库存基准版本不同”。不要仅凭其他页面的更新时间断言本批采用最新库存；也不要删除已生成订单来强迫回收外部可能已使用的库存。</p>
+<p>完成标志：运营版本已保存、原回传仍可查看，仓文件实际数量与分配预览一致。交接到第09章核实付款和采购。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c23"><h2>23 复盘这一批：看漏斗率随时间变化并定位商品</h2><nav class="chapter-nav" aria-label="本章任务"><a href="#c23-s01">比率怎样读，才不误判</a><a href="#c23-s02">要查当时的情况，而不是今天最新状态</a><a href="#c23-s03">缺货率从真实观测联看</a><a href="#c23-s04">导出给业务负责人</a></nav><p>业务目标：判断哪个环节的数量或货值增加、减少，哪些门店/供货商/类目需要跟进。先定业务日期和可比范围，再看比率，不能把未回传或未收货当作0。</p>
+<ol>
+<li>进入“订单跟踪 → 经营分析”，选择日期、门店和仓，点击查询。无需重新计算本次补货，也无需启用AI。</li>
+<li>打开“全流程与漏斗率趋势”。用日、周或月观察同一业务日期归属的订单。周从周一开始；首尾只覆盖部分日期会标为非完整周期。</li>
+<li>选择数量、商品款数或签发价货值，再选择要看的比率。原五段保留“签发/建议、回传/签发、付款/回传、收货/付款、收货/建议”；另增加“运营/回传、分配/运营、付款/分配”。</li>
+<li>点击“多维筛选”，可按门店、供货仓、上游供应商、商品类目、必采属性和库存单位多选。同维度是或，不同维度是且。缺少的供应商/类目显示待核，不凭商品名称猜。</li>
+<li>“比率趋势图”先看整体升降；“趋势数据”查看各组的八项比率和所选比率变化(pp)。点击图上日期或双击周期表，进入该周期的商品明细。门店编码和名称、商品编码和名称并列，三种关联单号放在末尾。</li>
+<li>点击“节点概览”查看七个节点的数量/款数/货值；默认收起，留出核心图表空间。需要完整范围时点击“返回全部周期”或清空趋势筛选。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片：查看时间趋势并下钻业务明细"><img loading="lazy" src="images/workflow-ratios-0520.png" alt="查看时间趋势并下钻业务明细"></button><figcaption>图 52：0.52.0源码Qt隔离演练。仅一天的合成资料显示一个点；没有记录的日期留空断线，不补0、不编造趋势。 · 点击放大原图</figcaption></figure>
+<h3 id="c23-s01">比率怎样读，才不误判</h3>
+<p>每条比率用前后两个环节均有效的同一批明细计算“分子合计÷分母合计”。周/月重新合计分子分母，不能平均每天的百分比；商品款数在所选周期内按商品编码去重。分母0、未取得资料、依据失效均留空，正常增加允许超过100%。相邻周期缺数据时不跨缺口强行算涨跌。</p>
+<p>货值始终按原签发价比较，实际付款金额另看原付款资料。数量混有瓶、件等不同库存单位时，只作执行统计；想作同单位比较，用“库存单位”筛选后再导出。总转化“收货/建议”直接在首尾共同可比范围计算，不用各段比率连乘。</p>
+<h3 id="c23-s02">要查当时的情况，而不是今天最新状态</h3>
+<p>在“更多筛选”填写历史截至时间，例如2026-11-12T12:00:00+08:00，再查询。软件只采用该时刻之前保存的签发和生命周期版本，不把下午更正混进中午快照；已删除订单不会因历史查询恢复。导出记录截至时间与版本依据。平台采购单号等关联标识仍是本机当前留存对应，不表示历史时点的平台在线状态。</p>
+<p>业务日期漏斗与“动作日完成量”分开：前者看这批业务的转化，后者按当前有效版本实际保存日期数完成单，不能把一次修订当新订单重复计数。</p>
+<h3 id="c23-s03">缺货率从真实观测联看</h3>
+<p>点击“联看留存缺货率趋势”才只读两个独立分析库。可看门店、山东仓或河北仓的每日曲线、分子分母和指标待核数；未采日期为空。不会查询平台、刷新补货默认资料或自动采集。</p>
+<p>门店缺货率按有月销商品中的门店可用库存不大于0统计；大仓缺货率按大仓商品统计基数中的可用库存不大于0统计，两者基数不同，不能直接相加平均。沿用现有考核品、禁采/停采、禁用等排除口径。这里联看的是当前发布的独立观测日报，历史截至不会把分析库日报回滚到旧修订；订单数量增减也不能代替真实库存变化。</p>
+<h3 id="c23-s04">导出给业务负责人</h3>
+<p>点击“导出本视角”保留当前周期、指标、分组与筛选；常规门店经营导出同时保留原商品切面。新版从纵向“漏斗总览”开始，数量主表、商品款数、签发价货值分表，业务数据在前，签发单号、聚水潭内部号、翱象采购单号在后。另有原五段比率的Excel折线图、日/周/月比率分子分母、动作日完成量，以及已主动联看的缺货率日报。未主动联看时只写说明，不后台加载缺货库。</p>
+<p>“订单或履约数据已更新”时重新查询再导出，原报告不会混入新版本。导出不覆盖旧文件；取消或失败不发布半份报表。完成标志是导出范围、当前筛选和表内日期一致，负责人能用末尾三种单号追到原单。</p><a class="back" href="#top">回到目录 ↑</a></section><section id="c24"><h2>24 C盘空间不足，把现有业务资料搬到其他磁盘</h2><nav class="chapter-nav" aria-label="本章任务"><a href="#c24-s01">开始前准备</a><a href="#c24-s02">从旧位置切换到新位置</a><a href="#c24-s03">搬迁过程中如何看进度</a><a href="#c24-s04">完成标志和下一步</a><a href="#c24-s05">没搬成功时如何处理</a></nav><p>业务目标：继续使用已有订单和分析结果，把资料占用转移到空间充足的本机磁盘。更改“导出设置”只影响输出文件；搬迁内部库要使用本章入口。</p>
+<h3 id="c24-s01">开始前准备</h3>
+<ol>
+<li>保存当前草稿，等待计算、采集和下单任务安全结束。正常关闭本应用的采集专用浏览器；软件不强杀任何浏览器或提交任务。</li>
+<li>准备独立空文件夹，例如D盘的“补货助手资料”。新盘需容纳活动资料与完整恢复副本，预检按资料大小两倍加128 MiB核对。不要选择盘根目录、网络盘或已有另一份资料的目录。</li>
+<li>这是同一台电脑换磁盘位置；换电脑仍走第21章的完整订单迁移，不把浏览器登录资料发送给别人。</li>
+</ol>
+<h3 id="c24-s02">从旧位置切换到新位置</h3>
+<ol>
+<li>点击顶部“显示与帮助 → 数据保存位置…”，核对“当前资料位置”。</li>
+</ol>
+<p>   进入本页后暂停自动连接和后台自动派发；取消或关闭本页会恢复原来的开关与计时器状态。已经开始的登录检查在确认前安全结束，正在执行的业务任务仍须安全收尾。</p>
+<ol>
+<li>选择新目录，点击“校验位置并搬迁全部资料…”。核对确认框中的旧位置、新位置、文件数和恢复副本路径。取消则不搬迁；提示未保存作业时取消，也不搬迁。</li>
+<li>确认后先显示独立的“数据搬迁进度”窗口，再等待主窗口安全退出。进度按安全退出、复制资料、完整性校验、切换位置、恢复副本归档、清理旧副本显示；复制和归档时可看到阶段处理量、文件数与更新时间。</li>
+<li>完整恢复副本保存到新盘并核对成功后，才清理旧位置副本。默认成功后自动重开，确认结果提示显示新位置，再抽查订单和已留存缺货率日期。失败时仅保留独立结果窗口，不自动重开主窗口或再次连接聚水潭。</li>
+</ol>
+<figure><button class="zoom" aria-label="放大图片：数据保存位置：核对当前目录并选择新盘"><img loading="lazy" src="images/data-location-0521.png" alt="数据保存位置：核对当前目录并选择新盘"></button><figcaption>图 53：0.52.1实际Qt窗口，独立合成资料，C盘临时资料向D盘测试目录搬迁；不是真实业务库。① 核对当前目录；② 选择新盘空目录；③ 确认后安全退出、校验和归档；④ 失败后可在本页继续处理旧副本。 · 点击放大原图</figcaption></figure>
+<h3 id="c24-s03">搬迁过程中如何看进度</h3>
+<p>百分比只表示当前阶段，不能把“复制100%”理解为全部完成。复制会核对原件与副本，因此阶段处理量可能超过资料本身体积；数据库完整性检查无法准确估算字节百分比，会显示等待动画和最近更新时间。大文件复制、摘要核对和归档中也会更新状态。</p>
+<p>关闭进度窗口只关闭查看，不停止搬迁。搬迁仍在执行时，重新打开补货助手可打开只读进度窗口，不建立第二个业务窗口，也不重做搬迁。结束后在“显示与帮助 → 数据保存位置 → 查看最近一次搬迁进度与结果”查看结果和原始错误。</p>
+<figure><button class="zoom" aria-label="放大图片：独立进度窗口：主窗口退出后仍可查看"><img loading="lazy" src="images/data-location-progress-0522.png" alt="独立进度窗口：主窗口退出后仍可查看"></button><figcaption>图 54：0.52.2源码实际Qt窗口，合成资料验收。完整成功才显示“搬迁完成”；异常时显示原始原因与原资料位置。不是本机真实资料搬迁成功的凭据。 · 点击放大原图</figcaption></figure>
+<h3 id="c24-s04">完成标志和下一步</h3>
+<p>重新打开显示“数据已保存在新位置”，本页当前目录正确，已有订单和分析日期保留。历史数量、单据版本、平台单号不重写，不重新计算或采购。资料目录以外的旧Excel保持原位；需要时单独调整“导出设置”。</p>
+<p>C盘仍留少量定位/恢复记录、实例保护和旧位置目录兼容链接，链接不保存另一份大库。不要手动删除、重命名旧目录或用旧版本并行打开；后续采集和订单使用新位置。</p>
+<h3 id="c24-s05">没搬成功时如何处理</h3>
+<ul>
+<li>“专用浏览器仍打开/资料仍被占用”：正常关闭对应窗口和原任务后再校验，不强制终止。</li>
+<li>“Windows尚未允许移动资料目录/拒绝改名旧资料目录”：目录占用或权限限制，提示本身不能确认占用者。0.52.3会先完整释放Qt、退出资料目录工作路径，在复制前检查目录权限；仍失败时保留原位置、结果及诊断，不要凭提示强杀进程。</li>
+<li>上次失败的新盘目录已有复制材料：保留这份材料，另选独立空目录再校验，不覆盖或合并失败副本。软件不会自动重试真实搬迁。</li>
+<li>“空间不足/权限不足”：换有空间且可写的本机空目录，原位置保留。</li>
+<li>“旧位置副本待归档或清理”：新位置已生效；完整恢复ZIP或旧副本仍保留。清理中途失败时旧目录可能已部分清理，不能把该目录单独当成完整恢复副本。回到本页点击“继续归档并清理旧位置副本…”，核验ZIP后处理剩余旧文件。</li>
+<li>“资料文件范围变化”：切换尚未生效时继续使用原位置，已有复制材料保留。记录新增/减少文件及目录的数量与少量样例，先查明占用或变化来源，不跳过校验强行切换。</li>
+<li>复制或切换前中断：重开先恢复原位置，保留复制材料；不会自动重放。切换提交后中断：使用已核实的新库，旧副本待归档。</li>
+<li>新盘离线：接回资料盘或恢复原目录，不会悄悄回C盘建空库。请保留“数据保存位置结果”及原始错误。</li>
+</ul>
+<p>恢复ZIP在新目录旁边，含本机登录资料，请妥善保管。本版没有一键还原ZIP入口；需要还原时先保留当前库和ZIP，再单独核验恢复，不能覆盖正在运行的目录。</p><a class="back" href="#top">回到目录 ↑</a></section></main><dialog aria-label="原图预览"><button>关闭原图</button><div class="scroll"><img alt=""></div></dialog><script>const search=document.querySelector('#manual-search');const sections=[...document.querySelectorAll('section')];function filter(){const terms=search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);let count=0;sections.forEach(s=>{s.hidden=!terms.every(t=>s.textContent.toLowerCase().includes(t));if(!s.hidden)count++;});document.querySelector('#count').textContent=terms.length?'找到 '+count+' 个章节；清空搜索显示全部':'共 24 个业务阶段，所有内容可离线阅读';}search.addEventListener('input',filter);document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',()=>{search.value='';filter();}));const zoom=document.querySelector('dialog');document.querySelectorAll('.zoom').forEach(b=>b.addEventListener('click',()=>{const src=b.querySelector('img');zoom.querySelector('img').src=src.src;zoom.querySelector('img').alt=src.alt;zoom.showModal();}));zoom.querySelector('button').onclick=()=>zoom.close();document.querySelectorAll('.practice').forEach(f=>{const w1=f.elements.w1,w2=f.elements.w2;function calc(){const a=w1.valueAsNumber,b=w2.valueAsNumber,c=100-a-b;const valid=[a,b].every(v=>Number.isFinite(v)&&v>=0&&v<=100)&&c>=-1e-9;f.dataset.valid=String(valid);const r=v=>Math.round(v*100)/100;f.querySelector('output').textContent=Number.isFinite(c)?'自动 w3 = '+r(c)+'%；'+(valid?'权重合计合法；是否适合本店仍需试算。':'不合法：两段非负且合计不能超过100%。'):'请完整填写两段权重。';f.querySelectorAll('.bars span').forEach((s,i)=>s.style.width=(valid?[a,b,Math.max(0,c)][i]:0)+'%');}f.addEventListener('submit',e=>e.preventDefault());[w1,w2].forEach(x=>x.addEventListener('input',calc));f.querySelectorAll('[data-weights]').forEach(b=>b.onclick=()=>{[w1.value,w2.value]=b.dataset.weights.split(',');calc();});calc();});</script></html>

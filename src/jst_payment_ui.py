@@ -17,7 +17,7 @@ def review(parent,host,entries):
     def select_order(i):
         d.scope_tree.setCurrentItem(d.scope_tree.topLevelItem(0));d.search.setText(d.overview_model.rows[d.overview_model.indices[i.row()]][0])
     d.overview.clicked.connect(select_order)
-    for i,width in enumerate((240,140,140,140,230,110,160)):d.overview.setColumnWidth(i,width)
+    for i,width in enumerate((240,140,140,140,140,230,110,160)):d.overview.setColumnWidth(i,width)
     d.layout().insertWidget(0,label(f'核对 {len(plan["plans"])} 单 · 付款金额合计 {sum(amounts.values()):,.2f} 元。采用已保存生成单，无需导出再导入；仅当实际已付款且数量、金额一致时确认。','section'))
     d.layout().insertWidget(1,label('存在差异请取消并导入真实付款单。内部号可在“订单详情 → 维护聚水潭内部订单号”补填。','muted'))
     try:

@@ -42,7 +42,7 @@ class HomeTasks(QFrame):
         v.addLayout(row)
         row = QHBoxLayout()
         self.buttons = {}
-        self.names = {'return': '待回传', 'payment': '待付款核对', 'receipt': '待收货核对', 'attention': '需重新核对'}
+        self.names = {'return': '待回传', 'operations':'待运营签发', 'payment': '待付款核对', 'receipt': '待收货核对', 'attention': '需重新核对'}
         for key, title in self.names.items():
             b = button(title + '  —', lambda checked=False, k=key: self.open_group(k))
             self.buttons[key] = b

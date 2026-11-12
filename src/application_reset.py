@@ -126,7 +126,8 @@ def _check_other_processes():
     # process identities, and never terminate a process or print command lines.
     if os.name != 'nt': return
     from application_processes import discover
-    matches=discover()
+    # Callers already own the data-area exclusive lease; never terminate peers.
+    matches=discover(guarded=True)
     if matches:raise ValueError('其他补货助手进程仍在运行，请先正常关闭；资料未替换。进程号：'+','.join(str(p['pid']) for p in matches))
 
 

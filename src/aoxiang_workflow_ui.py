@@ -110,7 +110,7 @@ class Manager(QObject):
         self.changed.emit()
 
     def tick(self):
-        if self.owner is None or self.worker or self.stopping or self.maintenance_depth or self.gate.yielding or getattr(self.host, 'closing', False) or getattr(self.host,'_large_io_dialog',None):
+        if self.owner is None or self.worker or self.stopping or self.maintenance_depth or self.gate.yielding or getattr(self.host, 'closing', False) or getattr(self.host,'_data_location_preparing',False) or getattr(self.host,'_large_io_dialog',None):
             return
         try:
             if self.recovering:
@@ -200,12 +200,18 @@ class Manager(QObject):
             return True
         task = Call(lambda _: self.session.close(timeout=.5), self)
         self.session_closer = task
-        task.failed.connect(lambda text: self.status('共享连接尚未退出：' + text))
+        failed=[False]
+        def failure(text):
+            failed[0]=True
+            from migration_status import shutdown_failed
+            if shutdown_failed(self.host,RuntimeError(text)):self.close_requested=False
+            else:self.status('共享连接尚未退出：' + text)
+        task.failed.connect(failure)
         def finished():
             self.session_closer = None
             task.deleteLater()
-            if self.close_requested:
-                QTimer.singleShot(200, self.host.close)
+            if self.close_requested and not failed[0]:
+                QTimer.singleShot(200,self.host,self.host.close)
         task.finished.connect(finished)
         task.start()
         return False
@@ -215,12 +221,14 @@ class Manager(QObject):
         self.close_requested = False
 
     def shutdown(self):
+        if getattr(self,'_shutdown_done',False):return
         self.timer.stop()
         # Normal application close has already drained this off the GUI thread.
         if self.session.client is not None and self.worker is None and self.session_closer is None:
-            self.session.close(timeout=.5)
+            if not self.session.close(timeout=.5):raise RuntimeError('翱象连接仍在安全退出，迁入未执行')
         if self.owner:
             self.owner.rollback();self.owner.close();self.owner=None
+        self._shutdown_done=True
 
     def reconcile_orders(self):
         if self.owner is None or self.worker or self.maintenance_depth:return

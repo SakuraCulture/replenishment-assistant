@@ -51,14 +51,14 @@ class Manager(QObject):
         h=self.host
         pending=getattr(h,'_large_io_dialog',None)
         maintenance=getattr(getattr(h,'aoxiang_workflows',None),'maintenance_depth',0)
-        return bool(getattr(h,'worker',None) or pending is not None and not pending._completed or
+        return bool(getattr(h,'_data_location_preparing',False) or getattr(h,'worker',None) or pending is not None and not pending._completed or
                     maintenance or
                     getattr(getattr(h,'browser_startup',None),'workers',None) or
                     getattr(h,'_aoxiang_dialog',None) or h.catalog_sessions.session.lease or
                     h.jst_generator.worker or getattr(getattr(h,'stockout',None),'worker',None) or getattr(h,'closing',False))
 
     def poll(self):
-        if self.reader or self.closing:return
+        if self.reader or self.closing or getattr(self.host,'_data_location_preparing',False):return
         pending=getattr(self.host,'_large_io_dialog',None)
         manager=getattr(self.host,'aoxiang_workflows',None)
         if (pending is not None and not pending._completed) or getattr(manager,'maintenance_depth',0):

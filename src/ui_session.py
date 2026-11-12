@@ -24,7 +24,8 @@ class SessionWindow(BackgroundJobs,ResultsView,QMainWindow):
         self.loaded=None;self.result=None;self.worker=None;self.dirty=True
         self.initializing=initializing;self.closing=False;self.last_export=None
         self.profile=None;self.config_warning=""
-        folder=os.environ.get("REPLENISHMENT_DATA_DIR") or str(Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppLocalDataLocation))/"settings")
+        from data_location import root
+        folder=root()
         self.repository=priority_list.Repository(folder)
 
     def refresh_profile_label(self):
