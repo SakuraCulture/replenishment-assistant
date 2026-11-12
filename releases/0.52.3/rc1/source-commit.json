@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "source_commit": "742c527a9640cab8999be2233815857f94c76a45",
+  "snapshot_sha256": "e66ae973c52e146723d7f018c052aa750615bfd2740140a124c39a83b1586b73",
+  "snapshot_files": 3852,
+  "submitted_files": 155,
+  "exact_tree_equivalence": true,
+  "archived_existing_eof_blank_preserved": true
+}

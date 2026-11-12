@@ -1,0 +1,225 @@
+{
+  "original_bytes_preserved": true,
+  "files": {
+    "releases/0.51.10/rc3/交付报告.md": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.51.10\\rc3\\交付报告.md",
+      "sha256": "43735caca65593485886cfc6bd81bd820e4a6b9c5906050bd725f73ceb7db57d"
+    },
+    "releases/0.51.10/rc3/artifacts.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.51.10\\rc3\\artifacts.json",
+      "sha256": "569dd18fc62f2d045aab246de15c282dd899f5bddf5c02976c658815c88878b9"
+    },
+    "releases/0.51.10/rc3/build_info.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.51.10\\rc3\\build_info.json",
+      "sha256": "2864157bbe3b9867af37f35b8d63ad3521cbeb720b06891c59927f210f945bd1"
+    },
+    "releases/0.51.10/rc3/diagnosis.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.51.10\\rc3\\diagnosis.json",
+      "sha256": "5ea96266d252c9de1c6428a8acaee545ffdf36fa4357bd3fa43ace0aa42fa0e1"
+    },
+    "releases/0.51.10/rc3/exe-migration-report.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.51.10\\rc3\\exe-migration-report.json",
+      "sha256": "8cdb69b7901f8e40398fa564e74cc9bc49d1d66fbd2bf7020f1705b439406f85"
+    },
+    "releases/0.51.10/rc3/scope-audit.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.51.10\\rc3\\scope-audit.json",
+      "sha256": "aadceead2e0e6c891dfac9aabc17a96e8ac3b4381565adae9b7e28f78850b226"
+    },
+    "releases/0.51.10/rc3/source-manifest.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.51.10\\rc3\\source-manifest.json",
+      "sha256": "8792b2b4528b05c6ccfd239c322cbe677346fa74e5fcb737460554b108a3a132"
+    },
+    "releases/0.52.0/rc2/交付报告.md": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\交付报告.md",
+      "sha256": "c35664d2cc6e3f8630ed2602b192f21092f3c951dd5fb930b9bc0f9c66c4821d"
+    },
+    "releases/0.52.0/rc2/allocation-diagnosis.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\allocation-diagnosis.json",
+      "sha256": "2782384dd7431e9bef02b20b03a033385df0bbbeb50c370121e28e701862773f"
+    },
+    "releases/0.52.0/rc2/artifacts.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\artifacts.json",
+      "sha256": "bfbf9ffa9c1e26f207a42268d29c2145930880a9e3ce7846e8752b98bf729cb8"
+    },
+    "releases/0.52.0/rc2/build_info.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\build_info.json",
+      "sha256": "8bd2675b7aa0a911108cb44cc01227a71c506558f2455c2e0fdf1477812b2df8"
+    },
+    "releases/0.52.0/rc2/build-report.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\build-report.json",
+      "sha256": "559da48d6158004b02fe88f89d828bd95699e8f40e2101d9a850331fbf17565f"
+    },
+    "releases/0.52.0/rc2/exe-normal.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\exe-normal.json",
+      "sha256": "d3ba75e247c10368eef26894ec72f224abe1ae6ed07393762002b47cbd6c175d"
+    },
+    "releases/0.52.0/rc2/exe-scale125.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\exe-scale125.json",
+      "sha256": "f4216dd32e7b97d10d15087bdaaad5126c775db193eb69b54190889c891a0905"
+    },
+    "releases/0.52.0/rc2/frozen-export-comparison.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\frozen-export-comparison.json",
+      "sha256": "95d118f605573bf31b6ab0f041c1bc38309f4bd46a52523947a0c6664d812cb7"
+    },
+    "releases/0.52.0/rc2/legacy-zero-repair.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\legacy-zero-repair.json",
+      "sha256": "bb268467bda03b83c5ea37a44b64d937db46cda6a3484cac39df37b47a4134f0"
+    },
+    "releases/0.52.0/rc2/manual-validation.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\manual-validation.json",
+      "sha256": "6cf894b97670c67cb6ed80bf4029cef5743350f817e1e05fef2639db07b0248f"
+    },
+    "releases/0.52.0/rc2/protected-work.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\protected-work.json",
+      "sha256": "45bcd2628610bed7ab6f2bd0c2bf048d32a2d66ad2d185d527340c67b8477ae1"
+    },
+    "releases/0.52.0/rc2/regression.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\regression.json",
+      "sha256": "3b69318d6ff029d9b92b49c356a4d024cc3ca45f0f706cea186ca95f234b3715"
+    },
+    "releases/0.52.0/rc2/source-manifest.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\source-manifest.json",
+      "sha256": "314851d4102dc795b4d46a57246bc75b363336e9758930244ff2818629818366"
+    },
+    "releases/0.52.1/rc6/交付报告.md": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\交付报告.md",
+      "sha256": "eb9ebbb20614db4778ffff1094245e00b39926e00867891bbfdb46d3ae543446"
+    },
+    "releases/0.52.1/rc6/build_info.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\build_info.json",
+      "sha256": "aacd80c82d2b9280c45105e8f70033e7fbff8d0e6543befd8840158d716cff04"
+    },
+    "releases/0.52.1/rc6/build-report-rc6.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\build-report-rc6.json",
+      "sha256": "49ce10c186caa2b5092bf10d6e3fed1e87cf4a1440c45319407a7fe4133ad7da"
+    },
+    "releases/0.52.1/rc6/final-source-review-rc6.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\final-source-review-rc6.json",
+      "sha256": "6a421b77e53882f9432aa68559f3443591f8c8d22b599f2ce6b734b4f6fb5eb8"
+    },
+    "releases/0.52.1/rc6/final-validation-scope-rc6.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\final-validation-scope-rc6.json",
+      "sha256": "da500936e52a1ba8dbe75ba3d55b1406d730e9a94ccc34f08fac6373ee0db3ed"
+    },
+    "releases/0.52.1/rc6/migration-exe-rc6-01.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\migration-exe-rc6-01.json",
+      "sha256": "f88efeff9e9c1b99f0403c4891be26d6d1143a685caf74679f5a5ad168179c07"
+    },
+    "releases/0.52.1/rc6/native-exe-rc6-01.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\native-exe-rc6-01.json",
+      "sha256": "269338c033924c967e7173443bf73bb7c0de4da682fd1a139c0bbc84c63be20d"
+    },
+    "releases/0.52.1/rc6/native-isolation-incident.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\native-isolation-incident.json",
+      "sha256": "144ebfa23b5dccbcd5ce3f8afd43c045c8d491d4072cc6806a75668bbe702407"
+    },
+    "releases/0.52.1/rc6/operations-exe-rc6-01.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\operations-exe-rc6-01.json",
+      "sha256": "6131575236b394316e3bc76776c861265ffdfea9cd6875b183d52c68f94884bc"
+    },
+    "releases/0.52.1/rc6/restoration-component-proof-rc6.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\restoration-component-proof-rc6.json",
+      "sha256": "f60fefd82a96530e35f6eca848fd37b8a816a0faca7b69d26279d620ea807172"
+    },
+    "releases/0.52.1/rc6/sealed-delivery.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\sealed-delivery.json",
+      "sha256": "4b472d6b0edf7e79e3761961b30c70175d5aebc5aa67f5821192a2fc1a864c9e"
+    },
+    "releases/0.52.1/rc6/SHA256SUMS.txt": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\SHA256SUMS.txt",
+      "sha256": "f585c3475d6b8ec70171c39a62579ad956470cdea4373a44db76468f9fc2692e"
+    },
+    "releases/0.52.1/rc6/source-manifest.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.1\\rc6\\source-manifest.json",
+      "sha256": "1463f5678dc295c1c51fd55a3d55f8ca3fbb83819d084fd6c3a7efd0047b12f3"
+    },
+    "releases/0.52.2/rc4/交付报告.md": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.2\\rc4\\交付报告.md",
+      "sha256": "dab5777eac0f5473d12b3f3c7df53ce56cc1fbfa796fa99ca4748181496ec1ff"
+    },
+    "releases/0.52.2/rc4/build_info.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.2\\rc4\\build_info.json",
+      "sha256": "98f72e27dc94f358a88aaf09d7a433e1000290a93d1adf0264b2fb8ffba261fa"
+    },
+    "releases/0.52.2/rc4/delivery.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.2\\rc4\\delivery.json",
+      "sha256": "ad3ac630f2b72232b94dd0de975d10473eae742f07d6ae732fef5e5a74f3bbdf"
+    },
+    "releases/0.52.2/rc4/exe-report.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.2\\rc4\\exe-report.json",
+      "sha256": "0404bbaed116e3f3bd7406fe32e8f69f23508459212e04d0cf9800d8977abb9b"
+    },
+    "releases/0.52.2/rc4/highdpi-report.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.2\\rc4\\highdpi-report.json",
+      "sha256": "320e0bd89d84629af970b93d23bc9303e7681d296b701719556e081c9ee78782"
+    },
+    "releases/0.52.3/rc1/交付报告.md": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.3\\rc1\\交付报告.md",
+      "sha256": "6595972559828ec99c27e968d73075d62251116d2b76e58edb11577f377ecd71"
+    },
+    "releases/0.52.3/rc1/build_info.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.3\\rc1\\build_info.json",
+      "sha256": "0a3b47ddc0f26a3dc84088f8dc71d4b7bcaa6031ce78d2a2b878b9ec6d251723"
+    },
+    "releases/0.52.3/rc1/delivery.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.3\\rc1\\delivery.json",
+      "sha256": "fd3f2376feb258355e4cb91983f73f422f9694f11e0137bf2fed66f44fe5f9f4"
+    },
+    "releases/0.52.3/rc1/exe-report.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.3\\rc1\\exe-report.json",
+      "sha256": "0ac61b08d2acee9cbdc6542b0d9e923387956e8b669de253fedda49d9a4b1ba2"
+    },
+    "releases/0.52.3/rc1/highdpi-report.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.3\\rc1\\highdpi-report.json",
+      "sha256": "480e0818da002568826763c723485a1f510f732ff752ece26ee621c0d035914d"
+    },
+    "releases/0.52.3/rc1/workspace-protection.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.3\\rc1\\workspace-protection.json",
+      "sha256": "33b4ec68549138b59fef782c011994e0aacf60e933630246368f5502b36e6092"
+    },
+    "releases/0.52.3/rc1/source-manifest.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.3_rc1\\source-manifest.json",
+      "sha256": "6d5e0b4f6813a8294a70f9430f312fd43f1633a17a0ebd1336de247b589eb8c3"
+    },
+    "releases/0.52.3/rc1/source-commit.json": {
+      "source": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\qa\\main_sync_0523_20261113_01\\source-commit.json",
+      "sha256": "670eb7e4f501d102c165d30556390bf5e978168d16366dc25c133b4d8a7e657b"
+    },
+    "releases/0.52.3/rc1/snapshot-regression.txt": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_browser_race_20261113_01\\targeted-tests-final-02.log",
+      "sha256": "c90dbefbae701c695f74ace685d2bb1b5fab2e4d6830819083b133a51cdf6a5b"
+    },
+    "releases/0.52.3/rc1/retained-harness-failure.txt": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_browser_race_20261113_01\\native-source-02.log",
+      "sha256": "bfd5209153ea561facbadf81d57da1cb24b1fc6273cc41df83b81f48e5ab1c46"
+    },
+    "releases/0.52.3/rc1/cwd-probe.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_browser_race_20261113_01\\cwd-probe.json",
+      "sha256": "dc0bf95179b7ff03b7ae4ba7c814717833506619ece0b9a92d0fdf231e2dc957"
+    },
+    "releases/0.52.3/rc1/qt-owned-directory-probe.json": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_browser_race_20261113_01\\qt-owned-directory-probe.json",
+      "sha256": "7ec18c6ca907f3f60db009f14b72069fb5041ef1411d6167806e3f80ab872de2"
+    },
+    "releases/0.52.3/rc1/merge-integration-sandbox-failure.txt": {
+      "source": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\qa\\main_sync_0523_20261113_01\\integration.log",
+      "sha256": "fc82190e00c1249f3bd9fc9e915fcdea645c71691e5e687504e786c94127a346"
+    },
+    "releases/0.52.3/rc1/merge-integration-passed.txt": {
+      "source": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\qa\\main_sync_0523_20261113_01\\integration-02.log",
+      "sha256": "5c86341c540feaf4dd26a79f7a9265b426a092a8ed8fbb2b829238d484ae7ffd"
+    },
+    "releases/0.51.10/rc3/first-build-failure.log.txt": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.51.10\\rc3\\first-build-failure.log",
+      "sha256": "fcde8ccee0ef2e0407d3037b477e24cc0c6a35f710b4303d1366e4e3844c8de6"
+    },
+    "releases/0.51.10/rc3/targeted-regression.log.txt": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.51.10\\rc3\\targeted-regression.log",
+      "sha256": "8552915be34fc3b8e232d8ff1b468eb41c94393cc73bb88e33a615ac84363f01"
+    },
+    "releases/0.52.0/rc2/regression.log.txt": {
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\releases\\0.52.0\\rc2\\regression.log",
+      "sha256": "bceea5adff6e60728bba96d57bf58488e0aa7982dbfb541de67025f3c47dfff9"
+    }
+  }
+}

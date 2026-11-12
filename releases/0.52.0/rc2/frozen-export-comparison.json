@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "run": "exe-rc2-normal",
+      "passed": true,
+      "numeric_comparisons": 138,
+      "same_logic_as_frontend": true,
+      "live_platform": false
+    },
+    {
+      "run": "exe-rc2-scale125",
+      "passed": true,
+      "numeric_comparisons": 138,
+      "same_logic_as_frontend": true,
+      "live_platform": false
+    }
+  ],
+  "total_comparisons": 276
+}

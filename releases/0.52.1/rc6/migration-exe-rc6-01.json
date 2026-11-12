@@ -1,0 +1,94 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "confirm",
+      "passed": true,
+      "exit_code": 0,
+      "state": "COMPLETED",
+      "real_native_dialogs": 2,
+      "source_orders": 18,
+      "original_orders": 2
+    },
+    {
+      "case": "cancel",
+      "passed": true,
+      "exit_code": 0,
+      "state": "CANCELLED",
+      "real_native_dialogs": 1,
+      "source_orders": 18,
+      "original_orders": 2
+    },
+    {
+      "case": "async",
+      "passed": true,
+      "exit_code": 0,
+      "state": "COMPLETED",
+      "real_native_dialogs": 2,
+      "source_orders": 18,
+      "original_orders": 2
+    },
+    {
+      "case": "background_fail",
+      "passed": true,
+      "exit_code": 0,
+      "state": "FAILED",
+      "real_native_dialogs": 2,
+      "source_orders": 18,
+      "original_orders": 2
+    },
+    {
+      "case": "apply_failure",
+      "passed": true,
+      "exit_code": 1,
+      "state": "FAILED",
+      "real_native_dialogs": 2,
+      "source_orders": 18,
+      "original_orders": 2
+    },
+    {
+      "case": "shutdown_exception",
+      "passed": true,
+      "exit_code": 1,
+      "state": "FAILED",
+      "real_native_dialogs": 2,
+      "source_orders": 18,
+      "original_orders": 2
+    },
+    {
+      "case": "early_loop_exit",
+      "passed": true,
+      "exit_code": 1,
+      "state": "FAILED",
+      "real_native_dialogs": 2,
+      "source_orders": 18,
+      "original_orders": 2
+    },
+    {
+      "case": "interrupt",
+      "passed": true,
+      "exit_code": 73,
+      "state": "FAILED",
+      "real_native_dialogs": 2,
+      "source_orders": 18,
+      "original_orders": 2
+    },
+    {
+      "case": "hold",
+      "passed": true,
+      "second_launch_activated_original": true
+    },
+    {
+      "case": "caught_background",
+      "passed": true,
+      "exit_code": 0,
+      "state": "COMPLETED",
+      "real_native_dialogs": 2,
+      "source_orders": 18,
+      "original_orders": 2
+    }
+  ],
+  "frozen_exe": true,
+  "live_platform": false,
+  "exe_sha256": "74698a1689c507047e53ff318f5d5cd652f9ec6fdbe00a911a2239912510247b"
+}

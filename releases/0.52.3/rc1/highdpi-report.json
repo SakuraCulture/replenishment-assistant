@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "large_file",
+      "passed": true,
+      "code": 0,
+      "state": "COMPLETED",
+      "phase": "COMPLETED",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-7b3237800db9e34f\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_browser_race_20261113_01\\native-exe-rc1-highdpi-01\\large_file\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 2
+    }
+  ],
+  "frozen_exe": true,
+  "live_platform": false,
+  "exe_sha256": "23fe8f6905b1d1d435bebbff608de7fa0a25cccb1be06bb69ed0387368cb4ed1"
+}

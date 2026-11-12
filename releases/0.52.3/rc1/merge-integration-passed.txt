@@ -1,0 +1,8 @@
+test_operations_route_return_allocation_and_paid_facts_survive_import (test_merge_migration_compat.CombinedMigration.test_operations_route_return_allocation_and_paid_facts_survive_import) ... ok
+test_paid_import_can_correct_operations_and_reallocate_without_rewriting_payment (test_migrated_operations_continuation.ContinuedWork.test_paid_import_can_correct_operations_and_reallocate_without_rewriting_payment) ... ok
+test_return_only_import_can_adopt_operations_allocate_and_save_payment (test_migrated_operations_continuation.ContinuedWork.test_return_only_import_can_adopt_operations_allocate_and_save_payment) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.819s
+
+OK

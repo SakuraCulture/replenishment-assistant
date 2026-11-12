@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\migration_shutdown_fix_20261112_01\build_snapshot.py", line 56, in <module>
+    exec(compile(ast.Module(body=body[start:index_env],type_ignores=[]),str(builder),'exec'),ns)
+  File "C:\Users\lenovo\.codex\worktrees\migration-shutdown-05110\replenishment_mvp_20261029\build_0.51.10_rc1\source\tools\build_from_commit.py", line 30, in <module>
+    info['aoxiang']=aoxiang_bundle.stage(component,ROOT/'components/aoxiang',staged,source_commit=commit,app_version=version)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\migration-shutdown-05110\replenishment_mvp_20261029\build_0.51.10_rc1\source\tools\aoxiang_bundle.py", line 65, in stage
+    raise ValueError('Installed component runtime file set differs from lock')
+ValueError: Installed component runtime file set differs from lock

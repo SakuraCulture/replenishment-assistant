@@ -1,0 +1,129 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "confirm",
+      "passed": true,
+      "code": 0,
+      "state": "COMPLETED",
+      "phase": "COMPLETED",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-37066da6ee09b466\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\confirm\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 3
+    },
+    {
+      "case": "cancel",
+      "passed": true,
+      "code": 0,
+      "state": "CANCELLED",
+      "phase": "CANCELLED",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-4ef500e487271046\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\cancel\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 1
+    },
+    {
+      "case": "unsaved_cancel",
+      "passed": true,
+      "code": 0,
+      "state": "CANCELLED",
+      "phase": "CANCELLED",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-130083e52e1e9164\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\unsaved_cancel\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 2
+    },
+    {
+      "case": "async",
+      "passed": true,
+      "code": 0,
+      "state": "COMPLETED",
+      "phase": "COMPLETED",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-3ffad0030fab41b0\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\async\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 2
+    },
+    {
+      "case": "background_fail",
+      "passed": true,
+      "code": 0,
+      "state": "FAILED",
+      "phase": "WAITING_EXIT",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-30193dc55ed4a4d1\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\background_fail\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 2
+    },
+    {
+      "case": "shutdown_exception",
+      "passed": true,
+      "code": 1,
+      "state": "FAILED",
+      "phase": "WAITING_EXIT",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-bcc60ab7867be876\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\shutdown_exception\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 1
+    },
+    {
+      "case": "apply_failure",
+      "passed": true,
+      "code": 1,
+      "state": "FAILED",
+      "phase": "ROLLED_BACK",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-5ce4209a37361b2b\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\apply_failure\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 2
+    },
+    {
+      "case": "cleanup_failure",
+      "passed": true,
+      "code": 0,
+      "state": "COMPLETED",
+      "phase": "CLEANUP_PENDING",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-1d69362f9e49d6d5\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\cleanup_failure\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 2
+    },
+    {
+      "case": "interrupt_before",
+      "passed": true,
+      "code": 73,
+      "state": "FAILED",
+      "phase": "ROLLED_BACK",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-00ee4a1c7dd00e6d\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\interrupt_before\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 2
+    },
+    {
+      "case": "interrupt_after",
+      "passed": true,
+      "code": 73,
+      "state": "COMPLETED",
+      "phase": "CLEANUP_PENDING",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-0b79297ad474c355\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\interrupt_after\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 2
+    },
+    {
+      "case": "busy",
+      "passed": true,
+      "code": 0,
+      "state": "COMPLETED",
+      "phase": "COMPLETED",
+      "source": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-b5310066816845f8\\YoutuanTools\\补货助手",
+      "target": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\busy\\D盘新资料",
+      "cross_volume": true,
+      "native_dialogs": 3
+    }
+  ],
+  "frozen_exe": true,
+  "live_platform": false,
+  "exe_sha256": "74698a1689c507047e53ff318f5d5cd652f9ec6fdbe00a911a2239912510247b"
+}

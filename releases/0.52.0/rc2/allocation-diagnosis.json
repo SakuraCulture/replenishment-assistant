@@ -1,0 +1,177 @@
+{
+  "scope": "isolated fixtures; local settings queried read-only; no platform calls",
+  "screenshot_note": "The screenshot is a store replenishment table, not a warehouse stock receipt. Names and quantities used below are synthetic reproductions, not original-order identification.",
+  "carton_cases": [
+    {
+      "name": "东方树叶茉莉花茶500ml",
+      "synthetic_warehouse_stock": 5000,
+      "demand": 1090,
+      "step": 15,
+      "row": {
+        "sku": "0001",
+        "name": "测试商品",
+        "demand": "1090",
+        "quantity": "0",
+        "amount": "0",
+        "price": "3.47",
+        "step": "15",
+        "stock": "5000",
+        "before": "5000",
+        "after": "5000",
+        "missing": "1090",
+        "reason": "回传数量不符合箱规倍数",
+        "issue": true,
+        "return_sources": [
+          {
+            "file": "return-2.xlsx",
+            "row": 2,
+            "sha": "b9a55eb8433d5a86363f815a6160359840eeeaa25a1910d6c16565c8e4be655b",
+            "sheet": "业务明细"
+          }
+        ],
+        "catalog_row": 2
+      },
+      "commit": {
+        "generated": [],
+        "skipped": [],
+        "zero": [
+          "BH-T-ZC-HB"
+        ],
+        "cancelled": false,
+        "errors": [],
+        "batch_id": "6c2a64d29323406482d8b23fc32bde0d"
+      },
+      "floor_to_carton_for_comparison_only": "1080"
+    },
+    {
+      "name": "饮用天然水550ml",
+      "synthetic_warehouse_stock": 5000,
+      "demand": 800,
+      "step": 24,
+      "row": {
+        "sku": "0001",
+        "name": "测试商品",
+        "demand": "800",
+        "quantity": "0",
+        "amount": "0",
+        "price": "0.90",
+        "step": "24",
+        "stock": "5000",
+        "before": "5000",
+        "after": "5000",
+        "missing": "800",
+        "reason": "回传数量不符合箱规倍数",
+        "issue": true,
+        "return_sources": [
+          {
+            "file": "return-2.xlsx",
+            "row": 2,
+            "sha": "58ab65615098e23e498243bad8851bc9db4784ee7bd291f5d08f03abc92925e2",
+            "sheet": "业务明细"
+          }
+        ],
+        "catalog_row": 2
+      },
+      "commit": {
+        "generated": [],
+        "skipped": [],
+        "zero": [
+          "BH-T-ZC-HB"
+        ],
+        "cancelled": false,
+        "errors": [],
+        "batch_id": "03da8a22157e44818142d3b18699591b"
+      },
+      "floor_to_carton_for_comparison_only": "792"
+    },
+    {
+      "name": "饮用纯净水550ml",
+      "synthetic_warehouse_stock": 5000,
+      "demand": 500,
+      "step": 12,
+      "row": {
+        "sku": "0001",
+        "name": "测试商品",
+        "demand": "500",
+        "quantity": "0",
+        "amount": "0",
+        "price": "0.70",
+        "step": "12",
+        "stock": "5000",
+        "before": "5000",
+        "after": "5000",
+        "missing": "500",
+        "reason": "回传数量不符合箱规倍数",
+        "issue": true,
+        "return_sources": [
+          {
+            "file": "return-2.xlsx",
+            "row": 2,
+            "sha": "b059d45a1960eb8f5950868efeb0772b33d3d294ffb569e005b6d1859d854278",
+            "sheet": "业务明细"
+          }
+        ],
+        "catalog_row": 2
+      },
+      "commit": {
+        "generated": [],
+        "skipped": [],
+        "zero": [
+          "BH-T-ZC-HB"
+        ],
+        "cancelled": false,
+        "errors": [],
+        "batch_id": "24cbcbd381b04c02a6706b1436b0afd7"
+      },
+      "floor_to_carton_for_comparison_only": "492"
+    }
+  ],
+  "default_vs_shared": {
+    "updated_default_stock": 9999,
+    "shared_baseline_stock": 100,
+    "new_dialog_automatically_selected_stock": 100,
+    "explicit_default_is_available": 9999
+  },
+  "frozen_batch_after_refresh": {
+    "frozen_stock": 100,
+    "first_order_allocation": 40,
+    "refreshed_stock": 1000,
+    "remaining_order_demand": 80,
+    "remaining_order_allocation": "60",
+    "errors": []
+  },
+  "local_metadata_only": {
+    "path": "C:\\Users\\lenovo\\AppData\\Local\\YoutuanTools\\补货助手\\settings",
+    "defaults": [
+      {
+        "warehouse": "山东仓",
+        "imported_at": "2026-11-08T13:47:05",
+        "revision": "443f1b2e8c4a7cf2",
+        "source_sha256": "dbf0bf8050af7baa08a219b2dcedc70a4007c45a3b1fb768ee8e46fed1eaa3c2",
+        "count": 9205
+      },
+      {
+        "warehouse": "河北仓",
+        "imported_at": "2026-11-08T13:47:28",
+        "revision": "35684420297f1e5e",
+        "source_sha256": "50995727a9600734684deb3223aaa69542986cb84b90931f95e608ad92cb84a7",
+        "count": 4494
+      }
+    ],
+    "jst_baselines": {
+      "count": 20,
+      "latest": "2026-11-08T20:55:42+08:00"
+    },
+    "jst_generations": {
+      "count": 3,
+      "latest": "2026-11-08T20:55:46+08:00"
+    },
+    "jst_batches": {
+      "count": 1,
+      "latest": "2026-11-08T20:55:42+08:00"
+    }
+  },
+  "current_allocator_sha256": "ba22c8f4ef9486cd5bbe9b1f8f96e224622e205d098c6e109c8cad7c7855d892",
+  "baseline_0519_allocator_sha256": "ba22c8f4ef9486cd5bbe9b1f8f96e224622e205d098c6e109c8cad7c7855d892",
+  "allocator_unchanged_from_0519": true
+}

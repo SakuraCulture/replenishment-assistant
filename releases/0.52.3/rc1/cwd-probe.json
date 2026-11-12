@@ -1,0 +1,5 @@
+{
+  "passed": false,
+  "error": "旧资料文件夹仍被其他程序或浏览器占用，未切换；请正常关闭占用程序后重试，原位置保持。",
+  "cwd": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_browser_race_20261113_01\\cwd-probe\\local\\YoutuanTools\\补货助手\\settings"
+}

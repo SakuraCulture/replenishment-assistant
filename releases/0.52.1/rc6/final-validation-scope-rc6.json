@@ -1,0 +1,16 @@
+{
+  "full_regression_passed": true,
+  "full_regression_tests": 1678,
+  "full_regression_seconds": 592.716,
+  "full_regression_scope": "rc4 runtime; final patch limited to relocation cutover recheck and disabling own read-guard close checkpoint",
+  "final_runtime_delta": [
+    "src/data_relocation.py"
+  ],
+  "final_relocation_tests": 27,
+  "final_relocation_tests_passed": true,
+  "all_delta_files": [
+    "docs/manual/business-edition.json",
+    "src/data_relocation.py",
+    "tests/test_data_location.py"
+  ]
+}

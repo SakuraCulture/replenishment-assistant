@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "tests": 1633,
+  "seconds": 647.1560000000172,
+  "frozen_runtime_and_tests_match": true,
+  "source_snapshot_sha256": "55c5da4cef23e9cf3fb57486fb4d2c8ff254e59b1fe31535c6b259b16c9383b8",
+  "log": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\operations_lifecycle_0520_20261112_01\\full-05-frozen-rc2.log",
+  "skipped": []
+}

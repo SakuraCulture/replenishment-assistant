@@ -1,0 +1,66 @@
+test_operations_route_return_allocation_and_paid_facts_survive_import (test_merge_migration_compat.CombinedMigration.test_operations_route_return_allocation_and_paid_facts_survive_import) ... ERROR
+test_paid_import_can_correct_operations_and_reallocate_without_rewriting_payment (test_migrated_operations_continuation.ContinuedWork.test_paid_import_can_correct_operations_and_reallocate_without_rewriting_payment) ... ERROR
+test_return_only_import_can_adopt_operations_allocate_and_save_payment (test_migrated_operations_continuation.ContinuedWork.test_return_only_import_can_adopt_operations_allocate_and_save_payment) ... ERROR
+
+======================================================================
+ERROR: test_operations_route_return_allocation_and_paid_facts_survive_import (test_merge_migration_compat.CombinedMigration.test_operations_route_return_allocation_and_paid_facts_survive_import)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_merge_migration_compat.py", line 26, in test_operations_route_return_allocation_and_paid_facts_survive_import
+    result=migration.export(source.path.parent,package)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\order_migration.py", line 142, in export
+    elif name in DBS:db_copy(path,dest,main=name=='workbench.sqlite3',cancel=cancel,progress=progress)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\order_migration.py", line 55, in db_copy
+    value=backup(source,target,progress,cancel);verify_originals(target,cancel);return value
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\storage_maintenance.py", line 38, in backup
+    checkpoint(cancel);os.link(temporary,destination)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [WinError 5] 拒绝访问。: 'C:\\Users\\lenovo\\AppData\\Local\\Packages\\sandbox.{0bc4c465-1409-4c26-af0a-17c4bef6fac3}\\AC\\Temp\\tmpnnq_iwgn\\orders-xtb8mx7x\\.workbench.sqlite3.7e3f0ceb127642ed9aefe4d369878cb2.tmp' -> 'C:\\Users\\lenovo\\AppData\\Local\\Packages\\sandbox.{0bc4c465-1409-4c26-af0a-17c4bef6fac3}\\AC\\Temp\\tmpnnq_iwgn\\orders-xtb8mx7x\\workbench.sqlite3'
+
+======================================================================
+ERROR: test_paid_import_can_correct_operations_and_reallocate_without_rewriting_payment (test_migrated_operations_continuation.ContinuedWork.test_paid_import_can_correct_operations_and_reallocate_without_rewriting_payment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_migrated_operations_continuation.py", line 37, in test_paid_import_can_correct_operations_and_reallocate_without_rewriting_payment
+    path=self.migrate();previous=lifecycle.snapshot(path,self.h)['documents']['payment']
+         ^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_migrated_operations_continuation.py", line 20, in migrate
+    order_migration.export(self.source.path.parent,package)
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\order_migration.py", line 142, in export
+    elif name in DBS:db_copy(path,dest,main=name=='workbench.sqlite3',cancel=cancel,progress=progress)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\order_migration.py", line 55, in db_copy
+    value=backup(source,target,progress,cancel);verify_originals(target,cancel);return value
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\storage_maintenance.py", line 38, in backup
+    checkpoint(cancel);os.link(temporary,destination)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [WinError 5] 拒绝访问。: 'C:\\Users\\lenovo\\AppData\\Local\\Packages\\sandbox.{0bc4c465-1409-4c26-af0a-17c4bef6fac3}\\AC\\Temp\\tmpe8funngg\\orders-z3_bl_sh\\.workbench.sqlite3.be0e2c77bde14ff0bbd1e690e1d8eca0.tmp' -> 'C:\\Users\\lenovo\\AppData\\Local\\Packages\\sandbox.{0bc4c465-1409-4c26-af0a-17c4bef6fac3}\\AC\\Temp\\tmpe8funngg\\orders-z3_bl_sh\\workbench.sqlite3'
+
+======================================================================
+ERROR: test_return_only_import_can_adopt_operations_allocate_and_save_payment (test_migrated_operations_continuation.ContinuedWork.test_return_only_import_can_adopt_operations_allocate_and_save_payment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_migrated_operations_continuation.py", line 27, in test_return_only_import_can_adopt_operations_allocate_and_save_payment
+    path=self.migrate();self.assertEqual(lifecycle.snapshot(path,self.h)['next'],'operations')
+         ^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_migrated_operations_continuation.py", line 20, in migrate
+    order_migration.export(self.source.path.parent,package)
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\order_migration.py", line 142, in export
+    elif name in DBS:db_copy(path,dest,main=name=='workbench.sqlite3',cancel=cancel,progress=progress)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\order_migration.py", line 55, in db_copy
+    value=backup(source,target,progress,cancel);verify_originals(target,cancel);return value
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\storage_maintenance.py", line 38, in backup
+    checkpoint(cancel);os.link(temporary,destination)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [WinError 5] 拒绝访问。: 'C:\\Users\\lenovo\\AppData\\Local\\Packages\\sandbox.{0bc4c465-1409-4c26-af0a-17c4bef6fac3}\\AC\\Temp\\tmp01qll_0u\\orders-3om05izz\\.workbench.sqlite3.38ec5aed6ee249c9a23690a09ce39a33.tmp' -> 'C:\\Users\\lenovo\\AppData\\Local\\Packages\\sandbox.{0bc4c465-1409-4c26-af0a-17c4bef6fac3}\\AC\\Temp\\tmp01qll_0u\\orders-3om05izz\\workbench.sqlite3'
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.685s
+
+FAILED (errors=3)

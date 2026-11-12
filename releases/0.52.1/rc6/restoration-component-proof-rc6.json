@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "recovery_archive_verified": true,
+  "extracted_synthetic_backup_business_signature_equal": true,
+  "restored_tables": 5,
+  "packaged_catalog_component_started_on_relocated_root": true,
+  "aliases": [
+    {
+      "from": "C:\\Users\\lenovo\\AppData\\Local\\Temp\\replenishment-location-37066da6ee09b466\\YoutuanTools\\补货助手",
+      "to": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\storage_location_0521_20261112_01\\native-exe-rc6-01\\confirm\\D盘新资料"
+    }
+  ],
+  "live_platform": false,
+  "capabilities": {
+    "protocol": "jst.catalog.v1",
+    "component_version": "0.31.0",
+    "dedicated_browser": true,
+    "password_login": false
+  }
+}

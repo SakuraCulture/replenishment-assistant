@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "main_branch_unchanged": "feat/operations-lifecycle-0.52.0",
+  "main_head": "fa7178c96399a0dc8b45b9661942c3568bd43d0b",
+  "main_files_unchanged": 123,
+  "repair_branch": "fix/migration-shutdown-0.51.10",
+  "repair_head": "fa7178c96399a0dc8b45b9661942c3568bd43d0b",
+  "frozen_snapshot": "94451567ae33c5e59ec2496052fb8a0a80f92fdff48c20c54414f4962cfc87b1",
+  "frozen_files": 3791,
+  "modified_vs_frozen": [
+    "README.md",
+    "prepare_delivery.py",
+    "src/aoxiang_ui_common.py",
+    "src/aoxiang_workflow_ui.py",
+    "src/app.py",
+    "src/application_processes.py",
+    "src/application_reset.py",
+    "src/application_window.py",
+    "src/catalog_session_ui.py",
+    "src/order_migration.py",
+    "src/order_migration_ui.py",
+    "src/readable_ui.py",
+    "src/single_instance.py",
+    "src/version.json",
+    "使用说明.txt"
+  ],
+  "new_files_vs_frozen": [
+    "docs/0.51.10迁移退出与实例识别修复.md",
+    "src/application_exit.py",
+    "src/application_runtime.py",
+    "src/migration_shutdown_smoke.py",
+    "src/migration_status.py",
+    "tests/test_migration_shutdown.py",
+    "tools/verify_migration_shutdown.py"
+  ],
+  "deleted_files_vs_frozen": [],
+  "model_and_business_allocation_unchanged": true,
+  "explicit_unchanged_files": [
+    "src/model.py",
+    "src/allocation.py",
+    "src/default_config.json",
+    "src/default_must_sell.json",
+    "src/order_lifecycle.py",
+    "src/normal_orders.py",
+    "src/jst_allocation.py"
+  ],
+  "real_data_written": false,
+  "source_snapshot_sha256": "b8140c7c4e273b575fd076afa98b0331c423fc7ee365b9bbd9f0b25aacdf8594",
+  "exe_sha256": "d4947460035b30c820e6cc05f466f12234e2ced617bd7c798978bd852237e0b1",
+  "new_commit": false
+}

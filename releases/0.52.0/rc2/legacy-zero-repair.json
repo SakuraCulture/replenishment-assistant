@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "baseline_rule": "jst-stock-v1",
+  "current_rule": "jst-stock-v2",
+  "legacy_zero_count": 1,
+  "legacy_row_can_reallocate": true,
+  "new_allocation": "1080",
+  "frozen_stock": "5000",
+  "original_return": "1.09E+3",
+  "real_platform": false
+}

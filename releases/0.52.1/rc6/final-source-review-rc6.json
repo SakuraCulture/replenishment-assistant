@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "actual_version": "0.52.1 rc6",
+  "source_snapshot_sha256": "20421a641979cae0b4a4842cda0fb0936732f1fb77eab1268109f4e0be41c833",
+  "exe_sha256": "74698a1689c507047e53ff318f5d5cd652f9ec6fdbe00a911a2239912510247b",
+  "protected_workspaces": {
+    "feature": {
+      "protected_files": 132,
+      "changed": [],
+      "branch_unchanged": true,
+      "head_unchanged": true,
+      "index_unchanged": true
+    },
+    "hotfix": {
+      "protected_files": 61,
+      "changed": [],
+      "branch_unchanged": true,
+      "head_unchanged": true,
+      "index_unchanged": true
+    }
+  },
+  "business_files_unchanged": [
+    "src/model.py",
+    "src/default_config.json",
+    "src/default_must_sell.json",
+    "src/jst_allocation.py",
+    "src/normal_orders.py",
+    "src/operations_flow.py",
+    "src/order_lifecycle.py",
+    "src/order_analytics.py",
+    "src/workflow_analysis.py"
+  ],
+  "runtime_matches_frozen_source": true,
+  "validation_scope": {
+    "full_regression_passed": true,
+    "full_regression_tests": 1678,
+    "full_regression_seconds": 592.716,
+    "full_regression_scope": "rc4 runtime; final patch limited to relocation cutover recheck and disabling own read-guard close checkpoint",
+    "final_runtime_delta": [
+      "src/data_relocation.py"
+    ],
+    "final_relocation_tests": 27,
+    "final_relocation_tests_passed": true,
+    "all_delta_files": [
+      "docs/manual/business-edition.json",
+      "src/data_relocation.py",
+      "tests/test_data_location.py"
+    ]
+  },
+  "actual_exe_results": {
+    "native-exe-rc6-01": {
+      "passed": true,
+      "cases": 11
+    },
+    "migration-exe-rc6-01": {
+      "passed": true,
+      "cases": 10
+    },
+    "operations-exe-rc6-01": {
+      "passed": true,
+      "checks": 20
+    }
+  },
+  "git_committed_pushed_or_merged": false,
+  "real_data_migrated": false
+}

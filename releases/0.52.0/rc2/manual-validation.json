@@ -1,0 +1,537 @@
+{
+  "passed": true,
+  "pages": 104,
+  "chapters": 23,
+  "image_occurrences": 52,
+  "indexed_unique_images": 52,
+  "pdf_image_occurrences": 52,
+  "changed_pages_rendered": [
+    98,
+    104
+  ],
+  "character_bounds_issues": [],
+  "pdf_sha256": "db73ffc09109c354e7efe90c5e46ec349655be7e3e3deacf39c3bc41fab0ba0e",
+  "page_stats": [
+    {
+      "page": 1,
+      "body_characters": 753,
+      "images": 0
+    },
+    {
+      "page": 2,
+      "body_characters": 531,
+      "images": 0
+    },
+    {
+      "page": 3,
+      "body_characters": 727,
+      "images": 0
+    },
+    {
+      "page": 4,
+      "body_characters": 940,
+      "images": 0
+    },
+    {
+      "page": 5,
+      "body_characters": 302,
+      "images": 0
+    },
+    {
+      "page": 6,
+      "body_characters": 76,
+      "images": 1
+    },
+    {
+      "page": 7,
+      "body_characters": 1123,
+      "images": 0
+    },
+    {
+      "page": 8,
+      "body_characters": 1034,
+      "images": 0
+    },
+    {
+      "page": 9,
+      "body_characters": 457,
+      "images": 0
+    },
+    {
+      "page": 10,
+      "body_characters": 34,
+      "images": 1
+    },
+    {
+      "page": 11,
+      "body_characters": 887,
+      "images": 0
+    },
+    {
+      "page": 12,
+      "body_characters": 1013,
+      "images": 0
+    },
+    {
+      "page": 13,
+      "body_characters": 77,
+      "images": 1
+    },
+    {
+      "page": 14,
+      "body_characters": 72,
+      "images": 1
+    },
+    {
+      "page": 15,
+      "body_characters": 36,
+      "images": 1
+    },
+    {
+      "page": 16,
+      "body_characters": 44,
+      "images": 1
+    },
+    {
+      "page": 17,
+      "body_characters": 902,
+      "images": 0
+    },
+    {
+      "page": 18,
+      "body_characters": 70,
+      "images": 0
+    },
+    {
+      "page": 19,
+      "body_characters": 72,
+      "images": 1
+    },
+    {
+      "page": 20,
+      "body_characters": 53,
+      "images": 1
+    },
+    {
+      "page": 21,
+      "body_characters": 58,
+      "images": 1
+    },
+    {
+      "page": 22,
+      "body_characters": 651,
+      "images": 0
+    },
+    {
+      "page": 23,
+      "body_characters": 75,
+      "images": 1
+    },
+    {
+      "page": 24,
+      "body_characters": 48,
+      "images": 1
+    },
+    {
+      "page": 25,
+      "body_characters": 874,
+      "images": 0
+    },
+    {
+      "page": 26,
+      "body_characters": 63,
+      "images": 1
+    },
+    {
+      "page": 27,
+      "body_characters": 50,
+      "images": 1
+    },
+    {
+      "page": 28,
+      "body_characters": 1087,
+      "images": 0
+    },
+    {
+      "page": 29,
+      "body_characters": 411,
+      "images": 0
+    },
+    {
+      "page": 30,
+      "body_characters": 47,
+      "images": 1
+    },
+    {
+      "page": 31,
+      "body_characters": 43,
+      "images": 1
+    },
+    {
+      "page": 32,
+      "body_characters": 1179,
+      "images": 0
+    },
+    {
+      "page": 33,
+      "body_characters": 29,
+      "images": 1
+    },
+    {
+      "page": 34,
+      "body_characters": 680,
+      "images": 0
+    },
+    {
+      "page": 35,
+      "body_characters": 936,
+      "images": 0
+    },
+    {
+      "page": 36,
+      "body_characters": 45,
+      "images": 0
+    },
+    {
+      "page": 37,
+      "body_characters": 80,
+      "images": 1
+    },
+    {
+      "page": 38,
+      "body_characters": 976,
+      "images": 0
+    },
+    {
+      "page": 39,
+      "body_characters": 1002,
+      "images": 0
+    },
+    {
+      "page": 40,
+      "body_characters": 261,
+      "images": 0
+    },
+    {
+      "page": 41,
+      "body_characters": 61,
+      "images": 1
+    },
+    {
+      "page": 42,
+      "body_characters": 77,
+      "images": 1
+    },
+    {
+      "page": 43,
+      "body_characters": 543,
+      "images": 0
+    },
+    {
+      "page": 44,
+      "body_characters": 778,
+      "images": 0
+    },
+    {
+      "page": 45,
+      "body_characters": 1043,
+      "images": 0
+    },
+    {
+      "page": 46,
+      "body_characters": 140,
+      "images": 0
+    },
+    {
+      "page": 47,
+      "body_characters": 735,
+      "images": 0
+    },
+    {
+      "page": 48,
+      "body_characters": 977,
+      "images": 0
+    },
+    {
+      "page": 49,
+      "body_characters": 792,
+      "images": 0
+    },
+    {
+      "page": 50,
+      "body_characters": 1057,
+      "images": 0
+    },
+    {
+      "page": 51,
+      "body_characters": 1102,
+      "images": 0
+    },
+    {
+      "page": 52,
+      "body_characters": 733,
+      "images": 0
+    },
+    {
+      "page": 53,
+      "body_characters": 140,
+      "images": 1
+    },
+    {
+      "page": 54,
+      "body_characters": 85,
+      "images": 1
+    },
+    {
+      "page": 55,
+      "body_characters": 120,
+      "images": 1
+    },
+    {
+      "page": 56,
+      "body_characters": 97,
+      "images": 1
+    },
+    {
+      "page": 57,
+      "body_characters": 125,
+      "images": 1
+    },
+    {
+      "page": 58,
+      "body_characters": 81,
+      "images": 1
+    },
+    {
+      "page": 59,
+      "body_characters": 95,
+      "images": 1
+    },
+    {
+      "page": 60,
+      "body_characters": 1019,
+      "images": 0
+    },
+    {
+      "page": 61,
+      "body_characters": 1399,
+      "images": 0
+    },
+    {
+      "page": 62,
+      "body_characters": 778,
+      "images": 0
+    },
+    {
+      "page": 63,
+      "body_characters": 120,
+      "images": 0
+    },
+    {
+      "page": 64,
+      "body_characters": 761,
+      "images": 0
+    },
+    {
+      "page": 65,
+      "body_characters": 1174,
+      "images": 0
+    },
+    {
+      "page": 66,
+      "body_characters": 867,
+      "images": 0
+    },
+    {
+      "page": 67,
+      "body_characters": 849,
+      "images": 0
+    },
+    {
+      "page": 68,
+      "body_characters": 88,
+      "images": 1
+    },
+    {
+      "page": 69,
+      "body_characters": 78,
+      "images": 1
+    },
+    {
+      "page": 70,
+      "body_characters": 91,
+      "images": 1
+    },
+    {
+      "page": 71,
+      "body_characters": 92,
+      "images": 1
+    },
+    {
+      "page": 72,
+      "body_characters": 80,
+      "images": 1
+    },
+    {
+      "page": 73,
+      "body_characters": 81,
+      "images": 1
+    },
+    {
+      "page": 74,
+      "body_characters": 1024,
+      "images": 0
+    },
+    {
+      "page": 75,
+      "body_characters": 1269,
+      "images": 0
+    },
+    {
+      "page": 76,
+      "body_characters": 1260,
+      "images": 0
+    },
+    {
+      "page": 77,
+      "body_characters": 276,
+      "images": 0
+    },
+    {
+      "page": 78,
+      "body_characters": 75,
+      "images": 1
+    },
+    {
+      "page": 79,
+      "body_characters": 91,
+      "images": 1
+    },
+    {
+      "page": 80,
+      "body_characters": 33,
+      "images": 1
+    },
+    {
+      "page": 81,
+      "body_characters": 29,
+      "images": 1
+    },
+    {
+      "page": 82,
+      "body_characters": 36,
+      "images": 1
+    },
+    {
+      "page": 83,
+      "body_characters": 33,
+      "images": 1
+    },
+    {
+      "page": 84,
+      "body_characters": 34,
+      "images": 1
+    },
+    {
+      "page": 85,
+      "body_characters": 28,
+      "images": 1
+    },
+    {
+      "page": 86,
+      "body_characters": 31,
+      "images": 1
+    },
+    {
+      "page": 87,
+      "body_characters": 29,
+      "images": 1
+    },
+    {
+      "page": 88,
+      "body_characters": 1297,
+      "images": 0
+    },
+    {
+      "page": 89,
+      "body_characters": 1355,
+      "images": 0
+    },
+    {
+      "page": 90,
+      "body_characters": 774,
+      "images": 0
+    },
+    {
+      "page": 91,
+      "body_characters": 77,
+      "images": 1
+    },
+    {
+      "page": 92,
+      "body_characters": 58,
+      "images": 1
+    },
+    {
+      "page": 93,
+      "body_characters": 72,
+      "images": 1
+    },
+    {
+      "page": 94,
+      "body_characters": 31,
+      "images": 1
+    },
+    {
+      "page": 95,
+      "body_characters": 34,
+      "images": 1
+    },
+    {
+      "page": 96,
+      "body_characters": 30,
+      "images": 1
+    },
+    {
+      "page": 97,
+      "body_characters": 34,
+      "images": 1
+    },
+    {
+      "page": 98,
+      "body_characters": 1079,
+      "images": 0
+    },
+    {
+      "page": 99,
+      "body_characters": 327,
+      "images": 0
+    },
+    {
+      "page": 100,
+      "body_characters": 76,
+      "images": 1
+    },
+    {
+      "page": 101,
+      "body_characters": 81,
+      "images": 1
+    },
+    {
+      "page": 102,
+      "body_characters": 1124,
+      "images": 0
+    },
+    {
+      "page": 103,
+      "body_characters": 419,
+      "images": 0
+    },
+    {
+      "page": 104,
+      "body_characters": 75,
+      "images": 1
+    }
+  ],
+  "visual_review": "passed: seven changed pages rendered and reviewed; complete chart axes visible"
+}

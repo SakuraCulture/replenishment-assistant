@@ -1,0 +1,6 @@
+{
+  "synthetic": true,
+  "note": "An explicit directory handle tied to QApplication destruction models an application-owned resource; it does not prove the original native dialog held this exact handle.",
+  "before_destroy": "rename_denied",
+  "after_destroy": "rename_succeeded"
+}

@@ -1,0 +1,16 @@
+{
+  "phase": "COPYING",
+  "copied_files": 31,
+  "copied_bytes": 196053077,
+  "stopped_owned_pid": 33384,
+  "source_renamed": false,
+  "location_committed": false,
+  "formal_orders": 2,
+  "pending_orders": 18,
+  "both_quick_check": "ok",
+  "partial_copy_removed": false,
+  "deletion_authorized_by_user": true,
+  "automatic_review": "rejected: blocked by policy; retained exact incomplete QA copy; not included in delivery",
+  "fix": "Automatic application paths use explicit LOCALAPPDATA resolver instead of Windows KnownFolder; startup before-repository and harness before-action guards; backend refuses any source other than currently enabled dataset. Explicit default-path API preserved.",
+  "business_limit": "No directory replacement, pointer change, real migration or deletion occurred; ordinary startup metadata/log writes were not byte-compared with a pre-launch snapshot."
+}

@@ -1,0 +1,54 @@
+{
+  "original_first_failure": {
+    "status": "NOT_FULLY_RECOVERED",
+    "confirmed": "原库2单、准备库18单有效；没有正式替换、完成凭据、替换日志、备份或新目录。",
+    "unknown": "16:11最初触发的Python异常、回调名称尚未恢复。不能用后续残留进程反推首次异常。",
+    "bound": "旧prepare已完成；中断发生在后续安全退出/清理/交接，或apply完成校验并开始复制/记录替换之前；不能进一步确定。"
+  },
+  "secondary_fatal": {
+    "status": "CONFIRMED",
+    "fatal": "QWidget: Must construct a QApplication before a QWidget",
+    "source_defect": "旧sys.excepthook无Qt存活和退出阶段判断，直到Py_FinalizeEx仍可能用QMessageBox报告销毁异常；旧post-loop也直接弹迁入结果。",
+    "stack_limit": "候选地址扫描，非完整符号化回溯；未认定具体destroyed回调就是首次异常源。"
+  },
+  "current_retry_block": {
+    "status": "REPRODUCED_WITH_FROZEN_REAL_PREPARE_APPLY",
+    "exception": "其他补货助手进程仍在运行，请先正常关闭；资料未替换。进程号：37788",
+    "evidence": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\migration_shutdown_fix_20261112_01\\frozen-real-04\\events.jsonl",
+    "limit": "当前重试失败证据，不是首次16:11事件的因果证明。"
+  },
+  "process_probe": [
+    {
+      "pid": 37788,
+      "name": "补货助手.exe",
+      "main": false,
+      "state": "ABANDONED_CHILD",
+      "created": "2026-11-12T08:11:01.2118960Z",
+      "role": "abandoned_child",
+      "probe": {
+        "state": "ABANDONED_CHILD",
+        "error": 5
+      }
+    }
+  ],
+  "dump": {
+    "sha256": "0a6ba552a079d8bbc9ea5bf269d201af51709aa636b402533056e624bb8f2fa0",
+    "size": 6070639,
+    "flags": "0x200121",
+    "streams": 14
+  },
+  "real_data": [
+    {
+      "root": "C:\\Users\\lenovo\\AppData\\Local\\YoutuanTools\\补货助手\\settings",
+      "normal_orders": 2,
+      "quick_check": "ok",
+      "database_sha256": "0bce73f4e3d3f215d040ea041e7f8a0823f1d39e0fce0cf1f3f3a716471bb927"
+    },
+    {
+      "root": "C:\\Users\\lenovo\\AppData\\Local\\YoutuanTools\\补货助手\\.settings.order-import-96433d579a3b4852a41a1b4c7c671a2a",
+      "normal_orders": 18,
+      "quick_check": "ok",
+      "database_sha256": "d3a666948b4e0e0897e4e48d1325415761b671dfa83103d5805bc87ffafe9c59"
+    }
+  ]
+}
