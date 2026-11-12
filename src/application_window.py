@@ -160,7 +160,10 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if not confirm_focus(self,data,self.new_focus):return
         try:self.focus_repository.save(data)
         except Exception as exc:self.failed('关注清单未保存，原清单保留：'+str(exc));return
-        self.new_focus=copy.deepcopy(data);self.refresh_focus();self.touch();self.status.setText('新品关注清单已保存；数量不变，本月/往期分组需随正常单重新确认归档。')
+        self.new_focus=copy.deepcopy(data);self.refresh_focus();self.invalidate(list(self.states));self.touch();self.status.setText('新品关注清单已保存；已有结果需重新计算，符合资格的本月新品将自动按归属仓首铺量参与预算。历史签发不变。')
+
+    def selected_settings(self,store):
+        return new_products.calculation_settings(super().selected_settings(store),self.new_focus,self.job_day)
 
     @staticmethod
     def fill_orders(table,records):
@@ -394,7 +397,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             self.failed('本店新品铺设已关闭，请先点击“调整补货策略”开启。');return
         if self.results[s].get('preissue') or s in self.preissue_drafts:
             self.failed('本店已进入最终清单调整，请在“编辑本店最终清单”继续；如需重新自动分配新品预算，请明确重新计算并复核已有调整。');return
-        current=self.results[s];base=self.new_bases.get(s,current)
+        current=self.results[s];base=self.new_bases.get(s)
+        if base is None:base=new_products.original(current)
         if base.get('new_products'):
             self.failed('当前草稿缺少新品原计算快照，请重新计算该店后选择。');return
         dialog=NewProductDialog(self,base,current,self.new_focus)

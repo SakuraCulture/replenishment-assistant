@@ -8,11 +8,17 @@ version=json.loads((root/'src/version.json').read_text(encoding='utf-8'))
 build=json.loads((dest/'_internal/build_info.json').read_text(encoding='utf-8-sig'))
 assert build['version']==version['version']
 shutil.copy2(root/'使用说明.txt',dest/'使用说明.txt')
-if version['version'] in {'0.51.6','0.51.7'}:
+if version['version'] in {'0.51.6','0.51.7','0.51.8'}:
     (dest/'docs').mkdir(exist_ok=True)
     shutil.copy2(root/'docs/0.51.6经营分析参数迁移修复.md',dest/'docs/0.51.6经营分析参数迁移修复.md')
-if version['version']=='0.51.7':
+if version['version'] in {'0.51.7','0.51.8'}:
     shutil.copy2(root/'docs/0.51.7大仓缺货率导出.md',dest/'docs/0.51.7大仓缺货率导出.md')
+if version['version']=='0.51.8':
+    shutil.copy2(root/'docs/0.51.8付款后回传更正与原批重分配.md',dest/'docs/0.51.8付款后回传更正与原批重分配.md')
+    shutil.copy2(root/'docs/0.51.8本月新品自动首铺.md',dest/'docs/0.51.8本月新品自动首铺.md')
+    image_folder=dest/'docs/manual/images';image_folder.mkdir(parents=True,exist_ok=True)
+    for name in ('paid-return-results-0518.png','paid-return-preview-0518.png'):
+        shutil.copy2(root/'docs/manual/images'/name,image_folder/name)
 if version['version'] in {'0.50.0','0.50.1','0.50.2','0.50.3'}:
     (dest/'docs').mkdir(exist_ok=True)
     shutil.copy2(root/'docs/0.50.0订单删除与任务失效.md',dest/'docs/0.50.0订单删除与任务失效.md')

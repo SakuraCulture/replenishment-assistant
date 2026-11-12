@@ -73,6 +73,8 @@ def prepare(snapshot, arguments, progress=lambda _: None, cancel=None):
             if chosen: record['preset']['config'] = pm.patch(record['preset']['config'], chosen)
             records[s] = record
             jobs[s] = record_settings(record, frozen['profile'], loaded.get('catalogs'), admission.snapshot(frozen['dbpath'], s))
+            from new_products import calculation_settings
+            jobs[s] = calculation_settings(jobs[s],frozen.get('new_focus'),frozen['day'])
         except ValueError as exc:
             issues.append({'store': s, 'message': str(exc)})
     files = (loaded.get('intake') or {}).get('files', [])

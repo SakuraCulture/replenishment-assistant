@@ -79,7 +79,11 @@ class ResultsPage(QWidget):
         self.selection.setText(f'已勾选 {len(self.chosen)} 单，可导出 {m} 份；已导出、锁单、付款和收货不会移除已有结果。')
         for b in (self.day,self.end,self.refresh_btn,self.scope_btn,self.folder_btn,self.prepare_btn,self.tools_btn,self.batch_btn,self.all_batches_btn):b.setEnabled(not busy and not self.closing)
         self.day.setEnabled(not busy and not self.batch_id);self.end.setEnabled(not busy and not self.batch_id)
-        self.continue_btn.setEnabled(ready and not busy and bool(self.batch_id) and bool(self.data.get('batch_pending')));self.reallocate_btn.setEnabled(ready and not busy and bool(self.batch_id) and bool(self.chosen))
+        correction_rows=[r for r in self.records if service.key(r['head']) in self.chosen and r.get('batch_id') and (r.get('gid') or r.get('original_zero'))]
+        self.continue_btn.setEnabled(ready and not busy and bool(self.batch_id) and bool(self.data.get('batch_pending')))
+        self.reallocate_btn.setText(f'按原批重新分配勾选单（{len(correction_rows)}单）')
+        self.reallocate_btn.setEnabled(ready and not busy and bool(correction_rows))
+        self.reallocate_btn.setToolTip('沿用所选订单的原批库存，只替换所选未锁、未收货订单；旧付款依据因新回传失效时，保留旧付款并在分配后重新核对。多个原批分别处理。')
         self.continue_btn.setToolTip('先选择分配批次；继续使用其冻结库存和原顺序')
         if not n:self.all_btn.setToolTip('当前筛选没有有效生成单；请准备批次或核对待处理原因')
         self.stop_btn.setEnabled(self.worker is not None and not self.worker.cancel.is_set());self.retry_btn.setEnabled(bool(self.remaining) and not busy and not self.closing)
@@ -105,7 +109,7 @@ class ResultsPage(QWidget):
         c=data['counts']
         if changed:self.render()
         if self.last_plan and new-old:self.status.setText(f'新增 {len(new-old)} 份可导出结果；不会加入已开始的导出，可再次导出。')
-        elif self.last_plan is None:self.status.setText('查询完成；业务进度见各单状态。可重复导出有效结果，不重新分配。' if c['ready'] else '当前范围没有可导出结果：尚未回传请先确认回传；已回传请准备分配批次，或选择原批继续。')
+        elif self.last_plan is None:self.status.setText('查询完成；业务进度见各单状态。可重复导出有效结果，不重新分配。' if c['ready'] else '旧分配已失效，不能直接导出；请勾选要更正的订单，点击“按原批重新分配勾选单”。旧付款保留，新分配后需重新核对付款。' if any((r.get('gid') or r.get('original_zero')) and r['state']=='stale' for r in self.records) else '当前范围没有可导出结果：尚未回传请先确认回传；已回传请准备分配批次，或选择原批继续。')
         if self.payment_notice:self.status.setText(self.payment_notice)
         self.progress.hide();self.controls()
     def day_changed(self,*_):
@@ -229,21 +233,45 @@ class ResultsPage(QWidget):
     def continue_batch(self):self.open_existing(False)
     def reallocate(self):self.open_existing(True)
     def open_existing(self,correction):
-        if not self.batch_id or self.worker:return
+        if self.worker or self.reviewing:return
+        if not correction and not self.batch_id:return
         import jst_ui
+        self.reviewing=True;self.controls()
         try:
             import sqlite3
             from contextlib import closing
-            with closing(sqlite3.connect(self.path)) as db:c=batches.context(db,self.batch_id,load_stock=False)
+            bid=self.batch_id
+            if correction:
+                selected=[r for r in self.records if service.key(r['head']) in self.chosen]
+                if not selected:QMessageBox.information(self,'请先勾选订单','勾选需要更正的门店或仓单，再按原批重新分配。');return
+                missing=[r for r in selected if not r.get('batch_id') or not (r.get('gid') or r.get('original_zero'))]
+                if missing:
+                    QMessageBox.information(self,'所选订单需分别处理','以下订单没有可替换的原批生成单，请先取消这些勾选；未生成的订单使用“准备新分配批次”。\n'+'\n'.join(r['head']['number']+'：'+r['reason'] for r in missing));return
+                groups={}
+                for r in selected:groups.setdefault(r['batch_id'],[]).append(r)
+                if bid is None:
+                    ids=list(groups)
+                    if len(ids)>1:
+                        with closing(sqlite3.connect(self.path)) as db:contexts=[batches.context(db,i,load_stock=False) for i in ids]
+                        titles=[c['label']+f" · 所选{len(groups[c['batch_id']])}单 · "+c['batch_id'][:8] for c in contexts]
+                        choice,ok=QInputDialog.getItem(self,'选择本次要更正的原批','所选订单来自多个批次。每次仅更正一个原批，沿用其冻结库存；其他勾选保留。',titles,0,False)
+                        if not ok:return
+                        bid=ids[titles.index(choice)]
+                    else:bid=ids[0]
+            with closing(sqlite3.connect(self.path)) as db:c=batches.context(db,bid,load_stock=False)
             heads=[m['head'] for m in c['members'] if service.key(m['head']) in self.chosen and m['status']=='done'] if correction else [m['head'] for m in c['members'] if m['status'] in ('pending','failed')]
-            if not heads:QMessageBox.information(self,'没有适用任务','本批没有未完成任务，或没有勾选可重新分配的已生成单。已生成单可直接导出。');return
-            jst_ui.generate(self,self.host,heads,self.batch_id,correction);self.refresh()
+            if not heads:QMessageBox.information(self,'没有适用任务','本批没有未完成任务，或没有勾选可重新分配的已生成单；请展开仓单查看准备情况。');return
+            jst_ui.generate(self,self.host,heads,bid,correction)
         except Exception as exc:self.status.setText(str(exc))
+        finally:self.reviewing=False;self.controls();self.refresh()
     def prepare(self):
         if not self.data or self.worker:return
         import jst_ui
-        rows=[r for r in self.visible_records() if (not self.chosen or service.key(r['head']) in self.chosen) and not r['gid'] and not r['locked']]
-        if not rows:QMessageBox.information(self,'没有可加入新批的订单','当前筛选没有待分配单。已生成单可直接导出；需要改量请选择原批重分配。');return
+        rows=[r for r in self.visible_records() if (not self.chosen or service.key(r['head']) in self.chosen) and not r['gid'] and not r.get('original_zero') and not r['locked']]
+        if not rows:
+            selected=[r for r in self.visible_records() if service.key(r['head']) in self.chosen]
+            if selected and all((r.get('gid') or r.get('original_zero')) and r.get('batch_id') for r in selected) and any(r['state']=='stale' for r in selected):self.reallocate();return
+            QMessageBox.information(self,'没有可加入新批的订单','当前筛选没有从未分配的订单。有效生成单可直接导出；回传已变化的旧分配不能直接导出，请勾选后点击“按原批重新分配勾选单”。已锁单或已有收货记录的订单须先核对外部执行事实。');return
         jst_ui.generate(self,self.host,[r['head'] for r in rows]);self.refresh()
     def tools(self):
         if not self.data or self.worker:return

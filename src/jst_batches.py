@@ -114,7 +114,9 @@ def preview_existing(path, batch_id, heads=None, correction=False, progress=lamb
                 and (m['status']=='done' if correction else m['status'] in ('pending','failed'))]
     if not selected: raise ValueError('本批没有可继续的任务；已生成单可直接导出')
     plan=orders.prepare_checked(path, selected, True, correction, progress, cancel, batch=spec)
-    if not plan['payload']['plans']:raise ValueError('所选任务已无要货、已锁定或已有下游资料；请核对后撤销本批未完成任务，不会自动重建')
+    if not plan['payload']['plans']:
+        reasons='；'.join(p['head']['number']+'：'+p['reason'] for p in plan['payload']['skipped'])
+        raise ValueError('所选订单暂不能重新分配：'+reasons if correction else '本批没有可继续生成的订单：'+reasons)
     return plan
 
 

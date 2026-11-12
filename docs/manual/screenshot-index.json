@@ -1,5 +1,5 @@
 {
-  "application": "0.51.7",
+  "application": "0.51.8",
   "edition": "2026-11-12",
   "source": "Historical versioned screenshots plus isolated source Qt acceptance; identity probes simulated, no live platform",
   "legacy_0480_build": {
@@ -331,24 +331,6 @@
       "live_platform_tested": false
     },
     {
-      "path": "images/first-fill-rounded-0514.png",
-      "application": "0.51.4",
-      "source": "qa/daily_views_0514_20261111_01/source-first-fill/首铺数向上对齐.png",
-      "sha256": "d0101599746e7111a2af84358584fe99a183a895a809b95ca31bbaac679b1e22",
-      "synthetic": true,
-      "live_platform": false,
-      "description": "源码Qt：首铺31向上对齐箱规6为36，原值留存，默认不选"
-    },
-    {
-      "path": "images/first-fill-warehouse-0514.png",
-      "application": "0.51.4",
-      "source": "qa/daily_views_0514_20261111_01/source-first-fill/山东单仓.png",
-      "sha256": "cefc7481f333a26bde4c9d05c5be6127227f4dd9aa2110be7f1daf69e8f7b406",
-      "synthetic": true,
-      "live_platform": false,
-      "description": "源码Qt：按实际仓首铺18，未选不增加采购"
-    },
-    {
       "path": "images/catalog-rebind-retired-0515.png",
       "application": "0.51.5",
       "source": "qa/catalog_rebind_0515_20261111_01/source-rebind-01/retired.png",
@@ -395,13 +377,49 @@
       "synthetic": true,
       "live_platform": false,
       "description": "选择切面和商品明细范围；源码Qt隔离演练。"
+    },
+    {
+      "path": "images/paid-return-results-0518.png",
+      "application": "0.51.8",
+      "source": "qa/paid_return_reallocation_0518_20261112_01/native-source-final/01-stale-results.png",
+      "sha256": "04e9105a445a88a42e2d5602a3d808e15e9219ebbaa12920eba4b5fb8696cf1d",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "付款后更正回传与原批重分配；源码Qt隔离演练。"
+    },
+    {
+      "path": "images/paid-return-preview-0518.png",
+      "application": "0.51.8",
+      "source": "qa/paid_return_reallocation_0518_20261112_01/native-source-final/02-correction-preview.png",
+      "sha256": "62f93ac51e9ea1405e1f205fa3be07a93a6702e39ad1cdaad54ef8523d8953ae",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "付款后更正回传与原批重分配；源码Qt隔离演练。"
+    },
+    {
+      "path": "images/monthly-auto-results-0518.png",
+      "application": "0.51.8",
+      "source": "qa/paid_return_reallocation_0518_20261112_01/monthly-native-source-02/01-monthly-auto-results.png",
+      "sha256": "af6bc0fce57b5b5681bb63aec471ecbe33219cf32f07e76e74b93a0578696b95",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "实际工作台计算及新品维护；源码Qt隔离演练。"
+    },
+    {
+      "path": "images/monthly-maintenance-0518.png",
+      "application": "0.51.8",
+      "source": "qa/paid_return_reallocation_0518_20261112_01/monthly-native-source-02/02-monthly-maintenance.png",
+      "sha256": "8f92332589dd7fd46a9e303f62ee3db56b2e8a7d89a261c8412219c3c93b56b1",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "实际工作台计算及新品维护；源码Qt隔离演练。"
     }
   ],
   "live_platform_tested": false,
   "binding_ready_state": "synthetic demonstration only; never queried or confirmed a real purchase",
   "historical_source_commit": "fa3bd028ad5aac3fd3ab8d80f5d4b5480eae3f4e",
-  "source_base_commit": "edf459b79c271d3a43b76f31d874947f1714471a",
-  "source_mode": "mixed historical images and uncommitted 0.51.4 source Qt images",
+  "source_base_commit": "459e5f530576a5cf1623cc8ded76cb051086211d",
+  "source_mode": "source Qt isolated rehearsal; frozen EXE evidence recorded separately in releases/0.51.8/rc1",
   "archived_images": [
     {
       "name": "deletion-remaining-0500.png",
@@ -422,6 +440,26 @@
       "synthetic": true,
       "live_platform_tested": false,
       "archive_reason": "历史图片保留；当前教程已使用后续版本截图，不再引用本图。"
+    },
+    {
+      "path": "images/first-fill-rounded-0514.png",
+      "application": "0.51.4",
+      "source": "qa/daily_views_0514_20261111_01/source-first-fill/首铺数向上对齐.png",
+      "sha256": "d0101599746e7111a2af84358584fe99a183a895a809b95ca31bbaac679b1e22",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "源码Qt：首铺31向上对齐箱规6为36，原值留存，默认不选",
+      "archive_reason": "0.51.8已按用户要求改为本月新品自动带量；旧手工选择示意保留历史，不再作为当前用法。"
+    },
+    {
+      "path": "images/first-fill-warehouse-0514.png",
+      "application": "0.51.4",
+      "source": "qa/daily_views_0514_20261111_01/source-first-fill/山东单仓.png",
+      "sha256": "cefc7481f333a26bde4c9d05c5be6127227f4dd9aa2110be7f1daf69e8f7b406",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "源码Qt：按实际仓首铺18，未选不增加采购",
+      "archive_reason": "0.51.8已按用户要求改为本月新品自动带量；旧手工选择示意保留历史，不再作为当前用法。"
     }
   ]
 }

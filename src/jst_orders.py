@@ -183,6 +183,34 @@ def return_basis(db, head):
     return basis, rows, doc['saved'] if doc else legacy['saved'], copy.deepcopy(head['products']) if doc is None else None
 
 
+def previous_payment_for_return(db, head, payment):
+    """Only a confirmed payment invalidated by a newer return can be corrected.
+
+    Keep the payment fact; its exact token is frozen and checked again at commit.
+    Pending/legacy documents and receipt facts do not acquire this permission.
+    """
+    if not payment:return None
+    p=payment['payload'];basis=p.get('basis',{});dependencies=basis.get('dependencies',{})
+    if (p.get('schema')!=lc.SCHEMA or p.get('pending') or not basis.get('ready')
+            or basis.get('signed_digest')!=head['digest']
+            or set(dependencies)!={'return'} or not dependencies['return']):return None
+    current_return=lc.current(db,head,'return')
+    if not current_return or dependencies['return']==lc.rules.basis_token(current_return):return None
+    if not lc.upstream(db,{**head,'products':{}},'payment')['ready']:return None
+    return lc.rules.basis_token(payment)
+
+
+def allocation_gate(db, head, old, correction=False):
+    """Return a blocker and, for a return correction, the old payment token."""
+    if locked(db,head):return '已锁单',None
+    if lc.current(db,head,'receipt'):return '已有收货记录，请先核对收货事实，不能直接重新分配',None
+    payment=lc.current(db,head,'payment')
+    previous=previous_payment_for_return(db,head,payment) if correction else None
+    if payment and not previous:return '已有付款记录，当前回传未形成可更正的旧付款依据，请先核对付款',None
+    if old and not correction:return '已生成，原样导出或选择重新分配',None
+    return None,previous
+
+
 def reservations(db, wh, included, exclude=()):
     values = {}
     for gid, sku, qty in db.execute('SELECT a.gid,r.sku,r.quantity FROM jst_active a JOIN jst_reservations r ON a.gid=r.gid WHERE a.warehouse=? ORDER BY a.rowid,r.rowid', (wh,)):
@@ -209,11 +237,12 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
             checkpoint(cancel); h = lc.full_head(path, supplied); key = (h['oid'], h['warehouse'])
             if key in seen:
                 raise ValueError('重复选择同一店仓订单')
-            seen.add(key); lock = locked(db, h); old = active(db, h)
-            if lock or lc.current(db,h,'payment') or lc.current(db,h,'receipt') or old and not correction:
-                skipped.append({'head': supplied, 'reason': '已锁单' if lock else '已有付款／收货' if lc.current(db,h,'payment') or lc.current(db,h,'receipt') else '已生成，原样导出或选择重新分配'}); continue
+            seen.add(key); old = active(db, h)
+            blocker,previous_payment=allocation_gate(db,h,old,correction)
+            if blocker:
+                skipped.append({'head': supplied, 'reason': blocker}); continue
             basis, rows, saved, signed_products = return_basis(db, h)
-            if not any(Decimal(r['base_quantity']) > 0 for r in rows):
+            if not any(Decimal(r['base_quantity']) > 0 for r in rows) and not (correction and old):
                 skipped.append({'head': supplied, 'reason': '无要货，无需生成'}); continue
             wh = h['warehouse']
             if batch and old and jst_batches.generation_batch(db,old)!=batch['batch_id']:
@@ -224,7 +253,7 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                 raise ValueError(wh + '尚未建立库存基准，请导入或采用默认仓资料')
             states[wh] = batch['states'][wh] if batch else state(db, wh)
             compact = {k:v for k,v in h.items() if k != 'products'}
-            orders.append({'head': compact, 'basis': basis, 'rows': rows, 'saved': saved, 'old': old, 'signed_products':signed_products})
+            orders.append({'head': compact, 'basis': basis, 'rows': rows, 'saved': saved, 'old': old, 'signed_products':signed_products,'previous_payment':previous_payment})
         if correction and not batch:
             # A correction changes subsequent balances; include ALL unlocked active orders in each affected warehouse.
             chosen = {o['old'] for o in orders if o['old']}
@@ -274,6 +303,7 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                     if not member or member['status']=='cancelled':raise wr.Conflict('订单不在本批有效范围')
                     value['position']=member['position']
             if o['signed_products'] is not None:value['signed_products']=o['signed_products']
+            if o['previous_payment'] is not None:value['previous_payment']=o['previous_payment']
             if evidence is not None:value['admission']=evidence
             plans.append(value); progress(RowProgress(f'预览分配 {i+1}/{len(orders)}：'+o['head']['number'],i+1,len(orders)))
     result = {'runid': runid, 'states': states, 'plans': plans, 'skipped': skipped, 'correction': correction, 'reserved': reserved}
@@ -293,8 +323,10 @@ def validate_plan(db, p, catalog_revisions=None):
         latest=catalog_revisions if catalog_revisions is not None else {w:c['revision'] for w,c in warehouse_catalog.Repository(folder).catalogs().items()}
         if latest!=p['admission']['default_catalog_revisions']:raise wr.Conflict('仓资料标签依据已更新，请重新分配：'+h['number'])
     purchases.validate_head(db, h)
-    if locked(db,h) or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):
-        raise wr.Conflict('订单已锁或已有付款／收货，请重新核对：'+h['number'])
+    blocker,previous_payment=allocation_gate(db,h,p['old'],True)
+    if blocker:raise wr.Conflict(blocker+'：'+h['number'])
+    if previous_payment!=p.get('previous_payment'):
+        raise wr.Conflict('付款依据已变化，请重新预览分配：'+h['number'])
     if active(db,h) != p['old']:
         raise wr.Conflict('生成记录已变化：'+h['number'])
     # Modern returns carry all effective rows. Legacy needs the frozen upstream products.

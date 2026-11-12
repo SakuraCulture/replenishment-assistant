@@ -143,7 +143,8 @@ def explanation(d):
         return f"签发前调整：自动{fmt(adjustment['automatic_quantity'])} → 最终{fmt(adjustment['quantity'])}；{adjustment['reason']}"
     if d.get('_budget_overrun'):return d['_budget_reason']+f"；本店超预算{d['_budget_overrun']['overspend']:.2f}元（上限5%）"
     if d.get('_new_requested',0)>0:
-        return '新品首铺 · 人工选择 '+fmt(d['_new_requested'])+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))+('；保留必采最低持有量' if d.get('_mandatory_holding',{}).get('required_quantity',0)>d['_new_requested'] else '')
+        source=d.get('_monthly_first_fill')
+        return ('本月新品自动首铺 '+fmt(d['_new_requested'])+'；'+source['source'] if source else '新品首铺 · 人工选择 '+fmt(d['_new_requested']))+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))+('；保留必采最低持有量' if d.get('_mandatory_holding',{}).get('required_quantity',0)>d['_new_requested'] else '')
     if d.get('_budget_gap',0)>0:
         return ('必卖：' if d.get('_must_sell') else '普通：')+d.get('_budget_reason','')+('；必采最低持有仍有缺口' if d.get('_holding_gap') and d.get('_mandatory_holding') else '')
     if d.get('_mandatory_holding') and (d['_mandatory_holding'].get('state')!='已核验' or d['_mandatory_holding'].get('added_quantity',0)>0):

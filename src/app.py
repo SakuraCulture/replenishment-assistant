@@ -48,6 +48,12 @@ def main():
     # startup; normal launches always attempt connection after the first paint.
     from browser_startup_ui import start_application_connections
     start_application_connections(win, sys.argv)
+    if '--monthly-first-fill-smoke' in sys.argv:
+        from monthly_first_fill_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--monthly-first-fill-smoke')+1:])
+    if '--paid-return-reallocation-smoke' in sys.argv:
+        from paid_return_reallocation_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--paid-return-reallocation-smoke')+1:])
     if '--warehouse-stockout-export-smoke' in sys.argv:
         from warehouse_stockout_export_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--warehouse-stockout-export-smoke')+1:])

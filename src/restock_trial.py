@@ -15,14 +15,22 @@ def prepare(loaded, jobs, current, bases, drafts, configs, profile, day, progres
         auto=preissue.original(old);recomputed=before['extreme_restore']!=after['extreme_restore']
         if recomputed:
             base=batch_service.calculate_store(loaded,store,settings,profile,progress,cancel)
+            base=new_products.original(base)
         else:
-            if auto.get('new_products') and store not in bases:raise ValueError('缺少新品原计算快照，请先重新计算：'+old['store_name'])
-            base=copy.deepcopy(bases[store] if auto.get('new_products') else auto)
+            if auto.get('new_products') and not auto['new_products'].get('automatic') and store not in bases:raise ValueError('缺少新品原计算快照，请先重新计算：'+old['store_name'])
+            base=copy.deepcopy(bases[store]) if store in bases and auto.get('new_products') else new_products.original(auto)
+            if base is auto:base=copy.deepcopy(base)
             if policy.KEY in cfg:base['config'][policy.KEY]=copy.deepcopy(cfg[policy.KEY])
             else:base['config'].pop(policy.KEY,None)
             base['effective_settings']=settings
         selections=auto.get('new_products',{}).get('selection',{}) if after['new_stocking'] else {}
-        automatic=new_products.apply(base,selections,cancel,progress)
+        if after['new_stocking'] and not (auto.get('new_products') and not auto['new_products'].get('automatic')):
+            automatic=copy.deepcopy(base);new_products.seed_monthly(automatic,settings.get('monthly_first_fill'),cancel,budget=settings.get('budget'))
+            if automatic.get('budget',{}).get('enabled'):
+                import allocation
+                automatic['budget']=allocation.apply(automatic['rows'],automatic['budget']['limit'],lambda:checkpoint(cancel))
+            automatic['summary']=sem.summarize(automatic['rows'])
+        else:automatic=new_products.apply(base,selections,cancel,progress)
         overlay=drafts.get(store) or old.get('preissue',{})
         edits=copy.deepcopy(overlay.get('edits',{}));rows=preissue.identity(automatic)
         removed=[]

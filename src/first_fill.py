@@ -3,10 +3,11 @@ from decimal import Decimal,DecimalException,ROUND_CEILING
 import result_semantics as sem
 
 FIELD='新店新品首铺数'
+FIELDS=(FIELD,'新店新品首铺数量')
 
 def basis(catalog,warehouse,sku):
     row=catalog['items'].get(sku) or {}
-    return {'field':FIELD,'known':FIELD in row,'raw':row.get(FIELD),'issue':row.get('_first_fill_issue'),'warehouse':warehouse,
+    return {'field':FIELD,'source_field':row.get('_first_fill_source_field',FIELD if FIELD in row else None),'known':FIELD in row,'raw':row.get(FIELD),'issue':row.get('_first_fill_issue'),'warehouse':warehouse,
             'catalog_revision':catalog['revision'],'source_sha256':catalog.get('source_sha256'),
             'sheet':catalog.get('sheet'),'row':row.get('_row')}
 
@@ -32,7 +33,7 @@ def suggestion(row):
         quantity=float(aligned)
         if not sem.numeric(quantity) or quantity>1e9 or Decimal(str(quantity))!=aligned:return minimum('首铺数对齐箱规后超出可维护数量范围')
     except DecimalException:return minimum('首铺数无法安全对齐箱规')
-    note=warehouse+'商品资料“'+FIELD+'”='+sem.fmt(value,8)+'（库存单位）'
+    note=warehouse+'商品资料“'+(info.get('source_field') or FIELD)+'”='+sem.fmt(value,8)+'（库存单位）'
     if quantity!=value:note+='；按最小出库单位'+sem.fmt(step,8)+'向上对齐为'+sem.fmt(quantity,8)
     return quantity,note
 

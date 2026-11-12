@@ -34,7 +34,7 @@ def parameter_settings(result, config, preset, admission_snapshot):
 
 def recalculation_impact(results, codes):
     return {
-        'new_products': [s for s in codes if results.get(s, {}).get('new_products')],
+        'new_products': [s for s in codes if results.get(s, {}).get('new_products') and not results[s]['new_products'].get('automatic')],
         'manual': {s: results[s] for s in codes if results.get(s, {}).get('preissue')},
     }
 

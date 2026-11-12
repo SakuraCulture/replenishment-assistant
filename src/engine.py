@@ -144,7 +144,7 @@ def preview(loaded,store):
         rows.append(x)
     return rows
 
-def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabled:bool,budget=None,profile=None,progress=lambda s:None,cancel=None) -> CalculationResult:
+def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabled:bool,budget=None,profile=None,progress=lambda s:None,cancel=None,*,monthly_first_fill=None) -> CalculationResult:
     from restock_policy import values
     extreme_restore=values(loaded['config'])['extreme_restore']
     rows=[copy.deepcopy(x) for x in loaded['normalized'] if x[0]['B']==store]
@@ -186,9 +186,9 @@ def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabl
     report={'rows':result,'baseline':baseline,'store':store,'store_name':loaded['stores'][store],
         'warehouses':warehouses,'enabled':enabled,'config':loaded['config'],'sources':loaded['hashes'],
         'created':datetime.now().isoformat(timespec='seconds'),'checks':checks,'summary':summarize(result)}
-    return apply_budget(report,budget,profile,progress,cancel)
+    return apply_budget(report,budget,profile,progress,cancel,monthly_first_fill=monthly_first_fill)
 
-def apply_budget(result,budget=None,profile=None,progress=lambda s:None,cancel=None):
+def apply_budget(result,budget=None,profile=None,progress=lambda s:None,cancel=None,*,monthly_first_fill=None):
     import priority_list
     if profile is not None:priority_list.validate_profile(profile)
     if budget is not None and profile is None:raise ValueError('启用预算前请先导入有效必卖清单')
@@ -202,6 +202,9 @@ def apply_budget(result,budget=None,profile=None,progress=lambda s:None,cancel=N
         d['_candidate_qty']=0 if exclusion_reason(d) else quantity(d)
         d['_candidate_amount']=0 if exclusion_reason(d) else amount_value(d)
         mandatory_holding.apply(d,minimum)
+    if monthly_first_fill is not None:
+        from new_products import seed_monthly
+        seed_monthly(result,monthly_first_fill,cancel,budget=budget)
     progress('正在按门店预算分配必卖与其他商品…' if budget is not None else '正在标记必卖清单…')
     result['budget']=allocation.apply(result['rows'],budget,lambda:checkpoint(cancel)) if budget is not None else {'enabled':False}
     by_code={d['E']:d for d in result['rows']}

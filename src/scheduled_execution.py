@@ -28,6 +28,7 @@ def freeze(folder, schedule, day):
     if mapping['conflict']:raise ValueError('全局分类映射待核对，请在参数设置保存后再试')
     priority=priority_list.Repository(folder);master=warehouse_catalog.Repository(folder)
     defaults=parameter_data['stores'];routes=master.routes();profile=priority.profile();budgets=priority.budgets()
+    monthly_focus=new_product_focus.Repository(folder).load()
     # Only route names are needed before fresh catalogs arrive. Do not parse/copy
     # both full previous masters just to validate membership in the warehouse list.
     from app_defaults import WAREHOUSES
@@ -40,7 +41,9 @@ def freeze(folder, schedule, day):
                 record=spi.base();record['ui'].update(routes.get(s,{}))
                 if s in budgets:record['ui'].update(mode=2 if budgets[s]['enabled'] else 1,amount=str(budgets[s]['amount']))
             record=plan_record(plan,record,mapping,s);records[s]=record
-            try:settings[s]=record_settings(record,profile,catalogs,admission.snapshot(path,s,db=db,day=day))
+            try:
+                from new_products import calculation_settings
+                settings[s]=calculation_settings(record_settings(record,profile,catalogs,admission.snapshot(path,s,db=db,day=day)),monthly_focus,day)
             except ValueError as exc:raise ValueError(item['name']+'（'+s+'）：'+str(exc)) from exc
             for w in (record['ui'].get('primary'),record['ui'].get('secondary')):
                 if w and w not in warehouses:warehouses.append(w)
@@ -48,7 +51,7 @@ def freeze(folder, schedule, day):
     from version_info import MODEL_VERSION, VERSION
     from deletion_barrier import read_epochs
     generations=read_epochs(path,day,records)
-    return {'deletion_generations':generations,'plan':plan,'records':records,'jobs':settings,'profile':profile,'new_focus':new_product_focus.Repository(folder).load(),'mapping':mapping,
+    return {'deletion_generations':generations,'plan':plan,'records':records,'jobs':settings,'profile':profile,'new_focus':monthly_focus,'mapping':mapping,
             'warehouses':warehouses,'catalog_digests':{w:master.current_digest(w) for w in warehouses},
             'day':day,'model_version':MODEL_VERSION,'app_version':VERSION,'workers':schedule['workers']}
 
@@ -57,7 +60,9 @@ def check_signature(frozen):
     # Dates are occurrence-specific. Catalog files are deliberately refreshed on each run.
     value=copy.deepcopy(frozen)
     for k in ('day','catalog_digests','app_version'):value.pop(k,None)
-    for job in value['jobs'].values():job['admission'].pop('day',None)
+    for job in value['jobs'].values():
+        job['admission'].pop('day',None)
+        if job.get('monthly_first_fill'):job['monthly_first_fill'].pop('day',None)
     return sr.signature(value)
 
 

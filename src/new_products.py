@@ -4,6 +4,73 @@ from decimal import Decimal
 import allocation
 import result_semantics as sem
 
+AUTO_RULE='monthly-first-fill-1'
+FIRST_FILL_KEYS=('_new_requested','_candidate_qty','_candidate_amount','_execution_qty','_execution_amount','_new_stockout_basis')
+
+
+def calculation_settings(settings, new_focus, day):
+    out=copy.deepcopy(settings)
+    if new_focus is not None:out['monthly_first_fill']={'day':day,'focus':copy.deepcopy(new_focus)}
+    return out
+
+
+def seed_monthly(result, context, cancel=None,*,budget=None):
+    """Seed an owned fresh calculation before its single budget allocation.
+
+    The compact per-row undo evidence avoids retaining a second complete store
+    result just to allow a later manual change. It never updates saved results.
+    """
+    if not context or context.get('focus') is None:return
+    from datetime import date
+    import new_product_focus as focus
+    import first_fill
+    from engine import checkpoint
+    from restock_policy import result_values
+    profile=focus.validate(context['focus']);day=date.fromisoformat(context['day']).isoformat()
+    audit={'rule':AUTO_RULE,'day':day,'month':profile['month'],'focus_revision':profile['revision'],'selected':0,'budget_input':budget}
+    result['monthly_first_fill']=audit
+    if profile['month']!=day[:7]:audit['state']='关注月份与业务日期不同，未自动首铺';return
+    if not result_values(result)['new_stocking']:audit['state']='本店新品铺设已关闭';return
+    focused=focus.members(profile);selected={};skipped={}
+    for d in result['rows']:
+        checkpoint(cancel)
+        if d['E'] not in focused:continue
+        reason=blocked_reason(d)
+        if reason:skipped[d['E']]=reason;continue
+        q,note=first_fill.suggestion(d)
+        reason=first_fill.quantity_issue(d,q)
+        if reason:skipped[d['E']]=reason;continue
+        original={k:{'present':k in d,'value':copy.deepcopy(d.get(k))} for k in FIRST_FILL_KEYS}
+        floor=d.get('_mandatory_holding',{})
+        actual=max(q,floor['required_quantity']) if floor.get('state')=='已核验' else q
+        d.update(_new_requested=q,_candidate_qty=actual,_candidate_amount=float(Decimal(str(actual))*Decimal(str(d['V']))),
+                 _execution_qty=actual,_execution_amount=float(Decimal(str(actual))*Decimal(str(d['V']))),
+                 _new_stockout_basis='本月关注且满足现有新品资格，自动使用归属仓首铺量',
+                 _monthly_first_fill={'rule':AUTO_RULE,'source':note,'original_fields':original})
+        selected[d['E']]=q
+    audit.update(state='已自动安排' if selected else '没有符合自动首铺资格的本月新品',selected=len(selected),skipped=skipped)
+    if selected:result['new_products']={'selection':selected,'rule':AUTO_RULE,'priority':allocation.POLICY,'automatic':True}
+
+
+def original(result):
+    """Rebuild the model/budget base lazily when automatic first-fill is edited."""
+    if not result.get('new_products',{}).get('automatic'):return result
+    out=copy.deepcopy(result)
+    for d in out['rows']:
+        evidence=d.pop('_monthly_first_fill',None)
+        if not evidence:continue
+        if evidence.get('rule')!=AUTO_RULE or set(evidence.get('original_fields',{}))!=set(FIRST_FILL_KEYS):raise ValueError('自动首铺原始依据不完整，请重新计算')
+        for k,saved in evidence['original_fields'].items():
+            if saved['present']:d[k]=saved['value']
+            else:d.pop(k,None)
+    budget_input=out.get('monthly_first_fill',{}).get('budget_input')
+    out.pop('new_products',None);out.pop('monthly_first_fill',None)
+    if out.get('budget',{}).get('enabled'):
+        for d in out['rows']:d.pop('_allocated_amount_exact',None)
+        out['budget']=allocation.apply(out['rows'],out['budget']['limit'] if budget_input is None else budget_input)
+    out['summary']=sem.summarize(out['rows'])
+    return out
+
 
 def is_new(row):
     # User-confirmed 2026-10-30: blank original stockout days mean zero for

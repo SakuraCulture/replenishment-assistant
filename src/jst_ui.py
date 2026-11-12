@@ -177,14 +177,16 @@ class GenerationDialog(QDialog):
             else:self.plan=run(self,batches.preview_new,(self.path,heads,{wh:c['catalog'] for wh,c in self.catalogs.items()},self.order_mode.currentIndex()==1),'预览新批库存分配')
             v=self.plan['payload'];self.show_order(v['plans'],v['skipped']);self.review.replace(v['plans'])
             self.order_note.setText('上方列表即本次预览执行顺序；跳过单列在末尾，不参与分配。')
-            self.summary.setText(f"本次预览 {len(v['plans'])} 张仓单；跳过 {len(v['skipped'])} 张（不计入本次汇总）。"+'；'.join(s['head']['number']+'：'+s['reason'] for s in v['skipped']))
+            payment_corrections=sum(bool(p.get('previous_payment')) for p in v['plans'])
+            self.summary.setText(f"本次预览 {len(v['plans'])} 张仓单；跳过 {len(v['skipped'])} 张（不计入本次汇总）。"+'；'.join(s['head']['number']+'：'+s['reason'] for s in v['skipped'])+(f'\n其中{payment_corrections}单的旧付款依据已因新回传失效：旧付款事实保留；本次仅更新本地分配，生成后需重新核对付款，不自动更改聚水潭或翱象订单。' if payment_corrections else ''))
             self.generate_btn.setEnabled(bool(v['plans']));self.accept_issues.setChecked(False)
         except Exception as exc:self.plan=None;self.review.replace([],'预览失败，请重新预览');self.generate_btn.setEnabled(False);warn(self,exc)
     def generate(self):
         if not self.plan or self.worker:return
         v=self.plan['payload']
         if any(p['summary']['issues'] for p in v['plans']) and not self.accept_issues.isChecked():QMessageBox.warning(self,'请核对待核商品','请先核对并勾选待核商品本次不安排。');return
-        if not confirm(self,'确认生成聚水潭订单',f"将按预览顺序生成{len(v['plans'])}单，保存库存预留与待核对付款草稿；并不表示已经付款。\n"+'\n'.join(p['head']['number']+'：'+p['summary']['amount']+'元' for p in v['plans'])):return
+        payment_notice='\n旧付款保留；更正分配后请重新核对付款。此处不修改平台订单。' if any(p.get('previous_payment') for p in v['plans']) else ''
+        if not confirm(self,'确认生成聚水潭订单',f"将按预览顺序生成{len(v['plans'])}单，保存库存预留与待核对付款草稿；并不表示已经付款。\n"+'\n'.join(p['head']['number']+'：'+p['summary']['amount']+'元' for p in v['plans'])+payment_notice):return
         self.folder=export_locations.initial_directory(self);self.saved=[];self.completed.clear();self.completed.show();self.receipt=None;self.stop_requested=False
         w=Worker(batches.execute,(self.path,self.plan,self.accept_issues.isChecked()),self);self.worker=w
         w.status.connect(self.status.setText);w.row_progress.connect(self.progress);w.commit_state.connect(self.boundary);w.business_event.connect(self.saved_order);w.success.connect(self.generation_done);w.failed.connect(lambda s:warn(self,RuntimeError(s)));w.cancelled.connect(lambda:self.status.setText('已停止，已保存订单保留'));w.finished.connect(self.worker_finished)

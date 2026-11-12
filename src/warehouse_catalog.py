@@ -9,7 +9,7 @@ import openpyxl
 from openpyxl.cell import WriteOnlyCell
 import engine
 from priority_list import atomic_json
-from first_fill import FIELD as FIRST_FILL_FIELD
+from first_fill import FIELD as FIRST_FILL_FIELD,FIELDS as FIRST_FILL_FIELDS
 
 from app_defaults import WAREHOUSES
 from data_contracts import InputBatch
@@ -39,8 +39,11 @@ def import_catalog(path,warehouse,progress=lambda s:None,cancel=None):
         if sku in items:raise ValueError(f"本仓商品编码重复：{sku}，第{items[sku]['_row']}和{raw['_row']}行；请处理后导入")
         row={k:raw.get(k) for k in FIELDS};row.update(商品编码=sku,_row=raw['_row']);items[sku]=row
         if '商品标签' in heads:row['商品标签']=raw.get('商品标签')
-        if FIRST_FILL_FIELD in info['duplicate_unused_headers']:row['_first_fill_issue']='“'+FIRST_FILL_FIELD+'”表头重复，未自动择一'
-        elif FIRST_FILL_FIELD in heads:row[FIRST_FILL_FIELD]=raw.get(FIRST_FILL_FIELD)
+        first_fill_fields=[f for f in FIRST_FILL_FIELDS if f in heads]
+        if len(first_fill_fields)>1 or any(f in info['duplicate_unused_headers'] for f in first_fill_fields):
+            row['_first_fill_issue']='“'+'／'.join(first_fill_fields)+'”表头重复或存在多个同义列，未自动择一'
+        elif first_fill_fields:
+            source=first_fill_fields[0];row[FIRST_FILL_FIELD]=raw.get(source);row['_first_fill_source_field']=source
     if before!=engine.adapter.digest(path):raise ValueError('读取期间文件发生变化，请重新导入')
     data={'schema':1,'warehouse':warehouse,'source_path':str(path),'source_sha256':before,'sheet':sheet,'imported_at':datetime.now().isoformat(timespec='seconds'),'items':items,'revision':revision(items)}
     return validate(data)

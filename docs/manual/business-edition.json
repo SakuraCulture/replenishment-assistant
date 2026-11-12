@@ -1,18 +1,18 @@
 {
   "edition": "2026-11-12",
-  "application": "0.51.7",
+  "application": "0.51.8",
   "chapters": 21,
-  "pdf_pages": 91,
-  "images": 45,
+  "pdf_pages": 94,
+  "images": 47,
   "parameter_definitions": 28,
   "runtime_logic_changed": true,
   "sealed_0493_changed": false,
   "legacy_pdf_preserved": true,
   "live_platform_tested": false,
   "newcomer_field_acceptance": false,
-  "validation": "0.51.5: explicit warehouse binding correction, unchanged verified save, retired-item and adoption race protection; isolated acceptance only; source fixes for unknown funnel values, complete parameter roundtrip and catalog-aware shutdown restore; isolated acceptance only; 0.51.7 warehouse export: source native 35 checks, warehouse tests 25 pass; frozen acceptance recorded in releases/0.51.7/rc2",
+  "validation": "0.51.8 paid return: 26 source tests and native 34 checks; monthly automatic first-fill: 19 source tests and native 17 checks; final full regression and frozen acceptance in releases/0.51.8/rc1",
   "files": {
-    "guide.md": "f61c0aee7b135c37fcf6740fd122aeb3a6d0647b32ac7363bb042d5e9a85442b",
+    "guide.md": "332fbbfbd087b8a1e97840eada8e15b552d86a963d376df4443cf90571a87f1e",
     "images/ai-stockout.png": "37e670415626b834edc680e3211f6e37b439c53710023ce3483b5faf8b1aeb4d",
     "images/audit-10pt.png": "6d14003218936d668e979b6753c0eb044936ecd76ef177731c6be301e2ed9b1e",
     "images/audit-12pt.png": "b0fdeb52be04d658c8a99e3329a75147d12664126241d84c7cddfe8c69626c2c",
@@ -58,9 +58,9 @@
     "images/stockout-overview.png": "22a391dfed5557c0f3649b325e8f36170de9008f8c6da22736b0ca2e20e990cc",
     "images/store-sales-days-0510.png": "8d50ea632f280b1d46f62be6a9b03d97074d7c64f94a45b8c2741acae991b0c2",
     "images/warehouse-stockout-0510.png": "3d4951c782fafefc16d3370781d579d416fcaac943d5178533b7dbb1ca192ec7",
-    "index.html": "4acf86c556f53a5d85496148cd8bc6a5ad6bfce8716a8b1030a364b7c8905d67",
+    "index.html": "c3794de3f9216ecdf620f906bb3a13937f783f65fbc9ad2cc52a84f43fa3137f",
     "parameter-reference.json": "08905e215c7f66245816eb8e31f5b3c04b1ea8dfde488cd6bfd3ec7cf52a895b",
-    "screenshot-index.json": "44f83bda49bc8e12e4e8f7a6fe49ee197affa248f9d6d5a387106ba01e337653",
+    "screenshot-index.json": "5bfcbd1348450717d6cae0666ecba596230f8d5421ba242dabe5d614075d6ad4",
     "validation_20261108/html-report.json": "c7de56a12ca067f9b9dcba24aa8099b7a595b9683384817f987bd79ec419de37",
     "validation_20261108/pdf-report.json": "3fecf4e60338c59360f666f24e1b0d73690c9463c20fb2e7b3d1fa77bf0e2e60",
     "补货助手_0.48.0_新人使用手册.pdf": "07ffb9011e5a76b9427eec29aea818f9fee05ba047a2a2cd967d4597cf649e3d",
@@ -69,10 +69,11 @@
     "补货助手_0.51.6_新人业务上手手册.pdf": "83f197a3178f3030ef87a2aa3d616753579d2aaf6050ccc8575bce321f9a8375",
     "images/warehouse-export-page-0517.png": "181f62df593c99483c445bcac4d1e9231dba6c0bd05dea69ebd6af6439265cca",
     "images/warehouse-export-0517.png": "1d8ffe824781ba935ed560aa649baba2117b71c1b3db7ca86f82d978dedf9613",
-    "补货助手_0.51.7_新人业务上手手册.pdf": "48d15e761e72ce10068b57ea847fd75512fbb59eb7227df149c05578c580b3c7"
+    "补货助手_0.51.7_新人业务上手手册.pdf": "48d15e761e72ce10068b57ea847fd75512fbb59eb7227df149c05578c580b3c7",
+    "补货助手_0.51.8_新人业务上手手册.pdf": "5cb149eb433c10e61fc261b85069c43ddaf081cb7c072f1f37f683ee396f44cc"
   },
-  "pdf_application": "0.49.3",
-  "pdf_status": "historical archive; current changes in HTML",
+  "pdf_application": "0.51.8",
+  "pdf_status": "current business guide; older PDFs retained as historical archives",
   "sealed_0510_rc1_changed": false,
   "daily_tag_guide": {
     "updated": "2026-11-11",
@@ -96,10 +97,19 @@
   },
   "first_fill_guide": {
     "chapter": "04",
-    "field": "新店新品首铺数",
-    "source": "assigned warehouse frozen catalog"
+    "field": "新店新品首铺数量 / 新店新品首铺数",
+    "source": "assigned warehouse frozen catalog",
+    "version": "0.51.8",
+    "automatic_rule": "monthly-first-fill-1",
+    "note": "automatic on fresh eligible monthly calculation; manual changes and history preserved"
   },
-  "source_mode": "uncommitted workspace; no new software package",
+  "source_mode": "source Qt isolated screenshots; final immutable build and EXE acceptance recorded separately",
   "model_version": "0.3.6-rules",
-  "indexed_images": 44
+  "indexed_images": 47,
+  "paid_return_correction": {
+    "chapter": "08",
+    "version": "0.51.8",
+    "evidence": "qa/paid_return_reallocation_0518_20261112_01",
+    "live_platform_tested": false
+  }
 }
