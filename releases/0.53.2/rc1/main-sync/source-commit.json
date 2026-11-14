@@ -1,0 +1,9 @@
+{
+  "source_commit": "4383356f030773767fbd464203527460a44ad1b2",
+  "tree": "013f5429a3994b66d8da20348d6234e299bdb38b",
+  "frozen_file_count": 4010,
+  "all_frozen_bytes_match": true,
+  "source_snapshot": "3ec340026c93c804b61b64b6ba7c33c93492f397ad48891da828a6ced41c8188",
+  "known_whitespace_findings": "source-whitespace-check.log; corrected separately without changing compiled code",
+  "branch": "codex/fix-runtime-qt-lifetime-0.53.2"
+}

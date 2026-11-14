@@ -1,0 +1,7 @@
+test_business_values_actual_parameters_and_frozen_master (test_decision_export.DecisionExportTests.test_business_values_actual_parameters_and_frozen_master) ... ok
+test_missing_frozen_fields_remain_blank (test_decision_export.DecisionExportTests.test_missing_frozen_fields_remain_blank) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.011s
+
+OK

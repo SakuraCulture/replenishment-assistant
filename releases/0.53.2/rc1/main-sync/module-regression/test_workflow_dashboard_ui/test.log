@@ -1,0 +1,8 @@
+test_chart_has_space_and_click_drills_without_mutation (test_workflow_dashboard_ui.Dashboard.test_chart_has_space_and_click_drills_without_mutation) ... ok
+test_custom_scope_controls_and_export_options_stay_in_sync (test_workflow_dashboard_ui.Dashboard.test_custom_scope_controls_and_export_options_stay_in_sync) ... ok
+test_legacy_summary_selection_remains_unchanged (test_workflow_dashboard_ui.Dashboard.test_legacy_summary_selection_remains_unchanged) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.568s
+
+OK

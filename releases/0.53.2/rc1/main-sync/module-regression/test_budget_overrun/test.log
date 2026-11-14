@@ -1,0 +1,13 @@
+test_above_five_percent_rejected (test_budget_overrun.OverrunTests.test_above_five_percent_rejected) ... ok
+test_exact_five_percent_one_only_and_stable_order (test_budget_overrun.OverrunTests.test_exact_five_percent_one_only_and_stable_order) ... ok
+test_no_candidate_increase_or_free_budget (test_budget_overrun.OverrunTests.test_no_candidate_increase_or_free_budget) ... ok
+test_pending_price_does_not_get_extra (test_budget_overrun.OverrunTests.test_pending_price_does_not_get_extra) ... ok
+test_positive_remaining_can_finish_a_unit (test_budget_overrun.OverrunTests.test_positive_remaining_can_finish_a_unit) ... ok
+test_reallocation_clears_audit (test_budget_overrun.OverrunTests.test_reallocation_clears_audit) ... ok
+test_whole_carton_not_one_piece (test_budget_overrun.OverrunTests.test_whole_carton_not_one_piece) ... ok
+test_zero_never_buys (test_budget_overrun.OverrunTests.test_zero_never_buys) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.001s
+
+OK

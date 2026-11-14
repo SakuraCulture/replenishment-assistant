@@ -1,0 +1,10 @@
+test_finish_new_only_failed_and_reuses_package (test_task_maintenance.TaskMaintenance.test_finish_new_only_failed_and_reuses_package) ... ok
+test_retry_keeps_identity_order_success_and_prevents_double_click (test_task_maintenance.TaskMaintenance.test_retry_keeps_identity_order_success_and_prevents_double_click) ... ok
+test_retry_running_siblings_continue (test_task_maintenance.TaskMaintenance.test_retry_running_siblings_continue) ... ok
+test_unknown_cannot_transfer (test_task_maintenance.TaskMaintenance.test_unknown_cannot_transfer) ... ok
+test_unknown_upload_queries_only_never_start (test_task_maintenance.TaskMaintenance.test_unknown_upload_queries_only_never_start) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.079s
+
+OK

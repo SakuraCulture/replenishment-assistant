@@ -1,0 +1,12 @@
+test_dual_warehouse_still_routes_to_other_warehouse (test_single_warehouse_scope.SingleWarehouseScopeTests.test_dual_warehouse_still_routes_to_other_warehouse) ... ok
+test_invalid_identity_is_not_reclassified_as_local (test_single_warehouse_scope.SingleWarehouseScopeTests.test_invalid_identity_is_not_reclassified_as_local) ... ok
+test_local_classification_does_not_hide_other_invalid_inputs (test_single_warehouse_scope.SingleWarehouseScopeTests.test_local_classification_does_not_hide_other_invalid_inputs) ... ok
+test_missing_selected_catalog_is_still_blocked (test_single_warehouse_scope.SingleWarehouseScopeTests.test_missing_selected_catalog_is_still_blocked) ... ok
+test_other_warehouse_only_is_local_in_both_directions (test_single_warehouse_scope.SingleWarehouseScopeTests.test_other_warehouse_only_is_local_in_both_directions) ... ok
+test_selected_catalog_fields_and_existing_exclusions_survive (test_single_warehouse_scope.SingleWarehouseScopeTests.test_selected_catalog_fields_and_existing_exclusions_survive) ... ok
+test_unused_catalog_presence_has_no_effect_on_routed_rows (test_single_warehouse_scope.SingleWarehouseScopeTests.test_unused_catalog_presence_has_no_effect_on_routed_rows) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.055s
+
+OK

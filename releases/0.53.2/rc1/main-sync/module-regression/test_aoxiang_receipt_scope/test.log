@@ -1,0 +1,11 @@
+test_deleted_source_cannot_queue_enable_or_dispatch_due_and_projection_retires_safely (test_aoxiang_receipt_scope.ReceiptScopeTests.test_deleted_source_cannot_queue_enable_or_dispatch_due_and_projection_retires_safely) ... ok
+test_legacy_frozen_proof_does_not_attach_recreated_same_number (test_aoxiang_receipt_scope.ReceiptScopeTests.test_legacy_frozen_proof_does_not_attach_recreated_same_number) ... ok
+test_old_void_final_pending_is_retired_without_erasing_platform_identity (test_aoxiang_receipt_scope.ReceiptScopeTests.test_old_void_final_pending_is_retired_without_erasing_platform_identity) ... ok
+test_poll_guard_requests_cooperative_pause_after_local_source_deleted (test_aoxiang_receipt_scope.ReceiptScopeTests.test_poll_guard_requests_cooperative_pause_after_local_source_deleted) ... ok
+test_read_only_guard_resolves_node_basis_without_oid_and_rejects_changed_payment (test_aoxiang_receipt_scope.ReceiptScopeTests.test_read_only_guard_resolves_node_basis_without_oid_and_rejects_changed_payment) ... ok
+test_void_stops_schedule_without_final_receipt_and_preserves_creation_status (test_aoxiang_receipt_scope.ReceiptScopeTests.test_void_stops_schedule_without_final_receipt_and_preserves_creation_status) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 1.135s
+
+OK

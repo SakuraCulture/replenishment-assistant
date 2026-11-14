@@ -1,0 +1,15 @@
+test_actual_category_parameter_and_warehouse_do_not_use_defaults (test_business_readability.ReadabilityTests.test_actual_category_parameter_and_warehouse_do_not_use_defaults) ... ok
+test_all_model_columns_have_business_names (test_business_readability.ReadabilityTests.test_all_model_columns_have_business_names) ... ok
+test_form_does_not_cross_warehouse (test_business_readability.ReadabilityTests.test_form_does_not_cross_warehouse) ... ok
+test_inline_chinese_help_replaces_model_symbols (test_business_readability.ReadabilityTests.test_inline_chinese_help_replaces_model_symbols) ... ok
+test_manual_uses_original_candidate_not_overwritten_field (test_business_readability.ReadabilityTests.test_manual_uses_original_candidate_not_overwritten_field) ... ok
+test_missing_stage_is_unknown_not_zero (test_business_readability.ReadabilityTests.test_missing_stage_is_unknown_not_zero) ... ok
+test_null_zero_blank_and_unlimited_are_distinct (test_business_readability.ReadabilityTests.test_null_zero_blank_and_unlimited_are_distinct) ... ok
+test_original_export_names_unchanged (test_business_readability.ReadabilityTests.test_original_export_names_unchanged) ... ok
+test_stages_keep_actual_values_and_input_unchanged (test_business_readability.ReadabilityTests.test_stages_keep_actual_values_and_input_unchanged) ... ok
+test_unknown_technical_fields_are_not_lost (test_business_readability.ReadabilityTests.test_unknown_technical_fields_are_not_lost) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.027s
+
+OK

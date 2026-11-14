@@ -1,0 +1,8 @@
+{
+  "module": "test_catalog_migration",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 6,
+  "elapsed_seconds": 6.25,
+  "summary": null
+}

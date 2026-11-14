@@ -1,0 +1,8 @@
+test_explicit_discovery_prefers_saved_profile_and_never_substitutes_missing_profile (test_setup_saved_connection.SavedConnectionTests.test_explicit_discovery_prefers_saved_profile_and_never_substitutes_missing_profile) ... ok
+test_open_close_reopen_reuses_live_client_and_saved_binding_without_browser_actions (test_setup_saved_connection.SavedConnectionTests.test_open_close_reopen_reuses_live_client_and_saved_binding_without_browser_actions) ... ok
+test_real_main_entry_does_not_retry_on_return_from_settings (test_setup_saved_connection.SavedConnectionTests.test_real_main_entry_does_not_retry_on_return_from_settings) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.394s
+
+OK

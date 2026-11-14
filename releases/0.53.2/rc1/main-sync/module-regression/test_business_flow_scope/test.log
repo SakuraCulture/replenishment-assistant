@@ -1,0 +1,8 @@
+test_cancel_cold_index_then_retry_does_not_change_business_database (test_business_flow_scope.ScopeTests.test_cancel_cold_index_then_retry_does_not_change_business_database) ... ok
+test_date_warehouse_lock_search_stage_combinations_exact_order (test_business_flow_scope.ScopeTests.test_date_warehouse_lock_search_stage_combinations_exact_order) ... ok
+test_paging_scope_and_source_immutability (test_business_flow_scope.ScopeTests.test_paging_scope_and_source_immutability) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 28.542s
+
+OK

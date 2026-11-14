@@ -1,0 +1,10 @@
+test_actual_protocol_end_delete_new_and_business_unchanged (test_collection_maintenance.MaintenanceProcessTests.test_actual_protocol_end_delete_new_and_business_unchanged) ... ok
+test_local_unaccepted_end_and_delete (test_collection_maintenance.MaintenanceProcessTests.test_local_unaccepted_end_and_delete) ... ok
+test_lost_end_and_delete_responses_reconciled_after_restart (test_collection_maintenance.MaintenanceProcessTests.test_lost_end_and_delete_responses_reconciled_after_restart) ... ok
+test_cancel_end_confirm_delete_and_reopen_scope (test_collection_maintenance.MaintenanceUiTests.test_cancel_end_confirm_delete_and_reopen_scope) ... ok
+test_component_exit_does_not_disable_end_and_new_collection (test_collection_maintenance.MaintenanceUiTests.test_component_exit_does_not_disable_end_and_new_collection) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 18.069s
+
+OK

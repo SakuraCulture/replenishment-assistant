@@ -1,0 +1,8 @@
+{
+  "module": "test_stockout_acquisition",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 20,
+  "elapsed_seconds": 16.10899999999674,
+  "summary": null
+}

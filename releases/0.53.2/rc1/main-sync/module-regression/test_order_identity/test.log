@@ -1,0 +1,15 @@
+test_ambiguous_same_store_warehouse_requires_record_selection (test_order_identity.Identity.test_ambiguous_same_store_warehouse_requires_record_selection) ... ok
+test_hidden_metadata_business_columns_and_automatic_binding (test_order_identity.Identity.test_hidden_metadata_business_columns_and_automatic_binding) ... ok
+test_hidden_removed_can_bind_but_conflicting_properties_fail (test_order_identity.Identity.test_hidden_removed_can_bind_but_conflicting_properties_fail) ... ok
+test_legacy_unpartitioned_export_feedback_still_readable (test_order_identity.Identity.test_legacy_unpartitioned_export_feedback_still_readable) ... ok
+test_metadata_corruption_and_formulas_rejected (test_order_identity.Identity.test_metadata_corruption_and_formulas_rejected) ... ok
+test_minimum_template_notes_not_treated_as_unknown_business_sheet (test_order_identity.Identity.test_minimum_template_notes_not_treated_as_unknown_business_sheet) ... ok
+test_old_hidden_reference_rejects_new_revision (test_order_identity.Identity.test_old_hidden_reference_rejects_new_revision) ... ok
+test_quantity_changes_sort_and_added_rows_do_not_destroy_identity (test_order_identity.Identity.test_quantity_changes_sort_and_added_rows_do_not_destroy_identity) ... ok
+test_return_export_preserves_metadata_and_no_number_column (test_order_identity.Identity.test_return_export_preserves_metadata_and_no_number_column) ... ok
+test_row_store_conflict_does_not_fallback_to_manual (test_order_identity.Identity.test_row_store_conflict_does_not_fallback_to_manual) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 1.989s
+
+OK

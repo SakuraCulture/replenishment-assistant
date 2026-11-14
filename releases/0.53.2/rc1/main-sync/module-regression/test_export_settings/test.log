@@ -1,0 +1,13 @@
+test_corrupt_and_unknown_schema_not_rewritten (test_export_settings.ExportSettingsTests.test_corrupt_and_unknown_schema_not_rewritten) ... ok
+test_first_read_has_no_write (test_export_settings.ExportSettingsTests.test_first_read_has_no_write) ... ok
+test_invalid_directory_keeps_previous (test_export_settings.ExportSettingsTests.test_invalid_directory_keeps_previous) ... ok
+test_other_config_files_untouched (test_export_settings.ExportSettingsTests.test_other_config_files_untouched) ... ok
+test_removed_folder_does_not_destroy_preference (test_export_settings.ExportSettingsTests.test_removed_folder_does_not_destroy_preference) ... ok
+test_replace_failure_keeps_config_and_cleans_temp (test_export_settings.ExportSettingsTests.test_replace_failure_keeps_config_and_cleans_temp) ... ok
+test_save_reload_unicode_and_clear (test_export_settings.ExportSettingsTests.test_save_reload_unicode_and_clear) ... ok
+test_unwritable_directory_rejected (test_export_settings.ExportSettingsTests.test_unwritable_directory_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.160s
+
+OK

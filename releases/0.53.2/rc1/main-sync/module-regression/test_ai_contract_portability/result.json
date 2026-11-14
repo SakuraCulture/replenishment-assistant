@@ -1,0 +1,8 @@
+{
+  "module": "test_ai_contract_portability",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 10,
+  "elapsed_seconds": 8.34299999999348,
+  "summary": null
+}

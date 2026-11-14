@@ -1,0 +1,16 @@
+test_all_choices_required_and_stale_candidates_or_sources_rejected (test_lifecycle_duplicates.LifecycleDuplicateTests.test_all_choices_required_and_stale_candidates_or_sources_rejected) ... ok
+test_all_conflicts_explain_actual_file_rows_quantities_and_differing_names (test_lifecycle_duplicates.LifecycleDuplicateTests.test_all_conflicts_explain_actual_file_rows_quantities_and_differing_names) ... ok
+test_blank_quantity_is_not_treated_as_an_explicit_zero (test_lifecycle_duplicates.LifecycleDuplicateTests.test_blank_quantity_is_not_treated_as_an_explicit_zero) ... ok
+test_conflicting_second_document_names_itself_and_does_not_write_first (test_lifecycle_duplicates.LifecycleDuplicateTests.test_conflicting_second_document_names_itself_and_does_not_write_first) ... ok
+test_explicit_zero_and_positive_keep_the_selected_whole_row_without_adding (test_lifecycle_duplicates.LifecycleDuplicateTests.test_explicit_zero_and_positive_keep_the_selected_whole_row_without_adding) ... ok
+test_file_changes_after_resolution_still_fail_commit (test_lifecycle_duplicates.LifecycleDuplicateTests.test_file_changes_after_resolution_still_fail_commit) ... ok
+test_nonconflicting_duplicates_and_first_seen_order_keep_existing_behavior (test_lifecycle_duplicates.LifecycleDuplicateTests.test_nonconflicting_duplicates_and_first_seen_order_keep_existing_behavior) ... ok
+test_other_warehouse_and_document_number_are_not_merged (test_lifecycle_duplicates.LifecycleDuplicateTests.test_other_warehouse_and_document_number_are_not_merged) ... ok
+test_partial_resolution_cannot_silently_drop_a_second_conflict (test_lifecycle_duplicates.LifecycleDuplicateTests.test_partial_resolution_cannot_silently_drop_a_second_conflict) ... ok
+test_payment_quantity_and_amount_follow_the_same_selected_row (test_lifecycle_duplicates.LifecycleDuplicateTests.test_payment_quantity_and_amount_follow_the_same_selected_row) ... ok
+test_same_choice_is_idempotent_and_original_file_and_signed_facts_are_unchanged (test_lifecycle_duplicates.LifecycleDuplicateTests.test_same_choice_is_idempotent_and_original_file_and_signed_facts_are_unchanged) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 1.154s
+
+OK

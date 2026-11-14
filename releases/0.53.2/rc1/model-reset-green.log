@@ -1,0 +1,9 @@
+test_active_sort_and_filter_use_new_rows_without_reordering_business (goods_reset_contract.GoodsResetLifetimeTests.test_active_sort_and_filter_use_new_rows_without_reordering_business) ... ok
+test_different_sizes_and_empty_have_one_real_reset_pair (goods_reset_contract.GoodsResetLifetimeTests.test_different_sizes_and_empty_have_one_real_reset_pair) ... ok
+test_persistent_source_and_proxy_indices_are_invalidated (goods_reset_contract.GoodsResetLifetimeTests.test_persistent_source_and_proxy_indices_are_invalidated) ... ok
+test_repeated_resets_keep_view_usable_for_selection_and_reading (goods_reset_contract.GoodsResetLifetimeTests.test_repeated_resets_keep_view_usable_for_selection_and_reading) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.111s
+
+OK

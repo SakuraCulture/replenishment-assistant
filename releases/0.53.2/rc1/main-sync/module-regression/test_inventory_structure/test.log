@@ -1,0 +1,24 @@
+test_cancel_and_retry (test_inventory_structure.ArchiveTests.test_cancel_and_retry) ... ok
+test_concurrent_change_not_blocked_or_published (test_inventory_structure.ArchiveTests.test_concurrent_change_not_blocked_or_published) ... ok
+test_delete_invalidates_and_partial_scope (test_inventory_structure.ArchiveTests.test_delete_invalidates_and_partial_scope) ... ok
+test_export_value_type_format_and_immutability (test_inventory_structure.ArchiveTests.test_export_value_type_format_and_immutability) ... ok
+test_full_parent_deleted (test_inventory_structure.ArchiveTests.test_full_parent_deleted) ... ok
+test_latest_day_never_sum_rounds (test_inventory_structure.ArchiveTests.test_latest_day_never_sum_rounds) ... ok
+test_previous_outside_query_and_no_duplicate_warehouse (test_inventory_structure.ArchiveTests.test_previous_outside_query_and_no_duplicate_warehouse) ... ok
+test_unknown_and_zero_excel (test_inventory_structure.ArchiveTests.test_unknown_and_zero_excel) ... ok
+test_each_view_independent (test_inventory_structure.MetricsTests.test_each_view_independent) ... ok
+test_hand_calculated_partition (test_inventory_structure.MetricsTests.test_hand_calculated_partition) ... ok
+test_membership_no_list_vs_explicit_empty (test_inventory_structure.MetricsTests.test_membership_no_list_vs_explicit_empty) ... ok
+test_missing_new_unit_and_valuation_separate (test_inventory_structure.MetricsTests.test_missing_new_unit_and_valuation_separate) ... ok
+test_missing_unit_and_duplicate_never_double_count (test_inventory_structure.MetricsTests.test_missing_unit_and_duplicate_never_double_count) ... ok
+test_missing_zero_negative_price_and_stock (test_inventory_structure.MetricsTests.test_missing_zero_negative_price_and_stock) ... ok
+test_preview_no_mutation (test_inventory_structure.MetricsTests.test_preview_no_mutation) ... ok
+test_quantity_price_migration_conservation (test_inventory_structure.MetricsTests.test_quantity_price_migration_conservation) ... ok
+test_unknown_source_and_status (test_inventory_structure.MetricsTests.test_unknown_source_and_status) ... ok
+test_unmatched_local_price_not_guessed (test_inventory_structure.MetricsTests.test_unmatched_local_price_not_guessed) ... ok
+test_zero_recommendation_restricted_inventory_retained (test_inventory_structure.MetricsTests.test_zero_recommendation_restricted_inventory_retained) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 1.646s
+
+OK

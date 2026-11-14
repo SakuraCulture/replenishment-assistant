@@ -1,0 +1,9 @@
+[
+  {
+    "module": "test_migration_shutdown",
+    "passed": true,
+    "tests": 16,
+    "exit_code": 0,
+    "seconds": 6.75
+  }
+]

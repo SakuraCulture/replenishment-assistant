@@ -1,0 +1,15 @@
+test_active_receipts_or_invalid_selection_cannot_be_adopted (test_aoxiang_acquisition.AcquisitionTests.test_active_receipts_or_invalid_selection_cannot_be_adopted) ... ok
+test_changed_bytes_same_size_and_wrong_scope_blocked (test_aoxiang_acquisition.AcquisitionTests.test_changed_bytes_same_size_and_wrong_scope_blocked) ... ok
+test_conflict_carries_exact_original_day_and_overlapping_stores_without_creating_a_job (test_aoxiang_acquisition.AcquisitionTests.test_conflict_carries_exact_original_day_and_overlapping_stores_without_creating_a_job) ... ok
+test_loaded_hash_order_and_errors_checked_without_business_mutation (test_aoxiang_acquisition.AcquisitionTests.test_loaded_hash_order_and_errors_checked_without_business_mutation) ... ok
+test_other_command_path_cannot_impersonate_valid_hash (test_aoxiang_acquisition.AcquisitionTests.test_other_command_path_cannot_impersonate_valid_hash) ... ok
+test_out_of_order_or_missing_item_never_sorted_to_hide_difference (test_aoxiang_acquisition.AcquisitionTests.test_out_of_order_or_missing_item_never_sorted_to_hide_difference) ... ok
+test_partial_failure_preserved_not_adopted (test_aoxiang_acquisition.AcquisitionTests.test_partial_failure_preserved_not_adopted) ... ok
+test_requested_order_manifest_and_exact_snapshot_reuse (test_aoxiang_acquisition.AcquisitionTests.test_requested_order_manifest_and_exact_snapshot_reuse) ... ok
+test_unaccepted_cancel_requires_definitive_missing_not_timeout (test_aoxiang_acquisition.AcquisitionTests.test_unaccepted_cancel_requires_definitive_missing_not_timeout) ... ok
+test_unknown_dispatch_cannot_be_replaced_by_new_id (test_aoxiang_acquisition.AcquisitionTests.test_unknown_dispatch_cannot_be_replaced_by_new_id) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.486s
+
+OK

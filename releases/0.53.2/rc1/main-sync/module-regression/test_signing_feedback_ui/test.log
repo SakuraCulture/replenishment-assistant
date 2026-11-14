@@ -1,0 +1,16 @@
+test_legacy_unknown_signature_does_not_claim_rollback_or_file_lock (test_signing_feedback_ui.FailureMessageTests.test_legacy_unknown_signature_does_not_claim_rollback_or_file_lock) ... ok
+test_plain_confirmation_structured_error_is_not_hidden (test_signing_feedback_ui.FailureMessageTests.test_plain_confirmation_structured_error_is_not_hidden) ... ok
+test_structured_failure_precedes_long_paths_and_preserves_commit_uncertainty (test_signing_feedback_ui.FailureMessageTests.test_structured_failure_precedes_long_paths_and_preserves_commit_uncertainty) ... ok
+test_busy_or_dirty_entries_explain_without_starting_a_second_operation (test_signing_feedback_ui.SigningFeedbackTests.test_busy_or_dirty_entries_explain_without_starting_a_second_operation) ... ok
+test_cancelled_selection_replaces_old_error_and_does_not_sign (test_signing_feedback_ui.SigningFeedbackTests.test_cancelled_selection_replaces_old_error_and_does_not_sign) ... ok
+test_confirmation_cancel_does_not_submit_and_reports_this_attempt (test_signing_feedback_ui.SigningFeedbackTests.test_confirmation_cancel_does_not_submit_and_reports_this_attempt) ... ok
+test_export_success_is_not_changed_into_failure_by_result_dialog (test_signing_feedback_ui.SigningFeedbackTests.test_export_success_is_not_changed_into_failure_by_result_dialog) ... ok
+test_historical_same_revision_export_still_works_without_new_signature (test_signing_feedback_ui.SigningFeedbackTests.test_historical_same_revision_export_still_works_without_new_signature) ... ok
+test_new_signature_readonly_and_wrong_day_explain_before_selection (test_signing_feedback_ui.SigningFeedbackTests.test_new_signature_readonly_and_wrong_day_explain_before_selection) ... ok
+test_readonly_changed_revision_does_not_reach_signing_expand_or_execute (test_signing_feedback_ui.SigningFeedbackTests.test_readonly_changed_revision_does_not_reach_signing_expand_or_execute) ... ok
+test_success_lists_exact_identity_even_when_refresh_fails (test_signing_feedback_ui.SigningFeedbackTests.test_success_lists_exact_identity_even_when_refresh_fails) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.035s
+
+OK

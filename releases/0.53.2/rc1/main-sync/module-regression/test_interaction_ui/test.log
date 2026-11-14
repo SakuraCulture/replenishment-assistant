@@ -1,0 +1,15 @@
+test_apply_review_cancel_does_not_accept (test_interaction_ui.UiContracts.test_apply_review_cancel_does_not_accept) ... ok
+test_commit_cancel_waits_then_only_stops_remaining (test_interaction_ui.UiContracts.test_commit_cancel_waits_then_only_stops_remaining) ... ok
+test_load_dirty_form_requires_confirmation (test_interaction_ui.UiContracts.test_load_dirty_form_requires_confirmation) ... ok
+test_no_implicit_enter_on_mutations (test_interaction_ui.UiContracts.test_no_implicit_enter_on_mutations) ... ok
+test_readonly_tabs_navigable_fields_locked (test_interaction_ui.UiContracts.test_readonly_tabs_navigable_fields_locked) ... ok
+test_retire_confirmation_and_builtin_guard (test_interaction_ui.UiContracts.test_retire_confirmation_and_builtin_guard) ... ok
+test_save_cannot_reenable_cancel_after_commit (test_interaction_ui.UiContracts.test_save_cannot_reenable_cancel_after_commit) ... ok
+test_select_visible_vs_all (test_interaction_ui.UiContracts.test_select_visible_vs_all) ... ok
+test_store_editor_cannot_persist_presets (test_interaction_ui.UiContracts.test_store_editor_cannot_persist_presets) ... ok
+test_unedited_form_does_not_ask_to_discard (test_interaction_ui.UiContracts.test_unedited_form_does_not_ask_to_discard) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.429s
+
+OK

@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "module_count": 200,
+  "tests": 1944,
+  "elapsed_seconds": 445.2820000000065,
+  "isolated_modules": true,
+  "unchanged_test_assertions": true,
+  "shared_process_native_failure_preserved": "full-regression.json",
+  "initial_protection_failure_retained": true,
+  "recheck": [
+    {
+      "module": "test_migration_shutdown",
+      "passed": true,
+      "tests": 16,
+      "exit_code": 0,
+      "seconds": 6.75
+    }
+  ],
+  "production_instance_closed_by_user": true,
+  "first_shared_process_native_crash_closed": false
+}

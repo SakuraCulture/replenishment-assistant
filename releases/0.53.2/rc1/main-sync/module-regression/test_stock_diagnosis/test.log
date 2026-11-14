@@ -1,0 +1,13 @@
+test_adoption_guards_and_saved_undo (test_stock_diagnosis.DiagnosisTests.test_adoption_guards_and_saved_undo) ... ok
+test_adoption_undo_and_rollback_without_default_writes (test_stock_diagnosis.DiagnosisTests.test_adoption_undo_and_rollback_without_default_writes) ... ok
+test_ai_api_paging_and_explicit_adoption (test_stock_diagnosis.DiagnosisTests.test_ai_api_paging_and_explicit_adoption) ... ok
+test_audit_survives_existing_job_and_sign_storage (test_stock_diagnosis.DiagnosisTests.test_audit_survives_existing_job_and_sign_storage) ... ok
+test_existing_completed_baseline_is_strictly_compatible (test_stock_diagnosis.DiagnosisTests.test_existing_completed_baseline_is_strictly_compatible) ... ok
+test_invalid_steps_cancel_and_stale_baseline (test_stock_diagnosis.DiagnosisTests.test_invalid_steps_cancel_and_stale_baseline) ... ok
+test_no_partial_store_comparison_and_fixed_predictor (test_stock_diagnosis.DiagnosisTests.test_no_partial_store_comparison_and_fixed_predictor) ... ok
+test_probability_only_complete_recalculation (test_stock_diagnosis.DiagnosisTests.test_probability_only_complete_recalculation) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 33.567s
+
+OK

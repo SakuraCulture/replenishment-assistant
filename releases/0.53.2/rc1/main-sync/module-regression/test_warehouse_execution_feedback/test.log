@@ -1,0 +1,7 @@
+test_same_source_single_warehouse_correction_keeps_other_warehouse_feedback (test_warehouse_execution_feedback.WarehouseFeedback.test_same_source_single_warehouse_correction_keeps_other_warehouse_feedback) ... ok
+test_same_store_different_warehouse_source_revisions_can_import_together (test_warehouse_execution_feedback.WarehouseFeedback.test_same_store_different_warehouse_source_revisions_can_import_together) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.826s
+
+OK

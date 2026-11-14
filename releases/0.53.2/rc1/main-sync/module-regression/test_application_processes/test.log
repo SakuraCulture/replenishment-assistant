@@ -1,0 +1,8 @@
+test_another_projects_app_py_is_not_this_application (test_application_processes.ProcessTests.test_another_projects_app_py_is_not_this_application) ... ok
+test_only_real_entrypoints_not_text_inside_python_code (test_application_processes.ProcessTests.test_only_real_entrypoints_not_text_inside_python_code) ... ok
+test_own_launcher_not_a_second_gui_but_independent_and_real_parent_are (test_application_processes.ProcessTests.test_own_launcher_not_a_second_gui_but_independent_and_real_parent_are) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.015s
+
+OK

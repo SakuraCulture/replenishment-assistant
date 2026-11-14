@@ -1,0 +1,17 @@
+test_complete_template_contains_all_six_editable_tables (test_business_chain_repairs.CompleteParameters.test_complete_template_contains_all_six_editable_tables) ... ok
+test_custom_profile_full_import_and_invalid_value_no_partial_commit (test_business_chain_repairs.CompleteParameters.test_custom_profile_full_import_and_invalid_value_no_partial_commit) ... ok
+test_full_ui_buttons_reach_the_complete_template_and_reader (test_business_chain_repairs.CompleteParameters.test_full_ui_buttons_reach_the_complete_template_and_reader) ... ok
+test_native_full_export_roundtrip_all_editable_values_and_scopes (test_business_chain_repairs.CompleteParameters.test_native_full_export_roundtrip_all_editable_values_and_scopes) ... ok
+test_old_full_v3_export_mapping_is_explicit_readonly_reference (test_business_chain_repairs.CompleteParameters.test_old_full_v3_export_mapping_is_explicit_readonly_reference) ... ok
+test_partial_v3_mapping_still_requires_global_entry (test_business_chain_repairs.CompleteParameters.test_partial_v3_mapping_still_requires_global_entry) ... ok
+test_unchanged_preview_explains_no_effect_and_readonly_reference (test_business_chain_repairs.CompleteParameters.test_unchanged_preview_explains_no_effect_and_readonly_reference) ... ok
+test_absent_stage_is_unknown_in_both_projections (test_business_chain_repairs.UnknownMetrics.test_absent_stage_is_unknown_in_both_projections) ... ok
+test_actual_funnel_cells_show_unknown_for_missing_stage_and_all_unpriced (test_business_chain_repairs.UnknownMetrics.test_actual_funnel_cells_show_unknown_for_missing_stage_and_all_unpriced) ... ok
+test_all_positive_unpriced_is_unknown_money_but_known_skus (test_business_chain_repairs.UnknownMetrics.test_all_positive_unpriced_is_unknown_money_but_known_skus) ... ok
+test_confirmed_zero_remains_zero_even_without_price (test_business_chain_repairs.UnknownMetrics.test_confirmed_zero_remains_zero_even_without_price) ... ok
+test_mixed_price_partial_value_and_shared_cohort_ratios_preserved (test_business_chain_repairs.UnknownMetrics.test_mixed_price_partial_value_and_shared_cohort_ratios_preserved) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 4.906s
+
+OK

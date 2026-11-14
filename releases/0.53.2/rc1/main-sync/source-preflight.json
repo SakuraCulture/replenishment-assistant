@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "frozen_files": 4010,
+  "new_files": 101,
+  "new_business_or_binary_artifacts": [],
+  "largest_files": [
+    {
+      "path": "docs/manual/补货助手_0.52.1_新人业务上手手册.pdf",
+      "bytes": 4924746
+    },
+    {
+      "path": "docs/manual/补货助手_0.52.0_新人业务上手手册.pdf",
+      "bytes": 4837164
+    },
+    {
+      "path": "docs/manual/补货助手_0.51.9_新人业务上手手册.pdf",
+      "bytes": 4500268
+    },
+    {
+      "path": "docs/manual/补货助手_0.51.8_新人业务上手手册.pdf",
+      "bytes": 4341919
+    },
+    {
+      "path": "docs/manual/补货助手_0.51.7_新人业务上手手册.pdf",
+      "bytes": 4030043
+    }
+  ],
+  "source_snapshot": "3ec340026c93c804b61b64b6ba7c33c93492f397ad48891da828a6ced41c8188",
+  "git_index_preexisting": false
+}

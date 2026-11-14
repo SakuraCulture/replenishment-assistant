@@ -1,0 +1,8 @@
+{
+  "module": "test_browser_status",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 10,
+  "elapsed_seconds": 0.625,
+  "summary": null
+}

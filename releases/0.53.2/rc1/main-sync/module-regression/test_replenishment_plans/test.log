@@ -1,0 +1,12 @@
+test_conflict_and_delete_never_mutate_owned_snapshot (test_replenishment_plans.Plans.test_conflict_and_delete_never_mutate_owned_snapshot) ... ok
+test_duplicate_and_invalid_parameters_reject (test_replenishment_plans.Plans.test_duplicate_and_invalid_parameters_reject) ... ok
+test_values_owned_ordered_and_no_route_budget (test_replenishment_plans.Plans.test_values_owned_ordered_and_no_route_budget) ... ok
+test_before_import_plan_beats_store_default_and_preserves_budget_route (test_replenishment_plans.WorkbenchPlans.test_before_import_plan_beats_store_default_and_preserves_budget_route) ... ok
+test_legacy_editor_keeps_initial_values_without_exposing_builtin_choice (test_replenishment_plans.WorkbenchPlans.test_legacy_editor_keeps_initial_values_without_exposing_builtin_choice) ... ok
+test_recheck_preserves_per_store_adjustment_and_no_shared_objects (test_replenishment_plans.WorkbenchPlans.test_recheck_preserves_per_store_adjustment_and_no_shared_objects) ... ok
+test_snapshot_survives_plan_delete_and_restore (test_replenishment_plans.WorkbenchPlans.test_snapshot_survives_plan_delete_and_restore) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.444s
+
+OK

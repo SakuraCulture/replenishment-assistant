@@ -1,0 +1,17 @@
+test_all_twelve_dimensions_conserve_counts_and_names (test_stockout_views.ViewTests.test_all_twelve_dimensions_conserve_counts_and_names) ... ok
+test_bad_dimensions_and_filter_values_rejected_without_export (test_stockout_views.ViewTests.test_bad_dimensions_and_filter_values_rejected_without_export) ... ok
+test_day_multiselect_filters_coverage_trend_details_and_export_evidence (test_stockout_views.ViewTests.test_day_multiselect_filters_coverage_trend_details_and_export_evidence) ... ok
+test_excel_safe_sheet_names_and_overflow_keep_every_group (test_stockout_views.ViewTests.test_excel_safe_sheet_names_and_overflow_keep_every_group) ... ok
+test_export_cancellation_mid_cut_removes_only_new_temporaries (test_stockout_views.ViewTests.test_export_cancellation_mid_cut_removes_only_new_temporaries) ... ok
+test_export_custom_sheets_include_all_groups_and_real_excel_filters (test_stockout_views.ViewTests.test_export_custom_sheets_include_all_groups_and_real_excel_filters) ... ok
+test_filter_candidate_pagination_has_no_missing_or_duplicate_codes (test_stockout_views.ViewTests.test_filter_candidate_pagination_has_no_missing_or_duplicate_codes) ... ok
+test_filter_values_search_names_escape_wildcards_and_remove_only_own_filter (test_stockout_views.ViewTests.test_filter_values_search_names_escape_wildcards_and_remove_only_own_filter) ... ok
+test_legacy_local_label_normalized_without_snapshot_mutation (test_stockout_views.ViewTests.test_legacy_local_label_normalized_without_snapshot_mutation) ... ok
+test_multiselect_uses_or_within_dimension_and_and_across_dimensions (test_stockout_views.ViewTests.test_multiselect_uses_or_within_dimension_and_and_across_dimensions) ... ok
+test_nullable_dimension_filters_remain_explicit (test_stockout_views.ViewTests.test_nullable_dimension_filters_remain_explicit) ... ok
+test_view_preferences_are_separate_atomic_and_guard_concurrent_edits (test_stockout_views.ViewTests.test_view_preferences_are_separate_atomic_and_guard_concurrent_edits) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 2.984s
+
+OK

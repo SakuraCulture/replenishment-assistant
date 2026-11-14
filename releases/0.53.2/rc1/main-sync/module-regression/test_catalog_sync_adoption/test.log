@@ -1,0 +1,14 @@
+test_allocation_refresh_idempotent (test_catalog_sync_adoption.Adoption.test_allocation_refresh_idempotent) ... ok
+test_allocation_refresh_rejects_changed_state_and_preserves_default (test_catalog_sync_adoption.Adoption.test_allocation_refresh_rejects_changed_state_and_preserves_default) ... ok
+test_cancel_before_and_at_commit_preserves_old (test_catalog_sync_adoption.Adoption.test_cancel_before_and_at_commit_preserves_old) ... ok
+test_crash_after_replace_recovers_without_replacing_newer_data (test_catalog_sync_adoption.Adoption.test_crash_after_replace_recovers_without_replacing_newer_data) ... ok
+test_default_does_not_reset_existing_inventory (test_catalog_sync_adoption.Adoption.test_default_does_not_reset_existing_inventory) ... ok
+test_identity_and_source_changes_rejected (test_catalog_sync_adoption.Adoption.test_identity_and_source_changes_rejected) ... ok
+test_manual_update_during_download_rejected (test_catalog_sync_adoption.Adoption.test_manual_update_during_download_rejected) ... ok
+test_same_bytes_do_not_replace_default_metadata (test_catalog_sync_adoption.Adoption.test_same_bytes_do_not_replace_default_metadata) ... ok
+test_same_manual_rows_original_bytes_and_retry (test_catalog_sync_adoption.Adoption.test_same_manual_rows_original_bytes_and_retry) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.850s
+
+OK

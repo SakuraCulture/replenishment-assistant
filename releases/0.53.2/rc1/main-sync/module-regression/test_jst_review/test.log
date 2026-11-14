@@ -1,0 +1,9 @@
+test_empty_scope_and_precision (test_jst_review.StoreReview.test_empty_scope_and_precision) ... ok
+test_two_warehouses_group_store_and_exact_metric_identity (test_jst_review.StoreReview.test_two_warehouses_group_store_and_exact_metric_identity) ... ok
+test_unpriced_not_zero_and_zero_price_not_missing (test_jst_review.StoreReview.test_unpriced_not_zero_and_zero_price_not_missing) ... ok
+test_default_store_then_warehouse_and_reduction_filter (test_jst_review.StoreReviewUI.test_default_store_then_warehouse_and_reduction_filter) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.071s
+
+OK

@@ -1,0 +1,12 @@
+test_preparation_remains_cancellable (test_review_preview_perf.ReviewJsonTests.test_preparation_remains_cancellable) ... ok
+test_same_bytes_as_original_encoders (test_review_preview_perf.ReviewJsonTests.test_same_bytes_as_original_encoders) ... ok
+test_unsupported_and_nonfinite_fail_during_preparation (test_review_preview_perf.ReviewJsonTests.test_unsupported_and_nonfinite_fail_during_preparation) ... ok
+test_delivery_review_keeps_canonical_json (test_review_preview_perf.ReviewSessionTests.test_delivery_review_keeps_canonical_json) ... ok
+test_existing_json_is_never_replaced_and_session_can_retry (test_review_preview_perf.ReviewSessionTests.test_existing_json_is_never_replaced_and_session_can_retry) ... ok
+test_failed_new_prepare_cannot_export_previous_review (test_review_preview_perf.ReviewSessionTests.test_failed_new_prepare_cannot_export_previous_review) ... ok
+test_full_json_and_spreadsheet_preserve_diff_beyond_preview (test_review_preview_perf.ReviewSessionTests.test_full_json_and_spreadsheet_preserve_diff_beyond_preview) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 3.545s
+
+OK

@@ -1,0 +1,17 @@
+test_bad_document_digest_and_unhashable_sku_are_still_rejected (test_sku_union_order.SkuUnionOrder.test_bad_document_digest_and_unhashable_sku_are_still_rejected) ... ok
+test_current_and_legacy_document_schema_zero_and_missing_remain_distinct (test_sku_union_order.SkuUnionOrder.test_current_and_legacy_document_schema_zero_and_missing_remain_distinct) ... ok
+test_current_route_operations_only_extra_has_original_two_views_order (test_sku_union_order.SkuUnionOrder.test_current_route_operations_only_extra_has_original_two_views_order) ... ok
+test_empty_signature_and_empty_document_keep_exact_row_counts (test_sku_union_order.SkuUnionOrder.test_empty_signature_and_empty_document_keep_exact_row_counts) ... ok
+test_file_sku_validation_remains_strict_before_projection (test_sku_union_order.SkuUnionOrder.test_file_sku_validation_remains_strict_before_projection) ... ok
+test_hashable_boundary_keys_preserve_python_list_membership_and_types (test_sku_union_order.SkuUnionOrder.test_hashable_boundary_keys_preserve_python_list_membership_and_types) ... ok
+test_initial_duplicate_signature_semantics_are_not_changed (test_sku_union_order.SkuUnionOrder.test_initial_duplicate_signature_semantics_are_not_changed) ... ok
+test_legacy_feedback_missing_lines_and_zero_quantity_keep_old_scope (test_sku_union_order.SkuUnionOrder.test_legacy_feedback_missing_lines_and_zero_quantity_keep_old_scope) ... ok
+test_legacy_route_cross_stage_extras_keep_first_appearance_order (test_sku_union_order.SkuUnionOrder.test_legacy_route_cross_stage_extras_keep_first_appearance_order) ... ok
+test_only_operations_addition_is_appended_by_existing_flow_rows (test_sku_union_order.SkuUnionOrder.test_only_operations_addition_is_appended_by_existing_flow_rows) ... ok
+test_projection_cancellation_still_raises_without_writes (test_sku_union_order.SkuUnionOrder.test_projection_cancellation_still_raises_without_writes) ... ok
+test_release_comparison_uses_frozen_actual_functions (test_sku_union_order.SkuUnionOrder.test_release_comparison_uses_frozen_actual_functions) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.416s
+
+OK

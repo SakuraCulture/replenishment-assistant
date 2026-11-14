@@ -1,0 +1,8 @@
+{
+  "module": "test_scoped_queries_perf",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 11,
+  "elapsed_seconds": 5.264999999984866,
+  "summary": null
+}

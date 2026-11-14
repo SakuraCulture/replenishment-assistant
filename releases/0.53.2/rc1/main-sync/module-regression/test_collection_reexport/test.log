@@ -1,0 +1,9 @@
+test_reexport_does_not_retire_analysis_request (test_collection_reexport.ReexportProtocolTests.test_reexport_does_not_retire_analysis_request) ... ok
+test_unaccepted_partial_request_keeps_other_store_and_never_dispatches_retired_code (test_collection_reexport.ReexportProtocolTests.test_unaccepted_partial_request_keeps_other_store_and_never_dispatches_retired_code) ... ok
+test_unknown_selected_can_reexport_with_idempotent_receipt_and_original_files_unchanged (test_collection_reexport.ReexportProtocolTests.test_unknown_selected_can_reexport_with_idempotent_receipt_and_original_files_unchanged) ... ok
+test_reexport_button_cancel_then_selected_scope (test_collection_reexport.ReexportUiTests.test_reexport_button_cancel_then_selected_scope) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 10.190s
+
+OK

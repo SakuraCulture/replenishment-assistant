@@ -1,0 +1,8 @@
+{
+  "module": "test_warehouse_stockout_export",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 11,
+  "elapsed_seconds": 3.6719999999913853,
+  "summary": null
+}

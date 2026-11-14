@@ -1,0 +1,10 @@
+test_changed_files_and_cancel_do_not_write_formal_receipt (test_aoxiang_receipts.ReceiptTests.test_changed_files_and_cancel_do_not_write_formal_receipt) ... ok
+test_manual_receipt_and_other_observation_not_overwritten (test_aoxiang_receipts.ReceiptTests.test_manual_receipt_and_other_observation_not_overwritten) ... ok
+test_payment_change_rejected_and_concurrent_update_at_commit_uses_original_lock_guard (test_aoxiang_receipts.ReceiptTests.test_payment_change_rejected_and_concurrent_update_at_commit_uses_original_lock_guard) ... ok
+test_real_zero_is_kept_null_blank_missing_and_mixed_status_never_become_zero (test_aoxiang_receipts.ReceiptTests.test_real_zero_is_kept_null_blank_missing_and_mixed_status_never_become_zero) ... ok
+test_short_received_and_repeat_after_lost_ack_no_new_version_or_original_changes (test_aoxiang_receipts.ReceiptTests.test_short_received_and_repeat_after_lost_ack_no_new_version_or_original_changes) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 6.179s
+
+OK

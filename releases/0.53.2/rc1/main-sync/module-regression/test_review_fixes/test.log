@@ -1,0 +1,21 @@
+test_bulk_proposal_never_guesses_duplicate_source (test_review_fixes.ReviewTests.test_bulk_proposal_never_guesses_duplicate_source) ... ok
+test_effective_values_show_overrides_without_mutation (test_review_fixes.ReviewTests.test_effective_values_show_overrides_without_mutation) ... ok
+test_generated_fractional_step_budget (test_review_fixes.ReviewTests.test_generated_fractional_step_budget) ... ok
+test_normalization_does_not_survive_reallocation (test_review_fixes.ReviewTests.test_normalization_does_not_survive_reallocation) ... ok
+test_real_mismatch_not_silently_normalized (test_review_fixes.ReviewTests.test_real_mismatch_not_silently_normalized) ... ok
+test_single_archive_read_equals_legacy (test_review_fixes.ReviewTests.test_single_archive_read_equals_legacy) ... ok
+test_source_map_detects_reorder_and_wrong_identity (test_review_fixes.ReviewTests.test_source_map_detects_reorder_and_wrong_identity) ... ok
+test_z_zero_has_explicit_reason_not_invented_forecast (test_review_fixes.ReviewTests.test_z_zero_has_explicit_reason_not_invented_forecast) ... ERROR:root:诊断 8c8ec5ab31d2 阶段=商品计算 门店=T 商品=SKU 文件= 行=2
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\input_adapter.py", line 187, in execute_one
+    try:d=calculate(inp,rules,extreme_restore=extreme_restore)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\model.py", line 293, in calculate
+    raise ValueError('趋势支撑无法确定：前7天日均Z为0，但早期销量差值非0；请核对日销/周销/月销精度，不自动回退预测')
+ValueError: 趋势支撑无法确定：前7天日均Z为0，但早期销量差值非0；请核对日销/周销/月销精度，不自动回退预测
+ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.072s
+
+OK

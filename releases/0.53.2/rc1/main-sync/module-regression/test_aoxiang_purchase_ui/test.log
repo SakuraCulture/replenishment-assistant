@@ -1,0 +1,9 @@
+test_existing_task_only_verifies_original_and_pause_no_new_upload (test_aoxiang_purchase_ui.PurchaseUiTests.test_existing_task_only_verifies_original_and_pause_no_new_upload) ... ok
+test_template_error_does_not_generate_or_upload_and_close_is_cooperative (test_aoxiang_purchase_ui.PurchaseUiTests.test_template_error_does_not_generate_or_upload_and_close_is_cooperative) ... ok
+test_unknown_no_receipt_has_no_resend_button_and_late_old_state_cannot_replace (test_aoxiang_purchase_ui.PurchaseUiTests.test_unknown_no_receipt_has_no_resend_button_and_late_old_state_cannot_replace) ... ok
+test_upload_confirmation_defaults_to_no_and_no_dispatch_on_cancel (test_aoxiang_purchase_ui.PurchaseUiTests.test_upload_confirmation_defaults_to_no_and_no_dispatch_on_cancel) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.574s
+
+OK

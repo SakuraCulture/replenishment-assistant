@@ -1,0 +1,31 @@
+{
+  "passed": false,
+  "tests": 4,
+  "failures": 4,
+  "errors": 0,
+  "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.53.1_rc1\\source\\src\\ui_goods_fast.py",
+  "source_sha256": "7cd533c7c1e091df94084433bb44c6a632aa4c325c51a6e050101198dbf24e45",
+  "test": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tests\\test_goods_reset_lifetime.py",
+  "test_sha256": "4ac1ed0a73ea6efd709b5e0dcaddb71b74056c13c078cceaaf5a49c93052e5fa",
+  "synthetic_only": true,
+  "live_platform": false,
+  "failure_details": [
+    {
+      "case": "test_active_sort_and_filter_use_new_rows_without_reordering_business (goods_reset_contract.GoodsResetLifetimeTests.test_active_sort_and_filter_use_new_rows_without_reordering_business)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tests\\test_goods_reset_lifetime.py\", line 83, in test_active_sort_and_filter_use_new_rows_without_reordering_business\n    self.no_reset_warning()\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tests\\test_goods_reset_lifetime.py\", line 58, in no_reset_warning\n    self.assertEqual(bad,[],'Native Qt rejected a nested or unpaired model reset')\nAssertionError: Lists differ: ['beginResetModel called on GoodsModel(0x1[499 chars]rst'] != []\n\nFirst list contains 6 additional elements.\nFirst extra element 0:\n'beginResetModel called on GoodsModel(0x1e6ef091f00) without calling endResetModel first'\n\n+ []\n- ['beginResetModel called on GoodsModel(0x1e6ef091f00) without calling '\n-  'endResetModel first',\n-  'endResetModel called on GoodsModel(0x1e6ef091f00) without calling '\n-  'beginResetModel first',\n-  'beginResetModel called on GoodsModel(0x1e6ef091f00) without calling '\n-  'endResetModel first',\n-  'endResetModel called on GoodsModel(0x1e6ef091f00) without calling '\n-  'beginResetModel first',\n-  'beginResetModel called on GoodsModel(0x1e6ef091f00) without calling '\n-  'endResetModel first',\n-  'endResetModel called on GoodsModel(0x1e6ef091f00) without calling '\n-  'beginResetModel first'] : Native Qt rejected a nested or unpaired model reset\n"
+    },
+    {
+      "case": "test_different_sizes_and_empty_have_one_real_reset_pair (goods_reset_contract.GoodsResetLifetimeTests.test_different_sizes_and_empty_have_one_real_reset_pair)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tests\\test_goods_reset_lifetime.py\", line 63, in test_different_sizes_and_empty_have_one_real_reset_pair\n    self.no_reset_warning()\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tests\\test_goods_reset_lifetime.py\", line 58, in no_reset_warning\n    self.assertEqual(bad,[],'Native Qt rejected a nested or unpaired model reset')\nAssertionError: Lists differ: ['beginResetModel called on GoodsModel(0x1[863 chars]rst'] != []\n\nFirst list contains 10 additional elements.\nFirst extra element 0:\n'beginResetModel called on GoodsModel(0x1e6ef091f00) without calling endResetModel first'\n\nDiff is 1005 characters long. Set self.maxDiff to None to see it. : Native Qt rejected a nested or unpaired model reset\n"
+    },
+    {
+      "case": "test_persistent_source_and_proxy_indices_are_invalidated (goods_reset_contract.GoodsResetLifetimeTests.test_persistent_source_and_proxy_indices_are_invalidated)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tests\\test_goods_reset_lifetime.py\", line 71, in test_persistent_source_and_proxy_indices_are_invalidated\n    self.no_reset_warning()\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tests\\test_goods_reset_lifetime.py\", line 58, in no_reset_warning\n    self.assertEqual(bad,[],'Native Qt rejected a nested or unpaired model reset')\nAssertionError: Lists differ: ['beginResetModel called on GoodsModel(0x1[317 chars]rst'] != []\n\nFirst list contains 4 additional elements.\nFirst extra element 0:\n'beginResetModel called on GoodsModel(0x1e6ec7f2670) without calling endResetModel first'\n\n+ []\n- ['beginResetModel called on GoodsModel(0x1e6ec7f2670) without calling '\n-  'endResetModel first',\n-  'endResetModel called on GoodsModel(0x1e6ec7f2670) without calling '\n-  'beginResetModel first',\n-  'beginResetModel called on GoodsModel(0x1e6ec7f2670) without calling '\n-  'endResetModel first',\n-  'endResetModel called on GoodsModel(0x1e6ec7f2670) without calling '\n-  'beginResetModel first'] : Native Qt rejected a nested or unpaired model reset\n"
+    },
+    {
+      "case": "test_repeated_resets_keep_view_usable_for_selection_and_reading (goods_reset_contract.GoodsResetLifetimeTests.test_repeated_resets_keep_view_usable_for_selection_and_reading)",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tests\\test_goods_reset_lifetime.py\", line 92, in test_repeated_resets_keep_view_usable_for_selection_and_reading\n    self.no_reset_warning()\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tests\\test_goods_reset_lifetime.py\", line 58, in no_reset_warning\n    self.assertEqual(bad,[],'Native Qt rejected a nested or unpaired model reset')\nAssertionError: Lists differ: ['beginResetModel called on GoodsModel(0x1[1045 chars]rst'] != []\n\nFirst list contains 12 additional elements.\nFirst extra element 0:\n'beginResetModel called on GoodsModel(0x1e6eed0de90) without calling endResetModel first'\n\nDiff is 1205 characters long. Set self.maxDiff to None to see it. : Native Qt rejected a nested or unpaired model reset\n"
+    }
+  ],
+  "error_details": []
+}

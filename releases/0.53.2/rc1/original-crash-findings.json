@@ -1,0 +1,82 @@
+{
+  "scope": "Read-only forensic review of actual 0.53.1 rc1 minidump; only this diagnostic output folder written. No app launch, business replay, platform calls, process termination, business database mutation, or dump modification.",
+  "dump": {
+    "path": "C:\\Users\\lenovo\\AppData\\Local\\CrashDumps\\补货助手.exe.20764.dmp",
+    "size_bytes": 5385491,
+    "sha256": "17390ed4d10376c47e60d06016faed22a72f7c87d8730c95a0cf1156a9d0999f"
+  },
+  "exception": {
+    "tid": 56212,
+    "code": "0xc0000409",
+    "address": "0x7ff86a68527e",
+    "parameters": [
+      7
+    ],
+    "registers": {
+      "rax": 1,
+      "rcx": 7,
+      "rdx": 2320442261504,
+      "rbx": 2320513760416,
+      "rsp": 211076152224,
+      "rbp": 0,
+      "rsi": 2320648695792,
+      "rdi": 4294967295,
+      "r8": 9223372036854775804,
+      "r9": 211073019904,
+      "rip": 140704913838718
+    }
+  },
+  "debugger_availability": {
+    "cdb": false,
+    "windbg": false,
+    "dumpchk": false,
+    "checked_standard_path": "C:\\Program Files (x86)\\Windows Kits\\10\\Debuggers\\x64"
+  },
+  "confirmed": [
+    "Exception thread 56212 stopped at ucrtbase!abort+0x4e with 0xc0000409 parameter 7.",
+    "VCRUNTIME140!_purecall+0x1a calls abort via its import at RVA0x14150; file disassembly and import table confirm pure virtual call termination.",
+    "Experimental unwind and call-site disassembly agree on front chain abort -> _purecall -> QObject destructor at Qt6Core RVA0xebfa6 -> QObject deleting destructor RVA0xec5a3 -> QtWidgets.pyd generic virtual deleting wrapper RVA0x9f9c -> Shiboken BindingManager::runDeletionInMainThread+0x39.",
+    "The lower experimental chain passes through Python interpreter/PySide signal dispatch and QTimer::timerEvent during QApplication event processing.",
+    "QObject destructor code at0xebf8e reads its d_ptr then calls d_ptr vtable slot0 at0xebfa0; return address0xebfa6 is in the actual front unwind chain.",
+    "No exact QWidget-before-QApplication fatal or QThread-destroyed fatal message was found in the captured dump bytes; this absence is limited by minidump coverage."
+  ],
+  "inference": [
+    "A deferred Qt object deletion dispatched by Shiboken while normal event processing was active encountered an invalid/partly destructed virtual object. This points to Qt/Python object lifetime handling rather than the old application-shutdown QWidget construction failure. Double deletion or invalid lifetime is a candidate, not established.",
+    "Python callback dispatch pattern is consistent with interpreter pending-call handling; exact nonexported Python function names lack PDB verification."
+  ],
+  "unknown": [
+    "The Python business callback name and source line which originally scheduled the deletion.",
+    "The concrete QObject subclass (progress dialog, model, table, or another object).",
+    "Whether this was double deletion, prior memory corruption, or another object lifetime fault.",
+    "No proof from this dump that the new stock-evidence-export feature caused the crash."
+  ],
+  "heap_limit": {
+    "object_candidate_r14": "0x21c518096d0",
+    "d_ptr_candidate_rsi": "0x21c5170eff0",
+    "captured": false,
+    "impact": "Cannot inspect the object vtable, concrete class, objectName, or Python wrapper at these heap addresses."
+  },
+  "methods": [
+    "Raw minidump module/exception/thread/memory stream parsing.",
+    "Raw stack words mapped to PE exports, retained separately as candidates only.",
+    "Experimental AMD64 standard prologue UNWIND_INFO walk using matching shipped/system PE images; chain entries supported; no epilogue emulation and no PDB symbols. This is not a complete symbolized debugger stack.",
+    "Capstone disassembly of matching DLL functions and import-table confirmation of _purecall -> abort.",
+    "Module timestamp matching and version matching where PE version resources exist."
+  ],
+  "artifacts": [
+    "parsed.json",
+    "stack-export-candidates.json",
+    "unwind-experimental.json",
+    "disassembly.json",
+    "python-shiboken-disasm.json",
+    "specific-strings.json",
+    "crash-register-object-candidates.json",
+    "module-identity.json"
+  ],
+  "diagnostic_attempts": [
+    {
+      "attempt": "Version identity extraction",
+      "initial_result": "AttributeError for PE without VS_FIXEDFILEINFO resource; corrected by preserving null version when resource absent. No files or business data modified."
+    }
+  ]
+}

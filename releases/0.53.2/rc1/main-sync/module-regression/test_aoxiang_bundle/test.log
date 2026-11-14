@@ -1,0 +1,9 @@
+test_changed_or_unlocked_runtime_never_packaged (test_aoxiang_bundle.BundleTests.test_changed_or_unlocked_runtime_never_packaged) ... ok
+test_dependency_lock_paths_and_declarations_cannot_escape (test_aoxiang_bundle.BundleTests.test_dependency_lock_paths_and_declarations_cannot_escape) ... ok
+test_only_committed_sources_and_locked_dependencies_no_user_files (test_aoxiang_bundle.BundleTests.test_only_committed_sources_and_locked_dependencies_no_user_files) ... ok
+test_package_verification_detects_changes_extra_and_missing_files (test_aoxiang_bundle.BundleTests.test_package_verification_detects_changes_extra_and_missing_files) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.283s
+
+OK

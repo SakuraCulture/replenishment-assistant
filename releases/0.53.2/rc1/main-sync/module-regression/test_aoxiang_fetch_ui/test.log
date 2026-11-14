@@ -1,0 +1,12 @@
+test_cancel_before_adoption_keeps_state_and_does_not_start_check (test_aoxiang_fetch_ui.AdoptionUiTests.test_cancel_before_adoption_keeps_state_and_does_not_start_check) ... ok
+test_check_uses_original_worker_and_only_adopts_once_after_success (test_aoxiang_fetch_ui.AdoptionUiTests.test_check_uses_original_worker_and_only_adopts_once_after_success) ... ok
+test_mismatch_after_check_keeps_original_results (test_aoxiang_fetch_ui.AdoptionUiTests.test_mismatch_after_check_keeps_original_results) ... ok
+test_new_login_failure_stops_indeterminate_progress_and_preserves_selected_stores (test_aoxiang_fetch_ui.FetchUiTests.test_new_login_failure_stops_indeterminate_progress_and_preserves_selected_stores) ... ok
+test_new_start_locates_hidden_original_blocker_without_registering_another_job (test_aoxiang_fetch_ui.FetchUiTests.test_new_start_locates_hidden_original_blocker_without_registering_another_job) ... ok
+test_review_uses_dedicated_continue_without_replaying_unknown_item (test_aoxiang_fetch_ui.FetchUiTests.test_review_uses_dedicated_continue_without_replaying_unknown_item) ... ok
+test_selection_pause_resume_same_id_then_manifest_order (test_aoxiang_fetch_ui.FetchUiTests.test_selection_pause_resume_same_id_then_manifest_order) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 7.555s
+
+OK

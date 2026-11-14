@@ -1,0 +1,15 @@
+test_batch_and_history_reexport_preserve_order_and_archive (test_signed_overwrite.SignedOverwriteTests.test_batch_and_history_reexport_preserve_order_and_archive) ... ok
+test_cancel_after_compression_before_replace_keeps_previous_file (test_signed_overwrite.SignedOverwriteTests.test_cancel_after_compression_before_replace_keeps_previous_file) ... ok
+test_cancel_during_rows_keeps_previous_file (test_signed_overwrite.SignedOverwriteTests.test_cancel_during_rows_keeps_previous_file) ... ok
+test_intra_batch_name_collision_still_rejected_before_replacement (test_signed_overwrite.SignedOverwriteTests.test_intra_batch_name_collision_still_rejected_before_replacement) ... ok
+test_overwrite_has_exactly_same_cells_types_styles_and_order_as_new_file (test_signed_overwrite.SignedOverwriteTests.test_overwrite_has_exactly_same_cells_types_styles_and_order_as_new_file) ... ok
+test_partial_save_failure_keeps_previous_file (test_signed_overwrite.SignedOverwriteTests.test_partial_save_failure_keeps_previous_file) ... ok
+test_real_windows_open_file_lock_retains_old_then_retry (test_signed_overwrite.SignedOverwriteTests.test_real_windows_open_file_lock_retains_old_then_retry) ... ok
+test_replace_failure_is_actionable_and_retry_succeeds (test_signed_overwrite.SignedOverwriteTests.test_replace_failure_is_actionable_and_retry_succeeds) ... ok
+test_second_file_cancel_keeps_first_completed_and_second_previous (test_signed_overwrite.SignedOverwriteTests.test_second_file_cancel_keeps_first_completed_and_second_previous) ... ok
+test_tracking_repeated_target_does_not_replace_first_output_again (test_signed_overwrite.SignedOverwriteTests.test_tracking_repeated_target_does_not_replace_first_output_again) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 2.044s
+
+OK

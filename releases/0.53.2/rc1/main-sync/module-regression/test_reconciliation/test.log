@@ -1,0 +1,21 @@
+test_all_zero_without_fabricated_next_documents (test_reconciliation.ReconciliationTests.test_all_zero_without_fabricated_next_documents) ... ok
+test_blank_payment_source_kept_and_zero_effect (test_reconciliation.ReconciliationTests.test_blank_payment_source_kept_and_zero_effect) ... ok
+test_formula_invalid_quantity_and_missing_column_not_zero (test_reconciliation.ReconciliationTests.test_formula_invalid_quantity_and_missing_column_not_zero) ... ok
+test_home_cache_updates_versions_and_no_cross_warehouse_effect (test_reconciliation.ReconciliationTests.test_home_cache_updates_versions_and_no_cross_warehouse_effect) ... ok
+test_missing_zero_in_payment_export_keeps_unknown_amount (test_reconciliation.ReconciliationTests.test_missing_zero_in_payment_export_keeps_unknown_amount) ... ok
+test_old_feedback_can_be_payment_basis_without_rewriting (test_reconciliation.ReconciliationTests.test_old_feedback_can_be_payment_basis_without_rewriting) ... ok
+test_old_schema_one_missing_read_unchanged (test_reconciliation.ReconciliationTests.test_old_schema_one_missing_read_unchanged) ... ok
+test_ordered_zero_missing_and_extra_not_invented_sources (test_reconciliation.ReconciliationTests.test_ordered_zero_missing_and_extra_not_invented_sources) ... ok
+test_payment_original_format_no_time_code_unit_columns_required (test_reconciliation.ReconciliationTests.test_payment_original_format_no_time_code_unit_columns_required) ... ok
+test_payment_receipt_positive_predecessor_and_missing_zero (test_reconciliation.ReconciliationTests.test_payment_receipt_positive_predecessor_and_missing_zero) ... ok
+test_pending_keeps_facts_but_never_invents_missing_zero (test_reconciliation.ReconciliationTests.test_pending_keeps_facts_but_never_invents_missing_zero) ... ok
+test_recheck_uses_archived_original_after_source_removed (test_reconciliation.ReconciliationTests.test_recheck_uses_archived_original_after_source_removed) ... ok
+test_return_export_keeps_template_zero_rows_and_original_signed (test_reconciliation.ReconciliationTests.test_return_export_keeps_template_zero_rows_and_original_signed) ... ok
+test_return_two_warehouse_batch_and_no_missing_fake_document (test_reconciliation.ReconciliationTests.test_return_two_warehouse_batch_and_no_missing_fake_document) ... ok
+test_saved_dependency_is_stale_until_explicit_recheck (test_reconciliation.ReconciliationTests.test_saved_dependency_is_stale_until_explicit_recheck) ... ok
+test_upstream_changes_after_preview_reject_no_new_payment (test_reconciliation.ReconciliationTests.test_upstream_changes_after_preview_reject_no_new_payment) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 4.041s
+
+OK

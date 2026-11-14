@@ -1,0 +1,12 @@
+test_defaults_effective_config_and_budget_optin (test_warehouse_orders.WarehouseTests.test_defaults_effective_config_and_budget_optin) ... ok
+test_filename_and_child_number (test_warehouse_orders.WarehouseTests.test_filename_and_child_number) ... ok
+test_invalid_route_not_saved (test_warehouse_orders.WarehouseTests.test_invalid_route_not_saved) ... ok
+test_no_empty_warehouse_file (test_warehouse_orders.WarehouseTests.test_no_empty_warehouse_file) ... ok
+test_partition_preserves_order_excludes_local_disabled_and_zero_new (test_warehouse_orders.WarehouseTests.test_partition_preserves_order_excludes_local_disabled_and_zero_new) ... ok
+test_unknown_blocks_entire_store (test_warehouse_orders.WarehouseTests.test_unknown_blocks_entire_store) ... ok
+test_warehouse_feedback_status (test_warehouse_orders.WarehouseTests.test_warehouse_feedback_status) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.008s
+
+OK

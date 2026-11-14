@@ -1,0 +1,15 @@
+test_actual_headers_auto_detect_and_bad_file_is_explicit (test_lifecycle_batch.LifecycleBatch.test_actual_headers_auto_detect_and_bad_file_is_explicit) ... ok
+test_cancel_before_and_at_safe_checkpoint_then_retry (test_lifecycle_batch.LifecycleBatch.test_cancel_before_and_at_safe_checkpoint_then_retry) ... ok
+test_export_partial_failure_keeps_complete_batch_receipt (test_lifecycle_batch.LifecycleBatch.test_export_partial_failure_keeps_complete_batch_receipt) ... ok
+test_file_change_after_preview_rejects_all (test_lifecycle_batch.LifecycleBatch.test_file_change_after_preview_rejects_all) ... ok
+test_missing_number_requires_binding_unless_explicit_scope (test_lifecycle_batch.LifecycleBatch.test_missing_number_requires_binding_unless_explicit_scope) ... ok
+test_no_summing_duplicate_documents (test_lifecycle_batch.LifecycleBatch.test_no_summing_duplicate_documents) ... ok
+test_pending_without_upstream_and_exclusion_recomputes_basis (test_lifecycle_batch.LifecycleBatch.test_pending_without_upstream_and_exclusion_recomputes_basis) ... ok
+test_preview_stale_and_atomic_rollback (test_lifecycle_batch.LifecycleBatch.test_preview_stale_and_atomic_rollback) ... ok
+test_same_batch_is_exactly_sequential_including_all_raw_fields (test_lifecycle_batch.LifecycleBatch.test_same_batch_is_exactly_sequential_including_all_raw_fields) ... ok
+test_store_warehouse_order_first_seen_then_stage_and_scope (test_lifecycle_batch.LifecycleBatch.test_store_warehouse_order_first_seen_then_stage_and_scope) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 1.688s
+
+OK

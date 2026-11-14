@@ -1,0 +1,16 @@
+test_ambiguous_new_content_never_overwritten (test_application_reset.ResetTests.test_ambiguous_new_content_never_overwritten) ... ok
+test_busy_writer_keeps_original (test_application_reset.ResetTests.test_busy_writer_keeps_original) ... ok
+test_complete_backup_includes_settings_platform_identity_and_analysis (test_application_reset.ResetTests.test_complete_backup_includes_settings_platform_identity_and_analysis) ... ok
+test_failed_commit_restores_original (test_application_reset.ResetTests.test_failed_commit_restores_original) ... ok
+test_interrupted_after_commit_recognizes_receipt (test_application_reset.ResetTests.test_interrupted_after_commit_recognizes_receipt) ... ok
+test_interrupted_after_rename_restores_before_open (test_application_reset.ResetTests.test_interrupted_after_rename_restores_before_open) ... ok
+test_interrupted_before_rename_leaves_original (test_application_reset.ResetTests.test_interrupted_before_rename_leaves_original) ... ok
+test_multiple_instances_allowed_but_reset_exclusive (test_application_reset.ResetTests.test_multiple_instances_allowed_but_reset_exclusive) ... ok
+test_old_instance_blocks_before_backup (test_application_reset.ResetTests.test_old_instance_blocks_before_backup) ... ok
+test_reject_unsafe_paths_and_changed_destination (test_application_reset.ResetTests.test_reject_unsafe_paths_and_changed_destination) ... ok
+test_repeated_reset_keeps_each_previous_backup (test_application_reset.ResetTests.test_repeated_reset_keeps_each_previous_backup) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 1.576s
+
+OK

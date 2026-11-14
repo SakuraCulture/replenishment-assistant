@@ -1,0 +1,35 @@
+test_ack_bound_to_observation_defer_restore_and_conflict (test_purchases.PurchaseTests.test_ack_bound_to_observation_defer_restore_and_conflict) ... ok
+test_cancel_preparation_before_transaction_and_boundary (test_purchases.PurchaseTests.test_cancel_preparation_before_transaction_and_boundary) ... ok
+test_cancel_waiting_for_lock_rolls_back (test_purchases.PurchaseTests.test_cancel_waiting_for_lock_rolls_back) ... ok
+test_cancelled_order_clears_active_allocations_keeps_old (test_purchases.PurchaseTests.test_cancelled_order_clears_active_allocations_keeps_old) ... ok
+test_corrupt_cache_rebuild_and_payload_tamper_rejected (test_purchases.PurchaseTests.test_corrupt_cache_rebuild_and_payload_tamper_rejected) ... ok
+test_cross_warehouse_and_extra_requires_explicit (test_purchases.PurchaseTests.test_cross_warehouse_and_extra_requires_explicit) ... ok
+test_duplicate_id_same_content_dedup_conflict_reject (test_purchases.PurchaseTests.test_duplicate_id_same_content_dedup_conflict_reject) ... ok
+test_empty_and_formula_without_cache (test_purchases.PurchaseTests.test_empty_and_formula_without_cache) ... ok
+test_exports_scopes_order_values_types_and_originals_unchanged (test_purchases.PurchaseTests.test_exports_scopes_order_values_types_and_originals_unchanged) ... ok
+test_first_import_versions_units_and_signed_immutable (test_purchases.PurchaseTests.test_first_import_versions_units_and_signed_immutable) ... ok
+test_full_new_version_replaces_keeps_history (test_purchases.PurchaseTests.test_full_new_version_replaces_keeps_history) ... ok
+test_legacy_unlabelled_warehouse_does_not_block_other_orders (test_purchases.PurchaseTests.test_legacy_unlabelled_warehouse_does_not_block_other_orders) ... ok
+test_mapping_profile_template_duplicate_headers_and_numeric_codes (test_purchases.PurchaseTests.test_mapping_profile_template_duplicate_headers_and_numeric_codes) ... ok
+test_missing_id_update_needs_identity_review (test_purchases.PurchaseTests.test_missing_id_update_needs_identity_review) ... ok
+test_missing_quantity_not_zero_zero_explicit (test_purchases.PurchaseTests.test_missing_quantity_not_zero_zero_explicit) ... ok
+test_old_feedback_without_warehouse_is_review_not_guessed (test_purchases.PurchaseTests.test_old_feedback_without_warehouse_is_review_not_guessed) ... ok
+test_old_revision_requires_explicit_binding_no_migration (test_purchases.PurchaseTests.test_old_revision_requires_explicit_binding_no_migration) ... ok
+test_partial_export_cancel_reports_files_and_no_db_change (test_purchases.PurchaseTests.test_partial_export_cancel_reports_files_and_no_db_change) ... ok
+test_preview_stale_signing_and_purchase_conflicts_atomic (test_purchases.PurchaseTests.test_preview_stale_signing_and_purchase_conflicts_atomic) ... ok
+test_repeated_import_does_not_accumulate (test_purchases.PurchaseTests.test_repeated_import_does_not_accumulate) ... ok
+test_replay_retains_explicit_conversion_and_manual_links (test_purchases.PurchaseTests.test_replay_retains_explicit_conversion_and_manual_links) ... ok
+test_reply_changes_invalidate_preview (test_purchases.PurchaseTests.test_reply_changes_invalidate_preview) ... ok
+test_retained_raw_cells_are_integrity_checked (test_purchases.PurchaseTests.test_retained_raw_cells_are_integrity_checked) ... ok
+test_revising_links_is_versioned_and_noop_idempotent (test_purchases.PurchaseTests.test_revising_links_is_versioned_and_noop_idempotent) ... ok
+test_source_changes_rejected_and_failed_batch_atomic (test_purchases.PurchaseTests.test_source_changes_rejected_and_failed_batch_atomic) ... ok
+test_split_allocations_and_overallocation (test_purchases.PurchaseTests.test_split_allocations_and_overallocation) ... ok
+test_todo_does_not_write_user_db_missing_is_pending (test_purchases.PurchaseTests.test_todo_does_not_write_user_db_missing_is_pending) ... ok
+test_trash_cannot_link_or_export_but_original_stays (test_purchases.PurchaseTests.test_trash_cannot_link_or_export_but_original_stays) ... ok
+test_two_lines_same_sku_and_two_orders_add_only_links (test_purchases.PurchaseTests.test_two_lines_same_sku_and_two_orders_add_only_links) ... ok
+test_unknown_units_then_explicit_conversion (test_purchases.PurchaseTests.test_unknown_units_then_explicit_conversion) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 5.472s
+
+OK

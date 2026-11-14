@@ -1,0 +1,10 @@
+test_detail_is_store_scope_search_does_not_recount (test_review_amounts_ui.ReviewMoneyUiTests.test_detail_is_store_scope_search_does_not_recount) ... ok
+test_excluded_view_is_explicit_read_only_and_work_scope_unchanged (test_review_amounts_ui.ReviewMoneyUiTests.test_excluded_view_is_explicit_read_only_and_work_scope_unchanged) ... ok
+test_new_selection_combines_month_selection_budget_and_barcode (test_review_amounts_ui.ReviewMoneyUiTests.test_new_selection_combines_month_selection_budget_and_barcode) ... ok
+test_stale_pending_draft_and_restore (test_review_amounts_ui.ReviewMoneyUiTests.test_stale_pending_draft_and_restore) ... ok
+test_summary_click_filters_zero_and_overlap (test_review_amounts_ui.ReviewMoneyUiTests.test_summary_click_filters_zero_and_overlap) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 2.316s
+
+OK

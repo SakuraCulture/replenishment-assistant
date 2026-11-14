@@ -1,0 +1,8 @@
+{
+  "module": "test_signing_failures",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 9,
+  "elapsed_seconds": 3.5780000000086147,
+  "summary": null
+}

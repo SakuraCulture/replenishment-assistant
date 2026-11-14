@@ -1,0 +1,15 @@
+test_changed_digest_is_rejected_even_with_current_file_identity (test_warehouse_history_memory.WarehouseHistoryMemoryTests.test_changed_digest_is_rejected_even_with_current_file_identity) ... ok
+test_corrupt_unselected_history_still_rejects_the_directory (test_warehouse_history_memory.WarehouseHistoryMemoryTests.test_corrupt_unselected_history_still_rejects_the_directory) ... ok
+test_empty_unknown_and_cancel_keep_existing_validation (test_warehouse_history_memory.WarehouseHistoryMemoryTests.test_empty_unknown_and_cancel_keep_existing_validation) ... ok
+test_file_change_during_validation_is_rejected (test_warehouse_history_memory.WarehouseHistoryMemoryTests.test_file_change_during_validation_is_rejected) ... ok
+test_foreign_folder_is_not_restored (test_warehouse_history_memory.WarehouseHistoryMemoryTests.test_foreign_folder_is_not_restored) ... ok
+test_previous_catalog_is_not_held_while_loading_next (test_warehouse_history_memory.WarehouseHistoryMemoryTests.test_previous_catalog_is_not_held_while_loading_next) ... ok
+test_replaced_deleted_and_metadata_changed_do_not_choose_another (test_warehouse_history_memory.WarehouseHistoryMemoryTests.test_replaced_deleted_and_metadata_changed_do_not_choose_another) ... ok
+test_same_order_metadata_and_complete_selected_values (test_warehouse_history_memory.WarehouseHistoryMemoryTests.test_same_order_metadata_and_complete_selected_values) ... ok
+test_windows_unsigned_file_identity_roundtrips_qt_without_overflow (test_warehouse_history_memory.WarehouseHistoryMemoryTests.test_windows_unsigned_file_identity_roundtrips_qt_without_overflow) ... ok
+test_real_restore_dialog_keeps_only_metadata_and_reads_chosen_version (test_warehouse_history_memory.WarehouseHistoryUiTests.test_real_restore_dialog_keeps_only_metadata_and_reads_chosen_version) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.509s
+
+OK

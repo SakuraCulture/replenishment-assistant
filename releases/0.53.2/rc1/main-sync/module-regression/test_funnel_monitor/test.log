@@ -1,0 +1,12 @@
+test_cancel_during_monitor_rows (test_funnel_monitor.MonitorTests.test_cancel_during_monitor_rows) ... ok
+test_exclusions_and_receipt_common_cohort (test_funnel_monitor.MonitorTests.test_exclusions_and_receipt_common_cohort) ... ok
+test_layout_order_values_percent_text_ids_and_shared_style (test_funnel_monitor.MonitorTests.test_layout_order_values_percent_text_ids_and_shared_style) ... ok
+test_missing_unit_not_summed_and_all_unpriced_not_zero (test_funnel_monitor.MonitorTests.test_missing_unit_not_summed_and_all_unpriced_not_zero) ... ok
+test_periods_cover_only_full_windows_and_numeric_percent (test_funnel_monitor.MonitorTests.test_periods_cover_only_full_windows_and_numeric_percent) ... ok
+test_quantity_cohort_not_price_dependent_and_no_zero_denominator (test_funnel_monitor.MonitorTests.test_quantity_cohort_not_price_dependent_and_no_zero_denominator) ... ok
+test_quantity_separates_units_and_keeps_unknown_and_zero (test_funnel_monitor.MonitorTests.test_quantity_separates_units_and_keeps_unknown_and_zero) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.917s
+
+OK

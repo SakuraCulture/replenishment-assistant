@@ -1,0 +1,11 @@
+test_A_restore_B_then_AI_failure_retry_uses_B (test_automation_gateway.GatewayRegression.test_A_restore_B_then_AI_failure_retry_uses_B) ... ok
+test_active_plan_is_not_reapplied_over_manual_current_parameters (test_automation_gateway.GatewayRegression.test_active_plan_is_not_reapplied_over_manual_current_parameters) ... ok
+test_human_takeover_prevents_automatic_current_adoption (test_automation_gateway.GatewayRegression.test_human_takeover_prevents_automatic_current_adoption) ... ok
+test_preview_parameters_are_frozen_and_scheduler_blocks_new_AI_work (test_automation_gateway.GatewayRegression.test_preview_parameters_are_frozen_and_scheduler_blocks_new_AI_work) ... ok
+test_reconnect_and_validation_do_not_cross_workspace (test_automation_gateway.GatewayRegression.test_reconnect_and_validation_do_not_cross_workspace) ... ok
+test_result_cache_is_bounded_and_adopted_results_survive (test_automation_gateway.GatewayRegression.test_result_cache_is_bounded_and_adopted_results_survive) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 9.012s
+
+OK

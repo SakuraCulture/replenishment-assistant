@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "version": "0.53.2 rc1",
+  "targeted_tests": 128,
+  "native_workflow_checks": 10,
+  "native_stock_evidence_checks": 9,
+  "original_purecall_reproduced": false,
+  "original_purecall_root_cause_closed": false,
+  "confirmed_model_reset_bug_fixed": true,
+  "gui_cycle_collection_guard_verified": true,
+  "real_data_mutated": false,
+  "live_platform": false,
+  "source_reference": "snapshot-3ec340026c93c804b61b64b6ba7c33c93492f397ad48891da828a6ced41c8188",
+  "exe_sha256": "f0249288e61f91748518efc9a32a593ffe9ca0a834a0e375117f134a088bcb5f",
+  "full_suite_claimed": false
+}

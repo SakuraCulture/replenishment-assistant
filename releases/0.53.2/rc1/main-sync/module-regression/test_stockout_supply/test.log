@@ -1,0 +1,15 @@
+test_adopted_single_and_dual_routes_select_only_the_assigned_catalog (test_stockout_supply.SupplyTests.test_adopted_single_and_dual_routes_select_only_the_assigned_catalog) ... ok
+test_adoption_is_frozen_until_explicit_readoption_and_old_run_keeps_basis (test_stockout_supply.SupplyTests.test_adoption_is_frozen_until_explicit_readoption_and_old_run_keeps_basis) ... ok
+test_choice_preview_and_adoption_use_the_same_saved_route_source (test_stockout_supply.SupplyTests.test_choice_preview_and_adoption_use_the_same_saved_route_source) ... ok
+test_concurrent_route_change_rejects_adoption_without_changing_analysis_settings (test_stockout_supply.SupplyTests.test_concurrent_route_change_rejects_adoption_without_changing_analysis_settings) ... ok
+test_no_business_db_is_created_and_no_legacy_route_guessed (test_stockout_supply.SupplyTests.test_no_business_db_is_created_and_no_legacy_route_guessed) ... ok
+test_parameter_page_routes_override_stale_cache_and_do_not_resurrect_missing (test_stockout_supply.SupplyTests.test_parameter_page_routes_override_stale_cache_and_do_not_resurrect_missing) ... ok
+test_saved_clear_and_invalid_secondary_are_explicit_not_silently_adopted (test_stockout_supply.SupplyTests.test_saved_clear_and_invalid_secondary_are_explicit_not_silently_adopted) ... ok
+test_completed_worker_result_is_drained_after_poll_exit_race (test_stockout_supply.WorkerCompletionTests.test_completed_worker_result_is_drained_after_poll_exit_race) ... ok
+test_exit_without_result_or_with_error_still_fails (test_stockout_supply.WorkerCompletionTests.test_exit_without_result_or_with_error_still_fails) ... ERROR:root:门店缺货率 query; 取消来源=未由页面请求: isolated failure fixture
+ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 1.309s
+
+OK

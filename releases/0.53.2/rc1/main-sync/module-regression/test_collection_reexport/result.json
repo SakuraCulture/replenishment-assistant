@@ -1,0 +1,8 @@
+{
+  "module": "test_collection_reexport",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 4,
+  "elapsed_seconds": 11.437000000005355,
+  "summary": null
+}

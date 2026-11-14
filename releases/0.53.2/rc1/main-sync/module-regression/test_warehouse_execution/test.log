@@ -1,0 +1,13 @@
+test_first_issue_only_one_warehouse_does_not_activate_the_other (test_warehouse_execution.WarehouseExecutionTests.test_first_issue_only_one_warehouse_does_not_activate_the_other) ... ok
+test_legacy_read_does_not_create_tables_or_change_snapshots (test_warehouse_execution.WarehouseExecutionTests.test_legacy_read_does_not_create_tables_or_change_snapshots) ... ok
+test_materialization_preserves_identity_and_freezes_only_warehouse_rows (test_warehouse_execution.WarehouseExecutionTests.test_materialization_preserves_identity_and_freezes_only_warehouse_rows) ... ok
+test_other_warehouse_generation_does_not_block_a_changed_sibling (test_warehouse_execution.WarehouseExecutionTests.test_other_warehouse_generation_does_not_block_a_changed_sibling) ... ok
+test_repeated_publish_does_not_increment_child_revision (test_warehouse_execution.WarehouseExecutionTests.test_repeated_publish_does_not_increment_child_revision) ... ok
+test_retired_warehouse_is_not_revived_by_parent_or_default_selection (test_warehouse_execution.WarehouseExecutionTests.test_retired_warehouse_is_not_revived_by_parent_or_default_selection) ... ok
+test_sibling_source_revision_is_pinned_after_only_shandong_changes (test_warehouse_execution.WarehouseExecutionTests.test_sibling_source_revision_is_pinned_after_only_shandong_changes) ... ok
+test_snapshot_integrity_checked_independently_of_legacy_parent_digest (test_warehouse_execution.WarehouseExecutionTests.test_snapshot_integrity_checked_independently_of_legacy_parent_digest) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.921s
+
+OK

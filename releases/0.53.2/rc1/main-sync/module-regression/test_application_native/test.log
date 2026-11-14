@@ -1,0 +1,8 @@
+test_native_log_setup_failure_preserves_original_error_and_qt_handler (test_application_native.NativeDiagnostics.test_native_log_setup_failure_preserves_original_error_and_qt_handler) ... ok
+test_preexisting_native_and_qt_handlers_remain_usable (test_application_native.NativeDiagnostics.test_preexisting_native_and_qt_handlers_remain_usable) ... ok
+test_qt_messages_and_native_stacks_have_durable_non_widget_evidence (test_application_native.NativeDiagnostics.test_qt_messages_and_native_stacks_have_durable_non_widget_evidence) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.667s
+
+OK

@@ -1,0 +1,58 @@
+test_background_error_under_exclusive_lock_keeps_queryable_failure (test_automation_lock.LockTests.test_background_error_under_exclusive_lock_keeps_queryable_failure) ... ERROR:root:AI 任务失败
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\automation_gateway.py", line 33, in run
+    try: self.result_ready.emit(self.fn(self))
+                                ^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_automation_lock.py", line 75, in fail
+    def fail(_): raise ValueError('synthetic failure')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: synthetic failure
+ERROR:root:AI 任务结果处理未完成：29e1efb72b88413fa455211f70c1bbca
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\automation_gateway.py", line 400, in failed
+    self.journal.update(task['task_id'], state='stopped' if code == 'CANCELLED' else 'failed', message=message, error_code=code)
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\automation_tasks.py", line 67, in update
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+test_busy_classification_does_not_treat_arbitrary_locked_text_as_database (test_automation_lock.LockTests.test_busy_classification_does_not_treat_arbitrary_locked_text_as_database) ... ok
+test_completion_commit_busy_is_not_success_and_not_replayed (test_automation_lock.LockTests.test_completion_commit_busy_is_not_success_and_not_replayed) ... ERROR:root:AI 任务结果处理未完成：c8795ca449d2484481ee868c18aff2af
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\automation_gateway.py", line 394, in completed
+    try: finish(value)
+         ^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_automation_lock.py", line 65, in finish
+    self.g.journal.update(self.tid,state='prepared')
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\automation_tasks.py", line 66, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+ok
+test_progress_write_failure_stops_later_callback (test_automation_lock.LockTests.test_progress_write_failure_stops_later_callback) ... ERROR:root:AI 任务结果处理未完成：6acef4493d0541c9aae62869b6803daa
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\automation_gateway.py", line 383, in progress
+    self.last_stage = time.monotonic(); self.journal.update(task['task_id'], message=message); self.changed.emit()
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\automation_tasks.py", line 66, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+ok
+test_store_event_write_failure_does_not_adopt (test_automation_lock.LockTests.test_store_event_write_failure_does_not_adopt) ... ERROR:root:AI 任务结果处理未完成：d68892861b974187baae49b633dbcad2
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\automation_gateway.py", line 389, in store_event
+    try: store_handler(*args)
+         ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_automation_lock.py", line 84, in <lambda>
+    lambda *args:self.g.journal.update(self.tid,message='门店已完成'))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\automation_tasks.py", line 66, in update
+    with closing(self.connect(_timeout)) as db, db:
+                                                ^^
+sqlite3.OperationalError: database is locked
+ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 4.561s
+
+OK

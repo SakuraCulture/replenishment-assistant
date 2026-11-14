@@ -1,0 +1,7 @@
+test_replace_preserves_chosen_mode_and_disables_old_plans (test_stockout_hub_schedule.HubScheduleTests.test_replace_preserves_chosen_mode_and_disables_old_plans) ... ok
+test_same_time_legacy_plans_form_one_both_request (test_stockout_hub_schedule.HubScheduleTests.test_same_time_legacy_plans_form_one_both_request) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.091s
+
+OK

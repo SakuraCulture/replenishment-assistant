@@ -1,0 +1,9 @@
+test_explicit_worker_collection_is_reported_without_hiding_it (test_application_gc.GuiGarbageCollection.test_explicit_worker_collection_is_reported_without_hiding_it) ... ok
+test_natural_worker_allocation_never_collects_gui_cycles_in_worker (test_application_gc.GuiGarbageCollection.test_natural_worker_allocation_never_collects_gui_cycles_in_worker) ... ok
+test_original_disabled_gc_and_reentrant_callbacks_are_preserved (test_application_gc.GuiGarbageCollection.test_original_disabled_gc_and_reentrant_callbacks_are_preserved) ... ok
+test_worker_cannot_install_collect_or_restore_global_gui_policy (test_application_gc.GuiGarbageCollection.test_worker_cannot_install_collect_or_restore_global_gui_policy) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 2.020s
+
+OK

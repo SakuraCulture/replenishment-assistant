@@ -1,0 +1,24 @@
+[
+  {
+    "component": "aoxiang",
+    "passed": true,
+    "exit_code": 0,
+    "elapsed_seconds": 52.110000000015134,
+    "tests": 253,
+    "pass": 253,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  {
+    "component": "jst_catalog",
+    "passed": true,
+    "exit_code": 0,
+    "elapsed_seconds": 5.405999999988126,
+    "tests": 103,
+    "pass": 103,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  }
+]

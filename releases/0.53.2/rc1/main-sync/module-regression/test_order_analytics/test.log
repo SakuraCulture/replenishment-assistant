@@ -1,0 +1,21 @@
+test_added_rows_unknown_not_zero_and_group_sums (test_order_analytics.AnalyticsTests.test_added_rows_unknown_not_zero_and_group_sums) ... ok
+test_budget_zero_still_in_model_cohort (test_order_analytics.AnalyticsTests.test_budget_zero_still_in_model_cohort) ... ok
+test_cancel_and_retry (test_order_analytics.AnalyticsTests.test_cancel_and_retry) ... ok
+test_changed_source_rejects_export_no_half_file (test_order_analytics.AnalyticsTests.test_changed_source_rejects_export_no_half_file) ... ok
+test_complete_lifecycle_and_actual_payment (test_order_analytics.AnalyticsTests.test_complete_lifecycle_and_actual_payment) ... ok
+test_confirmed_blank_zero_and_stale_downstream (test_order_analytics.AnalyticsTests.test_confirmed_blank_zero_and_stale_downstream) ... ok
+test_do_not_overmatch_retired_words (test_order_analytics.AnalyticsTests.test_do_not_overmatch_retired_words) ... ok
+test_each_frozen_warehouse_source_read_once (test_order_analytics.AnalyticsTests.test_each_frozen_warehouse_source_read_once) ... ok
+test_exact_query_and_order_snapshot (test_order_analytics.AnalyticsTests.test_exact_query_and_order_snapshot) ... ok
+test_export_types_all_rows_and_source_immutable (test_order_analytics.AnalyticsTests.test_export_types_all_rows_and_source_immutable) ... ok
+test_false_without_list_is_unknown_not_nonmandatory (test_order_analytics.AnalyticsTests.test_false_without_list_is_unknown_not_nonmandatory) ... ok
+test_five_stages_price_missing_and_membership (test_order_analytics.AnalyticsTests.test_five_stages_price_missing_and_membership) ... ok
+test_missing_virtual_column_not_blank (test_order_analytics.AnalyticsTests.test_missing_virtual_column_not_blank) ... ok
+test_no_mutation_during_collection (test_order_analytics.AnalyticsTests.test_no_mutation_during_collection) ... ok
+test_store_stop_and_warehouse_disabled_no_double_count (test_order_analytics.AnalyticsTests.test_store_stop_and_warehouse_disabled_no_double_count) ... ok
+test_virtual_tag_excludes_all_stages_in_assigned_warehouse (test_order_analytics.AnalyticsTests.test_virtual_tag_excludes_all_stages_in_assigned_warehouse) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 3.237s
+
+OK

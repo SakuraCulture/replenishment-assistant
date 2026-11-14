@@ -1,0 +1,17 @@
+test_can_edit_after_receipt_and_keeps_receipt_basis (test_payment_references.PaymentReferenceTests.test_can_edit_after_receipt_and_keeps_receipt_basis) ... ok
+test_commit_is_not_interrupted_halfway (test_payment_references.PaymentReferenceTests.test_commit_is_not_interrupted_halfway) ... ok
+test_concurrent_number_or_payment_update_requires_reopen (test_payment_references.PaymentReferenceTests.test_concurrent_number_or_payment_update_requires_reopen) ... ok
+test_concurrent_update_between_read_and_write_is_detected (test_payment_references.PaymentReferenceTests.test_concurrent_update_between_read_and_write_is_detected) ... ok
+test_deleted_or_resigned_order_cannot_be_edited (test_payment_references.PaymentReferenceTests.test_deleted_or_resigned_order_cannot_be_edited) ... ok
+test_existing_imported_number_prefills_without_modifying_original (test_payment_references.PaymentReferenceTests.test_existing_imported_number_prefills_without_modifying_original) ... ok
+test_fill_and_correct_keep_every_business_document_identical (test_payment_references.PaymentReferenceTests.test_fill_and_correct_keep_every_business_document_identical) ... ok
+test_invalid_number_does_not_create_a_record (test_payment_references.PaymentReferenceTests.test_invalid_number_does_not_create_a_record) ... ok
+test_mid_write_failure_rolls_back_number_and_history_together (test_payment_references.PaymentReferenceTests.test_mid_write_failure_rolls_back_number_and_history_together) ... ok
+test_payment_required_and_cancellation_before_write (test_payment_references.PaymentReferenceTests.test_payment_required_and_cancellation_before_write) ... ok
+test_repeat_is_noop_and_read_only_open_does_not_write (test_payment_references.PaymentReferenceTests.test_repeat_is_noop_and_read_only_open_does_not_write) ... ok
+test_same_store_other_warehouse_and_unselected_orders_untouched (test_payment_references.PaymentReferenceTests.test_same_store_other_warehouse_and_unselected_orders_untouched) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 4.968s
+
+OK

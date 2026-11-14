@@ -1,0 +1,23 @@
+test_batch_confirmation_rejects_concurrent_preview_change (test_aoxiang_workflow_ui.WorkflowUiTests.test_batch_confirmation_rejects_concurrent_preview_change) ... ok
+test_batch_upload_default_cancel_exact_selection_and_no_checkbox_leak (test_aoxiang_workflow_ui.WorkflowUiTests.test_batch_upload_default_cancel_exact_selection_and_no_checkbox_leak) ... ok
+test_client_constructor_failure_keeps_task_and_releases_gate (test_aoxiang_workflow_ui.WorkflowUiTests.test_client_constructor_failure_keeps_task_and_releases_gate) ... ok
+test_foreground_waits_for_actual_child_exit_and_ui_heartbeat_continues (test_aoxiang_workflow_ui.WorkflowUiTests.test_foreground_waits_for_actual_child_exit_and_ui_heartbeat_continues) ... ok
+test_idle_host_direct_destruction_releases_directory_lock (test_aoxiang_workflow_ui.WorkflowUiTests.test_idle_host_direct_destruction_releases_directory_lock) ... ok
+test_idle_queue_message_finishes_and_delete_navigation_releases_maintenance (test_aoxiang_workflow_ui.WorkflowUiTests.test_idle_queue_message_finishes_and_delete_navigation_releases_maintenance) ... ok
+test_local_failure_has_reason_not_fake_preview_and_can_end_selected (test_aoxiang_workflow_ui.WorkflowUiTests.test_local_failure_has_reason_not_fake_preview_and_can_end_selected) ... ok
+test_receipt_selection_local_only_order_default_off_and_confirmation (test_aoxiang_workflow_ui.WorkflowUiTests.test_receipt_selection_local_only_order_default_off_and_confirmation) ... ok
+test_refresh_keeps_checks_by_order_identity_not_old_row_number (test_aoxiang_workflow_ui.WorkflowUiTests.test_refresh_keeps_checks_by_order_identity_not_old_row_number) ... ok
+test_second_instance_cannot_dispatch_and_lock_released_on_shutdown (test_aoxiang_workflow_ui.WorkflowUiTests.test_second_instance_cannot_dispatch_and_lock_released_on_shutdown) ... WARNING:root:翱象调度锁初始化失败: C:\Users\lenovo\AppData\Local\Temp\tmppf4e2srs\aoxiang
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 86, in __init__
+    self.owner.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+test_selected_button_and_local_delete_apply_exact_checkbox_scope (test_aoxiang_workflow_ui.WorkflowUiTests.test_selected_button_and_local_delete_apply_exact_checkbox_scope) ... ok
+test_show_modal_assigns_gate_before_queued_local_load (test_aoxiang_workflow_ui.WorkflowUiTests.test_show_modal_assigns_gate_before_queued_local_load) ... ok
+test_stop_target_close_wait_and_cancelled_host_close_can_resume (test_aoxiang_workflow_ui.WorkflowUiTests.test_stop_target_close_wait_and_cancelled_host_close_can_resume) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 2.221s
+
+OK

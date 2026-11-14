@@ -1,0 +1,19 @@
+test_duplicate_draft_and_signed_work_keep_exact_unselected_values (test_deletion_load.DuplicateWorkRewrites.test_duplicate_draft_and_signed_work_keep_exact_unselected_values) ... ok
+test_duplicate_payload_still_checks_each_draft_digest (test_deletion_load.DuplicateWorkRewrites.test_duplicate_payload_still_checks_each_draft_digest) ... ok
+test_repeated_staged_block_is_compressed_once (test_deletion_load.DuplicateWorkRewrites.test_repeated_staged_block_is_compressed_once) ... ok
+test_same_payload_on_different_days_uses_each_days_selected_stores (test_deletion_load.DuplicateWorkRewrites.test_same_payload_on_different_days_uses_each_days_selected_stores) ... ok
+test_cache_publication_changes_only_new_or_changed_rows (test_deletion_load.StreamingEvidence.test_cache_publication_changes_only_new_or_changed_rows) ... ok
+test_exact_canonical_list_token_and_non_destructive_finalization (test_deletion_load.StreamingEvidence.test_exact_canonical_list_token_and_non_destructive_finalization) ... ok
+test_index_scan_preserves_matches_boundaries_and_rejects_invalid_text (test_deletion_load.StreamingEvidence.test_index_scan_preserves_matches_boundaries_and_rejects_invalid_text) ... ok
+test_large_cache_rows_keep_exact_unselected_bytes (test_deletion_load.StreamingEvidence.test_large_cache_rows_keep_exact_unselected_bytes) ... ok
+test_utf8_boundary_and_invalid_tail (test_deletion_load.StreamingEvidence.test_utf8_boundary_and_invalid_tail) ... ok
+test_concurrent_commit_discards_shortcut_and_revalidates_bytes (test_deletion_load.VerifiedReferences.test_concurrent_commit_discards_shortcut_and_revalidates_bytes) ... ok
+test_concurrent_corruption_not_hidden_by_verified_cache (test_deletion_load.VerifiedReferences.test_concurrent_corruption_not_hidden_by_verified_cache) ... ok
+test_prepared_descriptors_do_not_retain_source_blobs (test_deletion_load.VerifiedReferences.test_prepared_descriptors_do_not_retain_source_blobs) ... ok
+test_stable_database_reuses_only_operation_verified_references (test_deletion_load.VerifiedReferences.test_stable_database_reuses_only_operation_verified_references) ... ok
+test_valid_shared_payload_change_after_prepare_is_rebased (test_deletion_load.VerifiedReferences.test_valid_shared_payload_change_after_prepare_is_rebased) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.905s
+
+OK

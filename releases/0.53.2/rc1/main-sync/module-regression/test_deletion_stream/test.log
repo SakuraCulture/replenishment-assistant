@@ -1,0 +1,14 @@
+test_cached_block_checks_each_reference_length_before_discard (test_deletion_stream.DeltaReferences.test_cached_block_checks_each_reference_length_before_discard) ... ok
+test_external_cache_never_hides_corrupt_content (test_deletion_stream.DeltaReferences.test_external_cache_never_hides_corrupt_content) ... ok
+test_invalid_receipt_repair_is_staged_until_publication (test_deletion_stream.DeltaReferences.test_invalid_receipt_repair_is_staged_until_publication) ... ok
+test_valid_source_receipts_are_not_copied_or_republished (test_deletion_stream.DeltaReferences.test_valid_source_receipts_are_not_copied_or_republished) ... ok
+test_corrupt_removed_branch_is_still_validated (test_deletion_stream.StreamRewrite.test_corrupt_removed_branch_is_still_validated) ... ok
+test_many_blocks_with_deleted_and_retained_stores_and_optional_defaults (test_deletion_stream.StreamRewrite.test_many_blocks_with_deleted_and_retained_stores_and_optional_defaults) ... ok
+test_selected_intake_uses_saved_store_code_mapping (test_deletion_stream.StreamRewrite.test_selected_intake_uses_saved_store_code_mapping) ... ok
+test_source_digest_mismatch_rejected_even_when_all_stores_removed (test_deletion_stream.StreamRewrite.test_source_digest_mismatch_rejected_even_when_all_stores_removed) ... ok
+test_wide_root_current_format_uses_compatible_bounded_path (test_deletion_stream.StreamRewrite.test_wide_root_current_format_uses_compatible_bounded_path) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.407s
+
+OK

@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "package": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.2_rc1\\补货助手_0.53.2_rc1_界面模型修复与回收防护.zip",
+  "package_bytes": 156761864,
+  "package_sha256": "d2bdb0868514cd26e8065f23382e2397a57755902fbac5c11ed0699ce4218f2f",
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.2_rc1\\补货助手\\补货助手.exe",
+  "exe_sha256": "f0249288e61f91748518efc9a32a593ffe9ca0a834a0e375117f134a088bcb5f",
+  "file_count": 1337,
+  "zip_crc_verified": true,
+  "version": "0.53.2 rc1",
+  "source_reference": "snapshot-3ec340026c93c804b61b64b6ba7c33c93492f397ad48891da828a6ced41c8188",
+  "git_head": "e2f8fbcaa713ad5ed9bc5cdf053b859f8dc9870c",
+  "git_branch": "codex/fix-runtime-qt-lifetime-0.53.2",
+  "git_index_empty": true,
+  "original_purecall_root_cause_closed": false,
+  "real_data_mutated": false,
+  "old_delivery_preserved": true
+}

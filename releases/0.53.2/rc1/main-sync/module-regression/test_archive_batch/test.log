@@ -1,0 +1,16 @@
+test_cancel_before_and_during_then_retry (test_archive_batch.BatchTests.test_cancel_before_and_during_then_retry) ... ok
+test_capacity_no_truncation_and_duplicate_revision_rejected (test_archive_batch.BatchTests.test_capacity_no_truncation_and_duplicate_revision_rejected) ... ok
+test_combined_fails_atomic_per_warehouse_other_warehouse_completes (test_archive_batch.BatchTests.test_combined_fails_atomic_per_warehouse_other_warehouse_completes) ... ok
+test_date_range_and_source_status_and_legacy_form_guard (test_archive_batch.BatchTests.test_date_range_and_source_status_and_legacy_form_guard) ... ok
+test_missing_corrupt_source_and_explicit_partial (test_archive_batch.BatchTests.test_missing_corrupt_source_and_explicit_partial) ... ok
+test_original_byte_identity_and_dedup_associations (test_archive_batch.BatchTests.test_original_byte_identity_and_dedup_associations) ... ok
+test_partial_completion_and_no_overwrite (test_archive_batch.BatchTests.test_partial_completion_and_no_overwrite) ... ok
+test_preview_bound_revision_current_update_does_not_replace (test_archive_batch.BatchTests.test_preview_bound_revision_current_update_does_not_replace) ... ok
+test_reference_is_labelled_derived_and_retains_duplicate_columns (test_archive_batch.BatchTests.test_reference_is_labelled_derived_and_retains_duplicate_columns) ... ok
+test_reverse_selection_preserved (test_archive_batch.BatchTests.test_reverse_selection_preserved) ... ok
+test_separate_and_combined_values_types_order_and_baseline (test_archive_batch.BatchTests.test_separate_and_combined_values_types_order_and_baseline) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 7.370s
+
+OK

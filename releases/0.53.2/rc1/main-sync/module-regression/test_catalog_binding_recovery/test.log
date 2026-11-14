@@ -1,0 +1,12 @@
+test_actual_node_reset_and_python_adoption_share_the_commit_gate (test_catalog_binding_recovery.BindingRecovery.test_actual_node_reset_and_python_adoption_share_the_commit_gate) ... ok
+test_cached_old_item_cannot_apply_after_retirement (test_catalog_binding_recovery.BindingRecovery.test_cached_old_item_cannot_apply_after_retirement) ... ok
+test_changed_binding_blocks_cached_receipt_before_writes (test_catalog_binding_recovery.BindingRecovery.test_changed_binding_blocks_cached_receipt_before_writes) ... ok
+test_live_managed_receipt_keeps_normal_adoption (test_catalog_binding_recovery.BindingRecovery.test_live_managed_receipt_keeps_normal_adoption) ... ok
+test_managed_receipt_requires_fresh_service_state (test_catalog_binding_recovery.BindingRecovery.test_managed_receipt_requires_fresh_service_state) ... ok
+test_missing_managed_state_does_not_become_empty_safe_state (test_catalog_binding_recovery.BindingRecovery.test_missing_managed_state_does_not_become_empty_safe_state) ... ok
+test_unavailable_service_never_bypasses_identity_check (test_catalog_binding_recovery.BindingRecovery.test_unavailable_service_never_bypasses_identity_check) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.785s
+
+OK

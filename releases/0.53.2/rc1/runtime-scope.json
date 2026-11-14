@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "baseline": "0.53.1 rc1 frozen source",
+  "changed_runtime_files": [
+    "src/app.py",
+    "src/application_exit.py",
+    "src/application_gc.py",
+    "src/application_native.py",
+    "src/application_runtime.py",
+    "src/runtime_lifetime_smoke.py",
+    "src/ui_goods_fast.py",
+    "src/version.json"
+  ],
+  "known_original_purecall_reproduced": false,
+  "confirmed_model_reset_defect_red_green": true,
+  "default_concurrency_unchanged": true,
+  "real_data_mutated": false
+}

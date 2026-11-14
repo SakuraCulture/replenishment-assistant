@@ -1,0 +1,12 @@
+test_real_protocol_missing_browser_binding_fails_without_upload_or_business_changes (test_aoxiang_binding.BindingProtocolTests.test_real_protocol_missing_browser_binding_fails_without_upload_or_business_changes) ... ok
+test_confirmation_defaults_no_and_binds_preview_before_modal_refresh (test_aoxiang_binding.BindingUiTests.test_confirmation_defaults_no_and_binds_preview_before_modal_refresh) ... ok
+test_known_import_task_conflict_and_missing_package_block_manual_confirmation (test_aoxiang_binding.BindingUiTests.test_known_import_task_conflict_and_missing_package_block_manual_confirmation) ... ok
+test_late_receipt_supersedes_preview_and_requires_original_record_refresh (test_aoxiang_binding.BindingUiTests.test_late_receipt_supersedes_preview_and_requires_original_record_refresh) ... ok
+test_open_stays_local_unknown_upload_cannot_resend_and_explicit_check_is_separate (test_aoxiang_binding.BindingUiTests.test_open_stays_local_unknown_upload_cannot_resend_and_explicit_check_is_separate) ... ok
+test_real_payment_change_blocks_binding_dispatch_without_changing_original_documents (test_aoxiang_binding.BindingUiTests.test_real_payment_change_blocks_binding_dispatch_without_changing_original_documents) ... ok
+test_stale_other_order_callback_ignored_and_switch_clears_old_preview (test_aoxiang_binding.BindingUiTests.test_stale_other_order_callback_ignored_and_switch_clears_old_preview) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 5.014s
+
+OK

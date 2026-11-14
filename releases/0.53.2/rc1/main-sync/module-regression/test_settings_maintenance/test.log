@@ -1,0 +1,11 @@
+test_catalog_history_restores_exact_snapshot (test_settings_maintenance.SettingsMaintenance.test_catalog_history_restores_exact_snapshot) ... ok
+test_diff_readable_and_null_distinct (test_settings_maintenance.SettingsMaintenance.test_diff_readable_and_null_distinct) ... ok
+test_first_import_undo_and_explicit_restore (test_settings_maintenance.SettingsMaintenance.test_first_import_undo_and_explicit_restore) ... ok
+test_optimistic_conflict_rolls_back_all (test_settings_maintenance.SettingsMaintenance.test_optimistic_conflict_rolls_back_all) ... ok
+test_restore_preset_does_not_apply (test_settings_maintenance.SettingsMaintenance.test_restore_preset_does_not_apply) ... ok
+test_undo_import_preserves_later_change (test_settings_maintenance.SettingsMaintenance.test_undo_import_preserves_later_change) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.442s
+
+OK

@@ -1,0 +1,19 @@
+test_missing_day_has_gap_and_no_cross_gap_change (test_workflow_analysis.Metrics.test_missing_day_has_gap_and_no_cross_gap_change) ... ok
+test_missing_price_does_not_turn_into_free_goods (test_workflow_analysis.Metrics.test_missing_price_does_not_turn_into_free_goods) ... ok
+test_original_ratios_unchanged_by_operations_and_allocation (test_workflow_analysis.Metrics.test_original_ratios_unchanged_by_operations_and_allocation) ... ok
+test_partial_period_and_more_than_100_percent (test_workflow_analysis.Metrics.test_partial_period_and_more_than_100_percent) ... ok
+test_sku_union_over_period_not_sum_of_days (test_workflow_analysis.Metrics.test_sku_union_over_period_not_sum_of_days) ... ok
+test_weighted_week_is_not_mean_of_daily_rates (test_workflow_analysis.Metrics.test_weighted_week_is_not_mean_of_daily_rates) ... ok
+test_zero_and_unknown_remain_distinct (test_workflow_analysis.Metrics.test_zero_and_unknown_remain_distinct) ... ok
+test_allocation_journal_identities_are_scanned_once_per_query (test_workflow_analysis.Projections.test_allocation_journal_identities_are_scanned_once_per_query) ... ok
+test_as_of_without_timezone_is_not_silently_localized (test_workflow_analysis.Projections.test_as_of_without_timezone_is_not_silently_localized) ... ok
+test_clean_export_has_business_first_ids_last_and_native_chart (test_workflow_analysis.Projections.test_clean_export_has_business_first_ids_last_and_native_chart) ... ok
+test_historical_cutoff_selects_old_versions_not_future_correction (test_workflow_analysis.Projections.test_historical_cutoff_selects_old_versions_not_future_correction) ... ok
+test_linkage_missing_databases_creates_nothing (test_workflow_analysis.Projections.test_linkage_missing_databases_creates_nothing) ... ok
+test_operations_and_saved_allocation_are_distinct_facts (test_workflow_analysis.Projections.test_operations_and_saved_allocation_are_distinct_facts) ... ok
+test_zero_allocation_is_a_known_execution_fact (test_workflow_analysis.Projections.test_zero_allocation_is_a_known_execution_fact) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 1.849s
+
+OK

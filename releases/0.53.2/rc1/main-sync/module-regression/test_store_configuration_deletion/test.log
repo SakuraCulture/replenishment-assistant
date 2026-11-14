@@ -1,0 +1,10 @@
+test_existing_history_can_undo_explicitly (test_store_configuration_deletion.CompleteDeletion.test_existing_history_can_undo_explicitly) ... ok
+test_presets_plans_and_global_mapping_unchanged (test_store_configuration_deletion.CompleteDeletion.test_presets_plans_and_global_mapping_unchanged) ... ok
+test_route_only_leftover_is_removed_with_no_placeholder_after_reopen (test_store_configuration_deletion.CompleteDeletion.test_route_only_leftover_is_removed_with_no_placeholder_after_reopen) ... ok
+test_whole_batch_cas_and_failure_roll_back (test_store_configuration_deletion.CompleteDeletion.test_whole_batch_cas_and_failure_roll_back) ... ok
+test_saved_list_removal_current_scope_and_no_legacy_resurrection (test_store_configuration_deletion.UiCompleteDeletion.test_saved_list_removal_current_scope_and_no_legacy_resurrection) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.497s
+
+OK

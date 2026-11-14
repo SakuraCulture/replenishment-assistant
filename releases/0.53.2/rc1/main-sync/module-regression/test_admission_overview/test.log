@@ -1,0 +1,22 @@
+test_cancel_after_write_preserves_existing_target (test_admission_overview.OverviewTests.test_cancel_after_write_preserves_existing_target) ... ok
+test_cancelled_read (test_admission_overview.OverviewTests.test_cancelled_read) ... ok
+test_export_preserves_visible_values_types_order (test_admission_overview.OverviewTests.test_export_preserves_visible_values_types_order) ... ok
+test_invalid_admission_does_not_look_valid (test_admission_overview.OverviewTests.test_invalid_admission_does_not_look_valid) ... ok
+test_invalid_directory_is_visible_warning (test_admission_overview.OverviewTests.test_invalid_directory_is_visible_warning) ... ok
+test_load_read_only_and_no_database_creation (test_admission_overview.OverviewTests.test_load_read_only_and_no_database_creation) ... ok
+test_pending_not_unqualified_and_expiry_inclusive (test_admission_overview.OverviewTests.test_pending_not_unqualified_and_expiry_inclusive) ... ok
+test_refusal_status_and_active_count (test_admission_overview.OverviewTests.test_refusal_status_and_active_count) ... ok
+test_search_state_and_focus_preserve_order (test_admission_overview.OverviewTests.test_search_state_and_focus_preserve_order) ... ok
+test_union_and_deleted_parameter_visibility (test_admission_overview.OverviewTests.test_union_and_deleted_parameter_visibility) ... ok
+test_export_flushes_pending_search (test_admission_overview.OverviewUITests.test_export_flushes_pending_search) ... ok
+test_import_focus_resets_filter_to_show_exact_imported_keys (test_admission_overview.OverviewUITests.test_import_focus_resets_filter_to_show_exact_imported_keys) ... ok
+test_qualification_edit_preserves_refusals_and_source (test_admission_overview.OverviewUITests.test_qualification_edit_preserves_refusals_and_source) ... ok
+test_readonly_editor_does_not_save_or_release (test_admission_overview.OverviewUITests.test_readonly_editor_does_not_save_or_release) ... ok
+test_readonly_view_allows_query_but_blocks_maintenance (test_admission_overview.OverviewUITests.test_readonly_view_allows_query_but_blocks_maintenance) ... ok
+test_refusal_save_preserves_qualification_source (test_admission_overview.OverviewUITests.test_refusal_save_preserves_qualification_source) ... ok
+test_unchanged_qualification_editor_no_write (test_admission_overview.OverviewUITests.test_unchanged_qualification_editor_no_write) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 1.138s
+
+OK

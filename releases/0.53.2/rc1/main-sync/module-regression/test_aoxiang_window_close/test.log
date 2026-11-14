@@ -1,0 +1,7 @@
+test_accepted_close_blocks_queued_old_generator_and_new_queue_ticks (test_aoxiang_window_close.WindowCloseTests.test_accepted_close_blocks_queued_old_generator_and_new_queue_ticks) ... ok
+test_declined_close_keeps_normal_workflow_available (test_aoxiang_window_close.WindowCloseTests.test_declined_close_keeps_normal_workflow_available) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 1.892s
+
+OK

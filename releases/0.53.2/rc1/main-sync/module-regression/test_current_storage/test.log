@@ -1,0 +1,19 @@
+test_bad_block_rejects_backup_and_keeps_source (test_current_storage.Backups.test_bad_block_rejects_backup_and_keeps_source) ... ok
+test_cancel_cleans_temporary_without_publishing (test_current_storage.Backups.test_cancel_cleans_temporary_without_publishing) ... ok
+test_current_backup_preserves_every_table_and_source (test_current_storage.Backups.test_current_backup_preserves_every_table_and_source) ... ok
+test_existing_destination_not_overwritten (test_current_storage.Backups.test_existing_destination_not_overwritten) ... ok
+test_old_format_rejects_backup_and_keeps_source (test_current_storage.Backups.test_old_format_rejects_backup_and_keeps_source) ... ok
+test_all_snapshot_owners_are_checked_without_full_payload_select (test_current_storage.FormatContract.test_all_snapshot_owners_are_checked_without_full_payload_select) ... ok
+test_current_digest_and_binding_still_checked (test_current_storage.FormatContract.test_current_digest_and_binding_still_checked) ... ok
+test_format_check_can_cancel (test_current_storage.FormatContract.test_format_check_can_cancel) ... ok
+test_old_load_and_edit_refused_without_decompression (test_current_storage.FormatContract.test_old_load_and_edit_refused_without_decompression) ... ok
+test_corrupt_old_signed_revision_rejected_before_parent_deletion (test_current_storage.RejectionAtomicity.test_corrupt_old_signed_revision_rejected_before_parent_deletion) ... ok
+test_corrupt_orphan_work_manifest_rejected_before_reclamation (test_current_storage.RejectionAtomicity.test_corrupt_orphan_work_manifest_rejected_before_reclamation) ... ok
+test_old_draft_cannot_be_deleted_before_format_check (test_current_storage.RejectionAtomicity.test_old_draft_cannot_be_deleted_before_format_check) ... ok
+test_old_owner_added_after_preparation_rolls_back_and_retry_works (test_current_storage.RejectionAtomicity.test_old_owner_added_after_preparation_rolls_back_and_retry_works) ... ok
+test_unselected_old_owner_blocks_preview_without_changes (test_current_storage.RejectionAtomicity.test_unselected_old_owner_blocks_preview_without_changes) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.904s
+
+OK

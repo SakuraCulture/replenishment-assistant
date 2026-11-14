@@ -1,0 +1,8 @@
+test_parameter_dialog_preserves_values_and_splits_warehouse_pairs (test_readable_ui.ReadableUiTests.test_parameter_dialog_preserves_values_and_splits_warehouse_pairs) ... ok
+test_percentage_editor_keeps_fraction_and_accepts_percent_text (test_readable_ui.ReadableUiTests.test_percentage_editor_keeps_fraction_and_accepts_percent_text) ... ok
+test_review_keeps_cancel_default_and_all_ordered_rows (test_readable_ui.ReadableUiTests.test_review_keeps_cancel_default_and_all_ordered_rows) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.195s
+
+OK

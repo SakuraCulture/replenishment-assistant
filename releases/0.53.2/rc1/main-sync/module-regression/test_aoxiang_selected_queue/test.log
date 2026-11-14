@@ -1,0 +1,17 @@
+test_all_deleted_local_batches_disappear_without_platform_request (test_aoxiang_selected_queue.SelectedQueueTests.test_all_deleted_local_batches_disappear_without_platform_request) ... ok
+test_cannot_delete_platform_identity_or_running_item (test_aoxiang_selected_queue.SelectedQueueTests.test_cannot_delete_platform_identity_or_running_item) ... ok
+test_delete_selected_local_only_cas_and_remaining_business_unchanged (test_aoxiang_selected_queue.SelectedQueueTests.test_delete_selected_local_only_cas_and_remaining_business_unchanged) ... ok
+test_deleted_order_rejected_before_new_queue_and_runner_has_final_guard (test_aoxiang_selected_queue.SelectedQueueTests.test_deleted_order_rejected_before_new_queue_and_runner_has_final_guard) ... ok
+test_deleted_order_upload_not_attempted_is_blocked_but_bound_is_readable (test_aoxiang_selected_queue.SelectedQueueTests.test_deleted_order_upload_not_attempted_is_blocked_but_bound_is_readable) ... ok
+test_only_checked_execute_and_previews_can_upload_while_others_held (test_aoxiang_selected_queue.SelectedQueueTests.test_only_checked_execute_and_previews_can_upload_while_others_held) ... ok
+test_reconcile_prunes_stale_local_only_and_preserves_platform_evidence (test_aoxiang_selected_queue.SelectedQueueTests.test_reconcile_prunes_stale_local_only_and_preserves_platform_evidence) ... ok
+test_retry_selected_does_not_dispatch_unrelated_pending (test_aoxiang_selected_queue.SelectedQueueTests.test_retry_selected_does_not_dispatch_unrelated_pending) ... ok
+test_selection_compare_and_set_and_no_empty_or_completed_replay (test_aoxiang_selected_queue.SelectedQueueTests.test_selection_compare_and_set_and_no_empty_or_completed_replay) ... ok
+test_soft_deleted_child_does_not_hide_sibling_warehouse (test_aoxiang_selected_queue.SelectedQueueTests.test_soft_deleted_child_does_not_hide_sibling_warehouse) ... ok
+test_stop_resume_preserves_dispatch_range (test_aoxiang_selected_queue.SelectedQueueTests.test_stop_resume_preserves_dispatch_range) ... ok
+test_valid_queue_reconciliation_under_reader_lock_is_read_only (test_aoxiang_selected_queue.SelectedQueueTests.test_valid_queue_reconciliation_under_reader_lock_is_read_only) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.542s
+
+OK

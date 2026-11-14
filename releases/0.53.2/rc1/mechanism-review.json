@@ -1,0 +1,72 @@
+{
+  "scope": "Synthetic Qt ownership mechanism only. No real data, application workflow, platform or production source changes.",
+  "versions": {
+    "python": "3.12.14",
+    "PySide6": "6.12.0",
+    "Qt": "6.12.0",
+    "Shiboken6": "6.12.0"
+  },
+  "primary_sources": [
+    {
+      "url": "https://raw.githubusercontent.com/pyside/pyside-setup/v6.12.0/sources/shiboken6/libshiboken/basewrapper.cpp",
+      "lines": "367-371,425-459",
+      "supports": "Non-main wrapper deallocation for main-thread-only types enqueues native destructor and a CPython pending call; not restricted to cyclic GC."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/pyside/pyside-setup/6.12/sources/shiboken6/libshiboken/bindingmanager.cpp",
+      "lines": "329-339",
+      "supports": "Deletion queue invokes each saved native destructor and then clears entries."
+    },
+    {
+      "url": "https://doc.qt.io/qt-6/threads-qobject.html",
+      "lines": "27-45",
+      "supports": "GUI objects belong to main thread; foreign thread deletion unsafe; deleteLater is prescribed for owner-thread event dispatch."
+    }
+  ],
+  "probes": [
+    {
+      "mode": "worker",
+      "main_thread": 51124,
+      "wrappers": 300,
+      "alive": 0,
+      "wrapper_finalization_threads": [
+        13844
+      ],
+      "cpp_destruction_threads": [
+        51124
+      ],
+      "fatal_reproduced": false
+    },
+    {
+      "mode": "gui",
+      "main_thread": 23384,
+      "wrappers": 300,
+      "alive": 0,
+      "wrapper_finalization_threads": [
+        23384
+      ],
+      "cpp_destruction_threads": [
+        23384
+      ],
+      "fatal_reproduced": false
+    }
+  ],
+  "initial_probe_issue": "First graph had a signal closure retaining table graph outside GC traversal; both modes retained all objects and collected zero. It was not a crash. Console evidence retained. Removed this extra root to test collectible cycles.",
+  "conclusions": [
+    "Background cyclic collection demonstrably finalizes GUI wrappers off the GUI thread while native objects are later destroyed on GUI thread, matching the documented Shiboken delayed-deletion mechanism in the crash path.",
+    "GUI-owned cyclic collection removes that specific cross-thread wrapper-finalization route for naturally collected cycles, preserving normal reference counting.",
+    "A GUI GC coordinator is justified as targeted runtime hardening, but cannot by itself prove remediation of the original purecall: purecall was not reproduced, affected class unknown, and non-GC final reference release can still enqueue native deletion."
+  ],
+  "recommendations": [
+    "Retain normal QObject parent ownership and worker wait-before-deleteLater. Do not globally remove deleteLater.",
+    "GUI GC timer must retain its QObject owner, reject non-GUI invocation and reentrancy, stop scheduling on shutdown, and perform final collection only while QApplication is still valid after workers have ended. Restore prior automatic-GC state after controlled teardown.",
+    "Use generational collection to limit UI latency; measure pauses and RSS for repeated preparation/save/page transitions, rather than assume no performance effect.",
+    "Persist Qt diagnostic messages/fatal text and native Python faulthandler output without opening widgets.",
+    "Continue to audit worker closures and result containers for GUI-wrapper final references; GUI-only cyclic GC does not solve all reference-count releases."
+  ],
+  "limitations": [
+    "No original purecall was reproduced in these probes.",
+    "This test uses offscreen QApplication and synthetic widget graphs, not the full business application.",
+    "No claim that a particular progress dialog, table or model caused the original crash."
+  ]
+}

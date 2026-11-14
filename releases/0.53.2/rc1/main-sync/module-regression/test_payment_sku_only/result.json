@@ -1,0 +1,8 @@
+{
+  "module": "test_payment_sku_only",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 7,
+  "elapsed_seconds": 2.2030000000086147,
+  "summary": null
+}

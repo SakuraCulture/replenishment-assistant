@@ -1,0 +1,16 @@
+test_business_calculation_and_separate_raw_source (test_archive_orders.ArchiveTests.test_business_calculation_and_separate_raw_source) ... ok
+test_chunk_storage_identical_view (test_archive_orders.ArchiveTests.test_chunk_storage_identical_view) ... ok
+test_delete_restore_preserves_payload_sources_and_other_warehouse (test_archive_orders.ArchiveTests.test_delete_restore_preserves_payload_sources_and_other_warehouse) ... ok
+test_deleted_confirm_and_feedback_commit_reject_without_mutation (test_archive_orders.ArchiveTests.test_deleted_confirm_and_feedback_commit_reject_without_mutation) ... ok
+test_deleted_export_blocked_and_event_per_warehouse (test_archive_orders.ArchiveTests.test_deleted_export_blocked_and_event_per_warehouse) ... ok
+test_empty_fields_and_formula_text_are_not_dropped (test_archive_orders.ArchiveTests.test_empty_fields_and_formula_text_are_not_dropped) ... ok
+test_exception_isolation_survives_python_optimization (test_archive_orders.ArchiveTests.test_exception_isolation_survives_python_optimization) ... ok
+test_missing_source_explicit_and_cancel_no_file (test_archive_orders.ArchiveTests.test_missing_source_explicit_and_cancel_no_file) ... ok
+test_partition_order_amount_search_and_detail (test_archive_orders.ArchiveTests.test_partition_order_amount_search_and_detail) ... ok
+test_source_hash_tamper_and_no_partial_export (test_archive_orders.ArchiveTests.test_source_hash_tamper_and_no_partial_export) ... ok
+test_stale_revision_and_cancel_roll_back (test_archive_orders.ArchiveTests.test_stale_revision_and_cancel_roll_back) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 1.514s
+
+OK

@@ -1,0 +1,558 @@
+{
+  "original_crash_reproduced": false,
+  "purpose": "Bounded natural-GC pressure comparison, original frozen 0.53.1 rc1 versus 0.53.2 GUI GC guard",
+  "synthetic_only": true,
+  "live_platform": false,
+  "alternating_serial": true,
+  "rounds_per_mode_per_version": 3,
+  "cycles_per_process": 4,
+  "all_processes_exit_zero": true,
+  "all_fault_logs_empty": true,
+  "all_console_logs_empty": true,
+  "all_draft_semantics_equal": true,
+  "new_natural_gc_only_gui": true,
+  "new_observed_wrapper_finalizers_only_gui": true,
+  "medians": {
+    "save": {
+      "old": {
+        "elapsed_seconds": 4.187000000005355,
+        "peak_working_set_mib": 109.31640625,
+        "read_mib": 0.5197334289550781,
+        "write_mib": 1.1386642456054688,
+        "off_gui_gc_events": 81,
+        "off_gui_finalizers": 6
+      },
+      "new": {
+        "elapsed_seconds": 4.109000000025844,
+        "peak_working_set_mib": 109.015625,
+        "read_mib": 0.5196571350097656,
+        "write_mib": 1.1415328979492188,
+        "off_gui_gc_events": 0,
+        "off_gui_finalizers": 0
+      }
+    },
+    "details": {
+      "old": {
+        "elapsed_seconds": 1.0,
+        "peak_working_set_mib": 105.2265625,
+        "read_mib": 0.04480552673339844,
+        "write_mib": 0.06781959533691406,
+        "off_gui_gc_events": 80,
+        "off_gui_finalizers": 4
+      },
+      "new": {
+        "elapsed_seconds": 0.9849999999860302,
+        "peak_working_set_mib": 106.4921875,
+        "read_mib": 0.04479789733886719,
+        "write_mib": 0.05548095703125,
+        "off_gui_gc_events": 0,
+        "off_gui_finalizers": 0
+      }
+    }
+  },
+  "draft_equivalence": [
+    {
+      "round": 1,
+      "draft_semantics_equal_excluding_app_version": true
+    },
+    {
+      "round": 2,
+      "draft_semantics_equal_excluding_app_version": true
+    },
+    {
+      "round": 3,
+      "draft_semantics_equal_excluding_app_version": true
+    }
+  ],
+  "runs": [
+    {
+      "name": "old-save-b1",
+      "mode": "save",
+      "version": "old",
+      "round": 1,
+      "elapsed_seconds": 4.094000000011874,
+      "peak_working_set_mib": 109.29296875,
+      "read_mib": 0.5197334289550781,
+      "write_mib": 1.1386642456054688,
+      "gui_thread": 34700,
+      "gc_threads": [
+        22348,
+        34700,
+        37844,
+        39988,
+        42400,
+        64532
+      ],
+      "off_gui_gc_events": 81,
+      "python_wrapper_finalizers": 255,
+      "off_gui_finalizers": 6,
+      "off_gui_kinds": [
+        "QTableView",
+        "QTimer",
+        "TableReading"
+      ],
+      "off_gui_cpp_already_destroyed": 6,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": [
+        {
+          "day": "2026-11-14",
+          "digest": "657ce34c402ca52f8af17aa5e4c52bfbc8c41ad1b70fde071db2a86911c59ea4",
+          "summary": {
+            "amount": null,
+            "completed": 0,
+            "input_dirty": true,
+            "model_version": "0.3.6-rules",
+            "phase": "准备中 / 需重算",
+            "stores": {
+              "S1": {
+                "name": "合成门店3",
+                "state": "待计算"
+              }
+            }
+          },
+          "payload_sha256": "d730646e8a1b835392743d672823f1ce7a5d1de10460abcf20f50a016b10ed8f",
+          "app_version": "0.53.1"
+        }
+      ]
+    },
+    {
+      "name": "new-save-b1",
+      "mode": "save",
+      "version": "new",
+      "round": 1,
+      "elapsed_seconds": 4.0460000000020955,
+      "peak_working_set_mib": 109.015625,
+      "read_mib": 0.5196571350097656,
+      "write_mib": 1.1393241882324219,
+      "gui_thread": 53340,
+      "gc_threads": [
+        53340
+      ],
+      "off_gui_gc_events": 0,
+      "python_wrapper_finalizers": 255,
+      "off_gui_finalizers": 0,
+      "off_gui_kinds": [],
+      "off_gui_cpp_already_destroyed": 0,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": [
+        {
+          "day": "2026-11-14",
+          "digest": "657ce34c402ca52f8af17aa5e4c52bfbc8c41ad1b70fde071db2a86911c59ea4",
+          "summary": {
+            "amount": null,
+            "completed": 0,
+            "input_dirty": true,
+            "model_version": "0.3.6-rules",
+            "phase": "准备中 / 需重算",
+            "stores": {
+              "S1": {
+                "name": "合成门店3",
+                "state": "待计算"
+              }
+            }
+          },
+          "payload_sha256": "d730646e8a1b835392743d672823f1ce7a5d1de10460abcf20f50a016b10ed8f",
+          "app_version": "0.53.1"
+        }
+      ]
+    },
+    {
+      "name": "old-details-b1",
+      "mode": "details",
+      "version": "old",
+      "round": 1,
+      "elapsed_seconds": 1.0,
+      "peak_working_set_mib": 104.97265625,
+      "read_mib": 0.04480552673339844,
+      "write_mib": 0.06781959533691406,
+      "gui_thread": 8848,
+      "gc_threads": [
+        8848,
+        19516,
+        29720,
+        44056,
+        58476
+      ],
+      "off_gui_gc_events": 80,
+      "python_wrapper_finalizers": 168,
+      "off_gui_finalizers": 4,
+      "off_gui_kinds": [
+        "QTableView",
+        "QTimer",
+        "TableReading"
+      ],
+      "off_gui_cpp_already_destroyed": 4,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": []
+    },
+    {
+      "name": "new-details-b1",
+      "mode": "details",
+      "version": "new",
+      "round": 1,
+      "elapsed_seconds": 0.9849999999860302,
+      "peak_working_set_mib": 106.36328125,
+      "read_mib": 0.04479789733886719,
+      "write_mib": 0.05548095703125,
+      "gui_thread": 49384,
+      "gc_threads": [
+        49384
+      ],
+      "off_gui_gc_events": 0,
+      "python_wrapper_finalizers": 164,
+      "off_gui_finalizers": 0,
+      "off_gui_kinds": [],
+      "off_gui_cpp_already_destroyed": 0,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": []
+    },
+    {
+      "name": "old-save-b2",
+      "mode": "save",
+      "version": "old",
+      "round": 2,
+      "elapsed_seconds": 4.187000000005355,
+      "peak_working_set_mib": 109.33984375,
+      "read_mib": 0.5197334289550781,
+      "write_mib": 1.1458377838134766,
+      "gui_thread": 28864,
+      "gc_threads": [
+        17320,
+        25928,
+        26692,
+        28864,
+        38788,
+        53608
+      ],
+      "off_gui_gc_events": 81,
+      "python_wrapper_finalizers": 279,
+      "off_gui_finalizers": 6,
+      "off_gui_kinds": [
+        "QTableView",
+        "QTimer",
+        "TableReading"
+      ],
+      "off_gui_cpp_already_destroyed": 6,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": [
+        {
+          "day": "2026-11-14",
+          "digest": "657ce34c402ca52f8af17aa5e4c52bfbc8c41ad1b70fde071db2a86911c59ea4",
+          "summary": {
+            "amount": null,
+            "completed": 0,
+            "input_dirty": true,
+            "model_version": "0.3.6-rules",
+            "phase": "准备中 / 需重算",
+            "stores": {
+              "S1": {
+                "name": "合成门店3",
+                "state": "待计算"
+              }
+            }
+          },
+          "payload_sha256": "d730646e8a1b835392743d672823f1ce7a5d1de10460abcf20f50a016b10ed8f",
+          "app_version": "0.53.1"
+        }
+      ]
+    },
+    {
+      "name": "new-save-b2",
+      "mode": "save",
+      "version": "new",
+      "round": 2,
+      "elapsed_seconds": 4.109000000025844,
+      "peak_working_set_mib": 108.9921875,
+      "read_mib": 0.5196571350097656,
+      "write_mib": 1.1415328979492188,
+      "gui_thread": 63420,
+      "gc_threads": [
+        63420
+      ],
+      "off_gui_gc_events": 0,
+      "python_wrapper_finalizers": 265,
+      "off_gui_finalizers": 0,
+      "off_gui_kinds": [],
+      "off_gui_cpp_already_destroyed": 0,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": [
+        {
+          "day": "2026-11-14",
+          "digest": "657ce34c402ca52f8af17aa5e4c52bfbc8c41ad1b70fde071db2a86911c59ea4",
+          "summary": {
+            "amount": null,
+            "completed": 0,
+            "input_dirty": true,
+            "model_version": "0.3.6-rules",
+            "phase": "准备中 / 需重算",
+            "stores": {
+              "S1": {
+                "name": "合成门店3",
+                "state": "待计算"
+              }
+            }
+          },
+          "payload_sha256": "d730646e8a1b835392743d672823f1ce7a5d1de10460abcf20f50a016b10ed8f",
+          "app_version": "0.53.1"
+        }
+      ]
+    },
+    {
+      "name": "old-details-b2",
+      "mode": "details",
+      "version": "old",
+      "round": 2,
+      "elapsed_seconds": 1.0,
+      "peak_working_set_mib": 105.31640625,
+      "read_mib": 0.04480552673339844,
+      "write_mib": 0.052257537841796875,
+      "gui_thread": 66540,
+      "gc_threads": [
+        18968,
+        45716,
+        48692,
+        65952,
+        66540
+      ],
+      "off_gui_gc_events": 80,
+      "python_wrapper_finalizers": 113,
+      "off_gui_finalizers": 1,
+      "off_gui_kinds": [
+        "QTimer"
+      ],
+      "off_gui_cpp_already_destroyed": 1,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": []
+    },
+    {
+      "name": "new-details-b2",
+      "mode": "details",
+      "version": "new",
+      "round": 2,
+      "elapsed_seconds": 0.9849999999860302,
+      "peak_working_set_mib": 106.6484375,
+      "read_mib": 0.04479789733886719,
+      "write_mib": 0.05316162109375,
+      "gui_thread": 40980,
+      "gc_threads": [
+        40980
+      ],
+      "off_gui_gc_events": 0,
+      "python_wrapper_finalizers": 157,
+      "off_gui_finalizers": 0,
+      "off_gui_kinds": [],
+      "off_gui_cpp_already_destroyed": 0,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": []
+    },
+    {
+      "name": "old-save-b3",
+      "mode": "save",
+      "version": "old",
+      "round": 3,
+      "elapsed_seconds": 4.265999999974156,
+      "peak_working_set_mib": 109.31640625,
+      "read_mib": 0.5197334289550781,
+      "write_mib": 1.1260452270507812,
+      "gui_thread": 52780,
+      "gc_threads": [
+        38224,
+        43948,
+        48748,
+        52356,
+        52780,
+        66812
+      ],
+      "off_gui_gc_events": 81,
+      "python_wrapper_finalizers": 211,
+      "off_gui_finalizers": 4,
+      "off_gui_kinds": [
+        "QTableView",
+        "QTimer",
+        "TableReading"
+      ],
+      "off_gui_cpp_already_destroyed": 4,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": [
+        {
+          "day": "2026-11-14",
+          "digest": "657ce34c402ca52f8af17aa5e4c52bfbc8c41ad1b70fde071db2a86911c59ea4",
+          "summary": {
+            "amount": null,
+            "completed": 0,
+            "input_dirty": true,
+            "model_version": "0.3.6-rules",
+            "phase": "准备中 / 需重算",
+            "stores": {
+              "S1": {
+                "name": "合成门店3",
+                "state": "待计算"
+              }
+            }
+          },
+          "payload_sha256": "d730646e8a1b835392743d672823f1ce7a5d1de10460abcf20f50a016b10ed8f",
+          "app_version": "0.53.1"
+        }
+      ]
+    },
+    {
+      "name": "new-save-b3",
+      "mode": "save",
+      "version": "new",
+      "round": 3,
+      "elapsed_seconds": 4.14100000000326,
+      "peak_working_set_mib": 109.2421875,
+      "read_mib": 0.5196571350097656,
+      "write_mib": 1.1453771591186523,
+      "gui_thread": 40724,
+      "gc_threads": [
+        40724
+      ],
+      "off_gui_gc_events": 0,
+      "python_wrapper_finalizers": 276,
+      "off_gui_finalizers": 0,
+      "off_gui_kinds": [],
+      "off_gui_cpp_already_destroyed": 0,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": [
+        {
+          "day": "2026-11-14",
+          "digest": "657ce34c402ca52f8af17aa5e4c52bfbc8c41ad1b70fde071db2a86911c59ea4",
+          "summary": {
+            "amount": null,
+            "completed": 0,
+            "input_dirty": true,
+            "model_version": "0.3.6-rules",
+            "phase": "准备中 / 需重算",
+            "stores": {
+              "S1": {
+                "name": "合成门店3",
+                "state": "待计算"
+              }
+            }
+          },
+          "payload_sha256": "d730646e8a1b835392743d672823f1ce7a5d1de10460abcf20f50a016b10ed8f",
+          "app_version": "0.53.1"
+        }
+      ]
+    },
+    {
+      "name": "old-details-b3",
+      "mode": "details",
+      "version": "old",
+      "round": 3,
+      "elapsed_seconds": 1.0,
+      "peak_working_set_mib": 105.2265625,
+      "read_mib": 0.04480552673339844,
+      "write_mib": 0.08067607879638672,
+      "gui_thread": 43300,
+      "gc_threads": [
+        31892,
+        34704,
+        38816,
+        42304,
+        43300
+      ],
+      "off_gui_gc_events": 80,
+      "python_wrapper_finalizers": 210,
+      "off_gui_finalizers": 5,
+      "off_gui_kinds": [
+        "QTimer",
+        "TableReading"
+      ],
+      "off_gui_cpp_already_destroyed": 5,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": []
+    },
+    {
+      "name": "new-details-b3",
+      "mode": "details",
+      "version": "new",
+      "round": 3,
+      "elapsed_seconds": 0.985000000015134,
+      "peak_working_set_mib": 106.4921875,
+      "read_mib": 0.04479789733886719,
+      "write_mib": 0.0655069351196289,
+      "gui_thread": 16604,
+      "gc_threads": [
+        16604
+      ],
+      "off_gui_gc_events": 0,
+      "python_wrapper_finalizers": 199,
+      "off_gui_finalizers": 0,
+      "off_gui_kinds": [],
+      "off_gui_cpp_already_destroyed": 0,
+      "off_gui_cpp_destroyed_after_wrapper": 0,
+      "off_gui_cpp_destroy_event_not_observed": 0,
+      "exit_code": 0,
+      "fault_bytes": 0,
+      "console_bytes": 0,
+      "errors": [],
+      "drafts": []
+    }
+  ],
+  "probe_sha256": "27c2c8b9dc287b6ec3c856e1fa3d09eb4901f58bef36ff9070ff262ba02bf1e7",
+  "limits": [
+    "Original native purecall was not reproduced; both versions exited normally.",
+    "Measured parent process peak WorkingSet and Windows process IO only, excluding worker subprocess peaks.",
+    "Windows process IO includes cache and detailed probe trace writes; not physical disk utilization or a general IO performance claim.",
+    "App version is intentionally excluded from draft semantic digest, retained separately.",
+    "Weakref finalization alone does not prove C++ object lifetime; paired destroyed timestamps distinguish already-deleted C++ wrappers.",
+    "Four-cycle synthetic cases do not substitute for production incident reproduction or packaged EXE acceptance."
+  ]
+}

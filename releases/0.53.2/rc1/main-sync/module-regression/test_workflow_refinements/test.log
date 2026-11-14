@@ -1,0 +1,9 @@
+test_completed_buttons_show_scope_no_selection_warns_and_lock_only_selected (test_workflow_refinements.WorkflowRefinements.test_completed_buttons_show_scope_no_selection_warns_and_lock_only_selected) ... ok
+test_move_adopts_manual_order_and_locked_batch_does_not_change_strategy (test_workflow_refinements.WorkflowRefinements.test_move_adopts_manual_order_and_locked_batch_does_not_change_strategy) ... ok
+test_purchase_error_messages_separate_known_acceptance_from_query_failures (test_workflow_refinements.WorkflowRefinements.test_purchase_error_messages_separate_known_acceptance_from_query_failures) ... ok
+test_review_scope_filters_do_not_modify_whole_batch_or_confirmation_rules (test_workflow_refinements.WorkflowRefinements.test_review_scope_filters_do_not_modify_whole_batch_or_confirmation_rules) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 3.227s
+
+OK

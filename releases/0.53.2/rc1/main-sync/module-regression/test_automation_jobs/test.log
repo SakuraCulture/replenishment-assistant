@@ -1,0 +1,10 @@
+test_conflict_remains_blocked_and_cancel_is_not_success (test_automation_jobs.PreparationTests.test_conflict_remains_blocked_and_cancel_is_not_success) ... ok
+test_inherited_category_parameters_show_effective_value (test_automation_jobs.PreparationTests.test_inherited_category_parameters_show_effective_value) ... ok
+test_missing_store_unchecked_input_and_unknown_parameter_are_not_guessed (test_automation_jobs.PreparationTests.test_missing_store_unchecked_input_and_unknown_parameter_are_not_guessed) ... ok
+test_plan_only_patches_selected_parameters (test_automation_jobs.PreparationTests.test_plan_only_patches_selected_parameters) ... ok
+test_preparation_preserves_priority_B_and_does_not_mutate_source (test_automation_jobs.PreparationTests.test_preparation_preserves_priority_B_and_does_not_mutate_source) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.104s
+
+OK

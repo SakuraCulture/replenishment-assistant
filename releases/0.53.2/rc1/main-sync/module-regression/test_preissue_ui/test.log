@@ -1,0 +1,20 @@
+test_actual_delegate_edit_commit_keeps_sku_under_sort_and_filter (test_preissue_ui.FinalUiTests.test_actual_delegate_edit_commit_keeps_sku_under_sort_and_filter) ... ok
+test_check_and_reason_updates_are_data_changes_not_unpaired_layout (test_preissue_ui.FinalUiTests.test_check_and_reason_updates_are_data_changes_not_unpaired_layout) ... ok
+test_confirmed_risk_leaves_pending_filter_and_edit_clears_it (test_preissue_ui.FinalUiTests.test_confirmed_risk_leaves_pending_filter_and_edit_clears_it) ... ok
+test_draft_not_applied_and_keeps_zero (test_preissue_ui.FinalUiTests.test_draft_not_applied_and_keeps_zero) ... ok
+test_edit_invalidates_previous_preview (test_preissue_ui.FinalUiTests.test_edit_invalidates_previous_preview) ... ok
+test_filter_hidden_selection_stays (test_preissue_ui.FinalUiTests.test_filter_hidden_selection_stays) ... ok
+test_invalid_keyboard_does_not_change_quantity (test_preissue_ui.FinalUiTests.test_invalid_keyboard_does_not_change_quantity) ... ok
+test_live_money_scope_new_and_manual_overlap (test_preissue_ui.FinalUiTests.test_live_money_scope_new_and_manual_overlap) ... ok
+test_multi_store_finalize_atomic (test_preissue_ui.FinalUiTests.test_multi_store_finalize_atomic) ... ok
+test_other_window_job_change_rejects (test_preissue_ui.FinalUiTests.test_other_window_job_change_rejects) ... ok
+test_pack_editor_arrows_and_manual_invalid (test_preissue_ui.FinalUiTests.test_pack_editor_arrows_and_manual_invalid) ... ok
+test_partial_restore_does_not_clear_another_invalid_input (test_preissue_ui.FinalUiTests.test_partial_restore_does_not_clear_another_invalid_input) ... ok
+test_result_change_rejects (test_preissue_ui.FinalUiTests.test_result_change_rejects) ... ok
+test_sort_mapping_keeps_identity (test_preissue_ui.FinalUiTests.test_sort_mapping_keeps_identity) ... ok
+test_zero_risk_requires_checkbox (test_preissue_ui.FinalUiTests.test_zero_risk_requires_checkbox) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 1.798s
+
+OK

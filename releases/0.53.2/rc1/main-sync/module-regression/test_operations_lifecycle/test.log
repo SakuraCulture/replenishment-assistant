@@ -1,0 +1,19 @@
+test_adopt_replay_is_idempotent_and_other_warehouse_unaffected (test_operations_lifecycle.Operations.test_adopt_replay_is_idempotent_and_other_warehouse_unaffected) ... ok
+test_allocation_uses_operations_instead_of_return (test_operations_lifecycle.Operations.test_allocation_uses_operations_instead_of_return) ... ok
+test_cancel_does_not_save_or_leave_busy_state (test_operations_lifecycle.Operations.test_cancel_does_not_save_or_leave_busy_state) ... ok
+test_deletion_after_adopt_preview_does_not_restore_old_order (test_operations_lifecycle.Operations.test_deletion_after_adopt_preview_does_not_restore_old_order) ... ok
+test_export_visible_layout_identical_and_mixed_import_tagged (test_operations_lifecycle.Operations.test_export_visible_layout_identical_and_mixed_import_tagged) ... ok
+test_mixed_four_stage_import_sorts_dependencies_and_saves_atomically (test_operations_lifecycle.Operations.test_mixed_four_stage_import_sorts_dependencies_and_saves_atomically) ... ok
+test_native_sign_marks_new_route_without_changing_model (test_operations_lifecycle.Operations.test_native_sign_marks_new_route_without_changing_model) ... ok
+test_old_paid_received_orders_keep_original_route (test_operations_lifecycle.Operations.test_old_paid_received_orders_keep_original_route) ... ok
+test_operations_change_keeps_paid_fact_and_allows_explicit_reallocation (test_operations_lifecycle.Operations.test_operations_change_keeps_paid_fact_and_allows_explicit_reallocation) ... ok
+test_quantity_increases_and_missing_price_do_not_block_operations (test_operations_lifecycle.Operations.test_quantity_increases_and_missing_price_do_not_block_operations) ... ok
+test_return_changed_after_adopt_preview_cannot_commit_stale (test_operations_lifecycle.Operations.test_return_changed_after_adopt_preview_cannot_commit_stale) ... ok
+test_return_waits_only_for_operations_then_adopts_without_rewriting (test_operations_lifecycle.Operations.test_return_waits_only_for_operations_then_adopts_without_rewriting) ... ok
+test_same_quantity_rules_for_return_and_operations (test_operations_lifecycle.Operations.test_same_quantity_rules_for_return_and_operations) ... ok
+test_unready_adopt_has_explicit_return_path_and_no_lock (test_operations_lifecycle.Operations.test_unready_adopt_has_explicit_return_path_and_no_lock) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 2.712s
+
+OK

@@ -1,0 +1,8 @@
+{
+  "module": "test_catalog_sync_protocol",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 3,
+  "elapsed_seconds": 3.125,
+  "summary": null
+}

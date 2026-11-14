@@ -1,0 +1,14 @@
+test_account_switch_does_not_allow_duplicate_unfinished_store_export (test_aoxiang_current_login.CurrentLoginTests.test_account_switch_does_not_allow_duplicate_unfinished_store_export) ... ok
+test_cancelled_probe_is_settled_without_creating_business_tasks (test_aoxiang_current_login.CurrentLoginTests.test_cancelled_probe_is_settled_without_creating_business_tasks) ... ok
+test_failed_identity_read_does_not_fall_back_to_saved_success (test_aoxiang_current_login.CurrentLoginTests.test_failed_identity_read_does_not_fall_back_to_saved_success) ... ok
+test_failure_keeps_phase_and_diagnostics_and_progress_identifies_new_probe (test_aoxiang_current_login.CurrentLoginTests.test_failure_keeps_phase_and_diagnostics_and_progress_identifies_new_probe) ... ok
+test_new_purchase_does_not_reuse_template_from_previous_account (test_aoxiang_current_login.CurrentLoginTests.test_new_purchase_does_not_reuse_template_from_previous_account) ... ok
+test_new_work_receives_actual_observed_account_without_expected_identity (test_aoxiang_current_login.CurrentLoginTests.test_new_work_receives_actual_observed_account_without_expected_identity) ... ok
+test_other_merchant_is_connected_but_old_store_mappings_are_not_used (test_aoxiang_current_login.CurrentLoginTests.test_other_merchant_is_connected_but_old_store_mappings_are_not_used) ... ok
+test_single_purchase_refreshes_old_template_without_replaying_a_purchase (test_aoxiang_current_login.CurrentLoginTests.test_single_purchase_refreshes_old_template_without_replaying_a_purchase) ... ok
+test_unconfigured_or_older_transport_remains_metadata_only (test_aoxiang_current_login.CurrentLoginTests.test_unconfigured_or_older_transport_remains_metadata_only) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.003s
+
+OK

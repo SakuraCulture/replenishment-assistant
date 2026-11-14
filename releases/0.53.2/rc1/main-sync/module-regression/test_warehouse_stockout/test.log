@@ -1,0 +1,17 @@
+test_cancel_does_not_publish_or_remove_existing_results (test_warehouse_stockout.WarehouseTests.test_cancel_does_not_publish_or_remove_existing_results) ... ok
+test_cross_day_receipt_cannot_relabel_inventory_as_another_day (test_warehouse_stockout.WarehouseTests.test_cross_day_receipt_cannot_relabel_inventory_as_another_day) ... ok
+test_data_delete_cas_cleanup_and_other_module_untouched (test_warehouse_stockout.WarehouseTests.test_data_delete_cas_cleanup_and_other_module_untouched) ... ok
+test_date_and_filter_boundaries_no_phantom_days (test_warehouse_stockout.WarehouseTests.test_date_and_filter_boundaries_no_phantom_days) ... ok
+test_delete_log_keeps_current_rate_and_blocks_unresolved_log (test_warehouse_stockout.WarehouseTests.test_delete_log_keeps_current_rate_and_blocks_unresolved_log) ... ok
+test_duplicate_sku_or_used_header_keeps_prior_publication (test_warehouse_stockout.WarehouseTests.test_duplicate_sku_or_used_header_keeps_prior_publication) ... ok
+test_each_warehouse_separate_and_multidimensional_filter (test_warehouse_stockout.WarehouseTests.test_each_warehouse_separate_and_multidimensional_filter) ... ok
+test_export_all_combinations_numeric_rates_and_codes (test_warehouse_stockout.WarehouseTests.test_export_all_combinations_numeric_rates_and_codes) ... ok
+test_formula_exclusions_and_literal_daily (test_warehouse_stockout.WarehouseTests.test_formula_exclusions_and_literal_daily) ... ok
+test_known_exclusion_does_not_require_unknown_stock (test_warehouse_stockout.WarehouseTests.test_known_exclusion_does_not_require_unknown_stock) ... ok
+test_missing_classification_or_stock_is_pending_not_zero (test_warehouse_stockout.WarehouseTests.test_missing_classification_or_stock_is_pending_not_zero) ... ok
+test_original_recalculation_no_network_and_immutable_observation (test_warehouse_stockout.WarehouseTests.test_original_recalculation_no_network_and_immutable_observation) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 1.439s
+
+OK

@@ -1,0 +1,15 @@
+test_legacy_file_still_checks_exactly_for_binding_but_cannot_be_uploaded (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_legacy_file_still_checks_exactly_for_binding_but_cannot_be_uploaded) ... ok
+test_missing_browser_fails_precheck_then_retry_and_cancel_never_upload (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_missing_browser_fails_precheck_then_retry_and_cancel_never_upload) ... ok
+test_native_package_durable_reserve_restart_no_business_writes (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_native_package_durable_reserve_restart_no_business_writes) ... ok
+test_new_refusal_after_preview_prevents_upload_without_changing_payment (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_new_refusal_after_preview_prevents_upload_without_changing_payment) ... ok
+test_payment_change_stops_host_dispatch_and_reserved_order_remains_unique (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_payment_change_stops_host_dispatch_and_reserved_order_remains_unique) ... ok
+test_template_latest_pointer_change_blocks_before_reservation (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_template_latest_pointer_change_blocks_before_reservation) ... ok
+test_three_decimal_upload_price_and_legacy_unuploaded_preview_are_rejected (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_three_decimal_upload_price_and_legacy_unuploaded_preview_are_rejected) ... ok
+test_wrong_excel_values_are_blocked_even_if_caller_rehashes (test_aoxiang_purchase_tasks.PurchaseTaskTests.test_wrong_excel_values_are_blocked_even_if_caller_rehashes) ... C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\site-packages\openpyxl\styles\stylesheet.py:237: UserWarning: Workbook contains no default style, apply openpyxl's default
+  warn("Workbook contains no default style, apply openpyxl's default")
+ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 9.789s
+
+OK

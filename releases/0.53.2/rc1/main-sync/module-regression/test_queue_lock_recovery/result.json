@@ -1,0 +1,8 @@
+{
+  "module": "test_queue_lock_recovery",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 6,
+  "elapsed_seconds": 2.8280000000086147,
+  "summary": null
+}

@@ -18,4 +18,3 @@ class Prepared:
         # The process exclusively owns this frozen review for the session.
         # A new preparation invalidates it before receiving the next payload.
         for chunk in self.encoder.iterencode(self.value):stream.write(chunk)
-

@@ -1,0 +1,47 @@
+test_cancel_preserves_originals_and_does_not_start_prepare_or_save (test_lifecycle_duplicate_ui.LifecycleDuplicateUiTests.test_cancel_preserves_originals_and_does_not_start_prepare_or_save) ... ok
+test_later_document_cancel_discards_earlier_choices_without_partial_preview (test_lifecycle_duplicate_ui.LifecycleDuplicateUiTests.test_later_document_cancel_discards_earlier_choices_without_partial_preview) ... ok
+test_native_modal_choice_returns_only_after_explicit_acceptance (test_lifecycle_duplicate_ui.LifecycleDuplicateUiTests.test_native_modal_choice_returns_only_after_explicit_acceptance) ... ok
+test_no_default_and_every_conflict_requires_an_explicit_choice (test_lifecycle_duplicate_ui.LifecycleDuplicateUiTests.test_no_default_and_every_conflict_requires_an_explicit_choice) ... ok
+test_real_worker_error_uses_failing_document_not_current_selection (test_lifecycle_duplicate_ui.LifecycleDuplicateUiTests.test_real_worker_error_uses_failing_document_not_current_selection) ... ERROR:root:操作失败
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\lifecycle_batch.py", line 107, in prepare
+    result=service.prepare_numbered(path,d['scan'],d.get('target'),progress,cancel,staged=staged)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\order_lifecycle.py", line 136, in prepare_numbered
+    return prepare(path,scanned,bindings,progress,cancel,staged=staged)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\order_lifecycle.py", line 213, in prepare
+    if conflicts: raise ValueError(duplicate_rows.message(conflicts))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: 同仓单同商品内容冲突（共1款）；请在“核对重复商品”中选择每款采用的原始明细，再继续核对。
+商品编码：0001；差异字段：数量、折合数量
+  河东冲突.xlsx / 业务明细 / 第2行；数量=0；折合数量=0
+  河东冲突.xlsx / 业务明细 / 第3行；数量=7；折合数量=7
+数量不自动累加，明确填0不被正数覆盖；原文件保持不变，本次尚未保存单据。
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\lifecycle_batch.py", line 113, in prepare
+    raise kind(document_context(d)+'\n环节：'+io.TITLES[d['scan']['stage']]+'\n'+str(exc)) from exc
+ValueError: 实际出错来源：河东冲突.xlsx
+实际订单：BH-T-ZC-HB
+环节：门店回传单
+同仓单同商品内容冲突（共1款）；请在“核对重复商品”中选择每款采用的原始明细，再继续核对。
+商品编码：0001；差异字段：数量、折合数量
+  河东冲突.xlsx / 业务明细 / 第2行；数量=0；折合数量=0
+  河东冲突.xlsx / 业务明细 / 第3行；数量=7；折合数量=7
+数量不自动累加，明确填0不被正数覆盖；原文件保持不变，本次尚未保存单据。
+ok
+test_real_worker_preview_save_and_repeat_retain_selected_row_audit (test_lifecycle_duplicate_ui.LifecycleDuplicateUiTests.test_real_worker_preview_save_and_repeat_retain_selected_row_audit) ... ok
+test_return_to_files_requires_fresh_choice_and_keeps_original_rows (test_lifecycle_duplicate_ui.LifecycleDuplicateUiTests.test_return_to_files_requires_fresh_choice_and_keeps_original_rows) ... ok
+test_unselected_conflict_does_not_prompt_or_affect_other_order (test_lifecycle_duplicate_ui.LifecycleDuplicateUiTests.test_unselected_conflict_does_not_prompt_or_affect_other_order) ... ok
+test_zero_and_positive_are_equal_choices_and_details_show_source_rows (test_lifecycle_duplicate_ui.LifecycleDuplicateUiTests.test_zero_and_positive_are_equal_choices_and_details_show_source_rows) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 1.417s
+
+OK

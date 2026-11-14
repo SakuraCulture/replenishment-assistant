@@ -1,0 +1,15 @@
+test_copy_failure_retains_first_error_source_package_and_original (test_order_merge_migration.MergeHandoff.test_copy_failure_retains_first_error_source_package_and_original) ... ok
+test_foreign_database_writer_cannot_be_bypassed (test_order_merge_migration.MergeHandoff.test_foreign_database_writer_cannot_be_bypassed) ... ok
+test_full_replacement_remains_separate_and_rebinds_new_export_receipts (test_order_merge_migration.MergeHandoff.test_full_replacement_remains_separate_and_rebinds_new_export_receipts) ... ok
+test_live_instance_lease_cannot_be_bypassed (test_order_merge_migration.MergeHandoff.test_live_instance_lease_cannot_be_bypassed) ... ok
+test_prepare_cancel_keeps_original_and_zip (test_order_merge_migration.MergeHandoff.test_prepare_cancel_keeps_original_and_zip) ... ok
+test_prepared_source_tampering_is_rejected_before_clone (test_order_merge_migration.MergeHandoff.test_prepared_source_tampering_is_rejected_before_clone) ... ok
+test_real_merge_keeps_complete_original_backup_and_local_business_data (test_order_merge_migration.MergeHandoff.test_real_merge_keeps_complete_original_backup_and_local_business_data) ... ok
+test_repeated_zip_preview_is_duplicate_and_does_not_change_target (test_order_merge_migration.MergeHandoff.test_repeated_zip_preview_is_duplicate_and_does_not_change_target) ... ok
+test_second_rename_failure_restores_original_and_preserves_materials (test_order_merge_migration.MergeHandoff.test_second_rename_failure_restores_original_and_preserves_materials) ... ok
+test_target_changed_after_preview_rejects_without_silent_scope_reduction (test_order_merge_migration.MergeHandoff.test_target_changed_after_preview_rejects_without_silent_scope_reduction) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 8.827s
+
+OK

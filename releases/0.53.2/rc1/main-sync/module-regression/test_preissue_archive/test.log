@@ -1,0 +1,11 @@
+test_all_store_atomic_validation (test_preissue_archive.ArchiveAdjustmentTests.test_all_store_atomic_validation) ... ok
+test_cancel_and_retry_unchanged (test_preissue_archive.ArchiveAdjustmentTests.test_cancel_and_retry_unchanged) ... ok
+test_new_list_group_exactly_once_and_wholesale_qty (test_preissue_archive.ArchiveAdjustmentTests.test_new_list_group_exactly_once_and_wholesale_qty) ... ok
+test_pending_blocks_both_entry_points_no_archive (test_preissue_archive.ArchiveAdjustmentTests.test_pending_blocks_both_entry_points_no_archive) ... ok
+test_roundtrip_signature_history_and_original_immutable (test_preissue_archive.ArchiveAdjustmentTests.test_roundtrip_signature_history_and_original_immutable) ... ok
+test_unmodified_archived_old_revision_still_identical (test_preissue_archive.ArchiveAdjustmentTests.test_unmodified_archived_old_revision_still_identical) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.522s
+
+OK

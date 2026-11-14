@@ -1,0 +1,11 @@
+test_cancel_before_acquiring_does_not_start_a_host (test_aoxiang_shared_session.SharedSessionTests.test_cancel_before_acquiring_does_not_start_a_host) ... ok
+test_explicit_reset_waits_for_old_process_then_starts_once (test_aoxiang_shared_session.SharedSessionTests.test_explicit_reset_waits_for_old_process_then_starts_once) ... ok
+test_handoff_waits_for_async_action_and_never_replays_it (test_aoxiang_shared_session.SharedSessionTests.test_handoff_waits_for_async_action_and_never_replays_it) ... ok
+test_setup_advice_purchase_receipt_and_queue_reuse_one_host (test_aoxiang_shared_session.SharedSessionTests.test_setup_advice_purchase_receipt_and_queue_reuse_one_host) ... ok
+test_unacknowledged_start_does_not_spawn_twice (test_aoxiang_shared_session.SharedSessionTests.test_unacknowledged_start_does_not_spawn_twice) ... ok
+test_unknown_handoff_never_grants_operation_before_exit (test_aoxiang_shared_session.SharedSessionTests.test_unknown_handoff_never_grants_operation_before_exit) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.053s
+
+OK

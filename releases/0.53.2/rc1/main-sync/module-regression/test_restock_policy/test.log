@@ -1,0 +1,19 @@
+test_excel_patch_only_supplied_fields_and_blank_roundtrip (test_restock_policy.ConfigurationTests.test_excel_patch_only_supplied_fields_and_blank_roundtrip) ... ok
+test_legacy_nonmutation_strict_values_and_roundtrip (test_restock_policy.ConfigurationTests.test_legacy_nonmutation_strict_values_and_roundtrip) ... ok
+test_repository_legacy_new_preset_and_conflict (test_restock_policy.ConfigurationTests.test_repository_legacy_new_preset_and_conflict) ... ok
+test_extreme_boundary_and_cartons (test_restock_policy.ModelSwitchTests.test_extreme_boundary_and_cartons) ... ok
+test_missing_data_and_unknown_step_not_zero (test_restock_policy.ModelSwitchTests.test_missing_data_and_unknown_step_not_zero) ... ok
+test_no_fake_disable_or_relaxed_minimum (test_restock_policy.ModelSwitchTests.test_no_fake_disable_or_relaxed_minimum) ... ok
+test_on_default_and_reenable_exact (test_restock_policy.ModelSwitchTests.test_on_default_and_reenable_exact) ... ok
+test_only_extreme_no_sales_affected (test_restock_policy.ModelSwitchTests.test_only_extreme_no_sales_affected) ... ok
+test_guards_selection_manual_and_list_but_not_ordinary (test_restock_policy.NewSwitchTests.test_guards_selection_manual_and_list_but_not_ordinary) ... ok
+test_manual_new_removed_other_edits_preserved_and_risks_reconfirmed (test_restock_policy.NewSwitchTests.test_manual_new_removed_other_edits_preserved_and_risks_reconfirmed) ... ok
+test_manual_override_cannot_hide_new_list_origin (test_restock_policy.NewSwitchTests.test_manual_override_cannot_hide_new_list_origin) ... ok
+test_new_only_no_prediction_recompute_and_rebudget (test_restock_policy.NewSwitchTests.test_new_only_no_prediction_recompute_and_rebudget) ... ok
+test_reenable_does_not_auto_select (test_restock_policy.NewSwitchTests.test_reenable_does_not_auto_select) ... ok
+test_stale_preview_and_cancel_no_mutation (test_restock_policy.NewSwitchTests.test_stale_preview_and_cancel_no_mutation) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.133s
+
+OK

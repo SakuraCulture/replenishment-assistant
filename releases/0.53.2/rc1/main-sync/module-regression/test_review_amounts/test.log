@@ -1,0 +1,15 @@
+test_batch_total_matches_store_cent_precision (test_review_amounts.ReviewMoneyTests.test_batch_total_matches_store_cent_precision) ... ok
+test_budget_uses_final_allocated_not_requested (test_review_amounts.ReviewMoneyTests.test_budget_uses_final_allocated_not_requested) ... ok
+test_cache_replaced_results_restore_and_store_isolation (test_review_amounts.ReviewMoneyTests.test_cache_replaced_results_restore_and_store_isolation) ... ok
+test_empty_and_decimal_sum (test_review_amounts.ReviewMoneyTests.test_empty_and_decimal_sum) ... ok
+test_excluded_local_and_missing_price (test_review_amounts.ReviewMoneyTests.test_excluded_local_and_missing_price) ... ok
+test_increase_decrease_and_zero_against_automatic (test_review_amounts.ReviewMoneyTests.test_increase_decrease_and_zero_against_automatic) ... ok
+test_legacy_missing_audit_no_invented_delta (test_review_amounts.ReviewMoneyTests.test_legacy_missing_audit_no_invented_delta) ... ok
+test_manual_new_overlap_does_not_reallocate (test_review_amounts.ReviewMoneyTests.test_manual_new_overlap_does_not_reallocate) ... ok
+test_new_candidates_group_union_and_focus (test_review_amounts.ReviewMoneyTests.test_new_candidates_group_union_and_focus) ... ok
+test_plan_promotion_not_direct_manual (test_review_amounts.ReviewMoneyTests.test_plan_promotion_not_direct_manual) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.007s
+
+OK

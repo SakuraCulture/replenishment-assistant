@@ -1,0 +1,19 @@
+test_cancel_after_native_acceptance_continues_original (test_stockout_hub.HubTests.test_cancel_after_native_acceptance_continues_original) ... ok
+test_combined_once_and_idempotent_completed_replay (test_stockout_hub.HubTests.test_combined_once_and_idempotent_completed_replay) ... ok
+test_consumer_saved_before_capture_ack_replays_without_duplicate_snapshot (test_stockout_hub.HubTests.test_consumer_saved_before_capture_ack_replays_without_duplicate_snapshot) ... ok
+test_finished_warehouse_not_blocked_by_unfinished_ax (test_stockout_hub.HubTests.test_finished_warehouse_not_blocked_by_unfinished_ax) ... ok
+test_offline_reuse_keeps_observation_and_can_delete_independently (test_stockout_hub.HubTests.test_offline_reuse_keeps_observation_and_can_delete_independently) ... ok
+test_resume_after_store_recalculation_does_not_replace_current_revision (test_stockout_hub.HubTests.test_resume_after_store_recalculation_does_not_replace_current_revision) ... ok
+test_resume_never_rewinds_newer_independent_warehouse_snapshot (test_stockout_hub.HubTests.test_resume_never_rewinds_newer_independent_warehouse_snapshot) ... ok
+test_schedule_replay_uses_same_intention (test_stockout_hub.HubTests.test_schedule_replay_uses_same_intention) ... ok
+test_shared_warehouse_raw_and_combined_export_numeric_values (test_stockout_hub.HubTests.test_shared_warehouse_raw_and_combined_export_numeric_values) ... ok
+test_stale_preview_and_cross_day_do_not_dispatch (test_stockout_hub.HubTests.test_stale_preview_and_cross_day_do_not_dispatch) ... ok
+test_store_only_does_not_create_warehouse_result (test_stockout_hub.HubTests.test_store_only_does_not_create_warehouse_result) ... ok
+test_two_warehouses_one_batch_and_independent_partial_scope (test_stockout_hub.HubTests.test_two_warehouses_one_batch_and_independent_partial_scope) ... ok
+test_unknown_ax_response_preserves_published_warehouse_and_same_native_ids (test_stockout_hub.HubTests.test_unknown_ax_response_preserves_published_warehouse_and_same_native_ids) ... ok
+test_warehouse_only_never_calls_ax_or_creates_store_child (test_stockout_hub.HubTests.test_warehouse_only_never_calls_ax_or_creates_store_child) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 12.998s
+
+OK

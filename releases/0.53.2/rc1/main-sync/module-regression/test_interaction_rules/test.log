@@ -1,0 +1,11 @@
+test_atomic_recycle_restore_same_snapshots (test_interaction_rules.BatchVisibilityTests.test_atomic_recycle_restore_same_snapshots) ... ok
+test_cancel_duplicate_empty_rejected (test_interaction_rules.BatchVisibilityTests.test_cancel_duplicate_empty_rejected) ... ok
+test_second_conflict_rolls_back_first_and_events (test_interaction_rules.BatchVisibilityTests.test_second_conflict_rolls_back_first_and_events) ... ok
+test_legacy_unmarked_reply_remains_compatible (test_interaction_rules.ScopeTests.test_legacy_unmarked_reply_remains_compatible) ... ok
+test_parameter_diff_order_and_missing (test_interaction_rules.ScopeTests.test_parameter_diff_order_and_missing) ... ok
+test_return_exact_order_warehouse_revision (test_interaction_rules.ScopeTests.test_return_exact_order_warehouse_revision) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.311s
+
+OK

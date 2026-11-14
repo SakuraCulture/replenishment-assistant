@@ -1,0 +1,16 @@
+test_cancel_or_bad_original_leaves_no_published_archive (test_order_migration.MigrationTests.test_cancel_or_bad_original_leaves_no_published_archive) ... ok
+test_failed_rename_rolls_back_whole_target (test_order_migration.MigrationTests.test_failed_rename_rolls_back_whole_target) ... ok
+test_foreign_writer_blocks_export_no_partial_package (test_order_migration.MigrationTests.test_foreign_writer_blocks_export_no_partial_package) ... ok
+test_full_archive_readonly_source_and_secret_exclusion (test_order_migration.MigrationTests.test_full_archive_readonly_source_and_secret_exclusion) ... ok
+test_full_restore_keeps_frozen_orders_target_connections_and_backup (test_order_migration.MigrationTests.test_full_restore_keeps_frozen_orders_target_connections_and_backup) ... ok
+test_modified_package_and_zip_slip_rejected_before_target_changes (test_order_migration.MigrationTests.test_modified_package_and_zip_slip_rejected_before_target_changes) ... ok
+test_prepared_tampering_and_forged_plan_cannot_write_target (test_order_migration.MigrationTests.test_prepared_tampering_and_forged_plan_cannot_write_target) ... ok
+test_second_migration_preserves_old_path_aliases (test_order_migration.MigrationTests.test_second_migration_preserves_old_path_aliases) ... ok
+test_startup_recovery_after_first_move (test_order_migration.MigrationTests.test_startup_recovery_after_first_move) ... ok
+test_target_writer_prevents_restore_without_replacing_anything (test_order_migration.MigrationTests.test_target_writer_prevents_restore_without_replacing_anything) ... ok
+test_wal_database_is_exported_by_backup_not_raw_copy (test_order_migration.MigrationTests.test_wal_database_is_exported_by_backup_not_raw_copy) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 6.069s
+
+OK

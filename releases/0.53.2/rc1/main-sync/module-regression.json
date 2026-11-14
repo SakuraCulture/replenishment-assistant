@@ -1,0 +1,1611 @@
+{
+  "passed": false,
+  "module_count": 200,
+  "tests": 1944,
+  "elapsed_seconds": 445.2820000000065,
+  "isolated_modules": true,
+  "unchanged_test_assertions": true,
+  "shared_process_native_failure_preserved": "full-regression.json",
+  "results": [
+    {
+      "module": "test_admission",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 14,
+      "elapsed_seconds": 1.8910000000032596,
+      "summary": null
+    },
+    {
+      "module": "test_admission_overview",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 17,
+      "elapsed_seconds": 1.5469999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_ai_contract_portability",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 8.34299999999348,
+      "summary": null
+    },
+    {
+      "module": "test_analytics_identifiers",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 16,
+      "elapsed_seconds": 7.187000000005355,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_acquisition",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 1.4059999999881256,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_basis_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 14.860000000015134,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_binding",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 5.437999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_bundle",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 0.5780000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_current_login",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 0.9530000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_directory",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 1.4689999999827705,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_fetch_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 8.562000000005355,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_input_integration",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 1,
+      "elapsed_seconds": 6.35899999999674,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_protocol",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 4.0,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_purchase",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 2.5309999999881256,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_purchase_pricing",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 0.20399999999790452,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_purchase_tasks",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 10.76500000001397,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_purchase_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 2.0,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_receipt_scope",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 2.1560000000172295,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_receipt_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 2.0,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_receipts",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 7.171999999991385,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_selected_queue",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 1.5,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_setup_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 7.312999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_shared_session",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 0.26600000000325963,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_window_close",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 2.2969999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_workflow_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 13,
+      "elapsed_seconds": 3.5460000000020955,
+      "summary": null
+    },
+    {
+      "module": "test_aoxiang_workflows",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 15,
+      "elapsed_seconds": 6.85899999999674,
+      "summary": null
+    },
+    {
+      "module": "test_application_gc",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 2.2190000000118744,
+      "summary": null
+    },
+    {
+      "module": "test_application_native",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 1.8909999999741558,
+      "summary": null
+    },
+    {
+      "module": "test_application_processes",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 0.2340000000258442,
+      "summary": null
+    },
+    {
+      "module": "test_application_reset",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 1.9059999999881256,
+      "summary": null
+    },
+    {
+      "module": "test_archive_batch",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 8.28200000000652,
+      "summary": null
+    },
+    {
+      "module": "test_archive_orders",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 2.437999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_automation",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 0.9370000000053551,
+      "summary": null
+    },
+    {
+      "module": "test_automation_analytics",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 23.030999999988126,
+      "summary": null
+    },
+    {
+      "module": "test_automation_gateway",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 10.296000000002095,
+      "summary": null
+    },
+    {
+      "module": "test_automation_inventory",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 45.421999999991385,
+      "summary": null
+    },
+    {
+      "module": "test_automation_jobs",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 1.062999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_automation_lock",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 5.89000000001397,
+      "summary": null
+    },
+    {
+      "module": "test_automation_playbooks",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 0.20399999999790452,
+      "summary": null
+    },
+    {
+      "module": "test_automation_refresh",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 2.8280000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_browser_startup",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 21,
+      "elapsed_seconds": 2.125,
+      "summary": null
+    },
+    {
+      "module": "test_browser_status",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 0.625,
+      "summary": null
+    },
+    {
+      "module": "test_budget_overrun",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 0.21799999999348074,
+      "summary": null
+    },
+    {
+      "module": "test_bulk_refusals",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 1.4219999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_business_chain_repairs",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 6.062999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_business_export_fields",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 2.4060000000172295,
+      "summary": null
+    },
+    {
+      "module": "test_business_flow",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 3.6719999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_business_flow_scope",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 29.405999999988126,
+      "summary": null
+    },
+    {
+      "module": "test_business_logs",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 1.0320000000065193,
+      "summary": null
+    },
+    {
+      "module": "test_business_readability",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 0.9210000000020955,
+      "summary": null
+    },
+    {
+      "module": "test_business_scenes",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 5.344000000011874,
+      "summary": null
+    },
+    {
+      "module": "test_catalog_binding_recovery",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 1.875,
+      "summary": null
+    },
+    {
+      "module": "test_catalog_migration",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 6.25,
+      "summary": null
+    },
+    {
+      "module": "test_catalog_session",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 0.8279999999795109,
+      "summary": null
+    },
+    {
+      "module": "test_catalog_sync_adoption",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 1.7820000000065193,
+      "summary": null
+    },
+    {
+      "module": "test_catalog_sync_protocol",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 3.125,
+      "summary": null
+    },
+    {
+      "module": "test_catalog_sync_validation",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 1.9690000000118744,
+      "summary": null
+    },
+    {
+      "module": "test_collection_maintenance",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 19.078000000008615,
+      "summary": null
+    },
+    {
+      "module": "test_collection_reexport",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 11.437000000005355,
+      "summary": null
+    },
+    {
+      "module": "test_coverage_metrics",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 14,
+      "elapsed_seconds": 1.0939999999827705,
+      "summary": null
+    },
+    {
+      "module": "test_current_storage",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 14,
+      "elapsed_seconds": 1.7810000000172295,
+      "summary": null
+    },
+    {
+      "module": "test_data_location",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 35,
+      "elapsed_seconds": 27.60899999999674,
+      "summary": null
+    },
+    {
+      "module": "test_data_location_progress",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 1.9679999999934807,
+      "summary": null
+    },
+    {
+      "module": "test_data_location_shutdown",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 3.6570000000065193,
+      "summary": null
+    },
+    {
+      "module": "test_data_maintenance",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 2.452999999979511,
+      "summary": null
+    },
+    {
+      "module": "test_decision_export",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 0.9060000000172295,
+      "summary": null
+    },
+    {
+      "module": "test_deletion_bounded",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 16,
+      "elapsed_seconds": 2.0309999999881256,
+      "summary": null
+    },
+    {
+      "module": "test_deletion_lifecycle",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 18,
+      "elapsed_seconds": 5.532000000006519,
+      "summary": null
+    },
+    {
+      "module": "test_deletion_load",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 14,
+      "elapsed_seconds": 1.827999999979511,
+      "summary": null
+    },
+    {
+      "module": "test_deletion_stream",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 1.360000000015134,
+      "summary": null
+    },
+    {
+      "module": "test_deletion_workflow_consistency",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 13,
+      "elapsed_seconds": 2.9839999999967404,
+      "summary": null
+    },
+    {
+      "module": "test_export_recovery",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 2.4689999999827705,
+      "summary": null
+    },
+    {
+      "module": "test_export_settings",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 0.45300000000861473,
+      "summary": null
+    },
+    {
+      "module": "test_final_list_filters",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 1.4849999999860302,
+      "summary": null
+    },
+    {
+      "module": "test_final_review",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 0.7960000000020955,
+      "summary": null
+    },
+    {
+      "module": "test_first_fill",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 1.5780000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_funnel_compact",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 0.9690000000118744,
+      "summary": null
+    },
+    {
+      "module": "test_funnel_dimensions",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 3.1719999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_funnel_monitor",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 1.827999999979511,
+      "summary": null
+    },
+    {
+      "module": "test_goods_reset_lifetime",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 0.5470000000204891,
+      "summary": null
+    },
+    {
+      "module": "test_gui_maintenance_callbacks",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 4.327999999979511,
+      "summary": null
+    },
+    {
+      "module": "test_history_diagnostics",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 0.8280000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_interaction_rules",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 1.2810000000172295,
+      "summary": null
+    },
+    {
+      "module": "test_interaction_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 1.7349999999860302,
+      "summary": null
+    },
+    {
+      "module": "test_inventory_structure",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 19,
+      "elapsed_seconds": 2.5780000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_jst",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 29,
+      "elapsed_seconds": 5.14000000001397,
+      "summary": null
+    },
+    {
+      "module": "test_jst_batches",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 16,
+      "elapsed_seconds": 4.25,
+      "summary": null
+    },
+    {
+      "module": "test_jst_carton_normalization",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 1.9219999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_jst_current_basis",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 3.0940000000118744,
+      "summary": null
+    },
+    {
+      "module": "test_jst_payment",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 4.35899999999674,
+      "summary": null
+    },
+    {
+      "module": "test_jst_results",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 5.0939999999827705,
+      "summary": null
+    },
+    {
+      "module": "test_jst_review",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 1.375,
+      "summary": null
+    },
+    {
+      "module": "test_jst_stock_evidence",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 14,
+      "elapsed_seconds": 3.5469999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_jst_stock_evidence_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 3.2030000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_jst_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 4.469000000011874,
+      "summary": null
+    },
+    {
+      "module": "test_lifecycle",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 34,
+      "elapsed_seconds": 7.171999999991385,
+      "summary": null
+    },
+    {
+      "module": "test_lifecycle_batch",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 2.5939999999827705,
+      "summary": null
+    },
+    {
+      "module": "test_lifecycle_comparison",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 14,
+      "elapsed_seconds": 3.812000000005355,
+      "summary": null
+    },
+    {
+      "module": "test_lifecycle_duplicate_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 2.4690000000118744,
+      "summary": null
+    },
+    {
+      "module": "test_lifecycle_duplicates",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 2.110000000015134,
+      "summary": null
+    },
+    {
+      "module": "test_lifecycle_simple",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 2.25,
+      "summary": null
+    },
+    {
+      "module": "test_mandatory_holding",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 19,
+      "elapsed_seconds": 0.889999999984866,
+      "summary": null
+    },
+    {
+      "module": "test_memory_cache_checksum",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 0.9679999999934807,
+      "summary": null
+    },
+    {
+      "module": "test_merge_migration_compat",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 1,
+      "elapsed_seconds": 1.687999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_migrated_operations_continuation",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 2.3289999999979045,
+      "summary": null
+    },
+    {
+      "module": "test_migration_shutdown",
+      "passed": false,
+      "exit_code": 1,
+      "tests": 16,
+      "elapsed_seconds": 7.062000000005355,
+      "summary": "1\\replenishment_mvp_20261029\\src\\order_migration.py\", line 375, in apply\n\n    return _apply(plan)\n\n           ^^^^^^^^^^^^\n\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\src\\order_migration.py\", line 328, in _apply\n\n    _check_other_processes();resource_check(root.parent,sum(p.stat().st_size for p in root.rglob('*') if p.is_file()))\n\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\src\\application_reset.py\", line 131, in _check_other_processes\n\n    if matches:raise ValueError('其他补货助手进程仍在运行，请先正常关闭；资料未替换。进程号：'+','.join(str(p['pid']) for p in matches))\n\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nValueError: 其他补货助手进程仍在运行，请先正常关闭；资料未替换。进程号：42948,41408,63732,63356,28764,45124\n\n\n\n----------------------------------------------------------------------\nRan 16 tests in 6.106s\n\nFAILED (failures=1)\n"
+    },
+    {
+      "module": "test_monthly_first_fill",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 19,
+      "elapsed_seconds": 2.4689999999827705,
+      "summary": null
+    },
+    {
+      "module": "test_operations_lifecycle",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 14,
+      "elapsed_seconds": 3.7190000000118744,
+      "summary": null
+    },
+    {
+      "module": "test_order_analytics",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 16,
+      "elapsed_seconds": 4.187999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_order_analytics_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 2.812000000005355,
+      "summary": null
+    },
+    {
+      "module": "test_order_identity",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 3.0469999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_order_merge",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 39,
+      "elapsed_seconds": 28.828000000008615,
+      "summary": null
+    },
+    {
+      "module": "test_order_merge_migration",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 9.953000000008615,
+      "summary": null
+    },
+    {
+      "module": "test_order_merge_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 0.5629999999946449,
+      "summary": null
+    },
+    {
+      "module": "test_order_migration",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 7.125,
+      "summary": null
+    },
+    {
+      "module": "test_paid_return_reallocation",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 19,
+      "elapsed_seconds": 7.264999999984866,
+      "summary": null
+    },
+    {
+      "module": "test_paid_return_reallocation_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 3.5,
+      "summary": null
+    },
+    {
+      "module": "test_parameter_guidance",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 1.0780000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_parameter_presets",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 13,
+      "elapsed_seconds": 4.76600000000326,
+      "summary": null
+    },
+    {
+      "module": "test_parameter_quick_actions",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 19,
+      "elapsed_seconds": 2.7969999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_parameter_reload",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 3.2810000000172295,
+      "summary": null
+    },
+    {
+      "module": "test_parameter_snapshot",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 1,
+      "elapsed_seconds": 1.5309999999881256,
+      "summary": null
+    },
+    {
+      "module": "test_parameter_tables",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 13,
+      "elapsed_seconds": 1.562000000005355,
+      "summary": null
+    },
+    {
+      "module": "test_parameter_workspaces",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 20,
+      "elapsed_seconds": 2.7030000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_payment_auto_matching",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 18,
+      "elapsed_seconds": 10.25,
+      "summary": null
+    },
+    {
+      "module": "test_payment_binding_feedback",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 2.827999999979511,
+      "summary": null
+    },
+    {
+      "module": "test_payment_matching",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 17,
+      "elapsed_seconds": 9.64100000000326,
+      "summary": null
+    },
+    {
+      "module": "test_payment_references",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 5.921999999991385,
+      "summary": null
+    },
+    {
+      "module": "test_payment_sku_only",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 2.2030000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_payment_source",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 2.9690000000118744,
+      "summary": null
+    },
+    {
+      "module": "test_portable_assets",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 0.9839999999967404,
+      "summary": null
+    },
+    {
+      "module": "test_preissue",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 29,
+      "elapsed_seconds": 1.0160000000032596,
+      "summary": null
+    },
+    {
+      "module": "test_preissue_archive",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 1.5780000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_preissue_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 15,
+      "elapsed_seconds": 2.8439999999827705,
+      "summary": null
+    },
+    {
+      "module": "test_profile_parameters",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 1.125,
+      "summary": null
+    },
+    {
+      "module": "test_purchase_pipeline",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 16,
+      "elapsed_seconds": 3.0469999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_purchase_recovery",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 16,
+      "elapsed_seconds": 1.4849999999860302,
+      "summary": null
+    },
+    {
+      "module": "test_purchases",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 30,
+      "elapsed_seconds": 6.469000000011874,
+      "summary": null
+    },
+    {
+      "module": "test_queue_lock_recovery",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 2.8280000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_readability_workflow",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 1.687999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_readable_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 1.5940000000118744,
+      "summary": null
+    },
+    {
+      "module": "test_reconciliation",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 16,
+      "elapsed_seconds": 5.10999999998603,
+      "summary": null
+    },
+    {
+      "module": "test_relocation_integrity",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 1.1089999999967404,
+      "summary": null
+    },
+    {
+      "module": "test_replenishment_plans",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 2.6559999999881256,
+      "summary": null
+    },
+    {
+      "module": "test_restock_policy",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 14,
+      "elapsed_seconds": 1.0780000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_retry_profile",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 44.171999999991385,
+      "summary": null
+    },
+    {
+      "module": "test_review_amounts",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 0.8129999999946449,
+      "summary": null
+    },
+    {
+      "module": "test_review_amounts_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 3.514999999984866,
+      "summary": null
+    },
+    {
+      "module": "test_review_fixes",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 0.9220000000204891,
+      "summary": null
+    },
+    {
+      "module": "test_review_preview_perf",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 4.515999999974156,
+      "summary": null
+    },
+    {
+      "module": "test_rules",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 0.7810000000172295,
+      "summary": null
+    },
+    {
+      "module": "test_sales_floor",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 15,
+      "elapsed_seconds": 1.7339999999967404,
+      "summary": null
+    },
+    {
+      "module": "test_scheduled_catalog_handshake",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 1.0309999999881256,
+      "summary": null
+    },
+    {
+      "module": "test_scheduled_replenishment",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 17,
+      "elapsed_seconds": 21.860000000015134,
+      "summary": null
+    },
+    {
+      "module": "test_scoped_queries_perf",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 5.264999999984866,
+      "summary": null
+    },
+    {
+      "module": "test_settings_maintenance",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 6,
+      "elapsed_seconds": 1.2820000000065193,
+      "summary": null
+    },
+    {
+      "module": "test_setup_saved_connection",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 1.625,
+      "summary": null
+    },
+    {
+      "module": "test_signed_overwrite",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 3.0460000000020955,
+      "summary": null
+    },
+    {
+      "module": "test_signing_failures",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 3.5780000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_signing_feedback_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 1.187999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_signing_guidance",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 1.3280000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_single_instance",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 2.0789999999979045,
+      "summary": null
+    },
+    {
+      "module": "test_single_warehouse_scope",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 1.0,
+      "summary": null
+    },
+    {
+      "module": "test_sku_union_order",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 1.2960000000020955,
+      "summary": null
+    },
+    {
+      "module": "test_stock_diagnosis",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 35.078000000008615,
+      "summary": null
+    },
+    {
+      "module": "test_stocking_lists",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 13,
+      "elapsed_seconds": 1.2969999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_stocking_selection",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 15,
+      "elapsed_seconds": 1.5780000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_acquisition",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 20,
+      "elapsed_seconds": 16.10899999999674,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_ai",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 14.75,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_analysis",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 32,
+      "elapsed_seconds": 8.203999999997905,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_assessment",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 0.9379999999946449,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_hub",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 14,
+      "elapsed_seconds": 13.85899999999674,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_hub_schedule",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 0.45300000000861473,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_hub_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 1,
+      "elapsed_seconds": 5.842999999993481,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_lifecycle",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 21,
+      "elapsed_seconds": 7.51600000000326,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_login_bridge",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 0.40599999998812564,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_sales_days",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 1.0320000000065193,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_scheduling",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 1.0460000000020955,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_supply",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 1.625,
+      "summary": null
+    },
+    {
+      "module": "test_stockout_views",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 3.8910000000032596,
+      "summary": null
+    },
+    {
+      "module": "test_store_configuration_deletion",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 2.437999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_store_default_deletion",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 9,
+      "elapsed_seconds": 3.4530000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_store_parameter_import",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 1.6400000000139698,
+      "summary": null
+    },
+    {
+      "module": "test_store_parameter_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 1.562999999994645,
+      "summary": null
+    },
+    {
+      "module": "test_task_maintenance",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 5,
+      "elapsed_seconds": 1.0939999999827705,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_execution",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 8,
+      "elapsed_seconds": 1.8280000000086147,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_execution_delete",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 17,
+      "elapsed_seconds": 3.2810000000172295,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_execution_feedback",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 1.7189999999827705,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_execution_readers",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 16,
+      "elapsed_seconds": 4.265999999974156,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_execution_scheduler",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 1,
+      "elapsed_seconds": 0.9220000000204891,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_execution_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 5.187000000005355,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_fallback",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 0.9220000000204891,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_history_memory",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 10,
+      "elapsed_seconds": 1.4839999999967404,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_orders",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 7,
+      "elapsed_seconds": 0.8439999999827705,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_stockout",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 12,
+      "elapsed_seconds": 2.3589999999967404,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_stockout_export",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 11,
+      "elapsed_seconds": 3.6719999999913853,
+      "summary": null
+    },
+    {
+      "module": "test_warehouse_stockout_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 2.73499999998603,
+      "summary": null
+    },
+    {
+      "module": "test_workflow_analysis",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 14,
+      "elapsed_seconds": 2.8440000000118744,
+      "summary": null
+    },
+    {
+      "module": "test_workflow_dashboard_ui",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 3,
+      "elapsed_seconds": 1.9840000000258442,
+      "summary": null
+    },
+    {
+      "module": "test_workflow_refinements",
+      "passed": true,
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 3.7030000000086147,
+      "summary": null
+    }
+  ]
+}

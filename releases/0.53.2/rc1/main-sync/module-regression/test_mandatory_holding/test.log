@@ -1,0 +1,24 @@
+test_daily_catalog_uses_attributed_warehouse (test_mandatory_holding.DailyExclusionTests.test_daily_catalog_uses_attributed_warehouse) ... ok
+test_daily_tag_exact_membership_and_raw_preservation (test_mandatory_holding.DailyExclusionTests.test_daily_tag_exact_membership_and_raw_preservation) ... ok
+test_mandatory_never_overrides_disable_stop_forbid_or_refusal (test_mandatory_holding.DailyExclusionTests.test_mandatory_never_overrides_disable_stop_forbid_or_refusal) ... ok
+test_new_and_manual_paths_cannot_bypass_daily (test_mandatory_holding.DailyExclusionTests.test_new_and_manual_paths_cannot_bypass_daily) ... ok
+test_budget_zero_and_shortfall_not_hidden (test_mandatory_holding.MandatoryHoldingTests.test_budget_zero_and_shortfall_not_hidden) ... ok
+test_cancel_still_propagates (test_mandatory_holding.MandatoryHoldingTests.test_cancel_still_propagates) ... ok
+test_existing_available_or_inbound_coverage (test_mandatory_holding.MandatoryHoldingTests.test_existing_available_or_inbound_coverage) ... ok
+test_floor_precedes_other_mandatory_growth (test_mandatory_holding.MandatoryHoldingTests.test_floor_precedes_other_mandatory_growth) ... ok
+test_historical_rows_are_not_reinterpreted (test_mandatory_holding.MandatoryHoldingTests.test_historical_rows_are_not_reinterpreted) ... ok
+test_known_local_item_does_not_become_warehouse_order (test_mandatory_holding.MandatoryHoldingTests.test_known_local_item_does_not_become_warehouse_order) ... ok
+test_manual_exception_has_explicit_risk_and_restores_exactly (test_mandatory_holding.MandatoryHoldingTests.test_manual_exception_has_explicit_risk_and_restores_exactly) ... ok
+test_missing_price_stock_or_step_cannot_be_guessed (test_mandatory_holding.MandatoryHoldingTests.test_missing_price_stock_or_step_cannot_be_guessed) ... ok
+test_new_and_extreme_switches_do_not_cancel_default_must_sell_floor (test_mandatory_holding.MandatoryHoldingTests.test_new_and_extreme_switches_do_not_cancel_default_must_sell_floor) ... ok
+test_new_product_reallocation_keeps_mandatory_floor (test_mandatory_holding.MandatoryHoldingTests.test_new_product_reallocation_keeps_mandatory_floor) ... ok
+test_normal_suggestion_is_not_reduced (test_mandatory_holding.MandatoryHoldingTests.test_normal_suggestion_is_not_reduced) ... ok
+test_ordinary_sku_and_absent_mandatory_not_manufactured (test_mandatory_holding.MandatoryHoldingTests.test_ordinary_sku_and_absent_mandatory_not_manufactured) ... ok
+test_partial_coverage_and_carton_rounding (test_mandatory_holding.MandatoryHoldingTests.test_partial_coverage_and_carton_rounding) ... ok
+test_reapply_and_clear_membership_are_deterministic (test_mandatory_holding.MandatoryHoldingTests.test_reapply_and_clear_membership_are_deterministic) ... ok
+test_zero_sales_zero_stock_without_new_product_selection (test_mandatory_holding.MandatoryHoldingTests.test_zero_sales_zero_stock_without_new_product_selection) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.033s
+
+OK

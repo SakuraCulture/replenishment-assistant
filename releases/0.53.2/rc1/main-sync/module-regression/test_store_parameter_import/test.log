@@ -1,0 +1,13 @@
+test_cancel_and_changed_source (test_store_parameter_import.ImportTests.test_cancel_and_changed_source) ... ok
+test_invalid_input_does_not_coerce (test_store_parameter_import.ImportTests.test_invalid_input_does_not_coerce) ... ok
+test_multiple_files_order_duplicates_and_header_ambiguity (test_store_parameter_import.ImportTests.test_multiple_files_order_duplicates_and_header_ambiguity) ... ok
+test_patch_changes_only_requested_fields (test_store_parameter_import.ImportTests.test_patch_changes_only_requested_fields) ... ok
+test_reordered_aliases_zero_blank_long_codes_and_source (test_store_parameter_import.ImportTests.test_reordered_aliases_zero_blank_long_codes_and_source) ... ok
+test_route_and_budget_are_checked_together (test_store_parameter_import.ImportTests.test_route_and_budget_are_checked_together) ... ok
+test_template_and_prefilled_roundtrip (test_store_parameter_import.ImportTests.test_template_and_prefilled_roundtrip) ... ok
+test_validation_and_current_missing_name_and_fixed_rules (test_store_parameter_import.ImportTests.test_validation_and_current_missing_name_and_fixed_rules) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.755s
+
+OK

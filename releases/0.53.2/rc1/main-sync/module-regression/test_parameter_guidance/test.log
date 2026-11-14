@@ -1,0 +1,13 @@
+test_all_editable_paths_resolve_without_mutating_config (test_parameter_guidance.GuidanceTests.test_all_editable_paths_resolve_without_mutating_config) ... ok
+test_catalog_pages_search_and_unknown_fields (test_parameter_guidance.GuidanceTests.test_catalog_pages_search_and_unknown_fields) ... ok
+test_common_constraints_agree_with_existing_validator (test_parameter_guidance.GuidanceTests.test_common_constraints_agree_with_existing_validator) ... ok
+test_dependencies_warehouse_weights_and_monthly_thresholds (test_parameter_guidance.GuidanceTests.test_dependencies_warehouse_weights_and_monthly_thresholds) ... ok
+test_fixed_derived_policy_and_mapping_cannot_be_trial_writes (test_parameter_guidance.GuidanceTests.test_fixed_derived_policy_and_mapping_cannot_be_trial_writes) ... ok
+test_original_help_is_the_single_business_explanation_source (test_parameter_guidance.GuidanceTests.test_original_help_is_the_single_business_explanation_source) ... ok
+test_probability_encoding_and_category_inheritance (test_parameter_guidance.GuidanceTests.test_probability_encoding_and_category_inheritance) ... ok
+test_shared_response_not_repeated_per_store (test_parameter_guidance.GuidanceTests.test_shared_response_not_repeated_per_store) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.059s
+
+OK

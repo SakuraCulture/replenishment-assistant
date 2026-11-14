@@ -1,0 +1,17 @@
+test_budget_and_reason_changes_match_preview (test_final_review.DraftReviewTests.test_budget_and_reason_changes_match_preview) ... ok
+test_list_can_reclassify_no_sales_with_inbound (test_final_review.DraftReviewTests.test_list_can_reclassify_no_sales_with_inbound) ... ok
+test_manual_new_overlap_zero_and_restoration (test_final_review.DraftReviewTests.test_manual_new_overlap_zero_and_restoration) ... ok
+test_multiple_stores_and_incremental_update (test_final_review.DraftReviewTests.test_multiple_stores_and_incremental_update) ... ok
+test_prices_more_than_two_decimals_sum_before_rounding (test_final_review.DraftReviewTests.test_prices_more_than_two_decimals_sum_before_rounding) ... ok
+test_same_positive_quantity_has_no_phantom_manual_money (test_final_review.DraftReviewTests.test_same_positive_quantity_has_no_phantom_manual_money) ... ok
+test_unknown_and_excluded_not_zero_cost (test_final_review.DraftReviewTests.test_unknown_and_excluded_not_zero_cost) ... ok
+test_group_matches_export_without_reordering (test_final_review.FilterTests.test_group_matches_export_without_reordering) ... ok
+test_incremental_counts_equal_fresh_count (test_final_review.FilterTests.test_incremental_counts_equal_fresh_count) ... ok
+test_independent_dimensions_and_search (test_final_review.FilterTests.test_independent_dimensions_and_search) ... ok
+test_option_counts_hold_other_dimensions (test_final_review.FilterTests.test_option_counts_hold_other_dimensions) ... ok
+test_unknown_focus_is_not_claimed_previous_month (test_final_review.FilterTests.test_unknown_focus_is_not_claimed_previous_month) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.007s
+
+OK

@@ -1,0 +1,10 @@
+test_cancel_during_observation_does_not_acknowledge (test_scheduled_catalog_handshake.CatalogHandshakeTests.test_cancel_during_observation_does_not_acknowledge) ... ok
+test_resume_uses_original_batch_and_operation (test_scheduled_catalog_handshake.CatalogHandshakeTests.test_resume_uses_original_batch_and_operation) ... ok
+test_stop_does_not_supply_observation_or_resume_query (test_scheduled_catalog_handshake.CatalogHandshakeTests.test_stop_does_not_supply_observation_or_resume_query) ... ok
+test_two_warehouses_keep_order_and_own_observation (test_scheduled_catalog_handshake.CatalogHandshakeTests.test_two_warehouses_keep_order_and_own_observation) ... ok
+test_wait_host_answer_once_and_clear_progress (test_scheduled_catalog_handshake.CatalogHandshakeTests.test_wait_host_answer_once_and_clear_progress) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.004s
+
+OK

@@ -1,0 +1,8 @@
+test_entry_import_has_no_analysis_io_or_backend (test_warehouse_stockout_ui.WarehouseUiTests.test_entry_import_has_no_analysis_io_or_backend) ... ok
+test_page_and_custom_dimensions_and_filters (test_warehouse_stockout_ui.WarehouseUiTests.test_page_and_custom_dimensions_and_filters) ... ok
+test_real_child_worker_imports_no_qt_and_releases (test_warehouse_stockout_ui.WarehouseUiTests.test_real_child_worker_imports_no_qt_and_releases) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.429s
+
+OK

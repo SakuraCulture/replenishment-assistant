@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "method": "Actual local screenshot view_image inspection of packaged EXE captures",
+  "screenshots": [
+    {
+      "file": "exercise-prepared-two-stores.png",
+      "finding": "Chinese labels, both store code/name rows, warehouse choices, unlimited budget and calculation button readable. Parameter text continues horizontally in existing table."
+    },
+    {
+      "file": "exercise-real-overwrite-confirmation.png",
+      "finding": "Native overwrite scope, before/after store totals, revision time, overwrite/cancel actions visible. Long detail fields use existing ellipsis; no blank-glyph rendering."
+    },
+    {
+      "file": "reopen-reopened-saved-results.png",
+      "finding": "Both completed store rows, total1675.20, last saved timestamp and signing actions readable after real restart."
+    }
+  ],
+  "scope_limit": "Visual spot check of these three captures only; not a full application layout audit."
+}

@@ -1,0 +1,8 @@
+{
+  "module": "test_lifecycle_simple",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 9,
+  "elapsed_seconds": 2.25,
+  "summary": null
+}

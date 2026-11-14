@@ -1,0 +1,9 @@
+test_existing_secondary_zero_and_disabled_still_secondary (test_warehouse_fallback.WarehouseFallbackTests.test_existing_secondary_zero_and_disabled_still_secondary) ... ok
+test_invalid_code_is_not_manufactured_into_a_match (test_warehouse_fallback.WarehouseFallbackTests.test_invalid_code_is_not_manufactured_into_a_match) ... ok
+test_missing_secondary_preserves_entire_primary_pair_and_order (test_warehouse_fallback.WarehouseFallbackTests.test_missing_secondary_preserves_entire_primary_pair_and_order) ... ok
+test_primary_fields_cycles_calculation_and_exclusion (test_warehouse_fallback.WarehouseFallbackTests.test_primary_fields_cycles_calculation_and_exclusion) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.028s
+
+OK

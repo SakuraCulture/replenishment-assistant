@@ -1,0 +1,20 @@
+test_A_double_zero_keeps_floor_and_does_not_stack_it_on_normal_demand (test_sales_floor.SalesFloor.test_A_double_zero_keeps_floor_and_does_not_stack_it_on_normal_demand) ... ok
+test_B_inbound_and_failed_ordinary_qualification_cannot_add_a_floor (test_sales_floor.SalesFloor.test_B_inbound_and_failed_ordinary_qualification_cannot_add_a_floor) ... ok
+test_C_inbound_does_not_block_qualified_net_demand (test_sales_floor.SalesFloor.test_C_inbound_does_not_block_qualified_net_demand) ... ok
+test_D_stock_or_inbound_cover_target_even_when_ordinary_qualification_passes (test_sales_floor.SalesFloor.test_D_stock_or_inbound_cover_target_even_when_ordinary_qualification_passes) ... ok
+test_E_positive_negative_and_tiny_stock_do_not_masquerade_as_double_zero (test_sales_floor.SalesFloor.test_E_positive_negative_and_tiny_stock_do_not_masquerade_as_double_zero) ... ok
+test_actual_sign_archive_and_excel_keep_distinct_floor_sources (test_sales_floor.SalesFloor.test_actual_sign_archive_and_excel_keep_distinct_floor_sources) ... ok
+test_budget_and_admission_still_control_execution (test_sales_floor.SalesFloor.test_budget_and_admission_still_control_execution) ... ok
+test_history_without_new_rule_marker_keeps_original_short_reason_and_quantity (test_sales_floor.SalesFloor.test_history_without_new_rule_marker_keeps_original_short_reason_and_quantity) ... ok
+test_inbound_cap_warning_survives_without_manufacturing_a_floor (test_sales_floor.SalesFloor.test_inbound_cap_warning_survives_without_manufacturing_a_floor) ... ok
+test_independent_one_box_exception_is_kept_and_labelled_separately (test_sales_floor.SalesFloor.test_independent_one_box_exception_is_kept_and_labelled_separately) ... ok
+test_mandatory_holding_remains_separate_and_counts_inbound (test_sales_floor.SalesFloor.test_mandatory_holding_remains_separate_and_counts_inbound) ... ok
+test_missing_invalid_and_nonfinite_stock_stays_pending (test_sales_floor.SalesFloor.test_missing_invalid_and_nonfinite_stock_stays_pending) ... ok
+test_postcheck_rejects_reintroduced_BP_or_BQ_floor_and_unexplained_quantity (test_sales_floor.SalesFloor.test_postcheck_rejects_reintroduced_BP_or_BQ_floor_and_unexplained_quantity) ... ok
+test_small_inbound_cannot_use_BQ_to_bypass_funds (test_sales_floor.SalesFloor.test_small_inbound_cannot_use_BQ_to_bypass_funds) ... ok
+test_zero_sales_and_other_restoration_rules_keep_original_scope (test_sales_floor.SalesFloor.test_zero_sales_and_other_restoration_rules_keep_original_scope) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.849s
+
+OK

@@ -1,0 +1,24 @@
+test_blank_name_auto_and_no_preview_without_calculation (test_stocking_selection.PickerUiTests.test_blank_name_auto_and_no_preview_without_calculation) ... ok
+test_close_while_indexing_waits_safely_and_discards_result (test_stocking_selection.PickerUiTests.test_close_while_indexing_waits_safely_and_discards_result) ... ok
+test_existing_products_cannot_be_selected_twice_and_clear_is_all (test_stocking_selection.PickerUiTests.test_existing_products_cannot_be_selected_twice_and_clear_is_all) ... C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\stocking_ui.py:247: DeprecationWarning: Function: 'QSortFilterProxyModel.invalidateFilter()' is marked as deprecated, please check the documentation for more information.
+  if refresh:self.proxy.invalidateFilter()
+C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\stocking_ui.py:244: DeprecationWarning: Function: 'QSortFilterProxyModel.invalidateFilter()' is marked as deprecated, please check the documentation for more information.
+  self.proxy.needle=self.search.text().strip();self.proxy.warehouse=self.warehouse.currentData() or '';self.proxy.category=self.category.currentData() or '';self.proxy.only_selected=self.only_selected.isChecked();self.proxy.invalidateFilter();self.changed(False)
+ok
+test_remove_only_selected_item_preserves_other_edits (test_stocking_selection.PickerUiTests.test_remove_only_selected_item_preserves_other_edits) ... ok
+test_saved_append_uses_original_revision_for_optimistic_lock (test_stocking_selection.PickerUiTests.test_saved_append_uses_original_revision_for_optimistic_lock) ... ok
+test_search_sort_and_hidden_selection (test_stocking_selection.PickerUiTests.test_search_sort_and_hidden_selection) ... ok
+test_append_preserves_old_target_order_and_identity (test_stocking_selection.SelectionTests.test_append_preserves_old_target_order_and_identity) ... ok
+test_cancel_and_invalid_codes_rejected (test_stocking_selection.SelectionTests.test_cancel_and_invalid_codes_rejected) ... ok
+test_exact_codes_dedup_sources_and_no_input_mutation (test_stocking_selection.SelectionTests.test_exact_codes_dedup_sources_and_no_input_mutation) ... ok
+test_file_and_selected_list_same_quantities_and_budget_risks (test_stocking_selection.SelectionTests.test_file_and_selected_list_same_quantities_and_budget_risks) ... ok
+test_history_query_source_is_business_readable_and_original_intact (test_stocking_selection.SelectionTests.test_history_query_source_is_business_readable_and_original_intact) ... ok
+test_legacy_matched_data_only_and_multiple_warehouses (test_stocking_selection.SelectionTests.test_legacy_matched_data_only_and_multiple_warehouses) ... ok
+test_missing_disabled_stopped_and_local_still_pending (test_stocking_selection.SelectionTests.test_missing_disabled_stopped_and_local_still_pending) ... ok
+test_names_and_correlated_warehouse_category_filter (test_stocking_selection.SelectionTests.test_names_and_correlated_warehouse_category_filter) ... ok
+test_reuse_save_reopen_no_fake_file_attachment (test_stocking_selection.SelectionTests.test_reuse_save_reopen_no_fake_file_attachment) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.439s
+
+OK

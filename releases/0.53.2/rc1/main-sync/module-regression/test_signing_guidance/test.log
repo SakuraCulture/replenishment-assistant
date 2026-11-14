@@ -1,0 +1,8 @@
+test_both_actual_main_entries_stop_before_creating_a_worker (test_signing_guidance.SigningGuidanceTests.test_both_actual_main_entries_stop_before_creating_a_worker) ... ok
+test_cancel_keeps_pending_and_unselected_pending_does_not_block (test_signing_guidance.SigningGuidanceTests.test_cancel_keeps_pending_and_unselected_pending_does_not_block) ... ok
+test_only_selected_pending_stores_and_no_implicit_application (test_signing_guidance.SigningGuidanceTests.test_only_selected_pending_stores_and_no_implicit_application) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.235s
+
+OK

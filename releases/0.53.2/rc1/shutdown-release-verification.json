@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "runtime_release_events": [
+    {
+      "at": "2026-11-14T04:11:13.331843+00:00",
+      "pid": 17692,
+      "event": "STOPPED",
+      "phase": "STOPPED"
+    },
+    {
+      "at": "2026-11-14T04:11:13.332910+00:00",
+      "pid": 17692,
+      "event": "GUI_GC_RELEASED",
+      "phase": "STOPPED",
+      "collections": [
+        58,
+        6,
+        3
+      ],
+      "off_thread_collections": 0,
+      "maximum_seconds": 0.01600000000325963,
+      "automatic_restored": true
+    },
+    {
+      "at": "2026-11-14T04:11:17.490890+00:00",
+      "pid": 3364,
+      "event": "STOPPED",
+      "phase": "STOPPED"
+    },
+    {
+      "at": "2026-11-14T04:11:17.491878+00:00",
+      "pid": 3364,
+      "event": "GUI_GC_RELEASED",
+      "phase": "STOPPED",
+      "collections": [
+        1,
+        1,
+        3
+      ],
+      "off_thread_collections": 0,
+      "maximum_seconds": 0.015000000013969839,
+      "automatic_restored": true
+    }
+  ],
+  "active_application_processes": [],
+  "validation": "Normal shutdown reaches STOPPED and GUI_GC_RELEASED; final drain included in counters/max duration, automatic GC restored."
+}

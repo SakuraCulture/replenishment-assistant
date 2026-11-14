@@ -1,0 +1,13 @@
+test_cancel_ready_preview_reenables_configuration (test_aoxiang_setup_ui.SetupUiTests.test_cancel_ready_preview_reenables_configuration) ... ok
+test_close_pending_component_is_not_reported_closed (test_aoxiang_setup_ui.SetupUiTests.test_close_pending_component_is_not_reported_closed) ... ok
+test_close_waits_for_live_worker_keeps_event_loop_responsive (test_aoxiang_setup_ui.SetupUiTests.test_close_waits_for_live_worker_keeps_event_loop_responsive) ... ok
+test_discovery_is_not_full_verification_progress (test_aoxiang_setup_ui.SetupUiTests.test_discovery_is_not_full_verification_progress) ... ok
+test_main_entry_does_not_clear_results_or_manual_changes (test_aoxiang_setup_ui.SetupUiTests.test_main_entry_does_not_clear_results_or_manual_changes) ... ok
+test_poll_failure_stops_repeated_dialogs_and_reconnect_recovers (test_aoxiang_setup_ui.SetupUiTests.test_poll_failure_stops_repeated_dialogs_and_reconnect_recovers) ... ok
+test_selection_search_and_explicit_verify_then_save (test_aoxiang_setup_ui.SetupUiTests.test_selection_search_and_explicit_verify_then_save) ... ok
+test_setup_failure_enables_retry_and_shows_code (test_aoxiang_setup_ui.SetupUiTests.test_setup_failure_enables_retry_and_shows_code) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 6.854s
+
+OK

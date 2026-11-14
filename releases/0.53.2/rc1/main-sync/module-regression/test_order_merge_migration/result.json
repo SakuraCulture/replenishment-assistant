@@ -1,0 +1,8 @@
+{
+  "module": "test_order_merge_migration",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 10,
+  "elapsed_seconds": 9.953000000008615,
+  "summary": null
+}

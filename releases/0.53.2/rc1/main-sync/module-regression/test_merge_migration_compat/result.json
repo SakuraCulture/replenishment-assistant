@@ -1,0 +1,8 @@
+{
+  "module": "test_merge_migration_compat",
+  "passed": true,
+  "exit_code": 0,
+  "tests": 1,
+  "elapsed_seconds": 1.687999999994645,
+  "summary": null
+}

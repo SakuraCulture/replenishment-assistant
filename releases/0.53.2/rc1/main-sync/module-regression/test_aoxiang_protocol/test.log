@@ -1,0 +1,15 @@
+test_cooperative_close_can_be_polled_without_resending_on_closed_stdin (test_aoxiang_protocol.ActualProcessTests.test_cooperative_close_can_be_polled_without_resending_on_closed_stdin) ... ok
+test_host_fingerprint_is_identical_to_node_contract (test_aoxiang_protocol.ActualProcessTests.test_host_fingerprint_is_identical_to_node_contract) ... ok
+test_late_response_cannot_satisfy_new_request (test_aoxiang_protocol.ActualProcessTests.test_late_response_cannot_satisfy_new_request) ... ok
+test_real_dispatch_reopen_and_original_id_binding (test_aoxiang_protocol.ActualProcessTests.test_real_dispatch_reopen_and_original_id_binding) ... ok
+test_real_node_query_error_shutdown_and_session_exclusion (test_aoxiang_protocol.ActualProcessTests.test_real_node_query_error_shutdown_and_session_exclusion) ... ok
+test_real_template_control_fails_without_config_and_remains_responsive (test_aoxiang_protocol.ActualProcessTests.test_real_template_control_fails_without_config_and_remains_responsive) ... ok
+test_exact_intent_and_source_cannot_be_changed (test_aoxiang_protocol.HostJobsTests.test_exact_intent_and_source_cannot_be_changed) ... ok
+test_lost_ack_keeps_intent_reconnect_queries_original (test_aoxiang_protocol.HostJobsTests.test_lost_ack_keeps_intent_reconnect_queries_original) ... ok
+test_missing_database_or_tables_fail_closed (test_aoxiang_protocol.HostJobsTests.test_missing_database_or_tables_fail_closed) ... ok
+test_old_receipt_does_not_replace_newer_job_or_order (test_aoxiang_protocol.HostJobsTests.test_old_receipt_does_not_replace_newer_job_or_order) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 3.586s
+
+OK

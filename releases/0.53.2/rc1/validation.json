@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "tests": 128,
+  "elapsed": 49.453000000008615,
+  "modules": [
+    "test_application_gc",
+    "test_application_native",
+    "test_goods_reset_lifetime",
+    "test_migration_shutdown",
+    "test_data_location_shutdown",
+    "test_data_location",
+    "test_relocation_integrity",
+    "test_business_readability",
+    "test_readability_workflow",
+    "test_jst_stock_evidence",
+    "test_jst_stock_evidence_ui",
+    "test_final_list_filters"
+  ],
+  "log": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\runtime_crash_fix_0532_20261114_01\\targeted-final.log",
+  "synthetic_only": true,
+  "live_platform": false,
+  "qt_reset_warnings": []
+}

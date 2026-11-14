@@ -1,0 +1,10 @@
+test_exact_utf8_concatenation_at_chunk_boundaries (test_memory_cache_checksum.MemoryCacheChecksumTests.test_exact_utf8_concatenation_at_chunk_boundaries) ... ok
+test_hash_update_never_receives_the_whole_large_value (test_memory_cache_checksum.MemoryCacheChecksumTests.test_hash_update_never_receives_the_whole_large_value) ... ok
+test_malformed_json_behavior_is_not_relaxed (test_memory_cache_checksum.MemoryCacheChecksumTests.test_malformed_json_behavior_is_not_relaxed) ... ok
+test_old_cache_is_readable_and_unrequested_projection_still_checked (test_memory_cache_checksum.MemoryCacheChecksumTests.test_old_cache_is_readable_and_unrequested_projection_still_checked) ... ok
+test_put_keeps_existing_schema_strings_and_checksum (test_memory_cache_checksum.MemoryCacheChecksumTests.test_put_keeps_existing_schema_strings_and_checksum) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.056s
+
+OK

@@ -1,0 +1,9 @@
+test_login_failure_remains_failure_without_dispatch (test_stockout_login_bridge.StockoutLoginBridgeTests.test_login_failure_remains_failure_without_dispatch) ... ok
+test_only_the_three_login_actions_are_added_other_business_stays_blocked (test_stockout_login_bridge.StockoutLoginBridgeTests.test_only_the_three_login_actions_are_added_other_business_stays_blocked) ... ok
+test_real_bridge_can_cancel_its_login_probe_without_export (test_stockout_login_bridge.StockoutLoginBridgeTests.test_real_bridge_can_cancel_its_login_probe_without_export) ... ok
+test_real_bridge_forwards_current_login_and_poll_on_one_shared_lease (test_stockout_login_bridge.StockoutLoginBridgeTests.test_real_bridge_forwards_current_login_and_poll_on_one_shared_lease) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.003s
+
+OK

@@ -1,0 +1,11 @@
+test_cli_and_legacy_mcp_offline (test_automation_refresh.RefreshTests.test_cli_and_legacy_mcp_offline) ... ok
+test_current_and_saved_parameters_have_distinct_values_and_scope (test_automation_refresh.RefreshTests.test_current_and_saved_parameters_have_distinct_values_and_scope) ... ok
+test_file_registration_is_not_validation (test_automation_refresh.RefreshTests.test_file_registration_is_not_validation) ... ok
+test_no_new_scheduler_write_contract (test_automation_refresh.RefreshTests.test_no_new_scheduler_write_contract) ... ok
+test_schedule_pages_events_order_and_readonly (test_automation_refresh.RefreshTests.test_schedule_pages_events_order_and_readonly) ... ok
+test_schedule_query_absent_does_not_create_schema (test_automation_refresh.RefreshTests.test_schedule_query_absent_does_not_create_schema) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 1.910s
+
+OK

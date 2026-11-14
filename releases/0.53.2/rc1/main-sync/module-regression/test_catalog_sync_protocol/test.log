@@ -1,0 +1,8 @@
+test_busy_lock_is_business_readable_then_original_service_releases_it_without_reboot (test_catalog_sync_protocol.CatalogProtocolTests.test_busy_lock_is_business_readable_then_original_service_releases_it_without_reboot) ... ok
+test_parent_watch_releases_real_child_even_while_its_stdin_pipe_remains_open (test_catalog_sync_protocol.CatalogProtocolTests.test_parent_watch_releases_real_child_even_while_its_stdin_pipe_remains_open) ... ok
+test_real_node_child_status_error_retry_shutdown_isolated (test_catalog_sync_protocol.CatalogProtocolTests.test_real_node_child_status_error_retry_shutdown_isolated) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 2.130s
+
+OK

@@ -1,0 +1,13 @@
+test_bad_excel_dimension_still_reads_physical_rows (test_aoxiang_directory.DirectoryTests.test_bad_excel_dimension_still_reads_physical_rows) ... ok
+test_change_during_read_rejected (test_aoxiang_directory.DirectoryTests.test_change_during_read_rejected) ... ok
+test_duplicate_same_keeps_sources_conflict_blocks (test_aoxiang_directory.DirectoryTests.test_duplicate_same_keeps_sources_conflict_blocks) ... ok
+test_headers_not_positions_and_exact_code_order (test_aoxiang_directory.DirectoryTests.test_headers_not_positions_and_exact_code_order) ... ok
+test_invalid_missing_and_duplicate_headers (test_aoxiang_directory.DirectoryTests.test_invalid_missing_and_duplicate_headers) ... ok
+test_retained_source_and_mapping_reusable_with_suppliers (test_aoxiang_directory.DirectoryTests.test_retained_source_and_mapping_reusable_with_suppliers) ... ok
+test_source_changes_before_save_and_corrupt_directory_rejected (test_aoxiang_directory.DirectoryTests.test_source_changes_before_save_and_corrupt_directory_rejected) ... ok
+test_template_has_only_store_fields_and_specific_instructions (test_aoxiang_directory.DirectoryTests.test_template_has_only_store_fields_and_specific_instructions) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.564s
+
+OK

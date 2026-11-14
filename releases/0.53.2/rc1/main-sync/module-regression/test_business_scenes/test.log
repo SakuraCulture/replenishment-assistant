@@ -1,0 +1,25 @@
+test_batch_workspace_keeps_scope_and_atomic_preview (test_business_scenes.BusinessScenes.test_batch_workspace_keeps_scope_and_atomic_preview) ... ERROR:root:操作失败
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\jst_task_ui.py", line 35, in drain
+    return jst_tasks.drain(path,folder,progress,cancel,before_work=before_work)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\jst_tasks.py", line 60, in drain
+    return jst_batches.drain(path,progress,cancel,before_work=before_work)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\jst_batches.py", line 307, in drain
+    with closing(sqlite3.connect(path)) as db:
+                 ^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: unable to open database file
+ok
+test_decision_overview_only_reads_frozen_and_saved_facts (test_business_scenes.BusinessScenes.test_decision_overview_only_reads_frozen_and_saved_facts) ... ok
+test_default_compare_and_save_rejects_other_window_change (test_business_scenes.BusinessScenes.test_default_compare_and_save_rejects_other_window_change) ... ok
+test_defaults_editor_has_no_current_apply (test_business_scenes.BusinessScenes.test_defaults_editor_has_no_current_apply) ... ok
+test_navigation_keeps_workbench_and_tracking_selection (test_business_scenes.BusinessScenes.test_navigation_keeps_workbench_and_tracking_selection) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 4.765s
+
+OK

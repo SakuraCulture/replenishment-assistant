@@ -1,0 +1,11 @@
+test_qt_owned_directory_handle_closes_but_instance_guard_survives (test_data_location_shutdown.NativeTeardown.test_qt_owned_directory_handle_closes_but_instance_guard_survives) ... ok
+test_cancel_only_startup_checks_and_wait_for_existing_release (test_data_location_shutdown.PauseTests.test_cancel_only_startup_checks_and_wait_for_existing_release) ... ok
+test_failed_move_never_reopens_the_business_app (test_data_location_shutdown.PauseTests.test_failed_move_never_reopens_the_business_app) ... ok
+test_original_timer_and_stop_states_are_restored_on_cancel (test_data_location_shutdown.PauseTests.test_original_timer_and_stop_states_are_restored_on_cancel) ... ok
+test_shutdown_failure_does_not_enable_a_previously_stopped_queue (test_data_location_shutdown.PauseTests.test_shutdown_failure_does_not_enable_a_previously_stopped_queue) ... ok
+test_successful_reopen_uses_a_working_directory_outside_moved_data (test_data_location_shutdown.PauseTests.test_successful_reopen_uses_a_working_directory_outside_moved_data) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 2.380s
+
+OK

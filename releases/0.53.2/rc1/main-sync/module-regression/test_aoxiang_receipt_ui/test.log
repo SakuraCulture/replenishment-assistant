@@ -1,0 +1,9 @@
+test_missing_host_package_keeps_final_pending_and_can_retry_without_new_download (test_aoxiang_receipt_ui.ReceiptUiTests.test_missing_host_package_keeps_final_pending_and_can_retry_without_new_download) ... ok
+test_open_reads_locally_only_and_stop_preserves_original_task (test_aoxiang_receipt_ui.ReceiptUiTests.test_open_reads_locally_only_and_stop_preserves_original_task) ... ok
+test_ready_auto_save_after_sync_uses_existing_service_and_no_platform_resubmit (test_aoxiang_receipt_ui.ReceiptUiTests.test_ready_auto_save_after_sync_uses_existing_service_and_no_platform_resubmit) ... ok
+test_unknown_display_does_not_turn_into_zero_and_stale_response_is_ignored (test_aoxiang_receipt_ui.ReceiptUiTests.test_unknown_display_does_not_turn_into_zero_and_stale_response_is_ignored) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.019s
+
+OK

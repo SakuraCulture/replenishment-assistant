@@ -1,0 +1,13 @@
+test_both_saves_current_effective_config (test_store_parameter_ui.TransactionTests.test_both_saves_current_effective_config) ... ok
+test_changed_file_rejected_after_preview (test_store_parameter_ui.TransactionTests.test_changed_file_rejected_after_preview) ... ok
+test_current_only_invalidates_affected_store (test_store_parameter_ui.TransactionTests.test_current_only_invalidates_affected_store) ... ok
+test_default_only_and_reload (test_store_parameter_ui.TransactionTests.test_default_only_and_reload) ... ok
+test_defaults_conflict_and_database_failure_no_partial_current (test_store_parameter_ui.TransactionTests.test_defaults_conflict_and_database_failure_no_partial_current) ... ok
+test_preview_cancel_unknown_store_and_no_writes (test_store_parameter_ui.TransactionTests.test_preview_cancel_unknown_store_and_no_writes) ... ok
+test_real_stale_defaults_transaction_rejected (test_store_parameter_ui.TransactionTests.test_real_stale_defaults_transaction_rejected) ... ok
+test_stale_current_readonly_and_worker_blocked (test_store_parameter_ui.TransactionTests.test_stale_current_readonly_and_worker_blocked) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.254s
+
+OK

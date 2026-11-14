@@ -1,0 +1,8 @@
+test_cancel_never_accepts_scope (test_order_merge_ui.MergeReview.test_cancel_never_accepts_scope) ... ok
+test_duplicate_and_conflict_only_cannot_confirm (test_order_merge_ui.MergeReview.test_duplicate_and_conflict_only_cannot_confirm) ... ok
+test_explicit_confirmation_accepts_only_additions (test_order_merge_ui.MergeReview.test_explicit_confirmation_accepts_only_additions) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.115s
+
+OK

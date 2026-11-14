@@ -1,0 +1,6 @@
+test_operations_route_return_allocation_and_paid_facts_survive_import (test_merge_migration_compat.CombinedMigration.test_operations_route_return_allocation_and_paid_facts_survive_import) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.711s
+
+OK

@@ -1,0 +1,9 @@
+test_exact_ratio_just_below_half_does_not_round_up (test_aoxiang_purchase_pricing.PurchasePricingTests.test_exact_ratio_just_below_half_does_not_round_up) ... ok
+test_half_up_ties_repeating_fractional_zero_and_large_quantity (test_aoxiang_purchase_pricing.PurchasePricingTests.test_half_up_ties_repeating_fractional_zero_and_large_quantity) ... ok
+test_negative_nonfinite_and_zero_quantity_rejected (test_aoxiang_purchase_pricing.PurchasePricingTests.test_negative_nonfinite_and_zero_quantity_rejected) ... ok
+test_preview_keeps_original_payment_and_legacy_history (test_aoxiang_purchase_pricing.PurchasePricingTests.test_preview_keeps_original_payment_and_legacy_history) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+OK

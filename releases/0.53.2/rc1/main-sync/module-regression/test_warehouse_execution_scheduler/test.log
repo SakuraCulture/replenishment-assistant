@@ -1,0 +1,6 @@
+test_late_result_rejected_before_any_value_or_ready_state_is_saved (test_warehouse_execution_scheduler.ScheduledWarehouseFence.test_late_result_rejected_before_any_value_or_ready_state_is_saved) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.050s
+
+OK

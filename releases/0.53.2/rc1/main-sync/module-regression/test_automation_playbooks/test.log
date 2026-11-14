@@ -1,0 +1,10 @@
+test_codes_keep_order_and_exact_identity (test_automation_playbooks.RecipeContract.test_codes_keep_order_and_exact_identity) ... ok
+test_compare_and_adopt_are_distinct_authorizations (test_automation_playbooks.RecipeContract.test_compare_and_adopt_are_distinct_authorizations) ... ok
+test_every_recipe_is_bound_and_does_not_authorize_formal_writes (test_automation_playbooks.RecipeContract.test_every_recipe_is_bound_and_does_not_authorize_formal_writes) ... ok
+test_history_never_falls_back_to_current_parameters (test_automation_playbooks.RecipeContract.test_history_never_falls_back_to_current_parameters) ... ok
+test_scope_cannot_silently_expand (test_automation_playbooks.RecipeContract.test_scope_cannot_silently_expand) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.002s
+
+OK

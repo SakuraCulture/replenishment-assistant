@@ -1,0 +1,9 @@
+test_export_failure_keeps_business_state_in_visible_message (test_readability_workflow.ReadingWorkflow.test_export_failure_keeps_business_state_in_visible_message) ... ok
+test_font_spacing_changes_only_display_and_corrupt_width_settings_are_ignored (test_readability_workflow.ReadingWorkflow.test_font_spacing_changes_only_display_and_corrupt_width_settings_are_ignored) ... ok
+test_prompt_preserves_exact_scope_and_never_promises_autoconfiguration (test_readability_workflow.ReadingWorkflow.test_prompt_preserves_exact_scope_and_never_promises_autoconfiguration) ... ok
+test_resizable_review_preserves_cancel_scope_and_full_text (test_readability_workflow.ReadingWorkflow.test_resizable_review_preserves_cancel_scope_and_full_text) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.254s
+
+OK

@@ -1,0 +1,14 @@
+test_decimal_round_up_and_below_step_use_exact_outbound_multiples (test_first_fill.FirstFillUi.test_decimal_round_up_and_below_step_use_exact_outbound_multiples) ... ok
+test_disabled_product_is_not_made_eligible_by_first_fill_quantity (test_first_fill.FirstFillUi.test_disabled_product_is_not_made_eligible_by_first_fill_quantity) ... ok
+test_fractional_inventory_units_are_displayed_without_rounding_to_two_decimals (test_first_fill.FirstFillUi.test_fractional_inventory_units_are_displayed_without_rounding_to_two_decimals) ... ok
+test_missing_quantity_uses_minimum_and_can_still_be_maintained (test_first_fill.FirstFillUi.test_missing_quantity_uses_minimum_and_can_still_be_maintained) ... ok
+test_monthly_defaults_current_manual_and_previous_month_are_distinct (test_first_fill.FirstFillUi.test_monthly_defaults_current_manual_and_previous_month_are_distinct) ... ok
+test_source_quantity_rounds_up_but_manual_override_is_preserved_and_validated (test_first_fill.FirstFillUi.test_source_quantity_rounds_up_but_manual_override_is_preserved_and_validated) ... ok
+test_duplicate_first_fill_header_is_not_guessed_and_carton_budget_checks_are_unchanged (test_first_fill.WarehouseFirstFill.test_duplicate_first_fill_header_is_not_guessed_and_carton_budget_checks_are_unchanged) ... ok
+test_import_roundtrip_and_same_sku_different_warehouse_routing (test_first_fill.WarehouseFirstFill.test_import_roundtrip_and_same_sku_different_warehouse_routing) ... ok
+test_missing_invalid_and_wrong_warehouse_use_current_rows_minimum_only (test_first_fill.WarehouseFirstFill.test_missing_invalid_and_wrong_warehouse_use_current_rows_minimum_only) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.633s
+
+OK

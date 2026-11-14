@@ -1,0 +1,8 @@
+test_names_bound_to_exact_revision_not_current_store_catalog (test_business_logs.BusinessLogTests.test_names_bound_to_exact_revision_not_current_store_catalog) ... ok
+test_summary_is_bounded_full_values_remain_available (test_business_logs.BusinessLogTests.test_summary_is_bounded_full_values_remain_available) ... ok
+test_unknown_ids_and_paths_kept_in_technical_details (test_business_logs.BusinessLogTests.test_unknown_ids_and_paths_kept_in_technical_details) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.028s
+
+OK

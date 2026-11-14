@@ -1,0 +1,34 @@
+test_archive_guard_rejects_tamper (test_preissue.PreissueTests.test_archive_guard_rejects_tamper) ... ok
+test_both_warehouses_and_hidden_rows_share_budget (test_preissue.PreissueTests.test_both_warehouses_and_hidden_rows_share_budget) ... ok
+test_cap_disabled_and_not_forecast_days (test_preissue.PreissueTests.test_cap_disabled_and_not_forecast_days) ... ok
+test_cap_scoped_confirmation (test_preissue.PreissueTests.test_cap_scoped_confirmation) ... ok
+test_empty_is_not_zero (test_preissue.PreissueTests.test_empty_is_not_zero) ... ok
+test_exact_carton_steps_and_single (test_preissue.PreissueTests.test_exact_carton_steps_and_single) ... ok
+test_excluded_and_local_and_unknown_cannot_override (test_preissue.PreissueTests.test_excluded_and_local_and_unknown_cannot_override) ... ok
+test_identity_unique_and_cancel_no_mutation (test_preissue.PreissueTests.test_identity_unique_and_cancel_no_mutation) ... ok
+test_keyboard_paste_invalid_never_rounds (test_preissue.PreissueTests.test_keyboard_paste_invalid_never_rounds) ... ok
+test_legacy_identity (test_preissue.PreissueTests.test_legacy_identity) ... ok
+test_list_missing_is_not_zero (test_preissue.PreissueTests.test_list_missing_is_not_zero) ... ok
+test_list_repeat_and_manual_zero_preservation (test_preissue.PreissueTests.test_list_repeat_and_manual_zero_preservation) ... ok
+test_minimum_existing_stock_and_inbound (test_preissue.PreissueTests.test_minimum_existing_stock_and_inbound) ... ok
+test_money_precision_does_not_become_quantity_error (test_preissue.PreissueTests.test_money_precision_does_not_become_quantity_error) ... ok
+test_new_group_ignores_inbound_and_stockout_not_raw_missing (test_preissue.PreissueTests.test_new_group_ignores_inbound_and_stockout_not_raw_missing) ... ok
+test_nonmutation_and_other_row_exact (test_preissue.PreissueTests.test_nonmutation_and_other_row_exact) ... ok
+test_one_extra_and_five_percent (test_preissue.PreissueTests.test_one_extra_and_five_percent) ... ok
+test_original_automatic_exception_not_reblocked (test_preissue.PreissueTests.test_original_automatic_exception_not_reblocked) ... ok
+test_pending_and_cross_day_block_archive (test_preissue.PreissueTests.test_pending_and_cross_day_block_archive) ... ok
+test_reason_required (test_preissue.PreissueTests.test_reason_required) ... ok
+test_released_budget_not_redistributed (test_preissue.PreissueTests.test_released_budget_not_redistributed) ... ok
+test_restore_including_key_order (test_preissue.PreissueTests.test_restore_including_key_order) ... ok
+test_stale_confirmation_quantity_and_source (test_preissue.PreissueTests.test_stale_confirmation_quantity_and_source) ... ok
+test_stopped_cannot_override (test_preissue.PreissueTests.test_stopped_cannot_override) ... ok
+test_target_gap_not_added_to_current_quantity (test_preissue.PreissueTests.test_target_gap_not_added_to_current_quantity) ... ok
+test_two_units_cannot_borrow_old_expensive_unit (test_preissue.PreissueTests.test_two_units_cannot_borrow_old_expensive_unit) ... ok
+test_unknown_forecast_requires_confirmation (test_preissue.PreissueTests.test_unknown_forecast_requires_confirmation) ... ok
+test_zero_budget_never_reallocates (test_preissue.PreissueTests.test_zero_budget_never_reallocates) ... ok
+test_zero_requires_specific_risk_and_is_final (test_preissue.PreissueTests.test_zero_requires_specific_risk_and_is_final) ... ok
+
+----------------------------------------------------------------------
+Ran 29 tests in 0.024s
+
+OK

@@ -1,0 +1,12 @@
+test_frozen_base_quantity_payment_exact_price_rounded_no_lifecycle_mutation (test_aoxiang_purchase.PurchaseBasisTests.test_frozen_base_quantity_payment_exact_price_rounded_no_lifecycle_mutation) ... ok
+test_payment_return_or_config_changed_after_preview_blocks (test_aoxiang_purchase.PurchaseBasisTests.test_payment_return_or_config_changed_after_preview_blocks) ... ok
+test_unknown_store_pending_payment_or_currency_rejected (test_aoxiang_purchase.PurchaseBasisTests.test_unknown_store_pending_payment_or_currency_rejected) ... ok
+test_zero_paid_quantity_not_created_and_nonzero_amount_not_dropped (test_aoxiang_purchase.PurchaseBasisTests.test_zero_paid_quantity_not_created_and_nonzero_amount_not_dropped) ... ok
+test_hash_limit_tamper_and_precision_block_no_output (test_aoxiang_purchase.PurchaseWorkbookTests.test_hash_limit_tamper_and_precision_block_no_output) ... ok
+test_only_input_sheet_changes_text_codes_price_authoritative (test_aoxiang_purchase.PurchaseWorkbookTests.test_only_input_sheet_changes_text_codes_price_authoritative) ... ok
+test_rounded_price_tamper_blocked_even_with_new_plan_fingerprint (test_aoxiang_purchase.PurchaseWorkbookTests.test_rounded_price_tamper_blocked_even_with_new_plan_fingerprint) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.523s
+
+OK

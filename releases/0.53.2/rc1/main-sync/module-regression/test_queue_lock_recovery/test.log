@@ -1,0 +1,45 @@
+test_closing_and_active_worker_are_not_bypassed (test_queue_lock_recovery.QueueLockRecovery.test_closing_and_active_worker_are_not_bypassed) ... ok
+test_due_schedule_rechecked_after_read_phase (test_queue_lock_recovery.QueueLockRecovery.test_due_schedule_rechecked_after_read_phase) ... ok
+test_fatal_error_reported_but_owned_maintenance_possible (test_queue_lock_recovery.QueueLockRecovery.test_fatal_error_reported_but_owned_maintenance_possible) ... ERROR:root:翱象队列故障: C:\Users\lenovo\AppData\Local\Temp\tmpemfgegv2\settings\aoxiang\workflows.sqlite3
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 119, in tick
+    self.store.enqueue_due(timeout=0)
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+ValueError: 合成结构错误
+ok
+test_idle_poll_under_read_lock_never_needs_write (test_queue_lock_recovery.QueueLockRecovery.test_idle_poll_under_read_lock_never_needs_write) ... ok
+test_live_timer_busy_recovery_and_maintenance (test_queue_lock_recovery.QueueLockRecovery.test_live_timer_busy_recovery_and_maintenance) ... WARNING:root:翱象队列数据库繁忙，将重查原任务: C:\Users\lenovo\AppData\Local\Temp\tmpn83omjpd\settings\aoxiang\workflows.sqlite3
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 118, in tick
+    self.reconcile_orders()
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 239, in reconcile_orders
+    self.store.reconcile_deleted();self.store.retire_receipt_sources();self.order_signature=signature
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\aoxiang_workflows.py", line 548, in retire_receipt_sources
+    with self.db(True,timeout=0) as db:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\aoxiang_workflows.py", line 32, in db
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+test_other_owner_cannot_maintain_then_explicit_reacquire (test_queue_lock_recovery.QueueLockRecovery.test_other_owner_cannot_maintain_then_explicit_reacquire) ... WARNING:root:翱象调度锁初始化失败: C:\Users\lenovo\AppData\Local\Temp\tmponyymz08\settings\aoxiang
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\aoxiang_workflow_ui.py", line 86, in __init__
+    self.owner.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 1.447s
+
+OK

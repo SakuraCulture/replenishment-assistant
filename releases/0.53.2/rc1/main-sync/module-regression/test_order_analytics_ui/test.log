@@ -1,0 +1,27 @@
+test_cancel_close_waits_for_thread (test_order_analytics_ui.AnalyticsUiTests.test_cancel_close_waits_for_thread) ... ok
+test_detail_is_readonly (test_order_analytics_ui.AnalyticsUiTests.test_detail_is_readonly) ... ok
+test_identifiers_appear_in_all_summary_views_and_coverage_view (test_order_analytics_ui.AnalyticsUiTests.test_identifiers_appear_in_all_summary_views_and_coverage_view) ... ok
+test_number_maintenance_marks_existing_report_stale (test_order_analytics_ui.AnalyticsUiTests.test_number_maintenance_marks_existing_report_stale) ... ERROR:root:操作失败
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\order_analytics.py", line 292, in validate_basis
+    raise ValueError('订单关联单号已更新，请重新查询；原报告中的单号未自动替换')
+ValueError: 订单关联单号已更新，请重新查询；原报告中的单号未自动替换
+ok
+test_query_drill_back_and_scope (test_order_analytics_ui.AnalyticsUiTests.test_query_drill_back_and_scope) ... ok
+test_updated_data_does_not_replace_visible_snapshot (test_order_analytics_ui.AnalyticsUiTests.test_updated_data_does_not_replace_visible_snapshot) ... ERROR:root:操作失败
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\order_analytics.py", line 289, in validate_basis
+    raise ValueError('订单或履约数据已更新，请重新查询；原报告数据未混入本次结果')
+ValueError: 订单或履约数据已更新，请重新查询；原报告数据未混入本次结果
+ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 1.234s
+
+OK

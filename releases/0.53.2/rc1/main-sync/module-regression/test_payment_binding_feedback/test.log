@@ -1,0 +1,17 @@
+test_selected_whole_order_can_save_sku_that_used_to_belong_to_another_warehouse (test_payment_binding_feedback.PaymentBindingTests.test_selected_whole_order_can_save_sku_that_used_to_belong_to_another_warehouse) ... ok
+test_button_enters_review_for_manually_selected_order_without_old_sku_warehouse_guard (test_payment_binding_feedback.PaymentBindingUiTests.test_button_enters_review_for_manually_selected_order_without_old_sku_warehouse_guard) ... ok
+test_unresolved_target_shows_popup_and_full_reason_without_losing_files_or_saving (test_payment_binding_feedback.PaymentBindingUiTests.test_unresolved_target_shows_popup_and_full_reason_without_losing_files_or_saving) ... ERROR:root:操作失败
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\payment_matching.py", line 319, in prepare
+    if d.get('target') is None:raise ValueError(result['state']+'：'+result['reason'])
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: 没有完整匹配订单：没有找到逐商品明细完全一致的有效分配单。合成门店1 / 河北仓：少 1 款、多 1 款、数量不同 0 款、金额不同 0 款；缺少编码 0001；清单外编码 0002；合成门店1 / 山东仓：少 0 款、多 0 款、数量不同 0 款、金额不同 1 款；测试店 / 河北仓：少 1 款、多 1 款、数量不同 0 款、金额不同 0 款；缺少编码 0001；清单外编码 0002
+ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.784s
+
+OK

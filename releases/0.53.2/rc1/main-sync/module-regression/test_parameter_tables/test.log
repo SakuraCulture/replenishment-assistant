@@ -1,0 +1,18 @@
+test_blank_defaults_missing_column_untouched_and_zero (test_parameter_tables.ClassifiedParameters.test_blank_defaults_missing_column_untouched_and_zero) ... ok
+test_complete_roundtrip_and_template_scope (test_parameter_tables.ClassifiedParameters.test_complete_roundtrip_and_template_scope) ... ok
+test_default_blank_probability (test_parameter_tables.ClassifiedParameters.test_default_blank_probability) ... ok
+test_duplicate_conflict_rejected (test_parameter_tables.ClassifiedParameters.test_duplicate_conflict_rejected) ... ok
+test_formula_long_numeric_and_duplicate_header (test_parameter_tables.ClassifiedParameters.test_formula_long_numeric_and_duplicate_header) ... ok
+test_identical_duplicates_trace (test_parameter_tables.ClassifiedParameters.test_identical_duplicates_trace) ... ok
+test_invalid_no_commit (test_parameter_tables.ClassifiedParameters.test_invalid_no_commit) ... ok
+test_legacy_blank_unchanged (test_parameter_tables.ClassifiedParameters.test_legacy_blank_unchanged) ... ok
+test_restore_category_explicit_default_not_custom_parent (test_parameter_tables.ClassifiedParameters.test_restore_category_explicit_default_not_custom_parent) ... ok
+test_restore_not_mutating_standard_or_store (test_parameter_tables.ClassifiedParameters.test_restore_not_mutating_standard_or_store) ... ok
+test_shared_category_override_inherits_and_percent (test_parameter_tables.ClassifiedParameters.test_shared_category_override_inherits_and_percent) ... ok
+test_standard_integrity_error_not_silent_fallback (test_parameter_tables.ClassifiedParameters.test_standard_integrity_error_not_silent_fallback) ... ok
+test_warehouse_rows_no_route_or_budget (test_parameter_tables.ClassifiedParameters.test_warehouse_rows_no_route_or_budget) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.598s
+
+OK

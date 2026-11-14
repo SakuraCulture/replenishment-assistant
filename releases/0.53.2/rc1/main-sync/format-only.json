@@ -1,0 +1,16 @@
+[
+  {
+    "path": "docs/plans/性能优化评估与实施测试方案_0.52.5_20261113.md",
+    "before_sha256": "ab52a4eb810fca4db26b03118cbaa5ae8736ef66739d103e2d2b64977c0cfd3c",
+    "after_sha256": "a8d6587b856d925707fd798cac714e40e920d3248af3284b238b2e36bdf7839b",
+    "compiled_code_identical": null,
+    "change": "blank lines / end-of-file whitespace only"
+  },
+  {
+    "path": "src/review_json.py",
+    "before_sha256": "0b1acfae2b4a05cbb55ae7e2ddabe93e89febda086ff34bde92fe38312261c52",
+    "after_sha256": "4453a410508a4970cd384d1af1452afebd7e213ec2537bce7567b7c853c312dd",
+    "compiled_code_identical": true,
+    "change": "blank lines / end-of-file whitespace only"
+  }
+]

@@ -1,0 +1,21 @@
+test_actual_interruption_between_renames_rolls_back_on_reopen (test_migration_shutdown.Handoff.test_actual_interruption_between_renames_rolls_back_on_reopen) ... ok
+test_apply_failure_preserves_stage_and_original_and_specific_error (test_migration_shutdown.Handoff.test_apply_failure_preserves_stage_and_original_and_specific_error) ... ok
+test_cancel_is_explicit_and_original_package_survives (test_migration_shutdown.Handoff.test_cancel_is_explicit_and_original_package_survives) ... ok
+test_completed_state_requires_live_root_receipt_and_keeps_backup (test_migration_shutdown.Handoff.test_completed_state_requires_live_root_receipt_and_keeps_backup) ... ok
+test_prepared_and_waiting_are_durable_and_do_not_replace (test_migration_shutdown.Handoff.test_prepared_and_waiting_are_durable_and_do_not_replace) ... ok
+test_default_root_is_the_settings_directory_not_its_parent (test_migration_shutdown.NativeExceptionPolicy.test_default_root_is_the_settings_directory_not_its_parent) ... ok
+test_handled_health_failure_is_logged_without_failing_safe_shutdown (test_migration_shutdown.NativeExceptionPolicy.test_handled_health_failure_is_logged_without_failing_safe_shutdown) ... ok
+test_running_error_dialog_real_and_finalized_errors_log_without_widgets (test_migration_shutdown.NativeExceptionPolicy.test_running_error_dialog_real_and_finalized_errors_log_without_widgets) ... ok
+test_second_launch_waits_for_initial_window_without_second_owner (test_migration_shutdown.NativeStartingInstance.test_second_launch_waits_for_initial_window_without_second_owner) ... ok
+test_abandoned_child_distinct_and_only_ignored_under_guard (test_migration_shutdown.ProcessStates.test_abandoned_child_distinct_and_only_ignored_under_guard) ... ok
+test_access_denied_alone_never_allows_another_instance (test_migration_shutdown.ProcessStates.test_access_denied_alone_never_allows_another_instance) ... ok
+test_initializing_or_suspended_process_stays_protected (test_migration_shutdown.ProcessStates.test_initializing_or_suspended_process_stays_protected) ... ok
+test_live_worker_cannot_be_misread_as_main_or_ignored (test_migration_shutdown.ProcessStates.test_live_worker_cannot_be_misread_as_main_or_ignored) ... ok
+test_pid_reuse_between_probes_is_unknown_and_blocking (test_migration_shutdown.ProcessStates.test_pid_reuse_between_probes_is_unknown_and_blocking) ... ok
+test_running_windowless_process_remains_protected (test_migration_shutdown.ProcessStates.test_running_windowless_process_remains_protected) ... ok
+test_signaled_exited_process_is_not_live (test_migration_shutdown.ProcessStates.test_signaled_exited_process_is_not_live) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 5.806s
+
+OK

@@ -1,0 +1,18 @@
+test_concurrent_change_rejects_delete_and_assignment (test_parameter_presets.Presets.test_concurrent_change_rejects_delete_and_assignment) ... ok
+test_defaults_assign_only_selected_and_keep_budget_route (test_parameter_presets.Presets.test_defaults_assign_only_selected_and_keep_budget_route) ... ok
+test_delete_references_atomically_and_preserve_snapshot (test_parameter_presets.Presets.test_delete_references_atomically_and_preserve_snapshot) ... ok
+test_edited_default_detaches_and_no_silent_overwrite (test_parameter_presets.Presets.test_edited_default_detaches_and_no_silent_overwrite) ... ok
+test_per_store_full_replacement_and_global_mapping (test_parameter_presets.Presets.test_per_store_full_replacement_and_global_mapping) ... ok
+test_persisted_plan_never_reuses_resolution_and_missing_ref_rejected (test_parameter_presets.Presets.test_persisted_plan_never_reuses_resolution_and_missing_ref_rejected) ... ok
+test_restoring_defaults_does_not_revive_deleted_reference (test_parameter_presets.Presets.test_restoring_defaults_does_not_revive_deleted_reference) ... ok
+test_system_default_cannot_edit_delete_archive (test_parameter_presets.Presets.test_system_default_cannot_edit_delete_archive) ... ok
+test_update_future_defaults_not_existing_frozen_job (test_parameter_presets.Presets.test_update_future_defaults_not_existing_frozen_job) ... ok
+test_scheduler_uses_per_store_configs_and_detects_later_change (test_parameter_presets.ScheduledPresets.test_scheduler_uses_per_store_configs_and_detects_later_change) ... ok
+test_ai_snapshot_resolves_plan_without_touching_current (test_parameter_presets.WorkbenchPresets.test_ai_snapshot_resolves_plan_without_touching_current) ... ok
+test_apply_recheck_manual_and_restore_keep_frozen_parameters (test_parameter_presets.WorkbenchPresets.test_apply_recheck_manual_and_restore_keep_frozen_parameters) ... ok
+test_new_plan_editor_order_selection_and_follow_default (test_parameter_presets.WorkbenchPresets.test_new_plan_editor_order_selection_and_follow_default) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 3.742s
+
+OK

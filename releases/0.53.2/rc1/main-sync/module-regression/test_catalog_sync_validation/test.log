@@ -1,0 +1,8 @@
+test_count_hash_and_candidate_mutations_rejected (test_catalog_sync_validation.CatalogValidationTests.test_count_hash_and_candidate_mutations_rejected) ... ok
+test_headless_app_entry_does_not_import_qt_or_write_settings (test_catalog_sync_validation.CatalogValidationTests.test_headless_app_entry_does_not_import_qt_or_write_settings) ... ok
+test_original_values_types_order_and_rows_match_manual_import (test_catalog_sync_validation.CatalogValidationTests.test_original_values_types_order_and_rows_match_manual_import) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.035s
+
+OK

@@ -1,0 +1,16 @@
+test_62_orders_no_page_cutoff_grouped_stores_keep_generation_order (test_jst_results.BatchResults.test_62_orders_no_page_cutoff_grouped_stores_keep_generation_order) ... ok
+test_partial_failure_and_cancel_retry_exact_original_ids (test_jst_results.BatchResults.test_partial_failure_and_cancel_retry_exact_original_ids) ... ok
+test_change_after_export_starts_keeps_frozen_generation (test_jst_results.Results.test_change_after_export_starts_keeps_frozen_generation) ... ok
+test_inventory_refresh_requires_review_only_unlocked (test_jst_results.Results.test_inventory_refresh_requires_review_only_unlocked) ... ok
+test_legacy_return_and_paid_history_can_export (test_jst_results.Results.test_legacy_return_and_paid_history_can_export) ... ok
+test_locked_paid_received_orders_remain_exportable (test_jst_results.Results.test_locked_paid_received_orders_remain_exportable) ... ok
+test_repeat_exact_export_keeps_business_facts_and_ready_rows (test_jst_results.Results.test_repeat_exact_export_keeps_business_facts_and_ready_rows) ... ok
+test_scope_and_cancel_do_not_create_exports (test_jst_results.Results.test_scope_and_cancel_do_not_create_exports) ... ok
+test_stale_return_refresh_and_explicit_old_export (test_jst_results.Results.test_stale_return_refresh_and_explicit_old_export) ... ok
+test_warm_projection_does_not_decode_generation_and_tamper_rebuilt (test_jst_results.Results.test_warm_projection_does_not_decode_generation_and_tamper_rebuilt) ... ok
+test_zero_result_and_return_zero_stay_visible (test_jst_results.Results.test_zero_result_and_return_zero_stay_visible) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 4.166s
+
+OK

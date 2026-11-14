@@ -1,0 +1,11 @@
+test_active_source_writer_requires_rpc_snapshot_without_mutation (test_catalog_migration.CatalogMigration.test_active_source_writer_requires_rpc_snapshot_without_mutation) ... ok
+test_active_target_component_or_bad_guard_prevents_any_replacement (test_catalog_migration.CatalogMigration.test_active_target_component_or_bad_guard_prevents_any_replacement) ... ok
+test_export_is_readonly_and_contains_tasks_files_without_source_binding (test_catalog_migration.CatalogMigration.test_export_is_readonly_and_contains_tasks_files_without_source_binding) ... ok
+test_legacy_package_clears_target_task_area_but_keeps_whole_backup (test_catalog_migration.CatalogMigration.test_legacy_package_clears_target_task_area_but_keeps_whole_backup) ... ok
+test_restore_replaces_target_tasks_keeps_local_binding_and_translates_file_paths (test_catalog_migration.CatalogMigration.test_restore_replaces_target_tasks_keeps_local_binding_and_translates_file_paths) ... ok
+test_second_export_contains_no_target_connection_and_keeps_native_identity (test_catalog_migration.CatalogMigration.test_second_export_contains_no_target_connection_and_keeps_native_identity) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 5.199s
+
+OK

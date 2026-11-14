@@ -1,0 +1,15 @@
+test_cleanup_failure_cannot_be_reported_as_success (test_relocation_integrity.RelocationIntegrity.test_cleanup_failure_cannot_be_reported_as_success) ... ok
+test_corrupt_database_is_rejected_with_its_relative_name (test_relocation_integrity.RelocationIntegrity.test_corrupt_database_is_rejected_with_its_relative_name) ... ok
+test_dirty_wal_latest_commit_is_read_from_owned_clone_without_original_shm (test_relocation_integrity.RelocationIntegrity.test_dirty_wal_latest_commit_is_read_from_owned_clone_without_original_shm) ... ok
+test_first_progress_error_is_not_hidden_by_a_second_cleanup_error (test_relocation_integrity.RelocationIntegrity.test_first_progress_error_is_not_hidden_by_a_second_cleanup_error) ... ok
+test_insufficient_space_fails_before_creating_a_clone_and_names_the_database (test_relocation_integrity.RelocationIntegrity.test_insufficient_space_fails_before_creating_a_clone_and_names_the_database) ... ok
+test_ordinary_database_is_verified_without_changing_its_bytes (test_relocation_integrity.RelocationIntegrity.test_ordinary_database_is_verified_without_changing_its_bytes) ... ok
+test_progress_exception_preserves_the_original_exception_and_cleans_scratch (test_relocation_integrity.RelocationIntegrity.test_progress_exception_preserves_the_original_exception_and_cleans_scratch) ... ok
+test_real_hot_journal_reproduces_776_then_verifies_without_mutating_original (test_relocation_integrity.RelocationIntegrity.test_real_hot_journal_reproduces_776_then_verifies_without_mutating_original) ... ok
+test_sqlite_progress_callback_error_is_not_replaced_by_interrupted (test_relocation_integrity.RelocationIntegrity.test_sqlite_progress_callback_error_is_not_replaced_by_interrupted) ... ok
+test_super_journal_reference_is_rejected_and_external_sentinel_is_untouched (test_relocation_integrity.RelocationIntegrity.test_super_journal_reference_is_rejected_and_external_sentinel_is_untouched) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.702s
+
+OK

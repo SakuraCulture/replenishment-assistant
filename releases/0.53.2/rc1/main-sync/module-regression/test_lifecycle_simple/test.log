@@ -1,0 +1,14 @@
+test_batch_numbers_separate_warehouses_and_preserve_order (test_lifecycle_simple.SimpleImportTests.test_batch_numbers_separate_warehouses_and_preserve_order) ... ok
+test_blank_still_zero_but_missing_quantity_column_rejected (test_lifecycle_simple.SimpleImportTests.test_blank_still_zero_but_missing_quantity_column_rejected) ... ok
+test_current_order_changed_after_preview_rejected (test_lifecycle_simple.SimpleImportTests.test_current_order_changed_after_preview_rejected) ... ok
+test_minimal_number_code_quantity_no_upstream_retyping (test_lifecycle_simple.SimpleImportTests.test_minimal_number_code_quantity_no_upstream_retyping) ... ok
+test_minimum_template_explicit_labels_and_no_internal_columns (test_lifecycle_simple.SimpleImportTests.test_minimum_template_explicit_labels_and_no_internal_columns) ... ok
+test_order_number_conflicts_with_source_warehouse_rejected (test_lifecycle_simple.SimpleImportTests.test_order_number_conflicts_with_source_warehouse_rejected) ... ok
+test_single_context_fills_number_global_missing_or_wrong_rejected (test_lifecycle_simple.SimpleImportTests.test_single_context_fills_number_global_missing_or_wrong_rejected) ... ok
+test_source_claimed_upstream_quantity_is_ignored (test_lifecycle_simple.SimpleImportTests.test_source_claimed_upstream_quantity_is_ignored) ... ok
+test_source_revision_is_not_user_identity_current_order_is_unique (test_lifecycle_simple.SimpleImportTests.test_source_revision_is_not_user_identity_current_order_is_unique) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 1.316s
+
+OK

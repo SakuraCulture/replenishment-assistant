@@ -1,0 +1,18 @@
+test_cancel_does_not_save (test_stocking_lists.StockingTests.test_cancel_does_not_save) ... ok
+test_change_after_mapping_rejected (test_stocking_lists.StockingTests.test_change_after_mapping_rejected) ... ok
+test_conflict_not_last_wins (test_stocking_lists.StockingTests.test_conflict_not_last_wins) ... ok
+test_duplicate_header_rejected (test_stocking_lists.StockingTests.test_duplicate_header_rejected) ... ok
+test_duplicate_same_keeps_source_rows (test_stocking_lists.StockingTests.test_duplicate_same_keeps_source_rows) ... ok
+test_invalid_period (test_stocking_lists.StockingTests.test_invalid_period) ... ok
+test_numeric_long_code_rejected (test_stocking_lists.StockingTests.test_numeric_long_code_rejected) ... ok
+test_only_code_minimum_template (test_stocking_lists.StockingTests.test_only_code_minimum_template) ... ok
+test_per_item_targets_need_no_fallback (test_stocking_lists.StockingTests.test_per_item_targets_need_no_fallback) ... ok
+test_reordered_headers_and_long_exact_codes (test_stocking_lists.StockingTests.test_reordered_headers_and_long_exact_codes) ... ok
+test_uncached_formula_is_not_blank_default (test_stocking_lists.StockingTests.test_uncached_formula_is_not_blank_default) ... ok
+test_unknown_focus_never_silently_excludes (test_stocking_lists.StockingTests.test_unknown_focus_never_silently_excludes) ... ok
+test_versions_attachments_and_optimistic_lock (test_stocking_lists.StockingTests.test_versions_attachments_and_optimistic_lock) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.416s
+
+OK

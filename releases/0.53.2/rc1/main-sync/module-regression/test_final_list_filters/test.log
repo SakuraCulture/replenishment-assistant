@@ -1,0 +1,17 @@
+test_pending_export_error_does_not_advise_file_occupancy (test_final_list_filters.ExportBlockTests.test_pending_export_error_does_not_advise_file_occupancy) ... ok
+test_slim_export_preflight_preserves_selected_pending_adjustments (test_final_list_filters.ExportBlockTests.test_slim_export_preflight_preserves_selected_pending_adjustments) ... ok
+test_batch_preview_cancel_and_changed_input_require_repreview (test_final_list_filters.FilterUiTests.test_batch_preview_cancel_and_changed_input_require_repreview) ... ok
+test_combined_filter_keeps_hidden_checks_and_refreshes_held_after_edit (test_final_list_filters.FilterUiTests.test_combined_filter_keeps_hidden_checks_and_refreshes_held_after_edit) ... ok
+test_filter_dialog_validation_cancel_and_all_category_values (test_final_list_filters.FilterUiTests.test_filter_dialog_validation_cancel_and_all_category_values) ... ok
+test_all_numeric_operators_and_holding_use_current_quantity (test_final_list_filters.RuleTests.test_all_numeric_operators_and_holding_use_current_quantity) ... ok
+test_bad_intervals_and_non_finite_rejected (test_final_list_filters.RuleTests.test_bad_intervals_and_non_finite_rejected) ... ok
+test_categories_or_cross_conditions_and_missing_not_zero (test_final_list_filters.RuleTests.test_categories_or_cross_conditions_and_missing_not_zero) ... ok
+test_invalid_reason_or_one_blocked_row_has_no_partial_edits (test_final_list_filters.RuleTests.test_invalid_reason_or_one_blocked_row_has_no_partial_edits) ... ok
+test_missing_category_is_explicit (test_final_list_filters.RuleTests.test_missing_category_is_explicit) ... ok
+test_pack_arithmetic_exact_and_no_negative_output (test_final_list_filters.RuleTests.test_pack_arithmetic_exact_and_no_negative_output) ... ok
+test_plan_uses_each_pack_and_current_overlay_is_pure (test_final_list_filters.RuleTests.test_plan_uses_each_pack_and_current_overlay_is_pure) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.184s
+
+OK

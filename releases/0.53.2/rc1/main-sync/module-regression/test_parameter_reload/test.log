@@ -1,0 +1,14 @@
+test_explicit_copied_snapshot_survives_repeated_checks (test_parameter_reload.ParameterReloadTests.test_explicit_copied_snapshot_survives_repeated_checks) ... ok
+test_explicit_current_parameter_edits_survive (test_parameter_reload.ParameterReloadTests.test_explicit_current_parameter_edits_survive) ... ok
+test_explicit_route_and_parameter_edits_are_independent (test_parameter_reload.ParameterReloadTests.test_explicit_route_and_parameter_edits_are_independent) ... ok
+test_fresh_import_and_worker_settings_use_saved_values (test_parameter_reload.ParameterReloadTests.test_fresh_import_and_worker_settings_use_saved_values) ... ok
+test_injection_after_initial_check_takes_effect_on_recheck (test_parameter_reload.ParameterReloadTests.test_injection_after_initial_check_takes_effect_on_recheck) ... ok
+test_resolving_conflict_restores_selection_but_not_other_selection (test_parameter_reload.ParameterReloadTests.test_resolving_conflict_restores_selection_but_not_other_selection) ... ok
+test_restored_snapshot_kept_and_new_job_loads_latest (test_parameter_reload.ParameterReloadTests.test_restored_snapshot_kept_and_new_job_loads_latest) ... ok
+test_saving_current_as_default_then_external_update_refreshes (test_parameter_reload.ParameterReloadTests.test_saving_current_as_default_then_external_update_refreshes) ... ok
+test_updated_default_refreshes_inherited_config_but_keeps_local_budget_selection (test_parameter_reload.ParameterReloadTests.test_updated_default_refreshes_inherited_config_but_keeps_local_budget_selection) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 2.101s
+
+OK

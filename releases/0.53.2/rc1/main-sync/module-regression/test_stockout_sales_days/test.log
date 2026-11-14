@@ -1,0 +1,8 @@
+test_detail_and_export_use_same_snapshot_without_changing_rate (test_stockout_sales_days.SalesDaysTests.test_detail_and_export_use_same_snapshot_without_changing_rate) ... ok
+test_formula_keeps_zero_negative_and_fractional_values (test_stockout_sales_days.SalesDaysTests.test_formula_keeps_zero_negative_and_fractional_values) ... ok
+test_zero_month_and_missing_inbound_are_not_zero_days (test_stockout_sales_days.SalesDaysTests.test_zero_month_and_missing_inbound_are_not_zero_days) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.263s
+
+OK

@@ -1,0 +1,12 @@
+test_changed_file_is_kept_and_recovery_uses_original_revision (test_export_recovery.RecoveryTests.test_changed_file_is_kept_and_recovery_uses_original_revision) ... ok
+test_log_failure_preserves_file_and_recovers_once_without_signing (test_export_recovery.RecoveryTests.test_log_failure_preserves_file_and_recovers_once_without_signing) ... ok
+test_manifest_failure_does_not_hide_completed_archive_files (test_export_recovery.RecoveryTests.test_manifest_failure_does_not_hide_completed_archive_files) ... ok
+test_missing_identity_does_not_choose_by_similar_goods (test_export_recovery.RecoveryTests.test_missing_identity_does_not_choose_by_similar_goods) ... ok
+test_no_clobber_publication (test_export_recovery.RecoveryTests.test_no_clobber_publication) ... ok
+test_old_return_explains_stale_revision_without_selecting_it (test_export_recovery.RecoveryTests.test_old_return_explains_stale_revision_without_selecting_it) ... ok
+test_unknown_commit_does_not_guess_a_revision (test_export_recovery.RecoveryTests.test_unknown_commit_does_not_guess_a_revision) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.527s
+
+OK

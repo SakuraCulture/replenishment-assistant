@@ -1,0 +1,8 @@
+{
+  "module": "test_migration_shutdown",
+  "passed": false,
+  "exit_code": 1,
+  "tests": 16,
+  "elapsed_seconds": 7.062000000005355,
+  "summary": "1\\replenishment_mvp_20261029\\src\\order_migration.py\", line 375, in apply\n\n    return _apply(plan)\n\n           ^^^^^^^^^^^^\n\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\src\\order_migration.py\", line 328, in _apply\n\n    _check_other_processes();resource_check(root.parent,sum(p.stat().st_size for p in root.rglob('*') if p.is_file()))\n\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\src\\application_reset.py\", line 131, in _check_other_processes\n\n    if matches:raise ValueError('其他补货助手进程仍在运行，请先正常关闭；资料未替换。进程号：'+','.join(str(p['pid']) for p in matches))\n\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nValueError: 其他补货助手进程仍在运行，请先正常关闭；资料未替换。进程号：42948,41408,63732,63356,28764,45124\n\n\n\n----------------------------------------------------------------------\nRan 16 tests in 6.106s\n\nFAILED (failures=1)\n"
+}

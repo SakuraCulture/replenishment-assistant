@@ -1,0 +1,12 @@
+test_completed_is_hypothesis_not_on_time_proof (test_history_diagnostics.HistoryTests.test_completed_is_hypothesis_not_on_time_proof) ... ok
+test_cross_warehouse_same_day_one_round_no_stock_sum (test_history_diagnostics.HistoryTests.test_cross_warehouse_same_day_one_round_no_stock_sum) ... ok
+test_excluded_and_pending_not_used_to_claim_better_outcomes (test_history_diagnostics.HistoryTests.test_excluded_and_pending_not_used_to_claim_better_outcomes) ... ok
+test_high_coverage_and_same_day_ambiguity (test_history_diagnostics.HistoryTests.test_high_coverage_and_same_day_ambiguity) ... ok
+test_multiple_rounds_downstream_cuts_not_parameter_cause (test_history_diagnostics.HistoryTests.test_multiple_rounds_downstream_cuts_not_parameter_cause) ... ok
+test_round_limit_real_count_and_immutability (test_history_diagnostics.HistoryTests.test_round_limit_real_count_and_immutability) ... ok
+test_unknown_unit_or_downstream_prevents_parameter_blame (test_history_diagnostics.HistoryTests.test_unknown_unit_or_downstream_prevents_parameter_blame) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.001s
+
+OK

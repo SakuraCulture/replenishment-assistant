@@ -1,0 +1,12 @@
+test_auxiliary_column_is_optional_and_duplicate_auxiliary_headers_do_not_block (test_payment_sku_only.SkuOnlyIntegrationTests.test_auxiliary_column_is_optional_and_duplicate_auxiliary_headers_do_not_block) ... ok
+test_exact_recognition_save_and_repeat_ignore_auxiliary_changes (test_payment_sku_only.SkuOnlyIntegrationTests.test_exact_recognition_save_and_repeat_ignore_auxiliary_changes) ... ok
+test_auxiliary_code_cannot_rewrite_an_unknown_product_code (test_payment_sku_only.SkuOnlyTests.test_auxiliary_code_cannot_rewrite_an_unknown_product_code) ... ok
+test_previous_signed_warehouse_does_not_decide_a_payment_skus_warehouse (test_payment_sku_only.SkuOnlyTests.test_previous_signed_warehouse_does_not_decide_a_payment_skus_warehouse) ... ok
+test_stale_signed_revision_still_fails (test_payment_sku_only.SkuOnlyTests.test_stale_signed_revision_still_fails) ... ok
+test_unknown_sku_with_ambiguous_auxiliary_code_remains_unmatched (test_payment_sku_only.SkuOnlyTests.test_unknown_sku_with_ambiguous_auxiliary_code_remains_unmatched) ... ok
+test_valid_sku_ignores_conflicting_ambiguous_and_other_warehouse_auxiliary_codes (test_payment_sku_only.SkuOnlyTests.test_valid_sku_ignores_conflicting_ambiguous_and_other_warehouse_auxiliary_codes) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.219s
+
+OK

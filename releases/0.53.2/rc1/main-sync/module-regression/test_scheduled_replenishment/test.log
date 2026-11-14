@@ -1,0 +1,36 @@
+test_actual_spawn_core_equivalence_and_restore (test_scheduled_replenishment.ExecutionTests.test_actual_spawn_core_equivalence_and_restore) ... ok
+test_non_alphabetical_plan_order_survives_chunks_and_restore (test_scheduled_replenishment.ExecutionTests.test_non_alphabetical_plan_order_survives_chunks_and_restore) ... ok
+test_pause_recovers_frozen_profile_and_no_daily_overwrite (test_scheduled_replenishment.ExecutionTests.test_pause_recovers_frozen_profile_and_no_daily_overwrite) ... ok
+test_publication_idempotent_and_results_immutable (test_scheduled_replenishment.ExecutionTests.test_publication_idempotent_and_results_immutable) ... ok
+test_publication_version_checks_before_any_write (test_scheduled_replenishment.ExecutionTests.test_publication_version_checks_before_any_write) ... ok
+test_same_day_overlap_not_overwrite (test_scheduled_replenishment.ExecutionTests.test_same_day_overlap_not_overwrite) ... ERROR:root:定时补货运行未完成 50e3511895934c5c9e9b9c5baa6374e1
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\scheduled_execution.py", line 106, in execute
+    codes=[i['code'] for i in frozen['plan']['stores']];overlap(self.repo,run,codes)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\scheduled_execution.py", line 82, in overlap
+    if selected.intersection(codes):raise ValueError('同日门店已有自动任务，请先核对或结束原任务：'+other['schedule']['name'])
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: 同日门店已有自动任务，请先核对或结束原任务：早班
+ok
+test_saved_defaults_change_requires_review (test_scheduled_replenishment.ExecutionTests.test_saved_defaults_change_requires_review) ... ERROR:root:定时补货运行未完成 2db790833ba3473384ab82c75d36dbc4
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\scheduled_execution.py", line 105, in execute
+    raise ValueError('预案、默认参数或准入依据已变化，请重新检查运行条件后新建任务')
+ValueError: 预案、默认参数或准入依据已变化，请重新检查运行条件后新建任务
+ok
+test_warehouse_failure_blocks_dependents_and_success_not_recalculated (test_scheduled_replenishment.ExecutionTests.test_warehouse_failure_blocks_dependents_and_success_not_recalculated) ... ok
+test_chunk_copy_and_garbage_collection_keep_run (test_scheduled_replenishment.ScheduleTests.test_chunk_copy_and_garbage_collection_keep_run) ... ok
+test_exact_60_second_grace (test_scheduled_replenishment.ScheduleTests.test_exact_60_second_grace) ... ok
+test_missed_once_and_weekly_no_backlog (test_scheduled_replenishment.ScheduleTests.test_missed_once_and_weekly_no_backlog) ... ok
+test_once_trigger_and_no_duplicate_after_restart (test_scheduled_replenishment.ScheduleTests.test_once_trigger_and_no_duplicate_after_restart) ... ok
+test_one_process_owner (test_scheduled_replenishment.ScheduleTests.test_one_process_owner) ... ok
+test_pages_and_once_expiry (test_scheduled_replenishment.ScheduleTests.test_pages_and_once_expiry) ... ok
+test_pause_disable_not_same_action (test_scheduled_replenishment.ScheduleTests.test_pause_disable_not_same_action) ... ok
+test_ready_result_late_epoch_and_delete_guards (test_scheduled_replenishment.ScheduleTests.test_ready_result_late_epoch_and_delete_guards) ... ok
+test_revision_and_epoch_guards (test_scheduled_replenishment.ScheduleTests.test_revision_and_epoch_guards) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 20.917s
+
+OK

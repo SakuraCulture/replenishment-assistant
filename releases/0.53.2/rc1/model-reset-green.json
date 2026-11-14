@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "tests": 4,
+  "failures": 0,
+  "errors": 0,
+  "source": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\src\\ui_goods_fast.py",
+  "source_sha256": "4c3c699c486409e00a1b8a1e75875ee4a299e491bdc6f3685aba841421f251a1",
+  "test": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tests\\test_goods_reset_lifetime.py",
+  "test_sha256": "4ac1ed0a73ea6efd709b5e0dcaddb71b74056c13c078cceaaf5a49c93052e5fa",
+  "synthetic_only": true,
+  "live_platform": false,
+  "failure_details": [],
+  "error_details": []
+}

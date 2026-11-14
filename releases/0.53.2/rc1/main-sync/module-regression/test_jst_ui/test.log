@@ -1,0 +1,13 @@
+test_cancelled_batch_summary_only_counts_committed_orders (test_jst_ui.JstUI.test_cancelled_batch_summary_only_counts_committed_orders) ... ok
+test_close_requested_during_commit_stops_at_next_safe_boundary (test_jst_ui.JstUI.test_close_requested_during_commit_stops_at_next_safe_boundary) ... ok
+test_commit_boundary_disables_stop (test_jst_ui.JstUI.test_commit_boundary_disables_stop) ... ok
+test_generation_ready_and_old_callback_do_not_mark_paid (test_jst_ui.JstUI.test_generation_ready_and_old_callback_do_not_mark_paid) ... ok
+test_generator_has_distinct_qt_finished_signal_and_worker_callback (test_jst_ui.JstUI.test_generator_has_distinct_qt_finished_signal_and_worker_callback) ... ok
+test_overview_has_progress_entries_and_no_execution_toolbar (test_jst_ui.JstUI.test_overview_has_progress_entries_and_no_execution_toolbar) ... ok
+test_result_page_inherits_explicit_overview_scope (test_jst_ui.JstUI.test_result_page_inherits_explicit_overview_scope) ... ok
+test_stage_workspace_has_only_its_own_actions_and_keeps_overview (test_jst_ui.JstUI.test_stage_workspace_has_only_its_own_actions_and_keeps_overview) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 4.041s
+
+OK
