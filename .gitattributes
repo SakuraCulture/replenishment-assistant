@@ -61,3 +61,7 @@ releases/0.53.1/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-e
 releases/0.53.2/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 releases/0.53.2/rc1/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
 releases/0.53.2/rc1/validation.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+
+# Preserve raw Windows JSON and console evidence, including original CR bytes.
+releases/0.53.3/**/*.json whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+releases/0.53.3/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol

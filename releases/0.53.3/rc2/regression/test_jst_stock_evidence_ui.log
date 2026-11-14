@@ -1,0 +1,15 @@
+test_cancelled_destination_does_not_call_backend (test_jst_stock_evidence_ui.StockEvidenceUI.test_cancelled_destination_does_not_call_backend) ... ok
+test_cancelled_worker_reports_cancellation_without_error_popup (test_jst_stock_evidence_ui.StockEvidenceUI.test_cancelled_worker_reports_cancellation_without_error_popup) ... ok
+test_existing_batch_without_preview_exports_its_frozen_batch (test_jst_stock_evidence_ui.StockEvidenceUI.test_existing_batch_without_preview_exports_its_frozen_batch) ... ok
+test_no_selection_exports_only_current_visible_generated_records (test_jst_stock_evidence_ui.StockEvidenceUI.test_no_selection_exports_only_current_visible_generated_records) ... ok
+test_preview_export_passes_exact_plan_and_leaves_ui_scope_unchanged (test_jst_stock_evidence_ui.StockEvidenceUI.test_preview_export_passes_exact_plan_and_leaves_ui_scope_unchanged) ... ok
+test_result_export_failure_is_readable_and_unlocks_controls (test_jst_stock_evidence_ui.StockEvidenceUI.test_result_export_failure_is_readable_and_unlocks_controls) ... ok
+test_results_batch_view_explicitly_exports_whole_batch (test_jst_stock_evidence_ui.StockEvidenceUI.test_results_batch_view_explicitly_exports_whole_batch) ... ok
+test_results_checked_scope_uses_only_exact_generated_ids (test_jst_stock_evidence_ui.StockEvidenceUI.test_results_checked_scope_uses_only_exact_generated_ids) ... ok
+test_selected_pending_record_never_falls_back_to_other_generated_orders (test_jst_stock_evidence_ui.StockEvidenceUI.test_selected_pending_record_never_falls_back_to_other_generated_orders) ... ok
+test_unpreviewed_new_batch_explains_requirement_without_exporting_default (test_jst_stock_evidence_ui.StockEvidenceUI.test_unpreviewed_new_batch_explains_requirement_without_exporting_default) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 2.017s
+
+OK

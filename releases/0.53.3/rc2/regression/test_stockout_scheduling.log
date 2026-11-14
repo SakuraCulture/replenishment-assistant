@@ -1,0 +1,8 @@
+test_actual_allocation_work_marks_priority_before_preview (test_stockout_scheduling.PriorityTests.test_actual_allocation_work_marks_priority_before_preview) ... ok
+test_empty_poll_does_not_interrupt_analysis (test_stockout_scheduling.PriorityTests.test_empty_poll_does_not_interrupt_analysis) ... ok
+test_other_business_workers_still_take_priority (test_stockout_scheduling.PriorityTests.test_other_business_workers_still_take_priority) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.013s
+
+OK

@@ -1,0 +1,93 @@
+test_cancel_has_no_persistent_effect (test_jst_batch_recovery.PendingRecovery.test_cancel_has_no_persistent_effect) ... ERROR
+test_changed_claim_rejected_and_generated_order_preserved (test_jst_batch_recovery.PendingRecovery.test_changed_claim_rejected_and_generated_order_preserved) ... ERROR
+test_current_preview_blocks_but_identifies_exact_recovery_scope (test_jst_batch_recovery.PendingRecovery.test_current_preview_blocks_but_identifies_exact_recovery_scope) ... ERROR
+test_failure_second_member_rolls_back_first (test_jst_batch_recovery.PendingRecovery.test_failure_second_member_rolls_back_first) ... ERROR
+test_old_release_request_cannot_cancel_replacement_batch (test_jst_batch_recovery.PendingRecovery.test_old_release_request_cannot_cancel_replacement_batch) ... ERROR
+test_release_selected_then_fresh_preview_keeps_other_frozen_batch (test_jst_batch_recovery.PendingRecovery.test_release_selected_then_fresh_preview_keeps_other_frozen_batch) ... ERROR
+test_released_old_preview_and_queue_cannot_restore_selected_member (test_jst_batch_recovery.PendingRecovery.test_released_old_preview_and_queue_cannot_restore_selected_member) ... ERROR
+
+======================================================================
+ERROR: test_cancel_has_no_persistent_effect (test_jst_batch_recovery.PendingRecovery.test_cancel_has_no_persistent_effect)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 64, in test_cancel_has_no_persistent_effect
+    claims=self.claims();before=self.context();stop=threading.Event();stop.set()
+           ^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 17, in claims
+    def claims(self,heads=None):return batches.unfinished(self.path,heads or [self.head])
+                                       ^^^^^^^^^^^^^^^^^^
+AttributeError: module 'jst_batches' has no attribute 'unfinished'
+
+======================================================================
+ERROR: test_changed_claim_rejected_and_generated_order_preserved (test_jst_batch_recovery.PendingRecovery.test_changed_claim_rejected_and_generated_order_preserved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 47, in test_changed_claim_rejected_and_generated_order_preserved
+    claims=self.claims([self.head,self.other]);stop=threading.Event()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 17, in claims
+    def claims(self,heads=None):return batches.unfinished(self.path,heads or [self.head])
+                                       ^^^^^^^^^^^^^^^^^^
+AttributeError: module 'jst_batches' has no attribute 'unfinished'
+
+======================================================================
+ERROR: test_current_preview_blocks_but_identifies_exact_recovery_scope (test_jst_batch_recovery.PendingRecovery.test_current_preview_blocks_but_identifies_exact_recovery_scope)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 21, in test_current_preview_blocks_but_identifies_exact_recovery_scope
+    before=self.context();claims=self.claims()
+                                 ^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 17, in claims
+    def claims(self,heads=None):return batches.unfinished(self.path,heads or [self.head])
+                                       ^^^^^^^^^^^^^^^^^^
+AttributeError: module 'jst_batches' has no attribute 'unfinished'
+
+======================================================================
+ERROR: test_failure_second_member_rolls_back_first (test_jst_batch_recovery.PendingRecovery.test_failure_second_member_rolls_back_first)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 58, in test_failure_second_member_rolls_back_first
+    claims=self.claims([self.head,self.other]);before=self.context()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 17, in claims
+    def claims(self,heads=None):return batches.unfinished(self.path,heads or [self.head])
+                                       ^^^^^^^^^^^^^^^^^^
+AttributeError: module 'jst_batches' has no attribute 'unfinished'
+
+======================================================================
+ERROR: test_old_release_request_cannot_cancel_replacement_batch (test_jst_batch_recovery.PendingRecovery.test_old_release_request_cannot_cancel_replacement_batch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 68, in test_old_release_request_cannot_cancel_replacement_batch
+    claims=self.claims();batches.release_unfinished(self.path,claims)
+           ^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 17, in claims
+    def claims(self,heads=None):return batches.unfinished(self.path,heads or [self.head])
+                                       ^^^^^^^^^^^^^^^^^^
+AttributeError: module 'jst_batches' has no attribute 'unfinished'
+
+======================================================================
+ERROR: test_release_selected_then_fresh_preview_keeps_other_frozen_batch (test_jst_batch_recovery.PendingRecovery.test_release_selected_then_fresh_preview_keeps_other_frozen_batch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 28, in test_release_selected_then_fresh_preview_keeps_other_frozen_batch
+    claims=self.claims();before=self.context()
+           ^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 17, in claims
+    def claims(self,heads=None):return batches.unfinished(self.path,heads or [self.head])
+                                       ^^^^^^^^^^^^^^^^^^
+AttributeError: module 'jst_batches' has no attribute 'unfinished'
+
+======================================================================
+ERROR: test_released_old_preview_and_queue_cannot_restore_selected_member (test_jst_batch_recovery.PendingRecovery.test_released_old_preview_and_queue_cannot_restore_selected_member)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_jst_batch_recovery.py", line 41, in test_released_old_preview_and_queue_cannot_restore_selected_member
+    batches.release_unfinished(self.path,self.claims([self.head,self.other]))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'jst_batches' has no attribute 'release_unfinished'
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.370s
+
+FAILED (errors=7)

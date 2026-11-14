@@ -1,0 +1,7 @@
+{
+  "first_run": "source-smoke-01",
+  "passed": false,
+  "cause": "QA factory opened the old batch with a cancelled first head instead of its actual remaining member; real result-page path supplies pending heads",
+  "correction": "Fixture driver now reads actual original pending scope; no business rule or assertion weakened",
+  "final_source_run": "source-smoke-02"
+}

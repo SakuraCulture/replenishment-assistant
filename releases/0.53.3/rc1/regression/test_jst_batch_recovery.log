@@ -1,0 +1,14 @@
+test_cancel_has_no_persistent_effect (test_jst_batch_recovery.PendingRecovery.test_cancel_has_no_persistent_effect) ... ok
+test_cancel_while_waiting_for_writer_preserves_claims (test_jst_batch_recovery.PendingRecovery.test_cancel_while_waiting_for_writer_preserves_claims) ... ok
+test_changed_claim_rejected_and_generated_order_preserved (test_jst_batch_recovery.PendingRecovery.test_changed_claim_rejected_and_generated_order_preserved) ... ok
+test_current_preview_blocks_but_identifies_exact_recovery_scope (test_jst_batch_recovery.PendingRecovery.test_current_preview_blocks_but_identifies_exact_recovery_scope) ... ok
+test_failure_second_member_rolls_back_first (test_jst_batch_recovery.PendingRecovery.test_failure_second_member_rolls_back_first) ... ok
+test_old_release_request_cannot_cancel_replacement_batch (test_jst_batch_recovery.PendingRecovery.test_old_release_request_cannot_cancel_replacement_batch) ... ok
+test_release_selected_then_fresh_preview_keeps_other_frozen_batch (test_jst_batch_recovery.PendingRecovery.test_release_selected_then_fresh_preview_keeps_other_frozen_batch) ... ok
+test_released_old_preview_and_queue_cannot_restore_selected_member (test_jst_batch_recovery.PendingRecovery.test_released_old_preview_and_queue_cannot_restore_selected_member) ... ok
+test_same_parent_other_warehouse_claim_is_preserved (test_jst_batch_recovery.PendingRecovery.test_same_parent_other_warehouse_claim_is_preserved) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 2.411s
+
+OK

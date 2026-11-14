@@ -1,0 +1,14 @@
+test_choose_one_source_not_sum_and_calibrate_after_receipt (test_payment_source.PaymentSources.test_choose_one_source_not_sum_and_calibrate_after_receipt) ... ok
+test_column_order_blank_and_zero (test_payment_source.PaymentSources.test_column_order_blank_and_zero) ... ok
+test_confirmed_return_tasks_are_atomic_on_cancel (test_payment_source.PaymentSources.test_confirmed_return_tasks_are_atomic_on_cancel) ... ok
+test_explicit_batch_generation_retry_and_restart_exact_operation (test_payment_source.PaymentSources.test_explicit_batch_generation_retry_and_restart_exact_operation) ... ok
+test_four_column_roundtrip_same_business_and_no_fake_external_id (test_payment_source.PaymentSources.test_four_column_roundtrip_same_business_and_no_fake_external_id) ... ok
+test_payment_in_same_commit_skips_automatic_allocation (test_payment_source.PaymentSources.test_payment_in_same_commit_skips_automatic_allocation) ... ok
+test_positive_missing_price_and_unknown_number_not_guessed (test_payment_source.PaymentSources.test_positive_missing_price_and_unknown_number_not_guessed) ... ok
+test_same_second_task_order_uses_existing_business_tiebreaker (test_payment_source.PaymentSources.test_same_second_task_order_uses_existing_business_tiebreaker) ... ok
+test_task_cancel_failure_retry_and_upstream_change (test_payment_source.PaymentSources.test_task_cancel_failure_retry_and_upstream_change) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 1.750s
+
+OK

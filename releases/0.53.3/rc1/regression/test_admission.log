@@ -1,0 +1,19 @@
+test_atomic_save_and_revision_rejection (test_admission.AdmissionTests.test_atomic_save_and_revision_rejection) ... ok
+test_backup_and_metadata_are_recorded_side_effects (test_admission.AdmissionTests.test_backup_and_metadata_are_recorded_side_effects) ... ok
+test_blank_and_absent_tag_are_distinct (test_admission.AdmissionTests.test_blank_and_absent_tag_are_distinct) ... ok
+test_checked_jst_preview_rejects_changed_admission_and_catalog (test_admission.AdmissionTests.test_checked_jst_preview_rejects_changed_admission_and_catalog) ... ok
+test_crosswarehouse_medical_requirement (test_admission.AdmissionTests.test_crosswarehouse_medical_requirement) ... ok
+test_import_blank_expiry_preserves_source_and_other_refusals (test_admission.AdmissionTests.test_import_blank_expiry_preserves_source_and_other_refusals) ... ok
+test_jst_no_stock_reserved_for_blocked (test_admission.AdmissionTests.test_jst_no_stock_reserved_for_blocked) ... ok
+test_legacy_draft_cannot_be_new_signature_without_evidence (test_admission.AdmissionTests.test_legacy_draft_cannot_be_new_signature_without_evidence) ... ok
+test_manual_new_and_floor_cannot_bypass (test_admission.AdmissionTests.test_manual_new_and_floor_cannot_bypass) ... ok
+test_model_unchanged_execution_excluded_and_all_reasons (test_admission.AdmissionTests.test_model_unchanged_execution_excluded_and_all_reasons) ... ok
+test_multitag_raw_preserved_and_unknown (test_admission.AdmissionTests.test_multitag_raw_preserved_and_unknown) ... ok
+test_refusal_boundary_and_release (test_admission.AdmissionTests.test_refusal_boundary_and_release) ... ok
+test_sign_stale_refusal_and_historical_read (test_admission.AdmissionTests.test_sign_stale_refusal_and_historical_read) ... ok
+test_states_expiry_and_priority (test_admission.AdmissionTests.test_states_expiry_and_priority) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 1.248s
+
+OK

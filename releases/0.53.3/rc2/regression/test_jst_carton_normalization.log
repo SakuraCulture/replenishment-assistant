@@ -1,0 +1,7 @@
+test_short_stock_allocates_partial_carton_after_batch_reservation (test_jst_carton_normalization.Cartons.test_short_stock_allocates_partial_carton_after_batch_reservation) ... ok
+test_three_business_examples_commit_export_and_retry (test_jst_carton_normalization.Cartons.test_three_business_examples_commit_export_and_retry) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 1.036s
+
+OK

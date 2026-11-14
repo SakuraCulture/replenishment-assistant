@@ -1,0 +1,19 @@
+test_bad_frozen_baseline_digest_is_rejected_without_output (test_jst_stock_evidence.StockEvidence.test_bad_frozen_baseline_digest_is_rejected_without_output) ... ok
+test_batch_export_excludes_replaced_generations_but_exact_history_is_labelled (test_jst_stock_evidence.StockEvidence.test_batch_export_excludes_replaced_generations_but_exact_history_is_labelled) ... ok
+test_cancellation_before_and_during_writing_leaves_no_result_or_temp_file (test_jst_stock_evidence.StockEvidence.test_cancellation_before_and_during_writing_leaves_no_result_or_temp_file) ... ok
+test_excel_writing_does_not_hold_a_database_read_transaction (test_jst_stock_evidence.StockEvidence.test_excel_writing_does_not_hold_a_database_read_transaction) ... ok
+test_existing_file_is_not_overwritten (test_jst_stock_evidence.StockEvidence.test_existing_file_is_not_overwritten) ... ok
+test_export_does_not_reopen_source_path_or_claim_platform_freshness (test_jst_stock_evidence.StockEvidence.test_export_does_not_reopen_source_path_or_claim_platform_freshness) ... ok
+test_generation_keeps_original_100_after_global_stock_refreshes_to_900 (test_jst_stock_evidence.StockEvidence.test_generation_keeps_original_100_after_global_stock_refreshes_to_900) ... ok
+test_long_codes_formula_looking_names_and_unknown_values_are_preserved (test_jst_stock_evidence.StockEvidence.test_long_codes_formula_looking_names_and_unknown_values_are_preserved) ... ok
+test_missing_old_baseline_never_falls_back_to_the_current_900 (test_jst_stock_evidence.StockEvidence.test_missing_old_baseline_never_falls_back_to_the_current_900) ... ok
+test_registered_batch_exports_full_stock_before_members_are_generated (test_jst_stock_evidence.StockEvidence.test_registered_batch_exports_full_stock_before_members_are_generated) ... ok
+test_saved_batch_preview_keeps_its_stock_after_global_refresh (test_jst_stock_evidence.StockEvidence.test_saved_batch_preview_keeps_its_stock_after_global_refresh) ... ok
+test_tampered_preview_cannot_be_exported (test_jst_stock_evidence.StockEvidence.test_tampered_preview_cannot_be_exported) ... ok
+test_two_batches_same_warehouse_preserve_separate_stock_versions (test_jst_stock_evidence.StockEvidence.test_two_batches_same_warehouse_preserve_separate_stock_versions) ... ok
+test_unconfirmed_preview_exports_chosen_300_and_does_not_register (test_jst_stock_evidence.StockEvidence.test_unconfirmed_preview_exports_chosen_300_and_does_not_register) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 2.486s
+
+OK

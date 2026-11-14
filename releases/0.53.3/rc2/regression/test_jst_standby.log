@@ -1,0 +1,9 @@
+test_standby_does_not_bypass_daily_supply_and_other_admission_tags (test_jst_standby.Standby.test_standby_does_not_bypass_daily_supply_and_other_admission_tags) ... ok
+test_standby_keeps_carton_shortage_and_reservation_math (test_jst_standby.Standby.test_standby_keeps_carton_shortage_and_reservation_math) ... ok
+test_standby_real_batch_commit_and_xlsx_export (test_jst_standby.Standby.test_standby_real_batch_commit_and_xlsx_export) ... ok
+test_status_whitelist_and_exclusions (test_jst_standby.Standby.test_status_whitelist_and_exclusions) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.409s
+
+OK

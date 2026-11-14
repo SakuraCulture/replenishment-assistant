@@ -1,0 +1,9 @@
+{
+  "read_only_independent_review": true,
+  "frozen_files_matched": 4480,
+  "regression_logs_matched": 168,
+  "exe_checks_matched": 8,
+  "existing_tests_changed": 0,
+  "blocking_findings": [],
+  "known_native_crash_still_open": true
+}

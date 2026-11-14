@@ -1,0 +1,12 @@
+test_cancel_batch_choice_does_not_generate_or_change_selection (test_paid_return_reallocation_ui.PaidReturnUI.test_cancel_batch_choice_does_not_generate_or_change_selection) ... ok
+test_date_view_can_correct_checked_order_without_resetting_scope (test_paid_return_reallocation_ui.PaidReturnUI.test_date_view_can_correct_checked_order_without_resetting_scope) ... ok
+test_multiple_batches_choose_one_and_keep_all_checked (test_paid_return_reallocation_ui.PaidReturnUI.test_multiple_batches_choose_one_and_keep_all_checked) ... ok
+test_pending_selected_order_is_not_silently_dropped (test_paid_return_reallocation_ui.PaidReturnUI.test_pending_selected_order_is_not_silently_dropped) ... ok
+test_prepare_on_checked_stale_orders_routes_to_original_batch (test_paid_return_reallocation_ui.PaidReturnUI.test_prepare_on_checked_stale_orders_routes_to_original_batch) ... ok
+test_preview_and_confirmation_explain_old_payment_is_preserved (test_paid_return_reallocation_ui.PaidReturnUI.test_preview_and_confirmation_explain_old_payment_is_preserved) ... ok
+test_previous_zero_allocation_returns_to_original_batch_after_amendment (test_paid_return_reallocation_ui.PaidReturnUI.test_previous_zero_allocation_returns_to_original_batch_after_amendment) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 2.462s
+
+OK

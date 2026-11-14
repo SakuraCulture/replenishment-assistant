@@ -1,0 +1,17 @@
+test_changed_claim_reports_failure_without_releasing_other_item (test_jst_batch_recovery_ui.RecoveryUI.test_changed_claim_reports_failure_without_releasing_other_item) ... ERROR:root:操作失败
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\jst_batches.py", line 118, in release_unfinished
+    raise wr.Conflict('原批任务已变化，未结束任何任务；请重新预览并核对')
+work_repository.Conflict: 原批任务已变化，未结束任何任务；请重新预览并核对
+ok
+test_restart_selected_previews_new_stock_without_generating (test_jst_batch_recovery_ui.RecoveryUI.test_restart_selected_previews_new_stock_without_generating) ... ok
+test_resume_previews_original_all_remaining_stock_and_order (test_jst_batch_recovery_ui.RecoveryUI.test_resume_previews_original_all_remaining_stock_and_order) ... ok
+test_return_keeps_all_claims_and_does_not_generate (test_jst_batch_recovery_ui.RecoveryUI.test_return_keeps_all_claims_and_does_not_generate) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.118s
+
+OK

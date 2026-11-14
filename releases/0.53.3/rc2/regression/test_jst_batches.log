@@ -1,0 +1,21 @@
+test_cancel_after_register_persists_pause_before_queue_tick (test_jst_batches.Batches.test_cancel_after_register_persists_pause_before_queue_tick) ... ok
+test_cancel_and_queue_tick_cannot_resurrect (test_jst_batches.Batches.test_cancel_and_queue_tick_cannot_resurrect) ... ok
+test_cancel_pending_blocks_inflight_and_allows_explicit_new_batch (test_jst_batches.Batches.test_cancel_pending_blocks_inflight_and_allows_explicit_new_batch) ... ok
+test_correction_subset_replaces_only_batch_selected (test_jst_batches.Batches.test_correction_subset_replaces_only_batch_selected) ... ok
+test_current_admission_still_blocks_new_batch (test_jst_batches.Batches.test_current_admission_still_blocks_new_batch) ... ok
+test_deleted_order_is_removed_from_members_and_locked_usage_kept (test_jst_batches.Batches.test_deleted_order_is_removed_from_members_and_locked_usage_kept) ... ok
+test_first_failure_prevents_later_consumption (test_jst_batches.Batches.test_first_failure_prevents_later_consumption) ... ok
+test_global_refresh_does_not_stale_batch_export_or_change_cells (test_jst_batches.Batches.test_global_refresh_does_not_stale_batch_export_or_change_cells) ... ok
+test_new_batch_does_not_subtract_old_unlocked_or_locked (test_jst_batches.Batches.test_new_batch_does_not_subtract_old_unlocked_or_locked) ... ok
+test_next_batch_pause_then_original_resume (test_jst_batches.Batches.test_next_batch_pause_then_original_resume) ... ok
+test_old_queued_task_requires_explicit_batch (test_jst_batches.Batches.test_old_queued_task_requires_explicit_batch) ... ok
+test_pause_resume_uses_frozen_stock_after_new_global_catalog (test_jst_batches.Batches.test_pause_resume_uses_frozen_stock_after_new_global_catalog) ... ok
+test_preview_does_not_write_or_consume (test_jst_batches.Batches.test_preview_does_not_write_or_consume) ... ok
+test_return_zero_does_not_leave_active_queue_loop (test_jst_batches.Batches.test_return_zero_does_not_leave_active_queue_loop) ... ok
+test_same_batch_order_quantities_and_idempotence (test_jst_batches.Batches.test_same_batch_order_quantities_and_idempotence) ... ok
+test_two_warehouses_same_sku_are_independent (test_jst_batches.Batches.test_two_warehouses_same_sku_are_independent) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 3.521s
+
+OK

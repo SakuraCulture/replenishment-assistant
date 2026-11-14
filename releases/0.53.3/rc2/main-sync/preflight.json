@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "frozen_files": 4480,
+  "new_paths": 25,
+  "mismatches": [],
+  "business_or_executable_artifacts": [],
+  "zip_sha256": "44083a3b25b1b226c9db97cbc24df8147204da6c8f256ccbea6344adf9296a39",
+  "exe_sha256": "c2cbd3a733a5fea44b286553801730a53adab64af7c6203bb0ef719118342f01",
+  "source_snapshot": "6d4457973a90657b5b2e760df4c9be965d09533e31697629de01194cace10834"
+}

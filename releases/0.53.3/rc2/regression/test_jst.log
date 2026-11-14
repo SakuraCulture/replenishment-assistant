@@ -1,0 +1,39 @@
+test_business_carton_examples_keep_original_demand_and_remainder (test_jst.Allocation.test_business_carton_examples_keep_original_demand_and_remainder) ... ok
+test_carton_boundaries (test_jst.Allocation.test_carton_boundaries) ... ok
+test_decimal_price_and_exact_identifier (test_jst.Allocation.test_decimal_price_and_exact_identifier) ... ok
+test_non_carton_demand_is_rounded_down_without_over_ordering (test_jst.Allocation.test_non_carton_demand_is_rounded_down_without_over_ordering) ... ok
+test_normalization_keeps_reservations_and_short_stock_constraints (test_jst.Allocation.test_normalization_keeps_reservations_and_short_stock_constraints) ... ok
+test_reserved_balance_not_source_stock (test_jst.Allocation.test_reserved_balance_not_source_stock) ... ok
+test_unknowns_disabled_and_no_price_not_zero (test_jst.Allocation.test_unknowns_disabled_and_no_price_not_zero) ... ok
+test_cancel_after_first_keeps_first_and_retry_no_old_cancel (test_jst.Service.test_cancel_after_first_keeps_first_and_retry_no_old_cancel) ... ok
+test_cancel_before_commit_and_boundary (test_jst.Service.test_cancel_before_commit_and_boundary) ... ok
+test_cancel_unused_generation_releases_only_local_reservation (test_jst.Service.test_cancel_unused_generation_releases_only_local_reservation) ... ok
+test_correction_is_atomic_and_export_exact_old_generation (test_jst.Service.test_correction_is_atomic_and_export_exact_old_generation) ... ok
+test_daily_projection_and_logs_do_not_promote_draft (test_jst.Service.test_daily_projection_and_logs_do_not_promote_draft) ... ok
+test_failure_second_order_retains_first_then_retry_requires_repreview (test_jst.Service.test_failure_second_order_retains_first_then_retry_requires_repreview) ... ok
+test_focused_stage_queries_are_disjoint_and_do_not_mutate_facts (test_jst.Service.test_focused_stage_queries_are_disjoint_and_do_not_mutate_facts) ... ok
+test_generation_draft_is_not_actual_payment (test_jst.Service.test_generation_draft_is_not_actual_payment) ... ok
+test_legacy_return_preserves_original_signed_dependency (test_jst.Service.test_legacy_return_preserves_original_signed_dependency) ... ok
+test_locked_fresh_stock_no_double_deduction (test_jst.Service.test_locked_fresh_stock_no_double_deduction) ... ok
+test_locked_return_update_and_resign_guard (test_jst.Service.test_locked_return_update_and_resign_guard) ... ok
+test_multi_order_priority_manual_order_and_lock_while_running (test_jst.Service.test_multi_order_priority_manual_order_and_lock_while_running) ... ok
+test_original_catalog_is_exact_bytes_and_missing_never_substituted (test_jst.Service.test_original_catalog_is_exact_bytes_and_missing_never_substituted) ... ok
+test_payment_preview_bound_to_generation_and_failures_are_journaled (test_jst.Service.test_payment_preview_bound_to_generation_and_failures_are_journaled) ... ok
+test_refresh_lock_race_rejected (test_jst.Service.test_refresh_lock_race_rejected) ... ok
+test_refresh_retry_and_tamper (test_jst.Service.test_refresh_retry_and_tamper) ... ok
+test_retry_and_exports_do_not_reserve_twice (test_jst.Service.test_retry_and_exports_do_not_reserve_twice) ... ok
+test_stale_return_and_baseline_rejected (test_jst.Service.test_stale_return_and_baseline_rejected) ... ok
+test_unlocked_reservation_survives_refresh_and_late_lock (test_jst.Service.test_unlocked_reservation_survives_refresh_and_late_lock) ... ok
+test_waiting_write_lock_cancelled_no_generation (test_jst.Service.test_waiting_write_lock_cancelled_no_generation) ... ERROR:root:数据库忙，未能保存停止／失败日志：database is locked
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\jst_orders.py", line 438, in commit
+    db.execute('BEGIN IMMEDIATE')
+sqlite3.OperationalError: database is locked
+ok
+test_written_file_is_not_reported_missing_when_journal_fails (test_jst.Service.test_written_file_is_not_reported_missing_when_journal_fails) ... ok
+test_zero_allocation_no_fake_order_and_retry (test_jst.Service.test_zero_allocation_no_fake_order_and_retry) ... ok
+
+----------------------------------------------------------------------
+Ran 29 tests in 4.327s
+
+OK

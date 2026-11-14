@@ -1,0 +1,80 @@
+[
+  {
+    "path": "releases/0.53.3/rc1/backend-final.json",
+    "sha256": "67ac6d409c6a6083e7bcaec019cb0c9e4e567f531e316c949d027b8a1de5cd41",
+    "CRCRLF": 0,
+    "CRLF": 4
+  },
+  {
+    "path": "releases/0.53.3/rc1/backend-red.json",
+    "sha256": "5f6288f83b7c9b635bea11865537d68858fe43c9d9be31fd925cb020e44b4f5f",
+    "CRCRLF": 0,
+    "CRLF": 4
+  },
+  {
+    "path": "releases/0.53.3/rc1/build-report-rc1.json",
+    "sha256": "feee7570f0084076b9163cbf641c94d399cbcf5a384e3d55ad8195946b808d19",
+    "CRCRLF": 0,
+    "CRLF": 0
+  },
+  {
+    "path": "releases/0.53.3/rc1/build_info.json",
+    "sha256": "e10ff0c74ef89cd42757bb42a19e385ac7d682cf053b266aab80bd7e42408131",
+    "CRCRLF": 0,
+    "CRLF": 0
+  },
+  {
+    "path": "releases/0.53.3/rc1/business-code-unchanged.json",
+    "sha256": "b6f05092d1454c690f86407cce3928145f6c31361dd65cd22dd14d9fcf5a58b7",
+    "CRCRLF": 0,
+    "CRLF": 0
+  },
+  {
+    "path": "releases/0.53.3/rc1/delivery.json",
+    "sha256": "1e19b62b6dbe9901a38463565aac0c736ce782c70e069e4b26662855103b3fc4",
+    "CRCRLF": 0,
+    "CRLF": 0
+  },
+  {
+    "path": "releases/0.53.3/rc1/exe-report.json",
+    "sha256": "e683b9ec48f86effee0271542f3f0aef4367eb4c3bbf0efcc1aa38ddcd5529bb",
+    "CRCRLF": 0,
+    "CRLF": 181
+  },
+  {
+    "path": "releases/0.53.3/rc1/first-source-smoke-explanation.json",
+    "sha256": "9e951d771b07343286a034ec2d4ca45761e98468cabbb90af9eb3b1899a84a8b",
+    "CRCRLF": 0,
+    "CRLF": 6
+  },
+  {
+    "path": "releases/0.53.3/rc1/regression.json",
+    "sha256": "046b97edf250fe1c0c4bbb0faa6175c9f75e11ab34b11b822407bd17b145f720",
+    "CRCRLF": 0,
+    "CRLF": 0
+  },
+  {
+    "path": "releases/0.53.3/rc1/source-first-failed.json",
+    "sha256": "13296d3bac845a3389340354d096ad07a016e9c59eeabf955ace858c4a23fe6b",
+    "CRCRLF": 0,
+    "CRLF": 57
+  },
+  {
+    "path": "releases/0.53.3/rc1/source-manifest.json",
+    "sha256": "858e112c6ac9709fc1a07e24e6c46abacee74959283b358db8d380c16b4ef410",
+    "CRCRLF": 0,
+    "CRLF": 0
+  },
+  {
+    "path": "releases/0.53.3/rc1/source-report.json",
+    "sha256": "3af4db5f2c3469787627a0e192969c161f91250c5dc88cd22412a9f612a65306",
+    "CRCRLF": 0,
+    "CRLF": 93
+  },
+  {
+    "path": "releases/0.53.3/rc1/ui-first.json",
+    "sha256": "aac94b6487581e5e2e745ec5bd1605361e5f34ee0140e973fa20a97c4c020ca1",
+    "CRCRLF": 0,
+    "CRLF": 3
+  }
+]
