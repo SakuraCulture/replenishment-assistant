@@ -1,0 +1,65 @@
+{
+  "created_at": "2026-11-14T15:45:52.6950518+08:00",
+  "role": "independent cleanup scope and occupancy review",
+  "target_mutations_performed": false,
+  "scope": {
+    "root": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+    "source_plan": "qa\\workspace_cleanup_20261114_140224\\cleanup-held-plan.json",
+    "target_count": 336,
+    "build_count": 48,
+    "file_count": 51598,
+    "logical_bytes": 11072579276,
+    "all_targets_exist": true,
+    "bytes_match_previous_inventory_for_every_target": true,
+    "invalid_root_leaf_or_excluded_build_targets": 0,
+    "reparse_points": 0,
+    "allowed_leaf_names": [
+      "work",
+      "bridge-work",
+      "launcher-work",
+      "bridge-dist",
+      "launcher-dist",
+      "aoxiang-component",
+      "jst-catalog-component"
+    ],
+    "excluded_builds": [
+      "build_0.51.9_rc3",
+      "build_0.51.4_rc1",
+      "build_0.52.1_rc1",
+      "all build_0.53.x"
+    ],
+    "retained": "source and source.zip, build metadata/logs, every delivery, every QA"
+  },
+  "process_snapshot": {
+    "timestamp": "2026-11-14T15:37:41+08:00",
+    "pid18492": {
+      "name": "python.exe",
+      "threads": 0,
+      "handles": 0,
+      "path": null,
+      "command": null,
+      "parent_pid": 36988,
+      "parent_found": false,
+      "exit_proven": false,
+      "action": "none"
+    },
+    "python_total": 27,
+    "other_python_mcp_count": 26,
+    "project_executable_or_command_matches_excluding_shells_and_crashpad": 0,
+    "ntopenprocess_pid18492_status": "0xC0000022 for desired rights 0, QUERY_LIMITED_INFORMATION and SYNCHRONIZE; no exit claim"
+  },
+  "occupancy_probe": {
+    "artifact": "permission-probe-result.json",
+    "targets": 336,
+    "files": 51598,
+    "directories": 6720,
+    "elapsed_seconds": 9.0392919,
+    "error_count": 1,
+    "error_path": "build_0.51.5_rc2\\bridge-dist\\补货助手AI接口\\_internal\\PySide6\\opengl32sw.dll",
+    "error_win32": 32,
+    "concurrent_read_helper_possible": true,
+    "cause_verified": false,
+    "read_helper": "own-helper-stop.json; verified PID41772 stopped and absent; first probe incomplete count not known"
+  },
+  "recommendation": "Proceed only on the exact old-plan cache subdirectories after root recheck. Use native Remove-Item with no process termination, no handle closing and no unlock. Record and retain failures per target. Do not infer occupancy solely from unknown PID18492 name. Do not claim complete absence of runtime mappings from access probes."
+}

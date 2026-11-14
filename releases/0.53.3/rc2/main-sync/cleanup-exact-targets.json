@@ -1,0 +1,1689 @@
+{
+  "root": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029",
+  "targets": [
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.3_rc1\\work",
+      "inventory_bytes": 23073107,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.3_rc1\\launcher-work",
+      "inventory_bytes": 10206198,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.3_rc1\\launcher-dist",
+      "inventory_bytes": 7563438,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.3_rc1\\jst-catalog-component",
+      "inventory_bytes": 169727,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.3_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.3_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.3_rc1\\aoxiang-component",
+      "inventory_bytes": 110303312,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc1\\work",
+      "inventory_bytes": 23088757,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc1\\launcher-work",
+      "inventory_bytes": 10203323,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc1\\launcher-dist",
+      "inventory_bytes": 7560449,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc1\\jst-catalog-component",
+      "inventory_bytes": 169727,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc1\\aoxiang-component",
+      "inventory_bytes": 110308501,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc2\\work",
+      "inventory_bytes": 23090518,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc2\\launcher-work",
+      "inventory_bytes": 10206572,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc2\\launcher-dist",
+      "inventory_bytes": 7563698,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc2\\jst-catalog-component",
+      "inventory_bytes": 169727,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc2\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc2\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.49.5_rc2\\aoxiang-component",
+      "inventory_bytes": 110308501,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc1\\work",
+      "inventory_bytes": 23170517,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc1\\launcher-work",
+      "inventory_bytes": 10206466,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc1\\launcher-dist",
+      "inventory_bytes": 7563706,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc1\\jst-catalog-component",
+      "inventory_bytes": 169828,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc1\\aoxiang-component",
+      "inventory_bytes": 110324707,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc2\\work",
+      "inventory_bytes": 23176801,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc2\\launcher-work",
+      "inventory_bytes": 10205441,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc2\\launcher-dist",
+      "inventory_bytes": 7562681,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc2\\jst-catalog-component",
+      "inventory_bytes": 169828,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc2\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc2\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc2\\aoxiang-component",
+      "inventory_bytes": 110327107,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc3\\work",
+      "inventory_bytes": 23188871,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc3\\launcher-work",
+      "inventory_bytes": 10206129,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc3\\launcher-dist",
+      "inventory_bytes": 7563369,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc3\\jst-catalog-component",
+      "inventory_bytes": 169828,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc3\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc3\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.0_rc3\\aoxiang-component",
+      "inventory_bytes": 110327107,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc1\\work",
+      "inventory_bytes": 23207057,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc1\\launcher-work",
+      "inventory_bytes": 10206353,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc1\\launcher-dist",
+      "inventory_bytes": 7563593,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc1\\jst-catalog-component",
+      "inventory_bytes": 169828,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc1\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc1\\aoxiang-component",
+      "inventory_bytes": 110329996,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc2\\work",
+      "inventory_bytes": 23208992,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc2\\launcher-work",
+      "inventory_bytes": 10205967,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc2\\launcher-dist",
+      "inventory_bytes": 7563207,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc2\\jst-catalog-component",
+      "inventory_bytes": 169828,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc2\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc2\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc2\\aoxiang-component",
+      "inventory_bytes": 110329996,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc3\\work",
+      "inventory_bytes": 23209662,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc3\\launcher-work",
+      "inventory_bytes": 10205436,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc3\\launcher-dist",
+      "inventory_bytes": 7562562,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc3\\jst-catalog-component",
+      "inventory_bytes": 169828,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc3\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc3\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.1_rc3\\aoxiang-component",
+      "inventory_bytes": 110329996,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.2_rc1\\work",
+      "inventory_bytes": 23297726,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.2_rc1\\launcher-work",
+      "inventory_bytes": 10206911,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.2_rc1\\launcher-dist",
+      "inventory_bytes": 7564151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.2_rc1\\jst-catalog-component",
+      "inventory_bytes": 169828,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.2_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.2_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.2_rc1\\aoxiang-component",
+      "inventory_bytes": 110336400,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc1\\work",
+      "inventory_bytes": 23321852,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc1\\launcher-work",
+      "inventory_bytes": 10205627,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc1\\launcher-dist",
+      "inventory_bytes": 7562753,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc1\\jst-catalog-component",
+      "inventory_bytes": 174142,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc1\\aoxiang-component",
+      "inventory_bytes": 110336400,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc2\\work",
+      "inventory_bytes": 23321852,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc2\\launcher-work",
+      "inventory_bytes": 10205979,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc2\\launcher-dist",
+      "inventory_bytes": 7563219,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc2\\jst-catalog-component",
+      "inventory_bytes": 174359,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc2\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc2\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.3_rc2\\aoxiang-component",
+      "inventory_bytes": 110336400,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.4_rc1\\work",
+      "inventory_bytes": 23382720,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.4_rc1\\launcher-work",
+      "inventory_bytes": 10206688,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.4_rc1\\launcher-dist",
+      "inventory_bytes": 7563928,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.4_rc1\\jst-catalog-component",
+      "inventory_bytes": 174359,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.4_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.4_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.4_rc1\\aoxiang-component",
+      "inventory_bytes": 110351679,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc1\\work",
+      "inventory_bytes": 23425838,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc1\\launcher-work",
+      "inventory_bytes": 10205695,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc1\\launcher-dist",
+      "inventory_bytes": 7562935,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc1\\jst-catalog-component",
+      "inventory_bytes": 174359,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc1\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc1\\aoxiang-component",
+      "inventory_bytes": 110351679,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc2\\work",
+      "inventory_bytes": 23426600,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc2\\launcher-work",
+      "inventory_bytes": 10204610,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc2\\launcher-dist",
+      "inventory_bytes": 7561850,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc2\\jst-catalog-component",
+      "inventory_bytes": 174359,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc2\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc2\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc2\\aoxiang-component",
+      "inventory_bytes": 110351679,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc3\\work",
+      "inventory_bytes": 23426603,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc3\\launcher-work",
+      "inventory_bytes": 10206073,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc3\\launcher-dist",
+      "inventory_bytes": 7563199,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc3\\jst-catalog-component",
+      "inventory_bytes": 174359,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc3\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc3\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.50.5_rc3\\aoxiang-component",
+      "inventory_bytes": 110351679,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.0_rc1\\work",
+      "inventory_bytes": 23817154,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.0_rc1\\launcher-work",
+      "inventory_bytes": 10206210,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.0_rc1\\launcher-dist",
+      "inventory_bytes": 7563450,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.0_rc1\\jst-catalog-component",
+      "inventory_bytes": 174459,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.0_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.0_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.0_rc1\\aoxiang-component",
+      "inventory_bytes": 110354587,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.1_rc1\\work",
+      "inventory_bytes": 23857255,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.1_rc1\\launcher-work",
+      "inventory_bytes": 10203238,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.1_rc1\\launcher-dist",
+      "inventory_bytes": 7560478,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.1_rc1\\jst-catalog-component",
+      "inventory_bytes": 174560,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.1_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.1_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.1_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.2_rc1\\work",
+      "inventory_bytes": 23894778,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.2_rc1\\launcher-work",
+      "inventory_bytes": 10206055,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.2_rc1\\launcher-dist",
+      "inventory_bytes": 7563295,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.2_rc1\\jst-catalog-component",
+      "inventory_bytes": 174560,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.2_rc1\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.2_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.2_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.3_rc1\\work",
+      "inventory_bytes": 23931892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.3_rc1\\launcher-work",
+      "inventory_bytes": 10205656,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.3_rc1\\launcher-dist",
+      "inventory_bytes": 7562782,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.3_rc1\\jst-catalog-component",
+      "inventory_bytes": 174560,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.3_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.3_rc1\\bridge-dist",
+      "inventory_bytes": 70372955,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.3_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.4_rc2\\work",
+      "inventory_bytes": 23962957,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.4_rc2\\launcher-work",
+      "inventory_bytes": 10206401,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.4_rc2\\launcher-dist",
+      "inventory_bytes": 7563641,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.4_rc2\\jst-catalog-component",
+      "inventory_bytes": 174692,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.4_rc2\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.4_rc2\\bridge-dist",
+      "inventory_bytes": 70377859,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.4_rc2\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc1\\work",
+      "inventory_bytes": 24004756,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc1\\launcher-work",
+      "inventory_bytes": 10206445,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc1\\launcher-dist",
+      "inventory_bytes": 7563685,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc1\\jst-catalog-component",
+      "inventory_bytes": 181627,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc1\\bridge-dist",
+      "inventory_bytes": 70383326,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc2\\work",
+      "inventory_bytes": 24006136,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc2\\launcher-work",
+      "inventory_bytes": 10206738,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc2\\launcher-dist",
+      "inventory_bytes": 7563864,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc2\\jst-catalog-component",
+      "inventory_bytes": 181627,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc2\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc2\\bridge-dist",
+      "inventory_bytes": 70383436,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.5_rc2\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.6_rc1\\work",
+      "inventory_bytes": 24066810,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.6_rc1\\launcher-work",
+      "inventory_bytes": 10204971,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.6_rc1\\launcher-dist",
+      "inventory_bytes": 7562211,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.6_rc1\\jst-catalog-component",
+      "inventory_bytes": 183619,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.6_rc1\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.6_rc1\\bridge-dist",
+      "inventory_bytes": 70372956,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.6_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc1\\work",
+      "inventory_bytes": 24110504,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc1\\launcher-work",
+      "inventory_bytes": 10206513,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc1\\launcher-dist",
+      "inventory_bytes": 7563753,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc1\\jst-catalog-component",
+      "inventory_bytes": 183619,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc1\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc1\\bridge-dist",
+      "inventory_bytes": 70372956,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc2\\work",
+      "inventory_bytes": 24111256,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc2\\launcher-work",
+      "inventory_bytes": 10206363,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc2\\launcher-dist",
+      "inventory_bytes": 7563603,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc2\\jst-catalog-component",
+      "inventory_bytes": 183619,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc2\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc2\\bridge-dist",
+      "inventory_bytes": 70372956,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.7_rc2\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.8_rc1\\work",
+      "inventory_bytes": 24194002,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.8_rc1\\launcher-work",
+      "inventory_bytes": 10205989,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.8_rc1\\launcher-dist",
+      "inventory_bytes": 7563229,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.8_rc1\\jst-catalog-component",
+      "inventory_bytes": 183619,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.8_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.8_rc1\\bridge-dist",
+      "inventory_bytes": 70372956,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.8_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc1\\work",
+      "inventory_bytes": 24360674,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc1\\launcher-work",
+      "inventory_bytes": 10206132,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc1\\launcher-dist",
+      "inventory_bytes": 7563372,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc1\\jst-catalog-component",
+      "inventory_bytes": 182979,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc1\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc1\\bridge-dist",
+      "inventory_bytes": 70378161,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc2\\work",
+      "inventory_bytes": 24362972,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc2\\launcher-work",
+      "inventory_bytes": 10205798,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc2\\launcher-dist",
+      "inventory_bytes": 7563038,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc2\\jst-catalog-component",
+      "inventory_bytes": 182979,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc2\\bridge-work",
+      "inventory_bytes": 7868037,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc2\\bridge-dist",
+      "inventory_bytes": 70378246,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.51.9_rc2\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc1\\work",
+      "inventory_bytes": 24570937,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc1\\launcher-work",
+      "inventory_bytes": 10206387,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc1\\launcher-dist",
+      "inventory_bytes": 7563627,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc1\\jst-catalog-component",
+      "inventory_bytes": 182979,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc1\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc1\\bridge-dist",
+      "inventory_bytes": 70384819,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc2\\work",
+      "inventory_bytes": 24572752,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc2\\launcher-work",
+      "inventory_bytes": 10207121,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc2\\launcher-dist",
+      "inventory_bytes": 7564361,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc2\\jst-catalog-component",
+      "inventory_bytes": 182979,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc2\\bridge-work",
+      "inventory_bytes": 7868151,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc2\\bridge-dist",
+      "inventory_bytes": 70385006,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.0_rc2\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc2\\work",
+      "inventory_bytes": 24816091,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc2\\launcher-work",
+      "inventory_bytes": 10206227,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc2\\launcher-dist",
+      "inventory_bytes": 7563467,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc2\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc2\\bridge-work",
+      "inventory_bytes": 7881207,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc2\\bridge-dist",
+      "inventory_bytes": 70392888,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc2\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc3\\work",
+      "inventory_bytes": 24816985,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc3\\launcher-work",
+      "inventory_bytes": 10206953,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc3\\launcher-dist",
+      "inventory_bytes": 7564193,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc3\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc3\\bridge-work",
+      "inventory_bytes": 7881093,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc3\\bridge-dist",
+      "inventory_bytes": 70392888,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc3\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc4\\work",
+      "inventory_bytes": 24816414,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc4\\launcher-work",
+      "inventory_bytes": 10206044,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc4\\launcher-dist",
+      "inventory_bytes": 7563284,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc4\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc4\\bridge-work",
+      "inventory_bytes": 7880892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc4\\bridge-dist",
+      "inventory_bytes": 70392821,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc4\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc5\\work",
+      "inventory_bytes": 24816495,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc5\\launcher-work",
+      "inventory_bytes": 10206335,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc5\\launcher-dist",
+      "inventory_bytes": 7563575,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc5\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc5\\bridge-work",
+      "inventory_bytes": 7880892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc5\\bridge-dist",
+      "inventory_bytes": 70392821,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc5\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc6\\work",
+      "inventory_bytes": 24816603,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc6\\launcher-work",
+      "inventory_bytes": 10206456,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc6\\launcher-dist",
+      "inventory_bytes": 7563696,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc6\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc6\\bridge-work",
+      "inventory_bytes": 7881006,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc6\\bridge-dist",
+      "inventory_bytes": 70392821,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.1_rc6\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc1\\work",
+      "inventory_bytes": 24885232,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc1\\launcher-work",
+      "inventory_bytes": 10205548,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc1\\launcher-dist",
+      "inventory_bytes": 7562788,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc1\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc1\\bridge-work",
+      "inventory_bytes": 7880892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc1\\bridge-dist",
+      "inventory_bytes": 70393381,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc2\\work",
+      "inventory_bytes": 24885346,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc2\\launcher-work",
+      "inventory_bytes": 10206921,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc2\\launcher-dist",
+      "inventory_bytes": 7564161,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc2\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc2\\bridge-work",
+      "inventory_bytes": 7881006,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc2\\bridge-dist",
+      "inventory_bytes": 70393381,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc2\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc3\\work",
+      "inventory_bytes": 24887110,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc3\\launcher-work",
+      "inventory_bytes": 10204971,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc3\\launcher-dist",
+      "inventory_bytes": 7562211,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc3\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc3\\bridge-work",
+      "inventory_bytes": 7880892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc3\\bridge-dist",
+      "inventory_bytes": 70393381,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc3\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc4\\work",
+      "inventory_bytes": 24888622,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc4\\launcher-work",
+      "inventory_bytes": 10205567,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc4\\launcher-dist",
+      "inventory_bytes": 7562807,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc4\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc4\\bridge-work",
+      "inventory_bytes": 7880892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc4\\bridge-dist",
+      "inventory_bytes": 70393381,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.2_rc4\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.3_rc1\\work",
+      "inventory_bytes": 24910847,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.3_rc1\\launcher-work",
+      "inventory_bytes": 10204991,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.3_rc1\\launcher-dist",
+      "inventory_bytes": 7562231,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.3_rc1\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.3_rc1\\bridge-work",
+      "inventory_bytes": 7881006,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.3_rc1\\bridge-dist",
+      "inventory_bytes": 70394014,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.3_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.4_rc1\\work",
+      "inventory_bytes": 24925283,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.4_rc1\\launcher-work",
+      "inventory_bytes": 10206736,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.4_rc1\\launcher-dist",
+      "inventory_bytes": 7563862,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.4_rc1\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.4_rc1\\bridge-work",
+      "inventory_bytes": 7881006,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.4_rc1\\bridge-dist",
+      "inventory_bytes": 70378823,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.4_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.5_rc1\\work",
+      "inventory_bytes": 24988974,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.5_rc1\\launcher-work",
+      "inventory_bytes": 10206504,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.5_rc1\\launcher-dist",
+      "inventory_bytes": 7563630,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.5_rc1\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.5_rc1\\bridge-work",
+      "inventory_bytes": 7881006,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.5_rc1\\bridge-dist",
+      "inventory_bytes": 70380237,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.5_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.6_rc1\\work",
+      "inventory_bytes": 25014268,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.6_rc1\\launcher-work",
+      "inventory_bytes": 10206438,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.6_rc1\\launcher-dist",
+      "inventory_bytes": 7563678,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.6_rc1\\jst-catalog-component",
+      "inventory_bytes": 184602,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.6_rc1\\bridge-work",
+      "inventory_bytes": 7880892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.6_rc1\\bridge-dist",
+      "inventory_bytes": 70381688,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.6_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.7_rc1\\work",
+      "inventory_bytes": 25044206,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.7_rc1\\launcher-work",
+      "inventory_bytes": 10205893,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.7_rc1\\launcher-dist",
+      "inventory_bytes": 7563019,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.7_rc1\\jst-catalog-component",
+      "inventory_bytes": 185376,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.7_rc1\\bridge-work",
+      "inventory_bytes": 7880892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.7_rc1\\bridge-dist",
+      "inventory_bytes": 70383446,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.7_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc1\\work",
+      "inventory_bytes": 25234224,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc1\\launcher-work",
+      "inventory_bytes": 10206331,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc1\\launcher-dist",
+      "inventory_bytes": 7563571,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc1\\jst-catalog-component",
+      "inventory_bytes": 185376,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc1\\bridge-work",
+      "inventory_bytes": 7880892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc1\\bridge-dist",
+      "inventory_bytes": 70384904,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc2\\work",
+      "inventory_bytes": 25234653,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc2\\launcher-work",
+      "inventory_bytes": 10206692,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc2\\launcher-dist",
+      "inventory_bytes": 7563932,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc2\\jst-catalog-component",
+      "inventory_bytes": 185376,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc2\\bridge-work",
+      "inventory_bytes": 7880892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc2\\bridge-dist",
+      "inventory_bytes": 70384904,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.8_rc2\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.9_rc1\\work",
+      "inventory_bytes": 25316628,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.9_rc1\\launcher-work",
+      "inventory_bytes": 10205741,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.9_rc1\\launcher-dist",
+      "inventory_bytes": 7562981,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.9_rc1\\jst-catalog-component",
+      "inventory_bytes": 185376,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.9_rc1\\bridge-work",
+      "inventory_bytes": 7880892,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.9_rc1\\bridge-dist",
+      "inventory_bytes": 70386199,
+      "performed": false
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.52.9_rc1\\aoxiang-component",
+      "inventory_bytes": 110359648,
+      "performed": false
+    }
+  ],
+  "free_before": {
+    "C": 8151232512,
+    "D": 46683078656
+  }
+}

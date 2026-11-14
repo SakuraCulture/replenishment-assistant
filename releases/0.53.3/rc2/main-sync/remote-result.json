@@ -1,0 +1,10 @@
+{
+  "pushed": true,
+  "merged": true,
+  "fast_forward": true,
+  "main": "d76540769b5b45ac07c52de6dd716f4528ec2805",
+  "feature": "d76540769b5b45ac07c52de6dd716f4528ec2805",
+  "tag": "v0.53.3-rc2",
+  "tag_commit": "d76540769b5b45ac07c52de6dd716f4528ec2805",
+  "other_remote_refs_unchanged": true
+}

@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "removed_directories": 336,
+  "failed_or_retained": 0,
+  "old_build_count": 48,
+  "logical_bytes_removed": 11072579276,
+  "logical_GiB_removed": 10.312143038958311,
+  "free_before": {
+    "C": 8151232512,
+    "D": 46683078656
+  },
+  "free_after": {
+    "C": 8152817664,
+    "D": 57879117824
+  },
+  "observed_free_delta": {
+    "C": 1585152,
+    "D": 11196039168
+  },
+  "retained_directories_checked": 106,
+  "retained_files_metadata_checked": 390936,
+  "retained_archives_and_metadata_hashes_checked": 384,
+  "issues": [],
+  "all_target_paths_absent": true,
+  "other_worktree_index_unchanged": true,
+  "business_or_unknown_processes_terminated": 0,
+  "force_unlock_used": false,
+  "notes": "No deletion outside exact old-build generated children. 18492 not treated as exited; direct target access check and native sharing protection used. Metadata does not claim every retained file was content-hashed."
+}
