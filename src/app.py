@@ -318,6 +318,12 @@ def _main():
     if '--jst-stock-evidence-smoke' in sys.argv:
         from jst_stock_evidence_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--jst-stock-evidence-smoke')+1:])
+    if '--analytics-templates-smoke' in sys.argv:
+        from analytics_templates_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--analytics-templates-smoke')+1:])
+    if '--lifecycle-preflight-smoke' in sys.argv:
+        from lifecycle_preflight_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-preflight-smoke')+1:])
     if '--jst-batch-recovery-smoke' in sys.argv:
         from jst_batch_recovery_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--jst-batch-recovery-smoke')+1:])

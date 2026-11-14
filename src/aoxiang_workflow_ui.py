@@ -21,7 +21,7 @@ from runtime_support import Cancelled
 
 KINDS = {'prepare': '采购预览', 'upload': '采购上传与核对', 'receipt': '收货同步'}
 from aoxiang_workflow_state import can_end_local,local_preparation,summary as task_summary,counts
-from aoxiang_purchase_messages import waiting, item_message, voided
+from aoxiang_purchase_messages import waiting, item_message, voided, PAYMENT_PREPARATION_CODES
 STATES = {'QUEUED': '排队', 'RUNNING': '正在处理', 'YIELDED': '等待人工操作结束', 'PAUSED': '已停止，可继续原任务',
           'FAILED': '批次未完成', 'READY': '预览完成，尚未上传', 'COMPLETED': '完成', 'COMPLETED_WITH_ERRORS': '已处理，有待核项', 'CANCELLED': '剩余任务已取消',
           'PENDING': '未处理', 'ACCEPTED':'平台处理中，未重传', 'PREPARED': '预览就绪，未上传', 'BOUND': '已关联采购单', 'OBSERVED': '已观察，尚未完成', 'SYNCED': '正式实收已保存', 'VOIDED':'平台已作废，常规同步已停止', 'REVIEW': '待核，可继续核对或重建', 'SKIPPED': '本项已结束／跳过'}
@@ -416,7 +416,8 @@ class QueueDialog(QDialog):
             box.exec();return
         if local_preparation(item,self.current['kind']):message+='\n本次未建立新的平台采购任务，未进入上传。可结束本地准备；不必为删除订单而确认付款。'
         else:message+='\n请核对原平台任务；本地停止不代表平台订单已撤销。'
-        QMessageBox.information(self,'任务原因',message)
+        title='本地付款检查未通过' if local_preparation(item,self.current['kind']) and (item.get('error') or {}).get('code') in PAYMENT_PREPARATION_CODES else '任务原因'
+        QMessageBox.information(self,title,message)
 
     def end_local(self):
         if not self.current:return

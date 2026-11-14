@@ -95,7 +95,7 @@ class Evidence:
                     if sheet not in book.sheetnames: raise ValueError('当时仓资料工作表不一致')
                     ws=book[sheet];ws.reset_dimensions();it=ws.iter_rows(values_only=True)
                     heads=[str(v).strip() if v is not None else '' for v in next(it,())]
-                    fields=('商品编码','商品状态','虚拟分类','供应商名称','分类')
+                    fields=('商品编码','商品状态','虚拟分类','供应商名称','分类','可用数')
                     if heads.count('商品编码')==1:
                         indexes={k:heads.index(k) for k in fields if heads.count(k)==1}
                         for rownum, values in enumerate(it,2):
@@ -121,11 +121,53 @@ class Evidence:
         catalog=self.catalog(order,warehouse)
         return attributes(row,catalog,sku,self.source(catalog))
 
+    def template_attributes(self,order,warehouse,sku,row):
+        """Project retained input facts, never present-day settings or stock."""
+        from input_adapter import identifier
+        row=row or {};catalog=self.catalog(order,warehouse);source=self.source(catalog)
+        frozen=catalog.get('items',{}).get(sku) or {};original=source['items'].get(sku)
+        heads=source['headers'];notes=[];values=[]
+        if source['present']:
+            if heads.count('商品编码')>1:notes.append('原件商品编码表头重复')
+            if heads.count('可用数')>1:notes.append('原件可用数表头重复')
+            if sku in source['items'] and original is None:notes.append('原件商品编码重复')
+        for title,record in (('冻结仓资料',frozen),('归档原件',original or {})):
+            if '可用数' not in record:continue
+            value=num(record['可用数'])
+            if value is None:notes.append(title+'可用数缺失或无效')
+            else:values.append((title,value))
+        if len({value for _,value in values})>1:notes.append('冻结仓资料与归档原件可用数冲突')
+        stock=values[0][1] if values and not notes else None
+        if not values and not notes:notes.append('当时可用数未留存')
+        barcode,error=identifier(row.get('F'))
+        target=num(row.get('BF'))
+        if target is None:
+            predicted,safety=num(row.get('AP')),num(row.get('AL'))
+            if predicted is not None and safety is not None:target=predicted+safety
+        minimum=row.get('_mandatory_holding') or {}
+        meta=row.get('_meta') or {}
+        return {'barcode':None if error else barcode,'supply_state':template_text(row.get('S')),
+            'stock':num(row.get('K')),'monthly_sales':num(row.get('J')),'in_transit':num(row.get('L')),
+            'target_holding':target,'pack_size':num(row.get('BD')),
+            'minimum_holding':num(minimum.get('minimum')) if isinstance(minimum,dict) else None,
+            'stock_snapshot_at':template_text(meta.get('export_updated')),'warehouse_stock':stock,
+            'warehouse_stock_basis':{'catalog_revision':catalog.get('revision'),
+                'source_sha256':catalog.get('source_sha256'),'sheet':catalog.get('sheet'),
+                'catalog_imported_at':catalog.get('imported_at'),
+                'source_row':original.get('source_row') if original else None,
+                'sources':[title for title,_ in values] if stock is not None else [],'notes':notes}}
+
     def item(self, order, warehouse, sku):
         c=self.catalog(order,warehouse)
         row=c.get('items',{}).get(sku)
         if row and '虚拟分类' in row: return row, c.get('revision')
         return self.original(c).get(sku), c.get('source_sha256')
+
+
+def template_text(value):
+    if isinstance(value,str):return value if value.strip() else None
+    if isinstance(value,(date,datetime)):return value.isoformat()
+    return None
 
 
 def membership(result, row, sku):
@@ -192,11 +234,13 @@ def build_facts(order, head, view, evidence, cancel=None):
         name=r.get('D') if r else next((maps[s][sku].get('name','') for s in lifecycle.ALL_STAGES if sku in maps.get(s,{})),'')
         rows.append({'day':head['day'],'store':head['store'],'store_name':result['store_name'],
             'warehouse':head['warehouse'],'order':head['number'],'sku':sku,'name':name,'unit':r.get('G') if r else None,
+            'order_status':view['status'],'order_next':view['next'],
             'category':r.get('U') if r else None,'group':membership(result,r,sku),'scope':scope,'reasons':reasons,
             'price':price,'quantities':quantities,'valid':{s:bool(v[1]) and quantities[s] is not None for s,v in states.items()},
             'states':{s:v[0] for s,v in states.items()},'master_basis':basis,
             'source_row':r.get('_meta',{}).get('export_row') if r else None,
             'observations':{k:r.get(k) for k in ('H','I','J','K','L','N','AN','AM','AG','AH','BD','AL')} if r else {},
+            'template_attributes':evidence.template_attributes(order,head['warehouse'],sku,r),
             'decision':{'budget':r.get('_budget_reason'),'manual':r.get('_preissue',{}).get('reason'),
                         'new':r.get('_new_requested'),'one_box':r.get('_audit',{}).get('applied')} if r else {},
             'payment_amount':num(maps['payment'].get(sku,{}).get('amount')),

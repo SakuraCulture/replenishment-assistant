@@ -34,7 +34,7 @@ def detail_rows(rows):
 
 
 def export(path,report,target,level='store',orders=None,progress=lambda _:None,cancel=None):
-    if level not in ('store','order','detail','coverage_rounds','workflow'):raise ValueError('未知报表类型')
+    if level not in ('store','order','detail','coverage_rounds','workflow','analysis','analysis_detail'):raise ValueError('未知报表类型')
     target=Path(target).resolve()
     if target.suffix.lower()!='.xlsx' or target.exists():raise ValueError('请使用新的.xlsx文件，保留已导出分析快照')
     checkpoint(cancel);service.validate_snapshot(path,report,progress,cancel)
@@ -44,6 +44,8 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
     selected=set(orders or [])
     if selected-set(h['number'] for h in report['heads']):raise ValueError('勾选订单不在当前查询范围')
     rows=[r for r in report['rows'] if not selected or r['order'] in selected]
+    if level in ('analysis','analysis_detail'):
+        return export_template(path,report,target,level,rows,progress,cancel)
     included=[r for r in rows if r['scope']=='纳入'];pending=[r for r in rows if r['scope']=='待核']
     tabs=[]
     if level=='detail':
@@ -83,3 +85,28 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
     finally:Path(tmp).unlink(missing_ok=True)
     return {'path':str(target),'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),
             'snapshot_id':report['snapshot_id'],'rows':len(included),'pending':len(pending),'sheets':monitor+[t[0] for t in tabs]+extra,'coverage_version':report['coverage']['version']}
+
+
+def export_template(path,report,target,level,rows,progress,cancel):
+    """The new presentation uses the same frozen query and atomic publication."""
+    from analytics_formula_cache import FormulaCache
+    from analytics_template_export import append_summary,append_detail
+    fd,tmp=tempfile.mkstemp(dir=target.parent,prefix='.analytics-',suffix='.xlsx');os.close(fd)
+    try:
+        with FormulaCache(target.parent,cancel) as cache:
+            with stream_book() as book:
+                book._analytics_formula_cache=cache.add
+                writer=append_summary if level=='analysis' else append_detail
+                sheets=writer(book,report,rows,progress,cancel)
+                checkpoint(cancel);progress('保存模板报表与公式缓存…');book.save(tmp)
+            cache.apply(tmp)
+        service.validate_snapshot(path,report,progress,cancel)
+        if report.get('linked_stockout'):
+            import workflow_stockout
+            workflow_stockout.validate(path,report['query'],report['linked_stockout'],cancel)
+        checkpoint(cancel);os.link(tmp,target)
+    finally:Path(tmp).unlink(missing_ok=True)
+    with target.open('rb') as stream:digest=hashlib.file_digest(stream,'sha256').hexdigest()
+    return {'path':str(target),'sha256':digest,'snapshot_id':report['snapshot_id'],
+            'rows':sum(r['scope']=='纳入' for r in rows),'pending':sum(r['scope']=='待核' for r in rows),
+            'sheets':sheets,'coverage_version':report['coverage']['version'],'template':'summary' if level=='analysis' else 'detail'}

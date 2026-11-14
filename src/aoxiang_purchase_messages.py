@@ -1,5 +1,7 @@
 """Business explanations for purchase recovery; raw evidence stays available."""
 
+PAYMENT_PREPARATION_CODES = frozenset({'PAYMENT_MISSING', 'PAYMENT_PENDING', 'PAYMENT_BASIS_CHANGED', 'PAYMENT_UPSTREAM_NOT_READY'})
+
 
 def observation(record):
     return {k: record.get(k) for k in ('state', 'taskId', 'uploadAttempted', 'additionalTaskIds')} | {
@@ -19,6 +21,10 @@ def explain(error, known=None):
     error, known = error or {}, known or {}
     code = error.get('code', '')
     messages = {
+        'PAYMENT_MISSING': '尚无已确认付款单。需要采购时，请先在生命周期导入并核对付款单。',
+        'PAYMENT_PENDING': '付款单尚未确认。需要采购时，请先在生命周期完成付款核对。',
+        'PAYMENT_BASIS_CHANGED': '付款单的对照依据已变化。需要采购时，请先在生命周期重新核对付款单。',
+        'PAYMENT_UPSTREAM_NOT_READY': '付款单的前置业务资料尚未就绪。需要采购时，请先在生命周期核对前置资料和付款单。',
         'IDENTITY_RESPONSE_TIMEOUT': '原任务仍保留；本次核对账号身份时未取得响应，尚不能判断登录失效或采购失败。请确认原浏览器页面与网络可用，再继续核对原任务；不会重传。',
         'IDENTITY_CHECK_FAILED': '本次未完成账号身份核验，尚不能判断登录失效。请检查原浏览器页面及连接后继续原任务，不要重新上传。',
         'PURCHASE_STORE_NOT_FOUND': '原任务仍保留；采购页暂未定位到指定门店，尚未完成查单。请核对门店目录的编码、名称及页面加载后继续核对采购结果，不要重新上传。',
@@ -34,6 +40,9 @@ def explain(error, known=None):
         'PURCHASE_STATUS_UNSUPPORTED': '原采购单已找到，但目前状态不属于待提交或已作废，暂不自动关联。请在平台查看该单当前状态，并在技术详情核对原始状态；不要重新导入。',
         'PURCHASE_STATUS_CHANGED': '平台查询状态与核对文件不同，暂不关联。请稍后继续核对采购结果，保留原任务和已导出文件；不要重新导入。',
     }
+    if code in PAYMENT_PREPARATION_CODES:
+        # Keep the order/stage/version explanation supplied by local validation.
+        return error.get('message') or messages[code]
     if code == 'SUBMISSION_UNKNOWN':
         if known.get('taskId'):
             return '已找到原受理任务号，之前的结果提示尚未更新。请点击“继续核对采购结果”，读取原任务并关联已有采购单。'
@@ -52,6 +61,8 @@ def item_message(item, kind):
     if kind != 'upload':
         if kind == 'prepare' and (item.get('error') or {}).get('code') == 'PURCHASE_ALREADY_RESERVED':
             return '已有原采购任务，本次没有重复上传。可继续原任务；需要重做时，勾选本单后点击“结束所选任务并重建预览”，旧采购记录保留。'
+        if kind == 'prepare' and (item.get('error') or {}).get('code') in PAYMENT_PREPARATION_CODES:
+            return explain(item['error'])
         return (item.get('error') or {}).get('message', '')
     if item['state'] == 'BOUND':
         if voided(item):

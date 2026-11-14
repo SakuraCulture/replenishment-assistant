@@ -22,7 +22,10 @@ class LifecycleWidget(QWidget):
         for title in daily_batch.STATUSES:
             key={'待回传':'return','待运营签发':'operations','待付款':'payment','待收货':'receipt'}.get(title)
             b=button(title+'\n—',lambda checked=False,s=title,k=key:self.open_stage(k) if k else self.status.setCurrentText(s));self.cards[title]=b;row.addWidget(b);b.setVisible(stage is None)
-        v.addLayout(row);self.bar=QProgressBar();self.bar.setMaximumHeight(14);v.addWidget(self.bar);self.note=label('待查询','muted');v.addWidget(self.note)
+        v.addLayout(row);self.bar=QProgressBar();self.bar.setMaximumHeight(14);v.addWidget(self.bar);self.note=label('待查询','muted')
+        self.excluded_records=[];self.excluded_btn=button('查看未显示订单（0）',self.show_excluded_orders);self.excluded_btn.setEnabled(False)
+        self.excluded_btn.setToolTip('查看被当前筛选排除的有效仓单及全部原因；其他页的符合筛选订单请翻页查看。')
+        row=QHBoxLayout();row.addWidget(self.note,1);row.addWidget(self.excluded_btn);v.addLayout(row)
         self.table=QTableWidget();self.table.setColumnCount(13);self.table.setHorizontalHeaderLabels(['勾选','单据详情','下一步','业务日期','门店','仓','补货单号','当前进度','门店回传','运营签发','门店付款','实际收货','资料提示']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
         if stage:
             for column in (8,9,10,11):self.table.setColumnHidden(column,True)
@@ -151,9 +154,10 @@ class LifecycleWidget(QWidget):
     def query(self,*_,keep_page=False):
         if self.host.closing:return
         if not keep_page:self.page=0;self.checked.clear()
+        self.excluded_records=[];self.excluded_btn.setText('查看未显示订单（0）');self.excluded_btn.setEnabled(False)
         self.selection_label();self.bar.show();self.table.setEnabled(False);self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在查询单据进度…可继续使用工作页。')
         self.order_compare_btn.setEnabled(False);self.store_compare_btn.setEnabled(False)
-        request={'kind':'daily_batch','from':self.start.text().strip(),'to':self.end.text().strip(),'search':self.search.text().strip(),'status':'' if self.stage or self.status.currentIndex()==0 else self.status.currentText(),'stage_view':self.stage,'stage_filter':self.status.currentText() if self.stage else None,'scope':[[h['oid'],h['warehouse']] for h in self.fixed_scope] if self.fixed_scope is not None else None,'warehouse':'' if self.warehouse_filter.currentIndex()==0 else self.warehouse_filter.currentText(),'lock':'' if self.lock_filter.currentIndex()==0 else self.lock_filter.currentText(),'page':self.page}
+        request={'kind':'daily_batch','from':self.start.text().strip(),'to':self.end.text().strip(),'search':self.search.text().strip(),'status':'' if self.stage or self.status.currentIndex()==0 else self.status.currentText(),'stage_view':self.stage,'stage_filter':self.status.currentText() if self.stage else None,'scope':[[h['oid'],h['warehouse']] for h in self.fixed_scope] if self.fixed_scope is not None else None,'warehouse':'' if self.warehouse_filter.currentIndex()==0 else self.warehouse_filter.currentText(),'lock':'' if self.lock_filter.currentIndex()==0 else self.lock_filter.currentText(),'page':self.page,'explain_filters':True}
         self.reader.request(request,lambda data,r=request:self.query_ready(data,r),self.failed,self.progress)
     def query_ready(self,data,request):
         self.applied_request=dict(request);self.ready(data)
@@ -169,12 +173,15 @@ class LifecycleWidget(QWidget):
                 try:warehouse_execution.validate(db,h)
                 except (ValueError,__import__('work_repository').Conflict):invalid.append(key)
         for key in invalid:self.checked.pop(key,None)
-        self.records=data['records'];self.page=data['page'];self.count=data['count'];self.bar.hide();self.table.setEnabled(True);self.note.setText(f"查询范围 {data['scope']} 单 · 当前筛选 {data['count']} 单 · 第 {self.page+1}/{max(1,(data['count']+49)//50)} 页；每页50单，阶段计数不重复。")
+        self.records=data['records'];self.page=data['page'];self.count=data['count'];self.bar.hide();self.table.setEnabled(True)
+        self.excluded_records=data.get('filter_explanation',{}).get('excluded',[])
+        self.excluded_btn.setText(f'查看未显示订单（{len(self.excluded_records)}）');self.excluded_btn.setEnabled(bool(self.excluded_records))
+        self.note.setText(f"日期/关键词范围 {data['scope']} 单 · 符合当前筛选 {data['count']} 单 · 本页显示 {len(self.records)} 单 · 第 {self.page+1}/{max(1,(data['count']+49)//50)} 页；每页50单。")
         if invalid:self.note.setText(self.note.text()+f'；已移除{len(invalid)}条失效勾选，请重新核对选择。')
         self.empty_actions.setVisible(not data['count'])
         if not data['count']:
             from business_flow import empty_message
-            self.note.setText(empty_message(self.stage,getattr(self,'applied_request',{}),data))
+            self.note.setText(self.note.text()+'\n'+empty_message(self.stage,getattr(self,'applied_request',{}),data))
         for k,b in self.cards.items():b.setText(k+'\n'+str(data['counts'][k]))
         blocker=QSignalBlocker(self.table);self.table.setRowCount(len(self.records))
         for i,h in enumerate(self.records):
@@ -203,7 +210,15 @@ class LifecycleWidget(QWidget):
         del blocker
         for i,width in enumerate([45,110,165,100,185,70,250,155,100,100,100,100,260]):self.table.setColumnWidth(i,width)
         self.selection_label()
-    def failed(self,message):self.records=[];self.table.setRowCount(0);self.bar.setRange(0,1);self.bar.setValue(0);self.note.setText('查询失败：'+message+'；可重新查询');self.table.setEnabled(True);self.applied_request=None;self.order_compare_btn.setEnabled(False);self.store_compare_btn.setEnabled(False)
+    def show_excluded_orders(self):
+        if not self.excluded_records:return
+        from readable_ui import details
+        rows=[[r[k] for k in ('number','store','name','warehouse','status')]+['\n'.join(r['reasons'])] for r in self.excluded_records]
+        details(self,'未显示订单与原因',['补货单号','门店编码','门店名称','仓','当前进度','全部未显示原因'],rows,
+                '以下为当前日期/关键词范围内，被限定范围、环节、仓、锁或进度筛选排除的有效仓单。同一单可有多个原因；符合筛选的其他页订单请翻页查看。')
+    def failed(self,message):
+        self.excluded_records=[];self.excluded_btn.setText('查看未显示订单（0）');self.excluded_btn.setEnabled(False)
+        self.records=[];self.table.setRowCount(0);self.bar.setRange(0,1);self.bar.setValue(0);self.note.setText('查询失败：'+message+'；可重新查询');self.table.setEnabled(True);self.applied_request=None;self.order_compare_btn.setEnabled(False);self.store_compare_btn.setEnabled(False)
     def check(self,item):
         if item.column()!=0 or item.row()>=len(self.records):return
         h=self.records[item.row()]

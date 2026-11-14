@@ -7,6 +7,7 @@ from runtime_support import Cancelled, checkpoint
 from aoxiang_client import ComponentError
 from aoxiang_directory import Directory, atomic_json
 from aoxiang_purchase_tasks import prepare, validate_for_upload
+from aoxiang_purchase import preflight_payment
 from aoxiang_receipts import synchronize
 from aoxiang_workflows import DONE_ITEM
 
@@ -16,6 +17,12 @@ SESSION_ERRORS = {'COMPONENT_EXITED', 'COMPONENT_DISCONNECTED', 'PROTOCOL_FRAME'
 
 def package_ref(p):
     return {k: p[k] for k in ('id', 'package_file', 'package_sha256', 'plan_file', 'plan_sha256')}
+
+
+def item_error(exc):
+    error = {'code': getattr(exc, 'code', 'BUSINESS_REVIEW'), 'message': str(exc)}
+    if getattr(exc, 'details', None):error['details'] = exc.details
+    return error
 
 
 class Runner:
@@ -204,6 +211,24 @@ class Runner:
                     if not self.store.forget_missing(id,identity,basis.get('oid'),self.execution_token,self.business_path):
                         update(changes={'state':'SKIPPED','error':{'code':'SOURCE_ORDER_DELETED','message':'来源不可用，未派发平台动作'}})
                     continue
+                if job['kind']=='prepare' and not item.get('package'):
+                    # Local ineligibility needs no browser or template. This is
+                    # only a precheck: eligible items still observe the current
+                    # login individually and freeze_payment checks again later.
+                    try:
+                        preflight_payment(self.business_path,item['head'],cancel=self.cancel)
+                    except SourceDeleted:
+                        continue
+                    except Cancelled:
+                        update(changes={'state':'PENDING'})
+                        raise
+                    except Exception as exc:
+                        error=item_error(exc)
+                        if error['code'] in SESSION_ERRORS:
+                            update(changes={'state':'PENDING','error':error})
+                            raise
+                        update(changes={'state':'FAILED' if error['code'] in RETRYABLE else 'REVIEW','error':error})
+                        continue
                 # Read again at each dispatch: a batch never silently adopts stale host mappings.
                 from aoxiang_current_login import current_configuration
                 configuration = (current_configuration(self.client,self.progress,self.cancel)
@@ -229,9 +254,8 @@ class Runner:
                     update(changes={'state': 'PENDING'})
                     raise
                 except Exception as exc:
-                    code = getattr(exc, 'code', 'BUSINESS_REVIEW')
-                    error = {'code': code, 'message': str(exc)}
-                    if getattr(exc, 'details', None):error['details'] = exc.details
+                    error = item_error(exc)
+                    code = error['code']
                     if job['kind'] == 'receipt':
                         self.store.observe_schedule(item['purchase_id'], None, error=error, review=code not in RETRYABLE)
                     if code in SESSION_ERRORS:

@@ -49,8 +49,8 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
     wh=request.get('warehouse');lock=request.get('lock');stage=request.get('status','')
     view=request.get('stage_view');kind=request.get('stage_filter');scope=request.get('scope')
     chosen={tuple(k) for k in scope} if scope is not None else None
+    def in_scope(r):return chosen is None or (r['oid'],r['warehouse']) in chosen
     def in_stage(r):
-        if chosen is not None and (r['oid'],r['warehouse']) not in chosen:return False
         if not view:return True
         if view=='jst':
             if kind=='待生成':return r['next']=='payment' and not r['gid']
@@ -59,8 +59,29 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
             return bool(r['gid']) or r['next']=='payment'
         pending=r['next'] in ('payment','jst_payment') if view=='payment' else r['next']==view
         return pending if kind=='待处理' else pending or r['present'].get(view,False)
-    matched=[r for r in records if in_stage(r) and (not stage or stage==r['status'] or stage=='全部未完成' and r['next']) and (not wh or r['warehouse']==wh) and (not lock or r['locked']==(lock=='已锁'))]
-    if request.get('all_matched'):return {'records':matched,'count':len(matched),'counts':counts,'scope':len(records)}
+    def in_status(r):return not stage or stage==r['status'] or stage=='全部未完成' and r['next']
+    matched=[r for r in records if in_scope(r) and in_stage(r) and in_status(r) and (not wh or r['warehouse']==wh) and (not lock or r['locked']==(lock=='已锁'))]
+    explanation={}
+    if request.get('explain_filters'):
+        # Reuse the same active-head projection. No source details, extra SQL,
+        # recycle-bin records or cache-only identities are loaded for this view.
+        titles={'return':'回传处理','operations':'运营签发','payment':'付款核对','receipt':'收货核对','jst':'聚水潭导入单'}
+        excluded=[]
+        for r in records:
+            checkpoint(cancel);reasons=[];codes=[]
+            def add(code,text):codes.append(code);reasons.append(text)
+            if not in_scope(r):add('scope','限定范围：未在所选订单中')
+            if not in_stage(r):
+                text='环节筛选：不符合“'+titles.get(view,view)+' / '+str(kind or '本环节全部')+'”'
+                if view=='operations' and kind!='待处理' and r.get('flow_version',1)==1:
+                    text+='；旧流程未留存运营签发单据'
+                add('stage',text)
+            if wh and r['warehouse']!=wh:add('warehouse','仓筛选：所选'+wh+'，该单为'+r['warehouse'])
+            if lock and r['locked']!=(lock=='已锁'):add('lock','锁状态筛选：所选'+lock+'，该单'+('已锁' if r['locked'] else '未锁'))
+            if not in_status(r):add('status','进度筛选：所选“'+stage+'”，该单“'+r['status']+'”')
+            if reasons:excluded.append({**{k:r[k] for k in ('oid','number','store','name','warehouse','status')},'reason_codes':codes,'reasons':reasons})
+        explanation={'filter_explanation':{'excluded_count':len(excluded),'excluded':excluded}}
+    if request.get('all_matched'):return {'records':matched,'count':len(matched),'counts':counts,'scope':len(records),**explanation}
     page=min(max(0,int(request.get('page',0))),max(0,(len(matched)-1)//50))
     visible=matched[page*50:(page+1)*50]
     from aoxiang_receipt_scope import tracking_observations
@@ -68,7 +89,7 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
     for h in visible:
         value=observed.get((h['oid'],h['revision'],h['warehouse']))
         if value:h['platform_purchase']=value
-    return {'records':visible,'count':len(matched),'page':page,'counts':counts,'scope':len(records)}
+    return {'records':visible,'count':len(matched),'page':page,'counts':counts,'scope':len(records),**explanation}
 
 
 def logs(path,start='',end='',search='',progress=lambda _:None,cancel=None,*,page=None):

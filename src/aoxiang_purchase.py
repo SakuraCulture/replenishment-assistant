@@ -10,6 +10,7 @@ from purchase_io import code, number
 from runtime_support import checkpoint
 from aoxiang_jobs import encoded
 from aoxiang_purchase_pricing import POLICY, priced_row
+from aoxiang_payment_preflight import PaymentPreparationError, preflight_payment, require_payment
 
 
 def fingerprint(plan):
@@ -33,11 +34,7 @@ def freeze_payment(path, head, configuration, suppliers, *, cancel=None):
         db.execute('BEGIN')
         purchases.validate_head(db, head)
         view = lifecycle.snapshot(path, head, cancel=cancel, db=db)
-        if not view['health']['payment']:
-            raise ValueError('付款单尚未确认或对照依据已过期，请先在生命周期核对付款单')
-        payment = view['documents']['payment']
-        if not payment:
-            raise ValueError('尚无已确认付款单')
+        payment = require_payment(head, view)
         rows, omitted = [], []
         seen = set()
         for index, row in enumerate(payment['payload']['rows']):

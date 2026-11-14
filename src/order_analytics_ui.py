@@ -73,7 +73,7 @@ class AnalyticsWidget(QWidget):
         self.navigation_row=row=QHBoxLayout();row.addWidget(button('← 返回全部',self.back));row.addWidget(button('◀ 上一页',lambda:self.turn(-1)));row.addWidget(button('下一页 ▶',lambda:self.turn(1)));self.page_note=label('');row.addWidget(self.page_note,1)
         row.addWidget(button('清空订单勾选',self.clear_selected));v.addLayout(row)
         self.export_row=row=QHBoxLayout();self.export_kind=QComboBox()
-        for title,k in [('门店经营分析（含商品切面与天数）','store'),('订单经营分析（含商品切面与天数）','order'),('当前商品明细','detail'),('门店逐轮天数','coverage_rounds'),('全流程与漏斗率趋势（当前自定义视角）','workflow')]:self.export_kind.addItem(title,k)
+        for title,k in [('订单经营分析','analysis'),('订单经营细则分析','analysis_detail')]:self.export_kind.addItem(title,k)
         row.addWidget(self.export_kind);self.export_btn=button('导出当前范围',lambda:self.export(False),True);row.addWidget(self.export_btn)
         self.selected_btn=button('导出所选订单',lambda:self.export(True));row.addWidget(self.selected_btn)
         row.addWidget(button('保存常用视图',self.save_view));row.addWidget(button('复制 AI 分析指令',self.copy_prompt));self.cancel_btn=button('■ 停止当前任务',self.cancel);row.addWidget(self.cancel_btn);v.addLayout(row)
@@ -312,7 +312,7 @@ class AnalyticsWidget(QWidget):
         ordered=[h['number'] for h in self.report['heads']]
         orders=[n for n in ordered if n in self.selected] if selected else list(dict.fromkeys(r['order'] for r in self.visible_rows())) if self.drill else None
         if (selected or self.drill) and not orders:QMessageBox.information(self,'暂无订单','当前范围没有可导出的订单。');return
-        name='补货经营分析_'+datetime.now().strftime('%Y%m%d_%H%M%S_%f')+'.xlsx'
+        name=self.export_kind.currentText()+'_'+datetime.now().strftime('%Y%m%d_%H%M%S_%f')+'.xlsx'
         try:
             import export_settings
             configured=export_settings.load(export_locations.config_path(self))

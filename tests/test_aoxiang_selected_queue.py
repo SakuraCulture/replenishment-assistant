@@ -37,7 +37,11 @@ class SelectedQueueTests(unittest.TestCase):
         def prepare(r,job,item,*args):
             self.called.append(item['key']);r.store.update(job['id'],position=item['position'],changes={'package':{'id':'p'+item['key']}})
             return 'PREPARED',{'purchase_id':'p'+item['key']}
-        with patch.object(Runner,'prepare_item',prepare):return self.r.run(job['id'])
+        # This minimal-source fixture isolates selection/deletion dispatch and
+        # already stubs all preparation. Payment eligibility is exercised with
+        # real lifecycle sources in test_aoxiang_preflight_runner.
+        with patch('aoxiang_workflow_runner.preflight_payment',return_value={}),patch.object(Runner,'prepare_item',prepare):
+            return self.r.run(job['id'])
 
     def delete_order(self,oid):
         with closing(sqlite3.connect(self.path)) as db:db.execute('DELETE FROM normal_orders WHERE oid=?',(oid,));db.commit()

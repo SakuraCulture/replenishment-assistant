@@ -59,7 +59,9 @@ class LifecycleDeletion(unittest.TestCase):
         def execute():
             try:runner.run(job['id'])
             except BaseException as exc:errors.append(exc)
-        with patch('aoxiang_workflow_runner.Directory') as directory:
+        # This race stubs prepare_item and tests only late stable-ID writes;
+        # source deletion guards remain real. The fixture has no payment facts.
+        with patch('aoxiang_workflow_runner.preflight_payment',return_value={}),patch('aoxiang_workflow_runner.Directory') as directory:
             directory.return_value.suppliers.return_value={}
             thread=threading.Thread(target=execute);thread.start()
             try:self.assertTrue(entered.wait(20));self.remove()
