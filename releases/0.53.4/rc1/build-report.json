@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "delivery": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.4_rc1",
+  "build": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.53.4_rc1",
+  "base_commit": "788d0a305c69374349e762a8c917749aae5afca0",
+  "source_reference": "snapshot-02269adaec6fdff79bd8ec870af546938ab83f3e07ca2253342d1872589f399f",
+  "source_snapshot_sha256": "02269adaec6fdff79bd8ec870af546938ab83f3e07ca2253342d1872589f399f",
+  "exe_sha256": "3f18d1b35a2618847ab6f69a09d50dac3b7766bcb5482574819835f2ec1fbb79",
+  "working_tree_files": 22,
+  "snapshot_files": 4545,
+  "git_mutated": false
+}

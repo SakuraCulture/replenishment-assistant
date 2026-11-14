@@ -1,0 +1,18 @@
+{
+  "confirmed_cause": "Packaged application excludes lxml and uses et_xmlfile, which emits styled empty cells as self-closing <c ... />. The original cache regex consumed the following formula cell, causing Formula cell missing from generated row.",
+  "reproduction": "OPENPYXL_LXML=False; styled blank A1 then formula B1 reproduces the same failure.",
+  "fix": "Exclude self-closing c nodes from nonempty formula-cell regex. Original formula/amount semantics unchanged.",
+  "failed_native": "native-rc1-01/report.json",
+  "failed_build_preserved": "build_0.53.5_rc1",
+  "failed_delivery_preserved": "交付_0.53.5_rc1",
+  "affected_retest": {
+    "engine": "OPENPYXL_LXML=False",
+    "tests": 23,
+    "failures": 0,
+    "errors": 0,
+    "command": "python -m unittest test_analytics_formula_cache test_analytics_template_integration test_analytics_template_export -v",
+    "seconds": 5.823,
+    "source": "execution tool stdout in this session"
+  },
+  "real_data_changed": false
+}

@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "baseline": "0.53.4 rc1 frozen source",
+  "updated": "0.53.5 rc1 current source",
+  "metrics_unchanged": true,
+  "all_seven_stage_facts_unchanged": true,
+  "order_scope_and_identifiers_unchanged": true,
+  "source": "fresh synthetic 2-warehouse database",
+  "live_platform": false
+}

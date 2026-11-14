@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "baseline": "0.53.3 rc2 frozen source",
+  "updated": "0.53.4",
+  "full_plans_equal": true,
+  "business_tables_unchanged": true,
+  "cases": [
+    "legacy",
+    "operations"
+  ],
+  "real_platform_calls": 0
+}

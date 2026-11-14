@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "kind": "summary",
+      "sheet": "SKU种类",
+      "values_equal": true,
+      "styles_equal": true,
+      "freeze_and_merges_equal": true
+    },
+    {
+      "kind": "summary",
+      "sheet": "商品货值",
+      "values_equal": true,
+      "styles_equal": true,
+      "freeze_and_merges_equal": true
+    },
+    {
+      "kind": "summary",
+      "sheet": "商品数量",
+      "values_equal": true,
+      "styles_equal": true,
+      "freeze_and_merges_equal": true
+    },
+    {
+      "kind": "detail",
+      "sheet": "SKU完整明细",
+      "values_equal": true,
+      "styles_equal": true,
+      "freeze_and_merges_equal": true
+    }
+  ],
+  "comparison_method": "Compare actual copied style objects, not StyleProxy wrapper equality; initial proxy comparison was invalid and failed even for same style.",
+  "meaning": "Actual EXE workbooks equal the visually reviewed source workbooks in all cell values, formats, fills, alignments, merges and freeze/filter settings."
+}

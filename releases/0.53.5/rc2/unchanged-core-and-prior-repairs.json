@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "baseline": "0.53.4 rc1 immutable source",
+  "files": [
+    {
+      "file": "src/model.py",
+      "sha256": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+      "unchanged": true
+    },
+    {
+      "file": "src/engine.py",
+      "sha256": "45cbb8ff4a4c1f1bd955e69ba0b6825407eee08f73b6e7de5678634c90cbc9d7",
+      "unchanged": true
+    },
+    {
+      "file": "src/order_lifecycle.py",
+      "sha256": "1fa0c3eaf7f977f3f03f8f5e6b2f710d347c4f463f5349dabf1e6f3b927ca7fd",
+      "unchanged": true
+    },
+    {
+      "file": "src/jst_allocation.py",
+      "sha256": "b67ad11aa15bdad87c26bff2ee3c2ba009e071f5779149f197c8eca355a69a30",
+      "unchanged": true
+    },
+    {
+      "file": "src/operations_flow.py",
+      "sha256": "ba8826639bb90c45f0b7dba3769c543a2d0e2353d1c69e8ff58243df59ae6db5",
+      "unchanged": true
+    },
+    {
+      "file": "src/workflow_analysis.py",
+      "sha256": "8c755c30478751321631b589b2923dee8ace9025160cdcaed47a1f6e48ac3237",
+      "unchanged": true
+    },
+    {
+      "file": "src/coverage_metrics.py",
+      "sha256": "4eecd18626cff5549c5efe6f68438c2b9b8d1964cd7e5a225de677e8fed92960",
+      "unchanged": true
+    },
+    {
+      "file": "src/analytics_identifiers.py",
+      "sha256": "611913fa5705b4495bf93cff71f6ff86c8e1204b7bf724b5f83a630368ae1e41",
+      "unchanged": true
+    },
+    {
+      "file": "src/aoxiang_workflow_runner.py",
+      "sha256": "0eb47ffa71580420ac79a953296089464b3d75ed911a69106b24a2f816360531",
+      "unchanged": true
+    },
+    {
+      "file": "src/daily_batch.py",
+      "sha256": "d983c5b8f656c837d11caffeb7b97f3f005feb1f90103e27f08cf270de523162",
+      "unchanged": true
+    }
+  ]
+}

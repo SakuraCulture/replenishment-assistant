@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "base_commit": "788d0a305c69374349e762a8c917749aae5afca0",
+  "files": [
+    {
+      "file": "src/model.py",
+      "equals_base": true,
+      "sha256": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334"
+    },
+    {
+      "file": "src/engine.py",
+      "equals_base": true,
+      "sha256": "45cbb8ff4a4c1f1bd955e69ba0b6825407eee08f73b6e7de5678634c90cbc9d7"
+    },
+    {
+      "file": "src/jst_allocation.py",
+      "equals_base": true,
+      "sha256": "b67ad11aa15bdad87c26bff2ee3c2ba009e071f5779149f197c8eca355a69a30"
+    },
+    {
+      "file": "src/order_lifecycle.py",
+      "equals_base": true,
+      "sha256": "1fa0c3eaf7f977f3f03f8f5e6b2f710d347c4f463f5349dabf1e6f3b927ca7fd"
+    },
+    {
+      "file": "src/operations_flow.py",
+      "equals_base": true,
+      "sha256": "ba8826639bb90c45f0b7dba3769c543a2d0e2353d1c69e8ff58243df59ae6db5"
+    },
+    {
+      "file": "src/aoxiang_workflows.py",
+      "equals_base": true,
+      "sha256": "82277678be2fff184429ae9312b8d022aeae49f127dabe60c72d16ee5413d4b7"
+    },
+    {
+      "file": "src/aoxiang_purchase_tasks.py",
+      "equals_base": true,
+      "sha256": "2e0487a6aed4d5de7debd06c942cb57cadf0daed1f762fbf288b835aaf05c825"
+    },
+    {
+      "file": "src/aoxiang_upload_pipeline.py",
+      "equals_base": true,
+      "sha256": "aee8438c4a7651e9aff5aa034298c519b6b5908950eddb1c90e2d7074ecc164f"
+    },
+    {
+      "file": "src/normal_orders.py",
+      "equals_base": true,
+      "sha256": "5593b8c3b87b606f1635ef2ed16688769a90e2e48c150cfe156bf1538db7c832"
+    },
+    {
+      "file": "src/warehouse_execution.py",
+      "equals_base": true,
+      "sha256": "404f55d6d096a2fc6ae429496f65902f5436d6bcf6a36735135e272bde9b1c88"
+    }
+  ]
+}

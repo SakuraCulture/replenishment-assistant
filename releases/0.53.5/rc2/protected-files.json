@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "old_delivery": [
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.4_rc1\\补货助手\\补货助手.exe",
+      "sha256": "3f18d1b35a2618847ab6f69a09d50dac3b7766bcb5482574819835f2ec1fbb79"
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.4_rc1\\补货助手_0.53.4_rc1_计数说明与采购本地预检.zip",
+      "sha256": "90f18a8aa263b6eaec856b065307c9b11ad916ca23ebecee8784fa5bb6dab589"
+    }
+  ],
+  "original_templates": [
+    {
+      "path": "C:\\Users\\lenovo\\Desktop\\订单完成情况_三口径_含ALL及必采状态.xlsx",
+      "sha256": "3de71724a4d76cbe7ed0c392ddb4d9fa7cd8d8419724aaa4b80428f19416255b"
+    },
+    {
+      "path": "C:\\Users\\lenovo\\Desktop\\SKU完整明细_单页模板.xlsx",
+      "sha256": "0f6b0928f4f2133265565c0864e741c3cb2248023be151760815db7d0c459f11"
+    }
+  ],
+  "earlier_uncommitted_work": {
+    "base_commit": "788d0a305c69374349e762a8c917749aae5afca0",
+    "previous_uncommitted_source_snapshot": "snapshot-02269adaec6fdff79bd8ec870af546938ab83f3e07ca2253342d1872589f399f",
+    "source_archive": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.53.4_rc1\\source.zip",
+    "manifest": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.53.4_rc1\\source-manifest.json",
+    "old_exe_and_delivery_not_overwritten": true
+  }
+}

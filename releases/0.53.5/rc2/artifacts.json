@@ -1,0 +1,15 @@
+{
+  "version": "0.53.5",
+  "build": "rc2",
+  "source_reference": "snapshot-58ed1b7dfd6a73b0591a32ed253312f4768151d64fc21ca92bfd0b14873f65eb",
+  "archive": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.5_rc2\\补货助手_0.53.5_rc2_订单经营双模板.zip",
+  "archive_sha256": "78cc33403c51448387ec194d0e35f49b06db616849fa2031f100dde2999b36c8",
+  "archive_bytes": 156194911,
+  "archive_files": 1314,
+  "zip_crc_passed": true,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.5_rc2\\补货助手\\补货助手.exe",
+  "exe_sha256": "a6569a7f879c2d08f50a75c1d1aab3893e91833454f666f52eb5575f722f0ce1",
+  "native_checks": 9,
+  "unique_directed_tests": 159,
+  "sealed_at": "2026-11-14T18:35:58.816203+08:00"
+}

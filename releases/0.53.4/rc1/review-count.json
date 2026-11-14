@@ -1,0 +1,58 @@
+{
+  "scope": "Independent read-only review of count/exclusion explanation changes",
+  "reviewed_files": [
+    "src/daily_batch.py",
+    "src/lifecycle_home_ui.py"
+  ],
+  "supporting_files": [
+    "src/lifecycle_home.py",
+    "src/history_tasks.py",
+    "tests/test_lifecycle_filter_explanation.py"
+  ],
+  "blocking_findings": [],
+  "findings": [
+    {
+      "topic": "filter_equivalence",
+      "result": "PASS",
+      "evidence": "daily_batch.py matched now uses in_scope then in_stage; old in_stage first checked chosen then the identical stage predicate. Status, warehouse and lock predicates unchanged. records order, all_matched, page clamp, 50-row slicing and observation attachment unchanged."
+    },
+    {
+      "topic": "scope_and_reasons",
+      "result": "PASS",
+      "evidence": "Explanations use the same active records before selected/stage/warehouse/lock/status filters. Every failed predicate adds its own reason; compound reasons preserved. Date/keyword exclusions are outside this input range and are not claimed as filter rejections."
+    },
+    {
+      "topic": "legacy_route",
+      "result": "PASS",
+      "evidence": "Old-route operations explanation is added only after stage rejection in operations/all-stage mode and flow_version==1. Existing stage predicate determines absence/pending membership; it is not relaxed."
+    },
+    {
+      "topic": "deletion_and_recycle_bin",
+      "result": "PASS",
+      "evidence": "No new source of records added. lifecycle_home still derives from repository headers, active warehouse heads and archive visibility before explanation. The added list cannot introduce cache-only or deleted identities."
+    },
+    {
+      "topic": "async_and_failure",
+      "result": "PASS",
+      "evidence": "query clears and disables explanations immediately; failed does likewise. HistoryReader.request replaces callbacks by generation token; replies from older cancelled generations have no UI callback. ready re-enables only the newly completed explanation."
+    },
+    {
+      "topic": "read_cost",
+      "result": "PASS_WITH_LIMITATION",
+      "evidence": "No additional SQL, source SKU reads, signed snapshot reads or history loads in explanation loop. Extra work is O(N) predicate checks over already loaded order metadata; stores six identity/status fields plus reasons for excluded orders. Clicking details creates O(excluded) display rows/cells. Incremental RSS not measured by this review."
+    },
+    {
+      "topic": "business_machine_identity",
+      "result": "UNKNOWN_NOT_INFERRED",
+      "evidence": "No business-machine database was inspected; the concrete thirteenth order identity cannot be declared confirmed from screenshots or synthetic tests."
+    }
+  ],
+  "source_hashes": {
+    "src/daily_batch.py": "d983c5b8f656c837d11caffeb7b97f3f005feb1f90103e27f08cf270de523162",
+    "src/lifecycle_home_ui.py": "1c0d2b57a275f26b2743c95d0ccf1f92f3b42fcdcd85cd7e462e3724060a214d"
+  },
+  "head": "788d0a305c69374349e762a8c917749aae5afca0",
+  "source_modified_by_review": false,
+  "tests_run_by_review": 0,
+  "test_evidence_reviewed": "Existing test_lifecycle_filter_explanation.py includes equivalence/order/pagination/scope/recycle-bin/error-pending UI cases; this independent review did not rerun the suite."
+}

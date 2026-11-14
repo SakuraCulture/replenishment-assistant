@@ -1,0 +1,106 @@
+{
+  "scope": "Synthetic isolated fixtures; real business/settings/platform were not inspected",
+  "changed_files": [
+    "src/order_analytics.py",
+    "tests/test_analytics_template_facts.py"
+  ],
+  "fields": [
+    {
+      "key": "barcode",
+      "basis": "冻结签发行 F",
+      "type": "string or None",
+      "known_and_missing_routes_tested": true
+    },
+    {
+      "key": "supply_state",
+      "basis": "冻结签发行 S",
+      "type": "string or None",
+      "known_and_missing_routes_tested": true
+    },
+    {
+      "key": "stock",
+      "basis": "冻结签发行 K",
+      "type": "Decimal or None",
+      "known_and_missing_routes_tested": true
+    },
+    {
+      "key": "monthly_sales",
+      "basis": "冻结签发行 J",
+      "type": "Decimal or None",
+      "known_and_missing_routes_tested": true
+    },
+    {
+      "key": "in_transit",
+      "basis": "冻结签发行 L",
+      "type": "Decimal or None",
+      "known_and_missing_routes_tested": true
+    },
+    {
+      "key": "target_holding",
+      "basis": "数值BF优先，次选数值AP+AL；当时预测需求含安全库存",
+      "type": "Decimal or None",
+      "known_and_missing_routes_tested": true
+    },
+    {
+      "key": "pack_size",
+      "basis": "冻结签发行 BD",
+      "type": "Decimal or None",
+      "known_and_missing_routes_tested": true
+    },
+    {
+      "key": "minimum_holding",
+      "basis": "仅明确冻结 _mandatory_holding.minimum；不采用BQ",
+      "type": "Decimal or None",
+      "known_and_missing_routes_tested": true
+    },
+    {
+      "key": "stock_snapshot_at",
+      "basis": "冻结签发行 _meta.export_updated；不采用签发/查询时间",
+      "type": "string or None",
+      "known_and_missing_routes_tested": true
+    },
+    {
+      "key": "warehouse_stock",
+      "basis": "冻结catalog可用数或同份归档原件唯一列与SKU；冲突/重复/无效未知",
+      "type": "Decimal or None",
+      "known_and_missing_routes_tested": true
+    }
+  ],
+  "extra_projection": {
+    "order_status": "lifecycle view.status",
+    "order_next": "lifecycle view.next",
+    "warehouse_stock_basis": "catalog_revision/source_sha256/sheet/catalog_imported_at/source_row/sources/notes"
+  },
+  "rules_verified": [
+    "Leading-zero barcode retained; oversized numeric barcode left unknown",
+    "Known zero preserved; invalid numeric strings and booleans unknown",
+    "No current catalog read and no old filesystem source fallback",
+    "Missing minimum does not use recovery BQ; missing target does not reconstruct K+L+signed",
+    "Duplicate original SKU and headers are unknown even when frozen stock exists",
+    "Conflicting original/frozen stock unknown; frozen known stock valid when original unavailable",
+    "Lifecycle extra SKU keeps signed-store inputs unknown",
+    "New attrs change existing snapshot digest; stale old snapshot export rejected",
+    "Zero-demand order actual lifecycle completion status transmitted",
+    "Five-stage metrics and query source SQLite bytes unchanged"
+  ],
+  "test_runs": [
+    {
+      "module": "test_analytics_template_facts + test_order_analytics",
+      "tests": 26,
+      "exit_code": 0
+    },
+    {
+      "module": "test_funnel_dimensions",
+      "tests": 10,
+      "exit_code": 0
+    },
+    {
+      "module": "test_workflow_analysis",
+      "tests": 14,
+      "exit_code": 0
+    }
+  ],
+  "initial_environment_issue": "Standalone workflow discover initially lacked PYTHONPATH. Re-run with src/tests path passed 14 tests; no source repair needed.",
+  "total_distinct_tests_passed": 50,
+  "historical_real_order_field_population": "Not inspected; absent historical fields will remain None and display n.a."
+}

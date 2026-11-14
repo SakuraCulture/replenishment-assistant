@@ -66,3 +66,7 @@ releases/0.53.2/rc1/validation.log whitespace=-blank-at-eol,-blank-at-eof,space-
 releases/0.53.3/**/*.json whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
 releases/0.53.3/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
 releases/0.53.3/**/*.jsonl whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+
+# Preserve byte-identical Windows evidence for the 0.53.4 and 0.53.5 releases.
+releases/0.53.4/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.53.5/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

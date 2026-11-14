@@ -1,0 +1,23 @@
+ M README.md
+ M docs/manual/guide.md
+ M docs/manual/index.html
+ M prepare_delivery.py
+ M src/aoxiang_purchase.py
+ M src/aoxiang_purchase_messages.py
+ M src/aoxiang_workflow_runner.py
+ M src/aoxiang_workflow_ui.py
+ M src/app.py
+ M src/daily_batch.py
+ M src/lifecycle_home_ui.py
+ M src/version.json
+ M tests/test_aoxiang_selected_queue.py
+ M tests/test_deletion_lifecycle.py
+ M 使用说明.txt
+?? docs/0.53.4订单计数与采购本地预检.md
+?? releases/0.53.4/
+?? src/aoxiang_payment_preflight.py
+?? src/lifecycle_preflight_smoke.py
+?? tests/test_aoxiang_payment_preflight.py
+?? tests/test_aoxiang_preflight_runner.py
+?? tests/test_lifecycle_filter_explanation.py
+?? tools/verify_lifecycle_preflight.py

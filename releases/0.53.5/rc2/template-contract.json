@@ -1,0 +1,1863 @@
+{
+  "contract_version": "1.0",
+  "scope": "仅依据两个指定模板的静态结构、公式和模拟样例；未读取业务数据库、平台或项目业务文件；未修改或生成xlsx。",
+  "reports": [
+    {
+      "name": "订单经营分析",
+      "source_path": "C:\\Users\\lenovo\\Desktop\\订单完成情况_三口径_含ALL及必采状态.xlsx",
+      "source_sha256": "3de71724a4d76cbe7ed0c392ddb4d9fa7cd8d8419724aaa4b80428f19416255b",
+      "source_unchanged": true,
+      "sheet_order": [
+        "SKU种类",
+        "商品货值",
+        "商品数量"
+      ],
+      "sheets": [
+        {
+          "name": "SKU种类",
+          "state": "visible",
+          "title": "补货订单完成情况 · SKU种类",
+          "notes": {
+            "A3": "模拟样板 · 每笔订单分ALL、必采、非必采三行 · 大盘仅汇总ALL行，避免重复计算",
+            "A13": "ALL＝该订单必采＋非必采；ALL的八项指标按合计数量或货值重新计算，不平均两个分组的百分比。",
+            "A14": "顶部大盘只取ALL行；筛选明细不改变大盘口径。SKU种类按订单内计数，不跨订单去重。"
+          },
+          "layout": {
+            "nonempty_region": "A2:T28",
+            "header_and_data_table": [
+              {
+                "xml_part": "xl/tables/table1.xml",
+                "id": "1",
+                "name": "Orders_0",
+                "displayName": "Orders_0",
+                "ref": "A16:T28",
+                "headerRowCount": "1",
+                "totalsRowCount": "0",
+                "totalsRowShown": "0",
+                "auto_filter": null,
+                "style": {
+                  "name": "TableStyleMedium2",
+                  "showFirstColumn": "0",
+                  "showLastColumn": "0",
+                  "showRowStripes": "1",
+                  "showColumnStripes": "0"
+                }
+              }
+            ],
+            "sheet_auto_filter": null,
+            "freeze": {
+              "xSplit": "4",
+              "ySplit": "16",
+              "topLeftCell": "E17",
+              "activePane": "bottomRight",
+              "state": "frozen"
+            },
+            "show_grid_lines": false,
+            "merged_ranges": [
+              "A2:L2",
+              "A3:L3",
+              "A5:C5",
+              "A6:C6",
+              "D5:F5",
+              "D6:F6",
+              "G5:I5",
+              "G6:I6",
+              "J5:L5",
+              "J6:L6",
+              "A8:C8",
+              "A9:C9",
+              "D8:F8",
+              "D9:F9",
+              "G8:I8",
+              "G9:I9",
+              "J8:L8",
+              "J9:L9",
+              "A11:B11",
+              "A12:B12",
+              "C11:D11",
+              "C12:D12",
+              "E11:F11",
+              "E12:F12",
+              "G11:H11",
+              "G12:H12",
+              "I11:J11",
+              "I12:J12",
+              "K11:L11",
+              "K12:L12",
+              "A13:L13",
+              "A14:L14",
+              "A15:F15",
+              "G15:L15",
+              "M15:R15",
+              "S15:T15",
+              "N5:T5",
+              "N6:O6",
+              "P6:T6",
+              "N7:O7",
+              "P7:T7",
+              "N8:O8",
+              "P8:T8",
+              "N9:O9",
+              "P9:T9",
+              "N10:O10",
+              "P10:T10",
+              "N11:O11",
+              "P11:T11",
+              "N12:O12",
+              "P12:T12",
+              "N13:O13",
+              "P13:T13"
+            ],
+            "column_widths": {
+              "A": 16.0,
+              "B": 18.0,
+              "C": 18.0,
+              "D": 16.0,
+              "E": 16.0,
+              "F": 16.0,
+              "G": 16.0,
+              "H": 16.0,
+              "I": 16.0,
+              "J": 16.0,
+              "K": 16.0,
+              "L": 16.0,
+              "M": 16.0,
+              "N": 16.0,
+              "O": 16.0,
+              "P": 16.0,
+              "Q": 16.0,
+              "R": 16.0,
+              "S": 16.0,
+              "T": 16.0
+            },
+            "row_heights": {
+              "1": 25.0,
+              "2": 25.0,
+              "3": 25.0,
+              "4": 25.0,
+              "5": 25.0,
+              "6": 32.0,
+              "7": 25.0,
+              "8": 25.0,
+              "9": 32.0,
+              "10": 25.0,
+              "11": 25.0,
+              "12": 25.0,
+              "13": 25.0,
+              "14": 25.0,
+              "15": 25.0,
+              "16": 42.0,
+              "17": 25.0,
+              "18": 25.0,
+              "19": 25.0,
+              "20": 25.0,
+              "21": 25.0,
+              "22": 25.0,
+              "23": 25.0,
+              "24": 25.0,
+              "25": 25.0,
+              "26": 25.0,
+              "27": 25.0,
+              "28": 25.0,
+              "29": 25.0,
+              "30": 25.0
+            },
+            "hidden_rows": [],
+            "hidden_columns": [],
+            "conditional_formatting": [],
+            "data_validations": null,
+            "comments_present": false,
+            "number_formats_by_column": {
+              "A": [
+                "General"
+              ],
+              "B": [
+                "General"
+              ],
+              "C": [
+                "General"
+              ],
+              "D": [
+                "General"
+              ],
+              "E": [
+                "General"
+              ],
+              "F": [
+                "General"
+              ],
+              "G": [
+                "#,##0"
+              ],
+              "H": [
+                "#,##0"
+              ],
+              "I": [
+                "#,##0"
+              ],
+              "J": [
+                "#,##0"
+              ],
+              "K": [
+                "#,##0"
+              ],
+              "L": [
+                "#,##0"
+              ],
+              "M": [
+                "0.0%"
+              ],
+              "N": [
+                "0.0%"
+              ],
+              "O": [
+                "0.0%"
+              ],
+              "P": [
+                "0.0%"
+              ],
+              "Q": [
+                "0.0%"
+              ],
+              "R": [
+                "0.0%"
+              ],
+              "S": [
+                "0.0%"
+              ],
+              "T": [
+                "0.0%"
+              ]
+            }
+          },
+          "formula_count": 134,
+          "column_count": 20,
+          "headers": [
+            {
+              "column": "A",
+              "label": "订单日期"
+            },
+            {
+              "column": "B",
+              "label": "订单编号"
+            },
+            {
+              "column": "C",
+              "label": "门店"
+            },
+            {
+              "column": "D",
+              "label": "供货仓"
+            },
+            {
+              "column": "E",
+              "label": "必采状态"
+            },
+            {
+              "column": "F",
+              "label": "订单状态"
+            },
+            {
+              "column": "G",
+              "label": "模型建议量"
+            },
+            {
+              "column": "H",
+              "label": "签发量"
+            },
+            {
+              "column": "I",
+              "label": "门店回传量"
+            },
+            {
+              "column": "J",
+              "label": "运营回传量"
+            },
+            {
+              "column": "K",
+              "label": "实际下单量"
+            },
+            {
+              "column": "L",
+              "label": "实际收货量"
+            },
+            {
+              "column": "M",
+              "label": "签发率"
+            },
+            {
+              "column": "N",
+              "label": "门店回传率"
+            },
+            {
+              "column": "O",
+              "label": "运营修正率"
+            },
+            {
+              "column": "P",
+              "label": "实际确认率"
+            },
+            {
+              "column": "Q",
+              "label": "大仓订单满足率"
+            },
+            {
+              "column": "R",
+              "label": "实际收货率"
+            },
+            {
+              "column": "S",
+              "label": "模型建议履行率"
+            },
+            {
+              "column": "T",
+              "label": "补货建议履行率"
+            }
+          ],
+          "header_rows": [
+            15,
+            16
+          ],
+          "data_start_row": 17,
+          "sample_data_range": "A17:T28",
+          "sample_order_count": 4,
+          "sample_rows": 12,
+          "groups": [
+            {
+              "range": "A15:F15",
+              "label": "订单与必采状态"
+            },
+            {
+              "range": "G15:L15",
+              "label": "六阶段 · SKU种类"
+            },
+            {
+              "range": "M15:R15",
+              "label": "环节转化"
+            },
+            {
+              "range": "S15:T15",
+              "label": "最终履行"
+            }
+          ],
+          "grain": [
+            "订单日期",
+            "订单编号",
+            "门店",
+            "供货仓",
+            "必采状态"
+          ],
+          "state_order": [
+            "ALL",
+            "必采",
+            "非必采"
+          ],
+          "measure": "positive_sku_count",
+          "all_rows": {
+            "rule": "六阶段各为必采+非必采；两个子项都必须为数值，否则n.a.；八比例从ALL分子分母重算",
+            "sample_rows": [
+              17,
+              20,
+              23,
+              26
+            ],
+            "formula_example": "=IF(COUNT(G18:G19)<2,\"n.a.\",SUM(G18:G19))"
+          },
+          "top_dashboard": {
+            "stage_labels_range": "A11:L11",
+            "stage_values": [
+              "A12",
+              "C12",
+              "E12",
+              "G12",
+              "I12",
+              "K12"
+            ],
+            "scope": "仅全部订单ALL行；明细筛选不会改变大盘",
+            "stage_total_formula_example": "=IF(COUNTIFS($E$17:$E$28,\"ALL\",G17:G28,\"n.a.\")>0,\"n.a.\",SUMIFS(G17:G28,$E$17:$E$28,\"ALL\"))",
+            "rate_cards": {
+              "A6": "模型建议履行率",
+              "D6": "补货建议履行率",
+              "G6": "大仓订单满足率",
+              "J6": "实际收货率",
+              "A9": "签发率",
+              "D9": "门店回传率",
+              "G9": "运营修正率",
+              "J9": "实际确认率"
+            },
+            "ratio_aggregation": "合计分子/合计分母，不平均行百分比"
+          },
+          "style_contract": {
+            "font": "Microsoft YaHei",
+            "body_size": 10,
+            "title_size": 16,
+            "title_color": "FF233B59",
+            "group_and_header_fill": "FF233B59",
+            "group_and_header_font_color": "FFFFFFFF",
+            "headers_wrap": true,
+            "data_vertical_alignment": "center",
+            "template_style_preservation": "完整fonts/fills/borders/cellXfs及各单元格style_id见evidence_file；源表不需重存",
+            "table_style": "TableStyleMedium2",
+            "table_row_stripes": true,
+            "all_rows_fill": "FFEAF1F8",
+            "all_rows_bold": true,
+            "stage_format": "#,##0",
+            "rate_format": "0.0%"
+          }
+        },
+        {
+          "name": "商品货值",
+          "state": "visible",
+          "title": "补货订单完成情况 · 商品货值",
+          "notes": {
+            "A3": "模拟样板 · 每笔订单分ALL、必采、非必采三行 · 大盘仅汇总ALL行，避免重复计算",
+            "A13": "ALL＝该订单必采＋非必采；ALL的八项指标按合计数量或货值重新计算，不平均两个分组的百分比。",
+            "A14": "顶部大盘只取ALL行；筛选明细不改变大盘口径。SKU种类按订单内计数，不跨订单去重。"
+          },
+          "layout": {
+            "nonempty_region": "A2:T28",
+            "header_and_data_table": [
+              {
+                "xml_part": "xl/tables/table2.xml",
+                "id": "2",
+                "name": "Orders_1",
+                "displayName": "Orders_1",
+                "ref": "A16:T28",
+                "headerRowCount": "1",
+                "totalsRowCount": "0",
+                "totalsRowShown": "0",
+                "auto_filter": null,
+                "style": {
+                  "name": "TableStyleMedium2",
+                  "showFirstColumn": "0",
+                  "showLastColumn": "0",
+                  "showRowStripes": "1",
+                  "showColumnStripes": "0"
+                }
+              }
+            ],
+            "sheet_auto_filter": null,
+            "freeze": {
+              "xSplit": "4",
+              "ySplit": "16",
+              "topLeftCell": "E17",
+              "activePane": "bottomRight",
+              "state": "frozen"
+            },
+            "show_grid_lines": false,
+            "merged_ranges": [
+              "A2:L2",
+              "A3:L3",
+              "A5:C5",
+              "A6:C6",
+              "D5:F5",
+              "D6:F6",
+              "G5:I5",
+              "G6:I6",
+              "J5:L5",
+              "J6:L6",
+              "A8:C8",
+              "A9:C9",
+              "D8:F8",
+              "D9:F9",
+              "G8:I8",
+              "G9:I9",
+              "J8:L8",
+              "J9:L9",
+              "A11:B11",
+              "A12:B12",
+              "C11:D11",
+              "C12:D12",
+              "E11:F11",
+              "E12:F12",
+              "G11:H11",
+              "G12:H12",
+              "I11:J11",
+              "I12:J12",
+              "K11:L11",
+              "K12:L12",
+              "A13:L13",
+              "A14:L14",
+              "A15:F15",
+              "G15:L15",
+              "M15:R15",
+              "S15:T15",
+              "N5:T5",
+              "N6:O6",
+              "P6:T6",
+              "N7:O7",
+              "P7:T7",
+              "N8:O8",
+              "P8:T8",
+              "N9:O9",
+              "P9:T9",
+              "N10:O10",
+              "P10:T10",
+              "N11:O11",
+              "P11:T11",
+              "N12:O12",
+              "P12:T12",
+              "N13:O13",
+              "P13:T13"
+            ],
+            "column_widths": {
+              "A": 16.0,
+              "B": 18.0,
+              "C": 18.0,
+              "D": 16.0,
+              "E": 16.0,
+              "F": 16.0,
+              "G": 16.0,
+              "H": 16.0,
+              "I": 16.0,
+              "J": 16.0,
+              "K": 16.0,
+              "L": 16.0,
+              "M": 16.0,
+              "N": 16.0,
+              "O": 16.0,
+              "P": 16.0,
+              "Q": 16.0,
+              "R": 16.0,
+              "S": 16.0,
+              "T": 16.0
+            },
+            "row_heights": {
+              "1": 25.0,
+              "2": 25.0,
+              "3": 25.0,
+              "4": 25.0,
+              "5": 25.0,
+              "6": 32.0,
+              "7": 25.0,
+              "8": 25.0,
+              "9": 32.0,
+              "10": 25.0,
+              "11": 25.0,
+              "12": 25.0,
+              "13": 25.0,
+              "14": 25.0,
+              "15": 25.0,
+              "16": 42.0,
+              "17": 25.0,
+              "18": 25.0,
+              "19": 25.0,
+              "20": 25.0,
+              "21": 25.0,
+              "22": 25.0,
+              "23": 25.0,
+              "24": 25.0,
+              "25": 25.0,
+              "26": 25.0,
+              "27": 25.0,
+              "28": 25.0,
+              "29": 25.0,
+              "30": 25.0
+            },
+            "hidden_rows": [],
+            "hidden_columns": [],
+            "conditional_formatting": [],
+            "data_validations": null,
+            "comments_present": false,
+            "number_formats_by_column": {
+              "A": [
+                "General"
+              ],
+              "B": [
+                "General"
+              ],
+              "C": [
+                "General"
+              ],
+              "D": [
+                "General"
+              ],
+              "E": [
+                "General"
+              ],
+              "F": [
+                "General"
+              ],
+              "G": [
+                "#,##0.00"
+              ],
+              "H": [
+                "#,##0.00"
+              ],
+              "I": [
+                "#,##0.00"
+              ],
+              "J": [
+                "#,##0.00"
+              ],
+              "K": [
+                "#,##0.00"
+              ],
+              "L": [
+                "#,##0.00"
+              ],
+              "M": [
+                "0.0%"
+              ],
+              "N": [
+                "0.0%"
+              ],
+              "O": [
+                "0.0%"
+              ],
+              "P": [
+                "0.0%"
+              ],
+              "Q": [
+                "0.0%"
+              ],
+              "R": [
+                "0.0%"
+              ],
+              "S": [
+                "0.0%"
+              ],
+              "T": [
+                "0.0%"
+              ]
+            }
+          },
+          "formula_count": 134,
+          "column_count": 20,
+          "headers": [
+            {
+              "column": "A",
+              "label": "订单日期"
+            },
+            {
+              "column": "B",
+              "label": "订单编号"
+            },
+            {
+              "column": "C",
+              "label": "门店"
+            },
+            {
+              "column": "D",
+              "label": "供货仓"
+            },
+            {
+              "column": "E",
+              "label": "必采状态"
+            },
+            {
+              "column": "F",
+              "label": "订单状态"
+            },
+            {
+              "column": "G",
+              "label": "模型建议量"
+            },
+            {
+              "column": "H",
+              "label": "签发量"
+            },
+            {
+              "column": "I",
+              "label": "门店回传量"
+            },
+            {
+              "column": "J",
+              "label": "运营回传量"
+            },
+            {
+              "column": "K",
+              "label": "实际下单量"
+            },
+            {
+              "column": "L",
+              "label": "实际收货量"
+            },
+            {
+              "column": "M",
+              "label": "签发率"
+            },
+            {
+              "column": "N",
+              "label": "门店回传率"
+            },
+            {
+              "column": "O",
+              "label": "运营修正率"
+            },
+            {
+              "column": "P",
+              "label": "实际确认率"
+            },
+            {
+              "column": "Q",
+              "label": "大仓订单满足率"
+            },
+            {
+              "column": "R",
+              "label": "实际收货率"
+            },
+            {
+              "column": "S",
+              "label": "模型建议履行率"
+            },
+            {
+              "column": "T",
+              "label": "补货建议履行率"
+            }
+          ],
+          "header_rows": [
+            15,
+            16
+          ],
+          "data_start_row": 17,
+          "sample_data_range": "A17:T28",
+          "sample_order_count": 4,
+          "sample_rows": 12,
+          "groups": [
+            {
+              "range": "A15:F15",
+              "label": "订单与必采状态"
+            },
+            {
+              "range": "G15:L15",
+              "label": "六阶段 · 商品货值"
+            },
+            {
+              "range": "M15:R15",
+              "label": "环节转化"
+            },
+            {
+              "range": "S15:T15",
+              "label": "最终履行"
+            }
+          ],
+          "grain": [
+            "订单日期",
+            "订单编号",
+            "门店",
+            "供货仓",
+            "必采状态"
+          ],
+          "state_order": [
+            "ALL",
+            "必采",
+            "非必采"
+          ],
+          "measure": "sum_quantity_times_unified_price",
+          "all_rows": {
+            "rule": "六阶段各为必采+非必采；两个子项都必须为数值，否则n.a.；八比例从ALL分子分母重算",
+            "sample_rows": [
+              17,
+              20,
+              23,
+              26
+            ],
+            "formula_example": "=IF(COUNT(G18:G19)<2,\"n.a.\",SUM(G18:G19))"
+          },
+          "top_dashboard": {
+            "stage_labels_range": "A11:L11",
+            "stage_values": [
+              "A12",
+              "C12",
+              "E12",
+              "G12",
+              "I12",
+              "K12"
+            ],
+            "scope": "仅全部订单ALL行；明细筛选不会改变大盘",
+            "stage_total_formula_example": "=IF(COUNTIFS($E$17:$E$28,\"ALL\",G17:G28,\"n.a.\")>0,\"n.a.\",SUMIFS(G17:G28,$E$17:$E$28,\"ALL\"))",
+            "rate_cards": {
+              "A6": "模型建议履行率",
+              "D6": "补货建议履行率",
+              "G6": "大仓订单满足率",
+              "J6": "实际收货率",
+              "A9": "签发率",
+              "D9": "门店回传率",
+              "G9": "运营修正率",
+              "J9": "实际确认率"
+            },
+            "ratio_aggregation": "合计分子/合计分母，不平均行百分比"
+          },
+          "style_contract": {
+            "font": "Microsoft YaHei",
+            "body_size": 10,
+            "title_size": 16,
+            "title_color": "FF233B59",
+            "group_and_header_fill": "FF233B59",
+            "group_and_header_font_color": "FFFFFFFF",
+            "headers_wrap": true,
+            "data_vertical_alignment": "center",
+            "template_style_preservation": "完整fonts/fills/borders/cellXfs及各单元格style_id见evidence_file；源表不需重存",
+            "table_style": "TableStyleMedium2",
+            "table_row_stripes": true,
+            "all_rows_fill": "FFEAF1F8",
+            "all_rows_bold": true,
+            "stage_format": "#,##0.00",
+            "rate_format": "0.0%"
+          }
+        },
+        {
+          "name": "商品数量",
+          "state": "visible",
+          "title": "补货订单完成情况 · 商品数量",
+          "notes": {
+            "A3": "模拟样板 · 每笔订单分ALL、必采、非必采三行 · 大盘仅汇总ALL行，避免重复计算",
+            "A13": "ALL＝该订单必采＋非必采；ALL的八项指标按合计数量或货值重新计算，不平均两个分组的百分比。",
+            "A14": "顶部大盘只取ALL行；筛选明细不改变大盘口径。SKU种类按订单内计数，不跨订单去重。"
+          },
+          "layout": {
+            "nonempty_region": "A2:T28",
+            "header_and_data_table": [
+              {
+                "xml_part": "xl/tables/table3.xml",
+                "id": "3",
+                "name": "Orders_2",
+                "displayName": "Orders_2",
+                "ref": "A16:T28",
+                "headerRowCount": "1",
+                "totalsRowCount": "0",
+                "totalsRowShown": "0",
+                "auto_filter": null,
+                "style": {
+                  "name": "TableStyleMedium2",
+                  "showFirstColumn": "0",
+                  "showLastColumn": "0",
+                  "showRowStripes": "1",
+                  "showColumnStripes": "0"
+                }
+              }
+            ],
+            "sheet_auto_filter": null,
+            "freeze": {
+              "xSplit": "4",
+              "ySplit": "16",
+              "topLeftCell": "E17",
+              "activePane": "bottomRight",
+              "state": "frozen"
+            },
+            "show_grid_lines": false,
+            "merged_ranges": [
+              "A2:L2",
+              "A3:L3",
+              "A5:C5",
+              "A6:C6",
+              "D5:F5",
+              "D6:F6",
+              "G5:I5",
+              "G6:I6",
+              "J5:L5",
+              "J6:L6",
+              "A8:C8",
+              "A9:C9",
+              "D8:F8",
+              "D9:F9",
+              "G8:I8",
+              "G9:I9",
+              "J8:L8",
+              "J9:L9",
+              "A11:B11",
+              "A12:B12",
+              "C11:D11",
+              "C12:D12",
+              "E11:F11",
+              "E12:F12",
+              "G11:H11",
+              "G12:H12",
+              "I11:J11",
+              "I12:J12",
+              "K11:L11",
+              "K12:L12",
+              "A13:L13",
+              "A14:L14",
+              "A15:F15",
+              "G15:L15",
+              "M15:R15",
+              "S15:T15",
+              "N5:T5",
+              "N6:O6",
+              "P6:T6",
+              "N7:O7",
+              "P7:T7",
+              "N8:O8",
+              "P8:T8",
+              "N9:O9",
+              "P9:T9",
+              "N10:O10",
+              "P10:T10",
+              "N11:O11",
+              "P11:T11",
+              "N12:O12",
+              "P12:T12",
+              "N13:O13",
+              "P13:T13"
+            ],
+            "column_widths": {
+              "A": 16.0,
+              "B": 18.0,
+              "C": 18.0,
+              "D": 16.0,
+              "E": 16.0,
+              "F": 16.0,
+              "G": 16.0,
+              "H": 16.0,
+              "I": 16.0,
+              "J": 16.0,
+              "K": 16.0,
+              "L": 16.0,
+              "M": 16.0,
+              "N": 16.0,
+              "O": 16.0,
+              "P": 16.0,
+              "Q": 16.0,
+              "R": 16.0,
+              "S": 16.0,
+              "T": 16.0
+            },
+            "row_heights": {
+              "1": 25.0,
+              "2": 25.0,
+              "3": 25.0,
+              "4": 25.0,
+              "5": 25.0,
+              "6": 32.0,
+              "7": 25.0,
+              "8": 25.0,
+              "9": 32.0,
+              "10": 25.0,
+              "11": 25.0,
+              "12": 25.0,
+              "13": 25.0,
+              "14": 25.0,
+              "15": 25.0,
+              "16": 42.0,
+              "17": 25.0,
+              "18": 25.0,
+              "19": 25.0,
+              "20": 25.0,
+              "21": 25.0,
+              "22": 25.0,
+              "23": 25.0,
+              "24": 25.0,
+              "25": 25.0,
+              "26": 25.0,
+              "27": 25.0,
+              "28": 25.0,
+              "29": 25.0,
+              "30": 25.0
+            },
+            "hidden_rows": [],
+            "hidden_columns": [],
+            "conditional_formatting": [],
+            "data_validations": null,
+            "comments_present": false,
+            "number_formats_by_column": {
+              "A": [
+                "General"
+              ],
+              "B": [
+                "General"
+              ],
+              "C": [
+                "General"
+              ],
+              "D": [
+                "General"
+              ],
+              "E": [
+                "General"
+              ],
+              "F": [
+                "General"
+              ],
+              "G": [
+                "#,##0"
+              ],
+              "H": [
+                "#,##0"
+              ],
+              "I": [
+                "#,##0"
+              ],
+              "J": [
+                "#,##0"
+              ],
+              "K": [
+                "#,##0"
+              ],
+              "L": [
+                "#,##0"
+              ],
+              "M": [
+                "0.0%"
+              ],
+              "N": [
+                "0.0%"
+              ],
+              "O": [
+                "0.0%"
+              ],
+              "P": [
+                "0.0%"
+              ],
+              "Q": [
+                "0.0%"
+              ],
+              "R": [
+                "0.0%"
+              ],
+              "S": [
+                "0.0%"
+              ],
+              "T": [
+                "0.0%"
+              ]
+            }
+          },
+          "formula_count": 134,
+          "column_count": 20,
+          "headers": [
+            {
+              "column": "A",
+              "label": "订单日期"
+            },
+            {
+              "column": "B",
+              "label": "订单编号"
+            },
+            {
+              "column": "C",
+              "label": "门店"
+            },
+            {
+              "column": "D",
+              "label": "供货仓"
+            },
+            {
+              "column": "E",
+              "label": "必采状态"
+            },
+            {
+              "column": "F",
+              "label": "订单状态"
+            },
+            {
+              "column": "G",
+              "label": "模型建议量"
+            },
+            {
+              "column": "H",
+              "label": "签发量"
+            },
+            {
+              "column": "I",
+              "label": "门店回传量"
+            },
+            {
+              "column": "J",
+              "label": "运营回传量"
+            },
+            {
+              "column": "K",
+              "label": "实际下单量"
+            },
+            {
+              "column": "L",
+              "label": "实际收货量"
+            },
+            {
+              "column": "M",
+              "label": "签发率"
+            },
+            {
+              "column": "N",
+              "label": "门店回传率"
+            },
+            {
+              "column": "O",
+              "label": "运营修正率"
+            },
+            {
+              "column": "P",
+              "label": "实际确认率"
+            },
+            {
+              "column": "Q",
+              "label": "大仓订单满足率"
+            },
+            {
+              "column": "R",
+              "label": "实际收货率"
+            },
+            {
+              "column": "S",
+              "label": "模型建议履行率"
+            },
+            {
+              "column": "T",
+              "label": "补货建议履行率"
+            }
+          ],
+          "header_rows": [
+            15,
+            16
+          ],
+          "data_start_row": 17,
+          "sample_data_range": "A17:T28",
+          "sample_order_count": 4,
+          "sample_rows": 12,
+          "groups": [
+            {
+              "range": "A15:F15",
+              "label": "订单与必采状态"
+            },
+            {
+              "range": "G15:L15",
+              "label": "六阶段 · 商品数量"
+            },
+            {
+              "range": "M15:R15",
+              "label": "环节转化"
+            },
+            {
+              "range": "S15:T15",
+              "label": "最终履行"
+            }
+          ],
+          "grain": [
+            "订单日期",
+            "订单编号",
+            "门店",
+            "供货仓",
+            "必采状态"
+          ],
+          "state_order": [
+            "ALL",
+            "必采",
+            "非必采"
+          ],
+          "measure": "sum_quantity",
+          "all_rows": {
+            "rule": "六阶段各为必采+非必采；两个子项都必须为数值，否则n.a.；八比例从ALL分子分母重算",
+            "sample_rows": [
+              17,
+              20,
+              23,
+              26
+            ],
+            "formula_example": "=IF(COUNT(G18:G19)<2,\"n.a.\",SUM(G18:G19))"
+          },
+          "top_dashboard": {
+            "stage_labels_range": "A11:L11",
+            "stage_values": [
+              "A12",
+              "C12",
+              "E12",
+              "G12",
+              "I12",
+              "K12"
+            ],
+            "scope": "仅全部订单ALL行；明细筛选不会改变大盘",
+            "stage_total_formula_example": "=IF(COUNTIFS($E$17:$E$28,\"ALL\",G17:G28,\"n.a.\")>0,\"n.a.\",SUMIFS(G17:G28,$E$17:$E$28,\"ALL\"))",
+            "rate_cards": {
+              "A6": "模型建议履行率",
+              "D6": "补货建议履行率",
+              "G6": "大仓订单满足率",
+              "J6": "实际收货率",
+              "A9": "签发率",
+              "D9": "门店回传率",
+              "G9": "运营修正率",
+              "J9": "实际确认率"
+            },
+            "ratio_aggregation": "合计分子/合计分母，不平均行百分比"
+          },
+          "style_contract": {
+            "font": "Microsoft YaHei",
+            "body_size": 10,
+            "title_size": 16,
+            "title_color": "FF233B59",
+            "group_and_header_fill": "FF233B59",
+            "group_and_header_font_color": "FFFFFFFF",
+            "headers_wrap": true,
+            "data_vertical_alignment": "center",
+            "template_style_preservation": "完整fonts/fills/borders/cellXfs及各单元格style_id见evidence_file；源表不需重存",
+            "table_style": "TableStyleMedium2",
+            "table_row_stripes": true,
+            "all_rows_fill": "FFEAF1F8",
+            "all_rows_bold": true,
+            "stage_format": "#,##0",
+            "rate_format": "0.0%"
+          }
+        }
+      ]
+    },
+    {
+      "name": "订单经营细则分析",
+      "source_path": "C:\\Users\\lenovo\\Desktop\\SKU完整明细_单页模板.xlsx",
+      "source_sha256": "0f6b0928f4f2133265565c0864e741c3cb2248023be151760815db7d0c459f11",
+      "source_unchanged": true,
+      "sheet_order": [
+        "SKU完整明细"
+      ],
+      "sheets": [
+        {
+          "name": "SKU完整明细",
+          "state": "visible",
+          "title": "补货SKU生命周期明细",
+          "notes": {
+            "A3": "模拟样板 · 一行＝订单×供货仓×SKU · 数量、货值与商品属性合并展示 · 同一SKU跨订单分别计数",
+            "A4": "种类按阶段数量＞0计1；货值＝数量×统一单价。八项比率保留数量口径一套；同SKU统一单价为正时，货值比率相同。"
+          },
+          "layout": {
+            "nonempty_region": "A2:AO19",
+            "header_and_data_table": [
+              {
+                "xml_part": "xl/tables/table1.xml",
+                "id": "1",
+                "name": "SkuLifecycle",
+                "displayName": "SkuLifecycle",
+                "ref": "A7:AO19",
+                "headerRowCount": "1",
+                "totalsRowCount": "0",
+                "totalsRowShown": "0",
+                "auto_filter": null,
+                "style": {
+                  "name": "TableStyleMedium2",
+                  "showFirstColumn": "0",
+                  "showLastColumn": "0",
+                  "showRowStripes": "1",
+                  "showColumnStripes": "0"
+                }
+              }
+            ],
+            "sheet_auto_filter": null,
+            "freeze": {
+              "xSplit": "4",
+              "ySplit": "7",
+              "topLeftCell": "E8",
+              "activePane": "bottomRight",
+              "state": "frozen"
+            },
+            "show_grid_lines": false,
+            "merged_ranges": [
+              "A2:N2",
+              "A3:N3",
+              "A4:N4",
+              "A6:E6",
+              "F6:K6",
+              "L6:Q6",
+              "R6:S6",
+              "T6:Z6",
+              "AA6:AF6",
+              "AG6:AM6",
+              "AN6:AO6"
+            ],
+            "column_widths": {
+              "A": 18.0,
+              "B": 18.0,
+              "C": 16.0,
+              "D": 22.0,
+              "E": 16.0,
+              "F": 16.0,
+              "G": 16.0,
+              "H": 16.0,
+              "I": 16.0,
+              "J": 16.0,
+              "K": 16.0,
+              "L": 16.0,
+              "M": 16.0,
+              "N": 16.0,
+              "O": 16.0,
+              "P": 16.0,
+              "Q": 16.0,
+              "R": 16.0,
+              "S": 16.0,
+              "T": 16.0,
+              "U": 16.0,
+              "V": 16.0,
+              "W": 16.0,
+              "X": 16.0,
+              "Y": 16.0,
+              "Z": 16.0,
+              "AA": 16.0,
+              "AB": 16.0,
+              "AC": 16.0,
+              "AD": 20.0,
+              "AE": 16.0,
+              "AF": 16.0,
+              "AG": 16.0,
+              "AH": 16.0,
+              "AI": 16.0,
+              "AJ": 16.0,
+              "AK": 16.0,
+              "AL": 16.0,
+              "AM": 24.0,
+              "AN": 16.0,
+              "AO": 27.0
+            },
+            "row_heights": {
+              "1": 25.0,
+              "2": 25.0,
+              "3": 25.0,
+              "4": 25.0,
+              "5": 25.0,
+              "6": 25.0,
+              "7": 42.0,
+              "8": 25.0,
+              "9": 25.0,
+              "10": 25.0,
+              "11": 25.0,
+              "12": 25.0,
+              "13": 25.0,
+              "14": 25.0,
+              "15": 25.0,
+              "16": 25.0,
+              "17": 25.0,
+              "18": 25.0,
+              "19": 25.0,
+              "20": 25.0,
+              "21": 25.0,
+              "22": 25.0
+            },
+            "hidden_rows": [],
+            "hidden_columns": [],
+            "conditional_formatting": [],
+            "data_validations": null,
+            "comments_present": false,
+            "number_formats_by_column": {
+              "A": [
+                "General"
+              ],
+              "B": [
+                "General"
+              ],
+              "C": [
+                "General"
+              ],
+              "D": [
+                "General"
+              ],
+              "E": [
+                "General"
+              ],
+              "F": [
+                "#,##0"
+              ],
+              "G": [
+                "#,##0"
+              ],
+              "H": [
+                "#,##0"
+              ],
+              "I": [
+                "#,##0"
+              ],
+              "J": [
+                "#,##0"
+              ],
+              "K": [
+                "#,##0"
+              ],
+              "L": [
+                "0.0%"
+              ],
+              "M": [
+                "0.0%"
+              ],
+              "N": [
+                "0.0%"
+              ],
+              "O": [
+                "0.0%"
+              ],
+              "P": [
+                "0.0%"
+              ],
+              "Q": [
+                "0.0%"
+              ],
+              "R": [
+                "0.0%"
+              ],
+              "S": [
+                "0.0%"
+              ],
+              "T": [
+                "#,##0.00"
+              ],
+              "U": [
+                "#,##0.00"
+              ],
+              "V": [
+                "#,##0.00"
+              ],
+              "W": [
+                "#,##0.00"
+              ],
+              "X": [
+                "#,##0.00"
+              ],
+              "Y": [
+                "#,##0.00"
+              ],
+              "Z": [
+                "#,##0.00"
+              ],
+              "AA": [
+                "General"
+              ],
+              "AB": [
+                "General"
+              ],
+              "AC": [
+                "General"
+              ],
+              "AD": [
+                "General"
+              ],
+              "AE": [
+                "General"
+              ],
+              "AF": [
+                "General"
+              ],
+              "AG": [
+                "General"
+              ],
+              "AH": [
+                "General"
+              ],
+              "AI": [
+                "General"
+              ],
+              "AJ": [
+                "General"
+              ],
+              "AK": [
+                "General"
+              ],
+              "AL": [
+                "General"
+              ],
+              "AM": [
+                "General"
+              ],
+              "AN": [
+                "General"
+              ],
+              "AO": [
+                "General"
+              ]
+            }
+          },
+          "formula_count": 168,
+          "column_count": 41,
+          "headers": [
+            {
+              "column": "A",
+              "label": "订单编号"
+            },
+            {
+              "column": "B",
+              "label": "门店"
+            },
+            {
+              "column": "C",
+              "label": "SKU编码"
+            },
+            {
+              "column": "D",
+              "label": "商品名称"
+            },
+            {
+              "column": "E",
+              "label": "订单状态"
+            },
+            {
+              "column": "F",
+              "label": "模型建议量"
+            },
+            {
+              "column": "G",
+              "label": "签发量"
+            },
+            {
+              "column": "H",
+              "label": "门店回传量"
+            },
+            {
+              "column": "I",
+              "label": "运营回传量"
+            },
+            {
+              "column": "J",
+              "label": "实际下单量"
+            },
+            {
+              "column": "K",
+              "label": "实际收货量"
+            },
+            {
+              "column": "L",
+              "label": "签发率"
+            },
+            {
+              "column": "M",
+              "label": "门店回传率"
+            },
+            {
+              "column": "N",
+              "label": "运营修正率"
+            },
+            {
+              "column": "O",
+              "label": "实际确认率"
+            },
+            {
+              "column": "P",
+              "label": "大仓订单满足率"
+            },
+            {
+              "column": "Q",
+              "label": "实际收货率"
+            },
+            {
+              "column": "R",
+              "label": "模型建议履行率"
+            },
+            {
+              "column": "S",
+              "label": "补货建议履行率"
+            },
+            {
+              "column": "T",
+              "label": "统一计价单价"
+            },
+            {
+              "column": "U",
+              "label": "模型建议货值"
+            },
+            {
+              "column": "V",
+              "label": "签发货值"
+            },
+            {
+              "column": "W",
+              "label": "门店回传货值"
+            },
+            {
+              "column": "X",
+              "label": "运营回传货值"
+            },
+            {
+              "column": "Y",
+              "label": "实际下单货值"
+            },
+            {
+              "column": "Z",
+              "label": "实际收货货值"
+            },
+            {
+              "column": "AA",
+              "label": "订单日期"
+            },
+            {
+              "column": "AB",
+              "label": "供货仓"
+            },
+            {
+              "column": "AC",
+              "label": "必采状态"
+            },
+            {
+              "column": "AD",
+              "label": "商品条码"
+            },
+            {
+              "column": "AE",
+              "label": "三级类目"
+            },
+            {
+              "column": "AF",
+              "label": "供货状态"
+            },
+            {
+              "column": "AG",
+              "label": "门店现货"
+            },
+            {
+              "column": "AH",
+              "label": "近30天销量"
+            },
+            {
+              "column": "AI",
+              "label": "门店在途"
+            },
+            {
+              "column": "AJ",
+              "label": "目标持有量"
+            },
+            {
+              "column": "AK",
+              "label": "箱规数"
+            },
+            {
+              "column": "AL",
+              "label": "最低持有量"
+            },
+            {
+              "column": "AM",
+              "label": "库存快照时间"
+            },
+            {
+              "column": "AN",
+              "label": "大仓可用库存"
+            },
+            {
+              "column": "AO",
+              "label": "供货商"
+            }
+          ],
+          "header_rows": [
+            6,
+            7
+          ],
+          "data_start_row": 8,
+          "sample_data_range": "A8:AO19",
+          "sample_rows": 12,
+          "sample_order_count": 4,
+          "sample_unique_skus": 3,
+          "groups": [
+            {
+              "range": "A6:E6",
+              "label": "订单与商品"
+            },
+            {
+              "range": "F6:K6",
+              "label": "六阶段数量"
+            },
+            {
+              "range": "L6:Q6",
+              "label": "环节转化"
+            },
+            {
+              "range": "R6:S6",
+              "label": "最终履行"
+            },
+            {
+              "range": "T6:Z6",
+              "label": "统一单价与六阶段货值"
+            },
+            {
+              "range": "AA6:AF6",
+              "label": "订单与商品属性"
+            },
+            {
+              "range": "AG6:AM6",
+              "label": "库存与订货约束"
+            },
+            {
+              "range": "AN6:AO6",
+              "label": "大仓供给"
+            }
+          ],
+          "grain": [
+            "订单编号",
+            "供货仓",
+            "SKU编码"
+          ],
+          "state_values": [
+            "必采",
+            "非必采"
+          ],
+          "all_rows": false,
+          "quantity_columns": "F:K",
+          "rate_columns": "L:S",
+          "price_column": "T",
+          "amount_columns": "U:Z",
+          "properties_columns": "AA:AO",
+          "text_storage": [
+            "订单编号",
+            "门店",
+            "SKU编码",
+            "商品名称",
+            "订单状态",
+            "订单日期",
+            "供货仓",
+            "必采状态",
+            "商品条码",
+            "三级类目",
+            "供货状态",
+            "库存快照时间",
+            "供货商"
+          ],
+          "numeric_general_properties": [
+            "门店现货",
+            "近30天销量",
+            "门店在途",
+            "目标持有量",
+            "箱规数",
+            "最低持有量",
+            "大仓可用库存"
+          ],
+          "date_storage_note": "样例订单日期为YYYY-MM-DD文本、库存快照时间为YYYY-MM-DD HH:mm文本；均General格式，未使用Excel日期序号。",
+          "ratio_formula_example": "=IF(OR(COUNT(G8,F8)<2,F8=0),\"n.a.\",G8/F8)",
+          "amount_formula_example": "=IF(COUNT(F8,T8)<2,\"n.a.\",F8*T8)",
+          "style_contract": {
+            "font": "Microsoft YaHei",
+            "body_size": 10,
+            "title_size": 16,
+            "title_color": "FF233B59",
+            "group_and_header_fill": "FF233B59",
+            "group_and_header_font_color": "FFFFFFFF",
+            "headers_wrap": true,
+            "data_vertical_alignment": "center",
+            "template_style_preservation": "完整fonts/fills/borders/cellXfs及各单元格style_id见evidence_file；源表不需重存",
+            "table_style": "TableStyleMedium2",
+            "table_row_stripes": true
+          }
+        }
+      ]
+    }
+  ],
+  "shared_semantics": {
+    "stages_in_order": [
+      "模型建议量",
+      "签发量",
+      "门店回传量",
+      "运营回传量",
+      "实际下单量",
+      "实际收货量"
+    ],
+    "rates_in_order": [
+      {
+        "name": "签发率",
+        "numerator_stage": "签发量",
+        "denominator_stage": "模型建议量",
+        "summary_column": "M",
+        "detail_column": "L"
+      },
+      {
+        "name": "门店回传率",
+        "numerator_stage": "门店回传量",
+        "denominator_stage": "签发量",
+        "summary_column": "N",
+        "detail_column": "M"
+      },
+      {
+        "name": "运营修正率",
+        "numerator_stage": "运营回传量",
+        "denominator_stage": "门店回传量",
+        "summary_column": "O",
+        "detail_column": "N"
+      },
+      {
+        "name": "实际确认率",
+        "numerator_stage": "运营回传量",
+        "denominator_stage": "签发量",
+        "summary_column": "P",
+        "detail_column": "O"
+      },
+      {
+        "name": "大仓订单满足率",
+        "numerator_stage": "实际下单量",
+        "denominator_stage": "运营回传量",
+        "summary_column": "Q",
+        "detail_column": "P"
+      },
+      {
+        "name": "实际收货率",
+        "numerator_stage": "实际收货量",
+        "denominator_stage": "实际下单量",
+        "summary_column": "R",
+        "detail_column": "Q"
+      },
+      {
+        "name": "模型建议履行率",
+        "numerator_stage": "实际收货量",
+        "denominator_stage": "模型建议量",
+        "summary_column": "S",
+        "detail_column": "R"
+      },
+      {
+        "name": "补货建议履行率",
+        "numerator_stage": "实际收货量",
+        "denominator_stage": "签发量",
+        "summary_column": "T",
+        "detail_column": "S"
+      }
+    ],
+    "ratio_rule": {
+      "formula_pattern": "=IF(OR(COUNT(numerator,denominator)<2,denominator=0),\"n.a.\",numerator/denominator)",
+      "missing_or_non_numeric_input": "n.a.",
+      "zero_denominator": "n.a.",
+      "zero_numerator_with_positive_denominator": 0,
+      "cap_at_100_percent": false,
+      "format": "0.0%",
+      "rounding": "仅显示为1位百分数，公式无ROUND"
+    },
+    "amount_rule": {
+      "formula_pattern": "=IF(COUNT(stage_quantity,unified_price)<2,\"n.a.\",stage_quantity*unified_price)",
+      "display_format": "#,##0.00",
+      "rounding": "公式不舍入",
+      "same_price_for_six_stages": true,
+      "price_positive_required_for_ratio_equivalence": "模板说明写明同SKU统一单价为正时数量比率和货值比率相同；公式本身未限制价格为正"
+    },
+    "sku_count_rule": {
+      "evidence": "SKU完整明细!A4；各汇总页!A14；两模板模拟行逐组对账",
+      "definition": "同一订单×供货仓×必采分组内，每SKU每阶段数量>0计1；阶段独立判断",
+      "cross_order_distinct": false,
+      "cross_order_total": "按订单内计数后相加"
+    },
+    "no_days_metrics": "模板无可售天数、持有天数、库存天数或周期天数列。近30天销量是30天窗口数量，目标持有量和最低持有量为数量字段。",
+    "source_samples": "模板标题明确模拟样板；DEMO数据仅用于核对结构和公式，不能作为业务默认值。"
+  },
+  "not_uniquely_defined_by_templates": [
+    {
+      "topic": "统一计价单价",
+      "unknown": "采购价/售价/税前税后/币种/价格时间点及缺价策略；同SKU跨订单是否必须同价。模板只有字段和乘法，样例同SKU同价不足以定义真实来源。"
+    },
+    {
+      "topic": "数量单位",
+      "unknown": "六阶段数量与库存、销量、箱规、最低持有量的库存单位/包装单位换算。模板未声明瓶、个、件等单位。"
+    },
+    {
+      "topic": "六阶段来源",
+      "unknown": "六阶段分别取哪个业务表/版本/回传文件；未发生、未取得、取消、退货、负数、部分收货如何表达；模板只给静态阶段名称与样例。"
+    },
+    {
+      "topic": "订单粒度与重复行",
+      "unknown": "明细声明订单×仓×SKU；同订单SKU存在多行或多门店时的合并键/优先级及订单编号唯一范围未定义。"
+    },
+    {
+      "topic": "日期与快照",
+      "unknown": "订单日期对应创建/计算/签发/下单日期未定义；库存快照时间对哪些库存/商品属性有效、时区、历史/当前值选择未定义。"
+    },
+    {
+      "topic": "库存与供给字段",
+      "unknown": "门店现货是否等于可用库存，门店在途口径，近30天销量截止日，大仓可用库存口径，供货状态与供货商多值处理均未定义。"
+    },
+    {
+      "topic": "目标与约束",
+      "unknown": "目标持有量、最低持有量、箱规数取哪个参数或结果、保存计算时点或当前时点未定义。"
+    },
+    {
+      "topic": "必采与订单状态",
+      "unknown": "必采属性的映射/空值处理、订单状态完整枚举及判定规则未定义；仅观察到必采/非必采和收货结束/部分收货样例。"
+    },
+    {
+      "topic": "缺失值与空结果",
+      "unknown": "公式约定n.a.；源字段缺失是否统一转n.a.、无某子类时0或n.a.、空导出布局未定义。顶部SUMIFS只专门检测字面n.a.，其他文本/空白会被SUMIFS忽略。"
+    },
+    {
+      "topic": "筛选UI",
+      "unknown": "模板有原生Table但sheet及Table XML均未声明autoFilter，不能据此断言筛选箭头是否显示或已配置筛选条件。"
+    },
+    {
+      "topic": "排序与标题",
+      "unknown": "模拟行按日期升序及ALL/必采/非必采排列；真实导出的订单排序与报告名称是否替换页内原标题，需由实现约定。"
+    }
+  ],
+  "evidence_file": "template_structure_evidence.json",
+  "validation_file": "template_validation.json"
+}

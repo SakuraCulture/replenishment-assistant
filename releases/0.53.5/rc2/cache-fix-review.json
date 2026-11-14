@@ -1,0 +1,46 @@
+{
+  "review": "passed",
+  "scope": "single-line self-closing prefix/interleaved/suffix cells and formula cache patch",
+  "matched_nonempty_cells": [
+    "B1",
+    "D1",
+    "F1",
+    "G1",
+    "H1"
+  ],
+  "self_closing_cells_untouched": [
+    "A1",
+    "C1",
+    "E1",
+    "I1"
+  ],
+  "uncached_cells_untouched": [
+    "F1",
+    "H1"
+  ],
+  "patched_formula_cells": [
+    "B1",
+    "D1",
+    "G1"
+  ],
+  "one_formula_and_one_cache_value_per_patched_cell": true,
+  "numeric_and_string_caches": {
+    "B1": 2,
+    "D1": "n.a.",
+    "G1": 0
+  },
+  "entire_output_equals_only_expected_cache_substitutions": true,
+  "source_sha256": "6d454a13e19a658c3776d4c35dc94050ccc17ec3a5885be404f4bdb6497ffbed",
+  "output_sha256": "fe5b01d008c45f5880913ff68f73143151dd1656e93c0a123831cf503eec2b17",
+  "source_files": {
+    "src/analytics_formula_cache.py": "38a275000aa55ae2cad3be988aa57dae7e318b4100cabfed3bec6afaaedd2da6",
+    "tests/test_analytics_formula_cache.py": "9809e0d24fe719ad163cac9c460cacf5b197e97e31242776403568c836c8377c"
+  },
+  "review_of_new_tests": "One test locks regex exclusion of both self-closing spellings; one fresh subprocess forces OPENPYXL_LXML=False and verifies real numeric/string caches.",
+  "limitations": "This targeted review does not rerun the packaged executable or native Excel recalculation.",
+  "new_targeted_tests": {
+    "count": 2,
+    "exit_code": 0,
+    "output": "test_self_closing_cells_are_not_matched_as_nonempty_cells (test_analytics_formula_cache.FormulaValues.test_self_closing_cells_are_not_matched_as_nonempty_cells) ... ok\r\ntest_packaged_et_xmlfile_empty_cells_do_not_hide_following_formula (test_analytics_formula_cache.FormulaValues.test_packaged_et_xmlfile_empty_cells_do_not_hide_following_formula) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 2 tests in 0.890s\r\n\r\nOK\r\n"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "review_type": "independent read-only correctness review",
+  "created_at": "2026-11-14T17:28:31.1242278+08:00",
+  "findings": [],
+  "blocking_findings": 0,
+  "modified_source_files": [],
+  "tests_executed_during_review": [],
+  "sources": [
+    {
+      "path": "src/aoxiang_payment_preflight.py",
+      "sha256": "71cddc4858da1eb1c8c0afe37ff4c34d395cc5ca5549d60dca3c6e17c3d34b1b"
+    },
+    {
+      "path": "src/aoxiang_purchase.py",
+      "sha256": "a824b77cefe79634c6c46abc44ae976d6cef1e9ced0ea9ea2379cdff73dccbd8"
+    },
+    {
+      "path": "src/aoxiang_workflow_runner.py",
+      "sha256": "0eb47ffa71580420ac79a953296089464b3d75ed911a69106b24a2f816360531"
+    },
+    {
+      "path": "src/aoxiang_purchase_messages.py",
+      "sha256": "a4ed4dd88ed70d47f4e8d001bab41616d5af423a370198051bc19c5afcc05daf"
+    },
+    {
+      "path": "src/aoxiang_workflow_ui.py",
+      "sha256": "22313ab914c1a508c3f44ccdd492885c71ade1150f8c30af05432beffdc29024"
+    }
+  ],
+  "checks": [
+    {
+      "concern": "Local payment eligibility failures dispatch no browser work",
+      "result": "No concrete defect found",
+      "evidence": [
+        "aoxiang_workflow_runner.py:214-231 runs the local preflight before current_configuration at 234-235 and before prepare_item/template/reserve.",
+        "Error updates retain original code/message/details through item_error; invalid items continue to the next stable identity."
+      ],
+      "boundary": "This is the four-code payment eligibility gate; final quantity/pricing/template and other prepare validation remains in its original later path."
+    },
+    {
+      "concern": "Legacy/current operations preserve canonical health semantics",
+      "result": "No concrete defect found",
+      "evidence": [
+        "aoxiang_payment_preflight._view derives route through lifecycle.flow.stages and computes health with lifecycle.progress_state.",
+        "Absent modern return with existing legacy feedback falls back to lifecycle.snapshot for canonical SKU-completeness checking.",
+        "require_payment returns on existing canonical payment health; schema-1 historical dependency behavior is not tightened or bypassed."
+      ]
+    },
+    {
+      "concern": "Successful preflight does not authorize stale freeze or upload",
+      "result": "No concrete defect found",
+      "evidence": [
+        "freeze_payment still starts a fresh transaction, validates the head and calls canonical lifecycle.snapshot before require_payment.",
+        "validate_basis and the upload_item validate_for_upload dispatch gate remain unchanged.",
+        "Existing-package recovery skips the new preflight and preserves the original durable identity/recovery path."
+      ]
+    },
+    {
+      "concern": "Cancellation and deletion preserve stable writes",
+      "result": "No concrete defect found",
+      "evidence": [
+        "Preflight Cancelled returns the item to PENDING and rethrows.",
+        "The update closure retains item_id/oid/execution_token; Workflows.update validates the token and stable identity and rejects deleted sources.",
+        "SourceDeleted is handled without position-based fallback or any browser dispatch from the preflight branch."
+      ]
+    },
+    {
+      "concern": "Detailed payment errors preserve validation/audit gates",
+      "result": "No concrete defect found",
+      "evidence": [
+        "The four PaymentPreparationError codes distinguish missing, pending, changed dependencies and unready upstream without mutating lifecycle data.",
+        "Snapshot decode/integrity exceptions are not converted into a success or these specific payment classifications.",
+        "item_error persists exception details; message/UI changes retain the exact order/stage/version message and only specialize the dialog title."
+      ]
+    }
+  ],
+  "limitations": [
+    "Static source and relevant test-source review only; no new tests, EXE run, browser or platform operation was performed during this independent review.",
+    "No claim is made that every possible later freeze/template/pricing failure is covered by the lightweight payment eligibility preflight."
+  ]
+}

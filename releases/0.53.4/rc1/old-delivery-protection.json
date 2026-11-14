@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "files": [
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.3_rc2\\补货助手\\补货助手.exe",
+      "bytes": 7689810,
+      "sha256": "c2cbd3a733a5fea44b286553801730a53adab64af7c6203bb0ef719118342f01"
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.3_rc2\\补货助手_0.53.3_rc2_.zip",
+      "bytes": 156137124,
+      "sha256": "44083a3b25b1b226c9db97cbc24df8147204da6c8f256ccbea6344adf9296a39"
+    }
+  ],
+  "note": "Actual old ZIP filename verified from disk; historical summary descriptive name did not match filename."
+}

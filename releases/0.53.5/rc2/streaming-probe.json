@@ -1,0 +1,61 @@
+{
+  "scope": "Synthetic data only; local write_only openpyxl plus disk-spooled formula caches; Windows process working set includes imports, not a business-machine capacity guarantee.",
+  "outputs": [
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\analytics_templates_0535_20261114_01\\writer\\summary_synthetic.xlsx",
+      "sheets": [
+        "SKU种类",
+        "商品货值",
+        "商品数量"
+      ],
+      "seconds": 0.222,
+      "bytes": 24632,
+      "memory_before": {
+        "working_set_bytes": 47607808,
+        "peak_working_set_bytes": 47607808
+      },
+      "memory_after": {
+        "working_set_bytes": 49750016,
+        "peak_working_set_bytes": 49750016
+      }
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\analytics_templates_0535_20261114_01\\writer\\detail_synthetic.xlsx",
+      "sheets": [
+        "SKU完整明细"
+      ],
+      "seconds": 0.079,
+      "bytes": 10554,
+      "memory_before": {
+        "working_set_bytes": 49750016,
+        "peak_working_set_bytes": 49750016
+      },
+      "memory_after": {
+        "working_set_bytes": 49836032,
+        "peak_working_set_bytes": 49836032
+      }
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\analytics_templates_0535_20261114_01\\writer\\detail_5000_synthetic.xlsx",
+      "sheets": [
+        "SKU完整明细"
+      ],
+      "seconds": 8.961,
+      "bytes": 1461683,
+      "memory_before": {
+        "working_set_bytes": 49836032,
+        "peak_working_set_bytes": 49836032
+      },
+      "memory_after": {
+        "working_set_bytes": 52350976,
+        "peak_working_set_bytes": 52350976
+      }
+    }
+  ],
+  "readback": {
+    "synthetic_detail_rows": 5000,
+    "first_row_model_value": 60.0,
+    "first_row_operations_ratio": 2.5,
+    "all_expected": true
+  }
+}

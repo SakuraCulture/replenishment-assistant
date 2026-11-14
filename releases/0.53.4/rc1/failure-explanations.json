@@ -1,0 +1,24 @@
+{
+  "preserved_failures": [
+    {
+      "evidence": "payment/regression-01-setup-failure.txt",
+      "cause": "日志目录尚未创建导致首次重定向准备失败；未计作测试通过",
+      "correction": "创建独立日志目录后运行45项付款专项/回归全部通过"
+    },
+    {
+      "evidence": "runner/additional_runner_initial.log",
+      "cause": "5个选择队列控制流夹具仅创建最小订单表且原prepare_item已被模拟；新增真实本地付款预检使无付款夹具被正确拒绝",
+      "correction": "仅在原已模拟准备的控制流夹具显式模拟preflight；原选择/删除断言保留，真实源单和预检后并发变更测试继续执行真实预检"
+    },
+    {
+      "evidence": "source-native-01/report.json",
+      "cause": "验收脚本要求报错包含字面“版本”，实际正确提示为“门店回传单 V0 → V1”",
+      "correction": "验收改为精确断言V0 → V1；未更改业务代码，后续两轮源码实际窗口10项检查通过"
+    },
+    {
+      "evidence": "source-native-02",
+      "cause": "隔离offscreen字体缓存未发现CJK字体，截图显示方框；测试逻辑通过但不能作为中文可读性验收",
+      "correction": "仅验收入口显式加载本机微软雅黑，source-native-03图像复核可读；生产字体设置未改"
+    }
+  ]
+}
