@@ -1,0 +1,182 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "error": null,
+      "mode": "exercise",
+      "checks": [
+        "Real recovery cancel preserves every business table",
+        "Real resume previews original stock 100 and original remaining order without committing",
+        "Real selected restart releases only selected pending claim and previews fresh 700 before generation",
+        "Actual generation confirmation, worker, SQLite commit and export create selected order exactly once with quantity 40",
+        "Unselected original order continues against original stock 100, exports 80, and retains its own batch history"
+      ],
+      "messages": [
+        {
+          "title": "确认生成聚水潭订单",
+          "text": "将按预览顺序生成1单，保存库存预留与待核对付款草稿；并不表示已经付款。\nBH-T-ZC-HB：80元"
+        },
+        {
+          "title": "确认生成聚水潭订单",
+          "text": "将按预览顺序生成1单，保存库存预留与待核对付款草稿；并不表示已经付款。\nBH-U-ZC-HB：160元"
+        }
+      ],
+      "screenshots": [
+        "exercise-recovery-cancel.png",
+        "exercise-recovery-resume.png",
+        "exercise-resume-frozen-100.png",
+        "exercise-recovery-restart.png",
+        "exercise-fresh-preview-700.png",
+        "exercise-fresh-generated-exported.png",
+        "exercise-other-original-batch-complete.png"
+      ],
+      "frozen_exe": true,
+      "version": {
+        "app": "补货助手",
+        "version": "0.53.3",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "snapshot-cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256",
+        "source_commit_kind": "workspace_snapshot_not_git_commit",
+        "base_commit": "e13a04a677271f89d4c7ae1aa1bbc47bbd5e4073",
+        "source_snapshot_sha256": "cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256",
+        "source_archive_sha256": "cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256",
+        "source_manifest_sha256": "858e112c6ac9709fc1a07e24e6c46abacee74959283b358db8d380c16b4ef410",
+        "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+        "working_tree_files_sha256": {
+          "README.md": "154e8a21bb8f16f7d0c373f628b27327dfc9ede4bdd17a776e3bdde651a2089d",
+          "docs/0.53.3未完成分配批次恢复.md": "5e319cd6f53211a866bfa0f642149a92d89fee4c95b8036a4a26adae50e2c634",
+          "docs/manual/guide.md": "2b156b82ac6b92530e87649959ae743e4e4033bc306d73b50ad833c25078d9b3",
+          "docs/manual/index.html": "2696339cb2d2aa109584a6346aa960ebffa0901ed392a7cdeeaeb4b05d6d9423",
+          "prepare_delivery.py": "a30e06cbd389b83321f5159a1e17566aee39a4391471297193991b453bfc3589",
+          "src/app.py": "6d907bbcdd836707b45b1d7a75b479eeed6ec751db1fefbabe3db95f54308948",
+          "src/jst_batch_recovery_smoke.py": "a6e5594ae6fbedb892ab53fad03f18fc463b9034010c3463b52f154e994604d3",
+          "src/jst_batch_recovery_ui.py": "7f4c7934a916eb4a9ef220381451c69a7b667f96cba3919f9f0dacd4caf5e548",
+          "src/jst_batches.py": "7b1c58d94c447e68eb6c3c45959fc84e0dd6674f081aa30e31a2562820fea9bd",
+          "src/jst_ui.py": "ec70dc55bbee8d90dac687b13d3cca01722ae8772bc40fa40fe80e95eb516bf6",
+          "src/version.json": "f8299e6c8b52b8ccce52efabf193d33e1ce95dee9881123b005e38dfb5ee6b75",
+          "tests/test_jst_batch_recovery.py": "6d8ffaa791a18c1ec82c71e8060e85941ad4ce190c5871cb299ea23a65d93d82",
+          "tests/test_jst_batch_recovery_ui.py": "4b3121701c9d9d8e0121340f93a849a6ee408141f4206fbcfdd5e473b1ef5353",
+          "tools/verify_jst_batch_recovery.py": "86350be5a0f0f85775f8797c8e61f10b247362cb7972433a755758bce6c470c5",
+          "使用说明.txt": "05b7d6a847387e2e923058d35ffe8432b81f963d6eefa25021ceec6a1261222d"
+        },
+        "build_id": "rc1",
+        "built_at": "2026-11-14T15:07:22.592999+08:00",
+        "git_mutated": false,
+        "aoxiang": {
+          "source_commit": "e13a04a677271f89d4c7ae1aa1bbc47bbd5e4073",
+          "files": 874,
+          "manifest_sha256": "4dab7e78df519aadd8eb7395cb2d58a6a60aa680aec8971304db6cd532fcc311",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false
+        },
+        "jst_catalog": {
+          "manifest_sha256": "c0a19093930378d05edda3905bd6fb062bc4f40434566f688cb413cfa970b0db",
+          "files": 11,
+          "source_commit": "snapshot-cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256",
+          "contains_user_state": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "e13a04a677271f89d4c7ae1aa1bbc47bbd5e4073",
+          "source_snapshot_sha256": "cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256"
+        },
+        "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+      },
+      "live_platform": false,
+      "synthetic_input": true,
+      "dialogs_not_stubbed": true,
+      "file_destination_adapter": true,
+      "elapsed_seconds": 2.235000000015134,
+      "exit_code": 0
+    },
+    {
+      "passed": true,
+      "error": null,
+      "mode": "reopen",
+      "checks": [
+        "Actual EXE reopen retains both generations with no pending-claim resurrection",
+        "Reopened original batch retains cancelled selected item and completed other item"
+      ],
+      "messages": [],
+      "screenshots": [
+        "reopen-reopened-original-batch.png"
+      ],
+      "frozen_exe": true,
+      "version": {
+        "app": "补货助手",
+        "version": "0.53.3",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "snapshot-cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256",
+        "source_commit_kind": "workspace_snapshot_not_git_commit",
+        "base_commit": "e13a04a677271f89d4c7ae1aa1bbc47bbd5e4073",
+        "source_snapshot_sha256": "cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256",
+        "source_archive_sha256": "cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256",
+        "source_manifest_sha256": "858e112c6ac9709fc1a07e24e6c46abacee74959283b358db8d380c16b4ef410",
+        "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+        "working_tree_files_sha256": {
+          "README.md": "154e8a21bb8f16f7d0c373f628b27327dfc9ede4bdd17a776e3bdde651a2089d",
+          "docs/0.53.3未完成分配批次恢复.md": "5e319cd6f53211a866bfa0f642149a92d89fee4c95b8036a4a26adae50e2c634",
+          "docs/manual/guide.md": "2b156b82ac6b92530e87649959ae743e4e4033bc306d73b50ad833c25078d9b3",
+          "docs/manual/index.html": "2696339cb2d2aa109584a6346aa960ebffa0901ed392a7cdeeaeb4b05d6d9423",
+          "prepare_delivery.py": "a30e06cbd389b83321f5159a1e17566aee39a4391471297193991b453bfc3589",
+          "src/app.py": "6d907bbcdd836707b45b1d7a75b479eeed6ec751db1fefbabe3db95f54308948",
+          "src/jst_batch_recovery_smoke.py": "a6e5594ae6fbedb892ab53fad03f18fc463b9034010c3463b52f154e994604d3",
+          "src/jst_batch_recovery_ui.py": "7f4c7934a916eb4a9ef220381451c69a7b667f96cba3919f9f0dacd4caf5e548",
+          "src/jst_batches.py": "7b1c58d94c447e68eb6c3c45959fc84e0dd6674f081aa30e31a2562820fea9bd",
+          "src/jst_ui.py": "ec70dc55bbee8d90dac687b13d3cca01722ae8772bc40fa40fe80e95eb516bf6",
+          "src/version.json": "f8299e6c8b52b8ccce52efabf193d33e1ce95dee9881123b005e38dfb5ee6b75",
+          "tests/test_jst_batch_recovery.py": "6d8ffaa791a18c1ec82c71e8060e85941ad4ce190c5871cb299ea23a65d93d82",
+          "tests/test_jst_batch_recovery_ui.py": "4b3121701c9d9d8e0121340f93a849a6ee408141f4206fbcfdd5e473b1ef5353",
+          "tools/verify_jst_batch_recovery.py": "86350be5a0f0f85775f8797c8e61f10b247362cb7972433a755758bce6c470c5",
+          "使用说明.txt": "05b7d6a847387e2e923058d35ffe8432b81f963d6eefa25021ceec6a1261222d"
+        },
+        "build_id": "rc1",
+        "built_at": "2026-11-14T15:07:22.592999+08:00",
+        "git_mutated": false,
+        "aoxiang": {
+          "source_commit": "e13a04a677271f89d4c7ae1aa1bbc47bbd5e4073",
+          "files": 874,
+          "manifest_sha256": "4dab7e78df519aadd8eb7395cb2d58a6a60aa680aec8971304db6cd532fcc311",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false
+        },
+        "jst_catalog": {
+          "manifest_sha256": "c0a19093930378d05edda3905bd6fb062bc4f40434566f688cb413cfa970b0db",
+          "files": 11,
+          "source_commit": "snapshot-cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256",
+          "contains_user_state": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "e13a04a677271f89d4c7ae1aa1bbc47bbd5e4073",
+          "source_snapshot_sha256": "cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256"
+        },
+        "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+      },
+      "live_platform": false,
+      "synthetic_input": true,
+      "dialogs_not_stubbed": true,
+      "file_destination_adapter": true,
+      "elapsed_seconds": 0.28200000000651926,
+      "exit_code": 0
+    }
+  ],
+  "synthetic_input": true,
+  "live_platform": false,
+  "dialogs_not_stubbed": true,
+  "exe_sha256": "871eb5fbf7f65061a5ce80e877f85734363d587b1c3bc76d69cea84c245bf787",
+  "elapsed_seconds": 11.875
+}

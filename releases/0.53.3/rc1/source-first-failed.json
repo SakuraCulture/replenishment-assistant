@@ -1,0 +1,58 @@
+{
+  "passed": false,
+  "runs": [
+    {
+      "passed": false,
+      "error": "Traceback (most recent call last):\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\src\\jst_batch_recovery_smoke.py\", line 111, in execute\n    assert d.plan['payload']['plans'][0]['rows'][0]['stock']=='100'\n           ~~~~~~^^^^^^^^^^^\nTypeError: 'NoneType' object is not subscriptable\n",
+      "mode": "exercise",
+      "checks": [
+        "Real recovery cancel preserves every business table",
+        "Real resume previews original stock 100 and original remaining order without committing",
+        "Real selected restart releases only selected pending claim and previews fresh 700 before generation",
+        "Actual generation confirmation, worker, SQLite commit and export create selected order exactly once with quantity 40"
+      ],
+      "messages": [
+        {
+          "title": "确认生成聚水潭订单",
+          "text": "将按预览顺序生成1单，保存库存预留与待核对付款草稿；并不表示已经付款。\nBH-T-ZC-HB：80元"
+        },
+        {
+          "title": "未完成",
+          "text": "('oid-u', '河北仓')"
+        }
+      ],
+      "screenshots": [
+        "exercise-recovery-cancel.png",
+        "exercise-recovery-resume.png",
+        "exercise-resume-frozen-100.png",
+        "exercise-recovery-restart.png",
+        "exercise-fresh-preview-700.png",
+        "exercise-fresh-generated-exported.png"
+      ],
+      "frozen_exe": false,
+      "version": {
+        "app": "补货助手",
+        "version": "0.53.2",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "源码运行",
+        "build_id": "未打包"
+      },
+      "live_platform": false,
+      "synthetic_input": true,
+      "dialogs_not_stubbed": true,
+      "file_destination_adapter": true,
+      "elapsed_seconds": 0.6879999999946449,
+      "exit_code": 0
+    }
+  ],
+  "synthetic_input": true,
+  "live_platform": false,
+  "dialogs_not_stubbed": true,
+  "exe_sha256": null
+}

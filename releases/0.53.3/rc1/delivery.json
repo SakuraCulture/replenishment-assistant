@@ -1,0 +1,14 @@
+{
+  "version": "0.53.3",
+  "passed": true,
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.3_rc1\\补货助手_0.53.3_rc1_未完成分配批次恢复.zip",
+  "zip_sha256": "de5b9d5b9ba2671f18a33da7f7f5f0e86cb28d19d5d5c46cfb68bde6e6788685",
+  "zip_bytes": 156130214,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.3_rc1\\补货助手\\补货助手.exe",
+  "exe_sha256": "871eb5fbf7f65061a5ce80e877f85734363d587b1c3bc76d69cea84c245bf787",
+  "source_snapshot": "cb472b159ed8008193cd3b50bad3dbd762b2a0a5fff79867b720f02db065d256",
+  "directed_regression_tests": 164,
+  "actual_exe_checks": 7,
+  "source_files": 4461,
+  "pushed_or_merged_this_fix": false
+}

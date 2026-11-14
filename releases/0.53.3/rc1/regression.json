@@ -1,0 +1,106 @@
+{
+  "passed": true,
+  "tests": 164,
+  "modules": [
+    {
+      "module": "test_jst",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 29,
+      "seconds": 4.797
+    },
+    {
+      "module": "test_jst_batches",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 16,
+      "seconds": 4.282
+    },
+    {
+      "module": "test_jst_batch_recovery",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 9,
+      "seconds": 3.468
+    },
+    {
+      "module": "test_jst_batch_recovery_ui",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 4,
+      "seconds": 2.485
+    },
+    {
+      "module": "test_jst_carton_normalization",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 2,
+      "seconds": 2.187
+    },
+    {
+      "module": "test_jst_results",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 11,
+      "seconds": 5.563
+    },
+    {
+      "module": "test_paid_return_reallocation",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 19,
+      "seconds": 6.86
+    },
+    {
+      "module": "test_paid_return_reallocation_ui",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 7,
+      "seconds": 3.594
+    },
+    {
+      "module": "test_jst_stock_evidence",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 14,
+      "seconds": 3.703
+    },
+    {
+      "module": "test_jst_stock_evidence_ui",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 10,
+      "seconds": 3.328
+    },
+    {
+      "module": "test_stockout_scheduling",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 3,
+      "seconds": 1.297
+    },
+    {
+      "module": "test_payment_source",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 9,
+      "seconds": 3.406
+    },
+    {
+      "module": "test_admission",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 14,
+      "seconds": 2.328
+    },
+    {
+      "module": "test_warehouse_execution_delete",
+      "exit_code": 0,
+      "passed": true,
+      "tests": 17,
+      "seconds": 3.688
+    }
+  ],
+  "isolated_modules": true,
+  "live_platform": false
+}

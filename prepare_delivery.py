@@ -7,12 +7,14 @@ dest=args.delivery.resolve();assert (dest/'补货助手.exe').is_file()
 version=json.loads((root/'src/version.json').read_text(encoding='utf-8'))
 build=json.loads((dest/'_internal/build_info.json').read_text(encoding='utf-8-sig'))
 assert build['version']==version['version']
-if version['version'] in {'0.53.1','0.53.2'}:
+if version['version'] in {'0.53.1','0.53.2','0.53.3'}:
     (dest/'docs').mkdir(exist_ok=True)
     for name in ('0.53.0双仓独立执行与分仓删除.md','0.53.1分配采用仓资料导出.md'):
         shutil.copy2(root/'docs'/name,dest/'docs'/name)
-    if version['version']=='0.53.2':
+    if version['version'] in {'0.53.2','0.53.3'}:
         shutil.copy2(root/'docs/0.53.2界面模型重置与回收防护.md',dest/'docs/0.53.2界面模型重置与回收防护.md')
+if version['version']=='0.53.3':
+    shutil.copy2(root/'docs/0.53.3未完成分配批次恢复.md',dest/'docs/0.53.3未完成分配批次恢复.md')
 shutil.copy2(root/'使用说明.txt',dest/'使用说明.txt')
 if version['version'] in {'0.52.0','0.52.1','0.52.2','0.52.3','0.52.4','0.52.5','0.52.6','0.52.7','0.52.8','0.52.9'}:
     (dest/'docs').mkdir(exist_ok=True)

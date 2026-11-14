@@ -172,10 +172,33 @@ class GenerationDialog(QDialog):
         u=event.mimeData().urls()
         if not self.worker and len(u)==1 and u[0].isLocalFile() and Path(u[0].toLocalFile()).suffix.lower()=='.xlsx':event.acceptProposedAction()
     def dropEvent(self,event):self.refresh_stock(event.mimeData().urls()[0].toLocalFile());event.acceptProposedAction()
+    def recover_pending(self,heads):
+        groups=run(self,batches.unfinished,(self.path,heads),'核对所选订单的原分配批次')
+        if not groups:return True
+        from jst_batch_recovery_ui import RecoveryDialog
+        self.invalidate();d=RecoveryDialog(self,groups)
+        try:
+            if not d.exec():self.status.setText('已返回；原批任务和库存未改动。');return False
+            action,bid=d.action,d.batch_id
+        finally:d.deleteLater()
+        if action=='restart':
+            n=run(self,batches.release_unfinished,(self.path,groups),'结束所选未完成项')
+            self.status.setText(f'已结束所选{n}项；重新预览当前选定资料，尚未生成新订单。')
+        else:
+            with closing(sqlite3.connect(self.path)) as db:spec=batches.context(db,bid)
+            self.batch_id=bid;self.correction_mode=False;self.catalogs=spec['stocks']
+            self.order_list.clear()
+            for m in spec['members']:
+                if m['status'] not in ('pending','failed'):continue
+                h=m['head'];item=QListWidgetItem(h['number']+' · '+h.get('name',h['store'])+' · '+h['warehouse']);item.setData(Qt.ItemDataRole.UserRole,h);self.order_list.addItem(item)
+            self.setWindowTitle('继续原分配批次');self.apply_mode();self.describe()
+            self.status.setText('已转入原批；沿用其冻结库存及全部剩余任务，预览后确认才执行。')
+        return True
     def preview(self):
         try:
             heads=[self.order_list.item(i).data(Qt.ItemDataRole.UserRole) for i in range(self.order_list.count())]
             self.describe()
+            if not self.batch_id and not self.recover_pending(heads):return
             if self.batch_id:self.plan=run(self,batches.preview_existing,(self.path,self.batch_id,heads if self.correction_mode else None,self.correction_mode),'核对本批剩余库存')
             else:self.plan=run(self,batches.preview_new,(self.path,heads,{wh:c['catalog'] for wh,c in self.catalogs.items()},self.order_mode.currentIndex()==1),'预览新批库存分配')
             v=self.plan['payload'];self.show_order(v['plans'],v['skipped']);self.review.replace(v['plans'])

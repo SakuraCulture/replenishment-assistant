@@ -83,6 +83,54 @@ def listing(path, progress=lambda _: None, cancel=None):
         return out
 
 
+def _unfinished(db, heads, cancel=None):
+    """Exact selected claims plus the explicitly reviewable original batch scope."""
+    if not exists(db): return []
+    selected = {(h['oid'], h['warehouse']) for h in heads}; groups = []; found = {}
+    for oid,wh in selected:
+        checkpoint(cancel)
+        for row in db.execute("SELECT b.rowid,b.batch_id,b.label,b.status,b.epoch FROM jst_batch_members m JOIN jst_batches b ON b.batch_id=m.batch_id WHERE m.oid=? AND m.warehouse=? AND m.status IN ('pending','failed')",(oid,wh)):
+            found[row[1]]=row
+    for _, bid, label, status, epoch in sorted(found.values()):
+        checkpoint(cancel)
+        remaining = [dict(position=p, head=wr.loads(h), status=s, message=m) for p,h,s,m in db.execute(
+            "SELECT position,head,status,message FROM jst_batch_members WHERE batch_id=? AND status IN ('pending','failed') ORDER BY position", (bid,))]
+        chosen = [m for m in remaining if (m['head']['oid'],m['head']['warehouse']) in selected]
+        if chosen: groups.append(dict(batch_id=bid,label=label,status=status,epoch=epoch,selected=chosen,remaining=remaining))
+    return groups
+
+
+def unfinished(path, heads, progress=lambda _:None, cancel=None):
+    """Read only. Never infer that a pending batch is safe to discard."""
+    with closing(sqlite3.connect(path)) as db: return _unfinished(db,heads,cancel)
+
+
+def release_unfinished(path, groups, progress=lambda _:None, cancel=None):
+    """Explicitly end selected pending claims; preserve all allocations and others."""
+    if not groups: return 0
+    heads = [m['head'] for g in groups for m in g['selected']]
+    storage_chunks.backup_before_write(Path(path),progress)
+    with closing(sqlite3.connect(path,timeout=.1)) as db,db:
+        lc.begin(db,cancel)
+        # Recheck the whole displayed scope after obtaining the write lock.
+        # A late commit, pause, deletion or replacement requires a fresh review.
+        if _unfinished(db,heads,cancel) != groups:
+            raise wr.Conflict('原批任务已变化，未结束任何任务；请重新预览并核对')
+        count = 0
+        for g in groups:
+            for m in g['selected']:
+                checkpoint(cancel); h=m['head']
+                db.execute("UPDATE jst_batch_members SET status='cancelled',message='业务结束本次所选未完成项，改用新批资料' WHERE batch_id=? AND position=?",(g['batch_id'],m['position']))
+                settle_tasks(db,h,'cancelled','业务结束所选未完成项；不会由旧批自动恢复')
+                count += 1
+            pending = db.execute("SELECT 1 FROM jst_batch_members WHERE batch_id=? AND status IN ('pending','failed')",(g['batch_id'],)).fetchone()
+            db.execute('UPDATE jst_batches SET status=?,epoch=epoch+1 WHERE batch_id=?',('paused' if pending else 'complete',g['batch_id']))
+            orders.event(db,{},'结束所选批次未完成项',{'batch_id':g['batch_id'],'orders':[m['head'] for m in g['selected']]})
+        checkpoint(cancel); progress(CommitProgress(True)); db.commit()
+    progress(CommitProgress(False))
+    return count
+
+
 def preview_new(path, heads, catalogs, manual_order=False, progress=lambda _: None, cancel=None):
     """No writes/reservations; selecting the same file explicitly is allowed."""
     checkpoint(cancel); stocks = {}; states = {}; batch_id = uuid.uuid4().hex

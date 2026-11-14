@@ -41,7 +41,7 @@ def allocate(rows, items, balances):
             state = str(item.get('商品状态') or '').strip()
             if state in ('禁用', '停用', '已禁用', '停采'):
                 raise ValueError('该仓商品禁用')
-            if state not in ('启用', '正常', '在用', '已启用'):
+            if state not in ('启用', '正常', '在用', '已启用', '备用'):
                 raise ValueError('商品状态待核：' + state)
             raw_step = item.get('出库箱规')
             step = number(1 if raw_step is None or str(raw_step).strip() == '' else raw_step, '箱规')
