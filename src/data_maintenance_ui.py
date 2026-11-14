@@ -103,13 +103,15 @@ def _remove(parent,host,heads):
         with Session(host.work_repository.path) as session:plan=request(parent,session,'delete_preview',heads)
         d=QDialog(parent);d.setWindowTitle('彻底删除订单及关联数据');d.resize(1050,650);v=QVBoxLayout(d)
         v.addWidget(label('永久删除，不进入回收站。请核对完整关联范围。','section'))
-        v.addWidget(label('同一门店当天两仓共享原始计算快照，因此本次按门店当天整单删除，包含下列全部仓单、回传、付款、收货、生成结果和相关草稿数据。未选择的其他门店保留。'))
+        v.addWidget(label('只删除下方明确列出的仓单及其回传、付款、收货、生成结果和本地任务；同店未选择的另一仓保留。共享原件仍被其他仓单引用时保留。'))
         table,model=grid(d,['日期','门店','补货父单号','包含的仓单'],[[h['day'],h['name'],h['number'],'、'.join(h['warehouses'])] for h in plan['parents']]);v.addWidget(table,1)
+        retained=[h['name']+'：'+'、'.join(h.get('remaining_warehouses',[])) for h in plan['parents'] if h.get('remaining_warehouses')]
+        if retained:v.addWidget(label('本次保留：'+'；'.join(retained),'section'))
         if plan.get('tasks'):v.addWidget(label(f"将同时清理 {len(plan['tasks'])} 条关联任务（含运行中和待核项）；同批未选订单的任务保持。"))
         v.addWidget(label('磁盘原Excel、已经导出的文件、旧备份与外部平台订单不删除。其他订单或当前资料维护仍在引用的原文件保留；外部采购身份防重复记录保留，不再列为本地业务订单。'))
         v.addWidget(label('本地删除不撤销平台订单：已发出的请求可能继续完成。无需等待采购、付款或收货状态；同批其他订单保留。'))
         if plan['external']:v.addWidget(label('\n'.join(plan['external'])))
-        scope=QCheckBox('确认删除上述完整范围（包括同店另一仓）；本地无法恢复，外部订单不撤销');v.addWidget(scope);ack=scope
+        scope=QCheckBox('确认仅删除上述选中仓单；未选仓保留，本地无法恢复，外部订单不撤销');v.addWidget(scope);ack=scope
         row=QHBoxLayout();row.addWidget(button('取消',d.reject));go=button('永久删除上述订单',d.accept);go.setStyleSheet('color:#A52A2A;');go.setEnabled(False);row.addWidget(go);v.addLayout(row)
         def enabled():go.setEnabled(scope.isChecked())
         scope.toggled.connect(enabled)
@@ -124,6 +126,27 @@ def _remove(parent,host,heads):
     except Exception as exc:QMessageBox.warning(parent,'未完成删除',str(exc));return
     # Commit is complete. Refresh failure must never claim the deletion rolled back.
     try:
+        partial=[h for h in plan.get('scopes',[]) if h['oid'] not in plan.get('full_oids',[]) and h['day']==host.job_day]
+        if partial:
+            fields=('results','overrides','preissue_drafts','export_log','execution_warehouses')
+            while True:
+                current={key:getattr(host,key,{}) for key in fields};current['new_product_bases']=host.new_bases
+                original_results={h['store']:current['results'].get(h['store']) for h in partial}
+                projected=run(parent,maintenance.strip_current_warehouses,(current,partial),'更新所选仓工作区',cancellable=False)
+                if all(host.results.get(store) is value for store,value in original_results.items()):break
+            for key in fields:
+                if key in projected:setattr(host,key,projected[key])
+            host.new_bases=projected.get('new_product_bases',host.new_bases)
+            host.pending_copy=None
+            from deletion_barrier import read_warehouse_epochs
+            selected_scopes={}
+            for h in partial:selected_scopes.setdefault(h['store'],set()).add(h['warehouse'])
+            epochs=read_warehouse_epochs(host.work_repository.path,host.job_day,selected_scopes)
+            captured={s:dict(values) for s,values in getattr(host,'warehouse_deletion_generations',{}).items()}
+            for store,values in epochs.items():captured.setdefault(store,{}).update(values)
+            host.warehouse_deletion_generations=captured
+            if host.current_store in {h['store'] for h in partial}:host.result=host.results.get(host.current_store);host.dirty=True
+            host.saved_time='';host.touch();host.refresh_tables();host.selection_changed();host.update_controls()
         from deletion_barrier import read_epochs
         selected={h['store'] for h in plan['parents'] if h['day']==host.job_day}
         epochs=read_epochs(host.work_repository.path,host.job_day,selected)
@@ -148,6 +171,8 @@ def _remove(parent,host,heads):
                         for code in codes:value.pop(code,None)
             for code in codes:host.new_bases.pop(code,None)
             for code in codes:getattr(host,'deletion_generations',{}).pop(code,None)
+            for code in codes:getattr(host,'warehouse_deletion_generations',{}).pop(code,None)
+            for code in codes:getattr(host,'execution_warehouses',{}).pop(code,None)
             host.pending_copy=None
             # Keep frozen input/settings for unselected in-flight stores.
             for code in codes:getattr(host,'_calculation_settings',{}).pop(code,None)
@@ -163,16 +188,16 @@ def _remove(parent,host,heads):
             finally:host.initializing=previous
             if host.current_store in codes:host.current_store=None;host.result=None;host.dirty=True;host.navigate(3)
             host.saved_time='';host.touch();host.refresh_tables();host.selection_changed();host.update_controls()
-        deleted=set(plan['oids'])
+        deleted=set(plan.get('full_oids',plan['oids']));deleted_scopes={(h['oid'],h['warehouse']) for h in plan.get('scopes',[])}
         for widget in [host,*host.findChildren(__import__('PySide6.QtWidgets',fromlist=['QWidget']).QWidget)]:
             for attr in ('checked','archive_checked'):
                 selected=getattr(widget,attr,None)
                 if isinstance(selected,dict):
                     for key,head in list(selected.items()):
-                        if isinstance(head,dict) and head.get('oid') in deleted:selected.pop(key,None)
+                        if isinstance(head,dict) and (head.get('oid') in deleted or (head.get('oid'),head.get('warehouse')) in deleted_scopes):selected.pop(key,None)
         host.refresh_archive();host.followup.query(keep_page=True)
         if manager:manager.changed.emit()
-        QMessageBox.information(parent,'已彻底删除',f"已删除 {result['deleted']} 个门店当天正常单及关联业务记录。没有移入回收站。组件本地清理已登记，将在连接可用时自动处理；不等待平台结果。")
+        QMessageBox.information(parent,'已彻底删除',f"已删除 {result['deleted']} 张选中仓单及关联业务记录；未选仓保留。没有移入回收站。组件本地清理已登记，将在连接可用时自动处理；不等待平台结果。")
     except Exception as exc:
         logging.exception('删除已提交，但界面刷新失败')
         host.input_dirty=True;host.update_controls()

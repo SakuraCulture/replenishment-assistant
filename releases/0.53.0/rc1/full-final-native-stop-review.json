@@ -1,0 +1,63 @@
+{
+  "reviewed_at": "2026-11-14T02:33:00.8335309+08:00",
+  "review_scope": "只读核查全量日志中止；未修改冻结源码或测试，未重跑全量",
+  "full_suite": {
+    "log": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_execution_0530_20261113_01\\full-final.log",
+    "bytes": 6970,
+    "has_ran_summary": false,
+    "has_ok_summary": false,
+    "python_exit_code_captured": false,
+    "result": "INCOMPLETE_NOT_PASSED",
+    "last_visible_log": "test_lifecycle_duplicate_ui 的预期冲突工作线程异常；安静模式中最后可见日志不能证明实际中止测试位置"
+  },
+  "windows_event": {
+    "event_id": 1000,
+    "record_id": 134505,
+    "time_local": "2026-11-14T01:26:15.2560177+08:00",
+    "provider": "Application Error",
+    "application": "python.exe",
+    "version": "3.12.14150.1013",
+    "module": "python312.dll",
+    "exception_code": "0xc0000005",
+    "offset": "0x000000000008e38d",
+    "process_id_hex": "0xE7D0",
+    "process_id_decimal": 59344,
+    "process_start_local": "2026-11-14T01:20:48+08:00",
+    "application_path": "C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+    "raw_message": "出错应用程序名称： python.exe，版本： 3.12.14150.1013，时间戳： 0x6a8da072\r\n出错模块名称： python312.dll， 版本： 3.12.14150.1013，时间戳： 0x6a8da060\r\n异常代码： 0xc0000005\r\n错误偏移： 0x000000000008e38d\r\n出错进程 ID： 0xE7D0\r\n出错应用程序开始时间： 0x1DD7393533DF586\r\nFaulting 应用程序路径： C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe\r\nFaulting 模块路径： C:\\Users\\lenovo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python312.dll\r\nReport ID： 8ae7f786-ccb3-4894-9288-162686abc387\r\nFaulting 包全名： \r\nFaulting 程序包相对应用程序 ID：  个",
+    "correlation_limit": "事件紧接全量日志末尾；本次未持有原全量启动PID和命令行，不能严格排除其为子进程"
+  },
+  "targeted_ui_combination": {
+    "modules": [
+      "test_jst_review",
+      "test_jst_ui",
+      "test_lifecycle_batch",
+      "test_lifecycle_duplicate_ui",
+      "test_lifecycle_duplicates",
+      "test_lifecycle_simple"
+    ],
+    "tests": 51,
+    "seconds": 8.559,
+    "python_exit_code": 0,
+    "result": "PASSED",
+    "log": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\qa\\warehouse_readers_agent_0530\\qt-combo-diagnostic.log",
+    "exit_evidence": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\qa\\warehouse_readers_agent_0530\\qt-combo-exit.txt",
+    "interpreter": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\.venv\\Scripts\\python.exe",
+    "flags": [
+      "-u",
+      "-X utf8",
+      "-X faulthandler",
+      "-v"
+    ],
+    "qt_platform": "offscreen"
+  },
+  "findings": [
+    "已确认该时段存在Python原生访问冲突记录。",
+    "未能从全量安静日志还原实际中止测试与原生调用栈。",
+    "相关UI组合未复现崩溃；不能确定共享QApplication为根因。",
+    "不能把预期的重复商品冲突日志当成原生崩溃根因。",
+    "full-first有1902项完整汇总但存在失败，full-final无完成凭据；本轮不得宣称完整全量通过。",
+    "实际EXE和封版定向结果由主任务独立提供；本报告不替代完整全量验收。"
+  ],
+  "release_limitation": "仅作为独立rc候选交付；完整全量尚未通过，原生中止原因仍未知，不能归咎既有问题。"
+}

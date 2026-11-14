@@ -1,0 +1,29 @@
+{
+  "compared_to": "0.52.8 rc2 frozen source",
+  "changed_files": {
+    "docs/manual/index.html": "changed",
+    "prepare_delivery.py": "changed",
+    "src/lifecycle_duplicate_ui.py": "added",
+    "README.md": "changed",
+    "docs/manual/business-edition.json": "changed",
+    "docs/manual/guide.md": "changed",
+    "src/lifecycle_batch_ui.py": "changed",
+    "docs/manual/images/duplicate-resolution-0529.png": "added",
+    "docs/0.52.9回传重复商品核对与准确定位.md": "added",
+    "tests/test_lifecycle_duplicate_ui.py": "added",
+    "tests/test_lifecycle_duplicates.py": "added",
+    "src/lifecycle_duplicates.py": "added",
+    "src/order_lifecycle.py": "changed",
+    "使用说明.txt": "changed",
+    "docs/manual/screenshot-index.json": "changed",
+    "src/lifecycle_ui.py": "changed",
+    "src/lifecycle_duplicate_smoke.py": "added",
+    "src/app.py": "changed",
+    "tools/verify_lifecycle_duplicates.py": "added",
+    "src/version.json": "changed",
+    "src/lifecycle_batch.py": "changed"
+  },
+  "branch": "codex/merge-import-0.52.8",
+  "head": "e2f8fbcaa713ad5ed9bc5cdf053b859f8dc9870c",
+  "staged_empty": true
+}

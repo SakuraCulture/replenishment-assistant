@@ -12,8 +12,8 @@ class DeleteOrders(unittest.TestCase):
         self.t=tempfile.TemporaryDirectory();self.addCleanup(self.t.cleanup)
         self.root=Path(self.t.name);self.w,self.r,self.p=seed(self.root);self.path=self.w.path
         self.heads=purchases.targets(self.path)
-    def test_preview_expands_parent_and_delete_reclaims_unowned_chunks(self):
-        plan=m.prepare(self.path,[self.heads[0]])
+    def test_explicit_all_warehouses_delete_reclaims_unowned_chunks(self):
+        plan=m.prepare(self.path,self.heads)
         self.assertEqual(set(plan['parents'][0]['warehouses']),{'山东仓','河北仓'})
         m.execute(self.path,plan)
         self.assertEqual(purchases.targets(self.path),[]);self.assertEqual(self.r.headers(),[])

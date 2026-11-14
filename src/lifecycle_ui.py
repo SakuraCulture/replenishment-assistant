@@ -112,6 +112,8 @@ class Review(QDialog):
             basis_text='签发建议' if basis['stage']=='signed' else io.TITLES[basis['stage']]
             summary.append(head_text(h)+' · '+io.TITLES[p['stage']]+(' · 更新已有单据' if p['expected'] else ' · 新增单据')+f"\n依据：{basis_text}；系统自动读取上环节数量；{len(payload['rows'])}款；明确0 {origins.count('zero')}款、空白转0 {origins.count('blank')}款、缺行转0 {origins.count('missing')}款；清单外 {len(payload['extra'])}款；同值重复 {p['duplicates']}行"+('；上游未就绪，本次仅留存，之后须重新核对。' if payload['pending'] else '')+('；本次明确确认整单为0，不生成原始Excel。' if payload['explicit_zero'] else ''))
             source=next((r['source_order'] for r in payload['raw_rows'] if r.get('source_order')),None)
+            resolved=sum(bool(r.get('duplicate_resolution')) for r in payload['raw_rows'])
+            if resolved:summary.append(f'本次明确选择了 {resolved} 款重复商品的原始行；未采用行不累加，保存后可在单据版本中查看采用记录。')
             if source:summary.append('来源店铺：'+str(source.get('店铺名称'))+'；内部订单：'+str(source.get('内部订单号'))+'；线上订单：'+str(source.get('线上订单号'))+'。请与上方所选店仓单核对。')
             if show_source_notices and payload.get('payment_source',{}).get('type')=='jst_import_return':
                 v.addWidget(label(h['number']+'：使用聚水潭导入单作为付款来源；内部号可在“订单详情 → 维护聚水潭内部订单号”补填。确认前请核实外部导入无异常且已经付款。','section'))
@@ -218,6 +220,16 @@ class Document(QDialog):
         self.docs=run(self,service.history,(host.work_repository.path,head,stage),'读取单据版本')
         for d in self.docs:self.versions.addItem(f"第{d['version']}版 · {d['saved']}",d)
         self.versions.currentIndexChanged.connect(self.show_version); self.show_version()
+        self.duplicate_audit=button('查看重复商品采用记录',self.show_duplicate_audit)
+        row.insertWidget(0,self.duplicate_audit);self.versions.currentIndexChanged.connect(self.update_duplicate_audit);self.update_duplicate_audit()
+    def update_duplicate_audit(self):
+        d=self.versions.currentData()
+        self.duplicate_audit.setVisible(bool(d and any(r.get('duplicate_resolution') for r in d['payload'].get('raw_rows',[]))))
+    def show_duplicate_audit(self):
+        from lifecycle_duplicates import audit_rows
+        from readable_ui import details
+        d=self.versions.currentData()
+        if d:details(self,'重复商品采用记录',['商品编码','采用结果','原文件','工作表','Excel行号','原数量','原单位','原金额','币种'],audit_rows(d['payload'].get('raw_rows',[])),'数量和金额整行采用；未采用行不累加。原始文件仍完整保留，可从单据版本下载。')
     def show_version(self):
         d=self.versions.currentData(); self.files.clear()
         self.model.replace([[r['sku'],r['name'],r['base_quantity'],r['quantity'],r['unit'],r['amount'],r['currency'],r['document_number'],r['document_date'],'；'.join(s['file']+'/'+s['sheet']+':'+str(s['row']) for s in r['sources']), '；'.join(str(x) for x in (r.get('processing_note'),r.get('note')) if x)] for r in d['payload']['rows']] if d else [])

@@ -227,11 +227,13 @@ def cancel_unfinished(path,batch_id,reason,progress=lambda _:None,cancel=None):
     return n
 
 
-def deleting_order(db,oid):
+def deleting_order(db,oid,warehouse=None):
     """Called in the existing permanent-delete transaction, before rows vanish."""
     if not exists(db):return
     db.execute('CREATE TABLE IF NOT EXISTS jst_batch_retired(batch_id TEXT,warehouse TEXT,sku TEXT,quantity TEXT,PRIMARY KEY(batch_id,warehouse,sku))')
-    members=db.execute('SELECT batch_id,warehouse FROM jst_batch_members WHERE oid=?',(oid,)).fetchall()
+    condition=' AND warehouse=?' if warehouse is not None else ''
+    args=(oid,warehouse) if warehouse is not None else (oid,)
+    members=db.execute('SELECT batch_id,warehouse FROM jst_batch_members WHERE oid=?'+condition,args).fetchall()
     for bid,wh in members:
         h={'oid':oid,'warehouse':wh};gid=orders.active(db,h)
         if gid and generation_batch(db,gid)==bid and orders.locked(db,h):
@@ -242,8 +244,8 @@ def deleting_order(db,oid):
         # reservation was transferred to retired stock above. Neither decreases
         # available stock or changes another member's frozen allocation.
         # Keep the surviving batch's execution epoch and control state.
-    db.execute('DELETE FROM jst_generation_batches WHERE gid IN (SELECT gid FROM jst_generations WHERE oid=?)',(oid,))
-    db.execute('DELETE FROM jst_batch_members WHERE oid=?',(oid,))
+    db.execute('DELETE FROM jst_generation_batches WHERE gid IN (SELECT gid FROM jst_generations WHERE oid=?'+condition+')',args)
+    db.execute('DELETE FROM jst_batch_members WHERE oid=?'+condition,args)
     for bid,wh in members:
         if not db.execute('SELECT 1 FROM jst_batch_members WHERE batch_id=?',(bid,)).fetchone():
             db.execute('DELETE FROM jst_batch_stock WHERE batch_id=?',(bid,));db.execute('DELETE FROM jst_batch_retired WHERE batch_id=?',(bid,));db.execute('DELETE FROM jst_batches WHERE batch_id=?',(bid,))

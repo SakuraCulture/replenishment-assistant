@@ -44,6 +44,7 @@ def pool_token(db):
     for table,sql in [
         ('normal_orders','SELECT o.oid,o.day,o.store,o.number,o.current,r.digest FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid AND r.revision=o.current ORDER BY o.oid'),
         ('archive_visibility','SELECT oid,warehouse,deleted,token FROM archive_visibility ORDER BY oid,warehouse'),
+        ('warehouse_execution_heads','SELECT oid,warehouse,source_revision,child_revision,state,epoch FROM warehouse_execution_heads ORDER BY oid,warehouse'),
         ('jst_active','SELECT a.oid,a.warehouse,a.gid,g.digest FROM jst_active a JOIN jst_generations g ON a.gid=g.gid ORDER BY a.oid,a.warehouse'),
         ('lifecycle_versions',"SELECT oid,revision,warehouse,stage,MAX(version) FROM lifecycle_versions GROUP BY oid,revision,warehouse,stage ORDER BY oid,revision,warehouse,stage")]:
         parts.append([table,list(db.execute(sql)) if table in known else []])
@@ -104,18 +105,23 @@ def build(path,progress=lambda _:None,cancel=None):
     with closing(readonly(path)) as db,closing(Cache(path)) as cache:
         db.execute('BEGIN');token=pool_token(db);known=tables(db);visibility=ao.states(db)
         heads=[dict(zip(('day','store','oid','number','revision','digest','saved'),r)) for r in db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid AND r.revision=o.current ORDER BY o.day DESC,o.store')]
+        import warehouse_execution as execution
+        effective=[]
+        for head in heads:
+            effective.extend(execution.heads(db,[head]) if execution.has_parent(db,head['oid']) else [head])
+        heads=effective
         active={(oid,wh):(gid,revision,digest) for oid,wh,gid,revision,digest in db.execute('SELECT a.oid,a.warehouse,a.gid,g.revision,g.digest FROM jst_active a JOIN jst_generations g ON a.gid=g.gid')} if 'jst_active' in known else {}
         for i,head in enumerate(heads):
             checkpoint(cancel);progress(f'建立/刷新付款识别索引 {i+1}/{len(heads)}：仅当前签发，支持取消')
-            key=checksum(['signed',head['oid'],head['revision'],head['digest']]);meta=cache.get(key)
+            key=checksum(['signed',head['oid'],head['revision'],head['digest'],head.get('warehouse'),head.get('snapshot_digest')]);meta=cache.get(key)
             if meta is None:
-                checkpoint(cancel);order=repo.get(head['day'],head['store'],head['revision'],view='export');result=order['payload']['result']
+                checkpoint(cancel);order=execution.get_order(repo,head,view='export',db=db);result=order['payload']['result']
                 meta={'name':result['store_name'],'warehouses':[wh for wh in ao.scopes(result['rows']) if wh in wo.WAREHOUSES]}
                 cache.put(key,meta);decoded+=1;del order,result
             for wh in meta['warehouses']:
                 checkpoint(cancel);v=visibility.get((head['oid'],wh),{})
                 if v.get('deleted'):continue
-                h={**head,'parent_number':head['number'],'number':wo.child_number(head['number'],wh),'warehouse':wh,'name':meta['name'],
+                h={**head,'parent_number':head.get('parent_number',head['number']),'number':head['number'] if head.get('warehouse') else wo.child_number(head['number'],wh),'warehouse':wh,'name':meta['name'],
                    'current_revision':head['revision'],'visibility_token':v.get('token',0)}
                 gid,revision,gd=active.get((head['oid'],wh),(None,None,None))
                 if revision!=h['revision']:gid=None;gd=None

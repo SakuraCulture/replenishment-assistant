@@ -113,7 +113,8 @@ def historical_explanation(path, head, arguments, cancel):
     from contextlib import closing
     from automation_protocol import CommandError
     engine.checkpoint(cancel); repo = repository(path)
-    order = repo.get(head['day'], head['store'], head['revision'])
+    from warehouse_execution import get_order
+    order = get_order(repo,head)
     if not order: raise CommandError('ORDER_MISSING', '原订单已不存在')
     result = order['payload']['result']
     rows = [d for d in result['rows'] if d.get('E') == arguments['sku'] and (not arguments.get('warehouse') or d.get('AU') == arguments['warehouse'])]
@@ -124,8 +125,10 @@ def historical_explanation(path, head, arguments, cancel):
 
 
 def calculate(prepared, codes, notify, cancel):
-    from deletion_barrier import read_epochs
+    from deletion_barrier import read_epochs,read_warehouse_epochs
+    from app_defaults import WAREHOUSES
     prepared['deletion_generations']=read_epochs(prepared['dbpath'],prepared['day'],codes)
+    prepared['warehouse_deletion_generations']=read_warehouse_epochs(prepared['dbpath'],prepared['day'],{s:WAREHOUSES for s in codes})
     jobs = {s: prepared['jobs'][s] for s in codes}
     return batch_service.run(prepared['loaded'], jobs, prepared['profile'], prepared['workers'], notify, cancel)
 

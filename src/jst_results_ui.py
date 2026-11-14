@@ -58,6 +58,7 @@ class ResultsPage(QWidget):
         self.status=label('正在读取结果…','muted');v.addWidget(self.status)
         row=QHBoxLayout();self.all_btn=button('导出本批全部（0份）',self.export_all,True);self.selected_btn=button('导出勾选（0份）',self.export_selected)
         self.open_btn=button('打开导出文件夹',self.open_folder);row.addWidget(self.all_btn);row.addWidget(self.selected_btn);row.addWidget(self.open_btn);v.addLayout(row)
+        self.evidence_btn=button('导出当前筛选采用仓资料（0单）',self.export_stock_evidence);self.evidence_btn.setObjectName('exportSavedStockEvidence');self.evidence_btn.setToolTip('导出已保存分配实际使用的商品资料和库存依据；不同批次分别标识，不用当前默认资料替换。');v.addWidget(self.evidence_btn)
         row=QHBoxLayout();self.payment_all_btn=button('按当前筛选核对付款（0单）',self.payment_all)
         self.payment_selected_btn=button('按勾选核对付款（0单）',self.payment_selected)
         row.addWidget(self.payment_all_btn);row.addWidget(self.payment_selected_btn);v.addLayout(row)
@@ -73,6 +74,9 @@ class ResultsPage(QWidget):
         m=len(service.export_plan(self.data,self.chosen)['entries']) if self.data else 0
         self.all_btn.setText(f'导出当前筛选（{n}份）');self.selected_btn.setText(f'导出勾选（{m}份）')
         self.all_btn.setEnabled(ready and not busy and n>0);self.selected_btn.setEnabled(ready and not busy and m>0)
+        evidence_rows=self.stock_evidence_records()
+        self.evidence_btn.setText('导出本批采用仓资料' if self.batch_id else ('导出勾选采用仓资料' if self.chosen else '导出当前筛选采用仓资料')+f'（{len(evidence_rows)}单）')
+        self.evidence_btn.setEnabled(ready and not busy and (bool(self.batch_id) or bool(evidence_rows)))
         self.payment_all_btn.setText(f'按当前筛选核对付款（{len(self.visible_records())}单）');self.payment_selected_btn.setText(f'按勾选核对付款（{len(self.chosen)}单）')
         self.payment_all_btn.setEnabled(ready and not busy and bool(self.visible_records()));self.payment_selected_btn.setEnabled(ready and not busy and bool(self.chosen))
         for b in (self.payment_all_btn,self.payment_selected_btn):b.setToolTip('直接使用已保存生成单，无需导出再导入；核对实际已付款后才保存。')
@@ -184,6 +188,32 @@ class ResultsPage(QWidget):
             if len(review_widget.groups)==1:review_widget.open_store(review_widget.store_model.index(0,0))
             v.addWidget(button('返回结果页',d.accept));d.exec();d.deleteLater()
         except Exception as exc:self.status.setText(str(exc))
+
+    def stock_evidence_records(self):
+        return [r for r in self.visible_records() if r.get('gid') and (not self.chosen or service.key(r['head']) in self.chosen)]
+
+    def export_stock_evidence(self):
+        if self.worker or self.reviewing or self.closing or not self.data:return
+        import jst_stock_evidence as evidence
+        from runtime_support import Cancelled
+        from lifecycle_ui import warn
+        if self.batch_id:
+            fn,args=evidence.export_batch,(self.path,self.batch_id)
+        else:
+            gids=list(dict.fromkeys(r['gid'] for r in self.stock_evidence_records()))
+            if not gids:
+                self.status.setText('所选范围没有已保存分配依据；请先生成，或在预览窗口导出未确认预览采用的资料。');return
+            fn,args=evidence.export_generations,(self.path,gids)
+        target,_=export_locations.save_file(self,'导出实际采用仓资料','聚水潭实际采用仓资料.xlsx','Excel (*.xlsx)')
+        if not target:self.status.setText('已取消选择导出位置；未导出文件。');return
+        self.reviewing=True;self.reader.cancel();self.reading=False;self.controls()
+        try:
+            result=run(self,fn,(*args,target),'导出实际采用仓资料')
+            self.status.setText('实际采用仓资料已导出：'+str(result))
+        except Cancelled:self.status.setText('采用仓资料导出已取消；原分配和库存未改变。')
+        except Exception as exc:
+            self.status.setText('采用仓资料未导出：'+str(exc));warn(self,exc)
+        finally:self.reviewing=False;self.controls()
 
     def export_all(self):
         if self.data:self.begin(service.export_plan(self.data,{service.key(r['head']) for r in self.visible_records()}))

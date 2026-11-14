@@ -289,8 +289,9 @@ class QueueDialog(QDialog):
         row=QHBoxLayout();row.addWidget(self.selected_btn)
         self.delete_local_btn=button('删除勾选本地任务',self.delete_local);row.addWidget(self.delete_local_btn)
         self.rebuild_btn=button('结束所选任务并重建预览',self.rebuild_selected);row.addWidget(self.rebuild_btn)
-        row.addWidget(label('本批平台同时处理上限'))
-        self.inflight=QSpinBox();self.inflight.setRange(1,4);self.inflight.setValue(2);self.inflight.setToolTip('上传依次进行；平台处理等待可重叠。仅影响下一次确认上传的批次。');row.addWidget(self.inflight)
+        self.upload_policy=label('按勾选顺序连续提交；已受理任务并行处理，无本地数量上限')
+        self.upload_policy.setObjectName('uploadConcurrencyPolicy');self.upload_policy.setWordWrap(True)
+        self.upload_policy.setToolTip('不等上一单在平台处理完成才提交下一单；共享浏览器页面操作统一调度，核对结果按原订单保存。补货计算并发设置不受影响。');row.addWidget(self.upload_policy,1)
         row.addStretch();v.addLayout(row)
         self.bar = QProgressBar();v.addWidget(self.bar)
         self.note = label('');self.note.setWordWrap(True);v.addWidget(self.note)
@@ -469,7 +470,7 @@ class QueueDialog(QDialog):
         if QMessageBox.question(self, '确认批量上传采购', text, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:return
         try:
             self.manager.ensure_owner()
-            job = self.manager.store.upload(prepared_id, positions, expected_sequence,max_inflight=self.inflight.value())
+            job = self.manager.store.upload(prepared_id, positions, expected_sequence)
             self.id = job['id'];self.current = None;self.manager.tick();self.refresh()
         except Exception as exc:QMessageBox.warning(self, '未开始上传', str(exc))
 

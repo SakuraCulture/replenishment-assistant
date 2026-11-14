@@ -10,7 +10,7 @@ import work_repository as wr
 from runtime_support import checkpoint
 from export_progress import RowProgress
 
-STORE_MAPS=('deletion_generations','states','results','store_presets','store_ui','overrides','default_by_store',
+STORE_MAPS=('deletion_generations','warehouse_deletion_generations','execution_warehouses','states','results','store_presets','store_ui','overrides','default_by_store',
             'preissue_drafts','new_product_bases','_calculation_settings')
 HEX_RUN=re.compile(rb'[0-9a-f]{64,}')
 

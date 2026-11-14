@@ -13,6 +13,7 @@ import new_products
 
 SCHEMA=3
 import archive_orders as ao
+import warehouse_execution as execution
 
 def repository(path):
     path=Path(path).resolve()
@@ -27,7 +28,9 @@ def identity(path):
 
 
 def key(path,head):
-    return wr.dumps([SCHEMA,identity(path),head['oid'],head['revision'],head['digest'],head['saved']])
+    parts=[SCHEMA,identity(path),head['oid'],head['revision'],head['digest'],head['saved']]
+    if head.get('snapshot_digest'):parts.extend([head.get('warehouse'),head['snapshot_digest'],head.get('execution_epoch')])
+    return wr.dumps(parts)
 
 
 def summary_record(head,result):
@@ -48,6 +51,15 @@ def project(order):
         'search':[(d['E']+' '+str(d.get('D',''))).lower() for d in rows]}
 
 
+def projection_checksum(values):
+    """Same UTF-8 concatenation digest, without full joined text/bytes copies."""
+    checksum=hashlib.sha256()
+    for value in values:
+        for start in range(0,len(value),65536):
+            checksum.update(value[start:start+65536].encode('utf-8'))
+    return checksum.hexdigest()
+
+
 class Index:
     """Atomic per-revision publication; a broken cache is discarded, never the source."""
     def __init__(self,path):self.path=Path(path)
@@ -66,33 +78,42 @@ class Index:
         with closing(self.connect()) as db:
             row=db.execute('SELECT summary,search,projection,checksum FROM views WHERE k=?',(k,)).fetchone()
         if row is None:return None
-        if hashlib.sha256(''.join(row[:3]).encode()).hexdigest()!=row[3]:return None
+        if projection_checksum(row[:3])!=row[3]:return None
         try:
             stored=wr.loads(row[0]);record=stored
             return {'record':record,'search':json.loads(row[1]),'projection':json.loads(row[2]) if detail else None}
         except (ValueError,TypeError,KeyError):return None
     def put(self,k,record,view):
         values=[wr.dumps(record),json.dumps(view['search'],ensure_ascii=False),json.dumps(view,ensure_ascii=False)]
-        with closing(self.connect()) as db,db:db.execute('INSERT OR REPLACE INTO views VALUES(?,?,?,?,?)',(k,*values,hashlib.sha256(''.join(values).encode()).hexdigest()))
+        with closing(self.connect()) as db,db:db.execute('INSERT OR REPLACE INTO views VALUES(?,?,?,?,?)',(k,*values,projection_checksum(values)))
 
 
 def cached(path,cache,head,detail=False,cancel=None):
     # A stale cache is never authority for a permanently removed order.
     with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as check:
-        source=check.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
-        if not source or source[0]!=head['digest']:raise ValueError('归档已删除或变化，请刷新')
+        managed=bool(head.get('warehouse') and execution.has_parent(check,head['oid']))
+        if managed:
+            source=check.execute('SELECT identity_digest,snapshot_digest FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?',(head['oid'],head['warehouse'],head['revision'])).fetchone()
+            if not execution.is_active(check,head['oid'],head['warehouse']) or not source or source[0]!=head['digest']:raise ValueError('仓单已删除或变化，请刷新')
+            head={**head,'snapshot_digest':source[1]}
+        else:
+            source=check.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
+            if not source or source[0]!=head['digest']:raise ValueError('归档已删除或变化，请刷新')
     idx=Index(cache);k=key(path,head);hit=idx.get(k,detail)
     if hit is not None:return hit
-    before=identity(path);order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
+    before=identity(path);order=execution.get_order(repository(path),head,view='export')
     if order is None or order['digest']!=head['digest'] or before!=identity(path):raise ValueError('归档来源已变化，请刷新')
     view=project(order);record=summary_record(head,order['payload']['result'])
     import history_forms,storage_chunks
     repo=repository(path)
     with closing(repo.work.connect()) as db:
-        raw=db.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
-        work_revision=storage_chunks.load(raw[0],db,paths=[('work_revision',)]).get(('work_revision',))
-    catalogs=history_forms.work_parts(repo,{'payload':{'work_revision':work_revision}},[('catalogs',)]).get(('catalogs',),{})
-    for child in record['children']:child['source_sha256']=catalogs.get(child['warehouse'],{}).get('source_sha256')
+        if managed:work_revision=order['payload'].get('work_revision')
+        else:
+            raw=db.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
+            work_revision=storage_chunks.load(raw[0],db,paths=[('work_revision',)]).get(('work_revision',))
+    paths=[('catalogs',child['warehouse'],'source_sha256') for child in record['children']]
+    metadata=history_forms.work_parts(repo,{'payload':{'work_revision':work_revision}},paths)
+    for child in record['children']:child['source_sha256']=metadata.get(('catalogs',child['warehouse'],'source_sha256'))
     if cancel is not None and cancel.is_set():raise InterruptedError('已取消')
     idx.put(k,record,view)
     return {'record':record,'search':view['search'],'projection':view if detail else None}
@@ -121,8 +142,13 @@ def execute(path,cache,request,cancel,progress):
         for value in (start,end):
             if value and date.fromisoformat(value).isoformat()!=value:raise ValueError('日期请填写YYYY-MM-DD')
         if start and end and start>end:raise ValueError('起始日期不能晚于结束日期')
-        heads=repo.headers();records=[];matches=[];needle=request.get('search','').strip().lower()
+        parent_heads=repo.headers();records=[];matches=[];needle=request.get('search','').strip().lower()
         with closing(repo.work.connect()) as db:
+            managed={h['oid'] for h in parent_heads if execution.has_parent(db,h['oid'])}
+            child_heads=execution.heads(db,[h for h in parent_heads if h['oid'] in managed]) if managed else []
+            by_parent={}
+            for h in child_heads:by_parent.setdefault(h['oid'],[]).append(h)
+            heads=[child for h in parent_heads for child in (by_parent.get(h['oid'],[]) if h['oid'] in managed else [h])]
             visibility=ao.states(db)
             retained={r[0] for r in db.execute('SELECT sha FROM source_files')} if db.execute("SELECT 1 FROM sqlite_master WHERE name='source_files'").fetchone() else set()
         for i,h in enumerate(heads):
@@ -131,15 +157,18 @@ def execute(path,cache,request,cancel,progress):
             for child in item['record']['children']:
                 wh=child['warehouse'];state=visibility.get((h['oid'],wh),{'deleted':False,'token':0,'at':None})
                 r={k:v for k,v in item['record'].items() if k!='children'}
-                r.update(warehouse=wh,parent_number=h['number'],number=ao.number(h['number'],wh),summary=child['summary'],deleted=state['deleted'],visibility_token=state['token'],visibility_at=state['at'])
+                parent_number=h.get('parent_number',h['number'])
+                r.update(warehouse=wh,parent_number=parent_number,number=ao.number(parent_number,wh),summary=child['summary'],deleted=state['deleted'],visibility_token=state['token'],visibility_at=state['at'])
                 r['source_status']='已留存（导出前校验）' if child.get('source_sha256') in retained else '未留存'
                 if state['deleted']!=bool(request.get('trash')):continue
                 records.append(r);text=json.dumps(r,ensure_ascii=False).lower();terms=needle.split()
                 match=all(t in text for t in terms) or any(all(t in text or t in sku for t in terms) for sku in child['search'])
                 matches.append(match and (not start or r['day']>=start) and (not end or r['day']<=end) and (not request.get('day') or r['day']==request['day']) and (not request.get('store') or r['store']==request['store']) and (not request.get('warehouse') or wh==request['warehouse']))
             progress({'done':i+1,'total':len(heads)})
-        with closing(repo.work.connect()) as db:after=ao.states(db)
-        if heads!=repo.headers() or visibility!=after:raise ValueError('归档列表已更新，请刷新')
+        with closing(repo.work.connect()) as db:
+            after=ao.states(db);after_managed={h['oid'] for h in parent_heads if execution.has_parent(db,h['oid'])}
+            after_children=execution.heads(db,[h for h in parent_heads if h['oid'] in after_managed]) if after_managed else []
+        if parent_heads!=repo.headers() or visibility!=after or child_heads!=after_children or managed!=after_managed:raise ValueError('归档列表已更新，请刷新')
         return {'records':records,'matches':matches,'heads':heads}
     head=request['head']
     if kind=='detail':
@@ -155,7 +184,7 @@ def execute(path,cache,request,cancel,progress):
         view['head'].update(deleted=state['deleted'],visibility_token=state['token'],current_revision=head.get('current_revision',head['revision']))
         return view
     # Audit and formal export always retrieve and validate the source, not cache.
-    order=repo.get(head['day'],head['store'],head['revision'])
+    order=execution.get_order(repo,head)
     if order is None or order['digest']!=head['digest']:raise ValueError('归档来源已变化，请刷新')
     if head.get('warehouse'):order={**order,'warehouse':head['warehouse']}
     if kind in ('form','form_export','attachments','source_export'):
@@ -216,6 +245,6 @@ def read_for_export(repo,head,progress=None,cancel=None):
     import engine
     engine.checkpoint(cancel)
     if progress:progress('读取并校验历史签发快照…')
-    order=repo.get(head['day'],head['store'],head['revision'],view='export',progress=progress or (lambda _:None))
+    order=execution.get_order(repo,head,view='export',progress=progress or (lambda _:None))
     engine.checkpoint(cancel)
     return order

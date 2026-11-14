@@ -165,9 +165,9 @@ class LifecycleWidget(QWidget):
         with closing(self.host.work_repository.connect()) as db:
             visibility=archive_orders.states(db)
             for key,h in list(self.checked.items()):
-                row=db.execute('SELECT o.current,r.digest FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE o.oid=?',(h['oid'],)).fetchone()
-                gone=visibility.get((h['oid'],h['warehouse']),{}).get('deleted')
-                if not row or row!=(h.get('current_revision',h['revision']),h['digest']) or gone:invalid.append(key)
+                import warehouse_execution
+                try:warehouse_execution.validate(db,h)
+                except (ValueError,__import__('work_repository').Conflict):invalid.append(key)
         for key in invalid:self.checked.pop(key,None)
         self.records=data['records'];self.page=data['page'];self.count=data['count'];self.bar.hide();self.table.setEnabled(True);self.note.setText(f"查询范围 {data['scope']} 单 · 当前筛选 {data['count']} 单 · 第 {self.page+1}/{max(1,(data['count']+49)//50)} 页；每页50单，阶段计数不重复。")
         if invalid:self.note.setText(self.note.text()+f'；已移除{len(invalid)}条失效勾选，请重新核对选择。')

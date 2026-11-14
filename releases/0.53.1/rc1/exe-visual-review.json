@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "scope": "Actual packaged EXE screenshots, Chinese text and new export entry visibility",
+  "screenshots": [
+    {
+      "file": "exercise-selected-generation.png",
+      "observations": [
+        "Chinese labels render correctly",
+        "Selected-order evidence export button is fully visible and states one order",
+        "Success message contains the exported workbook path",
+        "Existing allocation result remains 80.00 with 100% fulfillment"
+      ]
+    },
+    {
+      "file": "exercise-old-batch-dialog.png",
+      "observations": [
+        "Frozen batch source 100 and original imported file are visible",
+        "Export adopted warehouse material button is fully visible alongside preview",
+        "Existing frozen-order explanation is readable",
+        "Success status is visible without obscuring the export control"
+      ]
+    },
+    {
+      "file": "exercise-unconfirmed-preview.png",
+      "observations": [
+        "Chosen material file identifies stock 500",
+        "New-batch stock and unconfirmed adoption explanations remain visible",
+        "Evidence export button is fully visible",
+        "Success status and output path are visible"
+      ]
+    }
+  ],
+  "limitations": [
+    "File destination adapter supplies QA output paths; native file chooser was not manually exercised",
+    "No physical low-resolution display or unusual Windows DPI matrix tested",
+    "Prepared preview plan supplied by QA harness; preview allocation calculation itself is covered by existing dedicated tests"
+  ],
+  "runtime_modified_after_build": false,
+  "live_platform": false
+}

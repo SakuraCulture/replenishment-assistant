@@ -86,7 +86,9 @@ class ReferenceScan(unittest.TestCase):
             self.assertEqual(len(count),1)
 
 class DeletionRaces(unittest.TestCase):
-    setUp=legacy_tests.DeleteOrders.setUp
+    def setUp(self):
+        legacy_tests.DeleteOrders.setUp(self)
+        self.heads=self.r.headers()  # Whole-parent transaction and crash-boundary tests.
     def test_surviving_job_exact(self):
         states={s:{'name':s,'state':'待计算'} for s in ('T','U')}
         payload={'schema':1,'day':wr.today(),'model_version':'0.3.4-rules','states':states,'input_dirty':True,'results':{},'store_ui':{'T':{'n':1},'U':{'n':2}}}

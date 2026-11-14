@@ -5,6 +5,7 @@ from contextlib import closing
 from decimal import Decimal
 import work_repository as wr
 import normal_exports,merchant_feedback,archive_orders as ao,warehouse_orders as wo
+import warehouse_execution as execution
 from history_read import repository
 from runtime_support import checkpoint
 from purchase_io import number
@@ -62,18 +63,34 @@ def targets(path,scopes=None,progress=lambda _:None,cancel=None):
     repo=repository(path);out=[]
     with closing(connect(path)) as db:
         visibility=ao.states(db)
-        headers=db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.revision,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid ORDER BY o.day DESC,o.store,r.revision DESC').fetchall()
-    if scopes:headers=[h for h in headers if any(s==h[1] for s,w in scopes)]
-    for i,(day,store,oid,parent,cur,rev,digest,saved) in enumerate(headers):
-        checkpoint(cancel);order=repo.get(day,store,rev,view='export');result=order['payload']['result']
+        managed={r[0] for r in db.execute('SELECT DISTINCT oid FROM warehouse_execution_heads')} if execution.exists(db) else set()
+        legacy=db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.revision,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid ORDER BY o.day DESC,o.store,r.revision DESC').fetchall()
+        work=[{'legacy':h} for h in legacy if h[2] not in managed and (not scopes or any(s==h[1] for s,w in scopes))]
+        if managed:work.extend(execution.heads(db,[{'oid':oid} for oid in managed],history=True))
+    for i,entry in enumerate(work):
+        checkpoint(cancel)
+        if 'legacy' in entry:
+            day,store,oid,parent,cur,rev,digest,saved=entry['legacy']
+            order=repo.get(day,store,rev,view='export');allowed=None
+        else:
+            day,store,oid,parent,cur,rev,digest,saved=(entry[k] for k in ('day','store','oid','parent_number','current_revision','revision','digest','saved'))
+            if scopes and (store,entry['warehouse']) not in scopes:continue
+            order=execution.get_order(repo,entry,view='export',progress=progress);allowed=entry['warehouse']
+        result=order['payload']['result']
         for wh,groups in history_groups(result,order['payload'].get('new_focus')).items():
-            if wh not in wo.WAREHOUSES:continue
+            if wh not in wo.WAREHOUSES or allowed is not None and wh!=allowed:continue
             if scopes and (store,wh) not in scopes:continue
             if visibility.get((oid,wh),{}).get('deleted'):continue
             rows=[r for rs in groups.values() for r in rs]
-            out.append({'oid':oid,'day':day,'store':store,'name':result['store_name'],'number':wo.child_number(parent,wh),'parent_number':parent,'warehouse':wh,'revision':rev,'current_revision':cur,'digest':digest,'saved':saved,'visibility_token':visibility.get((oid,wh),{}).get('token',0),'products':{d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':normal_exports.sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for d in rows}})
-        progress(RowProgress(f'读取可关联修订 {i+1}/{len(headers)}',i+1,len(headers)))
+            item={'oid':oid,'day':day,'store':store,'name':result['store_name'],'number':wo.child_number(parent,wh),'parent_number':parent,'warehouse':wh,'revision':rev,'current_revision':cur,'digest':digest,'saved':saved,'visibility_token':visibility.get((oid,wh),{}).get('token',0),'products':{d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':normal_exports.sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for d in rows}}
+            if allowed is not None:item.update({k:entry[k] for k in ('child_revision','source_parent_revision','snapshot_digest','execution_epoch')})
+            out.append(item)
+        progress(RowProgress(f'读取可关联修订 {i+1}/{len(work)}',i+1,len(work)))
+    rank={w:i for i,w in enumerate(wo.WAREHOUSES)}
+    out.sort(key=lambda h:(h['store'],-h['revision'],rank[h['warehouse']]))
+    out.sort(key=lambda h:h['day'],reverse=True)
     return out
+
 
 def link(head,qty,extra=False):
     return {'head':{k:v for k,v in head.items() if k!='products'},'quantity':number(qty),'extra':bool(extra)}
@@ -99,9 +116,7 @@ def retain_links(scan,docs):
     return out
 
 def validate_head(db,h):
-    ao.require_active(db,h['oid'],h['warehouse'])
-    row=db.execute('SELECT o.current,r.digest FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid WHERE o.oid=? AND r.revision=?',(h['oid'],h['revision'])).fetchone()
-    if not row or row!=(h['current_revision'],h['digest']):raise wr.Conflict('签发修订已更新，请重新读取并核对关联')
+    execution.validate(db,h)
     if ao.states(db).get((h['oid'],h['warehouse']),{}).get('token',0)!=h.get('visibility_token',0):raise wr.Conflict('归档可见性已变化，请重新核对')
 
 def prepare(path,scanned,progress=lambda _:None,cancel=None):
@@ -128,7 +143,7 @@ def prepare(path,scanned,progress=lambda _:None,cancel=None):
                     seen.add(k);validate_head(db,h)
                     if h['store']!=r['store'] or h['warehouse']!=r['warehouse']:raise ValueError('禁止跨门店/仓库关联')
                     if k not in signed:
-                        o=repo.get(h['day'],h['store'],h['revision'],view='export')
+                        o=execution.get_order(repo,h,view='export',db=db)
                         signed[k]={d['E']:d for ds in normal_exports.groups(o['payload']['result'],o['payload'].get('new_focus')).values() for d in ds if d.get('AU')==h['warehouse']}
                     if r['sku'] not in signed[k] and not l.get('extra'):raise ValueError('商品不在此仓签发表；需明确选择额外采购')
                     l['quantity']=number(l['quantity']);total+=Decimal(l['quantity'])
@@ -223,7 +238,7 @@ def comparison(path,head,progress=lambda _:None,cancel=None,*,db=None,docs=None)
             connection.execute('BEGIN')
             items=[current(connection,d[0]) for d in connection.execute('SELECT docid FROM purchase_documents ORDER BY rowid DESC')] if exists(connection) else []
             return comparison(path,head,progress,cancel,db=connection,docs=items)
-    order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
+    order=execution.get_order(repository(path),head,view='export',db=db)
     if order['digest']!=head['digest']:raise wr.Conflict('签发快照变化')
     reply=merchant_feedback.current(db,head['oid'],head['revision'])
     values=reply['payload']['values'] if reply else {};actual={};refs={};extras={}

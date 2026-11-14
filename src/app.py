@@ -18,7 +18,7 @@ def _main():
     default_data=data_location.default_base()
     overridden=bool(os.environ.get('REPLENISHMENT_DATA_DIR'))
     logs=data_location.hint(default_data)
-    runtime=Runtime(logs,folder=None if overridden else data_location.control()/'diagnostics');runtime.application=app
+    runtime=Runtime(logs,folder=None if overridden else data_location.control()/'diagnostics');runtime.bind_qt(app)
     if '--data-location-smoke' in sys.argv:
         from data_location_smoke import install_startup
         install_startup(app,sys.argv[sys.argv.index('--data-location-smoke')+1:])
@@ -72,9 +72,18 @@ def _main():
     if '--data-location-smoke' in sys.argv:
         from data_location_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--data-location-smoke')+1:])
+    if '--perf-core-smoke' in sys.argv:
+        from perf_core_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--perf-core-smoke')+1:])
+    if '--memory-load-smoke' in sys.argv:
+        from memory_load_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--memory-load-smoke')+1:])
     if '--migration-shutdown-smoke' in sys.argv:
         from migration_shutdown_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--migration-shutdown-smoke')+1:])
+    if '--order-merge-smoke' in sys.argv:
+        from order_merge_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--order-merge-smoke')+1:])
     if '--operations-lifecycle-smoke' in sys.argv:
         from operations_lifecycle_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--operations-lifecycle-smoke')+1:])
@@ -264,6 +273,9 @@ def _main():
     if '--lifecycle-smoke' in sys.argv:
         from lifecycle_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-smoke')+1:])
+    if '--lifecycle-duplicate-smoke' in sys.argv:
+        from lifecycle_duplicate_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-duplicate-smoke')+1:])
     if '--followup-smoke' in sys.argv:
         from followup_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--followup-smoke')+1:])
@@ -282,6 +294,9 @@ def _main():
     if '--storage-smoke' in sys.argv:
         from storage_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--storage-smoke')+1:])
+    if '--signing-feedback-smoke' in sys.argv:
+        from signing_feedback_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--signing-feedback-smoke')+1:])
     if '--work-io-smoke' in sys.argv:
         from work_io_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--work-io-smoke')+1:])
@@ -300,6 +315,15 @@ def _main():
     if '--batch-smoke' in sys.argv:
         from batch_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--batch-smoke')+1:])
+    if '--jst-stock-evidence-smoke' in sys.argv:
+        from jst_stock_evidence_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--jst-stock-evidence-smoke')+1:])
+    if '--runtime-lifetime-smoke' in sys.argv:
+        from runtime_lifetime_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--runtime-lifetime-smoke')+1:])
+    if '--warehouse-execution-smoke' in sys.argv:
+        from warehouse_execution_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--warehouse-execution-smoke')+1:])
     if '--warehouse-smoke' in sys.argv:
         from warehouse_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--warehouse-smoke')+1:])

@@ -20,7 +20,8 @@ def load(database, task_id):
 def original(repo, head):
     import archive_orders
     from warehouse_orders import child_number
-    order = repo.get(head['day'], head['store'], head['revision'], view='export')
+    from warehouse_execution import get_order
+    order = get_order(repo,head,view='export')
     if not order or any(order[k] != head[k] for k in ('oid', 'digest', 'revision')) or child_number(order['number'], head['warehouse']) != head['number']:
         raise ValueError('原签发修订不存在或身份不一致；不能改用当前版本')
     with closing(repo.work.connect()) as db:

@@ -9,6 +9,7 @@ from pathlib import Path
 import work_repository as wr
 import purchases, merchant_feedback, normal_exports, archive_orders as ao
 import lifecycle_rules as rules
+import lifecycle_duplicates as duplicate_rows
 from history_read import repository
 from runtime_support import checkpoint, Cancelled
 from export_progress import RowProgress
@@ -182,7 +183,8 @@ def match_payment_rows(path, head, rows):
     if not any(r.get('adapter')=='paid_order' for r in rows):return
     identities={tuple(str(r['source_order'].get(k) or '') for k in ('内部订单号','线上订单号','店铺名称','买家账号','平台站点')) for r in rows if r.get('adapter')=='paid_order'}
     if len(identities)!=1:raise ValueError('付款文件含多个来源订单/店铺，请分别导入，不自动合并')
-    order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
+    from warehouse_execution import get_order
+    order=get_order(repository(path),head,view='export')
     if order['digest']!=head['digest']:raise wr.Conflict('签发快照已变化')
     for row in rows:
         if row.get('adapter')!='paid_order':continue
@@ -207,12 +209,14 @@ def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None, *, st
             checkpoint(cancel); h = group['head']; unique = {}; duplicates = 0
             match_payment_rows(path,h,group['rows'])
             if len({(r['document_number'], r['document_date']) for r in group['rows']}) != 1: raise ValueError('一张仓单同一环节须提供一份完整单据；不同单号/日期不能自动拼成整单')
+            conflicts = duplicate_rows.find(group['rows'])
+            if conflicts: raise ValueError(duplicate_rows.message(conflicts))
             for r in group['rows']:
                 sku = r['sku']; r['sources'] = [r.pop('source')]
                 if sku in unique:
                     before = unique[sku]
                     facts = ('quantity', 'unit', 'factor', 'conversion_basis', 'base_quantity', 'amount', 'currency', 'note', 'name')
-                    if any(wr.dumps(before[k]) != wr.dumps(r[k]) for k in facts): raise ValueError('同仓单同商品内容冲突：' + sku + '；请整理为每商品一行')
+                    if any(wr.dumps(before[k]) != wr.dumps(r[k]) for k in facts): raise ValueError('同仓单同商品内容冲突：' + sku + '；请重新核对原始明细')
                     before['sources'].extend(r['sources']); duplicates += 1
                 else: unique[sku] = r
             rows = list(unique.values()); used = {s['sha'] for r in rows for s in r['sources']}
@@ -240,7 +244,8 @@ def zero_plan(path, head, stage, progress=lambda _:None, cancel=None):
 
 def full_head(path,head):
     if 'products' in head:return head
-    order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
+    from warehouse_execution import get_order
+    order=get_order(repository(path),head,view='export')
     if order['digest']!=head['digest']:raise wr.Conflict('签发快照已变化')
     result=order['payload']['result']
     products={d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':normal_exports.sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for rs in normal_exports.groups(result,order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d)==head['warehouse']}
@@ -353,16 +358,20 @@ def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order
     if db is None:
         with closing(purchases.connect(path)) as connection:
             connection.execute('BEGIN'); return snapshot(path, head, progress, cancel, connection, order=order,as_of=as_of)
-    if order is None:order = repository(path).get(head['day'], head['store'], head['revision'], view='export')
+    if order is None:
+        from warehouse_execution import get_order
+        order=get_order(repository(path),head,view='export')
     if order['digest'] != head['digest']: raise wr.Conflict('签发快照不一致')
     eligible = {d['E']: {'sku': d['E'], 'name': d.get('D'), 'quantity': normal_exports.sem.order_quantity(d)} for rs in normal_exports.groups(order['payload']['result'], order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d) == head['warehouse']}
     route=flow.stages(db,head,as_of=as_of)
     docs = {s: current(db, head, s,as_of=as_of) for s in route}; legacy = legacy_return(db, head, eligible,as_of=as_of)
     maps = {s: {r['sku']: r for r in doc['payload']['rows']} if doc else {} for s, doc in docs.items()}
     if not docs['return'] and legacy: maps['return'] = {s: {'base_quantity': str(q), 'name': eligible[s]['name']} for s, q in legacy['values'].items()}
-    skus = list(eligible)
+    skus = list(eligible); seen = set(skus)
     for stage in STAGES:
-        skus.extend(s for s in maps[stage] if s not in skus)
+        for sku in maps[stage]:
+            if sku not in seen:
+                skus.append(sku); seen.add(sku)
     rows = []
     for sku in skus:
         checkpoint(cancel); values = [maps[s].get(sku, {}).get('base_quantity') for s in STAGES]

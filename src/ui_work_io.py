@@ -31,6 +31,9 @@ class Session:
                 progress(RowProgress(*data))
             elif kind=='error':
                 self.writing=False
+                if isinstance(data,dict):
+                    from work_failures import WorkFailure
+                    raise WorkFailure(data['evidence'],data['message'])
                 if data[0]=='Cancelled':raise Cancelled(data[1])
                 raise RuntimeError(data[1])
             elif kind=='success':

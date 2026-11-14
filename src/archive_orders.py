@@ -34,6 +34,11 @@ def states(db):
 
 
 def require_active(db,oid,wh=None):
+    if wh is not None:
+        import warehouse_execution
+        if not warehouse_execution.is_active(db,oid,wh):
+            from deletion_barrier import SourceDeleted
+            raise SourceDeleted('来源仓单已删除或本轮未参与；不能由旧任务恢复')
     if any(o==oid and (wh is None or w==wh) and s['deleted'] for (o,w),s in states(db).items()):
         raise wr.Conflict('此仓正常单已在回收站，请先恢复再签发、导出或导入回传；原快照仍保留')
 
@@ -52,8 +57,15 @@ def change_many(path,heads,deleted,progress=lambda _:None,cancel=None):
         visibility=states(db);receipts=[]
         for head in heads:
             wh=head['warehouse']
-            current=db.execute('SELECT current FROM normal_orders WHERE oid=?',(head['oid'],)).fetchone()
-            signed=db.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
+            import warehouse_execution as execution
+            if execution.has_parent(db,head['oid']):
+                child=execution.state(db,head['oid'],wh)
+                current=(child['source_revision'],) if child and child['state']=='active' else None
+                signed=db.execute('SELECT identity_digest FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?',(head['oid'],wh,head['revision'])).fetchone()
+                if child and child.get('epoch')!=head.get('execution_epoch',child.get('epoch')):raise wr.Conflict('仓单数据代次已变化，请刷新')
+            else:
+                current=db.execute('SELECT current FROM normal_orders WHERE oid=?',(head['oid'],)).fetchone()
+                signed=db.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
             if not current or current[0]!=head.get('current_revision',head['revision']) or not signed or signed[0]!=head['digest']:
                 raise wr.Conflict('归档修订已变化，请刷新后重试')
             old=visibility.get((head['oid'],wh),{'deleted':False,'token':0})

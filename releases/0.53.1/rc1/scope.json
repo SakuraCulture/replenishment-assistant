@@ -1,0 +1,40 @@
+{
+  "compared_to": "frozen 0.53.0 rc1",
+  "files": [
+    "README.md",
+    "docs/0.53.1分配采用仓资料导出.md",
+    "docs/manual/business-edition.json",
+    "docs/manual/guide.md",
+    "docs/manual/index.html",
+    "prepare_delivery.py",
+    "releases/0.53.0/rc1/build_info.json",
+    "releases/0.53.0/rc1/calculation-unchanged.json",
+    "releases/0.53.0/rc1/delivery.json",
+    "releases/0.53.0/rc1/evidence/exercise-sign-hb-scope.png",
+    "releases/0.53.0/rc1/evidence/exercise-single-warehouse-delete-confirmation.png",
+    "releases/0.53.0/rc1/evidence/reopen-reopened-three-retained-warehouse-orders.png",
+    "releases/0.53.0/rc1/exe-report.json",
+    "releases/0.53.0/rc1/exe-visual-review.json",
+    "releases/0.53.0/rc1/full-final-native-stop-review.json",
+    "releases/0.53.0/rc1/scope.json",
+    "releases/0.53.0/rc1/validation.json",
+    "releases/0.53.0/rc1/交付报告.md",
+    "src/app.py",
+    "src/jst_results_ui.py",
+    "src/jst_stock_evidence.py",
+    "src/jst_stock_evidence_smoke.py",
+    "src/jst_ui.py",
+    "src/version.json",
+    "tests/test_jst_stock_evidence.py",
+    "tests/test_jst_stock_evidence_ui.py",
+    "tools/verify_jst_stock_evidence.py"
+  ],
+  "runtime_changes": [
+    "src/app.py",
+    "src/jst_results_ui.py",
+    "src/jst_stock_evidence.py",
+    "src/jst_stock_evidence_smoke.py",
+    "src/jst_ui.py",
+    "src/version.json"
+  ]
+}

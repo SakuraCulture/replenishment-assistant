@@ -9,6 +9,7 @@ import normal_exports,archive_orders as ao,warehouse_orders as wo,merchant_feedb
 from history_read import repository
 from runtime_support import checkpoint
 import purchases
+import warehouse_execution as execution
 
 def read(path,cache,request,cancel=None,progress=lambda _:None):
     start=request.get('from','');end=request.get('to','')
@@ -35,12 +36,19 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
         if has_purchase:
             notes={(oid,rev,wh):dict(wr.loads(p),token=token) for oid,rev,wh,token,p in db.execute('SELECT oid,revision,warehouse,token,payload FROM followup_notes')}
         selected=[h for h in heads if (not start or h['day']>=start) and (not end or h['day']<=end)]
+        selected_parents=list(selected);managed={h['oid'] for h in selected if execution.has_parent(db,h['oid'])}
+        managed_heads=execution.heads(db,[h for h in selected if h['oid'] in managed]) if managed else []
+        by_parent={}
+        for child in managed_heads:by_parent.setdefault(child['oid'],[]).append(child)
+        selected=[child for h in selected for child in (by_parent.get(h['oid'],[]) if h['oid'] in managed else [h])]
         records=[]
         for n,h in enumerate(selected):
-            checkpoint(cancel);k=wr.dumps([2,str(Path(path).resolve()),h['oid'],h['revision'],h['digest']]);hit=idx.execute('SELECT payload,sha FROM followup_projection WHERE k=?',(k,)).fetchone()
+            checkpoint(cancel);cache_parts=[2,str(Path(path).resolve()),h['oid'],h['revision'],h['digest']]
+            if h.get('warehouse'):cache_parts.extend([h['warehouse'],h.get('snapshot_digest'),h.get('execution_epoch')])
+            k=wr.dumps(cache_parts);hit=idx.execute('SELECT payload,sha FROM followup_projection WHERE k=?',(k,)).fetchone()
             if hit and hashlib.sha256(hit[0].encode()).hexdigest()==hit[1]:parts=json.loads(hit[0])
             else:
-                o=repo.get(h['day'],h['store'],h['revision'],view='export');r=o['payload']['result'];parts=[]
+                o=execution.get_order(repo,h,view='export',db=db) if h.get('warehouse') else repo.get(h['day'],h['store'],h['revision'],view='export');r=o['payload']['result'];parts=[]
                 for wh,g in purchases.history_groups(r,o['payload'].get('new_focus')).items():
                     products=[d for ds in g.values() for d in ds];parts.append({'warehouse':wh,'name':r['store_name'],'quantities':{d['E']:normal_exports.sem.order_quantity(d) for d in products}})
                 raw=json.dumps(parts,ensure_ascii=False);idx.execute('INSERT OR REPLACE INTO followup_projection VALUES(?,?,?)',(k,raw,hashlib.sha256(raw.encode()).hexdigest()));idx.commit()
@@ -63,12 +71,15 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
                 if required and purchase!='已关联（需核对范围）':issues.append(purchase)
                 if old and not acknowledged:issues.append('旧修订待核')
                 if diff and not acknowledged:issues.append('差异待核')
-                record={**h,**{x:part[x] for x in ('warehouse','name')},'number':ao.number(h['number'],wh),'parent_number':h['number'],'current_revision':h['revision'],'visibility_token':state.get('token',0),'reply_status':status,'pending':len(missing),'purchase_status':purchase,'differences':diff,'old_revision':old,'issues':issues,'deferred':deferred,'note':note,'wait_days':max(0,(date.fromisoformat(wr.today())-date.fromisoformat(h['saved'][:10])).days)}
+                parent_number=h.get('parent_number',h['number'])
+                record={**h,**{x:part[x] for x in ('warehouse','name')},'number':ao.number(parent_number,wh),'parent_number':parent_number,'current_revision':h.get('current_revision',h['revision']),'visibility_token':state.get('token',0),'reply_status':status,'pending':len(missing),'purchase_status':purchase,'differences':diff,'old_revision':old,'issues':issues,'deferred':deferred,'note':note,'wait_days':max(0,(date.fromisoformat(wr.today())-date.fromisoformat(h['saved'][:10])).days)}
                 record.update(observation=observed,acknowledged=acknowledged,note_token=note.get('token'))
                 query=request.get('search','').strip().lower()
                 if all(t in wr.dumps(record).lower() for t in query.split()):records.append(record)
             progress({'done':n+1,'total':len(selected)})
-        if heads!=repo.headers() or visibility!=ao.states(db):raise wr.Conflict('归档在查询期间变化，请刷新')
+        with closing(sqlite3.connect(path)) as fresh:
+            now_managed={h['oid'] for h in selected_parents if execution.has_parent(fresh,h['oid'])}
+            if heads!=repo.headers() or visibility!=ao.states(fresh) or now_managed!=managed or (managed and execution.heads(fresh,[h for h in selected_parents if h['oid'] in managed])!=managed_heads):raise wr.Conflict('归档在查询期间变化，请刷新')
     counts={s:sum(s in r['issues'] for r in records if not r['deferred']) for s in ('待回传','部分回传','尚未关联下单资料','部分关联','差异待核','旧修订待核')}
     for i,r in enumerate(records):r['list_position']=i
     kind=request.get('status','')

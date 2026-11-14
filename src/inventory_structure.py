@@ -1,6 +1,7 @@
 """Read-only store inventory valuation. No model, allocation, or current catalog reads.
 
-One parent snapshot per store/day; bounded to two rounds while aggregating.
+One store/day round; active warehouses keep their own frozen signing evidence.
+Shared local/unknown-source facts occur once. Bounded to two rounds while aggregating.
 Detail is loaded on demand from the same signed snapshot and visibility basis.
 """
 from collections import Counter
@@ -13,6 +14,7 @@ import sqlite3
 import archive_orders as ao
 import order_analytics as analytics
 import storage_chunks as chunks
+import warehouse_execution as execution
 from runtime_support import checkpoint
 from export_progress import RowProgress
 
@@ -174,7 +176,11 @@ def _basis(db):
     if 'normal_orders' not in tables:return analytics.digest([])
     heads=db.execute('SELECT o.oid,o.day,o.store,o.number,o.current,r.digest FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision ORDER BY o.oid').fetchall()
     visible=db.execute('SELECT oid,warehouse,deleted,token FROM archive_visibility ORDER BY oid,warehouse').fetchall() if 'archive_visibility' in tables else []
-    return analytics.digest([heads,visible])
+    basis=[heads,visible]
+    if 'warehouse_execution_heads' in tables:
+        basis.append(db.execute('SELECT oid,warehouse,source_revision,child_revision,state,epoch FROM warehouse_execution_heads ORDER BY oid,warehouse').fetchall())
+        basis.append(db.execute('SELECT oid,warehouse,source_revision,snapshot_digest FROM warehouse_execution_revisions ORDER BY oid,warehouse,source_revision').fetchall())
+    return analytics.digest(basis)
 
 
 def validate_basis(path,report,progress=lambda _:None,cancel=None):
@@ -189,11 +195,53 @@ def _load(db,head,visibility,cancel):
     row=db.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
     if not row:raise ValueError('该轮签发已不存在，请重新查询')
     payload=chunks.load(row[0],db,binding=head['digest'])
+    if 'execution_sources' in head:
+        return _load_executions(db,head,payload,visibility,cancel)
     scopes=ao.scopes(payload['result']['rows'])
     deleted=[wh for wh in scopes if visibility.get((head['oid'],wh),{}).get('deleted')]
     if scopes and len(deleted)==len(scopes):return None
     head['partial']=bool(deleted);head['scope']='部分仓已删除，本次导入的剩余范围' if deleted else '本次导入范围（未证明全店）'
     return facts(payload['result'],head,visibility,cancel)
+
+
+def _load_executions(db,head,payload,visibility,cancel):
+    """Combine frozen child facts without broadening the signed warehouse scope."""
+    from history_read import repository
+    sources=head['execution_sources']
+    if not sources:return None
+    repo=repository(db.execute('PRAGMA database_list').fetchone()[2]);center=[]
+    for child in sources:
+        checkpoint(cancel)
+        if visibility.get((head['oid'],child['warehouse']),{}).get('deleted'):continue
+        order=execution.get_order(repo,child,db=db)
+        center.extend(r for r in facts(order['payload']['result'],child,visibility,cancel) if r['source']=='中心仓')
+    common=[r for r in facts(payload['result'],head,visibility,cancel) if r['source']!='中心仓']
+    # Retain the shared calculation's source order where it contains the pinned
+    # facts. A sibling can retain an older source revision; any older-only rows
+    # remain in that warehouse's original order after the current source rows.
+    pools={}
+    for i,r in enumerate(center):pools.setdefault((r['warehouse'],r['sku']),[]).append((i,r))
+    common_pool={}
+    for i,r in enumerate(common):common_pool.setdefault((r['warehouse'],r['sku']),[]).append((i,r))
+    result=[];used_center=set();used_common=set()
+    for raw in payload['result'].get('rows',[]):
+        key=(ao.warehouse(raw),str(raw.get('E','')))
+        pool=common_pool if raw.get('_source') in ('地采商品','匹配待核') or key[0] not in ('山东仓','河北仓') else pools
+        if pool.get(key):
+            i,r=pool[key].pop(0);result.append(r)
+            (used_common if pool is common_pool else used_center).add(i)
+    result.extend(r for i,r in enumerate(center) if i not in used_center)
+    result.extend(r for i,r in enumerate(common) if i not in used_common)
+    counts=Counter(r['sku'] for r in result)
+    for r in result:
+        if not r['sku'] or counts[r['sku']]>1:
+            r.update(stock=None,inbound=None,position=None)
+            issue='商品编码缺失或重复，未合并估值'
+            if issue not in r['issues']:r['issues'].insert(0,issue)
+    parent_scopes=set(ao.scopes(payload['result']['rows']));active={s['warehouse'] for s in sources}
+    head['partial']=bool(parent_scopes-active) or any(visibility.get((head['oid'],w),{}).get('deleted') for w in active)
+    head['scope']='已参与仓各自冻结签发范围＋共同地采/待核；不同仓可来自不同签发时点，未证明覆盖全店'
+    return result
 
 
 def _round(head,rows,prev_head,prev_rows,view):
@@ -237,11 +285,18 @@ def collect(path,spec,progress=lambda _:None,cancel=None):
         if not db.execute("SELECT 1 FROM sqlite_master WHERE name='normal_orders'").fetchone():return finish_report(spec,[],stamp)
         # Metadata only; keep the nearest pre-range round plus requested rounds, not all payloads.
         heads=[dict(zip(('day','store','oid','number','revision','digest','saved'),r)) for r in db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE o.kind=? AND o.day<=? ORDER BY o.store,o.day DESC',('normal_model',spec['to'])) if not spec['stores'] or r[1] in spec['stores']]
+        managed={h['oid'] for h in heads if execution.has_parent(db,h['oid'])}
+        by_parent={}
+        for child in execution.heads(db,[h for h in heads if h['oid'] in managed]) if managed else []:
+            by_parent.setdefault(child['oid'],[]).append(child)
+        for h in heads:
+            if h['oid'] in managed:h['execution_sources']=by_parent.get(h['oid'],[])
         # Immutable revision IDs/digests are now pinned. Release the read transaction
         # before decoding/aggregating; do not hold a SQLite read lock across all rounds.
         db.commit()
         selected=[];found_prev=set()
         for h in heads:
+            if 'execution_sources' in h and not h['execution_sources']:continue
             if h['day']<spec['from'] and h['store'] in found_prev:continue
             checkpoint(cancel)
             # Deleted nearest parent is skipped; seek a still-visible older round.

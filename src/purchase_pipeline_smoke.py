@@ -106,18 +106,21 @@ def start_smoke(app,win,args):
                         time.sleep(.08);self.events.append(('observe',id));r.update(state='BOUND',binding={'orderId':'SYNTHETIC-PO-'+id});self.inflight.remove(id);return r
                     raise AssertionError(action)
             store=Workflows(out/'pipeline-simulation');heads=[]
-            for n in range(3):heads.append({**head,'oid':'SYNTHETIC-'+str(n),'store':'SYNTHETIC-'+str(n),'number':'SYNTHETIC-'+str(n)})
+            for n in range(9):heads.append({**head,'oid':'SYNTHETIC-'+str(n),'store':'SYNTHETIC-'+str(n),'number':'SYNTHETIC-'+str(n)})
             p=store.prepare(heads);platform=Platform()
-            for n in range(3):
+            for n in range(9):
                 pid='SYNTHETIC-'+str(n);store.update(p['id'],position=n,changes={'state':'PREPARED','package':{'id':pid}})
                 platform.rows[pid]={'state':'RESERVED','uploadAttempted':False,'active':False,'taskId':None}
-            p=store.update(p['id'],state='READY');upload=store.upload(p['id'],[0,1,2],p['sequence'],max_inflight=2)
+            p=store.update(p['id'],state='READY');upload=store.upload(p['id'],list(range(9)),p['sequence'])
             def simulate(progress,cancel):
                 return Runner(store,platform,component_root(),out/'unused-synthetic.sqlite3',cancel=cancel,progress=progress,delay=.01).run(upload['id'])
             with patch('aoxiang_upload_pipeline.require_orders'),patch('aoxiang_upload_pipeline.validate_for_upload'),patch('aoxiang_upload_pipeline.Directory'):
                 result=background(dialog,simulate,(),'隔离模拟平台等待流水线')
-            assert result['state']=='COMPLETED' and platform.maximum==2 and platform.events[:2]==[('submit','SYNTHETIC-0'),('submit','SYNTHETIC-1')]
-            checks.append('应用内生产调度：模拟A等待时B已提交，最多2单已受理并行处理，3单各归原单')
+            assert result['state']=='COMPLETED' and platform.maximum==9 and platform.events[:9]==[('submit','SYNTHETIC-'+str(n)) for n in range(9)]
+            assert [i['result']['binding']['orderId'] for i in result['items']]==['SYNTHETIC-PO-SYNTHETIC-'+str(n) for n in range(9)]
+            assert '无本地数量上限' in dialog.upload_policy.text()
+            dialog.grab().save(str(out/'03-无本地并发数量上限.png'))
+            checks.append('应用内生产调度：9单全部按选定顺序先提交再核对，无本地在途任务上限，各结果仍归原单')
             assert len(beats)>3;checks.append('重建与等待使用后台Worker，Qt事件循环持续响应')
             report.update(passed=True,component_calls=calls,simulation_events=platform.events,simulation_max_inflight=platform.maximum)
         except Exception:report['error']=traceback.format_exc()

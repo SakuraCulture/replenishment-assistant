@@ -224,20 +224,13 @@ def _copy(plan,source,stage,entries):
         if digest(file,progress.tick)!=manifest[name]['sha256']:raise ValueError('原资料在校验期间变化，未切换：'+name)
         progress.tick(files=number,force=number==len(fresh))
     progress=Progress(plan,'CHECKING','核对数据库完整性；此步骤无法按字节估算百分比',files=len(entries))
-    first_error=[]
-    def heartbeat():
-        try:progress.tick();return 0
-        except BaseException as exc:first_error.append(exc);return 1
+    from relocation_integrity import verify_database
     for number,(name,_) in enumerate(entries,1):
         file=stage/name
         if is_database(file):
-            with closing(sqlite3.connect(file.resolve().as_uri()+'?mode=ro',uri=True)) as db:
-                db.set_progress_handler(heartbeat,10000)
-                try:
-                    if db.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise ValueError('数据库副本完整性校验失败：'+name)
-                except sqlite3.OperationalError:
-                    if first_error:raise first_error[0]
-                    raise
+            progress.message='核对数据库完整性（独立校验副本）：'+name
+            progress.tick(force=True)
+            verify_database(file,name,stage.parent,progress.tick)
         progress.tick(files=number,force=number==len(entries))
     progress=Progress(plan,'CHECKING','数据库检查后再次核对全部副本',total,len(entries))
     for number,(name,meta) in enumerate(manifest.items(),1):

@@ -103,7 +103,14 @@ def prepare(path, documents, scope=None, progress=lambda _:None, cancel=None):
     for group in grouped.values():
         for d in sorted(group,key=lambda x:io.ALL_STAGES.index(x['scan']['stage'])):
             checkpoint(cancel)
-            result=service.prepare_numbered(path,d['scan'],d.get('target'),progress,cancel,staged=staged)
+            try:
+                result=service.prepare_numbered(path,d['scan'],d.get('target'),progress,cancel,staged=staged)
+            except ValueError as exc:
+                # Worker errors cross the UI boundary as strings. Include the
+                # failing source here, not the currently highlighted UI row.
+                from lifecycle_duplicates import document_context
+                kind=wr.Conflict if isinstance(exc,wr.Conflict) else ValueError
+                raise kind(document_context(d)+'\n环节：'+io.TITLES[d['scan']['stage']]+'\n'+str(exc)) from exc
             if len(result['plans'])!=1:raise ValueError('来源单据未按完整目标订单分组')
             p=result['plans'][0]
             # Validate an explicitly selected scope against its frozen snapshot too.

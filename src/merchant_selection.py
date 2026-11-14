@@ -6,8 +6,8 @@ import warehouse_orders
 class MerchantSelection(QDialog):
     def __init__(self,parent,order=None):
         super().__init__(parent);self.setObjectName('merchantSelection');self.setWindowTitle('选择门店与仓 · 加盟商确认单');self.resize(1060,520)
-        layout=QVBoxLayout(self);layout.addWidget(QLabel('每个门店每仓一份文件，同名文件直接覆盖。默认全选；只导出所选仓，但签发仍保存该门店完整正常单与同一修订。'))
-        self.table=QTableWidget(0,8);self.table.setHorizontalHeaderLabels(['导出','门店名称','门店编码','供货仓','状态','动销款数','新品款数','安排金额']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);layout.addWidget(self.table);self.items=[]
+        layout=QVBoxLayout(self);layout.addWidget(QLabel('每个门店每仓一份文件，同名文件直接覆盖。只签发和导出本轮所选仓；未选仓保持，门店单双仓、主从顺序及原计算规则不变。' if order is None else '只导出所选仓的原签发版本，不新增签发；门店原供货配置保持。'))
+        self.table=QTableWidget(0,8);self.table.setHorizontalHeaderLabels(['本轮执行' if order is None else '导出','门店名称','门店编码','供货仓','状态','动销款数','新品款数','安排金额']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);layout.addWidget(self.table);self.items=[]
         states=parent.states if order is None else {order['store']:{'state':'已完成','name':order['payload']['result']['store_name']}}
         results=parent.results if order is None else {order['store']:order['payload']['result']}
         profile=getattr(parent,'new_focus',None) if order is None else order['payload'].get('new_focus')
@@ -17,9 +17,14 @@ class MerchantSelection(QDialog):
                 try:summaries=warehouse_orders.summaries(results[s],profile)
                 except ValueError as exc:error=str(exc);valid=False
             if not summaries:summaries=[{'warehouse':None,'moving':0,'new':0,'amount':0}];valid=False;error=error if error!='已完成' else '没有可导出商品'
+            from warehouse_execution_ui import retired_warehouses,initial_warehouses
+            retired=retired_warehouses(parent,s) if valid and order is None else set()
+            initial=initial_warehouses(parent,s,[v['warehouse'] for v in summaries if v['warehouse'] not in retired]) if order is None else [v['warehouse'] for v in summaries]
             for info in summaries:
-                i=self.table.rowCount();self.table.insertRow(i);check=QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable if valid else Qt.ItemFlag.NoItemFlags);check.setCheckState(Qt.CheckState.Checked if valid else Qt.CheckState.Unchecked);self.table.setItem(i,0,check);self.items.append((s,info['warehouse'],check,valid))
-                for j,v in enumerate([state['name'],s,info['warehouse'] or '—','可导出' if valid else error,info['moving'],info['new'],f"{info['amount']:,.2f}"],1):self.table.setItem(i,j,QTableWidgetItem(str(v)))
+                enabled=valid and info['warehouse'] not in retired
+                i=self.table.rowCount();self.table.insertRow(i);check=QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable if enabled else Qt.ItemFlag.NoItemFlags);check.setCheckState(Qt.CheckState.Checked if enabled and info['warehouse'] in initial else Qt.CheckState.Unchecked);self.table.setItem(i,0,check);self.items.append((s,info['warehouse'],check,enabled))
+                status='已永久删除，请新建本仓任务' if info['warehouse'] in retired else '可执行' if enabled else error
+                for j,v in enumerate([state['name'],s,info['warehouse'] or '—',status,info['moving'],info['new'],f"{info['amount']:,.2f}"],1):self.table.setItem(i,j,QTableWidgetItem(str(v)))
         self.table.resizeColumnsToContents();row=QHBoxLayout()
         for title,value in [('全选有效仓',True),('取消全选',False)]:
             button=QPushButton(title);button.clicked.connect(lambda _,v=value:self.select_all(v));row.addWidget(button)

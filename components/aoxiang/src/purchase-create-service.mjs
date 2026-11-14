@@ -27,17 +27,17 @@ export async function nativeCreationEvidence(p,task,candidate,coordinator,run){
 export class PurchaseCreateService{
   constructor({root,state,ledger,browsers,progress=()=>{},coordinatorFactory=options=>new PurchaseCoordinator(options)}){Object.assign(this,{root,state,ledger,browsers,progress,coordinatorFactory});}
   async context(p,signal){
-    requireUnretired(this.state.db,p.id,p.basis.oid);requireHostOrder(p.basis.oid);
+    requireUnretired(this.state.db,p.id,p.basis.oid,p.basis.warehouse);requireHostOrder(p.basis.oid,p.basis.warehouse);
     const config=await loadConfig(this.root);checkPurchaseConfiguration(p,config);await assertHandoff(this.root,config.tenantBinding);
     const binding=await validateConfig('machine.binding',await readJson(path.join(this.root,'config/machine.binding.json')));
     const browser=await this.browsers.acquire({state:this.state,config,binding,signal,onProgress:e=>this.progress(e.stage)});
     browser.adapter.onImportReceipt=r=>this.ledger.accepted(r);
     const download=browser.adapter.retirementDownloadBase||browser.adapter.downloadPurchase;
     browser.adapter.retirementDownloadBase=download;
-    browser.adapter.downloadPurchase=async(...args)=>{const result=await download(...args);captureOwnedFiles(this.state,p.basis.oid,result);return result;};
-    return {config,binding,adapter:browser.adapter,signal,hostOrderId:p.basis.oid,hostPurchaseId:p.id};
+    browser.adapter.downloadPurchase=async(...args)=>{const result=await download(...args);captureOwnedFiles(this.state,p.basis.oid,result,p.basis.warehouse);return result;};
+    return {config,binding,adapter:browser.adapter,signal,hostOrderId:p.basis.oid,hostPurchaseId:p.id,hostWarehouse:p.basis.warehouse};
   }
-  async preflight(p,{forBinding=false}={}){requireUnretired(this.state.db,p.id,p.basis.oid);requireHostOrder(p.basis.oid);checkPurchaseConfiguration(p,await loadConfig(this.root));return checkPurchaseInput(p,{requireRounded:!forBinding});}
+  async preflight(p,{forBinding=false}={}){requireUnretired(this.state.db,p.id,p.basis.oid,p.basis.warehouse);requireHostOrder(p.basis.oid,p.basis.warehouse);checkPurchaseConfiguration(p,await loadConfig(this.root));return checkPurchaseInput(p,{requireRounded:!forBinding});}
   async prepare(p,{signal}){const {adapter}=await this.context(p,signal);return adapter.preparePurchaseCreate(p);}
   async upload(p,baseline,{signal}){const {adapter}=await this.context(p,signal);return adapter.uploadPurchaseOnce({intent:p,baseline});}
   async observe(p,receipt,{signal}){

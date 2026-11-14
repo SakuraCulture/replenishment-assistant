@@ -44,7 +44,9 @@ class StreamingEvidence(unittest.TestCase):
             self.assertEqual(db.execute('SELECT * FROM cache0.views').fetchall(),[rows[2]])
 
 class VerifiedReferences(unittest.TestCase):
-    setUp=fixtures.DeleteOrders.setUp
+    def setUp(self):
+        fixtures.DeleteOrders.setUp(self)
+        self.heads=self.r.headers()  # These cases exercise explicit complete-parent deletion.
     def keep_job(self):
         p={'schema':1,'day':'2001-01-01','model_version':'0.3.4-rules','states':{'U':{'name':'keep','state':'待计算'}},'unknown':{'proof':'kept'}}
         self.w.save_job('2001-01-01',p,None)
@@ -99,7 +101,9 @@ class VerifiedReferences(unittest.TestCase):
         self.assertEqual(self.r.headers(),[])
 
 class DuplicateWorkRewrites(unittest.TestCase):
-    setUp=fixtures.DeleteOrders.setUp
+    def setUp(self):
+        fixtures.DeleteOrders.setUp(self)
+        self.heads=self.r.headers()
 
     def duplicate_draft(self):
         day=wr.today()

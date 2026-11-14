@@ -12,7 +12,7 @@ from runtime_support import checkpoint,Cancelled
 from export_progress import RowProgress
 
 def returned_book(path,view,folder,progress,cancel,stage='return'):
-    h=view['head'];doc=view['documents'][stage];order=repository(path).get(h['day'],h['store'],h['revision'],view='export')
+    h=view['head'];doc=view['documents'][stage];order=__import__('warehouse_execution').get_order(repository(path),h,view='export')
     if order['digest']!=h['digest']:raise ValueError('签发修订校验失败')
     original=Path(folder)/('original-'+uuid.uuid4().hex+'.xlsx');ne.export(order,original,warehouse=h['warehouse'],progress=progress,cancel=cancel)
     b=openpyxl.load_workbook(original);rows={r['sku']:r for r in doc['payload']['rows']};raw_rows={r['sku']:r for r in doc['payload'].get('raw_rows',doc['payload']['rows'])};seen=set()

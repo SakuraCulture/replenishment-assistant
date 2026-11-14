@@ -80,16 +80,16 @@ async function main(){
       if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
       switch(request.action){
         case 'orders.retire':{
-          requireDeletedHostOrders(request.operation_id,request.oids);
+          requireDeletedHostOrders(request.operation_id,request.oids,request.scopes);
           const resultPending=[];
           for(const controller of [purchase,receiptSync,bindingCheck]){
             const active=controller?.job?.id;if(!active||!controller.busy)continue;
             const original=purchases.get(active),basis=original.intent?.basis||{oid:original.oid};
-            if(basis&&request.oids.includes(basis.oid)){
+            if(basis&&request.oids.includes(basis.oid)&&(!request.scopes||request.scopes.some(s=>s.oid===basis.oid&&s.warehouse===basis.warehouse))){
               controller.job.cancelled=true;controller.control?.abort();resultPending.push(active);
             }
           }
-          result=await retirement.apply(request.operation_id,request.oids);
+          result=await retirement.apply(request.operation_id,request.oids,request.scopes);
           result.pending_actions=resultPending.length;break;
         }
         case 'discover':result=await setup.discover();break;

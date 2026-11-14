@@ -13,7 +13,7 @@ def main():
     out=args.out.resolve();out.mkdir(parents=True,exist_ok=False)
     # Private LOCALAPPDATA is on C and target is on the output disk (D in acceptance).
     results=[]
-    cases=['confirm','cancel','unsaved_cancel','async','background_fail','shutdown_exception','apply_failure','cleanup_failure','interrupt_before','interrupt_after','busy','viewer_failure','large_file','cwd_in_source','qt_handle','login_pause'] if args.case=='all' else [args.case]
+    cases=['confirm','cancel','unsaved_cancel','async','background_fail','shutdown_exception','apply_failure','cleanup_failure','interrupt_before','interrupt_after','busy','viewer_failure','large_file','cwd_in_source','qt_handle','login_pause','hot_journal','corrupt_database','external_journal'] if args.case=='all' else [args.case]
     import data_relocation as move
     for case in cases:
         folder=out/case;folder.mkdir();local=Path(os.environ['TEMP'])/('replenishment-location-'+os.urandom(8).hex())
@@ -27,6 +27,21 @@ def main():
         profile=source/'settings/jst_catalog_sync/browsers/sd/User Data/Default';profile.mkdir(parents=True)
         (profile.parent/'Local State').write_text('synthetic-login','utf-8')
         (source/'AI接入').mkdir();(source/'AI接入/registration.json').write_text('{"synthetic":true}','utf-8')
+        frozen_database={};db_name='settings/jst_catalog_sync/browsers/hb/User Data/Default/ExtensionActivityEdge'
+        if case in ('hot_journal','corrupt_database','external_journal'):
+            candidate=source/db_name;candidate.parent.mkdir(parents=True)
+            if case=='corrupt_database':candidate.write_bytes(b'SQLite format 3\0'+b'\xff'*4096)
+            else:
+                from test_relocation_integrity import seed_hot_journal,JOURNAL_MAGIC
+                seed_hot_journal(candidate)
+                if case=='external_journal':
+                    sentinel=folder/'external-super-journal.keep';sentinel.write_bytes(b'SYNTHETIC-EXTERNAL-KEEP')
+                    identity=str(sentinel).encode('utf-8')
+                    with Path(str(candidate)+'-journal').open('ab') as file:
+                        file.write(identity+len(identity).to_bytes(4,'big')+(sum(identity)&0xffffffff).to_bytes(4,'big')+JOURNAL_MAGIC)
+            for suffix in ('','-journal'):
+                path=Path(str(candidate)+suffix)
+                if path.is_file():frozen_database[db_name+suffix]=hashlib.sha256(path.read_bytes()).hexdigest()
         target=folder/'D盘新资料';(folder/'synthetic.json').write_text(json.dumps({'synthetic':True,'live_platform':False,'target':str(target),'source':str(source),'localappdata':str(local)},ensure_ascii=False),'utf-8')
         expected=signature(source/'settings')
         environment={**os.environ,'LOCALAPPDATA':str(local),'QT_QPA_PLATFORM':'windows','PYTHONUTF8':'1'};environment.pop('REPLENISHMENT_DATA_DIR',None)
@@ -55,7 +70,7 @@ def main():
             (folder/'copy-release').touch();code=wait(process,file)
         else:code=run(case)
         value=journal()
-        if case in ('confirm','async','cleanup_failure','busy','large_file','cwd_in_source','qt_handle','login_pause'):
+        if case in ('confirm','async','cleanup_failure','busy','large_file','cwd_in_source','qt_handle','login_pause','hot_journal'):
             assert code==0 and value['state']=='COMPLETED',(case,code,value)
             deadline=time.monotonic()+45
             while not (folder/'reopen-exited').exists() and time.monotonic()<deadline:time.sleep(.05)
@@ -89,6 +104,17 @@ def main():
             assert code==(0 if case=='background_fail' else 1) and value['state']=='FAILED',(case,code,value)
             assert signature(source/'settings')==expected and not source.is_junction()
             assert run('reopen-failed')==0
+        if frozen_database:
+            preserved=target if case=='hot_journal' else source
+            for name,digest in frozen_database.items():assert hashlib.sha256((preserved/name).read_bytes()).hexdigest()==digest,('Changed DB or journal',name)
+            assert not list(folder.glob('.sqlite-check-*')),'Verification scratch left behind'
+            if case=='hot_journal':
+                import zipfile
+                with zipfile.ZipFile(value['archive']) as archive:
+                    for name,digest in frozen_database.items():assert hashlib.sha256(archive.read('data/'+name)).hexdigest()==digest
+            else:
+                assert db_name in value['error']['message'],'Missing failing relative database name'
+                if case=='external_journal':assert (folder/'external-super-journal.keep').read_bytes()==b'SYNTHETIC-EXTERNAL-KEEP'
         messages=[]
         if case not in ('cancel','unsaved_cancel','viewer_failure'):
             observer=folder/(case+'-progress-events.jsonl');deadline=time.monotonic()+20
@@ -108,7 +134,7 @@ def main():
             assert not any(e['event'] in ('harness_exception','watchdog_safe_close','unexpected_auto_connection') for e in events),events
             messages.extend(e for e in events if e['event']=='real_message')
         assert all(e['phase']=='RUNNING' for e in messages),'A cleanup path created a widget'
-        if case in ('confirm','async','cleanup_failure','busy','large_file','cwd_in_source','qt_handle','login_pause'):
+        if case in ('confirm','async','cleanup_failure','busy','large_file','cwd_in_source','qt_handle','login_pause','hot_journal'):
             events=[json.loads(line) for line in (folder/(case+'-events.jsonl')).read_text('utf-8').splitlines()]
             assert any(e['event']=='copy_after_qt_destroyed' and e['instance_guard_retained'] for e in events),'No verified Qt-free, guarded copy'
             if case=='qt_handle':assert any(e['event']=='qt_directory_released' for e in events),'Application-owned directory handle was not released'

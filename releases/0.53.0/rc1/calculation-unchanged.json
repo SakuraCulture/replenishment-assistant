@@ -1,0 +1,57 @@
+{
+  "base_commit": "e2f8fbcaa713ad5ed9bc5cdf053b859f8dc9870c",
+  "branch": "codex/warehouse-execution-0.53.0",
+  "model_files": [
+    {
+      "file": "src/model.py",
+      "old_sha256": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+      "new_sha256": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+      "identical": true
+    },
+    {
+      "file": "src/engine.py",
+      "old_sha256": "45cbb8ff4a4c1f1bd955e69ba0b6825407eee08f73b6e7de5678634c90cbc9d7",
+      "new_sha256": "45cbb8ff4a4c1f1bd955e69ba0b6825407eee08f73b6e7de5678634c90cbc9d7",
+      "identical": true
+    },
+    {
+      "file": "src/allocation.py",
+      "old_sha256": "eaad9d27238c3b532ac6c14a4e5091287157aa2f1e722a627d82b8e956ac4cd4",
+      "new_sha256": "eaad9d27238c3b532ac6c14a4e5091287157aa2f1e722a627d82b8e956ac4cd4",
+      "identical": true
+    },
+    {
+      "file": "src/app_defaults.py",
+      "old_sha256": "fe9b7a4b1e5ec32719f945b07dfeacd1ecfd83318228c0dbd9998a4469b1e795",
+      "new_sha256": "fe9b7a4b1e5ec32719f945b07dfeacd1ecfd83318228c0dbd9998a4469b1e795",
+      "identical": true
+    },
+    {
+      "file": "src/restock_policy.py",
+      "old_sha256": "d67d3b27e3218e9d4dbfaac8aff1e1e9d847505f3034878e5c5080bf117ed075",
+      "new_sha256": "d67d3b27e3218e9d4dbfaac8aff1e1e9d847505f3034878e5c5080bf117ed075",
+      "identical": true
+    },
+    {
+      "file": "src/new_products.py",
+      "old_sha256": "f92b75cf0fc5c55502c215d537bda15683eb9082a51e1227c1c822777f742195",
+      "new_sha256": "f92b75cf0fc5c55502c215d537bda15683eb9082a51e1227c1c822777f742195",
+      "identical": true
+    },
+    {
+      "file": "src/first_fill.py",
+      "old_sha256": "19a53dfe6661f13f7c230c2a2162e1b40fe8e2406456f1af1ea59e45f9c94fe2",
+      "new_sha256": "19a53dfe6661f13f7c230c2a2162e1b40fe8e2406456f1af1ea59e45f9c94fe2",
+      "identical": true
+    },
+    {
+      "file": "src/version.json",
+      "old_sha256": "ce412f18b33b7c99198f63b04f871caf738545ae870a7c9c72386e85b4ed1c56",
+      "new_sha256": "9de11f161e43af081b85710b0e92d04ebb9867d5cf8ea6d67a83a4d7cced9c60",
+      "identical": false
+    }
+  ],
+  "business_calculation_unchanged": true,
+  "real_platform": false,
+  "real_migration": false
+}

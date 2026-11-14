@@ -1,0 +1,13 @@
+{
+  "comparison": "frozen 0.53.0 rc1",
+  "identical": {
+    "src/model.py": true,
+    "src/engine.py": true,
+    "src/allocation.py": true,
+    "src/jst_allocation.py": true,
+    "src/jst_orders.py": true,
+    "src/jst_batches.py": true,
+    "src/warehouse_catalog.py": true,
+    "src/warehouse_execution.py": true
+  }
+}

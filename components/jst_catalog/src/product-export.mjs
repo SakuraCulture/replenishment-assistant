@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {CatalogError,check,sleep,atomic} from './common.mjs';
+import {CatalogError,check,sleep,atomic,safeError} from './common.mjs';
 const execFileAsync=promisify(execFile);
 
 export const COMPANY=null;
@@ -220,16 +220,31 @@ export async function receiveBoundFile(page,address,{recordId,expectedRows,expec
   if(expectedPath&&url.pathname!==expectedPath)throw new CatalogError('FILE_IDENTITY','原任务文件身份已变化');
   check(signal);onProgress('DOWNLOADING','正在接收原任务文件');
   const response=await page.context().request.get(url.href,{timeout:60000,maxRedirects:0});
-  if(!response.ok()){
-    if([401,403,404].includes(response.status()))downloadAddresses.get(page)?.delete(recordId);
-    throw Error('原生文件接收 HTTP '+response.status());
+  try{
+    if(!response.ok()){
+      if([401,403,404].includes(response.status()))downloadAddresses.get(page)?.delete(recordId);
+      throw Error('原生文件接收 HTTP '+response.status());
+    }
+    const bytes=await response.body();check(signal);
+    if(bytes.length<100||bytes.length>60*1024*1024||bytes.subarray(0,4).toString('hex')!=='504b0304')throw Error('下载不是受支持的XLSX');
+    const sha256=crypto.createHash('sha256').update(bytes).digest('hex');await fs.mkdir(output,{recursive:true});
+    const file=path.join(output,'聚水潭商品资料_'+recordId+'_'+sha256.slice(0,12)+'.xlsx');
+    await fs.writeFile(file,bytes,{flag:'wx'}).catch(async e=>{if(e.code!=='EEXIST')throw e;if(crypto.createHash('sha256').update(await fs.readFile(file)).digest('hex')!==sha256)throw Error('已有文件内容冲突');});
+    return {file,recordId,expectedRows,bytes:bytes.length,sha256,nativePath:url.origin+url.pathname,sourceBytesPreserved:true};
+  }finally{
+    // The shared request context outlives this download and retains response
+    // bodies until explicitly disposed. Release only this response, after its
+    // bytes have been saved/verified; never close the browser or login context.
+    try{await response.dispose();}
+    catch(error){
+      // A disconnected context during cleanup must not replace the original
+      // download failure or turn a successfully saved file into a failed task.
+      try{
+        const detail=safeError(error??new Error('未知响应清理错误'));
+        console.error('聚水潭下载响应清理未完成：'+detail.code+'；'+detail.message);
+      }catch{} // Diagnostics themselves are best effort during disconnection.
+    }
   }
-  const bytes=await response.body();check(signal);
-  if(bytes.length<100||bytes.length>60*1024*1024||bytes.subarray(0,4).toString('hex')!=='504b0304')throw Error('下载不是受支持的XLSX');
-  const sha256=crypto.createHash('sha256').update(bytes).digest('hex');await fs.mkdir(output,{recursive:true});
-  const file=path.join(output,'聚水潭商品资料_'+recordId+'_'+sha256.slice(0,12)+'.xlsx');
-  await fs.writeFile(file,bytes,{flag:'wx'}).catch(async e=>{if(e.code!=='EEXIST')throw e;if(crypto.createHash('sha256').update(await fs.readFile(file)).digest('hex')!==sha256)throw Error('已有文件内容冲突');});
-  return {file,recordId,expectedRows,bytes:bytes.length,sha256,nativePath:url.origin+url.pathname,sourceBytesPreserved:true};
 }
 function observe(page,event,predicate,timeout){
   let listener,timer,finish;

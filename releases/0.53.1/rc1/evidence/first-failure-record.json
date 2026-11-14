@@ -1,0 +1,17 @@
+{
+  "tests": 13,
+  "passed": 11,
+  "failed": 2,
+  "reason": "Strict test expected string quantities from first inspected implementation, but production changed to numeric Excel cells before run; numeric is desired, so expectations were updated without changing quantities or source checks.",
+  "cases": [
+    "test_generation_keeps_original_100_after_global_stock_refreshes_to_900",
+    "test_unconfirmed_preview_exports_chosen_300_and_does_not_register"
+  ],
+  "actual_numeric_values": [
+    100,
+    100,
+    40,
+    60,
+    300
+  ]
+}

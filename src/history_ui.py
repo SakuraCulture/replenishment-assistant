@@ -31,7 +31,15 @@ class ArchiveDialog(QDialog):
         from history_tasks import HistoryReader
         self.reader=HistoryReader(host.work_repository.path,host.history_reader.cache,self)
         self.initial_tab=initial_tab;self.initial_sku=sku;self.children_views={};root=QVBoxLayout(self);root.addWidget(label(record['number']+' · '+record.get('name',record['store'])+' · '+record.get('warehouse',''),'section'));self.tabs=QTabWidget();root.addWidget(self.tabs,1);page=QWidget();v=QVBoxLayout(page);self.tabs.addTab(page,'签发明细');self.tabs.addTab(QWidget(),'订单跟踪');self.tabs.addTab(QWidget(),'决策依据')
-        self.rev=QComboBox();self.rev.addItems([f'V{i:03d}'+(' · 当前' if i==record['revision'] else ' · 历史') for i in range(1,record['revision']+1)]);self.rev.setCurrentIndex(record['revision']-1);self.rev.hide();v.addWidget(button('查看签发历史记录',self.rev.show));v.addWidget(self.rev)
+        self.rev=QComboBox()
+        with closing(host.work_repository.connect()) as db:
+            import warehouse_execution
+            revisions=[h for h in warehouse_execution.heads(db,history=True) if h['day']==record['day'] and h['store']==record['store'] and h['warehouse']==record.get('warehouse')]
+        if revisions:
+            for h in sorted(revisions,key=lambda x:x['revision']):self.rev.addItem(f"V{h.get('child_revision',h['revision']):03d}"+(' · 当前' if h['revision']==h['current_revision'] else ' · 历史'),h['revision'])
+        else:
+            for i in range(1,record['revision']+1):self.rev.addItem(f'V{i:03d}',i)
+        self.rev.setCurrentIndex(max(0,self.rev.findData(record['revision'])));self.rev.hide();v.addWidget(button('查看签发历史记录',self.rev.show));v.addWidget(self.rev)
         self.note=label('读取中…','muted');v.addWidget(self.note);self.search=QLineEdit();self.search.setPlaceholderText('筛选商品名称 / 编码（不影响正式导出范围）');v.addWidget(self.search)
         self.model=ArchiveModel(self);self.table=QTableView();self.table.setModel(self.model);self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);v.addWidget(self.table,1)
         for i,width in enumerate([150,260,115,100,100,100,110,340]):self.table.setColumnWidth(i,width)
@@ -53,9 +61,15 @@ class ArchiveDialog(QDialog):
         try:
             repo=repository(self.host.work_repository.path)
             with closing(repo.work.connect()) as db:
-                r=db.execute('SELECT o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid WHERE o.day=? AND o.store=? AND r.revision=?',(self.record['day'],self.record['store'],self.rev.currentIndex()+1)).fetchone()
+                r=db.execute('SELECT o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid WHERE o.day=? AND o.store=? AND r.revision=?',(self.record['day'],self.record['store'],self.rev.currentData())).fetchone()
             if r is None:raise ValueError('归档修订不存在')
-            h=dict(zip(('oid','number','current_revision','digest','saved'),r));h.update(day=self.record['day'],store=self.record['store'],revision=self.rev.currentIndex()+1,warehouse=self.record.get('warehouse'))
+            h=dict(zip(('oid','number','current_revision','digest','saved'),r));h.update(day=self.record['day'],store=self.record['store'],revision=self.rev.currentData(),warehouse=self.record.get('warehouse'))
+            with closing(repo.work.connect()) as db:
+                import warehouse_execution
+                if warehouse_execution.has_parent(db,h['oid']):
+                    revision=self.rev.currentData()
+                    h=next((x for x in warehouse_execution.heads(db,history=True) if x['oid']==h['oid'] and x['warehouse']==h['warehouse'] and x['revision']==revision),None)
+                    if h is None:raise ValueError('该仓历史修订不存在或已删除')
             self.reader.request({'kind':'detail','head':h},self.ready,self.failed)
         except Exception as exc:self.failed(str(exc))
     def ready(self,view):
@@ -251,7 +265,7 @@ class EventsDialog(QDialog):
         if not hasattr(host,'work_repository'):return
         with closing(host.work_repository.connect()) as db:row=db.execute('SELECT day,store,number,current FROM normal_orders WHERE oid=?',(record['oid'],)).fetchone()
         if not row:return
-        head=dict(zip(('day','store','number','revision'),row));head['warehouse']=record.get('warehouse');head['number']=record.get('child_number',head['number']);d=ArchiveDialog(host,head);d.rev.setCurrentIndex(record['revision']-1);d.exec();d.deleteLater()
+        head=dict(zip(('day','store','number','revision'),row));head['warehouse']=record.get('warehouse');head['number']=record.get('child_number',head['number']);d=ArchiveDialog(host,head);d.rev.setCurrentIndex(max(0,d.rev.findData(record['revision'])));d.exec();d.deleteLater()
     def filter(self,*_):
         from business_presenter import title
         self.model.filter(' '.join(title(t) for t in self.search.text().split()));self.model.beginResetModel();self.model.indices=[i for i in self.model.indices if (not self.day.currentData() or self.rows[i][0].startswith(self.day.currentData())) and (not self.action.currentData() or self.rows[i][4]==self.action.currentData())];self.model.endResetModel();self.matches=[self.records[i] for i in self.model.indices];self.note.setText(f'匹配 {len(self.matches)} / {len(self.records)} 条；双击回溯当时签发修订，打开当前记录关联单据后，可导出其确切仓单修订。');self.selection_changed()
@@ -268,4 +282,10 @@ class EventsDialog(QDialog):
         if not row:return
         head=dict(zip(('day','store','parent_number','current_revision','digest','saved'),row))
         head.update(oid=record['oid'],revision=record['revision'],warehouse=record['warehouse'],number=number(head['parent_number'],record['warehouse']),deleted=state['deleted'],visibility_token=state['token'])
+        with closing(host.work_repository.connect()) as db:
+            import warehouse_execution
+            if warehouse_execution.has_parent(db,record['oid']):
+                head=next((h for h in warehouse_execution.heads(db,history=True) if h['oid']==record['oid'] and h['warehouse']==record['warehouse'] and h['revision']==record['revision']),None)
+                if head is None:return
+                head.update(deleted=state['deleted'],visibility_token=state['token'])
         host.export_archive(head,kind)

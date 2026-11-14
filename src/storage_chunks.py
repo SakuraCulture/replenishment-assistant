@@ -29,7 +29,7 @@ def require_current(db,cancel=None):
     """
     from runtime_support import checkpoint
     available={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    for table in ('normal_revisions','normal_work_revisions','jobs','scheduled_values'):
+    for table in ('normal_revisions','normal_work_revisions','warehouse_execution_revisions','jobs','scheduled_values'):
         if table not in available:continue
         for header, in db.execute(f'SELECT substr(payload,1,?) FROM {table}',(len(MAGIC),)):
             checkpoint(cancel)

@@ -1,21 +1,21 @@
 {
-  "edition": "2026-11-13",
-  "application": "0.52.3",
-  "chapters": 24,
+  "edition": "2026-11-14",
+  "application": "0.53.1",
+  "chapters": 26,
   "pdf_pages": 107,
-  "images": 54,
+  "images": 61,
   "parameter_definitions": 28,
   "runtime_logic_changed": true,
   "sealed_0493_changed": false,
   "legacy_pdf_preserved": true,
   "live_platform_tested": false,
   "newcomer_field_acceptance": false,
-  "validation": "0.52.3 evidence: qa/storage_browser_race_20261113_01; final EXE result is recorded in the release report",
+  "validation": "0.53.1 stock evidence export targeted regression and native EXE acceptance; scope and limitations in independent release report",
   "files": {
-    "guide.md": "c701e276659e226c99fe060d6b7b5374c561726dc4b1fe224232bc946db9d933",
-    "index.html": "94cd05af163511e0e8e30ac6dadd04dd05e3c31167f0ab3578754fa69a9e7275",
+    "guide.md": "6efdd88842d5aea4d463d040df6331f73e0f194157e77f1c65cf00d04286e1f8",
+    "index.html": "0a0d3c356fbda33420c0daaa35b45d2ad1235312e15d06092dfe4ea7010daea5",
     "parameter-reference.json": "08905e215c7f66245816eb8e31f5b3c04b1ea8dfde488cd6bfd3ec7cf52a895b",
-    "screenshot-index.json": "4e5cd91ae9da131174b49e97ca50f08ef8b9212b8c50a932ad06529aeb80d821",
+    "screenshot-index.json": "549c425472664f9846369594cb1bbaeae7d29817f1fc6c3055d8d59f417163ac",
     "补货助手_0.48.0_新人使用手册.pdf": "07ffb9011e5a76b9427eec29aea818f9fee05ba047a2a2cd967d4597cf649e3d",
     "补货助手_0.49.3_新人业务上手手册.pdf": "e2f494ed73817a561a87265811d2474c054e39f87b31ec60092ef1bac44e7326",
     "补货助手_0.51.5_新人业务上手手册.pdf": "ae40baa04b75dc109fc9ec5b9f365a8a51a5e71d06801d670a770bfecf50d0f3",
@@ -85,10 +85,12 @@
     "images/workflow-ratios-0520.png": "03382239cbf74d1c6492953ed9bc1fe73021442507d154c1523faca23331ef0e",
     "validation_20261108/html-report.json": "c7de56a12ca067f9b9dcba24aa8099b7a595b9683384817f987bd79ec419de37",
     "validation_20261108/pdf-report.json": "3fecf4e60338c59360f666f24e1b0d73690c9463c20fb2e7b3d1fa77bf0e2e60",
-    "images/data-location-progress-0522.png": "05f847865606c65587143a3dd3c430f463e2b574676bc7f0eb4d3148f658741b"
+    "images/data-location-progress-0522.png": "05f847865606c65587143a3dd3c430f463e2b574676bc7f0eb4d3148f658741b",
+    "images/order-merge-preview-0528.png": "24a906c474cd417addf30a837f38fbe5b86a643bf857d23a7f73ac9cad0069c2",
+    "images/duplicate-resolution-0529.png": "8506c76277449e51686014b58247ccc06a65f8266fc1b646607c7addd9becd16"
   },
   "pdf_application": "0.52.1",
-  "pdf_status": "0.52.1 and earlier PDFs retained; current HTML chapter 24 includes 0.52.3 maintenance and failure instructions",
+  "pdf_status": "0.52.1 and earlier PDFs retained; current HTML chapter 24 includes SQLite recovery verification in 0.52.4",
   "sealed_0510_rc1_changed": false,
   "daily_tag_guide": {
     "updated": "2026-11-11",
@@ -120,7 +122,7 @@
   },
   "source_mode": "Actual source Qt synthetic walkthrough; frozen EXE acceptance recorded in the release report",
   "model_version": "0.3.6-rules",
-  "indexed_images": 54,
+  "indexed_images": 60,
   "paid_return_correction": {
     "chapter": "08",
     "version": "0.51.8",
@@ -141,9 +143,41 @@
   "pdf_visual_review": "passed: seven changed pages rendered and reviewed",
   "storage_progress": {
     "chapter": "24",
-    "version": "0.52.3",
+    "version": "0.52.4",
     "live_platform_tested": false,
     "maintenance_pause": true,
-    "success_only_reopen": true
+    "success_only_reopen": true,
+    "isolated_sqlite_verification": true
+  },
+  "order_merge": {
+    "version": "0.52.8",
+    "chapter": "21",
+    "source_image": "source-native-confirm-04/confirm/confirm-preview-selected-conflict.png",
+    "image_provenance": "source Qt synthetic preview only; that run blocked by a correctly protected live instance",
+    "scope": "add-only, duplicate skip, conflict isolation; no existing-order completion",
+    "real_platform_tested": false
+  },
+  "model": "0.3.6-rules",
+  "warehouse_execution": {
+    "chapter": "25",
+    "version": "0.53.0",
+    "route_calculation_budget_unchanged": true,
+    "selected_warehouse_only": true,
+    "single_warehouse_delete": true,
+    "cross_day_latest_inputs": true,
+    "merge_existing_parent_policy": "whole-graph conflict isolation; no silent warehouse completion",
+    "images": "Explicitly versioned historical figures; new native EXE screenshots in QA/release only",
+    "live_platform_tested": false
+  },
+  "html_validation": "qa/warehouse_manual_0530_html_20261114_02/html-report.json",
+  "current_pdf_generated": false,
+  "current_changes_format": "guide.md and offline index.html; existing PDF files preserved as historical editions",
+  "stock_evidence_export": {
+    "chapter": "26",
+    "version": "0.53.1",
+    "frozen_bid_only": true,
+    "read_only": true,
+    "live_platform_tested": false,
+    "complete_original_export": false
   }
 }

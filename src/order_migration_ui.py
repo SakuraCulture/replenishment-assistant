@@ -17,8 +17,8 @@ def open_migration(parent,host):
     from data_maintenance_ui import guarded
     def show():
         idle(host);d=QDialog(parent);d.setWindowTitle('完整订单迁移与参数导出');d.resize(760,400);v=QVBoxLayout(d)
-        v.addWidget(label('迁移全部本地订单，保留完整关联','section'))
-        text=label('不受当前日期、筛选或勾选限制。包含订单全部修订、草稿、回传、库存分配、付款、实收、平台单号、防重事实、参数及留存原件。\n浏览器登录、机器连接配置、AI密钥和两个独立缺货分析板块不随包迁移。');text.setWordWrap(True);v.addWidget(text)
+        v.addWidget(label('合并导入保留本机；完整替换仅用于恢复','section'))
+        text=label('导出全部本地订单，不受当前日期、筛选或勾选限制。合并导入只新增无冲突订单，完全重复跳过，冲突保留本机；本轮不补齐已有订单。\n浏览器登录、机器连接配置、AI密钥和两个独立缺货分析板块不随包迁移。');text.setWordWrap(True);v.addWidget(text)
         def save():
             from order_migration import export
             path,_=QFileDialog.getSaveFileName(d,'导出完整订单迁移包','补货助手_完整订单迁移.zip','Zip (*.zip)')
@@ -61,6 +61,28 @@ def open_migration(parent,host):
                         shutdown_failed(host,exc)
                     else:discard(plan)
                 QMessageBox.warning(d,'订单未迁入',str(exc))
+        def merge_orders():
+            from order_merge_migration import prepare
+            from order_migration import discard
+            from order_merge_ui import review
+            path,_=QFileDialog.getOpenFileName(d,'选择要合并的完整订单迁移包','','Zip (*.zip)')
+            if not path:return
+            plan=None
+            try:
+                idle(host);plan=run(d,prepare,(host.repository.folder,path),'校验订单及完整关联，核对新增、重复和冲突')
+                if not review(d,plan):discard(plan);return
+                from migration_status import waiting
+                waiting(host,plan);host._discard_close=True;d.accept();host.setEnabled(False)
+                if not host.close():host.status.setText('订单合并已确认，正在等待后台安全退出；原资料保持，退出后完成合并。')
+            except Cancelled:
+                if plan:discard(plan)
+            except Exception as exc:
+                if plan:
+                    if getattr(host,'_order_import_request',None) is plan:
+                        from migration_status import shutdown_failed
+                        shutdown_failed(host,exc)
+                    else:discard(plan)
+                QMessageBox.warning(d,'订单未合并，原资料保持',str(exc))
         def parameters():
             from parameter_snapshot import export
             path,_=QFileDialog.getSaveFileName(d,'导出全部已保存参数','补货助手_全部门店参数.xlsx','Excel (*.xlsx)')
@@ -72,5 +94,6 @@ def open_migration(parent,host):
             from migration_status import latest,folder
             value=latest(host.repository.folder)
             QMessageBox.information(d,'上次迁入结果',('尚无新的迁入状态记录。旧的临时目录不代表迁入完成。' if value is None else f"状态：{value['state']} / {value['phase']}\n"+value.get('error',{}).get('message','')+f"\n迁入材料：{value['stage']}\n完整备份：{value['backup']}")+f'\n诊断：{folder(host.repository.folder)}\n失败后可重新校验原迁移包；不会自动重放。')
-        v.addWidget(button('导出完整订单迁移包…',save,True));v.addWidget(button('校验并导入完整订单迁移包…',restore));v.addWidget(button('查看上次迁入结果与原始错误',previous));v.addWidget(button('导出全部门店参数与预案…',parameters));v.addWidget(button('关闭',d.reject));d.exec()
+        v.addWidget(button('合并导入订单（保留本机）…',merge_orders,True))
+        v.addWidget(button('导出完整订单迁移包…',save));v.addWidget(button('校验并导入完整订单迁移包…',restore));v.addWidget(label('上方“校验并导入完整订单迁移包”是完整替换恢复，会替换订单及参数；日常汇入请使用“合并导入”。','muted'));v.addWidget(button('查看上次迁入结果与原始错误',previous));v.addWidget(button('导出全部门店参数与预案…',parameters));v.addWidget(button('关闭',d.reject));d.exec()
     return guarded(parent,host,show)

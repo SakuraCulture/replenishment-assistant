@@ -136,7 +136,9 @@ class ProcessClient:
                     logging.warning('业务已删除，导出回执清理待重试；原回执保留',exc_info=True)
                     complete=False
                 for start in range(0,len(plan['oids']),256):
-                    r=self.request('orders.retire',operation_id=plan['operation_id'],oids=plan['oids'][start:start+256])
+                    subset=plan['oids'][start:start+256]
+                    values={'scopes':[s for s in plan['scopes'] if s['oid'] in subset]} if plan.get('scopes') else {}
+                    r=self.request('orders.retire',operation_id=plan['operation_id'],oids=subset,**values)
                     complete=complete and not r.get('pending_files') and not r.get('pending_actions')
                 if complete:
                     try:deletion_barrier.acknowledge(self.business_path,plan['operation_id'],plan['generation'])

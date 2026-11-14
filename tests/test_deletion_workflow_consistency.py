@@ -24,6 +24,11 @@ class Consistency(unittest.TestCase):
         self.store=Workflows(self.path.parent/'aoxiang')
         self.before_b=self.r.get(wr.today(),'U')
 
+    def parents(self,*heads):
+        """These tests explicitly delete complete stores, not just task warehouses."""
+        selected={h['oid'] for h in heads}
+        return [h for h in self.r.headers() if h['oid'] in selected]
+
     def failed(self,heads=None):
         j=self.store.prepare(heads or [self.a,self.b])
         for n in range(len(j['items'])):
@@ -32,7 +37,7 @@ class Consistency(unittest.TestCase):
 
     def test_reported_local_review_deletes_only_selected_and_keeps_other_snapshot(self):
         j=self.failed();before=copy.deepcopy(j['items'][1]);before['position']=0
-        plan=m.inspect_deletion(self.path,[self.a]);self.assertEqual(plan['blockers'],[])
+        plan=m.inspect_deletion(self.path,self.parents(self.a));self.assertEqual(plan['blockers'],[])
         self.assertEqual(len(plan['tasks']),1);self.assertEqual(plan['external'],[])
         m.execute(self.path,plan)
         kept=self.store.get(j['id']);self.assertEqual(kept['items'],[before]);self.assertEqual(counts(kept)['review'],1)
@@ -42,14 +47,14 @@ class Consistency(unittest.TestCase):
     def test_partial_removal_reconciles_state_and_keeps_external_identity(self):
         j=self.failed();j=self.store.update(j['id'],position=1,changes={'state':'PREPARED','package':{'id':'keep-external-identity'},'error':None})
         survivor=copy.deepcopy(j['items'][1]);survivor['position']=0
-        m.execute(self.path,m.prepare(self.path,[self.a]))
+        m.execute(self.path,m.prepare(self.path,self.parents(self.a)))
         kept=self.store.get(j['id']);self.assertEqual(kept['state'],'READY');self.assertEqual(kept['items'],[survivor])
         with self.store.db() as db:self.assertEqual(db.execute('SELECT state FROM ax_workflows WHERE id=?',(j['id'],)).fetchone()[0],'READY')
         self.assertEqual(self.r.get(wr.today(),'U'),self.before_b)
 
     def test_inspection_lists_all_related_tasks_without_veto_or_writes(self):
         j=self.store.prepare([self.a,self.b]);before=self.store.get(j['id'])
-        plan=m.inspect_deletion(self.path,[self.a,self.b])
+        plan=m.inspect_deletion(self.path,self.parents(self.a,self.b))
         self.assertEqual(plan['blockers'],[])
         self.assertEqual([b['order'] for b in plan['tasks']],[self.a['number'],self.b['number']])
         self.assertTrue(all(b['can_end'] for b in plan['tasks']))
@@ -61,7 +66,7 @@ class Consistency(unittest.TestCase):
         j=self.store.prepare([self.a,self.b]);other=copy.deepcopy(j['items'][1]);other['position']=0
         ended=self.store.end_local_items(j['id'],[self.a['number']],j['sequence'])
         self.assertEqual(ended['state'],'QUEUED');self.assertIsNone(deletion_issue(ended,ended['items'][0]))
-        m.execute(self.path,m.prepare(self.path,[self.a]))
+        m.execute(self.path,m.prepare(self.path,self.parents(self.a)))
         kept=self.store.get(j['id']);self.assertEqual(kept['state'],'QUEUED');self.assertEqual(kept['items'],[other])
         self.assertEqual(self.store.next_queued()['items'],[other])
         self.assertEqual(self.r.get(wr.today(),'U'),self.before_b)
@@ -78,14 +83,14 @@ class Consistency(unittest.TestCase):
         self.assertEqual(self.store.get(j['id']),current)
 
     def test_preview_then_execution_start_preserves_running_unselected_item(self):
-        j=self.failed();plan=m.prepare(self.path,[self.a]);self.store.update(j['id'],state='RUNNING')
+        j=self.failed();plan=m.prepare(self.path,self.parents(self.a));self.store.update(j['id'],state='RUNNING')
         m.execute(self.path,plan)
         self.assertIsNone(self.r.get(wr.today(),'T'));self.assertEqual(self.r.get(wr.today(),'U'),self.before_b)
         kept=self.store.get(j['id']);self.assertEqual(kept['state'],'RUNNING');self.assertEqual([i['head']['oid'] for i in kept['items']],['other'])
 
     def test_upload_unknown_cannot_be_cancelled_before_upload_but_can_be_deleted_locally(self):
         j=self.failed([self.a]);j=self.store.update(j['id'],state='CANCELLED',kind='upload',position=0,changes={'package':{'id':'purchase-unknown'},'error':{'code':'SUBMISSION_UNKNOWN','message':'平台受理待核'}})
-        plan=m.inspect_deletion(self.path,[self.a]);self.assertEqual(plan['tasks'][0]['action'],'平台结果待核')
+        plan=m.inspect_deletion(self.path,self.parents(self.a));self.assertEqual(plan['tasks'][0]['action'],'平台结果待核')
         self.assertFalse(plan['tasks'][0]['can_end']);self.assertFalse(plan['blockers'])
         with self.assertRaises(ValueError):self.store.end_local_items(j['id'],[self.a['number']],j['sequence'])
         m.execute(self.path,plan,True)
@@ -106,12 +111,12 @@ class Consistency(unittest.TestCase):
             'package':{'id':'original'},'error':{'code':'PURCHASE_CREATED_MISMATCH'},
             'purchase_observation':{'taskId':'original-task','uploadAttempted':True}})
         other=copy.deepcopy(duplicate['items'][1])
-        plan=m.inspect_deletion(self.path,[self.a]);self.assertFalse(plan['blockers'])
+        plan=m.inspect_deletion(self.path,self.parents(self.a));self.assertFalse(plan['blockers'])
         self.assertEqual({i['id'] for i in plan['tasks']},{original['id'],duplicate['id']})
         self.assertTrue(can_end_local(duplicate,duplicate['items'][0]))
         ended=self.store.end_local_items(duplicate['id'],[self.a['number']],duplicate['sequence'])
         self.assertEqual(ended['items'][1],other)
-        plan=m.prepare(self.path,[self.a]);self.assertFalse(plan['blockers'])
+        plan=m.prepare(self.path,self.parents(self.a));self.assertFalse(plan['blockers'])
         self.assertEqual(len(plan['parents'][0]['warehouses']),2)
         m.execute(self.path,plan,True)
         self.assertIsNone(self.r.get(wr.today(),'T'));self.assertEqual(self.r.get(wr.today(),'U'),self.before_b)
@@ -140,7 +145,7 @@ class Consistency(unittest.TestCase):
         self.assertEqual(self.store.get(job['id']),current)
 
     def test_cancel_and_cross_database_failure_restore_all_task_payloads(self):
-        j=self.failed();plan=m.prepare(self.path,[self.a]);cancel=threading.Event()
+        j=self.failed();plan=m.prepare(self.path,self.parents(self.a));cancel=threading.Event()
         def progress(value):
             if '正在删除' in str(value):cancel.set()
         with self.assertRaises(Cancelled):m.execute(self.path,plan,cancel=cancel,progress=progress)

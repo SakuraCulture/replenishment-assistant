@@ -1,0 +1,11 @@
+{
+  "version": "0.52.9",
+  "build_id": "rc1",
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.52.9_rc1\\补货助手\\补货助手.exe",
+  "exe_sha256": "37bd7d003fb89fadef088484bc91ea4ad042285a1373aae2443807cf2737a416",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.52.9_rc1\\补货助手_0.52.9_rc1_回传重复商品修复.zip",
+  "zip_sha256": "672010579b7a2b942a0c336e88bfad3c82d4a70e589cec394fff094e5ff96200",
+  "zip_bytes": 156015339,
+  "zip_crc_ok": true,
+  "source_snapshot_sha256": "a4ed76d7defd0d7270989dc1137dc67b6c771a84d6932e958445c58ba5269205"
+}

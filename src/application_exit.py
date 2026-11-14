@@ -1,6 +1,10 @@
 """Post-event-loop handoff: no widget construction after shutdown begins."""
 import logging,sys,traceback,os
 
+def drain_gui_objects(runtime):
+    collector=getattr(runtime,'gui_gc',None)
+    if collector is not None:collector.drain()
+
 def running_threads(runtime):
     from PySide6.QtCore import QThread
     from shiboken6 import isValid
@@ -38,6 +42,7 @@ def finish(runtime,code):
     if running_threads(runtime) or retained_sessions(runtime):raise RuntimeError('事件循环提前退出，但后台线程或连接尚未结束；不执行迁入，等待原任务安全收尾')
     if (plan or reset or storage) and runtime.shutdown_errors:raise RuntimeError('安全退出阶段已发生异常，资料操作未执行；原始错误：'+str(runtime.first_shutdown_exception)) from runtime.first_shutdown_exception
     before=runtime.shutdown_errors
+    drain_gui_objects(runtime)
     if shiboken6.isValid(win):shiboken6.delete(win)
     runtime.window=None
     if runtime.shutdown_errors!=before:raise RuntimeError('退出清理回调发生异常，迁入未执行；原始错误：'+str(runtime.first_shutdown_exception)) from runtime.first_shutdown_exception
@@ -49,6 +54,7 @@ def finish(runtime,code):
         primary=runtime.primary;runtime.primary=primary.take_guard()
         shiboken6.delete(primary)
         app=runtime.application
+        drain_gui_objects(runtime)
         if app is not None and shiboken6.isValid(app):shiboken6.delete(app)
         runtime.application=None
         if runtime.shutdown_errors!=before:raise RuntimeError('Qt退出回调发生异常，搬迁未执行；原始错误：'+str(runtime.first_shutdown_exception)) from runtime.first_shutdown_exception
@@ -90,6 +96,7 @@ def release(runtime):
         if win is not None and shiboken6.isValid(win):win._order_import_request=None;win._data_location_request=None
         runtime.transition('WAITING_WORKERS');timer.start();app.exec();timer.stop();timer.deleteLater()
         runtime.transition('FINALIZING')
+    drain_gui_objects(runtime)
     for name in ('window','lease','primary'):
         item=getattr(runtime,name,None)
         if item is None:continue
@@ -101,6 +108,7 @@ def release(runtime):
         setattr(runtime,name,None)
     logging.shutdown()
     app=getattr(runtime,'application',None)
+    drain_gui_objects(runtime)
     if app is not None and shiboken6.isValid(app):
         try:shiboken6.delete(app)
         except BaseException:runtime.exception(*sys.exc_info(),event='QT_FINALIZE_EXCEPTION')
@@ -129,7 +137,11 @@ def notice(host,root):
     if value.get('acknowledged'):return
     state=value['state'];title='上次订单迁入结果'
     detail=f"状态：{state} / {value['phase']}\n诊断：{folder(root)}\n"
-    if state=='COMPLETED':detail+='订单迁入已完成；原库完整备份保留。请先核对连接和原平台结果，再逐项继续。'
+    if state=='COMPLETED':
+        result=value.get('result',{})
+        if result.get('mode')=='merge':
+            counts=result['counts'];detail+='订单合并已完成：新增 {added} 单，完全重复跳过 {duplicate} 单，冲突保留本机 {conflict} 单，本机已删除不恢复 {deleted} 单。'.format(**counts)+'\n本机原数据保留，完整备份：'+result['backup']+'\n完整结果：'+result['report']+'\n迁入任务未自动执行；请先核验连接和原平台结果。'
+        else:detail+='订单迁入已完成；原库完整备份保留。请先核对连接和原平台结果，再逐项继续。'
     elif state=='CANCELLED':return
     else:detail+='未确认迁入完成。原库、迁入材料及已有备份保留；不会自动重放。请查看原始错误，处理后重新校验原迁移包。\n'+value.get('error',{}).get('message','上次在退出或替换完成前中断，请保留现场。')
     QMessageBox.information(host,title,detail)

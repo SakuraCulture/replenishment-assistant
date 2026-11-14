@@ -199,6 +199,13 @@ class Repository:
         with self.db(True) as db:
             r=self._get(db,rid)
             if r['epoch']!=epoch or r['state'] not in ('RUNNING','PAUSING'):raise wr.Conflict('本次执行已退出，未采用迟到结果')
+            if store and name=='result:'+store:
+                import deletion_barrier
+                row=db.execute("SELECT digest,payload FROM scheduled_values WHERE run_id=? AND name='basis'",(rid,)).fetchone()
+                basis=chunks.load(row['payload'],db,expected=row['digest']) if row else {}
+                deletion_barrier.validate(db,deletion_barrier.basis({'day':r['day'],'results':{store:value},
+                    'deletion_generations':basis.get('deletion_generations',{}),
+                    'warehouse_deletion_generations':basis.get('warehouse_deletion_generations',{})}))
             blob=chunks.put(db,p)
             db.execute('INSERT INTO scheduled_values VALUES(?,?,?,?) ON CONFLICT(run_id,name) DO UPDATE SET digest=excluded.digest,payload=excluded.payload',(rid,name,p.digest,blob))
             if store:

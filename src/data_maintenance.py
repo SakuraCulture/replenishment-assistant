@@ -1,8 +1,8 @@
-"""Previewed permanent removal of complete store/day orders, in one transaction.
+"""Previewed permanent removal of selected warehouse orders, in one transaction.
 
-Warehouse children share a signed parent: selection is explicitly expanded to
-that parent before confirmation. Shared immutable source snapshots are retained
-only while another live order references them. This is not forensic disk wiping.
+Legacy parent-only callers retain the complete store/day scope. Warehouse-aware
+callers remove exact child histories and project shared records; sibling frozen
+identities and referenced immutable source files survive. Not forensic wiping.
 """
 import copy, hashlib, sqlite3, uuid, re, zlib, tempfile, time
 from pathlib import Path
@@ -100,7 +100,7 @@ def require_atomic_journals(db,*,configure=True):
             db.execute(f'PRAGMA {name}.synchronous=FULL');db.execute(f'PRAGMA {name}.secure_delete=ON')
     return modes
 
-def prune_purchases(db,docs,oids,cancel):
+def prune_purchases(db,docs,oids,cancel,scopes=None):
     import purchases
     for did in docs:
         retained=[];survives=False
@@ -108,7 +108,7 @@ def prune_purchases(db,docs,oids,cancel):
             checkpoint(cancel);p=wr.loads(raw)
             if purchases.fingerprint(p)!=old_digest:raise ValueError('采购快照校验失败，未删除')
             for row in p['rows']:
-                row['links']=[l for l in row.get('links',[]) if l['head']['oid'] not in oids]
+                row['links']=[l for l in row.get('links',[]) if not selected_head(l['head'],oids,scopes)]
                 survives=survives or bool(row['links'])
             retained.append((version,purchases.fingerprint(p),wr.dumps(p),p))
         if not survives:
@@ -122,13 +122,14 @@ def prune_purchases(db,docs,oids,cancel):
             for link in row['links']:
                 h=link['head'];db.execute('INSERT INTO purchase_link_index VALUES(?,?,?,?,?,?,?)',(did,row['line_id'],h['oid'],h['revision'],h['warehouse'],row['sku'],link['quantity']))
 
-def scrub_workflow_events(db,id,gone):
+def scrub_workflow_events(db,id,gone,*,scoped=False):
     identities={i.get('item_id') for i in gone if i.get('item_id')}
-    terms={v for i in gone for v in [i.get('key'),*((i.get('head') or i.get('basis') or {}).get(k) for k in ('oid','number','name','store'))] if isinstance(v,str) and v}
+    fields=('number',) if scoped else ('oid','number','name','store')
+    terms={v for i in gone for v in [i.get('key'),*((i.get('head') or i.get('basis') or {}).get(k) for k in fields)] if isinstance(v,str) and v}
     for sequence,raw in db.execute('SELECT sequence,payload FROM ax.ax_workflow_events WHERE id=?',(id,)).fetchall():
         e=wr.loads(raw)
         if e.get('item_id') in identities:db.execute('DELETE FROM ax.ax_workflow_events WHERE id=? AND sequence=?',(id,sequence))
-        elif any(t in str(e.get('message','')) for t in terms):
+        elif (not scoped or not e.get('item_id')) and any(t in str(e.get('message','')) for t in terms):
             e['message']='已清理所选订单内容；保留共享批次技术事件'
             db.execute('UPDATE ax.ax_workflow_events SET payload=? WHERE id=? AND sequence=?',(wr.dumps(e),id,sequence))
 
@@ -137,7 +138,10 @@ def prepare(path,heads,progress=lambda _:None,cancel=None,*,inspect=False):
     if not oids:raise ValueError('请勾选要彻底删除的订单')
     progress('读取订单与关联数据，核对删除范围…')
     with closing(connect(path)) as db:
-        db.execute('BEGIN');chunks.require_current(db,cancel);plan=snapshot(db,oids,cancel,progress,inspect=inspect)
+        db.execute('BEGIN');chunks.require_current(db,cancel)
+        if all(h.get('warehouse') in (*archive.WAREHOUSES,archive.LEGACY) for h in heads):
+            return scoped_snapshot(db,heads,cancel,progress,inspect)
+        plan=snapshot(db,oids,cancel,progress,inspect=inspect)
         for h in heads:
             p=next(p for p in plan['parents'] if p['oid']==h['oid'])
             if h['revision']!=p['revision'] or h['digest']!=p['digest']:raise wr.Conflict('原签发已变化，请刷新再删除')
@@ -147,10 +151,200 @@ def prepare(path,heads,progress=lambda _:None,cancel=None,*,inspect=False):
 def inspect_deletion(path,heads,progress=lambda _:None,cancel=None):
     return prepare(path,heads,progress,cancel,inspect=True)
 
+
+def selected_head(head,oids,scopes=None):
+    if head.get('oid') not in oids:return False
+    return scopes is None or (head.get('oid'),head.get('warehouse')) in scopes
+
+
+def scoped_snapshot(db,heads,cancel=None,progress=lambda _:None,inspect=False):
+    import warehouse_execution as execution
+    oids=list(dict.fromkeys(h['oid'] for h in heads));selected=[]
+    current=execution.heads(db,[{'oid':oid} for oid in oids])
+    for supplied in heads:
+        choices=[h for h in current if h['oid']==supplied['oid'] and h['warehouse']==supplied['warehouse']]
+        if len(choices)!=1:raise wr.Conflict('所选仓单已删除或本轮未参与，请刷新删除范围')
+        h=choices[0]
+        if any(h[k]!=supplied[k] for k in ('revision','digest')):raise wr.Conflict('所选仓签发已变化，请刷新删除范围')
+        selected.append(h)
+    if len({(h['oid'],h['warehouse']) for h in selected})!=len(selected):raise ValueError('不能重复选择同一仓单')
+    plan=snapshot(db,oids,cancel,progress,inspect=inspect)
+    pairs={(h['oid'],h['warehouse']) for h in selected};full=[]
+    for p in plan['parents']:
+        active={h['warehouse'] for h in current if h['oid']==p['oid']}
+        chosen={w for oid,w in pairs if oid==p['oid']}
+        p['all_warehouses']=sorted(active);p['remaining_warehouses']=sorted(active-chosen);p['warehouses']=sorted(chosen)
+        if active<=chosen:full.append(p['oid'])
+    # A warehouse child's frozen pointer, not the parent's latest calculation,
+    # defines the approved scope. Progress in another warehouse is harmless.
+    plan.update(oids=oids,scopes=selected,full_oids=full,
+                token=digest([{k:h.get(k) for k in ('oid','warehouse','revision','digest','execution_epoch')} for h in selected]))
+    plan['tasks']=[t for t in plan['tasks'] if (t['oid'],t['warehouse']) in pairs]
+    plan['external']=[text for text in plan['external'] if '已标记下单' not in text or any(h['warehouse'] in text for h in selected)]
+    return plan
+
+
+def _row_summary(editor,node):
+    # Only one store's surviving rows are decoded, never a whole workday or all
+    # historical revisions together. The canonical business summarizer is reused.
+    import result_semantics
+    return result_semantics.summarize(editor.value(node))
+
+
+def _prune_result(editor,tree,path,warehouses):
+    removed=set()
+    def keep(row):
+        if archive.warehouse(row) in warehouses:removed.add(row['E']);return False
+        return True
+    tree=editor.update(tree,(*path,'rows'),lambda n:editor.filter(n,keep))
+    row_node=editor.get(tree,(*path,'rows'),None)
+    if row_node is not None:
+        import result_semantics
+        tree=editor.update(tree,(*path,'summary'),lambda n:editor.encode(result_semantics.summarize(row_node)))
+    # Do not retain deleted business quantities in SKU-specific annotations.
+    for name in ('must_list_audit','allocation_audit'):
+        tree=editor.update(tree,(*path,name),lambda n:editor.filter(n,lambda v:v.get('sku') not in removed))
+    tree=editor.update(tree,(*path,'new_products','selection'),lambda n:editor.drop_keys(n,removed))
+    tree=editor.update(tree,(*path,'monthly_first_fill','skipped'),lambda n:editor.drop_keys(n,removed))
+    selection=editor.get(tree,(*path,'new_products','selection'),{})
+    tree=editor.update(tree,(*path,'monthly_first_fill','selected'),lambda n:editor.encode(len(selection)))
+    tree=editor.update(tree,(*path,'preissue','edits'),lambda n:editor.drop_keys(n,removed))
+    edits=editor.get(tree,(*path,'preissue','edits'),{})
+    refs={v.get('list_revision') for v in edits.values()}
+    def listings(node):
+        if node[0]=='dict':return ['dict',[[k,v] for k,v in node[1] if k in refs]]
+        return editor.encode({k:v for k,v in editor.value(node).items() if k in refs})
+    tree=editor.update(tree,(*path,'preissue','lists'),listings)
+    tree=editor.update(tree,(*path,'preissue','risks'),lambda n:editor.filter(n,lambda r:r.get('sku') not in removed and r.get('warehouse') not in warehouses))
+    ids={r['id'] for r in editor.get(tree,(*path,'preissue','risks'),[])}
+    tree=editor.update(tree,(*path,'preissue','confirmed'),lambda n:editor.filter(n,lambda x:x in ids))
+    return tree,removed
+
+
+def prepare_scoped_rewrites(db,plan,scratch,progress,cancel):
+    """Stage child-specific source and shared-draft projections without writes."""
+    editor=storage.Editor(db,scratch,progress,cancel);prepared=[];records=[]
+    by_day={};by_oid={}
+    for head in plan['scopes']:
+        by_day.setdefault(head['day'],{}).setdefault(head['store'],set()).add(head['warehouse'])
+        by_oid.setdefault(head['oid'],set()).add(head['warehouse'])
+    for oid,warehouses in by_oid.items():
+        if oid in plan['full_oids']:continue
+        for rev, in db.execute('SELECT revision FROM normal_revisions WHERE oid=? ORDER BY revision',(oid,)):
+            records.append(('normal_revisions',(oid,rev),warehouses))
+    for day,stores in by_day.items():
+        full_codes={p['store'] for p in plan['parents'] if p['day']==day and p['oid'] in plan['full_oids']}
+        for rev, in db.execute('SELECT revision FROM normal_work_revisions WHERE day=?',(day,)):
+            records.append(('normal_work_revisions',rev,(stores,full_codes)))
+        if db.execute('SELECT 1 FROM jobs WHERE day=?',(day,)).fetchone():records.append(('jobs',day,(stores,full_codes)))
+        if {'scheduled_runs','scheduled_values'}<=tables(db):
+            for store,warehouses in stores.items():
+                for rid,name in db.execute('SELECT v.run_id,v.name FROM scheduled_values v JOIN scheduled_runs r ON r.id=v.run_id WHERE r.day=? AND v.name=?',(day,'result:'+store)):
+                    records.append(('scheduled_values',(rid,name),warehouses))
+    for i,(table,key,scope) in enumerate(records,1):
+        where='oid=? AND revision=?' if table=='normal_revisions' else 'revision=?' if table=='normal_work_revisions' else 'run_id=? AND name=?' if table=='scheduled_values' else 'day=?'
+        args=key if isinstance(key,tuple) else (key,)
+        row=db.execute(f'SELECT payload'+(',digest' if table!='normal_work_revisions' else '')+f' FROM {table} WHERE {where}',args).fetchone()
+        if row is None:raise wr.Conflict('分仓快照在准备时变化，请重新核对删除范围')
+        blob=row[0];expected=row[1] if table!='normal_work_revisions' else None
+        checkpoint(cancel);manifest=chunks.require_manifest(blob);original=manifest['tree']
+        if editor.checksum(original)!=(manifest['digest'],manifest['size']):raise ValueError('完整快照校验失败，未删除')
+        if expected and (manifest.get('binding') or manifest['digest'])!=expected:raise ValueError('快照与索引不一致，未删除')
+        tree=original;info={'original_digest':manifest['digest']}
+        if table=='normal_revisions':
+            tree,removed=_prune_result(editor,tree,('result',),scope)
+            tree=editor.update(tree,('item_ids',),lambda n:editor.drop_keys(n,removed))
+            result=editor.get(tree,('result',));profile=editor.get(tree,('new_focus',))
+            binding=orders.fingerprint_owned(result,profile)
+        elif table=='scheduled_values':
+            tree,_=_prune_result(editor,tree,(),scope);binding=None
+        else:
+            stores,full_codes=scope
+            if full_codes:
+                pack=editor.rewrite(blob,full_codes,expected if table=='jobs' else None);tree=pack.tree
+            for store,warehouses in stores.items():
+                if store in full_codes:continue
+                tree,removed=_prune_result(editor,tree,('results',store),warehouses)
+                for field in ('overrides','new_product_bases'):
+                    tree=editor.update(tree,(field,store),lambda n:editor.drop_keys(n,removed))
+                tree=editor.update(tree,('preissue_drafts',store,'edits'),lambda n:editor.drop_keys(n,removed))
+                draft_edits=editor.get(tree,('preissue_drafts',store,'edits'),{})
+                refs={v.get('list_revision') for v in draft_edits.values()}
+                tree=editor.update(tree,('preissue_drafts',store,'lists'),lambda n:editor.encode({k:v for k,v in editor.value(n).items() if k in refs}))
+                tree=editor.update(tree,('execution_warehouses',store),lambda n:editor.filter(n,lambda w:w not in warehouses))
+            tree=editor.update(tree,('pending_copy',),lambda n:editor.block(None),create=True)
+            binding=None
+            if table=='jobs':info=editor.job_summary(tree)
+        sha,size=editor.checksum(tree);pack=chunks.Prepared(tree,sha,size,{},binding=binding)
+        prepared.append((table,key,hashlib.sha256(blob).digest(),pack,info))
+        del blob,row
+        progress(RowProgress('准备分仓业务明细清理',i,len(records)))
+    prepare_verified_references(db,scratch,progress,cancel)
+    scratch.commit();return prepared
+
+
+def prepare_verified_references(db,scratch,progress,cancel):
+    """Keep operation-local verified receipts on disk, never source blob lists."""
+    cache_source=db if 'maintenance_chunk_refs' in tables(db) else None
+    scratch.execute('CREATE TABLE verified_chunks(hash TEXT PRIMARY KEY,refs TEXT NOT NULL)')
+    if 'snapshot_chunks' in tables(db):
+        total=db.execute('SELECT COUNT(*) FROM snapshot_chunks').fetchone()[0]
+        for i,(h,size,data) in enumerate(db.execute('SELECT hash,size,data FROM snapshot_chunks'),1):
+            refs=storage.references_for(scratch,h,size,data,cancel,cache_source=cache_source)
+            scratch.execute('INSERT INTO verified_chunks VALUES(?,?)',(h,wr.dumps(refs)))
+            if i%32==0 or i==total:progress(RowProgress('准备共享附件引用（首次需核对历史块）',i,total))
+    for table in ('normal_revisions','warehouse_execution_revisions','normal_work_revisions','jobs'):
+        if table not in tables(db):continue
+        for blob, in db.execute(f'SELECT payload FROM {table}'):
+            checkpoint(cancel);chunks.require_manifest(blob)
+
+
+def apply_scoped_rewrites(db,scratch,prepared,progress,cancel):
+    for table,key,old,pack,info in prepared:
+        where='oid=? AND revision=?' if table=='normal_revisions' else 'revision=?' if table=='normal_work_revisions' else 'run_id=? AND name=?' if table=='scheduled_values' else 'day=?'
+        args=key if isinstance(key,tuple) else (key,)
+        row=db.execute(f'SELECT payload FROM {table} WHERE {where}',args).fetchone()
+        if not row or hashlib.sha256(row[0]).digest()!=old:raise wr.Conflict('共享计算或草稿在核对后变化，请重新核对删除范围')
+    for h,size,raw in scratch.execute('SELECT hash,size,data FROM snapshot_chunks'):
+        checkpoint(cancel);db.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',(h,size,raw))
+    for table,key,old,pack,info in prepared:
+        checkpoint(cancel);blob=chunks.put(db,pack,cancel=cancel)
+        if table=='normal_revisions':db.execute('UPDATE normal_revisions SET digest=?,payload=? WHERE oid=? AND revision=?',(pack.binding,blob,*key))
+        elif table=='normal_work_revisions':db.execute('UPDATE normal_work_revisions SET payload=? WHERE revision=?',(blob,key))
+        elif table=='scheduled_values':db.execute('UPDATE scheduled_values SET digest=?,payload=? WHERE run_id=? AND name=?',(pack.digest,blob,*key))
+        elif not info['stores']:db.execute('DELETE FROM jobs WHERE day=?',(key,))
+        else:db.execute('UPDATE jobs SET revision=?,digest=?,saved=?,summary=?,payload=? WHERE day=?',(uuid.uuid4().hex,pack.digest,wr.now(),wr.dumps(info),blob,key))
+    storage.publish_cache(db,scratch)
+
+
+def _prune_legacy_feedback(db,oid,selected,progress,cancel):
+    if 'merchant_feedback' not in tables(db):return
+    for revision,version,raw in db.execute('SELECT revision,version,payload FROM merchant_feedback WHERE oid=?',(oid,)).fetchall():
+        checkpoint(cancel);value=wr.loads(raw);incoming=value.get('incoming',{})
+        source=db.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',(oid,revision)).fetchone()
+        rows=chunks.load(source[0],db,paths=[('result','rows')]).get(('result','rows'),[]) if source else []
+        products={r['E']:r for r in rows}
+        removed={r['E'] for r in rows if archive.warehouse(r) in selected}|{sku for sku,item in incoming.items() if item.get('warehouse') in selected}
+        if not removed:continue
+        for field in ('values','incoming'):
+            value[field]={sku:item for sku,item in value.get(field,{}).items() if sku not in removed}
+        value['pending']=[sku for sku in value.get('pending',[]) if sku not in removed]
+        value['unpriced']=[sku for sku in value.get('unpriced',[]) if sku not in removed]
+        value['warehouses']={w:v for w,v in value.get('warehouses',{}).items() if w not in selected}
+        if not value.get('values') and not value.get('incoming'):
+            db.execute('DELETE FROM merchant_feedback WHERE oid=? AND revision=? AND version=?',(oid,revision,version));continue
+        import result_semantics as sem
+        value['unpriced']=[sku for sku in value['values'] if not sem.numeric(products.get(sku,{}).get('V'))]
+        value['estimated_amount']=round(sum(qty*products[sku]['V'] for sku,qty in value['values'].items() if sku not in value['unpriced']),2)
+        value['status']='部分确认' if value.get('pending') else '已确认'
+        sources={s['sha'] for item in value['incoming'].values() for s in item.get('sources',[]) if s.get('sha')}
+        value['files']=[f for f in value.get('files',[]) if f.get('sha') in sources]
+        db.execute('UPDATE merchant_feedback SET payload=? WHERE oid=? AND revision=? AND version=?',(wr.dumps(value),oid,revision,version))
+
 def strip_work(value,codes,*,owned=False,progress=lambda _:None,cancel=None):
     checkpoint(cancel)
     p=dict(value) if owned else copy.deepcopy(value)
-    for k in ('deletion_generations','states','results','store_presets','store_ui','overrides','default_by_store','preissue_drafts','new_product_bases','_calculation_settings'):
+    for k in ('deletion_generations','warehouse_deletion_generations','execution_warehouses','states','results','store_presets','store_ui','overrides','default_by_store','preissue_drafts','new_product_bases','_calculation_settings'):
         if isinstance(p.get(k),dict):p[k]={s:v for s,v in p[k].items() if s not in codes}
     loaded=p.get('loaded')
     if loaded and owned:
@@ -182,6 +376,45 @@ def strip_current(value,codes,progress=lambda _:None,cancel=None):
     progress('仅移除受影响门店，保留其他门店参数与结果…')
     return strip_work(value,codes,owned=True,progress=progress,cancel=cancel)
 
+
+def strip_current_warehouses(value,scopes,progress=lambda _:None,cancel=None):
+    """Remove executed business rows, keep shared raw inputs and sibling rules."""
+    import result_semantics
+    p=dict(value);p['results']=dict(value.get('results') or {})
+    by_store={}
+    for h in scopes:by_store.setdefault(h['store'],set()).add(h['warehouse'])
+    for store,warehouses in by_store.items():
+        checkpoint(cancel);result=p['results'].get(store)
+        if not result:continue
+        removed={r['E'] for r in result['rows'] if archive.warehouse(r) in warehouses}
+        rows=[r for r in result['rows'] if archive.warehouse(r) not in warehouses]
+        p['results'][store]={**result,'rows':rows,'summary':result_semantics.summarize(rows)}
+        projected=p['results'][store]
+        for name in ('must_list_audit','allocation_audit'):
+            if name in result:projected[name]=[v for v in result[name] if v.get('sku') not in removed]
+        if result.get('new_products'):
+            projected['new_products']={**result['new_products'],'selection':{k:v for k,v in result['new_products'].get('selection',{}).items() if k not in removed}}
+        if result.get('monthly_first_fill'):
+            audit=result['monthly_first_fill'];projected['monthly_first_fill']={**audit,'skipped':{k:v for k,v in audit.get('skipped',{}).items() if k not in removed}}
+            if 'selected' in audit:projected['monthly_first_fill']['selected']=len(projected.get('new_products',{}).get('selection',{}))
+        if result.get('preissue'):
+            state=result['preissue'];edits={k:v for k,v in state.get('edits',{}).items() if k not in removed};refs={v.get('list_revision') for v in edits.values()}
+            risks=[r for r in state.get('risks',[]) if r.get('sku') not in removed and r.get('warehouse') not in warehouses];ids={r['id'] for r in risks}
+            projected['preissue']={**state,'edits':edits,'lists':{k:v for k,v in state.get('lists',{}).items() if k in refs},'risks':risks,'confirmed':[v for v in state.get('confirmed',[]) if v in ids]}
+        for field in ('overrides','new_product_bases'):
+            mapping=p.get(field)
+            if isinstance(mapping,dict) and isinstance(mapping.get(store),dict):p[field]={**mapping,store:{k:v for k,v in mapping[store].items() if k not in removed}}
+        mapping=p.get('preissue_drafts')
+        if isinstance(mapping,dict) and store in mapping:
+            draft=dict(mapping[store]);p['preissue_drafts']={**mapping,store:draft}
+            if isinstance(draft.get('edits'),dict):draft['edits']={k:v for k,v in draft['edits'].items() if k not in removed}
+            refs={v.get('list_revision') for v in draft.get('edits',{}).values()}
+            if isinstance(draft.get('lists'),dict):draft['lists']={k:v for k,v in draft['lists'].items() if k in refs}
+        selected=p.get('execution_warehouses')
+        if isinstance(selected,dict) and store in selected:p['execution_warehouses']={**selected,store:[w for w in selected[store] if w not in warehouses]}
+    p['pending_copy']=None;progress('所选仓业务明细已清理；另一仓计算和供货配置保留。')
+    return p
+
 def references(node):
     if node[0]=='ref':yield node[1]
     elif node[0]=='dict':
@@ -201,7 +434,7 @@ def collect_shared(db,folder,cancel=None,progress=lambda _:None,*,verified=None)
             if revision:work_ids.add(revision)
     for rev, in db.execute('SELECT revision FROM normal_work_revisions').fetchall():
         if rev not in work_ids:db.execute('DELETE FROM normal_work_revisions WHERE revision=?',(rev,))
-    for table in ('normal_revisions','normal_work_revisions','jobs','scheduled_values'):
+    for table in ('normal_revisions','warehouse_execution_revisions','normal_work_revisions','jobs','scheduled_values'):
         if table not in available:continue
         for raw, in db.execute(f'SELECT payload FROM {table}'):
             checkpoint(cancel);m=chunks.require_manifest(raw)
@@ -345,7 +578,32 @@ def clear_indexes(db,oids,progress,cancel):
                 if remove:db.execute(f'DELETE FROM {name}.{table} WHERE k=?',(key,))
                 if i%16==0 or i==total:progress(RowProgress('清理订单索引',i,total))
 
+
+def clear_candidate_cache(db,oids,scopes=None):
+    """Drop exact derived matching facts before their source revisions vanish."""
+    aliases={r[1] for r in db.execute('PRAGMA database_list')};available=tables(db)
+    if 'cache2' not in aliases or not db.execute("SELECT 1 FROM cache2.sqlite_master WHERE name='candidates'").fetchone():return
+    import warehouse_execution as execution
+    keys=set()
+    for oid in oids:
+        for revision,identity in db.execute('SELECT revision,digest FROM normal_revisions WHERE oid=?',(oid,)):
+            # Both former parent-only formats could contain facts for this child.
+            keys.add(digest(['signed',oid,revision,identity]));keys.add(digest(['signed',oid,revision,identity,None,None]))
+        if 'warehouse_execution_revisions' in available:
+            for warehouse,revision,identity,snapshot_digest in db.execute('SELECT warehouse,source_revision,identity_digest,snapshot_digest FROM warehouse_execution_revisions WHERE oid=?',(oid,)):
+                if scopes is None or (oid,warehouse) in scopes:keys.add(digest(['signed',oid,revision,identity,warehouse,snapshot_digest]))
+        # Read-only compatibility heads can already have child-specific keys
+        # before the first lazily persisted warehouse snapshot is created.
+        for head in execution.heads(db,[{'oid':oid}]):
+            if selected_head(head,{oid},scopes):keys.add(digest(['signed',oid,head['revision'],head['digest'],head.get('warehouse'),head.get('snapshot_digest')]))
+        if 'jst_generations' in available:
+            for warehouse,gid,identity in db.execute('SELECT warehouse,gid,digest FROM jst_generations WHERE oid=?',(oid,)):
+                if scopes is None or (oid,warehouse) in scopes:keys.add(digest(['generation-v2',gid,identity]))
+    for key in keys:db.execute('DELETE FROM cache2.candidates WHERE k=?',(key,))
+
 def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
+    if plan.get('scopes'):
+        return execute_scoped(path,plan,ack_external,progress,cancel)
     checkpoint(cancel)
     if plan['external'] and not ack_external:raise ValueError('请明确核对外部采购/已下单影响；此操作不撤销外部订单')
     with tempfile.TemporaryDirectory(prefix='yt-order-delete-') as temporary,closing(connect(path)) as db,closing(sqlite3.connect(Path(temporary)/'prepared.sqlite3')) as scratch:
@@ -381,12 +639,7 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
             if 'lifecycle_mappings' in available:
                 for stage,name,raw in db.execute('SELECT stage,name,payload FROM lifecycle_mappings').fetchall():
                     if wr.loads(raw).get('head',{}).get('oid') in oids:db.execute('DELETE FROM lifecycle_mappings WHERE stage=? AND name=?',(stage,name))
-            aliases={r[1] for r in db.execute('PRAGMA database_list')}
-            if 'cache2' in aliases and db.execute("SELECT 1 FROM cache2.sqlite_master WHERE name='candidates'").fetchone():
-                for oid in oids:
-                    keys=[digest(['signed',oid,rev,h]) for rev,h in db.execute('SELECT revision,digest FROM normal_revisions WHERE oid=?',(oid,))]
-                    if 'jst_generations' in available:keys.extend(digest(['generation-v2',gid,h]) for gid,h in db.execute('SELECT gid,digest FROM jst_generations WHERE oid=?',(oid,)))
-                    for key in keys:db.execute('DELETE FROM cache2.candidates WHERE k=?',(key,))
+            clear_candidate_cache(db,oids)
             # Locked external orders must not release stock in the currently selected baseline.
             if 'jst_active' in available:
                 import jst_orders as jst
@@ -429,7 +682,7 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
                     if wr.loads(raw).get('order_ref') in oids:
                         if 'automation_events' in available:db.execute('DELETE FROM automation_events WHERE task=?',(task,))
                         db.execute('DELETE FROM automation_tasks WHERE id=?',(task,))
-            for table in ('lifecycle_routes','lifecycle_versions','lifecycle_events','merchant_feedback','followup_notes','archive_visibility','normal_events','normal_revisions','normal_orders','jst_active','jst_generations','jst_locks','jst_events'):
+            for table in ('lifecycle_routes','lifecycle_versions','lifecycle_events','merchant_feedback','followup_notes','archive_visibility','normal_events','normal_revisions','normal_orders','warehouse_execution_revisions','jst_active','jst_generations','jst_locks','jst_events'):
                 if table in available:
                     for oid in oids:db.execute(f'DELETE FROM {table} WHERE oid=?',(oid,))
             apply_rewrites(db,scratch,prepared,dict.fromkeys(h['day'] for h in plan['parents']),progress,cancel)
@@ -456,6 +709,125 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
             db.set_progress_handler(None,0);db.rollback();checkpoint(cancel);raise
         finally:progress(CommitProgress(False))
     return {'deleted':len(plan['parents']),'orders':[h['number'] for h in plan['parents']],'operation_id':operation_id,'component_cleanup_pending':True,'journal_modes':journal_modes}
+
+def execute_scoped(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
+    """Atomic exact-child deletion; surviving signed heads stay byte-identical."""
+    import warehouse_execution as execution
+    import deletion_barrier
+    checkpoint(cancel)
+    if plan['external'] and not ack_external:raise ValueError('请明确核对外部采购/已下单影响；此操作不撤销外部订单')
+    scopes={(h['oid'],h['warehouse']) for h in plan['scopes']};oids=set(plan['oids']);full=set(plan['full_oids'])
+    chosen=lambda h:selected_head(h,oids,scopes)
+    with tempfile.TemporaryDirectory(prefix='yt-child-delete-') as temporary,closing(connect(path)) as db,closing(sqlite3.connect(Path(temporary)/'prepared.sqlite3')) as scratch:
+        journal_modes=require_atomic_journals(db);version=db.execute('PRAGMA main.data_version').fetchone()[0]
+        prepared=prepare_scoped_rewrites(db,plan,scratch,progress,cancel)
+        progress('准备完成，正在取得分仓删除写锁…');started=time.monotonic()
+        while True:
+            checkpoint(cancel)
+            try:db.execute('BEGIN IMMEDIATE');break
+            except sqlite3.OperationalError as exc:
+                if 'locked' not in str(exc).lower() or time.monotonic()-started>10:raise
+                progress(f'等待其他操作释放数据库：{time.monotonic()-started:.1f} 秒（可取消）')
+        verified=scratch if db.execute('PRAGMA main.data_version').fetchone()[0]==version else None
+        if verified is not None and not scratch.in_transaction:scratch.execute('BEGIN')
+        db.set_progress_handler(lambda:int(cancel is not None and cancel.is_set()),10000)
+        try:
+            require_atomic_journals(db,configure=False);chunks.require_current(db,cancel)
+            latest=scoped_snapshot(db,plan['scopes'],cancel,progress)
+            if latest['token']!=plan['token'] or latest['full_oids']!=plan['full_oids']:raise wr.Conflict('所选仓签发或删除范围变化，请重新核对')
+            if db.execute('PRAGMA main.data_version').fetchone()[0]!=version:
+                for name, in scratch.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall():scratch.execute('DROP TABLE "'+name+'"')
+                scratch.commit();prepared=prepare_scoped_rewrites(db,latest,scratch,progress,cancel)
+            clear_candidate_cache(db,oids,scopes)
+            operations=[]
+            if full:operations.append(deletion_barrier.mark(db,[p for p in plan['parents'] if p['oid'] in full]))
+            partial=[h for h in plan['scopes'] if h['oid'] not in full]
+            if partial:
+                operation=deletion_barrier.mark_warehouses(db,partial);operations.append(operation)
+                for oid in dict.fromkeys(h['oid'] for h in partial):execution.ensure_parent(db,oid,progress,cancel)
+                for head in partial:execution.retire(db,head['oid'],head['warehouse'],operation)
+            # Upgrade only identities proven by the existing workflow item.
+            # Legacy package payloads themselves are left to component cleanup.
+            for _,raw in latest['ax']:
+                for item in wr.loads(raw)['items']:
+                    head=item.get('head') or item.get('basis') or {};package=item.get('package') or {}
+                    if chosen(head) and isinstance(package,dict) and package.get('id'):
+                        db.execute('INSERT OR IGNORE INTO warehouse_component_packages VALUES(?,?,?)',(package['id'],head['oid'],head['warehouse']))
+            progress('正在删除所选仓关联单据，提交前仍可取消…');available=tables(db)
+            if 'lifecycle_mappings' in available:
+                for stage,name,raw in db.execute('SELECT stage,name,payload FROM lifecycle_mappings').fetchall():
+                    if chosen(wr.loads(raw).get('head',{})):db.execute('DELETE FROM lifecycle_mappings WHERE stage=? AND name=?',(stage,name))
+            if 'jst_active' in available:
+                import jst_orders as jst,jst_batches
+                db.execute('CREATE TABLE IF NOT EXISTS retired_stock(warehouse TEXT,bid TEXT,sku TEXT,quantity TEXT,PRIMARY KEY(warehouse,bid,sku))')
+                for oid,warehouse in scopes:
+                    for gid, in db.execute('SELECT gid FROM jst_active WHERE oid=? AND warehouse=?',(oid,warehouse)).fetchall():
+                        batch_id=jst_batches.generation_batch(db,gid);st=None if batch_id else jst.state(db,warehouse)
+                        if jst.locked(db,{'oid':oid,'warehouse':warehouse}) and st:
+                            base=wr.loads(db.execute('SELECT payload FROM jst_baselines WHERE bid=?',(st[0],)).fetchone()[0])
+                            if gid not in base.get('included',[]):
+                                for sku,qty in db.execute('SELECT sku,quantity FROM jst_reservations WHERE gid=?',(gid,)):
+                                    old=db.execute('SELECT quantity FROM retired_stock WHERE warehouse=? AND bid=? AND sku=?',(warehouse,st[0],sku)).fetchone()
+                                    db.execute('INSERT OR REPLACE INTO retired_stock VALUES(?,?,?,?)',(warehouse,st[0],sku,str(Decimal(qty)+(Decimal(old[0]) if old else 0))))
+                    jst_batches.deleting_order(db,oid,warehouse)
+                    for gid, in db.execute('SELECT gid FROM jst_generations WHERE oid=? AND warehouse=?',(oid,warehouse)).fetchall():
+                        for table in ('jst_headers','jst_reservations'):db.execute(f'DELETE FROM {table} WHERE gid=?',(gid,))
+                for runid,raw in db.execute('SELECT runid,payload FROM jst_runs').fetchall():
+                    p=wr.loads(raw);gone=[x for x in p['plans'] if chosen(x['head'])]
+                    skipped=[x for x in p.get('skipped',[]) if not chosen(x.get('head',{}))]
+                    if not gone and skipped==p.get('skipped',[]):continue
+                    p['plans']=[x for x in p['plans'] if not chosen(x['head'])];p['skipped']=skipped
+                    for x in gone:
+                        warehouse=x['head']['warehouse'];step=db.execute('SELECT runid FROM jst_steps WHERE operation=?',(x['operation'],)).fetchone()
+                        if step:db.execute('INSERT OR IGNORE INTO deleted_jst_steps VALUES(?,?,?,?)',(x['operation'],step[0],warehouse,p['states'][warehouse][0]))
+                        db.execute('DELETE FROM jst_steps WHERE operation=?',(x['operation'],))
+                    if p['plans'] or skipped:db.execute('UPDATE jst_runs SET payload=?,digest=? WHERE runid=?',(wr.dumps(p),digest(p),runid))
+                    else:db.execute('DELETE FROM jst_runs WHERE runid=?',(runid,))
+            for task,raw in db.execute('SELECT task,head FROM jst_tasks').fetchall() if 'jst_tasks' in available else []:
+                if chosen(wr.loads(raw)):db.execute('DELETE FROM jst_tasks WHERE task=?',(task,))
+            prune_purchases(db,latest['docs'],oids,cancel,scopes)
+            for table in ('lifecycle_versions','lifecycle_events','followup_notes','archive_visibility','jst_active','jst_generations','jst_locks','jst_events'):
+                if table in available:
+                    for oid,warehouse in scopes:db.execute(f'DELETE FROM {table} WHERE oid=? AND warehouse=?',(oid,warehouse))
+            if 'normal_events' in available:
+                for key,oid,raw in db.execute('SELECT id,oid,detail FROM normal_events').fetchall():
+                    if oid in full or chosen({'oid':oid,**wr.loads(raw)}):db.execute('DELETE FROM normal_events WHERE id=?',(key,))
+            for oid in oids-full:_prune_legacy_feedback(db,oid,{w for o,w in scopes if o==oid},progress,cancel)
+            for table in ('lifecycle_routes','merchant_feedback','normal_events','normal_revisions','normal_orders','warehouse_execution_revisions'):
+                if table in available:
+                    for oid in full:db.execute(f'DELETE FROM {table} WHERE oid=?',(oid,))
+            if 'warehouse_execution_heads' in available:
+                for oid in full:db.execute("UPDATE warehouse_execution_heads SET state='deleted',epoch=epoch+1 WHERE oid=?",(oid,))
+            apply_scoped_rewrites(db,scratch,prepared,progress,cancel)
+            for id,raw in latest['ax']:
+                p=wr.loads(raw);gone=[item for item in p['items'] if chosen(item.get('head') or item.get('basis') or {})]
+                if not gone:continue
+                p['items']=[item for item in p['items'] if item not in gone]
+                if not p['items']:
+                    db.execute('DELETE FROM ax.ax_workflow_events WHERE id=?',(id,));db.execute('DELETE FROM ax.ax_workflows WHERE id=?',(id,))
+                else:
+                    from aoxiang_workflow_state import reconcile
+                    for n,item in enumerate(p['items']):item['position']=n
+                    if 'dispatch_keys' in p:p['dispatch_keys']=[k for k in p['dispatch_keys'] if k in {item['key'] for item in p['items']}]
+                    scrub_workflow_events(db,id,gone,scoped=True);p=reconcile(p);p['sequence']+=1;p['updated_at']=time.time()
+                    db.execute('UPDATE ax.ax_workflows SET state=?,payload=? WHERE id=?',(p['state'],wr.dumps(p),id))
+                    db.execute('INSERT INTO ax.ax_workflow_events VALUES(?,?,?)',(id,p['sequence'],wr.dumps({'at':p['updated_at'],'event':'REMOVED_SELECTED_WAREHOUSE_ITEMS','state':p['state'],'message':p['message']})))
+            if 'ax' in {r[1] for r in db.execute('PRAGMA database_list')}:
+                for id,raw in db.execute('SELECT id,payload FROM ax.ax_schedules').fetchall():
+                    if chosen(wr.loads(raw).get('basis',{})):db.execute('DELETE FROM ax.ax_schedules WHERE id=?',(id,))
+            if 'automation_tasks' in available:
+                for key,raw in db.execute('SELECT id,payload FROM automation_tasks').fetchall():
+                    value=wr.loads(raw);head=value.get('head') or {'oid':value.get('order_ref'),'warehouse':value.get('warehouse')}
+                    if head.get('oid') in full or chosen(head):
+                        if 'automation_events' in available:db.execute('DELETE FROM automation_events WHERE task=?',(key,))
+                        db.execute('DELETE FROM automation_tasks WHERE id=?',(key,))
+            clear_indexes(db,oids,progress,cancel);collect_shared(db,Path(path).parent,cancel,progress,verified=verified)
+            checkpoint(cancel);progress(CommitProgress(True));db.set_progress_handler(None,0);db.commit()
+        except BaseException:
+            db.set_progress_handler(None,0);db.rollback();checkpoint(cancel);raise
+        finally:progress(CommitProgress(False))
+    return {'deleted':len(plan['scopes']),'orders':[h['number'] for h in plan['scopes']],'operation_id':operations[0],'operation_ids':operations,'component_cleanup_pending':True,'journal_modes':journal_modes,'scopes':[{'oid':h['oid'],'warehouse':h['warehouse']} for h in plan['scopes']]}
+
 
 def delete_job(path,day,revision,progress=lambda _:None,cancel=None):
     import order_lifecycle as lc

@@ -120,8 +120,11 @@ class Workflows:
                 require_orders(self.business_path,items)
             return self._new(db, 'prepare', items)
 
-    def upload(self, prepared_id, positions, expected_sequence, *, max_inflight=2):
-        if type(max_inflight) is not int or not 1<=max_inflight<=4:raise ValueError('本批平台处理上限应为1至4单')
+    def upload(self, prepared_id, positions, expected_sequence, *, max_inflight=None):
+        # Keep the old keyword callable by existing integrations, but a positive
+        # legacy value no longer limits how many accepted jobs may wait online.
+        if max_inflight is not None and (type(max_inflight) is not int or max_inflight<1):
+            raise ValueError('旧版平台并发参数无效')
         with self.db(True) as db:
             original = self._get(db, prepared_id)
             scoped_pause=(original['state']=='PAUSED' and 'dispatch_keys' in original and not any(
@@ -142,7 +145,8 @@ class Workflows:
                         return old
                     if set(previous) & set(current):
                         raise ValueError('部分预览已确认上传，请继续原上传批次；剩余单据须单独选择')
-            return self._new(db, 'upload', items, prepared_id=prepared_id, confirmed_sequence=expected_sequence,max_inflight=max_inflight)
+            return self._new(db, 'upload', items, prepared_id=prepared_id, confirmed_sequence=expected_sequence,
+                             upload_policy='submit_all_then_observe',max_inflight=None)
 
     def rebuild_selected(self,id,keys,expected_sequence,heads):
         """Durable explicit replacement plan; never silently repeats an upload."""
@@ -243,10 +247,11 @@ class Workflows:
         with self.db(True) as db:
             job=self._get(db,id)
             if job.get('execution_token')!=execution_token:raise SourceDeleted('原执行已失效')
-            with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as source:
-                if active(source,oid):return False
             found=[i for i in job['items'] if i['item_id']==item_id and (i.get('head') or i.get('basis') or {}).get('oid')==oid]
             if not found:return True
+            warehouse=(found[0].get('head') or found[0].get('basis') or {}).get('warehouse')
+            with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as source:
+                if active(source,oid,warehouse):return False
             job['items']=[i for i in job['items'] if i not in found]
             for i in found:
                 if i.get('purchase_id'):db.execute('DELETE FROM ax_schedules WHERE id=?',(i['purchase_id'],))

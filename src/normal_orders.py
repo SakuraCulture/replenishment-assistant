@@ -32,6 +32,11 @@ def encode(value,db):
     return chunks.put(db,chunks.prepare(value,binding=binding))
 def decode(value,db=None):return chunks.load(value,db)
 
+def item_id(oid,sku):
+    try:namespace=uuid.UUID(oid)
+    except ValueError:namespace=uuid.uuid5(uuid.NAMESPACE_URL,oid)
+    return uuid.uuid5(namespace,sku).hex
+
 
 def revision_diff(old,new):
     """Ordered added/removed and per-field changes, including non-quantity evidence."""
@@ -109,10 +114,10 @@ class Repository:
     def log(self,order,action,detail):
         with closing(self.work.connect()) as db,db:
             import deletion_barrier
-            db.execute('BEGIN IMMEDIATE');deletion_barrier.require(db,order['oid'])
+            db.execute('BEGIN IMMEDIATE');deletion_barrier.require(db,order['oid'],order.get('warehouse') or detail.get('warehouse'))
             db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(wr.now(),order['oid'],order['revision'],action,wr.dumps(detail)))
 
-    def confirm(self,payload,codes,expected_job,expected_orders,*,progress=lambda _:None,headers_only=False,cancel=None):
+    def confirm(self,payload,codes,expected_job,expected_orders,*,progress=lambda _:None,headers_only=False,cancel=None,prepared_heads=None,warehouses=None):
         notify=progress
         def progress(message):
             checkpoint(cancel);notify(message);checkpoint(cancel)
@@ -122,6 +127,9 @@ class Repository:
         if payload.get('schema')!=1 or payload.get('model_version')!=MODEL_VERSION:raise ValueError('作业或模型版本不兼容，请重新计算')
         info=wr.summary(payload)
         if not codes or len(codes)!=len(set(codes)):raise ValueError('请选择互不重复的门店')
+        import warehouse_execution as execution
+        selected_warehouses={}
+        choice=warehouses if warehouses is not None else payload.get('execution_warehouses')
         from preissue import validate_payload
         validate_payload(payload,codes,cancel=cancel)
         for s in codes:
@@ -132,6 +140,10 @@ class Repository:
             if summarize(r['rows'])!=r['summary']:raise ValueError('门店汇总与明细不一致，请重新计算：'+s)
             if r.get('store')!=s or any(d.get('B')!=s for d in r['rows']):raise ValueError('门店结果混入其他门店')
             if len({d['E'] for d in r['rows']})!=len(r['rows']):raise ValueError('门店商品编码不唯一')
+            available=execution.warehouses({'result':r,'new_focus':payload.get('new_focus')})
+            selected=available if choice is None else choice.get(s,[])
+            if not selected or len(selected)!=len(set(selected)) or any(w not in available for w in selected):raise ValueError('请选择本轮有效的执行仓：'+s)
+            selected_warehouses[s]=list(selected)
         focus.require_for(payload.get('new_focus'),day,[payload['results'][s] for s in codes])
         # Freeze preparation outside the write transaction. Compare every revision
         # again inside BEGIN IMMEDIATE before publishing any prepared content.
@@ -142,8 +154,10 @@ class Repository:
             import deletion_barrier
             deletion_barrier.validate(db,deletion_barrier.basis(payload))
             planned={}
+            planned_children={}
             for s in codes:
                 planned[s]=db.execute("SELECT o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE o.day=? AND o.store=? AND o.kind='normal_model'",(day,s)).fetchone()
+                planned_children[s]={w:execution.state(db,planned[s][0],w) for w in selected_warehouses[s]} if planned[s] else {}
         existing=self.work.known_chunks()
         _,work_pack,digest=wr.prepare_job(day,payload,progress,known=existing);stamp=wr.now()
         existing.update(work_pack.chunks)
@@ -163,11 +177,28 @@ class Repository:
             same=bool(current and old_digest==h);rev=prev if same else prev+1
             heads.append({'oid':oid,'number':number,'day':day,'store':s,'revision':rev,'current_revision':rev,'digest':h,'saved':saved if same else stamp})
             if not same:
-                record={'schema':1,'model_version':MODEL_VERSION,'work_revision':work_revision,'result':result,'preset':payload.get('store_presets',{}).get(s),'new_focus':copy.deepcopy(payload.get('new_focus')),'item_ids':{d['E']:uuid.uuid5(uuid.UUID(oid),d['E']).hex for d in result['rows']}}
+                record={'schema':1,'model_version':MODEL_VERSION,'work_revision':work_revision,'result':result,'preset':payload.get('store_presets',{}).get(s),'new_focus':copy.deepcopy(payload.get('new_focus')),'item_ids':{d['E']:item_id(oid,d['E']) for d in result['rows']}}
                 encoded=chunks.prepare(record,existing,store_progress,binding=h)
                 existing.update(encoded.chunks)
                 prepared.append((s,oid,number,rev,h,encoded,result['summary']))
             progress(RowProgress(f'准备正常单：{index} / {len(codes)} 家',index,len(codes)))
+        # Persist exact per-warehouse identities before entering COMMIT. A
+        # selected unchanged warehouse may legitimately remain on an older
+        # source revision than its sibling's newly prepared calculation.
+        with closing(self.work.connect()) as db:
+            for head in heads:
+                previous={h['warehouse']:h for h in execution.heads(db,[head])} if planned[head['store']] else {}
+                expected=[]
+                for warehouse in selected_warehouses[head['store']]:
+                    projected=execution.project({'result':payload['results'][head['store']],'new_focus':payload.get('new_focus')},warehouse)
+                    projected_digest=execution._digest(projected);old_child=previous.get(warehouse)
+                    if old_child and old_child.get('snapshot_digest')==projected_digest:expected.append(old_child)
+                    else:expected.append(execution._head(head,warehouse,head['revision'],head['digest'],head['saved'],(old_child or {}).get('child_revision',0)+1,projected_digest))
+                head['warehouse_heads']=expected
+        # Export recovery can persist these exact planned identities before the
+        # transaction starts. Their existence is still checked against the DB;
+        # preparing an identity never constitutes successful signing.
+        if prepared_heads is not None:prepared_heads(heads)
         if changed_job or prepared:chunks.backup_before_write(self.work.path,progress)
         checkpoint(cancel)
         with closing(self.work.connect()) as db,db:
@@ -188,15 +219,22 @@ class Repository:
             if (old[0] if old else None)!=expected_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')
             if old!=planned_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')
             # Compare all expected revisions before any mutation.
-            from jst_orders import guard_resign
-            for s,oid,number,rev,h,encoded,summary in prepared:
-                guard_resign(db,oid)
             for s in codes:
                 from archive_orders import require_active
-                if planned[s]:require_active(db,planned[s][0])
+                if planned[s]:
+                    for warehouse in selected_warehouses[s]:
+                        child_state=execution.state(db,planned[s][0],warehouse)
+                        if not child_state or child_state['state']!='not_participating':require_active(db,planned[s][0],warehouse)
+                        elif __import__('archive_orders').states(db).get((planned[s][0],warehouse),{}).get('deleted'):raise wr.Conflict('所选仓单在回收站，请先恢复')
+                        if execution.state(db,planned[s][0],warehouse)!=planned_children[s][warehouse]:raise wr.Conflict('所选仓单已被其他窗口更改，请重新核对：'+warehouse)
                 current=db.execute("SELECT current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,s)).fetchone()
                 if (current[0] if current else None)!=expected_orders.get(s):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)
                 if (current[0] if current else None)!=(planned[s][2] if planned[s] else None):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)
+            # Legacy parents already represented both warehouses. Convert them
+            # before changing their global calculation revision, then pin only
+            # the explicitly selected child heads to the new result.
+            for s in codes:
+                if planned[s]:execution.ensure_parent(db,planned[s][0],progress=progress,cancel=cancel)
             if changed_job or prepared:compressed=chunks.put(db,work_pack,cancel=cancel)
             if changed_job:
                 if old:db.execute('INSERT OR IGNORE INTO normal_work_revisions SELECT revision,day,payload FROM jobs WHERE day=?',(day,))
@@ -214,6 +252,14 @@ class Repository:
                     operations_flow.schema(db)
                     db.execute('INSERT OR REPLACE INTO lifecycle_routes VALUES(?,?,2)',(oid,rev))
                 db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,oid,rev,'确认归档' if rev==1 else '同日覆盖修订',wr.dumps({'number':number,'day':day,'store':s,'summary':summary,'previous_revision':rev-1 or None})))
+            for head in heads:
+                s=head['store']
+                record={'schema':1,'model_version':MODEL_VERSION,'work_revision':work_revision,
+                        'result':payload['results'][s],'preset':payload.get('store_presets',{}).get(s),
+                        'new_focus':copy.deepcopy(payload.get('new_focus')),
+                        'item_ids':{d['E']:item_id(head['oid'],d['E']) for d in payload['results'][s]['rows']}}
+                execution.publish(db,head['oid'],head['revision'],head['digest'],head['saved'],record,selected_warehouses[s],progress,cancel)
+                head['warehouse_heads']=[h for h in execution.heads(db,[head]) if h['warehouse'] in selected_warehouses[s]]
             progress('事务内容准备完成，检查最终取消请求…')
             checkpoint(cancel)
             # Linearization boundary: after this check, commit must finish or fail.
@@ -221,5 +267,20 @@ class Repository:
             notify(CommitProgress(True))
             db.commit()
         notify(CommitProgress(False))
+        self.verify_issued(heads,progress=notify)
         if headers_only:return heads
-        with stage('读取并验证签发快照',notify):return [self.get(day,h['store'],h['revision'],progress=notify) for h in heads]
+        with stage('读取并验证签发快照',notify):return [{**self.get(day,h['store'],h['revision'],progress=notify),**({'warehouse_heads':h['warehouse_heads']} if choice is not None else {})} for h in heads]
+
+    def verify_issued(self,heads,*,progress=lambda _:None):
+        """Read back exact committed identities, without loading result payloads."""
+        with closing(self.work.connect()) as db:
+            db.execute('BEGIN')
+            from archive_orders import require_active
+            for head in heads:
+                progress('核对已提交签发记录：'+head['store'])
+                row=db.execute('SELECT o.day,o.store,o.number,r.digest FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid WHERE o.oid=? AND r.revision=?',(head['oid'],head['revision'])).fetchone()
+                if row!=(head['day'],head['store'],head['number'],head['digest']):
+                    raise ValueError('提交后签发记录身份未核实，请按诊断记录核对，不能重新签发：'+head['store'])
+                for child in head.get('warehouse_heads',[]):
+                    import warehouse_execution
+                    warehouse_execution.validate(db,child)

@@ -7,6 +7,7 @@ import lifecycle_home
 import order_lifecycle as lc
 import jst_orders as jst
 from runtime_support import checkpoint
+from query_scope import oid_batches
 
 STATUSES=('待回传','待运营签发','待付款','待收货','已结束')
 
@@ -14,14 +15,24 @@ STATUSES=('待回传','待运营签发','待付款','待收货','已结束')
 def read(path,cache,request,cancel=None,progress=lambda _:None):
     base=lifecycle_home.read(path,cache,{**request,'status':'','all_records':True},cancel,progress)
     records=base['records']
+    batches=list(oid_batches(r['oid'] for r in records))
     with closing(sqlite3.connect(path)) as db:
         current={};locks={};tasks={}
         if db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_tasks'").fetchone():
-            for raw,status,message in db.execute('SELECT head,status,message FROM jst_tasks ORDER BY created,rowid'):
-                h=wr.loads(raw);tasks[(h['oid'],h['warehouse'])]={'status':status,'message':message}
+            for placeholders,oids in batches or [('',[])]:
+                checkpoint(cancel)
+                # A malformed identity cannot be assigned outside the scope;
+                # retain the previous decode/error behavior instead of hiding it.
+                identity="json_type(head,'$.oid') IS NOT 'text' OR json_type(head,'$.warehouse') IS NOT 'text'"
+                if oids:identity+=' OR json_extract(head,\'$.oid\') IN ('+placeholders+')'
+                condition='CASE WHEN json_valid(head) THEN ('+identity+') ELSE 1 END'
+                for raw,status,message in db.execute('SELECT head,status,message FROM jst_tasks WHERE '+condition+' ORDER BY created,rowid',oids):
+                    h=wr.loads(raw);tasks[(h['oid'],h['warehouse'])]={'status':status,'message':message}
         if jst.exists(db):
-            current={(o,w):(g,wr.loads(p)) for o,w,g,p in db.execute('SELECT a.oid,a.warehouse,a.gid,h.payload FROM jst_active a JOIN jst_headers h ON a.gid=h.gid')}
-            locks={(o,w):g for o,w,g in db.execute('SELECT oid,warehouse,gid FROM jst_locks WHERE locked=1')}
+            for placeholders,oids in batches:
+                checkpoint(cancel)
+                current.update(((o,w),(g,wr.loads(p))) for o,w,g,p in db.execute('SELECT a.oid,a.warehouse,a.gid,h.payload FROM jst_active a JOIN jst_headers h ON a.gid=h.gid WHERE a.oid IN ('+placeholders+')',oids))
+                locks.update(((o,w),g) for o,w,g in db.execute('SELECT oid,warehouse,gid FROM jst_locks WHERE locked=1 AND oid IN ('+placeholders+')',oids))
         for r in records:
             checkpoint(cancel);key=(r['oid'],r['warehouse']);g=current.get(key)
             r.update(gid=g[0] if g else None,locked=key in locks,generation_summary=g[1]['summary'] if g else None)
@@ -70,7 +81,14 @@ def logs(path,start='',end='',search='',progress=lambda _:None,cancel=None,*,pag
             fields={r[1] for r in db.execute('PRAGMA table_info('+table+')')}
             wh='e.warehouse' if 'warehouse' in fields else "''"
             day='e.day' if 'day' in fields else 'NULL'
-            parts.append(f"SELECT '{table}:'||e.id AS id,e.at,COALESCE(n.day,{day},substr(e.at,1,10)) AS day,COALESCE(n.store,'') AS store,COALESCE(n.number,'') AS number,{wh} AS warehouse,'{group}' AS kind,e.action,e.detail FROM {table} e LEFT JOIN normal_orders n ON n.oid=e.oid")
+            revision='e.revision' if 'revision' in fields else 'NULL'
+            active=''
+            if 'warehouse_execution_heads' in tables:
+                # Filter before counting/paging, not after LIMIT. Shared parent
+                # journal entries remain common; warehouse entries require a
+                # published, surviving child at their own frozen source revision.
+                active=" WHERE (NOT EXISTS(SELECT 1 FROM warehouse_execution_heads x WHERE x.oid=e.oid) OR EXISTS(SELECT 1 FROM warehouse_execution_heads x WHERE x.oid=e.oid AND x.state='active' AND (COALESCE("+wh+",'')='' OR x.warehouse="+wh+" AND EXISTS(SELECT 1 FROM warehouse_execution_revisions v WHERE v.oid=x.oid AND v.warehouse=x.warehouse AND v.source_revision="+revision+"))))"
+            parts.append(f"SELECT '{table}:'||e.id AS id,e.at,COALESCE(n.day,{day},substr(e.at,1,10)) AS day,COALESCE(n.store,'') AS store,COALESCE(n.number,'') AS number,{wh} AS warehouse,'{group}' AS kind,e.action,e.detail,e.oid AS oid,{revision} AS revision FROM {table} e LEFT JOIN normal_orders n ON n.oid=e.oid"+active)
         if not parts:return {'rows':[],'count':0,'page':0} if page is not None else []
         conditions=[];args=[]
         if start:conditions.append('day>=?');args.append(start)
@@ -82,8 +100,8 @@ def logs(path,start='',end='',search='',progress=lambda _:None,cancel=None,*,pag
         query=sql+' ORDER BY at DESC,id DESC'
         if page is not None:
             page=min(max(0,page),max(0,(count-1)//50));query+=' LIMIT 50 OFFSET ?';args.append(page*50)
-        for eid,at,day,store,number,wh,group,action,raw in db.execute(query,args):
-            checkpoint(cancel);rows.append({'id':eid,'at':at,'day':day,'store':store,'number':number,'warehouse':wh,'group':group,'action':action,'detail':wr.loads(raw)})
+        for eid,at,day,store,number,wh,group,action,raw,oid,revision in db.execute(query,args):
+            checkpoint(cancel);rows.append({'id':eid,'at':at,'day':day,'store':store,'number':number,'warehouse':wh,'group':group,'action':action,'detail':wr.loads(raw),'oid':oid,'revision':revision})
     return {'rows':rows,'count':count,'page':page} if page is not None else rows
 
 

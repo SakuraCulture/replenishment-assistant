@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "targeted_tests": 185,
+  "new_core_tests": 11,
+  "new_ui_tests": 9,
+  "full_regression_run": false,
+  "real_exe_phases": [
+    "exercise",
+    "reopen"
+  ],
+  "native_dialogs": true,
+  "real_platform_called": false,
+  "real_database_opened": false,
+  "original_files_unchanged": true,
+  "old_package_sha256": "cdc5ff4be2f4c88c40baccbc17548759db3a8487dfb17528b62150806bf78b18",
+  "head_unchanged": true,
+  "index_unchanged": true,
+  "unrelated_working_files_unchanged": true
+}

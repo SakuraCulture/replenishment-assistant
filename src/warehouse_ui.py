@@ -43,9 +43,13 @@ class WarehouseUi:
         d=QDialog(self);d.setWindowTitle('恢复仓商品资料');v=QVBoxLayout(d);choices=QComboBox();v.addWidget(choices)
         v.addWidget(label('恢复当时保留的完整仓资料。历史签发不变；本次需重新检查。旧库存仅是历史快照，不代表当前可用库存，也不调整聚水潭库存分配账。'))
         for wh in warehouse_catalog.WAREHOUSES:
-            for c in self.catalog_repository.history(wh):choices.addItem(f"{wh} · {c['imported_at']} · {len(c['items'])}款 · {c['revision']}",c)
+            for entry in self.catalog_repository.history_entries(wh):
+                c=entry['metadata'];choices.addItem(f"{wh} · {c['imported_at']} · {c['count']}款 · {c['revision']}",entry)
         row=QHBoxLayout();row.addWidget(button('取消',d.reject));go=button('下一步：核对恢复范围',d.accept);go.setEnabled(choices.count()>0);row.addWidget(go);v.addLayout(row)
-        if d.exec()==QDialog.DialogCode.Accepted:self.catalog_imported(choices.currentData())
+        if d.exec()==QDialog.DialogCode.Accepted:
+            try:catalog=self.catalog_repository.read_history_entry(choices.currentData())
+            except Exception as exc:self.failed('历史仓资料未恢复：'+str(exc));return
+            self.catalog_imported(catalog)
     def import_catalog_path(self,path,warehouse):self.job(warehouse_catalog.import_catalog,(path,warehouse),self.catalog_imported)
     def catalog_imported(self,catalog):
         from interaction_ui import confirm

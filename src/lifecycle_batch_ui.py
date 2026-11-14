@@ -271,10 +271,23 @@ class BatchImport(QDialog):
         if self.issues:self.problem('尚未进入核对页','请先处理上方问题文件，或明确选择本次不纳入；不会悄悄跳过。');return
         self.capture();self.busy=True
         try:
+            # Keep the scanned originals intact. A decision belongs only to this
+            # preview and must be made again when returning to the file range.
+            import lifecycle_duplicates
+            from lifecycle_duplicate_ui import resolve_document
+            documents=[]
+            for document in self.documents:
+                if document.get('selected',True) and lifecycle_duplicates.find(document['scan']['rows']):
+                    resolved=resolve_document(self,document)
+                    if resolved is None:
+                        self.note.setText('已取消重复商品处理，尚未保存；原文件和读取范围保留。')
+                        return
+                    documents.append(resolved)
+                else:documents.append(document)
             if self.payment_index:
                 from payment_matching import prepare
-                self.plan=run(self,prepare,(self.host.work_repository.path,self.documents,self.scope,self.payment_index,self.source_company.currentData(),self.remember_matching.isChecked()),'按完整付款单核对并冻结识别对应')
-            else:self.plan=run(self,batch.prepare,(self.host.work_repository.path,self.documents,self.scope),'按整单和上下游顺序核对')
+                self.plan=run(self,prepare,(self.host.work_repository.path,documents,self.scope,self.payment_index,self.source_company.currentData(),self.remember_matching.isChecked()),'按完整付款单核对并冻结识别对应')
+            else:self.plan=run(self,batch.prepare,(self.host.work_repository.path,documents,self.scope),'按整单和上下游顺序核对')
             from lifecycle_ui import Review
             if self.review:self.pages.removeWidget(self.review);self.review.deleteLater()
             self.review=Review(self,self.plan);self.review.setWindowFlags(Qt.WindowType.Widget);self.review.save.clicked.disconnect();self.review.save.clicked.connect(self.save)
@@ -292,9 +305,9 @@ class BatchImport(QDialog):
         finally:self.busy=False
     def problem(self,title,reason):
         self.pages.setCurrentIndex(0);self.note.setText(title+'：'+(reason if len(reason)<=220 else reason[:220]+'…完整原因见上方说明或弹窗详情。'))
-        self.describe_selection()
-        context=self.selection_note.toPlainText()
-        detail=title+'\n'+reason+('\n\n'+context if context else '')
+        # The worker reports the actual failing document. The current selection
+        # can be another order and is never evidence about the failure source.
+        detail=title+'\n'+reason
         self.selection_note.setPlainText(detail)
         box=QMessageBox(self);box.setIcon(QMessageBox.Icon.Warning);box.setWindowTitle(title)
         box.setText('本次核对未完成，尚未保存单据。' if title=='尚未进入核对页' else '保存未完成，请核对单据历史和以下原因后再重试。')

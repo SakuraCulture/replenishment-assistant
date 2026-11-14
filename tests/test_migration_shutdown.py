@@ -85,7 +85,7 @@ class NativeExceptionPolicy(unittest.TestCase):
             finally:runtime.restore()
     def test_default_root_is_the_settings_directory_not_its_parent(self):
         from application_runtime import settings_root
-        with patch.dict(os.environ):
+        with patch.dict(os.environ),patch('data_location.config',return_value=None):
             os.environ.pop('REPLENISHMENT_DATA_DIR',None)
             self.assertEqual(settings_root(Path.cwd()/'synthetic-appdata'),Path.cwd()/'synthetic-appdata/settings')
     def test_running_error_dialog_real_and_finalized_errors_log_without_widgets(self):

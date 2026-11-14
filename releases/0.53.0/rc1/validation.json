@@ -1,0 +1,70 @@
+{
+  "targeted": {
+    "tests": 385,
+    "modules": [
+      "test_warehouse_execution",
+      "test_warehouse_execution_ui",
+      "test_warehouse_execution_readers",
+      "test_warehouse_execution_delete",
+      "test_warehouse_execution_feedback",
+      "test_warehouse_execution_scheduler",
+      "test_signing_failures",
+      "test_signing_feedback_ui",
+      "test_archive_orders",
+      "test_archive_batch",
+      "test_order_analytics",
+      "test_inventory_structure",
+      "test_payment_matching",
+      "test_payment_references",
+      "test_payment_sku_only",
+      "test_purchase_pipeline",
+      "test_order_merge",
+      "test_order_merge_migration",
+      "test_deletion_load",
+      "test_deletion_bounded",
+      "test_deletion_stream",
+      "test_deletion_lifecycle",
+      "test_deletion_workflow_consistency",
+      "test_data_maintenance",
+      "test_current_storage",
+      "test_aoxiang_workflows",
+      "test_aoxiang_purchase_tasks",
+      "test_scheduled_replenishment",
+      "test_migration_shutdown"
+    ],
+    "returncode": 0,
+    "passed": true,
+    "elapsed_seconds": 119.51600000000326,
+    "frozen_runtime": true
+  },
+  "node": {
+    "tests": 253,
+    "passed": true,
+    "log": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_execution_0530_20261113_01\\node-full.log"
+  },
+  "actual_exe": {
+    "passed": true,
+    "checks": 9,
+    "report": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\qa\\warehouse_execution_native_0530_exe_20261114_rc1_01\\report.json",
+    "sha256": "6fed533057e157df8032abc0bdaa24cb51a07da8b94b495af1ea1be37d6b48b1",
+    "native_dialogs": true,
+    "reopen": true
+  },
+  "full_first": {
+    "tests": 1902,
+    "failures": 23,
+    "errors": 11,
+    "log": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_execution_0530_20261113_01\\full-first.log",
+    "subsequent_targeted_fixes_verified": true
+  },
+  "full_final": {
+    "passed": false,
+    "status": "inconclusive_no_unittest_summary",
+    "log": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\warehouse_execution_0530_20261113_01\\full-final.log",
+    "native_python_crash_observed": true,
+    "cause_unknown": true
+  },
+  "real_platform_called": false,
+  "real_data_mutated": false,
+  "git_commit_push_merge": false
+}

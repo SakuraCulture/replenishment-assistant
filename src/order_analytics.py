@@ -20,6 +20,7 @@ import order_lifecycle as lifecycle
 import result_semantics as sem
 import source_archive
 import storage_chunks as chunks
+import warehouse_execution as execution
 from runtime_support import checkpoint
 from export_progress import RowProgress
 
@@ -170,8 +171,11 @@ def build_facts(order, head, view, evidence, cancel=None):
     legacy=view.get('legacy_return')
     if not view['documents']['return'] and legacy:
         maps['return']={sku:{'base_quantity':q} for sku,q in legacy['values'].items()}
-    skus=list(bysku)
-    for s in lifecycle.ALL_STAGES: skus.extend(sku for sku in maps.get(s,{}) if sku not in skus)
+    skus=list(bysku);seen=set(skus)
+    for s in lifecycle.ALL_STAGES:
+        for sku in maps.get(s,{}):
+            if sku not in seen:
+                skus.append(sku);seen.add(sku)
     states={'model':('当时自动建议',True),'signed':('已签发',True),
             **{s:comparison.stage_state(view,s) for s in lifecycle.STAGES}}
     rows=[]
@@ -267,7 +271,10 @@ def data_stamp(db,spec):
                                ('lifecycle_routes','oid,revision,version','oid,revision'),
                                ('jst_active','oid,warehouse,gid','oid,warehouse'),
                                ('jst_generations','oid,revision,warehouse,gid,digest','oid,warehouse,gid'),
-                               ('jst_events','oid,warehouse,id,action,at','oid,warehouse,id')]:
+                               ('jst_events','oid,warehouse,id,action,at','oid,warehouse,id'),
+                               ('warehouse_execution_heads','oid,warehouse,source_revision,child_revision,state,epoch','oid,warehouse'),
+                               ('warehouse_execution_revisions','oid,warehouse,source_revision,identity_digest,snapshot_digest,saved','oid,warehouse,source_revision')]:
+        if table.startswith('warehouse_execution_') and table not in tables:continue
         relevant=" AND action IN ('生成聚水潭订单','库存不足未生成','撤销未下单生成单')" if table=='jst_events' else ''
         values.append(db.execute(f'SELECT {columns} FROM {table} WHERE oid IN ({selection})'+relevant+f' ORDER BY {order}',args).fetchall() if table in tables else [])
     return digest(values)
@@ -300,15 +307,39 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
                 where='r.revision=(SELECT max(x.revision) FROM normal_revisions x WHERE x.oid=o.oid AND julianday(x.saved)<=julianday(?))'
                 args.insert(0,spec['as_of'])
             records=db.execute('SELECT o.day,o.store,o.oid,o.number,r.revision,r.digest,r.saved,r.payload FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND '+where+' WHERE o.day>=? AND o.day<=? ORDER BY o.day DESC,o.store',args).fetchall()
+        managed=set()
+        if execution.exists(db):
+            managed_parents=db.execute("SELECT day,store,oid,number FROM normal_orders o WHERE day>=? AND day<=? AND EXISTS(SELECT 1 FROM warehouse_execution_heads h WHERE h.oid=o.oid) ORDER BY day DESC,store",(spec['from'],spec['to'])).fetchall()
+            managed={p[2] for p in managed_parents};present={r[2] for r in records}
+            # Child evidence survives parent revision replacement/pruning. In
+            # particular, an as-of query must not discard an older active child
+            # merely because no shared parent revision precedes the cutoff.
+            records.extend((*p,None,None,None,None) for p in managed_parents if p[2] not in present)
+            records.sort(key=lambda r:r[1]);records.sort(key=lambda r:r[0],reverse=True)
+        child_heads=execution.heads(db,[{'oid':oid} for oid in managed],history=bool(spec.get('as_of'))) if managed else []
+        if spec.get('as_of'):
+            chosen={}
+            for head in child_heads:
+                if db.execute('SELECT julianday(?)<=julianday(?)',(head['saved'],spec['as_of'])).fetchone()[0]:chosen.setdefault((head['oid'],head['warehouse']),head)
+            child_heads=list(chosen.values())
+        by_parent={}
+        for head in child_heads:by_parent.setdefault(head['oid'],[]).append(head)
+        records=[(record,head) for record in records for head in (by_parent.get(record[2],[]) if record[2] in managed else [None])]
         import workflow_analysis as workflow
         allocations=workflow.AllocationReader(db,spec,cancel)
         visibility=ao.states(db);evidence=Evidence(db,cancel);seen_stores=set();seen_orders=set()
-        for i,(day,store,oid,number,revision,sha,saved,blob) in enumerate(records):
+        for i,(record,execution_head) in enumerate(records):
+            day,store,oid,number,revision,sha,saved,blob=record
             checkpoint(cancel)
             if spec['stores'] and store not in spec['stores']:continue
             progress(RowProgress('读取签发与履约快照',i+1,len(records)))
-            payload=chunks.load(blob,db,binding=sha)
-            order={'day':day,'store':store,'oid':oid,'number':number,'revision':revision,'current_revision':revision,'digest':sha,'saved':saved,'payload':payload}
+            if execution_head:
+                from history_read import repository
+                order=execution.get_order(repository(path),execution_head,db=db)
+                revision,sha,saved=(order[k] for k in ('revision','digest','saved'));payload=order['payload']
+            else:
+                payload=chunks.load(blob,db,binding=sha)
+                order={'day':day,'store':store,'oid':oid,'number':number,'revision':revision,'current_revision':revision,'digest':sha,'saved':saved,'payload':payload}
             result=payload['result']
             for wh in dict.fromkeys(ao.warehouse(r) for r in result['rows']):
                 if wh not in ('山东仓','河北仓') or visibility.get((oid,wh),{}).get('deleted'):continue

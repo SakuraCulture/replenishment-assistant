@@ -39,7 +39,9 @@ class FormatContract(unittest.TestCase):
             with self.assertRaises(Cancelled):c.require_current(db,event)
 
 class RejectionAtomicity(unittest.TestCase):
-    setUp=fixtures.DeleteOrders.setUp
+    def setUp(self):
+        fixtures.DeleteOrders.setUp(self)
+        self.heads=self.r.headers()  # Keep complete-parent prepare/apply injection coverage.
     def corrupt_manifest(self,db):
         blob=bytearray(c.put(db,c.prepare({'probe':'完整性测试'})))
         blob[len(c.MAGIC)]^=1

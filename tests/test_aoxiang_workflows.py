@@ -164,6 +164,7 @@ class RunnerTests(unittest.TestCase):
         p=result['items'][0]['package'];self.assertNotIn('intent',p)
         self.assertEqual(real.request('purchase.status',purchase_id=p['id'])['state'],'RESERVED')
         after=self.f.f.old_tables();self.assertEqual(after.pop('order_component_packages'),[(p['id'],self.f.f.h['oid'])])
+        self.assertEqual(after.pop('warehouse_component_packages'),[(p['id'],self.f.f.h['oid'],self.f.f.h['warehouse'])])
         self.assertEqual(after,before)
         self.runner(Client()).run(job['id']);self.assertEqual(sum(a=='template.start' for a,_ in calls),1)
 

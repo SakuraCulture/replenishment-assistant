@@ -86,9 +86,9 @@ export class StateStore{
   }
   getPurchase(id){return this.rows('purchase_runs').find(r=>r.id===id)||null;}
   putPurchase(record){
-    requireUnretired(this.db,record.hostPurchaseId,record.hostOrderId);
+    requireUnretired(this.db,record.hostPurchaseId,record.hostOrderId,record.hostWarehouse);
     if(this.db.prepare('SELECT 1 FROM retired_purchase_runs WHERE id=?').get(record.id))fail('SOURCE_ORDER_DELETED','原采购取数任务已退役，不接受晚到回写');
-    if(record.hostOrderId)requireHostOrder(record.hostOrderId);
+    if(record.hostOrderId)requireHostOrder(record.hostOrderId,record.hostWarehouse);
     const old=this.getPurchase(record.id);
     if(old){
       for(const key of ['identity','target','from','to','dateBasis','orderId','scopeHash','createdAt'])if(canonical(old[key]??null)!==canonical(record[key]??null))fail('PURCHASE_RECORD_CHANGED','已有采购作业的身份或冻结范围不能修改');
@@ -106,9 +106,9 @@ export class StateStore{
   }
   importPurchases(records){
     const merged=[];for(const r of records){
-      requireUnretired(this.db,r.hostPurchaseId,r.hostOrderId);
+      requireUnretired(this.db,r.hostPurchaseId,r.hostOrderId,r.hostWarehouse);
       if(this.db.prepare('SELECT 1 FROM retired_purchase_runs WHERE id=?').get(r.id))fail('SOURCE_ORDER_DELETED','迁入记录属于已退役任务，不能恢复');
-      if(r.hostOrderId)requireHostOrder(r.hostOrderId);
+      if(r.hostOrderId)requireHostOrder(r.hostOrderId,r.hostWarehouse);
       const old=this.getPurchase(r.id);if(!old){merged.push(r);continue;}
       if(old.scopeHash!==r.scopeHash||!sameIdentity(old.identity,r.identity))fail('MIGRATION_PURCHASE_CONFLICT','同一采购作业ID对应不同范围');
       const selected={...old,query:old.query||r.query,exports:{...old.exports}},rank=['PLANNED','INTENT_RECORDED','SUBMITTING','ACCEPTED','RUNNING','FINISHED','DOWNLOADED','VALIDATED','SUCCEEDED','FAILED_CONFIRMED'];

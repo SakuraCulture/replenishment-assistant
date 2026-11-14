@@ -28,10 +28,10 @@ export function validatePurchasePair(run,main,detail){
   return {status:'VALIDATED',queryParents:expected.size,mainRows:main.rows,detailRows:detail.rows,linkedParents:childSku.size,orphanRows:0,parentCoverage:'EXACT_SET',skuCoverage:'DISTINCT_SKU_PER_ORDER',duplicatesPreserved:true,dateBasis:run.dateBasis,...(run.queryMode==='order_id'?{queryMode:'order_id',createdDay:createdDays.size===1?[...createdDays][0]:null}:{})};
 }
 export class PurchaseCoordinator{
-  constructor({state,config,binding,adapter,onProgress=()=>{},onSourceValidated=null,signal,hostOrderId=null,hostPurchaseId=null}){Object.assign(this,{state,config,binding,adapter,onProgress,onSourceValidated,signal,hostOrderId,hostPurchaseId});}
+  constructor({state,config,binding,adapter,onProgress=()=>{},onSourceValidated=null,signal,hostOrderId=null,hostPurchaseId=null,hostWarehouse=null}){Object.assign(this,{state,config,binding,adapter,onProgress,onSourceValidated,signal,hostOrderId,hostPurchaseId,hostWarehouse});}
   stopped(){if(this.signal?.aborted)fail('PAUSED','采购作业已暂停；继续时恢复原任务');}
   async progress(stage,body={}){await this.onProgress({stage,...body});}
-  save(run){if(this.hostOrderId)run={...run,hostOrderId:this.hostOrderId,hostPurchaseId:this.hostPurchaseId};this.state.putPurchase(run);return run;}
+  save(run){if(this.hostOrderId)run={...run,hostOrderId:this.hostOrderId,hostPurchaseId:this.hostPurchaseId,hostWarehouse:this.hostWarehouse};this.state.putPurchase(run);return run;}
   async sourceFile(run,sourceId){
     const e=run.exports[sourceId],file=await portablePath(await outputPath(this.binding.outputRoot,e.asset.relativePath),{sha256:e.asset.sha256});if(!await exists(file)||await fileHash(file)!==e.asset.sha256)fail('PURCHASE_ASSET_CHANGED','已验收采购文件缺失或已修改，保留文件并等待恢复',{sourceId,file});return file;
   }

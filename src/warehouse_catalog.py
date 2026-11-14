@@ -1,6 +1,6 @@
 """Externally labelled warehouse snapshots and demand ownership, not stock reservation."""
 from __future__ import annotations
-import copy,hashlib,json
+import copy,hashlib,json,os
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -91,6 +91,28 @@ class CatalogRevisionCheck:
             self.verify()
             yield self.revisions
 
+def _history_identity(stat):
+    # Windows volume/file IDs may exceed QVariant's signed 64-bit integer.
+    # Keep exact opaque tokens as strings when the directory enters Qt userData.
+    return [str(v) for v in (stat.st_dev,stat.st_ino,stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns)]
+
+
+def _history_file(path):
+    # Bind digest and decoded data to the same opened file. Keep no raw bytes
+    # while validating the decoded tree, and reject an in-place/replaced file.
+    before=_history_identity(path.stat())
+    with path.open('rb') as source:
+        opened=_history_identity(os.fstat(source.fileno()));raw=source.read()
+        digest=hashlib.sha256(raw).hexdigest();text=raw.decode('utf-8');del raw
+        data=validate(json.loads(text));del text
+        # Windows stat and fstat expose different legacy st_ctime meanings.
+        # Compare each API to itself; cross-check file identity/size/mtime only.
+        after=_history_identity(path.stat())
+        if opened!=_history_identity(os.fstat(source.fileno())) or before!=after or opened[:4]!=after[:4]:
+            raise ValueError('历史仓资料在读取期间变化，请重新打开恢复窗口')
+    return data,before,digest
+
+
 class Repository:
     def __init__(self,folder):self.folder=Path(folder)
     def catalogs(self):
@@ -130,6 +152,34 @@ class Repository:
         if warehouse not in WAREHOUSES:raise ValueError('未知仓库')
         folder=self.folder/'warehouse_catalogs'/'history'/warehouse
         return [validate(json.loads(p.read_text('utf-8'))) for p in sorted(folder.glob('*.json'),key=lambda p:p.stat().st_mtime_ns,reverse=True)]
+    def history_entries(self,warehouse,cancel=None):
+        """Validate each original version, retaining only the displayed directory."""
+        if warehouse not in WAREHOUSES:raise ValueError('未知仓库')
+        folder=self.folder/'warehouse_catalogs'/'history'/warehouse;entries=[]
+        for path in sorted(folder.glob('*.json'),key=lambda p:p.stat().st_mtime_ns,reverse=True):
+            engine.checkpoint(cancel)
+            data,identity,digest=_history_file(path)
+            entries.append({'warehouse':warehouse,'file':str(path.absolute()),'identity':identity,'sha256':digest,
+                            'metadata':{'imported_at':data['imported_at'],'revision':data['revision'],'count':len(data['items'])}})
+            # Do not keep the preceding full catalog while reading the next.
+            del data
+        return entries
+    def read_history_entry(self,entry,cancel=None):
+        """Load the exact selected version; never substitute a newer snapshot."""
+        warehouse=entry['warehouse']
+        if warehouse not in WAREHOUSES:raise ValueError('未知仓库')
+        path=Path(entry['file']);folder=self.folder/'warehouse_catalogs'/'history'/warehouse
+        if path.parent.resolve()!=folder.resolve() or path.suffix.lower()!='.json':raise ValueError('历史仓资料位置不符，请重新打开恢复窗口')
+        engine.checkpoint(cancel)
+        try:
+            if _history_identity(path.stat())!=entry['identity']:raise ValueError('所选历史仓资料已变化，请重新打开恢复窗口')
+            data,identity,digest=_history_file(path)
+        except FileNotFoundError as exc:raise ValueError('所选历史仓资料已移除，请重新打开恢复窗口') from exc
+        meta={'imported_at':data['imported_at'],'revision':data['revision'],'count':len(data['items'])}
+        if identity!=entry['identity'] or digest!=entry['sha256'] or meta!=entry['metadata']:
+            raise ValueError('所选历史仓资料已变化，请重新打开恢复窗口')
+        engine.checkpoint(cancel)
+        return data
     def routes(self):
         p=self.folder/'store_supply.json'
         if not p.exists():return {}

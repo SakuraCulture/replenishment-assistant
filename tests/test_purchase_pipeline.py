@@ -34,7 +34,7 @@ class Platform:
         if action=='purchase.start':
             self.events.append(('observe',i));self.checks[i]=self.checks.get(i,0)+1
             if i in self.fail:r.update(state='NEEDS_REVIEW',error={'code':'IMPORT_TASK_PARTIAL','message':'合成部分失败'});self.inflight.discard(i)
-            elif self.checks[i]<=self.pending:r.update(state='ACCEPTED',error={'code':'TASK_PENDING','message':'合成处理中'})
+            elif self.checks[i]<=(self.pending.get(i,0) if isinstance(self.pending,dict) else self.pending):r.update(state='ACCEPTED',error={'code':'TASK_PENDING','message':'合成处理中'})
             else:r.update(state='BOUND',error=None,binding={'orderId':'PO-'+i});self.inflight.discard(i)
             return copy.deepcopy(r)
         if action=='purchase.pause':return copy.deepcopy(r)
@@ -57,12 +57,12 @@ class PipelineTests(unittest.TestCase):
         return self.store.upload(prep['id'],list(range(count)),ready['sequence'],max_inflight=limit)
     def run_batch(self,job,client,*,cancel=None,wait=2):
         return Runner(self.store,client,self.root,self.root/'unused-isolated.sqlite3',cancel=cancel or threading.Event(),delay=.001,verification_interval=.001,verification_wait=wait).run(job['id'])
-    def test_second_upload_precedes_first_observation_and_import_window_is_bounded(self):
-        job=self.batch();client=Platform(['p0','p1','p2'],pending=1)
+    def test_all_uploads_precede_first_observation_without_pending_cap(self):
+        job=self.batch(9);client=Platform(['p'+str(n) for n in range(9)],pending=1)
         out=self.run_batch(job,client)
-        self.assertEqual(out['state'],'COMPLETED');self.assertEqual(client.uploads,['p0','p1','p2']);self.assertEqual(client.maximum,2)
-        self.assertLess(client.events.index(('upload','p1')),client.events.index(('observe','p0')))
-        self.assertEqual([i['result']['binding']['orderId'] for i in out['items']],['PO-p0','PO-p1','PO-p2'])
+        self.assertEqual(out['state'],'COMPLETED');self.assertEqual(client.uploads,['p'+str(n) for n in range(9)]);self.assertEqual(client.maximum,9)
+        self.assertEqual(client.events[:9],[('upload','p'+str(n)) for n in range(9)])
+        self.assertEqual([i['result']['binding']['orderId'] for i in out['items']],['PO-p'+str(n) for n in range(9)])
     def test_unknown_or_partial_item_does_not_block_other_orders(self):
         job=self.batch();client=Platform(['p0','p1','p2'],unknown=['p0'],fail=['p1'])
         out=self.run_batch(job,client)
@@ -83,11 +83,29 @@ class PipelineTests(unittest.TestCase):
         self.store.recover();cancel.clear();client.cancel=None
         out=self.run_batch(job,client,cancel=cancel)
         self.assertEqual(out['state'],'COMPLETED');self.assertEqual(client.uploads,['p0','p1'])
-    def test_limit_one_keeps_serial_submission_and_invalid_limits_reject(self):
-        job=self.batch(limit=1);client=Platform(['p0','p1','p2']);self.run_batch(job,client)
-        self.assertEqual(client.maximum,1)
+    def test_legacy_limit_keyword_is_compatible_but_no_longer_caps_uploads(self):
+        job=self.batch(limit=1);client=Platform(['p0','p1','p2']);out=self.run_batch(job,client)
+        self.assertEqual(client.maximum,3);self.assertIsNone(out['max_inflight'])
+        self.assertEqual(out['upload_policy'],'submit_all_then_observe')
         p=self.store.prepare([head(9)]);p=self.store.update(p['id'],state='READY')
-        with self.assertRaisesRegex(ValueError,'上限'):self.store.upload(p['id'],[0],p['sequence'],max_inflight=0)
+        with self.assertRaisesRegex(ValueError,'参数无效'):self.store.upload(p['id'],[0],p['sequence'],max_inflight=0)
+    def test_saved_old_batch_cap_is_ignored_after_recovery(self):
+        for n,limit in enumerate((1,2,4)):
+            job=self.batch(7)
+            self.store.update(job['id'],max_inflight=limit,upload_policy=None)
+            self.store.claim(job['id']);self.store.recover()
+            client=Platform(['p'+str(i) for i in range(7)],pending=999)
+            out=self.run_batch(job,client,wait=0)
+            self.assertEqual(client.maximum,7);self.assertEqual(out['state'],'QUEUED')
+            self.assertEqual([i['state'] for i in out['items']],['ACCEPTED']*7)
+            self.store.update(job['id'],state='COMPLETED')
+    def test_first_long_pending_import_does_not_stop_remaining_submissions_or_binding(self):
+        job=self.batch(8);client=Platform(['p'+str(n) for n in range(8)],pending={'p0':999})
+        out=self.run_batch(job,client,wait=0)
+        self.assertEqual(client.uploads,['p'+str(n) for n in range(8)])
+        self.assertEqual(out['state'],'QUEUED');self.assertEqual(out['items'][0]['state'],'ACCEPTED')
+        self.assertEqual([i['state'] for i in out['items'][1:]],['BOUND']*7)
+        self.assertEqual([i['result']['binding']['orderId'] for i in out['items'][1:]],['PO-p'+str(n) for n in range(1,8)])
     def test_legacy_interrupted_running_item_reads_original_receipt_instead_of_disappearing(self):
         job=self.batch(1);self.store.update(job['id'],position=0,changes={'state':'RUNNING'})
         self.store.recover();client=Platform(['p0'])
@@ -99,6 +117,27 @@ class PipelineTests(unittest.TestCase):
         job=self.store.execute_selected(job['id'],[job['items'][0]['key'],job['items'][1]['key']],job['sequence'])
         client=Platform(['p0','p1','p2']);out=self.run_batch(job,client)
         self.assertEqual(out['state'],'PAUSED');self.assertEqual(client.uploads,['p0','p1']);self.assertEqual(out['items'][2],before)
+    def test_removing_queued_item_during_submission_never_retargets_its_position(self):
+        job=self.batch();source=self.root/'source.sqlite3'
+        with closing(sqlite3.connect(source)) as db,db:
+            db.execute('CREATE TABLE normal_orders(oid TEXT,day TEXT,store TEXT)')
+            db.executemany('INSERT INTO normal_orders VALUES(?,?,?)',[(str(n),head(n)['day'],str(n)) for n in range(3)])
+        self.store.business_path=source;store=self.store
+        class RemovingPlatform(Platform):
+            def request(platform,action,**values):
+                r=super().request(action,**values)
+                if action=='purchase.submit' and values['purchase_id']=='p0':
+                    with closing(sqlite3.connect(source)) as db,db:db.execute('DELETE FROM normal_orders WHERE oid=?',('1',))
+                    current=store.get(job['id']);gone=current['items'][1]
+                    self.assertTrue(store.forget_missing(job['id'],gone['item_id'],'1',current['execution_token'],source))
+                return r
+        client=RemovingPlatform(['p0','p1','p2'])
+        runner=Runner(store,client,self.root,source,cancel=threading.Event(),delay=.001,verification_interval=.001)
+        out=runner.run(job['id'])
+        self.assertEqual(out['state'],'COMPLETED');self.assertEqual(client.uploads,['p0','p2'])
+        self.assertEqual([i['head']['oid'] for i in out['items']],['0','2'])
+        self.assertEqual([i['result']['binding']['orderId'] for i in out['items']],['PO-p0','PO-p2'])
+        self.assertEqual(out['items'][1]['item_id'],job['items'][2]['item_id'])
     def test_rebuild_unknown_and_bound_items_preserves_unselected_package_and_new_operation(self):
         job=self.batch();self.store.update(job['id'],position=0,changes={'state':'REVIEW','error':{'code':'SUBMISSION_UNKNOWN'}})
         self.store.update(job['id'],position=1,changes={'state':'BOUND','result':{'binding':{'orderId':'PO1'}}})

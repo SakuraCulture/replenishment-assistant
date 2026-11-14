@@ -1,6 +1,6 @@
 {
-  "application": "0.52.2",
-  "edition": "2026-11-12",
+  "application": "0.53.0",
+  "edition": "2026-11-14",
   "source": "Historical versioned screenshots plus isolated source Qt acceptance; identity probes simulated, no live platform",
   "legacy_0480_build": {
     "source_commit": "c12feff48eb81008a2643b2ce61d636b56fae980",
@@ -480,6 +480,15 @@
       "synthetic": true,
       "live_platform": false,
       "description": "源码实际Qt：12MiB合成大文件，复制及核对阶段的处理量与阶段百分比；最终EXE另有独立验收。"
+    },
+    {
+      "path": "images/duplicate-resolution-0529.png",
+      "application": "0.52.9",
+      "source": "qa/duplicate_ui_agent_20261113_01/duplicate-dialog-synthetic-font.png",
+      "sha256": "8506c76277449e51686014b58247ccc06a65f8266fc1b646607c7addd9becd16",
+      "synthetic": true,
+      "live_platform": false,
+      "description": "源码Qt：10款跨表冲突逐款选择原始整行，默认无选择；非实际EXE截图"
     }
   ],
   "live_platform_tested": false,
@@ -535,5 +544,14 @@
       "source": "actual EXE; original business edition",
       "archive_reason": "0.51.9统一入口及固定排除考核品；保留旧界面证据。"
     }
-  ]
+  ],
+  "warehouse_execution_manual": {
+    "chapter": "25",
+    "version": "0.53.0",
+    "images": [
+      "confirm-confirmation.png"
+    ],
+    "provenance": "Historical screenshots reused and explicitly labelled; final 0.53.0 EXE selection/deletion screenshots belong to QA and release evidence, not this frozen manual",
+    "live_platform_tested": false
+  }
 }

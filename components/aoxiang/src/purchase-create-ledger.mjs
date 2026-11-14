@@ -32,7 +32,7 @@ export class PurchaseCreates{
   list(){return this.db.prepare('SELECT payload FROM purchase_creates ORDER BY rowid').all().map(r=>JSON.parse(r.payload));}
   events(id){return this.db.prepare('SELECT payload FROM purchase_create_events WHERE id=? ORDER BY sequence').all(id).map(r=>JSON.parse(r.payload));}
   reserve(intent,requestHash){
-    requireUnretired(this.db,intent.id,intent.basis?.oid);requireHostOrder(intent.basis?.oid);
+    requireUnretired(this.db,intent.id,intent.basis?.oid,intent.basis?.warehouse);requireHostOrder(intent.basis?.oid,intent.basis?.warehouse);
     validatePurchaseIntent(intent);const key=orderKey(intent);
     return this.state.write(()=>this.reserveWithin(intent,requestHash,key));
   }
@@ -53,7 +53,7 @@ export class PurchaseCreates{
       this.db.prepare('INSERT INTO purchase_creates VALUES(?,?,?,?,?,?,?,?)').run(r.id,key,sha256(canonical(intent.identity)),requestHash,r.state,r.sequence,null,JSON.stringify(r));this.event(r,'RESERVED');return {created:true,record:r};
   }
   rebuild(id,sequence,intent,requestHash,operationId,reason){
-    requireUnretired(this.db,id);requireUnretired(this.db,intent.id,intent.basis?.oid);requireHostOrder(intent.basis?.oid);validatePurchaseIntent(intent);
+    requireUnretired(this.db,id);requireUnretired(this.db,intent.id,intent.basis?.oid,intent.basis?.warehouse);requireHostOrder(intent.basis?.oid,intent.basis?.warehouse);validatePurchaseIntent(intent);
     if(id===intent.id)fail('PURCHASE_REBUILD_SCOPE','重建必须生成新的采购命令，不能覆盖原记录');
     return this.state.write(()=>{
       const successor=this.db.prepare('SELECT payload FROM purchase_creates WHERE id=?').get(intent.id);

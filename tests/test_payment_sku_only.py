@@ -21,8 +21,8 @@ class SkuOnlyTests(unittest.TestCase):
             {'E':'C','F':'c-barcode','AU':'山东仓'}]}}}
     def match(self,sku,aux):
         rows=[{'adapter':'paid_order','sku':sku,'source_order':{'内部订单号':'JST-1','店铺名称':'S','辅助码':aux}}]
-        with patch('order_lifecycle.repository') as repo:
-            repo.return_value.get.return_value=self.order
+        with patch('warehouse_execution.get_order') as get_order, patch('order_lifecycle.repository') as repo:
+            repo.return_value.get.return_value=self.order;get_order.return_value=self.order
             lc.match_payment_rows('unused-isolated.sqlite3',self.head,rows)
         return rows[0]
     def test_valid_sku_ignores_conflicting_ambiguous_and_other_warehouse_auxiliary_codes(self):

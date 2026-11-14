@@ -21,7 +21,9 @@ class GoodsModel(QStandardItemModel):
         self.beginResetModel()
         blocker=QSignalBlocker(self)
         try:
-            self.clear();self.rows=rows;self.values={};self.sort_keys={};self.rank_cache={};self.items=[]
+            # clear() starts its own native model reset, even with signals
+            # blocked. Remove rows inside this single outer reset instead.
+            self.setRowCount(0);self.rows=rows;self.values={};self.sort_keys={};self.rank_cache={};self.items=[]
             self.setColumnCount(len(COLUMNS));self.setRowCount(len(rows));self.setHorizontalHeaderLabels([c[0] for c in COLUMNS])
             for i,d in enumerate(rows):
                 item=QStandardItem();item.setData('1',PASS_ROLE);self.setItem(i,0,item);self.items.append(item)

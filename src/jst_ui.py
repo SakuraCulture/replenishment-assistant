@@ -72,7 +72,8 @@ class GenerationDialog(QDialog):
         self.restore_order_btn=button('恢复回传时间顺序',self.restore_order);options.addWidget(self.restore_order_btn)
         self.order_note=label('默认按回传确认时间；预览后列表显示实际执行顺序。','muted');options.addWidget(self.order_note,1)
         self.correction=QCheckBox('仅替换本批所选未锁单；未选单保留占用');options.addWidget(self.correction);v.addLayout(options);self.order_mode.currentIndexChanged.connect(self.invalidate);self.correction.setChecked(correction);self.correction.setVisible(correction);self.correction.setEnabled(False)
-        self.preview_btn=button('预览库存分配',self.preview,True);v.addWidget(self.preview_btn)
+        preview_actions=QHBoxLayout();self.preview_btn=button('预览库存分配',self.preview,True);preview_actions.addWidget(self.preview_btn)
+        self.evidence_btn=button('导出本批采用仓资料',self.export_stock_evidence);self.evidence_btn.setObjectName('exportAllocationStockEvidence');self.evidence_btn.setToolTip('导出预览或原批实际采用的仓资料和库存依据，不读取当前默认资料替代。');preview_actions.addWidget(self.evidence_btn);v.addLayout(preview_actions)
         self.summary=label('新批从选用库存开始，不扣其他批占用。预览不保存；确认后固定门店顺序和库存。','muted');self.summary.setWordWrap(True);v.addWidget(self.summary)
         self.review=AllocationReview(self);v.addWidget(self.review,1)
         self.accept_issues=QCheckBox('已核对缺口及待核原因，同意待核商品本次不安排');v.addWidget(self.accept_issues)
@@ -135,6 +136,7 @@ class GenerationDialog(QDialog):
         self.export_saved_btn.setText(f'导出所选已生成单（{n}单）');self.lock_saved_btn.setText(f'确认所选已下单并锁定（{n}单）')
         for b in (self.export_saved_btn,self.lock_saved_btn):b.setEnabled(n>0 and not busy)
         self.select_completed_btn.setEnabled(total>0 and not busy)
+        self.evidence_btn.setEnabled(not busy)
     def choose(self):
         from PySide6.QtWidgets import QFileDialog
         p,_=QFileDialog.getOpenFileName(self,'更新'+self.warehouse.currentText()+'资料','','Excel (*.xlsx)')
@@ -182,6 +184,24 @@ class GenerationDialog(QDialog):
             self.summary.setText(f"本次预览 {len(v['plans'])} 张仓单；跳过 {len(v['skipped'])} 张（不计入本次汇总）。"+'；'.join(s['head']['number']+'：'+s['reason'] for s in v['skipped'])+(f'\n其中{payment_corrections}单的旧付款依据已因新回传失效：旧付款事实保留；本次仅更新本地分配，生成后需重新核对付款，不自动更改聚水潭或翱象订单。' if payment_corrections else ''))
             self.generate_btn.setEnabled(bool(v['plans']));self.accept_issues.setChecked(False)
         except Exception as exc:self.plan=None;self.review.replace([],'预览失败，请重新预览');self.generate_btn.setEnabled(False);warn(self,exc)
+    def export_stock_evidence(self):
+        if self.worker or self.export_worker:return
+        import jst_stock_evidence as evidence
+        from runtime_support import Cancelled
+        if self.plan:
+            fn,args=evidence.export_preview,(self.path,self.plan)
+        elif self.batch_id:
+            fn,args=evidence.export_batch,(self.path,self.batch_id)
+        else:
+            QMessageBox.information(self,'请先预览库存分配','先点击“预览库存分配”，再导出本次预览实际采用的仓资料；当前默认资料不代表本批已采用。');return
+        target,_=export_locations.save_file(self,'导出本批采用仓资料','聚水潭本批采用仓资料.xlsx','Excel (*.xlsx)')
+        if not target:self.status.setText('已取消选择导出位置；未导出文件。');return
+        try:
+            result=run(self,fn,(*args,target),'导出本批实际采用仓资料')
+            self.status.setText('采用仓资料已导出：'+str(result))
+        except Cancelled:self.status.setText('采用仓资料导出已取消；原分配和库存未改变。')
+        except Exception as exc:warn(self,exc)
+
     def generate(self):
         if not self.plan or self.worker:return
         v=self.plan['payload']
@@ -191,7 +211,7 @@ class GenerationDialog(QDialog):
         self.folder=export_locations.initial_directory(self);self.saved=[];self.completed.clear();self.completed.show();self.receipt=None;self.stop_requested=False
         w=Worker(batches.execute,(self.path,self.plan,self.accept_issues.isChecked()),self);self.worker=w
         w.status.connect(self.status.setText);w.row_progress.connect(self.progress);w.commit_state.connect(self.boundary);w.business_event.connect(self.saved_order);w.success.connect(self.generation_done);w.failed.connect(lambda s:warn(self,RuntimeError(s)));w.cancelled.connect(lambda:self.status.setText('已停止，已保存订单保留'));w.finished.connect(self.worker_finished)
-        for b in (self.generate_btn,self.preview_btn,self.update_btn,self.default_btn,self.save_default_btn,self.order_mode,self.restore_order_btn,self.correction,self.order_list,self.auto_export,self.sync_btn):b.setEnabled(False)
+        for b in (self.generate_btn,self.preview_btn,self.update_btn,self.default_btn,self.save_default_btn,self.order_mode,self.restore_order_btn,self.correction,self.order_list,self.auto_export,self.sync_btn,self.evidence_btn):b.setEnabled(False)
         self.completed_selection();self.stop_btn.setEnabled(True);w.start()
     def progress(self,n,total):self.bar.show();self.bar.setRange(0,max(1,total) if total else 0);self.bar.setValue(n)
     def boundary(self,on):
@@ -227,7 +247,7 @@ class GenerationDialog(QDialog):
         self.batch_id=r.get('batch_id',self.batch_id);self.receipt=r;self.status.setText(f"已保存{len(r['generated'])}单，零分配{len(r['zero'])}单，失败/未处理{len(r['errors'])}项，停止：{r['cancelled']}。"+'；'.join(x['error'] for x in r['errors'])+r.get('audit_warning',''))
     def worker_finished(self):
         w=self.worker;self.worker=None;w.deleteLater();self.committing=False;self.stop_btn.setEnabled(False)
-        for b in (self.preview_btn,self.update_btn,self.default_btn,self.save_default_btn,self.order_mode,self.restore_order_btn,self.correction,self.order_list,self.auto_export,self.sync_btn):b.setEnabled(True)
+        for b in (self.preview_btn,self.update_btn,self.default_btn,self.save_default_btn,self.order_mode,self.restore_order_btn,self.correction,self.order_list,self.auto_export,self.sync_btn,self.evidence_btn):b.setEnabled(True)
         self.apply_mode();self.bar.hide();self.completed_selection()
         self.plan=None;self.generate_btn.setEnabled(False)
         if self.close_pending and not self.export_worker:self._completed=True;self.accept()

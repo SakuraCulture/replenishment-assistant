@@ -73,6 +73,10 @@ def choices(path,numbers,progress=lambda _:None,cancel=None):
             try:identity,warehouse=wo.resolve(db,number)
             except ValueError:result[number]=[];continue
             result[number]=[{'day':d,'store':s,'oid':o,'revision':v,'current':c,'saved':t,'warehouse':warehouse} for d,s,o,v,c,t in db.execute('SELECT o.day,o.store,o.oid,r.revision,o.current,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid WHERE o.number=? ORDER BY r.revision DESC',(identity[2],))]
+            import warehouse_execution as execution
+            oid=db.execute('SELECT oid FROM normal_orders WHERE number=?',(identity[2],)).fetchone()[0]
+            if execution.has_parent(db,oid):
+                result[number]=[{**h,'current':h['current_revision']} for h in execution.heads(db,history=True) if h['oid']==oid and (not warehouse or h['warehouse']==warehouse)]
     return result
 
 def prepare(path,scanned,bindings,progress=lambda _:None,cancel=None):
@@ -88,16 +92,35 @@ def prepare(path,scanned,bindings,progress=lambda _:None,cancel=None):
         identity,warehouse=identities[item['number']]
         key=(identity[2],revision);groups.setdefault(key,[]).append({**item,'warehouse':warehouse})
     by_number={}
-    for number,revision in groups:
-        if number in by_number and by_number[number]!=revision:raise ValueError('同一单号的不同修订请分开导入核对')
-        by_number[number]=revision
+    for (number,revision),items in groups.items():
+        scope={i.get('warehouse') for i in items}
+        for old_revision,old_scope in by_number.setdefault(number,[]):
+            if old_revision!=revision and (None in scope or None in old_scope or scope&old_scope):raise ValueError('同一仓单的不同修订请分开导入核对')
+        by_number[number].append((revision,scope))
     plans=[]
     for (number,revision),items in groups.items():
         checkpoint(cancel);progress('核对回传差异：'+number+f' V{revision:03d}')
         with closing(connect(path)) as db:
             row=db.execute('SELECT day,store FROM normal_orders WHERE number=?',(number,)).fetchone()
         if not row:raise ValueError('本机未找到补货单号：'+number+'；不得按名称或相近日期猜测')
-        order=repo.get(*row,revision,view='export');r=order['payload']['result'];eligible={d['E']:d for rows in normal_exports.groups(r,order['payload'].get('new_focus')).values() for d in rows}
+        import warehouse_execution as execution
+        warehouse_heads=[]
+        with closing(connect(path)) as db:
+            oid=db.execute('SELECT oid FROM normal_orders WHERE number=?',(number,)).fetchone()[0]
+            if execution.has_parent(db,oid):
+                selected={i['warehouse'] for i in items if i.get('warehouse')}
+                all_heads=[h for h in execution.heads(db,history=True) if h['oid']==oid and h['revision']==revision]
+                warehouse_heads=[h for h in all_heads if not selected or h['warehouse'] in selected]
+                if not warehouse_heads or (selected and selected!={h['warehouse'] for h in warehouse_heads}):raise wr.Conflict('来源仓单已删除、未参与或该仓修订不存在')
+                # Legacy feedback versions contain a same-source, whole-parent
+                # value map. Preserve its unselected warehouse values and read
+                # their own frozen evidence; never reinterpret via parent.current.
+                orders=[execution.get_order(repo,h,view='export',db=db) for h in all_heads]
+                rows=[d for value in orders for d in value['payload']['result']['rows']]
+                result={**orders[0]['payload']['result'],'rows':rows,'summary':sem.summarize(rows)}
+                order={**orders[0],'payload':{**orders[0]['payload'],'result':result},'warehouse_heads':warehouse_heads}
+            else:order=repo.get(*row,revision,view='export')
+        r=order['payload']['result'];eligible={d['E']:d for rows in normal_exports.groups(r,order['payload'].get('new_focus')).values() for d in rows}
         if any(i.get('identity_digest',order['digest'])!=order['digest'] for i in items):raise ValueError('隐藏页原签发摘要与存档不一致')
         with closing(connect(path)) as db:
             old=current(db,order['oid'],revision)
@@ -145,8 +168,13 @@ def commit(path,plan,progress=lambda _:None,cancel=None):
             h=p['head']
             from archive_orders import require_active
             for wh in dict.fromkeys(item.get('warehouse') for item in p['payload']['incoming'].values()):require_active(db,h['oid'],wh)
-            now=db.execute('SELECT current FROM normal_orders WHERE oid=?',(h['oid'],)).fetchone();signed=db.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(h['oid'],h['revision'])).fetchone();old=current(db,h['oid'],h['revision'])
-            if not now or now[0]!=h['current_revision'] or not signed or signed[0]!=h['digest']:raise wr.Conflict('签发记录在预览后变化，请重新核对回传')
+            old=current(db,h['oid'],h['revision'])
+            if h.get('warehouse_heads'):
+                import warehouse_execution
+                for child in h['warehouse_heads']:warehouse_execution.validate(db,child)
+            else:
+                now=db.execute('SELECT current FROM normal_orders WHERE oid=?',(h['oid'],)).fetchone();signed=db.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(h['oid'],h['revision'])).fetchone()
+                if not now or now[0]!=h['current_revision'] or not signed or signed[0]!=h['digest']:raise wr.Conflict('签发记录在预览后变化，请重新核对回传')
             if (old['version'] if old else None)!=p['expected']:raise wr.Conflict('回传记录已被另一窗口更新，请重新核对')
         checkpoint(cancel);stamp=wr.now()
         for f,data in contents:db.execute('INSERT OR IGNORE INTO source_files VALUES(?,?,?,?)',(f['sha'],f['name'],stamp,data))
@@ -160,7 +188,8 @@ def commit(path,plan,progress=lambda _:None,cancel=None):
 
 def view(path,head,progress=lambda _:None,cancel=None):
     from history_read import repository
-    order=repository(path).get(head['day'],head['store'],head['revision'],view='export')
+    from warehouse_execution import get_order
+    order=get_order(repository(path),head,view='export')
     if order['digest']!=head['digest']:raise ValueError('签发来源已变化')
     with closing(connect(path)) as db:
         record=current(db,head['oid'],head['revision']);history=[]

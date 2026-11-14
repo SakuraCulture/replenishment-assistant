@@ -14,6 +14,7 @@ class LifecycleDeletion(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name);self.work,self.repo,self.payload=seed(self.root);self.path=self.work.path
         self.head=purchases.targets(self.path)[0]
+        self.parent=self.repo.headers()[0]  # Whole-store deletion safety; child tests are separate.
     def other(self):
         p=copy.deepcopy(self.payload);r=p['result'];r['store']='U';r['store_name']='保留店'
         for d in r['rows']:d['B']='U'
@@ -21,14 +22,14 @@ class LifecycleDeletion(unittest.TestCase):
             db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(wr.today(),'U','normal_model','other','BH-U-ZC',1))
             db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',('other',1,no.fingerprint(r),wr.now(),no.encode(p,db)))
         return next(h for h in purchases.targets(self.path) if h['oid']=='other')
-    def remove(self):return dm.execute(self.path,dm.prepare(self.path,[self.head]),True)
+    def remove(self):return dm.execute(self.path,dm.prepare(self.path,[self.parent]),True)
     def test_all_lifecycle_states_are_not_deletion_gates(self):
         w=Workflows(self.path.parent/'aoxiang',business_path=self.path)
         j=w.prepare([self.head])
         for state in ('PENDING','RUNNING','REVIEW','FAILED','PREPARED','BOUND','SYNCED'):
             w.update(j['id'],state='RUNNING' if state=='RUNNING' else 'PAUSED',position=0,changes={'state':state,'purchase_id':'p-'+state,'error':{'code':'TASK_PENDING'}})
-            self.assertFalse(dm.prepare(self.path,[self.head])['blockers'])
-        plan=dm.prepare(self.path,[self.head]);self.assertFalse(plan['blockers'])
+            self.assertFalse(dm.prepare(self.path,[self.parent])['blockers'])
+        plan=dm.prepare(self.path,[self.parent]);self.assertFalse(plan['blockers'])
         self.assertEqual(len(plan['tasks']),1);dm.execute(self.path,plan,True)
         self.assertEqual(w.list(),[]);self.assertEqual(self.repo.headers(),[])
         self.assertEqual(len(fence.pending(self.path)),1)
@@ -120,7 +121,7 @@ class LifecycleDeletion(unittest.TestCase):
                 self.assertEqual(r['saved'],'saved-'+str(v))
             self.assertEqual(db.execute('SELECT DISTINCT oid FROM purchase_link_index').fetchall(),[('other',)])
     def test_wal_rejected_before_mutation_and_outbox_rollback(self):
-        plan=dm.prepare(self.path,[self.head])
+        plan=dm.prepare(self.path,[self.parent])
         with closing(sqlite3.connect(self.path)) as db:self.assertEqual(db.execute('PRAGMA journal_mode=WAL').fetchone()[0],'wal')
         with self.assertRaisesRegex(wr.Conflict,'WAL'):dm.execute(self.path,plan,True)
         self.assertEqual(len(self.repo.headers()),1);self.assertEqual(fence.pending(self.path),[])
@@ -186,6 +187,7 @@ class LifecycleDeletion(unittest.TestCase):
         # power cut or a claim to inject torn disk sectors during COMMIT.
         w=Workflows(self.path.parent/'aoxiang',business_path=self.path);w.prepare([self.head])
         script='''import sys,os\nsys.path.insert(0,sys.argv[1])\nimport data_maintenance as m,purchases\np=sys.argv[2]\ndef progress(s):\n if sys.argv[3]=='before' and '当天作业清理已写入事务' in str(s):os._exit(73)\n if sys.argv[3]=='after' and getattr(s,'committing',None) is False:os._exit(74)\nm.execute(p,m.prepare(p,[purchases.targets(p)[0]]),True,progress)\nos._exit(74)\n'''
+        script=script.replace('m.prepare(p,[purchases.targets(p)[0]])',"m.prepare(p,[{k:v for k,v in purchases.targets(p)[0].items() if k!='warehouse'}])")
         args=[sys.executable,'-c',script,str(Path(__file__).resolve().parents[1]/'src'),str(self.path)]
         r=subprocess.run([*args,'before'],capture_output=True,timeout=40);self.assertEqual(r.returncode,73,r.stderr)
         self.assertEqual(len(self.repo.headers()),1);self.assertEqual(len(w.list()),1);self.assertEqual(fence.pending(self.path),[])

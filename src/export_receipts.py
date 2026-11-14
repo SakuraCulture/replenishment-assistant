@@ -25,7 +25,8 @@ def stamp():
 def identity(order, warehouse):
     from warehouse_orders import child_number
     result = {key: order[key] for key in ('day', 'store', 'oid', 'revision', 'digest')}
-    result.update(warehouse=warehouse, number=child_number(order['number'], warehouse),
+    result.update({key:order[key] for key in ('current_revision','child_revision','source_parent_revision','snapshot_digest','execution_epoch','parent_number','visibility_token') if key in order})
+    result.update(warehouse=warehouse, number=order['number'] if order.get('warehouse') else child_number(order['number'], warehouse),
                   name=order.get('payload', {}).get('result', {}).get('store_name', order['store']))
     return result
 
@@ -49,11 +50,11 @@ def _save(database, receipt):
 
 def _pruned(db,receipt):
     import deletion_barrier
-    if not deletion_barrier.has(db,'deleted_order_tokens'):return receipt,False
+    if not deletion_barrier.has(db,'deleted_order_tokens') and not deletion_barrier.has(db,'warehouse_execution_heads'):return receipt,False
     files=[];changed=False
     for item in receipt['files']:
         heads=item.get('heads') or ([item['head']] if item.get('head') else [])
-        kept=[h for h in heads if not db.execute('SELECT 1 FROM deleted_order_tokens WHERE oid=?',(h['oid'],)).fetchone()]
+        kept=[h for h in heads if deletion_barrier.active(db,h['oid'],h.get('warehouse'))]
         if heads and not kept:changed=True;continue
         if heads!=kept:
             item=copy.deepcopy(item);item['heads']=kept;item.pop('head',None);changed=True
@@ -102,7 +103,7 @@ def update(database, receipt):
     try:
         save(database, receipt)
         return True
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, sqlite3.Error) as exc:
         message = '导出回执未能更新：' + str(exc)
         if message not in receipt['warnings']:
             receipt['warnings'].append(message)
@@ -132,7 +133,8 @@ def summary(receipt):
     complete = [f for f in files if f['state'] in ('已生成', '已完成')]
     remaining = [f for f in files if f not in complete]
     sign = receipt.get('signature', '原归档不变')
-    parts = [sign + '。', f'已生成 {len(complete)}/{len(files)} 份：' + ('、'.join(f['path'] for f in complete) or '无'),
+    from work_failures import format_failure
+    parts = ([format_failure(receipt['failure'])] if receipt.get('failure') else []) + [sign + '。', f'已生成 {len(complete)}/{len(files)} 份：' + ('、'.join(f['path'] for f in complete) or '无'),
              '未生成：' + ('、'.join(f['path'] for f in remaining) or '无')]
     for item in files:
         if item.get('error'):

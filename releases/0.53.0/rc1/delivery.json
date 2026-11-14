@@ -1,0 +1,13 @@
+{
+  "version": "0.53.0",
+  "build": "rc1",
+  "status": "independent_candidate_full_suite_not_completed",
+  "archive": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.0_rc1\\补货助手_0.53.0_rc1_双仓独立执行.zip",
+  "sha256": "745967715d0b4451f21250a6f24c005e9c340037917e5362bc967ba558086225",
+  "bytes": 156309788,
+  "files": 1318,
+  "crc_verified": true,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.0_rc1\\补货助手\\补货助手.exe",
+  "source_snapshot_sha256": "ebbf21a9939440770116f0bae213ef9f5269f0ac01a8caa5ca52de431894cd37",
+  "report": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\releases\\0.53.0\\rc1\\交付报告.md"
+}

@@ -7,7 +7,9 @@ import data_maintenance as m,maintenance_storage as ms,storage_chunks as c,work_
 import test_data_maintenance as fixtures
 
 class DeltaReferences(unittest.TestCase):
-    setUp=fixtures.DeleteOrders.setUp
+    def setUp(self):
+        fixtures.DeleteOrders.setUp(self)
+        self.heads=self.r.headers()  # Explicit whole-parent integrity/performance scope.
     def warm(self):
         with closing(sqlite3.connect(self.path)) as db,db:
             ms.cache_schema(db)

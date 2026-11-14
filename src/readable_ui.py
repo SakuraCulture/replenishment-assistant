@@ -135,12 +135,31 @@ def file_results(parent,paths,title='导出完成',note=''):
 
 def failure_message(exc):
     raw=str(exc)
+    fields={}
+    for line in raw.splitlines():
+        line=line.strip()
+        for prefix in ('未完成：','导出操作未全部完成：','归档操作未完成，请在历史记录核对状态：'):
+            if line.startswith(prefix):line=line[len(prefix):]
+        for key in ('失败阶段','原因','提交状态','诊断记录'):
+            marker=key+'：'
+            if line.startswith(marker):fields[key]=line[len(marker):].strip()
+    if any(key in fields for key in ('失败阶段','原因','提交状态')):
+        parts=[key+'：'+fields[key] for key in ('失败阶段','原因','提交状态') if fields.get(key)]
+        if fields.get('诊断记录'):parts.append('诊断记录：'+fields['诊断记录'])
+        if '导出任务与恢复' in raw:
+            import re
+            amount=re.search(r'已生成 \d+/\d+ 份',raw)
+            if amount:parts.append(amount.group()+'。')
+            parts.append('请到“导出任务与恢复”核对原任务和确切签发修订；不要重复签发。')
+        return '\n'.join(parts)
     if '门店尚有待核对的签发前调整：' in raw:
         code=raw.split('门店尚有待核对的签发前调整：',1)[1].splitlines()[0]
         return '门店 '+code+' 的最终清单调整尚未应用，暂不能签发导出。\n打开“最终清单 / 改量”，补齐调整原因，核对修改与预算并确认风险后，点击“应用最终数量”，再签发导出。\n“保留为待核对草稿”只暂存，不代表应用；此提示不表示文件被占用。'
     if '导出任务与恢复' in raw and '已生成 ' in raw:
         import re
         amount=re.search(r'已生成 \d+/\d+ 份',raw)
+        if '签发结果待核' in raw:
+            return '签发归档或校验发生异常，提交状态尚未核实。\n'+(amount.group()+'。\n' if amount else '')+'不能据此判断是否已经签发；请展开详情并到“导出任务与恢复”核对原任务和签发记录，不要重复签发。'
         reason='文件已生成，导出日志未写完。' if '日志写入失败' in raw else '部分文件写出未完成；请关闭占用文件或更换可写目录。'
         return raw.splitlines()[0]+'\n'+(amount.group()+'。' if amount else '')+reason+'\n打开“显示与帮助 → 导出任务与恢复”，按原修订补导出；不要重新签发。'
     if 'UNRESOLVED_TASK' in raw or 'SUBMISSION_UNKNOWN' in raw:

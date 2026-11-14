@@ -20,7 +20,14 @@ def review_rows(parent,title,headers,rows,note,accept_text):
     return d.exec()==QDialog.DialogCode.Accepted
 
 
-def choose_stores(parent,title,states,initial=()):
+def choose_stores(parent,title,states,initial=(),*,execution=False):
+    if execution:
+        from warehouse_execution_ui import ExecutionSelection
+        dialog=ExecutionSelection(parent,states,initial)
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return []
+        parent.execution_warehouses={**getattr(parent,'execution_warehouses',{}),**dialog.warehouses()}
+        if hasattr(parent,'touch'):parent.touch()
+        return dialog.codes()
     d=QDialog(parent);d.setObjectName('storeScopeSelection');d.setWindowTitle(title);d.resize(650,520);v=QVBoxLayout(d);v.addWidget(label('仅勾选的有效完成门店参与；未完成或过期门店不可选。'));checks={}
     from PySide6.QtWidgets import QScrollArea,QWidget
     scroll=QScrollArea();content=QWidget();body=QVBoxLayout(content)

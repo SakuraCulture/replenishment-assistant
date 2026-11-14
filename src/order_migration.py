@@ -24,6 +24,7 @@ def owned(name):
     if name!=p.as_posix() or p.is_absolute() or any(x in ('..','.','') for x in p.parts) or '\\' in name or ':' in name:return False
     parts=p.parts
     if name in ROOT_FILES or name in DBS or name=='aoxiang/jobs.sqlite3.guard':return True
+    if parts[0]=='export_receipts':return len(parts)==2 and bool(re.fullmatch('[a-f0-9]{32}\\.json',parts[1]))
     if parts[0]=='warehouse_catalogs':return p.suffix=='.json'
     if parts[0]=='migration-assets':return len(parts)==3 and bool(re.fullmatch(r'[a-f0-9]{64}',parts[1])) and p.suffix.lower() in SUFFIXES
     if len(parts)>=3 and parts[:2]==('aoxiang','component-state'):
@@ -37,7 +38,7 @@ def tree(root):
     for folder,dirs,files in os.walk(root,followlinks=False):
         parent=Path(folder);parts=parent.relative_to(root).parts
         def include(name):
-            if not parts:return name in {'warehouse_catalogs','aoxiang','jst_catalog','jst_catalog_sync','migration-assets'}
+            if not parts:return name in {'warehouse_catalogs','aoxiang','jst_catalog','jst_catalog_sync','migration-assets','export_receipts'}
             if parts==('aoxiang',):return name=='component-state'
             if parts in (('jst_catalog',),('jst_catalog_sync',)):return name=='downloads'
             return name not in {'config','recovery','temporary','logs','browser','profiles','profile','user-data','Cache','Code Cache','node_modules'}
@@ -72,7 +73,7 @@ def verify_originals(path,cancel=None):
 def info(path):
     with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")};counts={}
-        for table in ('normal_orders','normal_revisions','normal_work_revisions','jobs','lifecycle_routes','lifecycle_versions','purchase_documents','purchase_versions','jst_generations','jst_baselines','source_files','stores','presets','deleted_order_tokens'):
+        for table in ('normal_orders','normal_revisions','normal_work_revisions','warehouse_execution_heads','warehouse_execution_revisions','warehouse_execution_retirements','jobs','lifecycle_routes','lifecycle_versions','purchase_documents','purchase_versions','jst_generations','jst_baselines','source_files','stores','presets','deleted_order_tokens'):
             if table in tables:counts[table]=db.execute('SELECT count(*) FROM '+table).fetchone()[0]
     return counts
 
@@ -192,7 +193,8 @@ def manifest(path):
             if not Path(old).is_absolute() or new not in paths or not owned(new):raise ValueError('原文件迁移映射无效')
     return value
 
-def prepare(root,package,progress=lambda _:None,cancel=None):
+def prepare(root,package,progress=lambda _:None,cancel=None,*,mode='replace'):
+    if mode not in ('replace','merge'):raise ValueError('未知的订单导入方式')
     root=validate_root(root);package=Path(package).resolve();before=file_hash(package);value=manifest(package)
     resource_check(root.parent,sum(e['size'] for e in value['entries'])*2)
     nonce=uuid.uuid4().hex;stage=root.with_name('.'+root.name+'.order-import-'+nonce);stage.mkdir()
@@ -214,6 +216,9 @@ def prepare(root,package,progress=lambda _:None,cancel=None):
         atomic_json(stage/'迁入原文件映射.json',{'version':1,'paths':value.get('external_map',{}),'contents':contents})
         plan={'root':str(root),'stage':str(stage),'backup':str(root.with_name(root.name+'.订单导入备份-'+nonce)),
                 'new':str(root.with_name('.'+root.name+'.order-new-'+nonce)),'nonce':nonce,'package':str(package),'package_sha256':before,'manifest':value}
+        if mode=='merge':
+            from order_merge import inspect
+            plan['mode']='merge';plan['merge_report']=inspect(stage,root,progress,cancel)
         from migration_status import record
         record(plan,'PREPARED');return plan
     except BaseException:shutil.rmtree(stage);raise
@@ -275,8 +280,11 @@ def _recover(root):
     plan=json.loads(path.read_text('utf-8'));checked_plan(plan)
     if Path(plan['root']).resolve()!=root:raise ValueError('订单导入恢复目录不一致')
     backup=Path(plan['backup']);receipt=root/'订单迁入完成.json'
-    if receipt.is_file() and json.loads(receipt.read_text('utf-8')).get('nonce')==plan['nonce']:
+    completed=json.loads(receipt.read_text('utf-8')) if receipt.is_file() else {}
+    if completed.get('nonce')==plan['nonce']:
         result={'state':'COMPLETED','backup':str(backup)}
+        if completed.get('mode')=='merge':
+            result.update(mode='merge',counts=completed['report']['counts'],report=str(root/'order-merge-reports'/(plan['nonce']+'.json')))
         from migration_status import record
         record(plan,'COMPLETED',result=result);path.unlink();return result
     if backup.exists():
@@ -296,6 +304,14 @@ def recover(root):
     if not journal(root).exists():return None
     from application_reset import _exclusive
     with _exclusive(root):return _recover(root)
+
+def restore_export_receipts(new,final_root):
+    """Only the machine database path changes; signed order facts stay exact."""
+    for file in (new/'export_receipts').glob('*.json'):
+        value=json.loads(file.read_text('utf-8'))
+        if value.get('schema')!=1 or value.get('id')!=file.stem or not isinstance(value.get('files'),list):raise ValueError('迁入导出恢复回执格式无效：'+file.name)
+        value['database']=str(final_root/'workbench.sqlite3');atomic_json(file,value)
+
 
 def _apply(plan):
     """Only after accepted GUI close; never deletes the target backup."""
@@ -338,6 +354,7 @@ def _apply(plan):
                 target=new/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(stage/entry['path'],target)
             shutil.copyfile(stage/'迁入原文件映射.json',new/'迁入原文件映射.json');pause_imported(new)
             restore_catalog(new,root,plan['manifest'],catalog_local)
+            restore_export_receipts(new,root)
             atomic_json(new/'订单迁入完成.json',{'nonce':plan['nonce'],'at':now(),'package_sha256':plan['package_sha256'],'backup':str(backup),'scope':plan['manifest']['scope']})
             record(plan,'APPLYING',phase='REPLACING');atomic_json(journal(root),plan)
             root.rename(backup);new.rename(root)
@@ -350,7 +367,12 @@ def _apply(plan):
 def apply(plan):
     from migration_status import record,latest
     checked_plan(plan);record(plan,'APPLYING',phase='VALIDATING')
-    try:return _apply(plan)
+    try:
+        if plan.get('mode')=='merge':
+            from order_merge_migration import apply as merge_apply
+            return merge_apply(plan)
+        if plan.get('mode','replace')!='replace':raise ValueError('未知的订单导入方式')
+        return _apply(plan)
     except BaseException as exc:
         value=latest(plan['root'])
         if value and value['nonce']==plan['nonce'] and value['state']=='COMPLETED':

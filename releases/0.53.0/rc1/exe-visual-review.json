@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "reviewed": [
+    "exercise-sign-hb-scope.png",
+    "exercise-single-warehouse-delete-confirmation.png",
+    "reopen-reopened-three-retained-warehouse-orders.png"
+  ],
+  "observations": [
+    "Windows-native Chinese labels render normally; no offscreen square glyphs",
+    "Execution selector shows warehouse/name/code/state and exact one-store one-warehouse selection count; amount column remains available by horizontal scroll",
+    "Permanent delete explicitly lists HB and full-text retained SD beneath table",
+    "Actual reopened tracking shows SD for QA01 and both warehouses for QA02, three rows total"
+  ],
+  "live_platform_tested": false,
+  "frozen_exe_sha256": "6fed533057e157df8032abc0bdaa24cb51a07da8b94b495af1ea1be37d6b48b1"
+}

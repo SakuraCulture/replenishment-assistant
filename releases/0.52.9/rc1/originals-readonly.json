@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "real_database_opened": false,
+  "real_import": false,
+  "files": [
+    {
+      "file": "2026-11-13优团生活·精品超市（定陶店）（精简版·山东仓）.xlsx",
+      "sha256": "9b17d3b262e452e50df81d6342cc955783ea7bf73a716188c1ddb1e79ff8f27e",
+      "source_unchanged": true,
+      "rows": [
+        2040
+      ],
+      "conflicts": [
+        0
+      ],
+      "read_issues": []
+    },
+    {
+      "file": "2026-11-13柴小囤便利超市（河东店）（精简版·山东仓）(1).xlsx",
+      "sha256": "72f0647ef8179900094f02bfb7eb2ef338aa4c3bbd6a636632bb0cd42394016b",
+      "source_unchanged": true,
+      "rows": [
+        1696
+      ],
+      "conflicts": [
+        10
+      ],
+      "read_issues": []
+    },
+    {
+      "file": "2026-11-13柴小囤便利超市（鱼台店）（精简版·山东仓）.xlsx",
+      "sha256": "8ee79d7c3ab9cfc983fcce849d75a27e4d6fbbb31fae41461fa50cd4a7cbb1a4",
+      "source_unchanged": true,
+      "rows": [
+        1574
+      ],
+      "conflicts": [
+        0
+      ],
+      "read_issues": []
+    }
+  ]
+}

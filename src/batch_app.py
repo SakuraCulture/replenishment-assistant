@@ -302,6 +302,9 @@ class BatchWindow(WarehouseUi,SessionWindow):
             from deletion_barrier import read_epochs
             epochs=read_epochs(self.work_repository.path,self.job_day,jobs)
             self.__dict__.setdefault('deletion_generations',{}).update(epochs)
+            from deletion_barrier import read_warehouse_epochs
+            from app_defaults import WAREHOUSES
+            self.__dict__.setdefault('warehouse_deletion_generations',{}).update(read_warehouse_epochs(self.work_repository.path,self.job_day,{s:WAREHOUSES for s in jobs}))
         for s,settings in jobs.items():
             self.states[s].update(state='排队中',error='');self.results.pop(s,None)
             if s==self.current_store:self.dirty=True;self.result=None
@@ -312,6 +315,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
             except Exception as exc:self.states[s]['error']='本次设置未能保存：'+str(exc)
         worker=BatchWorker(self._calculation_input,jobs,self._calculation_profile,self.concurrency.value(),self);self.worker=worker
         worker.deletion_generations={s:getattr(self,'deletion_generations',{}).get(s,0) for s in jobs}
+        worker.warehouse_deletion_generations={s:getattr(self,'warehouse_deletion_generations',{}).get(s,{}) for s in jobs}
         worker.changed.connect(self.task_changed);worker.failed.connect(self.batch_failed);worker.finished.connect(self.job_finished)
         self.pages.setCurrentIndex(2);self.refresh_tables();self.update_controls();worker.start()
     def task_changed(self,store,state,result,error):

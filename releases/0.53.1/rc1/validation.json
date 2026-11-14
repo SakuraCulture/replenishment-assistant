@@ -1,0 +1,44 @@
+{
+  "targeted": {
+    "passed": true,
+    "returncode": 0,
+    "tests": 102,
+    "modules": [
+      "test_jst_stock_evidence",
+      "test_jst_stock_evidence_ui",
+      "test_jst",
+      "test_jst_batches",
+      "test_jst_results",
+      "test_jst_payment",
+      "test_jst_carton_normalization",
+      "test_jst_review",
+      "test_jst_ui"
+    ],
+    "elapsed_seconds": 30.96899999998277
+  },
+  "actual_exe": {
+    "passed": true,
+    "checks": 9,
+    "exe_sha256": "4eae6bb7f5fa7fd9dfa830e40c40843903af35fb5c784b41e388b3c2e688f6cb",
+    "source_snapshot_sha256": "1f0253b0151e0e357591b2eb4aa6f3fa20388ac7ff0618d2cf30c4f64019b6dc",
+    "live_platform": false,
+    "report": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\qa\\stock_evidence_native_exe_0531_20261114_rc1_01\\report.json"
+  },
+  "business_tables_unchanged": true,
+  "allocation_and_model_files_unchanged": {
+    "comparison": "frozen 0.53.0 rc1",
+    "identical": {
+      "src/model.py": true,
+      "src/engine.py": true,
+      "src/allocation.py": true,
+      "src/jst_allocation.py": true,
+      "src/jst_orders.py": true,
+      "src/jst_batches.py": true,
+      "src/warehouse_catalog.py": true,
+      "src/warehouse_execution.py": true
+    }
+  },
+  "full_application_suite": "Not repeated; unresolved full-suite native Python crash from 0.53.0 remains inconclusive; not claimed passed",
+  "real_data_mutated": false,
+  "git_commit_push_merge": false
+}

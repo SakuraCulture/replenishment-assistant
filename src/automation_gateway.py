@@ -601,7 +601,7 @@ class Gateway(QObject):
         import deletion_barrier
         from contextlib import closing
         with closing(h.work_repository.connect()) as db:
-            deletion_barrier.validate(db,{'day':p['day'],'generations':{s:p.get('deletion_generations',{}).get(s,0) for s in p['codes']}})
+            deletion_barrier.validate(db,{'day':p['day'],'generations':{s:p.get('deletion_generations',{}).get(s,0) for s in p['codes']},'warehouse_generations':p.get('warehouse_deletion_generations',{})})
         impact = recalculation_impact(h.results, p['codes'])
         if impact['new_products'] or impact['manual']:
             raise CommandError('NEEDS_REVIEW', '重算涉及已有新品选择或人工调整，请先在原工作台核对后重新准备',
@@ -643,6 +643,7 @@ class Gateway(QObject):
             h.initializing = True
             try:
                 h.__dict__.setdefault('deletion_generations',{}).update(p.get('deletion_generations',{}))
+                h.__dict__.setdefault('warehouse_deletion_generations',{}).update(p.get('warehouse_deletion_generations',{}))
                 for s in r['codes']:
                     record = p['records'][s]
                     h.store_presets[s] = copy.deepcopy(record['preset']); h.overrides[s] = copy.deepcopy(record['preset']['config']['warehouses'])

@@ -107,6 +107,26 @@ test('pause in upload persists returned receipt; next start only observes it',as
   c.pause(p.id);d.resolve(receipt(p));await c.pending;assert.equal(f.ledger.get(p.id).state,'ACCEPTED');assert.equal(observes,0);
   c.start(p.id);await c.pending;assert.equal(uploads,1);assert.equal(observes,1);assert.equal(f.ledger.get(p.id).binding.orderId,'PO-1');
 });
+
+test('one shared machine accepts nine ordered imports before observing any platform task',async t=>{
+  const f=await fixture(t),uploads=[];let observations=0;
+  const controller=new MachinePurchaseCreate({ledger:f.ledger,adapter:{
+    prepare:async()=>({orderIds:[]}),
+    upload:async p=>{uploads.push(p.id);return {...receipt(p),taskId:receipt(p).taskId.replace('@7114','@'+(7114+uploads.length))};},
+    observe:async()=>{observations++;assert.fail('submitOnly must not wait for platform import/proof');}
+  }});
+  const ids=[];
+  for(let n=0;n<9;n++){
+    const p=intent('uncapped-'+n);p.basis.number='BH-'+n;p.note=p.marker+' 本地单:'+p.basis.number;reserve(f,p);ids.push(p.id);
+    controller.start(p.id,{submitOnly:true});await controller.pending;
+    assert.equal(controller.busy,false);assert.equal(f.ledger.get(p.id).state,'ACCEPTED');
+  }
+  assert.deepEqual(uploads,ids);assert.equal(observations,0);
+  assert.equal(f.ledger.list().filter(r=>r.state==='ACCEPTED').length,9);
+  // Resuming submission follows the existing receipt and does not upload twice.
+  controller.start(ids[0],{submitOnly:true});await controller.pending;assert.deepEqual(uploads,ids);
+  await controller.close();
+});
 test('timeout no receipt forbids replay; late exact receipt can recover',async t=>{
   const f=await fixture(t),p=reserve(f);let uploads=0;
   const c=new MachinePurchaseCreate({ledger:f.ledger,adapter:{prepare:async()=>({orderIds:[]}),upload:async()=>{uploads++;throw Object.assign(Error('timeout'),{code:'WORKER_RESPONSE_UNKNOWN'});},observe:async()=>evidence(p)}});

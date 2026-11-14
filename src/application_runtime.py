@@ -34,6 +34,16 @@ class Runtime:
         self.folder=Path(folder);self.folder.mkdir(parents=True,exist_ok=True);self.path=self.folder/'application.jsonl'
         if root is not None:self.root=Path(root)
         self.emit('DIAGNOSTIC_ROUTE')
+    def bind_qt(self,app):
+        if getattr(self,'gui_gc',None) is not None and not self.gui_gc.closed:
+            if self.application is not app:raise RuntimeError('不能跨Qt应用复用界面回收控制器')
+            return
+        self.application=app
+        from application_gc import GuiCollector
+        self.gui_gc=GuiCollector(app,self)
+        from application_native import Diagnostics
+        from data_location import control
+        self.native_diagnostics=Diagnostics(self,control()/'diagnostics')
     def emit(self,event,**values):
         # Open per event: no handle is held in either movable data directory.
         try:
@@ -61,6 +71,14 @@ class Runtime:
         global _runtime
         # Never leave the QWidget-reporting hook installed into Py_FinalizeEx.
         self.phase='STOPPED';self.emit('STOPPED')
+        collector=getattr(self,'gui_gc',None)
+        try:
+            if collector is not None:collector.restore()
+        except BaseException:self.exception(*sys.exc_info(),event='GC_RESTORE_EXCEPTION',blocking=False)
+        native=getattr(self,'native_diagnostics',None)
+        try:
+            if native is not None:native.close()
+        except BaseException:self.exception(*sys.exc_info(),event='NATIVE_DIAGNOSTICS_CLOSE_EXCEPTION',blocking=False)
         sys.excepthook=sys.__excepthook__;sys.unraisablehook=self.previous_unraisable;threading.excepthook=self.previous_thread
         _runtime=None
 

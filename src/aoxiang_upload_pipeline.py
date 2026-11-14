@@ -1,4 +1,4 @@
-"""Bounded platform import pipeline over one serial, shared browser transport."""
+"""Uncapped accepted imports over one serial, shared browser transport."""
 import time
 from aoxiang_client import ComponentError
 from aoxiang_directory import Directory
@@ -12,8 +12,10 @@ from aoxiang_purchase_messages import observation
 
 def run_upload(runner,job):
     store,client=runner.store,runner.client
-    limit=job.get('max_inflight',2)
-    if type(limit) is not int or not 1<=limit<=4:raise ValueError('本批平台处理上限无效')
+    # Persisted max_inflight=1..4 belongs to the previous windowed scheduler.
+    # Resuming it now uses the same uncapped policy as newly confirmed batches.
+    # Browser interactions stay serial: submit waits only for its own durable
+    # acceptance, never for platform import/proof completion before the next item.
     scope=job.get('dispatch_keys');deadline=time.monotonic()+runner.verification_wait
     def current():return store.get(job['id'])
     def eligible(item):return scope is None or item['key'] in scope
@@ -33,11 +35,10 @@ def run_upload(runner,job):
         while True:
             checkpoint(runner.cancel)
             items=[i for i in current()['items'] if eligible(i)]
-            waiting=[i for i in items if i['state']=='ACCEPTED']
             ready=[i for i in items if i['state']=='PENDING']
-            # Fill the import window before spending any time waiting on the
-            # first task's import completion or D16/D17 verification exports.
-            for item in ready[:max(0,limit-len(waiting))]:
+            # Submit the complete selected scope in its original order before
+            # observing any import/proof. No local cap on platform-pending jobs.
+            for item in ready:
                 checkpoint(runner.cancel)
                 try:
                     require_orders(runner.business_path,[item]);p=item['package']
@@ -75,20 +76,16 @@ def run_upload(runner,job):
                     else:
                         e=r.get('error') or {}
                         if e.get('code') in {'TASK_PENDING','TASK_NOT_FOUND','VERIFY_INTERRUPTED'} and r.get('taskId'):
-                            runner.progress('平台正在处理采购；已受理任务保留，按本批上限继续调度')
+                            runner.progress('平台正在处理采购；已受理任务并行处理，无本地数量上限')
                         else:raise ComponentError(e.get('code','PURCHASE_NEEDS_REVIEW'),e.get('message','原采购结果待核；其他订单继续'),e.get('details'))
                 except SourceDeleted:
                     basis=item.get('head') or item.get('basis') or {}
                     store.forget_missing(job['id'],item['item_id'],basis.get('oid'),runner.execution_token,runner.business_path)
                 except Cancelled:raise
                 except Exception as exc:fail(item,exc)
-                # A completed task frees a slot: submit another order before
-                # checking a second potentially slow native proof.
-                now=[i for i in current()['items'] if eligible(i)]
-                if any(i['state']=='PENDING' for i in now) and sum(i['state']=='ACCEPTED' for i in now)<limit:break
             remaining=[i for i in current()['items'] if eligible(i) and i['state'] in ('PENDING','ACCEPTED')]
             if not remaining:break
-            if any(i['state']=='PENDING' for i in remaining) and sum(i['state']=='ACCEPTED' for i in remaining)<limit:continue
+            if any(i['state']=='PENDING' for i in remaining):continue
             if time.monotonic()>=deadline:
                 return store.update(job['id'],execution_token=runner.execution_token,state='QUEUED',next_poll_at=store.clock()+runner.verification_interval,
                                     message='平台处理中；稍后继续原任务，等待时释放共享会话供其他作业使用')
