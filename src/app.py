@@ -324,6 +324,15 @@ def _main():
     if '--lifecycle-preflight-smoke' in sys.argv:
         from lifecycle_preflight_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-preflight-smoke')+1:])
+    if '--return-save-smoke' in sys.argv:
+        from return_save_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--return-save-smoke')+1:])
+    if '--lifecycle-performance-smoke' in sys.argv:
+        from lifecycle_perf_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-performance-smoke')+1:])
+    if '--lifecycle-followup-smoke' in sys.argv:
+        from lifecycle_followup_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-followup-smoke')+1:])
     if '--jst-batch-recovery-smoke' in sys.argv:
         from jst_batch_recovery_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--jst-batch-recovery-smoke')+1:])

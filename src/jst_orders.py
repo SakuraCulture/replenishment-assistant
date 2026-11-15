@@ -6,6 +6,7 @@ New warehouse stock already includes orders locked BEFORE that refresh.
 import copy
 import hashlib
 import sqlite3
+import time
 import uuid
 from contextlib import closing
 from decimal import Decimal
@@ -357,7 +358,13 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
     storage_chunks.backup_before_write(Path(path),progress); checkpoint(cancel)
     result={'generated':[], 'skipped':v['skipped'], 'zero':[], 'cancelled':False, 'errors':[]}; expected={w:tuple(s) for w,s in v['states'].items()}
     groups=[v['plans']] if v['correction'] else [[p] for p in v['plans']]
-    run_raw=wr.dumps(v)
+    # Canonical run facts are independent of each order's transaction. Reuse
+    # the exact text while the latest deletion scope is identical, retaining
+    # only one encoding (not an unbounded cache of large batch snapshots).
+    clean={**v,'plans':list(v['plans']),'skipped':list(v.get('skipped',[]))}
+    run_raw=wr.dumps(clean);run_digest=hashlib.sha256(run_raw.encode()).hexdigest()
+    run_oids={p['head']['oid'] for p in v['plans']}|{p.get('head',{}).get('oid') for p in v.get('skipped',[])}
+    run_removed=frozenset()
     blocked=set()
     catalog_check=warehouse_catalog.CatalogRevisionCheck(Path(path).parent)
     for group in groups:
@@ -413,8 +420,11 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                 for w in whs:
                     if v.get('batch_id'):db.execute('UPDATE jst_batch_stock SET serial=serial+1 WHERE batch_id=? AND warehouse=?',(v['batch_id'],w))
                     else:db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(w,))
-                clean={**v,'plans':[p for p in v['plans'] if p['head']['oid'] not in removed],'skipped':[p for p in v.get('skipped',[]) if p.get('head',{}).get('oid') not in removed]}
-                db.execute('INSERT OR IGNORE INTO jst_runs VALUES(?,?,?,?)',(v['runid'],wr.now(),wr.dumps(clean),digest(clean)))
+                scope=frozenset(removed & run_oids)
+                if scope!=run_removed:
+                    clean={**v,'plans':[p for p in v['plans'] if p['head']['oid'] not in removed],'skipped':[p for p in v.get('skipped',[]) if p.get('head',{}).get('oid') not in removed]}
+                    run_raw=wr.dumps(clean);run_digest=hashlib.sha256(run_raw.encode()).hexdigest();run_removed=scope
+                db.execute('INSERT OR IGNORE INTO jst_runs VALUES(?,?,?,?)',(v['runid'],wr.now(),run_raw,run_digest))
                 if catalog_revisions is not None:catalog_check.verify()
                 checkpoint(cancel);progress(CommitProgress(True));db.commit()
                 # Advance only our own transaction; never adopt a concurrent refresh after COMMIT.
@@ -447,12 +457,36 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
     return result
 
 
+class _LockCommitBusy(Exception):
+    def __init__(self,error):self.error=error
+
+
+class _LockRollbackWait(str):
+    active=False
+
+
+_LOCK_BUSY_SECONDS=10
+
+
 def lock(path, gids, reason='', unlock=False, progress=lambda _:None, cancel=None):
     orders=[get(path,g,cancel=cancel) for g in gids]
     if unlock and not reason.strip():raise ValueError('更正已锁订单必须记录外部撤销／更正情况及原因')
     storage_chunks.backup_before_write(Path(path),progress);checkpoint(cancel)
+    deadline=time.monotonic()+_LOCK_BUSY_SECONDS
+    while True:
+        try:
+            _lock_once(path,orders,reason,unlock,progress,cancel,deadline)
+            progress(CommitProgress(False));return gids
+        except _LockCommitBusy as blocked:
+            if time.monotonic()>=deadline:raise blocked.error
+            checkpoint(cancel)
+            progress(_LockRollbackWait('本地读取短暂占用，锁单尝试已安全回滚；正在重新核验后保存，不会重复锁单'))
+            time.sleep(.025)
+
+
+def _lock_once(path,orders,reason,unlock,progress,cancel,deadline):
     with closing(sqlite3.connect(path,timeout=.1)) as db,db:
-        lc.begin(db,cancel);schema(db)
+        lc.begin(db,cancel,deadline=deadline);schema(db)
         for p in orders:
             checkpoint(cancel);h=p['head'];purchases.validate_head(db,h)
             if active(db,h)!=p['gid']:raise wr.Conflict('生成单已变化，请重新核对')
@@ -462,15 +496,22 @@ def lock(path, gids, reason='', unlock=False, progress=lambda _:None, cancel=Non
             if bool(locked(db,h)) == (not unlock):continue
             db.execute('INSERT INTO jst_locks VALUES(?,?,?,?,?,?) ON CONFLICT(oid,warehouse) DO UPDATE SET gid=excluded.gid,locked=excluded.locked,at=excluded.at,reason=excluded.reason',(h['oid'],h['warehouse'],p['gid'],int(not unlock),wr.now(),reason))
             event(db,h,'更正解除锁定' if unlock else '确认下单并锁定',{'gid':p['gid'],'reason':reason})
-        checkpoint(cancel);progress(CommitProgress(True));db.commit()
-    progress(CommitProgress(False));return gids
+        checkpoint(cancel);progress(CommitProgress(True))
+        try:db.commit()
+        except sqlite3.OperationalError as exc:
+            code=getattr(exc,'sqlite_errorcode',None)
+            busy=(code & 255)==sqlite3.SQLITE_BUSY if isinstance(code,int) else str(exc).lower()=='database is locked'
+            if not busy or not db.in_transaction:raise
+            db.rollback()  # A failed/unknown rollback must never be replayed.
+            raise _LockCommitBusy(exc) from exc
 
 
 def payment_plan(path, gid, progress=lambda _:None, cancel=None):
     p=get(path,gid,cancel=cancel);h=lc.full_head(path,p['head'])
     with closing(sqlite3.connect(path)) as db:
         if active(db,h)!=gid:raise wr.Conflict('请核对当前有效生成单')
-        if lc.upstream(db,h,'payment')!=p['basis']:raise wr.Conflict('回传已变化，请先核对生成依据')
+        proofs={}
+        if lc.upstream(db,h,'payment',_proofs=proofs)!=p['basis']:raise wr.Conflict('回传已变化，请先核对生成依据')
         rows=[]
         for r in p['rows']:
             if Decimal(r['quantity'])<=0:continue
@@ -479,9 +520,9 @@ def payment_plan(path, gid, progress=lambda _:None, cancel=None):
         for row in rows:
             for field in ('quantity','base_quantity','amount','price'):row[field]=number(row[field])
             row['document_number']=''
-        plan=lc.make_plan(db,h,'payment',rows,[])
+        plan=lc.make_plan(db,h,'payment',rows,[],_verified=proofs)
         plan['payload']['jst_generation']=gid;plan['digest']=lc.fingerprint(plan['payload'])
-        old=lc.current(db,h,'payment');plan['changed']=not old or old['digest']!=plan['digest']
+        old=lc.current(db,h,'payment',_verified=plan.get('_read_proofs'));plan['changed']=not old or old['digest']!=plan['digest']
     return {'plans':[plan],'files':[], 'jst_generation':gid}
 
 

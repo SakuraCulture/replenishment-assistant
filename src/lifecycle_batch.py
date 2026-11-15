@@ -104,7 +104,7 @@ def prepare(path, documents, scope=None, progress=lambda _:None, cancel=None):
         for d in sorted(group,key=lambda x:io.ALL_STAGES.index(x['scan']['stage'])):
             checkpoint(cancel)
             try:
-                result=service.prepare_numbered(path,d['scan'],d.get('target'),progress,cancel,staged=staged)
+                result=service.prepare_numbered(path,d['scan'],d.get('target'),progress,cancel,staged=staged,_owned=True)
             except ValueError as exc:
                 # Worker errors cross the UI boundary as strings. Include the
                 # failing source here, not the currently highlighted UI row.

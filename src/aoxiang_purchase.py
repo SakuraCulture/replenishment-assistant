@@ -33,8 +33,9 @@ def freeze_payment(path, head, configuration, suppliers, *, cancel=None):
     with closing(purchases.connect(path)) as db:
         db.execute('BEGIN')
         purchases.validate_head(db, head)
-        view = lifecycle.snapshot(path, head, cancel=cancel, db=db)
+        view = lifecycle.snapshot(path, head, cancel=cancel, db=db,_comparison=False)
         payment = require_payment(head, view)
+        del view  # This call owns the fresh checked document; retain only payment.
         rows, omitted = [], []
         seen = set()
         for index, row in enumerate(payment['payload']['rows']):
@@ -67,7 +68,7 @@ def freeze_payment(path, head, configuration, suppliers, *, cancel=None):
                 'account_binding': copy.deepcopy(configuration['account_binding']),
                 'store_mapping_version': configuration['store_mapping_version'],
                 'platform_store': copy.deepcopy(targets[0]), 'supplier_code': supplier,
-                'payment': copy.deepcopy(payment), 'rows': rows, 'omitted': omitted,
+                'payment': payment, 'rows': rows, 'omitted': omitted,
                 'total_quantity': str(sum((Decimal(r['quantity']) for r in rows), Decimal(0))),
                 'total_amount': str(sum((Decimal(r['amount']) for r in rows), Decimal(0))),
                 'quantity_basis': 'confirmed_base_quantity_no_additional_conversion',
@@ -90,7 +91,7 @@ def validate_basis(path, plan, configuration, suppliers, *, cancel=None):
     with closing(purchases.connect(path)) as db:
         db.execute('BEGIN')
         purchases.validate_head(db, plan['head'])
-        view = lifecycle.snapshot(path, plan['head'], cancel=cancel, db=db)
+        view = lifecycle.snapshot(path, plan['head'], cancel=cancel, db=db,_comparison=False)
         current = view['documents']['payment']
         if not current or (current['version'], current['digest']) != (plan['payment']['version'], plan['payment']['digest']):
             raise ValueError('付款单已更新，请重新预览，不能上传旧付款数量')

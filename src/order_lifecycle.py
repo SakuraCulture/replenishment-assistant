@@ -47,12 +47,24 @@ def decode(row):
     if payload.get('schema') not in (1,SCHEMA) or fingerprint(payload) != digest: raise ValueError('生命周期单据快照校验失败')
     return {'version': version, 'saved': saved, 'digest': digest, 'payload': payload}
 
-def current(db, head, stage, version=None,*,as_of=None):
+def current(db, head, stage, version=None,*,as_of=None,_proofs=None,_verified=None):
     if not exists(db): return None
     condition = ' AND version=?' if version is not None else ''
     args = (*key(head), stage, *((version,) if version is not None else ()))
     if as_of:condition+=' AND julianday(saved)<=julianday(?)';args=(*args,as_of)
-    return decode(db.execute('SELECT version,saved,digest,payload FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=?' + condition + ' ORDER BY version DESC LIMIT 1', args).fetchone())
+    row=db.execute('SELECT version,saved,digest,payload FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=?' + condition + ' ORDER BY version DESC LIMIT 1', args).fetchone()
+    if type(_verified) is dict and row:
+        from lifecycle_read_proofs import reuse
+        reused=reuse(head,stage,row,_verified.get(stage))
+        if reused is not None:
+            if _proofs is not None:_proofs[stage]=_verified[stage]
+            return reused
+    document=decode(row)
+    if _proofs is not None and document:
+        from lifecycle_read_proofs import make
+        proof=make(head,stage,row,document)
+        if proof is not None:_proofs[stage]=proof
+    return document
 
 def history(path, head, stage, progress=lambda _: None, cancel=None):
     with closing(purchases.connect(path)) as db:
@@ -83,10 +95,23 @@ def matching(row, heads):
 def available(path, scanned, progress=lambda _: None, cancel=None):
     scopes = set(); unknown = False
     with closing(purchases.connect(path)) as db:
+        resolved={};data_version=None
         for row in scanned['rows']:
             checkpoint(cancel)
             if row['signed_number']:
-                identity, wh = purchases.wo.resolve(db, row['signed_number'])
+                version=db.execute('PRAGMA data_version').fetchone()[0]
+                if version!=data_version:resolved.clear();data_version=version
+                number=row['signed_number']
+                try:hit=resolved.get(number)
+                except TypeError:hit=None
+                if hit is None:
+                    hit=purchases.wo.resolve(db,number)
+                    after=db.execute('PRAGMA data_version').fetchone()[0]
+                    if after==version:
+                        try:resolved[number]=hit
+                        except TypeError:pass
+                    else:resolved.clear();data_version=after
+                identity, wh = hit
                 scopes.update((identity[1], w) for w in ([wh] if wh else purchases.wo.WAREHOUSES))
             elif row['store']:
                 scopes.update((row['store'], w) for w in ([row['warehouse']] if row['warehouse'] else purchases.wo.WAREHOUSES))
@@ -96,13 +121,15 @@ def available(path, scanned, progress=lambda _: None, cancel=None):
 def current_targets(path, progress=lambda _:None, cancel=None):
     return [h for h in purchases.targets(path,progress=progress,cancel=cancel) if h['revision']==h['current_revision']]
 
-def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=None, *, staged=None):
+def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=None, *, staged=None,_owned=False):
     """Public import: one order number, current signed facts; versions stay internal.
 
     Existing prepare/recheck remain exact-snapshot compatibility APIs. A current
     head is frozen here; validate_head still rejects re-signing after preview.
     """
-    scanned=copy.deepcopy(scanned)
+    # The batch entry already owns an isolated copy. Public callers still get
+    # one private snapshot; neither UI scans nor cached inputs are mutated.
+    if not _owned:scanned=copy.deepcopy(scanned)
     for row in scanned['rows']:
         checkpoint(cancel)
         if not row.get('signed_number'):
@@ -133,14 +160,14 @@ def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=N
         if not matching(row,[h]):raise ValueError('源表门店或仓库与补货单号不一致：'+row['signed_number'])
         row['revision']=h['revision']
         bindings[binding_key(row)]=h
-    return prepare(path,scanned,bindings,progress,cancel,staged=staged)
+    return prepare(path,scanned,bindings,progress,cancel,staged=staged,_owned=True)
 
-def upstream(db, head, stage, staged=None):
+def upstream(db, head, stage, staged=None,*,_proofs=None,_verified=None):
     """Freeze every dependency; absence is also a token checked at commit."""
     route=flow.stages(db,head,staged,including=stage)
     index=route.index(stage); tokens={}; previous=None; valid=True
     for s in route[:index]:
-        doc=(staged or {}).get((*key(head),s)) or current(db,head,s)
+        doc=(staged or {}).get((*key(head),s)) or current(db,head,s,_proofs=_proofs,_verified=_verified)
         if doc is None and s=='return':
             legacy=legacy_return(db,head,head['products'])
             if legacy and legacy['complete']:
@@ -155,8 +182,9 @@ def upstream(db, head, stage, staged=None):
     products=head['products'] if stage=='return' else rules.positive(previous['payload']['rows']) if previous and valid else {}
     return {'stage':'signed' if stage=='return' else route[index-1], 'dependencies':tokens, 'signed_digest':head['digest'], 'ready':stage=='return' or valid, 'products':products}
 
-def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False, *, staged=None):
-    basis=upstream(db,head,stage,staged)
+def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False, *, staged=None,_verified=None):
+    proofs={}
+    basis=upstream(db,head,stage,staged,_proofs=proofs,_verified=_verified)
     if explicit_zero and not basis['ready']:raise ValueError('上游未就绪，不能确认整单为0')
     effective=rules.reconcile(raw_rows,basis['products'],pending=not basis['ready'])
     missing=[r['sku'] for r in effective if r['quantity_origin']=='missing'];extra=[r['sku'] for r in effective if r['outside_basis']]
@@ -165,7 +193,7 @@ def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=Fals
         kinds=list(dict.fromkeys(r.get('adapter','payment_file') for r in raw_rows))
         if 'jst_import_return' in kinds:
             payload['payment_source']={'type':'jst_import_return','external_order_number':None,'amount_basis':'数量×单价'}
-    digest=fingerprint(payload);old=current(db,head,stage);prior={r['sku']:r for r in old['payload']['rows']} if old else {}
+    digest=fingerprint(payload);old=current(db,head,stage,_proofs=proofs);prior={r['sku']:r for r in old['payload']['rows']} if old else {}
     differences=[]
     for r in effective:
         a=prior.get(r['sku'],{})
@@ -177,7 +205,9 @@ def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=Fals
             a=prior.get(sku,{});b=after.get(sku,{})
             if any(a.get(k)!=b.get(k) for k in ('base_quantity','amount','document_number')):
                 calibration.append([sku,b.get('name') or a.get('name'),a.get('base_quantity'),b.get('base_quantity'),a.get('amount'),b.get('amount'),a.get('document_number'),b.get('document_number')])
-    return {'head':head,'stage':stage,'expected':old['version'] if old else None,'digest':digest,'payload':payload,'changed':not old or old['digest']!=digest,'differences':differences,'duplicates':duplicates,'calibration':calibration}
+    plan={'head':head,'stage':stage,'expected':old['version'] if old else None,'digest':digest,'payload':payload,'changed':not old or old['digest']!=digest,'differences':differences,'duplicates':duplicates,'calibration':calibration}
+    if proofs:plan['_read_proofs']=proofs
+    return plan
 
 def match_payment_rows(path, head, rows):
     if not any(r.get('adapter')=='paid_order' for r in rows):return
@@ -193,20 +223,31 @@ def match_payment_rows(path, head, rows):
             row['matching_basis']='商品编码精确匹配'
         else:row['matching_basis']='清单外商品，需确认'
 
-def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None, *, staged=None):
+def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None, *, staged=None,_owned=False):
     """Bindings are exact whole-document heads, no per-line quantity allocations."""
     stage = scanned['stage']
     if stage not in ALL_STAGES: raise ValueError('未知生命周期环节')
     groups = {}; plans = []
     with closing(purchases.connect(path)) as db:
+        checked=set();data_version=None
         for row in scanned['rows']:
             checkpoint(cancel); head = bindings.get(binding_key(row))
             if not head or not matching(row, [head]): raise ValueError('单据未明确匹配，或门店/仓/单号/修订不一致')
             if head['warehouse'] not in purchases.wo.WAREHOUSES: raise ValueError('旧单仓归属不明确，不能猜测关联')
-            purchases.validate_head(db, head)
-            groups.setdefault(key(head), {'head': head, 'rows': []})['rows'].append(copy.deepcopy(row))
+            version=db.execute('PRAGMA data_version').fetchone()[0]
+            if version!=data_version:checked.clear();data_version=version
+            token=tuple((k in head,head.get(k)) for k in ('oid','revision','warehouse','digest','current_revision','execution_epoch','visibility_token'))
+            try:known=token in checked
+            except TypeError:known=False;token=None
+            if not known:
+                purchases.validate_head(db, head)
+                after=db.execute('PRAGMA data_version').fetchone()[0]
+                if after==version and token is not None:checked.add(token)
+                else:checked.clear();data_version=after
+            groups.setdefault(key(head), {'head': head, 'rows': []})['rows'].append(row if _owned else copy.deepcopy(row))
         for i, group in enumerate(groups.values()):
             checkpoint(cancel); h = group['head']; unique = {}; duplicates = 0
+            purchases.validate_head(db,h)  # Latest state when freezing each plan.
             match_payment_rows(path,h,group['rows'])
             if len({(r['document_number'], r['document_date']) for r in group['rows']}) != 1: raise ValueError('一张仓单同一环节须提供一份完整单据；不同单号/日期不能自动拼成整单')
             conflicts = duplicate_rows.find(group['rows'])
@@ -251,18 +292,30 @@ def full_head(path,head):
     products={d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':normal_exports.sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for rs in normal_exports.groups(result,order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d)==head['warehouse']}
     return {**head,'products':products}
 
-def begin(db, cancel):
+def begin(db, cancel,*,deadline=None):
     start = time.monotonic()
+    end=min(start+10,deadline) if deadline is not None else start+10
     while True:
         checkpoint(cancel)
         try: db.execute('BEGIN IMMEDIATE'); checkpoint(cancel); return
         except sqlite3.OperationalError as exc:
-            if 'locked' not in str(exc).lower() or time.monotonic()-start > 10: raise
+            if 'locked' not in str(exc).lower() or time.monotonic() > end: raise
 
 def staged_document(plan):
     """Exact document that this plan will commit, including unchanged versions."""
     return {'version':(plan['expected'] or 0)+int(plan['changed']),
             'digest':plan['digest'],'payload':plan['payload']}
+
+
+class _BusyCommit(Exception):
+    def __init__(self,error):self.error=error
+
+
+class _RollbackWait(str):
+    active=False  # Safe rollback completed: cancellation is available again.
+
+
+_SAVE_BUSY_SECONDS=10
 
 def commit(path, plan, progress=lambda _: None, cancel=None):
     checkpoint(cancel); contents = []
@@ -276,28 +329,46 @@ def commit(path, plan, progress=lambda _: None, cancel=None):
         else:raw = Path(f['path']).read_bytes()
         if hashlib.sha256(raw).hexdigest() != f['sha']: raise ValueError('原文件在预览后变化，请重新读取')
         contents.append((f, raw)); progress(RowProgress(f'留存原件 {i+1}/{len(plan["files"])}', i+1, len(plan['files'])))
-    encoded = [wr.dumps(p['payload']) for p in plan['plans']]; checkpoint(cancel)
+    checkpoint(cancel)
     import storage_chunks
     storage_chunks.backup_before_write(Path(path), progress); checkpoint(cancel)
+    deadline=time.monotonic()+_SAVE_BUSY_SECONDS
+    while True:
+        try:return _commit_once(path,plan,contents,progress,cancel,deadline)
+        except _BusyCommit as blocked:
+            # COMMIT returned SQLITE_BUSY while the transaction was still live,
+            # and rollback succeeded. Only this proven-uncommitted attempt can
+            # be replayed, with all source/version/dependency checks repeated.
+            if time.monotonic()>=deadline:raise blocked.error
+            checkpoint(cancel)
+            progress(_RollbackWait('本地读取短暂占用，已安全回滚本次尝试；正在重新核验后保存，不会重复新增'))
+            time.sleep(.025)
+
+
+def _commit_once(path,plan,contents,progress,cancel,deadline):
     receipts = []
     with closing(sqlite3.connect(path, timeout=.15)) as db, db:
-        begin(db, cancel); schema(db)
+        begin(db, cancel,deadline=deadline); schema(db)
         if plan.get('payment_matching'):
             from payment_matching import validate
             validate(path,db,plan)
-        staged={}
+        staged={};encoded=[]
         for p in plan['plans']:
-            checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'])
+            verified=p.get('_read_proofs')
+            checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'],_verified=verified)
             from jst_orders import guard_return,guard_payment
             if p['stage'] in ('return','operations') and p['changed']:guard_return(db,p['head'])
             if p['stage']=='payment':guard_payment(db,p)
             identity=(*key(p['head']),p['stage'])
             if identity in staged:raise ValueError('同一订单同一环节只能保存一份完整单据')
             if (old['version'] if old else None) != p['expected']: raise wr.Conflict('单据在预览后被更新，请重新核对')
-            if p['payload']['basis'] != upstream(db,p['head'],p['stage'],staged):raise wr.Conflict('上游单据在预览后变化，请重新核对')
-            if fingerprint(p['payload']) != p['digest']: raise ValueError('预览内容变化')
+            if p['payload']['basis'] != upstream(db,p['head'],p['stage'],staged,_verified=verified):raise wr.Conflict('上游单据在预览后变化，请重新核对')
+            from lifecycle_save_encoding import encode
+            raw,checked_digest=encode(p['payload'],retain=p['changed'])
+            if checked_digest != p['digest']: raise ValueError('预览内容变化')
             if p['changed'] != (not old or old['digest']!=p['digest']):raise ValueError('预览更新状态变化')
             staged[identity]=staged_document(p)
+            encoded.append(raw)
         # Last checkpoint. Never terminate the process between here and COMMIT.
         checkpoint(cancel); progress(COMMIT_BOUNDARY)
         for f, raw in contents: db.execute('INSERT OR IGNORE INTO lifecycle_files VALUES(?,?,?)', (f['sha'], f['name'], raw))
@@ -313,6 +384,13 @@ def commit(path, plan, progress=lambda _: None, cancel=None):
         if plan.get('payment_matching'):
             from payment_matching import apply
             apply(db,plan)
+        try:db.commit()
+        except sqlite3.OperationalError as exc:
+            code=getattr(exc,'sqlite_errorcode',None)
+            busy=(code & 255)==sqlite3.SQLITE_BUSY if isinstance(code,int) else str(exc).lower()=='database is locked'
+            if not busy or not db.in_transaction:raise
+            db.rollback()  # Failure here propagates: unknown outcomes never replay.
+            raise _BusyCommit(exc) from exc
     return receipts
 
 def state(present):
@@ -354,17 +432,36 @@ def legacy_return(db, head, products,*,as_of=None):
     complete = bool(supplied) and all(s in supplied for s in required)
     return {'version': old['version'], 'saved': old['saved'], 'complete': complete, 'values': supplied, 'legacy': True,'digest':hashlib.sha256(wr.dumps(supplied).encode()).hexdigest()}
 
-def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order=None,as_of=None):
+def _comparison_document(document):
+    """Compact only after full decode/fingerprint verification; never persisted."""
+    if document is None:return None
+    payload=document['payload']
+    rows=[{k:r[k] for k in ('sku','name','base_quantity','amount','currency','processing_note') if k in r} for r in payload['rows']]
+    value={k:payload[k] for k in ('schema','pending') if k in payload}
+    value['rows']=rows
+    if 'basis' in payload:value['basis']={'dependencies':payload['basis'].get('dependencies',{})}
+    return {**document,'payload':value}
+
+
+def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order=None,as_of=None,_comparison=True):
     if db is None:
         with closing(purchases.connect(path)) as connection:
-            connection.execute('BEGIN'); return snapshot(path, head, progress, cancel, connection, order=order,as_of=as_of)
+            connection.execute('BEGIN'); return snapshot(path, head, progress, cancel, connection, order=order,as_of=as_of,_comparison=_comparison)
     if order is None:
         from warehouse_execution import get_order
         order=get_order(repository(path),head,view='export')
     if order['digest'] != head['digest']: raise wr.Conflict('签发快照不一致')
     eligible = {d['E']: {'sku': d['E'], 'name': d.get('D'), 'quantity': normal_exports.sem.order_quantity(d)} for rs in normal_exports.groups(order['payload']['result'], order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d) == head['warehouse']}
+    if not _comparison:del order  # The verified large signed tree is no longer needed.
     route=flow.stages(db,head,as_of=as_of)
-    docs = {s: current(db, head, s,as_of=as_of) for s in route}; legacy = legacy_return(db, head, eligible,as_of=as_of)
+    if _comparison:docs = {s: current(db, head, s,as_of=as_of) for s in route}
+    else:
+        docs={}
+        for s in route:
+            checkpoint(cancel);document=current(db,head,s,as_of=as_of)
+            docs[s]=document if s=='payment' else _comparison_document(document)
+            del document
+    legacy = legacy_return(db, head, eligible,as_of=as_of)
     maps = {s: {r['sku']: r for r in doc['payload']['rows']} if doc else {} for s, doc in docs.items()}
     if not docs['return'] and legacy: maps['return'] = {s: {'base_quantity': str(q), 'name': eligible[s]['name']} for s, q in legacy['values'].items()}
     skus = list(eligible); seen = set(skus)
@@ -381,7 +478,7 @@ def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order
         missing = '；'.join(TITLES[s] + ('未导入' if not docs[s] and not (s == 'return' and legacy) else '未列出此商品（旧口径）' if docs[s] and docs[s]['payload'].get('schema')==1 else '不在本环节对照范围') for s in STAGES if sku not in maps[s])
         notes=[TITLES[s]+'：'+maps[s][sku]['processing_note'] for s in STAGES if sku in maps[s] and maps[s][sku].get('processing_note')]
         missing='；'.join([missing,*notes]).strip('；')
-        rows.append([sku, name, *nums, *diffs, maps['payment'].get(sku, {}).get('amount'), maps['payment'].get(sku, {}).get('currency'), missing])
+        if _comparison:rows.append([sku, name, *nums, *diffs, maps['payment'].get(sku, {}).get('amount'), maps['payment'].get(sku, {}).get('currency'), missing])
     present = {s: bool(docs[s]) for s in STAGES}
     if not present['return'] and legacy: present['return'] = legacy['complete']
     if 'operations' in docs:present['operations']=bool(docs['operations'])
