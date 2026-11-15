@@ -73,6 +73,7 @@ class GenerationDialog(QDialog):
         self.order_note=label('默认按回传确认时间；预览后列表显示实际执行顺序。','muted');options.addWidget(self.order_note,1)
         self.correction=QCheckBox('仅替换本批所选未锁单；未选单保留占用');options.addWidget(self.correction);v.addLayout(options);self.order_mode.currentIndexChanged.connect(self.invalidate);self.correction.setChecked(correction);self.correction.setVisible(correction);self.correction.setEnabled(False)
         preview_actions=QHBoxLayout();self.preview_btn=button('预览库存分配',self.preview,True);preview_actions.addWidget(self.preview_btn)
+        self.recovery_btn=button('恢复分配状态',self.recover_state);preview_actions.addWidget(self.recovery_btn)
         self.evidence_btn=button('导出本批采用仓资料',self.export_stock_evidence);self.evidence_btn.setObjectName('exportAllocationStockEvidence');self.evidence_btn.setToolTip('导出预览或原批实际采用的仓资料和库存依据，不读取当前默认资料替代。');preview_actions.addWidget(self.evidence_btn);v.addLayout(preview_actions)
         self.summary=label('新批从选用库存开始，不扣其他批占用。预览不保存；确认后固定门店顺序和库存。','muted');self.summary.setWordWrap(True);v.addWidget(self.summary)
         self.review=AllocationReview(self);v.addWidget(self.review,1)
@@ -268,6 +269,21 @@ class GenerationDialog(QDialog):
         self.review.replace(committed,'本次已保存分配结果（含零分配）')
         self.summary.setText(f"已保存 {len(committed)} / {len(plans)} 张仓单；取消、失败或尚未处理的预览不计入上方结果。")
         self.batch_id=r.get('batch_id',self.batch_id);self.receipt=r;self.status.setText(f"已保存{len(r['generated'])}单，零分配{len(r['zero'])}单，失败/未处理{len(r['errors'])}项，停止：{r['cancelled']}。"+'；'.join(x['error'] for x in r['errors'])+r.get('audit_warning',''))
+        if r.get('recovery_warning'):self.status.setText(self.status.text()+'\n'+r['recovery_warning']+'；点击“恢复分配状态”，已保存订单不重做。')
+    def recover_state(self):
+        if self.worker or self.export_worker:return
+        bid=self.batch_id or (self.plan or {}).get('payload',{}).get('batch_id')
+        if not bid:
+            self.status.setText('尚未建立分配批次，可重新预览；没有执行库存分配。');return
+        try:
+            r=run(self,batches.recover_batch,(self.path,bid),'核对已保存结果并恢复分配状态')
+            if self.host.closing:return
+            self.batch_id=bid;self.receipt=r
+            for gid in r['generated']:
+                p=service.get(self.path,gid)
+                self.saved_order({'positive':True,'gid':gid,'number':p['head']['number']})
+            self.status.setText(r['message']);self.plan=None;self.generate_btn.setEnabled(False)
+        except Exception as exc:warn(self,exc)
     def worker_finished(self):
         w=self.worker;self.worker=None;w.deleteLater();self.committing=False;self.stop_btn.setEnabled(False)
         for b in (self.preview_btn,self.update_btn,self.default_btn,self.save_default_btn,self.order_mode,self.restore_order_btn,self.correction,self.order_list,self.auto_export,self.sync_btn,self.evidence_btn):b.setEnabled(True)

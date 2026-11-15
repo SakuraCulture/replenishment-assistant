@@ -333,6 +333,9 @@ def _main():
     if '--lifecycle-followup-smoke' in sys.argv:
         from lifecycle_followup_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-followup-smoke')+1:])
+    if '--lifecycle-recovery-smoke' in sys.argv:
+        from lifecycle_recovery_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-recovery-smoke')+1:])
     if '--jst-batch-recovery-smoke' in sys.argv:
         from jst_batch_recovery_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--jst-batch-recovery-smoke')+1:])

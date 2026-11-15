@@ -318,6 +318,11 @@ class _RollbackWait(str):
 _SAVE_BUSY_SECONDS=10
 
 def commit(path, plan, progress=lambda _: None, cancel=None):
+    import lifecycle_recovery
+    return lifecycle_recovery.execute(path,plan,progress,cancel,_commit)
+
+
+def _commit(path, plan, progress=lambda _: None, cancel=None):
     checkpoint(cancel); contents = []
     for i, f in enumerate(plan['files']):
         checkpoint(cancel)

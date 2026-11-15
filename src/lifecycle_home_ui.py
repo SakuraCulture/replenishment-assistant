@@ -81,6 +81,12 @@ class LifecycleWidget(QWidget):
         if stage:er.addWidget(button('查看本环节全部',lambda:self.status.setCurrentText('本环节全部')))
         er.addStretch();self.empty_actions.hide();v.insertWidget(5,self.empty_actions)
         self.selection_label();self.setAcceptDrops(True)
+        self.recovery_btn=button('恢复并继续原操作',self.recover_operation);v.addWidget(self.recovery_btn)
+
+    def recover_operation(self):
+        from lifecycle_recovery_ui import show
+        show(self,self.host,list(self.checked.values()) or self.fixed_scope,self.stage if self.stage!='jst' else None)
+        self.query(keep_page=True)
 
     def clear_filters(self):
         blockers=[QSignalBlocker(x) for x in (self.search,self.warehouse_filter,self.lock_filter)]

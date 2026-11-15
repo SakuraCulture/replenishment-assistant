@@ -73,6 +73,8 @@ def save(database,receipt):
         else:_save(database,value)
 
 def prune_deleted(database):
+    from lifecycle_recovery import prune_deleted as prune_lifecycle
+    prune_lifecycle(database)
     root=directory(database)
     if not root.exists():return
     for file in root.glob('*.json'):

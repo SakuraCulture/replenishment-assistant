@@ -51,6 +51,7 @@ def run_upload(runner,job):
                     if not r['uploadAttempted']:
                         configuration=client.request('configuration');suppliers=Directory(store.folder).suppliers()
                         validate_for_upload(runner.business_path,p,configuration,suppliers,cancel=runner.cancel)
+                    update(item,submission_started=True)
                     client.request('purchase.submit',purchase_id=p['id'])
                     r=runner.wait_status('purchase.status','purchase_id',p['id'],cancel_action='purchase.pause',
                         notify=lambda r,item=item:update(item,purchase_observation=observation(r)))

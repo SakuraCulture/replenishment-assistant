@@ -168,8 +168,30 @@ def preview_existing(path, batch_id, heads=None, correction=False, progress=lamb
     return plan
 
 
-def _pause_other(db, batch_id):
+def _pause_other(db, batch_id, operation=None):
+    before=db.execute("SELECT batch_id,epoch FROM jst_batches WHERE batch_id<>? AND status='active' ORDER BY rowid",(batch_id,)).fetchall()
     db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE batch_id<>? AND status='active'", (batch_id,))
+    if before and operation:
+        orders.event(db,{},'分配控制切换',{'batch_id':batch_id,'operation':operation,
+            'paused':[{'batch_id':bid,'epoch':epoch+1} for bid,epoch in before]})
+
+
+def _restore_switch(db, batch_id, operation):
+    # Only undo this operation's control changes, never allocations or a newer
+    # pause/resume decision. Called under the same failure-cleanup write lock.
+    if db.execute('SELECT 1 FROM jst_steps WHERE runid=?',(operation,)).fetchone():return
+    from deletion_barrier import has
+    if has(db,'deleted_jst_steps') and db.execute('SELECT 1 FROM deleted_jst_steps WHERE runid=?',(operation,)).fetchone():return
+    if db.execute("SELECT 1 FROM jst_batches WHERE batch_id<>? AND status='active'",(batch_id,)).fetchone():return
+    rows=db.execute("SELECT detail FROM jst_events WHERE action='分配控制切换' AND json_extract(detail,'$.operation')=? AND json_extract(detail,'$.batch_id')=? ORDER BY id DESC",(operation,batch_id)).fetchall()
+    for row in rows:
+        for old in wr.loads(row[0])['paused']:
+            # Keep epochs monotonic so an old in-flight plan cannot revive.
+            if db.execute("SELECT 1 FROM jst_batch_members WHERE batch_id=? AND status IN ('pending','failed')",(old['batch_id'],)).fetchone():
+                changed=db.execute("UPDATE jst_batches SET status='active',epoch=epoch+1 WHERE batch_id=? AND status='paused' AND epoch=?",(old['batch_id'],old['epoch'])).rowcount
+                if changed:
+                    orders.event(db,{},'恢复分配前控制状态',{'batch_id':batch_id,'operation':operation,'restored':old['batch_id']})
+                    return
 
 
 def register(path, plan, progress=lambda _:None, cancel=None):
@@ -206,7 +228,7 @@ def register(path, plan, progress=lambda _:None, cancel=None):
                     raise wr.Conflict('订单已加入其他未完成批次：'+h['number'])
                 full = {**h,'products':p.get('signed_products',p['basis']['products'])}
                 if lc.upstream(db,full,'payment') != p['basis']: raise wr.Conflict('回传依据已变化：'+h['number'])
-            _pause_other(db,spec['batch_id'])
+            _pause_other(db,spec['batch_id'],v['runid'])
             db.execute('INSERT INTO jst_batches VALUES(?,?,?,?,?,?,?)', (spec['batch_id'],spec['created'],spec['label'],'active',0,wr.dumps(fixed),orders.digest(fixed)))
             for wh,b in spec['stocks'].items():
                 db.execute('INSERT INTO jst_baselines VALUES(?,?,?,?,?)', (b['bid'],wh,b['created'],wr.dumps(b),orders.digest(b)))
@@ -255,7 +277,7 @@ def cancel_member(db, head, gid=None):
 def pause(path, batch_id, progress=lambda _:None, cancel=None):
     with closing(sqlite3.connect(path,timeout=.1)) as db,db:
         lc.begin(db,cancel)
-        db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE batch_id=? AND status='active'",(batch_id,))
+        db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE batch_id=? AND status IN ('active','paused')",(batch_id,))
 
 
 def cancel_unfinished(path,batch_id,reason,progress=lambda _:None,cancel=None):
@@ -307,7 +329,7 @@ def activate(path, plan, progress=lambda _:None, cancel=None):
         if c['epoch'] != v['batch_epoch']: raise wr.Conflict('批次状态已变化，请重新核对')
         for wh,expected in v['states'].items():
             if state(db,bid,wh) != tuple(expected): raise wr.Conflict('本批占用已变化，请重新预览')
-        _pause_other(db,bid)
+        _pause_other(db,bid,v['runid'])
         epoch = c['epoch'] + (c['status'] != 'active')
         db.execute("UPDATE jst_batches SET status='active',epoch=? WHERE batch_id=?",(epoch,bid))
     v['batch_epoch'] = epoch
@@ -321,8 +343,15 @@ def execute(path, plan, accept_issues=False, progress=lambda _:None, cancel=None
     except BaseException:
         # Registration may have committed before cancellation. Persist the stop
         # so a later timer/restart cannot consume this batch unexpectedly.
-        with closing(sqlite3.connect(path,timeout=10)) as db,db:
-            if exists(db):db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE batch_id=? AND status='active' AND epoch IN (?,?)",(bid,plan['payload'].get('batch_epoch',0),plan['payload'].get('batch_epoch',0)+1))
+        try:
+            with closing(sqlite3.connect(path,timeout=.1)) as db,db:
+                if exists(db):
+                    lc.begin(db,None)
+                    changed=db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE batch_id=? AND status='active' AND epoch IN (?,?)",(bid,plan['payload'].get('batch_epoch',0),plan['payload'].get('batch_epoch',0)+1)).rowcount
+                    if changed:_restore_switch(db,bid,plan['payload']['runid'])
+        except Exception:
+            import logging
+            logging.exception('分配异常后控制状态待恢复；保留原始异常及批次 %s',bid)
         raise
 
 
@@ -335,19 +364,58 @@ def _execute(path, plan, accept_issues=False, progress=lambda _:None, cancel=Non
         replay = bool(prepared['payload']['plans']) and all(db.execute('SELECT 1 FROM jst_steps WHERE operation=?',(p['operation'],)).fetchone() for p in prepared['payload']['plans'])
     if not replay and not background: prepared = activate(path,prepared,progress,cancel)
     receipt = orders.commit(path,prepared,accept_issues,progress,cancel)
+    receipt['batch_id']=bid
+    receipt['commit_state']='partial' if receipt['errors'] or receipt['cancelled'] else 'committed'
+    try:
+        with closing(sqlite3.connect(path,timeout=.1)) as db,db:
+            lc.begin(db,None)
+            # Do not overwrite a newer user's pause/activation decision.
+            c = db.execute('SELECT epoch FROM jst_batches WHERE batch_id=?',(bid,)).fetchone()
+            if c and c[0] == prepared['payload']['batch_epoch']:
+                remaining = db.execute("SELECT count(*) FROM jst_batch_members WHERE batch_id=? AND status IN ('pending','failed')",(bid,)).fetchone()[0]
+                if receipt['errors'] or receipt['cancelled']:
+                    db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE batch_id=?",(bid,))
+                    _restore_switch(db,bid,prepared['payload']['runid'])
+                elif not remaining: db.execute("UPDATE jst_batches SET status='complete' WHERE batch_id=?",(bid,))
+    except Exception as exc:
+        import logging
+        logging.exception('分配业务回执已取得，批次收尾待恢复：%s',bid)
+        receipt.update(finalization_pending=True,recovery_warning='已保存的分配结果保留，批次状态待恢复：'+type(exc).__name__+'：'+str(exc))
+    return receipt
+
+
+def recover_batch(path,batch_id,progress=lambda _:None,cancel=None):
+    """Read committed member facts and repair control metadata, never allocate."""
     with closing(sqlite3.connect(path,timeout=.1)) as db,db:
-        lc.begin(db,None)
-        # Do not overwrite a newer user's pause/activation decision.
-        c = db.execute('SELECT epoch FROM jst_batches WHERE batch_id=?',(bid,)).fetchone()
-        if c and c[0] == prepared['payload']['batch_epoch']:
-            remaining = db.execute("SELECT count(*) FROM jst_batch_members WHERE batch_id=? AND status IN ('pending','failed')",(bid,)).fetchone()[0]
-            if receipt['errors'] or receipt['cancelled']:
-                db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE batch_id=?",(bid,))
-            elif not remaining: db.execute("UPDATE jst_batches SET status='complete' WHERE batch_id=?",(bid,))
-    receipt['batch_id'] = bid; return receipt
+        lc.begin(db,cancel);c=context(db,batch_id,load_stock=False)
+        generated=[];zero=[];pending=[]
+        for m in c['members']:
+            checkpoint(cancel)
+            if m['status']=='done':
+                gid=orders.active(db,m['head'])
+                if gid:generated.append(gid)
+                else:zero.append(m['head']['number'])
+            elif m['status'] in ('pending','failed'):pending.append(m['head']['number'])
+        if not pending:
+            db.execute("UPDATE jst_batches SET status='complete' WHERE batch_id=?",(batch_id,))
+        elif c['status']=='active':
+            # Explicit recovery stops stale dispatch before a new preview.
+            db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE batch_id=?",(batch_id,))
+        if pending and not generated and not zero:
+            last=db.execute("SELECT json_extract(detail,'$.operation') FROM jst_events WHERE action='分配控制切换' AND json_extract(detail,'$.batch_id')=? ORDER BY id DESC LIMIT 1",(batch_id,)).fetchone()
+            if last:_restore_switch(db,batch_id,last[0])
+        orders.event(db,{},'核对并恢复分配状态',{'batch_id':batch_id,'generated':generated,'zero':zero,'pending':pending})
+        checkpoint(cancel)
+    return {'batch_id':batch_id,'generated':generated,'zero':zero,'pending':pending,'errors':[],
+            'skipped':[],'cancelled':False,'commit_state':'partial' if pending else 'committed',
+            'message':f'已核实保存{len(generated)}单、零分配{len(zero)}单；'+(f'剩余{len(pending)}单请继续原批，已保存部分不重做' if pending else '可直接导出原结果，无需重新分配')}
 
 
 def continue_batch(path,batch_id,progress=lambda _:None,cancel=None):
+    with closing(sqlite3.connect(path)) as db:
+        c=context(db,batch_id,load_stock=False)
+        remaining=any(m['status'] in ('pending','failed') for m in c['members'])
+    if not remaining:return recover_batch(path,batch_id,progress,cancel)
     return execute(path,preview_existing(path,batch_id,progress=progress,cancel=cancel),progress=progress,cancel=cancel)
 
 
@@ -361,6 +429,10 @@ def drain(path,progress=lambda _:None,cancel=None,*,before_work=lambda:None):
         try:
             checkpoint(cancel)
             before_work()
+            with closing(sqlite3.connect(path)) as db:
+                remaining=db.execute("SELECT 1 FROM jst_batch_members WHERE batch_id=? AND status IN ('pending','failed')",(bid,)).fetchone()
+            if not remaining:
+                out.append(recover_batch(path,bid,progress,cancel));continue
             plan = preview_existing(path,bid,progress=progress,cancel=cancel)
             out.append(execute(path,plan,progress=progress,cancel=cancel,background=True))
         except Cancelled:

@@ -20,7 +20,7 @@ from aoxiang_ui_common import ComponentDialog, Call, component_root, show_modal
 from runtime_support import Cancelled
 
 KINDS = {'prepare': '采购预览', 'upload': '采购上传与核对', 'receipt': '收货同步'}
-from aoxiang_workflow_state import can_end_local,local_preparation,summary as task_summary,counts
+from aoxiang_workflow_state import can_end_local,local_preparation,summary as task_summary,counts,recoverable
 from aoxiang_purchase_messages import waiting, item_message, voided, PAYMENT_PREPARATION_CODES
 STATES = {'QUEUED': '排队', 'RUNNING': '正在处理', 'YIELDED': '等待人工操作结束', 'PAUSED': '已停止，可继续原任务',
           'FAILED': '批次未完成', 'READY': '预览完成，尚未上传', 'COMPLETED': '完成', 'COMPLETED_WITH_ERRORS': '已处理，有待核项', 'CANCELLED': '剩余任务已取消',
@@ -274,6 +274,7 @@ class QueueDialog(QDialog):
         self.table.itemSelectionChanged.connect(self.detail_controls)
         self.upload_btn = button('确认上传勾选的采购预览', self.upload, True)
         self.resume_btn = button('继续本批原未完任务', self.resume)
+        self.recover_btn = button('恢复并继续原任务',self.recover_original)
         self.selected_btn = button('仅执行勾选项', self.execute_selected)
         self.stop_btn = button('停止本批剩余动作', lambda:manager.stop(self.id))
         self.cancel_btn = button('取消本批未开始的剩余任务', self.cancel)
@@ -286,7 +287,7 @@ class QueueDialog(QDialog):
         self.new_batch_btn=button('结束本批并新建',self.finish_new);row.addWidget(self.new_batch_btn)
         self.end_local_btn=button('结束所选本地准备',self.end_local);row.addWidget(self.end_local_btn)
         v.addLayout(row)
-        row=QHBoxLayout();row.addWidget(self.selected_btn)
+        row=QHBoxLayout();row.addWidget(self.selected_btn);row.addWidget(self.recover_btn)
         self.delete_local_btn=button('删除勾选本地任务',self.delete_local);row.addWidget(self.delete_local_btn)
         self.rebuild_btn=button('结束所选任务并重建预览',self.rebuild_selected);row.addWidget(self.rebuild_btn)
         self.upload_policy=label('按勾选顺序连续提交；已受理任务并行处理，无本地数量上限')
@@ -333,6 +334,8 @@ class QueueDialog(QDialog):
             self.new_batch_btn.setEnabled(bool(job and job['state']!='RUNNING' and not any(i['state'] in ('RUNNING','REVIEW') for i in job['items']) and any(i['state'] in ('PENDING','FAILED') for i in job['items'])))
             self.resume_btn.setEnabled(bool(job and job['state'] in ('PAUSED', 'FAILED')) and not active)
             self.resume_btn.setText('继续上次勾选范围' if job and 'dispatch_keys' in job else '继续整批未完任务')
+            self.recover_btn.setEnabled(bool(job and recoverable(job) and not active))
+            self.recover_btn.setToolTip('核对并继续原任务身份；已取消的未开始项重新排队，成功项保留，不另建平台采购单。')
             self.selected_btn.setEnabled(bool(job and job['state'] not in ('RUNNING','CANCELLED') and not active and any(i['state'] in ('PENDING','FAILED','REVIEW') for i in job['items'])))
             self.delete_local_btn.setEnabled(bool(job and not active and any(local_preparation(i,job['kind']) for i in job['items'])))
             self.cancel_btn.setEnabled(bool(job and job['state'] in ('QUEUED', 'PAUSED', 'YIELDED', 'FAILED')) and not active)
@@ -377,7 +380,9 @@ class QueueDialog(QDialog):
                           item_message(i,job['kind'])]
                 for c, x in enumerate(values, 1):
                     item = QTableWidgetItem(str(x));item.setToolTip(str(x));self.table.setItem(n, c, item)
-                if i['state'] in ('FAILED','REVIEW'):
+                if i['state']=='ACCEPTED' and not active:
+                    self.table.setCellWidget(n,8,button('继续核对原受理结果',lambda checked=False,key=i['key']:self.recover_original([key])))
+                elif i['state'] in ('FAILED','REVIEW'):
                     b=button('继续核对采购结果' if job['kind']=='upload' else '核对原任务并继续' if i['state']=='REVIEW' else '重跑此任务',lambda checked=False,pos=n:self.retry([pos]))
                     b.setEnabled(job['state']!='CANCELLED');self.table.setCellWidget(n,8,b)
                 else:self.table.removeCellWidget(n,8)
@@ -513,6 +518,15 @@ class QueueDialog(QDialog):
     def resume(self):
         try:self.manager.ensure_owner();self.manager.store.resume(self.id);self.manager.tick();self.refresh()
         except Exception as exc:QMessageBox.warning(self, '未继续', str(exc))
+
+    def recover_original(self,keys=None):
+        if not self.current:return
+        if not isinstance(keys,list):keys=None
+        try:
+            self.manager.ensure_owner()
+            job=self.manager.store.recover_original(self.id,self.current['sequence'],keys)
+            self.id=job['id'];self.current=None;self.manager.tick();self.refresh()
+        except Exception as exc:QMessageBox.warning(self,'未恢复原任务',str(exc))
 
     def execute_selected(self):
         if not self.current:return

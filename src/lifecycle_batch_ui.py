@@ -51,7 +51,7 @@ class BatchImport(QDialog):
         self.issue_note=label('需要处理');v.addWidget(self.issue_note)
         self.issue_table=QTableWidget(0,4);self.issue_table.setHorizontalHeaderLabels(['问题文件 / 原因','环节','修正映射','本次不纳入']);self.issue_table.setColumnWidth(0,600);self.issue_table.setMaximumHeight(180);self.issue_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);v.addWidget(self.issue_table)
         self.note=label('同单同环节有多份文件时只能选择一份，不按到达时间覆盖，也不累加。','muted');self.note.setWordWrap(True);self.note.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse);v.addWidget(self.note)
-        row=QHBoxLayout();row.addWidget(button('取消',self.reject));self.preview_btn=button('核对并准备保存',self.preview,True);row.addWidget(self.preview_btn);v.addLayout(row)
+        row=QHBoxLayout();row.addWidget(button('取消',self.reject));row.addWidget(button('恢复上次保存并继续',self.recover_save));self.preview_btn=button('核对并准备保存',self.preview,True);row.addWidget(self.preview_btn);v.addLayout(row)
         from table_readability import fit_window,install
         fit_window(self,1240,820)
         for table in (self.table,self.issue_table):install(table)
@@ -323,6 +323,11 @@ class BatchImport(QDialog):
         except Cancelled:self.pages.setCurrentIndex(0);self.note.setText('已安全取消，未保存；可重新核对。')
         except Exception as exc:self.problem('保存未完成',str(exc)+'；请重新核对。')
         finally:self.busy=False
+    def recover_save(self):
+        if self.busy:return
+        from lifecycle_recovery_ui import show
+        receipt=show(self,self.host,self.scope,self.stage)
+        if receipt:self.receipt=receipt;self.accept()
     def reject(self):
         if not self.busy:super().reject()
 

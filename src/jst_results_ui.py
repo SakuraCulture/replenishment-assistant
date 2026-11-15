@@ -39,6 +39,7 @@ class ResultsPage(QWidget):
         row=QHBoxLayout();self.batch_btn=button('选择分配批次',self.choose_batch);row.addWidget(self.batch_btn)
         self.all_batches_btn=button('返回日期范围',self.clear_batch);row.addWidget(self.all_batches_btn)
         self.continue_btn=button('继续原批未完成任务',self.continue_batch);row.addWidget(self.continue_btn)
+        self.recovery_btn=button('恢复分配状态',self.recover_state);row.addWidget(self.recovery_btn)
         self.reallocate_btn=button('重新分配本批勾选单',self.reallocate);row.addWidget(self.reallocate_btn);v.addLayout(row)
         self.total=SummaryLabel('正在读取已保存结果…');v.addWidget(self.total)
         self.counts=label('','muted');v.addWidget(self.counts)
@@ -85,6 +86,7 @@ class ResultsPage(QWidget):
         self.day.setEnabled(not busy and not self.batch_id);self.end.setEnabled(not busy and not self.batch_id)
         correction_rows=[r for r in self.records if service.key(r['head']) in self.chosen and r.get('batch_id') and (r.get('gid') or r.get('original_zero'))]
         self.continue_btn.setEnabled(ready and not busy and bool(self.batch_id) and bool(self.data.get('batch_pending')))
+        self.recovery_btn.setEnabled(ready and not busy and bool(self.batch_id))
         self.reallocate_btn.setText(f'按原批重新分配勾选单（{len(correction_rows)}单）')
         self.reallocate_btn.setEnabled(ready and not busy and bool(correction_rows))
         self.reallocate_btn.setToolTip('沿用所选订单的原批库存，只替换所选未锁、未收货订单；旧付款依据因新回传失效时，保留旧付款并在分配后重新核对。多个原批分别处理。')
@@ -278,6 +280,16 @@ class ResultsPage(QWidget):
             if ok:self.batch_id=rows[titles.index(choice)]['batch_id'];self.scope=None;self.scope_btn.hide();self.day_changed()
         except Exception as exc:self.status.setText(str(exc))
     def clear_batch(self):self.batch_id=None;self.day_changed()
+    def recover_state(self):
+        if self.worker or self.reviewing or not self.batch_id:return
+        from business_ui import run
+        from lifecycle_ui import warn
+        import jst_batches
+        try:
+            r=run(self,jst_batches.recover_batch,(self.host.work_repository.path,self.batch_id),'核对原批已保存结果')
+            if self.host.closing:return
+            self.refresh();self.status.setText(r['message'])
+        except Exception as exc:warn(self,exc)
     def continue_batch(self):self.open_existing(False)
     def reallocate(self):self.open_existing(True)
     def open_existing(self,correction):

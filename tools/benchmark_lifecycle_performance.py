@@ -105,7 +105,7 @@ def main():
     before={p.name:sha(p) for p in fixture.iterdir() if p.is_file()}
     for trial in range(1,a.repeats+1):
         for variant in (('old','new') if trial%2 else ('new','old')):
-            dest=out/f'{trial}-{variant}';source=a.baseline.resolve() if variant=='old' else ROOT
+            dest=out/f'{trial}-{variant}';source=a.baseline.resolve() if variant=='old' else (a.source.resolve() if a.source else ROOT)
             command=[sys.executable,str(Path(__file__).resolve()),'--worker','--source',str(source),'--fixture',str(fixture),'--out',str(dest),'--deps',str(a.deps.resolve()),'--variant',variant,'--trial',str(trial)]
             with (out/f'{trial}-{variant}.log').open('wb') as log:r=subprocess.run(command,stdout=log,stderr=log,env={**os.environ,'PYTHONUTF8':'1'})
             if r.returncode:raise RuntimeError('Failed isolated worker; retained '+str(log.name))
