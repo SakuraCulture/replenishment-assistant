@@ -1,0 +1,17 @@
+{
+  "passed": false,
+  "checks": [
+    "实际分配结果页显示两店四仓单",
+    "付款仍需明确核对确认后才能保存",
+    "自然转付款取消后不保存任何一单",
+    "付款仍需明确核对确认后才能保存",
+    "实际勾选入口仅保存所选一张仓单",
+    "付款仍需明确核对确认后才能保存",
+    "实际当前筛选入口完成四单付款，无Excel搬运",
+    "付款仍需明确核对确认后才能保存",
+    "自然转付款重复确认不新增版本、事件或库存占用"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\src\\lifecycle_followup_smoke.py\", line 101, in execute\n    require([(r['sku'],r['base_quantity'],r['amount']) for r in doc['payload']['rows'] if float(r['base_quantity'])>0]==[(r['sku'],r['quantity'],r['amount']) for r in generated['rows'] if float(r['quantity'])>0],'付款数量、金额与原聚水潭生成单逐行相等：'+head['number'])\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\src\\lifecycle_followup_smoke.py\", line 23, in require\n    if not ok:raise AssertionError(text)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 付款数量、金额与原聚水潭生成单逐行相等：BH-S1-ZC-HB\n",
+  "messages": [],
+  "calls": []
+}

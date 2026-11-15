@@ -1,0 +1,6 @@
+{
+  "rc1_exe_focus_passed": true,
+  "checks": 35,
+  "reason_for_rc2": "Normalize line endings in README, prepare_delivery, version JSON and usage text; no business code changes",
+  "preserve_rc1": true
+}

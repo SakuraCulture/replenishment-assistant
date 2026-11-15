@@ -1,0 +1,581 @@
+{
+  "includes_fixture_setup": true,
+  "profile": [
+    {
+      "file": "order_lifecycle.py",
+      "line": 50,
+      "name": "current",
+      "calls": 192,
+      "own_seconds": 0.002935,
+      "cumulative_seconds": 8.3145474
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 163,
+      "name": "upstream",
+      "calls": 42,
+      "own_seconds": 0.115469,
+      "cumulative_seconds": 6.0103591000000005
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 44,
+      "name": "decode",
+      "calls": 180,
+      "own_seconds": 0.0011363,
+      "cumulative_seconds": 4.5218292
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 433,
+      "name": "snapshot",
+      "calls": 12,
+      "own_seconds": 0.1045113,
+      "cumulative_seconds": 2.4261685
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 37,
+      "name": "fingerprint",
+      "calls": 126,
+      "own_seconds": 0.0422304,
+      "cumulative_seconds": 2.3866203
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 233,
+      "name": "prepare_checked",
+      "calls": 1,
+      "own_seconds": 0.0033736,
+      "cumulative_seconds": 2.05378
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 236,
+      "name": "prepare",
+      "calls": 1,
+      "own_seconds": 0.0214062,
+      "cumulative_seconds": 2.0504064
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 509,
+      "name": "payment_plan",
+      "calls": 6,
+      "own_seconds": 0.014107600000000001,
+      "cumulative_seconds": 1.7242959000000002
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 353,
+      "name": "commit",
+      "calls": 1,
+      "own_seconds": 0.0028446,
+      "cumulative_seconds": 1.6603205
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 179,
+      "name": "return_basis",
+      "calls": 6,
+      "own_seconds": 0.0197593,
+      "cumulative_seconds": 1.4240363
+    },
+    {
+      "file": "normal_orders.py",
+      "line": 75,
+      "name": "get",
+      "calls": 24,
+      "own_seconds": 0.0007390000000000001,
+      "cumulative_seconds": 1.1156649
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 319,
+      "name": "validate_plan",
+      "calls": 6,
+      "own_seconds": 0.018374400000000003,
+      "cumulative_seconds": 1.0318811
+    },
+    {
+      "file": "warehouse_execution.py",
+      "line": 191,
+      "name": "get_order",
+      "calls": 18,
+      "own_seconds": 0.0002452,
+      "cumulative_seconds": 0.8520503
+    },
+    {
+      "file": "aoxiang_purchase.py",
+      "line": 82,
+      "name": "validate_basis",
+      "calls": 6,
+      "own_seconds": 0.0034437,
+      "cumulative_seconds": 0.7049435000000001
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 119,
+      "name": "current_targets",
+      "calls": 1,
+      "own_seconds": 0.0016665,
+      "cumulative_seconds": 0.7008243000000001
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 24,
+      "name": "digest",
+      "calls": 25,
+      "own_seconds": 0.0082235,
+      "cumulative_seconds": 0.6319455
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 284,
+      "name": "full_head",
+      "calls": 12,
+      "own_seconds": 0.0106251,
+      "cumulative_seconds": 0.6028165000000001
+    },
+    {
+      "file": "aoxiang_purchase.py",
+      "line": 20,
+      "name": "freeze_payment",
+      "calls": 6,
+      "own_seconds": 0.0086563,
+      "cumulative_seconds": 0.5139688
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 1,
+      "name": "<module>",
+      "calls": 1,
+      "own_seconds": 4.7000000000000004e-05,
+      "cumulative_seconds": 0.24722460000000002
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 86,
+      "name": "decode",
+      "calls": 12,
+      "own_seconds": 9.6e-05,
+      "cumulative_seconds": 0.23770850000000002
+    },
+    {
+      "file": "jst_payment.py",
+      "line": 24,
+      "name": "prepare",
+      "calls": 1,
+      "own_seconds": 0.0041265,
+      "cumulative_seconds": 0.2341859
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 343,
+      "name": "put_generation",
+      "calls": 6,
+      "own_seconds": 0.0036984,
+      "cumulative_seconds": 0.23075250000000003
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 95,
+      "name": "get",
+      "calls": 6,
+      "own_seconds": 0.0008216,
+      "cumulative_seconds": 0.21231260000000002
+    },
+    {
+      "file": "aoxiang_purchase.py",
+      "line": 16,
+      "name": "fingerprint",
+      "calls": 12,
+      "own_seconds": 0.0021025,
+      "cumulative_seconds": 0.14197800000000002
+    },
+    {
+      "file": "aoxiang_purchase.py",
+      "line": 1,
+      "name": "<module>",
+      "calls": 1,
+      "own_seconds": 2.1400000000000002e-05,
+      "cumulative_seconds": 0.1402883
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 399,
+      "name": "document_summary",
+      "calls": 48,
+      "own_seconds": 0.0015172,
+      "cumulative_seconds": 0.0861918
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 1,
+      "name": "<module>",
+      "calls": 1,
+      "own_seconds": 3.52e-05,
+      "cumulative_seconds": 0.05910700000000001
+    },
+    {
+      "file": "warehouse_execution.py",
+      "line": 173,
+      "name": "validate",
+      "calls": 48,
+      "own_seconds": 0.0004507,
+      "cumulative_seconds": 0.0338016
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 183,
+      "name": "make_plan",
+      "calls": 6,
+      "own_seconds": 0.0086741,
+      "cumulative_seconds": 0.019820400000000002
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 457,
+      "name": "<genexpr>",
+      "calls": 50184,
+      "own_seconds": 0.0136383,
+      "cumulative_seconds": 0.013896200000000001
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 32,
+      "name": "exists",
+      "calls": 204,
+      "own_seconds": 0.00026270000000000004,
+      "cumulative_seconds": 0.0132314
+    },
+    {
+      "file": "warehouse_execution.py",
+      "line": 15,
+      "name": "exists",
+      "calls": 127,
+      "own_seconds": 0.0001071,
+      "cumulative_seconds": 0.011082400000000001
+    },
+    {
+      "file": "warehouse_execution.py",
+      "line": 25,
+      "name": "has_parent",
+      "calls": 126,
+      "own_seconds": 5.94e-05,
+      "cumulative_seconds": 0.0109724
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 28,
+      "name": "exists",
+      "calls": 78,
+      "own_seconds": 9.56e-05,
+      "cumulative_seconds": 0.0086297
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 57,
+      "name": "active",
+      "calls": 42,
+      "own_seconds": 0.00010870000000000001,
+      "cumulative_seconds": 0.0064927000000000006
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 318,
+      "name": "commit",
+      "calls": 1,
+      "own_seconds": 0.0009607000000000001,
+      "cumulative_seconds": 0.0059399000000000006
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 346,
+      "name": "_commit_once",
+      "calls": 1,
+      "own_seconds": 1.23e-05,
+      "cumulative_seconds": 0.0049784
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 32,
+      "name": "schema",
+      "calls": 7,
+      "own_seconds": 3.0200000000000002e-05,
+      "cumulative_seconds": 0.0029531
+    },
+    {
+      "file": "aoxiang_purchase.py",
+      "line": 76,
+      "name": "<genexpr>",
+      "calls": 10914,
+      "own_seconds": 0.0023326,
+      "cumulative_seconds": 0.0023326
+    },
+    {
+      "file": "aoxiang_purchase.py",
+      "line": 75,
+      "name": "<genexpr>",
+      "calls": 10914,
+      "own_seconds": 0.0022428,
+      "cumulative_seconds": 0.0022428
+    },
+    {
+      "file": "aoxiang_purchase.py",
+      "line": 71,
+      "name": "<genexpr>",
+      "calls": 10914,
+      "own_seconds": 0.0022402000000000004,
+      "cumulative_seconds": 0.0022402000000000004
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 191,
+      "name": "<genexpr>",
+      "calls": 10914,
+      "own_seconds": 0.0013242,
+      "cumulative_seconds": 0.0021183
+    },
+    {
+      "file": "aoxiang_purchase.py",
+      "line": 72,
+      "name": "<genexpr>",
+      "calls": 10914,
+      "own_seconds": 0.0020854000000000003,
+      "cumulative_seconds": 0.0020854000000000003
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 293,
+      "name": "begin",
+      "calls": 8,
+      "own_seconds": 3.96e-05,
+      "cumulative_seconds": 0.002007
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 81,
+      "name": "event",
+      "calls": 7,
+      "own_seconds": 7.22e-05,
+      "cumulative_seconds": 0.0015729000000000001
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 208,
+      "name": "allocation_gate",
+      "calls": 12,
+      "own_seconds": 5.0700000000000006e-05,
+      "cumulative_seconds": 0.0007705
+    },
+    {
+      "file": "warehouse_execution.py",
+      "line": 36,
+      "name": "is_active",
+      "calls": 60,
+      "own_seconds": 5.55e-05,
+      "cumulative_seconds": 0.0005295
+    },
+    {
+      "file": "warehouse_execution.py",
+      "line": 29,
+      "name": "state",
+      "calls": 60,
+      "own_seconds": 4.4800000000000005e-05,
+      "cumulative_seconds": 0.00047400000000000003
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 425,
+      "name": "legacy_return",
+      "calls": 12,
+      "own_seconds": 2.5300000000000002e-05,
+      "cumulative_seconds": 0.0004263
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 64,
+      "name": "locked",
+      "calls": 30,
+      "own_seconds": 3.5600000000000005e-05,
+      "cumulative_seconds": 0.0003936
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 385,
+      "name": "removed_scope",
+      "calls": 6,
+      "own_seconds": 1.4900000000000001e-05,
+      "cumulative_seconds": 0.00034020000000000003
+    },
+    {
+      "file": "jst_payment.py",
+      "line": 12,
+      "name": "selection",
+      "calls": 1,
+      "own_seconds": 4.3e-06,
+      "cumulative_seconds": 0.0003394
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 404,
+      "name": "progress_state",
+      "calls": 12,
+      "own_seconds": 0.00018030000000000002,
+      "cumulative_seconds": 0.0002311
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 24,
+      "name": "schema",
+      "calls": 1,
+      "own_seconds": 2.0000000000000003e-06,
+      "cumulative_seconds": 0.0001845
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 35,
+      "name": "key",
+      "calls": 306,
+      "own_seconds": 0.00014910000000000002,
+      "cumulative_seconds": 0.00014910000000000002
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 528,
+      "name": "guard_payment",
+      "calls": 6,
+      "own_seconds": 1.16e-05,
+      "cumulative_seconds": 0.0001179
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 250,
+      "name": "<genexpr>",
+      "calls": 12,
+      "own_seconds": 5.7900000000000005e-05,
+      "cumulative_seconds": 5.7900000000000005e-05
+    },
+    {
+      "file": "normal_orders.py",
+      "line": 1,
+      "name": "<module>",
+      "calls": 1,
+      "own_seconds": 2.3400000000000003e-05,
+      "cumulative_seconds": 4.69e-05
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 379,
+      "name": "<genexpr>",
+      "calls": 12,
+      "own_seconds": 1.25e-05,
+      "cumulative_seconds": 1.6000000000000003e-05
+    },
+    {
+      "file": "warehouse_execution.py",
+      "line": 1,
+      "name": "<module>",
+      "calls": 1,
+      "own_seconds": 1.5100000000000001e-05,
+      "cumulative_seconds": 1.5100000000000001e-05
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 302,
+      "name": "staged_document",
+      "calls": 6,
+      "own_seconds": 1.16e-05,
+      "cumulative_seconds": 1.16e-05
+    },
+    {
+      "file": "jst_payment.py",
+      "line": 1,
+      "name": "<module>",
+      "calls": 1,
+      "own_seconds": 1.1400000000000001e-05,
+      "cumulative_seconds": 1.1400000000000001e-05
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 357,
+      "name": "<genexpr>",
+      "calls": 7,
+      "own_seconds": 7.2000000000000005e-06,
+      "cumulative_seconds": 7.2000000000000005e-06
+    },
+    {
+      "file": "normal_orders.py",
+      "line": 59,
+      "name": "Repository",
+      "calls": 1,
+      "own_seconds": 3.5000000000000004e-06,
+      "cumulative_seconds": 3.5000000000000004e-06
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 353,
+      "name": "<lambda>",
+      "calls": 24,
+      "own_seconds": 2.8000000000000003e-06,
+      "cumulative_seconds": 2.8000000000000003e-06
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 270,
+      "name": "<lambda>",
+      "calls": 6,
+      "own_seconds": 2.5e-06,
+      "cumulative_seconds": 2.5e-06
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 119,
+      "name": "<lambda>",
+      "calls": 6,
+      "own_seconds": 1.8000000000000001e-06,
+      "cumulative_seconds": 1.8000000000000001e-06
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 191,
+      "name": "previous_payment_for_return",
+      "calls": 6,
+      "own_seconds": 9.000000000000001e-07,
+      "cumulative_seconds": 9.000000000000001e-07
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 308,
+      "name": "_BusyCommit",
+      "calls": 1,
+      "own_seconds": 8.000000000000001e-07,
+      "cumulative_seconds": 8.000000000000001e-07
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 460,
+      "name": "_LockCommitBusy",
+      "calls": 1,
+      "own_seconds": 8.000000000000001e-07,
+      "cumulative_seconds": 8.000000000000001e-07
+    },
+    {
+      "file": "order_lifecycle.py",
+      "line": 312,
+      "name": "_RollbackWait",
+      "calls": 1,
+      "own_seconds": 5.000000000000001e-07,
+      "cumulative_seconds": 5.000000000000001e-07
+    },
+    {
+      "file": "jst_orders.py",
+      "line": 464,
+      "name": "_LockRollbackWait",
+      "calls": 1,
+      "own_seconds": 3.0000000000000004e-07,
+      "cumulative_seconds": 3.0000000000000004e-07
+    }
+  ]
+}

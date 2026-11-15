@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "branch": "codex/perf-lifecycle-0.53.7",
+  "base_commit": "7d76889a000bd9e05be42ced7c4aaadf0a4d0f28",
+  "source_reference": "snapshot-24f133361c5d30a7a38d18f2542c3f29b0fba8b5b516d2bfdb141ae117cf5b16",
+  "source_snapshot_sha256": "24f133361c5d30a7a38d18f2542c3f29b0fba8b5b516d2bfdb141ae117cf5b16",
+  "source_changed_from_initial": [
+    "src/app.py",
+    "src/jst_orders.py",
+    "src/lifecycle_batch.py",
+    "src/order_lifecycle.py",
+    "src/version.json"
+  ],
+  "added_source": [
+    "src/lifecycle_perf_smoke.py"
+  ],
+  "prior_overlay_preserved_sha256": {
+    "docs/0.53.6门店与运营回传性能优化.md": "1ae9a90c3131c685f5444f078d9357b170f7cf9f4031164af5a595b4629e7b58",
+    "src/lifecycle_read_proofs.py": "92524307f5ac68759bf8aef44bd921c072177211dfa5f038b1f260ec848e1c85",
+    "src/lifecycle_save_encoding.py": "9c1f344e5830d5e9ba125e66e2b878d90b41ff3c8bdb3d163aaf8b9c0f05e3f3",
+    "src/return_save_smoke.py": "92f24eb78a6ce7b1f9ce37c7069d5d7bd50e4db8dc462d78a3d0041a18abba69",
+    "tests/test_return_save_performance.py": "748d2a6654df318e9b8466503bde62a6f7fa3e5cf669770d5ffececf104bcb05",
+    "tools/benchmark_return_save.py": "57e814b70fa3b42a7dc39dc3b44a33bebf8a6963f4e701b41b2188b66f0572e0",
+    "tools/verify_return_save.py": "959adce542909c76c070b75f9878fff593fe56b1d56176218fd42bf6986cd733"
+  },
+  "all_other_source_unchanged": true,
+  "components_unchanged": true,
+  "model_and_defaults_unchanged": true,
+  "benchmark_core_matches_frozen_build": true,
+  "baseline_archive_unchanged": true,
+  "frozen_inputs_unchanged": true,
+  "old_delivery_sha256": {
+    "交付_0.53.6_rc2/补货助手/补货助手.exe": "fdeefd8522700029491d89573ffb346b3d7e9544c2293d544b1025624f12cbbd",
+    "交付_0.53.6_rc2/补货助手_0.53.6_rc2_门店与运营回传性能优化.zip": "bef9ae3694a4d6b0e406005c95838c8ade970d0f6a6bf0fde936d86377a9e4fb",
+    "交付_0.53.5_rc2/补货助手/补货助手.exe": "a6569a7f879c2d08f50a75c1d1aab3893e91833454f666f52eb5575f722f0ce1",
+    "交付_0.53.5_rc2/补货助手_0.53.5_rc2_订单经营双模板.zip": "78cc33403c51448387ec194d0e35f49b06db616849fa2031f100dde2999b36c8"
+  },
+  "regression_unique_tests": 452,
+  "regression_modules": 34,
+  "source_ui_checks": 63,
+  "actual_exe_checks": 63,
+  "exe_sha256": "deaf0d3948d3d951bd07d7766b1eef8f269160d310739eba14a57cd852b692c4",
+  "git_committed": false,
+  "git_pushed": false,
+  "git_merged": false,
+  "real_data_modified": false,
+  "live_platform": false
+}

@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "different_files": [
+    "prepare_delivery.py",
+    "README.md",
+    "src/version.json",
+    "使用说明.txt"
+  ],
+  "difference_is_line_endings_only": true,
+  "business_code_identical": true,
+  "rc1_native_focus_passed": true,
+  "rc1_native_checks": 35
+}

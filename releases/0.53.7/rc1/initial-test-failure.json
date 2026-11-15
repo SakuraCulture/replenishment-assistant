@@ -1,0 +1,10 @@
+{
+  "preserved": "boundary-tests-01-failure.log",
+  "failures": [
+    "An unchanged-save test generated a different filename each time, which correctly creates different retained-file facts. It now reuses the exact same original scan.",
+    "A parent-retirement scope test deleted only one warehouse child, so it now explicitly selects both children to test the intended parent deletion marker. Existing child-deletion behavior is separately covered by regression."
+  ],
+  "product_expectations_relaxed": false,
+  "corrected_suite": "boundary-tests-02.log",
+  "corrected_tests": 24
+}

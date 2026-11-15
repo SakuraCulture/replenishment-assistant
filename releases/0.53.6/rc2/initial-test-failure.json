@@ -1,0 +1,7 @@
+{
+  "test": "test_mutated_preview_and_original_file_still_rejected",
+  "tests_run": 74,
+  "product_failures": 0,
+  "helper_errors": 1,
+  "error": "Stored-document test accessor queried lifecycle_versions after the transaction correctly rolled back CREATE TABLE; corrected accessor to treat absent table as absent document. No business expectation was changed."
+}

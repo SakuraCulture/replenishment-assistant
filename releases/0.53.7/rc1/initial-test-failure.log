@@ -1,0 +1,57 @@
+test_cancel_after_safe_rollback_keeps_no_lock (test_lifecycle_performance.LockRetry.test_cancel_after_safe_rollback_keeps_no_lock) ... ok
+test_failed_rollback_never_replayed (test_lifecycle_performance.LockRetry.test_failed_rollback_never_replayed) ... ok
+test_nonbusy_error_never_replayed (test_lifecycle_performance.LockRetry.test_nonbusy_error_never_replayed) ... ok
+test_persistent_reader_is_bounded_and_rolls_back_lock (test_lifecycle_performance.LockRetry.test_persistent_reader_is_bounded_and_rolls_back_lock) ... ok
+test_short_reader_retries_with_one_lock_and_one_event (test_lifecycle_performance.LockRetry.test_short_reader_retries_with_one_lock_and_one_event) ... ok
+test_source_change_during_retry_is_rechecked (test_lifecycle_performance.LockRetry.test_source_change_during_retry_is_rechecked) ... ok
+test_unknown_committed_outcome_never_replayed (test_lifecycle_performance.LockRetry.test_unknown_committed_outcome_never_replayed) ... ok
+test_unlock_keeps_reason_and_only_one_event_after_reader (test_lifecycle_performance.LockRetry.test_unlock_keeps_reason_and_only_one_event_after_reader) ... ok
+test_old_or_edited_payment_proof_uses_original_decoder (test_lifecycle_performance.PaymentReceiptProofs.test_old_or_edited_payment_proof_uses_original_decoder) ... ok
+test_payment_receipt_initial_and_unchanged_keep_exact_full_payload (test_lifecycle_performance.PaymentReceiptProofs.test_payment_receipt_initial_and_unchanged_keep_exact_full_payload) ... 
+  test_payment_receipt_initial_and_unchanged_keep_exact_full_payload (test_lifecycle_performance.PaymentReceiptProofs.test_payment_receipt_initial_and_unchanged_keep_exact_full_payload) (stage='payment', repeated=True) ... FAIL
+  test_payment_receipt_initial_and_unchanged_keep_exact_full_payload (test_lifecycle_performance.PaymentReceiptProofs.test_payment_receipt_initial_and_unchanged_keep_exact_full_payload) (stage='receipt', repeated=True) ... FAIL
+test_payment_upstream_changed_bytes_still_runs_complete_validation (test_lifecycle_performance.PaymentReceiptProofs.test_payment_upstream_changed_bytes_still_runs_complete_validation) ... ok
+test_receipt_changed_payment_amount_never_reuses_old_proof (test_lifecycle_performance.PaymentReceiptProofs.test_receipt_changed_payment_amount_never_reuses_old_proof) ... ok
+test_available_cancellation_remains_active_inside_cached_rows (test_lifecycle_performance.PreviewOwnership.test_available_cancellation_remains_active_inside_cached_rows) ... ok
+test_batch_inputs_stay_exact_across_repreview_and_plan_mutation (test_lifecycle_performance.PreviewOwnership.test_batch_inputs_stay_exact_across_repreview_and_plan_mutation) ... ok
+test_cached_number_does_not_skip_conflicting_store_or_revision_checks (test_lifecycle_performance.PreviewOwnership.test_cached_number_does_not_skip_conflicting_store_or_revision_checks) ... ok
+test_mixed_stage_order_and_inputs_preserved_through_actual_save (test_lifecycle_performance.PreviewOwnership.test_mixed_stage_order_and_inputs_preserved_through_actual_save) ... ok
+test_one_exact_number_resolution_for_many_skus_without_losing_duplicates (test_lifecycle_performance.PreviewOwnership.test_one_exact_number_resolution_for_many_skus_without_losing_duplicates) ... ok
+test_public_low_level_prepare_still_protects_caller_scan (test_lifecycle_performance.PreviewOwnership.test_public_low_level_prepare_still_protects_caller_scan) ... ok
+test_public_numbered_entry_owns_copy_and_retains_source_rows (test_lifecycle_performance.PreviewOwnership.test_public_numbered_entry_owns_copy_and_retains_source_rows) ... ok
+test_resolution_cache_invalidates_after_external_identity_commit (test_lifecycle_performance.PreviewOwnership.test_resolution_cache_invalidates_after_external_identity_commit) ... ok
+test_unrelated_commit_invalidates_cache_without_false_rejection (test_lifecycle_performance.PreviewOwnership.test_unrelated_commit_invalidates_cache_without_false_rejection) ... ok
+test_altered_batch_rejected_before_any_generation (test_lifecycle_performance.RunEncoding.test_altered_batch_rejected_before_any_generation) ... ok
+test_latest_deletion_scope_reencodes_without_reviving_removed_member (test_lifecycle_performance.RunEncoding.test_latest_deletion_scope_reencodes_without_reviving_removed_member) ... FAIL
+test_one_run_encoding_keeps_exact_canonical_payload_sequence_and_replay (test_lifecycle_performance.RunEncoding.test_one_run_encoding_keeps_exact_canonical_payload_sequence_and_replay) ... ok
+
+======================================================================
+FAIL: test_payment_receipt_initial_and_unchanged_keep_exact_full_payload (test_lifecycle_performance.PaymentReceiptProofs.test_payment_receipt_initial_and_unchanged_keep_exact_full_payload) (stage='payment', repeated=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_lifecycle_performance.py", line 30, in test_payment_receipt_initial_and_unchanged_keep_exact_full_payload
+    self.assertEqual(result[0]['changed'],not repeated)
+AssertionError: True != False
+
+======================================================================
+FAIL: test_payment_receipt_initial_and_unchanged_keep_exact_full_payload (test_lifecycle_performance.PaymentReceiptProofs.test_payment_receipt_initial_and_unchanged_keep_exact_full_payload) (stage='receipt', repeated=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_lifecycle_performance.py", line 30, in test_payment_receipt_initial_and_unchanged_keep_exact_full_payload
+    self.assertEqual(result[0]['changed'],not repeated)
+AssertionError: True != False
+
+======================================================================
+FAIL: test_latest_deletion_scope_reencodes_without_reviving_removed_member (test_lifecycle_performance.RunEncoding.test_latest_deletion_scope_reencodes_without_reviving_removed_member)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_lifecycle_performance.py", line 151, in test_latest_deletion_scope_reencodes_without_reviving_removed_member
+    self.assertEqual(raw,wr.dumps(clean));self.assertEqual(digest,jo.digest(clean))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '{"ba[431 chars]e": "T", "version": "admission-2"}, "default_c[4699 chars]0]}}' != '{"ba[431 chars]e": "U", "version": "admission-2"}, "default_c[2238 chars]0]}}'
+Diff is 7914 characters long. Set self.maxDiff to None to see it.
+
+----------------------------------------------------------------------
+Ran 24 tests in 8.955s
+
+FAILED (failures=3)

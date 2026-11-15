@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "unchanged_business_files": {
+    "src/model.py": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+    "src/engine.py": "45cbb8ff4a4c1f1bd955e69ba0b6825407eee08f73b6e7de5678634c90cbc9d7",
+    "src/result_semantics.py": "e1a3d9f63716d56ef57d38fa675a7d3438b3de092c19f1de1c5f70eda9aacdc2",
+    "src/jst_allocation.py": "b67ad11aa15bdad87c26bff2ee3c2ba009e071f5779149f197c8eca355a69a30",
+    "src/normal_orders.py": "5593b8c3b87b606f1635ef2ed16688769a90e2e48c150cfe156bf1538db7c832",
+    "src/warehouse_execution.py": "404f55d6d096a2fc6ae429496f65902f5436d6bcf6a36735135e272bde9b1c88",
+    "src/lifecycle_rules.py": "db165d3f585e3dc6ede4726d5acd774322f8eb733772dc985e7e35cf6ae8813d",
+    "src/lifecycle_io.py": "8a5c82d9ff12cc18bb7db6fdb32823fee39e64c12894d916d26c0efb1ec41503",
+    "src/purchases.py": "1147910d5e385da436e96648b9bfda9a1a782e86323152b78dd10ef1f995fb60",
+    "src/operations_flow.py": "ba8826639bb90c45f0b7dba3769c543a2d0e2353d1c69e8ff58243df59ae6db5",
+    "src/deletion_barrier.py": "2ed6a2ac00e3aaab5c95db6047cdb0c592d89bd4912f8c1f01a6062783a517d0",
+    "src/jst_orders.py": "30be0fbba25d6ec5cd23ada8d4f067d805b38cbb1cf027ae81e8d221d6226627",
+    "src/jst_tasks.py": "06ba42e1efa9ceabbde031abb57faf504559143700e63e526a219e5307ef0252",
+    "src/default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "src/default_must_sell.json": "c8fe32c9b344ef9071ee4995fde822800ea6a5277dfba2794518fc2bb15603cd",
+    "src/parameter_schema.py": "3eeddbf40bb7bea207ed87a073ac48b699928d03f500ada6370d05c52f6fbc32"
+  },
+  "model_and_storage_versions_unchanged": true,
+  "unique_directed_tests": 371,
+  "skipped": 0,
+  "full_regression_claimed": false,
+  "base_commit": "7d76889a000bd9e05be42ced7c4aaadf0a4d0f28",
+  "branch": "codex/perf-return-save-0.53.6",
+  "working_tree_uncommitted": true,
+  "protected_old_deliveries": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.5_rc2\\补货助手\\补货助手.exe": "a6569a7f879c2d08f50a75c1d1aab3893e91833454f666f52eb5575f722f0ce1",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.5_rc2\\补货助手_0.53.5_rc2_订单经营双模板.zip": "78cc33403c51448387ec194d0e35f49b06db616849fa2031f100dde2999b36c8"
+  },
+  "native_checks": 41
+}

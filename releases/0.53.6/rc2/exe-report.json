@@ -1,0 +1,153 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "live_platform": false,
+  "runs": [
+    {
+      "passed": true,
+      "checks": [
+        "真实文件读取与整单识别：return",
+        "真实核对页生成两个仓单：return",
+        "返回与取消不保存任何回传事实",
+        "真实文件读取与整单识别：return",
+        "真实核对页生成两个仓单：return",
+        "真实确认保存按钮完成：return",
+        "写入数量、顺序、完整JSON及摘要与预览一致：return/河北仓",
+        "写入数量、顺序、完整JSON及摘要与预览一致：return/山东仓",
+        "真实文件读取与整单识别：return",
+        "真实核对页生成两个仓单：return",
+        "相同文件不新增版本、事件或原件：return",
+        "真实文件读取与整单识别：operations",
+        "真实核对页生成两个仓单：operations",
+        "真实确认保存按钮完成：operations",
+        "写入数量、顺序、完整JSON及摘要与预览一致：operations/河北仓",
+        "写入数量、顺序、完整JSON及摘要与预览一致：operations/山东仓",
+        "真实文件读取与整单识别：operations",
+        "真实核对页生成两个仓单：operations",
+        "相同文件不新增版本、事件或原件：operations",
+        "真实文件读取与整单识别：operations",
+        "真实核对页生成两个仓单：operations",
+        "实际EXE建立受控短暂读锁",
+        "短暂读锁后整批只保存一次新运营版本",
+        "回滚尝试不遗留重复单据版本",
+        "读锁重试仍保持完整JSON、数量和顺序：河北仓",
+        "读锁重试仍保持完整JSON、数量和顺序：山东仓",
+        "实际Qt进度显示回滚重核后重试，没有跳过校验",
+        "安全回滚后恢复可取消状态，重新提交前仍保护原子边界",
+        "真实文件读取与整单识别：operations",
+        "真实核对页生成两个仓单：operations",
+        "原文件预览后变化：真实错误提示且不保存任何部分",
+        "实际错误窗口保留原文件变化原因",
+        "原签发、源文件和内容块保持不变",
+        "没有隐藏或忽略非预期错误窗口",
+        "读取、核对与保存期间Qt事件循环持续运行"
+      ],
+      "frozen_exe": true,
+      "dialogs_not_stubbed": true,
+      "synthetic": true,
+      "live_platform": false,
+      "timings": [
+        {
+          "name": "return-review",
+          "click_seconds": 0.07800000000861473
+        },
+        {
+          "name": "return-same",
+          "click_seconds": 0.07800000000861473
+        },
+        {
+          "name": "operations-review",
+          "click_seconds": 0.0629999999946449
+        },
+        {
+          "name": "operations-same",
+          "click_seconds": 0.062000000005355105
+        },
+        {
+          "name": "short-reader",
+          "click_seconds": 0.40700000000651926
+        },
+        {
+          "name": "changed-file",
+          "click_seconds": 0.17199999999138527
+        }
+      ],
+      "messages": [
+        {
+          "title": "保存未完成",
+          "detail": "保存未完成，请核对单据历史和以下原因后再重试。\n原文件在预览后变化，请重新读取；请重新核对。\n保存未完成\n原文件在预览后变化，请重新读取；请重新核对。",
+          "expected": "原文件"
+        }
+      ],
+      "heartbeat_ticks": 63,
+      "statuses": [
+        "核对整单 1/1：BH-T-ZC-HB",
+        "核对单据 1/2",
+        "核对整单 1/1：BH-T-ZC-SD",
+        "核对单据 2/2",
+        "核对整单 1/1：BH-T-ZC-HB",
+        "核对单据 1/2",
+        "核对整单 1/1：BH-T-ZC-SD",
+        "核对单据 2/2",
+        "核对整单 1/1：BH-T-ZC-HB",
+        "核对单据 1/2",
+        "核对整单 1/1：BH-T-ZC-SD",
+        "核对单据 2/2",
+        "核对整单 1/1：BH-T-ZC-HB",
+        "核对单据 1/2",
+        "核对整单 1/1：BH-T-ZC-SD",
+        "核对单据 2/2",
+        "核对整单 1/1：BH-T-ZC-HB",
+        "核对单据 1/2",
+        "核对整单 1/1：BH-T-ZC-SD",
+        "核对单据 2/2",
+        "核对整单 1/1：BH-T-ZC-HB",
+        "核对单据 1/2",
+        "核对整单 1/1：BH-T-ZC-SD",
+        "核对单据 2/2",
+        "本地读取短暂占用，已安全回滚本次尝试；正在重新核验后保存，不会重复新增",
+        "正在原子提交单据；提交完成前不可取消",
+        "核对整单 1/1：BH-T-ZC-HB",
+        "核对单据 1/2",
+        "核对整单 1/1：BH-T-ZC-SD",
+        "核对单据 2/2"
+      ],
+      "commit_states": [
+        false
+      ],
+      "exit_code": 0
+    },
+    {
+      "passed": true,
+      "checks": [
+        "实际EXE退出重开：全部已保存事实与原签发不变",
+        "真实文件读取与整单识别：operations",
+        "真实核对页生成两个仓单：operations",
+        "重开后的相同运营文件仍幂等，不依赖旧进程证据",
+        "没有隐藏或忽略非预期错误窗口",
+        "读取、核对与保存期间Qt事件循环持续运行"
+      ],
+      "frozen_exe": true,
+      "dialogs_not_stubbed": true,
+      "synthetic": true,
+      "live_platform": false,
+      "timings": [
+        {
+          "name": "reopen-same",
+          "click_seconds": 0.0779999999795109
+        }
+      ],
+      "messages": [],
+      "heartbeat_ticks": 7,
+      "statuses": [
+        "核对整单 1/1：BH-T-ZC-HB",
+        "核对单据 1/2",
+        "核对整单 1/1：BH-T-ZC-SD",
+        "核对单据 2/2"
+      ],
+      "commit_states": [],
+      "exit_code": 0
+    }
+  ],
+  "exe_sha256": "fdeefd8522700029491d89573ffb346b3d7e9544c2293d544b1025624f12cbbd"
+}

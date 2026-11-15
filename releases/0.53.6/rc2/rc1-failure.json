@@ -1,0 +1,100 @@
+{
+  "passed": false,
+  "report": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\return_save_perf_0536_20261115_01\\native-rc1-01\\report.json",
+  "phase": "reopen same operations save",
+  "fact": "database is locked at order_lifecycle.commit transaction context line 307; first exercise process passed.",
+  "cause_scope": "The old 150ms SQLite connection only retried BEGIN, not a COMMIT blocked by a short reader. Holding an isolated reader reproduces this mechanism. The exact native lock-holder process was not traced, so no specific background reader is claimed as confirmed.",
+  "repair": "Retry only COMMIT SQLITE_BUSY while still in transaction after successful rollback; reopen transaction and repeat every validation; bounded deadline, no replay on unknown or non-busy outcomes.",
+  "runs": [
+    {
+      "passed": true,
+      "checks": [
+        "真实文件读取与整单识别：return",
+        "真实核对页生成两个仓单：return",
+        "返回与取消不保存任何回传事实",
+        "真实文件读取与整单识别：return",
+        "真实核对页生成两个仓单：return",
+        "真实确认保存按钮完成：return",
+        "写入数量、顺序、完整JSON及摘要与预览一致：return/河北仓",
+        "写入数量、顺序、完整JSON及摘要与预览一致：return/山东仓",
+        "真实文件读取与整单识别：return",
+        "真实核对页生成两个仓单：return",
+        "相同文件不新增版本、事件或原件：return",
+        "真实文件读取与整单识别：operations",
+        "真实核对页生成两个仓单：operations",
+        "真实确认保存按钮完成：operations",
+        "写入数量、顺序、完整JSON及摘要与预览一致：operations/河北仓",
+        "写入数量、顺序、完整JSON及摘要与预览一致：operations/山东仓",
+        "真实文件读取与整单识别：operations",
+        "真实核对页生成两个仓单：operations",
+        "相同文件不新增版本、事件或原件：operations",
+        "真实文件读取与整单识别：operations",
+        "真实核对页生成两个仓单：operations",
+        "原文件预览后变化：真实错误提示且不保存任何部分",
+        "实际错误窗口保留原文件变化原因",
+        "原签发、源文件和内容块保持不变",
+        "没有隐藏或忽略非预期错误窗口",
+        "读取、核对与保存期间Qt事件循环持续运行"
+      ],
+      "frozen_exe": true,
+      "dialogs_not_stubbed": true,
+      "synthetic": true,
+      "live_platform": false,
+      "timings": [
+        {
+          "name": "return-review",
+          "click_seconds": 0.0779999999795109
+        },
+        {
+          "name": "return-same",
+          "click_seconds": 0.062000000005355105
+        },
+        {
+          "name": "operations-review",
+          "click_seconds": 0.0779999999795109
+        },
+        {
+          "name": "operations-same",
+          "click_seconds": 0.0470000000204891
+        },
+        {
+          "name": "changed-file",
+          "click_seconds": 0.1720000000204891
+        }
+      ],
+      "messages": [
+        {
+          "title": "保存未完成",
+          "detail": "保存未完成，请核对单据历史和以下原因后再重试。\n原文件在预览后变化，请重新读取；请重新核对。\n保存未完成\n原文件在预览后变化，请重新读取；请重新核对。",
+          "expected": "原文件"
+        }
+      ],
+      "heartbeat_ticks": 19,
+      "exit_code": 0
+    },
+    {
+      "passed": false,
+      "checks": [
+        "实际EXE退出重开：全部已保存事实与原签发不变",
+        "真实文件读取与整单识别：operations",
+        "真实核对页生成两个仓单：operations"
+      ],
+      "error": "重开后的相同运营文件仍幂等，不依赖旧进程证据",
+      "traceback": "Traceback (most recent call last):\n  File \"return_save_smoke.py\", line 84, in run\n  File \"return_save_smoke.py\", line 22, in require\nAssertionError: 重开后的相同运营文件仍幂等，不依赖旧进程证据\n",
+      "messages": [
+        {
+          "title": "保存未完成",
+          "detail": "保存未完成，请核对单据历史和以下原因后再重试。\ndatabase is locked；请重新核对。\n保存未完成\ndatabase is locked；请重新核对。",
+          "expected": null
+        }
+      ],
+      "timings": [
+        {
+          "name": "reopen-same",
+          "click_seconds": 0.32800000000861473
+        }
+      ],
+      "exit_code": 1
+    }
+  ]
+}

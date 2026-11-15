@@ -70,3 +70,10 @@ releases/0.53.3/**/*.jsonl whitespace=-blank-at-eol,-blank-at-eof,space-before-t
 # Preserve byte-identical Windows evidence for the 0.53.4 and 0.53.5 releases.
 releases/0.53.4/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 releases/0.53.5/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# Preserve byte-identical Windows evidence for lifecycle performance acceptance.
+releases/0.53.6/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.53.7/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.53.8/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# The original interrupted unittest status line ends in a space; retain raw evidence.
+releases/0.53.7/rc1/initial-test-failure.log whitespace=-blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

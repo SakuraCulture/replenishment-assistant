@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "version": "0.53.7",
+  "build_id": "rc1",
+  "branch": "codex/perf-lifecycle-0.53.7",
+  "base_commit": "7d76889a000bd9e05be42ced7c4aaadf0a4d0f28",
+  "source_reference": "snapshot-24f133361c5d30a7a38d18f2542c3f29b0fba8b5b516d2bfdb141ae117cf5b16",
+  "source_snapshot_sha256": "24f133361c5d30a7a38d18f2542c3f29b0fba8b5b516d2bfdb141ae117cf5b16",
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.7_rc1\\补货助手\\补货助手.exe",
+  "exe_sha256": "deaf0d3948d3d951bd07d7766b1eef8f269160d310739eba14a57cd852b692c4",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.7_rc1\\补货助手_0.53.7_rc1_生命周期性能与锁单恢复.zip",
+  "zip_sha256": "d5019c68c7e0fd7f0c1b90db80e69c7fa79a03a5f3628d19e8dc37a96cedf676",
+  "zip_bytes": 156232450,
+  "zip_members": 1317,
+  "zip_crc_passed": true,
+  "release_report": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\releases\\0.53.7\\rc1\\交付报告.md",
+  "qa": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\lifecycle_perf_0537_20261115_01",
+  "regression_unique_tests": 452,
+  "native_checks": 63,
+  "git_committed": false,
+  "git_pushed": false,
+  "git_merged": false
+}

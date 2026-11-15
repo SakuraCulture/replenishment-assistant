@@ -1,0 +1,61 @@
+test_batch_exact_saved_source_no_export_atomic_save_and_idempotent_repeat (test_jst_payment.DirectPayment.test_batch_exact_saved_source_no_export_atomic_save_and_idempotent_repeat) ... ok
+test_cancel_during_prepare_and_before_commit_never_writes (test_jst_payment.DirectPayment.test_cancel_during_prepare_and_before_commit_never_writes) ... ok
+test_exact_checked_subset_and_no_selection_never_falls_back_to_all (test_jst_payment.DirectPayment.test_exact_checked_subset_and_no_selection_never_falls_back_to_all) ... ok
+test_invalid_member_blocks_whole_scope_with_order_identity (test_jst_payment.DirectPayment.test_invalid_member_blocks_whole_scope_with_order_identity) ... ok
+test_missing_positive_price_is_not_invented (test_jst_payment.DirectPayment.test_missing_positive_price_is_not_invented) ... ok
+test_payment_modified_after_review_rolls_back_other_orders (test_jst_payment.DirectPayment.test_payment_modified_after_review_rolls_back_other_orders) ... ok
+test_reallocation_after_review_rolls_back_all_payments (test_jst_payment.DirectPayment.test_reallocation_after_review_rolls_back_all_payments) ... ok
+test_stale_display_generation_cannot_silently_switch_to_new_active (test_jst_payment.DirectPayment.test_stale_display_generation_cannot_silently_switch_to_new_active) ... ok
+test_frozen_base_quantity_payment_exact_price_rounded_no_lifecycle_mutation (test_aoxiang_purchase.PurchaseBasisTests.test_frozen_base_quantity_payment_exact_price_rounded_no_lifecycle_mutation) ... ok
+test_payment_return_or_config_changed_after_preview_blocks (test_aoxiang_purchase.PurchaseBasisTests.test_payment_return_or_config_changed_after_preview_blocks) ... ok
+test_unknown_store_pending_payment_or_currency_rejected (test_aoxiang_purchase.PurchaseBasisTests.test_unknown_store_pending_payment_or_currency_rejected) ... ok
+test_zero_paid_quantity_not_created_and_nonzero_amount_not_dropped (test_aoxiang_purchase.PurchaseBasisTests.test_zero_paid_quantity_not_created_and_nonzero_amount_not_dropped) ... ok
+test_hash_limit_tamper_and_precision_block_no_output (test_aoxiang_purchase.PurchaseWorkbookTests.test_hash_limit_tamper_and_precision_block_no_output) ... ok
+test_only_input_sheet_changes_text_codes_price_authoritative (test_aoxiang_purchase.PurchaseWorkbookTests.test_only_input_sheet_changes_text_codes_price_authoritative) ... ok
+test_rounded_price_tamper_blocked_even_with_new_plan_fingerprint (test_aoxiang_purchase.PurchaseWorkbookTests.test_rounded_price_tamper_blocked_even_with_new_plan_fingerprint) ... ok
+test_payment_preflight (unittest.loader._FailedTest.test_payment_preflight) ... ERROR
+test_cancel_after_safe_rollback_keeps_no_lock (test_lifecycle_performance.LockRetry.test_cancel_after_safe_rollback_keeps_no_lock) ... ok
+test_cancellation_at_commit_boundary_cannot_interrupt_lock_commit (test_lifecycle_performance.LockRetry.test_cancellation_at_commit_boundary_cannot_interrupt_lock_commit) ... ok
+test_failed_rollback_never_replayed (test_lifecycle_performance.LockRetry.test_failed_rollback_never_replayed) ... ok
+test_generation_change_during_retry_is_rechecked (test_lifecycle_performance.LockRetry.test_generation_change_during_retry_is_rechecked) ... ok
+test_nonbusy_error_never_replayed (test_lifecycle_performance.LockRetry.test_nonbusy_error_never_replayed) ... ok
+test_persistent_reader_is_bounded_and_rolls_back_lock (test_lifecycle_performance.LockRetry.test_persistent_reader_is_bounded_and_rolls_back_lock) ... ok
+test_short_reader_retries_with_one_lock_and_one_event (test_lifecycle_performance.LockRetry.test_short_reader_retries_with_one_lock_and_one_event) ... ok
+test_source_change_during_retry_is_rechecked (test_lifecycle_performance.LockRetry.test_source_change_during_retry_is_rechecked) ... ok
+test_unknown_committed_outcome_never_replayed (test_lifecycle_performance.LockRetry.test_unknown_committed_outcome_never_replayed) ... ok
+test_unlock_keeps_reason_and_only_one_event_after_reader (test_lifecycle_performance.LockRetry.test_unlock_keeps_reason_and_only_one_event_after_reader) ... ok
+test_old_or_edited_payment_proof_uses_original_decoder (test_lifecycle_performance.PaymentReceiptProofs.test_old_or_edited_payment_proof_uses_original_decoder) ... ok
+test_payment_receipt_initial_and_unchanged_keep_exact_full_payload (test_lifecycle_performance.PaymentReceiptProofs.test_payment_receipt_initial_and_unchanged_keep_exact_full_payload) ... ok
+test_payment_upstream_changed_bytes_still_runs_complete_validation (test_lifecycle_performance.PaymentReceiptProofs.test_payment_upstream_changed_bytes_still_runs_complete_validation) ... ok
+test_receipt_changed_payment_amount_never_reuses_old_proof (test_lifecycle_performance.PaymentReceiptProofs.test_receipt_changed_payment_amount_never_reuses_old_proof) ... ok
+test_available_cancellation_remains_active_inside_cached_rows (test_lifecycle_performance.PreviewOwnership.test_available_cancellation_remains_active_inside_cached_rows) ... ok
+test_batch_inputs_stay_exact_across_repreview_and_plan_mutation (test_lifecycle_performance.PreviewOwnership.test_batch_inputs_stay_exact_across_repreview_and_plan_mutation) ... ok
+test_cached_number_does_not_skip_conflicting_store_or_revision_checks (test_lifecycle_performance.PreviewOwnership.test_cached_number_does_not_skip_conflicting_store_or_revision_checks) ... ok
+test_commit_after_cached_resolution_cannot_hide_removed_order_number (test_lifecycle_performance.PreviewOwnership.test_commit_after_cached_resolution_cannot_hide_removed_order_number) ... ok
+test_failed_preview_keeps_original_scans_and_duplicate_facts_exact (test_lifecycle_performance.PreviewOwnership.test_failed_preview_keeps_original_scans_and_duplicate_facts_exact) ... ok
+test_mixed_stage_order_and_inputs_preserved_through_actual_save (test_lifecycle_performance.PreviewOwnership.test_mixed_stage_order_and_inputs_preserved_through_actual_save) ... ok
+test_one_exact_number_resolution_for_many_skus_without_losing_duplicates (test_lifecycle_performance.PreviewOwnership.test_one_exact_number_resolution_for_many_skus_without_losing_duplicates) ... ok
+test_public_low_level_prepare_still_protects_caller_scan (test_lifecycle_performance.PreviewOwnership.test_public_low_level_prepare_still_protects_caller_scan) ... ok
+test_public_numbered_entry_owns_copy_and_retains_source_rows (test_lifecycle_performance.PreviewOwnership.test_public_numbered_entry_owns_copy_and_retains_source_rows) ... ok
+test_resolution_cache_invalidates_after_external_identity_commit (test_lifecycle_performance.PreviewOwnership.test_resolution_cache_invalidates_after_external_identity_commit) ... ok
+test_unrelated_commit_invalidates_cache_without_false_rejection (test_lifecycle_performance.PreviewOwnership.test_unrelated_commit_invalidates_cache_without_false_rejection) ... ok
+test_altered_batch_rejected_before_any_generation (test_lifecycle_performance.RunEncoding.test_altered_batch_rejected_before_any_generation) ... ok
+test_child_only_deletion_keeps_existing_run_filter_and_other_warehouse (test_lifecycle_performance.RunEncoding.test_child_only_deletion_keeps_existing_run_filter_and_other_warehouse) ... ok
+test_latest_deletion_scope_reencodes_without_reviving_removed_member (test_lifecycle_performance.RunEncoding.test_latest_deletion_scope_reencodes_without_reviving_removed_member) ... ok
+test_one_run_encoding_keeps_exact_canonical_payload_sequence_and_replay (test_lifecycle_performance.RunEncoding.test_one_run_encoding_keeps_exact_canonical_payload_sequence_and_replay) ... ok
+
+======================================================================
+ERROR: test_payment_preflight (unittest.loader._FailedTest.test_payment_preflight)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_payment_preflight
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'test_payment_preflight'
+
+
+----------------------------------------------------------------------
+Ran 45 tests in 13.892s
+
+FAILED (errors=1)

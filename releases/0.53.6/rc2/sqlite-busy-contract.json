@@ -1,0 +1,11 @@
+{
+  "error": "database is locked",
+  "sqlite_errorcode": 5,
+  "transaction_live_before_rollback": true,
+  "transaction_live_after_rollback": false,
+  "rows_after_rollback": [
+    [
+      1
+    ]
+  ]
+}

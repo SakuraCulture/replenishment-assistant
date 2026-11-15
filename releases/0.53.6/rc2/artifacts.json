@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "version": "0.53.6",
+  "build": "rc2",
+  "source_reference": "snapshot-7c0a2678033e1a2f52507c75ac12eb086c5636abe63c9aac8c04e27b65a1c3ce",
+  "base_commit": "7d76889a000bd9e05be42ced7c4aaadf0a4d0f28",
+  "branch": "codex/perf-return-save-0.53.6",
+  "git_committed": false,
+  "pushed": false,
+  "merged": false,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.6_rc2\\补货助手\\补货助手.exe",
+  "exe_sha256": "fdeefd8522700029491d89573ffb346b3d7e9544c2293d544b1025624f12cbbd",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.6_rc2\\补货助手_0.53.6_rc2_门店与运营回传性能优化.zip",
+  "zip_sha256": "bef9ae3694a4d6b0e406005c95838c8ade970d0f6a6bf0fde936d86377a9e4fb",
+  "zip_bytes": 156209755,
+  "zip_members": 1315,
+  "zip_crc_passed": true,
+  "native_checks": 41,
+  "unique_directed_tests": 371,
+  "performance_repeats": 3,
+  "business_equivalence": {
+    "plans": true,
+    "receipts": true,
+    "ordered_tables": true,
+    "views": true
+  },
+  "release": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\releases\\0.53.6\\rc2",
+  "qa": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\return_save_perf_0536_20261115_01",
+  "measurement_scope_explicit": true,
+  "prior_seal_preserved": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\return_save_perf_0536_20261115_01\\first-seal-before-scope-clarification"
+}

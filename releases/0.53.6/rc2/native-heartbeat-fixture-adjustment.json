@@ -1,0 +1,19 @@
+{
+  "purpose": "Increase native acceptance fixture duration so the existing 30ms Qt heartbeat assertion can observe meaningful work; no assertion, product code or saved-value expectation changed.",
+  "source": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tools\\verify_return_save.py",
+  "source_sha256": "959adce542909c76c070b75f9878fff593fe56b1d56176218fd42bf6986cd733",
+  "launcher": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\return_save_perf_0536_20261115_01\\verify_return_save_400.py",
+  "launcher_sha256": "697c1ab5693710ac76687399621080a7ae5ee5379562bbd28c5665426dd12a74",
+  "changes": {
+    "ROOT=Path(__file__).resolve().parents[1]": "ROOT=Path('C:\\\\Users\\\\lenovo\\\\.codex\\\\worktrees\\\\data-location-0521\\\\replenishment_mvp_20261029')",
+    "range(80)": "range(400)",
+    "i==79": "i==399",
+    "'rows_per_warehouse':81": "'rows_per_warehouse':401"
+  },
+  "rows_per_warehouse_before": 81,
+  "rows_per_warehouse_after": 401,
+  "first_rc2_native_report": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\return_save_perf_0536_20261115_01\\native-rc2-01\\report.json",
+  "failed_assertion": "读取、核对与保存期间Qt事件循环持续运行",
+  "prior_business_and_reopen_checks_passed": true,
+  "assertions_relaxed": false
+}

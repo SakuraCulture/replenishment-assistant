@@ -1,0 +1,47 @@
+{
+  "source_commit": "snapshot-7c0a2678033e1a2f52507c75ac12eb086c5636abe63c9aac8c04e27b65a1c3ce",
+  "source_commit_kind": "workspace_snapshot_not_git_commit",
+  "base_commit": "7d76889a000bd9e05be42ced7c4aaadf0a4d0f28",
+  "source_snapshot_sha256": "7c0a2678033e1a2f52507c75ac12eb086c5636abe63c9aac8c04e27b65a1c3ce",
+  "source_archive_sha256": "7c0a2678033e1a2f52507c75ac12eb086c5636abe63c9aac8c04e27b65a1c3ce",
+  "source_manifest_sha256": "f9699523551499dde169850115104c336150943c4ad76fc4c0a053c5cfde234c",
+  "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+  "working_tree_files_sha256": {
+    "README.md": "cddbb329e5328db414bc21be011774ec016fce163cccdbb38fcd5e248d1202d8",
+    "docs/0.53.6门店与运营回传性能优化.md": "1ae9a90c3131c685f5444f078d9357b170f7cf9f4031164af5a595b4629e7b58",
+    "prepare_delivery.py": "24ead08f5a1369e375ccfbcbe9e5f817ad322b9ea7021dc8bfc0b459e6ae90e5",
+    "src/app.py": "5578a618b7607ab4ce83b11d9dbd2ec4c99724949791c58ad409459f265dde3a",
+    "src/lifecycle_read_proofs.py": "92524307f5ac68759bf8aef44bd921c072177211dfa5f038b1f260ec848e1c85",
+    "src/lifecycle_save_encoding.py": "9c1f344e5830d5e9ba125e66e2b878d90b41ff3c8bdb3d163aaf8b9c0f05e3f3",
+    "src/order_lifecycle.py": "4d3c8026b9753f1ed69189b5b53c85ec2d160bddb1bc0bc87ff92101d024c4de",
+    "src/return_save_smoke.py": "92f24eb78a6ce7b1f9ce37c7069d5d7bd50e4db8dc462d78a3d0041a18abba69",
+    "src/version.json": "bc784dc464ae11c86558141d98b5ff420a324051012d2c69ee3e70c4bac1cbac",
+    "tests/test_return_save_performance.py": "748d2a6654df318e9b8466503bde62a6f7fa3e5cf669770d5ffececf104bcb05",
+    "tools/benchmark_return_save.py": "57e814b70fa3b42a7dc39dc3b44a33bebf8a6963f4e701b41b2188b66f0572e0",
+    "tools/verify_return_save.py": "959adce542909c76c070b75f9878fff593fe56b1d56176218fd42bf6986cd733",
+    "使用说明.txt": "234423a895c3dbdb152fd657b7e5c5389665c82fb7eff172ba36087ba4686b36"
+  },
+  "build_id": "rc2",
+  "version": "0.53.6",
+  "built_at": "2026-11-15T14:59:49.661678+08:00",
+  "git_mutated": false,
+  "aoxiang": {
+    "source_commit": "7d76889a000bd9e05be42ced7c4aaadf0a4d0f28",
+    "files": 874,
+    "manifest_sha256": "3423d342475f742f291f336aed0d66fe8f44f2e0f01eccd68c67ec46c152ff06",
+    "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+    "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+    "contains_user_state": false,
+    "live_platform_tested": false
+  },
+  "jst_catalog": {
+    "manifest_sha256": "330a67e4c559567a62ddc54131790c5cc4eddaa1525e0ba8a3fe9d08bd7e9301",
+    "files": 11,
+    "source_commit": "snapshot-7c0a2678033e1a2f52507c75ac12eb086c5636abe63c9aac8c04e27b65a1c3ce",
+    "contains_user_state": false,
+    "source_commit_kind": "workspace_snapshot_not_git_commit",
+    "base_commit": "7d76889a000bd9e05be42ced7c4aaadf0a4d0f28",
+    "source_snapshot_sha256": "7c0a2678033e1a2f52507c75ac12eb086c5636abe63c9aac8c04e27b65a1c3ce"
+  },
+  "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+}
