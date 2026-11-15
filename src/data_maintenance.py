@@ -708,6 +708,8 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
         except BaseException:
             db.set_progress_handler(None,0);db.rollback();checkpoint(cancel);raise
         finally:progress(CommitProgress(False))
+    from lifecycle_recovery import prune_after_delete
+    prune_after_delete(path)
     return {'deleted':len(plan['parents']),'orders':[h['number'] for h in plan['parents']],'operation_id':operation_id,'component_cleanup_pending':True,'journal_modes':journal_modes}
 
 def execute_scoped(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
@@ -826,6 +828,8 @@ def execute_scoped(path,plan,ack_external=False,progress=lambda _:None,cancel=No
         except BaseException:
             db.set_progress_handler(None,0);db.rollback();checkpoint(cancel);raise
         finally:progress(CommitProgress(False))
+    from lifecycle_recovery import prune_after_delete
+    prune_after_delete(path)
     return {'deleted':len(plan['scopes']),'orders':[h['number'] for h in plan['scopes']],'operation_id':operations[0],'operation_ids':operations,'component_cleanup_pending':True,'journal_modes':journal_modes,'scopes':[{'oid':h['oid'],'warehouse':h['warehouse']} for h in plan['scopes']]}
 
 

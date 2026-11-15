@@ -1,0 +1,5 @@
+{
+  "passed": false,
+  "reason": "核查脚本误按manual英文目录筛选中文使用手册目录，断言未命中；实际HTML和三张新图均在ZIP内，改用准确路径复核。",
+  "package_changed": false
+}

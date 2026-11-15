@@ -1,0 +1,103 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "passed": true,
+      "frozen_exe": true,
+      "synthetic": true,
+      "live_platform": false,
+      "checks": [
+        "实际分配结果页显示两店四仓单",
+        "付款仍需明确核对确认后才能保存",
+        "自然转付款取消后不保存任何一单",
+        "付款仍需明确核对确认后才能保存",
+        "实际勾选入口仅保存所选一张仓单",
+        "付款仍需明确核对确认后才能保存",
+        "实际当前筛选入口完成四单付款，无Excel搬运",
+        "付款仍需明确核对确认后才能保存",
+        "自然转付款重复确认不新增版本、事件或库存占用",
+        "付款数量、金额按原规范文本与生成单逐行相等：BH-S1-ZC-HB",
+        "付款数量、金额按原规范文本与生成单逐行相等：BH-S1-ZC-SD",
+        "付款数量、金额按原规范文本与生成单逐行相等：BH-T-ZC-HB",
+        "付款数量、金额按原规范文本与生成单逐行相等：BH-T-ZC-SD",
+        "真实后台线程完成采购准备并显示有效依据",
+        "采购文件冻结付款明细、金额、两位单价、舍入差额及顺序一致",
+        "实际采购预览表格显示完整商品和原顺序",
+        "原有采购文件、准入、当前付款及上传前检查仍通过",
+        "采购准备不改变签发、回传、运营、付款、收货及库存事实",
+        "准备只生成本地文件，尚未创建平台采购单",
+        "采购窗口正常关闭并释放本轮离线传输",
+        "离线传输未发起登录、模板导出、采购上传或平台查询",
+        "没有忽略或隐藏非预期错误窗口",
+        "自然转付款和采购准备期间Qt事件循环持续运行"
+      ],
+      "heartbeat_ticks": 193,
+      "dialogs_not_stubbed": true,
+      "transport": "strict offline test adapter",
+      "component_reservation_tested": false,
+      "reviews": [
+        [
+          "BH-S1-ZC-HB",
+          "BH-S1-ZC-SD",
+          "BH-T-ZC-HB",
+          "BH-T-ZC-SD"
+        ],
+        [
+          "BH-S1-ZC-HB"
+        ],
+        [
+          "BH-S1-ZC-HB",
+          "BH-S1-ZC-SD",
+          "BH-T-ZC-HB",
+          "BH-T-ZC-SD"
+        ],
+        [
+          "BH-S1-ZC-HB",
+          "BH-S1-ZC-SD",
+          "BH-T-ZC-HB",
+          "BH-T-ZC-SD"
+        ]
+      ],
+      "calls": [
+        "configuration",
+        "purchase.list"
+      ],
+      "messages": [],
+      "exit_code": 0
+    },
+    {
+      "passed": true,
+      "frozen_exe": true,
+      "synthetic": true,
+      "live_platform": false,
+      "checks": [
+        "退出重开后四环节事实及库存不变",
+        "重开后自然转付款仍去重，不依赖旧进程证据",
+        "真实后台线程完成采购准备并显示有效依据",
+        "采购文件冻结付款明细、金额、两位单价、舍入差额及顺序一致",
+        "实际采购预览表格显示完整商品和原顺序",
+        "原有采购文件、准入、当前付款及上传前检查仍通过",
+        "采购准备不改变签发、回传、运营、付款、收货及库存事实",
+        "准备只生成本地文件，尚未创建平台采购单",
+        "采购窗口正常关闭并释放本轮离线传输",
+        "离线传输未发起登录、模板导出、采购上传或平台查询",
+        "没有忽略或隐藏非预期错误窗口",
+        "自然转付款和采购准备期间Qt事件循环持续运行"
+      ],
+      "heartbeat_ticks": 491,
+      "dialogs_not_stubbed": true,
+      "transport": "strict offline test adapter",
+      "component_reservation_tested": false,
+      "reviews": [],
+      "calls": [
+        "configuration",
+        "purchase.list"
+      ],
+      "messages": [],
+      "exit_code": 0
+    }
+  ],
+  "synthetic": true,
+  "live_platform": false,
+  "exe_sha256": "acc2432b000f6d943b4e2482f7c2eb9e1cf243a79e3cb6f2aa19f454673764c3"
+}

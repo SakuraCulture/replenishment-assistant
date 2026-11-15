@@ -1,0 +1,175 @@
+{
+  "passed": true,
+  "qa_directory": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\lifecycle_recovery_0539_20261115_01",
+  "original_evidence_modified": false,
+  "copied_files": [
+    {
+      "file": "regression.log",
+      "source": "targeted-03.log",
+      "bytes": 54525,
+      "sha256": "60e9281438f8f5af787a4a4a1890fabece159807f8fe139d48c89460e8f1c051"
+    },
+    {
+      "file": "initial-regression-failure.json",
+      "source": "targeted-01.json",
+      "bytes": 35624,
+      "sha256": "96edaa9bfada3d259c8ab50c1aab8f7c8009a1fdcc36dccc7374189ae7d0aea2"
+    },
+    {
+      "file": "initial-regression-failure.log",
+      "source": "targeted-01.log",
+      "bytes": 57101,
+      "sha256": "4bedb8d325c1a6430d1b22eb88ddb82e6ffd6212e55eceed12dd658738bf7d92"
+    },
+    {
+      "file": "source-ui-report.json",
+      "source": "visible-source-02/report.json",
+      "bytes": 5748,
+      "sha256": "2e37f496d6edf2c24988030aa7f0e4c26a9889c8d4e261ca20ee5855ef6254f4"
+    },
+    {
+      "file": "initial-ui-worker-failure.json",
+      "source": "source-ui-01/report.json",
+      "bytes": 3201,
+      "sha256": "d5047215201c9f787b92e74f8a79f218290450b97fe55567a5c425398942df1c"
+    },
+    {
+      "file": "initial-ui-fixture-failure.json",
+      "source": "source-ui-02/report.json",
+      "bytes": 5247,
+      "sha256": "885328c69aedc70f8fd9c04820c6662c224c9764f3aa351b6452f0f3e0535617"
+    },
+    {
+      "file": "initial-performance-dependency-failure.log",
+      "source": "comparison-01.log",
+      "bytes": 763,
+      "sha256": "642764952e3d231c337a7f58ac4a2f6eae5b43fe9b1d4d4c56687a3de05cb3a4"
+    },
+    {
+      "file": "interrupted-performance-not-final.log",
+      "source": "comparison-02.log",
+      "bytes": 848,
+      "sha256": "36ee5b4cd1831981da7b76af28ee3a03e94f28cc62630070b41919ee583c2fb7"
+    },
+    {
+      "file": "final-check-initial-failure.json",
+      "source": "final-check-01.json",
+      "bytes": 223,
+      "sha256": "d6ef3fe8235d12c96a9d615824797f6ba04623a838a9c4e784250a5fd3206845"
+    },
+    {
+      "file": "final-check.json",
+      "source": "final-check-02.json",
+      "bytes": 545,
+      "sha256": "7d8cdf57bf68148e56f5ed43a186c6121c0c12caa53e80c06c9f536a44a733d1"
+    },
+    {
+      "file": "publication-preflight.json",
+      "source": "main-sync-01/preflight.json",
+      "bytes": 8877,
+      "sha256": "e018df823a866c5c74fd8f2668e121efcd43dff3668e60a3df77a104553baf4b"
+    },
+    {
+      "file": "publication-source-check.json",
+      "source": "main-sync-01/source-check.json",
+      "bytes": 685,
+      "sha256": "af19f00283427b5ad82015af917709aad49b7bc2bc64820a405a89fbd559647d"
+    },
+    {
+      "file": "build-report.json",
+      "source": "build-report-rc1.json",
+      "bytes": 633,
+      "sha256": "615b0592a877c9289b1187d193e82dcc0dad3fc293443db6ce49b0c2bd9ec69c"
+    },
+    {
+      "file": "qa-tools/build_snapshot.py",
+      "source": "build_snapshot.py",
+      "bytes": 5767,
+      "sha256": "84bec2c28a853e572829d5d452a82d92a891a82accba6aab65608ac944344927"
+    },
+    {
+      "file": "qa-tools/benchmark_return_save.py",
+      "source": "benchmark_return_save.py",
+      "bytes": 10172,
+      "sha256": "fb719e3ae1579e460e16c1ee058450b3fd51d1c871036e4ec92100f38cdf26a0"
+    },
+    {
+      "file": "qa-tools/run_regression.py",
+      "source": "run_regression_03.py",
+      "bytes": 1990,
+      "sha256": "66eb20439ee981229e337c012902e3171c7e9ca6a62a2fdbdadde7af9842f5c3"
+    },
+    {
+      "file": "qa-tools/seal_delivery.py",
+      "source": "seal_delivery.py",
+      "bytes": 14973,
+      "sha256": "1722804f59168dbef3d5d17a0df49a9d432f20b5d5c500754e0a017c32d969df"
+    },
+    {
+      "file": "native-logs/exe-recovery-01/close_recovery-process.log",
+      "source": "exe-recovery-01/close_recovery-process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "native-logs/exe-recovery-01/exercise-process.log",
+      "source": "exe-recovery-01/exercise-process.log",
+      "bytes": 768,
+      "sha256": "65834e3cfb477aa184082f45e29715e3dac381e6943b54db2d239382aa97a1bc"
+    },
+    {
+      "file": "native-logs/exe-recovery-01/reopen-process.log",
+      "source": "exe-recovery-01/reopen-process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "native-logs/exe-compatibility-01/exercise-process.log",
+      "source": "exe-compatibility-01/exercise-process.log",
+      "bytes": 384,
+      "sha256": "01f9ef61a3e6a80b072d6a8fa989a6ee8da101517fe7a74a45b5915b222fe29b"
+    },
+    {
+      "file": "native-logs/exe-compatibility-01/reopen-process.log",
+      "source": "exe-compatibility-01/reopen-process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "native-logs/exe-followup-01/exercise-process.log",
+      "source": "exe-followup-01/exercise-process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "native-logs/exe-followup-01/reopen-process.log",
+      "source": "exe-followup-01/reopen-process.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "screenshots/exercise-recovered-return.png",
+      "source": "exe-recovery-01/exercise-recovered-return.png",
+      "bytes": 66626,
+      "sha256": "1cae4e1dcb1ed7d0adf1a3a739132d50bca53c1ecf343df5e11ab11ce6523047"
+    },
+    {
+      "file": "screenshots/exercise-accepted-after-cancel.png",
+      "source": "exe-recovery-01/exercise-accepted-after-cancel.png",
+      "bytes": 121788,
+      "sha256": "a9f19019a6200206a60bbb5f98f06440a3ea0394f02a9036739777958b5fe89a"
+    },
+    {
+      "file": "screenshots/exercise-allocation-finalization.png",
+      "source": "exe-recovery-01/exercise-allocation-finalization.png",
+      "bytes": 168447,
+      "sha256": "7e162975bdbdf186422d5616856855752a9c3b4c0e3eb5742d5d8a0d23858ef9"
+    },
+    {
+      "file": "screenshots/reopen-reopen-completed.png",
+      "source": "exe-recovery-01/reopen-reopen-completed.png",
+      "bytes": 69911,
+      "sha256": "8ca30349cef9d9207bdc6f924cc3f3f949073be4a9782ab59d6675141beb7552"
+    }
+  ]
+}

@@ -489,6 +489,30 @@
       "synthetic": true,
       "live_platform": false,
       "description": "源码Qt：10款跨表冲突逐款选择原始整行，默认无选择；非实际EXE截图"
+    },
+    {
+      "name": "lifecycle-recovery-0539.png",
+      "sha256": "d7e63841399d9338b94e8fcc4a1d1bf74324f631fbd04e5f1457c864c1aeaa75",
+      "version": "0.53.9",
+      "source": "actual Windows source Qt; isolated synthetic recovery acceptance, no platform",
+      "qa": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\lifecycle_recovery_0539_20261115_01\\visible-source-01\\exercise-recovered-return.png",
+      "caption": "原保存核对与恢复入口"
+    },
+    {
+      "name": "purchase-original-recovery-0539.png",
+      "sha256": "5622a7478df9cafa837c1406e0b18c1475542fb1c341287a99b50922e71db78f",
+      "version": "0.53.9",
+      "source": "actual Windows source Qt; isolated synthetic recovery acceptance, no platform",
+      "qa": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\lifecycle_recovery_0539_20261115_01\\visible-source-01\\exercise-accepted-after-cancel.png",
+      "caption": "取消剩余后核对原受理结果"
+    },
+    {
+      "name": "allocation-finalization-recovery-0539.png",
+      "sha256": "25eb1356826471f0cbe3e9b5b6188914286b95b927d26dad25783dcf3756a4be",
+      "version": "0.53.9",
+      "source": "actual Windows source Qt; isolated synthetic recovery acceptance, no platform",
+      "qa": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\lifecycle_recovery_0539_20261115_01\\visible-source-01\\exercise-allocation-finalization.png",
+      "caption": "分配已保存而收尾待恢复"
     }
   ],
   "live_platform_tested": false,
@@ -553,5 +577,15 @@
     ],
     "provenance": "Historical screenshots reused and explicitly labelled; final 0.53.0 EXE selection/deletion screenshots belong to QA and release evidence, not this frozen manual",
     "live_platform_tested": false
+  },
+  "lifecycle_recovery_manual": {
+    "chapter": "28",
+    "application": "0.53.9",
+    "source": "visible-source-01; real Qt, synthetic only, no live platform",
+    "images": [
+      "lifecycle-recovery-0539.png",
+      "purchase-original-recovery-0539.png",
+      "allocation-finalization-recovery-0539.png"
+    ]
   }
 }

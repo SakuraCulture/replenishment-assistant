@@ -42,15 +42,8 @@ def mark(path,task,status,message):
 
 
 def retry(path, heads, progress=lambda _:None,cancel=None):
-    import jst_batches as batches
-    checkpoint(cancel);ids=set()
-    with closing(sqlite3.connect(path)) as db:
-        if batches.exists(db):
-            for h in heads:
-                ids.update(r[0] for r in db.execute("SELECT batch_id FROM jst_batch_members WHERE oid=? AND warehouse=? AND status IN ('pending','failed')",(h['oid'],h['warehouse'])))
-    if len(ids)!=1:raise ValueError('请选择同一未完成分配批次；旧任务或尚未分批的回传请先准备新批次')
-    plan=batches.preview_existing(path,next(iter(ids)),progress=progress,cancel=cancel)
-    batches.activate(path,plan,progress,cancel)
+    checkpoint(cancel)
+    raise ValueError('旧版勾选重试入口已停用，未执行任何订单。请打开“聚水潭导入单”选择原分配批次，核对范围和原顺序后继续。')
 
 
 def drain(path, folder, progress=lambda _:None,cancel=None,*,before_work=lambda:None):

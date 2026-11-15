@@ -243,6 +243,7 @@ class Runner:
                         state, result = self.prepare_item(job, item, configuration, suppliers)
                     elif job['kind'] == 'upload':
                         from aoxiang_purchase_messages import observation
+                        update(changes={'submission_started':True})
                         state, result = self.upload_item(item, configuration, suppliers,
                             notify=lambda r,update_item=update: update_item(changes={'purchase_observation': observation(r)}))
                     else:

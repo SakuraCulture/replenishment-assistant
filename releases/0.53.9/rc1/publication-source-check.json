@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "source_commit": "8730a13a8957308e8c336c4a2831cab220113ee5",
+  "base_commit": "f7d5b701c93d9c7f0f1af855430e6e1f515ed7c0",
+  "source_reference": "snapshot-7be65fc3b212cff393a6564f8a850a8f2fd70c1ad175c47e198e6272af931049",
+  "files_changed": 35,
+  "snapshot_tree_files": 4722,
+  "snapshot_file_set_equal": true,
+  "changed_blob_sha256_equal": true,
+  "unchanged_paths_inherited_from_exact_base": true,
+  "rc1_source_tree_equal": true,
+  "rebuild_required": false,
+  "explanation": "The source commit is the same base plus the exact 35 byte-identical overlay files used to build the tested rc1. Only later publication evidence is outside the original build tree."
+}

@@ -6,6 +6,22 @@ ACTIVE = ('QUEUED', 'RUNNING', 'YIELDED', 'PAUSED')
 SUCCESS = ('PREPARED', 'BOUND', 'SYNCED')
 
 
+def original_pending(item):
+    """An attempted/accepted upload must retain its observe-original route."""
+    evidence = item.get('purchase_observation') or {}
+    code = (item.get('error') or {}).get('code', '')
+    return (item['state'] in ('ACCEPTED', 'RUNNING') or item.get('submission_started')
+            or evidence.get('uploadAttempted') or evidence.get('taskId')
+            or code in ('SUBMISSION_UNKNOWN', 'DISPATCH_UNKNOWN', 'RESPONSE_UNKNOWN', 'WORKER_RESPONSE_UNKNOWN'))
+
+
+def recoverable(job):
+    return (job['state'] != 'RUNNING' and not job.get('successor') and any(
+        not i.get('rebuild_to') and not i.get('source_deleted') and
+        (i['state'] in ('PENDING','RUNNING','FAILED','REVIEW','ACCEPTED') or (i['state']=='SKIPPED' and i.get('cancelled_unstarted')))
+        for i in job['items']))
+
+
 def local_preparation(item, kind):
     """Only preparation which never reached a durable purchase identity is local."""
     result = item.get('result') or {}

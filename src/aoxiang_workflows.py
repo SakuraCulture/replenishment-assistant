@@ -142,6 +142,10 @@ class Workflows:
                     previous = [i['key'] for i in old['items']]
                     current = [i['key'] for i in items]
                     if previous == current:
+                        while old.get('successor'):
+                            old = self._get(db, old['successor'])
+                        if old['state']=='CANCELLED':
+                            return self._recover_original(db,old,include_cancelled=True)
                         return old
                     if set(previous) & set(current):
                         raise ValueError('部分预览已确认上传，请继续原上传批次；剩余单据须单独选择')
@@ -300,6 +304,39 @@ class Workflows:
             job['state'] = 'QUEUED'
             return self._save(db, job, 'RESUMED_ORIGINAL')
 
+    def _recover_original(self, db, job, *, include_cancelled=False, keys=None):
+        from aoxiang_workflow_state import recoverable, original_pending
+        if job.get('successor'):
+            return self._get(db,job['successor'])
+        if job['state'] in ('QUEUED','YIELDED','RUNNING'):
+            return job
+        if not recoverable(job):
+            return job
+        selected=set(keys) if keys is not None else None
+        if selected is not None and (not selected or not selected<={i['key'] for i in job['items']}):raise ValueError('所选原任务范围已变化，请刷新')
+        dispatch=[]
+        for item in job['items']:
+            if selected is not None and item['key'] not in selected:continue
+            if item.get('source_deleted') or item.get('rebuild_to'):continue
+            cancelled=item['state']=='SKIPPED' and item.get('cancelled_unstarted')
+            if cancelled and not include_cancelled:continue
+            if item['state'] in ('PENDING','RUNNING','FAILED','REVIEW','ACCEPTED') or cancelled:
+                item['previous_error']=item.get('error')
+                item['error']=None
+                item['state']='ACCEPTED' if job['kind']=='upload' and (item.get('purchase_observation') or {}).get('taskId') and original_pending(item) else 'PENDING'
+                if cancelled:item.pop('cancelled_unstarted',None)
+                dispatch.append(item['key'])
+        if not dispatch:return job
+        job.update(state='QUEUED',dispatch_keys=dispatch,next_poll_at=0,
+                   message='已恢复原任务；先核对原采购状态，成功项及未选项保留，不重建平台采购单')
+        return self._save(db,job,'RECOVERED_ORIGINAL_EXECUTION')
+
+    def recover_original(self,id,expected_sequence,keys=None):
+        with self.db(True) as db:
+            job=self._get(db,id)
+            if job['sequence']!=expected_sequence:raise ValueError('原任务已变化，请刷新后恢复')
+            return self._recover_original(db,job,include_cancelled=True,keys=keys)
+
     def execute_selected(self,id,keys,expected_sequence):
         with self.db(True) as db:
             job=self._get(db,id)
@@ -376,7 +413,13 @@ class Workflows:
             job = self._get(db, id)
             if job['state'] not in ('QUEUED', 'PAUSED', 'YIELDED', 'FAILED'):
                 raise ValueError('先停止正在执行的批次，再取消剩余任务')
-            job['state'] = 'CANCELLED'
+            from aoxiang_workflow_state import original_pending
+            for item in job['items']:
+                if item['state']=='PENDING' and not original_pending(item):
+                    item.update(state='SKIPPED',cancelled_unstarted=True)
+            pending=[i['key'] for i in job['items'] if i['state'] in ('PENDING','RUNNING','ACCEPTED','REVIEW','FAILED')]
+            job.update(state='PAUSED' if pending else 'CANCELLED',dispatch_keys=pending,next_poll_at=0,
+                       message='未开始项已取消；已受理或结果待核项保留，请恢复原任务继续核对' if pending else '未开始项已取消；可恢复原任务，采购身份保留')
             return self._save(db, job, 'CANCELLED_REMAINDER_ONLY')
 
     def end_local_items(self, id, keys, expected_sequence):
@@ -428,7 +471,10 @@ class Workflows:
             if job['sequence']!=expected_sequence:raise ValueError('批次已变化，请重新核对')
             if job['state']=='RUNNING':raise ValueError('请先停止，等待当前安全阶段退出')
             if job.get('successor'):return self._get(db,job['successor'])
-            items=[i for i in job['items'] if i['state'] in ('PENDING','FAILED')]
+            if any(i['state']=='ACCEPTED' for i in job['items']):
+                raise ValueError('已有平台受理项，请使用“恢复并继续原任务”核对；不能封住原受理结果')
+            items=[{**i,'state':'PENDING'} for i in job['items'] if i['state'] in ('PENDING','FAILED') or i.get('cancelled_unstarted')]
+            for item in items:item.pop('cancelled_unstarted',None)
             if any(i['state'] in ('RUNNING','REVIEW') for i in job['items']):raise ValueError('仍有正在执行或结果待核项，请先核对原任务再新建')
             if not items:raise ValueError('没有未开始或失败项需要转入新批次')
             job['state']='CANCELLED';self._save(db,job,'ENDED_KEEP_SUCCESS')

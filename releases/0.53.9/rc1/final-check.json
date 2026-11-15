@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "original_docs_hashes_available": {},
+  "manual_in_zip": [
+    "补货助手/使用手册/index.html",
+    "补货助手/使用手册/images/lifecycle-recovery-0539.png",
+    "补货助手/使用手册/images/purchase-original-recovery-0539.png",
+    "补货助手/使用手册/images/allocation-finalization-recovery-0539.png"
+  ],
+  "git_head_unchanged": true,
+  "index_unchanged": true,
+  "zip_crc_passed": true,
+  "business_data_touched": false,
+  "platform_called": false,
+  "software_replaced": false
+}
