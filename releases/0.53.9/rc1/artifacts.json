@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "version": "0.53.9",
+  "build_id": "rc1",
+  "branch": "codex/lifecycle-recovery-0.53.9",
+  "base_commit": "f7d5b701c93d9c7f0f1af855430e6e1f515ed7c0",
+  "source_reference": "snapshot-7be65fc3b212cff393a6564f8a850a8f2fd70c1ad175c47e198e6272af931049",
+  "source_snapshot_sha256": "7be65fc3b212cff393a6564f8a850a8f2fd70c1ad175c47e198e6272af931049",
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.9_rc1\\补货助手\\补货助手.exe",
+  "exe_sha256": "acc2432b000f6d943b4e2482f7c2eb9e1cf243a79e3cb6f2aa19f454673764c3",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.9_rc1\\补货助手_0.53.9_rc1_主业务生命周期恢复.zip",
+  "zip_sha256": "d4f39b44ef267b0c1fab98c02c48e9720cc300ce6920ba31979b03a7e8788df3",
+  "zip_bytes": 156604106,
+  "zip_members": 1313,
+  "zip_crc_passed": true,
+  "regression_unique_tests": 330,
+  "native_checks_by_suite": {
+    "exe-recovery-01": 53,
+    "exe-compatibility-01": 63,
+    "exe-followup-01": 35
+  },
+  "report": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\releases\\0.53.9\\rc1\\交付报告.md",
+  "qa": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\lifecycle_recovery_0539_20261115_01",
+  "old_0538_exe_zip_hashes_unchanged": true,
+  "git_committed": false,
+  "git_pushed": false,
+  "git_merged": false
+}

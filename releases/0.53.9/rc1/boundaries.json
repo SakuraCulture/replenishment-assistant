@@ -1,0 +1,27 @@
+{
+  "protected_baseline_equal": [
+    "src/default_config.json",
+    "src/model.py"
+  ],
+  "performance_backend_equal": {
+    "order_lifecycle.py": true,
+    "lifecycle_recovery.py": true,
+    "jst_batches.py": true,
+    "aoxiang_workflows.py": true,
+    "aoxiang_workflow_state.py": true,
+    "aoxiang_upload_pipeline.py": true
+  },
+  "version": {
+    "app": "补货助手",
+    "version": "0.53.9",
+    "parameter_schema_version": 3,
+    "job_schema_version": 1,
+    "routing_version": "0.5.2",
+    "model_version": "0.3.6-rules",
+    "model_baseline": "v0.3.0-baseline",
+    "entry": "补货助手.exe",
+    "storage_format_version": 2
+  },
+  "head": "f7d5b701c93d9c7f0f1af855430e6e1f515ed7c0",
+  "staged": false
+}

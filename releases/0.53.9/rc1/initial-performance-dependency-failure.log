@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tools\benchmark_lifecycle_performance.py", line 134, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tools\benchmark_lifecycle_performance.py", line 111, in main
+    if r.returncode:raise RuntimeError('Failed isolated worker; retained '+str(log.name))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Failed isolated worker; retained D:\优团工作文件夹\outputs\replenishment_mvp_20261029\qa\lifecycle_recovery_0539_20261115_01\comparison-01\1-old.log

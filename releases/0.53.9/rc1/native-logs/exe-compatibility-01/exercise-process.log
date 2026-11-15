@@ -1,0 +1,1 @@
+QWindowsWindow::setGeometry: Unable to set geometry 1830x1343+351+135 (frame: 1852x1399+340+90) on QWidgetWindow/"jstGenerationWindow" on "\\.\DISPLAY1". Resulting geometry: 1830x1370+351+135 (frame: 1852x1426+340+90) margins: 11, 45, 11, 11 minimum size: 656x895 MINMAXINFO(maxSize=POINT(x=0, y=0), maxpos=POINT(x=0, y=0), maxtrack=POINT(x=0, y=0), mintrack=POINT(x=1006, y=1399)))

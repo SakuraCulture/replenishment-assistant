@@ -1,0 +1,132 @@
+{
+  "passed": true,
+  "branch": "codex/lifecycle-recovery-0.53.9",
+  "base_commit": "f7d5b701c93d9c7f0f1af855430e6e1f515ed7c0",
+  "remote_main_before": "f7d5b701c93d9c7f0f1af855430e6e1f515ed7c0",
+  "source_reference": "snapshot-7be65fc3b212cff393a6564f8a850a8f2fd70c1ad175c47e198e6272af931049",
+  "source_files_sha256": {
+    "README.md": "45aa6f75f36eed4ef51ea59ef608b681195b1eb1e2233dc476f05e21686e77e2",
+    "docs/0.53.9主业务生命周期恢复.md": "87590cd3abe36e6ebff28203ecff055576a5eef1c462243bea66daeb68831ca4",
+    "docs/manual/guide.md": "b16ec0c4577c5316e593dafb26c7b19422d143b8fb58094154f06478ce9b07b3",
+    "docs/manual/images/allocation-finalization-recovery-0539.png": "25eb1356826471f0cbe3e9b5b6188914286b95b927d26dad25783dcf3756a4be",
+    "docs/manual/images/lifecycle-recovery-0539.png": "d7e63841399d9338b94e8fcc4a1d1bf74324f631fbd04e5f1457c864c1aeaa75",
+    "docs/manual/images/purchase-original-recovery-0539.png": "5622a7478df9cafa837c1406e0b18c1475542fb1c341287a99b50922e71db78f",
+    "docs/manual/index.html": "095129a15c80f1293600d09c8f579118fb308c6e64aa77ffbe592d34ea4b3ec3",
+    "docs/manual/screenshot-index.json": "9cdd55a6507f8ff2d8b5e49382b954f5966430c8b74f80cf3c33be6aa2228697",
+    "docs/plans/主业务生命周期操作与异常恢复核查方案_20261115.md": "83f9c719b9ce6851f52fbcba4bbc6987ebe7cabe0e705e6f10769f29387ef40b",
+    "docs/主业务生命周期恢复核查报告_20261115.md": "f49b61ebac33d67cdec06a10ad46433105162c31be98b4db0bbd61d55c634421",
+    "src/aoxiang_upload_pipeline.py": "0ed07c4a9692abbdd12e30b223598fdb184110baa567069b9752e1819f3c7485",
+    "src/aoxiang_workflow_runner.py": "2d52881dec7ea17c212c1cf9a1280b5632ef088804ba32f85fbd006c442a99b7",
+    "src/aoxiang_workflow_state.py": "e63ccc66b8b82dde373ad5ee3ef85b0ccf5bb7bedbd81fbbef7a5a8ef18bb3da",
+    "src/aoxiang_workflow_ui.py": "34935d6c3b1e607c510cfa75902409d710b809abb21f3b51d3a63d6a398f664f",
+    "src/aoxiang_workflows.py": "e39b391f9e3bf035c82adb73cd913b2616fc76905e7830c677f4490c3247917b",
+    "src/app.py": "27d00c70ba82f69ff51810747cfc72a2b1ac3b95946f763982f0445fa3c564ed",
+    "src/data_maintenance.py": "dffad02140a1c863a53cb7d2baba9e90acc0e847106c6ceb46bb819271594621",
+    "src/display_settings.py": "318166c6fbcc6948a6e0aef5dbcd6bbe4727d3744c697770957469dd8248823b",
+    "src/export_receipts.py": "7d00624de81be72bd9ba443e6607c6fee0cce1a05f14acc262d619d778894567",
+    "src/jst_batches.py": "c07f0dadfeb65f525b863494f2035d01e4dd18c4f3be00b40b423b03d102fa80",
+    "src/jst_results_ui.py": "772c411a129c0fb3e7b6e1edc0336bcd0f533a004c933c9f5f5bff108fe52e68",
+    "src/jst_tasks.py": "321e930c6d398f2b6065211904cd546aad12e9858ee673585cac59aa7b5fa631",
+    "src/jst_ui.py": "842828a062558de8a33ddccdb9ff8af16a6df99ef25968ffebca3f8eda587fc3",
+    "src/lifecycle_batch_ui.py": "e9829e4a31fdd40e21797ed3c01b3617ede74dcfcdfcc7ca8ace0857fb36ecfc",
+    "src/lifecycle_home_ui.py": "cdba5f2492800765fd84237656919d6e5b34373882690bda4294d9fae134c767",
+    "src/lifecycle_recovery.py": "afdf100362555879f5beaaf0269721414adef715dc5aab69e43c27285e6e8103",
+    "src/lifecycle_recovery_smoke.py": "bae6cefd412b253c552501f9499e7cb94fabd476a348ce2ab820bc8c3c6c6812",
+    "src/lifecycle_recovery_ui.py": "c30feeb62030a1a609ad08b19df699eed77897b61c1f7758118722ccc75e36fe",
+    "src/order_lifecycle.py": "5a260222e929278a647a7787bc5aa13cf209af2d187eb5c5061f0d5b809761c4",
+    "src/version.json": "a31f16e21d282c072c8d918a32809ee09cee45c6531c7b54a800343997db79c2",
+    "tests/test_allocation_recovery.py": "dceb942df78d7a4c1076e95e45e34853e0ef8836387dbd47898237a3b94c1565",
+    "tests/test_lifecycle_recovery.py": "0324a37667bee5f644d48b32877e8471cd80c8d34db011db575055b326ce1037",
+    "tests/test_workflow_recovery.py": "d539405d1fad6c50d2ab499121aeeb67510f629aec455e5d97b46c21b3f19208",
+    "tools/benchmark_lifecycle_performance.py": "704374c814357a7235bb24265d48b85f7315a63a92ab3902d087b546090f720a",
+    "tools/verify_lifecycle_recovery.py": "54a0935aedea92b7ef57ac91b2ae0b2c3b41e603048e6d9a137a4f4ae3753512"
+  },
+  "existing_release_files": [
+    "releases/0.53.9/rc1/SHA256.txt",
+    "releases/0.53.9/rc1/artifacts.json",
+    "releases/0.53.9/rc1/boundaries.json",
+    "releases/0.53.9/rc1/build_info.json",
+    "releases/0.53.9/rc1/exe-compatibility-01.json",
+    "releases/0.53.9/rc1/exe-followup-01.json",
+    "releases/0.53.9/rc1/exe-recovery-01.json",
+    "releases/0.53.9/rc1/failure-evidence.json",
+    "releases/0.53.9/rc1/performance-payment-receipt-jst.json",
+    "releases/0.53.9/rc1/performance-return-operations.json",
+    "releases/0.53.9/rc1/regression.json",
+    "releases/0.53.9/rc1/source-manifest.json",
+    "releases/0.53.9/rc1/交付报告.md"
+  ],
+  "qa_original_results_sha256": {
+    "targeted-03.json": "2c891f2ce63db244ed5499f49914afd215d3c85c8a60aabe625a66d4614719f2",
+    "comparison-03/report.json": "6878ee467dba2e2e1e8672bcbdc1f74d63fa023bc4f4b7615e544aef02432f23",
+    "comparison-return-01/report.json": "6b782a683430357b4a510524d83056878aee9b78dc06630968903720e0623da9",
+    "visible-source-02/report.json": "2e37f496d6edf2c24988030aa7f0e4c26a9889c8d4e261ca20ee5855ef6254f4",
+    "exe-recovery-01/report.json": "f2a1d092d3c14760166f584c0c1b5b1df4f3a880643d89bce3177e93db373466",
+    "exe-compatibility-01/report.json": "74c1b77b30c7beb98b17b6995906663706631ce6ccabed55c08bf29e770a328f",
+    "exe-followup-01/report.json": "2849130e735dbdd078205c0352cedf50ddcc93b566d490f6e1f47037b922c68f",
+    "final-check-02.json": "7d8cdf57bf68148e56f5ed43a186c6121c0c12caa53e80c06c9f536a44a733d1"
+  },
+  "delivery": {
+    "exe": {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.9_rc1\\补货助手\\补货助手.exe",
+      "sha256": "acc2432b000f6d943b4e2482f7c2eb9e1cf243a79e3cb6f2aa19f454673764c3"
+    },
+    "zip": {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.9_rc1\\补货助手_0.53.9_rc1_主业务生命周期恢复.zip",
+      "sha256": "d4f39b44ef267b0c1fab98c02c48e9720cc300ce6920ba31979b03a7e8788df3"
+    }
+  },
+  "old_0538": {
+    "exe": {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.8_rc2\\补货助手\\补货助手.exe",
+      "sha256": "e408f622caba9fc6e0db5be435ab3a8a1901df593843264889209d3b9b8aa0f8"
+    },
+    "zip": {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.53.8_rc2\\补货助手_0.53.8_rc2_自然转付款与采购准备优化.zip",
+      "sha256": "53c746096001fc8ab1de9f4846dcdb909ebb83bec1213b2efbfbf4c5d610c24f"
+    }
+  },
+  "existing_delivery_directories": [
+    "交付_0.45.0_rc1",
+    "交付_0.45.1_rc1",
+    "交付_0.48.0_业务流程手册_20261108",
+    "交付_0.49.3_新人教程详解_20261109",
+    "交付_0.51.10_rc3",
+    "交付_0.51.9_rc3",
+    "交付_0.52.1_rc6",
+    "交付_0.52.2_rc4",
+    "交付_0.52.3_rc1",
+    "交付_0.52.9_rc1",
+    "交付_0.53.0_rc1",
+    "交付_0.53.1_rc1",
+    "交付_0.53.2_rc1",
+    "交付_0.53.3_rc1",
+    "交付_0.53.3_rc2",
+    "交付_0.53.4_rc1",
+    "交付_0.53.5_rc1",
+    "交付_0.53.5_rc2",
+    "交付_0.53.6_rc1",
+    "交付_0.53.6_rc2",
+    "交付_0.53.7_rc1",
+    "交付_0.53.8_rc1",
+    "交付_0.53.8_rc2",
+    "交付_0.53.9_rc1"
+  ],
+  "existing_release_files_sha256": {
+    "releases/0.53.9/rc1/SHA256.txt": "afb49c56fc992972d77bfb9617fdc09500f3bde9b1dbbc74ab87b4054cb192cc",
+    "releases/0.53.9/rc1/artifacts.json": "74bdf831a82cac567129e3f5adc71f4e9f0a84abbd286d559d20f25b31f8828d",
+    "releases/0.53.9/rc1/boundaries.json": "73a368a1a20fe6f1d7342adf018cde8d6ba457ca957e494bc13ac2436575d598",
+    "releases/0.53.9/rc1/build_info.json": "eea486d1d0689c07c3ee9684e7f32ce257fa89db1460baa71d8e13955c96ae8b",
+    "releases/0.53.9/rc1/exe-compatibility-01.json": "74c1b77b30c7beb98b17b6995906663706631ce6ccabed55c08bf29e770a328f",
+    "releases/0.53.9/rc1/exe-followup-01.json": "2849130e735dbdd078205c0352cedf50ddcc93b566d490f6e1f47037b922c68f",
+    "releases/0.53.9/rc1/exe-recovery-01.json": "f2a1d092d3c14760166f584c0c1b5b1df4f3a880643d89bce3177e93db373466",
+    "releases/0.53.9/rc1/failure-evidence.json": "fb8b41580b364b957eadcd2f77880f62d56b48938d8709311ee7a7b399198530",
+    "releases/0.53.9/rc1/performance-payment-receipt-jst.json": "6878ee467dba2e2e1e8672bcbdc1f74d63fa023bc4f4b7615e544aef02432f23",
+    "releases/0.53.9/rc1/performance-return-operations.json": "6b782a683430357b4a510524d83056878aee9b78dc06630968903720e0623da9",
+    "releases/0.53.9/rc1/regression.json": "2c891f2ce63db244ed5499f49914afd215d3c85c8a60aabe625a66d4614719f2",
+    "releases/0.53.9/rc1/source-manifest.json": "1183ec3df8ef15f709f26ede20a52fea3642daadb9dc65903523789de1524522",
+    "releases/0.53.9/rc1/交付报告.md": "a9350b88284c04022a7e72bcade175e1baa15d56d8e1b4f9c970333d0a2204db"
+  },
+  "git_index_empty": true,
+  "business_data_touched": false
+}

@@ -1,0 +1,37 @@
+[
+  {
+    "evidence": "targeted-01.json / targeted-process-01.log",
+    "kind": "验收装配错误",
+    "reason": "首版回归入口缺少子进程保护，签发测试启动的子进程重复装配了套件；加主入口保护后重新独立执行，最终330项通过。"
+  },
+  {
+    "evidence": "source-ui-01",
+    "kind": "已修复的恢复界面问题",
+    "reason": "恢复列表函数未接受通用后台任务传入的progress/cancel参数；已补齐，真实控件路径最终通过。"
+  },
+  {
+    "evidence": "source-ui-02",
+    "kind": "合成样本错误",
+    "reason": "测试付款样本漏必填单号，原校验正确拒绝；补齐样本，未放宽业务校验。"
+  },
+  {
+    "evidence": "comparison-01",
+    "kind": "测量环境缺少依赖",
+    "reason": "采样进程未找到已有psutil；显式引用隔离依赖后重跑。"
+  },
+  {
+    "evidence": "comparison-02",
+    "kind": "非最终性能证据",
+    "reason": "首版逐JSON token编码的检查点开销偏高，已改为按单/字段编码；该轮还因读取开发中的可变源码被一致性保护中止，不作为最终对照。"
+  },
+  {
+    "evidence": "visible-source-02 / targeted-03 / comparison-03 / comparison-return-01",
+    "kind": "最终通过证据",
+    "reason": "固定核心源码、独立目录和输入后重新完成；早期失败、日志和输入均未覆盖。"
+  },
+  {
+    "evidence": "final-check-01.json / final-check-02.json",
+    "kind": "终检脚本路径筛选错误",
+    "reason": "英文目录筛选未匹配中文手册，改为确切ZIP成员核验后通过；EXE及ZIP未因此改动。"
+  }
+]

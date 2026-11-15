@@ -77,3 +77,7 @@ releases/0.53.7/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-e
 releases/0.53.8/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 # The original interrupted unittest status line ends in a space; retain raw evidence.
 releases/0.53.7/rc1/initial-test-failure.log whitespace=-blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# Keep the recovery candidate's original Windows acceptance bytes and transcripts.
+releases/0.53.9/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.53.9/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
