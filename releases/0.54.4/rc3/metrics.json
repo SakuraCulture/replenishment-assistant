@@ -1,0 +1,74 @@
+{
+  "ample": {
+    "old": {
+      "runs": 2,
+      "completed": 2,
+      "failures": [],
+      "confirm_seconds": 139.9978024000011,
+      "export_seconds": 150.25217074999819,
+      "confirm_sampled_peak_private_mib": 3298.794921875,
+      "export_sampled_peak_private_mib": 3708.515625,
+      "signing_added_private_mib": 88.689453125
+    },
+    "new": {
+      "runs": 1,
+      "completed": 1,
+      "failures": [],
+      "confirm_seconds": 115.51125930005219,
+      "export_seconds": 143.92123420001008,
+      "confirm_sampled_peak_private_mib": 3321.76171875,
+      "export_sampled_peak_private_mib": 3711.3046875,
+      "signing_added_private_mib": 113.40234375
+    }
+  },
+  "tight": {
+    "old": {
+      "runs": 1,
+      "completed": 0,
+      "failures": [
+        {
+          "exception": "MemoryError",
+          "phase": "export",
+          "retained_orders": 17,
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\tools\\benchmark_adaptive_resources.py\", line 132, in child\n  File \"D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\baseline\\src\\normal_exports.py\", line 118, in export\n  File \"C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1112-611-0_26.1112.611.0_x64__3k8sg7r9htsxt\\dependencies\\python\\Lib\\site-packages\\openpyxl\\styles\\styleable.py\", line 26, in __set__\n    setattr(instance._style, self.key, coll.add(value))\n                                       ^^^^^^^^^^^^^^^\n  File \"C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1112-611-0_26.1112.611.0_x64__3k8sg7r9htsxt\\dependencies\\python\\Lib\\site-packages\\openpyxl\\utils\\indexed_list.py\", line 48, in add\n    self.append(value)\n  File \"C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1112-611-0_26.1112.611.0_x64__3k8sg7r9htsxt\\dependencies\\python\\Lib\\site-packages\\openpyxl\\utils\\indexed_list.py\", line 43, in append\n    if value not in self._dict:\n       ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1112-611-0_26.1112.611.0_x64__3k8sg7r9htsxt\\dependencies\\python\\Lib\\site-packages\\openpyxl\\descriptors\\serialisable.py\", line 212, in __hash__\n    return hash(tuple(fields))\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Program Files\\WindowsApps\\OpenAI.CodexPrimaryRuntime.v26-1112-611-0_26.1112.611.0_x64__3k8sg7r9htsxt\\dependencies\\python\\Lib\\site-packages\\openpyxl\\descriptors\\serialisable.py\", line 212, in __hash__\n    return hash(tuple(fields))\n           ^^^^^^^^^^^^^^^^^^^\nMemoryError\n"
+        }
+      ],
+      "confirm_seconds": 128.68055310001364,
+      "export_seconds": null,
+      "confirm_sampled_peak_private_mib": 3295.8515625,
+      "export_sampled_peak_private_mib": 3427.0
+    },
+    "new": {
+      "runs": 1,
+      "completed": 1,
+      "failures": [],
+      "confirm_seconds": 109.57828789995983,
+      "export_seconds": 174.6971174000064,
+      "confirm_sampled_peak_private_mib": 3247.62109375,
+      "export_sampled_peak_private_mib": 3327.4375,
+      "signing_added_private_mib": 38.09375
+    }
+  },
+  "occupied": {
+    "old": {
+      "runs": 1,
+      "completed": 1,
+      "failures": [],
+      "confirm_seconds": 127.9117099000141,
+      "export_seconds": 142.11623549996875,
+      "confirm_sampled_peak_private_mib": 3297.25390625,
+      "export_sampled_peak_private_mib": 3712.03515625,
+      "signing_added_private_mib": 86.90625
+    },
+    "new": {
+      "runs": 1,
+      "completed": 1,
+      "failures": [],
+      "confirm_seconds": 114.70527839998249,
+      "export_seconds": 148.2272545999731,
+      "confirm_sampled_peak_private_mib": 3322.8046875,
+      "export_sampled_peak_private_mib": 3710.5546875,
+      "signing_added_private_mib": 112.90625
+    }
+  }
+}

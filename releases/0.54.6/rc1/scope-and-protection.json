@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "changed_existing": [
+    "src/analytics_template_export.py",
+    "src/order_analytics_exports.py",
+    "src/order_lifecycle.py",
+    "src/version.json"
+  ],
+  "new_runtime_or_tests": [
+    "src/analytics_export_validation.py",
+    "tests/test_flow_speed.py"
+  ],
+  "measured_runtime_files": 468,
+  "preexisting_files_preserved": 1117,
+  "old_package_preserved": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.5_rc1\\补货助手_0.54.5_rc1_库存分配箱规向上规整.zip",
+  "head": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+  "index_unchanged": true,
+  "business_model_allocation_and_signing_preserved": true
+}

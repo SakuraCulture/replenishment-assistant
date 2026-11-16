@@ -1,0 +1,359 @@
+{
+  "passed": true,
+  "tests": 525,
+  "modules": [
+    {
+      "passed": true,
+      "module": "test_analytics_formula_cache",
+      "tests": 6,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_analytics_identifiers",
+      "tests": 16,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_analytics_lifecycle_scope",
+      "tests": 9,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_analytics_template_export",
+      "tests": 12,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_analytics_template_facts",
+      "tests": 10,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_analytics_template_integration",
+      "tests": 5,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_automation_analytics",
+      "tests": 6,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_deletion_lifecycle",
+      "tests": 18,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_flow_speed",
+      "tests": 17,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_global_crud_lifecycle",
+      "tests": 5,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst",
+      "tests": 31,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_batch_recovery",
+      "tests": 9,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_batch_recovery_ui",
+      "tests": 4,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_batches",
+      "tests": 16,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_carton_normalization",
+      "tests": 3,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_current_basis",
+      "tests": 12,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_payment",
+      "tests": 8,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_results",
+      "tests": 13,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_review",
+      "tests": 6,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_standby",
+      "tests": 4,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_stock_evidence",
+      "tests": 14,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_stock_evidence_ui",
+      "tests": 10,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_jst_ui",
+      "tests": 8,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_lifecycle",
+      "tests": 34,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_lifecycle_batch",
+      "tests": 10,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_lifecycle_comparison",
+      "tests": 14,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_lifecycle_duplicate_ui",
+      "tests": 9,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_lifecycle_duplicates",
+      "tests": 11,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_lifecycle_filter_explanation",
+      "tests": 11,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_lifecycle_followup_performance",
+      "tests": 10,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_lifecycle_performance",
+      "tests": 29,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_lifecycle_recovery",
+      "tests": 20,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_lifecycle_simple",
+      "tests": 9,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_operations_lifecycle",
+      "tests": 14,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_order_analytics",
+      "tests": 16,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_order_analytics_ui",
+      "tests": 8,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_payment_matching",
+      "tests": 17,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_payment_shop_names",
+      "tests": 15,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_warehouse_execution",
+      "tests": 8,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_warehouse_execution_delete",
+      "tests": 17,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_warehouse_execution_feedback",
+      "tests": 2,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_warehouse_execution_readers",
+      "tests": 16,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_warehouse_execution_scheduler",
+      "tests": 1,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    },
+    {
+      "passed": true,
+      "module": "test_warehouse_execution_ui",
+      "tests": 12,
+      "failures": [],
+      "errors": [],
+      "skipped": []
+    }
+  ],
+  "seconds": 231.875
+}

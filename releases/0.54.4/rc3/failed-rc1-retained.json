@@ -1,0 +1,8 @@
+{
+  "retained": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.4_rc1\\补货助手\\补货助手.exe": "31f69513052e66cdcbf543574b48d453bad5c75b7a22caf5bc0f6c45b19bd8bb",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.4_rc1\\source-manifest.json": "4c401f421a676e97a8a97392fe654622c32d77a13eb602505cc3cc8fd019041a",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-01\\acceptance.json": "df461d8c03cf377990f9645c0b8eeaa687f1239add966e5cc6cf01ee96669308"
+  },
+  "reason": "Actual formal export omitted adaptive I/O marker; source algorithm test passed, real tight full EXE test exposed missing wiring; orders committed, no files generated, application exited normally"
+}

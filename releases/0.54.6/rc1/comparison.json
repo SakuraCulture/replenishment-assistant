@@ -1,0 +1,1181 @@
+{
+  "passed": true,
+  "baseline": "0.54.5 rc1",
+  "candidate": "0.54.6 candidate-01",
+  "default_workers": 2,
+  "repeats": 2,
+  "flow_shape": {
+    "stores": 4,
+    "skus_per_store": 2500,
+    "warehouse_orders": 8,
+    "sku_warehouse_rows": 10000,
+    "operations": 38
+  },
+  "totals_of_tested_operations": {
+    "old": 154.3871578000253,
+    "new": 117.772077349975
+  },
+  "total_faster_percent": 23.716402952036404,
+  "phases": {
+    "01_input_read_prepare": {
+      "old": {
+        "seconds": 3.316595349984709,
+        "process_tree_cpu_seconds": 4.9765625,
+        "peak_private_commit_mib": 2454.541015625,
+        "peak_rss_sum_mib": 189.68359375,
+        "process_read_mib": 29.574585437774658,
+        "process_write_mib": 1.5429363250732422,
+        "seconds_samples": [
+          3.2867957999696955,
+          3.346394899999723
+        ]
+      },
+      "new": {
+        "seconds": 3.4660175500030164,
+        "process_tree_cpu_seconds": 5.296875,
+        "peak_private_commit_mib": 2451.392578125,
+        "peak_rss_sum_mib": 186.34375,
+        "process_read_mib": 29.42900562286377,
+        "process_write_mib": 1.0310883522033691,
+        "seconds_samples": [
+          3.480713500001002,
+          3.4513216000050306
+        ]
+      },
+      "faster_percent": -4.505288835401524
+    },
+    "02_calculate_default_2_workers": {
+      "old": {
+        "seconds": 3.2094982499838807,
+        "process_tree_cpu_seconds": 5.7578125,
+        "peak_private_commit_mib": 2598.1171875,
+        "peak_rss_sum_mib": 332.546875,
+        "process_read_mib": 41.611947536468506,
+        "process_write_mib": 16.889148712158203,
+        "seconds_samples": [
+          3.1621336999814957,
+          3.2568627999862656
+        ]
+      },
+      "new": {
+        "seconds": 3.22775720001664,
+        "process_tree_cpu_seconds": 6.0234375,
+        "peak_private_commit_mib": 2600.462890625,
+        "peak_rss_sum_mib": 334.68359375,
+        "process_read_mib": 41.61286163330078,
+        "process_write_mib": 16.88922357559204,
+        "seconds_samples": [
+          3.3084101999993436,
+          3.1471042000339366
+        ]
+      },
+      "faster_percent": -0.5689035671806695
+    },
+    "03_draft_save_with_process_ipc": {
+      "old": {
+        "seconds": 2.696329850004986,
+        "process_tree_cpu_seconds": 2.640625,
+        "peak_private_commit_mib": 1923.779296875,
+        "peak_rss_sum_mib": 415.638671875,
+        "process_read_mib": 34.66064739227295,
+        "process_write_mib": 24.146708011627197,
+        "seconds_samples": [
+          2.690299700014293,
+          2.7023599999956787
+        ]
+      },
+      "new": {
+        "seconds": 2.7838839500036556,
+        "process_tree_cpu_seconds": 2.8046875,
+        "peak_private_commit_mib": 1923.115234375,
+        "peak_rss_sum_mib": 415.138671875,
+        "process_read_mib": 34.592580795288086,
+        "process_write_mib": 23.46519899368286,
+        "seconds_samples": [
+          2.9162457999773324,
+          2.651522100029979
+        ]
+      },
+      "faster_percent": -3.2471583548469707
+    },
+    "03b_draft_unchanged_save_with_process_ipc": {
+      "old": {
+        "seconds": 2.370251649990678,
+        "process_tree_cpu_seconds": 2.5390625,
+        "peak_private_commit_mib": 1922.513671875,
+        "peak_rss_sum_mib": 414.625,
+        "process_read_mib": 34.568161964416504,
+        "process_write_mib": 23.403778076171875,
+        "seconds_samples": [
+          2.29020639997907,
+          2.450296900002286
+        ]
+      },
+      "new": {
+        "seconds": 2.509756150015164,
+        "process_tree_cpu_seconds": 2.71875,
+        "peak_private_commit_mib": 1922.685546875,
+        "peak_rss_sum_mib": 414.576171875,
+        "process_read_mib": 34.56869602203369,
+        "process_write_mib": 23.40381622314453,
+        "seconds_samples": [
+          2.588873100001365,
+          2.4306392000289634
+        ]
+      },
+      "faster_percent": -5.8856408780491725
+    },
+    "04_sign_prepare_with_process_ipc": {
+      "old": {
+        "seconds": 1.8976215000147931,
+        "process_tree_cpu_seconds": 2.046875,
+        "peak_private_commit_mib": 1924.23828125,
+        "peak_rss_sum_mib": 416.51171875,
+        "process_read_mib": 34.79903984069824,
+        "process_write_mib": 23.426864624023438,
+        "seconds_samples": [
+          2.0089755000080913,
+          1.786267500021495
+        ]
+      },
+      "new": {
+        "seconds": 1.9867160999856424,
+        "process_tree_cpu_seconds": 2.1328125,
+        "peak_private_commit_mib": 1924.00390625,
+        "peak_rss_sum_mib": 416.2421875,
+        "process_read_mib": 34.79422426223755,
+        "process_write_mib": 23.426865577697754,
+        "seconds_samples": [
+          1.9997973999707028,
+          1.973634800000582
+        ]
+      },
+      "faster_percent": -4.69506695461422
+    },
+    "05_sign_commit_export_with_process_ipc": {
+      "old": {
+        "seconds": 12.408728849986801,
+        "process_tree_cpu_seconds": 13.6875,
+        "peak_private_commit_mib": 1929.1015625,
+        "peak_rss_sum_mib": 421.8984375,
+        "process_read_mib": 18.18385934829712,
+        "process_write_mib": 15.447606086730957,
+        "seconds_samples": [
+          12.418967799982056,
+          12.398489899991546
+        ]
+      },
+      "new": {
+        "seconds": 12.512406949972501,
+        "process_tree_cpu_seconds": 13.59375,
+        "peak_private_commit_mib": 1928.794921875,
+        "peak_rss_sum_mib": 421.62890625,
+        "process_read_mib": 18.1839656829834,
+        "process_write_mib": 15.447525978088379,
+        "seconds_samples": [
+          12.630845299980137,
+          12.393968599964865
+        ]
+      },
+      "faster_percent": -0.835525550111528
+    },
+    "06_list_cold": {
+      "old": {
+        "seconds": 2.824512249993859,
+        "process_tree_cpu_seconds": 2.671875,
+        "peak_private_commit_mib": 1014.15234375,
+        "peak_rss_sum_mib": 264.2890625,
+        "process_read_mib": 1.7060256004333496,
+        "process_write_mib": 0.036528587341308594,
+        "seconds_samples": [
+          2.7833935999660753,
+          2.8656309000216424
+        ]
+      },
+      "new": {
+        "seconds": 2.82287920001545,
+        "process_tree_cpu_seconds": 2.7421875,
+        "peak_private_commit_mib": 1017.80859375,
+        "peak_rss_sum_mib": 267.53515625,
+        "process_read_mib": 1.7060446739196777,
+        "process_write_mib": 0.036528587341308594,
+        "seconds_samples": [
+          2.792178600037005,
+          2.853579799993895
+        ]
+      },
+      "faster_percent": 0.05781706127889914
+    },
+    "06_list_warm": {
+      "old": {
+        "seconds": 0.01736944998265244,
+        "process_tree_cpu_seconds": 0.03125,
+        "peak_private_commit_mib": 976.0625,
+        "peak_rss_sum_mib": 226.044921875,
+        "process_read_mib": 0.3174171447753906,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          0.01948169997194782,
+          0.015257199993357062
+        ]
+      },
+      "new": {
+        "seconds": 0.01607400001375936,
+        "process_tree_cpu_seconds": 0.0234375,
+        "peak_private_commit_mib": 974.544921875,
+        "peak_rss_sum_mib": 225.095703125,
+        "process_read_mib": 0.3174171447753906,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          0.015545400034170598,
+          0.01660259999334812
+        ]
+      },
+      "faster_percent": 7.45820950108897
+    },
+    "07_load_lifecycle_targets": {
+      "old": {
+        "seconds": 3.022055699984776,
+        "process_tree_cpu_seconds": 2.859375,
+        "peak_private_commit_mib": 1021.9453125,
+        "peak_rss_sum_mib": 271.900390625,
+        "process_read_mib": 2.2087111473083496,
+        "process_write_mib": 0.0005173683166503906,
+        "seconds_samples": [
+          3.040412699978333,
+          3.0036986999912187
+        ]
+      },
+      "new": {
+        "seconds": 3.087936449999688,
+        "process_tree_cpu_seconds": 2.9609375,
+        "peak_private_commit_mib": 1021.7109375,
+        "peak_rss_sum_mib": 271.681640625,
+        "process_read_mib": 2.2087111473083496,
+        "process_write_mib": 0.000461578369140625,
+        "seconds_samples": [
+          3.218733899993822,
+          2.9571390000055544
+        ]
+      },
+      "faster_percent": -2.179997874137271
+    },
+    "08_return_file_read": {
+      "old": {
+        "seconds": 1.782744600030128,
+        "process_tree_cpu_seconds": 1.7265625,
+        "peak_private_commit_mib": 991.3046875,
+        "peak_rss_sum_mib": 240.56640625,
+        "process_read_mib": 1.9413094520568848,
+        "process_write_mib": 0.0003867149353027344,
+        "seconds_samples": [
+          1.8025692000519484,
+          1.7629200000083074
+        ]
+      },
+      "new": {
+        "seconds": 1.8200779000180773,
+        "process_tree_cpu_seconds": 1.7265625,
+        "peak_private_commit_mib": 991.2578125,
+        "peak_rss_sum_mib": 241.80078125,
+        "process_read_mib": 1.9413237571716309,
+        "process_write_mib": 0.00038623809814453125,
+        "seconds_samples": [
+          1.8526316999923438,
+          1.787524100043811
+        ]
+      },
+      "faster_percent": -2.0941474167033522
+    },
+    "08_return_prepare": {
+      "old": {
+        "seconds": 6.565304150019074,
+        "process_tree_cpu_seconds": 6.328125,
+        "peak_private_commit_mib": 1038.50390625,
+        "peak_rss_sum_mib": 288.033203125,
+        "process_read_mib": 3.8920159339904785,
+        "process_write_mib": 0.0010890960693359375,
+        "seconds_samples": [
+          6.529860500013456,
+          6.600747800024692
+        ]
+      },
+      "new": {
+        "seconds": 3.6542472500004806,
+        "process_tree_cpu_seconds": 3.515625,
+        "peak_private_commit_mib": 1036.517578125,
+        "peak_rss_sum_mib": 286.23046875,
+        "process_read_mib": 3.5868592262268066,
+        "process_write_mib": 0.0006303787231445312,
+        "seconds_samples": [
+          3.7245811999891885,
+          3.5839133000117727
+        ]
+      },
+      "faster_percent": 44.340015839329176
+    },
+    "08_return_confirmed_save": {
+      "old": {
+        "seconds": 0.453690149995964,
+        "process_tree_cpu_seconds": 0.4296875,
+        "peak_private_commit_mib": 1061.734375,
+        "peak_rss_sum_mib": 311.279296875,
+        "process_read_mib": 1.0651764869689941,
+        "process_write_mib": 18.11183261871338,
+        "seconds_samples": [
+          0.46569520002231,
+          0.441685099969618
+        ]
+      },
+      "new": {
+        "seconds": 0.46542105003027245,
+        "process_tree_cpu_seconds": 0.4375,
+        "peak_private_commit_mib": 1067.705078125,
+        "peak_rss_sum_mib": 317.259765625,
+        "process_read_mib": 1.0653338432312012,
+        "process_write_mib": 18.111677646636963,
+        "seconds_samples": [
+          0.48245150002185255,
+          0.44839060003869236
+        ]
+      },
+      "faster_percent": -2.585663372769453
+    },
+    "09_operations_file_read": {
+      "old": {
+        "seconds": 1.8666076499794144,
+        "process_tree_cpu_seconds": 1.75,
+        "peak_private_commit_mib": 1012.52734375,
+        "peak_rss_sum_mib": 261.89453125,
+        "process_read_mib": 1.9305658340454102,
+        "process_write_mib": 0.00041103363037109375,
+        "seconds_samples": [
+          1.8976121000014246,
+          1.8356031999574043
+        ]
+      },
+      "new": {
+        "seconds": 1.9463046000164468,
+        "process_tree_cpu_seconds": 1.8125,
+        "peak_private_commit_mib": 1009.1953125,
+        "peak_rss_sum_mib": 258.583984375,
+        "process_read_mib": 1.9305706024169922,
+        "process_write_mib": 0.00047397613525390625,
+        "seconds_samples": [
+          1.982951000041794,
+          1.9096581999910995
+        ]
+      },
+      "faster_percent": -4.269614454752251
+    },
+    "09_operations_prepare": {
+      "old": {
+        "seconds": 6.976128399983281,
+        "process_tree_cpu_seconds": 6.765625,
+        "peak_private_commit_mib": 1042.984375,
+        "peak_rss_sum_mib": 292.765625,
+        "process_read_mib": 21.40640687942505,
+        "process_write_mib": 0.0013914108276367188,
+        "seconds_samples": [
+          7.0508924999739975,
+          6.901364299992565
+        ]
+      },
+      "new": {
+        "seconds": 4.043643950019032,
+        "process_tree_cpu_seconds": 3.859375,
+        "peak_private_commit_mib": 1040.84375,
+        "peak_rss_sum_mib": 290.958984375,
+        "process_read_mib": 21.101250171661377,
+        "process_write_mib": 0.0007376670837402344,
+        "seconds_samples": [
+          4.111580300028436,
+          3.9757076000096276
+        ]
+      },
+      "faster_percent": 42.03598732459221
+    },
+    "09_operations_confirmed_save": {
+      "old": {
+        "seconds": 0.5012689499999397,
+        "process_tree_cpu_seconds": 0.515625,
+        "peak_private_commit_mib": 1071.111328125,
+        "peak_rss_sum_mib": 321.380859375,
+        "process_read_mib": 17.97235870361328,
+        "process_write_mib": 17.99739122390747,
+        "seconds_samples": [
+          0.5135464000049978,
+          0.48899149999488145
+        ]
+      },
+      "new": {
+        "seconds": 0.478282299998682,
+        "process_tree_cpu_seconds": 0.4609375,
+        "peak_private_commit_mib": 1062.09765625,
+        "peak_rss_sum_mib": 312.41796875,
+        "process_read_mib": 17.972359657287598,
+        "process_write_mib": 17.997082710266113,
+        "seconds_samples": [
+          0.4678219999768771,
+          0.48874260002048686
+        ]
+      },
+      "faster_percent": 4.585691972594836
+    },
+    "09b_operations_natural_adopt_recheck": {
+      "old": {
+        "seconds": 2.477459049987374,
+        "process_tree_cpu_seconds": 2.3515625,
+        "peak_private_commit_mib": 1032.55859375,
+        "peak_rss_sum_mib": 282.75,
+        "process_read_mib": 85.64188766479492,
+        "process_write_mib": 0.0004420280456542969,
+        "seconds_samples": [
+          2.501273499976378,
+          2.45364459999837
+        ]
+      },
+      "new": {
+        "seconds": 2.4577347500016913,
+        "process_tree_cpu_seconds": 2.3984375,
+        "peak_private_commit_mib": 1032.017578125,
+        "peak_rss_sum_mib": 282.3671875,
+        "process_read_mib": 85.64188766479492,
+        "process_write_mib": 0.0004425048828125,
+        "seconds_samples": [
+          2.4563228000188246,
+          2.459146699984558
+        ]
+      },
+      "faster_percent": 0.7961503939200575
+    },
+    "09c_operations_export": {
+      "old": {
+        "seconds": 3.833035049989121,
+        "process_tree_cpu_seconds": 3.7421875,
+        "peak_private_commit_mib": 1118.75,
+        "peak_rss_sum_mib": 367.701171875,
+        "process_read_mib": 36.46299886703491,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          3.869649500004016,
+          3.796420599974226
+        ]
+      },
+      "new": {
+        "seconds": 3.7918116500077303,
+        "process_tree_cpu_seconds": 3.671875,
+        "peak_private_commit_mib": 1119.189453125,
+        "peak_rss_sum_mib": 368.513671875,
+        "process_read_mib": 36.46301794052124,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          3.764439599995967,
+          3.8191837000194937
+        ]
+      },
+      "faster_percent": 1.075476729113335
+    },
+    "10_catalog_import_河北仓": {
+      "old": {
+        "seconds": 0.21066260000225157,
+        "process_tree_cpu_seconds": 0.2109375,
+        "peak_private_commit_mib": 1038.009765625,
+        "peak_rss_sum_mib": 287.548828125,
+        "process_read_mib": 0.3786964416503906,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          0.19587990001309663,
+          0.2254452999914065
+        ]
+      },
+      "new": {
+        "seconds": 0.21608969997032546,
+        "process_tree_cpu_seconds": 0.2265625,
+        "peak_private_commit_mib": 1041.578125,
+        "peak_rss_sum_mib": 290.619140625,
+        "process_read_mib": 0.3786954879760742,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          0.22709879995090887,
+          0.20508059998974204
+        ]
+      },
+      "faster_percent": -2.57620477864409
+    },
+    "10_catalog_save_河北仓": {
+      "old": {
+        "seconds": 0.07969440001761541,
+        "process_tree_cpu_seconds": 0.09375,
+        "peak_private_commit_mib": 1041.66796875,
+        "peak_rss_sum_mib": 291.462890625,
+        "process_read_mib": 0.021871566772460938,
+        "process_write_mib": 2.2615575790405273,
+        "seconds_samples": [
+          0.07374090002849698,
+          0.08564790000673383
+        ]
+      },
+      "new": {
+        "seconds": 0.07525779999559745,
+        "process_tree_cpu_seconds": 0.078125,
+        "peak_private_commit_mib": 1045.47265625,
+        "peak_rss_sum_mib": 294.72265625,
+        "process_read_mib": 0.021890640258789062,
+        "process_write_mib": 2.2615575790405273,
+        "seconds_samples": [
+          0.07333610003115609,
+          0.07717949996003881
+        ]
+      },
+      "faster_percent": 5.567016027521762
+    },
+    "10_catalog_import_山东仓": {
+      "old": {
+        "seconds": 0.24444614999811165,
+        "process_tree_cpu_seconds": 0.25,
+        "peak_private_commit_mib": 1040.6796875,
+        "peak_rss_sum_mib": 290.486328125,
+        "process_read_mib": 0.3786964416503906,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          0.2828343999572098,
+          0.20605790003901348
+        ]
+      },
+      "new": {
+        "seconds": 0.22676309998496436,
+        "process_tree_cpu_seconds": 0.234375,
+        "peak_private_commit_mib": 1044.357421875,
+        "peak_rss_sum_mib": 293.64453125,
+        "process_read_mib": 0.3786954879760742,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          0.2071274999761954,
+          0.24639869999373332
+        ]
+      },
+      "faster_percent": 7.23392453236997
+    },
+    "10_catalog_save_山东仓": {
+      "old": {
+        "seconds": 0.1036570000287611,
+        "process_tree_cpu_seconds": 0.09375,
+        "peak_private_commit_mib": 1041.486328125,
+        "peak_rss_sum_mib": 291.31640625,
+        "process_read_mib": 1.1307783126831055,
+        "process_write_mib": 2.2615575790405273,
+        "seconds_samples": [
+          0.09692040004301816,
+          0.11039360001450405
+        ]
+      },
+      "new": {
+        "seconds": 0.12823984998976812,
+        "process_tree_cpu_seconds": 0.125,
+        "peak_private_commit_mib": 1045.50390625,
+        "peak_rss_sum_mib": 294.779296875,
+        "process_read_mib": 1.1307783126831055,
+        "process_write_mib": 2.2615575790405273,
+        "seconds_samples": [
+          0.09581079997587949,
+          0.16066890000365674
+        ]
+      },
+      "faster_percent": -23.715571504274823
+    },
+    "11_stock_allocation_preview": {
+      "old": {
+        "seconds": 1.6156111000163946,
+        "process_tree_cpu_seconds": 1.515625,
+        "peak_private_commit_mib": 1056.5390625,
+        "peak_rss_sum_mib": 306.34765625,
+        "process_read_mib": 53.68958282470703,
+        "process_write_mib": 0.00011920928955078125,
+        "seconds_samples": [
+          1.5608533000340685,
+          1.6703688999987207
+        ]
+      },
+      "new": {
+        "seconds": 1.6909250999742653,
+        "process_tree_cpu_seconds": 1.65625,
+        "peak_private_commit_mib": 1061.998046875,
+        "peak_rss_sum_mib": 311.357421875,
+        "process_read_mib": 53.68958282470703,
+        "process_write_mib": 0.00011920928955078125,
+        "seconds_samples": [
+          1.5575069999904372,
+          1.8243431999580935
+        ]
+      },
+      "faster_percent": -4.661641651082147
+    },
+    "12_stock_allocation_confirm": {
+      "old": {
+        "seconds": 2.975712450017454,
+        "process_tree_cpu_seconds": 2.8671875,
+        "peak_private_commit_mib": 1097.859375,
+        "peak_rss_sum_mib": 348.349609375,
+        "process_read_mib": 72.85598373413086,
+        "process_write_mib": 23.1114501953125,
+        "seconds_samples": [
+          2.9057127000414766,
+          3.0457121999934316
+        ]
+      },
+      "new": {
+        "seconds": 2.920520599989686,
+        "process_tree_cpu_seconds": 2.84375,
+        "peak_private_commit_mib": 1101.20703125,
+        "peak_rss_sum_mib": 351.46484375,
+        "process_read_mib": 72.85402965545654,
+        "process_write_mib": 23.093864917755127,
+        "seconds_samples": [
+          2.8799351999768987,
+          2.9611060000024736
+        ]
+      },
+      "faster_percent": 1.854744063978501
+    },
+    "13_jst_export": {
+      "old": {
+        "seconds": 2.076708900014637,
+        "process_tree_cpu_seconds": 1.7578125,
+        "peak_private_commit_mib": 1055.23828125,
+        "peak_rss_sum_mib": 305.82421875,
+        "process_read_mib": 64.88801097869873,
+        "process_write_mib": 2.6301164627075195,
+        "seconds_samples": [
+          1.9355362000060268,
+          2.2178816000232473
+        ]
+      },
+      "new": {
+        "seconds": 1.9857720999862067,
+        "process_tree_cpu_seconds": 1.7421875,
+        "peak_private_commit_mib": 1056.958984375,
+        "peak_rss_sum_mib": 307.201171875,
+        "process_read_mib": 64.88801002502441,
+        "process_write_mib": 2.6301145553588867,
+        "seconds_samples": [
+          1.9907817000057548,
+          1.9807624999666587
+        ]
+      },
+      "faster_percent": 4.378890080732516
+    },
+    "14_jst_lock": {
+      "old": {
+        "seconds": 0.8940738999808673,
+        "process_tree_cpu_seconds": 0.859375,
+        "peak_private_commit_mib": 1052.564453125,
+        "peak_rss_sum_mib": 303.158203125,
+        "process_read_mib": 44.12563610076904,
+        "process_write_mib": 0.039702415466308594,
+        "seconds_samples": [
+          0.8787034999695607,
+          0.9094442999921739
+        ]
+      },
+      "new": {
+        "seconds": 0.9337128500046674,
+        "process_tree_cpu_seconds": 0.8984375,
+        "peak_private_commit_mib": 1054.09765625,
+        "peak_rss_sum_mib": 304.359375,
+        "process_read_mib": 44.12563610076904,
+        "process_write_mib": 0.039702415466308594,
+        "seconds_samples": [
+          0.9168317000148818,
+          0.950593999994453
+        ]
+      },
+      "faster_percent": -4.433520542837497
+    },
+    "15_payment_natural_prepare": {
+      "old": {
+        "seconds": 4.680599949992029,
+        "process_tree_cpu_seconds": 4.375,
+        "peak_private_commit_mib": 1067.546875,
+        "peak_rss_sum_mib": 318.171875,
+        "process_read_mib": 89.54779767990112,
+        "process_write_mib": 0.00080108642578125,
+        "seconds_samples": [
+          4.641925700008869,
+          4.719274199975189
+        ]
+      },
+      "new": {
+        "seconds": 4.518817949981894,
+        "process_tree_cpu_seconds": 4.4453125,
+        "peak_private_commit_mib": 1068.26171875,
+        "peak_rss_sum_mib": 318.904296875,
+        "process_read_mib": 89.54779767990112,
+        "process_write_mib": 0.0008006095886230469,
+        "seconds_samples": [
+          4.521361599967349,
+          4.516274299996439
+        ]
+      },
+      "faster_percent": 3.4564372460502666
+    },
+    "16_payment_file_read": {
+      "old": {
+        "seconds": 2.073585150006693,
+        "process_tree_cpu_seconds": 1.9453125,
+        "peak_private_commit_mib": 1044.396484375,
+        "peak_rss_sum_mib": 294.244140625,
+        "process_read_mib": 2.0270323753356934,
+        "process_write_mib": 0.00045108795166015625,
+        "seconds_samples": [
+          2.0879177000024356,
+          2.05925260001095
+        ]
+      },
+      "new": {
+        "seconds": 1.9262391499942169,
+        "process_tree_cpu_seconds": 1.734375,
+        "peak_private_commit_mib": 1047.77734375,
+        "peak_rss_sum_mib": 298.447265625,
+        "process_read_mib": 2.0270299911499023,
+        "process_write_mib": 0.00045108795166015625,
+        "seconds_samples": [
+          1.8658152999705635,
+          1.9866630000178702
+        ]
+      },
+      "faster_percent": 7.105857216039594
+    },
+    "16_payment_prepare": {
+      "old": {
+        "seconds": 7.402129150024848,
+        "process_tree_cpu_seconds": 7.0703125,
+        "peak_private_commit_mib": 1067.92578125,
+        "peak_rss_sum_mib": 318.572265625,
+        "process_read_mib": 38.53146409988403,
+        "process_write_mib": 0.0014410018920898438,
+        "seconds_samples": [
+          7.1357431000215,
+          7.668515200028196
+        ]
+      },
+      "new": {
+        "seconds": 4.389587699988624,
+        "process_tree_cpu_seconds": 4.1875,
+        "peak_private_commit_mib": 1067.546875,
+        "peak_rss_sum_mib": 318.236328125,
+        "process_read_mib": 38.22628831863403,
+        "process_write_mib": 0.000827789306640625,
+        "seconds_samples": [
+          4.294246999954339,
+          4.484928400022909
+        ]
+      },
+      "faster_percent": 40.6983097562694
+    },
+    "16_payment_confirmed_save": {
+      "old": {
+        "seconds": 0.5492865999694914,
+        "process_tree_cpu_seconds": 0.5390625,
+        "peak_private_commit_mib": 1096.884765625,
+        "peak_rss_sum_mib": 347.59765625,
+        "process_read_mib": 34.91352701187134,
+        "process_write_mib": 17.938220024108887,
+        "seconds_samples": [
+          0.5587669999804348,
+          0.539806199958548
+        ]
+      },
+      "new": {
+        "seconds": 0.5589016000158153,
+        "process_tree_cpu_seconds": 0.546875,
+        "peak_private_commit_mib": 1090.9921875,
+        "peak_rss_sum_mib": 341.6015625,
+        "process_read_mib": 34.91352653503418,
+        "process_write_mib": 17.93854856491089,
+        "seconds_samples": [
+          0.548687800008338,
+          0.5691154000232928
+        ]
+      },
+      "faster_percent": -1.750452322495765
+    },
+    "17_purchase_freeze": {
+      "old": {
+        "seconds": 4.37834464997286,
+        "process_tree_cpu_seconds": 4.09375,
+        "peak_private_commit_mib": 1071.921875,
+        "peak_rss_sum_mib": 322.142578125,
+        "process_read_mib": 53.81057786941528,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          4.314886399952229,
+          4.44180289999349
+        ]
+      },
+      "new": {
+        "seconds": 4.530277749989182,
+        "process_tree_cpu_seconds": 4.1953125,
+        "peak_private_commit_mib": 1078.419921875,
+        "peak_rss_sum_mib": 328.875,
+        "process_read_mib": 53.81057786941528,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          4.504753299988806,
+          4.555802199989557
+        ]
+      },
+      "faster_percent": -3.4701037072827003
+    },
+    "18_purchase_final_validation_local": {
+      "old": {
+        "seconds": 4.175305350043345,
+        "process_tree_cpu_seconds": 4.078125,
+        "peak_private_commit_mib": 1088.38671875,
+        "peak_rss_sum_mib": 339.021484375,
+        "process_read_mib": 53.87319993972778,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          4.1429563000565395,
+          4.207654400030151
+        ]
+      },
+      "new": {
+        "seconds": 4.224337499996182,
+        "process_tree_cpu_seconds": 4.0703125,
+        "peak_private_commit_mib": 1092.19921875,
+        "peak_rss_sum_mib": 342.80859375,
+        "process_read_mib": 53.87319993972778,
+        "process_write_mib": 0.0,
+        "seconds_samples": [
+          4.198248300002888,
+          4.250426699989475
+        ]
+      },
+      "faster_percent": -1.1743368650229933
+    },
+    "19_receipt_file_read": {
+      "old": {
+        "seconds": 1.8158967000199482,
+        "process_tree_cpu_seconds": 1.734375,
+        "peak_private_commit_mib": 1060.99609375,
+        "peak_rss_sum_mib": 311.919921875,
+        "process_read_mib": 1.9282269477844238,
+        "process_write_mib": 0.0003457069396972656,
+        "seconds_samples": [
+          1.796030100027565,
+          1.8357633000123315
+        ]
+      },
+      "new": {
+        "seconds": 1.8936469000182115,
+        "process_tree_cpu_seconds": 1.71875,
+        "peak_private_commit_mib": 1069.455078125,
+        "peak_rss_sum_mib": 320.111328125,
+        "process_read_mib": 1.9282269477844238,
+        "process_write_mib": 0.00040721893310546875,
+        "seconds_samples": [
+          1.919560000009369,
+          1.8677338000270538
+        ]
+      },
+      "faster_percent": -4.281642232039364
+    },
+    "19_receipt_prepare": {
+      "old": {
+        "seconds": 7.893645300006028,
+        "process_tree_cpu_seconds": 7.5703125,
+        "peak_private_commit_mib": 1086.775390625,
+        "peak_rss_sum_mib": 337.537109375,
+        "process_read_mib": 55.56295824050903,
+        "process_write_mib": 0.0016183853149414062,
+        "seconds_samples": [
+          8.01165120000951,
+          7.775639400002547
+        ]
+      },
+      "new": {
+        "seconds": 4.876613049971638,
+        "process_tree_cpu_seconds": 4.6171875,
+        "peak_private_commit_mib": 1090.228515625,
+        "peak_rss_sum_mib": 340.796875,
+        "process_read_mib": 55.25778245925903,
+        "process_write_mib": 0.0009131431579589844,
+        "seconds_samples": [
+          4.887777699972503,
+          4.865448399970774
+        ]
+      },
+      "faster_percent": 38.221026349284855
+    },
+    "19_receipt_confirmed_save": {
+      "old": {
+        "seconds": 0.655877449986292,
+        "process_tree_cpu_seconds": 0.6328125,
+        "peak_private_commit_mib": 1110.341796875,
+        "peak_rss_sum_mib": 361.0390625,
+        "process_read_mib": 51.944547176361084,
+        "process_write_mib": 17.795854568481445,
+        "seconds_samples": [
+          0.6948481000144966,
+          0.6169067999580875
+        ]
+      },
+      "new": {
+        "seconds": 0.6045600500074215,
+        "process_tree_cpu_seconds": 0.6328125,
+        "peak_private_commit_mib": 1113.7578125,
+        "peak_rss_sum_mib": 364.365234375,
+        "process_read_mib": 51.944547176361084,
+        "process_write_mib": 17.795662879943848,
+        "seconds_samples": [
+          0.5885173999704421,
+          0.620602700044401
+        ]
+      },
+      "faster_percent": 7.824236064213379
+    },
+    "20_analytics_query": {
+      "old": {
+        "seconds": 6.114485800004331,
+        "process_tree_cpu_seconds": 5.9140625,
+        "peak_private_commit_mib": 1158.130859375,
+        "peak_rss_sum_mib": 408.103515625,
+        "process_read_mib": 88.34592294692993,
+        "process_write_mib": 0.00080108642578125,
+        "seconds_samples": [
+          6.375998399977107,
+          5.852973200031556
+        ]
+      },
+      "new": {
+        "seconds": 5.867532149975887,
+        "process_tree_cpu_seconds": 5.609375,
+        "peak_private_commit_mib": 1159.529296875,
+        "peak_rss_sum_mib": 409.9609375,
+        "process_read_mib": 88.34211206436157,
+        "process_write_mib": 0.0008029937744140625,
+        "seconds_samples": [
+          5.857900799950585,
+          5.877163500001188
+        ]
+      },
+      "faster_percent": 4.038829398021824
+    },
+    "21_analytics_summary_export": {
+      "old": {
+        "seconds": 11.995647300034761,
+        "process_tree_cpu_seconds": 11.2578125,
+        "peak_private_commit_mib": 1248.63671875,
+        "peak_rss_sum_mib": 497.107421875,
+        "process_read_mib": 178.4751739501953,
+        "process_write_mib": 0.3362612724304199,
+        "seconds_samples": [
+          12.36804840003606,
+          11.623246200033464
+        ]
+      },
+      "new": {
+        "seconds": 6.025805800018134,
+        "process_tree_cpu_seconds": 5.5390625,
+        "peak_private_commit_mib": 1247.001953125,
+        "peak_rss_sum_mib": 496.302734375,
+        "process_read_mib": 90.2900710105896,
+        "process_write_mib": 0.33551549911499023,
+        "seconds_samples": [
+          6.048382100008894,
+          6.003229500027373
+        ]
+      },
+      "faster_percent": 49.766730804091985
+    },
+    "22_analytics_detail_export": {
+      "old": {
+        "seconds": 32.36142444997677,
+        "process_tree_cpu_seconds": 30.328125,
+        "peak_private_commit_mib": 1266.95703125,
+        "peak_rss_sum_mib": 516.212890625,
+        "process_read_mib": 221.3208589553833,
+        "process_write_mib": 44.901038646698,
+        "seconds_samples": [
+          33.190153599949554,
+          31.53269530000398
+        ]
+      },
+      "new": {
+        "seconds": 13.22657739999704,
+        "process_tree_cpu_seconds": 12.34375,
+        "peak_private_commit_mib": 1261.021484375,
+        "peak_rss_sum_mib": 510.15234375,
+        "process_read_mib": 133.12610578536987,
+        "process_write_mib": 44.898892879486084,
+        "seconds_samples": [
+          13.159208500001114,
+          13.293946299992967
+        ]
+      },
+      "faster_percent": 59.128568581885965
+    },
+    "23_analytics_query_again": {
+      "old": {
+        "seconds": 5.871162600000389,
+        "process_tree_cpu_seconds": 5.6875,
+        "peak_private_commit_mib": 1250.962890625,
+        "peak_rss_sum_mib": 499.2578125,
+        "process_read_mib": 88.21077394485474,
+        "process_write_mib": 0.0009508132934570312,
+        "seconds_samples": [
+          5.959978699975181,
+          5.7823465000255965
+        ]
+      },
+      "new": {
+        "seconds": 5.88094825000735,
+        "process_tree_cpu_seconds": 5.609375,
+        "peak_private_commit_mib": 1262.29296875,
+        "peak_rss_sum_mib": 511.310546875,
+        "process_read_mib": 88.20686769485474,
+        "process_write_mib": 0.0009517669677734375,
+        "seconds_samples": [
+          5.829715700005181,
+          5.932180800009519
+        ]
+      },
+      "faster_percent": -0.16667312206547352
+    }
+  },
+  "targets": {
+    "lifecycle": {
+      "old": {
+        "passed": true,
+        "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.5_rc1\\source",
+        "kind": "lifecycle",
+        "rows": 20000,
+        "metrics": [
+          {
+            "phase": "lifecycle_prepare_20k",
+            "seconds": 7.223099900002126,
+            "cpu_seconds": 7.0,
+            "peak_private_mib": 1115.73046875,
+            "peak_rss_mib": 358.1015625,
+            "process_read_mib": 5.371805191040039,
+            "process_write_mib": 0.0
+          },
+          {
+            "phase": "lifecycle_save_20k",
+            "seconds": 0.8504235000000335,
+            "cpu_seconds": 0.8125,
+            "peak_private_mib": 1197.7890625,
+            "peak_rss_mib": 442.33984375,
+            "process_read_mib": 1.0252141952514648,
+            "process_write_mib": 36.02630615234375
+          }
+        ],
+        "synthetic": true,
+        "live_platform": false,
+        "data_version_calls": 40002,
+        "sql_statements": 40323,
+        "facts_sha256": "9a6ced3c9f90d1da70676a0ece639c6113d5c7bad3b4b745d6e77326631fe3c1",
+        "payload_rows": 20000,
+        "receipt": [
+          {
+            "number": "BH-20261116-SYN001-ZC-HB",
+            "stage": "return",
+            "version": 1,
+            "changed": true
+          }
+        ]
+      },
+      "new": {
+        "passed": true,
+        "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\candidate-01",
+        "kind": "lifecycle",
+        "rows": 20000,
+        "metrics": [
+          {
+            "phase": "lifecycle_prepare_20k",
+            "seconds": 2.486603000026662,
+            "cpu_seconds": 2.359375,
+            "peak_private_mib": 1113.73046875,
+            "peak_rss_mib": 356.65234375,
+            "process_read_mib": 4.761472702026367,
+            "process_write_mib": 0.0
+          },
+          {
+            "phase": "lifecycle_save_20k",
+            "seconds": 0.7900724000064656,
+            "cpu_seconds": 0.734375,
+            "peak_private_mib": 1197.14453125,
+            "peak_rss_mib": 441.765625,
+            "process_read_mib": 1.025350570678711,
+            "process_write_mib": 36.03182411193848
+          }
+        ],
+        "synthetic": true,
+        "live_platform": false,
+        "data_version_calls": 2,
+        "sql_statements": 323,
+        "facts_sha256": "9a6ced3c9f90d1da70676a0ece639c6113d5c7bad3b4b745d6e77326631fe3c1",
+        "payload_rows": 20000,
+        "receipt": [
+          {
+            "number": "BH-20261116-SYN001-ZC-HB",
+            "stage": "return",
+            "version": 1,
+            "changed": true
+          }
+        ]
+      }
+    },
+    "template": {
+      "old": {
+        "passed": true,
+        "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.5_rc1\\source",
+        "kind": "template",
+        "rows": 20000,
+        "metrics": [
+          {
+            "phase": "template_detail_20k",
+            "seconds": 36.74461260001408,
+            "cpu_seconds": 34.84375,
+            "peak_private_mib": 895.67578125,
+            "peak_rss_mib": 139.96484375,
+            "process_read_mib": 89.95857238769531,
+            "process_write_mib": 95.7692518234253
+          }
+        ],
+        "synthetic": true,
+        "live_platform": false,
+        "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\template-20k-old\\20k-SKU完整明细.xlsx"
+      },
+      "new": {
+        "passed": true,
+        "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\candidate-01",
+        "kind": "template",
+        "rows": 20000,
+        "metrics": [
+          {
+            "phase": "template_detail_20k",
+            "seconds": 13.580637100036256,
+            "cpu_seconds": 12.953125,
+            "peak_private_mib": 895.91015625,
+            "peak_rss_mib": 140.046875,
+            "process_read_mib": 89.95857238769531,
+            "process_write_mib": 95.76924800872803
+          }
+        ],
+        "synthetic": true,
+        "live_platform": false,
+        "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\template-20k-new\\20k-SKU完整明细.xlsx"
+      }
+    }
+  },
+  "business_equivalence": true,
+  "workbook_equivalence": true,
+  "notes": [
+    "38-operation sum includes alternative entries and repeated operations; not a single real-user workflow wait.",
+    "Two alternating local repeats, one 20k pair per target. No real platform or business-PC original data.",
+    "Private commit/RSS are sampled; process IO includes cache and does not equal physical disk traffic.",
+    "Input business clocks and reporting clock fixed identically; native/real business clocks are not modified."
+  ]
+}

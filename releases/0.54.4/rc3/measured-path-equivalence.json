@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "measured_candidate": "candidate-03",
+  "final_candidate": "candidate-05",
+  "unchanged_core": {
+    "adaptive_resources.py": {
+      "measured": "de597e03706c0cfbc0eea4f630219d127c186ce61aff1709140ab898f9ac20b6",
+      "final": "de597e03706c0cfbc0eea4f630219d127c186ce61aff1709140ab898f9ac20b6"
+    },
+    "encoding_store.py": {
+      "measured": "8208cd040073e2489237ed8a63f231ee06c2c68f29219bfed8b523919185b921",
+      "final": "8208cd040073e2489237ed8a63f231ee06c2c68f29219bfed8b523919185b921"
+    },
+    "normal_exports.py": {
+      "measured": "a49419d40ff1c36e14cc68fe90d202187f5ce7f3234faa9c3d244c33843843ee",
+      "final": "a49419d40ff1c36e14cc68fe90d202187f5ce7f3234faa9c3d244c33843843ee"
+    },
+    "storage_chunks.py": {
+      "measured": "e4d4197d4cfef6c6b296f7d9bbf53edacaf8f298737f031822d3a1c5a386f4f1",
+      "final": "e4d4197d4cfef6c6b296f7d9bbf53edacaf8f298737f031822d3a1c5a386f4f1"
+    },
+    "work_memory.py": {
+      "measured": "d335504509ad580ff3af3b335f13fac58c7c84cc1681e461d8203440cb555779",
+      "final": "d335504509ad580ff3af3b335f13fac58c7c84cc1681e461d8203440cb555779"
+    },
+    "signing_memory_fixture.py": {
+      "measured": "fd4ab5bd7ad48fb21ddbc90f5421a96b4376124af57a4973a6ab7c8f0c51a66a",
+      "final": "fd4ab5bd7ad48fb21ddbc90f5421a96b4376124af57a4973a6ab7c8f0c51a66a"
+    }
+  },
+  "signing_confirm_ast_identical": true,
+  "warehouse_reader_ast_identical_for_measured_export_view": true,
+  "later_fix": "Explicit export_io wiring in formal and archived exports; legacy full payload fingerprint validation retained",
+  "full_matrix_rerun_after_wiring": false,
+  "final_actual_exe_full_matrix_required": true,
+  "additional_production_optimization": "Worker-only consume after successful archive and recovery identity publication; default borrowed-input API unchanged; measured algorithm matrix retains input for validation. Final native frames record actual post-archive memory."
+}

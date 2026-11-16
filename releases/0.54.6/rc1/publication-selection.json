@@ -1,0 +1,145 @@
+{
+  "source_commit": "e10d6a3e93854d456ad4f97ce757c2684d77ccb7",
+  "initial_head": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+  "remote_main_before": "be7e0bacedf7e59c5439c3112ebaf506d16c1123",
+  "old_packages_verified": [
+    "0.54.3 rc1",
+    "0.54.4 rc3",
+    "0.54.5 rc1",
+    "0.54.6 rc1"
+  ],
+  "selected_evidence_copies": [
+    {
+      "path": "releases/0.54.5/rc1/regression-final-02.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\carton_ceiling_0545_20261116_01\\regression-final-02.json",
+      "sha256": "dd3c864f9e166eb83451f0d27935db3ff2ccf2a6f2b680d08284fc27334674fc"
+    },
+    {
+      "path": "releases/0.54.5/rc1/scope-and-protection.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\carton_ceiling_0545_20261116_01\\scope-and-protection.json",
+      "sha256": "226805fb9b91cb986580b2cd1640faca717facfc2f2902993a9faca390075fed"
+    },
+    {
+      "path": "releases/0.54.5/rc1/native-exe-01-result.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\carton_ceiling_0545_20261116_01\\native-exe-01\\result.json",
+      "sha256": "59b61e8c3d3318fb59c4cdac77d549b2e573388a44edb21e76568faabee06d78"
+    },
+    {
+      "path": "releases/0.54.5/rc1/build-report-rc1.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\carton_ceiling_0545_20261116_01\\build-report-rc1.json",
+      "sha256": "676aaad4924528aae02944118943104a9dcf635c8e9571c40b7aaf855cf705e0"
+    },
+    {
+      "path": "releases/0.54.5/rc1/build_info.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.5_rc1\\build_info.json",
+      "sha256": "9dd7f098ec9e2a9c1b6af845a42d5e50f18bc6a3ca411478b1a7f6ebb6143127"
+    },
+    {
+      "path": "releases/0.54.5/rc1/source-manifest.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.5_rc1\\source-manifest.json",
+      "sha256": "159a8e5be238b274710fb58f5560271c04faaf667aaee01f493925ece12f49af"
+    },
+    {
+      "path": "releases/0.54.6/rc1/regression-final.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\regression-final.json",
+      "sha256": "8930b5474f84e428eeef809df75f2c4006bce8b0bc3cd36ed6bfcce8cb5c7432"
+    },
+    {
+      "path": "releases/0.54.6/rc1/comparison.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\comparison.json",
+      "sha256": "55257850325aef42089ee046b9d9e4bea7f61b73bcafb9b44165c66a6283823d"
+    },
+    {
+      "path": "releases/0.54.6/rc1/workbook-comparisons.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\workbook-comparisons.json",
+      "sha256": "0dc13bb91ccdfb58181736c2cd6fd1bf437988d572bbdc699a81679098e72731"
+    },
+    {
+      "path": "releases/0.54.6/rc1/target-comparison.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\target-comparison.json",
+      "sha256": "f71a59b343996ea76447057674835be4e6c5b7d46c07691ba5077eef151dc5c7"
+    },
+    {
+      "path": "releases/0.54.6/rc1/scope-and-protection.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\scope-and-protection.json",
+      "sha256": "367c7ced2a7beaaeca390224a9bfe495eb7f3e20d7ca17f95c714e2a19e16439"
+    },
+    {
+      "path": "releases/0.54.6/rc1/native-result.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\native-result.json",
+      "sha256": "51806d9fa67ec07b219606b42ef396a9db5a7f56d065e2471c27871d84d2eb2a"
+    },
+    {
+      "path": "releases/0.54.6/rc1/build-report-rc1.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\build-report-rc1.json",
+      "sha256": "c206e36f62c358b06c9d4de3b367b440afecb64f4dfc21ac8fae4646fa8e8eaa"
+    },
+    {
+      "path": "releases/0.54.6/rc1/directed-01.log",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\directed-01.log",
+      "sha256": "564aaf2bc14a162e04cdd250f98d055dc13ea78fabc323806ac49bca919af0d0"
+    },
+    {
+      "path": "releases/0.54.6/rc1/directed-02.log",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\directed-02.log",
+      "sha256": "07261ce116f2ad162fe810a78289ea9fbb2987cb82ad9c66fc98b330f5df9f33"
+    },
+    {
+      "path": "releases/0.54.6/rc1/run_regression.py",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\run_regression.py",
+      "sha256": "ed9b70c2f3cb2cfa644824f4529716be6608443ee1a49ffad1bc1d03bebd089e"
+    },
+    {
+      "path": "releases/0.54.6/rc1/flow_worker.py",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\flow_worker.py",
+      "sha256": "4227e65e9d976e55127dac2b40016e15f41a6bfbc208a76504db473c7bc134b9"
+    },
+    {
+      "path": "releases/0.54.6/rc1/target_worker.py",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\target_worker.py",
+      "sha256": "fad2ac2333bcbf8ea4a28ebad8b2c9515ecbbe4a9ef38a27acfdad572565bdf0"
+    },
+    {
+      "path": "releases/0.54.6/rc1/run_comparison.py",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\run_comparison.py",
+      "sha256": "f6d211e13bf0f8ede99f8afce8b18243411f25ad44f8121e6ce1f1af6d8df24d"
+    },
+    {
+      "path": "releases/0.54.6/rc1/run_native.py",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\run_native.py",
+      "sha256": "691aa3d096a95fda126ad68406d530ef18920fda70d356276eeedf17c6f0d60a"
+    },
+    {
+      "path": "releases/0.54.6/rc1/build_snapshot.py",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\build_snapshot.py",
+      "sha256": "eed6ad8f9bc286133fc44f35dedc4f4d1bd8cc7d8b4e7f3564f26620e24a32ba"
+    },
+    {
+      "path": "releases/0.54.6/rc1/build_info.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.6_rc1\\build_info.json",
+      "sha256": "3223b8e15033a7c3c458509d80fb4602beaa920be3a467398a6fe3b0eb06b69d"
+    },
+    {
+      "path": "releases/0.54.6/rc1/source-manifest.json",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.6_rc1\\source-manifest.json",
+      "sha256": "6bddfdfa1b2d2ae58db420fe32230c173420863e3937e603d9fee558fa89dbb3"
+    },
+    {
+      "path": "releases/0.54.6/rc1/exercise-menu.png",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\native-analytics-01\\exercise-menu.png",
+      "sha256": "c63b81399a4726eeac454a7affb9a3280a377faf20a033e91b0eb45bae783220"
+    },
+    {
+      "path": "releases/0.54.6/rc1/exercise-saved-0.png",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\native-analytics-01\\exercise-saved-0.png",
+      "sha256": "1ab869f25cd476922fbf08bc327357f926e0f34b4ebbd399239974d36ca0ac74"
+    },
+    {
+      "path": "releases/0.54.6/rc1/reopen-menu.png",
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\native-analytics-01\\reopen-menu.png",
+      "sha256": "213120ff03e9ebd871c046214229f85e03c7e9cd708bc8052447ee5487be7d32"
+    }
+  ],
+  "binaries_and_business_data_excluded": true,
+  "runtime_bytes_identical": true
+}

@@ -1,0 +1,8 @@
+{
+  "retained": {
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.4_rc2\\补货助手\\补货助手.exe": "f75db08bb6dd1be9eebb3218d364caa7ef9e2eaa313e0cd5639ffb6422ffb728",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.4_rc2\\source-manifest.json": "2e455ef4482f7cf3dcfe8fcdaa0fea398211859fadb279dc6722618e7ed41c82",
+    "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-02\\acceptance.json": "fe84e0a1018fd420cedc3a6bc3525acce8e28d43552b04a624d1d396fcb78599"
+  },
+  "reason": "128MiB extra process quota: 16/17 exports survived; retained full worker input crowded final hash buffer; normal app exit, committed orders and existing files preserved"
+}

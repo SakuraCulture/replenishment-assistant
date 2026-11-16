@@ -1,0 +1,3098 @@
+{
+  "old": {
+    "passed": true,
+    "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\baseline",
+    "kind": "old",
+    "files": 17,
+    "rows_per_file": 20000,
+    "synthetic": true,
+    "live_platform": false,
+    "stages": [
+      {
+        "at": 348493.375,
+        "phase": "fixture",
+        "text": "冻结本批次草稿并检查所选门店…",
+        "working_bytes": 2556723200,
+        "peak_working_bytes": 2556723200,
+        "private_bytes": 3365281792,
+        "peak_private_bytes": 3365281792
+      },
+      {
+        "at": 348495.453,
+        "phase": "fixture",
+        "text": "核对门店 13/17：SYN013",
+        "working_bytes": 2556784640,
+        "peak_working_bytes": 2556784640,
+        "private_bytes": 3365281792,
+        "peak_private_bytes": 3365281792
+      },
+      {
+        "at": 348528.359,
+        "phase": "signing",
+        "text": "后台归档所选门店与完整来源（一次事务）…",
+        "working_bytes": 2557153280,
+        "peak_working_bytes": 2557153280,
+        "private_bytes": 3365281792,
+        "peak_private_bytes": 3365281792
+      },
+      {
+        "at": 348534.234,
+        "phase": "signing",
+        "text": "按内容块编码及校验完整快照…",
+        "working_bytes": 2557210624,
+        "peak_working_bytes": 2559287296,
+        "private_bytes": 3365281792,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348536.234,
+        "phase": "signing",
+        "text": "编码内容块：512/7,481；复用 17 块",
+        "working_bytes": 2557870080,
+        "peak_working_bytes": 2559287296,
+        "private_bytes": 3365171200,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348538.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 89.3 MiB；临时文件 8.2 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2558226432,
+        "peak_working_bytes": 2559287296,
+        "private_bytes": 3366219776,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348540.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 134.0 MiB；临时文件 11.6 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2558517248,
+        "peak_working_bytes": 2559287296,
+        "private_bytes": 3366219776,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348542.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 181.3 MiB；临时文件 14.4 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2558758912,
+        "peak_working_bytes": 2559287296,
+        "private_bytes": 3366219776,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348544.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 228.2 MiB；临时文件 17.2 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2558992384,
+        "peak_working_bytes": 2559287296,
+        "private_bytes": 3366219776,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348546.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 276.6 MiB；临时文件 19.6 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2559234048,
+        "peak_working_bytes": 2559287296,
+        "private_bytes": 3367272448,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348548.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 327.2 MiB；临时文件 21.2 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2559434752,
+        "peak_working_bytes": 2559434752,
+        "private_bytes": 3367272448,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348550.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 377.8 MiB；临时文件 22.7 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2559635456,
+        "peak_working_bytes": 2559635456,
+        "private_bytes": 3367272448,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348552.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 428.0 MiB；临时文件 24.2 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2559823872,
+        "peak_working_bytes": 2559823872,
+        "private_bytes": 3367272448,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348554.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 478.3 MiB；临时文件 25.6 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2560090112,
+        "peak_working_bytes": 2560090112,
+        "private_bytes": 3367272448,
+        "peak_private_bytes": 3367452672
+      },
+      {
+        "at": 348556.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 528.6 MiB；临时文件 27.1 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2560294912,
+        "peak_working_bytes": 2560294912,
+        "private_bytes": 3368321024,
+        "peak_private_bytes": 3368321024
+      },
+      {
+        "at": 348558.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 568.5 MiB；临时文件 31.9 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2560380928,
+        "peak_working_bytes": 2560380928,
+        "private_bytes": 3368321024,
+        "peak_private_bytes": 3368321024
+      },
+      {
+        "at": 348560.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 608.3 MiB；临时文件 36.8 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2560479232,
+        "peak_working_bytes": 2560479232,
+        "private_bytes": 3368325120,
+        "peak_private_bytes": 3368325120
+      },
+      {
+        "at": 348562.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 648.4 MiB；临时文件 41.6 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2560589824,
+        "peak_working_bytes": 2560589824,
+        "private_bytes": 3368325120,
+        "peak_private_bytes": 3368325120
+      },
+      {
+        "at": 348564.25,
+        "phase": "signing",
+        "text": "编码内容块：6,144/7,481；复用 1,465 块",
+        "working_bytes": 2560679936,
+        "peak_working_bytes": 2560679936,
+        "private_bytes": 3368325120,
+        "peak_private_bytes": 3368325120
+      },
+      {
+        "at": 348566.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 727.8 MiB；临时文件 51.3 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2560761856,
+        "peak_working_bytes": 2560761856,
+        "private_bytes": 3368325120,
+        "peak_private_bytes": 3368325120
+      },
+      {
+        "at": 348568.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 767.2 MiB；临时文件 56.0 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2560839680,
+        "peak_working_bytes": 2560839680,
+        "private_bytes": 3368325120,
+        "peak_private_bytes": 3368325120
+      },
+      {
+        "at": 348570.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 807.2 MiB；临时文件 60.9 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2560917504,
+        "peak_working_bytes": 2560917504,
+        "private_bytes": 3368325120,
+        "peak_private_bytes": 3368325120
+      },
+      {
+        "at": 348572.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 847.2 MiB；临时文件 65.8 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2561036288,
+        "peak_working_bytes": 2561036288,
+        "private_bytes": 3368325120,
+        "peak_private_bytes": 3368325120
+      },
+      {
+        "at": 348574.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 887.6 MiB；临时文件 70.7 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2561114112,
+        "peak_working_bytes": 2561114112,
+        "private_bytes": 3368325120,
+        "peak_private_bytes": 3368325120
+      },
+      {
+        "at": 348576.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 927.8 MiB；临时文件 75.6 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2561200128,
+        "peak_working_bytes": 2561200128,
+        "private_bytes": 3368325120,
+        "peak_private_bytes": 3368325120
+      },
+      {
+        "at": 348578.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 967.7 MiB；临时文件 80.4 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2561314816,
+        "peak_working_bytes": 2561314816,
+        "private_bytes": 3369377792,
+        "peak_private_bytes": 3369377792
+      },
+      {
+        "at": 348580.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 1007.7 MiB；临时文件 85.3 MiB；缓存 0.0 / 64 MiB",
+        "working_bytes": 2561396736,
+        "peak_working_bytes": 2561396736,
+        "private_bytes": 3369377792,
+        "peak_private_bytes": 3369377792
+      },
+      {
+        "at": 348582.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 1057.1 MiB；临时文件 86.9 MiB；缓存 6.9 / 64 MiB",
+        "working_bytes": 2565537792,
+        "peak_working_bytes": 2565537792,
+        "private_bytes": 3372912640,
+        "peak_private_bytes": 3372912640
+      },
+      {
+        "at": 348584.25,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 1107.6 MiB；临时文件 87.7 MiB；缓存 13.8 / 64 MiB",
+        "working_bytes": 2574417920,
+        "peak_working_bytes": 2574417920,
+        "private_bytes": 3381260288,
+        "peak_private_bytes": 3381260288
+      },
+      {
+        "at": 348586.328,
+        "phase": "signing",
+        "text": "门店 6/17 · SYN006 · 按内容块编码及校验完整快照…",
+        "working_bytes": 2582126592,
+        "peak_working_bytes": 2582126592,
+        "private_bytes": 3388960768,
+        "peak_private_bytes": 3388960768
+      },
+      {
+        "at": 348588.375,
+        "phase": "signing",
+        "text": "门店 7/17 · SYN007 · 编码内容块：192/192；复用 15 块",
+        "working_bytes": 2587004928,
+        "peak_working_bytes": 2587004928,
+        "private_bytes": 3393769472,
+        "peak_private_bytes": 3393769472
+      },
+      {
+        "at": 348590.578,
+        "phase": "signing",
+        "text": "门店 9/17 · SYN009 · 编码内容块：160/192；复用 0 块",
+        "working_bytes": 2595561472,
+        "peak_working_bytes": 2595561472,
+        "private_bytes": 3402375168,
+        "peak_private_bytes": 3402375168
+      },
+      {
+        "at": 348592.843,
+        "phase": "signing",
+        "text": "门店 11/17 · SYN011 · 编码内容块：160/192；复用 0 块",
+        "working_bytes": 2603728896,
+        "peak_working_bytes": 2603728896,
+        "private_bytes": 3411505152,
+        "peak_private_bytes": 3411505152
+      },
+      {
+        "at": 348595.14,
+        "phase": "signing",
+        "text": "门店 13/17 · SYN013 · 编码内容块：160/192；复用 0 块",
+        "working_bytes": 2612432896,
+        "peak_working_bytes": 2612432896,
+        "private_bytes": 3419983872,
+        "peak_private_bytes": 3419983872
+      },
+      {
+        "at": 348597.437,
+        "phase": "signing",
+        "text": "门店 15/17 · SYN015 · 编码内容块：160/192；复用 0 块",
+        "working_bytes": 2620690432,
+        "peak_working_bytes": 2620690432,
+        "private_bytes": 3428188160,
+        "peak_private_bytes": 3428188160
+      },
+      {
+        "at": 348599.734,
+        "phase": "signing",
+        "text": "门店 17/17 · SYN017 · 编码内容块：160/192；复用 0 块",
+        "working_bytes": 2629582848,
+        "peak_working_bytes": 2629582848,
+        "private_bytes": 3436769280,
+        "peak_private_bytes": 3436769280
+      },
+      {
+        "at": 348601.953,
+        "phase": "signing",
+        "text": "编码内容块：128/192；复用 0 块",
+        "working_bytes": 2630184960,
+        "peak_working_bytes": 2632261632,
+        "private_bytes": 3437297664,
+        "peak_private_bytes": 3439468544
+      },
+      {
+        "at": 348604.078,
+        "phase": "signing",
+        "text": "按内容块编码及校验完整快照…",
+        "working_bytes": 2630328320,
+        "peak_working_bytes": 2632429568,
+        "private_bytes": 3437297664,
+        "peak_private_bytes": 3439468544
+      },
+      {
+        "at": 348606.234,
+        "phase": "signing",
+        "text": "编码内容块：160/192；复用 0 块",
+        "working_bytes": 2630897664,
+        "peak_working_bytes": 2632581120,
+        "private_bytes": 3437674496,
+        "peak_private_bytes": 3439468544
+      },
+      {
+        "at": 348608.484,
+        "phase": "signing",
+        "text": "编码内容块：128/192；复用 0 块",
+        "working_bytes": 2630926336,
+        "peak_working_bytes": 2633027584,
+        "private_bytes": 3438731264,
+        "peak_private_bytes": 3440857088
+      },
+      {
+        "at": 348610.609,
+        "phase": "signing",
+        "text": "按内容块编码及校验完整快照…",
+        "working_bytes": 2631098368,
+        "peak_working_bytes": 2633199616,
+        "private_bytes": 3438731264,
+        "peak_private_bytes": 3440893952
+      },
+      {
+        "at": 348612.796,
+        "phase": "signing",
+        "text": "编码内容块：160/192；复用 0 块",
+        "working_bytes": 2631163904,
+        "peak_working_bytes": 2633265152,
+        "private_bytes": 3438731264,
+        "peak_private_bytes": 3440893952
+      },
+      {
+        "at": 348615.0,
+        "phase": "signing",
+        "text": "编码内容块：128/192；复用 0 块",
+        "working_bytes": 2631241728,
+        "peak_working_bytes": 2633334784,
+        "private_bytes": 3438731264,
+        "peak_private_bytes": 3440893952
+      },
+      {
+        "at": 348617.125,
+        "phase": "signing",
+        "text": "按内容块编码及校验完整快照…",
+        "working_bytes": 2631376896,
+        "peak_working_bytes": 2633478144,
+        "private_bytes": 3438731264,
+        "peak_private_bytes": 3440893952
+      },
+      {
+        "at": 348619.296,
+        "phase": "signing",
+        "text": "编码内容块：160/192；复用 0 块",
+        "working_bytes": 2631450624,
+        "peak_working_bytes": 2633551872,
+        "private_bytes": 3438731264,
+        "peak_private_bytes": 3440902144
+      },
+      {
+        "at": 348621.531,
+        "phase": "signing",
+        "text": "编码内容块：128/192；复用 0 块",
+        "working_bytes": 2631565312,
+        "peak_working_bytes": 2633658368,
+        "private_bytes": 3438731264,
+        "peak_private_bytes": 3440902144
+      },
+      {
+        "at": 348644.234,
+        "phase": "signing",
+        "text": "事务内容准备完成，检查最终取消请求…",
+        "working_bytes": 2651656192,
+        "peak_working_bytes": 2653757440,
+        "private_bytes": 3458859008,
+        "peak_private_bytes": 3461029888
+      },
+      {
+        "at": 348644.234,
+        "phase": "signing",
+        "text": "正在最终提交，暂不可取消…",
+        "working_bytes": 2651656192,
+        "peak_working_bytes": 2653757440,
+        "private_bytes": 3458859008,
+        "peak_private_bytes": 3461029888
+      },
+      {
+        "at": 348644.25,
+        "phase": "archive-committed",
+        "text": "归档已提交；可取消后续导出",
+        "working_bytes": 2651656192,
+        "peak_working_bytes": 2653757440,
+        "private_bytes": 3458859008,
+        "peak_private_bytes": 3461029888
+      },
+      {
+        "at": 348646.968,
+        "phase": "export",
+        "text": "文件 1/17 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：已写 3,000 / 20,000 行",
+        "working_bytes": 2685960192,
+        "peak_working_bytes": 2761613312,
+        "private_bytes": 3496488960,
+        "peak_private_bytes": 3572584448
+      },
+      {
+        "at": 348649.39,
+        "phase": "export",
+        "text": "文件 1/17 · 合成门店SYN001 · 河北仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2819874816,
+        "peak_working_bytes": 2819874816,
+        "private_bytes": 3630440448,
+        "peak_private_bytes": 3630440448
+      },
+      {
+        "at": 348652.625,
+        "phase": "export",
+        "text": "文件 1/17 · 合成门店SYN001 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2823516160,
+        "peak_working_bytes": 2855636992,
+        "private_bytes": 3633659904,
+        "peak_private_bytes": 3666440192
+      },
+      {
+        "at": 348654.625,
+        "phase": "export",
+        "text": "文件 2/17 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：已写 14,500 / 20,000 行",
+        "working_bytes": 2903429120,
+        "peak_working_bytes": 2924138496,
+        "private_bytes": 3713200128,
+        "peak_private_bytes": 3755147264
+      },
+      {
+        "at": 348660.062,
+        "phase": "export",
+        "text": "文件 2/17 · 合成门店SYN002 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2850140160,
+        "peak_working_bytes": 3018395648,
+        "private_bytes": 3659644928,
+        "peak_private_bytes": 3828985856
+      },
+      {
+        "at": 348662.062,
+        "phase": "export",
+        "text": "文件 3/17 · 合成门店SYN003 · 河北仓 · 中心仓动销补货清单：已写 14,500 / 20,000 行",
+        "working_bytes": 2903707648,
+        "peak_working_bytes": 3018395648,
+        "private_bytes": 3712929792,
+        "peak_private_bytes": 3828985856
+      },
+      {
+        "at": 348664.078,
+        "phase": "export",
+        "text": "文件 3/17 · 合成门店SYN003 · 河北仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2985013248,
+        "peak_working_bytes": 3018395648,
+        "private_bytes": 3794870272,
+        "peak_private_bytes": 3828985856
+      },
+      {
+        "at": 348666.218,
+        "phase": "export",
+        "text": "文件 3/17 · 合成门店SYN003 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2987298816,
+        "peak_working_bytes": 3020529664,
+        "private_bytes": 3796983808,
+        "peak_private_bytes": 3830808576
+      },
+      {
+        "at": 348668.875,
+        "phase": "export",
+        "text": "写出确认单 4/17 · 山东仓…",
+        "working_bytes": 2690449408,
+        "peak_working_bytes": 3076456448,
+        "private_bytes": 3499081728,
+        "peak_private_bytes": 3918860288
+      },
+      {
+        "at": 348671.578,
+        "phase": "export",
+        "text": "文件 4/17 · 合成门店SYN004 · 山东仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2820587520,
+        "peak_working_bytes": 3076456448,
+        "private_bytes": 3629912064,
+        "peak_private_bytes": 3918860288
+      },
+      {
+        "at": 348675.015,
+        "phase": "export",
+        "text": "文件 4/17 · 合成门店SYN004 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2822877184,
+        "peak_working_bytes": 3076456448,
+        "private_bytes": 3632025600,
+        "peak_private_bytes": 3918860288
+      },
+      {
+        "at": 348677.015,
+        "phase": "export",
+        "text": "文件 5/17 · 合成门店SYN005 · 河北仓 · 中心仓动销补货清单：已写 13,500 / 20,000 行",
+        "working_bytes": 2900148224,
+        "peak_working_bytes": 3076456448,
+        "private_bytes": 3709804544,
+        "peak_private_bytes": 3918860288
+      },
+      {
+        "at": 348679.062,
+        "phase": "export",
+        "text": "文件 5/17 · 合成门店SYN005 · 河北仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2985566208,
+        "peak_working_bytes": 3076456448,
+        "private_bytes": 3794898944,
+        "peak_private_bytes": 3918860288
+      },
+      {
+        "at": 348681.187,
+        "phase": "export",
+        "text": "文件 5/17 · 合成门店SYN005 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2987859968,
+        "peak_working_bytes": 3076456448,
+        "private_bytes": 3797004288,
+        "peak_private_bytes": 3918860288
+      },
+      {
+        "at": 348683.89,
+        "phase": "export",
+        "text": "写出确认单 6/17 · 山东仓…",
+        "working_bytes": 2696642560,
+        "peak_working_bytes": 3077668864,
+        "private_bytes": 3505008640,
+        "peak_private_bytes": 3919486976
+      },
+      {
+        "at": 348686.578,
+        "phase": "export",
+        "text": "文件 6/17 · 合成门店SYN006 · 山东仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2821550080,
+        "peak_working_bytes": 3077668864,
+        "private_bytes": 3630567424,
+        "peak_private_bytes": 3919486976
+      },
+      {
+        "at": 348689.953,
+        "phase": "export",
+        "text": "文件 6/17 · 合成门店SYN006 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2823929856,
+        "peak_working_bytes": 3077668864,
+        "private_bytes": 3632668672,
+        "peak_private_bytes": 3919486976
+      },
+      {
+        "at": 348691.968,
+        "phase": "export",
+        "text": "文件 7/17 · 合成门店SYN007 · 河北仓 · 中心仓动销补货清单：已写 14,500 / 20,000 行",
+        "working_bytes": 2904166400,
+        "peak_working_bytes": 3077668864,
+        "private_bytes": 3713540096,
+        "peak_private_bytes": 3919486976
+      },
+      {
+        "at": 348697.453,
+        "phase": "export",
+        "text": "文件 7/17 · 合成门店SYN007 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2867331072,
+        "peak_working_bytes": 3077668864,
+        "private_bytes": 3675774976,
+        "peak_private_bytes": 3919486976
+      },
+      {
+        "at": 348699.453,
+        "phase": "export",
+        "text": "文件 8/17 · 合成门店SYN008 · 山东仓 · 中心仓动销补货清单：已写 13,500 / 20,000 行",
+        "working_bytes": 2900242432,
+        "peak_working_bytes": 3077668864,
+        "private_bytes": 3709386752,
+        "peak_private_bytes": 3919486976
+      },
+      {
+        "at": 348701.484,
+        "phase": "export",
+        "text": "文件 8/17 · 合成门店SYN008 · 山东仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2985656320,
+        "peak_working_bytes": 3077668864,
+        "private_bytes": 3794419712,
+        "peak_private_bytes": 3919486976
+      },
+      {
+        "at": 348703.609,
+        "phase": "export",
+        "text": "文件 8/17 · 合成门店SYN008 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2987941888,
+        "peak_working_bytes": 3077668864,
+        "private_bytes": 3796525056,
+        "peak_private_bytes": 3919486976
+      },
+      {
+        "at": 348706.234,
+        "phase": "export",
+        "text": "写出确认单 9/17 · 河北仓…",
+        "working_bytes": 2728968192,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3537133568,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348708.937,
+        "phase": "export",
+        "text": "文件 9/17 · 合成门店SYN009 · 河北仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2822127616,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3630579712,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348712.218,
+        "phase": "export",
+        "text": "文件 9/17 · 合成门店SYN009 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2825404416,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3633741824,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348714.218,
+        "phase": "export",
+        "text": "文件 10/17 · 合成门店SYN010 · 山东仓 · 中心仓动销补货清单：已写 15,000 / 20,000 行",
+        "working_bytes": 2906431488,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3715661824,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348716.218,
+        "phase": "export",
+        "text": "文件 10/17 · 合成门店SYN010 · 山东仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2985824256,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3794427904,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348719.703,
+        "phase": "export",
+        "text": "文件 10/17 · 合成门店SYN010 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2896715776,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3705184256,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348721.703,
+        "phase": "export",
+        "text": "文件 11/17 · 合成门店SYN011 · 河北仓 · 中心仓动销补货清单：已写 14,000 / 20,000 行",
+        "working_bytes": 2907234304,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3715694592,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348723.718,
+        "phase": "export",
+        "text": "文件 11/17 · 合成门店SYN011 · 河北仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2985869312,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3795472384,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348725.875,
+        "phase": "export",
+        "text": "文件 11/17 · 合成门店SYN011 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2990043136,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3798630400,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348728.625,
+        "phase": "export",
+        "text": "写出确认单 12/17 · 山东仓…",
+        "working_bytes": 2851655680,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3660025856,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348731.328,
+        "phase": "export",
+        "text": "文件 12/17 · 合成门店SYN012 · 山东仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2986012672,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3795476480,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348734.781,
+        "phase": "export",
+        "text": "文件 12/17 · 合成门店SYN012 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2906152960,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3714641920,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348736.781,
+        "phase": "export",
+        "text": "文件 13/17 · 合成门店SYN013 · 河北仓 · 中心仓动销补货清单：已写 13,000 / 20,000 行",
+        "working_bytes": 2916679680,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3725152256,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348738.828,
+        "phase": "export",
+        "text": "文件 13/17 · 合成门店SYN013 · 河北仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2986356736,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3795476480,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348740.984,
+        "phase": "export",
+        "text": "文件 13/17 · 合成门店SYN013 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2988609536,
+        "peak_working_bytes": 3078987776,
+        "private_bytes": 3797577728,
+        "peak_private_bytes": 3920367616
+      },
+      {
+        "at": 348743.718,
+        "phase": "export",
+        "text": "写出确认单 14/17 · 山东仓…",
+        "working_bytes": 2756272128,
+        "peak_working_bytes": 3079671808,
+        "private_bytes": 3564511232,
+        "peak_private_bytes": 3921428480
+      },
+      {
+        "at": 348746.406,
+        "phase": "export",
+        "text": "文件 14/17 · 合成门店SYN014 · 山东仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2822610944,
+        "peak_working_bytes": 3079671808,
+        "private_bytes": 3631697920,
+        "peak_private_bytes": 3921428480
+      },
+      {
+        "at": 348749.843,
+        "phase": "export",
+        "text": "文件 14/17 · 合成门店SYN014 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2826539008,
+        "peak_working_bytes": 3079671808,
+        "private_bytes": 3634847744,
+        "peak_private_bytes": 3921428480
+      },
+      {
+        "at": 348751.843,
+        "phase": "export",
+        "text": "文件 15/17 · 合成门店SYN015 · 河北仓 · 中心仓动销补货清单：已写 13,000 / 20,000 行",
+        "working_bytes": 2899128320,
+        "peak_working_bytes": 3079671808,
+        "private_bytes": 3708346368,
+        "peak_private_bytes": 3921428480
+      },
+      {
+        "at": 348753.89,
+        "phase": "export",
+        "text": "文件 15/17 · 合成门店SYN015 · 河北仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2986561536,
+        "peak_working_bytes": 3079671808,
+        "private_bytes": 3795480576,
+        "peak_private_bytes": 3921428480
+      },
+      {
+        "at": 348756.015,
+        "phase": "export",
+        "text": "文件 15/17 · 合成门店SYN015 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2988838912,
+        "peak_working_bytes": 3079671808,
+        "private_bytes": 3797581824,
+        "peak_private_bytes": 3921428480
+      },
+      {
+        "at": 348758.718,
+        "phase": "export",
+        "text": "写出确认单 16/17 · 山东仓…",
+        "working_bytes": 2773065728,
+        "peak_working_bytes": 3079925760,
+        "private_bytes": 3581325312,
+        "peak_private_bytes": 3921489920
+      },
+      {
+        "at": 348761.437,
+        "phase": "export",
+        "text": "文件 16/17 · 合成门店SYN016 · 山东仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2822754304,
+        "peak_working_bytes": 3079925760,
+        "private_bytes": 3631722496,
+        "peak_private_bytes": 3921489920
+      },
+      {
+        "at": 348764.765,
+        "phase": "export",
+        "text": "文件 16/17 · 合成门店SYN016 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2825031680,
+        "peak_working_bytes": 3079925760,
+        "private_bytes": 3633819648,
+        "peak_private_bytes": 3921489920
+      },
+      {
+        "at": 348766.765,
+        "phase": "export",
+        "text": "文件 17/17 · 合成门店SYN017 · 河北仓 · 中心仓动销补货清单：已写 13,500 / 20,000 行",
+        "working_bytes": 2901274624,
+        "peak_working_bytes": 3079925760,
+        "private_bytes": 3710451712,
+        "peak_private_bytes": 3921489920
+      },
+      {
+        "at": 348768.796,
+        "phase": "export",
+        "text": "文件 17/17 · 合成门店SYN017 · 河北仓 · 数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…",
+        "working_bytes": 2986741760,
+        "peak_working_bytes": 3079925760,
+        "private_bytes": 3795488768,
+        "peak_private_bytes": 3921489920
+      },
+      {
+        "at": 348770.921,
+        "phase": "export",
+        "text": "文件 17/17 · 合成门店SYN017 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 2989035520,
+        "peak_working_bytes": 3079925760,
+        "private_bytes": 3797590016,
+        "peak_private_bytes": 3921489920
+      }
+    ],
+    "limit_mib": 6000,
+    "prepare_seconds": 2.892521300003864,
+    "expected": [
+      {
+        "store": "SYN001",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN002",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN003",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN004",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN005",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN006",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN007",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN008",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN009",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN010",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN011",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN012",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN013",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN014",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN015",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN016",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN017",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      }
+    ],
+    "expected_work_digest": "8f51cb5fa1c5f63b6bf887ca6314ef16090aefa7f3456102369ba2802d515269",
+    "fixture_memory": {
+      "working_bytes": 2556850176,
+      "peak_working_bytes": 2556850176,
+      "private_bytes": 3365281792,
+      "peak_private_bytes": 3365281792
+    },
+    "operation_seconds": 242.67347999999765,
+    "operation_cpu_seconds": 236.125,
+    "operation_end_memory": {
+      "working_bytes": 2989051904,
+      "peak_working_bytes": 3079925760,
+      "private_bytes": 3797590016,
+      "peak_private_bytes": 3921489920
+    },
+    "source_input_consumed": false,
+    "export_count": 17,
+    "work_digest": "8f51cb5fa1c5f63b6bf887ca6314ef16090aefa7f3456102369ba2802d515269",
+    "orders": [
+      {
+        "store": "SYN001",
+        "digest": "f18b8335204ccf9b6bbad81b1384a43a0fb1371938edc488ddafa31fdc2fea28",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN002",
+        "digest": "779678c19e8db46f9d5db67555ddf699b11484064d70e7d1060377811b3a5b80",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN003",
+        "digest": "c6cb4678a41ae06ce93f6147ad46970ddb5217222e71e9da48e22422775c0c6f",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN004",
+        "digest": "3a7e58d3f8ce9cbf4c29c6732b1ebe85b286c9eaf5ade6e8f44a3a7c08491fe0",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN005",
+        "digest": "d696ee9248fa0bc4a5d68bbf9bd2e3f9f50962b8bdd7df64c06c85fe8f7ed69f",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN006",
+        "digest": "04d02077042db63a213e3fdbd249487f9e8eb27764c36af50d4b8dc8d04cd27c",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN007",
+        "digest": "6892b8e49948d6b641992cd1ff6c42cea2e87d9f8cb1fc033c31d0f4b9eb9657",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN008",
+        "digest": "a920f1ca21ca926939c1c31f81981169fab041baf085a35516145afcb694766d",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN009",
+        "digest": "0c7f60fde82b6a625eb677d94ba55a5065d35d3c20ce81eaf40c0b6cba9d073c",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN010",
+        "digest": "ada2edd13aad4937d75c297123e5696d1af209db2a33e35da54616ffacaeb56b",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN011",
+        "digest": "026662c91efd1c0dcf2fcdb3bf970ea3296b47cda35c709fdbe32317ed7479ad",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN012",
+        "digest": "274bbdf5162b4d7ed17bb72ee8310a9be0740e8f26eb09f7b078660bd21e8634",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN013",
+        "digest": "b9a1b290cefe8cb625ca2907a7adc050b820ad9d946da3f5c9143440b16df77d",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN014",
+        "digest": "5b93da2eb00dc26ac9addd3d28066e8d46db55723cb769ba89355c28303eba38",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN015",
+        "digest": "354db1b1b12580976ff9dbc6847561e2a7f33c8ea1d5c72a39c1be7f5b0a44cf",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN016",
+        "digest": "cffc6657a73ea2bfdc6f29463aeebd033761702a2e020cafbd19e4dce91de8ef",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN017",
+        "digest": "a96c847b5bc6756b72b258c789523e0bfa27c5c0ed7ba92889089efd9b2c537f",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      }
+    ],
+    "exports": [
+      {
+        "name": "2026-11-16合成门店SYN001（精简版·河北仓）.xlsx",
+        "cells_sha256": "06541306db2601bdc8ea7469a39daf480b5d13b15aace05c395bda69dfbddf67",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN002（精简版·山东仓）.xlsx",
+        "cells_sha256": "28d1d4d20f5b4508fc5475abfa272ef42ae1b53afb8eaae76a3a344db50daf19",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN003（精简版·河北仓）.xlsx",
+        "cells_sha256": "19eb5a7d5499ce44b23b8a8812a0ccd0b791b3a445e5944501d05b2549eb1b04",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN004（精简版·山东仓）.xlsx",
+        "cells_sha256": "d3680d0be9a717964abe2bd58b9f1ba0161e2a93fc762e67f412f7cc97e886af",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN005（精简版·河北仓）.xlsx",
+        "cells_sha256": "a635dd5d679b6fe21855f221ef71ada56f35cdefa1f9d5f2b1e00dfea7e87bdd",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN006（精简版·山东仓）.xlsx",
+        "cells_sha256": "2333ad485ecced9d1f26fa9c478556e9684a43a2ad342ea07b28ac2cc7b35fb1",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN007（精简版·河北仓）.xlsx",
+        "cells_sha256": "b7186042f792271fe23c41ebd948b816730fb791720c8952167145ed29337fc6",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN008（精简版·山东仓）.xlsx",
+        "cells_sha256": "a95db91093e9b6401d39fb16d2fd6765d86298f7131a6c48d853098d92593a96",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN009（精简版·河北仓）.xlsx",
+        "cells_sha256": "5834c7b7923b2e6ad8bae92870f1b0dd215f4d3d626afd89a3b0984fb4186784",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN010（精简版·山东仓）.xlsx",
+        "cells_sha256": "6ff8203db144fbc7f3520f30df76a3f5d555a56b0193319ccfbbece23c6e0665",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN011（精简版·河北仓）.xlsx",
+        "cells_sha256": "3d46ba682229e3405251942c844ff9a283f873a7722d755b0d2da79554a1587f",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN012（精简版·山东仓）.xlsx",
+        "cells_sha256": "5b46e11f55cf4f251eb6bec8bb17c24825b7bad23ef8df45d68dbe5469849274",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN013（精简版·河北仓）.xlsx",
+        "cells_sha256": "87363121aee2a98fd214d87067be259e77a760faee7a750de1b55b87ee0689e5",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN014（精简版·山东仓）.xlsx",
+        "cells_sha256": "7d72bfefee9cf7b5b8a5bd66063cf165dde3c01c9e204a8bf892914efcfc7e81",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN015（精简版·河北仓）.xlsx",
+        "cells_sha256": "ba25ba3145a60c104dbdc6bf7b27f255befc3877154c26e7aa6d1ea51781d453",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN016（精简版·山东仓）.xlsx",
+        "cells_sha256": "3abac1354269afb7373eebfef9e1337809b898789faa6d92f5dc515ade2ea4c5",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN017（精简版·河北仓）.xlsx",
+        "cells_sha256": "1f3f837dee20ff62d0e7979712d796cbadc6f53c77d9909f30c5d4d9f16b77cb",
+        "rows": 20007
+      }
+    ],
+    "final_memory": {
+      "working_bytes": 273580032,
+      "peak_working_bytes": 3080187904,
+      "private_bytes": 1067728896,
+      "peak_private_bytes": 3921559552
+    },
+    "exit_code": 0,
+    "phase_peaks": {
+      "fixture": {
+        "private_bytes": 3365281792,
+        "working_bytes": 2556841984
+      },
+      "export": {
+        "private_bytes": 3889397760,
+        "working_bytes": 3078873088
+      },
+      "verify": {
+        "private_bytes": 3887857664,
+        "working_bytes": 3079135232
+      },
+      "signing": {
+        "private_bytes": 3460964352,
+        "working_bytes": 2653757440
+      }
+    }
+  },
+  "new": {
+    "passed": true,
+    "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\candidate-05",
+    "kind": "new",
+    "files": 17,
+    "rows_per_file": 20000,
+    "synthetic": true,
+    "live_platform": false,
+    "stages": [
+      {
+        "at": 348853.562,
+        "phase": "fixture",
+        "text": "冻结本批次草稿并检查所选门店…",
+        "working_bytes": 2556043264,
+        "peak_working_bytes": 2556043264,
+        "private_bytes": 3364122624,
+        "peak_private_bytes": 3364122624
+      },
+      {
+        "at": 348855.656,
+        "phase": "fixture",
+        "text": "核对门店 13/17：SYN013",
+        "working_bytes": 2556801024,
+        "peak_working_bytes": 2556801024,
+        "private_bytes": 3365171200,
+        "peak_private_bytes": 3365171200
+      },
+      {
+        "at": 348888.593,
+        "phase": "signing",
+        "text": "后台归档所选门店与完整来源（一次事务）…",
+        "working_bytes": 2556977152,
+        "peak_working_bytes": 2556977152,
+        "private_bytes": 3365171200,
+        "peak_private_bytes": 3365171200
+      },
+      {
+        "at": 348894.468,
+        "phase": "signing",
+        "text": "按内容块编码及校验完整快照…",
+        "working_bytes": 2556997632,
+        "peak_working_bytes": 2559090688,
+        "private_bytes": 3365171200,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348896.484,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 63.7 MiB；临时文件 6.1 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2557427712,
+        "peak_working_bytes": 2559090688,
+        "private_bytes": 3365060608,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348898.484,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 130.3 MiB；临时文件 11.4 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2557870080,
+        "peak_working_bytes": 2559090688,
+        "private_bytes": 3365060608,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348900.484,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 196.3 MiB；临时文件 15.3 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2558234624,
+        "peak_working_bytes": 2559090688,
+        "private_bytes": 3366113280,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348902.484,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 262.4 MiB；临时文件 19.3 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2558648320,
+        "peak_working_bytes": 2559090688,
+        "private_bytes": 3366113280,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348904.484,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 335.7 MiB；临时文件 21.3 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2558963712,
+        "peak_working_bytes": 2559090688,
+        "private_bytes": 3366113280,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348906.484,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 407.2 MiB；临时文件 23.6 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2559266816,
+        "peak_working_bytes": 2559266816,
+        "private_bytes": 3366113280,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348908.484,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 481.1 MiB；临时文件 25.7 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2559594496,
+        "peak_working_bytes": 2559594496,
+        "private_bytes": 3367161856,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348910.484,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 543.3 MiB；临时文件 28.9 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2559836160,
+        "peak_working_bytes": 2559836160,
+        "private_bytes": 3367161856,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348912.484,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 587.1 MiB；临时文件 34.2 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2559987712,
+        "peak_working_bytes": 2559987712,
+        "private_bytes": 3367161856,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348914.5,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 630.5 MiB；临时文件 39.5 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2560159744,
+        "peak_working_bytes": 2560159744,
+        "private_bytes": 3367161856,
+        "peak_private_bytes": 3367342080
+      },
+      {
+        "at": 348916.5,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 673.9 MiB；临时文件 44.7 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2560311296,
+        "peak_working_bytes": 2560311296,
+        "private_bytes": 3368214528,
+        "peak_private_bytes": 3368214528
+      },
+      {
+        "at": 348918.5,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 717.3 MiB；临时文件 50.0 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2560425984,
+        "peak_working_bytes": 2560425984,
+        "private_bytes": 3368214528,
+        "peak_private_bytes": 3368214528
+      },
+      {
+        "at": 348920.5,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 760.3 MiB；临时文件 55.2 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2560520192,
+        "peak_working_bytes": 2560520192,
+        "private_bytes": 3368214528,
+        "peak_private_bytes": 3368214528
+      },
+      {
+        "at": 348922.5,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 804.5 MiB；临时文件 60.6 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2560663552,
+        "peak_working_bytes": 2560663552,
+        "private_bytes": 3368214528,
+        "peak_private_bytes": 3368214528
+      },
+      {
+        "at": 348924.5,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 847.5 MiB；临时文件 65.8 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2560823296,
+        "peak_working_bytes": 2560823296,
+        "private_bytes": 3368214528,
+        "peak_private_bytes": 3368214528
+      },
+      {
+        "at": 348926.5,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 891.3 MiB；临时文件 71.1 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2560983040,
+        "peak_working_bytes": 2560983040,
+        "private_bytes": 3368214528,
+        "peak_private_bytes": 3368214528
+      },
+      {
+        "at": 348928.515,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 934.7 MiB；临时文件 76.4 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2561130496,
+        "peak_working_bytes": 2561130496,
+        "private_bytes": 3368214528,
+        "peak_private_bytes": 3368214528
+      },
+      {
+        "at": 348930.531,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 978.5 MiB；临时文件 81.7 MiB；缓存 0.0 / 128.0 MiB",
+        "working_bytes": 2561269760,
+        "peak_working_bytes": 2561269760,
+        "private_bytes": 3368214528,
+        "peak_private_bytes": 3368214528
+      },
+      {
+        "at": 348932.531,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 1023.2 MiB；临时文件 86.4 MiB；缓存 3.5 / 128.0 MiB",
+        "working_bytes": 2563309568,
+        "peak_working_bytes": 2563309568,
+        "private_bytes": 3370315776,
+        "peak_private_bytes": 3370315776
+      },
+      {
+        "at": 348934.531,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 1079.6 MiB；临时文件 87.3 MiB；缓存 10.4 / 128.0 MiB",
+        "working_bytes": 2573668352,
+        "peak_working_bytes": 2573668352,
+        "private_bytes": 3380625408,
+        "peak_private_bytes": 3380625408
+      },
+      {
+        "at": 348936.531,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 1136.7 MiB；临时文件 88.2 MiB；缓存 17.3 / 128.0 MiB",
+        "working_bytes": 2581180416,
+        "peak_working_bytes": 2581180416,
+        "private_bytes": 3387822080,
+        "peak_private_bytes": 3387822080
+      },
+      {
+        "at": 348938.531,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 1194.3 MiB；临时文件 89.1 MiB；缓存 24.2 / 128.0 MiB",
+        "working_bytes": 2590126080,
+        "peak_working_bytes": 2590126080,
+        "private_bytes": 3397013504,
+        "peak_private_bytes": 3397013504
+      },
+      {
+        "at": 348940.531,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 1251.2 MiB；临时文件 89.9 MiB；缓存 31.1 / 128.0 MiB",
+        "working_bytes": 2597658624,
+        "peak_working_bytes": 2597658624,
+        "private_bytes": 3404279808,
+        "peak_private_bytes": 3404279808
+      },
+      {
+        "at": 348942.531,
+        "phase": "signing",
+        "text": "正在流式编码签发内容：已处理 1309.1 MiB；临时文件 90.8 MiB；缓存 38.0 / 128.0 MiB",
+        "working_bytes": 2605907968,
+        "peak_working_bytes": 2605907968,
+        "private_bytes": 3413475328,
+        "peak_private_bytes": 3413475328
+      },
+      {
+        "at": 348944.593,
+        "phase": "signing",
+        "text": "门店 13/17 · SYN013 · 按内容块编码及校验完整快照…",
+        "working_bytes": 2613174272,
+        "peak_working_bytes": 2613174272,
+        "private_bytes": 3420663808,
+        "peak_private_bytes": 3420663808
+      },
+      {
+        "at": 348946.656,
+        "phase": "signing",
+        "text": "门店 15/17 · SYN015 · 按内容块编码及校验完整快照…",
+        "working_bytes": 2621452288,
+        "peak_working_bytes": 2621452288,
+        "private_bytes": 3428831232,
+        "peak_private_bytes": 3428831232
+      },
+      {
+        "at": 348948.75,
+        "phase": "signing",
+        "text": "门店 17/17 · SYN017 · 按内容块编码及校验完整快照…",
+        "working_bytes": 2630529024,
+        "peak_working_bytes": 2630529024,
+        "private_bytes": 3437510656,
+        "peak_private_bytes": 3437510656
+      },
+      {
+        "at": 348950.75,
+        "phase": "signing",
+        "text": "编码内容块：160/192；复用 0 块",
+        "working_bytes": 2632585216,
+        "peak_working_bytes": 2634387456,
+        "private_bytes": 3439308800,
+        "peak_private_bytes": 3441168384
+      },
+      {
+        "at": 348952.828,
+        "phase": "signing",
+        "text": "编码内容块：128/192；复用 0 块",
+        "working_bytes": 2632978432,
+        "peak_working_bytes": 2635079680,
+        "private_bytes": 3439689728,
+        "peak_private_bytes": 3441827840
+      },
+      {
+        "at": 348954.875,
+        "phase": "signing",
+        "text": "编码内容块：96/192；复用 0 块",
+        "working_bytes": 2634063872,
+        "peak_working_bytes": 2636165120,
+        "private_bytes": 3441635328,
+        "peak_private_bytes": 3443798016
+      },
+      {
+        "at": 348957.171,
+        "phase": "signing",
+        "text": "按内容块编码及校验完整快照…",
+        "working_bytes": 2634260480,
+        "peak_working_bytes": 2636361728,
+        "private_bytes": 3441635328,
+        "peak_private_bytes": 3443798016
+      },
+      {
+        "at": 348959.515,
+        "phase": "signing",
+        "text": "按内容块编码及校验完整快照…",
+        "working_bytes": 2634457088,
+        "peak_working_bytes": 2636558336,
+        "private_bytes": 3441635328,
+        "peak_private_bytes": 3443802112
+      },
+      {
+        "at": 348961.843,
+        "phase": "signing",
+        "text": "按内容块编码及校验完整快照…",
+        "working_bytes": 2634584064,
+        "peak_working_bytes": 2636685312,
+        "private_bytes": 3441635328,
+        "peak_private_bytes": 3443802112
+      },
+      {
+        "at": 348963.875,
+        "phase": "signing",
+        "text": "编码内容块：192/192；复用 15 块",
+        "working_bytes": 2634715136,
+        "peak_working_bytes": 2636816384,
+        "private_bytes": 3441635328,
+        "peak_private_bytes": 3443802112
+      },
+      {
+        "at": 348965.89,
+        "phase": "signing",
+        "text": "编码内容块：128/192；复用 0 块",
+        "working_bytes": 2634907648,
+        "peak_working_bytes": 2637012992,
+        "private_bytes": 3441635328,
+        "peak_private_bytes": 3443802112
+      },
+      {
+        "at": 348967.937,
+        "phase": "signing",
+        "text": "编码内容块：96/192；复用 0 块",
+        "working_bytes": 2635042816,
+        "peak_working_bytes": 2637144064,
+        "private_bytes": 3442688000,
+        "peak_private_bytes": 3444842496
+      },
+      {
+        "at": 348969.937,
+        "phase": "signing",
+        "text": "等待归档写锁（可取消）…",
+        "working_bytes": 2635132928,
+        "peak_working_bytes": 2637205504,
+        "private_bytes": 3442688000,
+        "peak_private_bytes": 3444842496
+      },
+      {
+        "at": 348991.375,
+        "phase": "signing",
+        "text": "事务内容准备完成，检查最终取消请求…",
+        "working_bytes": 2675490816,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 3483291648,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 348991.375,
+        "phase": "signing",
+        "text": "正在最终提交，暂不可取消…",
+        "working_bytes": 2675490816,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 3483291648,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 348991.39,
+        "phase": "archive-committed",
+        "text": "归档已提交；可取消后续导出",
+        "working_bytes": 2675490816,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 3483291648,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 348993.406,
+        "phase": "export",
+        "text": "文件 1/17 · 合成门店SYN001 · 河北仓 · 导出资源自适应：内存写入；资源充裕；临时内存预算 256.0 MiB；编码缓存上限 128.0 MiB",
+        "working_bytes": 173293568,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 970022912,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 348995.406,
+        "phase": "export",
+        "text": "文件 1/17 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：已写 13,500 / 20,000 行",
+        "working_bytes": 270184448,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1066430464,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 348998.484,
+        "phase": "export",
+        "text": "文件 1/17 · 合成门店SYN001 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 328179712,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1124175872,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349000.484,
+        "phase": "export",
+        "text": "文件 2/17 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：已写 4,500 / 20,000 行",
+        "working_bytes": 371445760,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1168302080,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349002.515,
+        "phase": "export",
+        "text": "文件 2/17 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：已写 17,500 / 20,000 行",
+        "working_bytes": 308674560,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1105297408,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349005.031,
+        "phase": "export",
+        "text": "文件 2/17 · 合成门店SYN002 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 329572352,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1125269504,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349007.046,
+        "phase": "export",
+        "text": "文件 3/17 · 合成门店SYN003 · 河北仓 · 中心仓动销补货清单：已写 4,000 / 20,000 行",
+        "working_bytes": 365346816,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1161703424,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349009.093,
+        "phase": "export",
+        "text": "文件 3/17 · 合成门店SYN003 · 河北仓 · 中心仓动销补货清单：已写 16,500 / 20,000 行",
+        "working_bytes": 302292992,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1098207232,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349011.796,
+        "phase": "export",
+        "text": "文件 3/17 · 合成门店SYN003 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 328716288,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1124470784,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349013.843,
+        "phase": "export",
+        "text": "文件 4/17 · 合成门店SYN004 · 山东仓 · 中心仓动销补货清单：已写 4,500 / 20,000 行",
+        "working_bytes": 371453952,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1167233024,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349015.859,
+        "phase": "export",
+        "text": "文件 4/17 · 合成门店SYN004 · 山东仓 · 中心仓动销补货清单：已写 16,500 / 20,000 行",
+        "working_bytes": 322306048,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1117880320,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349018.64,
+        "phase": "export",
+        "text": "文件 4/17 · 合成门店SYN004 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 333238272,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1129447424,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349020.687,
+        "phase": "export",
+        "text": "文件 5/17 · 合成门店SYN005 · 河北仓 · 中心仓动销补货清单：已写 4,500 / 20,000 行",
+        "working_bytes": 371453952,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1168297984,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349022.687,
+        "phase": "export",
+        "text": "文件 5/17 · 合成门店SYN005 · 河北仓 · 中心仓动销补货清单：已写 16,000 / 20,000 行",
+        "working_bytes": 331902976,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1128390656,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349025.515,
+        "phase": "export",
+        "text": "文件 5/17 · 合成门店SYN005 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 343990272,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1139953664,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349027.562,
+        "phase": "export",
+        "text": "文件 6/17 · 合成门店SYN006 · 山东仓 · 中心仓动销补货清单：已写 4,500 / 20,000 行",
+        "working_bytes": 372277248,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1169080320,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349029.562,
+        "phase": "export",
+        "text": "文件 6/17 · 合成门店SYN006 · 山东仓 · 中心仓动销补货清单：已写 16,000 / 20,000 行",
+        "working_bytes": 333234176,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1129439232,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349032.359,
+        "phase": "export",
+        "text": "文件 6/17 · 合成门店SYN006 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 345079808,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1141010432,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349034.375,
+        "phase": "export",
+        "text": "文件 7/17 · 合成门店SYN007 · 河北仓 · 中心仓动销补货清单：已写 2,500 / 20,000 行",
+        "working_bytes": 293761024,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1089929216,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349036.375,
+        "phase": "export",
+        "text": "文件 7/17 · 合成门店SYN007 · 河北仓 · 中心仓动销补货清单：已写 15,500 / 20,000 行",
+        "working_bytes": 302026752,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1097809920,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349039.312,
+        "phase": "export",
+        "text": "文件 7/17 · 合成门店SYN007 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 327409664,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1123012608,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349041.359,
+        "phase": "export",
+        "text": "文件 8/17 · 合成门店SYN008 · 山东仓 · 中心仓动销补货清单：已写 4,500 / 20,000 行",
+        "working_bytes": 372920320,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1169203200,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349043.39,
+        "phase": "export",
+        "text": "文件 8/17 · 合成门店SYN008 · 山东仓 · 中心仓动销补货清单：已写 16,500 / 20,000 行",
+        "working_bytes": 360828928,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1156591616,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349046.156,
+        "phase": "export",
+        "text": "文件 8/17 · 合成门店SYN008 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 371503104,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1167114240,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349048.171,
+        "phase": "export",
+        "text": "文件 9/17 · 合成门店SYN009 · 河北仓 · 中心仓动销补货清单：已写 4,000 / 20,000 行",
+        "working_bytes": 373534720,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1169436672,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349050.296,
+        "phase": "export",
+        "text": "文件 9/17 · 合成门店SYN009 · 河北仓 · 中心仓动销补货清单：已写 16,500 / 20,000 行",
+        "working_bytes": 332222464,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1129041920,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349053.078,
+        "phase": "export",
+        "text": "文件 9/17 · 合成门店SYN009 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 344719360,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1141420032,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349055.109,
+        "phase": "export",
+        "text": "文件 10/17 · 合成门店SYN010 · 山东仓 · 中心仓动销补货清单：已写 4,500 / 20,000 行",
+        "working_bytes": 373071872,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1169014784,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349057.156,
+        "phase": "export",
+        "text": "文件 10/17 · 合成门店SYN010 · 山东仓 · 中心仓动销补货清单：已写 16,500 / 20,000 行",
+        "working_bytes": 358551552,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1154310144,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349059.906,
+        "phase": "export",
+        "text": "文件 10/17 · 合成门店SYN010 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 369479680,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1164836864,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349061.968,
+        "phase": "export",
+        "text": "文件 11/17 · 合成门店SYN011 · 河北仓 · 中心仓动销补货清单：已写 4,500 / 20,000 行",
+        "working_bytes": 374333440,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1170231296,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349064.0,
+        "phase": "export",
+        "text": "文件 11/17 · 合成门店SYN011 · 河北仓 · 中心仓动销补货清单：已写 16,500 / 20,000 行",
+        "working_bytes": 338690048,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1135587328,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349066.765,
+        "phase": "export",
+        "text": "文件 11/17 · 合成门店SYN011 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 352407552,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1148207104,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349068.812,
+        "phase": "export",
+        "text": "文件 12/17 · 合成门店SYN012 · 山东仓 · 中心仓动销补货清单：已写 4,500 / 20,000 行",
+        "working_bytes": 373743616,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1169965056,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349070.859,
+        "phase": "export",
+        "text": "文件 12/17 · 合成门店SYN012 · 山东仓 · 中心仓动销补货清单：已写 16,500 / 20,000 行",
+        "working_bytes": 356835328,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1153159168,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349073.562,
+        "phase": "export",
+        "text": "文件 12/17 · 合成门店SYN012 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 369156096,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1164496896,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349075.609,
+        "phase": "export",
+        "text": "文件 13/17 · 合成门店SYN013 · 河北仓 · 中心仓动销补货清单：已写 2,500 / 20,000 行",
+        "working_bytes": 330985472,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1126232064,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349077.625,
+        "phase": "export",
+        "text": "文件 13/17 · 合成门店SYN013 · 河北仓 · 中心仓动销补货清单：已写 15,000 / 20,000 行",
+        "working_bytes": 338849792,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1134116864,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349080.656,
+        "phase": "export",
+        "text": "文件 13/17 · 合成门店SYN013 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 350167040,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1145688064,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349082.656,
+        "phase": "export",
+        "text": "文件 14/17 · 合成门店SYN014 · 山东仓 · 中心仓动销补货清单：已写 4,000 / 20,000 行",
+        "working_bytes": 368381952,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1164447744,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349084.812,
+        "phase": "export",
+        "text": "文件 14/17 · 合成门店SYN014 · 山东仓 · 中心仓动销补货清单：已写 16,500 / 20,000 行",
+        "working_bytes": 368435200,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1163898880,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349087.578,
+        "phase": "export",
+        "text": "文件 14/17 · 合成门店SYN014 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 379109376,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1174425600,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349089.609,
+        "phase": "export",
+        "text": "文件 15/17 · 合成门店SYN015 · 河北仓 · 中心仓动销补货清单：已写 4,000 / 20,000 行",
+        "working_bytes": 382033920,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1178034176,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349091.781,
+        "phase": "export",
+        "text": "文件 15/17 · 合成门店SYN015 · 河北仓 · 中心仓动销补货清单：已写 16,500 / 20,000 行",
+        "working_bytes": 342761472,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1139740672,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349094.531,
+        "phase": "export",
+        "text": "文件 15/17 · 合成门店SYN015 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 355713024,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1152360448,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349096.546,
+        "phase": "export",
+        "text": "文件 16/17 · 合成门店SYN016 · 山东仓 · 中心仓动销补货清单：已写 4,500 / 20,000 行",
+        "working_bytes": 374710272,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1170333696,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349098.546,
+        "phase": "export",
+        "text": "文件 16/17 · 合成门店SYN016 · 山东仓 · 中心仓动销补货清单：已写 16,000 / 20,000 行",
+        "working_bytes": 367575040,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1162964992,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349101.406,
+        "phase": "export",
+        "text": "文件 16/17 · 合成门店SYN016 · 山东仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 378241024,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1173491712,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349103.406,
+        "phase": "export",
+        "text": "文件 17/17 · 合成门店SYN017 · 河北仓 · 中心仓动销补货清单：已写 4,000 / 20,000 行",
+        "working_bytes": 381132800,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1176576000,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349105.5,
+        "phase": "export",
+        "text": "文件 17/17 · 合成门店SYN017 · 河北仓 · 中心仓动销补货清单：已写 16,000 / 20,000 行",
+        "working_bytes": 351244288,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1146671104,
+        "peak_private_bytes": 3485466624
+      },
+      {
+        "at": 349108.343,
+        "phase": "export",
+        "text": "文件 17/17 · 合成门店SYN017 · 河北仓 · 核验文件中的补货单号、店仓与签发修订…",
+        "working_bytes": 361984000,
+        "peak_working_bytes": 2677592064,
+        "private_bytes": 1157193728,
+        "peak_private_bytes": 3485466624
+      }
+    ],
+    "limit_mib": 6000,
+    "prepare_seconds": 2.916927999991458,
+    "expected": [
+      {
+        "store": "SYN001",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN002",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN003",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN004",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN005",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN006",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN007",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN008",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN009",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN010",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN011",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN012",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN013",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN014",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN015",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN016",
+        "rows": 20000,
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      },
+      {
+        "store": "SYN017",
+        "rows": 20000,
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e",
+        "summary": {
+          "rows": 20000,
+          "local": 0,
+          "issues": 0,
+          "calculable": 20000,
+          "positive": 20000,
+          "amount": 2555965.8,
+          "calculated_positive": 20000,
+          "calculated_amount": 2555965.8,
+          "excluded": 0,
+          "excluded_positive": 0,
+          "excluded_amount": 0.0,
+          "unpriced": 0,
+          "candidate_amount": 2555965.8,
+          "must_amount": 196724.4,
+          "must_candidate_amount": 196724.4,
+          "budget_deferred": 0,
+          "holding_gaps": 0,
+          "exception": 0,
+          "extra": 0
+        }
+      }
+    ],
+    "expected_work_digest": "8f51cb5fa1c5f63b6bf887ca6314ef16090aefa7f3456102369ba2802d515269",
+    "fixture_memory": {
+      "working_bytes": 2556882944,
+      "peak_working_bytes": 2556882944,
+      "private_bytes": 3365171200,
+      "peak_private_bytes": 3365171200
+    },
+    "after_input_release": {
+      "working_bytes": 92160000,
+      "peak_working_bytes": 2677592064,
+      "private_bytes": 886976512,
+      "peak_private_bytes": 3485466624
+    },
+    "operation_seconds": 219.87087380001321,
+    "operation_cpu_seconds": 213.84375,
+    "operation_end_memory": {
+      "working_bytes": 326197248,
+      "peak_working_bytes": 2677592064,
+      "private_bytes": 1119805440,
+      "peak_private_bytes": 3485466624
+    },
+    "source_input_consumed": true,
+    "export_count": 17,
+    "work_digest": "8f51cb5fa1c5f63b6bf887ca6314ef16090aefa7f3456102369ba2802d515269",
+    "orders": [
+      {
+        "store": "SYN001",
+        "digest": "f18b8335204ccf9b6bbad81b1384a43a0fb1371938edc488ddafa31fdc2fea28",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN002",
+        "digest": "779678c19e8db46f9d5db67555ddf699b11484064d70e7d1060377811b3a5b80",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN003",
+        "digest": "c6cb4678a41ae06ce93f6147ad46970ddb5217222e71e9da48e22422775c0c6f",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN004",
+        "digest": "3a7e58d3f8ce9cbf4c29c6732b1ebe85b286c9eaf5ade6e8f44a3a7c08491fe0",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN005",
+        "digest": "d696ee9248fa0bc4a5d68bbf9bd2e3f9f50962b8bdd7df64c06c85fe8f7ed69f",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN006",
+        "digest": "04d02077042db63a213e3fdbd249487f9e8eb27764c36af50d4b8dc8d04cd27c",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN007",
+        "digest": "6892b8e49948d6b641992cd1ff6c42cea2e87d9f8cb1fc033c31d0f4b9eb9657",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN008",
+        "digest": "a920f1ca21ca926939c1c31f81981169fab041baf085a35516145afcb694766d",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN009",
+        "digest": "0c7f60fde82b6a625eb677d94ba55a5065d35d3c20ce81eaf40c0b6cba9d073c",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN010",
+        "digest": "ada2edd13aad4937d75c297123e5696d1af209db2a33e35da54616ffacaeb56b",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN011",
+        "digest": "026662c91efd1c0dcf2fcdb3bf970ea3296b47cda35c709fdbe32317ed7479ad",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN012",
+        "digest": "274bbdf5162b4d7ed17bb72ee8310a9be0740e8f26eb09f7b078660bd21e8634",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN013",
+        "digest": "b9a1b290cefe8cb625ca2907a7adc050b820ad9d946da3f5c9143440b16df77d",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN014",
+        "digest": "5b93da2eb00dc26ac9addd3d28066e8d46db55723cb769ba89355c28303eba38",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN015",
+        "digest": "354db1b1b12580976ff9dbc6847561e2a7f33c8ea1d5c72a39c1be7f5b0a44cf",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      },
+      {
+        "store": "SYN016",
+        "digest": "cffc6657a73ea2bfdc6f29463aeebd033761702a2e020cafbd19e4dce91de8ef",
+        "facts": "09cf5e143d0d4ee57bbd4b5504c3026494786cee08fb40f7f96f351c3206a3c5"
+      },
+      {
+        "store": "SYN017",
+        "digest": "a96c847b5bc6756b72b258c789523e0bfa27c5c0ed7ba92889089efd9b2c537f",
+        "facts": "e29fcb74bc949615d89477e57a5564c6b7c621d162e6370051e7e57dcc918f5e"
+      }
+    ],
+    "exports": [
+      {
+        "name": "2026-11-16合成门店SYN001（精简版·河北仓）.xlsx",
+        "cells_sha256": "06541306db2601bdc8ea7469a39daf480b5d13b15aace05c395bda69dfbddf67",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN002（精简版·山东仓）.xlsx",
+        "cells_sha256": "28d1d4d20f5b4508fc5475abfa272ef42ae1b53afb8eaae76a3a344db50daf19",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN003（精简版·河北仓）.xlsx",
+        "cells_sha256": "19eb5a7d5499ce44b23b8a8812a0ccd0b791b3a445e5944501d05b2549eb1b04",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN004（精简版·山东仓）.xlsx",
+        "cells_sha256": "d3680d0be9a717964abe2bd58b9f1ba0161e2a93fc762e67f412f7cc97e886af",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN005（精简版·河北仓）.xlsx",
+        "cells_sha256": "a635dd5d679b6fe21855f221ef71ada56f35cdefa1f9d5f2b1e00dfea7e87bdd",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN006（精简版·山东仓）.xlsx",
+        "cells_sha256": "2333ad485ecced9d1f26fa9c478556e9684a43a2ad342ea07b28ac2cc7b35fb1",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN007（精简版·河北仓）.xlsx",
+        "cells_sha256": "b7186042f792271fe23c41ebd948b816730fb791720c8952167145ed29337fc6",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN008（精简版·山东仓）.xlsx",
+        "cells_sha256": "a95db91093e9b6401d39fb16d2fd6765d86298f7131a6c48d853098d92593a96",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN009（精简版·河北仓）.xlsx",
+        "cells_sha256": "5834c7b7923b2e6ad8bae92870f1b0dd215f4d3d626afd89a3b0984fb4186784",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN010（精简版·山东仓）.xlsx",
+        "cells_sha256": "6ff8203db144fbc7f3520f30df76a3f5d555a56b0193319ccfbbece23c6e0665",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN011（精简版·河北仓）.xlsx",
+        "cells_sha256": "3d46ba682229e3405251942c844ff9a283f873a7722d755b0d2da79554a1587f",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN012（精简版·山东仓）.xlsx",
+        "cells_sha256": "5b46e11f55cf4f251eb6bec8bb17c24825b7bad23ef8df45d68dbe5469849274",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN013（精简版·河北仓）.xlsx",
+        "cells_sha256": "87363121aee2a98fd214d87067be259e77a760faee7a750de1b55b87ee0689e5",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN014（精简版·山东仓）.xlsx",
+        "cells_sha256": "7d72bfefee9cf7b5b8a5bd66063cf165dde3c01c9e204a8bf892914efcfc7e81",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN015（精简版·河北仓）.xlsx",
+        "cells_sha256": "ba25ba3145a60c104dbdc6bf7b27f255befc3877154c26e7aa6d1ea51781d453",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN016（精简版·山东仓）.xlsx",
+        "cells_sha256": "3abac1354269afb7373eebfef9e1337809b898789faa6d92f5dc515ade2ea4c5",
+        "rows": 20007
+      },
+      {
+        "name": "2026-11-16合成门店SYN017（精简版·河北仓）.xlsx",
+        "cells_sha256": "1f3f837dee20ff62d0e7979712d796cbadc6f53c77d9909f30c5d4d9f16b77cb",
+        "rows": 20007
+      }
+    ],
+    "final_memory": {
+      "working_bytes": 304828416,
+      "peak_working_bytes": 2677592064,
+      "private_bytes": 1099612160,
+      "peak_private_bytes": 3485466624
+    },
+    "exit_code": 0,
+    "phase_peaks": {
+      "export": {
+        "private_bytes": 1260544000,
+        "working_bytes": 464072704
+      },
+      "signing": {
+        "private_bytes": 3485401088,
+        "working_bytes": 2677592064
+      },
+      "fixture": {
+        "private_bytes": 3365171200,
+        "working_bytes": 2556882944
+      },
+      "verify": {
+        "private_bytes": 1248227328,
+        "working_bytes": 452079616
+      },
+      "archive-committed": {
+        "private_bytes": 3246346240,
+        "working_bytes": 2441154560
+      }
+    }
+  },
+  "passed": true
+}

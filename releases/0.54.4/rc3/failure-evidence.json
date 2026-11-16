@@ -1,0 +1,42 @@
+{
+  "retained_root": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01",
+  "all_failures_retained": true,
+  "records": [
+    {
+      "path": "early-attempts.json",
+      "reason": "Initial QA runtime/header/progress callback setup failures retained; excluded from final metrics"
+    },
+    {
+      "path": "native-source-01",
+      "reason": "QA force-exit timer interrupted real asynchronous close; removed timer, native-source-02 passed"
+    },
+    {
+      "path": "formal-2runs/tight-old-1",
+      "reason": "Original baseline failed export and exhausted memory again when saving QA report; second attempt preserved original failure via reporting-only recovery"
+    },
+    {
+      "path": "formal-resume-01",
+      "reason": "Baseline original export MemoryError recovered; candidate-01 failed whole-JSON archive restore during file 14"
+    },
+    {
+      "path": "formal-final-02",
+      "reason": "Candidate-02 reclaimed closed workbook cycles but whole-JSON restore still failed before final file; added bounded verified export restore, no changed calculation"
+    },
+    {
+      "path": "native-exe-01",
+      "reason": "rc1 full tight packaged test found formal export missed adaptive marker; preserved committed synthetic orders, diagnostic and original EXE. rc2 fixed entry; no flash/crash occurred"
+    },
+    {
+      "path": "native-exe-02",
+      "reason": "rc2 produced 16/17 files under tight cap, then final file hash allocation failed because worker retained all input. rc3 drops only exclusively-owned input after commit; original data and outputs retained"
+    },
+    {
+      "path": "targeted-05.log",
+      "reason": "65 tests passed but one requested module name did not exist; corrected to actual delivery/overwrite/failure modules, final 84 passed"
+    },
+    {
+      "path": "formal-final-03",
+      "reason": "Final controlled old/new comparison; expected baseline failures preserved rather than counted as passes"
+    }
+  ]
+}

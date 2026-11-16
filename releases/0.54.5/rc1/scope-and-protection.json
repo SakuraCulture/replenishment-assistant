@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "changed": [
+    "src/app.py",
+    "src/jst_allocation.py",
+    "src/jst_results.py",
+    "src/jst_review.py",
+    "src/jst_review_ui.py",
+    "src/jst_smoke.py",
+    "src/operations_lifecycle_smoke.py",
+    "src/version.json",
+    "tests/test_jst.py",
+    "tests/test_jst_carton_normalization.py",
+    "tests/test_jst_results.py",
+    "tests/test_jst_review.py",
+    "tests/test_jst_standby.py"
+  ],
+  "added": [
+    "src/jst_carton_smoke.py",
+    "tools/jst_carton_qa.py"
+  ],
+  "protected_unchanged": [
+    "model.py",
+    "allocation.py",
+    "quantity_contract.py",
+    "normal_orders.py",
+    "normal_delivery.py",
+    "normal_exports.py",
+    "work_io_process.py",
+    "storage_chunks.py"
+  ],
+  "component_sources_unchanged": true
+}

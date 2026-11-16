@@ -1,0 +1,15 @@
+✔ actual fork relay invokes the bound adapter host check before exactly one native release (183.25ms)
+✔ missing callback refuses the request, then the same unuploaded intent can resume (148.3589ms)
+✔ payment changed during browser wait is rejected in the parent before release (141.5898ms)
+✔ child cancellation after parent approval awaits the original scoped refusal (138.4455ms)
+✔ timed-out child approval cannot later release a request or leak guard timers (31165.9573ms)
+✔ foreign, duplicate and late guard messages do not validate another upload (0.6114ms)
+✔ failed durable refusal stays failed without replay or false acknowledgement (0.2054ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 31903.0839

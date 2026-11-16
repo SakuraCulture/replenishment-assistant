@@ -1,0 +1,14 @@
+{
+  "os": "Microsoft Windows 11 家庭版 中文版",
+  "os_version": "10.0.26200",
+  "physical_kib": 33324920,
+  "available_physical_kib": 6416992,
+  "commit_limit_kib": 56098548,
+  "available_commit_kib": 4040260,
+  "processor": {
+    "Name": "Intel(R) Core(TM) i7-14650HX",
+    "NumberOfCores": 16,
+    "NumberOfLogicalProcessors": 24
+  },
+  "observed": "2026-11-16T14:08:55.3488538+08:00"
+}
