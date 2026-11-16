@@ -246,11 +246,13 @@ class Graph:
         in the private target. No signed/lifecycle payload is rewritten, and
         missing declarations in a legacy payload are not invented.
         """
-        expected={'merchant_feedback':'source_files','lifecycle_versions':'lifecycle_files','purchase_versions':'purchase_files'}
+        expected={'merchant_feedback':'source_files','lifecycle_versions':'lifecycle_files','purchase_versions':'purchase_files','lifecycle_events':'lifecycle_files'}
         assets={(r.table,r.values.get('sha')):r for r in self.rows if r.table in ASSETS}
         for parent in list(self.rows):
             if not parent.owners or parent.table not in expected or parent.error:continue
-            payload=json.loads(parent.values['payload']);files=payload.get('files')
+            if parent.table=='lifecycle_events' and parent.values.get('action')!='业务未变化，留存新原件':continue
+            payload=json.loads(parent.values['detail' if parent.table=='lifecycle_events' else 'payload'])
+            files=payload.get('files') if isinstance(payload,dict) else None
             if files is None:continue
             if not isinstance(files,list):
                 for oid in parent.owners:self.bad.setdefault(oid,[]).append('单据原件清单格式无效：'+parent.table)

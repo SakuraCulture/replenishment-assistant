@@ -92,6 +92,8 @@ const root=process.argv[1],s=await StateStore.open(root);await saveConfig(root,f
         self.assertFalse(self.reserve(p)['created'])
         after=self.f.old_tables();self.assertEqual(after.pop('order_component_packages'),[(p['id'],self.f.h['oid'])])
         self.assertEqual(after.pop('warehouse_component_packages'),[(p['id'],self.f.h['oid'],self.f.h['warehouse'])])
+        approval=after.pop('purchase_dispatch_guards')
+        self.assertEqual(len(approval),1);self.assertEqual(approval[0][0],p['id']);self.assertEqual(approval[0][3],'AUTHORIZED')
         self.assertEqual(after, before)
         self.assertEqual(self.f.view(), view)
 

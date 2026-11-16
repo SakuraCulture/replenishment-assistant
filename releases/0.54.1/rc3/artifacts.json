@@ -1,0 +1,26 @@
+{
+  "version": "0.54.1",
+  "build_id": "rc3",
+  "source_reference": "snapshot-9873669d8e53cc89d4ec0a9ec35e02b6fc02b81659182529772ad5cbac8aca29",
+  "base_commit": "4cdab01e67779264adb0bf24fc62734660edfc41",
+  "source_snapshot_sha256": "9873669d8e53cc89d4ec0a9ec35e02b6fc02b81659182529772ad5cbac8aca29",
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.1_rc3\\补货助手\\补货助手.exe",
+  "exe_sha256": "cd94e7d8986eb1874e06cdc3938532fe6294a7e5a32a1cc92beadaed3320b1b7",
+  "old_exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.0_rc3\\补货助手\\补货助手.exe",
+  "old_exe_sha256": "a8a665fec49ca361bcba9b5315bb59458211976a9cfa96503fdf3ff32d956333",
+  "previous_worktree_edits_included": true,
+  "committed": false,
+  "pushed": false,
+  "merged": false,
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.1_rc3\\补货助手_0.54.1_rc3_工作台修复与性能优化.zip",
+  "zip_sha256": "b542b0639b8907ddc79b15277634c66a0509ba96ee053280c468d7d1ad89099c",
+  "zip_bytes": 156757121,
+  "release": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\releases\\0.54.1\\rc3",
+  "additional_recovery_acceptance": {
+    "report": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\releases\\0.54.1\\rc3\\exe-recovery.json",
+    "passed": true,
+    "checks": 53,
+    "synthetic": true,
+    "live_platform": false
+  }
+}

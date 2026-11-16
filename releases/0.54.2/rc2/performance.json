@@ -1,0 +1,707 @@
+{
+  "passed": true,
+  "cases": {
+    "1000": {
+      "outputs_equal": true,
+      "digest": "3fb365ca962841d30cb0b3ad13a50c0ab101791a50985b43a1e931c9f2884db6",
+      "metrics": {
+        "light_snapshot": {
+          "old": {
+            "seconds": 0.0841441999655217,
+            "rss_before_mib": 51.7421875,
+            "rss_after_mib": 58.55078125,
+            "sampled_peak_worker_rss_mib": 63.78515625
+          },
+          "new": {
+            "seconds": 0.08023650001268834,
+            "rss_before_mib": 51.54296875,
+            "rss_after_mib": 58.2578125,
+            "sampled_peak_worker_rss_mib": 62.73828125
+          }
+        },
+        "freeze_payment": {
+          "old": {
+            "seconds": 0.11460930004250258,
+            "rss_before_mib": 58.55078125,
+            "rss_after_mib": 64.7578125,
+            "sampled_peak_worker_rss_mib": 69.6328125
+          },
+          "new": {
+            "seconds": 0.1100021000020206,
+            "rss_before_mib": 58.2578125,
+            "rss_after_mib": 64.37890625,
+            "sampled_peak_worker_rss_mib": 67.61328125
+          }
+        },
+        "validate_upload_basis": {
+          "old": {
+            "seconds": 0.1314544000197202,
+            "rss_before_mib": 64.7578125,
+            "rss_after_mib": 68.890625,
+            "sampled_peak_worker_rss_mib": 75.62890625
+          },
+          "new": {
+            "seconds": 0.13721559999976307,
+            "rss_before_mib": 64.37890625,
+            "rss_after_mib": 69.6875,
+            "write_hold_seconds": 0.0038687000051140785,
+            "sampled_peak_worker_rss_mib": 75.28515625
+          }
+        }
+      }
+    },
+    "5000": {
+      "outputs_equal": true,
+      "digest": "1fad7058eb023c2a0c6035882519a5f6738979e3a51601029bb9d24c2e0a898a",
+      "metrics": {
+        "light_snapshot": {
+          "old": {
+            "seconds": 0.40695299999788404,
+            "rss_before_mib": 65.12109375,
+            "rss_after_mib": 92.10546875,
+            "sampled_peak_worker_rss_mib": 124.16796875
+          },
+          "new": {
+            "seconds": 0.44356430001789704,
+            "rss_before_mib": 64.671875,
+            "rss_after_mib": 91.4453125,
+            "sampled_peak_worker_rss_mib": 121.41015625
+          }
+        },
+        "freeze_payment": {
+          "old": {
+            "seconds": 0.5646599999745376,
+            "rss_before_mib": 92.109375,
+            "rss_after_mib": 121.01953125,
+            "sampled_peak_worker_rss_mib": 152.55078125
+          },
+          "new": {
+            "seconds": 0.5820128999766894,
+            "rss_before_mib": 91.4453125,
+            "rss_after_mib": 120.71875,
+            "sampled_peak_worker_rss_mib": 150.98046875
+          }
+        },
+        "validate_upload_basis": {
+          "old": {
+            "seconds": 0.5923538000206463,
+            "rss_before_mib": 121.01953125,
+            "rss_after_mib": 136.75,
+            "sampled_peak_worker_rss_mib": 181.00390625
+          },
+          "new": {
+            "seconds": 0.6111830999725498,
+            "rss_before_mib": 120.73046875,
+            "rss_after_mib": 136.4609375,
+            "write_hold_seconds": 0.007037500035949051,
+            "sampled_peak_worker_rss_mib": 181.73828125
+          }
+        }
+      }
+    },
+    "10000": {
+      "outputs_equal": true,
+      "digest": "99320c33639fb3d796c38fdbda66e6028fa365df434dfe28abfb115e5040bb04",
+      "metrics": {
+        "light_snapshot": {
+          "old": {
+            "seconds": 0.8273467000108212,
+            "rss_before_mib": 81.1953125,
+            "rss_after_mib": 131.4140625,
+            "sampled_peak_worker_rss_mib": 196.37890625
+          },
+          "new": {
+            "seconds": 0.8148387999972329,
+            "rss_before_mib": 81.15625,
+            "rss_after_mib": 132.80078125,
+            "sampled_peak_worker_rss_mib": 199.0703125
+          }
+        },
+        "freeze_payment": {
+          "old": {
+            "seconds": 1.1816143000032753,
+            "rss_before_mib": 131.4140625,
+            "rss_after_mib": 194.33984375,
+            "sampled_peak_worker_rss_mib": 258.61328125
+          },
+          "new": {
+            "seconds": 1.1817026000353508,
+            "rss_before_mib": 132.8046875,
+            "rss_after_mib": 195.6328125,
+            "sampled_peak_worker_rss_mib": 258.89453125
+          }
+        },
+        "validate_upload_basis": {
+          "old": {
+            "seconds": 1.3170223000342958,
+            "rss_before_mib": 194.33984375,
+            "rss_after_mib": 218.28125,
+            "sampled_peak_worker_rss_mib": 325.8984375
+          },
+          "new": {
+            "seconds": 1.2736308999592438,
+            "rss_before_mib": 195.63671875,
+            "rss_after_mib": 218.578125,
+            "write_hold_seconds": 0.012280199967790395,
+            "sampled_peak_worker_rss_mib": 322.80859375
+          }
+        }
+      }
+    }
+  },
+  "repeats": 3,
+  "runs": [
+    {
+      "variant": "old",
+      "count": 1000,
+      "round": 0,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.0841441999655217,
+          "rss_before_mib": 52.375,
+          "rss_after_mib": 58.55078125,
+          "sampled_peak_worker_rss_mib": 63.78515625
+        },
+        "freeze_payment": {
+          "seconds": 0.11404559999937192,
+          "rss_before_mib": 58.55078125,
+          "rss_after_mib": 64.7578125,
+          "sampled_peak_worker_rss_mib": 68.7421875
+        },
+        "validate_upload_basis": {
+          "seconds": 0.1314544000197202,
+          "rss_before_mib": 64.7578125,
+          "rss_after_mib": 68.890625,
+          "sampled_peak_worker_rss_mib": 75.62890625
+        }
+      },
+      "digest": "3fb365ca962841d30cb0b3ad13a50c0ab101791a50985b43a1e931c9f2884db6",
+      "payment_rows": 1000,
+      "quantity": "3000",
+      "amount": "9000.00"
+    },
+    {
+      "variant": "new",
+      "count": 1000,
+      "round": 0,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.08023650001268834,
+          "rss_before_mib": 51.51953125,
+          "rss_after_mib": 58.2578125,
+          "sampled_peak_worker_rss_mib": 62.3671875
+        },
+        "freeze_payment": {
+          "seconds": 0.10998080001445487,
+          "rss_before_mib": 58.2578125,
+          "rss_after_mib": 64.37890625,
+          "sampled_peak_worker_rss_mib": 68.359375
+        },
+        "validate_upload_basis": {
+          "seconds": 0.13721559999976307,
+          "rss_before_mib": 64.37890625,
+          "rss_after_mib": 68.7109375,
+          "write_hold_seconds": 0.0044219999690540135,
+          "sampled_peak_worker_rss_mib": 75.28515625
+        }
+      },
+      "digest": "3fb365ca962841d30cb0b3ad13a50c0ab101791a50985b43a1e931c9f2884db6",
+      "payment_rows": 1000,
+      "quantity": "3000",
+      "amount": "9000.00"
+    },
+    {
+      "variant": "old",
+      "count": 5000,
+      "round": 0,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.3921419999678619,
+          "rss_before_mib": 65.12109375,
+          "rss_after_mib": 92.10546875,
+          "sampled_peak_worker_rss_mib": 124.50390625
+        },
+        "freeze_payment": {
+          "seconds": 0.5703057000064291,
+          "rss_before_mib": 92.109375,
+          "rss_after_mib": 121.01953125,
+          "sampled_peak_worker_rss_mib": 153.33203125
+        },
+        "validate_upload_basis": {
+          "seconds": 0.5923538000206463,
+          "rss_before_mib": 121.01953125,
+          "rss_after_mib": 135.44140625,
+          "sampled_peak_worker_rss_mib": 180.16015625
+        }
+      },
+      "digest": "1fad7058eb023c2a0c6035882519a5f6738979e3a51601029bb9d24c2e0a898a",
+      "payment_rows": 5000,
+      "quantity": "15000",
+      "amount": "45000.00"
+    },
+    {
+      "variant": "new",
+      "count": 5000,
+      "round": 0,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.44356430001789704,
+          "rss_before_mib": 64.44140625,
+          "rss_after_mib": 91.38671875,
+          "sampled_peak_worker_rss_mib": 121.41015625
+        },
+        "freeze_payment": {
+          "seconds": 0.5820128999766894,
+          "rss_before_mib": 91.38671875,
+          "rss_after_mib": 120.71875,
+          "sampled_peak_worker_rss_mib": 152.0546875
+        },
+        "validate_upload_basis": {
+          "seconds": 0.6111830999725498,
+          "rss_before_mib": 120.73046875,
+          "rss_after_mib": 136.86328125,
+          "write_hold_seconds": 0.007037500035949051,
+          "sampled_peak_worker_rss_mib": 181.375
+        }
+      },
+      "digest": "1fad7058eb023c2a0c6035882519a5f6738979e3a51601029bb9d24c2e0a898a",
+      "payment_rows": 5000,
+      "quantity": "15000",
+      "amount": "45000.00"
+    },
+    {
+      "variant": "old",
+      "count": 10000,
+      "round": 0,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.8681567999883555,
+          "rss_before_mib": 81.17578125,
+          "rss_after_mib": 131.37890625,
+          "sampled_peak_worker_rss_mib": 199.234375
+        },
+        "freeze_payment": {
+          "seconds": 1.1816143000032753,
+          "rss_before_mib": 131.390625,
+          "rss_after_mib": 194.33984375,
+          "sampled_peak_worker_rss_mib": 258.61328125
+        },
+        "validate_upload_basis": {
+          "seconds": 1.3170223000342958,
+          "rss_before_mib": 194.33984375,
+          "rss_after_mib": 219.5703125,
+          "sampled_peak_worker_rss_mib": 328.79296875
+        }
+      },
+      "digest": "99320c33639fb3d796c38fdbda66e6028fa365df434dfe28abfb115e5040bb04",
+      "payment_rows": 10000,
+      "quantity": "30000",
+      "amount": "90000.00"
+    },
+    {
+      "variant": "new",
+      "count": 10000,
+      "round": 0,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.8148387999972329,
+          "rss_before_mib": 81.15625,
+          "rss_after_mib": 132.546875,
+          "sampled_peak_worker_rss_mib": 200.00390625
+        },
+        "freeze_payment": {
+          "seconds": 1.1817026000353508,
+          "rss_before_mib": 132.55078125,
+          "rss_after_mib": 195.7734375,
+          "sampled_peak_worker_rss_mib": 265.26953125
+        },
+        "validate_upload_basis": {
+          "seconds": 1.2736308999592438,
+          "rss_before_mib": 195.7734375,
+          "rss_after_mib": 218.578125,
+          "write_hold_seconds": 0.012280199967790395,
+          "sampled_peak_worker_rss_mib": 322.80859375
+        }
+      },
+      "digest": "99320c33639fb3d796c38fdbda66e6028fa365df434dfe28abfb115e5040bb04",
+      "payment_rows": 10000,
+      "quantity": "30000",
+      "amount": "90000.00"
+    },
+    {
+      "variant": "new",
+      "count": 1000,
+      "round": 1,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.07945650001056492,
+          "rss_before_mib": 52.2265625,
+          "rss_after_mib": 58.62109375,
+          "sampled_peak_worker_rss_mib": 63.36328125
+        },
+        "freeze_payment": {
+          "seconds": 0.1100021000020206,
+          "rss_before_mib": 58.62109375,
+          "rss_after_mib": 63.75,
+          "sampled_peak_worker_rss_mib": 67.29296875
+        },
+        "validate_upload_basis": {
+          "seconds": 0.1300500999786891,
+          "rss_before_mib": 63.75,
+          "rss_after_mib": 69.6875,
+          "write_hold_seconds": 0.0038687000051140785,
+          "sampled_peak_worker_rss_mib": 76.22265625
+        }
+      },
+      "digest": "3fb365ca962841d30cb0b3ad13a50c0ab101791a50985b43a1e931c9f2884db6",
+      "payment_rows": 1000,
+      "quantity": "3000",
+      "amount": "9000.00"
+    },
+    {
+      "variant": "old",
+      "count": 1000,
+      "round": 1,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.07998290000250563,
+          "rss_before_mib": 51.40234375,
+          "rss_after_mib": 58.84375,
+          "sampled_peak_worker_rss_mib": 64.0234375
+        },
+        "freeze_payment": {
+          "seconds": 0.11460930004250258,
+          "rss_before_mib": 58.84375,
+          "rss_after_mib": 65.27734375,
+          "sampled_peak_worker_rss_mib": 69.6328125
+        },
+        "validate_upload_basis": {
+          "seconds": 0.123660099983681,
+          "rss_before_mib": 65.27734375,
+          "rss_after_mib": 68.34375,
+          "sampled_peak_worker_rss_mib": 75.33984375
+        }
+      },
+      "digest": "3fb365ca962841d30cb0b3ad13a50c0ab101791a50985b43a1e931c9f2884db6",
+      "payment_rows": 1000,
+      "quantity": "3000",
+      "amount": "9000.00"
+    },
+    {
+      "variant": "new",
+      "count": 5000,
+      "round": 1,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.5034132999717258,
+          "rss_before_mib": 64.78515625,
+          "rss_after_mib": 91.4453125,
+          "sampled_peak_worker_rss_mib": 121.3828125
+        },
+        "freeze_payment": {
+          "seconds": 0.6349456000025384,
+          "rss_before_mib": 91.4453125,
+          "rss_after_mib": 120.44140625,
+          "sampled_peak_worker_rss_mib": 146.3046875
+        },
+        "validate_upload_basis": {
+          "seconds": 0.6546907000010833,
+          "rss_before_mib": 120.453125,
+          "rss_after_mib": 136.4609375,
+          "write_hold_seconds": 0.006734499998856336,
+          "sampled_peak_worker_rss_mib": 183.4609375
+        }
+      },
+      "digest": "1fad7058eb023c2a0c6035882519a5f6738979e3a51601029bb9d24c2e0a898a",
+      "payment_rows": 5000,
+      "quantity": "15000",
+      "amount": "45000.00"
+    },
+    {
+      "variant": "old",
+      "count": 5000,
+      "round": 1,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.4271031999960542,
+          "rss_before_mib": 65.46484375,
+          "rss_after_mib": 92.15234375,
+          "sampled_peak_worker_rss_mib": 124.16796875
+        },
+        "freeze_payment": {
+          "seconds": 0.5646599999745376,
+          "rss_before_mib": 92.15625,
+          "rss_after_mib": 122.94140625,
+          "sampled_peak_worker_rss_mib": 152.55078125
+        },
+        "validate_upload_basis": {
+          "seconds": 0.607552100031171,
+          "rss_before_mib": 122.94140625,
+          "rss_after_mib": 136.75,
+          "sampled_peak_worker_rss_mib": 188.125
+        }
+      },
+      "digest": "1fad7058eb023c2a0c6035882519a5f6738979e3a51601029bb9d24c2e0a898a",
+      "payment_rows": 5000,
+      "quantity": "15000",
+      "amount": "45000.00"
+    },
+    {
+      "variant": "new",
+      "count": 10000,
+      "round": 1,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.9466534999664873,
+          "rss_before_mib": 81.72265625,
+          "rss_after_mib": 132.80078125,
+          "sampled_peak_worker_rss_mib": 199.0703125
+        },
+        "freeze_payment": {
+          "seconds": 1.2803098000003956,
+          "rss_before_mib": 132.8046875,
+          "rss_after_mib": 195.6328125,
+          "sampled_peak_worker_rss_mib": 254.55859375
+        },
+        "validate_upload_basis": {
+          "seconds": 2.061728700005915,
+          "rss_before_mib": 195.63671875,
+          "rss_after_mib": 219.15625,
+          "write_hold_seconds": 0.016000200004782528,
+          "sampled_peak_worker_rss_mib": 327.4453125
+        }
+      },
+      "digest": "99320c33639fb3d796c38fdbda66e6028fa365df434dfe28abfb115e5040bb04",
+      "payment_rows": 10000,
+      "quantity": "30000",
+      "amount": "90000.00"
+    },
+    {
+      "variant": "old",
+      "count": 10000,
+      "round": 1,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.8170192000106908,
+          "rss_before_mib": 81.3984375,
+          "rss_after_mib": 131.4140625,
+          "sampled_peak_worker_rss_mib": 195.5234375
+        },
+        "freeze_payment": {
+          "seconds": 1.2329777000122704,
+          "rss_before_mib": 131.4140625,
+          "rss_after_mib": 192.3046875,
+          "sampled_peak_worker_rss_mib": 247.01171875
+        },
+        "validate_upload_basis": {
+          "seconds": 1.3440946999471635,
+          "rss_before_mib": 192.3046875,
+          "rss_after_mib": 218.28125,
+          "sampled_peak_worker_rss_mib": 324.46484375
+        }
+      },
+      "digest": "99320c33639fb3d796c38fdbda66e6028fa365df434dfe28abfb115e5040bb04",
+      "payment_rows": 10000,
+      "quantity": "30000",
+      "amount": "90000.00"
+    },
+    {
+      "variant": "old",
+      "count": 1000,
+      "round": 2,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.17871569999260828,
+          "rss_before_mib": 51.7421875,
+          "rss_after_mib": 58.0234375,
+          "sampled_peak_worker_rss_mib": 62.76171875
+        },
+        "freeze_payment": {
+          "seconds": 0.2888245000503957,
+          "rss_before_mib": 58.0234375,
+          "rss_after_mib": 63.99609375,
+          "sampled_peak_worker_rss_mib": 71.03125
+        },
+        "validate_upload_basis": {
+          "seconds": 0.22148720000404865,
+          "rss_before_mib": 63.99609375,
+          "rss_after_mib": 69.6171875,
+          "sampled_peak_worker_rss_mib": 76.37890625
+        }
+      },
+      "digest": "3fb365ca962841d30cb0b3ad13a50c0ab101791a50985b43a1e931c9f2884db6",
+      "payment_rows": 1000,
+      "quantity": "3000",
+      "amount": "9000.00"
+    },
+    {
+      "variant": "new",
+      "count": 1000,
+      "round": 2,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.08679500001017004,
+          "rss_before_mib": 51.54296875,
+          "rss_after_mib": 58.234375,
+          "sampled_peak_worker_rss_mib": 62.73828125
+        },
+        "freeze_payment": {
+          "seconds": 0.1109376999665983,
+          "rss_before_mib": 58.234375,
+          "rss_after_mib": 64.796875,
+          "sampled_peak_worker_rss_mib": 67.61328125
+        },
+        "validate_upload_basis": {
+          "seconds": 0.13821379997534677,
+          "rss_before_mib": 64.796875,
+          "rss_after_mib": 70.01171875,
+          "write_hold_seconds": 0.0037959999754093587,
+          "sampled_peak_worker_rss_mib": 73.4609375
+        }
+      },
+      "digest": "3fb365ca962841d30cb0b3ad13a50c0ab101791a50985b43a1e931c9f2884db6",
+      "payment_rows": 1000,
+      "quantity": "3000",
+      "amount": "9000.00"
+    },
+    {
+      "variant": "old",
+      "count": 5000,
+      "round": 2,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.40695299999788404,
+          "rss_before_mib": 65.1171875,
+          "rss_after_mib": 91.90234375,
+          "sampled_peak_worker_rss_mib": 116.421875
+        },
+        "freeze_payment": {
+          "seconds": 0.5533832000219263,
+          "rss_before_mib": 91.90625,
+          "rss_after_mib": 120.609375,
+          "sampled_peak_worker_rss_mib": 149.05078125
+        },
+        "validate_upload_basis": {
+          "seconds": 0.572350499976892,
+          "rss_before_mib": 120.609375,
+          "rss_after_mib": 137.34765625,
+          "sampled_peak_worker_rss_mib": 181.00390625
+        }
+      },
+      "digest": "1fad7058eb023c2a0c6035882519a5f6738979e3a51601029bb9d24c2e0a898a",
+      "payment_rows": 5000,
+      "quantity": "15000",
+      "amount": "45000.00"
+    },
+    {
+      "variant": "new",
+      "count": 5000,
+      "round": 2,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.41604240000015125,
+          "rss_before_mib": 64.671875,
+          "rss_after_mib": 91.8203125,
+          "sampled_peak_worker_rss_mib": 121.5390625
+        },
+        "freeze_payment": {
+          "seconds": 0.551541900029406,
+          "rss_before_mib": 91.8203125,
+          "rss_after_mib": 120.9609375,
+          "sampled_peak_worker_rss_mib": 150.98046875
+        },
+        "validate_upload_basis": {
+          "seconds": 0.5945779000176117,
+          "rss_before_mib": 120.96875,
+          "rss_after_mib": 134.4375,
+          "write_hold_seconds": 0.008141900005284697,
+          "sampled_peak_worker_rss_mib": 181.73828125
+        }
+      },
+      "digest": "1fad7058eb023c2a0c6035882519a5f6738979e3a51601029bb9d24c2e0a898a",
+      "payment_rows": 5000,
+      "quantity": "15000",
+      "amount": "45000.00"
+    },
+    {
+      "variant": "old",
+      "count": 10000,
+      "round": 2,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.8273467000108212,
+          "rss_before_mib": 81.1953125,
+          "rss_after_mib": 131.46484375,
+          "sampled_peak_worker_rss_mib": 196.37890625
+        },
+        "freeze_payment": {
+          "seconds": 1.153040900011547,
+          "rss_before_mib": 131.46484375,
+          "rss_after_mib": 194.6328125,
+          "sampled_peak_worker_rss_mib": 259.18359375
+        },
+        "validate_upload_basis": {
+          "seconds": 1.203987400047481,
+          "rss_before_mib": 194.6328125,
+          "rss_after_mib": 217.57421875,
+          "sampled_peak_worker_rss_mib": 325.8984375
+        }
+      },
+      "digest": "99320c33639fb3d796c38fdbda66e6028fa365df434dfe28abfb115e5040bb04",
+      "payment_rows": 10000,
+      "quantity": "30000",
+      "amount": "90000.00"
+    },
+    {
+      "variant": "new",
+      "count": 10000,
+      "round": 2,
+      "result": true,
+      "values": {
+        "light_snapshot": {
+          "seconds": 0.7637553999666125,
+          "rss_before_mib": 81.12109375,
+          "rss_after_mib": 132.9375,
+          "sampled_peak_worker_rss_mib": 196.859375
+        },
+        "freeze_payment": {
+          "seconds": 1.1179172999691218,
+          "rss_before_mib": 132.94140625,
+          "rss_after_mib": 195.46875,
+          "sampled_peak_worker_rss_mib": 258.89453125
+        },
+        "validate_upload_basis": {
+          "seconds": 1.2139445000211708,
+          "rss_before_mib": 195.47265625,
+          "rss_after_mib": 217.29296875,
+          "write_hold_seconds": 0.011928700027056038,
+          "sampled_peak_worker_rss_mib": 322.609375
+        }
+      },
+      "digest": "99320c33639fb3d796c38fdbda66e6028fa365df434dfe28abfb115e5040bb04",
+      "payment_rows": 10000,
+      "quantity": "30000",
+      "amount": "90000.00"
+    }
+  ],
+  "synthetic": true,
+  "live_platform": false,
+  "notes": "Same synthetic DB per size; old/new alternate. RSS sampled from actual worker PID each 10ms. Upload-basis comparison includes new short host approval; not full browser/upload latency. No business-PC capacity claim."
+}

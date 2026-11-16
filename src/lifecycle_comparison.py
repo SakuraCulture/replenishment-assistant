@@ -129,9 +129,10 @@ def collect(path,heads,progress=lambda _:None,cancel=None):
                 if seen[key]!=lc.key(h):raise ValueError('同一订单不能合计多个签发修订，请刷新列表')
                 continue
             seen[key]=lc.key(h);purchases.validate_head(db,h)
-            if db.execute('SELECT current FROM normal_orders WHERE oid=?',(h['oid'],)).fetchone()[0]!=h['revision']:raise ValueError('订单签发已更新，请刷新后导出')
-            k=(h['oid'],h['revision'])
-            if k not in cache:cache[k]=repo.get(h['day'],h['store'],h['revision'],view='export')
+            import warehouse_execution as execution
+            managed=execution.has_parent(db,h['oid'])
+            k=(h['oid'],h['revision'],h['warehouse'] if managed else None)
+            if k not in cache:cache[k]=execution.get_order(repo,h,view='export',db=db) if managed else repo.get(h['day'],h['store'],h['revision'],view='export')
             cache.move_to_end(k)
             if len(cache)>2:cache.popitem(last=False)
             order=cache[k]

@@ -41,9 +41,9 @@ def load(path,known=None,progress=lambda _:None,cancel=None,*,day=None):
             if 'store_admission' in tables:
                 for code,raw in db.execute('SELECT store,payload FROM store_admission ORDER BY rowid'):
                     checkpoint(cancel);records[code]=json.loads(raw)
-    from aoxiang_directory import Directory
+    from aoxiang_directory import load_for_settings
     try:
-        directory=Directory(path.parent).load()
+        directory=load_for_settings(path.parent)
         for item in (directory or {}).get('items',[]):
             if not names.get(item['code']):names[item['code']]=item['name']
     except (OSError,ValueError,KeyError,TypeError) as exc:warnings.append('门店目录未能读取，以下仍展示作业、参数和准入记录中的门店：'+str(exc))

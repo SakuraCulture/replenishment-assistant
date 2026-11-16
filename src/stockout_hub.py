@@ -34,7 +34,8 @@ class Child(BaseEntry):
         if self.hub.page:self.hub.page.controls()
     def status(self,message):
         super().status(message)
-        if self.hub.page:self.hub.page.note.setText(('门店：' if self.kind=='store' else '大仓：')+message)
+        if self.hub.page:
+            self.hub.page.note.setText(('门店：' if self.kind=='store' else '大仓：')+message);self.hub.page.controls()
 
 
 class Entry(BaseEntry):
@@ -58,6 +59,7 @@ class Entry(BaseEntry):
         if self.page is not None and index!=self.index:
             for child in self.children.values():
                 if child.page:
+                    child.discard_pending('已离开缺货率',foreground_only=True)
                     if child.worker and not child.background:child.pause('离开缺货率，正在安全暂停')
                     child.page=None;child.index=None;child.generation+=1;child.callback=None
         super().section_changed(index)
@@ -77,7 +79,7 @@ class Entry(BaseEntry):
     def pause(self,message='已请求安全暂停；原任务和原件保留'):
         super().pause(message)
         for child in self.children.values():
-            if child.worker:child.pause(message)
+            if child.worker or child.queued:child.pause(message)
     def prepare_close(self):
         ready=super().prepare_close()
         for child in self.children.values():ready=child.prepare_close() and ready

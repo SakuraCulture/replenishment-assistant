@@ -125,7 +125,13 @@ def start_smoke(app,win,args):
         with closing(sqlite3.connect(partial_path)) as db:
             require(not active(db,head['oid'],head['warehouse']) and active(db,sd['oid'],sd['warehouse']) and orders.active(db,other)==gids[1],'单仓删除与晚到结果不恢复已删仓，不影响另一仓和未选订单')
         # Real DB allocations, with a failure between register and first commit.
-        p=batches.preview_new(path,[head],{'河北仓':catalog()});batches.register(path,p);bid=p['payload']['batch_id']
+        p=batches.preview_new(path,[head],{'河北仓':catalog()})
+        write('registration-scheduling.json',{'archive_reader_active':win.history_reader.active is not None,
+              'home_reader_active':win.home_tasks.reader.active is not None,'uses_real_background_task':True})
+        # Production invokes this service from a worker. A synchronous probe on
+        # the GUI thread would prevent history IPC callbacks from completing.
+        from business_ui import run
+        run(win,batches.register,(path,p),'登记隔离验收原批次');bid=p['payload']['batch_id']
         new=batches.preview_new(path,[other],{'河北仓':catalog()});activate=batches.activate
         def fail(*a,**k):raise OSError('synthetic activation failure')
         batches.activate=fail
@@ -191,7 +197,7 @@ def start_smoke(app,win,args):
         state=json.loads((out/'reopen.json').read_text('utf-8'));sd=state['head']
         dialog=RecoveryDialog(win,win,[sd],'receipt');dialogs.append(dialog);dialog.show();QTest.qWait(50)
         require(dialog.choices.currentData()==state['checkpoint'] and dialog.go.isEnabled(),'实际EXE重开后找到原未完成保存')
-        QTest.mouseClick(dialog.go,Qt.MouseButton.LeftButton);require(bool(dialog.receipt),'重开后从当前恢复页完成原收货保存')
+        QTest.mouseClick(dialog.go,Qt.MouseButton.LeftButton);require(bool(dialog.receipt),'重开后从当前恢复页完成原收货保存：'+dialog.note.text())
         before=lc.snapshot(path,sd)['documents']['receipt']['version'];QTest.mouseClick(dialog.go,Qt.MouseButton.LeftButton)
         require(lc.snapshot(path,sd)['documents']['receipt']['version']==before,'重开后再次恢复也不增加版本');shot(dialog,'reopen-completed');dialog.close()
         r=batches.recover_batch(path,state['bid'])

@@ -85,8 +85,8 @@ def ordered(stores,plan):
     return {s:stores[s] for s in dict.fromkeys([*(i['code'] for i in plan['stores']),*stores]) if s in stores}
 
 def available(host):
-    from aoxiang_directory import Directory
-    data=Directory(host.work_repository.path.parent/'aoxiang').load()
+    from aoxiang_directory import load_for_settings
+    data=load_for_settings(host.work_repository.path.parent)
     stores={i['code']:i['name'] for i in (data or {}).get('items',[])}
     stores.update({s:r.get('name') or s for s,r in host.work_repository.stores().items()})
     stores.update((host.loaded or {}).get('stores',{}));return stores

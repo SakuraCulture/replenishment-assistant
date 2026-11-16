@@ -1,0 +1,22 @@
+{
+  "version": "0.54.1",
+  "build_id": "rc1",
+  "source_reference": "snapshot-2275ca252a06913c0d543fcc2a03e0384f443da693e65616e1377048b76ff819",
+  "base_commit": "4cdab01e67779264adb0bf24fc62734660edfc41",
+  "source_snapshot_sha256": "2275ca252a06913c0d543fcc2a03e0384f443da693e65616e1377048b76ff819",
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.1_rc1\\补货助手\\补货助手.exe",
+  "exe_sha256": "c80a54bf3725f4f05f8a52522a2636f1ec3351396182de1584d6e7316e752cfc",
+  "old_exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.0_rc3\\补货助手\\补货助手.exe",
+  "old_exe_sha256": "a8a665fec49ca361bcba9b5315bb59458211976a9cfa96503fdf3ff32d956333",
+  "previous_worktree_edits_included": true,
+  "committed": false,
+  "pushed": false,
+  "merged": false,
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.1_rc1\\补货助手_0.54.1_rc1_工作台修复与性能优化.zip",
+  "zip_sha256": "e2992bb54e566eb11bb4cd7e735fc1968252b7b9f5978b49245ded35328fc114",
+  "zip_bytes": 156751357,
+  "release": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\releases\\0.54.1\\rc1",
+  "delivery_status": "superseded_internal_candidate",
+  "superseded_by": "0.54.1 rc2",
+  "reason": "Configuration choices uses an AX RPC/shared lease, so it must retain the platform busy gate. No live browser navigation was tested or observed."
+}

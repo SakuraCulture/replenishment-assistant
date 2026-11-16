@@ -48,6 +48,7 @@ class Page(QWidget):
             old=self.entry.children[self.current]
             if old.page:
                 self.queries[self.current]=old.page.options()
+                old.discard_pending('已切换分析子页',foreground_only=True)
                 if old.worker and not old.background:old.pause('切换分析子页，正在安全暂停；可在原作业继续')
                 self.body.removeWidget(old.page);old.page.deleteLater();old.page=None;old.callback=None;old.generation+=1
         self.current=kind;child=self.entry.children[kind];child.generation+=1;child.index=self.entry.index
@@ -69,7 +70,8 @@ class Page(QWidget):
         child.page.refresh_metadata()
     def controls(self):
         busy=bool(self.entry.worker or any(c.worker for c in self.entry.children.values()))
-        self.collect.setEnabled(not busy);self.stop.setEnabled(busy)
+        queued=bool(self.entry.queued or any(c.queued for c in self.entry.children.values()))
+        self.collect.setEnabled(not busy);self.stop.setEnabled(busy or queued)
         self.export_btn.setEnabled(not busy)
         self.resume.setEnabled(not busy and self.runs.currentData() is not None);self.end.setEnabled(not busy and self.runs.currentData() is not None);self.reuse.setEnabled(not busy and self.runs.currentData() is not None)
     def refresh_metadata(self):self.entry.start('hub_open',{},self.metadata)

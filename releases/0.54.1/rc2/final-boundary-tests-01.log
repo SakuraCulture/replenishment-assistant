@@ -1,0 +1,19 @@
+.........................ERROR:root:单据已保存，恢复回执写入待核：984f1df305417c909de0fd6aada4b209
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\lifecycle_recovery.py", line 135, in execute
+    try:_publish(path,value)
+        ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+OSError: receipt disk unavailable
+...........
+----------------------------------------------------------------------
+Ran 36 tests in 9.042s
+
+OK

@@ -79,15 +79,21 @@ def validate_for_upload(path, package, configuration, suppliers, *, cancel=None,
         raise ValueError('采购任务和付款依据关联不符')
     if file_hash(intent['file']['path']) != intent['file']['sha256']:
         raise ValueError('采购上传文件已变化')
-    validate_basis(path, plan, configuration, suppliers, cancel=cancel)
-    current_admission=check_admission(path,plan)
-    if plan.get('admission') is not None and current_admission!=plan['admission']:
-        raise ValueError('采购准入依据已变化，请重新核对采购预览；未重新上传')
+    def validate(db=None):
+        validate_basis(path, plan, configuration, suppliers, cancel=cancel, _db=db)
+        current_admission=check_admission(path,plan,db=db)
+        if plan.get('admission') is not None and current_admission!=plan['admission']:
+            raise ValueError('采购准入依据已变化，请重新核对采购预览；未重新上传')
+        return current_admission
+    if for_binding:validate()
+    else:
+        from purchase_dispatch import authorize
+        authorize(path,intent,validate,cancel=cancel)
     return True
 
-def check_admission(path,plan):
+def check_admission(path,plan,*,db=None):
     from admission import execution_evidence
-    evidence=execution_evidence(path,plan['head']['store'],plan['head']['warehouse'],[r['sku'] for r in plan['rows']])
+    evidence=execution_evidence(path,plan['head']['store'],plan['head']['warehouse'],[r['sku'] for r in plan['rows']],db=db)
     blocked=[sku+'：'+'；'.join(a['reasons']) for sku,a in evidence['items'].items() if a['reasons']]
     if blocked:raise ValueError('采购准入未通过，原付款事实保留：\n'+'\n'.join(blocked))
     return evidence

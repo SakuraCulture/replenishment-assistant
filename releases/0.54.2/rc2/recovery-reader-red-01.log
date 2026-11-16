@@ -1,0 +1,29 @@
+EE
+======================================================================
+ERROR: test_checkpoint_publication_does_not_require_readers_to_finish (tests.test_lifecycle_recovery.Recovery.test_checkpoint_publication_does_not_require_readers_to_finish)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_lifecycle_recovery.py", line 138, in test_checkpoint_publication_does_not_require_readers_to_finish
+    task=recovery.begin(self.path,plan)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\lifecycle_recovery.py", line 114, in begin
+    with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=rw',uri=True,timeout=.15)) as db,db:
+                                                                                                       ^^
+sqlite3.OperationalError: database is locked
+
+======================================================================
+ERROR: test_checkpoint_receipt_publication_also_allows_active_reader (tests.test_lifecycle_recovery.Recovery.test_checkpoint_receipt_publication_also_allows_active_reader)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\tests\test_lifecycle_recovery.py", line 148, in test_checkpoint_receipt_publication_also_allows_active_reader
+    self.assertTrue(recovery._publish(self.path,task))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\lifecycle_recovery.py", line 70, in _publish
+    with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=rw',uri=True,timeout=.15)) as db,db:
+                                                                                                       ^^
+sqlite3.OperationalError: database is locked
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.676s
+
+FAILED (errors=2)

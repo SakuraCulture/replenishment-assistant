@@ -1,6 +1,6 @@
 """Lazy, rebuildable payment candidate index. Source facts are never inferred or rewritten."""
 import copy,hashlib,json,re,sqlite3,unicodedata
-from contextlib import closing
+from contextlib import closing,nullcontext
 from datetime import date,datetime
 from decimal import Decimal
 from pathlib import Path
@@ -19,10 +19,10 @@ def tables(db):return {r[0] for r in db.execute("SELECT name FROM sqlite_master 
 def accounts(path):
     """Only stable, previously verified JST company identifiers; no browser or login."""
     file=Path(path).parent/'jst_catalog_sync/jobs.json'
-    if not file.is_file():return {'choices':[],'token':checksum([]),'reason':'尚无已核验的聚水潭企业连接；可人工关联，本次不记住来源单号'}
-    if file.stat().st_size>32*1024*1024:return {'choices':[],'token':checksum(['oversize']),'reason':'来源连接记录过大，未整体加载；可人工关联，自动来源识别待维护'}
+    if not file.is_file():return {'choices':[],'token':checksum([]),'reason':'尚无已核验的聚水潭企业连接；自动模式仍可认单，仅记住本张付款的原单对应，不推断企业'}
+    if file.stat().st_size>32*1024*1024:return {'choices':[],'token':checksum(['oversize']),'reason':'来源连接记录过大，未整体加载；可在自动模式认单，不推断企业'}
     try:value=json.loads(file.read_text('utf-8'))
-    except (OSError,ValueError):return {'choices':[],'token':checksum(['unreadable']),'reason':'聚水潭来源连接记录无法读取；可人工关联，不自动记录内部单号'}
+    except (OSError,ValueError):return {'choices':[],'token':checksum(['unreadable']),'reason':'聚水潭来源连接记录无法读取；自动模式仍可认单，仅记住本张付款的原单对应'}
     raw=value.get('accounts',{}) if isinstance(value,dict) else {}
     values=list(raw.values()) if isinstance(raw,dict) else raw if isinstance(raw,list) else [];choices={};versions=[]
     for a in values:
@@ -94,7 +94,7 @@ class Cache:
         self.writes+=1
         if self.writes%32==0:self.db.commit()
 
-def build(path,progress=lambda _:None,cancel=None):
+def build(path,progress=lambda _:None,cancel=None,*,_db=None):
     """Only current revisions, one decoded snapshot at a time; warm reads use metadata."""
     import archive_orders as ao
     import warehouse_orders as wo
@@ -102,8 +102,13 @@ def build(path,progress=lambda _:None,cancel=None):
     import jst_orders as jst
     import order_lifecycle as lc
     repo=repository(path);out=[];decoded=0
-    with closing(readonly(path)) as db,closing(Cache(path)) as cache:
-        db.execute('BEGIN');token=pool_token(db);known=tables(db);visibility=ao.states(db)
+    with (closing(readonly(path)) if _db is None else nullcontext(_db)) as db,closing(Cache(path)) as cache:
+        if not db.in_transaction:db.execute('BEGIN')
+        token=pool_token(db);known=tables(db);visibility=ao.states(db)
+        dependencies={}
+        if 'lifecycle_versions' in known:
+            for oid,rev,wh,stage,version in db.execute('SELECT oid,revision,warehouse,stage,MAX(version) FROM lifecycle_versions GROUP BY oid,revision,warehouse,stage'):
+                dependencies.setdefault((oid,rev,wh),{})[stage]=version
         heads=[dict(zip(('day','store','oid','number','revision','digest','saved'),r)) for r in db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid AND r.revision=o.current ORDER BY o.day DESC,o.store')]
         import warehouse_execution as execution
         effective=[]
@@ -133,13 +138,15 @@ def build(path,progress=lambda _:None,cancel=None):
                         if any(generation['head'][k]!=h[k] for k in ('oid','revision','warehouse','digest')):raise wr.Conflict('生成单与当前签发身份不符')
                         exported=[r for r in generation['rows'] if Decimal(r['quantity'])>0]
                         features=facts(exported);cache.put(ck,features);decoded+=1;del exported,generation
-                paid=db.execute("SELECT version FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage='payment' ORDER BY version DESC LIMIT 1",lc.key(h)).fetchone() if 'lifecycle_versions' in known else None
-                returned=db.execute("SELECT version FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage='return' ORDER BY version DESC LIMIT 1",lc.key(h)).fetchone() if 'lifecycle_versions' in known else None
-                out.append({**h,'generation_id':gid,'generation_digest':gd,'basis_kind':'generation' if gid else 'return' if returned else 'signed',
-                            'payment_version':paid[0] if paid else None,'return_version':returned[0] if returned else None,'features':features})
+                document_versions=dependencies.get((h['oid'],h['revision'],wh),{})
+                out.append({**h,'generation_id':gid,'generation_digest':gd,'basis_kind':'generation' if gid else 'return' if 'return' in document_versions else 'signed',
+                            'payment_version':document_versions.get('payment'),'return_version':document_versions.get('return'),'features':features,
+                            'lifecycle_versions':document_versions})
         if pool_token(db)!=token:raise wr.Conflict('索引读取期间业务依据变化，请刷新')
         mapping=mappings(db)
-    return {'heads':out,'pool_token':token,'mapping_token':checksum(mapping),'mappings':mapping,'accounts':accounts(path),'decoded_snapshots':decoded}
+        import payment_shop_names
+        shop_names=payment_shop_names.records(db)
+    return {'heads':out,'pool_token':token,'mapping_token':checksum(mapping),'mappings':mapping,'accounts':accounts(path),'decoded_snapshots':decoded,'shop_names':shop_names}
 
 def source_day(rows):
     days=set()
@@ -175,7 +182,9 @@ def exact(path,rows,head,cancel=None,*,quantities_only=False):
     return ok,('逐商品编码、基础数量'+('' if quantities_only else '及金额')+'完全一致' if ok else '数量、金额、缺行或清单外商品存在差异，下一步保留核对')
 
 def analyze(path,document,index,scope=None,source_scope=None,mode='first',progress=lambda _:None,cancel=None):
-    if source_scope is None or any(r.get('signed_number') for r in document['scan']['rows']):
+    import payment_shop_names
+    maintained=payment_shop_names.name_evidence(index.get('shop_names',{}),(document['scan']['rows'][0].get('source_order') or {}).get('店铺名称'))['pairs']
+    if source_scope is None or maintained or any(r.get('signed_number') for r in document['scan']['rows']):
         from payment_auto_matching import analyze as automatic
         return automatic(path,document,index,scope,source_scope,progress,cancel)
     if source_scope is not None and source_scope not in {a['coid'] for a in index['accounts']['choices']}:
@@ -238,14 +247,51 @@ def attach(path,plan,documents,index,source_scope,remember=True):
         origin=d['scan']['rows'][0]['source_order'];h=p['head'];candidate=next((v for v in index['heads'] if v['number']==h['number']),None)
         if not candidate:raise wr.Conflict('所选仓单已不在本次有效索引中，请重新读取')
         proof=d.get('payment_match') or {}
+        incoming=facts(p['payload']['raw_rows'])
+        constraints={checksum(v):v for row in d['scan']['rows'] for v in [{k:row.get(k) for k in ('signed_number','store','warehouse')}]}
         requests.append({'internal':next(iter(internal)),'source_scope':source_scope,'original_name':str(origin.get('店铺名称') or ''),'remember':bool(remember),
             'automatic_proof':proof.get('proof') if proof.get('automatic') and proof['candidates'][0]['number']==number_value else None,
-            'quantity_signature':facts(p['payload']['raw_rows'])['quantity_signature'],
+            'name_context':copy.deepcopy(proof.get('name_context')),'manual_selection':not proof.get('automatic',False),
+            'explicit_identity':any(r.get('signed_number') for r in d['scan']['rows']),
+            'quantity_signature':incoming['quantity_signature'],'facts_signature':incoming['signature'],'identity_constraints':list(constraints.values()),
             'head':{k:h[k] for k in ('oid','revision','warehouse','number','store','digest')},'generation_id':candidate.get('generation_id')})
     metadata={'pool_token':index['pool_token'],'mapping_token':index['mapping_token'],'accounts_token':index['accounts']['token'],'requests':requests}
+    import payment_shop_names
+    for r in requests:r['name_evidence']=payment_shop_names.name_evidence(index.get('shop_names',{}),r['original_name'])
+    metadata['scope_evidence']=scope_evidence(index,requests)
     plan['payment_matching']=metadata;plan['payment_matching_digest']=checksum(metadata)
     with closing(readonly(path)) as db:validate(path,db,plan)
     return plan
+
+def scope_evidence(index,requests):
+    """Relevant candidate additions/removals count; unrelated payments do not."""
+    relevant=[];mapping={}
+    warehouse_scopes={a['coid']:set(a['warehouses'])&{'山东仓','河北仓'} for a in index['accounts']['choices']}
+    for h in index['heads']:
+        for r in requests:
+            selected=all(h.get(k)==r['head'].get(k) for k in ('oid','warehouse')) or h['number']==r['head']['number']
+            warehouses=warehouse_scopes.get(r['source_scope'],())
+            eligible=(not warehouses or h['warehouse'] in warehouses) and all(not value or value==h[{'signed_number':'number'}.get(field,field)] for c in r.get('identity_constraints',[]) for field,value in c.items())
+            proof=r.get('automatic_proof');context=r.get('name_context');automatic=not r.get('manual_selection',True)
+            unique=eligible and automatic and not r.get('explicit_identity') and proof not in ('explicit_number','previous_source')
+            named=bool(unique and context and [h['store'],h['warehouse']] in context['pairs'])
+            signature='signature' if r.get('facts_signature') else 'quantity_signature'
+            facts_match=bool(unique and proof in (None,'full_detail') and h.get('features') and h['features'].get(signature)==(r.get('facts_signature') or r['quantity_signature']))
+            possible_name=bool(unique and (not context or context['basis']=='application_name') and normalized(h['name'])==normalized(r['original_name']))
+            if selected or named or facts_match or possible_name:
+                relevant.append(h);break
+    keys=set();orders=set();aliases=set()
+    # Hash request keys once, not once per historical mapping and request.
+    for r in requests:
+        scope=r['source_scope'];name=normalized(r['original_name'])
+        keys.add(mapping_key('document',None,checksum([str(r['internal']),name])))
+        if scope is not None:keys.update((mapping_key('order',scope,r['internal']),mapping_key('store',scope,name)))
+        else:
+            orders.add((r['internal'],name))
+            if not r.get('name_context') or r['name_context']['basis']!='configured_name':aliases.add(name)
+    for key,value in index['mappings'].items():
+        if key in keys or (orders and key.startswith(PREFIX+'order.') and (value.get('internal'),normalized(value.get('original_name'))) in orders) or (aliases and key.startswith(PREFIX+'store.') and normalized(value.get('original_name')) in aliases):mapping[key]=value
+    return {'version':2,'heads':checksum(sorted(relevant,key=lambda h:(h['oid'],h['warehouse']))),'mappings':checksum(mapping)}
 
 def operations(db,metadata):
     existing=mappings(db);updates={}
@@ -255,7 +301,7 @@ def operations(db,metadata):
             from payment_auto_matching import local_key,same_head
             original=existing.get(local_key(r['internal'],r['original_name']))
             if original and not same_head(original['head'],r['head']):raise wr.Conflict('该来源内部单号已有本机原关联，不能通过手选订单改绑')
-            if r.get('automatic_proof'):
+            if r.get('automatic_proof') or r.get('manual_selection'):
                 from payment_auto_matching import relationship_update
                 relationship_update(existing,updates,r)
                 continue
@@ -280,12 +326,17 @@ def validate(path,db,plan):
     metadata=plan.get('payment_matching')
     if not metadata:return
     if plan.get('payment_matching_digest')!=checksum(metadata):raise ValueError('付款识别预览已变化，请重新核对')
-    if pool_token(db)!=metadata['pool_token']:raise wr.Conflict('订单、生命周期或生成范围在识别后变化，请重新读取；未保存')
-    if checksum(mappings(db))!=metadata['mapping_token']:raise wr.Conflict('门店或来源单号对应关系已变化，请重新读取')
+    changed_pool=pool_token(db)!=metadata['pool_token'] or checksum(mappings(db))!=metadata['mapping_token']
+    if changed_pool:
+        if not metadata.get('scope_evidence') or scope_evidence(build(path,_db=db),metadata['requests'])!=metadata['scope_evidence']:
+            raise wr.Conflict('本次订单、匹配候选、生成范围或来源对应关系已变化，请重新识别；未保存')
     current_accounts=accounts(path)
     if current_accounts['token']!=metadata['accounts_token']:raise wr.Conflict('聚水潭企业连接身份已变化，请重新核对来源')
     scopes={a['coid'] for a in current_accounts['choices']}
     for r in metadata['requests']:
+        if r.get('name_evidence'):
+            from payment_shop_names import validate_evidence
+            validate_evidence(db,r['name_evidence'])
         if r['source_scope'] is not None and r['source_scope'] not in scopes:raise ValueError('付款来源企业没有已核验的稳定身份，不能记住内部单号')
         if r['source_scope'] is not None:
             source=next(a for a in current_accounts['choices'] if a['coid']==r['source_scope'])
@@ -295,7 +346,10 @@ def validate(path,db,plan):
         if len(matches)!=1:raise ValueError('识别对应关系与付款预览不是同一仓单')
         raw=matches[0]['payload']['raw_rows']
         if not raw or any(row.get('document_number')!=r['internal'] or str((row.get('source_order') or {}).get('店铺名称') or '')!=r['original_name'] for row in raw):raise ValueError('识别对应关系与原付款来源不符')
-        if r.get('automatic_proof') and (r['automatic_proof'] not in ('full_detail','explicit_number','previous_source') or r.get('quantity_signature')!=facts(raw)['quantity_signature']):raise ValueError('自动识别依据与付款明细不一致')
+        if r.get('automatic_proof') and (r['automatic_proof'] not in ('full_detail','explicit_number','previous_source','configured_name','confirmed_name','application_name') or r.get('quantity_signature')!=facts(raw)['quantity_signature']):raise ValueError('自动识别依据与付款明细不一致')
+        if r.get('name_context'):
+            from payment_name_matching import validate as validate_name
+            validate_name(db,r['name_context'],r)
     operations(db,metadata)
 
 def apply(db,plan):
@@ -307,9 +361,8 @@ def apply(db,plan):
 def prepare(path,documents,scope,index,source_scope,remember=True,progress=lambda _:None,cancel=None):
     import lifecycle_batch
     documents=copy.deepcopy(documents)
-    if index:
-        with closing(readonly(path)) as db:
-            if pool_token(db)!=index['pool_token']:raise wr.Conflict('订单或生成范围已变化，请刷新后重新识别')
+    # Head/dependency validation and attach() check the relevant candidate set.
+    # An unrelated payment save must not invalidate this entire index first.
     for d in documents:
         if not d.get('selected',True) or d['scan']['stage']!='payment' or d['scan']['rows'][0].get('adapter')!='paid_order':continue
         result=analyze(path,d,index,scope,source_scope,progress=progress,cancel=cancel);d['payment_match']=result
@@ -317,6 +370,10 @@ def prepare(path,documents,scope,index,source_scope,remember=True,progress=lambd
         if result['automatic'] and d.get('target') and d['target']['number']!=result['candidates'][0]['number']:raise ValueError('自动识别结果与所选订单不同；不能将完整付款单改绑其他订单')
         if d.get('target') is None and result['automatic']:d['target']=result['candidates'][0]
         if d.get('target') is None:raise ValueError(result['state']+'：'+result['reason'])
+        if not any(all(h[k]==d['target'].get(k) for k in ('oid','revision','warehouse','number','store','digest')) for h in result['candidates']):
+            source=next((a for a in index['accounts']['choices'] if a['coid']==source_scope),None)
+            if source and d['target']['warehouse'] not in source['warehouses']:raise ValueError('所选来源企业与订单供货仓不一致；请修正来源或恢复自动模式')
+            raise ValueError('所选付款订单不在当前有效候选中，请重新识别')
     plan=lifecycle_batch.prepare(path,documents,scope,progress,cancel)
     checkpoint(cancel)
     return attach(path,plan,documents,index,source_scope,remember)

@@ -8,6 +8,8 @@ import {requireHostOrder,requireUnretired,captureOwnedFiles} from './order-retir
 import {purchaseContract,purchaseScopeHash} from './purchase-contract.mjs';
 import {validateWorkbook} from './workbook-validator.mjs';
 import {IMPORT_CODE} from './purchase-create-contract.mjs';
+import {checkHostDispatch,abortHostDispatch} from './purchase-host-guard.mjs';
+import {errorInfo} from './machine-runtime.mjs';
 
 export async function nativeCreationEvidence(p,task,candidate,coordinator,run){
   if(run.status!=='SUCCEEDED'||run.orderId!==candidate.supplyOrderId||run.query.orderIds.join(',')!==candidate.supplyOrderId)fail('PURCHASE_PROOF_SCOPE','采购核验文件不属于唯一候选采购单');
@@ -25,7 +27,7 @@ export async function nativeCreationEvidence(p,task,candidate,coordinator,run){
 }
 
 export class PurchaseCreateService{
-  constructor({root,state,ledger,browsers,progress=()=>{},coordinatorFactory=options=>new PurchaseCoordinator(options)}){Object.assign(this,{root,state,ledger,browsers,progress,coordinatorFactory});}
+  constructor({root,state,ledger,browsers,progress=()=>{},coordinatorFactory=options=>new PurchaseCoordinator(options)}){Object.assign(this,{root,state,ledger,browsers,progress,coordinatorFactory});this.managesSubmissionBoundary=true;}
   async context(p,signal){
     requireUnretired(this.state.db,p.id,p.basis.oid,p.basis.warehouse);requireHostOrder(p.basis.oid,p.basis.warehouse);
     const config=await loadConfig(this.root);checkPurchaseConfiguration(p,config);await assertHandoff(this.root,config.tenantBinding);
@@ -37,9 +39,33 @@ export class PurchaseCreateService{
     browser.adapter.downloadPurchase=async(...args)=>{const result=await download(...args);captureOwnedFiles(this.state,p.basis.oid,result,p.basis.warehouse);return result;};
     return {config,binding,adapter:browser.adapter,signal,hostOrderId:p.basis.oid,hostPurchaseId:p.id,hostWarehouse:p.basis.warehouse};
   }
-  async preflight(p,{forBinding=false}={}){requireUnretired(this.state.db,p.id,p.basis.oid,p.basis.warehouse);requireHostOrder(p.basis.oid,p.basis.warehouse);checkPurchaseConfiguration(p,await loadConfig(this.root));return checkPurchaseInput(p,{requireRounded:!forBinding});}
+  async preflight(p,{forBinding=false}={}){requireUnretired(this.state.db,p.id,p.basis.oid,p.basis.warehouse);requireHostOrder(p.basis.oid,p.basis.warehouse);checkPurchaseConfiguration(p,await loadConfig(this.root));if(!forBinding)checkHostDispatch(p);return checkPurchaseInput(p,{requireRounded:!forBinding});}
   async prepare(p,{signal}){const {adapter}=await this.context(p,signal);return adapter.preparePurchaseCreate(p);}
-  async upload(p,baseline,{signal}){const {adapter}=await this.context(p,signal);return adapter.uploadPurchaseOnce({intent:p,baseline});}
+  async upload(p,baseline,{signal,beforeRelease}){
+    const {adapter}=await this.context(p,signal);checkHostDispatch(p);
+    const guard=async({requestSha256,isActive=()=>true})=>{
+      if(signal?.aborted||!isActive())fail('PAUSED','已停止；原生采购请求尚未放行');
+      const config=await loadConfig(this.root);checkPurchaseConfiguration(p,config);await assertHandoff(this.root,config.tenantBinding);
+      if(signal?.aborted||!isActive())fail('PAUSED','已停止；原生采购请求尚未放行');
+      requireUnretired(this.state.db,p.id,p.basis.oid,p.basis.warehouse);
+      checkHostDispatch(p,{consume:true,requestHash:requestSha256});
+      // Both durable stores precede route.continue. A crash between them is
+      // conservatively reconciled; it never grants permission for an automatic resend.
+      try{beforeRelease();}
+      catch(error){
+        abortHostDispatch(p,requestSha256);
+        if(this.ledger.get(p.id).uploadAttempted)this.ledger.refusedBeforeRelease(p.id,requestSha256,errorInfo(error));
+        throw error;
+      }
+      return ()=>{
+        abortHostDispatch(p,requestSha256);
+        this.ledger.refusedBeforeRelease(p.id,requestSha256,{code:'PAUSED',message:'原生请求放行前已停止，未上传'});
+      };
+    };
+    adapter.beforePurchaseImport=guard;
+    try{return await adapter.uploadPurchaseOnce({intent:p,baseline});}
+    finally{if(adapter.beforePurchaseImport===guard)adapter.beforePurchaseImport=null;}
+  }
   async observe(p,receipt,{signal}){
     const context=await this.context(p,signal),{adapter}=context,r=this.ledger.get(p.id);
     const task=await adapter.purchaseImportTask({taskId:receipt.taskId,identity:p.identity});

@@ -1,0 +1,61 @@
+{
+  "retained_in": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\five_fixes_0542_20261116_01",
+  "excluded_results": [
+    {
+      "path": "regression-01.json",
+      "kind": "invalid_harness_evidence",
+      "reason": "Windows spawn reran unguarded runner; excluded. Corrected 980-test run is final."
+    },
+    {
+      "path": "performance-01.log",
+      "kind": "probe_dependency_error",
+      "reason": "psutil unavailable; replaced with native Windows actual-worker RSS sampling."
+    },
+    {
+      "path": "gui-source-01",
+      "kind": "fixture_error",
+      "reason": "Incomplete synthetic component template; state database missing."
+    },
+    {
+      "path": "gui-source-02",
+      "kind": "fixture_error",
+      "reason": "Same incomplete template; full initialized synthetic template then used."
+    },
+    {
+      "path": "gui-source-03",
+      "kind": "probe_assertion_error",
+      "reason": "Read-only streamed workbook max_row is None; verified actual worksheet rows instead."
+    },
+    {
+      "path": "recovery-reader-red-01.log",
+      "kind": "expected_regression_red",
+      "reason": "Two deterministic active-reader tests fail in unchanged original recovery publication."
+    },
+    {
+      "path": "exe-recovery-01/report.json",
+      "kind": "confirmed_preexisting_defect",
+      "reason": "rc1 actual EXE recovery publication fails with database is locked; fixed and reaccepted in rc2."
+    },
+    {
+      "path": "recovery-reader-green-01.log",
+      "kind": "invalid_module_in_test_command",
+      "reason": "One nonexistent test_deletion_rollback module; full 980-test run and targeted 20-test run replace this result."
+    },
+    {
+      "path": "gui-recovery-02/report.json",
+      "kind": "test_scheduling_error",
+      "reason": "Test called backup registration synchronously on GUI thread during active home reader; corrected to real background Task."
+    },
+    {
+      "path": "seal-release.log",
+      "kind": "windows_line_ending_check",
+      "reason": "Default whitespace check treated README CRLF as trailing whitespace. Verified no trailing spaces; explicit Windows CR-at-EOL check passed. Frozen files were not changed."
+    },
+    {
+      "path": "seal-release-02.log",
+      "kind": "packaging_helper_import",
+      "reason": "Sealing helper omitted src import path for existing component verifier; corrected helper only. No release files had been created."
+    }
+  ],
+  "all_failed_and_passing_directories_preserved": true
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "evidence": "first tool result; names-tests-02.log is the corrected run",
+    "kind": "首次新服务导入错误",
+    "reason": "CommitProgress误从export_progress导入；改用现有runtime_support。首次10项中8项错误，后续定向测试全部通过。"
+  },
+  {
+    "evidence": "source-ui-02/.settings.diagnostics/app.log and report-exercise.json",
+    "kind": "已修复的名称保存短读锁",
+    "reason": "真实Qt第一次保存时COMMIT遇到SQLITE_BUSY；增加有时限的同事务COMMIT等待，超时回滚。短读锁成功一次、长读锁不留部分修改均有定向测试；最终EXE正常保存。"
+  },
+  {
+    "evidence": "regression-01.log / regression-01.json",
+    "kind": "旧断言需适配新明确提示",
+    "reason": "1项仍断言“没有完整匹配订单”，新界面已明确为“店铺名称对应多个订单”；更新为同时验证具体原因与选单提示，未放宽业务校验。"
+  },
+  {
+    "evidence": "exe-payment-compatibility-01/acceptance.json",
+    "kind": "旧验收样本不兼容",
+    "reason": "旧聚水潭探针只mock旧Repository.get，不能满足分仓执行层查询，报KeyError state；将纯商品码小探针的快照mock放到现用get_order边界，真实界面与真实合成数据库保存路径保持未替换，最终32项EXE兼容检查通过。"
+  },
+  {
+    "evidence": "manual-process-01.log",
+    "kind": "文档验收等待条件错误",
+    "reason": "等待全手册懒加载图片同时完成导致超时；改为检查全部本地图片路径、实际滚动加载新增章节图片，29章/锚点/搜索/移动端及离线检查通过。"
+  },
+  {
+    "evidence": "initial command output, recorded here",
+    "kind": "验收脚本装配编码错误",
+    "reason": "PowerShell管道送入首次脚本写入程序时未设置UTF-8，写入前报UnicodeEncodeError；改为明确UTF-8与固定文件入口，未触碰产品或业务数据。"
+  }
+]

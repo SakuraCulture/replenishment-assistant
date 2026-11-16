@@ -17,18 +17,23 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
         if value: date.fromisoformat(value)
     if start and end and start > end: raise ValueError('起始日期不能晚于结束日期')
     repo = repository(path); heads = repo.headers(); cache = Path(cache); cache.parent.mkdir(parents=True, exist_ok=True)
-    records = []
+    records = [];basis_tokens={}
     selected = [h for h in heads if (not start or h['day'] >= start) and (not end or h['day'] <= end)]
     selected_parents=list(selected)
     with closing(sqlite3.connect(cache)) as idx, closing(purchases.connect(path)) as db:
         db.execute('BEGIN'); visibility = ao.states(db)
-        managed={h['oid'] for h in selected if execution.has_parent(db,h['oid'])}
+        managed=execution.managed(db,(h['oid'] for h in selected))
         managed_heads=execution.heads(db,[h for h in selected if h['oid'] in managed]) if managed else []
         by_parent={}
         for h in managed_heads:by_parent.setdefault(h['oid'],[]).append(h)
         selected=[child for h in selected for child in (by_parent.get(h['oid'],[]) if h['oid'] in managed else [h])]
         idx.execute('CREATE TABLE IF NOT EXISTS lifecycle_projection(k TEXT PRIMARY KEY,payload TEXT,sha TEXT)')
         versions = {}
+        tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        routes={};legacy_keys=set()
+        for placeholders,oids in oid_batches(h['oid'] for h in selected):
+            if 'lifecycle_routes' in tables:routes.update(((o,r),v) for o,r,v in db.execute('SELECT oid,revision,version FROM lifecycle_routes WHERE oid IN ('+placeholders+')',oids))
+            if 'merchant_feedback' in tables:legacy_keys.update(db.execute('SELECT DISTINCT oid,revision FROM merchant_feedback WHERE oid IN ('+placeholders+')',oids))
         if lifecycle.exists(db):
             for placeholders,oids in oid_batches(h['oid'] for h in selected):
                 checkpoint(cancel)
@@ -38,7 +43,8 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
         for oid,revision,warehouse,stage in versions:
             if revision!=selected_revisions.get((oid,warehouse),selected_revisions.get((oid,None))):older.add((oid,warehouse))
         for n, h in enumerate(selected):
-            checkpoint(cancel); cache_parts=[1,str(Path(path).resolve()),h['oid'],h['revision'],h['digest']]
+            needs_legacy=(h['oid'],h['revision']) in legacy_keys
+            checkpoint(cancel); cache_parts=[2,str(Path(path).resolve()),h['oid'],h['revision'],h['digest'],needs_legacy]
             if h.get('warehouse'):cache_parts.extend([h['warehouse'],h.get('snapshot_digest'),h.get('execution_epoch')])
             k=wr.dumps(cache_parts)
             hit = idx.execute('SELECT payload,sha FROM lifecycle_projection WHERE k=?', (k,)).fetchone()
@@ -47,13 +53,15 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                 o = execution.get_order(repo,h,view='export',db=db) if h.get('warehouse') else repo.get(h['day'],h['store'],h['revision'],view='export')
                 result = o['payload']['result']; parts = []
                 for wh, group in purchases.history_groups(result, o['payload'].get('new_focus')).items():
-                    parts.append({'warehouse': wh, 'name': result['store_name'], 'products': {d['E']: {'quantity': normal_exports.sem.order_quantity(d)} for rows in group.values() for d in rows}})
-                raw = json.dumps(parts, ensure_ascii=False); idx.execute('INSERT OR REPLACE INTO lifecycle_projection VALUES(?,?,?)', (k, raw, hashlib.sha256(raw.encode()).hexdigest())); idx.commit()
+                    part={'warehouse':wh,'name':result['store_name']}
+                    if needs_legacy:part['products']={d['E']:{'quantity':normal_exports.sem.order_quantity(d)} for rows in group.values() for d in rows}
+                    parts.append(part)
+                raw = json.dumps(parts, ensure_ascii=False); idx.execute('INSERT OR REPLACE INTO lifecycle_projection VALUES(?,?,?)', (k, raw, hashlib.sha256(raw.encode()).hexdigest()))
             for part in parts:
                 wh = part['warehouse']; vis = visibility.get((h['oid'], wh), {})
                 if vis.get('deleted'): continue
                 head = {**h, 'warehouse': wh}; present = {s: (h['oid'], h['revision'], wh, s) in versions for s in lifecycle.ALL_STAGES}
-                legacy = lifecycle.legacy_return(db, head, part['products']) if not present['return'] else None
+                legacy = lifecycle.legacy_return(db, head, part['products']) if not present['return'] and (h['oid'],h['revision']) in legacy_keys else None
                 if legacy: present['return'] = legacy['complete']
                 summaries={}
                 for s in lifecycle.ALL_STAGES:
@@ -64,9 +72,10 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                     if cached and hashlib.sha256(cached[0].encode()).hexdigest()==cached[1]:summary=json.loads(cached[0])
                     else:
                         summary=lifecycle.document_summary(lifecycle.current(db,head,s,version));text=json.dumps(summary,ensure_ascii=False)
-                        idx.execute('INSERT OR REPLACE INTO lifecycle_projection VALUES(?,?,?)',(doc_key,text,hashlib.sha256(text.encode()).hexdigest()));idx.commit()
+                        idx.execute('INSERT OR REPLACE INTO lifecycle_projection VALUES(?,?,?)',(doc_key,text,hashlib.sha256(text.encode()).hexdigest()))
                     summaries[s]=summary
-                required=lifecycle.flow.required(db,head)
+                required=routes.get((h['oid'],h['revision']),0)>=2 or present['operations']
+                if request.get('_with_tokens'):basis_tokens[h['oid'],wh]={s:lifecycle.rules.basis_token(d) for s,d in summaries.items()}
                 status,next_stage,note,health=lifecycle.progress_state(summaries,legacy,required)
                 old = (h['oid'],wh) in older
                 parent_number=h.get('parent_number',h['number'])
@@ -78,11 +87,12 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
             progress({'done': n+1, 'total': len(selected)})
         if heads != repo.headers(): raise wr.Conflict('签发修订在查询期间变化，请刷新')
         with closing(purchases.connect(path)) as fresh:
-            now_managed={h['oid'] for h in selected_parents if execution.has_parent(fresh,h['oid'])}
+            now_managed=execution.managed(fresh,(h['oid'] for h in selected_parents))
             if now_managed!=managed or (managed and execution.heads(fresh,[h for h in selected_parents if h['oid'] in managed])!=managed_heads):raise wr.Conflict('仓单签发范围在查询期间变化，请刷新')
+        idx.commit()
     counts = {s: sum(r['status'] == s for r in records) for s in (*lifecycle.STATUSES,'待运营签发')}
     for i, r in enumerate(records): r['list_position'] = i
-    if request.get('all_records'):return {'records':records,'counts':counts,'scope':len(records)}
+    if request.get('all_records'):return {'records':records,'counts':counts,'scope':len(records),**({'_basis_tokens':basis_tokens} if request.get('_with_tokens') else {})}
     kind = request.get('status', '')
     matched = [r for r in records if not kind or kind == '全部未完成' and r['next'] or kind == r['status']]
     page = min(max(0, int(request.get('page', 0))), max(0, (len(matched)-1)//50))

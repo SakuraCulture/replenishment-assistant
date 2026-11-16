@@ -13,7 +13,7 @@ STATUSES=('待回传','待运营签发','待付款','待收货','已结束')
 
 
 def read(path,cache,request,cancel=None,progress=lambda _:None):
-    base=lifecycle_home.read(path,cache,{**request,'status':'','all_records':True},cancel,progress)
+    base=lifecycle_home.read(path,cache,{**request,'status':'','all_records':True,'_with_tokens':True},cancel,progress)
     records=base['records']
     batches=list(oid_batches(r['oid'] for r in records))
     with closing(sqlite3.connect(path)) as db:
@@ -40,7 +40,8 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
             elif r['next']=='payment':
                 r.update(status='待付款',next='payment')
                 if g:
-                    ret=lc.current(db,r,lc.flow.demand_stage(db,r));token=lc.rules.basis_token(ret)
+                    stage='operations' if r['flow_version']==2 else 'return'
+                    token=base['_basis_tokens'][r['oid'],r['warehouse']][stage]
                     if token!=g[1]['return'] or r['revision']!=g[1]['revision']:
                         r['note']='回传或签发依据已变化，请核对生成单；未自动重分配'
                 else:r['note']='待生成聚水潭导入单；也可直接导入实际付款单'

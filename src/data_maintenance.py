@@ -448,6 +448,8 @@ def collect_shared(db,folder,cancel=None,progress=lambda _:None,*,verified=None)
     for table in ('lifecycle_versions','purchase_versions','merchant_feedback'):
         if table in available:
             for raw, in db.execute(f'SELECT payload FROM {table}'):hashes.update(storage.hashes(raw,cancel))
+    if 'lifecycle_events' in available:
+        for raw, in db.execute("SELECT detail FROM lifecycle_events WHERE action='业务未变化，留存新原件' AND detail IS NOT NULL"):hashes.update(storage.hashes(raw,cancel))
     if 'snapshot_chunks' in available:
         storage.cache_schema(db);total=db.execute('SELECT COUNT(*) FROM snapshot_chunks').fetchone()[0]
         for i,(h,) in enumerate(db.execute('SELECT hash FROM snapshot_chunks'),1):

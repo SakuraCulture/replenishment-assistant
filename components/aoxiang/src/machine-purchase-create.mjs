@@ -42,10 +42,17 @@ export class MachinePurchaseCreate{
         r=this.ledger.update(id,r.sequence,'READY',{baseline});
         // Recheck the frozen file and local business token after potentially slow connection.
         await this.preflight(r.intent);this.check();
-        this.progress('正在上传采购文件；此后只查询原任务，不重复上传');
-        r=this.ledger.update(id,r.sequence,'SUBMITTING',{uploadAttempted:true});
+        this.progress('核对最新付款与采购文件，准备上传');
+        const beforeRelease=()=>{
+          this.check();r=this.ledger.get(id);
+          r=this.ledger.update(id,r.sequence,'SUBMITTING',{uploadAttempted:true});
+          this.progress('正在上传采购文件；随后核对原任务');
+        };
+        // Native transport calls this from its request guard, after all browser
+        // waits. Legacy offline adapters keep their existing one-shot contract.
+        if(!this.adapter.managesSubmissionBoundary)beforeRelease();
         try{
-          const receipt=await this.adapter.upload(r.intent,baseline,{signal:this.control.signal});
+          const receipt=await this.adapter.upload(r.intent,baseline,{signal:this.control.signal,beforeRelease});
           this.ledger.accepted(receipt); // Persist even when pause arrived in flight.
         }catch(error){
           // The guard has aborted the extra request, while its exact successful
@@ -67,7 +74,7 @@ export class MachinePurchaseCreate{
       r=this.ledger.get(id);const error=errorInfo(e);
       if(r.state==='RETIRED'){this.progress('来源订单已删除；当前动作已结束，不建立本地业务关联');return;}
       if(['BOUND','CANCELLED_BEFORE_UPLOAD'].includes(r.state))throw e;
-      if(!r.uploadAttempted)this.ledger.update(id,r.sequence,this.job.cancelled?'PAUSED':'FAILED_PRECHECK',{error});
+      if(!r.uploadAttempted){if(!['FAILED_PRECHECK','PAUSED'].includes(r.state))this.ledger.update(id,r.sequence,this.job.cancelled?'PAUSED':'FAILED_PRECHECK',{error});}
       else if(r.state==='SUBMITTING')this.ledger.update(id,r.sequence,'NEEDS_REVIEW',{error});
       else if(r.state==='VERIFYING')this.ledger.update(id,r.sequence,this.job.cancelled||['TASK_PENDING','TASK_NOT_FOUND','BROWSER_DISCONNECTED','WORKER_RESPONSE_UNKNOWN'].includes(e.code)?'ACCEPTED':'NEEDS_REVIEW',{error});
       else if(r.state==='ACCEPTED'&&!this.job.cancelled)this.ledger.update(id,r.sequence,'NEEDS_REVIEW',{error});

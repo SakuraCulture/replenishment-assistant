@@ -3,6 +3,11 @@ from datetime import datetime
 from PySide6.QtCore import QObject,QTimer
 from ui_controls import button
 
+LOCAL_READS=frozenset({'open','query','cuts','details','values','filter_values','delete_preview','hub_open','hub_preview'})
+# Reading live connection configuration still acquires the shared AX lease.
+READ_OPERATIONS=LOCAL_READS|{'choices'}
+REPLACEABLE_READS=frozenset({'query','cuts','details','values','filter_values','open','hub_open'})
+
 
 class Entry(QObject):
     nav_text='门店缺货率'
@@ -11,7 +16,7 @@ class Entry(QObject):
     def __init__(self,host,*,navigation=True,schedule=True):
         super().__init__(host)
         self.host=host;self.page=None;self.index=None;self.generation=0
-        self.worker=None;self.callback=None;self.queued=None;self.watch=None;self.timer=None
+        self.worker=None;self.callback=None;self._requests=[];self.watch=None;self.timer=None
         self.closing=False;self.background=False;self.message='按需进入；每日采集默认关闭'
         self.nav=button(self.nav_text,self.enter)
         if navigation:host.centralWidget().layout().itemAt(0).layout().insertWidget(5,self.nav)
@@ -55,7 +60,7 @@ class Entry(QObject):
     def section_changed(self,index):
         if self.page is None or index==self.index:return
         page=self.page;self.page=None;self.index=None;self.generation+=1;self.callback=None
-        if self.queued and not self.queued[3]:self.queued=None
+        self.discard_pending('已离开分析',foreground_only=True)
         if self.worker and not self.background:
             self.pause('已离开分析，正在安全暂停并释放资源')
         self.host.sections.removeWidget(page);page.deleteLater()
@@ -77,14 +82,44 @@ class Entry(QObject):
                     or ax and (ax.worker or ax.maintenance_depth or ax.gate.foreground is not None)
                     or generator and generator.worker and getattr(generator,'active_work',True))
 
+    @property
+    def queued(self):return self._requests[0] if self._requests else None
+
+    @queued.setter
+    def queued(self,value):self._requests=[value] if value is not None else []
+
+    def blocked(self,operation):
+        h=self.host;io=getattr(h,'_large_io_dialog',None)
+        if (getattr(h,'closing',False) or getattr(h,'_data_location_preparing',False)
+                or io is not None and not getattr(io,'_completed',False)
+                or getattr(getattr(h,'aoxiang_workflows',None),'maintenance_depth',0)):return True
+        if operation not in LOCAL_READS:return self.busy()
+        # Local reads use their analysis snapshot/lock, never a platform lease.
+        # Keep analysis writers serialized, including the shared hub collector.
+        entries=(getattr(h,'stockout_hub',None),getattr(h,'stockout',None),getattr(h,'warehouse_stockout',None))
+        return any(e is not self and getattr(e,'worker',None) for e in entries if e is not None)
+
+    def discard_pending(self,message,*,foreground_only=False):
+        removed=[r for r in self._requests if not foreground_only or not r[3]]
+        self._requests=[r for r in self._requests if r not in removed]
+        writes=sum(r[0] not in READ_OPERATIONS for r in removed)
+        if writes:self.status(message+f'；已取消{writes}项尚未执行的保存/写入请求，未保存')
+
     def start(self,operation,args=None,callback=None,*,background=False):
         if self.closing:return
-        request=(operation,args or {},callback,background,self.generation)
-        if self.worker or self.busy():
-            if self.worker and self.worker.operation not in {'collect','adopt','end','cleanup','ingest','cleanup_retry','delete_run_log','rerun','recalculate','save_views','hub_collect','hub_scheduled','hub_end','hub_reuse','hub_export'}:
+        from copy import deepcopy
+        request=(operation,deepcopy(args or {}),callback,background,self.generation)
+        if self.worker or self._requests or self.blocked(operation):
+            if self.worker and self.worker.operation==operation and operation in REPLACEABLE_READS:
                 self.callback=None;self.worker.cancel_reason='已按新请求取消上次查询';self.worker.cancel.set()
-            self.queued=request;self.status('等待当前任务安全结束；原补货业务优先')
-            self.ensure_watch();return
+            # Only adjacent reads may coalesce; no request crosses a pending write.
+            if operation in REPLACEABLE_READS and self._requests and self._requests[-1][0]==operation:
+                self._requests[-1]=request
+            else:self._requests.append(request)
+            self.status(f'已排队{len(self._requests)}项；保存/写入不会被后续查询替换')
+            self.ensure_watch()
+            if self.page:self.page.controls()
+            return
         self.begin(request)
 
     def ensure_watch(self):
@@ -117,14 +152,17 @@ class Entry(QObject):
 
     def tick(self):
         if self.worker:
-            if self.busy() and not self.worker.cancel.is_set():self.pause('原补货业务优先，分析正在安全让行；之后可继续原任务')
-        elif self.queued and not self.busy() and not self.closing:
-            request=self.queued;self.queued=None
+            if self.blocked(getattr(self.worker,'operation','collect')) and not self.worker.cancel.is_set():
+                self.worker.cancel_reason='原补货业务优先，分析正在安全让行；排队请求保留'
+                self.worker.cancel.set();self.status(self.worker.cancel_reason)
+        elif self.queued and not self.blocked(self.queued[0]) and not self.closing:
+            request=self._requests.pop(0)
             if request[1].get('trigger','').startswith('schedule:'):
                 from stockout_common import today
                 if request[1]['trigger']!='schedule:'+today():
                     self.status('原分析计划已跨日错过，未补写昨日库存；可手动采集今日');return
             if request[3] or request[4]==self.generation and self.page is not None:self.begin(request)
+            elif request[0] not in READ_OPERATIONS:self.status('页面已关闭；该项尚未执行的保存/写入已取消，未保存')
         elif not self.queued and self.watch:
             self.watch.stop();self.watch.deleteLater();self.watch=None
 
@@ -148,10 +186,10 @@ class Entry(QObject):
 
     def pause(self,message='已请求安全暂停；原件和原任务编号保留'):
         if self.worker:self.worker.cancel_reason=message;self.worker.cancel.set()
-        self.queued=None;self.status(message)
+        self.status(message);self.discard_pending(message)
 
     def prepare_close(self):
-        self.closing=True;self.queued=None
+        self.closing=True;self.discard_pending('正在关闭分析')
         if self.timer:self.timer.stop()
         if self.worker:
             self.pause('等待分析安全结束后退出，不强杀提交任务');return False
@@ -164,7 +202,7 @@ class Entry(QObject):
     def set_schedule(self,enabled,at):
         save=self.trigger().save
         save(self.host.repository.folder,enabled,at)
-        if not enabled and self.queued and self.queued[1].get('trigger','').startswith('schedule:'):self.queued=None
+        if not enabled:self._requests=[r for r in self._requests if not r[1].get('trigger','').startswith('schedule:')]
         self.arm()
         self.status('已启用每日采集；到时会后台取数，完成后释放' if enabled else '已停用未来每日采集；当前任务可单独安全暂停')
 

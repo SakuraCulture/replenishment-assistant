@@ -23,20 +23,29 @@ export async function installPurchaseWriteFence(page){
 // Installed only around one native file-input action. No direct create API is invoked.
 // The parent has committed SUBMITTING before entering here. Every exit is non-replayable.
 export class NativeImportGuard{
-  constructor(page,p,bytes,onReceipt=()=>{}){
-    Object.assign(this,{page,p,bytes,onReceipt});this.requests=0;this.blocked=[];this.matched=new Map();this.pending=new Set();this.receipts=[];
-    this.route=async route=>{
+  constructor(page,p,bytes,onReceipt=()=>{},beforeRelease=null){
+    Object.assign(this,{page,p,bytes,onReceipt,beforeRelease});this.requests=0;this.blocked=[];this.matched=new Map();this.pending=new Set();this.receipts=[];this.checking=false;this.closed=false;this.routes=new Set();
+    const handle=async route=>{
       const r=route.request(),u=new URL(r.url()),write=!['GET','HEAD','OPTIONS'].includes(r.method());
       if(!allowed(u)||!write)return route.continue();
       if(importPath(u)){
+        if(this.closed)return route.abort();
         const body=r.postDataBuffer();
-        if(this.requests||r.method()!=='PUT'||u.hostname!=='sc-gei-tc-supply-chain-portal.ele.me'||u.pathname!=='/gei/import/task/'+IMPORT_CODE||!body?.includes(this.bytes)||body.indexOf(this.bytes)!==body.lastIndexOf(this.bytes)){
+        if(this.requests||this.checking||r.method()!=='PUT'||u.hostname!=='sc-gei-tc-supply-chain-portal.ele.me'||u.pathname!=='/gei/import/task/'+IMPORT_CODE||!body?.includes(this.bytes)||body.indexOf(this.bytes)!==body.lastIndexOf(this.bytes)){
           this.blocked.push({kind:'unexpected_or_repeated_import',method:r.method(),host:u.hostname,path:u.pathname});return route.abort();
         }
-        this.requests++;this.matched.set(r,{requestSha256:sha256(body),method:r.method()});
+        const requestSha256=sha256(body);this.checking=true;
+        try{
+          const refuse=await this.beforeRelease?.({requestSha256,isActive:()=>!this.closed});
+          if(this.closed){refuse?.();return route.abort();}
+        }
+        catch(error){this.error=error;return route.abort();}
+        finally{this.checking=false;}
+        this.requests++;this.matched.set(r,{requestSha256,method:r.method()});
       }else if(r.method()!=='POST'||!knownReads.has(u.pathname)){this.blocked.push({kind:'unapproved_request',method:r.method(),host:u.hostname,path:u.pathname});return route.abort();}
       return route.continue();
     };
+    this.route=route=>{const task=handle(route);this.routes.add(task);void task.then(()=>this.routes.delete(task),()=>this.routes.delete(task));return task;};
     this.listener=response=>{const work=this.observe(response);this.pending.add(work);void work.finally(()=>this.pending.delete(work));};
   }
   async install(){await this.page.route('**/*',this.route);this.page.on('response',this.listener);}
@@ -58,7 +67,7 @@ export class NativeImportGuard{
     if(this.requests!==1||this.receipts.length!==1)fail('SUBMISSION_UNKNOWN','未取得本次唯一导入任务回执，只能核对原任务，不允许重传');
     return this.receipts[0];
   }
-  async dispose(){await this.page.unroute('**/*',this.route);this.page.off('response',this.listener);await Promise.all([...this.pending]);}
+  async dispose(){this.closed=true;await this.page.unroute('**/*',this.route);this.page.off('response',this.listener);await Promise.allSettled([...this.routes]);await Promise.all([...this.pending]);}
 }
 
 export class PurchaseCreateUI extends PurchaseUI{
@@ -76,11 +85,12 @@ export class PurchaseCreateUI extends PurchaseUI{
   }
   importModal(){return this.page.locator('.next-dialog').filter({hasText:'请按照规定格式上传文件'}).filter({visible:true});}
   async uploadPurchaseOnce({intent:p,baseline}){
+    if(typeof this.beforePurchaseImport!=='function')fail('HOST_GUARD_REQUIRED','缺少主程序最终采购核验；原生导入请求尚未放行');
     if(this.usedImports.has(p.id)||this.createPrepared?.id!==p.id||this.createPrepared.preparedAt!==baseline.preparedAt||!sameIdentity(this.identity,p.identity))fail('IMPORT_NOT_PREPARED','采购上传未在当前会话准备或已使用');
     await this.preflightScope(baseline.query);
     const bytes=await fs.readFile(await portablePath(p.file.path));if(bytes.length!==p.file.bytes||sha256(bytes)!==p.file.sha256)fail('PURCHASE_FILE_CHANGED','采购文件变化，停止上传');
     const modal=this.importModal(),input=modal.locator('input[type=file]');if(await input.count()!==1)fail('IMPORT_VIEW','上传窗口已变化');
-    const guard=new NativeImportGuard(this.page,p,bytes,r=>this.onImportReceipt?.(r));
+    const guard=new NativeImportGuard(this.page,p,bytes,r=>this.onImportReceipt?.(r),this.beforePurchaseImport);
     this.usedImports.add(p.id);await guard.install();
     try{
       // In-memory bytes prevent a file-path change between the hash check and native upload.
@@ -94,7 +104,7 @@ export class PurchaseCreateUI extends PurchaseUI{
       const until=Date.now()+this.timeoutMs;
       while(!guard.receipts.length&&!guard.error&&Date.now()<until)await new Promise(r=>setTimeout(r,50));
       return await guard.result();
-    }finally{await guard.dispose();if(guard.blocked.length||guard.error)await guard.result();}
+    }finally{await guard.dispose();if(!guard.requests)this.usedImports.delete(p.id);if(guard.blocked.length||guard.error)await guard.result();}
   }
   async purchaseImportTask({taskId,identity}){
     if(!taskPattern.test(taskId||''))fail('IMPORT_TASK_ID','原导入任务编号无效');

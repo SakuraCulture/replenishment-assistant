@@ -1,7 +1,7 @@
 """Freeze confirmed payment facts for AX procurement. Never writes lifecycle or model tables."""
 import copy
 import hashlib
-from contextlib import closing
+from contextlib import closing, nullcontext
 from decimal import Decimal
 
 import order_lifecycle as lifecycle
@@ -80,7 +80,7 @@ def freeze_payment(path, head, configuration, suppliers, *, cancel=None):
     return plan
 
 
-def validate_basis(path, plan, configuration, suppliers, *, cancel=None):
+def validate_basis(path, plan, configuration, suppliers, *, cancel=None, _db=None):
     checkpoint(cancel)
     if fingerprint(plan) != plan['fingerprint']:
         raise ValueError('采购预览内容变化，请重新生成')
@@ -88,8 +88,8 @@ def validate_basis(path, plan, configuration, suppliers, *, cancel=None):
             or configuration['store_mapping_version'] != plan['store_mapping_version']
             or suppliers.get(plan['head']['warehouse']) != plan['supplier_code']):
         raise ValueError('翱象身份、门店绑定或供应商配置已变化，请重新核对')
-    with closing(purchases.connect(path)) as db:
-        db.execute('BEGIN')
+    with (closing(purchases.connect(path)) if _db is None else nullcontext(_db)) as db:
+        if _db is None:db.execute('BEGIN')
         purchases.validate_head(db, plan['head'])
         view = lifecycle.snapshot(path, plan['head'], cancel=cancel, db=db,_comparison=False)
         current = view['documents']['payment']

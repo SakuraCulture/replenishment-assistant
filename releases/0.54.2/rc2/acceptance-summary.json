@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "version": "0.54.2 rc2",
+  "model": "0.3.6-rules",
+  "unique_python_tests": 980,
+  "final_component_tests": 254,
+  "actual_exe_checks": {
+    "five": 46,
+    "workbench": 51,
+    "recovery": 53
+  },
+  "actual_exe_total": 150,
+  "actual_edge_checks": 22,
+  "full_and_light_snapshot_business_outputs_equal": true,
+  "live_platform": false,
+  "synthetic": true
+}

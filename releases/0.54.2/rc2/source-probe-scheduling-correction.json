@@ -1,0 +1,13 @@
+{
+  "failed_probe": "gui-recovery-02/report.json",
+  "observed_failure": "Synchronous test-only first-backup registration on GUI thread while startup history read could remain active",
+  "correction": "Use business_ui.run for test-only registration, the same real worker/progress path used by production; no change to storage_chunks or backup code",
+  "reader_state_at_same_point": {
+    "archive_reader_active": false,
+    "home_reader_active": true,
+    "uses_real_background_task": true
+  },
+  "passed_probe": "gui-recovery-03/report.json",
+  "checks": 53,
+  "not_ignored_or_stubbed": true
+}

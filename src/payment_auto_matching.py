@@ -74,7 +74,6 @@ def analyze(path,document,index,scope=None,source_scope=None,progress=lambda _:N
         if not eligible and evidence['candidates']:return result('指定企业与供货仓不一致','文件对应的供货仓不属于指定来源企业；请恢复自动模式或修正来源设置。',blocked=True)
     numbers={r['signed_number'] for r in rows if r.get('signed_number')}
     explicit=bool(numbers)
-    matches=matching_heads(path,rows,eligible,progress,cancel)
     links=prior_links(rows,index,source_scope)
     linked=[]
     for link in links:
@@ -84,6 +83,13 @@ def analyze(path,document,index,scope=None,source_scope=None,progress=lambda _:N
         if candidates[0].get('generation_id')!=link.get('generation_id'):
             return result('原分配已变化','此内部单号的原库存分配已变更；当前文件不能自动替换为另一轮分配。',blocked=True)
         if not any(same_head(candidates[0],h) for h in linked):linked.append(candidates[0])
+    import payment_name_matching as naming
+    name_context=naming.context(rows,index,eligible,source_scope)
+    named=naming.candidates(name_context,eligible) if name_context else eligible
+    # Immutable document identities precede optional name narrowing. Complete
+    # facts remain a fallback, never a universal requirement to bind a payment.
+    strong=explicit or bool(linked)
+    matches=matching_heads(path,rows,eligible if strong else named,progress,cancel)
     target=None;method=None;reason='';is_exact=False
     if explicit:
         if len(numbers)!=1 or not all(r.get('signed_number') for r in rows) or len(eligible)!=1:
@@ -100,28 +106,34 @@ def analyze(path,document,index,scope=None,source_scope=None,progress=lambda _:N
                 return result('签发单号与明细冲突','填写单号属于 '+target['name']+' / '+target['warehouse']+'；文件明细完整对应 '+descriptions+'。请更正文件中的错误单号后重新读取。',matches=other,blocked=True)
         method='explicit_number';is_exact=bool(matches)
         reason='已按文件签发单号识别 '+target['name']+' / '+target['warehouse']+'；'+('商品、数量、金额全部一致。' if is_exact else '订单身份已确定，数量或金额差异会在付款核对中逐项显示。')
-    elif len(matches)>1:
-        return result('存在多张完整匹配订单',f'全部相关日期内有 {len(matches)} 张仓单的商品、数量、金额完全一致，不能仅凭最近日期或待付款状态选一张。',matches,matches=matches,blocked=True)
-    elif len(matches)==1:
-        target=matches[0]
-        if linked and any(not same_head(target,h) for h in linked):
-            return result('内部单号与明细冲突','该内部单号已有原订单关联，当前明细却完整匹配另一张订单；不能自动改绑。',matches=matches,blocked=True)
-        method='full_detail';is_exact=True
-        reason='已自动识别 '+target['name']+' / '+target['warehouse']+'：商品编码、逐商品数量及金额完整一致，全部相关日期内仅此一单。'
-    elif len(linked)==1:
+    elif linked:
+        if len(linked)!=1:return result('原单号存在多个关联','该内部单号存在不同的已确认原单，请先核对原关联；不能默认取其中一张。',blocked=True)
         target=linked[0]
-        quantity_matches=matching_heads(path,rows,eligible,progress,cancel,quantities_only=True)
-        if len(quantity_matches)!=1 or not same_head(target,quantity_matches[0]):
-            return result('原付款明细发生冲突','已找到原内部单号，但商品或数量已变化，或存在另一张同商品同数量的仓单；不能只凭内部号自动认单。',blocked=True)
-        method='previous_source'
-        difference=Decimal(pm.facts(rows)['amount'])-Decimal(target['features']['amount'])
-        reason=f"已自动识别原内部单号对应的 {target['name']} / {target['warehouse']}；逐商品和数量一致，金额较分配结果变化 {difference:+.2f} 元，核对页保留差异。"
+        if matches and any(not same_head(target,h) for h in matches):
+            return result('内部单号与明细冲突','该内部单号已有原订单关联，当前明细却完整匹配另一张订单；不能自动改绑。',matches=matches,blocked=True)
+        method='previous_source';is_exact=any(same_head(target,h) for h in matches)
+        a=pm.facts(rows)['amount'];b=(target.get('features') or {}).get('amount')
+        difference=f'金额较分配结果变化 {Decimal(a)-Decimal(b):+.2f} 元；' if a is not None and b is not None else ''
+        reason=f"已自动识别原内部单号对应的 {target['name']} / {target['warehouse']}；{difference}数量和金额差异保留到核对页。"
+    elif name_context and len(named)==1:
+        target=named[0];method=name_context['basis'];is_exact=bool(matches)
+        reason='店铺名称对应 '+target['name']+' / '+target['warehouse']+'，全部相关日期内只有这一张有效仓单；数量和金额差异进入付款核对。'
+    elif len(matches)==1:
+        target=matches[0];method='full_detail';is_exact=True
+        reason='已自动识别 '+target['name']+' / '+target['warehouse']+'：商品编码、逐商品数量及金额完整一致，全部相关日期内仅此一单。'
     else:
-        # Diagnostic only: do not use similar totals/partial SKU overlap to bind.
-        details=differences(path,rows,eligible,cancel)
-        hint='；'.join(h['name']+' / '+h['warehouse']+'：'+details[h['number']] for h in eligible if h['number'] in details)
-        outcome=result('没有完整匹配订单','没有找到逐商品明细完全一致的有效分配单。'+hint,eligible,matches=matches)
+        if name_context and not named:
+            return result('店铺名称暂无有效订单','已找到店仓名称对应，但没有符合文件身份的当前有效仓单；请核对签发和文件中的门店、仓。',blocked=True)
+        details=differences(path,rows,named,cancel)
+        hint='；'.join(h['name']+' / '+h['warehouse']+'：'+details[h['number']] for h in named if h['number'] in details)
+        choices=[h for h in named if allowed is None or h['number'] in allowed]
+        day=pm.source_day(rows)
+        choices.sort(key=lambda h:(0 if h in matches else 1,0 if h['day']==day else 1,0 if h.get('payment_version') is None else 1,h['day'],h['number']))
+        state='店铺名称对应多个订单' if name_context else '存在多张完整匹配订单' if len(matches)>1 else '没有完整匹配订单'
+        reason=(f'名称对应 {len(named)} 张有效仓单；请选择业务日期和仓单。' if name_context else '没有唯一完整明细匹配；请明确选择原单。')+'数量或金额差异在下一页核对，不妨碍确认单据身份。'+hint
+        outcome=result(state,reason,choices,matches=matches)
         outcome['candidate_reasons']=details
+        if name_context:outcome['name_context']=name_context
         return outcome
     if allowed is not None and target['number'] not in allowed:
         return result('识别订单超出本次范围','文件完整对应 '+target['number']+'，但该订单不在本次勾选范围内；未改绑其他订单。',blocked=True)
@@ -129,8 +141,11 @@ def analyze(path,document,index,scope=None,source_scope=None,progress=lambda _:N
     # previously remembered local associations.
     if not any(same_head(target,h) for h in eligible):
         return result('文件身份冲突','原订单与文件中的门店、仓或签发修订不一致。',blocked=True)
-    return result('已自动识别原内部单号' if method=='previous_source' else '已自动识别',reason,[target],automatic=True,
-                  proof=method,exact=is_exact,matches=matches)
+    if name_context and not any(same_head(target,h) for h in named):
+        return result('店铺名称与原单身份冲突','文件名称对应的店仓与明确单号或已确认原关联不一致，请核对文件名称及独立名称配置。',blocked=True)
+    outcome=result('已自动识别原内部单号' if method=='previous_source' else '已自动识别',reason,[target],automatic=True,proof=method,exact=is_exact,matches=matches)
+    if name_context:outcome['name_context']=name_context
+    return outcome
 
 def relationship_update(existing,updates,request):
     """Local file evidence only; never claims or saves an inferred company."""

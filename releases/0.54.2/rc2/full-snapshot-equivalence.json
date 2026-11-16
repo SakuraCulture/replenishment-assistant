@@ -1,0 +1,80 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "sku_count": 1000,
+      "outputs_equal": true,
+      "values": {
+        "old": {
+          "digest": "d18edd04e55fa7af04c7ec4c5344375a78c4f87bab1274738f1547fc3de424f5",
+          "comparison_rows": 1000,
+          "health": {
+            "return": true,
+            "payment": true,
+            "receipt": false
+          }
+        },
+        "new": {
+          "digest": "d18edd04e55fa7af04c7ec4c5344375a78c4f87bab1274738f1547fc3de424f5",
+          "comparison_rows": 1000,
+          "health": {
+            "return": true,
+            "payment": true,
+            "receipt": false
+          }
+        }
+      }
+    },
+    {
+      "sku_count": 5000,
+      "outputs_equal": true,
+      "values": {
+        "old": {
+          "digest": "addc20f45954f8ddb4e4f458d38e99467efa5ab9aa68f63fba988fd8b9d1ed94",
+          "comparison_rows": 5000,
+          "health": {
+            "return": true,
+            "payment": true,
+            "receipt": false
+          }
+        },
+        "new": {
+          "digest": "addc20f45954f8ddb4e4f458d38e99467efa5ab9aa68f63fba988fd8b9d1ed94",
+          "comparison_rows": 5000,
+          "health": {
+            "return": true,
+            "payment": true,
+            "receipt": false
+          }
+        }
+      }
+    },
+    {
+      "sku_count": 10000,
+      "outputs_equal": true,
+      "values": {
+        "old": {
+          "digest": "435eee8b541e5fd19ae1e391ca726096829393f90f4acead34147ae9abb5b523",
+          "comparison_rows": 10000,
+          "health": {
+            "return": true,
+            "payment": true,
+            "receipt": false
+          }
+        },
+        "new": {
+          "digest": "435eee8b541e5fd19ae1e391ca726096829393f90f4acead34147ae9abb5b523",
+          "comparison_rows": 10000,
+          "health": {
+            "return": true,
+            "payment": true,
+            "receipt": false
+          }
+        }
+      }
+    }
+  ],
+  "live_platform": false,
+  "synthetic": true,
+  "includes_entire_full_snapshot": true
+}

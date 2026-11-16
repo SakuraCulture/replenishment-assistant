@@ -1,0 +1,3464 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "repeats": 3,
+  "summary": {
+    "return_initial": {
+      "old": {
+        "prepare_seconds": 2.1310025000129826,
+        "write_lock_wait_seconds": 0.00013230001786723733,
+        "save_seconds": 0.5842658000183292,
+        "write_lock_through_close_seconds": 0.3412862000404857,
+        "post_save_warm_list_seconds": 0.005891899985726923,
+        "peak_rss_mib": 261.76171875,
+        "process_read_mib": 1.3358516693115234,
+        "process_write_mib": 32.11866283416748
+      },
+      "new": {
+        "prepare_seconds": 2.140642200014554,
+        "write_lock_wait_seconds": 0.00013729999773204327,
+        "save_seconds": 0.5571248999913223,
+        "write_lock_through_close_seconds": 0.31269849999807775,
+        "post_save_warm_list_seconds": 0.006374099990352988,
+        "peak_rss_mib": 262.0078125,
+        "process_read_mib": 1.3372602462768555,
+        "process_write_mib": 32.11866283416748
+      }
+    },
+    "operations_initial": {
+      "old": {
+        "prepare_seconds": 2.6116279999841936,
+        "write_lock_wait_seconds": 0.00012699997751042247,
+        "save_seconds": 0.6313313000136986,
+        "write_lock_through_close_seconds": 0.39261600002646446,
+        "post_save_warm_list_seconds": 0.006309200020041317,
+        "peak_rss_mib": 303.265625,
+        "process_read_mib": 31.536434173583984,
+        "process_write_mib": 31.823440551757812
+      },
+      "new": {
+        "prepare_seconds": 2.644046800036449,
+        "write_lock_wait_seconds": 0.00012509996304288507,
+        "save_seconds": 0.6325916000059806,
+        "write_lock_through_close_seconds": 0.39336759998695925,
+        "post_save_warm_list_seconds": 0.006373999989591539,
+        "peak_rss_mib": 299.80078125,
+        "process_read_mib": 31.536434173583984,
+        "process_write_mib": 31.823440551757812
+      }
+    },
+    "return_unchanged": {
+      "old": {
+        "prepare_seconds": 1.526047200022731,
+        "write_lock_wait_seconds": 0.00013540004147216678,
+        "save_seconds": 0.27070569997886196,
+        "write_lock_through_close_seconds": 0.2627401999779977,
+        "post_save_warm_list_seconds": 0.006836500018835068,
+        "peak_rss_mib": 325.11328125,
+        "process_read_mib": 31.324118614196777,
+        "process_write_mib": 0.0073719024658203125
+      },
+      "new": {
+        "prepare_seconds": 1.5233307000016794,
+        "write_lock_wait_seconds": 0.0001476999605074525,
+        "save_seconds": 0.2706421000184491,
+        "write_lock_through_close_seconds": 0.262361700006295,
+        "post_save_warm_list_seconds": 0.0062256999663077295,
+        "peak_rss_mib": 325.19140625,
+        "process_read_mib": 31.324118614196777,
+        "process_write_mib": 0.0073719024658203125
+      }
+    },
+    "operations_unchanged": {
+      "old": {
+        "prepare_seconds": 2.0070347000146285,
+        "write_lock_wait_seconds": 0.00013120000949129462,
+        "save_seconds": 0.35078139998950064,
+        "write_lock_through_close_seconds": 0.34272999997483566,
+        "post_save_warm_list_seconds": 0.006602099980227649,
+        "peak_rss_mib": 395.4375,
+        "process_read_mib": 60.99989986419678,
+        "process_write_mib": 0.0074481964111328125
+      },
+      "new": {
+        "prepare_seconds": 2.0026747999945655,
+        "write_lock_wait_seconds": 0.00013619998935610056,
+        "save_seconds": 0.3529951999662444,
+        "write_lock_through_close_seconds": 0.3441882999613881,
+        "post_save_warm_list_seconds": 0.006922900036443025,
+        "peak_rss_mib": 394.97265625,
+        "process_read_mib": 60.99989986419678,
+        "process_write_mib": 0.0074481964111328125
+      }
+    }
+  },
+  "runs": [
+    {
+      "passed": true,
+      "cases": [
+        {
+          "case": "return_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.1928194999927655,
+            "write_lock_wait_seconds": 0.00014679995365440845,
+            "save_seconds": 0.5842658000183292,
+            "write_lock_through_close_seconds": 0.3412862000404857,
+            "post_save_warm_list_seconds": 0.005891899985726923
+          },
+          "peak_rss_mib": 262.0,
+          "process_read_mib": 1.3358516693115234,
+          "process_write_mib": 32.11866283416748,
+          "plan_sha256": "6a7083a945f29b933bfa1f86d5c67ac14ac54dd43418a6c8242b4fad4af6f85a",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "6802847aa0bf0e14d88b0106afa1335bbad951a8ac01a1d2bdef1d25d174d419"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "bd91fdcfa3f8e17f83d1e9561ca32f91b753a73142bdaca0da9400ce287acc54"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.2415966999833472,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.44249290000880137,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.680612399999518,
+            "write_lock_wait_seconds": 0.0001352000399492681,
+            "save_seconds": 0.6619915000046603,
+            "write_lock_through_close_seconds": 0.4221327999839559,
+            "post_save_warm_list_seconds": 0.006309200020041317
+          },
+          "peak_rss_mib": 300.6796875,
+          "process_read_mib": 31.536434173583984,
+          "process_write_mib": 31.823440551757812,
+          "plan_sha256": "4181720f09534bf386a22c5277de3ad1a07eb7465260ec70cd47c1604cf78640",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.23849979997612536,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.5292652000207454,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "return_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 1.573210000002291,
+            "write_lock_wait_seconds": 0.00013270002091303468,
+            "save_seconds": 0.2707225999911316,
+            "write_lock_through_close_seconds": 0.2628398000379093,
+            "post_save_warm_list_seconds": 0.005630800034850836
+          },
+          "peak_rss_mib": 326.80078125,
+          "process_read_mib": 31.324118614196777,
+          "process_write_mib": 0.0073719024658203125,
+          "plan_sha256": "b6829bcfae3b4194ffac96b3940dc2181cecbd9d5410ef1600c2d96f2065136d",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "eaa25ef5f1cef7a8c68272ddd1ecb4c1afbf6ce509eabb846080c744ad476337"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "66104faf668212e9e6cf46cc0e6a4347ec2a572aac4ae2213112e37c0603d803"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.006353899952955544,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.26636489998782054,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 2.0866625999915414,
+            "write_lock_wait_seconds": 0.0001431000418961048,
+            "save_seconds": 0.3618475000257604,
+            "write_lock_through_close_seconds": 0.3540054999757558,
+            "post_save_warm_list_seconds": 0.005999099987093359
+          },
+          "peak_rss_mib": 395.4375,
+          "process_read_mib": 60.99989986419678,
+          "process_write_mib": 0.0074481964111328125,
+          "plan_sha256": "0dee5da6b7f301d127ce755f80f5025dca468aaf081ad3c3b164e89da1d911a7",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.006439300021156669,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.35748280002735555,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        }
+      ],
+      "variant": "old",
+      "trial": 1,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\global_crud_0541_20261116_01\\baseline"
+    },
+    {
+      "passed": true,
+      "cases": [
+        {
+          "case": "return_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.2280034000286832,
+            "write_lock_wait_seconds": 0.00014070002362132072,
+            "save_seconds": 0.5564763999427669,
+            "write_lock_through_close_seconds": 0.31237309996504337,
+            "post_save_warm_list_seconds": 0.006374099990352988
+          },
+          "peak_rss_mib": 262.109375,
+          "process_read_mib": 1.3372602462768555,
+          "process_write_mib": 32.11866283416748,
+          "plan_sha256": "6a7083a945f29b933bfa1f86d5c67ac14ac54dd43418a6c8242b4fad4af6f85a",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "6802847aa0bf0e14d88b0106afa1335bbad951a8ac01a1d2bdef1d25d174d419"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "bd91fdcfa3f8e17f83d1e9561ca32f91b753a73142bdaca0da9400ce287acc54"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.2427713999641128,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.43930109997745603,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.6780449000070803,
+            "write_lock_wait_seconds": 0.00015549996169283986,
+            "save_seconds": 0.6443910999805667,
+            "write_lock_through_close_seconds": 0.405205900024157,
+            "post_save_warm_list_seconds": 0.006563999981153756
+          },
+          "peak_rss_mib": 299.80078125,
+          "process_read_mib": 31.536434173583984,
+          "process_write_mib": 31.823440551757812,
+          "plan_sha256": "4181720f09534bf386a22c5277de3ad1a07eb7465260ec70cd47c1604cf78640",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.2377880999702029,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.5173647999763489,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "return_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 1.556601500022225,
+            "write_lock_wait_seconds": 0.0001202999847009778,
+            "save_seconds": 0.2737499999930151,
+            "write_lock_through_close_seconds": 0.2658072999911383,
+            "post_save_warm_list_seconds": 0.006131900008767843
+          },
+          "peak_rss_mib": 324.0859375,
+          "process_read_mib": 31.324118614196777,
+          "process_write_mib": 0.0073719024658203125,
+          "plan_sha256": "b6829bcfae3b4194ffac96b3940dc2181cecbd9d5410ef1600c2d96f2065136d",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "eaa25ef5f1cef7a8c68272ddd1ecb4c1afbf6ce509eabb846080c744ad476337"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "66104faf668212e9e6cf46cc0e6a4347ec2a572aac4ae2213112e37c0603d803"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.006541399983689189,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.26890339999226853,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 2.062614800001029,
+            "write_lock_wait_seconds": 0.00013619998935610056,
+            "save_seconds": 0.35303430003114045,
+            "write_lock_through_close_seconds": 0.34553370001958683,
+            "post_save_warm_list_seconds": 0.006929999974090606
+          },
+          "peak_rss_mib": 394.97265625,
+          "process_read_mib": 60.99989986419678,
+          "process_write_mib": 0.0074481964111328125,
+          "plan_sha256": "0dee5da6b7f301d127ce755f80f5025dca468aaf081ad3c3b164e89da1d911a7",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.006128900044132024,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.34858500002883375,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        }
+      ],
+      "variant": "new",
+      "trial": 1,
+      "source": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029"
+    },
+    {
+      "passed": true,
+      "cases": [
+        {
+          "case": "return_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.140642200014554,
+            "write_lock_wait_seconds": 0.00013729999773204327,
+            "save_seconds": 0.6088662999682128,
+            "write_lock_through_close_seconds": 0.3611938999965787,
+            "post_save_warm_list_seconds": 0.007153699989430606
+          },
+          "peak_rss_mib": 262.0078125,
+          "process_read_mib": 1.3372602462768555,
+          "process_write_mib": 32.11866283416748,
+          "plan_sha256": "6a7083a945f29b933bfa1f86d5c67ac14ac54dd43418a6c8242b4fad4af6f85a",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "6802847aa0bf0e14d88b0106afa1335bbad951a8ac01a1d2bdef1d25d174d419"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "bd91fdcfa3f8e17f83d1e9561ca32f91b753a73142bdaca0da9400ce287acc54"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.24634959996910766,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.4432162999873981,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.644046800036449,
+            "write_lock_wait_seconds": 0.0001246000174432993,
+            "save_seconds": 0.6325916000059806,
+            "write_lock_through_close_seconds": 0.39336759998695925,
+            "post_save_warm_list_seconds": 0.006176700000651181
+          },
+          "peak_rss_mib": 300.23828125,
+          "process_read_mib": 31.536434173583984,
+          "process_write_mib": 31.823440551757812,
+          "plan_sha256": "4181720f09534bf386a22c5277de3ad1a07eb7465260ec70cd47c1604cf78640",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.23759610002161935,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.5151670000050217,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "return_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 1.5233307000016794,
+            "write_lock_wait_seconds": 0.00026679999427869916,
+            "save_seconds": 0.2706421000184491,
+            "write_lock_through_close_seconds": 0.262361700006295,
+            "post_save_warm_list_seconds": 0.0062256999663077295
+          },
+          "peak_rss_mib": 325.19140625,
+          "process_read_mib": 31.324118614196777,
+          "process_write_mib": 0.0073719024658203125,
+          "plan_sha256": "b6829bcfae3b4194ffac96b3940dc2181cecbd9d5410ef1600c2d96f2065136d",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "eaa25ef5f1cef7a8c68272ddd1ecb4c1afbf6ce509eabb846080c744ad476337"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "66104faf668212e9e6cf46cc0e6a4347ec2a572aac4ae2213112e37c0603d803"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.006563599978107959,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.26549289998365566,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 1.9943158000241965,
+            "write_lock_wait_seconds": 0.00020300003234297037,
+            "save_seconds": 0.3529951999662444,
+            "write_lock_through_close_seconds": 0.3441882999613881,
+            "post_save_warm_list_seconds": 0.006635400000959635
+          },
+          "peak_rss_mib": 396.3515625,
+          "process_read_mib": 60.99989986419678,
+          "process_write_mib": 0.0074481964111328125,
+          "plan_sha256": "0dee5da6b7f301d127ce755f80f5025dca468aaf081ad3c3b164e89da1d911a7",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.007110800012014806,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.348768999974709,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        }
+      ],
+      "variant": "new",
+      "trial": 2,
+      "source": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029"
+    },
+    {
+      "passed": true,
+      "cases": [
+        {
+          "case": "return_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.1310025000129826,
+            "write_lock_wait_seconds": 0.00012049998622387648,
+            "save_seconds": 0.5628575999871828,
+            "write_lock_through_close_seconds": 0.3098471999983303,
+            "post_save_warm_list_seconds": 0.005280899989884347
+          },
+          "peak_rss_mib": 257.48828125,
+          "process_read_mib": 1.3358516693115234,
+          "process_write_mib": 32.11866283416748,
+          "plan_sha256": "6a7083a945f29b933bfa1f86d5c67ac14ac54dd43418a6c8242b4fad4af6f85a",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "6802847aa0bf0e14d88b0106afa1335bbad951a8ac01a1d2bdef1d25d174d419"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "bd91fdcfa3f8e17f83d1e9561ca32f91b753a73142bdaca0da9400ce287acc54"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.2516388999647461,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.44780829997034743,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.5764743000036106,
+            "write_lock_wait_seconds": 0.00012159999459981918,
+            "save_seconds": 0.6165548000135459,
+            "write_lock_through_close_seconds": 0.38427779998164624,
+            "post_save_warm_list_seconds": 0.006873800011817366
+          },
+          "peak_rss_mib": 304.390625,
+          "process_read_mib": 31.536434173583984,
+          "process_write_mib": 31.823440551757812,
+          "plan_sha256": "4181720f09534bf386a22c5277de3ad1a07eb7465260ec70cd47c1604cf78640",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.23088149999966845,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.5030839000246488,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "return_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 1.526047200022731,
+            "write_lock_wait_seconds": 0.00013589998707175255,
+            "save_seconds": 0.27070569997886196,
+            "write_lock_through_close_seconds": 0.2627401999779977,
+            "post_save_warm_list_seconds": 0.006836500018835068
+          },
+          "peak_rss_mib": 325.11328125,
+          "process_read_mib": 31.324118614196777,
+          "process_write_mib": 0.0073719024658203125,
+          "plan_sha256": "b6829bcfae3b4194ffac96b3940dc2181cecbd9d5410ef1600c2d96f2065136d",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "eaa25ef5f1cef7a8c68272ddd1ecb4c1afbf6ce509eabb846080c744ad476337"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "66104faf668212e9e6cf46cc0e6a4347ec2a572aac4ae2213112e37c0603d803"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.006610399985220283,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.2663421999895945,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 2.0055171999847516,
+            "write_lock_wait_seconds": 0.00013120000949129462,
+            "save_seconds": 0.35078139998950064,
+            "write_lock_through_close_seconds": 0.34272999997483566,
+            "post_save_warm_list_seconds": 0.006602099980227649
+          },
+          "peak_rss_mib": 396.75,
+          "process_read_mib": 60.99989986419678,
+          "process_write_mib": 0.0074481964111328125,
+          "plan_sha256": "0dee5da6b7f301d127ce755f80f5025dca468aaf081ad3c3b164e89da1d911a7",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.006634099991060793,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.34636110003339127,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        }
+      ],
+      "variant": "old",
+      "trial": 2,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\global_crud_0541_20261116_01\\baseline"
+    },
+    {
+      "passed": true,
+      "cases": [
+        {
+          "case": "return_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.1002574000158347,
+            "write_lock_wait_seconds": 0.00013230001786723733,
+            "save_seconds": 0.6081107999780215,
+            "write_lock_through_close_seconds": 0.3590954999672249,
+            "post_save_warm_list_seconds": 0.007798000006005168
+          },
+          "peak_rss_mib": 261.76171875,
+          "process_read_mib": 1.3358516693115234,
+          "process_write_mib": 32.11866283416748,
+          "plan_sha256": "6a7083a945f29b933bfa1f86d5c67ac14ac54dd43418a6c8242b4fad4af6f85a",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "6802847aa0bf0e14d88b0106afa1335bbad951a8ac01a1d2bdef1d25d174d419"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "bd91fdcfa3f8e17f83d1e9561ca32f91b753a73142bdaca0da9400ce287acc54"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.24758939997991547,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.4428067000117153,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.6116279999841936,
+            "write_lock_wait_seconds": 0.00012699997751042247,
+            "save_seconds": 0.6313313000136986,
+            "write_lock_through_close_seconds": 0.39261600002646446,
+            "post_save_warm_list_seconds": 0.005605599959380925
+          },
+          "peak_rss_mib": 303.265625,
+          "process_read_mib": 31.536434173583984,
+          "process_write_mib": 31.823440551757812,
+          "plan_sha256": "4181720f09534bf386a22c5277de3ad1a07eb7465260ec70cd47c1604cf78640",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.23732989997370169,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.5146658000303432,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "return_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 1.5095651000156067,
+            "write_lock_wait_seconds": 0.00013540004147216678,
+            "save_seconds": 0.2688922999659553,
+            "write_lock_through_close_seconds": 0.2611015999573283,
+            "post_save_warm_list_seconds": 0.006952399970032275
+          },
+          "peak_rss_mib": 325.01171875,
+          "process_read_mib": 31.324118614196777,
+          "process_write_mib": 0.0073719024658203125,
+          "plan_sha256": "b6829bcfae3b4194ffac96b3940dc2181cecbd9d5410ef1600c2d96f2065136d",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "eaa25ef5f1cef7a8c68272ddd1ecb4c1afbf6ce509eabb846080c744ad476337"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "66104faf668212e9e6cf46cc0e6a4347ec2a572aac4ae2213112e37c0603d803"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.0064286999986507,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.26482169999508187,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 2.0070347000146285,
+            "write_lock_wait_seconds": 0.00012750003952533007,
+            "save_seconds": 0.3461173999821767,
+            "write_lock_through_close_seconds": 0.338102700014133,
+            "post_save_warm_list_seconds": 0.007059800031129271
+          },
+          "peak_rss_mib": 395.328125,
+          "process_read_mib": 60.99989986419678,
+          "process_write_mib": 0.0074481964111328125,
+          "plan_sha256": "0dee5da6b7f301d127ce755f80f5025dca468aaf081ad3c3b164e89da1d911a7",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.006115199998021126,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.3416010999935679,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        }
+      ],
+      "variant": "old",
+      "trial": 3,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\global_crud_0541_20261116_01\\baseline"
+    },
+    {
+      "passed": true,
+      "cases": [
+        {
+          "case": "return_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.1265210999990813,
+            "write_lock_wait_seconds": 0.0001210999907925725,
+            "save_seconds": 0.5571248999913223,
+            "write_lock_through_close_seconds": 0.31269849999807775,
+            "post_save_warm_list_seconds": 0.006100700004026294
+          },
+          "peak_rss_mib": 257.06640625,
+          "process_read_mib": 1.3372602462768555,
+          "process_write_mib": 32.11866283416748,
+          "plan_sha256": "6a7083a945f29b933bfa1f86d5c67ac14ac54dd43418a6c8242b4fad4af6f85a",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "6802847aa0bf0e14d88b0106afa1335bbad951a8ac01a1d2bdef1d25d174d419"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "bd91fdcfa3f8e17f83d1e9561ca32f91b753a73142bdaca0da9400ce287acc54"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.24311059998581186,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.44207920000189915,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_initial",
+          "prepare_kind": "file_prepare",
+          "times": {
+            "prepare_seconds": 2.638894799980335,
+            "write_lock_wait_seconds": 0.00012509996304288507,
+            "save_seconds": 0.6256495999987237,
+            "write_lock_through_close_seconds": 0.386326200037729,
+            "post_save_warm_list_seconds": 0.006373999989591539
+          },
+          "peak_rss_mib": 298.99609375,
+          "process_read_mib": 31.536434173583984,
+          "process_write_mib": 31.823440551757812,
+          "plan_sha256": "4181720f09534bf386a22c5277de3ad1a07eb7465260ec70cd47c1604cf78640",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": true
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.23805280000669882,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.509516199992504,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "return_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 1.5203515000175685,
+            "write_lock_wait_seconds": 0.0001476999605074525,
+            "save_seconds": 0.2699033999815583,
+            "write_lock_through_close_seconds": 0.2621862000087276,
+            "post_save_warm_list_seconds": 0.006740099983289838
+          },
+          "peak_rss_mib": 325.921875,
+          "process_read_mib": 31.324118614196777,
+          "process_write_mib": 0.0073719024658203125,
+          "plan_sha256": "b6829bcfae3b4194ffac96b3940dc2181cecbd9d5410ef1600c2d96f2065136d",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "return",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_events": {
+              "rows": 6,
+              "sha256": "eaa25ef5f1cef7a8c68272ddd1ecb4c1afbf6ce509eabb846080c744ad476337"
+            },
+            "lifecycle_files": {
+              "rows": 1,
+              "sha256": "4e613c3e8270a48a4bd66872a3647a31dad82829e8b5322590f2f4887ed8c062"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 6,
+              "sha256": "66104faf668212e9e6cf46cc0e6a4347ec2a572aac4ae2213112e37c0603d803"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.006342199980281293,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.264770999958273,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        },
+        {
+          "case": "operations_unchanged",
+          "prepare_kind": "archived_recheck",
+          "times": {
+            "prepare_seconds": 2.0026747999945655,
+            "write_lock_wait_seconds": 0.00013240001862868667,
+            "save_seconds": 0.35187680000672117,
+            "write_lock_through_close_seconds": 0.3441234999918379,
+            "post_save_warm_list_seconds": 0.006922900036443025
+          },
+          "peak_rss_mib": 394.265625,
+          "process_read_mib": 60.99989986419678,
+          "process_write_mib": 0.0074481964111328125,
+          "plan_sha256": "0dee5da6b7f301d127ce755f80f5025dca468aaf081ad3c3b164e89da1d911a7",
+          "receipts": [
+            {
+              "number": "BH-SYN-SYN0000-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0001-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0002-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0003-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0004-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            },
+            {
+              "number": "BH-SYN-SYN0005-ZC-HB",
+              "revision": 1,
+              "stage": "operations",
+              "version": 1,
+              "changed": false
+            }
+          ],
+          "view_sha256": "6149a402b431a2f0c35fe0b7efc168235084ada28a18e171e6665f95370ab166",
+          "tables": {
+            "jobs": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "jst_tasks": {
+              "rows": 6,
+              "sha256": "5338f3aca1dc2048b08f93c2adc3cbbf8fc1f600076d73aedb260fa713ef68ad"
+            },
+            "lifecycle_events": {
+              "rows": 12,
+              "sha256": "bc7ec59548750945ee196bb5a1e97d4f8d34df48c4fdfb15eec57d2d65e67f65"
+            },
+            "lifecycle_files": {
+              "rows": 2,
+              "sha256": "ed9e73ae1b6718723e3c9fa2d04a29be341f1d655e5e801bd88ffa6de9eaa917"
+            },
+            "lifecycle_mappings": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "lifecycle_routes": {
+              "rows": 6,
+              "sha256": "e6e452dd905dd2e2a31cab93872f9756128df0f4216302d9a7ec6800fd5332e8"
+            },
+            "lifecycle_versions": {
+              "rows": 12,
+              "sha256": "612645d2b2cbd109d55d3e9746b70bc9b0e3e3b8a254b80f12c94e948bbc270b"
+            },
+            "normal_events": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "normal_orders": {
+              "rows": 6,
+              "sha256": "13270dcc8594ac9e52f4a455b2a7d79f39734c12de535a3eaca718f70862e27e"
+            },
+            "normal_revisions": {
+              "rows": 6,
+              "sha256": "ff074b6fb008c5f9cb91f046a2a91d916739592877f625228d9e0bd8d81814a0"
+            },
+            "normal_work_revisions": {
+              "rows": 1,
+              "sha256": "20f3707216c334c764a506db1429a5f81114c0a29fdd5bec6d30b19208da8682"
+            },
+            "presets": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "snapshot_chunks": {
+              "rows": 101,
+              "sha256": "cab0171af055b56d97d5b24b381c8d3533abe333ba941a548293dec4a34d9bbf"
+            },
+            "snapshot_storage_meta": {
+              "rows": 1,
+              "sha256": "5151a72de60f32659e2ac6ffa35099bfbdbeeafd068144cbef859529c0e51d4d"
+            },
+            "source_files": {
+              "rows": 1,
+              "sha256": "c6ee83bde764ec468c10503d95e1ced89b072333a1d52261e7c6e0c5ddf81ede"
+            },
+            "sqlite_sequence": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "stores": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "events": [
+            {
+              "seconds": 0.006349499977659434,
+              "message": "留存原件 1/1"
+            },
+            {
+              "seconds": 0.34751689998665825,
+              "message": "正在原子提交单据；提交完成前不可取消"
+            }
+          ]
+        }
+      ],
+      "variant": "new",
+      "trial": 3,
+      "source": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029"
+    }
+  ],
+  "business_equivalence": {
+    "plans": true,
+    "receipts": true,
+    "ordered_tables": true,
+    "views": true
+  },
+  "notes": "Old/new alternate serially in independent processes. Fixed synthetic clocks. Unchanged cases use the real archived recheck API. Windows process IO includes cache; RSS is sampled per worker, not whole app/PC. Warm list includes new-version summary reads. Reproducible transient DB copies are cleaned only after signed evidence is saved; inputs and first-trial fact dumps remain."
+}

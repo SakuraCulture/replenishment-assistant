@@ -108,6 +108,7 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
             if stage=='payment' and spec.get('adapter')=='jst_import_return' and key in ('付款单号','实际金额'):continue
             if mapping.get(key) is None and defaults.get(key) in (None, ''): raise ValueError('缺少字段映射：' + key)
         book = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=False, keep_links=False); cached = None
+        cached_iterator=None;cached_position=0
         try:
             import order_identity
             identities=order_identity.read(book)
@@ -115,18 +116,27 @@ def scan(stage, specs, progress=lambda _: None, cancel=None):
             if list(next(iterator, ())) != spec['headers']: raise ValueError('表头已变化')
             for n, cells in enumerate(iterator, 2):
                 checkpoint(cancel)
-                if not any(v not in (None, '') for v in cells): continue
+                business_columns=set(columns)|set((spec.get('paid_columns') or {}).values())
+                if spec.get('price_column') is not None:business_columns.add(spec['price_column'])
+                # Ignore content in unmapped verification columns, including a
+                # footer below the last product. Actual incomplete business rows
+                # must still reach the normal missing-code/quantity checks.
+                if not any(c<len(cells) and cells[c] not in (None,'') for c in business_columns):continue
                 try:
                     d = {f: cells[c] if c is not None and c < len(cells) else defaults.get(f) for f in names for c in [mapping.get(f)]}
                     if number_only:d['签发修订']=(cells[revision_column] if identities and revision_column is not None and revision_column<len(cells) else None)
                     price_column=spec.get('price_column') if spec.get('adapter')=='jst_import_return' else None
                     if price_column is not None:d['_price']=cells[price_column] if price_column<len(cells) else None
                     if any(isinstance(v, str) and v.startswith('=') for v in d.values()):
-                        if cached is None: cached = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=True, keep_links=False)
-                        values = next(cached[spec['sheet']].iter_rows(min_row=n, max_row=n, values_only=True))
+                        if cached is None:
+                            cached = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=True, keep_links=False)
+                            cached[spec['sheet']].reset_dimensions();cached_iterator=iter(cached[spec['sheet']].values)
+                        while cached_position<n:
+                            values=next(cached_iterator,());cached_position+=1
                         for f, v in list(d.items()):
                             if isinstance(v, str) and v.startswith('='):
-                                c = price_column if f=='_price' else mapping[f]; d[f] = values[c] if c < len(values) else None
+                                c = price_column if f=='_price' else revision_column if number_only and f=='签发修订' else mapping[f]
+                                d[f] = values[c] if c is not None and c < len(values) else None
                                 if d[f] is None: raise ValueError(f + '公式无缓存值，请在Excel计算保存后重试')
                     raw_qty=d[QUANTITIES[stage]]
                     blank=raw_qty is None or isinstance(raw_qty,str) and not raw_qty.strip()

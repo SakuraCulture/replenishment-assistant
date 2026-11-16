@@ -153,7 +153,7 @@ class Dashboard(QWidget):
         self.detail_note.setText(f"{self.period_filter or '全部周期'} · {len(rows)}条 · 第{self.page+1}页；单号在末列")
     def export(self):
         if not self.report:return
-        self.owner.export_kind.setCurrentIndex(self.owner.export_kind.findData('workflow'));self.owner.export(False)
+        self.owner.export(False,kind='workflow')
     def load_stockout(self):
         if not self.report:return
         import workflow_stockout
