@@ -1,0 +1,32 @@
+{
+  "real_business_data_opened": false,
+  "real_platform_calls": false,
+  "auto_installed": false,
+  "numeric_core_unchanged_sha256": {
+    "model.py": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+    "allocation.py": "eaad9d27238c3b532ac6c14a4e5091287157aa2f1e722a627d82b8e956ac4cd4",
+    "jst_allocation.py": "b67ad11aa15bdad87c26bff2ee3c2ba009e071f5779149f197c8eca355a69a30",
+    "restock_policy.py": "d67d3b27e3218e9d4dbfaac8aff1e1e9d847505f3034878e5c5080bf117ed075",
+    "parameter_schema.py": "3eeddbf40bb7bea207ed87a073ac48b699928d03f500ada6370d05c52f6fbc32",
+    "default_config.json": "02b006825baab0a7e6d47448ccbbd79d57c212ec758014c812b6d91d0b977012",
+    "workbench_actions.py": "b59d4b8d20cf4a4042148d79e7c2efe2db3d9382e63f1c518582be53b151176c",
+    "aoxiang_upload_pipeline.py": "0ed07c4a9692abbdd12e30b223598fdb184110baa567069b9752e1819f3c7485"
+  },
+  "initial_scope_audit": "global_crud_review_0540_20261115_01/global-audit-summary.json",
+  "corrected_outputs": [
+    "Directory-only stores are visible",
+    "Queued writes cannot be replaced by subsequent reads",
+    "Extra-only footer rows no longer become phantom products",
+    "Source-only changes keep business version/basis, with new originals separately retained",
+    "Unrelated edits do not invalidate target previews; relevant additions/changes still conflict",
+    "Trend export uses explicit workflow type without changing the two-template main menu"
+  ],
+  "limits": [
+    "Synthetic development-PC measurements; not a business-machine capacity claim",
+    "Initial full-range totals still require full-range projection; existing cache is compact and batched",
+    "Previously stale historical stages are not silently rewritten; use existing explicit recheck",
+    "Queues are in-memory; close/cancel reports unexecuted writes and does not automatically replay them after restart",
+    "Older EXEs do not understand evidence-only attachment references during cleanup; rollback must use pre-upgrade recovery data",
+    "No changes to quantity, amount, carton, budget, allocation order, default concurrency or platform submission logic"
+  ]
+}

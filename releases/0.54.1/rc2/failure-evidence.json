@@ -1,0 +1,39 @@
+{
+  "retained": [
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\global_crud_0541_20261116_01\\batch1-tests-01.log",
+      "sha256": "368c2abce39459e8f8ee69a10d287ca0dc218853171bf225b62d7bde7d4d2d2b"
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\global_crud_0541_20261116_01\\batch2-tests-01.log",
+      "sha256": "e11b273608815e661f3399b4878dd7f4153b326b13b07213fcd6cc7442a19b16"
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\global_crud_0541_20261116_01\\integration-tests-01.log",
+      "sha256": "56155efeaf5e02edc6dac8db748fa1f2d6831158e01ad2cd6ec5966abd8b2773"
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\global_crud_0541_20261116_01\\regression-01.log",
+      "sha256": "3b7d83c2009fb7819bc857f6d0d3cb4ad6e1dc6872e52c8764d77eab641e5748"
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\global_crud_0541_20261116_01\\gui-source-01.log",
+      "sha256": "1fe1ec940413772a04ca29e8a12a6633585f9156bf47c3014c350849f9da868c"
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\global_crud_0541_20261116_01\\gui-source-03.log",
+      "sha256": "16c45d3d9352a153cabb225ea3ac1f38745b18f7de1956e7b104056d7f78afac"
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\global_crud_0541_20261116_01\\rc1-platform-read-review.json",
+      "sha256": "5951b4d5e5747672ecbd2bb2020a45fde3e35c9255e5afe66fb208be8af7e2d8"
+    }
+  ],
+  "notes": [
+    "Initial schema-only scheduling test fixture was outdated and was replaced with current production schema plus a pending member",
+    "Initial candidate guards missed legacy automatic proof without a named proof field; late-candidate tests now pass",
+    "Old history API contract was preserved when there are no newly attached originals",
+    "Existing trend button referenced a removed menu item; explicit export type now keeps the two main templates",
+    "Source GUI probe failures were a button accessible-name lookup and date-widget type assumption; no dialog/service was replaced with a no-op"
+  ]
+}

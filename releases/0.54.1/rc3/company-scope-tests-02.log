@@ -1,0 +1,28 @@
+.........................................................ERROR:root:操作失败
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\ui_tasks.py", line 19, in run
+    result=self.fn(*self.args,progress=report,cancel=self.cancel)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\payment_matching.py", line 372, in prepare
+    if d.get('target') is None:raise ValueError(result['state']+'：'+result['reason'])
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: 店铺名称对应多个订单：名称对应 2 张有效仓单；请选择业务日期和仓单。数量或金额差异在下一页核对，不妨碍确认单据身份。合成门店1 / 河北仓：少 1 款、多 1 款、数量不同 0 款、金额不同 0 款；缺少编码 0001；清单外编码 0002；合成门店1 / 山东仓：少 0 款、多 0 款、数量不同 0 款、金额不同 1 款
+................ERROR:root:单据已保存，恢复回执写入待核：52b7dc38e877298d3558dd915cd39f64
+Traceback (most recent call last):
+  File "C:\Users\lenovo\.codex\worktrees\data-location-0521\replenishment_mvp_20261029\src\lifecycle_recovery.py", line 135, in execute
+    try:_publish(path,value)
+        ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 1198, in _execute_mock_call
+    raise effect
+OSError: receipt disk unavailable
+....
+----------------------------------------------------------------------
+Ran 77 tests in 38.025s
+
+OK

@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "base_commit": "4cdab01e67779264adb0bf24fc62734660edfc41",
+  "branch": "codex/payment-shop-names-0.54.0",
+  "changed_original_source": [
+    "src/app.py",
+    "src/lifecycle_batch_ui.py",
+    "src/order_lifecycle.py",
+    "src/parameter_scene.py",
+    "src/payment_auto_matching.py",
+    "src/payment_matching.py",
+    "src/payment_matching_smoke.py",
+    "src/version.json"
+  ],
+  "unchanged_business_files": {
+    "model.py": true,
+    "normal_orders.py": true,
+    "jst_orders.py": true,
+    "jst_allocation.py": true,
+    "lifecycle_rules.py": true,
+    "lifecycle_batch.py": true,
+    "purchases.py": true,
+    "store_parameter_import.py": true,
+    "parameter_snapshot.py": true,
+    "order_migration.py": true,
+    "order_merge.py": true,
+    "data_relocation.py": true
+  },
+  "lifecycle_except_mapping_profile_unchanged": true,
+  "old_0539_artifacts_equal": {
+    "exe": true,
+    "zip": true
+  },
+  "real_business_data_opened": false,
+  "live_platform": false,
+  "git_committed_or_published": false
+}

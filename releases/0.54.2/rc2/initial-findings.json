@@ -1,0 +1,200 @@
+{
+  "date": "2026-11-16",
+  "stage": "diagnosis_and_plan_only",
+  "branch": "codex/payment-shop-names-0.54.0",
+  "head": "4cdab01e67779264adb0bf24fc62734660edfc41",
+  "build": "0.54.1 rc3",
+  "frozen_source_matches": {
+    "components/aoxiang/src/purchase-create-service.mjs": true,
+    "components/aoxiang/src/purchase-create-ui.mjs": true,
+    "components/aoxiang/src/machine-purchase-create.mjs": true,
+    "src/aoxiang_receipt_scope.py": true,
+    "src/lifecycle_comparison.py": true,
+    "src/order_lifecycle.py": true
+  },
+  "packaged_component_matches": {
+    "components/aoxiang/src/purchase-create-service.mjs": true,
+    "components/aoxiang/src/purchase-create-ui.mjs": true,
+    "components/aoxiang/src/machine-purchase-create.mjs": true
+  },
+  "findings": [
+    {
+      "id": "dashboard-csv-correction",
+      "priority": "P1-data-persistence",
+      "confirmed": true,
+      "impact": "Existing-key CSV corrections disappear on reopen, including previously imported dates; dependent statistics also revert",
+      "sources": [
+        {
+          "file": "C:\\Users\\lenovo\\Downloads\\大仓缺货治理追踪看板.html",
+          "lines": [
+            242,
+            482,
+            486,
+            488
+          ]
+        }
+      ],
+      "evidence": "dashboard-report.json",
+      "fix": "Persist additions and updates by date/warehouse/SKU; restored rows override embedded base; do not overwrite storage failure with success; preserve previous state on failure",
+      "estimated_hours": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": "purchase-payment-race",
+      "priority": "P1",
+      "confirmed": true,
+      "impact": "A stale payment-derived file can cross the upload boundary after payment changes during browser acquisition; host validator correctly rejects it when called again",
+      "sources": [
+        {
+          "file": "components/aoxiang/src/purchase-create-service.mjs",
+          "lines": [
+            29,
+            40,
+            42
+          ]
+        },
+        {
+          "file": "components/aoxiang/src/purchase-create-ui.mjs",
+          "lines": [
+            28,
+            80,
+            87
+          ]
+        }
+      ],
+      "evidence": "upload-report.json",
+      "fix": "Fresh live host-basis check after slow browser preparation and before releasing actual import request; distinguish proven zero-submit rejection from accepted/unknown outcome; preserve receipt recovery and default concurrency",
+      "estimated_hours": [
+        5,
+        8
+      ]
+    },
+    {
+      "id": "receipt-sibling-revision",
+      "priority": "P1",
+      "confirmed": true,
+      "impact": "A valid unaffected warehouse becomes ineligible and its schedule is retired; queued work is skipped and manual retry is rejected",
+      "sources": [
+        {
+          "file": "src/aoxiang_receipt_scope.py",
+          "lines": [
+            36,
+            39,
+            45,
+            51
+          ]
+        },
+        {
+          "file": "src/aoxiang_workflows.py",
+          "lines": [
+            580,
+            602,
+            612
+          ]
+        }
+      ],
+      "evidence": "warehouse-report.json",
+      "fix": "Resolve current warehouse execution identity/revision/digest; retain oid/visibility/payment checks; explicit revalidation can restore wrongly retired schedules without reviving deleted, voided or intentionally paused ones",
+      "estimated_hours": [
+        3,
+        5
+      ]
+    },
+    {
+      "id": "comparison-sibling-revision",
+      "priority": "P2",
+      "confirmed": true,
+      "impact": "Single and batch lifecycle order/store comparison export fails for valid older-source sibling warehouse",
+      "sources": [
+        {
+          "file": "src/lifecycle_comparison.py",
+          "lines": [
+            131,
+            132,
+            138
+          ]
+        }
+      ],
+      "evidence": "warehouse-report.json",
+      "fix": "Use warehouse validation as authority; remove parent-latest equality while retaining immutable snapshot, duplicate-revision and real changed-warehouse checks",
+      "estimated_hours": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "unused-lightweight-display",
+      "priority": "P2",
+      "confirmed": true,
+      "impact": "snapshot(_comparison=False) returns no display rows but still computes per-SKU differences, labels and notes",
+      "sources": [
+        {
+          "file": "src/order_lifecycle.py",
+          "lines": [
+            504,
+            510,
+            514,
+            515,
+            518
+          ]
+        }
+      ],
+      "evidence": "lightweight-report.json",
+      "fix": "Guard the complete display-only block, not only row append; retain decoding/fingerprints, legacy completeness, payment documents and health checks",
+      "estimated_hours": [
+        1,
+        2
+      ]
+    }
+  ],
+  "validation_methods": {
+    "dashboard": "Original script, synthetic data and simulated DOM/storage; reopen with a new JS VM. Not a real-browser persistence acceptance.",
+    "purchase": "Actual machine/service/ledger/input validation with fake browser acquisition and upload transport; original host validator rerun afterwards. No platform requests.",
+    "warehouse": "Production publish, warehouse validation, receipt eligibility/scheduling/manual queue and comparison collector on synthetic SQLite.",
+    "lightweight": "Production snapshot with 1000 synthetic SKUs; trace verifies unused display work and full/light health equivalence. No post-fix speed claim."
+  },
+  "probe_history": [
+    {
+      "log": "python-probe-01.log",
+      "result": "First combined probe completed purchase/warehouse checks, then failed a probe-only assertion expecting exactly 1000 line events. Comprehension resumes create multiple events."
+    },
+    {
+      "log": "lightweight-probe-02.log",
+      "result": "Corrected probe-only line-event assertion passed; original failure retained; no production source changes."
+    }
+  ],
+  "cross_regression_and_exe_estimated_hours": [
+    4,
+    6
+  ],
+  "total_estimated_hours": [
+    16,
+    26
+  ],
+  "implementation_boundaries": [
+    "No calculation/quantity/money/carton/budget/order/default-concurrency changes",
+    "No real-data repair, platform operation, upload replay, Git commit/push/merge or rebuild in this audit",
+    "Historical wrongly retired schedules need explicit revalidation; do not auto-enable every schedule",
+    "Already closed dashboard corrections may need the source CSV imported again; do not invent missing corrections"
+  ],
+  "protection": {
+    "selected_sources_unchanged": true,
+    "git_status_unchanged": true,
+    "html_unchanged": true,
+    "rc3_frozen_source_matches": {
+      "components/aoxiang/src/purchase-create-service.mjs": true,
+      "components/aoxiang/src/purchase-create-ui.mjs": true,
+      "components/aoxiang/src/machine-purchase-create.mjs": true,
+      "src/aoxiang_receipt_scope.py": true,
+      "src/lifecycle_comparison.py": true,
+      "src/order_lifecycle.py": true
+    }
+  },
+  "unknown": [
+    "Real business-machine hit counts were not read",
+    "No real platform accepted any request in these probes",
+    "Post-fix regression/performance/EXE acceptance will be required during implementation"
+  ]
+}

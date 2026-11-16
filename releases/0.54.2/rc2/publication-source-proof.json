@@ -1,0 +1,23 @@
+{
+  "source_commit": "690e71976d498d3ba75abfd15b7a610a0636df28",
+  "base_commit": "4cdab01e67779264adb0bf24fc62734660edfc41",
+  "built_source_snapshot": "snapshot-bb7de724a8115db024252872bc0af9bf8a039e0f4b863bf51698309388fc472b",
+  "compared_frozen_files": 4876,
+  "publication_only_changes": [
+    "README.md",
+    ".gitattributes"
+  ],
+  "format_only_source_change": {
+    "file": "src/purchase_dispatch.py",
+    "change": "remove extra terminal blank line only",
+    "accepted_sha256": "69b1918550d1d89402fb3abdca8bd761e394d746a2009438157de40ba5cc4816",
+    "published_sha256": "094382dc7f0d7e4799de59da6f52f0c2cb44096b126d01aa93b3b426d2613701",
+    "python_AST_equal": true,
+    "body_equal_ignoring_terminal_newlines": true,
+    "accepted_bundle_unchanged": true
+  },
+  "business_AST_unchanged": true,
+  "bundle_rebuilt": false,
+  "real_data_modified": false,
+  "tag": "v0.54.2-rc2"
+}

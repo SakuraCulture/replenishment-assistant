@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "source_files": 79,
+  "candidate_files": 203,
+  "frozen_mismatches": [
+    ".gitattributes",
+    "README.md"
+  ],
+  "all_runtime_and_test_bytes_equal_to_accepted_rc2": true,
+  "no_databases_workbooks_bundles_or_state_selected": true,
+  "credential_pattern_hits": [],
+  "ignored_logs_explicitly_selected": [
+    "releases/0.54.0/rc3/payment-final.log",
+    "releases/0.54.1/rc1/final-boundary-tests-01.log",
+    "releases/0.54.1/rc1/final-followup-tests-01.log",
+    "releases/0.54.1/rc1/regression-02.log",
+    "releases/0.54.1/rc2/final-boundary-tests-01.log",
+    "releases/0.54.1/rc2/final-followup-tests-01.log",
+    "releases/0.54.1/rc2/regression-02.log",
+    "releases/0.54.1/rc3/company-scope-tests-02.log",
+    "releases/0.54.1/rc3/final-boundary-tests-01.log",
+    "releases/0.54.1/rc3/final-followup-tests-01.log",
+    "releases/0.54.1/rc3/platform-gate-followup-01.log",
+    "releases/0.54.1/rc3/regression-02.log",
+    "releases/0.54.2/rc2/final-python-01.log",
+    "releases/0.54.2/rc2/node-regression.log",
+    "releases/0.54.2/rc2/recovery-reader-green-02.log",
+    "releases/0.54.2/rc2/recovery-reader-red-01.log"
+  ]
+}

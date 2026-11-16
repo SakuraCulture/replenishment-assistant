@@ -1,0 +1,5 @@
+{
+  "passed": true,
+  "files": 79,
+  "scope": "all staged bytes match reviewed source; one EOF-only change has identical Python AST"
+}

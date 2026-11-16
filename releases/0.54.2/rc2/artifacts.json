@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "version": "0.54.2 rc2",
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.2_rc2\\补货助手\\补货助手.exe",
+  "exe_sha256": "4d49da0860bd2e286f10fdbc23c8fc86e892cb15219c2c44d7737e5027bebd0b",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.2_rc2\\补货助手_0.54.2_rc2_五项修复.zip",
+  "zip_sha256": "8aabfa75e154b1861da8feb9b912d8bb8b20d5a14d20181381854c3e8d4b3579",
+  "zip_bytes": 157810129,
+  "file_inventory_sha256": "ef3fecfe3ce739dee124c4de60c732b7a729182bd1e163937099140001230850",
+  "source_snapshot": "snapshot-bb7de724a8115db024252872bc0af9bf8a039e0f4b863bf51698309388fc472b",
+  "source_archive": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.2_rc2\\source.zip",
+  "source_archive_sha256": "bb7de724a8115db024252872bc0af9bf8a039e0f4b863bf51698309388fc472b",
+  "report": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\releases\\0.54.2\\rc2\\交付说明.txt",
+  "dashboard": {
+    "passed": true,
+    "directory": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_缺货治理看板_20261116_rc1",
+    "html": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_缺货治理看板_20261116_rc1\\大仓缺货治理追踪看板_修复版.html",
+    "html_sha256": "0f14cad1e92ee94b28677c0f7fd2ca599c4cd62e64750a7b66e05239acafd74b",
+    "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_缺货治理看板_20261116_rc1\\大仓缺货治理看板_CSV保存修复_20261116_rc1.zip",
+    "zip_sha256": "35819f9414cc51275a11562373b3eaeec7806ccdac25a4e2a48a2eb2573d4d78",
+    "original_preserved": true
+  },
+  "sealed_at": "2026-11-16T11:52:26.802724+08:00",
+  "no_git_or_live_data_mutation": true,
+  "actual_exe_checks": {
+    "five": 46,
+    "workbench": 51,
+    "recovery": 53
+  }
+}

@@ -1,0 +1,1011 @@
+{
+  "passed": true,
+  "cases": {
+    "formula_400": {
+      "old": {
+        "seconds": 1.0269996999995783,
+        "peak_worker_rss_mib": 59.44140625,
+        "rss_delta_mib": 5.28125
+      },
+      "new": {
+        "seconds": 0.04862140002660453,
+        "peak_worker_rss_mib": 56.51953125,
+        "rss_delta_mib": 2.578125
+      },
+      "outputs_equal": true
+    },
+    "formula_1000": {
+      "old": {
+        "seconds": 5.692230899992865,
+        "peak_worker_rss_mib": 62.37109375,
+        "rss_delta_mib": 4.20703125
+      },
+      "new": {
+        "seconds": 0.0695621999911964,
+        "peak_worker_rss_mib": 58.26953125,
+        "rss_delta_mib": 0.8359375
+      },
+      "outputs_equal": true
+    },
+    "list_40_cold_page": {
+      "old": {
+        "seconds": 0.3200552999624051,
+        "peak_worker_rss_mib": 63.3828125,
+        "rss_delta_mib": 0.98046875
+      },
+      "new": {
+        "seconds": 0.22706760000437498,
+        "peak_worker_rss_mib": 59.90625,
+        "rss_delta_mib": 0.15234375
+      },
+      "outputs_equal": true
+    },
+    "list_40_warm_page": {
+      "old": {
+        "seconds": 0.033517699979711324,
+        "peak_worker_rss_mib": 63.4140625,
+        "rss_delta_mib": 0.02734375
+      },
+      "new": {
+        "seconds": 0.02608229999896139,
+        "peak_worker_rss_mib": 59.90625,
+        "rss_delta_mib": 0.0234375
+      },
+      "outputs_equal": true
+    },
+    "list_40_warm_one_order": {
+      "old": {
+        "seconds": 0.030647500010672957,
+        "peak_worker_rss_mib": 63.4140625,
+        "rss_delta_mib": 0.0234375
+      },
+      "new": {
+        "seconds": 0.024841499980539083,
+        "peak_worker_rss_mib": 59.90625,
+        "rss_delta_mib": 0.0234375
+      },
+      "outputs_equal": true
+    },
+    "list_160_cold_page": {
+      "old": {
+        "seconds": 1.28055470000254,
+        "peak_worker_rss_mib": 63.6796875,
+        "rss_delta_mib": 1.01171875
+      },
+      "new": {
+        "seconds": 0.878326800011564,
+        "peak_worker_rss_mib": 60.21875,
+        "rss_delta_mib": 0.9140625
+      },
+      "outputs_equal": true
+    },
+    "list_160_warm_page": {
+      "old": {
+        "seconds": 0.10879289999138564,
+        "peak_worker_rss_mib": 63.33984375,
+        "rss_delta_mib": 0.7109375
+      },
+      "new": {
+        "seconds": 0.08305000001564622,
+        "peak_worker_rss_mib": 59.9296875,
+        "rss_delta_mib": 0.0234375
+      },
+      "outputs_equal": true
+    },
+    "list_160_warm_one_order": {
+      "old": {
+        "seconds": 0.11067819996969774,
+        "peak_worker_rss_mib": 63.40625,
+        "rss_delta_mib": 0.08203125
+      },
+      "new": {
+        "seconds": 0.07750640000449494,
+        "peak_worker_rss_mib": 59.9296875,
+        "rss_delta_mib": 0.0234375
+      },
+      "outputs_equal": true
+    },
+    "list_40_400sku_cold_page": {
+      "old": {
+        "seconds": 0.6932313000434078,
+        "peak_worker_rss_mib": 67.5546875,
+        "rss_delta_mib": 3.25
+      },
+      "new": {
+        "seconds": 0.581925299949944,
+        "peak_worker_rss_mib": 64.390625,
+        "rss_delta_mib": 4.15625
+      },
+      "outputs_equal": true
+    },
+    "list_40_400sku_warm_page": {
+      "old": {
+        "seconds": 0.040301800007000566,
+        "peak_worker_rss_mib": 63.734375,
+        "rss_delta_mib": 0.421875
+      },
+      "new": {
+        "seconds": 0.026183200010564178,
+        "peak_worker_rss_mib": 61.39453125,
+        "rss_delta_mib": 0.30078125
+      },
+      "outputs_equal": true
+    },
+    "list_40_400sku_warm_one_order": {
+      "old": {
+        "seconds": 0.03586549998726696,
+        "peak_worker_rss_mib": 63.859375,
+        "rss_delta_mib": 0.109375
+      },
+      "new": {
+        "seconds": 0.02387450000969693,
+        "peak_worker_rss_mib": 61.4453125,
+        "rss_delta_mib": 0.0234375
+      },
+      "outputs_equal": true
+    },
+    "history_500_initial_open": {
+      "old": {
+        "seconds": 0.1705183000303805,
+        "peak_worker_rss_mib": 120.64453125,
+        "rss_delta_mib": 57.0078125
+      },
+      "new": {
+        "seconds": 0.0059377000434324145,
+        "peak_worker_rss_mib": 62.37109375,
+        "rss_delta_mib": 0.80078125
+      },
+      "outputs_equal": true
+    }
+  },
+  "workers": [
+    {
+      "variant": "old",
+      "round": 0,
+      "runs": [
+        {
+          "case": "formula_400",
+          "seconds": 1.0269996999995783,
+          "rss_before_mib": 54.21875,
+          "peak_worker_rss_mib": 59.44140625,
+          "rss_delta_mib": 5.22265625,
+          "single_row_reparses": 400,
+          "output_digest": "3a2011189a22f74b68260f81556bebe532112713e7be2085e2b0a309ea0b8686"
+        },
+        {
+          "case": "formula_1000",
+          "seconds": 5.661753000051249,
+          "rss_before_mib": 58.13671875,
+          "peak_worker_rss_mib": 62.37109375,
+          "rss_delta_mib": 4.234375,
+          "single_row_reparses": 1000,
+          "output_digest": "94f2ea698df388894b3f5702f79ada220d26671ec5edfa0dc7a175ef19a22750"
+        },
+        {
+          "case": "list_40_cold_page",
+          "seconds": 0.32288699998753145,
+          "rss_before_mib": 62.46484375,
+          "peak_worker_rss_mib": 63.45703125,
+          "rss_delta_mib": 0.9921875,
+          "selects": 1366,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_page",
+          "seconds": 0.03426169999875128,
+          "rss_before_mib": 63.46484375,
+          "peak_worker_rss_mib": 63.48828125,
+          "rss_delta_mib": 0.0234375,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_one_order",
+          "seconds": 0.02939969999715686,
+          "rss_before_mib": 63.46484375,
+          "peak_worker_rss_mib": 63.48828125,
+          "rss_delta_mib": 0.0234375,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "list_160_cold_page",
+          "seconds": 1.325702000001911,
+          "rss_before_mib": 62.66796875,
+          "peak_worker_rss_mib": 63.6796875,
+          "rss_delta_mib": 1.01171875,
+          "selects": 5446,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_page",
+          "seconds": 0.10955850000027567,
+          "rss_before_mib": 62.61328125,
+          "peak_worker_rss_mib": 63.33984375,
+          "rss_delta_mib": 0.7265625,
+          "selects": 1446,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_one_order",
+          "seconds": 0.11067819996969774,
+          "rss_before_mib": 63.32421875,
+          "peak_worker_rss_mib": 63.40625,
+          "rss_delta_mib": 0.08203125,
+          "selects": 1446,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "c331459bd86ee514fd03ecae9a204f66c9a534e96f605bec28b4478f63e9e687"
+        },
+        {
+          "case": "list_40_400sku_cold_page",
+          "seconds": 0.6932313000434078,
+          "rss_before_mib": 63.3828125,
+          "peak_worker_rss_mib": 67.5546875,
+          "rss_delta_mib": 4.171875,
+          "selects": 1406,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_page",
+          "seconds": 0.05116699996870011,
+          "rss_before_mib": 63.8671875,
+          "peak_worker_rss_mib": 64.2890625,
+          "rss_delta_mib": 0.421875,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_one_order",
+          "seconds": 0.040435400034766644,
+          "rss_before_mib": 64.3125,
+          "peak_worker_rss_mib": 64.421875,
+          "rss_delta_mib": 0.109375,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "history_500_initial_open",
+          "seconds": 0.17807670001639053,
+          "rss_before_mib": 63.78125,
+          "peak_worker_rss_mib": 121.06640625,
+          "rss_delta_mib": 57.28515625,
+          "output_digest": "8c09d4e814aecfd6bbfbfbf0e7f51059178aae67731dbc3f8bfa5a9024a0b0f3"
+        }
+      ],
+      "pid": 64236,
+      "native_peak_worker_rss_mib": 122.26953125,
+      "source_sha256": {
+        "model.py": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+        "lifecycle_io.py": "8a5c82d9ff12cc18bb7db6fdb32823fee39e64c12894d916d26c0efb1ec41503",
+        "lifecycle_home.py": "4cbc30ee56af0b20d17db4121628adbcad55caafa7f511a9bf6ffb4194d59021",
+        "daily_batch.py": "d983c5b8f656c837d11caffeb7b97f3f005feb1f90103e27f08cf270de523162",
+        "settings_history.py": "2b4f0502c4030db3b3e154141e40330d1bbd38d5257141db672e7be10be90192",
+        "payment_matching.py": "c5cc13753efa6c04071914841450204d29ed7db88a01fd8d7c6a0540edcc26e6"
+      }
+    },
+    {
+      "variant": "new",
+      "round": 0,
+      "runs": [
+        {
+          "case": "formula_400",
+          "seconds": 0.04856550000840798,
+          "rss_before_mib": 53.8359375,
+          "peak_worker_rss_mib": 56.4765625,
+          "rss_delta_mib": 2.640625,
+          "single_row_reparses": 0,
+          "output_digest": "3a2011189a22f74b68260f81556bebe532112713e7be2085e2b0a309ea0b8686"
+        },
+        {
+          "case": "formula_1000",
+          "seconds": 0.0695621999911964,
+          "rss_before_mib": 57.44921875,
+          "peak_worker_rss_mib": 58.26953125,
+          "rss_delta_mib": 0.8203125,
+          "single_row_reparses": 0,
+          "output_digest": "94f2ea698df388894b3f5702f79ada220d26671ec5edfa0dc7a175ef19a22750"
+        },
+        {
+          "case": "list_40_cold_page",
+          "seconds": 0.2281375000020489,
+          "rss_before_mib": 59.9921875,
+          "peak_worker_rss_mib": 60.05078125,
+          "rss_delta_mib": 0.05859375,
+          "selects": 1049,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_page",
+          "seconds": 0.02608229999896139,
+          "rss_before_mib": 60.02734375,
+          "peak_worker_rss_mib": 60.0546875,
+          "rss_delta_mib": 0.02734375,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_one_order",
+          "seconds": 0.02366109995637089,
+          "rss_before_mib": 60.03125,
+          "peak_worker_rss_mib": 60.0546875,
+          "rss_delta_mib": 0.0234375,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "list_160_cold_page",
+          "seconds": 0.8866708999848925,
+          "rss_before_mib": 59.41796875,
+          "peak_worker_rss_mib": 60.33203125,
+          "rss_delta_mib": 0.9140625,
+          "selects": 4169,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_page",
+          "seconds": 0.08161540003493428,
+          "rss_before_mib": 60.30859375,
+          "peak_worker_rss_mib": 60.33203125,
+          "rss_delta_mib": 0.0234375,
+          "selects": 169,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_one_order",
+          "seconds": 0.07750640000449494,
+          "rss_before_mib": 60.30859375,
+          "peak_worker_rss_mib": 60.33203125,
+          "rss_delta_mib": 0.0234375,
+          "selects": 169,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "c331459bd86ee514fd03ecae9a204f66c9a534e96f605bec28b4478f63e9e687"
+        },
+        {
+          "case": "list_40_400sku_cold_page",
+          "seconds": 0.581925299949944,
+          "rss_before_mib": 59.94921875,
+          "peak_worker_rss_mib": 64.390625,
+          "rss_delta_mib": 4.44140625,
+          "selects": 1089,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_page",
+          "seconds": 0.026183200010564178,
+          "rss_before_mib": 61.09375,
+          "peak_worker_rss_mib": 61.39453125,
+          "rss_delta_mib": 0.30078125,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_one_order",
+          "seconds": 0.022634799999650568,
+          "rss_before_mib": 61.421875,
+          "peak_worker_rss_mib": 61.4453125,
+          "rss_delta_mib": 0.0234375,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "history_500_initial_open",
+          "seconds": 0.007848799985367805,
+          "rss_before_mib": 61.5546875,
+          "peak_worker_rss_mib": 62.35546875,
+          "rss_delta_mib": 0.80078125,
+          "output_digest": "8c09d4e814aecfd6bbfbfbf0e7f51059178aae67731dbc3f8bfa5a9024a0b0f3"
+        }
+      ],
+      "pid": 27844,
+      "native_peak_worker_rss_mib": 64.48828125,
+      "source_sha256": {
+        "model.py": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+        "lifecycle_io.py": "b44a49356cce55433ada477e3484604b68ef5b882ee61e15e8eccefbdda3cc50",
+        "lifecycle_home.py": "3d69c81b11aaffe53f50a37c68d26ca81d57640acbe635ccae38628152818a7f",
+        "daily_batch.py": "626b62d9c885fda54ab13dfa3d5a827fc37b15cc80875fd4277540da2492dd9a",
+        "settings_history.py": "1f0be0dc0c8b4378b9a90cda56d0f4c1fbc99683f5c943fe6ba8708f4e098e73",
+        "payment_matching.py": "097d6cb12ac05461a703ddb19f8b89419eb34d9781e59820974053757fa4247b"
+      }
+    },
+    {
+      "variant": "new",
+      "round": 1,
+      "runs": [
+        {
+          "case": "formula_400",
+          "seconds": 0.07587439997587353,
+          "rss_before_mib": 53.9609375,
+          "peak_worker_rss_mib": 56.5390625,
+          "rss_delta_mib": 2.578125,
+          "single_row_reparses": 0,
+          "output_digest": "3a2011189a22f74b68260f81556bebe532112713e7be2085e2b0a309ea0b8686"
+        },
+        {
+          "case": "formula_1000",
+          "seconds": 0.07421510003041476,
+          "rss_before_mib": 57.3359375,
+          "peak_worker_rss_mib": 58.2109375,
+          "rss_delta_mib": 0.875,
+          "single_row_reparses": 0,
+          "output_digest": "94f2ea698df388894b3f5702f79ada220d26671ec5edfa0dc7a175ef19a22750"
+        },
+        {
+          "case": "list_40_cold_page",
+          "seconds": 0.22706760000437498,
+          "rss_before_mib": 58.45703125,
+          "peak_worker_rss_mib": 59.70703125,
+          "rss_delta_mib": 1.25,
+          "selects": 1049,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_page",
+          "seconds": 0.024980899994261563,
+          "rss_before_mib": 59.69921875,
+          "peak_worker_rss_mib": 59.72265625,
+          "rss_delta_mib": 0.0234375,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_one_order",
+          "seconds": 0.02580669999588281,
+          "rss_before_mib": 59.69921875,
+          "peak_worker_rss_mib": 59.72265625,
+          "rss_delta_mib": 0.0234375,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "list_160_cold_page",
+          "seconds": 0.8653373999986798,
+          "rss_before_mib": 59.328125,
+          "peak_worker_rss_mib": 59.92578125,
+          "rss_delta_mib": 0.59765625,
+          "selects": 4169,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_page",
+          "seconds": 0.08305000001564622,
+          "rss_before_mib": 59.90625,
+          "peak_worker_rss_mib": 59.9296875,
+          "rss_delta_mib": 0.0234375,
+          "selects": 169,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_one_order",
+          "seconds": 0.0829774999874644,
+          "rss_before_mib": 59.90625,
+          "peak_worker_rss_mib": 59.9296875,
+          "rss_delta_mib": 0.0234375,
+          "selects": 169,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "c331459bd86ee514fd03ecae9a204f66c9a534e96f605bec28b4478f63e9e687"
+        },
+        {
+          "case": "list_40_400sku_cold_page",
+          "seconds": 0.6147023999947123,
+          "rss_before_mib": 60.05078125,
+          "peak_worker_rss_mib": 64.20703125,
+          "rss_delta_mib": 4.15625,
+          "selects": 1089,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_page",
+          "seconds": 0.026059099996928126,
+          "rss_before_mib": 61.05078125,
+          "peak_worker_rss_mib": 61.3359375,
+          "rss_delta_mib": 0.28515625,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_one_order",
+          "seconds": 0.033550400054082274,
+          "rss_before_mib": 61.3359375,
+          "peak_worker_rss_mib": 61.359375,
+          "rss_delta_mib": 0.0234375,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "history_500_initial_open",
+          "seconds": 0.0059377000434324145,
+          "rss_before_mib": 61.6875,
+          "peak_worker_rss_mib": 62.37109375,
+          "rss_delta_mib": 0.68359375,
+          "output_digest": "8c09d4e814aecfd6bbfbfbf0e7f51059178aae67731dbc3f8bfa5a9024a0b0f3"
+        }
+      ],
+      "pid": 22524,
+      "native_peak_worker_rss_mib": 64.34765625,
+      "source_sha256": {
+        "model.py": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+        "lifecycle_io.py": "b44a49356cce55433ada477e3484604b68ef5b882ee61e15e8eccefbdda3cc50",
+        "lifecycle_home.py": "3d69c81b11aaffe53f50a37c68d26ca81d57640acbe635ccae38628152818a7f",
+        "daily_batch.py": "626b62d9c885fda54ab13dfa3d5a827fc37b15cc80875fd4277540da2492dd9a",
+        "settings_history.py": "1f0be0dc0c8b4378b9a90cda56d0f4c1fbc99683f5c943fe6ba8708f4e098e73",
+        "payment_matching.py": "097d6cb12ac05461a703ddb19f8b89419eb34d9781e59820974053757fa4247b"
+      }
+    },
+    {
+      "variant": "old",
+      "round": 1,
+      "runs": [
+        {
+          "case": "formula_400",
+          "seconds": 1.0269051999785006,
+          "rss_before_mib": 54.12109375,
+          "peak_worker_rss_mib": 59.40234375,
+          "rss_delta_mib": 5.28125,
+          "single_row_reparses": 400,
+          "output_digest": "3a2011189a22f74b68260f81556bebe532112713e7be2085e2b0a309ea0b8686"
+        },
+        {
+          "case": "formula_1000",
+          "seconds": 5.778140500013251,
+          "rss_before_mib": 58.08203125,
+          "peak_worker_rss_mib": 62.203125,
+          "rss_delta_mib": 4.12109375,
+          "single_row_reparses": 1000,
+          "output_digest": "94f2ea698df388894b3f5702f79ada220d26671ec5edfa0dc7a175ef19a22750"
+        },
+        {
+          "case": "list_40_cold_page",
+          "seconds": 0.3200552999624051,
+          "rss_before_mib": 62.2578125,
+          "peak_worker_rss_mib": 63.23828125,
+          "rss_delta_mib": 0.98046875,
+          "selects": 1366,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_page",
+          "seconds": 0.033517699979711324,
+          "rss_before_mib": 63.24609375,
+          "peak_worker_rss_mib": 63.31640625,
+          "rss_delta_mib": 0.0703125,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_one_order",
+          "seconds": 0.030647500010672957,
+          "rss_before_mib": 63.29296875,
+          "peak_worker_rss_mib": 63.31640625,
+          "rss_delta_mib": 0.0234375,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "list_160_cold_page",
+          "seconds": 1.28055470000254,
+          "rss_before_mib": 62.55859375,
+          "peak_worker_rss_mib": 63.32421875,
+          "rss_delta_mib": 0.765625,
+          "selects": 5446,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_page",
+          "seconds": 0.10879289999138564,
+          "rss_before_mib": 63.30078125,
+          "peak_worker_rss_mib": 63.328125,
+          "rss_delta_mib": 0.02734375,
+          "selects": 1446,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_one_order",
+          "seconds": 0.10682670003734529,
+          "rss_before_mib": 63.30859375,
+          "peak_worker_rss_mib": 63.33203125,
+          "rss_delta_mib": 0.0234375,
+          "selects": 1446,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "c331459bd86ee514fd03ecae9a204f66c9a534e96f605bec28b4478f63e9e687"
+        },
+        {
+          "case": "list_40_400sku_cold_page",
+          "seconds": 0.6810404999996535,
+          "rss_before_mib": 64.26171875,
+          "peak_worker_rss_mib": 66.55859375,
+          "rss_delta_mib": 2.296875,
+          "selects": 1406,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_page",
+          "seconds": 0.039801199978683144,
+          "rss_before_mib": 63.2578125,
+          "peak_worker_rss_mib": 63.734375,
+          "rss_delta_mib": 0.4765625,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_one_order",
+          "seconds": 0.03545470000244677,
+          "rss_before_mib": 63.7109375,
+          "peak_worker_rss_mib": 63.859375,
+          "rss_delta_mib": 0.1484375,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "history_500_initial_open",
+          "seconds": 0.17007430002558976,
+          "rss_before_mib": 62.90234375,
+          "peak_worker_rss_mib": 119.91015625,
+          "rss_delta_mib": 57.0078125,
+          "output_digest": "8c09d4e814aecfd6bbfbfbf0e7f51059178aae67731dbc3f8bfa5a9024a0b0f3"
+        }
+      ],
+      "pid": 17360,
+      "native_peak_worker_rss_mib": 121.87890625,
+      "source_sha256": {
+        "model.py": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+        "lifecycle_io.py": "8a5c82d9ff12cc18bb7db6fdb32823fee39e64c12894d916d26c0efb1ec41503",
+        "lifecycle_home.py": "4cbc30ee56af0b20d17db4121628adbcad55caafa7f511a9bf6ffb4194d59021",
+        "daily_batch.py": "d983c5b8f656c837d11caffeb7b97f3f005feb1f90103e27f08cf270de523162",
+        "settings_history.py": "2b4f0502c4030db3b3e154141e40330d1bbd38d5257141db672e7be10be90192",
+        "payment_matching.py": "c5cc13753efa6c04071914841450204d29ed7db88a01fd8d7c6a0540edcc26e6"
+      }
+    },
+    {
+      "variant": "old",
+      "round": 2,
+      "runs": [
+        {
+          "case": "formula_400",
+          "seconds": 1.051884600019548,
+          "rss_before_mib": 54.1171875,
+          "peak_worker_rss_mib": 59.5,
+          "rss_delta_mib": 5.3828125,
+          "single_row_reparses": 400,
+          "output_digest": "3a2011189a22f74b68260f81556bebe532112713e7be2085e2b0a309ea0b8686"
+        },
+        {
+          "case": "formula_1000",
+          "seconds": 5.692230899992865,
+          "rss_before_mib": 58.1640625,
+          "peak_worker_rss_mib": 62.37109375,
+          "rss_delta_mib": 4.20703125,
+          "single_row_reparses": 1000,
+          "output_digest": "94f2ea698df388894b3f5702f79ada220d26671ec5edfa0dc7a175ef19a22750"
+        },
+        {
+          "case": "list_40_cold_page",
+          "seconds": 0.3174161000060849,
+          "rss_before_mib": 62.59765625,
+          "peak_worker_rss_mib": 63.3828125,
+          "rss_delta_mib": 0.78515625,
+          "selects": 1366,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_page",
+          "seconds": 0.032166199991479516,
+          "rss_before_mib": 63.38671875,
+          "peak_worker_rss_mib": 63.4140625,
+          "rss_delta_mib": 0.02734375,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_one_order",
+          "seconds": 0.032274500001221895,
+          "rss_before_mib": 63.390625,
+          "peak_worker_rss_mib": 63.4140625,
+          "rss_delta_mib": 0.0234375,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "list_160_cold_page",
+          "seconds": 1.2765531999757513,
+          "rss_before_mib": 62.62890625,
+          "peak_worker_rss_mib": 63.8671875,
+          "rss_delta_mib": 1.23828125,
+          "selects": 5446,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_page",
+          "seconds": 0.10668100003385916,
+          "rss_before_mib": 62.703125,
+          "peak_worker_rss_mib": 63.4140625,
+          "rss_delta_mib": 0.7109375,
+          "selects": 1446,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_one_order",
+          "seconds": 0.11070119997020811,
+          "rss_before_mib": 63.39453125,
+          "peak_worker_rss_mib": 63.75390625,
+          "rss_delta_mib": 0.359375,
+          "selects": 1446,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "c331459bd86ee514fd03ecae9a204f66c9a534e96f605bec28b4478f63e9e687"
+        },
+        {
+          "case": "list_40_400sku_cold_page",
+          "seconds": 0.7032474000006914,
+          "rss_before_mib": 64.6640625,
+          "peak_worker_rss_mib": 67.9140625,
+          "rss_delta_mib": 3.25,
+          "selects": 1406,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_page",
+          "seconds": 0.040301800007000566,
+          "rss_before_mib": 63.42578125,
+          "peak_worker_rss_mib": 63.6953125,
+          "rss_delta_mib": 0.26953125,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_one_order",
+          "seconds": 0.03586549998726696,
+          "rss_before_mib": 63.6953125,
+          "peak_worker_rss_mib": 63.71875,
+          "rss_delta_mib": 0.0234375,
+          "selects": 366,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "history_500_initial_open",
+          "seconds": 0.1705183000303805,
+          "rss_before_mib": 64.12890625,
+          "peak_worker_rss_mib": 120.64453125,
+          "rss_delta_mib": 56.515625,
+          "output_digest": "8c09d4e814aecfd6bbfbfbf0e7f51059178aae67731dbc3f8bfa5a9024a0b0f3"
+        }
+      ],
+      "pid": 4136,
+      "native_peak_worker_rss_mib": 122.3671875,
+      "source_sha256": {
+        "model.py": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+        "lifecycle_io.py": "8a5c82d9ff12cc18bb7db6fdb32823fee39e64c12894d916d26c0efb1ec41503",
+        "lifecycle_home.py": "4cbc30ee56af0b20d17db4121628adbcad55caafa7f511a9bf6ffb4194d59021",
+        "daily_batch.py": "d983c5b8f656c837d11caffeb7b97f3f005feb1f90103e27f08cf270de523162",
+        "settings_history.py": "2b4f0502c4030db3b3e154141e40330d1bbd38d5257141db672e7be10be90192",
+        "payment_matching.py": "c5cc13753efa6c04071914841450204d29ed7db88a01fd8d7c6a0540edcc26e6"
+      }
+    },
+    {
+      "variant": "new",
+      "round": 2,
+      "runs": [
+        {
+          "case": "formula_400",
+          "seconds": 0.04862140002660453,
+          "rss_before_mib": 53.99609375,
+          "peak_worker_rss_mib": 56.51953125,
+          "rss_delta_mib": 2.5234375,
+          "single_row_reparses": 0,
+          "output_digest": "3a2011189a22f74b68260f81556bebe532112713e7be2085e2b0a309ea0b8686"
+        },
+        {
+          "case": "formula_1000",
+          "seconds": 0.0683953000116162,
+          "rss_before_mib": 57.56640625,
+          "peak_worker_rss_mib": 58.40234375,
+          "rss_delta_mib": 0.8359375,
+          "single_row_reparses": 0,
+          "output_digest": "94f2ea698df388894b3f5702f79ada220d26671ec5edfa0dc7a175ef19a22750"
+        },
+        {
+          "case": "list_40_cold_page",
+          "seconds": 0.22492639999836683,
+          "rss_before_mib": 59.75390625,
+          "peak_worker_rss_mib": 59.90625,
+          "rss_delta_mib": 0.15234375,
+          "selects": 1049,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_page",
+          "seconds": 0.026733100006822497,
+          "rss_before_mib": 59.8828125,
+          "peak_worker_rss_mib": 59.90625,
+          "rss_delta_mib": 0.0234375,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_warm_one_order",
+          "seconds": 0.024841499980539083,
+          "rss_before_mib": 59.8828125,
+          "peak_worker_rss_mib": 59.90625,
+          "rss_delta_mib": 0.0234375,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 40,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "list_160_cold_page",
+          "seconds": 0.878326800011564,
+          "rss_before_mib": 59.22265625,
+          "peak_worker_rss_mib": 60.21875,
+          "rss_delta_mib": 0.99609375,
+          "selects": 4169,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_page",
+          "seconds": 0.08630470000207424,
+          "rss_before_mib": 59.046875,
+          "peak_worker_rss_mib": 59.75390625,
+          "rss_delta_mib": 0.70703125,
+          "selects": 169,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "819c4e891565371f5f0ccab1e7e51d46b078063b6c556ca9e539bad92bce6201"
+        },
+        {
+          "case": "list_160_warm_one_order",
+          "seconds": 0.0766361000132747,
+          "rss_before_mib": 59.75390625,
+          "peak_worker_rss_mib": 59.796875,
+          "rss_delta_mib": 0.04296875,
+          "selects": 169,
+          "parents": 160,
+          "skus_per_parent": 40,
+          "output_digest": "c331459bd86ee514fd03ecae9a204f66c9a534e96f605bec28b4478f63e9e687"
+        },
+        {
+          "case": "list_40_400sku_cold_page",
+          "seconds": 0.5753850000328384,
+          "rss_before_mib": 61.94921875,
+          "peak_worker_rss_mib": 64.765625,
+          "rss_delta_mib": 2.81640625,
+          "selects": 1089,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_page",
+          "seconds": 0.028988700010813773,
+          "rss_before_mib": 61.328125,
+          "peak_worker_rss_mib": 61.7265625,
+          "rss_delta_mib": 0.3984375,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "dab8f38e6295316e7f682b2ef77eddeb03bb2acc9d83fa5658ae571aedbc4fdd"
+        },
+        {
+          "case": "list_40_400sku_warm_one_order",
+          "seconds": 0.02387450000969693,
+          "rss_before_mib": 61.70703125,
+          "peak_worker_rss_mib": 61.73046875,
+          "rss_delta_mib": 0.0234375,
+          "selects": 49,
+          "parents": 40,
+          "skus_per_parent": 400,
+          "output_digest": "e79a3bac14f520e1d834ad96ec626119234628597f62b2d9e219a97e4f28027f"
+        },
+        {
+          "case": "history_500_initial_open",
+          "seconds": 0.00581679999595508,
+          "rss_before_mib": 61.5390625,
+          "peak_worker_rss_mib": 62.44921875,
+          "rss_delta_mib": 0.91015625,
+          "output_digest": "8c09d4e814aecfd6bbfbfbf0e7f51059178aae67731dbc3f8bfa5a9024a0b0f3"
+        }
+      ],
+      "pid": 68556,
+      "native_peak_worker_rss_mib": 65.09375,
+      "source_sha256": {
+        "model.py": "da97c3fc2a99f9d74a4ebf10f8bc7fdc34ce1e2cedb7fcee05a2e552bff47334",
+        "lifecycle_io.py": "b44a49356cce55433ada477e3484604b68ef5b882ee61e15e8eccefbdda3cc50",
+        "lifecycle_home.py": "3d69c81b11aaffe53f50a37c68d26ca81d57640acbe635ccae38628152818a7f",
+        "daily_batch.py": "626b62d9c885fda54ab13dfa3d5a827fc37b15cc80875fd4277540da2492dd9a",
+        "settings_history.py": "1f0be0dc0c8b4378b9a90cda56d0f4c1fbc99683f5c943fe6ba8708f4e098e73",
+        "payment_matching.py": "097d6cb12ac05461a703ddb19f8b89419eb34d9781e59820974053757fa4247b"
+      }
+    }
+  ],
+  "live_platform": false,
+  "limitations": "Synthetic development-PC measurements, three alternating runs. RSS samples are actual worker processes; no business-machine capacity claim. History compares first-page metadata and exact selected full record. Cold lists still compute full-scope totals."
+}

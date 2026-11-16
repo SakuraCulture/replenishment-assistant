@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "version": "0.54.0",
+  "build_id": "rc3",
+  "branch": "codex/payment-shop-names-0.54.0",
+  "base_commit": "4cdab01e67779264adb0bf24fc62734660edfc41",
+  "source_reference": "snapshot-50336ab33dd0603fb6eb4ac082e29d509652ee13b6d1f748d8363c860e11a90d",
+  "source_snapshot_sha256": "50336ab33dd0603fb6eb4ac082e29d509652ee13b6d1f748d8363c860e11a90d",
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.0_rc3\\补货助手\\补货助手.exe",
+  "exe_sha256": "a8a665fec49ca361bcba9b5315bb59458211976a9cfa96503fdf3ff32d956333",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.0_rc3\\补货助手_0.54.0_rc3_店铺名称独立维护.zip",
+  "zip_sha256": "ac188759d64764958abda217313ee90c916a93fbb5e508c300a66b833fb04dfa",
+  "zip_bytes": 156719715,
+  "zip_members": 1313,
+  "zip_crc_passed": true,
+  "regression_unique_tests": 231,
+  "final_payment_regression_tests": 84,
+  "test_counts_overlap": true,
+  "native_names_checks": 43,
+  "native_compatibility_checks": 32,
+  "native_exit_codes": [
+    0,
+    0,
+    0
+  ],
+  "qa": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\payment_shop_names_0540_20261115_01",
+  "live_platform": false,
+  "real_business_data_modified": false,
+  "git_committed": false,
+  "pushed_or_merged": false,
+  "old_0539_exe_and_zip_preserved": true
+}

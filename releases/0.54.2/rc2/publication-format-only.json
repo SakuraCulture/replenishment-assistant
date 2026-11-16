@@ -1,0 +1,9 @@
+{
+  "file": "src/purchase_dispatch.py",
+  "change": "remove extra terminal blank line only",
+  "accepted_sha256": "69b1918550d1d89402fb3abdca8bd761e394d746a2009438157de40ba5cc4816",
+  "published_sha256": "094382dc7f0d7e4799de59da6f52f0c2cb44096b126d01aa93b3b426d2613701",
+  "python_AST_equal": true,
+  "body_equal_ignoring_terminal_newlines": true,
+  "accepted_bundle_unchanged": true
+}

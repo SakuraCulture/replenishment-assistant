@@ -1,0 +1,24 @@
+{
+  "issue": "recovery-checkpoint-unnecessary-commit",
+  "discovered_by": "actual 0.54.2 rc1 EXE lifecycle recovery close/reopen compatibility acceptance",
+  "confirmed_root": "Recovery checkpoint publication acquired BEGIN IMMEDIATE to serialize with deletion, then an unnecessary read-only COMMIT requested an exclusive lock against readers. SQLite raised database is locked before the business save.",
+  "preexisting_source": true,
+  "reproduction": "recovery-lock-diagnostic-01/result.json",
+  "expected_failure": "recovery-reader-red-01.log",
+  "passing_targeted_suite": "recovery-reader-green-02.log",
+  "tests": 20,
+  "fix": "Publish and fsync technical files while the existing deletion fence remains held, then roll back the SQL fence which wrote no data. The real business transaction remains unchanged.",
+  "boundaries": [
+    "No SQL quantity or monetary data changed",
+    "Original deletion serialization remains held through durable publication",
+    "Failures and cancelled saves retain original recovery material",
+    "No real data or platform calls"
+  ],
+  "additional_modified_files": [
+    "src/lifecycle_recovery.py",
+    "tests/test_lifecycle_recovery.py",
+    "src/lifecycle_recovery_smoke.py"
+  ],
+  "rc1_retained": true,
+  "candidate": "0.54.2 rc2"
+}

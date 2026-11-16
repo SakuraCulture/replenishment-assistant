@@ -1,0 +1,7 @@
+.........................C:\Users\lenovo\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\site-packages\openpyxl\styles\stylesheet.py:237: UserWarning: Workbook contains no default style, apply openpyxl's default
+  warn("Workbook contains no default style, apply openpyxl's default")
+...............
+----------------------------------------------------------------------
+Ran 40 tests in 61.198s
+
+OK

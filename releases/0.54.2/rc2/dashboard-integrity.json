@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "original_sha256": "b801f3b0a348313907df9d69adc3dd98875b535f1427e08db86b5e89bd540081",
+  "original_unchanged": true,
+  "embedded_DATA_equal": true,
+  "embedded_DATA_sha256": "6214d5ecb2a4f5447af29b5e7194e3c19dd941f02573611357395d206c2bfbba",
+  "repair_sha256": "0f14cad1e92ee94b28677c0f7fd2ca599c4cd62e64750a7b66e05239acafd74b",
+  "repair_file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\five_fixes_0542_20261116_01\\大仓缺货治理追踪看板_修复版_01.html"
+}
