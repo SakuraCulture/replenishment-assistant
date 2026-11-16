@@ -78,6 +78,9 @@ def _main():
     if '--five-fixes-smoke' in sys.argv:
         from five_fixes_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--five-fixes-smoke')+1:])
+    if '--signing-memory-smoke' in sys.argv:
+        from signing_memory_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--signing-memory-smoke')+1:])
     if '--perf-core-smoke' in sys.argv:
         from perf_core_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--perf-core-smoke')+1:])
@@ -93,6 +96,9 @@ def _main():
     if '--operations-lifecycle-smoke' in sys.argv:
         from operations_lifecycle_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--operations-lifecycle-smoke')+1:])
+    if '--jst-carton-smoke' in sys.argv:
+        from jst_carton_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--jst-carton-smoke')+1:])
     if '--stockout-hub-smoke' in sys.argv:
         from stockout_hub_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--stockout-hub-smoke')+1:])

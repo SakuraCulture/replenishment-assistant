@@ -1,0 +1,18 @@
+{
+  "old": {
+    "seconds": 108.12230859999545,
+    "cpu_seconds": 104.5,
+    "signing_peak_private_mib": 3452.50390625,
+    "signing_added_private_mib": 244.734375,
+    "all_phases_peak_private_mib": 3482.6640625,
+    "signing_peak_working_mib": 2616.7265625
+  },
+  "new": {
+    "seconds": 147.46109140000772,
+    "cpu_seconds": 141.484375,
+    "signing_peak_private_mib": 3297.08203125,
+    "signing_added_private_mib": 89.1796875,
+    "all_phases_peak_private_mib": 3398.59765625,
+    "signing_peak_working_mib": 2506.9765625
+  }
+}

@@ -11,7 +11,7 @@ def number(value):
 
 
 def metrics(entries):
-    demand=Decimal(0);allocated=Decimal(0);reduced=Decimal(0);skus={};unknown=set();priced=0
+    demand=Decimal(0);allocated=Decimal(0);reduced=Decimal(0);increased=Decimal(0);skus={};unknown=set();priced=0
     for head,row in entries:
         sku=(head['store'],row['sku']);q=number(row.get('quantity'));want=number(row.get('demand'));price=number(row.get('price'));amount=number(row.get('amount'))
         counts=skus.setdefault(sku,{'arranged':False,'reduced':False})
@@ -19,8 +19,9 @@ def metrics(entries):
         counts['reduced'] |= want is not None and q is not None and q<want
         if want is None or q is None or price is None or amount is None:
             unknown.add(sku);continue
-        priced+=1;demand+=want*price;allocated+=amount;reduced+=want*price-amount
-    return {'demand':demand,'allocated':allocated,'reduced':reduced,'rate':allocated/demand if demand else None,
+        delta=want*price-amount
+        priced+=1;demand+=want*price;allocated+=amount;reduced+=max(delta,Decimal(0));increased+=max(-delta,Decimal(0))
+    return {'demand':demand,'allocated':allocated,'reduced':reduced,'increased':increased,'rate':allocated/demand if demand else None,
             'sku':len(skus),'arranged':sum(r['arranged'] for r in skus.values()),'reduced_sku':sum(r['reduced'] for r in skus.values()),
             'unallocated':sum(not r['arranged'] for r in skus.values()),'unknown':len(unknown),'priced_rows':priced}
 
@@ -43,5 +44,6 @@ def amount_text(m,key):
 
 def caption(m):
     rate=f"{m['rate']:.1%}" if m['rate'] is not None else '—'
-    return (f"回传需求 {amount_text(m,'demand')} 元  →  已分配 {amount_text(m,'allocated')} 元  ·  减少 {amount_text(m,'reduced')} 元  ·  金额满足率 {rate}\n"
+    extra=f"  ·  箱规增配 {amount_text(m,'increased')} 元" if m.get('increased',0) else ''
+    return (f"回传需求 {amount_text(m,'demand')} 元  →  已分配 {amount_text(m,'allocated')} 元  ·  减少 {amount_text(m,'reduced')} 元{extra}  ·  金额满足率 {rate}\n"
             f"涉及 {m['sku']} 款次；已安排 {m['arranged']}，有减量 {m['reduced_sku']}，完全未安排 {m['unallocated']}；金额待核 {m['unknown']}。")

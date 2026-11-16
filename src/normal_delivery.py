@@ -112,7 +112,7 @@ def selected_heads(repository,orders,warehouses):
     return result
 
 
-def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=None):
+def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=None,*,consume=False):
     """One archive transaction, sequential files, explicit partial-failure receipt."""
     import tempfile,os
     import export_progress as ep
@@ -120,7 +120,8 @@ def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=Non
     failure_context=FailureContext('delivery_execute');notify=progress
     def progress(value):
         failure_context.progress(value);notify(value)
-    plans=batch['plans'];payload=batch['payload'];destination=Path(destination)
+    if batch.get('consumed'):raise ValueError('本批签发已归档，请使用原导出任务恢复；不能重放旧确认')
+    plans=batch['plans'];payload=batch['payload'];day=payload['day'];destination=Path(destination)
     files=[(p,f) for p in plans for f in p['files']]
     paths=[destination/f['filename'] for p,f in files] if destination.is_dir() else [destination]
     if len(paths)!=len(files):raise ValueError('多仓或多店导出请选择文件夹')
@@ -165,8 +166,16 @@ def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=Non
     for item in receipt['files']:
         order=by_child[item['store'],item['warehouse']];item['head']=warehouse_identity(order,item['warehouse']);records.append((order,item))
     receipt['state']='归档已核实，等待导出';receipts.update(repository.work.path,receipt)
+    if consume:
+        # Only the IPC worker opts in: its tree is exclusively owned. The full
+        # draft and exact warehouse identities have already committed. Subsequent
+        # files are read from those immutable revisions, not this input tree.
+        payload.clear();batch['consumed']=True
+        import gc
+        gc.collect()
+        progress('签发归档已核实，已释放工作进程私有输入；按原签发修订导出…')
     completed=_write_exports(repository,records,receipt,progress,cancel)
-    return {'paths':completed,'signed':signed,'saved':job_head(repository.work,payload['day'])['saved'] if signed else None,
+    return {'paths':completed,'signed':signed,'saved':job_head(repository.work,day)['saved'] if signed else None,
             'orders':[{**{k:v for k,v in o.items() if k!='payload'},
                        'warehouse_heads':[by_child[o['store'],w] for w in warehouses[o['store']]]} for o in orders],
             'export_task':receipt['id'],'warnings':receipt['warnings']}
@@ -191,7 +200,7 @@ def _write_exports(repository,records,receipt,progress,cancel):
                     loaded=None;order=None
                     progress('读取并校验原签发修订：'+descriptor['store'])
                     import warehouse_execution
-                    loaded=warehouse_execution.get_order(repository,descriptor,progress=progress)
+                    loaded=warehouse_execution.get_order(repository,descriptor,progress=progress,export_io=True)
                     if not loaded or any(loaded[k]!=descriptor[k] for k in ('oid','revision','digest')):
                         raise ValueError('原签发修订身份变化，未导出替代版本：'+descriptor['store'])
                 order=loaded
@@ -200,7 +209,7 @@ def _write_exports(repository,records,receipt,progress,cancel):
             with stage(f'写出确认单 {i}/{len(records)} · {warehouse}',progress):
                 normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'文件 {i}/{len(records)} · {order["payload"]["result"]["store_name"]} · {warehouse}'),warehouse=warehouse)
             item.update(state='已生成',stage='核验文件摘要');done.append(str(path));receipts.update(repository.work.path,receipt)
-            item['sha256']=sha256(path);item['stage']='记录导出日志';receipts.update(repository.work.path,receipt)
+            progress('核验导出文件摘要…');item['sha256']=sha256(path);item['stage']='记录导出日志';receipts.update(repository.work.path,receipt)
             repository.log(order,'带号导出',{'path':str(path),'sha256':item['sha256'],'warehouse':warehouse,'child_number':child_number(order['number'],warehouse),'export_task':receipt['id']})
             item.update(state='已完成',stage='完成');receipts.update(repository.work.path,receipt)
     except Exception as exc:

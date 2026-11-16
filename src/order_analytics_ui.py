@@ -11,6 +11,7 @@ from ui_tasks import Worker
 import order_analytics as service
 import order_analytics_exports as exports
 import export_locations
+import analytics_lifecycle_scope as lifecycle_scope
 
 
 def formatted(v):
@@ -42,7 +43,12 @@ class AnalyticsWidget(QWidget):
         self.as_of=QLineEdit();self.as_of.setPlaceholderText('历史截至（选填，如2026-11-12T12:00:00+08:00）');extra.addWidget(self.as_of,1);self.as_of.textChanged.connect(self.dirty)
         for edit in (self.start,self.end,self.search,self.stores):edit.textChanged.connect(self.dirty);edit.returnPressed.connect(self.query)
         self.warehouse.currentIndexChanged.connect(self.dirty);self.group.currentIndexChanged.connect(self.dirty)
-        self.metric_row=metric_row=QHBoxLayout();metric_row.addWidget(label('漏斗指标'))
+        self.metric_row=metric_row=QHBoxLayout();metric_row.addWidget(label('生命周期范围'))
+        self.lifecycle_range=QComboBox()
+        for key,title in lifecycle_scope.OPTIONS:self.lifecycle_range.addItem(title,key)
+        self.lifecycle_range.setToolTip('按当前仓单进度筛选；待付款及以后包含尚未确认付款的订单。无要货而提前结束的订单不算到达付款。')
+        self.lifecycle_range.currentIndexChanged.connect(self.dirty);metric_row.addWidget(self.lifecycle_range)
+        metric_row.addWidget(label('漏斗指标'))
         self.metric_choice=QComboBox()
         for title,key in [('商品货值','value'),('商品款数','skus'),('商品数量','quantity'),('预计可售天数','coverage')]:self.metric_choice.addItem(title,key)
         metric_row.addWidget(self.metric_choice);self.metric_choice.currentIndexChanged.connect(self.change_metric)
@@ -97,7 +103,7 @@ class AnalyticsWidget(QWidget):
         return service.query_spec({'from':self.start.text().strip(),'to':self.end.text().strip(),
             'stores':[s.strip() for s in self.stores.text().replace('，',',').split(',') if s.strip()],
             'warehouse':self.warehouse.currentText() if self.warehouse.currentIndex() else '',
-            'group':self.group.currentText() if self.group.currentIndex() else '', 'search':self.search.text().strip(),'category':self.category.text().strip(),'rounds':self.rounds.value(),'coverage_through':self.coverage_through.currentData(),
+            'group':self.group.currentText() if self.group.currentIndex() else '', 'search':self.search.text().strip(),'category':self.category.text().strip(),'rounds':self.rounds.value(),'coverage_through':self.coverage_through.currentData(),'lifecycle_from':self.lifecycle_range.currentData(),
             **({'as_of':self.as_of.text().strip()} if self.as_of.text().strip() else {})})
 
     def choose_plan(self):
@@ -157,7 +163,7 @@ class AnalyticsWidget(QWidget):
 
     def show_report(self,report):
         self.report=report;self.drill=None;self.selected.clear();self.page=0;self.stale=False
-        self.applied.setText(f"已查询 {report['query']['from']} 至 {report['query']['to']} · 数据截至 {report['as_of']} · 按当时资料与清单")
+        self.applied.setText(f"已查询 {report['query']['from']} 至 {report['query']['to']} · 生命周期范围：{lifecycle_scope.label(report['query'])} · 数据截至 {report['as_of']} · 按当时资料与清单")
         m=report['metrics'];self.note.setText(f"查询{len(report['heads'])}单，纳入{m['included_orders']}单，五段完整{m['complete_orders']}单；纳入 {m['included']} 条，排除 {m['excluded']} 条，待核 {m['pending']} 条。未导入不算0。")
         self.workflow.set_report(report);self.render_funnel();self.render();self.controls()
 
@@ -367,6 +373,7 @@ class AnalyticsWidget(QWidget):
         self.category.setText(q.get('category',''))
         self.as_of.setText(q.get('as_of',''))
         self.coverage_through.setCurrentIndex(service.STAGES.index(q.get('coverage_through','signed')))
+        self.lifecycle_range.setCurrentIndex(self.lifecycle_range.findData(q.get('lifecycle_from','')))
 
 
 def open_analytics(host):

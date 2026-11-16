@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "version": "0.54.5",
+  "build_id": "rc1",
+  "package": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.5_rc1\\补货助手_0.54.5_rc1_库存分配箱规向上规整.zip",
+  "zip_sha256": "7d7bbfadbe9f146abf3763779c664665da72c1425042a08bd26448c44f58c774",
+  "exe_sha256": "9957272b6166bce875d1a8d3edf3d4e5d827499ae35f294391e21aac7f93ded8",
+  "source_reference": "snapshot-2da466e52f40e1765b0b1576330bcb28481f9a89b791a58bbcb10098018c9721",
+  "source_manifest_sha256": "159a8e5be238b274710fb58f5560271c04faaf667aaee01f493925ece12f49af",
+  "branch": "codex/payment-shop-names-0.54.0",
+  "base_head": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+  "python_regressions": 239,
+  "native_exe_checks": 84,
+  "old_package_preserved": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.4_rc3\\补货助手_0.54.4_rc3_资源自适应与采购核验修复.zip",
+  "live_platform_calls": 0,
+  "git_committed_pushed_or_merged": false,
+  "real_data_modified": false,
+  "evidence": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\carton_ceiling_0545_20261116_01"
+}

@@ -34,14 +34,14 @@ def project(p):
         bits=flags.setdefault(r['sku'],[False,False,False])
         bits[0] |= q is not None and q>0;bits[1] |= want is not None and q is not None and q<want
         bits[2] |= any(n is None for n in (want,q,price,amount))
-    return {'amounts':{k:str(m[k]) for k in ('demand','allocated','reduced')},'priced_rows':m['priced_rows'],'flags':flags,
+    return {'amounts':{k:str(m[k]) for k in ('demand','allocated','reduced','increased')},'priced_rows':m['priced_rows'],'flags':flags,
             'position':p['position'],'saved':p['saved'],'bid':p['bid'],'head':p['head'],
             'return':p['basis']['dependencies'].get(p['basis']['stage']),'demand_stage':p['basis']['stage'],'signed_products':p.get('signed_products'),
             'batch_id':p.get('batch_id')}
 
 
 def aggregate(records):
-    amounts={k:Decimal(0) for k in ('demand','allocated','reduced')};flags={};priced=0
+    amounts={k:Decimal(0) for k in ('demand','allocated','reduced','increased')};flags={};priced=0
     for r in records:
         p=r.get('projection')
         if not p:continue
@@ -56,7 +56,7 @@ def aggregate(records):
 
 
 def cached_projection(idx,source_id,gid,digest,loader):
-    k=wr.dumps([3,source_id,gid,digest]);hit=idx.execute('SELECT payload,sha FROM jst_result_projection WHERE k=?',(k,)).fetchone()
+    k=wr.dumps([4,source_id,gid,digest]);hit=idx.execute('SELECT payload,sha FROM jst_result_projection WHERE k=?',(k,)).fetchone()
     if hit and hashlib.sha256(hit[0].encode()).hexdigest()==hit[1]:return wr.loads(hit[0])
     p=loader();value=project(p);raw=wr.dumps(value)
     idx.execute('INSERT OR REPLACE INTO jst_result_projection VALUES(?,?,?)',(k,raw,hashlib.sha256(raw.encode()).hexdigest()));idx.commit()

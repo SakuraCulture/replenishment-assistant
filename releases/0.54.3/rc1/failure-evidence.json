@@ -1,0 +1,42 @@
+{
+  "retained_root": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01",
+  "all_failed_and_passing_evidence_preserved": true,
+  "records": [
+    {
+      "path": "calibration-01",
+      "reason": "Benchmark reader used Windows default encoding instead of UTF-8. Fixed harness; results excluded."
+    },
+    {
+      "path": "full-pilot-01",
+      "reason": "Early narrower input shape and earlier implementation. Not final metrics."
+    },
+    {
+      "path": "full-shaped-pilot-01",
+      "reason": "Earlier input shape and implementation. Not final metrics."
+    },
+    {
+      "path": "native-source-01",
+      "reason": "Probe rejected existing Cancelled failure dialog; application rollback was correct. Probe corrected."
+    },
+    {
+      "path": "native-source-02",
+      "reason": "Probe included hidden association sheet when checking SKU columns. Restricted to actual business sheets."
+    },
+    {
+      "path": "targeted-final-02.log",
+      "reason": "Real worker interruption exposed bare EOFError. Narrowly normalized to existing worker-exit message; final 38 tests pass."
+    },
+    {
+      "path": "native-source-03",
+      "reason": "Final corrected native source acceptance passed, 19 checks."
+    },
+    {
+      "path": "capped-3427mib",
+      "reason": "Old MemoryError retained. New run interrupted by an observer opening stage.txt with Windows sharing that denied the QA callback write. Zero orders/jobs; not a production codec defect. Replaced by distinct repeat without that reader."
+    },
+    {
+      "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\capped-3427mib-02",
+      "reason": "Controlled original MemoryError is expected failure evidence; same limit new implementation succeeds."
+    }
+  ]
+}

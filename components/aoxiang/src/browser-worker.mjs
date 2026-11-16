@@ -7,18 +7,21 @@ import {ExclusiveLock} from './state.mjs';
 import {redact} from './common.mjs';
 import {ModuleSession} from './module-session.mjs';
 import {browserConnectionState,watchBrowserConnection} from './browser-connection.mjs';
+import {WorkerPurchaseGuards,uploadWithHostGuard} from './purchase-guard-ipc.mjs';
 
 const bridge=new EdgeBridge();let ui=null,modules=null,lock=null,busy=false,closing=false,unwatch=null;
+const hostGuards=new WorkerPurchaseGuards(send);
 async function sourceUI(source){ui=await modules.open(source);}
-function send(message){if(process.connected)process.send(message);}
+function send(message){if(process.connected)process.send(message,()=>{});}
 function loginResult(error=null){send({event:'login',state:error?'FAILED':'VERIFIED',error:error?redact({code:error.code||'IDENTITY_CHECK_FAILED',message:error.message}):null});}
 async function close(){
   if(closing)return;closing=true;
-  unwatch?.();send({event:'connection',state:'DISCONNECTED'});
+  unwatch?.();hostGuards.close();send({event:'connection',state:'DISCONNECTED'});
   try{await modules?.dispose();await bridge.close();}finally{try{lock?.release();}catch{}process.exit(0);}
 }
 process.on('disconnect',()=>void close());process.on('SIGTERM',()=>void close());process.on('SIGINT',()=>void close());
 process.on('message',async message=>{
+  if(hostGuards.receive(message))return;
   const {id,method,params={}}=message||{};
   if(method==='stop'){await close();return;}
   if(!id||busy){send({id,error:{code:'WORKER_BUSY',message:'浏览器执行器正在处理上一操作'}});return;}
@@ -57,7 +60,7 @@ process.on('message',async message=>{
       else if(method==='downloadPurchase')result=await ui.downloadPurchase(params);
       else if(method==='downloadPurchaseTemplate')result=await ui.downloadPurchaseTemplate(params);
       else if(method==='preparePurchaseCreate')result=await ui.preparePurchaseCreate(params);
-      else if(method==='uploadPurchaseOnce')result=await ui.uploadPurchaseOnce(params);
+      else if(method==='uploadPurchaseOnce')result=await uploadWithHostGuard(ui,params,id,hostGuards);
       else if(method==='purchaseImportTask')result=await ui.purchaseImportTask(params);
       else if(method==='queryCreateOrders')result=await ui.queryCreateOrders(params);
       else if(method==='findTask'){

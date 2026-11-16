@@ -23,6 +23,7 @@ import storage_chunks as chunks
 import warehouse_execution as execution
 from runtime_support import checkpoint
 from export_progress import RowProgress
+import analytics_lifecycle_scope as lifecycle_scope
 
 VERSION = 'funnel-4'
 STAGES = ('model', 'signed', 'return', 'payment', 'receipt')
@@ -41,7 +42,7 @@ def digest(value):
 
 
 def query_spec(spec):
-    allowed = {'from','to','stores','orders','warehouse','group','search','category','rounds','coverage_through','as_of'}
+    allowed = {'from','to','stores','orders','warehouse','group','search','category','rounds','coverage_through','as_of','lifecycle_from'}
     if set(spec)-allowed: raise ValueError('存在未开放的分析筛选字段')
     out = {**spec}
     for k in ('from','to'):
@@ -55,6 +56,7 @@ def query_spec(spec):
         out[key] = list(dict.fromkeys(values))
     if out.get('warehouse') not in (None, '', '山东仓', '河北仓'): raise ValueError('未知供货仓')
     if out.get('group') not in (None, '', *GROUPS): raise ValueError('未知必采分组')
+    lifecycle_scope.validate(out.get('lifecycle_from', ''))
     if type(out.get('rounds',8)) is not int or not 1<=out.get('rounds',8)<=30:raise ValueError('复盘轮数须在1至30之间')
     if out.get('coverage_through', 'signed') not in STAGES: raise ValueError('未知天数比较环节')
     if out.get('as_of'):
@@ -393,6 +395,8 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
                 h={k:v for k,v in order.items() if k!='payload'}
                 h.update(number=child,parent_number=number,warehouse=wh,visibility_token=visibility.get((oid,wh),{}).get('token',0))
                 view=lifecycle.snapshot(path,h,db=db,order=order,cancel=cancel,as_of=spec.get('as_of'))
+                seen_stores.add(store);seen_orders.add(child)
+                if not lifecycle_scope.includes(view,spec.get('lifecycle_from','')):continue
                 allocation=workflow.allocation_fact(db,h,view,spec.get('as_of'),event=allocations.event(h))
                 payment=view['documents']['payment']
                 references=local(db,h,payment)
@@ -407,7 +411,7 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
                     state,valid=stage_state(view,'payment')
                     payments.extend({'order':child,'store':store,'warehouse':wh,'currency':c,**v,'state':state,'valid':valid} for c,v in totals.items())
                 tokens.append([h,[(s,d['version'],d['digest']) if d else [s,None] for s,d in view['documents'].items()],view.get('legacy_return'),allocation['digest'] if allocation else None])
-                heads.append(h);seen_stores.add(store);seen_orders.add(child)
+                heads.append(h)
                 for row in workflow.enrich(build_facts(order,h,view,evidence,cancel),h,view,allocation,saved):
                     row['references']=references
                     if spec.get('group') and row['group']!=spec['group']:continue

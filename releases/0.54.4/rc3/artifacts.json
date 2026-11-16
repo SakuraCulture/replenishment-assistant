@@ -1,0 +1,16 @@
+{
+  "version": "0.54.4 rc3",
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.4_rc3\\补货助手\\补货助手.exe",
+  "exe_sha256": "a7fed88f1d7f6937ab0b4b0ec4e121824cdf61209a831e275c8d190ea780f526",
+  "zip": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.4_rc3\\补货助手_0.54.4_rc3_资源自适应与采购核验修复.zip",
+  "zip_sha256": "3510dbc1d4e74fc9a82820ab93445a3afd6a553fe5b4f75935e09c7ccd1f4a6c",
+  "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+  "git_head": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+  "snapshot_not_commit": true,
+  "previous_deliveries_preserved": true,
+  "real_data_modified": false,
+  "platform_called": false,
+  "native_checks": 73,
+  "python_tests": 1086,
+  "node_tests": 261
+}

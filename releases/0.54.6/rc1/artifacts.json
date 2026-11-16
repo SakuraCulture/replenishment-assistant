@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "version": "0.54.6",
+  "build_id": "rc1",
+  "package": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.6_rc1\\补货助手_0.54.6_rc1_生命周期核对与经营分析导出优化.zip",
+  "zip_sha256": "7f33cc22979e395cf4959f4d65b41b86a0f66ab12e00b71c45dd9c12c9266fe5",
+  "exe_sha256": "3c4aa1f34df8c44f9245540c7267d17729d389b1aff1871c2271ac5e4be7b860",
+  "source_reference": "snapshot-82f4463f51dd601daebba854c805eba1e2656513b1d791dc2d1e2e0a8ffc8ac7",
+  "source_manifest_sha256": "6bddfdfa1b2d2ae58db420fe32230c173420863e3937e603d9fee558fa89dbb3",
+  "branch": "codex/payment-shop-names-0.54.0",
+  "base_head": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+  "python_regressions": 525,
+  "native_exe_checks": 72,
+  "performance_summary": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\performance-summary.csv",
+  "business_equivalence": true,
+  "workbook_equivalence": true,
+  "old_package_preserved": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.5_rc1\\补货助手_0.54.5_rc1_库存分配箱规向上规整.zip",
+  "live_platform_calls": 0,
+  "git_committed_pushed_or_merged": false,
+  "real_data_modified": false,
+  "evidence": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01"
+}

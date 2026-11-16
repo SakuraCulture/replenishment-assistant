@@ -47,6 +47,43 @@ class SigningFailures(unittest.TestCase):
 
     def task(self): return export_receipts.recent(self.work.path)[0]
 
+    def test_owned_input_is_released_only_after_commit_and_exact_recovery_heads(self):
+        batch=self.prepare(2);before=copy.deepcopy(batch['payload']);original=delivery._write_exports;commits=[]
+        def progress(value):
+            if getattr(value,'active',None) is True:
+                self.assertEqual(batch['payload'],before);commits.append(True)
+        def write(repo,records,receipt,*args):
+            self.assertTrue(commits);self.assertEqual(len(repo.headers()),2)
+            self.assertEqual(batch['payload'],{});self.assertTrue(batch['consumed'])
+            self.assertTrue(all(item['head'] for item in receipt['files']))
+            stored=self.work.get_job(before['day'])['payload']
+            self.assertEqual(stored,before)
+            return original(repo,records,receipt,*args)
+        with patch.object(delivery,'_write_exports',side_effect=write):
+            result=delivery.execute_batch(self.repo,batch,self.output,progress=progress,consume=True)
+        self.assertEqual(len(result['paths']),4)
+        with self.assertRaisesRegex(ValueError,'不能重放旧确认'):delivery.execute_batch(self.repo,batch,self.output,consume=True)
+
+    def test_failed_commit_does_not_consume_owned_input(self):
+        batch=self.prepare();before=copy.deepcopy(batch['payload'])
+        with patch.object(self.repo,'confirm',side_effect=MemoryError('synthetic precommit')):
+            with self.assertRaises(WorkFailure):delivery.execute_batch(self.repo,batch,self.output,consume=True)
+        self.assertEqual(batch['payload'],before);self.assertFalse(batch.get('consumed',False));self.assertFalse(self.repo.headers())
+
+    def test_failed_file_after_owned_release_keeps_signed_data_and_original_recovery(self):
+        batch=self.prepare();before=copy.deepcopy(batch['payload'])
+        with patch.object(delivery.normal_exports,'export',side_effect=OSError('synthetic file failure')):
+            with self.assertRaises(WorkFailure):delivery.execute_batch(self.repo,batch,self.output,consume=True)
+        self.assertEqual(batch['payload'],{});self.assertTrue(self.repo.headers())
+        self.assertEqual(self.work.get_job(before['day'])['payload'],before)
+        review=export_recovery.inspect(self.work.path,self.task()['id'])
+        self.assertTrue(all(r['action']=='export' for r in review['items']))
+
+    def test_default_delivery_keeps_borrowed_input(self):
+        batch=self.prepare();before=copy.deepcopy(batch['payload'])
+        delivery.execute_batch(self.repo,batch,self.output)
+        self.assertEqual(batch['payload'],before);self.assertFalse(batch.get('consumed',False))
+
     def test_empty_memory_error_has_type_stack_stage_and_no_false_commit(self):
         batch = self.prepare()
         with patch.object(self.repo, 'confirm', side_effect=MemoryError()):

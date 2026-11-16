@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "tests": 239,
+  "failures": [],
+  "errors": [],
+  "skipped": [],
+  "modules": [
+    "test_jst",
+    "test_jst_batches",
+    "test_jst_batch_recovery",
+    "test_jst_batch_recovery_ui",
+    "test_jst_carton_normalization",
+    "test_jst_current_basis",
+    "test_jst_payment",
+    "test_jst_results",
+    "test_jst_review",
+    "test_jst_standby",
+    "test_jst_stock_evidence",
+    "test_jst_stock_evidence_ui",
+    "test_jst_ui",
+    "test_operations_lifecycle",
+    "test_admission",
+    "test_admission_overview",
+    "test_warehouse_execution",
+    "test_warehouse_execution_delete",
+    "test_warehouse_execution_feedback",
+    "test_warehouse_execution_readers",
+    "test_warehouse_execution_scheduler",
+    "test_warehouse_execution_ui"
+  ],
+  "seconds": 49.23399999999674
+}

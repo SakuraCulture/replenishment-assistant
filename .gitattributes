@@ -90,3 +90,19 @@ releases/0.54.2/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-e
 releases/0.54.0/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
 releases/0.54.1/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
 releases/0.54.2/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+
+# Preserve original Windows acceptance bytes for the 0.54.3 through 0.54.6 releases.
+releases/0.54.3/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.54.3/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+releases/0.54.4/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.54.4/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+releases/0.54.5/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.54.5/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+releases/0.54.6/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+releases/0.54.6/**/*.log whitespace=-blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+
+# Preserve accepted Windows source/evidence bytes; still reject real end spaces.
+docs/handoffs/** whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Accepted synthetic fixture retains its original terminal empty line.
+src/signing_memory_fixture.py whitespace=blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+tools/benchmark_signing_memory.py whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

@@ -1,0 +1,13 @@
+{
+  "expected_old_oom_new_success": true,
+  "limit_mib": 3427,
+  "path": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\capped-3427mib-02",
+  "old_failure": "MemoryError",
+  "old_failure_phase": "confirm",
+  "old_db_heads": 0,
+  "old_db_jobs": 0,
+  "old_quick_check": "ok",
+  "new_passed": true,
+  "actual_16g_hardware": false,
+  "new_business_rows_verified": 340000
+}

@@ -77,9 +77,13 @@ class Prepared:
         raw=codec().dumps({'version':2,'tree':self.tree,'digest':self.digest,'size':self.size,'binding':self.binding}).encode()
         return MAGIC+hashlib.sha256(raw).digest()+zlib.compress(raw)
 
-def prepare(value,existing=(),progress=lambda _:None,binding=None):
+def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None):
     """Encode once in bounded row blocks; never materialize a whole JSON string."""
-    seen=set(existing);blocks={};h=hashlib.sha256();size=0;count=0
+    if store is None:seen=set(existing);blocks={}
+    else:
+        from encoding_store import Blocks
+        blocks=Blocks(store)
+    h=hashlib.sha256();size=0;count=0
     def count_blocks(v,depth=0):
         if isinstance(v,dict) and len(v)>BLOCK_ROWS:return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS
         if isinstance(v,dict) and depth<5:return sum(count_blocks(x,depth+1) for x in v.values())
@@ -90,13 +94,17 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None):
         h.update(raw);size+=len(raw)
     def block(v,fragment=False):
         nonlocal count
-        raw=codec().dumps(v).encode();digest=hashlib.sha256(raw).hexdigest()
-        feed(raw[1:-1] if fragment else raw)
-        if digest not in seen:
-            blocks[digest]=(len(raw),zlib.compress(raw));seen.add(digest)
+        if store is None:
+            raw=codec().dumps(v).encode();digest=hashlib.sha256(raw).hexdigest();raw_size=len(raw)
+            feed(raw[1:-1] if fragment else raw)
+            if digest not in seen:
+                blocks[digest]=(len(raw),zlib.compress(raw));seen.add(digest)
+        else:
+            digest,raw_size=store.encode(v,feed,fragment)
+            blocks.keys[digest]=None
         count+=1
         if count%32==0:progress(RowProgress(f'编码内容块：{count:,}/{total:,}；复用 {count-len(blocks):,} 块',count,total))
-        return ['ref',digest,len(raw)]
+        return ['ref',digest,raw_size]
     def walk(v,depth=0):
         if isinstance(v,dict) and len(v)>BLOCK_ROWS:
             feed(b'{');parts=[];keys=sorted(v)
@@ -123,12 +131,60 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None):
     progress(RowProgress(f'快照编码完成：{count:,} 块，新增 {len(blocks):,} 块',count,total))
     return Prepared(tree,h.hexdigest(),size,blocks,binding)
 
+def business_digest(prepared,path,focus_revision=None):
+    """Hash canonical business fields from prepared bytes, without re-encoding.
+
+    None requests the streaming-encoder fallback for an uncommon manifest
+    shape; it never stands for an absent/zero business value.
+    """
+    from encoding_store import Blocks
+    if not isinstance(prepared.chunks,Blocks):return None
+    node=prepared.tree
+    for key in path:
+        if node[0]!='dict':return None
+        node=next((v for k,v in node[1] if k==key),None)
+        if node is None:return None
+    if node[0]!='dict':return None
+    h=hashlib.sha256();store=prepared.chunks.store
+    def emit(n,fragment=False):
+        kind=n[0]
+        if kind=='ref':
+            tail=b'';first=True
+            for raw in store.raw(n[1]):
+                if fragment:
+                    if first:raw=raw[1:];first=False
+                    data=tail+raw
+                    if data:h.update(data[:-1]);tail=data[-1:]
+                else:h.update(raw)
+        elif kind=='dict':
+            h.update(b'{')
+            for i,(key,child) in enumerate(n[1]):
+                if i:h.update(b', ')
+                h.update(codec().dumps(key).encode()+b': ');emit(child)
+            h.update(b'}')
+        elif kind in ('array','map'):
+            h.update(b'[' if kind=='array' else b'{')
+            for i,child in enumerate(n[1]):
+                if i:h.update(b', ')
+                emit(child,True)
+            h.update(b']' if kind=='array' else b'}')
+        else:raise ValueError('未知快照节点')
+    if focus_revision is not None:
+        h.update(b'{"new_focus": '+codec().dumps(focus_revision).encode()+b', "result": ')
+    emit(['dict',[(k,v) for k,v in node[1] if k not in ('created','task','version')]])
+    if focus_revision is not None:h.update(b'}')
+    return h.hexdigest()
+
+
 def put(db,p,*,cancel=None):
     from runtime_support import checkpoint
     schema(db)
-    for h,(size,data) in p.chunks.items():
-        checkpoint(cancel)
-        db.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',(h,size,data))
+    from encoding_store import Blocks
+    if isinstance(p.chunks,Blocks):p.chunks.store.put(db,p.chunks,cancel)
+    else:
+        for h,(size,data) in p.chunks.items():
+            checkpoint(cancel)
+            db.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,?)',(h,size,data))
     # A partial prepare cannot publish references to absent blocks.
     def refs(n):
         if n[0]=='ref':yield n[1],n[2]
@@ -218,7 +274,7 @@ def select_value(value,path):
     if path[0]=='*':return {k:select_value(v,path[1:]) for k,v in value.items()}
     return select_value(value[path[0]],path[1:])
 
-def load(blob,db=None,expected=None,paths=None,binding=None,progress=lambda _:None):
+def load(blob,db=None,expected=None,paths=None,binding=None,progress=lambda _:None,*,bounded=False):
     m=require_manifest(blob)
     if expected and m['digest']!=expected:raise ValueError('作业快照清单与索引不一致')
     if binding is not None and m.get('binding')!=binding:raise ValueError('归档清单与业务指纹不一致')
@@ -233,6 +289,15 @@ def load(blob,db=None,expected=None,paths=None,binding=None,progress=lambda _:No
     def count_refs(node):
         return 1 if node[0]=='ref' else sum(count_refs(v) for _,v in node[1]) if node[0]=='dict' else sum(count_refs(v) for v in node[1])
     reader.total=count_refs(m['tree'])
+    if bounded:
+        h=hashlib.sha256();size=0
+        def feed(raw):
+            nonlocal size
+            h.update(raw);size+=len(raw)
+        value=reader.read(m['tree'],feed)
+        if h.hexdigest()!=m['digest'] or size!=m['size']:raise ValueError('完整快照校验失败')
+        progress('完整快照逐块读取及校验完成')
+        return value
     h=hashlib.sha256();buffer=BytesIO()
     def feed(raw):h.update(raw);buffer.write(raw)
     reader.emit(m['tree'],feed)

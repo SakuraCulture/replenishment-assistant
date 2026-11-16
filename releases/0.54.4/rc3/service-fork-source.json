@@ -1,0 +1,49 @@
+{
+  "passed": true,
+  "component": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\components\\aoxiang",
+  "node": "C:\\Users\\lenovo\\.codex\\worktrees\\data-location-0521\\replenishment_mvp_20261029\\components\\aoxiang\\runtime\\node.exe",
+  "real_fork": true,
+  "real_service_and_ledger": true,
+  "live_platform": false,
+  "cases": [
+    {
+      "passed": true,
+      "mode": "valid",
+      "state": "ACCEPTED",
+      "error": null,
+      "uploadAttempted": true,
+      "guard": "CONSUMED",
+      "taskId": "GEI@SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-IMPORT-V2@261116000000@7114",
+      "counts": {
+        "released": 1,
+        "aborted": 0,
+        "pendingGuards": 0
+      },
+      "changed": false,
+      "quantity": "7",
+      "synthetic": true,
+      "live_platform": false
+    },
+    {
+      "passed": true,
+      "mode": "changed",
+      "state": "FAILED_PRECHECK",
+      "error": {
+        "code": "PURCHASE_BASIS_CHANGED",
+        "message": "付款单已更新，不能上传旧付款数量；尚未上传，请在主程序重新核对并生成预览",
+        "details": {}
+      },
+      "uploadAttempted": false,
+      "guard": "AUTHORIZED",
+      "counts": {
+        "released": 0,
+        "aborted": 1,
+        "pendingGuards": 0
+      },
+      "changed": true,
+      "quantity": "7",
+      "synthetic": true,
+      "live_platform": false
+    }
+  ]
+}

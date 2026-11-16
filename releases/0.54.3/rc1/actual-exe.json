@@ -1,0 +1,1660 @@
+{
+  "passed": true,
+  "complete": true,
+  "reports": [
+    {
+      "passed": true,
+      "phase": "boundaries",
+      "frozen_exe": true,
+      "version": {
+        "app": "补货助手",
+        "version": "0.54.3",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "snapshot-d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+        "source_commit_kind": "workspace_snapshot_not_git_commit",
+        "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+        "source_snapshot_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+        "source_archive_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+        "source_manifest_sha256": "2dddb2be1c4169eb8fe3e25b0062d9ab2de071ed6cf1fd37f6bc17458972db54",
+        "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+        "working_tree_files_sha256": {
+          "README.md": "93269a55221048fa1c4558a6871b5eeb90de310fdd0931d679244aefa8bbb0a2",
+          "src/app.py": "f5cd26856e69d95d71ae0d4301f34664f60b8b6c549bc06914375ed969d09539",
+          "src/encoding_store.py": "ad2602cd5c3ce5e1ddb362ae946d7767726ab92db610ba683507cb6e3853279c",
+          "src/normal_orders.py": "ff57fb50cfbdf4bc85f8365221ced3b67bf431081bbfe06b75ef8f505c15917d",
+          "src/signing_memory_fixture.py": "fd4ab5bd7ad48fb21ddbc90f5421a96b4376124af57a4973a6ab7c8f0c51a66a",
+          "src/signing_memory_smoke.py": "58d6b230c7b4692a3af82bf3301a020cd939231b75741fabed7a1525f299702f",
+          "src/storage_chunks.py": "35a4cbff7bb5bc83273b7014f41b85ea52a1e1cd269bbe13a5a3d3c60789630d",
+          "src/ui_work_io.py": "629be6c2d6f9604b8de6a22cc4f5b650d22e48c110000530a3218c18c6c8d224",
+          "src/version.json": "ad8bb9a3a91e5da5cb091197900205b4b3d42d43625a1494051b5233da62a802",
+          "src/warehouse_execution.py": "5139febbe70c5fbe421cb66da774180c1d64567c85b8d7f0dc8c124c7049b2a8",
+          "src/work_failures.py": "58e4c04491e912cdd7e711da28b3ec13a20a16af1367182696d4af02f7e62104",
+          "src/work_io_process.py": "efa7fe44e3692068fadec215757d2dcddb0df623473db5f8209916539f59330f",
+          "src/work_memory.py": "6920cb7a5d690b08481e2c84b20190aa7e55c556baaa5e2a4e209df983d29efc",
+          "src/work_repository.py": "bb267cf9b7e2cba4bb4b5bd2d8c39d05938ab417d3101f2ec5280b62dbf5f55a",
+          "tests/test_signing_memory.py": "2eb372c92ef76b2d1cae16e9aca23cfa44769e3cc0e255ec5f1db58bd6c017ff",
+          "tools/benchmark_signing_memory.py": "9df1c10c59f534b3e10dab5af79702ac7298a15845c81466ec1d6b4c4bdc1549",
+          "tools/verify_signing_memory.py": "39ac7ec7066f21d260d34ef3deed2c793fb504d0cf6cfeb204a86fece2e6f9b1"
+        },
+        "build_id": "rc1",
+        "built_at": "2026-11-16T14:18:20.232081+08:00",
+        "git_mutated": false,
+        "aoxiang": {
+          "source_commit": "snapshot-d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+          "files": 875,
+          "manifest_sha256": "81df5d9c82eaae4ff83746ca6c08adb557533fd8741afe1acd222c629f35c474",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7"
+        },
+        "jst_catalog": {
+          "manifest_sha256": "3c120dfed20cb604f17338ce0c65e693ba62c2e8c58fe08e89012e7f00ff2e35",
+          "files": 11,
+          "source_commit": "snapshot-d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+          "contains_user_state": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7"
+        },
+        "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+      },
+      "checks": [
+        "默认计算并发仍为2，未降低并发",
+        "真实取消回执明确未提交",
+        "真实编码进度页取消后整批未提交",
+        "取消后私有临时文件已关闭",
+        "原始写入错误在真实弹窗中可见",
+        "真实EXE第二单写入失败，第一单和草稿一起回滚",
+        "失败不留下半批草稿",
+        "真实签发并导出动作完成全部父单",
+        "全部仓单已归档，无额外订单",
+        "签发后订单库完整性通过",
+        "SYN002：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN001：实际Excel逐行SKU、数量、单价及顺序一致",
+        "成功后编码临时文件已自动关闭"
+      ],
+      "dialogs": [
+        {
+          "title": "操作未完成",
+          "text": "失败阶段：编码内容块：64/375；复用 2 块\n原因：Cancelled：已取消\n提交状态：未开始最终提交\n诊断记录：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\boundaries\\settings\\diagnostics\\work-io-f78b3b422e7c49139c20ef7a28fe1bb0.json\n已生成 0/2 份。\n请到“导出任务与恢复”核对原任务和确切签发修订；不要重复签发。",
+          "details": "导出操作未全部完成：失败阶段：编码内容块：64/375；复用 2 块\n原因：Cancelled：已取消\n提交状态：未开始最终提交\n诊断记录：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\boundaries\\settings\\diagnostics\\work-io-f78b3b422e7c49139c20ef7a28fe1bb0.json\n本次签发未进入最终提交。\n已生成 0/2 份：无\n未生成：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\boundaries\\exports\\2026-11-16合成门店SYN001（精简版·河北仓）.xlsx、D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\boundaries\\exports\\2026-11-16合成门店SYN002（精简版·山东仓）.xlsx\nCancelled：已取消\n可到“订单跟踪 → 导出任务与恢复”查看逐文件结果，按原修订补导出。任务 dc1dc2bd18604495b20f8c7d7b3b79e1"
+        },
+        {
+          "title": "操作未完成",
+          "text": "失败阶段：已取得写锁，校验修订并准备事务内容（可取消）…\n原因：IntegrityError：QA_BATCH_ABORT\n提交状态：未开始最终提交\n诊断记录：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\boundaries\\settings\\diagnostics\\work-io-ef6515b735894c7598107e4c468110b1.json\n已生成 0/2 份。\n请到“导出任务与恢复”核对原任务和确切签发修订；不要重复签发。",
+          "details": "导出操作未全部完成：失败阶段：已取得写锁，校验修订并准备事务内容（可取消）…\n原因：IntegrityError：QA_BATCH_ABORT\n提交状态：未开始最终提交\n诊断记录：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\boundaries\\settings\\diagnostics\\work-io-ef6515b735894c7598107e4c468110b1.json\n本次签发未进入最终提交。\n已生成 0/2 份：无\n未生成：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\boundaries\\exports\\2026-11-16合成门店SYN001（精简版·河北仓）.xlsx、D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\boundaries\\exports\\2026-11-16合成门店SYN002（精简版·山东仓）.xlsx\nIntegrityError：QA_BATCH_ABORT\n可到“订单跟踪 → 导出任务与恢复”查看逐文件结果，按原修订补导出。任务 eb2efa5fb8cf4b1d90715335488f55a0"
+        }
+      ],
+      "screenshots": [
+        "selection-cancel.png",
+        "confirmation-cancel.png",
+        "cancel-during-encoding.png",
+        "message-cancel.png",
+        "selection-failure.png",
+        "confirmation-failure.png",
+        "message-failure.png",
+        "selection-success.png",
+        "confirmation-success.png",
+        "result-success.png",
+        "completed-boundaries.png"
+      ],
+      "live_platform": false,
+      "action_seconds": 15.57638720003888,
+      "files": 2,
+      "rows_per_file": 5000,
+      "peaks": {
+        "gui_working_bytes": 353980416,
+        "gui_private_bytes": 271138816,
+        "worker_working_bytes": 227500032,
+        "worker_private_bytes": 241963008
+      },
+      "progress": [
+        {
+          "at": 325366.64,
+          "stage": "传输本次操作所需数据…",
+          "worker_pid": 57324,
+          "committing": false
+        },
+        {
+          "at": 325369.14,
+          "stage": "传输本次操作所需数据…",
+          "worker_pid": 46968,
+          "committing": false
+        },
+        {
+          "at": 325371.171,
+          "stage": "编码内容块：224/375；复用 40 块",
+          "worker_pid": 46968,
+          "committing": false
+        },
+        {
+          "at": 325373.25,
+          "stage": "准备正常单：2 / 2 家",
+          "worker_pid": 46968,
+          "committing": false
+        },
+        {
+          "at": 325375.375,
+          "stage": "正在传输数据：已发送 128 个数据块（总量未预扫描）",
+          "worker_pid": 38572,
+          "committing": false
+        },
+        {
+          "at": 325377.406,
+          "stage": "编码内容块：224/375；复用 40 块",
+          "worker_pid": 38572,
+          "committing": false
+        },
+        {
+          "at": 325379.484,
+          "stage": "准备正常单：2 / 2 家",
+          "worker_pid": 38572,
+          "committing": false
+        },
+        {
+          "at": 325381.562,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 38572,
+          "committing": false
+        },
+        {
+          "at": 325383.64,
+          "stage": "文件 1/2 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 38572,
+          "committing": false
+        },
+        {
+          "at": 325385.718,
+          "stage": "文件 1/2 · 合成门店SYN001 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 38572,
+          "committing": false
+        },
+        {
+          "at": 325387.796,
+          "stage": "文件 2/2 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 38572,
+          "committing": false
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "passed": true,
+      "phase": "full",
+      "frozen_exe": true,
+      "version": {
+        "app": "补货助手",
+        "version": "0.54.3",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "snapshot-d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+        "source_commit_kind": "workspace_snapshot_not_git_commit",
+        "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+        "source_snapshot_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+        "source_archive_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+        "source_manifest_sha256": "2dddb2be1c4169eb8fe3e25b0062d9ab2de071ed6cf1fd37f6bc17458972db54",
+        "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+        "working_tree_files_sha256": {
+          "README.md": "93269a55221048fa1c4558a6871b5eeb90de310fdd0931d679244aefa8bbb0a2",
+          "src/app.py": "f5cd26856e69d95d71ae0d4301f34664f60b8b6c549bc06914375ed969d09539",
+          "src/encoding_store.py": "ad2602cd5c3ce5e1ddb362ae946d7767726ab92db610ba683507cb6e3853279c",
+          "src/normal_orders.py": "ff57fb50cfbdf4bc85f8365221ced3b67bf431081bbfe06b75ef8f505c15917d",
+          "src/signing_memory_fixture.py": "fd4ab5bd7ad48fb21ddbc90f5421a96b4376124af57a4973a6ab7c8f0c51a66a",
+          "src/signing_memory_smoke.py": "58d6b230c7b4692a3af82bf3301a020cd939231b75741fabed7a1525f299702f",
+          "src/storage_chunks.py": "35a4cbff7bb5bc83273b7014f41b85ea52a1e1cd269bbe13a5a3d3c60789630d",
+          "src/ui_work_io.py": "629be6c2d6f9604b8de6a22cc4f5b650d22e48c110000530a3218c18c6c8d224",
+          "src/version.json": "ad8bb9a3a91e5da5cb091197900205b4b3d42d43625a1494051b5233da62a802",
+          "src/warehouse_execution.py": "5139febbe70c5fbe421cb66da774180c1d64567c85b8d7f0dc8c124c7049b2a8",
+          "src/work_failures.py": "58e4c04491e912cdd7e711da28b3ec13a20a16af1367182696d4af02f7e62104",
+          "src/work_io_process.py": "efa7fe44e3692068fadec215757d2dcddb0df623473db5f8209916539f59330f",
+          "src/work_memory.py": "6920cb7a5d690b08481e2c84b20190aa7e55c556baaa5e2a4e209df983d29efc",
+          "src/work_repository.py": "bb267cf9b7e2cba4bb4b5bd2d8c39d05938ab417d3101f2ec5280b62dbf5f55a",
+          "tests/test_signing_memory.py": "2eb372c92ef76b2d1cae16e9aca23cfa44769e3cc0e255ec5f1db58bd6c017ff",
+          "tools/benchmark_signing_memory.py": "9df1c10c59f534b3e10dab5af79702ac7298a15845c81466ec1d6b4c4bdc1549",
+          "tools/verify_signing_memory.py": "39ac7ec7066f21d260d34ef3deed2c793fb504d0cf6cfeb204a86fece2e6f9b1"
+        },
+        "build_id": "rc1",
+        "built_at": "2026-11-16T14:18:20.232081+08:00",
+        "git_mutated": false,
+        "aoxiang": {
+          "source_commit": "snapshot-d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+          "files": 875,
+          "manifest_sha256": "81df5d9c82eaae4ff83746ca6c08adb557533fd8741afe1acd222c629f35c474",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7"
+        },
+        "jst_catalog": {
+          "manifest_sha256": "3c120dfed20cb604f17338ce0c65e693ba62c2e8c58fe08e89012e7f00ff2e35",
+          "files": 11,
+          "source_commit": "snapshot-d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+          "contains_user_state": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7"
+        },
+        "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+      },
+      "checks": [
+        "默认计算并发仍为2，未降低并发",
+        "真实签发并导出动作完成全部父单",
+        "全部仓单已归档，无额外订单",
+        "签发后订单库完整性通过",
+        "SYN017：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN016：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN015：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN014：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN013：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN012：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN011：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN010：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN009：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN008：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN007：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN006：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN005：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN004：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN003：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN002：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN001：实际Excel逐行SKU、数量、单价及顺序一致",
+        "成功后编码临时文件已自动关闭"
+      ],
+      "dialogs": [],
+      "screenshots": [
+        "selection-success.png",
+        "confirmation-success.png",
+        "result-success.png",
+        "completed-full.png"
+      ],
+      "live_platform": false,
+      "action_seconds": 451.4734624000266,
+      "files": 17,
+      "rows_per_file": 20000,
+      "peaks": {
+        "gui_working_bytes": 2776924160,
+        "gui_private_bytes": 2812268544,
+        "worker_working_bytes": 4021837824,
+        "worker_private_bytes": 4027756544
+      },
+      "progress": [
+        {
+          "at": 325415.859,
+          "stage": "传输本次操作所需数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325417.937,
+          "stage": "正在传输数据：已发送 2,432 个数据块（总量未预扫描）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325420.0,
+          "stage": "正在传输数据：已发送 3,904 个数据块（总量未预扫描）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325422.312,
+          "stage": "正在传输数据：已发送 4,992 个数据块（总量未预扫描）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325424.375,
+          "stage": "核对门店 6/17：SYN006",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325426.453,
+          "stage": "核对门店 13/17：SYN013",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325428.531,
+          "stage": "核对门店 17/17：SYN017",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325430.609,
+          "stage": "核对门店 17/17：SYN017",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325432.687,
+          "stage": "核对门店 17/17：SYN017",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325434.765,
+          "stage": "正在传输数据：已发送 2,432 个数据块（总量未预扫描）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325436.843,
+          "stage": "正在传输数据：已发送 4,928 个数据块（总量未预扫描）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325438.921,
+          "stage": "正在传输数据：已发送 8,448 个数据块（总量未预扫描）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325441.0,
+          "stage": "正在传输数据：已发送 12,544 个数据块（总量未预扫描）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325443.078,
+          "stage": "正在传输数据：已发送 21,888 个数据块（总量未预扫描）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325445.156,
+          "stage": "签发编码临时位置：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\full\\settings\\.encoding-cache；缓存上限 64 MiB（不含输入数据）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325447.234,
+          "stage": "签发编码临时位置：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\full\\settings\\.encoding-cache；缓存上限 64 MiB（不含输入数据）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325449.312,
+          "stage": "签发编码临时位置：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\signing_memory_0543_20261116_01\\native-exe-01\\full\\settings\\.encoding-cache；缓存上限 64 MiB（不含输入数据）",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325451.39,
+          "stage": "编码内容块：384/7,481；复用 17 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325453.468,
+          "stage": "编码内容块：960/7,481；复用 17 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325455.546,
+          "stage": "编码内容块：1,504/7,481；复用 17 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325457.625,
+          "stage": "正在流式编码签发内容：已处理 159.8 MiB；临时文件 13.2 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325460.0,
+          "stage": "编码内容块：2,048/7,481；复用 17 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325462.109,
+          "stage": "编码内容块：2,528/7,481；复用 17 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325464.187,
+          "stage": "编码内容块：2,784/7,481；复用 17 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325466.265,
+          "stage": "编码内容块：3,104/7,481；复用 94 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325468.359,
+          "stage": "编码内容块：3,392/7,481；复用 248 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325470.421,
+          "stage": "编码内容块：3,648/7,481；复用 381 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325472.5,
+          "stage": "编码内容块：3,936/7,481；复用 511 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325474.593,
+          "stage": "编码内容块：4,256/7,481；复用 673 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325476.671,
+          "stage": "编码内容块：4,544/7,481；复用 803 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325478.765,
+          "stage": "编码内容块：4,832/7,481；复用 948 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325480.828,
+          "stage": "编码内容块：5,120/7,481；复用 1,103 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325482.921,
+          "stage": "编码内容块：5,408/7,481；复用 1,257 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325484.984,
+          "stage": "正在流式编码签发内容：已处理 537.0 MiB；临时文件 28.1 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325487.062,
+          "stage": "正在流式编码签发内容：已处理 560.1 MiB；临时文件 30.9 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325489.156,
+          "stage": "编码内容块：5,760/7,481；复用 1,369 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325491.234,
+          "stage": "正在流式编码签发内容：已处理 606.8 MiB；临时文件 36.6 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325493.296,
+          "stage": "正在流式编码签发内容：已处理 629.0 MiB；临时文件 39.3 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325495.375,
+          "stage": "编码内容块：6,016/7,481；复用 1,438 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325497.453,
+          "stage": "编码内容块：6,112/7,481；复用 1,465 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325499.531,
+          "stage": "编码内容块：6,208/7,481；复用 1,492 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325501.609,
+          "stage": "编码内容块：6,304/7,481；复用 1,513 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325503.687,
+          "stage": "正在流式编码签发内容：已处理 753.3 MiB；临时文件 54.3 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325505.765,
+          "stage": "正在流式编码签发内容：已处理 775.7 MiB；临时文件 57.1 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325507.843,
+          "stage": "正在流式编码签发内容：已处理 798.1 MiB；临时文件 59.8 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325509.921,
+          "stage": "编码内容块：6,656/7,481；复用 1,600 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325512.0,
+          "stage": "编码内容块：6,752/7,481；复用 1,627 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325514.078,
+          "stage": "编码内容块：6,816/7,481；复用 1,627 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325516.171,
+          "stage": "正在流式编码签发内容：已处理 888.0 MiB；临时文件 70.7 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325518.234,
+          "stage": "正在流式编码签发内容：已处理 910.6 MiB；临时文件 73.5 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325520.312,
+          "stage": "正在流式编码签发内容：已处理 934.1 MiB；临时文件 76.3 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325522.39,
+          "stage": "正在流式编码签发内容：已处理 956.3 MiB；临时文件 79.0 MiB；缓存 0.0 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325524.468,
+          "stage": "编码内容块：7,264/7,481；复用 1,753 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325526.562,
+          "stage": "编码内容块：7,328/7,481；复用 1,762 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325528.625,
+          "stage": "门店 1/17 · SYN001 · 编码内容块：160/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325530.703,
+          "stage": "门店 2/17 · SYN002 · 编码内容块：160/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325533.703,
+          "stage": "门店 3/17 · SYN003 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325535.734,
+          "stage": "门店 5/17 · SYN005 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325537.812,
+          "stage": "门店 6/17 · SYN006 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325539.89,
+          "stage": "门店 7/17 · SYN007 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325541.984,
+          "stage": "门店 8/17 · SYN008 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325544.062,
+          "stage": "门店 9/17 · SYN009 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325546.14,
+          "stage": "门店 10/17 · SYN010 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325548.218,
+          "stage": "门店 11/17 · SYN011 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325550.296,
+          "stage": "门店 12/17 · SYN012 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325552.375,
+          "stage": "门店 13/17 · SYN013 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325554.453,
+          "stage": "门店 14/17 · SYN014 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325556.546,
+          "stage": "门店 15/17 · SYN015 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325558.609,
+          "stage": "门店 16/17 · SYN016 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325560.687,
+          "stage": "门店 17/17 · SYN017 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325562.765,
+          "stage": "编码内容块：32/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325564.843,
+          "stage": "快照编码完成：192 块，新增 177 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325566.921,
+          "stage": "编码内容块：160/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325569.0,
+          "stage": "正在流式编码签发内容：已处理 1590.3 MiB；临时文件 93.5 MiB；缓存 58.7 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325571.078,
+          "stage": "编码内容块：128/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325573.156,
+          "stage": "编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325575.25,
+          "stage": "编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325577.328,
+          "stage": "编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325579.406,
+          "stage": "编码内容块：32/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325581.484,
+          "stage": "快照编码完成：192 块，新增 177 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325583.562,
+          "stage": "快照编码完成：192 块，新增 177 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325585.64,
+          "stage": "快照编码完成：192 块，新增 177 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325587.734,
+          "stage": "正在流式编码签发内容：已处理 1827.1 MiB；临时文件 93.5 MiB；缓存 58.7 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325589.812,
+          "stage": "正在流式编码签发内容：已处理 1857.1 MiB；临时文件 93.5 MiB；缓存 58.7 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325591.875,
+          "stage": "正在流式编码签发内容：已处理 1884.7 MiB；临时文件 93.5 MiB；缓存 58.7 / 64 MiB",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325593.953,
+          "stage": "编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325596.031,
+          "stage": "编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325598.109,
+          "stage": "编码内容块：96/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325600.187,
+          "stage": "编码内容块：32/192；复用 0 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325602.265,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325604.343,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325607.375,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325609.39,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325611.453,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325613.531,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325615.609,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325617.687,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325619.765,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325621.843,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325623.921,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325626.0,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325628.078,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325630.171,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325632.234,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325634.312,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325636.406,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325638.484,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325640.578,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325642.64,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325644.718,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：已写 6,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325646.796,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：已写 9,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325648.875,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325650.953,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325653.031,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325655.109,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325657.187,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325659.265,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：已写 11,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325661.343,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：已写 14,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325663.421,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325665.515,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325667.593,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325669.656,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325671.734,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325673.828,
+          "stage": "文件 3/17 · 合成门店SYN003 · 河北仓 · 中心仓动销补货清单：已写 16,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325675.89,
+          "stage": "文件 3/17 · 合成门店SYN003 · 河北仓 · 中心仓动销补货清单：已写 17,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325677.968,
+          "stage": "文件 3/17 · 合成门店SYN003 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325680.828,
+          "stage": "文件 3/17 · 合成门店SYN003 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325682.89,
+          "stage": "文件 3/17 · 合成门店SYN003 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325684.968,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325687.046,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 中心仓动销补货清单：已写 5,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325689.14,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325691.203,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325693.281,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325695.359,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325697.468,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325699.546,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325701.625,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 中心仓动销补货清单：已写 10,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325703.687,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325705.765,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325707.843,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325709.937,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325712.0,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325714.078,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325716.171,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 中心仓动销补货清单：已写 8,500 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325718.234,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325720.328,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325722.39,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325724.468,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325726.546,
+          "stage": "读取并校验内容块：128 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325728.64,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 中心仓动销补货清单：已写 0 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325730.703,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325732.781,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325734.859,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325736.953,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325739.031,
+          "stage": "写出确认单 8/17 · 山东仓…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325741.125,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 中心仓动销补货清单：已写 9,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325743.203,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325745.296,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325747.359,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325749.437,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325751.515,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325754.406,
+          "stage": "文件 9/17 · 合成门店SYN009 · 河北仓 · 中心仓动销补货清单：已写 8,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325756.484,
+          "stage": "文件 9/17 · 合成门店SYN009 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325758.562,
+          "stage": "文件 9/17 · 合成门店SYN009 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325760.671,
+          "stage": "文件 9/17 · 合成门店SYN009 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325762.734,
+          "stage": "读取并校验内容块：128 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325764.812,
+          "stage": "写出确认单 10/17 · 山东仓…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325766.906,
+          "stage": "文件 10/17 · 合成门店SYN010 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325769.015,
+          "stage": "文件 10/17 · 合成门店SYN010 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325771.093,
+          "stage": "文件 10/17 · 合成门店SYN010 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325773.171,
+          "stage": "文件 10/17 · 合成门店SYN010 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325775.25,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325777.328,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 中心仓动销补货清单：已写 6,500 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325779.437,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325781.531,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325783.593,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325785.687,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325787.75,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325789.828,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 中心仓动销补货清单：已写 7,500 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325791.906,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325793.984,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325796.062,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325798.14,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325800.218,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325802.296,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 中心仓动销补货清单：已写 3,500 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325804.375,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325806.546,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325808.609,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325810.687,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325812.765,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325814.843,
+          "stage": "文件 14/17 · 合成门店SYN014 · 山东仓 · 中心仓动销补货清单：已写 2,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325816.921,
+          "stage": "文件 14/17 · 合成门店SYN014 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325819.015,
+          "stage": "文件 14/17 · 合成门店SYN014 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325821.078,
+          "stage": "文件 14/17 · 合成门店SYN014 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325823.156,
+          "stage": "读取并校验内容块：128 块",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325825.234,
+          "stage": "写出确认单 15/17 · 河北仓…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325828.609,
+          "stage": "文件 15/17 · 合成门店SYN015 · 河北仓 · 中心仓动销补货清单：已写 9,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325830.718,
+          "stage": "文件 15/17 · 合成门店SYN015 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325832.796,
+          "stage": "文件 15/17 · 合成门店SYN015 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325834.875,
+          "stage": "文件 15/17 · 合成门店SYN015 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325836.953,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325839.046,
+          "stage": "文件 16/17 · 合成门店SYN016 · 山东仓 · 中心仓动销补货清单：已写 14,500 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325841.125,
+          "stage": "文件 16/17 · 合成门店SYN016 · 山东仓 · 中心仓动销补货清单：已写 15,500 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325843.203,
+          "stage": "文件 16/17 · 合成门店SYN016 · 山东仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325845.296,
+          "stage": "文件 16/17 · 合成门店SYN016 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325847.359,
+          "stage": "文件 16/17 · 合成门店SYN016 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325849.437,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325851.515,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 中心仓动销补货清单：已写 6,000 / 20,000 行",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325853.593,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325855.671,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 中心仓动销补货清单：整理格式…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325857.75,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        },
+        {
+          "at": 325859.828,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 34784,
+          "committing": false
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "passed": true,
+      "phase": "reopen",
+      "frozen_exe": true,
+      "version": {
+        "app": "补货助手",
+        "version": "0.54.3",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "snapshot-d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+        "source_commit_kind": "workspace_snapshot_not_git_commit",
+        "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+        "source_snapshot_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+        "source_archive_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+        "source_manifest_sha256": "2dddb2be1c4169eb8fe3e25b0062d9ab2de071ed6cf1fd37f6bc17458972db54",
+        "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+        "working_tree_files_sha256": {
+          "README.md": "93269a55221048fa1c4558a6871b5eeb90de310fdd0931d679244aefa8bbb0a2",
+          "src/app.py": "f5cd26856e69d95d71ae0d4301f34664f60b8b6c549bc06914375ed969d09539",
+          "src/encoding_store.py": "ad2602cd5c3ce5e1ddb362ae946d7767726ab92db610ba683507cb6e3853279c",
+          "src/normal_orders.py": "ff57fb50cfbdf4bc85f8365221ced3b67bf431081bbfe06b75ef8f505c15917d",
+          "src/signing_memory_fixture.py": "fd4ab5bd7ad48fb21ddbc90f5421a96b4376124af57a4973a6ab7c8f0c51a66a",
+          "src/signing_memory_smoke.py": "58d6b230c7b4692a3af82bf3301a020cd939231b75741fabed7a1525f299702f",
+          "src/storage_chunks.py": "35a4cbff7bb5bc83273b7014f41b85ea52a1e1cd269bbe13a5a3d3c60789630d",
+          "src/ui_work_io.py": "629be6c2d6f9604b8de6a22cc4f5b650d22e48c110000530a3218c18c6c8d224",
+          "src/version.json": "ad8bb9a3a91e5da5cb091197900205b4b3d42d43625a1494051b5233da62a802",
+          "src/warehouse_execution.py": "5139febbe70c5fbe421cb66da774180c1d64567c85b8d7f0dc8c124c7049b2a8",
+          "src/work_failures.py": "58e4c04491e912cdd7e711da28b3ec13a20a16af1367182696d4af02f7e62104",
+          "src/work_io_process.py": "efa7fe44e3692068fadec215757d2dcddb0df623473db5f8209916539f59330f",
+          "src/work_memory.py": "6920cb7a5d690b08481e2c84b20190aa7e55c556baaa5e2a4e209df983d29efc",
+          "src/work_repository.py": "bb267cf9b7e2cba4bb4b5bd2d8c39d05938ab417d3101f2ec5280b62dbf5f55a",
+          "tests/test_signing_memory.py": "2eb372c92ef76b2d1cae16e9aca23cfa44769e3cc0e255ec5f1db58bd6c017ff",
+          "tools/benchmark_signing_memory.py": "9df1c10c59f534b3e10dab5af79702ac7298a15845c81466ec1d6b4c4bdc1549",
+          "tools/verify_signing_memory.py": "39ac7ec7066f21d260d34ef3deed2c793fb504d0cf6cfeb204a86fece2e6f9b1"
+        },
+        "build_id": "rc1",
+        "built_at": "2026-11-16T14:18:20.232081+08:00",
+        "git_mutated": false,
+        "aoxiang": {
+          "source_commit": "snapshot-d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+          "files": 875,
+          "manifest_sha256": "81df5d9c82eaae4ff83746ca6c08adb557533fd8741afe1acd222c629f35c474",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7"
+        },
+        "jst_catalog": {
+          "manifest_sha256": "3c120dfed20cb604f17338ce0c65e693ba62c2e8c58fe08e89012e7f00ff2e35",
+          "files": 11,
+          "source_commit": "snapshot-d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7",
+          "contains_user_state": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "d515c414c156b3e73a0077f35a7830f78cd08b33e9e7c43973b325b1df1d3cd7"
+        },
+        "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+      },
+      "checks": [
+        "默认计算并发仍为2，未降低并发",
+        "实际EXE重新打开后全部签发仍存在",
+        "重开订单库完整性通过",
+        "独立仓单数量保持",
+        "完整草稿摘要保持",
+        "全部实际导出文件保留"
+      ],
+      "dialogs": [],
+      "screenshots": [
+        "completed-reopen.png"
+      ],
+      "live_platform": false,
+      "progress": [],
+      "exit_code": 0
+    }
+  ],
+  "live_platform": false,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.3_rc1\\补货助手\\补货助手.exe",
+  "exe_sha256": "8772d35cd5409d487981cb1d1f2138c0c745ee77ff9fc340eef69b86f86325b8"
+}

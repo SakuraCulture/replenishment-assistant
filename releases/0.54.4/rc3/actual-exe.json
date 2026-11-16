@@ -1,0 +1,2858 @@
+{
+  "passed": true,
+  "complete": true,
+  "reports": [
+    {
+      "passed": true,
+      "phase": "boundaries",
+      "frozen_exe": true,
+      "version": {
+        "app": "补货助手",
+        "version": "0.54.4",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_commit_kind": "workspace_snapshot_not_git_commit",
+        "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+        "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_archive_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_manifest_sha256": "97dd6421460a5d825363c8915a833a6c4ff2970a9088861246a11810a2d070d3",
+        "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+        "working_tree_files_sha256": {
+          "README.md": "2211829d6ea5a21632c96294becdccc449cc9ecf38f0bfe63132a72601fd28e6",
+          "components/aoxiang/src/bound-browser.mjs": "b1c353ff04f325896fa61fde67b9ce39deb3916745b9f486b76eae255943fe4d",
+          "components/aoxiang/src/browser-worker.mjs": "c2635145d7c88919fa77af11bcfd3e43eecd0bfdcf980e9749b51977a301a724",
+          "components/aoxiang/src/purchase-create-ui.mjs": "0f0fc9ffa7a23c7dc5b75ec9b3198e7f938fbccec1518650bc9805eb1f7b705e",
+          "components/aoxiang/src/purchase-guard-ipc.mjs": "97bee8f44440cf9588b5b127ac3cc1f8905a53c0528cf3dbbdf7665aae35e111",
+          "components/aoxiang/src/worker-client.mjs": "c1352eed7727378d4fc2e6d3413c513a1a6d95f925040d1228323bba9a8b61e9",
+          "components/aoxiang/test/purchase-guard-ipc.test.mjs": "c552d15bec1730f24780f139f037a69c6aff4bee18c35e652445ef6193f8bb96",
+          "components/aoxiang/test/purchase-guard-worker.fixture.mjs": "35f339c347a4d340aaa1eaf04aba197c3867fca590af883662e654c8de615063",
+          "docs/handoffs/20261116_资源自适应与采购核验_暂停.md": "5ee86a3ea55e4b671fb5dc6d3ea40766e85b8698e1b1caade919363e6610488d",
+          "releases/0.54.3/rc1/actual-exe.json": "11815758f75d77ff0a500ea14ccfc692f813e6cab34c517b8f318101f958b1de",
+          "releases/0.54.3/rc1/artifacts.json": "3ce5696dbc87ce4c0930b019cc40464ffcfc1f8a3de7241efb8f3f0509eb969c",
+          "releases/0.54.3/rc1/build_info.json": "a1143f88cabe67884dc20dcd3680a3a6099f5ff1a4d4d0c3a81ff7c910e8efc9",
+          "releases/0.54.3/rc1/business-invariants.json": "c813d81566871e6307471d38dd091d7a917f45fbf14fd6673fef504e5f079b17",
+          "releases/0.54.3/rc1/cancel-during-encoding.png": "3e52a2208f5bf0b9458732aa0e4bd9a2330192d9bd66f3678f2129319f58ee48",
+          "releases/0.54.3/rc1/capped-outcome.json": "013a0ab40d5734996a7a4402fec324820440f6b15e3b26af12c79df0a08cbd91",
+          "releases/0.54.3/rc1/completed-full.png": "726e11d5faf50e85e24ecf4bc48957d625ef16fe182eabfa1868f8a7d1ec1435",
+          "releases/0.54.3/rc1/completed-reopen.png": "e141d33788e5faec8740c774a965d7f7ca450c751f1f10427426968999173699",
+          "releases/0.54.3/rc1/failure-evidence.json": "f5383a93a75173a0c356c3309f68c8030baea88bc8af2d90b806de77f29c480f",
+          "releases/0.54.3/rc1/initial-state.json": "8390e179fc3f3720aaefc7e0e7b03edec78a687d70f26bb7c9322bdf8613fadb",
+          "releases/0.54.3/rc1/message-failure.png": "7016968ba86b66bc6b49a9112772e39f3184fa94f3a972fdbd6b02a006466a89",
+          "releases/0.54.3/rc1/metrics.json": "64b3740f8507d23ba64867d29771e154240a68c4d2348d5f78a3605d2b240b96",
+          "releases/0.54.3/rc1/performance-memory.json": "6410651247d676a899b89d41a4c9e9265e296979d321d7109726caf3aff02f59",
+          "releases/0.54.3/rc1/regression.json": "a679acad379884acaa9356327b47a877a5f7b35bda7c17e798f367cede6c888d",
+          "releases/0.54.3/rc1/source-manifest.json": "2dddb2be1c4169eb8fe3e25b0062d9ab2de071ed6cf1fd37f6bc17458972db54",
+          "releases/0.54.3/rc1/test-environment.json": "d0b085e29e7d1066bccee88374114942386b058019a123b19c407a849007601e",
+          "releases/0.54.3/rc1/workspace_snapshot_builder.py": "c13b6b08aad2b771db09e1f36b74fecdb16fb2dbc997414b425754047ab4fbb0",
+          "releases/0.54.3/rc1/交付报告.md": "c3ce7cd7b6945d3d81df4ea77fd3d6675f6ef7d71c010e2c923e71512bf7e811",
+          "src/adaptive_resources.py": "de597e03706c0cfbc0eea4f630219d127c186ce61aff1709140ab898f9ac20b6",
+          "src/analytics_lifecycle_scope.py": "abd6ba71fef98ef32fe5dfc0823a2fc723e6920bb2ee4c6baa34c66a5cc30df3",
+          "src/analytics_template_export.py": "b33e013f1dc5bb2e98365be5fa0963e2e96b2a2e910c1847521bc04f126a9896",
+          "src/app.py": "f5cd26856e69d95d71ae0d4301f34664f60b8b6c549bc06914375ed969d09539",
+          "src/archive_batch.py": "904a781231426fac686b0ff8dbb2120da7e3b1b0ec0f7681f95765d775b73a94",
+          "src/archive_exports.py": "74cb68f0322e63598aaf6fb8da0299b9d2fa64ac6d65d52f07cb7e50129246d0",
+          "src/automation_protocol.py": "6e9366e828e8acb9101dccc41b93fe3be2fbae65010e816cbd0b923af4b4079f",
+          "src/encoding_store.py": "8208cd040073e2489237ed8a63f231ee06c2c68f29219bfed8b523919185b921",
+          "src/normal_delivery.py": "ee4625b52576c45f522805345c77faf7f7bd8fdb1814421a95a757dd0a10cdbf",
+          "src/normal_exports.py": "a49419d40ff1c36e14cc68fe90d202187f5ce7f3234faa9c3d244c33843843ee",
+          "src/normal_orders.py": "61ded571282025884c33f48f9ffe86cd1cf5f811e782cbbe2d1f9fb112846983",
+          "src/order_analytics.py": "fcaecd13b27840679278495ba45da35f27405d78441bb204bcdf641b9a7017b0",
+          "src/order_analytics_ui.py": "2b3c3827c20c1fbb0bc9796c7f26990a0e683b46fc99c794a90b201b958a6a9a",
+          "src/order_identity.py": "a94020864814d8230056da689c33b65f0fbbfb0c71165410e11e4e38bf195970",
+          "src/resource_pressure_probe.py": "c31bd768f94450a62d86fd5d245879e6a39a7b516cb1755f2341a9c983badf9f",
+          "src/signing_memory_fixture.py": "fd4ab5bd7ad48fb21ddbc90f5421a96b4376124af57a4973a6ab7c8f0c51a66a",
+          "src/signing_memory_smoke.py": "bef55112d43d759c2e302af60bb6a64e442e9216f57f6f47a9fb5516749e5e4d",
+          "src/storage_chunks.py": "e4d4197d4cfef6c6b296f7d9bbf53edacaf8f298737f031822d3a1c5a386f4f1",
+          "src/ui_work_io.py": "629be6c2d6f9604b8de6a22cc4f5b650d22e48c110000530a3218c18c6c8d224",
+          "src/version.json": "77d990397901cc219b3380c98af9e32c649a569d977e1fe628bbca018c6db14f",
+          "src/warehouse_execution.py": "bfc361ca1c3d3792c00525130d881233c2feb4e00924b5da629df3e8acb45360",
+          "src/work_failures.py": "e27e2a3f190cd969760c93ce2ef8154197794632e822f55353a7f44519daf0ca",
+          "src/work_io_process.py": "7d2bfc22af037082a34a2f9eab4d9d38e91aed32acb8cc97f6c7c6a9e53272e8",
+          "src/work_memory.py": "d335504509ad580ff3af3b335f13fac58c7c84cc1681e461d8203440cb555779",
+          "src/work_repository.py": "bb267cf9b7e2cba4bb4b5bd2d8c39d05938ab417d3101f2ec5280b62dbf5f55a",
+          "tests/test_adaptive_resources.py": "d0289ff1d63f9cfd490eea8c5fed2818bc24c76376732445b3a5f3e4d945e39d",
+          "tests/test_analytics_lifecycle_scope.py": "7b796cf1c068752e264c33fa93680f7c14151f7b0d34ab1c74790666b025a37e",
+          "tests/test_order_analytics_ui.py": "fc6d83e9f0b364c3488aa3f6420394362e24cb8fba274bf121f7fe0eb31ef2c5",
+          "tests/test_signing_failures.py": "c8e44f07ed5169a9073c68be00980aadfd7678476aa6ab43ec2db856e870ee20",
+          "tests/test_signing_memory.py": "2eb372c92ef76b2d1cae16e9aca23cfa44769e3cc0e255ec5f1db58bd6c017ff",
+          "tools/benchmark_adaptive_resources.py": "3d9f744751f2be97b8dfdd43c931ee12a261cc650c5f0f019a597ecf2eb9d85a",
+          "tools/benchmark_signing_memory.py": "9df1c10c59f534b3e10dab5af79702ac7298a15845c81466ec1d6b4c4bdc1549",
+          "tools/verify_signing_memory.py": "ea98a324f5de32a46724d2f44c938ecfe814f762841f2ab78907d8f8e900aa86"
+        },
+        "build_id": "rc3",
+        "built_at": "2026-11-16T20:44:52.457828+08:00",
+        "git_mutated": false,
+        "aoxiang": {
+          "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+          "files": 876,
+          "manifest_sha256": "5e5da29fb71b43077a21a16833d1f038038b480fb259167f1d70eed51fd1219c",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc"
+        },
+        "jst_catalog": {
+          "manifest_sha256": "4e2df9e0552923b2a5ed9e2a9fbdaa4cbb42f21ee7e43c504d4c9d2d4a1a995b",
+          "files": 11,
+          "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+          "contains_user_state": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc"
+        },
+        "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+      },
+      "checks": [
+        "默认计算并发仍为2，未降低并发",
+        "真实取消回执明确未提交",
+        "真实编码进度页取消后整批未提交",
+        "取消后私有临时文件已关闭",
+        "原始写入错误在真实弹窗中可见",
+        "真实EXE第二单写入失败，第一单和草稿一起回滚",
+        "失败不留下半批草稿",
+        "真实签发并导出动作完成全部父单",
+        "全部仓单已归档，无额外订单",
+        "签发后订单库完整性通过",
+        "SYN002：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN001：实际Excel逐行SKU、数量、单价及顺序一致",
+        "成功后编码临时文件已自动关闭"
+      ],
+      "dialogs": [
+        {
+          "title": "操作未完成",
+          "text": "失败阶段：编码内容块：32/375；复用 0 块\n原因：Cancelled：已取消\n提交状态：未开始最终提交\n诊断记录：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\boundaries\\settings\\diagnostics\\work-io-4ca88981761940308e0064ad7a3c9696.json\n已生成 0/2 份。\n请到“导出任务与恢复”核对原任务和确切签发修订；不要重复签发。",
+          "details": "导出操作未全部完成：失败阶段：编码内容块：32/375；复用 0 块\n原因：Cancelled：已取消\n提交状态：未开始最终提交\n诊断记录：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\boundaries\\settings\\diagnostics\\work-io-4ca88981761940308e0064ad7a3c9696.json\n本次签发未进入最终提交。\n已生成 0/2 份：无\n未生成：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\boundaries\\exports\\2026-11-16合成门店SYN001（精简版·河北仓）.xlsx、D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\boundaries\\exports\\2026-11-16合成门店SYN002（精简版·山东仓）.xlsx\nCancelled：已取消\n可到“订单跟踪 → 导出任务与恢复”查看逐文件结果，按原修订补导出。任务 edeb8402f27048d88f84c0f10fbacd3d"
+        },
+        {
+          "title": "操作未完成",
+          "text": "失败阶段：已取得写锁，校验修订并准备事务内容（可取消）…\n原因：IntegrityError：QA_BATCH_ABORT\n提交状态：未开始最终提交\n诊断记录：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\boundaries\\settings\\diagnostics\\work-io-ed6ac6c0a23c4eb1beaad02fb99e1a82.json\n已生成 0/2 份。\n请到“导出任务与恢复”核对原任务和确切签发修订；不要重复签发。",
+          "details": "导出操作未全部完成：失败阶段：已取得写锁，校验修订并准备事务内容（可取消）…\n原因：IntegrityError：QA_BATCH_ABORT\n提交状态：未开始最终提交\n诊断记录：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\boundaries\\settings\\diagnostics\\work-io-ed6ac6c0a23c4eb1beaad02fb99e1a82.json\n本次签发未进入最终提交。\n已生成 0/2 份：无\n未生成：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\boundaries\\exports\\2026-11-16合成门店SYN001（精简版·河北仓）.xlsx、D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\boundaries\\exports\\2026-11-16合成门店SYN002（精简版·山东仓）.xlsx\nIntegrityError：QA_BATCH_ABORT\n可到“订单跟踪 → 导出任务与恢复”查看逐文件结果，按原修订补导出。任务 14e4cf5efb5d46b3adc6aacd72037339"
+        }
+      ],
+      "screenshots": [
+        "selection-cancel.png",
+        "confirmation-cancel.png",
+        "cancel-during-encoding.png",
+        "message-cancel.png",
+        "selection-failure.png",
+        "confirmation-failure.png",
+        "message-failure.png",
+        "selection-success.png",
+        "confirmation-success.png",
+        "result-success.png",
+        "completed-boundaries.png"
+      ],
+      "live_platform": false,
+      "action_seconds": 8.181455199955963,
+      "files": 2,
+      "rows_per_file": 5000,
+      "peaks": {
+        "gui_working_bytes": 333283328,
+        "gui_private_bytes": 257167360,
+        "worker_working_bytes": 179073024,
+        "worker_private_bytes": 169177088
+      },
+      "progress": [
+        {
+          "at": 347651.218,
+          "stage": "传输本次操作所需数据…",
+          "worker_pid": 65976,
+          "committing": false,
+          "worker_private_bytes": 8310784,
+          "worker_working_bytes": 15716352
+        },
+        {
+          "at": 347653.296,
+          "stage": "核对门店 2/2：SYN002",
+          "worker_pid": 59024,
+          "committing": false,
+          "worker_private_bytes": 75849728,
+          "worker_working_bytes": 86220800
+        },
+        {
+          "at": 347655.375,
+          "stage": "门店 1/2 · SYN001 · 编码内容块：32/74；复用 0 块",
+          "worker_pid": 59024,
+          "committing": false,
+          "worker_private_bytes": 159289344,
+          "worker_working_bytes": 170704896
+        },
+        {
+          "at": 347657.468,
+          "stage": "正在传输数据：已发送 768 个数据块（总量未预扫描）",
+          "worker_pid": 68196,
+          "committing": false,
+          "worker_private_bytes": 146972672,
+          "worker_working_bytes": 157544448
+        },
+        {
+          "at": 347659.546,
+          "stage": "门店 2/2 · SYN002 · 按内容块编码及校验完整快照…",
+          "worker_pid": 68196,
+          "committing": false,
+          "worker_private_bytes": 159870976,
+          "worker_working_bytes": 171290624
+        },
+        {
+          "at": 347661.625,
+          "stage": "文件 1/2 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：已写 1,000 / 5,000 行",
+          "worker_pid": 68196,
+          "committing": false,
+          "worker_private_bytes": 145260544,
+          "worker_working_bytes": 156823552
+        },
+        {
+          "at": 347663.703,
+          "stage": "文件 2/2 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：已写 3,000 / 5,000 行",
+          "worker_pid": 68196,
+          "committing": false,
+          "worker_private_bytes": 147451904,
+          "worker_working_bytes": 158715904
+        }
+      ],
+      "resource_profile": "ample",
+      "resource_pressure_events": [],
+      "exit_code": 0
+    },
+    {
+      "passed": true,
+      "phase": "full",
+      "frozen_exe": true,
+      "version": {
+        "app": "补货助手",
+        "version": "0.54.4",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_commit_kind": "workspace_snapshot_not_git_commit",
+        "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+        "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_archive_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_manifest_sha256": "97dd6421460a5d825363c8915a833a6c4ff2970a9088861246a11810a2d070d3",
+        "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+        "working_tree_files_sha256": {
+          "README.md": "2211829d6ea5a21632c96294becdccc449cc9ecf38f0bfe63132a72601fd28e6",
+          "components/aoxiang/src/bound-browser.mjs": "b1c353ff04f325896fa61fde67b9ce39deb3916745b9f486b76eae255943fe4d",
+          "components/aoxiang/src/browser-worker.mjs": "c2635145d7c88919fa77af11bcfd3e43eecd0bfdcf980e9749b51977a301a724",
+          "components/aoxiang/src/purchase-create-ui.mjs": "0f0fc9ffa7a23c7dc5b75ec9b3198e7f938fbccec1518650bc9805eb1f7b705e",
+          "components/aoxiang/src/purchase-guard-ipc.mjs": "97bee8f44440cf9588b5b127ac3cc1f8905a53c0528cf3dbbdf7665aae35e111",
+          "components/aoxiang/src/worker-client.mjs": "c1352eed7727378d4fc2e6d3413c513a1a6d95f925040d1228323bba9a8b61e9",
+          "components/aoxiang/test/purchase-guard-ipc.test.mjs": "c552d15bec1730f24780f139f037a69c6aff4bee18c35e652445ef6193f8bb96",
+          "components/aoxiang/test/purchase-guard-worker.fixture.mjs": "35f339c347a4d340aaa1eaf04aba197c3867fca590af883662e654c8de615063",
+          "docs/handoffs/20261116_资源自适应与采购核验_暂停.md": "5ee86a3ea55e4b671fb5dc6d3ea40766e85b8698e1b1caade919363e6610488d",
+          "releases/0.54.3/rc1/actual-exe.json": "11815758f75d77ff0a500ea14ccfc692f813e6cab34c517b8f318101f958b1de",
+          "releases/0.54.3/rc1/artifacts.json": "3ce5696dbc87ce4c0930b019cc40464ffcfc1f8a3de7241efb8f3f0509eb969c",
+          "releases/0.54.3/rc1/build_info.json": "a1143f88cabe67884dc20dcd3680a3a6099f5ff1a4d4d0c3a81ff7c910e8efc9",
+          "releases/0.54.3/rc1/business-invariants.json": "c813d81566871e6307471d38dd091d7a917f45fbf14fd6673fef504e5f079b17",
+          "releases/0.54.3/rc1/cancel-during-encoding.png": "3e52a2208f5bf0b9458732aa0e4bd9a2330192d9bd66f3678f2129319f58ee48",
+          "releases/0.54.3/rc1/capped-outcome.json": "013a0ab40d5734996a7a4402fec324820440f6b15e3b26af12c79df0a08cbd91",
+          "releases/0.54.3/rc1/completed-full.png": "726e11d5faf50e85e24ecf4bc48957d625ef16fe182eabfa1868f8a7d1ec1435",
+          "releases/0.54.3/rc1/completed-reopen.png": "e141d33788e5faec8740c774a965d7f7ca450c751f1f10427426968999173699",
+          "releases/0.54.3/rc1/failure-evidence.json": "f5383a93a75173a0c356c3309f68c8030baea88bc8af2d90b806de77f29c480f",
+          "releases/0.54.3/rc1/initial-state.json": "8390e179fc3f3720aaefc7e0e7b03edec78a687d70f26bb7c9322bdf8613fadb",
+          "releases/0.54.3/rc1/message-failure.png": "7016968ba86b66bc6b49a9112772e39f3184fa94f3a972fdbd6b02a006466a89",
+          "releases/0.54.3/rc1/metrics.json": "64b3740f8507d23ba64867d29771e154240a68c4d2348d5f78a3605d2b240b96",
+          "releases/0.54.3/rc1/performance-memory.json": "6410651247d676a899b89d41a4c9e9265e296979d321d7109726caf3aff02f59",
+          "releases/0.54.3/rc1/regression.json": "a679acad379884acaa9356327b47a877a5f7b35bda7c17e798f367cede6c888d",
+          "releases/0.54.3/rc1/source-manifest.json": "2dddb2be1c4169eb8fe3e25b0062d9ab2de071ed6cf1fd37f6bc17458972db54",
+          "releases/0.54.3/rc1/test-environment.json": "d0b085e29e7d1066bccee88374114942386b058019a123b19c407a849007601e",
+          "releases/0.54.3/rc1/workspace_snapshot_builder.py": "c13b6b08aad2b771db09e1f36b74fecdb16fb2dbc997414b425754047ab4fbb0",
+          "releases/0.54.3/rc1/交付报告.md": "c3ce7cd7b6945d3d81df4ea77fd3d6675f6ef7d71c010e2c923e71512bf7e811",
+          "src/adaptive_resources.py": "de597e03706c0cfbc0eea4f630219d127c186ce61aff1709140ab898f9ac20b6",
+          "src/analytics_lifecycle_scope.py": "abd6ba71fef98ef32fe5dfc0823a2fc723e6920bb2ee4c6baa34c66a5cc30df3",
+          "src/analytics_template_export.py": "b33e013f1dc5bb2e98365be5fa0963e2e96b2a2e910c1847521bc04f126a9896",
+          "src/app.py": "f5cd26856e69d95d71ae0d4301f34664f60b8b6c549bc06914375ed969d09539",
+          "src/archive_batch.py": "904a781231426fac686b0ff8dbb2120da7e3b1b0ec0f7681f95765d775b73a94",
+          "src/archive_exports.py": "74cb68f0322e63598aaf6fb8da0299b9d2fa64ac6d65d52f07cb7e50129246d0",
+          "src/automation_protocol.py": "6e9366e828e8acb9101dccc41b93fe3be2fbae65010e816cbd0b923af4b4079f",
+          "src/encoding_store.py": "8208cd040073e2489237ed8a63f231ee06c2c68f29219bfed8b523919185b921",
+          "src/normal_delivery.py": "ee4625b52576c45f522805345c77faf7f7bd8fdb1814421a95a757dd0a10cdbf",
+          "src/normal_exports.py": "a49419d40ff1c36e14cc68fe90d202187f5ce7f3234faa9c3d244c33843843ee",
+          "src/normal_orders.py": "61ded571282025884c33f48f9ffe86cd1cf5f811e782cbbe2d1f9fb112846983",
+          "src/order_analytics.py": "fcaecd13b27840679278495ba45da35f27405d78441bb204bcdf641b9a7017b0",
+          "src/order_analytics_ui.py": "2b3c3827c20c1fbb0bc9796c7f26990a0e683b46fc99c794a90b201b958a6a9a",
+          "src/order_identity.py": "a94020864814d8230056da689c33b65f0fbbfb0c71165410e11e4e38bf195970",
+          "src/resource_pressure_probe.py": "c31bd768f94450a62d86fd5d245879e6a39a7b516cb1755f2341a9c983badf9f",
+          "src/signing_memory_fixture.py": "fd4ab5bd7ad48fb21ddbc90f5421a96b4376124af57a4973a6ab7c8f0c51a66a",
+          "src/signing_memory_smoke.py": "bef55112d43d759c2e302af60bb6a64e442e9216f57f6f47a9fb5516749e5e4d",
+          "src/storage_chunks.py": "e4d4197d4cfef6c6b296f7d9bbf53edacaf8f298737f031822d3a1c5a386f4f1",
+          "src/ui_work_io.py": "629be6c2d6f9604b8de6a22cc4f5b650d22e48c110000530a3218c18c6c8d224",
+          "src/version.json": "77d990397901cc219b3380c98af9e32c649a569d977e1fe628bbca018c6db14f",
+          "src/warehouse_execution.py": "bfc361ca1c3d3792c00525130d881233c2feb4e00924b5da629df3e8acb45360",
+          "src/work_failures.py": "e27e2a3f190cd969760c93ce2ef8154197794632e822f55353a7f44519daf0ca",
+          "src/work_io_process.py": "7d2bfc22af037082a34a2f9eab4d9d38e91aed32acb8cc97f6c7c6a9e53272e8",
+          "src/work_memory.py": "d335504509ad580ff3af3b335f13fac58c7c84cc1681e461d8203440cb555779",
+          "src/work_repository.py": "bb267cf9b7e2cba4bb4b5bd2d8c39d05938ab417d3101f2ec5280b62dbf5f55a",
+          "tests/test_adaptive_resources.py": "d0289ff1d63f9cfd490eea8c5fed2818bc24c76376732445b3a5f3e4d945e39d",
+          "tests/test_analytics_lifecycle_scope.py": "7b796cf1c068752e264c33fa93680f7c14151f7b0d34ab1c74790666b025a37e",
+          "tests/test_order_analytics_ui.py": "fc6d83e9f0b364c3488aa3f6420394362e24cb8fba274bf121f7fe0eb31ef2c5",
+          "tests/test_signing_failures.py": "c8e44f07ed5169a9073c68be00980aadfd7678476aa6ab43ec2db856e870ee20",
+          "tests/test_signing_memory.py": "2eb372c92ef76b2d1cae16e9aca23cfa44769e3cc0e255ec5f1db58bd6c017ff",
+          "tools/benchmark_adaptive_resources.py": "3d9f744751f2be97b8dfdd43c931ee12a261cc650c5f0f019a597ecf2eb9d85a",
+          "tools/benchmark_signing_memory.py": "9df1c10c59f534b3e10dab5af79702ac7298a15845c81466ec1d6b4c4bdc1549",
+          "tools/verify_signing_memory.py": "ea98a324f5de32a46724d2f44c938ecfe814f762841f2ab78907d8f8e900aa86"
+        },
+        "build_id": "rc3",
+        "built_at": "2026-11-16T20:44:52.457828+08:00",
+        "git_mutated": false,
+        "aoxiang": {
+          "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+          "files": 876,
+          "manifest_sha256": "5e5da29fb71b43077a21a16833d1f038038b480fb259167f1d70eed51fd1219c",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc"
+        },
+        "jst_catalog": {
+          "manifest_sha256": "4e2df9e0552923b2a5ed9e2a9fbdaa4cbb42f21ee7e43c504d4c9d2d4a1a995b",
+          "files": 11,
+          "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+          "contains_user_state": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc"
+        },
+        "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+      },
+      "checks": [
+        "默认计算并发仍为2，未降低并发",
+        "真实签发并导出动作完成全部父单",
+        "全部仓单已归档，无额外订单",
+        "签发后订单库完整性通过",
+        "SYN017：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN016：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN015：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN014：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN013：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN012：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN011：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN010：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN009：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN008：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN007：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN006：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN005：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN004：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN003：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN002：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN001：实际Excel逐行SKU、数量、单价及顺序一致",
+        "成功后编码临时文件已自动关闭",
+        "实际EXE在紧张进程预算下完整签发并导出"
+      ],
+      "dialogs": [],
+      "screenshots": [
+        "selection-success.png",
+        "confirmation-success.png",
+        "result-success.png",
+        "completed-full.png"
+      ],
+      "live_platform": false,
+      "action_seconds": 263.55026940000243,
+      "files": 17,
+      "rows_per_file": 20000,
+      "peaks": {
+        "gui_working_bytes": 2795638784,
+        "gui_private_bytes": 2762825728,
+        "worker_working_bytes": 3538636800,
+        "worker_private_bytes": 3542691840
+      },
+      "progress": [
+        {
+          "at": 347683.171,
+          "stage": "传输本次操作所需数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 26034176,
+          "worker_working_bytes": 36950016
+        },
+        {
+          "at": 347685.265,
+          "stage": "正在传输数据：已发送 3,264 个数据块（总量未预扫描）",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 1017741312,
+          "worker_working_bytes": 1019088896
+        },
+        {
+          "at": 347687.343,
+          "stage": "核对门店 4/17：SYN004",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 1637351424,
+          "worker_working_bytes": 1634893824
+        },
+        {
+          "at": 347689.421,
+          "stage": "核对门店 16/17：SYN016",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 1637351424,
+          "worker_working_bytes": 1635332096
+        },
+        {
+          "at": 347691.5,
+          "stage": "核对门店 17/17：SYN017",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 1752965120,
+          "worker_working_bytes": 1751965696
+        },
+        {
+          "at": 347693.578,
+          "stage": "正在传输数据：已发送 2,432 个数据块（总量未预扫描）",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 1971687424,
+          "worker_working_bytes": 1970958336
+        },
+        {
+          "at": 347695.656,
+          "stage": "正在传输数据：已发送 9,856 个数据块（总量未预扫描）",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 2624868352,
+          "worker_working_bytes": 2622681088
+        },
+        {
+          "at": 347697.734,
+          "stage": "正在传输数据：已发送 15,040 个数据块（总量未预扫描）",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3079421952,
+          "worker_working_bytes": 3075981312
+        },
+        {
+          "at": 347699.812,
+          "stage": "签发编码临时位置：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\tight\\settings\\.encoding-cache；资源充裕；临时内存预算 256.0 MiB；编码缓存上限 128.0 MiB（不含输入数据）",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492278272,
+          "worker_working_bytes": 3488489472
+        },
+        {
+          "at": 347701.89,
+          "stage": "签发编码临时位置：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\tight\\settings\\.encoding-cache；资源充裕；临时内存预算 256.0 MiB；编码缓存上限 128.0 MiB（不含输入数据）",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492278272,
+          "worker_working_bytes": 3488489472
+        },
+        {
+          "at": 347703.968,
+          "stage": "签发编码临时位置：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\tight\\settings\\.encoding-cache；资源充裕；临时内存预算 256.0 MiB；编码缓存上限 128.0 MiB（不含输入数据）",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492278272,
+          "worker_working_bytes": 3488489472
+        },
+        {
+          "at": 347706.046,
+          "stage": "编码内容块：224/7,481；复用 17 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492282368,
+          "worker_working_bytes": 3488649216
+        },
+        {
+          "at": 347708.125,
+          "stage": "编码内容块：864/7,481；复用 17 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492282368,
+          "worker_working_bytes": 3489021952
+        },
+        {
+          "at": 347710.203,
+          "stage": "编码内容块：1,504/7,481；复用 17 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492282368,
+          "worker_working_bytes": 3489366016
+        },
+        {
+          "at": 347712.281,
+          "stage": "编码内容块：1,984/7,481；复用 17 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492282368,
+          "worker_working_bytes": 3489398784
+        },
+        {
+          "at": 347714.359,
+          "stage": "编码内容块：2,464/7,481；复用 17 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489390592
+        },
+        {
+          "at": 347716.437,
+          "stage": "编码内容块：2,976/7,481；复用 25 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489398784
+        },
+        {
+          "at": 347718.515,
+          "stage": "编码内容块：3,488/7,481；复用 300 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489402880
+        },
+        {
+          "at": 347720.968,
+          "stage": "编码内容块：3,872/7,481；复用 480 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489411072
+        },
+        {
+          "at": 347723.0,
+          "stage": "正在流式编码签发内容：已处理 432.4 MiB；临时文件 24.2 MiB；缓存 0.0 / 6.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489411072
+        },
+        {
+          "at": 347725.078,
+          "stage": "编码内容块：5,120/7,481；复用 1,103 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489411072
+        },
+        {
+          "at": 347727.156,
+          "stage": "正在流式编码签发内容：已处理 533.4 MiB；临时文件 27.6 MiB；缓存 0.0 / 6.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489443840
+        },
+        {
+          "at": 347729.234,
+          "stage": "编码内容块：5,728/7,481；复用 1,358 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489456128
+        },
+        {
+          "at": 347731.312,
+          "stage": "编码内容块：5,888/7,481；复用 1,411 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489456128
+        },
+        {
+          "at": 347733.39,
+          "stage": "编码内容块：6,048/7,481；复用 1,438 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489456128
+        },
+        {
+          "at": 347735.468,
+          "stage": "编码内容块：6,176/7,481；复用 1,466 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489456128
+        },
+        {
+          "at": 347737.546,
+          "stage": "编码内容块：6,336/7,481；复用 1,519 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489460224
+        },
+        {
+          "at": 347739.625,
+          "stage": "编码内容块：6,496/7,481；复用 1,546 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489456128
+        },
+        {
+          "at": 347741.703,
+          "stage": "编码内容块：6,656/7,481；复用 1,600 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492249600,
+          "worker_working_bytes": 3489452032
+        },
+        {
+          "at": 347743.781,
+          "stage": "编码内容块：6,816/7,481；复用 1,627 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492184064,
+          "worker_working_bytes": 3489419264
+        },
+        {
+          "at": 347745.859,
+          "stage": "编码内容块：6,976/7,481；复用 1,681 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492184064,
+          "worker_working_bytes": 3489419264
+        },
+        {
+          "at": 347747.937,
+          "stage": "正在流式编码签发内容：已处理 955.9 MiB；临时文件 79.0 MiB；缓存 0.0 / 6.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492184064,
+          "worker_working_bytes": 3489415168
+        },
+        {
+          "at": 347750.015,
+          "stage": "正在流式编码签发内容：已处理 996.4 MiB；临时文件 83.9 MiB；缓存 0.0 / 6.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3492184064,
+          "worker_working_bytes": 3489415168
+        },
+        {
+          "at": 347752.093,
+          "stage": "门店 2/17 · SYN002 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3498934272,
+          "worker_working_bytes": 3495309312
+        },
+        {
+          "at": 347754.171,
+          "stage": "门店 4/17 · SYN004 · 编码内容块：32/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3499712512,
+          "worker_working_bytes": 3496964096
+        },
+        {
+          "at": 347756.25,
+          "stage": "门店 5/17 · SYN005 · 快照编码完成：192 块，新增 177 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3499712512,
+          "worker_working_bytes": 3496964096
+        },
+        {
+          "at": 347758.328,
+          "stage": "门店 7/17 · SYN007 · 编码内容块：128/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3500093440,
+          "worker_working_bytes": 3497345024
+        },
+        {
+          "at": 347760.406,
+          "stage": "门店 9/17 · SYN009 · 编码内容块：128/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3500093440,
+          "worker_working_bytes": 3497345024
+        },
+        {
+          "at": 347762.484,
+          "stage": "门店 11/17 · SYN011 · 编码内容块：128/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3501146112,
+          "worker_working_bytes": 3497607168
+        },
+        {
+          "at": 347764.562,
+          "stage": "门店 13/17 · SYN013 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3501535232,
+          "worker_working_bytes": 3498205184
+        },
+        {
+          "at": 347766.64,
+          "stage": "门店 15/17 · SYN015 · 编码内容块：96/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3501535232,
+          "worker_working_bytes": 3498459136
+        },
+        {
+          "at": 347768.718,
+          "stage": "门店 17/17 · SYN017 · 编码内容块：32/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3501535232,
+          "worker_working_bytes": 3498655744
+        },
+        {
+          "at": 347770.796,
+          "stage": "编码内容块：128/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3502563328,
+          "worker_working_bytes": 3499802624
+        },
+        {
+          "at": 347772.875,
+          "stage": "编码内容块：32/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3503988736,
+          "worker_working_bytes": 3500339200
+        },
+        {
+          "at": 347774.953,
+          "stage": "快照编码完成：192 块，新增 177 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3506479104,
+          "worker_working_bytes": 3503063040
+        },
+        {
+          "at": 347777.031,
+          "stage": "编码内容块：128/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3504373760,
+          "worker_working_bytes": 3501027328
+        },
+        {
+          "at": 347779.109,
+          "stage": "编码内容块：32/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3504373760,
+          "worker_working_bytes": 3501223936
+        },
+        {
+          "at": 347781.187,
+          "stage": "编码内容块：128/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3504373760,
+          "worker_working_bytes": 3501350912
+        },
+        {
+          "at": 347783.265,
+          "stage": "编码内容块：96/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3504373760,
+          "worker_working_bytes": 3501613056
+        },
+        {
+          "at": 347785.343,
+          "stage": "快照编码完成：192 块，新增 177 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3505426432,
+          "worker_working_bytes": 3501629440
+        },
+        {
+          "at": 347787.421,
+          "stage": "编码内容块：128/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3505426432,
+          "worker_working_bytes": 3501809664
+        },
+        {
+          "at": 347789.5,
+          "stage": "编码内容块：32/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3505426432,
+          "worker_working_bytes": 3502002176
+        },
+        {
+          "at": 347791.578,
+          "stage": "编码内容块：128/192；复用 0 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3505815552,
+          "worker_working_bytes": 3502485504
+        },
+        {
+          "at": 347793.656,
+          "stage": "签发资源自适应：资源紧张；临时内存预算 8.0 MiB；编码缓存上限 4.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3514109952,
+          "worker_working_bytes": 3510714368
+        },
+        {
+          "at": 347795.734,
+          "stage": "签发资源自适应：资源紧张；临时内存预算 8.0 MiB；编码缓存上限 4.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3515162624,
+          "worker_working_bytes": 3512369152
+        },
+        {
+          "at": 347797.812,
+          "stage": "签发资源自适应：资源紧张；临时内存预算 8.0 MiB；编码缓存上限 4.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3518316544,
+          "worker_working_bytes": 3514486784
+        },
+        {
+          "at": 347799.89,
+          "stage": "签发资源自适应：资源紧张；临时内存预算 8.0 MiB；编码缓存上限 4.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3516211200,
+          "worker_working_bytes": 3512385536
+        },
+        {
+          "at": 347801.968,
+          "stage": "签发资源自适应：资源紧张；临时内存预算 8.0 MiB；编码缓存上限 4.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3516211200,
+          "worker_working_bytes": 3512385536
+        },
+        {
+          "at": 347804.046,
+          "stage": "签发资源自适应：资源紧张；临时内存预算 8.0 MiB；编码缓存上限 4.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3518316544,
+          "worker_working_bytes": 3514494976
+        },
+        {
+          "at": 347806.125,
+          "stage": "签发资源自适应：资源紧张；临时内存预算 8.0 MiB；编码缓存上限 4.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3516211200,
+          "worker_working_bytes": 3512401920
+        },
+        {
+          "at": 347808.203,
+          "stage": "签发资源自适应：资源紧张；临时内存预算 8.0 MiB；编码缓存上限 4.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3516211200,
+          "worker_working_bytes": 3512418304
+        },
+        {
+          "at": 347810.281,
+          "stage": "签发资源自适应：资源紧张；临时内存预算 8.0 MiB；编码缓存上限 4.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3518316544,
+          "worker_working_bytes": 3514519552
+        },
+        {
+          "at": 347812.359,
+          "stage": "签发资源自适应：资源紧张；临时内存预算 8.0 MiB；编码缓存上限 4.0 MiB",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 3516211200,
+          "worker_working_bytes": 3512500224
+        },
+        {
+          "at": 347814.437,
+          "stage": "核对已提交签发记录：SYN017",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 2100842496,
+          "worker_working_bytes": 2107564032
+        },
+        {
+          "at": 347816.515,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 343711744,
+          "worker_working_bytes": 349261824
+        },
+        {
+          "at": 347818.593,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：已写 12,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 355143680,
+          "worker_working_bytes": 360620032
+        },
+        {
+          "at": 347820.671,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 365649920,
+          "worker_working_bytes": 371675136
+        },
+        {
+          "at": 347822.75,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 427839488,
+          "worker_working_bytes": 438218752
+        },
+        {
+          "at": 347824.828,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：已写 5,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 366927872,
+          "worker_working_bytes": 376893440
+        },
+        {
+          "at": 347826.906,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：已写 19,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 361676800,
+          "worker_working_bytes": 371646464
+        },
+        {
+          "at": 347828.984,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 361676800,
+          "worker_working_bytes": 371654656
+        },
+        {
+          "at": 347831.062,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 361549824,
+          "worker_working_bytes": 371232768
+        },
+        {
+          "at": 347833.14,
+          "stage": "文件 3/17 · 合成门店SYN003 · 河北仓 · 中心仓动销补货清单：已写 11,500 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 351637504,
+          "worker_working_bytes": 361443328
+        },
+        {
+          "at": 347835.218,
+          "stage": "文件 3/17 · 合成门店SYN003 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362143744,
+          "worker_working_bytes": 371929088
+        },
+        {
+          "at": 347837.296,
+          "stage": "读取并校验内容块：32 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 366075904,
+          "worker_working_bytes": 366731264
+        },
+        {
+          "at": 347839.375,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 中心仓动销补货清单：已写 5,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 368111616,
+          "worker_working_bytes": 377118720
+        },
+        {
+          "at": 347841.453,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 中心仓动销补货清单：已写 17,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362848256,
+          "worker_working_bytes": 371871744
+        },
+        {
+          "at": 347843.531,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362848256,
+          "worker_working_bytes": 371871744
+        },
+        {
+          "at": 347845.609,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 361205760,
+          "worker_working_bytes": 369909760
+        },
+        {
+          "at": 347847.687,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 中心仓动销补货清单：已写 9,500 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 351526912,
+          "worker_working_bytes": 360378368
+        },
+        {
+          "at": 347849.781,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362033152,
+          "worker_working_bytes": 370872320
+        },
+        {
+          "at": 347851.859,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362033152,
+          "worker_working_bytes": 370872320
+        },
+        {
+          "at": 347853.937,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 中心仓动销补货清单：已写 2,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 364335104,
+          "worker_working_bytes": 373813248
+        },
+        {
+          "at": 347856.015,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 中心仓动销补货清单：已写 14,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 351195136,
+          "worker_working_bytes": 360742912
+        },
+        {
+          "at": 347858.093,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 361701376,
+          "worker_working_bytes": 371236864
+        },
+        {
+          "at": 347860.171,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 448188416,
+          "worker_working_bytes": 456986624
+        },
+        {
+          "at": 347862.25,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 中心仓动销补货清单：已写 6,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 346787840,
+          "worker_working_bytes": 356110336
+        },
+        {
+          "at": 347864.328,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 中心仓动销补货清单：已写 19,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362541056,
+          "worker_working_bytes": 371838976
+        },
+        {
+          "at": 347866.406,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362541056,
+          "worker_working_bytes": 371838976
+        },
+        {
+          "at": 347868.484,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 361799680,
+          "worker_working_bytes": 371343360
+        },
+        {
+          "at": 347870.562,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 中心仓动销补货清单：已写 11,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 351887360,
+          "worker_working_bytes": 361594880
+        },
+        {
+          "at": 347872.64,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362393600,
+          "worker_working_bytes": 372105216
+        },
+        {
+          "at": 347874.718,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362393600,
+          "worker_working_bytes": 372150272
+        },
+        {
+          "at": 347876.796,
+          "stage": "文件 9/17 · 合成门店SYN009 · 河北仓 · 中心仓动销补货清单：已写 4,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 368926720,
+          "worker_working_bytes": 377737216
+        },
+        {
+          "at": 347878.875,
+          "stage": "文件 9/17 · 合成门店SYN009 · 河北仓 · 中心仓动销补货清单：已写 16,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 353157120,
+          "worker_working_bytes": 362004480
+        },
+        {
+          "at": 347880.953,
+          "stage": "文件 9/17 · 合成门店SYN009 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363663360,
+          "worker_working_bytes": 372756480
+        },
+        {
+          "at": 347883.031,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362541056,
+          "worker_working_bytes": 371781632
+        },
+        {
+          "at": 347885.109,
+          "stage": "文件 10/17 · 合成门店SYN010 · 山东仓 · 中心仓动销补货清单：已写 8,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 352665600,
+          "worker_working_bytes": 362184704
+        },
+        {
+          "at": 347887.187,
+          "stage": "文件 10/17 · 合成门店SYN010 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 366542848,
+          "worker_working_bytes": 376033280
+        },
+        {
+          "at": 347889.265,
+          "stage": "文件 10/17 · 合成门店SYN010 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363171840,
+          "worker_working_bytes": 372670464
+        },
+        {
+          "at": 347891.343,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 中心仓动销补货清单：已写 0 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363196416,
+          "worker_working_bytes": 372486144
+        },
+        {
+          "at": 347893.421,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 中心仓动销补货清单：已写 12,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 352690176,
+          "worker_working_bytes": 362000384
+        },
+        {
+          "at": 347895.5,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363196416,
+          "worker_working_bytes": 372494336
+        },
+        {
+          "at": 347897.578,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 425570304,
+          "worker_working_bytes": 436129792
+        },
+        {
+          "at": 347899.656,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 中心仓动销补货清单：已写 5,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 368783360,
+          "worker_working_bytes": 378363904
+        },
+        {
+          "at": 347901.734,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 中心仓动销补货清单：已写 17,500 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363520000,
+          "worker_working_bytes": 373116928
+        },
+        {
+          "at": 347903.812,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363520000,
+          "worker_working_bytes": 373149696
+        },
+        {
+          "at": 347905.89,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 362471424,
+          "worker_working_bytes": 371929088
+        },
+        {
+          "at": 347907.968,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 中心仓动销补货清单：已写 9,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 352796672,
+          "worker_working_bytes": 362278912
+        },
+        {
+          "at": 347910.046,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363302912,
+          "worker_working_bytes": 372764672
+        },
+        {
+          "at": 347912.656,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 355352576,
+          "worker_working_bytes": 365985792
+        },
+        {
+          "at": 347914.75,
+          "stage": "文件 14/17 · 合成门店SYN014 · 山东仓 · 中心仓动销补货清单：已写 5,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 368934912,
+          "worker_working_bytes": 378036224
+        },
+        {
+          "at": 347916.828,
+          "stage": "文件 14/17 · 合成门店SYN014 · 山东仓 · 中心仓动销补货清单：已写 16,500 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363671552,
+          "worker_working_bytes": 372789248
+        },
+        {
+          "at": 347918.906,
+          "stage": "文件 14/17 · 合成门店SYN014 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363671552,
+          "worker_working_bytes": 372789248
+        },
+        {
+          "at": 347920.984,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363118592,
+          "worker_working_bytes": 372281344
+        },
+        {
+          "at": 347923.062,
+          "stage": "文件 15/17 · 合成门店SYN015 · 河北仓 · 中心仓动销补货清单：已写 8,500 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 353206272,
+          "worker_working_bytes": 362610688
+        },
+        {
+          "at": 347925.14,
+          "stage": "文件 15/17 · 合成门店SYN015 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 367083520,
+          "worker_working_bytes": 376459264
+        },
+        {
+          "at": 347927.218,
+          "stage": "文件 15/17 · 合成门店SYN015 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363712512,
+          "worker_working_bytes": 373096448
+        },
+        {
+          "at": 347929.296,
+          "stage": "写出确认单 16/17 · 山东仓…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 363220992,
+          "worker_working_bytes": 372957184
+        },
+        {
+          "at": 347931.375,
+          "stage": "文件 16/17 · 合成门店SYN016 · 山东仓 · 中心仓动销补货清单：已写 12,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 353554432,
+          "worker_working_bytes": 363311104
+        },
+        {
+          "at": 347933.453,
+          "stage": "文件 16/17 · 合成门店SYN016 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 364060672,
+          "worker_working_bytes": 373825536
+        },
+        {
+          "at": 347935.546,
+          "stage": "读取并校验内容块：32 块",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 347168768,
+          "worker_working_bytes": 356696064
+        },
+        {
+          "at": 347937.609,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 中心仓动销补货清单：已写 5,000 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 369537024,
+          "worker_working_bytes": 378830848
+        },
+        {
+          "at": 347939.687,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 中心仓动销补货清单：已写 15,500 / 20,000 行",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 353767424,
+          "worker_working_bytes": 363098112
+        },
+        {
+          "at": 347941.765,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 50112,
+          "committing": false,
+          "worker_private_bytes": 364273664,
+          "worker_working_bytes": 373596160
+        }
+      ],
+      "resource_profile": "tight",
+      "resource_pressure_events": [
+        {
+          "stage": "encoding-tight",
+          "pid": 50112,
+          "at": 347698.937,
+          "limit_mib": 3458,
+          "monotonic": 347698.937,
+          "working_bytes": 3488415744,
+          "peak_working_bytes": 3593125888,
+          "private_bytes": 3492278272,
+          "peak_private_bytes": 3597324288,
+          "commit_total_bytes": 31356428288,
+          "commit_limit_bytes": 53452070912,
+          "commit_peak_bytes": 65395798016,
+          "physical_total_bytes": 34124718080,
+          "physical_available_bytes": 11996356608
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "passed": true,
+      "phase": "reopen",
+      "frozen_exe": true,
+      "version": {
+        "app": "补货助手",
+        "version": "0.54.4",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_commit_kind": "workspace_snapshot_not_git_commit",
+        "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+        "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_archive_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_manifest_sha256": "97dd6421460a5d825363c8915a833a6c4ff2970a9088861246a11810a2d070d3",
+        "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+        "working_tree_files_sha256": {
+          "README.md": "2211829d6ea5a21632c96294becdccc449cc9ecf38f0bfe63132a72601fd28e6",
+          "components/aoxiang/src/bound-browser.mjs": "b1c353ff04f325896fa61fde67b9ce39deb3916745b9f486b76eae255943fe4d",
+          "components/aoxiang/src/browser-worker.mjs": "c2635145d7c88919fa77af11bcfd3e43eecd0bfdcf980e9749b51977a301a724",
+          "components/aoxiang/src/purchase-create-ui.mjs": "0f0fc9ffa7a23c7dc5b75ec9b3198e7f938fbccec1518650bc9805eb1f7b705e",
+          "components/aoxiang/src/purchase-guard-ipc.mjs": "97bee8f44440cf9588b5b127ac3cc1f8905a53c0528cf3dbbdf7665aae35e111",
+          "components/aoxiang/src/worker-client.mjs": "c1352eed7727378d4fc2e6d3413c513a1a6d95f925040d1228323bba9a8b61e9",
+          "components/aoxiang/test/purchase-guard-ipc.test.mjs": "c552d15bec1730f24780f139f037a69c6aff4bee18c35e652445ef6193f8bb96",
+          "components/aoxiang/test/purchase-guard-worker.fixture.mjs": "35f339c347a4d340aaa1eaf04aba197c3867fca590af883662e654c8de615063",
+          "docs/handoffs/20261116_资源自适应与采购核验_暂停.md": "5ee86a3ea55e4b671fb5dc6d3ea40766e85b8698e1b1caade919363e6610488d",
+          "releases/0.54.3/rc1/actual-exe.json": "11815758f75d77ff0a500ea14ccfc692f813e6cab34c517b8f318101f958b1de",
+          "releases/0.54.3/rc1/artifacts.json": "3ce5696dbc87ce4c0930b019cc40464ffcfc1f8a3de7241efb8f3f0509eb969c",
+          "releases/0.54.3/rc1/build_info.json": "a1143f88cabe67884dc20dcd3680a3a6099f5ff1a4d4d0c3a81ff7c910e8efc9",
+          "releases/0.54.3/rc1/business-invariants.json": "c813d81566871e6307471d38dd091d7a917f45fbf14fd6673fef504e5f079b17",
+          "releases/0.54.3/rc1/cancel-during-encoding.png": "3e52a2208f5bf0b9458732aa0e4bd9a2330192d9bd66f3678f2129319f58ee48",
+          "releases/0.54.3/rc1/capped-outcome.json": "013a0ab40d5734996a7a4402fec324820440f6b15e3b26af12c79df0a08cbd91",
+          "releases/0.54.3/rc1/completed-full.png": "726e11d5faf50e85e24ecf4bc48957d625ef16fe182eabfa1868f8a7d1ec1435",
+          "releases/0.54.3/rc1/completed-reopen.png": "e141d33788e5faec8740c774a965d7f7ca450c751f1f10427426968999173699",
+          "releases/0.54.3/rc1/failure-evidence.json": "f5383a93a75173a0c356c3309f68c8030baea88bc8af2d90b806de77f29c480f",
+          "releases/0.54.3/rc1/initial-state.json": "8390e179fc3f3720aaefc7e0e7b03edec78a687d70f26bb7c9322bdf8613fadb",
+          "releases/0.54.3/rc1/message-failure.png": "7016968ba86b66bc6b49a9112772e39f3184fa94f3a972fdbd6b02a006466a89",
+          "releases/0.54.3/rc1/metrics.json": "64b3740f8507d23ba64867d29771e154240a68c4d2348d5f78a3605d2b240b96",
+          "releases/0.54.3/rc1/performance-memory.json": "6410651247d676a899b89d41a4c9e9265e296979d321d7109726caf3aff02f59",
+          "releases/0.54.3/rc1/regression.json": "a679acad379884acaa9356327b47a877a5f7b35bda7c17e798f367cede6c888d",
+          "releases/0.54.3/rc1/source-manifest.json": "2dddb2be1c4169eb8fe3e25b0062d9ab2de071ed6cf1fd37f6bc17458972db54",
+          "releases/0.54.3/rc1/test-environment.json": "d0b085e29e7d1066bccee88374114942386b058019a123b19c407a849007601e",
+          "releases/0.54.3/rc1/workspace_snapshot_builder.py": "c13b6b08aad2b771db09e1f36b74fecdb16fb2dbc997414b425754047ab4fbb0",
+          "releases/0.54.3/rc1/交付报告.md": "c3ce7cd7b6945d3d81df4ea77fd3d6675f6ef7d71c010e2c923e71512bf7e811",
+          "src/adaptive_resources.py": "de597e03706c0cfbc0eea4f630219d127c186ce61aff1709140ab898f9ac20b6",
+          "src/analytics_lifecycle_scope.py": "abd6ba71fef98ef32fe5dfc0823a2fc723e6920bb2ee4c6baa34c66a5cc30df3",
+          "src/analytics_template_export.py": "b33e013f1dc5bb2e98365be5fa0963e2e96b2a2e910c1847521bc04f126a9896",
+          "src/app.py": "f5cd26856e69d95d71ae0d4301f34664f60b8b6c549bc06914375ed969d09539",
+          "src/archive_batch.py": "904a781231426fac686b0ff8dbb2120da7e3b1b0ec0f7681f95765d775b73a94",
+          "src/archive_exports.py": "74cb68f0322e63598aaf6fb8da0299b9d2fa64ac6d65d52f07cb7e50129246d0",
+          "src/automation_protocol.py": "6e9366e828e8acb9101dccc41b93fe3be2fbae65010e816cbd0b923af4b4079f",
+          "src/encoding_store.py": "8208cd040073e2489237ed8a63f231ee06c2c68f29219bfed8b523919185b921",
+          "src/normal_delivery.py": "ee4625b52576c45f522805345c77faf7f7bd8fdb1814421a95a757dd0a10cdbf",
+          "src/normal_exports.py": "a49419d40ff1c36e14cc68fe90d202187f5ce7f3234faa9c3d244c33843843ee",
+          "src/normal_orders.py": "61ded571282025884c33f48f9ffe86cd1cf5f811e782cbbe2d1f9fb112846983",
+          "src/order_analytics.py": "fcaecd13b27840679278495ba45da35f27405d78441bb204bcdf641b9a7017b0",
+          "src/order_analytics_ui.py": "2b3c3827c20c1fbb0bc9796c7f26990a0e683b46fc99c794a90b201b958a6a9a",
+          "src/order_identity.py": "a94020864814d8230056da689c33b65f0fbbfb0c71165410e11e4e38bf195970",
+          "src/resource_pressure_probe.py": "c31bd768f94450a62d86fd5d245879e6a39a7b516cb1755f2341a9c983badf9f",
+          "src/signing_memory_fixture.py": "fd4ab5bd7ad48fb21ddbc90f5421a96b4376124af57a4973a6ab7c8f0c51a66a",
+          "src/signing_memory_smoke.py": "bef55112d43d759c2e302af60bb6a64e442e9216f57f6f47a9fb5516749e5e4d",
+          "src/storage_chunks.py": "e4d4197d4cfef6c6b296f7d9bbf53edacaf8f298737f031822d3a1c5a386f4f1",
+          "src/ui_work_io.py": "629be6c2d6f9604b8de6a22cc4f5b650d22e48c110000530a3218c18c6c8d224",
+          "src/version.json": "77d990397901cc219b3380c98af9e32c649a569d977e1fe628bbca018c6db14f",
+          "src/warehouse_execution.py": "bfc361ca1c3d3792c00525130d881233c2feb4e00924b5da629df3e8acb45360",
+          "src/work_failures.py": "e27e2a3f190cd969760c93ce2ef8154197794632e822f55353a7f44519daf0ca",
+          "src/work_io_process.py": "7d2bfc22af037082a34a2f9eab4d9d38e91aed32acb8cc97f6c7c6a9e53272e8",
+          "src/work_memory.py": "d335504509ad580ff3af3b335f13fac58c7c84cc1681e461d8203440cb555779",
+          "src/work_repository.py": "bb267cf9b7e2cba4bb4b5bd2d8c39d05938ab417d3101f2ec5280b62dbf5f55a",
+          "tests/test_adaptive_resources.py": "d0289ff1d63f9cfd490eea8c5fed2818bc24c76376732445b3a5f3e4d945e39d",
+          "tests/test_analytics_lifecycle_scope.py": "7b796cf1c068752e264c33fa93680f7c14151f7b0d34ab1c74790666b025a37e",
+          "tests/test_order_analytics_ui.py": "fc6d83e9f0b364c3488aa3f6420394362e24cb8fba274bf121f7fe0eb31ef2c5",
+          "tests/test_signing_failures.py": "c8e44f07ed5169a9073c68be00980aadfd7678476aa6ab43ec2db856e870ee20",
+          "tests/test_signing_memory.py": "2eb372c92ef76b2d1cae16e9aca23cfa44769e3cc0e255ec5f1db58bd6c017ff",
+          "tools/benchmark_adaptive_resources.py": "3d9f744751f2be97b8dfdd43c931ee12a261cc650c5f0f019a597ecf2eb9d85a",
+          "tools/benchmark_signing_memory.py": "9df1c10c59f534b3e10dab5af79702ac7298a15845c81466ec1d6b4c4bdc1549",
+          "tools/verify_signing_memory.py": "ea98a324f5de32a46724d2f44c938ecfe814f762841f2ab78907d8f8e900aa86"
+        },
+        "build_id": "rc3",
+        "built_at": "2026-11-16T20:44:52.457828+08:00",
+        "git_mutated": false,
+        "aoxiang": {
+          "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+          "files": 876,
+          "manifest_sha256": "5e5da29fb71b43077a21a16833d1f038038b480fb259167f1d70eed51fd1219c",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc"
+        },
+        "jst_catalog": {
+          "manifest_sha256": "4e2df9e0552923b2a5ed9e2a9fbdaa4cbb42f21ee7e43c504d4c9d2d4a1a995b",
+          "files": 11,
+          "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+          "contains_user_state": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc"
+        },
+        "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+      },
+      "checks": [
+        "默认计算并发仍为2，未降低并发",
+        "实际EXE重新打开后全部签发仍存在",
+        "重开订单库完整性通过",
+        "独立仓单数量保持",
+        "完整草稿摘要保持",
+        "全部实际导出文件保留"
+      ],
+      "dialogs": [],
+      "screenshots": [
+        "completed-reopen.png"
+      ],
+      "live_platform": false,
+      "progress": [],
+      "resource_profile": "tight",
+      "resource_pressure_events": [],
+      "exit_code": 0
+    },
+    {
+      "passed": true,
+      "phase": "full",
+      "frozen_exe": true,
+      "version": {
+        "app": "补货助手",
+        "version": "0.54.4",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_commit_kind": "workspace_snapshot_not_git_commit",
+        "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+        "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_archive_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_manifest_sha256": "97dd6421460a5d825363c8915a833a6c4ff2970a9088861246a11810a2d070d3",
+        "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+        "working_tree_files_sha256": {
+          "README.md": "2211829d6ea5a21632c96294becdccc449cc9ecf38f0bfe63132a72601fd28e6",
+          "components/aoxiang/src/bound-browser.mjs": "b1c353ff04f325896fa61fde67b9ce39deb3916745b9f486b76eae255943fe4d",
+          "components/aoxiang/src/browser-worker.mjs": "c2635145d7c88919fa77af11bcfd3e43eecd0bfdcf980e9749b51977a301a724",
+          "components/aoxiang/src/purchase-create-ui.mjs": "0f0fc9ffa7a23c7dc5b75ec9b3198e7f938fbccec1518650bc9805eb1f7b705e",
+          "components/aoxiang/src/purchase-guard-ipc.mjs": "97bee8f44440cf9588b5b127ac3cc1f8905a53c0528cf3dbbdf7665aae35e111",
+          "components/aoxiang/src/worker-client.mjs": "c1352eed7727378d4fc2e6d3413c513a1a6d95f925040d1228323bba9a8b61e9",
+          "components/aoxiang/test/purchase-guard-ipc.test.mjs": "c552d15bec1730f24780f139f037a69c6aff4bee18c35e652445ef6193f8bb96",
+          "components/aoxiang/test/purchase-guard-worker.fixture.mjs": "35f339c347a4d340aaa1eaf04aba197c3867fca590af883662e654c8de615063",
+          "docs/handoffs/20261116_资源自适应与采购核验_暂停.md": "5ee86a3ea55e4b671fb5dc6d3ea40766e85b8698e1b1caade919363e6610488d",
+          "releases/0.54.3/rc1/actual-exe.json": "11815758f75d77ff0a500ea14ccfc692f813e6cab34c517b8f318101f958b1de",
+          "releases/0.54.3/rc1/artifacts.json": "3ce5696dbc87ce4c0930b019cc40464ffcfc1f8a3de7241efb8f3f0509eb969c",
+          "releases/0.54.3/rc1/build_info.json": "a1143f88cabe67884dc20dcd3680a3a6099f5ff1a4d4d0c3a81ff7c910e8efc9",
+          "releases/0.54.3/rc1/business-invariants.json": "c813d81566871e6307471d38dd091d7a917f45fbf14fd6673fef504e5f079b17",
+          "releases/0.54.3/rc1/cancel-during-encoding.png": "3e52a2208f5bf0b9458732aa0e4bd9a2330192d9bd66f3678f2129319f58ee48",
+          "releases/0.54.3/rc1/capped-outcome.json": "013a0ab40d5734996a7a4402fec324820440f6b15e3b26af12c79df0a08cbd91",
+          "releases/0.54.3/rc1/completed-full.png": "726e11d5faf50e85e24ecf4bc48957d625ef16fe182eabfa1868f8a7d1ec1435",
+          "releases/0.54.3/rc1/completed-reopen.png": "e141d33788e5faec8740c774a965d7f7ca450c751f1f10427426968999173699",
+          "releases/0.54.3/rc1/failure-evidence.json": "f5383a93a75173a0c356c3309f68c8030baea88bc8af2d90b806de77f29c480f",
+          "releases/0.54.3/rc1/initial-state.json": "8390e179fc3f3720aaefc7e0e7b03edec78a687d70f26bb7c9322bdf8613fadb",
+          "releases/0.54.3/rc1/message-failure.png": "7016968ba86b66bc6b49a9112772e39f3184fa94f3a972fdbd6b02a006466a89",
+          "releases/0.54.3/rc1/metrics.json": "64b3740f8507d23ba64867d29771e154240a68c4d2348d5f78a3605d2b240b96",
+          "releases/0.54.3/rc1/performance-memory.json": "6410651247d676a899b89d41a4c9e9265e296979d321d7109726caf3aff02f59",
+          "releases/0.54.3/rc1/regression.json": "a679acad379884acaa9356327b47a877a5f7b35bda7c17e798f367cede6c888d",
+          "releases/0.54.3/rc1/source-manifest.json": "2dddb2be1c4169eb8fe3e25b0062d9ab2de071ed6cf1fd37f6bc17458972db54",
+          "releases/0.54.3/rc1/test-environment.json": "d0b085e29e7d1066bccee88374114942386b058019a123b19c407a849007601e",
+          "releases/0.54.3/rc1/workspace_snapshot_builder.py": "c13b6b08aad2b771db09e1f36b74fecdb16fb2dbc997414b425754047ab4fbb0",
+          "releases/0.54.3/rc1/交付报告.md": "c3ce7cd7b6945d3d81df4ea77fd3d6675f6ef7d71c010e2c923e71512bf7e811",
+          "src/adaptive_resources.py": "de597e03706c0cfbc0eea4f630219d127c186ce61aff1709140ab898f9ac20b6",
+          "src/analytics_lifecycle_scope.py": "abd6ba71fef98ef32fe5dfc0823a2fc723e6920bb2ee4c6baa34c66a5cc30df3",
+          "src/analytics_template_export.py": "b33e013f1dc5bb2e98365be5fa0963e2e96b2a2e910c1847521bc04f126a9896",
+          "src/app.py": "f5cd26856e69d95d71ae0d4301f34664f60b8b6c549bc06914375ed969d09539",
+          "src/archive_batch.py": "904a781231426fac686b0ff8dbb2120da7e3b1b0ec0f7681f95765d775b73a94",
+          "src/archive_exports.py": "74cb68f0322e63598aaf6fb8da0299b9d2fa64ac6d65d52f07cb7e50129246d0",
+          "src/automation_protocol.py": "6e9366e828e8acb9101dccc41b93fe3be2fbae65010e816cbd0b923af4b4079f",
+          "src/encoding_store.py": "8208cd040073e2489237ed8a63f231ee06c2c68f29219bfed8b523919185b921",
+          "src/normal_delivery.py": "ee4625b52576c45f522805345c77faf7f7bd8fdb1814421a95a757dd0a10cdbf",
+          "src/normal_exports.py": "a49419d40ff1c36e14cc68fe90d202187f5ce7f3234faa9c3d244c33843843ee",
+          "src/normal_orders.py": "61ded571282025884c33f48f9ffe86cd1cf5f811e782cbbe2d1f9fb112846983",
+          "src/order_analytics.py": "fcaecd13b27840679278495ba45da35f27405d78441bb204bcdf641b9a7017b0",
+          "src/order_analytics_ui.py": "2b3c3827c20c1fbb0bc9796c7f26990a0e683b46fc99c794a90b201b958a6a9a",
+          "src/order_identity.py": "a94020864814d8230056da689c33b65f0fbbfb0c71165410e11e4e38bf195970",
+          "src/resource_pressure_probe.py": "c31bd768f94450a62d86fd5d245879e6a39a7b516cb1755f2341a9c983badf9f",
+          "src/signing_memory_fixture.py": "fd4ab5bd7ad48fb21ddbc90f5421a96b4376124af57a4973a6ab7c8f0c51a66a",
+          "src/signing_memory_smoke.py": "bef55112d43d759c2e302af60bb6a64e442e9216f57f6f47a9fb5516749e5e4d",
+          "src/storage_chunks.py": "e4d4197d4cfef6c6b296f7d9bbf53edacaf8f298737f031822d3a1c5a386f4f1",
+          "src/ui_work_io.py": "629be6c2d6f9604b8de6a22cc4f5b650d22e48c110000530a3218c18c6c8d224",
+          "src/version.json": "77d990397901cc219b3380c98af9e32c649a569d977e1fe628bbca018c6db14f",
+          "src/warehouse_execution.py": "bfc361ca1c3d3792c00525130d881233c2feb4e00924b5da629df3e8acb45360",
+          "src/work_failures.py": "e27e2a3f190cd969760c93ce2ef8154197794632e822f55353a7f44519daf0ca",
+          "src/work_io_process.py": "7d2bfc22af037082a34a2f9eab4d9d38e91aed32acb8cc97f6c7c6a9e53272e8",
+          "src/work_memory.py": "d335504509ad580ff3af3b335f13fac58c7c84cc1681e461d8203440cb555779",
+          "src/work_repository.py": "bb267cf9b7e2cba4bb4b5bd2d8c39d05938ab417d3101f2ec5280b62dbf5f55a",
+          "tests/test_adaptive_resources.py": "d0289ff1d63f9cfd490eea8c5fed2818bc24c76376732445b3a5f3e4d945e39d",
+          "tests/test_analytics_lifecycle_scope.py": "7b796cf1c068752e264c33fa93680f7c14151f7b0d34ab1c74790666b025a37e",
+          "tests/test_order_analytics_ui.py": "fc6d83e9f0b364c3488aa3f6420394362e24cb8fba274bf121f7fe0eb31ef2c5",
+          "tests/test_signing_failures.py": "c8e44f07ed5169a9073c68be00980aadfd7678476aa6ab43ec2db856e870ee20",
+          "tests/test_signing_memory.py": "2eb372c92ef76b2d1cae16e9aca23cfa44769e3cc0e255ec5f1db58bd6c017ff",
+          "tools/benchmark_adaptive_resources.py": "3d9f744751f2be97b8dfdd43c931ee12a261cc650c5f0f019a597ecf2eb9d85a",
+          "tools/benchmark_signing_memory.py": "9df1c10c59f534b3e10dab5af79702ac7298a15845c81466ec1d6b4c4bdc1549",
+          "tools/verify_signing_memory.py": "ea98a324f5de32a46724d2f44c938ecfe814f762841f2ab78907d8f8e900aa86"
+        },
+        "build_id": "rc3",
+        "built_at": "2026-11-16T20:44:52.457828+08:00",
+        "git_mutated": false,
+        "aoxiang": {
+          "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+          "files": 876,
+          "manifest_sha256": "5e5da29fb71b43077a21a16833d1f038038b480fb259167f1d70eed51fd1219c",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc"
+        },
+        "jst_catalog": {
+          "manifest_sha256": "4e2df9e0552923b2a5ed9e2a9fbdaa4cbb42f21ee7e43c504d4c9d2d4a1a995b",
+          "files": 11,
+          "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+          "contains_user_state": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc"
+        },
+        "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+      },
+      "checks": [
+        "默认计算并发仍为2，未降低并发",
+        "真实签发并导出动作完成全部父单",
+        "全部仓单已归档，无额外订单",
+        "签发后订单库完整性通过",
+        "SYN017：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN016：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN015：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN014：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN013：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN012：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN011：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN010：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN009：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN008：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN007：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN006：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN005：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN004：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN003：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN002：实际Excel逐行SKU、数量、单价及顺序一致",
+        "SYN001：实际Excel逐行SKU、数量、单价及顺序一致",
+        "成功后编码临时文件已自动关闭",
+        "实际EXE编码期间仅对自有子进程收紧内存预算",
+        "实际EXE编码期间资源释放后继续完成",
+        "实际EXE导出期间中途收紧资源后文件仍完整"
+      ],
+      "dialogs": [],
+      "screenshots": [
+        "selection-success.png",
+        "confirmation-success.png",
+        "result-success.png",
+        "completed-full.png"
+      ],
+      "live_platform": false,
+      "action_seconds": 255.5486742000212,
+      "files": 17,
+      "rows_per_file": 20000,
+      "peaks": {
+        "gui_working_bytes": 2779418624,
+        "gui_private_bytes": 2760867840,
+        "worker_working_bytes": 3607257088,
+        "worker_private_bytes": 3611971584
+      },
+      "progress": [
+        {
+          "at": 347998.828,
+          "stage": "传输本次操作所需数据…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 27197440,
+          "worker_working_bytes": 37392384
+        },
+        {
+          "at": 348000.843,
+          "stage": "正在传输数据：已发送 3,328 个数据块（总量未预扫描）",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 1041973248,
+          "worker_working_bytes": 1042939904
+        },
+        {
+          "at": 348002.921,
+          "stage": "核对门店 5/17：SYN005",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 1638117376,
+          "worker_working_bytes": 1634910208
+        },
+        {
+          "at": 348005.0,
+          "stage": "核对门店 17/17：SYN017",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 1638117376,
+          "worker_working_bytes": 1635016704
+        },
+        {
+          "at": 348007.078,
+          "stage": "核对门店 17/17：SYN017",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 1753350144,
+          "worker_working_bytes": 1751445504
+        },
+        {
+          "at": 348009.156,
+          "stage": "正在传输数据：已发送 2,432 个数据块（总量未预扫描）",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 1971376128,
+          "worker_working_bytes": 1969905664
+        },
+        {
+          "at": 348011.234,
+          "stage": "正在传输数据：已发送 9,856 个数据块（总量未预扫描）",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 2624561152,
+          "worker_working_bytes": 2621603840
+        },
+        {
+          "at": 348013.312,
+          "stage": "正在传输数据：已发送 15,552 个数据块（总量未预扫描）",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3124600832,
+          "worker_working_bytes": 3120492544
+        },
+        {
+          "at": 348015.39,
+          "stage": "签发编码临时位置：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\full\\settings\\.encoding-cache；资源充裕；临时内存预算 256.0 MiB；编码缓存上限 128.0 MiB（不含输入数据）",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491971072,
+          "worker_working_bytes": 3487436800
+        },
+        {
+          "at": 348017.468,
+          "stage": "签发编码临时位置：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\full\\settings\\.encoding-cache；资源充裕；临时内存预算 256.0 MiB；编码缓存上限 128.0 MiB（不含输入数据）",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491971072,
+          "worker_working_bytes": 3487436800
+        },
+        {
+          "at": 348019.546,
+          "stage": "签发编码临时位置：D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\resource_adaptive_0544_20261116_01\\native-exe-03\\full\\settings\\.encoding-cache；资源充裕；临时内存预算 256.0 MiB；编码缓存上限 128.0 MiB（不含输入数据）",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491971072,
+          "worker_working_bytes": 3487436800
+        },
+        {
+          "at": 348021.64,
+          "stage": "编码内容块：320/7,481；复用 17 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491975168,
+          "worker_working_bytes": 3488055296
+        },
+        {
+          "at": 348023.718,
+          "stage": "编码内容块：928/7,481；复用 17 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491975168,
+          "worker_working_bytes": 3488518144
+        },
+        {
+          "at": 348025.796,
+          "stage": "编码内容块：1,568/7,481；复用 17 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491975168,
+          "worker_working_bytes": 3488886784
+        },
+        {
+          "at": 348027.875,
+          "stage": "编码内容块：2,048/7,481；复用 17 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491975168,
+          "worker_working_bytes": 3488911360
+        },
+        {
+          "at": 348029.953,
+          "stage": "编码内容块：2,560/7,481；复用 17 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3488899072
+        },
+        {
+          "at": 348032.031,
+          "stage": "编码内容块：3,296/7,481；复用 187 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3488903168
+        },
+        {
+          "at": 348034.109,
+          "stage": "编码内容块：4,000/7,481；复用 557 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3488903168
+        },
+        {
+          "at": 348036.187,
+          "stage": "编码内容块：4,800/7,481；复用 948 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3488907264
+        },
+        {
+          "at": 348038.265,
+          "stage": "正在流式编码签发内容：已处理 528.8 MiB；临时文件 27.1 MiB；缓存 0.0 / 48.0 MiB",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3488923648
+        },
+        {
+          "at": 348040.343,
+          "stage": "正在流式编码签发内容：已处理 572.9 MiB；临时文件 32.5 MiB；缓存 0.0 / 96.0 MiB",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3488972800
+        },
+        {
+          "at": 348042.421,
+          "stage": "正在流式编码签发内容：已处理 617.0 MiB；临时文件 37.8 MiB；缓存 0.0 / 96.0 MiB",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3488972800
+        },
+        {
+          "at": 348044.5,
+          "stage": "编码内容块：6,048/7,481；复用 1,438 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3489042432
+        },
+        {
+          "at": 348046.578,
+          "stage": "编码内容块：6,240/7,481；复用 1,492 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3489050624
+        },
+        {
+          "at": 348048.656,
+          "stage": "编码内容块：6,400/7,481；复用 1,529 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3489050624
+        },
+        {
+          "at": 348050.734,
+          "stage": "编码内容块：6,560/7,481；复用 1,573 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3489054720
+        },
+        {
+          "at": 348052.812,
+          "stage": "编码内容块：6,752/7,481；复用 1,627 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3489054720
+        },
+        {
+          "at": 348054.89,
+          "stage": "编码内容块：6,912/7,481；复用 1,654 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3489087488
+        },
+        {
+          "at": 348056.968,
+          "stage": "编码内容块：7,104/7,481；复用 1,708 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491938304,
+          "worker_working_bytes": 3489087488
+        },
+        {
+          "at": 348059.046,
+          "stage": "编码内容块：7,264/7,481；复用 1,753 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3491872768,
+          "worker_working_bytes": 3489054720
+        },
+        {
+          "at": 348061.125,
+          "stage": "门店 1/17 · SYN001 · 快照编码完成：192 块，新增 177 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3495616512,
+          "worker_working_bytes": 3492229120
+        },
+        {
+          "at": 348063.203,
+          "stage": "门店 4/17 · SYN004 · 校验门店业务指纹…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3506794496,
+          "worker_working_bytes": 3503046656
+        },
+        {
+          "at": 348065.281,
+          "stage": "门店 6/17 · SYN006 · 校验门店业务指纹…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3515883520,
+          "worker_working_bytes": 3513057280
+        },
+        {
+          "at": 348067.359,
+          "stage": "门店 8/17 · SYN008 · 校验门店业务指纹…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3523895296,
+          "worker_working_bytes": 3521044480
+        },
+        {
+          "at": 348069.437,
+          "stage": "门店 10/17 · SYN010 · 校验门店业务指纹…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3533111296,
+          "worker_working_bytes": 3530178560
+        },
+        {
+          "at": 348071.515,
+          "stage": "门店 12/17 · SYN012 · 校验门店业务指纹…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3542786048,
+          "worker_working_bytes": 3538722816
+        },
+        {
+          "at": 348073.593,
+          "stage": "门店 14/17 · SYN014 · 校验门店业务指纹…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3550666752,
+          "worker_working_bytes": 3547095040
+        },
+        {
+          "at": 348075.671,
+          "stage": "门店 16/17 · SYN016 · 校验门店业务指纹…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3558912000,
+          "worker_working_bytes": 3555414016
+        },
+        {
+          "at": 348077.75,
+          "stage": "准备正常单：17 / 17 家",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3566579712,
+          "worker_working_bytes": 3563433984
+        },
+        {
+          "at": 348079.828,
+          "stage": "编码内容块：128/192；复用 0 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3565547520,
+          "worker_working_bytes": 3562610688
+        },
+        {
+          "at": 348081.906,
+          "stage": "编码内容块：32/192；复用 0 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3567931392,
+          "worker_working_bytes": 3564068864
+        },
+        {
+          "at": 348083.984,
+          "stage": "编码内容块：32/192；复用 0 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3567931392,
+          "worker_working_bytes": 3564199936
+        },
+        {
+          "at": 348086.062,
+          "stage": "快照编码完成：192 块，新增 177 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3567931392,
+          "worker_working_bytes": 3564326912
+        },
+        {
+          "at": 348088.14,
+          "stage": "编码内容块：128/192；复用 0 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3567931392,
+          "worker_working_bytes": 3564523520
+        },
+        {
+          "at": 348090.218,
+          "stage": "编码内容块：32/192；复用 0 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3567931392,
+          "worker_working_bytes": 3564642304
+        },
+        {
+          "at": 348092.296,
+          "stage": "快照编码完成：192 块，新增 177 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3570036736,
+          "worker_working_bytes": 3566948352
+        },
+        {
+          "at": 348094.375,
+          "stage": "快照编码完成：192 块，新增 177 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3568979968,
+          "worker_working_bytes": 3565019136
+        },
+        {
+          "at": 348096.453,
+          "stage": "编码内容块：128/192；复用 0 块",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3568979968,
+          "worker_working_bytes": 3565240320
+        },
+        {
+          "at": 348098.531,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3598798848,
+          "worker_working_bytes": 3594412032
+        },
+        {
+          "at": 348100.609,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3607994368,
+          "worker_working_bytes": 3604127744
+        },
+        {
+          "at": 348102.687,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3610099712,
+          "worker_working_bytes": 3606315008
+        },
+        {
+          "at": 348104.765,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3607994368,
+          "worker_working_bytes": 3604267008
+        },
+        {
+          "at": 348106.843,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3608813568,
+          "worker_working_bytes": 3605086208
+        },
+        {
+          "at": 348108.921,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3610918912,
+          "worker_working_bytes": 3607187456
+        },
+        {
+          "at": 348111.0,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3609866240,
+          "worker_working_bytes": 3605090304
+        },
+        {
+          "at": 348113.078,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3609866240,
+          "worker_working_bytes": 3605118976
+        },
+        {
+          "at": 348115.156,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3609866240,
+          "worker_working_bytes": 3605135360
+        },
+        {
+          "at": 348117.234,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3609866240,
+          "worker_working_bytes": 3605135360
+        },
+        {
+          "at": 348119.312,
+          "stage": "已取得写锁，校验修订并准备事务内容（可取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 3609866240,
+          "worker_working_bytes": 3605155840
+        },
+        {
+          "at": 348121.39,
+          "stage": "核对已提交签发记录：SYN017",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 999579648,
+          "worker_working_bytes": 1008066560
+        },
+        {
+          "at": 348123.468,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：已写 3,500 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 336633856,
+          "worker_working_bytes": 345591808
+        },
+        {
+          "at": 348125.546,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：已写 6,500 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 334000128,
+          "worker_working_bytes": 342970368
+        },
+        {
+          "at": 348127.625,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：已写 13,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 334000128,
+          "worker_working_bytes": 342970368
+        },
+        {
+          "at": 348129.703,
+          "stage": "文件 1/17 · 合成门店SYN001 · 河北仓 · 中心仓动销补货清单：已写 19,500 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 334000128,
+          "worker_working_bytes": 342970368
+        },
+        {
+          "at": 348131.781,
+          "stage": "完整快照逐块读取及校验完成",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 335331328,
+          "worker_working_bytes": 344616960
+        },
+        {
+          "at": 348133.859,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 中心仓动销补货清单：已写 11,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 346103808,
+          "worker_working_bytes": 355422208
+        },
+        {
+          "at": 348135.937,
+          "stage": "文件 2/17 · 合成门店SYN002 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 356610048,
+          "worker_working_bytes": 366116864
+        },
+        {
+          "at": 348138.015,
+          "stage": "核验导出文件摘要…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 342351872,
+          "worker_working_bytes": 352858112
+        },
+        {
+          "at": 348140.093,
+          "stage": "文件 3/17 · 合成门店SYN003 · 河北仓 · 中心仓动销补货清单：已写 5,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 363732992,
+          "worker_working_bytes": 372006912
+        },
+        {
+          "at": 348142.171,
+          "stage": "文件 3/17 · 合成门店SYN003 · 河北仓 · 中心仓动销补货清单：已写 17,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358469632,
+          "worker_working_bytes": 366759936
+        },
+        {
+          "at": 348144.25,
+          "stage": "文件 3/17 · 合成门店SYN003 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358469632,
+          "worker_working_bytes": 367284224
+        },
+        {
+          "at": 348146.328,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 357318656,
+          "worker_working_bytes": 366428160
+        },
+        {
+          "at": 348148.406,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 中心仓动销补货清单：已写 9,500 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 347623424,
+          "worker_working_bytes": 356790272
+        },
+        {
+          "at": 348150.484,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358129664,
+          "worker_working_bytes": 367276032
+        },
+        {
+          "at": 348152.562,
+          "stage": "文件 4/17 · 合成门店SYN004 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358154240,
+          "worker_working_bytes": 367300608
+        },
+        {
+          "at": 348154.64,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 中心仓动销补货清单：已写 3,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 360517632,
+          "worker_working_bytes": 369217536
+        },
+        {
+          "at": 348156.718,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 中心仓动销补货清单：已写 15,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 347381760,
+          "worker_working_bytes": 356282368
+        },
+        {
+          "at": 348158.796,
+          "stage": "文件 5/17 · 合成门店SYN005 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 357888000,
+          "worker_working_bytes": 366780416
+        },
+        {
+          "at": 348160.875,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 357343232,
+          "worker_working_bytes": 366342144
+        },
+        {
+          "at": 348163.468,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 中心仓动销补货清单：已写 5,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 347652096,
+          "worker_working_bytes": 356745216
+        },
+        {
+          "at": 348165.578,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358158336,
+          "worker_working_bytes": 367230976
+        },
+        {
+          "at": 348167.656,
+          "stage": "文件 6/17 · 合成门店SYN006 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358162432,
+          "worker_working_bytes": 367259648
+        },
+        {
+          "at": 348169.734,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 中心仓动销补货清单：已写 4,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 363110400,
+          "worker_working_bytes": 371888128
+        },
+        {
+          "at": 348171.812,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 中心仓动销补货清单：已写 16,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 347340800,
+          "worker_working_bytes": 356155392
+        },
+        {
+          "at": 348173.89,
+          "stage": "文件 7/17 · 合成门店SYN007 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 357847040,
+          "worker_working_bytes": 366649344
+        },
+        {
+          "at": 348175.968,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 357666816,
+          "worker_working_bytes": 366034944
+        },
+        {
+          "at": 348178.046,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 中心仓动销补货清单：已写 8,500 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 347160576,
+          "worker_working_bytes": 355708928
+        },
+        {
+          "at": 348180.125,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 357666816,
+          "worker_working_bytes": 366727168
+        },
+        {
+          "at": 348182.203,
+          "stage": "文件 8/17 · 合成门店SYN008 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 357666816,
+          "worker_working_bytes": 366727168
+        },
+        {
+          "at": 348184.281,
+          "stage": "文件 9/17 · 合成门店SYN009 · 河北仓 · 中心仓动销补货清单：已写 0 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358133760,
+          "worker_working_bytes": 366477312
+        },
+        {
+          "at": 348186.359,
+          "stage": "文件 9/17 · 合成门店SYN009 · 河北仓 · 中心仓动销补货清单：已写 13,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 347627520,
+          "worker_working_bytes": 355991552
+        },
+        {
+          "at": 348188.437,
+          "stage": "文件 9/17 · 合成门店SYN009 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358133760,
+          "worker_working_bytes": 367009792
+        },
+        {
+          "at": 348190.531,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 430895104,
+          "worker_working_bytes": 439103488
+        },
+        {
+          "at": 348192.609,
+          "stage": "文件 10/17 · 合成门店SYN010 · 山东仓 · 中心仓动销补货清单：已写 5,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 363945984,
+          "worker_working_bytes": 372326400
+        },
+        {
+          "at": 348194.687,
+          "stage": "文件 10/17 · 合成门店SYN010 · 山东仓 · 中心仓动销补货清单：已写 18,500 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358682624,
+          "worker_working_bytes": 367079424
+        },
+        {
+          "at": 348196.765,
+          "stage": "文件 10/17 · 合成门店SYN010 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358682624,
+          "worker_working_bytes": 367083520
+        },
+        {
+          "at": 348198.843,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358711296,
+          "worker_working_bytes": 366297088
+        },
+        {
+          "at": 348200.921,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 中心仓动销补货清单：已写 10,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 347197440,
+          "worker_working_bytes": 355414016
+        },
+        {
+          "at": 348203.0,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 357703680,
+          "worker_working_bytes": 365907968
+        },
+        {
+          "at": 348205.078,
+          "stage": "文件 11/17 · 合成门店SYN011 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 357703680,
+          "worker_working_bytes": 365907968
+        },
+        {
+          "at": 348207.156,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 中心仓动销补货清单：已写 2,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 359989248,
+          "worker_working_bytes": 368644096
+        },
+        {
+          "at": 348209.234,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 中心仓动销补货清单：已写 14,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 347910144,
+          "worker_working_bytes": 356171776
+        },
+        {
+          "at": 348211.312,
+          "stage": "文件 12/17 · 合成门店SYN012 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358416384,
+          "worker_working_bytes": 367075328
+        },
+        {
+          "at": 348213.39,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 438120448,
+          "worker_working_bytes": 446816256
+        },
+        {
+          "at": 348215.468,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 中心仓动销补货清单：已写 6,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 342409216,
+          "worker_working_bytes": 351596544
+        },
+        {
+          "at": 348217.546,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 中心仓动销补货清单：已写 18,500 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 357208064,
+          "worker_working_bytes": 366419968
+        },
+        {
+          "at": 348219.625,
+          "stage": "文件 13/17 · 合成门店SYN013 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358141952,
+          "worker_working_bytes": 367026176
+        },
+        {
+          "at": 348221.703,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 358330368,
+          "worker_working_bytes": 366886912
+        },
+        {
+          "at": 348223.781,
+          "stage": "文件 14/17 · 合成门店SYN014 · 山东仓 · 中心仓动销补货清单：已写 11,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 348884992,
+          "worker_working_bytes": 356589568
+        },
+        {
+          "at": 348225.859,
+          "stage": "文件 14/17 · 合成门店SYN014 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 359391232,
+          "worker_working_bytes": 367149056
+        },
+        {
+          "at": 348227.937,
+          "stage": "文件 14/17 · 合成门店SYN014 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 359415808,
+          "worker_working_bytes": 367198208
+        },
+        {
+          "at": 348230.015,
+          "stage": "文件 15/17 · 合成门店SYN015 · 河北仓 · 中心仓动销补货清单：已写 3,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 362926080,
+          "worker_working_bytes": 370147328
+        },
+        {
+          "at": 348232.093,
+          "stage": "文件 15/17 · 合成门店SYN015 · 河北仓 · 中心仓动销补货清单：已写 15,500 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 349782016,
+          "worker_working_bytes": 358051840
+        },
+        {
+          "at": 348234.171,
+          "stage": "文件 15/17 · 合成门店SYN015 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 360292352,
+          "worker_working_bytes": 369074176
+        },
+        {
+          "at": 348236.25,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 359604224,
+          "worker_working_bytes": 367767552
+        },
+        {
+          "at": 348238.328,
+          "stage": "文件 16/17 · 合成门店SYN016 · 山东仓 · 中心仓动销补货清单：已写 6,500 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 345845760,
+          "worker_working_bytes": 353316864
+        },
+        {
+          "at": 348240.406,
+          "stage": "文件 16/17 · 合成门店SYN016 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 364974080,
+          "worker_working_bytes": 373264384
+        },
+        {
+          "at": 348242.484,
+          "stage": "文件 16/17 · 合成门店SYN016 · 山东仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 361603072,
+          "worker_working_bytes": 369913856
+        },
+        {
+          "at": 348244.562,
+          "stage": "完整快照校验完成，解析数据…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 361107456,
+          "worker_working_bytes": 369598464
+        },
+        {
+          "at": 348246.64,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 中心仓动销补货清单：已写 11,000 / 20,000 行",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 350613504,
+          "worker_working_bytes": 359747584
+        },
+        {
+          "at": 348248.718,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 361115648,
+          "worker_working_bytes": 370241536
+        },
+        {
+          "at": 348250.796,
+          "stage": "文件 17/17 · 合成门店SYN017 · 河北仓 · 压缩保存 Excel（完成后响应取消）…",
+          "worker_pid": 43852,
+          "committing": false,
+          "worker_private_bytes": 361115648,
+          "worker_working_bytes": 370270208
+        }
+      ],
+      "resource_profile": "occupied",
+      "resource_pressure_events": [
+        {
+          "stage": "encoding-pressure",
+          "pid": 43852,
+          "at": 348016.375,
+          "limit_mib": 3458,
+          "monotonic": 348016.375,
+          "working_bytes": 3487436800,
+          "peak_working_bytes": 3592056832,
+          "private_bytes": 3491971072,
+          "peak_private_bytes": 3597017088,
+          "commit_total_bytes": 31604080640,
+          "commit_limit_bytes": 53452070912,
+          "commit_peak_bytes": 65395798016,
+          "physical_total_bytes": 34124718080,
+          "physical_available_bytes": 11316617216
+        },
+        {
+          "stage": "encoding-resources-released",
+          "pid": 43852,
+          "at": 348026.343,
+          "limit_mib": 6000,
+          "monotonic": 348026.343,
+          "working_bytes": 3488907264,
+          "peak_working_bytes": 3592056832,
+          "private_bytes": 3491975168,
+          "peak_private_bytes": 3597017088,
+          "commit_total_bytes": 31634010112,
+          "commit_limit_bytes": 53452070912,
+          "commit_peak_bytes": 65395798016,
+          "physical_total_bytes": 34124718080,
+          "physical_available_bytes": 11335262208
+        },
+        {
+          "stage": "export-pressure",
+          "pid": 43852,
+          "at": 348123.14,
+          "limit_mib": 447,
+          "monotonic": 348123.14,
+          "working_bytes": 344281088,
+          "peak_working_bytes": 3607257088,
+          "private_bytes": 335319040,
+          "peak_private_bytes": 3612028928,
+          "commit_total_bytes": 27725283328,
+          "commit_limit_bytes": 53452070912,
+          "commit_peak_bytes": 65395798016,
+          "physical_total_bytes": 34124718080,
+          "physical_available_bytes": 14902521856
+        },
+        {
+          "stage": "export-resources-released",
+          "pid": 43852,
+          "at": 348131.234,
+          "limit_mib": 6000,
+          "monotonic": 348131.234,
+          "working_bytes": 344440832,
+          "peak_working_bytes": 3607257088,
+          "private_bytes": 335335424,
+          "peak_private_bytes": 3612028928,
+          "commit_total_bytes": 27724083200,
+          "commit_limit_bytes": 53452070912,
+          "commit_peak_bytes": 65395798016,
+          "physical_total_bytes": 34124718080,
+          "physical_available_bytes": 14895026176
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "passed": true,
+      "phase": "reopen",
+      "frozen_exe": true,
+      "version": {
+        "app": "补货助手",
+        "version": "0.54.4",
+        "parameter_schema_version": 3,
+        "job_schema_version": 1,
+        "routing_version": "0.5.2",
+        "model_version": "0.3.6-rules",
+        "model_baseline": "v0.3.0-baseline",
+        "entry": "补货助手.exe",
+        "storage_format_version": 2,
+        "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_commit_kind": "workspace_snapshot_not_git_commit",
+        "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+        "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_archive_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+        "source_manifest_sha256": "97dd6421460a5d825363c8915a833a6c4ff2970a9088861246a11810a2d070d3",
+        "source_mode": "immutable uncommitted workspace snapshot: git base plus explicit hashed working files",
+        "working_tree_files_sha256": {
+          "README.md": "2211829d6ea5a21632c96294becdccc449cc9ecf38f0bfe63132a72601fd28e6",
+          "components/aoxiang/src/bound-browser.mjs": "b1c353ff04f325896fa61fde67b9ce39deb3916745b9f486b76eae255943fe4d",
+          "components/aoxiang/src/browser-worker.mjs": "c2635145d7c88919fa77af11bcfd3e43eecd0bfdcf980e9749b51977a301a724",
+          "components/aoxiang/src/purchase-create-ui.mjs": "0f0fc9ffa7a23c7dc5b75ec9b3198e7f938fbccec1518650bc9805eb1f7b705e",
+          "components/aoxiang/src/purchase-guard-ipc.mjs": "97bee8f44440cf9588b5b127ac3cc1f8905a53c0528cf3dbbdf7665aae35e111",
+          "components/aoxiang/src/worker-client.mjs": "c1352eed7727378d4fc2e6d3413c513a1a6d95f925040d1228323bba9a8b61e9",
+          "components/aoxiang/test/purchase-guard-ipc.test.mjs": "c552d15bec1730f24780f139f037a69c6aff4bee18c35e652445ef6193f8bb96",
+          "components/aoxiang/test/purchase-guard-worker.fixture.mjs": "35f339c347a4d340aaa1eaf04aba197c3867fca590af883662e654c8de615063",
+          "docs/handoffs/20261116_资源自适应与采购核验_暂停.md": "5ee86a3ea55e4b671fb5dc6d3ea40766e85b8698e1b1caade919363e6610488d",
+          "releases/0.54.3/rc1/actual-exe.json": "11815758f75d77ff0a500ea14ccfc692f813e6cab34c517b8f318101f958b1de",
+          "releases/0.54.3/rc1/artifacts.json": "3ce5696dbc87ce4c0930b019cc40464ffcfc1f8a3de7241efb8f3f0509eb969c",
+          "releases/0.54.3/rc1/build_info.json": "a1143f88cabe67884dc20dcd3680a3a6099f5ff1a4d4d0c3a81ff7c910e8efc9",
+          "releases/0.54.3/rc1/business-invariants.json": "c813d81566871e6307471d38dd091d7a917f45fbf14fd6673fef504e5f079b17",
+          "releases/0.54.3/rc1/cancel-during-encoding.png": "3e52a2208f5bf0b9458732aa0e4bd9a2330192d9bd66f3678f2129319f58ee48",
+          "releases/0.54.3/rc1/capped-outcome.json": "013a0ab40d5734996a7a4402fec324820440f6b15e3b26af12c79df0a08cbd91",
+          "releases/0.54.3/rc1/completed-full.png": "726e11d5faf50e85e24ecf4bc48957d625ef16fe182eabfa1868f8a7d1ec1435",
+          "releases/0.54.3/rc1/completed-reopen.png": "e141d33788e5faec8740c774a965d7f7ca450c751f1f10427426968999173699",
+          "releases/0.54.3/rc1/failure-evidence.json": "f5383a93a75173a0c356c3309f68c8030baea88bc8af2d90b806de77f29c480f",
+          "releases/0.54.3/rc1/initial-state.json": "8390e179fc3f3720aaefc7e0e7b03edec78a687d70f26bb7c9322bdf8613fadb",
+          "releases/0.54.3/rc1/message-failure.png": "7016968ba86b66bc6b49a9112772e39f3184fa94f3a972fdbd6b02a006466a89",
+          "releases/0.54.3/rc1/metrics.json": "64b3740f8507d23ba64867d29771e154240a68c4d2348d5f78a3605d2b240b96",
+          "releases/0.54.3/rc1/performance-memory.json": "6410651247d676a899b89d41a4c9e9265e296979d321d7109726caf3aff02f59",
+          "releases/0.54.3/rc1/regression.json": "a679acad379884acaa9356327b47a877a5f7b35bda7c17e798f367cede6c888d",
+          "releases/0.54.3/rc1/source-manifest.json": "2dddb2be1c4169eb8fe3e25b0062d9ab2de071ed6cf1fd37f6bc17458972db54",
+          "releases/0.54.3/rc1/test-environment.json": "d0b085e29e7d1066bccee88374114942386b058019a123b19c407a849007601e",
+          "releases/0.54.3/rc1/workspace_snapshot_builder.py": "c13b6b08aad2b771db09e1f36b74fecdb16fb2dbc997414b425754047ab4fbb0",
+          "releases/0.54.3/rc1/交付报告.md": "c3ce7cd7b6945d3d81df4ea77fd3d6675f6ef7d71c010e2c923e71512bf7e811",
+          "src/adaptive_resources.py": "de597e03706c0cfbc0eea4f630219d127c186ce61aff1709140ab898f9ac20b6",
+          "src/analytics_lifecycle_scope.py": "abd6ba71fef98ef32fe5dfc0823a2fc723e6920bb2ee4c6baa34c66a5cc30df3",
+          "src/analytics_template_export.py": "b33e013f1dc5bb2e98365be5fa0963e2e96b2a2e910c1847521bc04f126a9896",
+          "src/app.py": "f5cd26856e69d95d71ae0d4301f34664f60b8b6c549bc06914375ed969d09539",
+          "src/archive_batch.py": "904a781231426fac686b0ff8dbb2120da7e3b1b0ec0f7681f95765d775b73a94",
+          "src/archive_exports.py": "74cb68f0322e63598aaf6fb8da0299b9d2fa64ac6d65d52f07cb7e50129246d0",
+          "src/automation_protocol.py": "6e9366e828e8acb9101dccc41b93fe3be2fbae65010e816cbd0b923af4b4079f",
+          "src/encoding_store.py": "8208cd040073e2489237ed8a63f231ee06c2c68f29219bfed8b523919185b921",
+          "src/normal_delivery.py": "ee4625b52576c45f522805345c77faf7f7bd8fdb1814421a95a757dd0a10cdbf",
+          "src/normal_exports.py": "a49419d40ff1c36e14cc68fe90d202187f5ce7f3234faa9c3d244c33843843ee",
+          "src/normal_orders.py": "61ded571282025884c33f48f9ffe86cd1cf5f811e782cbbe2d1f9fb112846983",
+          "src/order_analytics.py": "fcaecd13b27840679278495ba45da35f27405d78441bb204bcdf641b9a7017b0",
+          "src/order_analytics_ui.py": "2b3c3827c20c1fbb0bc9796c7f26990a0e683b46fc99c794a90b201b958a6a9a",
+          "src/order_identity.py": "a94020864814d8230056da689c33b65f0fbbfb0c71165410e11e4e38bf195970",
+          "src/resource_pressure_probe.py": "c31bd768f94450a62d86fd5d245879e6a39a7b516cb1755f2341a9c983badf9f",
+          "src/signing_memory_fixture.py": "fd4ab5bd7ad48fb21ddbc90f5421a96b4376124af57a4973a6ab7c8f0c51a66a",
+          "src/signing_memory_smoke.py": "bef55112d43d759c2e302af60bb6a64e442e9216f57f6f47a9fb5516749e5e4d",
+          "src/storage_chunks.py": "e4d4197d4cfef6c6b296f7d9bbf53edacaf8f298737f031822d3a1c5a386f4f1",
+          "src/ui_work_io.py": "629be6c2d6f9604b8de6a22cc4f5b650d22e48c110000530a3218c18c6c8d224",
+          "src/version.json": "77d990397901cc219b3380c98af9e32c649a569d977e1fe628bbca018c6db14f",
+          "src/warehouse_execution.py": "bfc361ca1c3d3792c00525130d881233c2feb4e00924b5da629df3e8acb45360",
+          "src/work_failures.py": "e27e2a3f190cd969760c93ce2ef8154197794632e822f55353a7f44519daf0ca",
+          "src/work_io_process.py": "7d2bfc22af037082a34a2f9eab4d9d38e91aed32acb8cc97f6c7c6a9e53272e8",
+          "src/work_memory.py": "d335504509ad580ff3af3b335f13fac58c7c84cc1681e461d8203440cb555779",
+          "src/work_repository.py": "bb267cf9b7e2cba4bb4b5bd2d8c39d05938ab417d3101f2ec5280b62dbf5f55a",
+          "tests/test_adaptive_resources.py": "d0289ff1d63f9cfd490eea8c5fed2818bc24c76376732445b3a5f3e4d945e39d",
+          "tests/test_analytics_lifecycle_scope.py": "7b796cf1c068752e264c33fa93680f7c14151f7b0d34ab1c74790666b025a37e",
+          "tests/test_order_analytics_ui.py": "fc6d83e9f0b364c3488aa3f6420394362e24cb8fba274bf121f7fe0eb31ef2c5",
+          "tests/test_signing_failures.py": "c8e44f07ed5169a9073c68be00980aadfd7678476aa6ab43ec2db856e870ee20",
+          "tests/test_signing_memory.py": "2eb372c92ef76b2d1cae16e9aca23cfa44769e3cc0e255ec5f1db58bd6c017ff",
+          "tools/benchmark_adaptive_resources.py": "3d9f744751f2be97b8dfdd43c931ee12a261cc650c5f0f019a597ecf2eb9d85a",
+          "tools/benchmark_signing_memory.py": "9df1c10c59f534b3e10dab5af79702ac7298a15845c81466ec1d6b4c4bdc1549",
+          "tools/verify_signing_memory.py": "ea98a324f5de32a46724d2f44c938ecfe814f762841f2ab78907d8f8e900aa86"
+        },
+        "build_id": "rc3",
+        "built_at": "2026-11-16T20:44:52.457828+08:00",
+        "git_mutated": false,
+        "aoxiang": {
+          "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+          "files": 876,
+          "manifest_sha256": "5e5da29fb71b43077a21a16833d1f038038b480fb259167f1d70eed51fd1219c",
+          "node_sha256": "b59feb2088f80e1fa431c8f9c316861e660e5936f968fd97b802e550fed356c5",
+          "runtime_lock_sha256": "3111b6bbc7163525043ea67dfb86772cbe97bd020e77bb407418d58033fb29d7",
+          "contains_user_state": false,
+          "live_platform_tested": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc"
+        },
+        "jst_catalog": {
+          "manifest_sha256": "4e2df9e0552923b2a5ed9e2a9fbdaa4cbb42f21ee7e43c504d4c9d2d4a1a995b",
+          "files": 11,
+          "source_commit": "snapshot-7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc",
+          "contains_user_state": false,
+          "source_commit_kind": "workspace_snapshot_not_git_commit",
+          "base_commit": "979b19bbcd5bd92436a5a7df29a1e4eb36a69d61",
+          "source_snapshot_sha256": "7b6b195b1e4af13a0d6f9b1a4d11ce531d2591017f5734f654d14dc3e38172dc"
+        },
+        "build_procedure_sha256": "f6c8ae823941ca59d9365831f2e4bf43b408e5f75c2814af0c7d040ab0f2a890"
+      },
+      "checks": [
+        "默认计算并发仍为2，未降低并发",
+        "实际EXE重新打开后全部签发仍存在",
+        "重开订单库完整性通过",
+        "独立仓单数量保持",
+        "完整草稿摘要保持",
+        "全部实际导出文件保留"
+      ],
+      "dialogs": [],
+      "screenshots": [
+        "completed-reopen.png"
+      ],
+      "live_platform": false,
+      "progress": [],
+      "resource_profile": "occupied",
+      "resource_pressure_events": [],
+      "exit_code": 0
+    }
+  ],
+  "live_platform": false,
+  "exe": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.4_rc3\\补货助手\\补货助手.exe",
+  "exe_sha256": "a7fed88f1d7f6937ab0b4b0ec4e121824cdf61209a831e275c8d190ea780f526"
+}

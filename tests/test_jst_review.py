@@ -29,6 +29,14 @@ class StoreReview(unittest.TestCase):
         p=plans()[0];p['rows']=[dict(sku='X',demand='3',quantity='1',price='0.1',amount='0.1')]
         self.assertEqual(r.stores([p])[0]['metrics']['reduced'],Decimal('0.2'))
 
+    def test_carton_increase_is_separate_from_reduction_without_netting(self):
+        p=plans()[0];p['rows']=[dict(sku='A',demand='1',quantity='24',price='2',amount='48'),dict(sku='B',demand='48',quantity='30',price='2',amount='60')]
+        m=r.stores([p])[0]['metrics']
+        self.assertEqual((m['demand'],m['allocated'],m['reduced'],m['increased']),(98,108,36,46))
+        self.assertEqual(m['demand']-m['allocated'],m['reduced']-m['increased'])
+        self.assertEqual((m['arranged'],m['reduced_sku']),(2,1))
+        self.assertIn('箱规增配 46.00 元',r.caption(m));self.assertIn('110.2%',r.caption(m))
+
 
 class StoreReviewUI(unittest.TestCase):
     @classmethod
@@ -46,6 +54,17 @@ class StoreReviewUI(unittest.TestCase):
         w.search.setText('没有');self.assertEqual(w.model.rowCount(),0)
         w.pages.setCurrentIndex(0);self.assertEqual(w.store_model.rowCount(),2);self.assertEqual(p,before)
         w.replace([],'原预览已失效');self.assertEqual(w.model.rowCount(),0);self.assertEqual(w.store_model.rowCount(),0)
+        w.deleteLater();self.app.processEvents()
+
+    def test_upward_detail_has_no_negative_reduction_and_shows_increment(self):
+        from jst_review_ui import AllocationReview
+        w=AllocationReview();p=plans()[0]
+        p['rows']=[dict(sku='A',demand='1',quantity='24',price='2',amount='48',reason='向上规整')]
+        w.replace([p]);w.open_store(w.store_model.index(0,0))
+        row=lambda i:w.model.data(w.model.index(0,i))
+        self.assertEqual([row(i) for i in (6,10,16,17)],['0','0.00','23','46.00'])
+        self.assertIn('箱规增配 46.00',w.detail_title.text())
+        w.kind.setCurrentText('有减量');self.assertEqual(w.model.rowCount(),0)
         w.deleteLater();self.app.processEvents()
 
 if __name__=='__main__':unittest.main()

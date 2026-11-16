@@ -3,6 +3,7 @@ import hashlib
 import json
 import math
 from decimal import Decimal
+from analytics_lifecycle_scope import OPTIONS as LIFECYCLE_OPTIONS
 
 
 def wire_default(value):
@@ -39,7 +40,7 @@ TASK = {'task_id': TEXT}
 CHANGE = obj({'store': TEXT, 'path': {'type': 'array', 'items': {'type': ['string', 'integer']}, 'minItems': 2, 'maxItems': 3},
               'value': {'type': ['number', 'string']}}, ['store', 'path', 'value'])
 ANALYTICS_QUERY = obj({'from':TEXT,'to':TEXT,'stores':LIST,'orders':LIST,'warehouse':{'type':'string','enum':['','山东仓','河北仓']},
-    'group':{'type':'string','enum':['','必采','非必采','属性待核']},'search':{'type':'string'},'category':{'type':'string','maxLength':4096},'coverage_through':{'type':'string','enum':['model','signed','return','payment','receipt']},'rounds':{'type':'integer','minimum':1,'maximum':30}},['from','to'])
+    'group':{'type':'string','enum':['','必采','非必采','属性待核']},'search':{'type':'string'},'category':{'type':'string','maxLength':4096},'coverage_through':{'type':'string','enum':['model','signed','return','payment','receipt']},'rounds':{'type':'integer','minimum':1,'maximum':30},'lifecycle_from':{'type':'string','enum':[key for key,_ in LIFECYCLE_OPTIONS]}},['from','to'])
 TOOLS = [
     ('query_inventory_structure','只读货盘存量分析，与补货漏斗不同：包括禁用、停采、地采及零补货商品。库存视角stock现货/inbound在途/position总持有；日期是签发业务日，非实时库存。默认结束日大盘，latest为各店最新且不同时间。异步task_status完成后分页；商品明细需同时指定detail_store/detail_day，在后台加载。缺价不算0，不重跑模型。',
      obj({'context_token':TEXT,'operation_key':TEXT,'query':obj({'from':TEXT,'to':TEXT,'stores':LIST,'view':{'type':'string','enum':['stock','inbound','position']},'overview':{'type':'string','enum':['end_day','latest']},'detail_store':TEXT,'detail_day':TEXT},['from','to'])},['context_token','operation_key','query'])),

@@ -82,17 +82,54 @@ def _digest(payload):
     return normal_orders.fingerprint_owned(payload['result'],payload.get('new_focus'))
 
 
-def _store_snapshot(db,oid,warehouse,source_revision,child_revision,identity_digest,saved,payload,progress,cancel):
-    projected=project(payload,warehouse);digest=_digest(projected)
-    encoded=chunks.prepare(projected,chunks.known(db),progress,binding=digest)
+def _store_snapshot(db,oid,warehouse,source_revision,child_revision,identity_digest,saved,payload,progress,cancel,prepared=None,checked_digest=None):
+    if prepared is None:
+        projected=project(payload,warehouse);digest=_digest(projected)
+        encoded=chunks.prepare(projected,chunks.known(db),progress,binding=digest)
+    else:
+        encoded=prepared;digest=checked_digest
+        if encoded.binding!=digest:raise wr.Conflict('预编码仓单与当前内容不一致，请重新核对')
     db.execute('INSERT OR IGNORE INTO warehouse_execution_revisions VALUES(?,?,?,?,?,?,?,?)',
         (oid,warehouse,source_revision,child_revision,identity_digest,digest,saved,chunks.put(db,encoded,cancel=cancel)))
     return digest
 
 
-def ensure_parent(db,oid,progress=lambda _:None,cancel=None):
+def prepare_parent(db,oid,store,progress=lambda _:None,cancel=None):
+    """Prepare legacy history off the writer, retaining its exact CAS evidence."""
+    if has_parent(db,oid):return None
+    row=db.execute('SELECT current FROM normal_orders WHERE oid=?',(oid,)).fetchone()
+    if not row:raise wr.Conflict('来源订单已删除，请刷新')
+    current=row[0];latest={};counts={};sources=[];snapshots=[]
+    for revision,digest,saved,blob in db.execute('SELECT revision,digest,saved,payload FROM normal_revisions WHERE oid=? ORDER BY revision',(oid,)):
+        checkpoint(cancel);sources.append((revision,digest,saved,hashlib.sha256(blob).digest()))
+        payload=chunks.load(blob,db,binding=digest,progress=progress)
+        if _digest(payload)!=digest:raise ValueError('原签发快照校验失败')
+        for warehouse in warehouses(payload):
+            counts[warehouse]=counts.get(warehouse,0)+1
+            projected=project(payload,warehouse);child_digest=_digest(projected)
+            encoded=chunks.prepare(projected,progress=progress,binding=child_digest,store=store)
+            snapshots.append((warehouse,revision,counts[warehouse],digest,child_digest,saved,encoded))
+            if revision==current:latest[warehouse]=(revision,counts[warehouse])
+        del payload
+    return current,sources,snapshots,latest
+
+
+def ensure_parent(db,oid,progress=lambda _:None,cancel=None,*,prepared=None):
     """Convert one legacy parent's complete history inside its caller's transaction."""
     if has_parent(db,oid):return
+    if prepared is not None:
+        current,sources,snapshots,latest=prepared
+        actual=db.execute('SELECT current FROM normal_orders WHERE oid=?',(oid,)).fetchone()
+        history=[(r,d,s,hashlib.sha256(b).digest()) for r,d,s,b in db.execute('SELECT revision,digest,saved,payload FROM normal_revisions WHERE oid=? ORDER BY revision',(oid,))]
+        if actual!=(current,) or history!=sources:raise wr.Conflict('原签发历史已变化，请重新核对')
+        schema(db)
+        for warehouse,revision,child_revision,digest,child_digest,saved,encoded in snapshots:
+            checkpoint(cancel)
+            db.execute('INSERT OR IGNORE INTO warehouse_execution_revisions VALUES(?,?,?,?,?,?,?,?)',
+                (oid,warehouse,revision,child_revision,digest,child_digest,saved,chunks.put(db,encoded,cancel=cancel)))
+        for warehouse,(revision,child_revision) in latest.items():
+            db.execute("INSERT INTO warehouse_execution_heads VALUES(?,?,?,?,'active',0)",(oid,warehouse,revision,child_revision))
+        return
     row=db.execute('SELECT current FROM normal_orders WHERE oid=?',(oid,)).fetchone()
     if row is None:raise wr.Conflict('来源订单已删除，请刷新')
     schema(db);current=row[0];latest={};counts={}
@@ -107,7 +144,7 @@ def ensure_parent(db,oid,progress=lambda _:None,cancel=None):
         db.execute("INSERT INTO warehouse_execution_heads VALUES(?,?,?,?,'active',0)",(oid,warehouse,revision,child_revision))
 
 
-def publish(db,oid,source_revision,identity_digest,saved,payload,selected,progress=lambda _:None,cancel=None):
+def publish(db,oid,source_revision,identity_digest,saved,payload,selected,progress=lambda _:None,cancel=None,*,prepared=None):
     """Publish only the explicitly selected children; leave other heads exact."""
     schema(db)
     if not selected or len(selected)!=len(set(selected)) or any(w not in warehouses(payload) for w in selected):
@@ -125,7 +162,9 @@ def publish(db,oid,source_revision,identity_digest,saved,payload,selected,progre
             if jst_orders.exists(db) and db.execute('SELECT 1 FROM jst_active WHERE oid=? AND warehouse=?',(oid,warehouse)).fetchone():
                 raise wr.Conflict('所选仓已有聚水潭生成记录，请通过该仓原单更正；另一仓不受影响：'+warehouse)
         child_revision=(old.get('child_revision',0) if old else 0)+1
-        _store_snapshot(db,oid,warehouse,source_revision,child_revision,identity_digest,saved,payload,progress,cancel)
+        if prepared is not None and warehouse not in prepared:raise wr.Conflict('预编码仓单已失效，请重新核对')
+        _store_snapshot(db,oid,warehouse,source_revision,child_revision,identity_digest,saved,payload,progress,cancel,
+                        prepared=prepared.get(warehouse) if prepared is not None else None,checked_digest=snapshot_digest)
         db.execute("INSERT INTO warehouse_execution_heads VALUES(?,?,?,?,'active',0) ON CONFLICT(oid,warehouse) DO UPDATE SET source_revision=excluded.source_revision,child_revision=excluded.child_revision,state='active'",(oid,warehouse,source_revision,child_revision))
         result.append(warehouse)
     return result
@@ -193,7 +232,7 @@ def validate(db,head):
         if not row or row!=(head.get('current_revision',head['revision']),head['digest']):raise wr.Conflict('签发修订已更新，请重新读取并核对关联')
 
 
-def get_order(repository,head,view=None,progress=lambda _:None,*,db=None):
+def get_order(repository,head,view=None,progress=lambda _:None,*,db=None,export_io=False):
     warehouse=head.get('warehouse')
     if warehouse:
         with (closing(repository.work.connect()) if db is None else nullcontext(db)) as db:
@@ -201,11 +240,17 @@ def get_order(repository,head,view=None,progress=lambda _:None,*,db=None):
                 if not is_active(db,head['oid'],warehouse):raise wr.Conflict('来源仓单已删除或未参与')
                 row=db.execute('SELECT identity_digest,snapshot_digest,saved,payload FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?',(head['oid'],warehouse,head['revision'])).fetchone()
                 if not row or row[0]!=head['digest']:raise wr.Conflict('仓单原签发依据已变化，请刷新')
-                payload=chunks.load(row[3],db,binding=row[1],progress=progress)
+                bounded=False
+                if view=='export' or export_io:
+                    from adaptive_resources import Budget
+                    resources=Budget()
+                    bounded=not resources.restore_fits(chunks.require_manifest(row[3])['size'])
+                    progress('导出快照资源自适应：'+('逐块读取' if bounded else '完整解析')+'；'+resources.description())
+                payload=chunks.load(row[3],db,binding=row[1],progress=progress,bounded=bounded)
                 if _digest(payload)!=row[1]:raise ValueError('仓单业务快照校验失败')
                 return {**head,'number':head.get('parent_number') or db.execute('SELECT number FROM normal_orders WHERE oid=?',(head['oid'],)).fetchone()[0],
                         'saved':row[2],'payload':payload,'snapshot_digest':row[1]}
-    order=repository.get(head['day'],head['store'],head['revision'],view=view,progress=progress)
+    order=repository.get(head['day'],head['store'],head['revision'],view=view,progress=progress,**({'export_io':True} if export_io else {}))
     if not order or order['digest']!=head['digest']:raise wr.Conflict('原签发依据已变化，请刷新')
     return {**order,**({'warehouse':warehouse} if warehouse else {})}
 

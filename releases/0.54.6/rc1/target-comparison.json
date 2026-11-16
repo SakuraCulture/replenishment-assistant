@@ -1,0 +1,126 @@
+{
+  "lifecycle": {
+    "old": {
+      "passed": true,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.5_rc1\\source",
+      "kind": "lifecycle",
+      "rows": 20000,
+      "metrics": [
+        {
+          "phase": "lifecycle_prepare_20k",
+          "seconds": 7.223099900002126,
+          "cpu_seconds": 7.0,
+          "peak_private_mib": 1115.73046875,
+          "peak_rss_mib": 358.1015625,
+          "process_read_mib": 5.371805191040039,
+          "process_write_mib": 0.0
+        },
+        {
+          "phase": "lifecycle_save_20k",
+          "seconds": 0.8504235000000335,
+          "cpu_seconds": 0.8125,
+          "peak_private_mib": 1197.7890625,
+          "peak_rss_mib": 442.33984375,
+          "process_read_mib": 1.0252141952514648,
+          "process_write_mib": 36.02630615234375
+        }
+      ],
+      "synthetic": true,
+      "live_platform": false,
+      "data_version_calls": 40002,
+      "sql_statements": 40323,
+      "facts_sha256": "9a6ced3c9f90d1da70676a0ece639c6113d5c7bad3b4b745d6e77326631fe3c1",
+      "payload_rows": 20000,
+      "receipt": [
+        {
+          "number": "BH-20261116-SYN001-ZC-HB",
+          "stage": "return",
+          "version": 1,
+          "changed": true
+        }
+      ]
+    },
+    "new": {
+      "passed": true,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\candidate-01",
+      "kind": "lifecycle",
+      "rows": 20000,
+      "metrics": [
+        {
+          "phase": "lifecycle_prepare_20k",
+          "seconds": 2.486603000026662,
+          "cpu_seconds": 2.359375,
+          "peak_private_mib": 1113.73046875,
+          "peak_rss_mib": 356.65234375,
+          "process_read_mib": 4.761472702026367,
+          "process_write_mib": 0.0
+        },
+        {
+          "phase": "lifecycle_save_20k",
+          "seconds": 0.7900724000064656,
+          "cpu_seconds": 0.734375,
+          "peak_private_mib": 1197.14453125,
+          "peak_rss_mib": 441.765625,
+          "process_read_mib": 1.025350570678711,
+          "process_write_mib": 36.03182411193848
+        }
+      ],
+      "synthetic": true,
+      "live_platform": false,
+      "data_version_calls": 2,
+      "sql_statements": 323,
+      "facts_sha256": "9a6ced3c9f90d1da70676a0ece639c6113d5c7bad3b4b745d6e77326631fe3c1",
+      "payload_rows": 20000,
+      "receipt": [
+        {
+          "number": "BH-20261116-SYN001-ZC-HB",
+          "stage": "return",
+          "version": 1,
+          "changed": true
+        }
+      ]
+    }
+  },
+  "template": {
+    "old": {
+      "passed": true,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\build_0.54.5_rc1\\source",
+      "kind": "template",
+      "rows": 20000,
+      "metrics": [
+        {
+          "phase": "template_detail_20k",
+          "seconds": 36.74461260001408,
+          "cpu_seconds": 34.84375,
+          "peak_private_mib": 895.67578125,
+          "peak_rss_mib": 139.96484375,
+          "process_read_mib": 89.95857238769531,
+          "process_write_mib": 95.7692518234253
+        }
+      ],
+      "synthetic": true,
+      "live_platform": false,
+      "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\template-20k-old\\20k-SKU完整明细.xlsx"
+    },
+    "new": {
+      "passed": true,
+      "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\candidate-01",
+      "kind": "template",
+      "rows": 20000,
+      "metrics": [
+        {
+          "phase": "template_detail_20k",
+          "seconds": 13.580637100036256,
+          "cpu_seconds": 12.953125,
+          "peak_private_mib": 895.91015625,
+          "peak_rss_mib": 140.046875,
+          "process_read_mib": 89.95857238769531,
+          "process_write_mib": 95.76924800872803
+        }
+      ],
+      "synthetic": true,
+      "live_platform": false,
+      "file": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\flow_speed_0546_20261116_01\\template-20k-new\\20k-SKU完整明细.xlsx"
+    }
+  }
+}

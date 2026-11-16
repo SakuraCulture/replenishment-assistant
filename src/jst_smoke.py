@@ -72,7 +72,7 @@ def start_smoke(app,win,args):
                 review=dialog.review
                 if review.pages.currentIndex()!=0 or review.store_model.rowCount()!=2 or review.model.rowCount()!=0:raise AssertionError('default must be store overview')
                 if review.total.height()<review.total.heightForWidth(review.total.width()) or review.total.geometry().bottom()>=review.definition.geometry().top():raise AssertionError('summary text clipped or overlapping')
-                expected=sum((Decimal(r['demand'])*Decimal(r['price'])-Decimal(r['amount']) for p in dialog.plan['payload']['plans'] for r in p['rows']),Decimal(0))
+                expected=sum((max(Decimal(r['demand'])*Decimal(r['price'])-Decimal(r['amount']),Decimal(0)) for p in dialog.plan['payload']['plans'] for r in p['rows']),Decimal(0))
                 if sum(g['metrics']['reduced'] for g in review.groups)!=expected:raise AssertionError('store reduction reconciliation')
                 index=review.store_model.index(0,0);QTest.mouseClick(review.store_table.viewport(),Qt.MouseButton.LeftButton,pos=review.store_table.visualRect(index).center())
                 if review.pages.currentIndex()!=1:raise AssertionError('store click did not drill down')

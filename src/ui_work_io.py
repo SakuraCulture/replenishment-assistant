@@ -21,7 +21,9 @@ class Session:
             if not self.connection.poll(.05):
                 if not self.process.is_alive():raise RuntimeError('作业处理进程退出；请在作业记录核对保存状态后重试')
                 continue
-            kind,data=self.connection.recv()
+            try:kind,data=self.connection.recv()
+            except (EOFError,BrokenPipeError) as exc:
+                raise RuntimeError('作业处理进程退出；请在作业记录核对保存状态后重试') from exc
             if kind=='commit':
                 from runtime_support import CommitProgress
                 progress(CommitProgress(data))

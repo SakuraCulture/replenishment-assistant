@@ -82,6 +82,32 @@ class Results(unittest.TestCase):
         with patch('jst_orders.decode',side_effect=AssertionError('warm snapshot read')):self.assertEqual(self.read(),data)
         with closing(sqlite3.connect(self.cache)) as db,db:db.execute("UPDATE jst_result_projection SET payload='broken'")
         self.assertEqual(self.read(),data)
+
+    def test_upward_projection_and_warm_cache_keep_separate_increase(self):
+        self.f.f.save('return',[{'门店确认数量':1}])
+        import jst_batches as batches
+        p=batches.preview_new(self.path,[self.h],{'河北仓':test_jst.catalog(stock=100,step=24)})
+        result=batches.execute(self.path,p);self.assertFalse(result['errors'])
+        data=self.read();m=data['metrics']
+        self.assertEqual((m['demand'],m['allocated'],m['reduced'],m['increased']),(2,48,0,46))
+        self.assertEqual(m['reduced_sku'],0)
+        with patch('jst_orders.decode',side_effect=AssertionError('warm snapshot read')):
+            self.assertEqual(self.read(),data)
+
+    def test_projection_cache_v3_is_rebuilt_without_changing_generation(self):
+        _,gid=self.f.generated();before=orders.get(self.path,gid);data=self.read()
+        # Old cache entries are display caches, not business facts. A valid old
+        # cache digest must not bypass the new gross reduction/increase split.
+        with closing(sqlite3.connect(self.cache)) as db,db:
+            rows=db.execute('SELECT k,payload FROM jst_result_projection').fetchall()
+            import hashlib
+            for key,raw in rows:
+                key=wr.loads(key);key[0]=3;value=wr.loads(raw)
+                value['amounts'].pop('increased');value['amounts']['reduced']='-999'
+                raw=wr.dumps(value)
+                db.execute('INSERT OR REPLACE INTO jst_result_projection VALUES(?,?,?)',(wr.dumps(key),raw,hashlib.sha256(raw.encode()).hexdigest()))
+            db.execute('DELETE FROM jst_result_projection WHERE k LIKE ?',('[4,%',))
+        self.assertEqual(self.read(),data);self.assertEqual(orders.get(self.path,gid),before)
     def test_scope_and_cancel_do_not_create_exports(self):
         self.f.generated();data=results.read(self.path,self.cache,self.h['day'],[results.key(self.h)])
         self.assertEqual(len(data['records']),1);self.assertEqual(results.export_plan(data,[])['entries'],[])

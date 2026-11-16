@@ -32,7 +32,7 @@ def load(repo,head,cancel=None):
     checkpoint(cancel)
     with closing(repo.work.connect()) as db:ao.require_active(db,head['oid'],head['warehouse'])
     from warehouse_execution import get_order
-    order=get_order(repo,head)
+    order=get_order(repo,head,export_io=True)
     if order is None or order['digest']!=head['digest'] or order['oid']!=head['oid']:
         raise ValueError('归档修订或指纹不一致，请重新查询')
     if head['warehouse'] not in ao.scopes(order['payload']['result']['rows']):raise ValueError('此修订没有该仓数据')

@@ -107,6 +107,15 @@ def serve(connection,path,cancel):
                     issued=repository.confirm(payload,codes,expected_job,expected_orders,progress=progress,headers_only=True,cancel=cancel,prepared_heads=remember,warehouses=payload.get('execution_warehouses'))
                     result={'orders':[{k:v for k,v in r.items() if k!='payload'} for r in issued],'saved':normal_delivery.job_head(work,payload['day'])['saved']}
                 elif op=='review_export':
+                    if review_json is None and batch is not None:
+                        # Confirmation released only private preview objects.
+                        # Recreate the same review on demand after a failed run.
+                        import order_review,normal_orders
+                        repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
+                        review_records=[order_review.build(repository.get(p['old']['day'],p['store'],p['old']['revision']) if p['old'] else None,
+                            batch['payload']['results'][p['store']],batch['payload'].get('new_focus')) for p in batch['plans'] if not p['same']]
+                        from review_json import Prepared
+                        review_json=Prepared(review_records,canonical=True,cancel=cancel)
                     if review_json is None:raise ValueError('尚未生成完整差异')
                     destination=Path(arguments)
                     if destination.suffix.lower()=='.xlsx':
@@ -147,8 +156,15 @@ def serve(connection,path,cancel):
                     import normal_orders,normal_delivery
                     if batch is None:raise ValueError('缺少已核对的导出批次')
                     if not batch.get('complete') and any(not p['same'] for p in batch['plans']):raise ValueError('完整签发草稿尚未准备，不能归档')
+                    review_json=None;review_records=None
+                    for plan in batch['plans']:
+                        if plan['old']:plan['old']={k:v for k,v in plan['old'].items() if k!='payload'}
+                    supplied=None;tail=None;values=None;previous=None;review=None;r=None;order=None
                     repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=work
-                    result=normal_delivery.execute_batch(repository,batch,arguments,progress=progress,cancel=cancel)
+                    executing=batch
+                    try:result=normal_delivery.execute_batch(repository,executing,arguments,progress=progress,cancel=cancel,consume=True)
+                    finally:
+                        if executing.get('consumed'):batch=None
                 elif op in ('delete_preview','delete_orders','delete_job'):
                     import data_maintenance as maintenance
                     if op=='delete_preview':result=maintenance.inspect_deletion(path,arguments,progress,cancel)

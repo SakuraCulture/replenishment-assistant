@@ -37,7 +37,7 @@ export class NativeImportGuard{
         const requestSha256=sha256(body);this.checking=true;
         try{
           const refuse=await this.beforeRelease?.({requestSha256,isActive:()=>!this.closed});
-          if(this.closed){refuse?.();return route.abort();}
+          if(this.closed){await refuse?.();return route.abort();}
         }
         catch(error){this.error=error;return route.abort();}
         finally{this.checking=false;}
