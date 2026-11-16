@@ -22,7 +22,9 @@ export class BoundBrowser{
     this.client=null;this.adapter={onReceipt:null};
     for(const method of ['verifyIdentity','querySingle','warehouseOptions','prepareExport','submitOnce','findTask','downloadPurchaseTemplate','preparePurchaseCreate','uploadPurchaseOnce','purchaseImportTask','queryCreateOrders','queryPurchase','preparePurchase','submitPurchase','purchaseTask','downloadPurchase']){
       this.adapter[method]=async(...args)=>{
-        this.check();await this.ensure();this.check();return invokeBoundRead(this,method,args);
+        this.check();await this.ensure();this.check();
+        if(method==='uploadPurchaseOnce')return this.client.uploadPurchaseOnce(args[0],this.adapter.beforePurchaseImport);
+        return invokeBoundRead(this,method,args);
       };
     }
   }

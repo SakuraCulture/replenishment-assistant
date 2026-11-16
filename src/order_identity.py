@@ -21,9 +21,17 @@ def write(book,entries):
     identity=checksum([[e.get(k) for k in ('sheet','number','store','warehouse','day','revision','digest','created')] for e in entries])
     for e in entries:
         row=[VERSION,identity,e['sheet'],e['number'],e['store'],e['warehouse'] or None,e['day'],e['revision'],e['digest'],e.get('created')]
-        ws.append(row+[checksum(row)])
-        for c in ws[ws.max_row]:
-            if isinstance(c.value,str):c.data_type='s'
+        values=row+[checksum(row)]
+        if book.write_only:
+            from openpyxl.cell import WriteOnlyCell
+            cells=[WriteOnlyCell(ws,v) for v in values]
+            for cell in cells:
+                if isinstance(cell.value,str):cell.data_type='s'
+            ws.append(cells)
+        else:
+            ws.append(values)
+            for c in ws[ws.max_row]:
+                if isinstance(c.value,str):c.data_type='s'
     ws.sheet_state='veryHidden';book.security.lockStructure=True
 
 def read(book):

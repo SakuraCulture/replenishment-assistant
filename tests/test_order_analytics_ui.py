@@ -39,6 +39,22 @@ class AnalyticsUiTests(unittest.TestCase):
     def test_detail_is_readonly(self):
         w=self.widget;w.show_report(self.f.report());w.tabs.setCurrentIndex(3)
         self.assertFalse(w.models['detail'].flags(w.models['detail'].index(0,0)) & __import__('PySide6.QtCore',fromlist=['Qt']).Qt.ItemFlag.ItemIsEditable)
+    def test_lifecycle_range_filters_query_and_keeps_previous_snapshot_until_query(self):
+        self.f.f.save('return')
+        w=self.widget;w.show_report(self.f.report());old=w.report
+        w.lifecycle_range.setCurrentIndex(w.lifecycle_range.findData('payment'))
+        self.assertEqual(w.spec()['lifecycle_from'],'payment')
+        self.assertIs(w.report,old);self.assertIn('尚未查询',w.applied.text())
+        w.query();self.wait()
+        self.assertEqual(len(w.report['heads']),1)
+        self.assertIn('待付款及以后',w.applied.text())
+        self.assertEqual(w.report['rows'][0]['order_status'],'待付款')
+    def test_saved_view_restores_range_and_old_view_defaults_to_all_signed(self):
+        w=self.widget
+        for query,expected in (({**self.f.spec,'lifecycle_from':'payment'},'payment'),(dict(self.f.spec),'')):
+            w.views.addItem('隔离视图',{'name':'隔离视图','query':query})
+            w.load_view(w.views.count()-1)
+            self.assertEqual(w.lifecycle_range.currentData(),expected)
     def test_updated_data_does_not_replace_visible_snapshot(self):
         w=self.widget;w.show_report(self.f.report());snapshot=w.report;self.host.show();w.show();self.app.processEvents();self.assertTrue(w.isVisible());self.f.f.save('return');w.check_update()
         deadline=time.monotonic()+10

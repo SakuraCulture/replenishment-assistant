@@ -45,20 +45,40 @@ class Allocation(unittest.TestCase):
     def test_decimal_price_and_exact_identifier(self):
         r=a.allocate([{'sku':'0001','base_quantity':'3'},{'sku':'1','base_quantity':'3'}],catalog(price='0.1')['items'],{})
         self.assertEqual(r[0]['amount'],'0.3');self.assertTrue(r[1]['issue'])
-    def test_non_carton_demand_is_rounded_down_without_over_ordering(self):
+    def test_non_carton_demand_is_rounded_up_and_original_is_preserved(self):
         r=a.allocate([{'sku':'0001','base_quantity':'23'}],catalog(step=24)['items'],{})[0]
-        self.assertFalse(r['issue']);self.assertEqual(r['quantity'],'0')
+        self.assertFalse(r['issue']);self.assertEqual(r['quantity'],'24')
         self.assertEqual(r['demand'],'23');self.assertEqual(r['carton_remainder'],'23')
-        self.assertIn('需求不足一箱',r['reason'])
+        self.assertEqual(r['carton_increment'],'1');self.assertEqual(r['missing'],'0')
+        self.assertIn('向上规整 23→24',r['reason'])
 
     def test_business_carton_examples_keep_original_demand_and_remainder(self):
-        for demand,step,expected,remainder in [(1090,15,1080,10),(800,24,792,8),(500,12,492,8)]:
+        for demand,step,expected,remainder in [(1090,15,1095,10),(800,24,816,8),(500,12,504,8)]:
             with self.subTest(demand=demand):
                 r=a.allocate([{'sku':'0001','base_quantity':str(demand)}],catalog(stock=5000,step=step)['items'],{})[0]
                 self.assertFalse(r['issue']);self.assertEqual(Decimal(r['quantity']),expected)
-                self.assertEqual(Decimal(r['demand']),demand);self.assertEqual(Decimal(r['missing']),remainder)
+                self.assertEqual(Decimal(r['demand']),demand);self.assertEqual(Decimal(r['missing']),0)
                 self.assertEqual(Decimal(r['carton_demand']),expected);self.assertEqual(Decimal(r['carton_remainder']),remainder)
+                self.assertEqual(Decimal(r['carton_increment']),expected-demand)
                 self.assertNotIn('库存不足',r['reason'])
+
+    def test_ceiling_is_not_nearest_and_does_not_add_to_exact_cartons(self):
+        for demand,expected in [('0.1','24'),('1','24'),('12','24'),('23.9','24'),('24','24'),('24.1','48'),('36','48'),('48','48')]:
+            with self.subTest(demand=demand):
+                r=a.allocate([{'sku':'0001','base_quantity':demand}],catalog(step=24)['items'],{})[0]
+                self.assertEqual(r['quantity'],expected);self.assertFalse(r['issue'])
+                self.assertEqual(r['missing'],'0');self.assertEqual(Decimal(r['demand']),Decimal(demand))
+        self.assertEqual(a.allocate([{'sku':'0001','base_quantity':'0'}],catalog(step=24)['items'],{}),[])
+
+    def test_shortage_uses_all_stock_even_between_original_and_ceiling(self):
+        for stock in (0,14,1089,1090,1094,1095,1096):
+            with self.subTest(stock=stock):
+                balances={}
+                r=a.allocate([{'sku':'0001','base_quantity':'1090'}],catalog(stock=stock,step=15)['items'],balances)[0]
+                self.assertEqual(Decimal(r['quantity']),min(1095,stock))
+                self.assertEqual(Decimal(r['missing']),max(1090-stock,0))
+                self.assertEqual(balances['0001'],stock-min(1095,stock))
+                self.assertEqual(a.totals([r])['shortages'],int(stock<1090))
 
     def test_normalization_keeps_reservations_and_short_stock_constraints(self):
         for balance,expected in [(Decimal(90),90),(Decimal(31),31),(Decimal(14),14),(Decimal(0),0)]:

@@ -129,11 +129,11 @@ class Repository:
         return {'revision':revision,'saved':stamp,'digest':digest}
 
 
-def prepare_job(day,payload,progress=lambda _:None,*,known=()):
+def prepare_job(day,payload,progress=lambda _:None,*,known=(),store=None):
         if date.fromisoformat(day).isoformat()!=day:raise ValueError('日期须为YYYY-MM-DD')
         if payload.get('schema')!=1 or payload.get('day')!=day:raise ValueError('作业快照与日期不一致')
         info=summary(payload)
         import deletion_barrier
         info['_deletion_guard']=deletion_barrier.basis(payload)
-        prepared=chunks.prepare(payload,known,progress)
+        prepared=chunks.prepare(payload,known,progress,store=store)
         return info,prepared,prepared.digest

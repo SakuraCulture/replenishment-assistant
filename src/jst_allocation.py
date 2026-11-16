@@ -1,7 +1,7 @@
 """Ordered, inventory-unit execution allocation. No model, Qt, storage or I/O."""
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_CEILING
 
-RULE = 'jst-stock-v2'
+RULE = 'jst-stock-v3'
 
 
 def number(value, label):
@@ -32,7 +32,7 @@ def allocate(rows, items, balances):
                'demand': text(demand), 'quantity': '0', 'amount': None, 'price': None,
                'step': None, 'stock': None, 'before': None, 'after': None,
                'missing': text(demand), 'reason': '', 'issue': False,
-               'carton_demand': None, 'carton_remainder': None,
+               'carton_demand': None, 'carton_remainder': None, 'carton_increment': None,
                'return_sources': row.get('sources', []), 'catalog_row': (item or {}).get('_row')}
         try:
             if row.get('_admission_error'):raise ValueError(row['_admission_error'])
@@ -51,20 +51,23 @@ def allocate(rows, items, balances):
             stock = number(item.get('可用数'), '可用库存')
             before = balances.setdefault(sku, stock)
             out.update(step=text(step), price=text(price), stock=text(stock), before=text(before), after=text(before), amount='0')
-            carton_demand = (demand // step) * step
-            remainder = demand - carton_demand
-            out.update(carton_demand=text(carton_demand), carton_remainder=text(remainder))
+            carton_demand = (demand / step).to_integral_value(rounding=ROUND_CEILING) * step
+            increment = carton_demand - demand
+            # Keep the original tail's meaning in saved rows; record the upward
+            # padding separately instead of turning that tail into a negative.
+            remainder = demand % step
+            out.update(carton_demand=text(carton_demand), carton_remainder=text(remainder), carton_increment=text(increment))
             if before < 0:
                 raise ValueError('库存预留超过可用数')
             # Normalize the demand once. A warehouse shortage allocates every
             # remaining inventory unit, including a partial carton.
             qty = min(carton_demand, before)
             balances[sku] = before - qty
-            reason = ('需求不足一箱' if carton_demand == 0 else '无可用库存' if before == 0
+            reason = ('无可用库存' if before == 0
                       else '库存不足，按剩余可用库存分配（含不足整箱）' if qty < carton_demand else '按回传分配')
-            if remainder:
-                reason += '；回传按箱规向下取整 '+text(demand)+'→'+text(carton_demand)+'，余数'+text(remainder)+'未分配'
-            out.update(quantity=text(qty), amount=text(qty * price), after=text(before-qty), missing=text(demand-qty), reason=reason)
+            if increment:
+                reason += '；回传按箱规向上规整 '+text(demand)+'→'+text(carton_demand)+'，补齐'+text(increment)
+            out.update(quantity=text(qty), amount=text(qty * price), after=text(before-qty), missing=text(max(demand-qty, Decimal(0))), reason=reason)
         except ValueError as exc:
             out.update(issue=True, reason=str(exc))
         output.append(out)

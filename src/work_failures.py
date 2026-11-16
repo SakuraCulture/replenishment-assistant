@@ -41,11 +41,20 @@ class FailureContext:
         self.stage = '准备操作'
         self.commit_state = 'not_started'
         self.heads = []
+        self.memory = []
+        self.memory_at = 0
 
     def progress(self, value):
         if hasattr(value, 'active'):
             self.commit_state = 'unknown' if value.active else 'committed'
         self.stage = str(value)
+        try:
+            import time
+            if time.monotonic()-self.memory_at>=1 or hasattr(value,'active'):
+                from work_memory import snapshot
+                self.memory.append({'stage':self.stage,**snapshot()})
+                self.memory=self.memory[-24:];self.memory_at=time.monotonic()
+        except Exception:pass
 
     def capture(self, exc, database):
         if isinstance(exc, WorkFailure): return exc.evidence
@@ -55,6 +64,14 @@ class FailureContext:
                         operation=self.operation, stage=self.stage, commit_state=self.commit_state,
                         exception_type=type(exc).__name__, reason=exception_text(exc))
         if self.heads:evidence['prepared_heads'] = self.heads
+        try:
+            from work_memory import snapshot
+            evidence['memory'] = snapshot()
+            evidence['recent_stage_memory'] = self.memory
+            if hasattr(exc,'encoding_stats'):evidence['encoding'] = exc.encoding_stats
+            if hasattr(exc,'resource_budget'):evidence['resource_budget'] = exc.resource_budget
+            if hasattr(exc,'encoding_cleanup_error'):evidence['encoding_cleanup_error']=exc.encoding_cleanup_error
+        except Exception:pass
         try:
             evidence['exception_repr'] = repr(exc)
             evidence['traceback'] = ''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))[-65536:]

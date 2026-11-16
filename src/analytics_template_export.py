@@ -19,6 +19,7 @@ from openpyxl.worksheet.table import Table, TableColumn, TableStyleInfo
 from analytics_identifiers import HEADERS as ID_HEADERS, cells as identifier_cells
 from export_progress import rows as row_progress
 from runtime_support import checkpoint
+import analytics_lifecycle_scope as lifecycle_scope
 
 NA = 'n.a.'
 STAGES = ('model', 'signed', 'return', 'operations', 'payment', 'receipt')
@@ -112,6 +113,9 @@ class _Sheet:
         self.ws.sheet_view.showGridLines = False
         self.cancel, self.count, self.width = cancel, 0, len(widths)
         self.cache = getattr(book, '_analytics_formula_cache', None)
+        # Style IDs belong to this workbook. Cache complete, write-once style
+        # combinations here; never share them with a later export/workbook.
+        self._styles = {}
         for col, width in enumerate(widths, 1):
             self.ws.column_dimensions[get_column_letter(col)].width = width
 
@@ -130,12 +134,20 @@ class _Sheet:
             if isinstance(actual, str) and not formula:
                 cell.data_type = 's'  # Identifiers, names and attributes cannot inject Excel formulas.
             style = (overrides or {}).get(col, kind)
-            cell.font, cell.fill = _STYLES[style]
             numeric = formula or isinstance(actual, (int, float)) or (actual == NA and col in (formats or {}))
             horizontal = 'center' if kind in ('header', 'card', 'total') or style in ('card', 'total') else 'right' if numeric else None
-            cell.alignment = Alignment(vertical='center', wrap_text=(kind == 'header' or col in (5, 6) or (isinstance(actual, str) and '\n' in actual)),
-                                       horizontal=horizontal, indent=1 if horizontal == 'right' else 0)
-            cell.number_format = (formats or {}).get(col, 'General')
+            wrap = kind == 'header' or col in (5, 6) or (isinstance(actual, str) and '\n' in actual)
+            number_format = (formats or {}).get(col, 'General')
+            key = (style, horizontal, wrap, number_format)
+            cached = self._styles.get(key)
+            if cached is None:
+                cell.font, cell.fill = _STYLES[style]
+                cell.alignment = Alignment(vertical='center', wrap_text=wrap, horizontal=horizontal,
+                                           indent=1 if horizontal == 'right' else 0)
+                cell.number_format = number_format
+                self._styles[key] = cell._style
+            else:
+                cell._style = cached
             if formula and callable(self.cache):
                 self.cache(self.ws.title, f'{get_column_letter(col)}{self.count}', value.cached)
             cells.append(cell)
@@ -275,7 +287,7 @@ def append_summary(book, report, rows, progress=lambda _: None, cancel=None):
         sheet.stage_format = MONEY if kind == 'value' else INTEGER
         sheet.ws.freeze_panes = 'E17'; sheet.ws.print_title_rows = '15:16'
         _dashboard(sheet, '补货订单完成情况 · ' + name, totals, 16 + row_count,
-                   '顶部只取ALL；排除不入统计、待核不当零。SKU按订单内计数，跨单分别加；数量为各库存单位执行量相加，非同单位物量。')
+                   '顶部只取ALL；排除不入统计、待核不当零。SKU按订单内计数，跨单分别加；数量为各库存单位执行量相加，非同单位物量。生命周期范围：'+lifecycle_scope.label(report.get('query',{})))
         for reference in ('A15:F15', 'G15:L15', 'M15:R15', 'S15:T15', 'U15:V15'): sheet.merge(reference)
         sheet.row(['订单与必采状态', None, None, None, None, None, '六阶段 · ' + name, None, None, None, None, None,
                    '环节转化', None, None, None, None, None, '最终履行', None, '外部订单号'], 'header',
@@ -308,7 +320,7 @@ def append_detail(book, report, rows, progress=lambda _: None, cancel=None):
     sheet.ws.freeze_panes = 'E8'; sheet.ws.print_title_rows = '6:7'
     for reference in ('A2:N2', 'A3:N3', 'A4:N4', 'A6:E6', 'F6:K6', 'L6:Q6', 'R6:S6', 'T6:Z6', 'AA6:AF6', 'AG6:AM6', 'AN6:AO6', 'AP6:AQ6'): sheet.merge(reference)
     sheet.row(); sheet.row(['补货SKU生命周期明细'], 'title')
-    sheet.row(['一行＝订单×供货仓×SKU；保留本筛选全部纳入、待核、排除行；同SKU跨订单分别计数。'], 'note')
+    sheet.row(['一行＝订单×供货仓×SKU；保留本筛选全部纳入、待核、排除行；同SKU跨订单分别计数。生命周期范围：'+lifecycle_scope.label(report.get('query',{}))], 'note')
     sheet.row(['种类按阶段数量>0计1；货值=数量×签发冻结V单价。目标持有量为当时预测需求含安全库存，不按签发量倒推；数量非同单位物量。'], 'note')
     sheet.row()
     groups = [None] * 43

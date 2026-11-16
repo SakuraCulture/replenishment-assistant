@@ -118,23 +118,26 @@ def available(path, scanned, progress=lambda _: None, cancel=None):
         for row in scanned['rows']:
             checkpoint(cancel)
             if row['signed_number']:
-                version=db.execute('PRAGMA data_version').fetchone()[0]
-                if version!=data_version:resolved.clear();data_version=version
+                if data_version is None:data_version=db.execute('PRAGMA data_version').fetchone()[0]
                 number=row['signed_number']
                 try:hit=resolved.get(number)
                 except TypeError:hit=None
                 if hit is None:
                     hit=purchases.wo.resolve(db,number)
-                    after=db.execute('PRAGMA data_version').fetchone()[0]
-                    if after==version:
-                        try:resolved[number]=hit
-                        except TypeError:pass
-                    else:resolved.clear();data_version=after
+                    try:resolved[number]=hit
+                    except TypeError:pass
                 identity, wh = hit
                 scopes.update((identity[1], w) for w in ([wh] if wh else purchases.wo.WAREHOUSES))
             elif row['store']:
                 scopes.update((row['store'], w) for w in ([row['warehouse']] if row['warehouse'] else purchases.wo.WAREHOUSES))
             else: unknown = True
+        # Observe changes at this read boundary, not once per SKU. No read
+        # transaction is held while grouping rows. A concurrent rename/delete
+        # still goes through the real resolver; unrelated writes can pass.
+        if resolved and db.execute('PRAGMA data_version').fetchone()[0]!=data_version:
+            for number in resolved:
+                checkpoint(cancel);identity,wh=purchases.wo.resolve(db,number)
+                scopes.update((identity[1],w) for w in ([wh] if wh else purchases.wo.WAREHOUSES))
     return purchases.targets(path, None if unknown else scopes, progress, cancel)
 
 def current_targets(path, progress=lambda _:None, cancel=None):
@@ -255,25 +258,23 @@ def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None, *, st
     if stage not in ALL_STAGES: raise ValueError('未知生命周期环节')
     groups = {}; plans = []
     with closing(purchases.connect(path)) as db:
-        checked=set();data_version=None
+        checked=set()
         for row in scanned['rows']:
             checkpoint(cancel); head = bindings.get(binding_key(row))
             if not head or not matching(row, [head]): raise ValueError('单据未明确匹配，或门店/仓/单号/修订不一致')
             if head['warehouse'] not in purchases.wo.WAREHOUSES: raise ValueError('旧单仓归属不明确，不能猜测关联')
-            version=db.execute('PRAGMA data_version').fetchone()[0]
-            if version!=data_version:checked.clear();data_version=version
             token=tuple((k in head,head.get(k)) for k in ('oid','revision','warehouse','digest','current_revision','execution_epoch','visibility_token'))
             try:known=token in checked
             except TypeError:known=False;token=None
             if not known:
                 purchases.validate_head(db, head)
-                after=db.execute('PRAGMA data_version').fetchone()[0]
-                if after==version and token is not None:checked.add(token)
-                else:checked.clear();data_version=after
+                if token is not None:checked.add(token)
             groups.setdefault(key(head), {'head': head, 'rows': []})['rows'].append(row if _owned else copy.deepcopy(row))
         for i, group in enumerate(groups.values()):
             checkpoint(cancel); h = group['head']; unique = {}; duplicates = 0
-            purchases.validate_head(db,h)  # Latest state when freezing each plan.
+            # Always recheck each source when freezing its plan. The immutable
+            # binding cache above never replaces this or commit's fresh CAS.
+            purchases.validate_head(db,h)
             match_payment_rows(path,h,group['rows'])
             if len({(r['document_number'], r['document_date']) for r in group['rows']}) != 1: raise ValueError('一张仓单同一环节须提供一份完整单据；不同单号/日期不能自动拼成整单')
             conflicts = duplicate_rows.find(group['rows'])

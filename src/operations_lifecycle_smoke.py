@@ -59,7 +59,7 @@ def start_smoke(app,win,args):
                 g=GenerationDialog(win,win,heads);dialogs.append(g);g.show();wait(lambda:len(g.catalogs)==2)
                 g.preview_btn.click();require(g.plan is not None,'实际预览按钮读取运营需求及所选仓快照')
                 values={p['head']['warehouse']:Decimal(p['rows'][0]['quantity']) for p in g.plan['payload']['plans']}
-                require(values=={'河北仓':Decimal(1079),'山东仓':Decimal(792)},'1090按15规整后库存不足分1079；800按24规整后分792')
+                require(values=={'河北仓':Decimal(1079),'山东仓':Decimal(816)},'1090按15向上规整为1095后库存不足分1079；800按24向上规整后分816')
                 g.generate_btn.click();wait(lambda:g.worker is None and g.receipt is not None)
                 require(not g.receipt['errors'] and len(g.saved)==2,'真实确认生成按钮保存两个仓单并释放工作线程')
                 gids=list(g.saved);g.grab().save(str(out/'allocation-page.png'))
@@ -69,7 +69,7 @@ def start_smoke(app,win,args):
                     book=openpyxl.load_workbook(file['path'],read_only=True,data_only=True)
                     try:quantities.append(list(book.active.values)[1][2])
                     finally:book.close()
-                require(sorted(quantities)==[792,1079],'实际Excel数量与分配预览一致，未二次整箱取整');g.close()
+                require(sorted(quantities)==[816,1079],'实际Excel数量与分配预览一致，未二次整箱取整');g.close()
                 d=StageDialog(win.followup,'operations',heads);dialogs.append(d);d.show();p=d.panel;p.status.setCurrentText('本环节全部');wait(lambda:len(p.records)==2);p.checked={str(i):h for i,h in enumerate(heads)}
                 forward[0]=True
                 next(b for b in p.findChildren(QPushButton) if b.text()=='分配并准备付款').click()

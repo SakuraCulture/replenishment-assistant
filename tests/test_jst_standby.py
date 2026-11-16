@@ -15,10 +15,10 @@ class Standby(unittest.TestCase):
                 allowed=status in ('启用','正常','在用','已启用','备用')
                 self.assertEqual(r['quantity'],'40' if allowed else '0');self.assertEqual(r['issue'],not allowed)
     def test_standby_keeps_carton_shortage_and_reservation_math(self):
-        for stock,balance,expected in [(100,None,'72'),(10,None,'10'),(100,Decimal(14),'14'),(0,None,'0')]:
+        for stock,balance,expected in [(100,None,'96'),(10,None,'10'),(100,Decimal(14),'14'),(0,None,'0')]:
             with self.subTest(stock=stock,balance=balance):
                 r=allocation.allocate([{'sku':'0001','base_quantity':'80'}],self.catalog(stock=stock,step=24)['items'],{} if balance is None else {'0001':balance})[0]
-                self.assertFalse(r['issue']);self.assertEqual(r['quantity'],expected);self.assertEqual(r['carton_demand'],'72')
+                self.assertFalse(r['issue']);self.assertEqual(r['quantity'],expected);self.assertEqual(r['carton_demand'],'96')
     def test_standby_real_batch_commit_and_xlsx_export(self):
         import openpyxl
         f=fixture.Service();f.setUp()

@@ -37,7 +37,13 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
     if level not in ('store','order','detail','coverage_rounds','workflow','analysis','analysis_detail'):raise ValueError('未知报表类型')
     target=Path(target).resolve()
     if target.suffix.lower()!='.xlsx' or target.exists():raise ValueError('请使用新的.xlsx文件，保留已导出分析快照')
-    checkpoint(cancel);service.validate_snapshot(path,report,progress,cancel)
+    from analytics_export_validation import SnapshotCheck
+    with SnapshotCheck(path,report,progress,cancel) as check:
+        check()
+        return _export_verified(path,report,target,level,orders,progress,cancel,check)
+
+
+def _export_verified(path,report,target,level,orders,progress,cancel,check):
     if report.get('linked_stockout'):
         import workflow_stockout
         workflow_stockout.validate(path,report['query'],report['linked_stockout'],cancel)
@@ -45,7 +51,7 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
     if selected-set(h['number'] for h in report['heads']):raise ValueError('勾选订单不在当前查询范围')
     rows=[r for r in report['rows'] if not selected or r['order'] in selected]
     if level in ('analysis','analysis_detail'):
-        return export_template(path,report,target,level,rows,progress,cancel)
+        return export_template(path,report,target,level,rows,progress,cancel,_check=check)
     included=[r for r in rows if r['scope']=='纳入'];pending=[r for r in rows if r['scope']=='待核']
     tabs=[]
     if level=='detail':
@@ -79,7 +85,7 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
             progress('压缩保存报表，完成后响应取消…');book.save(tmp)
         checkpoint(cancel)
         # A confirmed/deleted order while writing must not publish an obsolete report.
-        service.validate_snapshot(path,report,progress,cancel)
+        check()
         if report.get('linked_stockout'):workflow_stockout.validate(path,report['query'],report['linked_stockout'],cancel)
         checkpoint(cancel);os.link(tmp,target)
     finally:Path(tmp).unlink(missing_ok=True)
@@ -87,7 +93,7 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
             'snapshot_id':report['snapshot_id'],'rows':len(included),'pending':len(pending),'sheets':monitor+[t[0] for t in tabs]+extra,'coverage_version':report['coverage']['version']}
 
 
-def export_template(path,report,target,level,rows,progress,cancel):
+def export_template(path,report,target,level,rows,progress,cancel,*,_check=None):
     """The new presentation uses the same frozen query and atomic publication."""
     from analytics_formula_cache import FormulaCache
     from analytics_template_export import append_summary,append_detail
@@ -100,7 +106,8 @@ def export_template(path,report,target,level,rows,progress,cancel):
                 sheets=writer(book,report,rows,progress,cancel)
                 checkpoint(cancel);progress('保存模板报表与公式缓存…');book.save(tmp)
             cache.apply(tmp)
-        service.validate_snapshot(path,report,progress,cancel)
+        if _check is None:service.validate_snapshot(path,report,progress,cancel)
+        else:_check()
         if report.get('linked_stockout'):
             import workflow_stockout
             workflow_stockout.validate(path,report['query'],report['linked_stockout'],cancel)

@@ -80,7 +80,7 @@ def export(path,head,target,progress=lambda _:None,cancel=None):
     repo=repository(path);wh=head['warehouse'];checkpoint(cancel)
     with closing(repo.work.connect()) as db:ao.require_active(db,head['oid'],wh)
     from warehouse_execution import get_order
-    progress('读取并校验所选修订…');order=get_order(repo,head,progress=progress)
+    progress('读取并校验所选修订…');order=get_order(repo,head,progress=progress,export_io=True)
     if order is None or order['digest']!=head['digest']:raise ValueError('归档快照已变化，请重新查询')
     target=Path(target)
     if target.exists():raise FileExistsError('文件已存在，请换新文件名')
