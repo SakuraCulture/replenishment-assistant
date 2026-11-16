@@ -4,6 +4,7 @@ import {DatabaseSync,backup} from 'node:sqlite';
 import {canonical,sha256,now,uid,fail} from './common.mjs';
 import {orderKey,validatePurchaseIntent,checkImportReceipt,checkCreatedPurchase,canBind,bindingEligible,checkedBinding} from './purchase-create-contract.mjs';
 import {requireUnretired,requireHostOrder,retiredRecord,lateRetiredReceipt} from './order-retirement.mjs';
+import {requireAbortedDispatch} from './purchase-host-guard.mjs';
 
 const transitions={
   RESERVED:['PREPARING','PAUSED','CANCELLED_BEFORE_UPLOAD'],PREPARING:['READY','PAUSED','FAILED_PRECHECK'],
@@ -129,6 +130,16 @@ export class PurchaseCreates{
       });
     }
     return this.update(r.id,r.sequence,'ACCEPTED',{receipt,error:null},'ACCEPTED');
+  }
+  refusedBeforeRelease(id,requestHash,error){
+    const original=this.get(id);requireAbortedDispatch(original.intent,requestHash);
+    return this.state.write(()=>{
+      const old=this.get(id);requireUnretired(this.db,id,old.intent?.basis?.oid,old.intent?.basis?.warehouse);
+      if(old.receipt||old.state!=='SUBMITTING')fail('HOST_SUBMISSION_REVIEW','已有受理记录或状态变化，不能清除提交事实');
+      const r={...old,state:error.code==='PAUSED'?'PAUSED':'FAILED_PRECHECK',uploadAttempted:false,error,sequence:old.sequence+1,updatedAt:now()};
+      this.db.prepare('UPDATE purchase_creates SET state=?,sequence=?,payload=? WHERE id=?').run(r.state,r.sequence,JSON.stringify(r),id);
+      this.event(r,'PROVEN_BLOCKED_BEFORE_RELEASE');return r;
+    });
   }
   putBindingProposal(id,sequence,proposal,kind){
     requireUnretired(this.db,id);

@@ -503,6 +503,14 @@ class Workflows:
                 s = json.loads(old[0]) if old else {'id': r['id'], 'basis': r['basis'], 'order_id': r['binding']['orderId'], 'terminal': False, 'final_pending': False, 'failures': 0, 'active_job': None, 'created_at': self.clock()}
                 if enabled and (s['terminal'] or r.get('receipt_terminal') or r.get('platform_status')=='已作废' or r['binding'].get('status')=='已作废'):
                     raise ValueError('已完成或已作废订单不能重新启用常规监控；已完成的实收待办仍保留')
+                if enabled and self.business_path and s.get('retired'):
+                    if s['basis']!=r['basis'] or s['order_id']!=r['binding']['orderId']:
+                        raise ValueError('原监听与所选采购关联已变化，不能换绑恢复')
+                    event_id='schedule:'+r['id']
+                    seq=db.execute('SELECT coalesce(max(sequence),0)+1 FROM ax_workflow_events WHERE id=?',(event_id,)).fetchone()[0]
+                    db.execute('INSERT INTO ax_workflow_events VALUES(?,?,?)',(event_id,seq,encoded({'at':self.clock(),'event':'RECEIPT_MONITOR_REVALIDATED','order_id':s['order_id'],
+                        'before':{k:s.get(k) for k in ('retired','retired_reason','enabled','automation_paused')}})))
+                    s.update(retired=False,retired_reason=None)
                 s.update(enabled=bool(enabled), automation_paused=not enabled, display_name=r.get('target', {}).get('displayName'), interval_seconds=minutes * 60, next_at=self.clock(), updated_at=self.clock())
                 db.execute('INSERT INTO ax_schedules VALUES(?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload', (r['id'], encoded(s)))
 

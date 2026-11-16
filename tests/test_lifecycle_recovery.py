@@ -130,3 +130,43 @@ class Recovery(unittest.TestCase):
         self.assertEqual({r['id'] for r in records},{task['id'],'f'*32})
         self.assertEqual(next(r for r in records if r['id']=='f'*32)['state'],'unreadable')
         self.assertEqual(recovery.recover(self.path,task['id'])['action'],'completed')
+
+    def test_checkpoint_publication_does_not_require_readers_to_finish(self):
+        plan=self.f.plan();before=hashlib.sha256(self.path.read_bytes()).hexdigest()
+        with closing(sqlite3.connect(self.path)) as reader:
+            reader.execute('BEGIN');reader.execute('SELECT count(*) FROM normal_orders').fetchone()
+            task=recovery.begin(self.path,plan)
+            self.assertEqual(recovery.inspect(self.path,task['id'])['action'],'retry')
+            self.assertEqual(hashlib.sha256(self.path.read_bytes()).hexdigest(),before)
+        self.assertEqual(recovery.recover(self.path,task['id'])['action'],'completed')
+
+    def test_checkpoint_receipt_publication_also_allows_active_reader(self):
+        task=recovery.begin(self.path,self.f.plan());task.update(state='interrupted',error={'message':'synthetic failure'})
+        before=hashlib.sha256(self.path.read_bytes()).hexdigest()
+        with closing(sqlite3.connect(self.path)) as reader:
+            reader.execute('BEGIN');reader.execute('SELECT count(*) FROM normal_orders').fetchone()
+            self.assertTrue(recovery._publish(self.path,task))
+            self.assertEqual(hashlib.sha256(self.path.read_bytes()).hexdigest(),before)
+        self.assertEqual(self.task()['error']['message'],'synthetic failure')
+
+    def test_publication_still_excludes_deletion_writer_until_files_are_durable(self):
+        atomic=recovery._atomic;observed=[]
+        def checked(*args):
+            with closing(sqlite3.connect(self.path,timeout=.01)) as writer:
+                with self.assertRaisesRegex(sqlite3.OperationalError,'locked'):writer.execute('BEGIN IMMEDIATE')
+            observed.append(True);return atomic(*args)
+        with patch.object(recovery,'_atomic',checked):task=recovery.begin(self.path,self.f.plan())
+        with patch.object(recovery,'_atomic',checked):self.assertTrue(recovery._publish(self.path,task))
+        self.assertEqual(len(observed),2)
+        with closing(sqlite3.connect(self.path,timeout=.01)) as writer:
+            writer.execute('BEGIN IMMEDIATE');writer.rollback()
+        self.assertIsNone(self.doc())
+
+    def test_failed_publication_releases_only_technical_lock(self):
+        with patch.object(recovery,'_atomic',side_effect=OSError('synthetic publication error')):
+            with self.assertRaisesRegex(OSError,'publication error'):recovery.begin(self.path,self.f.plan())
+        with closing(sqlite3.connect(self.path,timeout=.01)) as writer:
+            writer.execute('BEGIN IMMEDIATE');writer.rollback()
+        self.assertIsNone(self.doc())
+        task=recovery.begin(self.path,self.f.plan())
+        self.assertEqual(recovery.recover(self.path,task['id'])['action'],'completed')

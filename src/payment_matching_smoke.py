@@ -34,8 +34,7 @@ def start_smoke(app,win,args):
                 {'E':'SKU','F':'SKU-BARCODE','AU':head['warehouse']},
                 {'E':'OTHER','F':'CONFLICTING-AUX','AU':head['warehouse']}]}}}
             rows=[{'adapter':'paid_order','sku':'SKU','source_order':{'内部订单号':'J-SKU','辅助码':'CONFLICTING-AUX'}}]
-            with patch('order_lifecycle.repository') as original:
-                original.return_value.get.return_value=order
+            with patch('warehouse_execution.get_order',return_value=order):
                 lc.match_payment_rows(path,head,rows)
                 require(rows[0]['sku']=='SKU' and rows[0]['matching_basis']=='商品编码精确匹配','商品编码准确时，辅助码指向其他条码不拦截')
                 rows[0]['sku']='UNKNOWN';rows[0]['source_order']['辅助码']='SKU-BARCODE'
@@ -95,7 +94,7 @@ def start_smoke(app,win,args):
                     if isinstance(box,QMessageBox):
                         boxes.append(box.detailedText());box.grab().save(str(out/'付款核对失败完整原因.png'));box.accept();answer.stop()
                 answer.timeout.connect(dismiss);answer.start();dialog.preview_btn.click();answer.stop()
-                require(len(boxes)==1 and '没有完整匹配订单' in boxes[0] and dialog.pages.currentIndex()==0,'核对未通过弹出完整原因，文件和目标选择界面仍保留')
+                require(len(boxes)==1 and '店铺名称对应多个订单' in boxes[0] and '请选择业务日期和仓单' in boxes[0] and dialog.pages.currentIndex()==0,'多候选未选时弹出具体原因，文件和目标选择界面仍保留')
                 head=f['head'];combo=dialog.targets[0]
                 combo.setCurrentIndex(next(i for i in range(combo.count()) if combo.itemData(i) and combo.itemData(i)['number']==head['number']))
                 signed_before=lc.repository(path).get(head['day'],head['store'],head['revision'],view='export')['digest']

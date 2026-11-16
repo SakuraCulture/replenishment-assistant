@@ -117,7 +117,8 @@ class PaymentMatchingTests(unittest.TestCase):
         with self.assertRaisesRegex(wr.Conflict,'企业连接'):lc.commit(self.path,plan)
         self.account_data['accounts']['sd']['bindingVersion']=1;self.accounts_file.write_text(json.dumps(self.account_data),'utf-8')
         with closing(sqlite3.connect(self.path)) as db,db:
-            db.execute("INSERT INTO lifecycle_mappings VALUES('payment','payment_match.concurrent','{}')")
+            name=doc['scan']['rows'][0]['source_order']['店铺名称']
+            db.execute("INSERT INTO lifecycle_mappings VALUES('payment',?,?)",(matching.mapping_key('store','100',matching.normalized(name)),wr.dumps({'original_name':name,'store':'OTHER','source_scope':'100'})))
         with self.assertRaisesRegex(wr.Conflict,'对应关系'):lc.commit(self.path,plan)
         self.assertTrue(self.f.unpaid())
     def test_missing_extra_or_changed_sku_is_not_full_match_even_with_same_totals(self):

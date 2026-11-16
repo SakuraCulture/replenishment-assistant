@@ -25,6 +25,11 @@ def schema(db):
 def has_parent(db, oid):
     return exists(db) and bool(db.execute('SELECT 1 FROM warehouse_execution_heads WHERE oid=?', (oid,)).fetchone())
 
+def managed(db,oids):
+    from query_scope import oid_batches
+    if not exists(db):return set()
+    return {oid for placeholders,values in oid_batches(oids) for oid, in db.execute('SELECT DISTINCT oid FROM warehouse_execution_heads WHERE oid IN ('+placeholders+')',values)}
+
 
 def state(db, oid, warehouse):
     if not has_parent(db, oid):

@@ -36,16 +36,26 @@ def assess(path, items, *, require_payment=True):
                 row=db.execute('SELECT oid,current FROM normal_orders WHERE number=?',(parent[2],)).fetchone()
                 oid,revision=row
                 if basis.get('oid') and basis['oid']!=oid:raise ValueError('原订单身份已失效，不能按同号重建的订单继续')
+                import warehouse_execution as execution
+                child=execution.state(db,oid,warehouse)
+                if child is not None:
+                    if child['state']!='active':raise ValueError('本机原仓单已删除或本轮未参与')
+                    revision=child['source_revision']
                 if basis.get('revision') is not None and basis['revision']!=revision:raise ValueError('原签发修订已失效')
                 if 'archive_visibility' in tables:
                     deleted=db.execute('SELECT deleted,token FROM archive_visibility WHERE oid=? AND warehouse=?',(oid,warehouse)).fetchone()
                     if deleted and deleted[0]:raise ValueError('本机原仓单已移入回收站')
                     if basis.get('visibilityToken') is not None and (deleted[1] if deleted else 0)!=basis['visibilityToken']:raise ValueError('原仓单可见性已改变，请重新核对原关联')
-                if basis.get('signedDigest'):
-                    digest=db.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(oid,revision)).fetchone()
-                    if not digest or digest[0]!=basis['signedDigest']:raise ValueError('原签发快照已改变')
+                digest=db.execute('SELECT identity_digest FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?',(oid,warehouse,revision)).fetchone() if child is not None else db.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(oid,revision)).fetchone()
+                if not digest or basis.get('signedDigest') and digest[0]!=basis['signedDigest']:raise ValueError('原签发快照已改变')
                 head={'oid':oid,'revision':revision,'warehouse':warehouse,'store':parent[1],'number':basis['number'],'day':parent[0],
+                      'current_revision':revision,'digest':digest[0],
+                      **({'execution_epoch':basis.get('executionEpoch',child['epoch'])} if child is not None else {}),
                       **{k:basis[k] for k in ('signedDigest','visibilityToken') if k in basis}}
+                from work_repository import Conflict
+                from deletion_barrier import SourceDeleted
+                try:execution.validate(db,head)
+                except (Conflict,SourceDeleted) as exc:raise ValueError(str(exc)) from exc
                 if require_payment:
                     if 'lifecycle_versions' not in tables:raise ValueError('原已确认付款依据不存在')
                     payment=db.execute("SELECT version,digest FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage='payment' ORDER BY version DESC LIMIT 1",(oid,revision,warehouse)).fetchone()

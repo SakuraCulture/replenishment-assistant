@@ -54,20 +54,43 @@ def confirm_plan(parent,host,plan):
     return True
 
 def open_history(parent,host):
+    from PySide6.QtCore import QSignalBlocker
+    from business_ui import run
+    from runtime_support import Cancelled
     d=QDialog(parent);d.setWindowTitle('默认设置变更记录');d.resize(900,620);v=QVBoxLayout(d)
     v.addWidget(label('撤销只还原未被后续修改的门店；恢复旧配置会先比较当前值。升级前未留存的旧值不能恢复。'))
     choices=QComboBox();v.addWidget(choices)
     table,model=grid(d,['门店编码','设置项','变更前','变更后']);fit_diff_grid(table);v.addWidget(table,1)
+    cursors=[None];state={'next':None,'entry':None}
+    navigation=QHBoxLayout();previous=button('上一页',lambda:turn(False));following=button('下一页',lambda:turn(True))
+    navigation.addWidget(previous);navigation.addWidget(following);v.addLayout(navigation)
     def load():
-        choices.clear()
-        for e in history.history(host.work_repository):choices.addItem(f"{e['at']} · {re.sub(r'[0-9a-f]{32}',lambda m:m[0][:8],e['action'])} · {len(e['after'])}店 · {e['id'][:8]}",e)
+        try:data=run(d,history.page,(host.work_repository,cursors[-1]),'读取默认设置变更记录')
+        except Cancelled:return False
+        if getattr(host,'closing',False):return False
+        state['next']=data['next'];state['entry']=None
+        with QSignalBlocker(choices):
+            choices.clear()
+            for e in data['items']:choices.addItem(f"{e['at']} · {re.sub(r'[0-9a-f]{32}',lambda m:m[0][:8],e['action'])} · {e['stores']}店 · {e['id'][:8]}",e['id'])
+        previous.setEnabled(len(cursors)>1);following.setEnabled(state['next'] is not None);show();return True
+    def turn(forward):
+        old=list(cursors)
+        if forward and state['next'] is not None:cursors.append(state['next'])
+        elif not forward and len(cursors)>1:cursors.pop()
+        if not load():cursors[:]=old
     def show():
-        e=choices.currentData();model.replace(diffs({'values':e['after'],'expected':e['before']}) if e else [])
+        identity=choices.currentData()
+        try:e=run(d,history.entry,(host.work_repository,identity),'读取所选设置变更') if identity else None
+        except Cancelled:e=None
+        if getattr(host,'closing',False):return
+        state['entry']=e;model.replace(diffs({'values':e['after'],'expected':e['before']}) if e else [])
     choices.currentIndexChanged.connect(show)
     def apply(restore):
-        e=choices.currentData()
+        e=state['entry']
         if e and confirm_plan(d,host,history.plan(host.work_repository,e,restore=restore)):load()
-    row=QHBoxLayout();row.addWidget(button('撤销此批变更',lambda:apply(False)));row.addWidget(button('恢复为此批保存后的配置',lambda:apply(True)));row.addWidget(button('关闭',d.accept));v.addLayout(row);load();d.exec()
+    row=QHBoxLayout();row.addWidget(button('撤销此批变更',lambda:apply(False)));row.addWidget(button('恢复为此批保存后的配置',lambda:apply(True)));row.addWidget(button('关闭',d.accept));v.addLayout(row)
+    if load():d.exec()
+    d.deleteLater()
 
 def reset_defaults(parent,host,codes):
     if not codes:return

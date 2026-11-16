@@ -114,6 +114,7 @@ class Review(QDialog):
             source=next((r['source_order'] for r in payload['raw_rows'] if r.get('source_order')),None)
             resolved=sum(bool(r.get('duplicate_resolution')) for r in payload['raw_rows'])
             if resolved:summary.append(f'本次明确选择了 {resolved} 款重复商品的原始行；未采用行不累加，保存后可在单据版本中查看采用记录。')
+            if p.get('source_evidence'):summary.append('业务内容与当前版本相同；仅留存本次新原件，不新增业务版本，不使下游依据失效。')
             if source:summary.append('来源店铺：'+str(source.get('店铺名称'))+'；内部订单：'+str(source.get('内部订单号'))+'；线上订单：'+str(source.get('线上订单号'))+'。请与上方所选店仓单核对。')
             if show_source_notices and payload.get('payment_source',{}).get('type')=='jst_import_return':
                 v.addWidget(label(h['number']+'：使用聚水潭导入单作为付款来源；内部号可在“订单详情 → 维护聚水潭内部订单号”补填。确认前请核实外部导入无异常且已经付款。','section'))
@@ -234,7 +235,7 @@ class Document(QDialog):
         d=self.versions.currentData(); self.files.clear()
         self.model.replace([[r['sku'],r['name'],r['base_quantity'],r['quantity'],r['unit'],r['amount'],r['currency'],r['document_number'],r['document_date'],'；'.join(s['file']+'/'+s['sheet']+':'+str(s['row']) for s in r['sources']), '；'.join(str(x) for x in (r.get('processing_note'),r.get('note')) if x)] for r in d['payload']['rows']] if d else [])
         if d:
-            for f in d['payload']['files']:self.files.addItem(f['name'],f)
+            for f in d.get('attachments',d['payload']['files']):self.files.addItem(f['name'],f)
     def download(self):
         f=self.files.currentData();d=self.versions.currentData()
         if not f or not d:return

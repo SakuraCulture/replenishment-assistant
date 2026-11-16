@@ -111,6 +111,13 @@ def atomic_json(path, data):
         Path(tmp).unlink(missing_ok=True)
 
 
+def load_for_settings(folder):
+    """Read the setup directory; support legacy roots without masking corruption."""
+    folder = Path(folder)
+    current = Directory(folder / 'aoxiang')
+    return current.load() if current.path.exists() else Directory(folder).load()
+
+
 class Directory:
     def __init__(self, folder):
         self.folder = Path(folder)

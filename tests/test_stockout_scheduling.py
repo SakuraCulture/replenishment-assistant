@@ -23,7 +23,8 @@ class PriorityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp)/'isolated.sqlite3'
             with closing(sqlite3.connect(path)) as db,db:
-                db.execute('CREATE TABLE jst_batches(batch_id TEXT,status TEXT)');db.execute("INSERT INTO jst_batches VALUES('batch','active')")
+                jst_batches.schema(db);db.execute("INSERT INTO jst_batches(batch_id,status,epoch) VALUES('batch','active',0)")
+                db.execute("INSERT INTO jst_batch_members(batch_id,position,oid,warehouse,status) VALUES('batch',0,'test','河北仓','pending')")
             generator=SimpleNamespace(worker=object(),active_work=False)
             entry=SimpleNamespace(host=SimpleNamespace(jst_generator=generator));seen=[]
             def preview(*a,**k):

@@ -72,6 +72,12 @@ def _main():
     if '--data-location-smoke' in sys.argv:
         from data_location_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--data-location-smoke')+1:])
+    if '--global-crud-smoke' in sys.argv:
+        from global_crud_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--global-crud-smoke')+1:])
+    if '--five-fixes-smoke' in sys.argv:
+        from five_fixes_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--five-fixes-smoke')+1:])
     if '--perf-core-smoke' in sys.argv:
         from perf_core_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--perf-core-smoke')+1:])
@@ -243,6 +249,9 @@ def _main():
     if '--payment-matching-smoke' in sys.argv:
         from payment_matching_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--payment-matching-smoke')+1:])
+    if '--payment-shop-names-smoke' in sys.argv:
+        from payment_shop_names_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--payment-shop-names-smoke')+1:])
     if '--payment-reference-smoke' in sys.argv:
         from payment_reference_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--payment-reference-smoke')+1:])

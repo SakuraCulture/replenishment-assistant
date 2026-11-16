@@ -74,6 +74,20 @@ def references(data,pid):
 def check(data,expected):
     if expected is not None and data['token']!=expected['token']:raise Conflict('参数预案、门店默认或补货预案已变化，请刷新后重新核对')
 
+def check_scope(data,expected,*,presets=(),stores=(),references_of=(),plans=False):
+    """CAS only actual inputs; reference-set additions are conflicts as well."""
+    if expected is None:return
+    def projection(value):
+        selected=set(stores);refs=[];plan_ids=set()
+        for pid in references_of:
+            codes,links=references(value,pid);selected.update(codes)
+            refs.append([pid,sorted(codes),sorted((p['id'],i['code']) for p,i in links)])
+            plan_ids.update(p['id'] for p,_ in links)
+        return {'presets':[p for p in value['presets'] if p['id'] in presets],
+                'stores':{s:value['stores'].get(s) for s in sorted(selected)},'references':refs,
+                'plans':[p for p in value['plans'] if plans and p['id'] in plan_ids]}
+    if projection(data)!=projection(expected):raise Conflict('本次所选参数、门店或引用范围已变化，请刷新后重新核对')
+
 
 def write_stores(db,before,after,action):
     from settings_history import record
@@ -88,7 +102,7 @@ def clear_defaults(repo,codes,expected):
     from storage_chunks import backup_before_write
     backup_before_write(repo.path,lambda _:None)
     with closing(repo.connect()) as db,db:
-        db.execute('BEGIN IMMEDIATE');data=read(db);check(data,expected)
+        db.execute('BEGIN IMMEDIATE');data=read(db);check_scope(data,expected,stores=codes)
         before={s:data['stores'][s] for s in codes if has_parameters(data['stores'].get(s))}
         if before:preserve_mapping(db,data)
         after=copy.deepcopy(before)
@@ -102,7 +116,7 @@ def remove_store_configurations(repo,codes,expected):
     from settings_history import record
     backup_before_write(repo.path,lambda _:None)
     with closing(repo.connect()) as db,db:
-        db.execute('BEGIN IMMEDIATE');data=read(db);check(data,expected)
+        db.execute('BEGIN IMMEDIATE');data=read(db);check_scope(data,expected,stores=codes)
         before={s:data['stores'][s] for s in dict.fromkeys(codes) if s in data['stores']}
         if before:preserve_mapping(db,data)
         for s in before:db.execute('DELETE FROM stores WHERE code=?',(s,))
@@ -129,7 +143,7 @@ def save(repo,name,config,pid=None,expected=None):
     if pid=='standard':raise ValueError('系统默认参数不可修改，请复制另存')
     pid=pid or uuid.uuid4().hex
     with closing(repo.connect()) as db,db:
-        db.execute('BEGIN IMMEDIATE');data=read(db);check(data,expected)
+        db.execute('BEGIN IMMEDIATE');data=read(db);check_scope(data,expected,presets=[pid],references_of=[pid])
         version=db.execute('SELECT COALESCE(MAX(version),0)+1 FROM presets WHERE id=?',(pid,)).fetchone()[0]
         p={'id':pid,'version':version,'name':name,'config':copy.deepcopy(config),'builtin':False}
         db.execute('INSERT INTO presets(id,version,name,config) VALUES(?,?,?,?)',(pid,version,name,dumps(config)))
@@ -144,7 +158,7 @@ def save(repo,name,config,pid=None,expected=None):
 def assign(repo,codes,pid,expected):
     from store_parameter_import import base
     with closing(repo.connect()) as db,db:
-        db.execute('BEGIN IMMEDIATE');data=read(db);check(data,expected);p=resolve(data,pid)
+        db.execute('BEGIN IMMEDIATE');data=read(db);check_scope(data,expected,presets=[pid],stores=codes);p=resolve(data,pid)
         before={s:data['stores'].get(s) for s in codes};after={}
         for s in codes:
             r=copy.deepcopy(before[s] or base());mapping=r['preset']['config']['category_profiles']
@@ -160,7 +174,7 @@ def delete(repo,pid,replacement,expected):
     from storage_chunks import backup_before_write
     backup_before_write(repo.path,lambda _:None)
     with closing(repo.connect()) as db,db:
-        db.execute('BEGIN IMMEDIATE');data=read(db);check(data,expected);resolve(data,pid)
+        db.execute('BEGIN IMMEDIATE');data=read(db);check_scope(data,expected,presets=[pid,replacement],references_of=[pid],plans=True);resolve(data,pid)
         codes,refs=references(data,pid)
         if (codes or refs) and not replacement:raise ValueError('预案仍被门店或补货预案使用，请选择替换预案')
         clearing=replacement==FOLLOW_DEFAULTS

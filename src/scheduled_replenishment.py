@@ -123,6 +123,11 @@ class Repository:
     def due(self):
         if not self.exists():return []
         now=self.clock();out=[]
+        # Idle polling must not reserve the shared business database writer.
+        # Any due arrangement is re-read after taking the write lock below.
+        with self.db() as db:
+            candidates=[wr.loads(row[0]) for row in db.execute('SELECT payload FROM scheduled_arrangements ORDER BY rowid')]
+        if not any(s['enabled'] and s.get('next_at') and datetime.fromisoformat(s['next_at'])<=now for s in candidates):return []
         with self.db(True) as db:
             for row in db.execute('SELECT payload FROM scheduled_arrangements ORDER BY rowid').fetchall():
                 s=wr.loads(row[0]);dt=datetime.fromisoformat(s['next_at']) if s.get('next_at') else None

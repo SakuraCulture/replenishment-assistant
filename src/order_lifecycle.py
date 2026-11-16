@@ -41,6 +41,14 @@ def fingerprint(payload):
     value['files'] = [{k: f[k] for k in ('name', 'sha')} for f in value['files']]
     return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
 
+def business_fingerprint(payload):
+    """Equality for a new import only; persisted snapshot hashes stay unchanged."""
+    evidence={'source','sources','raw_headers','raw_values'}
+    value={k:v for k,v in payload.items() if k not in ('files','raw_rows','rows')}
+    for key in ('raw_rows','rows'):
+        value[key]=[{k:v for k,v in row.items() if k not in evidence} for row in payload.get(key,[])]
+    return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
+
 def decode(row):
     if not row: return None
     version, saved, digest, raw = row; payload = wr.loads(raw)
@@ -71,11 +79,22 @@ def history(path, head, stage, progress=lambda _: None, cancel=None):
         if not exists(db): return []
         result = []
         for row in db.execute('SELECT version,saved,digest,payload FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=? ORDER BY version DESC', (*key(head), stage)):
-            checkpoint(cancel); result.append(decode(row))
+            checkpoint(cancel);doc=decode(row);files=attachment_files(db,head,stage,doc)
+            if {f['sha'] for f in files}-{f['sha'] for f in doc['payload']['files']}:doc['attachments']=files
+            result.append(doc)
         return result
+
+def attachment_files(db,head,stage,doc):
+    files={f['sha']:f for f in doc['payload']['files']}
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE name='lifecycle_events'").fetchone():return list(files.values())
+    for raw, in db.execute('SELECT detail FROM lifecycle_events WHERE oid=? AND revision=? AND warehouse=? AND stage=? AND version=? AND action=? ORDER BY id',(*key(head),stage,doc['version'],'业务未变化，留存新原件')):
+        for f in wr.loads(raw)['files']:files.setdefault(f['sha'],f)
+    return list(files.values())
 
 def mappings(path, stage, name=None, value=None, progress=lambda _: None, cancel=None):
     checkpoint(cancel)
+    reserved=('payment_shop_names.','payment_match.','jst_order_reference.')
+    if value is not None and stage=='payment' and name.startswith(reserved):raise ValueError('该名称由独立付款资料维护使用，请更换字段映射方案名称')
     if value is not None:
         import storage_chunks
         storage_chunks.backup_before_write(Path(path), progress)
@@ -84,7 +103,7 @@ def mappings(path, stage, name=None, value=None, progress=lambda _: None, cancel
             checkpoint(cancel); schema(db)
             db.execute('INSERT INTO lifecycle_mappings VALUES(?,?,?) ON CONFLICT(stage,name) DO UPDATE SET payload=excluded.payload', (stage, name, wr.dumps(value)))
         if not exists(db): return {}
-        return {n: wr.loads(p) for n, p in db.execute('SELECT name,payload FROM lifecycle_mappings WHERE stage=? ORDER BY name', (stage,))}
+        return {n: wr.loads(p) for n, p in db.execute('SELECT name,payload FROM lifecycle_mappings WHERE stage=? ORDER BY name', (stage,)) if stage!='payment' or not n.startswith(reserved)}
 
 def binding_key(row):
     return wr.dumps([row.get(k) for k in ('signed_number', 'revision', 'store', 'warehouse', 'document_number')])
@@ -205,7 +224,14 @@ def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=Fals
             a=prior.get(sku,{});b=after.get(sku,{})
             if any(a.get(k)!=b.get(k) for k in ('base_quantity','amount','document_number')):
                 calibration.append([sku,b.get('name') or a.get('name'),a.get('base_quantity'),b.get('base_quantity'),a.get('amount'),b.get('amount'),a.get('document_number'),b.get('document_number')])
+    evidence=None
+    if old and old['digest']!=digest and business_fingerprint(old['payload'])==business_fingerprint(payload):
+        evidence={'files':[{k:f[k] for k in ('name','sha')} for f in files],'source_digest':digest}
+        # Downstream dependencies must refer to the exact retained version, not
+        # a hypothetical digest containing different source cells or filenames.
+        payload=old['payload'];digest=old['digest']
     plan={'head':head,'stage':stage,'expected':old['version'] if old else None,'digest':digest,'payload':payload,'changed':not old or old['digest']!=digest,'differences':differences,'duplicates':duplicates,'calibration':calibration}
+    if evidence:plan['source_evidence']=evidence
     if proofs:plan['_read_proofs']=proofs
     return plan
 
@@ -385,6 +411,12 @@ def _commit_once(path,plan,contents,progress,cancel,deadline):
                     from jst_tasks import enqueue
                     enqueue(db,h,{'version':v,'digest':p['digest']})
                 db.execute('INSERT INTO lifecycle_events(at,oid,revision,warehouse,stage,version,action,detail) VALUES(?,?,?,?,?,?,?,?)', (wr.now(), *key(h), p['stage'], v, '确认完整单据', wr.dumps({'number': h['number'], 'rows': len(p['payload']['rows']), 'missing': p['payload']['missing'], 'extra': p['payload']['extra']})))
+            evidence=p.get('source_evidence')
+            if evidence:
+                if p['changed'] or any(f not in [{k:f[k] for k in ('name','sha')} for f,_ in contents] for f in evidence['files']):raise ValueError('原件留存范围与核对文件不一致')
+                detail=wr.dumps(evidence);action='业务未变化，留存新原件'
+                if not db.execute('SELECT 1 FROM lifecycle_events WHERE oid=? AND revision=? AND warehouse=? AND stage=? AND version=? AND action=? AND detail=?',(*key(h),p['stage'],v,action,detail)).fetchone():
+                    db.execute('INSERT INTO lifecycle_events(at,oid,revision,warehouse,stage,version,action,detail) VALUES(?,?,?,?,?,?,?,?)',(wr.now(),*key(h),p['stage'],v,action,detail))
             receipts.append({'number': h['number'], 'revision': h['revision'], 'stage': p['stage'], 'version': v, 'changed': p['changed']})
         if plan.get('payment_matching'):
             from payment_matching import apply
@@ -467,23 +499,24 @@ def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order
             docs[s]=document if s=='payment' else _comparison_document(document)
             del document
     legacy = legacy_return(db, head, eligible,as_of=as_of)
-    maps = {s: {r['sku']: r for r in doc['payload']['rows']} if doc else {} for s, doc in docs.items()}
-    if not docs['return'] and legacy: maps['return'] = {s: {'base_quantity': str(q), 'name': eligible[s]['name']} for s, q in legacy['values'].items()}
-    skus = list(eligible); seen = set(skus)
-    for stage in STAGES:
-        for sku in maps[stage]:
-            if sku not in seen:
-                skus.append(sku); seen.add(sku)
     rows = []
-    for sku in skus:
-        checkpoint(cancel); values = [maps[s].get(sku, {}).get('base_quantity') for s in STAGES]
-        name = eligible.get(sku, {}).get('name') or next((maps[s][sku]['name'] for s in STAGES if sku in maps[s]), '')
-        nums = [eligible.get(sku, {}).get('quantity'), *[float(Decimal(v)) if v is not None else None for v in values]]
-        diffs = [nums[i+1]-nums[i] if nums[i] is not None and nums[i+1] is not None else None for i in range(3)]
-        missing = '；'.join(TITLES[s] + ('未导入' if not docs[s] and not (s == 'return' and legacy) else '未列出此商品（旧口径）' if docs[s] and docs[s]['payload'].get('schema')==1 else '不在本环节对照范围') for s in STAGES if sku not in maps[s])
-        notes=[TITLES[s]+'：'+maps[s][sku]['processing_note'] for s in STAGES if sku in maps[s] and maps[s][sku].get('processing_note')]
-        missing='；'.join([missing,*notes]).strip('；')
-        if _comparison:rows.append([sku, name, *nums, *diffs, maps['payment'].get(sku, {}).get('amount'), maps['payment'].get(sku, {}).get('currency'), missing])
+    if _comparison:
+        maps = {s: {r['sku']: r for r in doc['payload']['rows']} if doc else {} for s, doc in docs.items()}
+        if not docs['return'] and legacy: maps['return'] = {s: {'base_quantity': str(q), 'name': eligible[s]['name']} for s, q in legacy['values'].items()}
+        skus = list(eligible); seen = set(skus)
+        for stage in STAGES:
+            for sku in maps[stage]:
+                if sku not in seen:
+                    skus.append(sku); seen.add(sku)
+        for sku in skus:
+            checkpoint(cancel); values = [maps[s].get(sku, {}).get('base_quantity') for s in STAGES]
+            name = eligible.get(sku, {}).get('name') or next((maps[s][sku]['name'] for s in STAGES if sku in maps[s]), '')
+            nums = [eligible.get(sku, {}).get('quantity'), *[float(Decimal(v)) if v is not None else None for v in values]]
+            diffs = [nums[i+1]-nums[i] if nums[i] is not None and nums[i+1] is not None else None for i in range(3)]
+            missing = '；'.join(TITLES[s] + ('未导入' if not docs[s] and not (s == 'return' and legacy) else '未列出此商品（旧口径）' if docs[s] and docs[s]['payload'].get('schema')==1 else '不在本环节对照范围') for s in STAGES if sku not in maps[s])
+            notes=[TITLES[s]+'：'+maps[s][sku]['processing_note'] for s in STAGES if sku in maps[s] and maps[s][sku].get('processing_note')]
+            missing='；'.join([missing,*notes]).strip('；')
+            rows.append([sku, name, *nums, *diffs, maps['payment'].get(sku, {}).get('amount'), maps['payment'].get(sku, {}).get('currency'), missing])
     present = {s: bool(docs[s]) for s in STAGES}
     if not present['return'] and legacy: present['return'] = legacy['complete']
     if 'operations' in docs:present['operations']=bool(docs['operations'])
@@ -511,7 +544,7 @@ def flow_rows(view):
 def attachment(path, head, stage, version, sha, target, progress=lambda _: None, cancel=None):
     with closing(purchases.connect(path)) as db:
         doc = current(db, head, stage, version)
-        if not doc or sha not in {f['sha'] for f in doc['payload']['files']}: raise ValueError('原件不属于此单据版本')
+        if not doc or sha not in {f['sha'] for f in attachment_files(db,head,stage,doc)}: raise ValueError('原件不属于此单据版本')
         row = db.execute('SELECT content FROM lifecycle_files WHERE sha=?', (sha,)).fetchone()
     if not row or hashlib.sha256(row[0]).hexdigest() != sha: raise ValueError('原文件缺失或校验失败')
     checkpoint(cancel); fd, tmp = tempfile.mkstemp(dir=Path(target).parent)

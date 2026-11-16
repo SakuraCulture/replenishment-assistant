@@ -307,12 +307,13 @@ class AnalyticsWidget(QWidget):
 
     def clear_selected(self):self.selected.clear();self.tables['order'].clearSelection();self.controls()
 
-    def export(self,selected):
+    def export(self,selected,*,kind=None):
         if not self.report:return
         ordered=[h['number'] for h in self.report['heads']]
         orders=[n for n in ordered if n in self.selected] if selected else list(dict.fromkeys(r['order'] for r in self.visible_rows())) if self.drill else None
         if (selected or self.drill) and not orders:QMessageBox.information(self,'暂无订单','当前范围没有可导出的订单。');return
-        name=self.export_kind.currentText()+'_'+datetime.now().strftime('%Y%m%d_%H%M%S_%f')+'.xlsx'
+        level=kind or self.export_kind.currentData()
+        name=('全流程与漏斗率趋势' if level=='workflow' else self.export_kind.currentText())+'_'+datetime.now().strftime('%Y%m%d_%H%M%S_%f')+'.xlsx'
         try:
             import export_settings
             configured=export_settings.load(export_locations.config_path(self))
@@ -322,7 +323,7 @@ class AnalyticsWidget(QWidget):
             def complete(receipt):
                 from readable_ui import file_results
                 file_results(self,[receipt['path']],'分析报表已导出',f"纳入{receipt['rows']}条，资料待核{receipt['pending']}条。")
-            self.start_task(exports.export,(self.host.work_repository.path,self.report,target,self.export_kind.currentData(),orders),complete)
+            self.start_task(exports.export,(self.host.work_repository.path,self.report,target,level,orders),complete)
         except Exception as exc:QMessageBox.warning(self,'未能导出',str(exc))
 
     def load_views(self):

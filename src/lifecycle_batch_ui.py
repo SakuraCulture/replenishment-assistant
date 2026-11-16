@@ -18,7 +18,7 @@ class BatchImport(QDialog):
         self.paths=[];self.documents=[];self.issues=[];self.excluded=[];self.heads=[];self.receipt=None;self.review=None;self.busy=False
         self.payment_index=None;self.read_ready=False
         self.setObjectName('lifecycleBatchImport');self.setWindowTitle('批量导入单据');self.resize(1240,820);self.setAcceptDrops(True)
-        root=QVBoxLayout(self);self.identity=label(f'限定范围：所选 {len(scope)} 张仓单；付款表自动认单，识别后核对保存。' if scope is not None else '付款表自动认单：有签发单号按单号核对，缺号按完整商品明细识别门店和仓。','section');root.addWidget(self.identity)
+        root=QVBoxLayout(self);self.identity=label(f'限定范围：所选 {len(scope)} 张仓单；付款表自动认单，识别后核对保存。' if scope is not None else '付款表自动认单：先按原单身份，再按店铺名称缩小范围；多张候选请选择。','section');root.addWidget(self.identity)
         if scope is not None:self.identity.setToolTip('\n'.join(h['number'] for h in scope))
         root.addWidget(label('拖入回传、付款、收货文件，可同批混合。只填写本环节事实；上环节自动读取本批资料或已有资料。','muted'))
         self.pages=QStackedWidget();root.addWidget(self.pages,1);queue=QWidget();v=QVBoxLayout(queue);self.pages.addWidget(queue)
@@ -27,12 +27,12 @@ class BatchImport(QDialog):
         for s in io.ALL_STAGES:row.addWidget(button('下载'+io.TITLES[s]+'模板',lambda checked=False,k=s:template(self,k)))
         v.addLayout(row);self.file_note=label('拖入文件后自动识别，原文件不变。');v.addWidget(self.file_note)
         self.match_bar=QWidget();match_layout=QVBoxLayout(self.match_bar);match_layout.setContentsMargins(0,0,0,0)
-        row=QHBoxLayout();row.addWidget(label('自动识别完整付款单；门店名称略有不同、同店两仓均按实际分配明细核对。'))
+        row=QHBoxLayout();row.addWidget(label('店铺名称可独立维护，也可不配置；认单后在下一页核对数量和金额。'))
         self.source_company=QComboBox();self.source_company.addItem('自动识别（无需选择来源企业）',None)
         self.match_mode=QComboBox()
         for title,value in [('首次付款优先','first'),('重复导入 / 付款更正优先','correction'),('全部有效生命周期','all')]:self.match_mode.addItem(title,value)
         row.addWidget(self.match_mode);self.remember_matching=QCheckBox('保存本次认单对应');self.remember_matching.setChecked(True);row.addWidget(self.remember_matching)
-        self.match_more=QCheckBox('更多候选筛选');row.addWidget(self.match_more);match_layout.addLayout(row)
+        self.match_more=QCheckBox('更多候选筛选');row.addWidget(self.match_more);row.addWidget(button('聚水潭店铺名称维护',self.maintain_shop_names));match_layout.addLayout(row)
         self.match_filters=QWidget();filters_layout=QVBoxLayout(self.match_filters);filters_layout.setContentsMargins(0,0,0,0)
         row=QHBoxLayout();row.addWidget(label('指定来源企业（仅需要时设置）'));row.addWidget(self.source_company,1);filters_layout.addLayout(row)
         row=QHBoxLayout();self.match_from=QLineEdit();self.match_from.setPlaceholderText('候选起始日 YYYY-MM-DD，选填');self.match_to=QLineEdit();self.match_to.setPlaceholderText('候选结束日 YYYY-MM-DD，选填');row.addWidget(self.match_from);row.addWidget(self.match_to)
@@ -107,7 +107,11 @@ class BatchImport(QDialog):
                 choices=[h for h in choices if (not start or h['day']>=start) and (not end or h['day']<=end)]
                 preserve=d.get('target') or automatic_head
                 if preserve and not any(h['number']==preserve['number'] for h in choices):choices=[preserve,*choices]
-            for h in choices:combo.addItem(f"{h['day']} · {h.get('name',h['store'])} ({h['store']}) · {h['warehouse']} · {h['number']} · V{h['revision']:03d}",h)
+            for h in choices:
+                status='已确认付款' if h.get('payment_version') is not None else '尚未确认付款'
+                amount=(h.get('features') or {}).get('amount')
+                summary=f' · 分配金额 {amount} 元' if amount is not None else ''
+                combo.addItem(f"{h['day']} · {h.get('name',h['store'])} ({h['store']}) · {h['warehouse']} · {h['number']} · V{h['revision']:03d} · {status}{summary}",h)
             combo.setEditable(True);combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert);combo.completer().setFilterMode(Qt.MatchFlag.MatchContains);combo.completer().setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
             if automatic_head:combo.setCurrentIndex(next((n+1 for n,h in enumerate(choices) if h['number']==automatic_head['number']),0))
             if d.get('target'):
@@ -175,6 +179,12 @@ class BatchImport(QDialog):
         if self.busy:return
         from payment_matching_ui import maintain_aliases
         if maintain_aliases(self,self.host.work_repository.path):self.refresh_payment_index()
+
+    def maintain_shop_names(self):
+        if self.busy or getattr(self.host,'closing',False):return
+        from payment_shop_names_ui import open_names
+        open_names(self,self.host)
+        if not getattr(self.host,'closing',False):self.refresh_payment_index()
 
     def rematch(self,*_):
         if self.busy or not self.payment_index:return

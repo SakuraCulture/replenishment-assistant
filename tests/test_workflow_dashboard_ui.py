@@ -20,8 +20,9 @@ class Dashboard(unittest.TestCase):
         self.w.show_report(self.f.f.report());self.w.tabs.setCurrentWidget(self.w.workflow);d=self.w.workflow
         d.filters={'warehouse':['河北仓']};d.grain.setCurrentIndex(2);d.mode.setCurrentIndex(0);d.dimension.setCurrentIndex(2);d.render()
         self.assertEqual(d.details.rowCount(),1);self.assertEqual(self.w.report['_workflow_options']['grain'],'month')
-        with patch.object(self.w,'export') as export:d.export();export.assert_called_once_with(False)
-        self.assertEqual(self.w.export_kind.currentData(),'workflow')
+        previous=self.w.export_kind.currentData()
+        with patch.object(self.w,'export') as export:d.export();export.assert_called_once_with(False,kind='workflow')
+        self.assertEqual(self.w.export_kind.currentData(),previous);self.assertEqual(self.w.export_kind.count(),2)
     def test_legacy_summary_selection_remains_unchanged(self):
         self.w.show_report(self.f.f.report());self.assertEqual(len(self.w.report['metrics']['pairs']),4)
         self.w.tabs.setCurrentWidget(self.w.workflow);self.w.tabs.setCurrentIndex(2)

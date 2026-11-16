@@ -67,15 +67,20 @@ def _sections(value,depth=0):
 def _publish(path,value):
     # Serializes publication with deletion, without holding a business writer
     # while encoding the large preview. Late callbacks cannot recreate it.
-    with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=rw',uri=True,timeout=.15)) as db,db:
-        db.execute('BEGIN IMMEDIATE')
-        if not _alive(db,value['entries']):
-            (directory(path)/(value['id']+'.json')).unlink(missing_ok=True)
-            (directory(path)/(value['id']+'.json.gz')).unlink(missing_ok=True)
-            return False
-        _atomic(directory(path)/(value['id']+'.json'),value)
-        if value.get('state')=='completed':
-            (directory(path)/(value['id']+'.json.gz')).unlink(missing_ok=True)
+    with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=rw',uri=True,timeout=.15)) as db:
+        try:
+            db.execute('BEGIN IMMEDIATE')
+            if not _alive(db,value['entries']):
+                (directory(path)/(value['id']+'.json')).unlink(missing_ok=True)
+                (directory(path)/(value['id']+'.json.gz')).unlink(missing_ok=True)
+                return False
+            _atomic(directory(path)/(value['id']+'.json'),value)
+            if value.get('state')=='completed':
+                (directory(path)/(value['id']+'.json.gz')).unlink(missing_ok=True)
+        finally:
+            # Only a deletion/publication fence: no SQL data was written.
+            # COMMIT would unnecessarily need an exclusive lock from readers.
+            if db.in_transaction:db.rollback()
     return True
 
 
@@ -87,6 +92,7 @@ def begin(path,plan,cancel=None):
         target=staged_document(p)
         entries.append({'head':{k:v for k,v in p['head'].items() if k!='products'},'stage':p['stage'],
                         'expected':p['expected'],'version':target['version'],'digest':p['digest'],'changed':p['changed']})
+        if p.get('source_evidence'):entries[-1]['source_evidence']=p['source_evidence']
     identity=hashlib.sha256(wr.dumps(entries).encode()).hexdigest()[:32]
     root=directory(path);root.mkdir(exist_ok=True)
     target=root/(identity+'.json.gz')
@@ -97,7 +103,7 @@ def begin(path,plan,cancel=None):
     frozen['plans']=[{k:({a:b for a,b in v.items() if a!='products'} if k=='head' else v)
                       for k,v in p.items() if k not in ('_read_proofs','differences','calibration')}
                      for p in plan['plans']]
-    changed=any(p['changed'] for p in entries);name=None
+    changed=any(p['changed'] or p.get('source_evidence') for p in entries);name=None
     try:
         h=hashlib.sha256()
         if changed:
@@ -110,12 +116,17 @@ def begin(path,plan,cancel=None):
         checkpoint(cancel)
         value={'schema':1,'id':identity,'created':wr.now(),'updated':wr.now(),'state':'prepared',
                'entries':entries,'preview_sha256':h.hexdigest() if changed else None,'database':str(Path(path).resolve())}
-        with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=rw',uri=True,timeout=.15)) as db,db:
-            import order_lifecycle as lc
-            lc.begin(db,cancel)
-            if not _alive(db,entries):raise wr.Conflict('原仓单已删除，未建立恢复任务；请刷新范围')
-            if changed:os.replace(name,target)
-            _atomic(root/(identity+'.json'),value)
+        with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=rw',uri=True,timeout=.15)) as db:
+            try:
+                import order_lifecycle as lc
+                lc.begin(db,cancel)
+                if not _alive(db,entries):raise wr.Conflict('原仓单已删除，未建立恢复任务；请刷新范围')
+                if changed:os.replace(name,target)
+                _atomic(root/(identity+'.json'),value)
+            finally:
+                # Persisted files precede release of the deletion fence. The
+                # business save remains a separate, unchanged transaction.
+                if db.in_transaction:db.rollback()
         return value
     finally:
         if name:Path(name).unlink(missing_ok=True)
@@ -179,7 +190,11 @@ def inspect(path,identity,progress=lambda _:None,cancel=None):
                 doc=lc.current(db,h,p['stage'])
                 version=doc['version'] if doc else None
                 if doc and (version,doc['digest'])==(p['version'],p['digest']):
-                    state='saved';saved.append(p)
+                    evidence=p.get('source_evidence')
+                    retained=not evidence or bool(db.execute('SELECT 1 FROM lifecycle_events WHERE oid=? AND revision=? AND warehouse=? AND stage=? AND version=? AND action=? AND detail=?',(*lc.key(h),p['stage'],version,'业务未变化，留存新原件',wr.dumps(evidence))).fetchone())
+                    if evidence:retained=retained and all(db.execute('SELECT 1 FROM lifecycle_files WHERE sha=?',(f['sha'],)).fetchone() for f in evidence['files'])
+                    if retained:state='saved';saved.append(p)
+                    else:state='unchanged';untouched.append(p);reason='业务版本未变化，但本次新原件尚未留存；可继续原保存'
                 elif version==p['expected']:
                     state='unchanged';untouched.append(p)
                 else:reason='本环节已有其他版本；保留当前事实，请重新核对'

@@ -52,7 +52,7 @@ class PaymentBindingUiTests(BindingFixture,unittest.TestCase):
         with closing(sqlite3.connect(f.path)) as db:before='\n'.join(db.iterdump())
         boxes=[]
         with patch.object(QMessageBox,'exec',new=lambda box:boxes.append((box.windowTitle(),box.detailedText())) or QMessageBox.StandardButton.Ok):dialog.preview_btn.click()
-        self.assertEqual(len(boxes),1);self.assertEqual(boxes[0][0],'尚未进入核对页');self.assertIn('没有完整匹配订单',boxes[0][1])
+        self.assertEqual(len(boxes),1);self.assertEqual(boxes[0][0],'尚未进入核对页');self.assertIn('店铺名称对应多个订单',boxes[0][1]);self.assertIn('请选择业务日期和仓单',boxes[0][1])
         self.assertEqual(dialog.pages.currentIndex(),0);self.assertEqual(dialog.paths,[file]);self.assertEqual(len(dialog.documents),1)
         self.assertTrue(dialog.preview_btn.isEnabled());self.assertFalse(dialog.busy)
         with closing(sqlite3.connect(f.path)) as db:self.assertEqual('\n'.join(db.iterdump()),before)

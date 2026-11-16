@@ -38,6 +38,15 @@ test('no task, conflicting tasks and HTTP failure never become a successful rece
   }
 });
 
+test('disposing during final approval aborts the owned request and waits for its callback',async()=>{
+  const page=new Page();let release,refused=0;
+  const gate=new Promise(r=>release=r);
+  const guard=new NativeImportGuard(page,p,bytes,()=>{},async()=>{await gate;return ()=>{refused++;};});
+  await guard.install();const pending=page.request(request());await new Promise(r=>setImmediate(r));
+  const closing=guard.dispose();release();await pending;await closing;
+  assert.equal(page.sent.length,0);assert.equal(guard.requests,0);assert.equal(refused,1);
+});
+
 test('guard permits exact identity read, keeps writes blocked and records only safe request metadata',async()=>{
   const page=new Page(),guard=new NativeImportGuard(page,p,bytes);await guard.install();
   await page.request(request(undefined,'POST','/account/session/getLoginInfo'));assert.equal(page.sent.length,1);
@@ -79,10 +88,11 @@ test('isolated real Edge native file input/confirm: one exact multipart body; la
     for(const automatic of [false,true]){
       await real.setContent(`<form><input id="storeCodeList"></form><div class="next-dialog">请按照规定格式上传文件<input type="file" onchange="${automatic?'sendFile()':''}"><button onclick="sendFile()">确定</button></div><script>async function sendFile(){const f=document.querySelector('input[type=file]').files[0];const data=new FormData();data.append('file',f);try{await fetch('https://sc-gei-tc-supply-chain-portal.ele.me/gei/import/task/${IMPORT_CODE}',{method:'PUT',body:data});}catch{} }</script>`);
       await installPurchaseWriteFence(page);ui=new PurchaseCreateUI(page,{timeoutMs:1500});ui.identity={accountId:'A',merchantCode:'M'};
+      let finalChecks=0;ui.beforePurchaseImport=()=>{finalChecks++;};
       const p2={...p,id:'p-'+automatic,identity:ui.identity,file:{path:file,sha256:sha256(bytes),bytes:bytes.length}};
       const query={identity:ui.identity,orderIds:[],request:{storeCodeList:['T']},filterState:await ui.readFilterState()};
       ui.lastQuery=query;const baseline={id:p2.id,query,preparedAt:'local-test'};ui.createPrepared=baseline;
-      const before=accepted,r=await ui.uploadPurchaseOnce({intent:p2,baseline});assert.equal(r.taskId,task);assert.equal(accepted-before,1);assert.ok(received.at(-1).includes(bytes));
+      const before=accepted,r=await ui.uploadPurchaseOnce({intent:p2,baseline});assert.equal(r.taskId,task);assert.equal(accepted-before,1);assert.ok(received.at(-1).includes(bytes));assert.equal(finalChecks,1);
       await assert.rejects(()=>ui.uploadPurchaseOnce({intent:p2,baseline}),{code:'IMPORT_NOT_PREPARED'});
       await real.evaluate(()=>sendFile());assert.equal(accepted-before,1);
       await ui.dispose();ui=null;

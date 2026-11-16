@@ -587,5 +587,16 @@
       "purchase-original-recovery-0539.png",
       "allocation-finalization-recovery-0539.png"
     ]
+  },
+  "payment_shop_names_manual": {
+    "chapter": "29",
+    "application": "0.54.0",
+    "source": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\payment_shop_names_0540_20261115_01\\source-ui-04\\独立名称维护.png",
+    "images": [
+      "payment-shop-names-0540.png"
+    ],
+    "sha256": "bcb9fcc54405711a9d4051db75f99b50d8904573e103c3b18e6d2823fccb5089",
+    "provenance": "Windows source Qt, synthetic only; EXE acceptance recorded separately",
+    "live_platform": false
   }
 }

@@ -53,11 +53,11 @@ class Presets(unittest.TestCase):
         new=plans.Repository(self.repo.path).list()[0];self.assertEqual(new['stores'][1]['preset_id'],'standard');self.assertEqual(new['revision'],p['revision']+1)
         self.assertEqual(f['_resolved_presets']['A']['id'],self.p['id'])
         self.assertEqual(self.repo.stores()['A'],self.a)
-    def test_concurrent_change_rejects_delete_and_assignment(self):
+    def test_new_reference_rejects_delete_and_target_change_rejects_assignment(self):
         expected=pp.snapshot(self.repo);self.plan()
         with self.assertRaises(wr.Conflict):pp.delete(self.repo,self.p['id'],'standard',expected)
+        pp.assign(self.repo,['A'],self.p['id'],expected)
         with self.assertRaises(wr.Conflict):pp.assign(self.repo,['A'],self.p['id'],expected)
-        self.assertEqual(self.repo.stores()['A'],self.a)
     def test_per_store_full_replacement_and_global_mapping(self):
         f=pp.freeze(self.plan(),self.repo);mapping=pm.mapping_snapshot(self.repo.path)
         for s,r in [('B',self.b),('A',self.a)]:

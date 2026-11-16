@@ -33,6 +33,7 @@ class ParameterScene(QWidget):
         from admission_overview_ui import open_overview
         row.addWidget(button('二类医疗资质',lambda:open_overview(self,self.host,'qualification')))
         row.addWidget(button('门店拒收清单',lambda:open_overview(self,self.host,'refusals')))
+        row.addWidget(button('聚水潭店铺名称维护',lambda:__import__('payment_shop_names_ui').open_names(self,self.host)))
         row.addStretch();v.addLayout(row)
         row=QHBoxLayout()
         row.addWidget(button('全局分类映射',lambda:open_mapping(self,host)))
