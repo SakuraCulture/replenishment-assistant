@@ -66,7 +66,7 @@ export class PurchaseCreateService{
     try{return await adapter.uploadPurchaseOnce({intent:p,baseline});}
     finally{if(adapter.beforePurchaseImport===guard)adapter.beforePurchaseImport=null;}
   }
-  async observe(p,receipt,{signal}){
+  async observe(p,receipt,{signal,retryMainRunId=null}){
     const context=await this.context(p,signal),{adapter}=context,r=this.ledger.get(p.id);
     const task=await adapter.purchaseImportTask({taskId:receipt.taskId,identity:p.identity});
     if(task.status!=='FINISHED')fail(['FAILED','FAILURE','CANCELLED'].includes(task.status)?'IMPORT_TASK_FAILED':'TASK_PENDING','原导入任务尚未成功完成，保留原任务不重传');
@@ -79,13 +79,14 @@ export class PurchaseCreateService{
     if(typeof c.status!=='string'||!c.status)fail('PURCHASE_STATUS_UNSUPPORTED','原采购单查询状态缺失，暂不能核实是否已作废',{status:c.status});
     if(typeof c.gmtCreate!=='string'||!/^\d{13}$/.test(c.gmtCreate))fail('PURCHASE_CREATED_DATE','采购制单时间口径未支持，不按本地时间猜测');
     const day=businessDate(new Date(Number(c.gmtCreate)));
-    const coordinator=this.coordinatorFactory({state:this.state,...context,onProgress:e=>this.progress(e.stage)});
+    const verification={importTaskId:receipt.taskId,orderId:c.supplyOrderId,retryRunId:retryMainRunId};
+    const coordinator=this.coordinatorFactory({state:this.state,...context,verification,onProgress:e=>this.progress(e.stage)});
     // One exact PO. The existing coordinator persists D16/D17 intents, task IDs and files;
     // resuming a failed verification follows those tasks, never submits the import again.
     const scope={buyerWarehouseCode:p.basis.store,from:day,to:day,dateBasis:'created',orderId:c.supplyOrderId};
     const prior=this.state.rows('purchase_runs').filter(v=>sameIdentity(v.identity,p.identity)&&v.scopeHash===purchaseScopeHash(scope)).at(-1);
-    // A completed old export may predate a platform void. Refresh only completed
-    // evidence; unfinished exports must resume their saved tasks, never resubmit.
+    // A completed export may predate a platform void. For an unfinished
+    // verification keep its exact scope and saved tasks, including the D16 history.
     const rerun=c.status!=='0'&&prior?.status==='SUCCEEDED';
     const run=await coordinator.run({target:p.target,...scope,rerun});
     return {...await nativeCreationEvidence(p,task,c,coordinator,run),listingStatus:c.status};

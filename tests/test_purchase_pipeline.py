@@ -112,6 +112,27 @@ class PipelineTests(unittest.TestCase):
         client.records['p0'].update(state='ACCEPTED',uploadAttempted=True,taskId='TASK-p0')
         out=self.run_batch(job,client)
         self.assertEqual(out['items'][0]['state'],'BOUND');self.assertEqual(client.uploads,[])
+
+    def test_d16_review_retries_original_verification_without_a_submit_command(self):
+        job = self.batch(2)
+        error = {'code':'SUBMISSION_UNKNOWN', 'details':{'sourceId':'D16','runId':'old-run','taskId':None}}
+        self.store.update(job['id'],position=0,changes={'state':'REVIEW','error':error})
+        self.store.update(job['id'],position=1,changes={'state':'BOUND','result':{'binding':{'orderId':'PO-p1'}}})
+        job = self.store.update(job['id'],state='COMPLETED_WITH_ERRORS')
+        before = copy.deepcopy(job['items'][1])
+        job = self.store.retry_items(job['id'],[0],job['sequence'])
+        client = Platform(['p0','p1'])
+        client.records['p0'].update(state='NEEDS_REVIEW',uploadAttempted=True,taskId='TASK-p0',error=error)
+        original_request = client.request
+        def verify_only(action, **values):
+            self.assertNotEqual(action, 'purchase.submit')
+            return original_request(action, **values)
+        client.request = verify_only
+        saved = self.run_batch(job,client)
+        self.assertEqual(client.events,[('observe','p0')])
+        self.assertEqual(saved['items'][0]['result']['binding']['orderId'],'PO-p0')
+        self.assertEqual(saved['items'][0]['purchase_observation']['taskId'],'TASK-p0')
+        self.assertEqual(saved['items'][1],before)
     def test_selected_dispatch_does_not_submit_or_change_unselected_orders(self):
         job=self.batch();before=self.store.get(job['id'])['items'][2]
         job=self.store.execute_selected(job['id'],[job['items'][0]['key'],job['items'][1]['key']],job['sequence'])

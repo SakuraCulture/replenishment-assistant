@@ -41,7 +41,7 @@ def start_smoke(app,win,args):
             def start(self):self.running=True
             def close(self,timeout=.5):self.running=False;return True
             def request(self,action,**kw):
-                if action=='configuration':return {}
+                if action=='configuration':return {'purchase_pipeline':True}
                 id=kw.get('purchase_id');r=records[id]
                 if action=='purchase.status':return copy.deepcopy(r)
                 if action!='purchase.start':raise AssertionError(action)
@@ -82,11 +82,27 @@ def start_smoke(app,win,args):
             host.work_repository=SimpleNamespace(path=out/'unused-business.sqlite3')
             manager=Manager(host,client_factory=Client);manager.timer.stop()
             job=batch(range(6),['REVIEW']*5+['BOUND']);successful=copy.deepcopy(job['items'][5])
+            saved_error={'code':'SUBMISSION_UNKNOWN','message':'采购原提交仍未消歧，禁止重提',
+                         'details':{'runId':'synthetic-verification','sourceId':'D16','taskId':None}}
+            records['synthetic-1'].update(state='NEEDS_REVIEW',error=saved_error)
+            job=manager.store.update(job['id'],position=1,changes={'error':saved_error,
+                'purchase_observation':{'state':'NEEDS_REVIEW','taskId':'TASK-synthetic-1','uploadAttempted':True}})
             dialog=QueueDialog(host,manager,job['id']);dialogs.append(dialog);dialog.resize(1380,780);dialog.show();app.processEvents()
             assert dialog.retry_btn.isEnabled() and dialog.retry_btn.text()=='继续核对未完成采购'
             assert dialog.table.item(0,4).text()=='采购结果需核对'
             assert '没有唯一受理任务号' not in dialog.table.item(0,7).text()
             dialog.grab().save(str(out/'01-旧待核记录可继续.png'));checks.append('旧版五笔误待核可一键沿原采购任务继续，原因显示处理路径')
+            dialog.table.selectRow(1)
+            box_action(dialog.reason_btn.click,['原采购导入已受理','采购主单核对导出缺少回执','采购单不会重复上传'],'08-D16-区分核对与上传.png')
+            row=dialog.table.cellWidget(1,8)
+            assert row.text()=='继续核对采购结果'
+            row.click()
+            wait(lambda:manager.worker is None and manager.store.get(job['id'])['items'][1]['state']=='BOUND')
+            one=manager.store.get(job['id'])
+            assert starts==['synthetic-1'] and one['items'][1]['purchase_observation']['taskId']=='TASK-synthetic-1'
+            assert all(a==b for n,(a,b) in enumerate(zip(one['items'],job['items'])) if n!=1)
+            checks.append('D16缺回执显示专门提示，实际单项按钮只派发原单核对，同批其他项保留')
+            dialog.refresh()
             dialog.retry_btn.click();wait(lambda:manager.worker is None and manager.store.get(job['id'])['state']=='COMPLETED')
             dialog.refresh();after=manager.store.get(job['id'])
             assert all(i['state']=='BOUND' for i in after['items']) and after['items'][5]==successful

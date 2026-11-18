@@ -47,10 +47,14 @@ def run_upload(runner,job):
                     if r['state']=='BOUND':update(item,state='BOUND',result={'binding':r['binding']},error=None);continue
                     if r['state']=='SUPERSEDED':raise ComponentError('PURCHASE_SUPERSEDED','原任务已重建，请打开后继任务')
                     if r.get('additionalTaskIds'):raise ComponentError('MULTIPLE_IMPORT_TASKS','原导入任务不唯一，请核对原采购记录')
-                    if r['uploadAttempted'] and not r.get('taskId'):raise ComponentError('SUBMISSION_UNKNOWN','原上传结果未知；可核对原任务或明确结束并重建')
-                    if not r['uploadAttempted']:
-                        configuration=client.request('configuration');suppliers=Directory(store.folder).suppliers()
-                        validate_for_upload(runner.business_path,p,configuration,suppliers,cancel=runner.cancel)
+                    if r.get('taskId'):
+                        if not r['uploadAttempted']:
+                            raise ComponentError('PURCHASE_RECEIPT_CONFLICT','原采购已有受理记录，上传标记不一致，请核对原任务')
+                        update(item,state='ACCEPTED',submission_started=True,error=None)
+                        continue
+                    if r['uploadAttempted']:raise ComponentError('SUBMISSION_UNKNOWN','原上传结果未知；可核对原任务或明确结束并重建')
+                    configuration=client.request('configuration');suppliers=Directory(store.folder).suppliers()
+                    validate_for_upload(runner.business_path,p,configuration,suppliers,cancel=runner.cancel)
                     update(item,submission_started=True)
                     client.request('purchase.submit',purchase_id=p['id'])
                     r=runner.wait_status('purchase.status','purchase_id',p['id'],cancel_action='purchase.pause',

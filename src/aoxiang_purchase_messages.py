@@ -43,9 +43,17 @@ def explain(error, known=None):
     if code in PAYMENT_PREPARATION_CODES:
         # Keep the order/stage/version explanation supplied by local validation.
         return error.get('message') or messages[code]
+    details = error.get('details') or {}
+    source = details.get('sourceId')
+    if known.get('taskId') and source in ('D16', 'D17') and code in ('SUBMISSION_UNKNOWN', 'PURCHASE_VERIFY_EXPORT_UNKNOWN'):
+        if source == 'D16' and not details.get('taskId') and details.get('canRecoverMain', True) and not known.get('additionalTaskIds'):
+            return ('原采购导入已受理，采购主单核对导出缺少回执。点击“继续核对采购结果”，只处理原采购单的核对资料。'
+                    '已有导出回执时沿用原导出任务，缺回执时重新导出核对主单，采购单不会重复上传。')
+        label = '采购主单' if source == 'D16' else '采购商品明细'
+        return '原采购导入受理号已保留。' + label + '核对导出的受理情况待核，请核对该导出的原任务记录。'
     if code == 'SUBMISSION_UNKNOWN':
         if known.get('taskId'):
-            return '已找到原受理任务号，之前的结果提示尚未更新。请点击“继续核对采购结果”，读取原任务并关联已有采购单。'
+            return '已找到原受理任务号。点击“继续核对采购结果”，只读取原采购任务并核对已有采购单。'
         if known.get('uploadAttempted'):
             return '上传已发起，未取得唯一受理回执，平台可能已建单。可从单据详情核对原采购；需要重做时，在批次中勾选本单后点击“结束所选任务并重建预览”。新预览仍需确认上传，旧平台单由业务处理。'
         return '此记录尚未完成上传结果核对。请先点击“继续核对采购结果”重新读取原任务；若仍缺少回执，再到单据详情核对已有采购单。'
