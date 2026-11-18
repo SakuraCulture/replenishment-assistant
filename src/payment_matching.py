@@ -7,6 +7,7 @@ from pathlib import Path
 import work_repository as wr
 from purchase_io import number
 from runtime_support import checkpoint
+from export_progress import RowProgress
 
 PREFIX='payment_match.'
 
@@ -120,6 +121,7 @@ def build(path,progress=lambda _:None,cancel=None,*,_db=None):
             checkpoint(cancel);progress(f'建立/刷新付款识别索引 {i+1}/{len(heads)}：仅当前签发，支持取消')
             key=checksum(['signed',head['oid'],head['revision'],head['digest'],head.get('warehouse'),head.get('snapshot_digest')]);meta=cache.get(key)
             if meta is None:
+                progress(RowProgress('读取签发快照以建立付款索引',i+1,len(heads)))
                 checkpoint(cancel);order=execution.get_order(repo,head,view='export',db=db);result=order['payload']['result']
                 meta={'name':result['store_name'],'warehouses':[wh for wh in ao.scopes(result['rows']) if wh in wo.WAREHOUSES]}
                 cache.put(key,meta);decoded+=1;del order,result
@@ -134,6 +136,7 @@ def build(path,progress=lambda _:None,cancel=None,*,_db=None):
                 if gid:
                     ck=checksum(['generation-v2',gid,gd]);features=cache.get(ck)
                     if features is None:
+                        progress(RowProgress('读取分配快照以建立付款索引',i+1,len(heads)))
                         checkpoint(cancel);generation=jst.decode(db.execute('SELECT payload,digest FROM jst_generations WHERE gid=?',(gid,)).fetchone())
                         if any(generation['head'][k]!=h[k] for k in ('oid','revision','warehouse','digest')):raise wr.Conflict('生成单与当前签发身份不符')
                         exported=[r for r in generation['rows'] if Decimal(r['quantity'])>0]
@@ -230,6 +233,18 @@ def analyze(path,document,index,scope=None,source_scope=None,mode='first',progre
         state='需要核对来源／候选';reason=('尚未确认来源企业；' if not source_scope else '')+('门店名称对应待确认；' if not confirmed_store else '')+(f'完整匹配 {len(related_matches)} 张，不能默认第一张' if len(related_matches)!=1 else '有内容匹配候选，仍需确认来源及门店对应')
     trace=[['有效仓单',len(all_heads)],['待付款优先',sum(bool(h.get('return_version') and h.get('generation_id') and h.get('payment_version') is None) for h in all_heads)],['同日优先',sum(h['day']==day for h in all_heads) if day else '来源无明确日期'],['汇总相同',len(summary)],['完整匹配（跨全部相关日期）',len(related_matches)]]
     return {'candidates':choices,'rejected':[],'automatic':automatic,'state':state,'reason':reason,'source_scope':source_scope,'day':day,'trace':trace,'exact_numbers':[h['number'] for h in matching],'candidate_reasons':reasons}
+
+
+def identify_documents(path,documents,index,scope,source_scope,mode,progress=lambda _:None,cancel=None):
+    """Identify paid spreadsheets as a separately timed background operation."""
+    results=[]
+    for document in documents:
+        checkpoint(cancel)
+        scan=document['scan']
+        result=(analyze(path,document,index,scope,source_scope,mode,progress,cancel)
+                if scan['stage']=='payment' and scan['rows'][0].get('adapter')=='paid_order' else None)
+        results.append(result)
+    return results
 
 
 def attach(path,plan,documents,index,source_scope,remember=True):

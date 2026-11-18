@@ -5,7 +5,6 @@ All heavy functions are module-level spawn targets and have no Qt dependency.
 import hashlib,json,sqlite3,os,gc
 from contextlib import closing
 from pathlib import Path
-from types import SimpleNamespace
 import normal_orders as orders
 import work_repository as wr
 from result_semantics import fmt,order_quantity,order_amount,explanation
@@ -16,10 +15,7 @@ import archive_orders as ao
 import warehouse_execution as execution
 
 def repository(path):
-    path=Path(path).resolve()
-    repo=orders.Repository.__new__(orders.Repository)
-    repo.work=SimpleNamespace(path=path,connect=lambda:sqlite3.connect(path.as_uri()+'?mode=ro',uri=True))
-    return repo
+    return orders.Repository.from_existing_work(wr.Repository.open_existing(path,read_only=True))
 
 
 def identity(path):
@@ -125,7 +121,7 @@ def execute(path,cache,request,cancel,progress):
         return read_home(path,cache,cancel,progress)
     if request.get('kind')=='jst_results':
         import jst_results
-        return jst_results.read(path,cache,request['day'],request.get('scope'),lambda p:progress({'text':str(p),'done':p.current,'total':p.total}),cancel,request.get('batch_id'),request.get('date_end'))
+        return jst_results.read(path,cache,request['day'],request.get('scope'),lambda p:progress({'text':str(p),'done':p.current,'total':p.total}),cancel,request.get('batch_id'),request.get('date_end'),platform_tracking=request.get('platform_tracking',False))
     if request.get('kind')=='daily_batch':
         import daily_batch
         return daily_batch.read(path,cache,request,cancel,progress)

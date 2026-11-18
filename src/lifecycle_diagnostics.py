@@ -1,31 +1,45 @@
 """Explain existing whole-order association constraints without guessing identity."""
 
+FIELDS = (('signed_number','number','补货单号'),('store','store','门店编码'),('warehouse','warehouse','仓'))
+REFERENCE_FIELDS = ('number','store','day','revision','digest')
+
 
 def binding(document, heads, *, scoped=False):
     if document.get('payment_match') is not None:return document['payment_match']
     rows = document['scan']['rows']
+    # One document can repeat the same identity on thousands of SKU lines.
+    # Keep the first occurrence so the first rejection reason stays identical.
+    constraints = {}
+    numbers = set()
+    explicit = bool(rows)
+    for row in rows:
+        values = tuple(row.get(field) or None for field, _, _ in FIELDS)
+        if values[0]:numbers.add(values[0])
+        else:explicit=False
+        ref = row.get('identity_reference')
+        references = (ref,) if ref else row.get('identity_candidates') or ()
+        identity = tuple(tuple(r.get(field) for field in REFERENCE_FIELDS) for r in references)
+        revision = None if identity else row.get('revision') or None
+        if any(values) or identity or revision:
+            constraints[(values,identity,revision)] = None
     candidates, rejected = [], []
     for head in heads:
         reason = ''
-        for row in rows:
-            for field, title in (('signed_number', '补货单号'), ('store', '门店编码'), ('warehouse', '仓')):
-                target = 'number' if field == 'signed_number' else field
-                if row.get(field) and row[field] != head[target]:
+        reference_head = tuple(head.get(field) for field in REFERENCE_FIELDS)
+        for values, references, revision in constraints:
+            for value, (_, target, title) in zip(values,FIELDS):
+                if value and value != head[target]:
                     reason = title + '不一致'
                     break
             if reason:
                 break
-            references = row.get('identity_candidates') or []
-            reference = row.get('identity_reference')
-            if reference:
-                references = [reference]
             if references:
-                matched = [r for r in references if r['number'] == head['number']]
+                matched = [r for r in references if r[0] == head['number']]
                 if not matched:
                     reason = '不在文件的原签发候选中'
-                elif not any(all(r.get(k) == head.get(k) for k in ('number', 'store', 'day', 'revision', 'digest')) for r in matched):
-                    reason = '原签发已变化：文件修订 ' + ' / '.join('V%03d' % r['revision'] for r in matched) + '，当前 V%03d；旧回传不能套用新签发' % head['revision']
-            elif row.get('revision') and row['revision'] != head['revision']:
+                elif reference_head not in matched:
+                    reason = '原签发已变化：文件修订 ' + ' / '.join('V%03d' % r[3] for r in matched) + '，当前 V%03d；旧回传不能套用新签发' % head['revision']
+            elif revision and revision != head['revision']:
                 reason = '文件修订与当前签发修订不一致'
             if reason:
                 break
@@ -33,8 +47,7 @@ def binding(document, heads, *, scoped=False):
             rejected.append({'head': head, 'reason': reason})
         else:
             candidates.append(head)
-    numbers = {r.get('signed_number') for r in rows if r.get('signed_number')}
-    explicit = len(numbers) == 1 and all(r.get('signed_number') for r in rows)
+    explicit = explicit and len(numbers) == 1
     automatic = len(candidates) == 1 and (explicit or scoped and len(heads) == 1)
     if not candidates:
         related = [x for x in rejected if x['head']['number'] in numbers]

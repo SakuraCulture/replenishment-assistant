@@ -73,6 +73,11 @@ class Repository:
                 CREATE TABLE IF NOT EXISTS normal_work_revisions(revision TEXT PRIMARY KEY,day TEXT NOT NULL,payload BLOB NOT NULL);
             ''')
 
+    @classmethod
+    def from_existing_work(cls,work):
+        repo=cls.__new__(cls);repo.work=work
+        return repo
+
     def get(self,day,store,revision=None,*,view=None,progress=lambda _:None,export_io=False):
         with closing(self.work.connect()) as db:
             row=db.execute("SELECT oid,number,current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,store)).fetchone()

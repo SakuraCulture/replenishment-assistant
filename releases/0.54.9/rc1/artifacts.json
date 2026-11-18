@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "version": "0.54.9",
+  "build_id": "rc1",
+  "package": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.9_rc1\\补货助手_0.54.9_rc1_经营分析导出修复.zip",
+  "zip_sha256": "f7fbcb6665675e561bda556332f634508ee946b53d1e71bdec33ccdd27d5dd93",
+  "exe_sha256": "f268bd606e5289d5b4e8b24168c74b97cdf56b7baf6574cd37e28f0601ca7c3b",
+  "source_reference": "snapshot-b7f4e5215c7b885d63cef82abdc42f5f60b8cb641f533dfa4b63e5fbb834da06",
+  "python_passed": 251,
+  "native_checks": 56,
+  "same_complete_reports": true,
+  "same_workbook_members_except_timestamps": true,
+  "old_package_preserved": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.8_rc1\\补货助手_0.54.8_rc1_轻量性能日志.zip",
+  "old_zip_sha256": "23c2bc7dc249d8fecbd917d22d92858b9d3b7cdd23a22d1502a6da92cf1a9baf",
+  "known_limitations": [
+    "Actual business-machine exception not yet confirmed by its app.log",
+    "Full 64000-row detail save/cache hit source test 300s guard; not counted as passed"
+  ],
+  "git_committed_pushed_or_merged": false,
+  "real_data_modified": false,
+  "live_platform_calls": 0,
+  "evidence": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\analytics_export_fix_0549_20261117_01"
+}

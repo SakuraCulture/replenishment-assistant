@@ -14,6 +14,7 @@ from openpyxl.cell import WriteOnlyCell
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 from analytics_formula_cache import FormulaCache
 from runtime_support import Cancelled
+from xlsx_exports import stream_book
 
 
 class FormulaValues(unittest.TestCase):
@@ -31,7 +32,7 @@ with tempfile.TemporaryDirectory() as folder,FormulaCache(folder) as cache:
  blank=WriteOnlyCell(s,None);blank.fill=PatternFill('solid',fgColor='FFFFFF')
  s.append([blank,'=1+1',blank,'=IF(1=0,0,"n.a.")'])
  cache.add('表','B1',2);cache.add('表','D1','n.a.')
- p=Path(folder)/'et.xlsx';b.save(p);cache.apply(p)
+ p=Path(folder)/'et.xlsx';cache.save(b,p)
  r=openpyxl.load_workbook(p,read_only=True,data_only=True)
  assert r.active['B1'].value==2 and r.active['D1'].value=='n.a.'
  r.close()
@@ -47,19 +48,24 @@ with tempfile.TemporaryDirectory() as folder,FormulaCache(folder) as cache:
 
     def test_numeric_and_unavailable_cache_formulas_names_and_other_zip_members_preserved(self):
         with tempfile.TemporaryDirectory() as folder, FormulaCache(folder) as cache:
-            p=Path(folder)/'book.xlsx'; b=openpyxl.Workbook(write_only=True)
-            for title in ('中文&表','Second'):
-                s=b.create_sheet(title); s.freeze_panes='C2'
-                s.append([2,4,'=A1/B1','=IF(A1=0,"n.a.",A1)'])
-                cache.add(title,'C1',.5); cache.add(title,'D1','n.a.')
-                literal=WriteOnlyCell(s,'=原商品名称'); literal.data_type='s'; s.append([literal])
-            b.save(p)
+            p=Path(folder)/'book.xlsx'
+            def fill(book):
+                for title in ('中文&表','Second'):
+                    s=book.create_sheet(title); s.freeze_panes='C2'
+                    s.append([2,4,'=A1/B1','=IF(A1=0,"n.a.",A1)'])
+                    literal=WriteOnlyCell(s,'=原商品名称'); literal.data_type='s'; s.append([literal])
+            with stream_book() as book:
+                fill(book);book.save(p)
             with zipfile.ZipFile(p) as z: before={n:z.read(n) for n in z.namelist()}
-            cache.apply(p)
+            with stream_book() as book:
+                fill(book)
+                for sheet in book:
+                    cache.add(sheet.title,'C1',.5); cache.add(sheet.title,'D1','n.a.')
+                cache.save(book,p)
             with zipfile.ZipFile(p) as z:
                 self.assertIsNone(z.testzip())
                 for name,data in before.items():
-                    if not name.startswith('xl/worksheets/'): self.assertEqual(z.read(name),data)
+                    if not name.startswith(('xl/worksheets/','docProps/core.xml')): self.assertEqual(z.read(name),data)
             for data_only in (False,True):
                 r=openpyxl.load_workbook(p,read_only=True,data_only=data_only)
                 try:
@@ -70,19 +76,20 @@ with tempfile.TemporaryDirectory() as folder,FormulaCache(folder) as cache:
                 finally:r.close()
 
     def test_missing_cell_aborts_without_replacing_original(self):
-        with tempfile.TemporaryDirectory() as folder, FormulaCache(folder) as cache:
-            p=Path(folder)/'book.xlsx';b=openpyxl.Workbook(write_only=True);b.create_sheet('表').append([1]);b.save(p)
-            before=p.read_bytes();cache.add('表','C1',3)
-            with self.assertRaisesRegex(ValueError,'missing'):cache.apply(p)
+        with tempfile.TemporaryDirectory() as folder, FormulaCache(folder) as cache, stream_book() as book:
+            p=Path(folder)/'book.xlsx';p.write_bytes(b'existing workbook')
+            before=p.read_bytes();book.create_sheet('表').append([1]);cache.add('表','C1',3)
+            with self.assertRaisesRegex(ValueError,'missing'):cache.save(book,p)
             self.assertEqual(p.read_bytes(),before)
 
     def test_cancel_leaves_original_file_and_cleans_spool(self):
         with tempfile.TemporaryDirectory() as folder:
-            p=Path(folder)/'book.xlsx';b=openpyxl.Workbook(write_only=True);b.create_sheet('表').append(['=1+1']);b.save(p)
+            p=Path(folder)/'book.xlsx';p.write_bytes(b'existing workbook')
             before=p.read_bytes();event=threading.Event()
-            with FormulaCache(folder,cancel=event) as cache:
+            with FormulaCache(folder,cancel=event) as cache, stream_book() as book:
+                book.create_sheet('表').append(['=1+1'])
                 cache.add('表','A1',2);event.set()
-                with self.assertRaises(Cancelled):cache.apply(p)
+                with self.assertRaises(Cancelled):cache.save(book,p)
             self.assertEqual(p.read_bytes(),before)
             self.assertEqual([v.name for v in Path(folder).iterdir()],['book.xlsx'])
 

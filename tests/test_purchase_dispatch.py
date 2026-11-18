@@ -43,6 +43,27 @@ class PurchaseDispatchTests(unittest.TestCase):
         self.assertTrue(r['ok'], r)
         with closing(self.f.work.connect()) as db:
             self.assertEqual(r['facts'], facts(db, self.f.h))
+            stored, = db.execute('SELECT proof FROM purchase_dispatch_guards').fetchone()
+        proof = json.loads(stored)
+        # This is the persisted wire contract that a version change must update
+        # together with the Node reader and the isolated dispatch cases below.
+        self.assertEqual(proof['schema'], 1)
+        self.assertEqual(set(proof), {'schema', 'day', 'facts', 'supplierFile', 'catalogs'})
+        self.assertEqual(set(proof['facts']), {'parent', 'managed', 'child', 'signed', 'visibility',
+                                               'deleted', 'retirement', 'operations', 'versions', 'legacy', 'admission'})
+        self.assertEqual(proof['facts'], r['facts'])
+
+    def test_unknown_proof_version_never_releases_a_native_request(self):
+        with closing(self.f.work.connect()) as db, db:
+            stored, = db.execute('SELECT proof FROM purchase_dispatch_guards').fetchone()
+            proof = json.loads(stored)
+            proof['schema'] += 1
+            db.execute('UPDATE purchase_dispatch_guards SET proof=?', (json.dumps(proof),))
+        result = self.node('unknown_proof_version')
+        self.assertEqual(result['state'], 'FAILED_PRECHECK', result)
+        self.assertFalse(result['uploadAttempted'], result)
+        self.assertEqual(result['released'], 0, result)
+        self.assertEqual(result['guard'], 'AUTHORIZED', result)
 
     def test_current_payment_and_file_can_consume_exactly_once(self):
         self.assertTrue(self.node('consume')['ok'])

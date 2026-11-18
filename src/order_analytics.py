@@ -256,9 +256,14 @@ def build_facts(order, head, view, evidence, cancel=None):
 def aggregate(rows):
     """Ratios always use the same priced valid row cohort in both stages."""
     eligible=[r for r in rows if r['scope']=='纳入']
-    out={'rows':len(rows),'included':len(eligible),'included_orders':len({r['order'] for r in eligible}),
-         'complete_orders':sum(all(all(r['valid'][s] for s in STAGES) for r in eligible if r['order']==oid) for oid in {r['order'] for r in eligible}),
-         'complete_rows':sum(all(r['valid'][s] for s in STAGES) for r in eligible),'excluded':sum(r['scope']=='排除' for r in rows),
+    complete_by_order={};complete_rows=0
+    for row in eligible:
+        order=row['order'];complete=all(row['valid'][s] for s in STAGES)
+        complete_by_order[order]=complete_by_order.get(order,True) and complete
+        complete_rows+=complete
+    out={'rows':len(rows),'included':len(eligible),'included_orders':len(complete_by_order),
+         'complete_orders':sum(complete_by_order.values()),
+         'complete_rows':complete_rows,'excluded':sum(r['scope']=='排除' for r in rows),
          'pending':sum(r['scope']=='待核' for r in rows),'stages':{},'pairs':[]}
     for s in STAGES:
         valid=[r for r in eligible if r['valid'][s]]
@@ -339,9 +344,10 @@ def validate_basis(path,report,progress=lambda _:None,cancel=None):
     checkpoint(cancel)
 
 
-def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
+def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, _verification=None):
     from analytics_identifiers import local, attach
-    spec=query_spec(spec);path=Path(path).resolve();rows=[];tokens=[];heads=[];payments=[];identifiers=[]
+    spec=query_spec(spec);path=Path(path).resolve();verifying=_verification is not None
+    rows=_verification if verifying else [];tokens=[];heads=[];payments=[];identifiers=[]
     with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as db:
         db.execute('BEGIN')
         stamp=data_stamp(db,spec)
@@ -381,10 +387,11 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
             progress(RowProgress('读取签发与履约快照',i+1,len(records)))
             if execution_head:
                 from history_read import repository
-                order=execution.get_order(repository(path),execution_head,db=db)
+                order=execution.get_order(repository(path),execution_head,db=db,
+                    **({'progress':progress,'export_io':True} if verifying else {}))
                 revision,sha,saved=(order[k] for k in ('revision','digest','saved'));payload=order['payload']
             else:
-                payload=chunks.load(blob,db,binding=sha)
+                payload=chunks.load(blob,db,binding=sha,**({'bounded':True} if verifying else {}))
                 order={'day':day,'store':store,'oid':oid,'number':number,'revision':revision,'current_revision':revision,'digest':sha,'saved':saved,'payload':payload}
             result=payload['result']
             for wh in dict.fromkeys(ao.warehouse(r) for r in result['rows']):
@@ -419,12 +426,19 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
                     terms=spec.get('search','').casefold().split()
                     if not all(t in (row['store_name']+' '+row['order']+' '+row['sku']+' '+str(row['name'])).casefold() for t in terms):continue
                     rows.append(row)
+            if verifying:
+                # The sink owns serialized facts and small shared references.
+                # Do not overlap two decoded warehouse/lifecycle order trees.
+                order=payload=result=view=allocation=payment=row=None
         if set(spec['stores'])-seen_stores:raise ValueError('所选门店在日期和仓范围内没有有效签发：'+'、'.join(sorted(set(spec['stores'])-seen_stores)))
         if set(spec['orders'])-seen_orders:raise ValueError('所选订单不存在、已删除或不在查询范围，请重新查询')
         identifier_token=attach(path,db,heads,identifiers,cancel)
     checkpoint(cancel)
+    from analytics_snapshot import snapshot_digest
+    snapshot_id=snapshot_digest(VERSION,spec,tokens,rows,payments,identifiers,cancel)
+    if verifying:return {'snapshot_id':snapshot_id}
     report={'schema':VERSION,'query':spec,'as_of':spec.get('as_of') or datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds'),
-            'snapshot_id':digest([VERSION,spec,tokens,rows,payments,identifiers]),'data_stamp':stamp,'identifier_token':identifier_token,
+            'snapshot_id':snapshot_id,'data_stamp':stamp,'identifier_token':identifier_token,
             'heads':heads,'rows':rows,'payments':payments,'identifiers':identifiers,
             'metrics':aggregate(rows),'groups':{g:aggregate([r for r in rows if r['group']==g]) for g in GROUPS},
             'stores':summaries(rows,'store'),'warehouses':summaries(rows,'warehouse'),'orders':summaries(rows,'order')}
@@ -438,8 +452,10 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True):
     return report
 
 
-def validate_snapshot(path, report, progress=lambda _:None,cancel=None):
-    current=collect(path,report['query'],progress,cancel,_coverage=False)
+def validate_snapshot(path, report, progress=lambda _:None,cancel=None,*,temp_folder=None):
+    from analytics_snapshot import FactSpool
+    with FactSpool(temp_folder,cancel,progress) as spool:
+        current=collect(path,report['query'],progress,cancel,_coverage=False,_verification=spool)
     if current['snapshot_id']!=report['snapshot_id']:
         raise ValueError('分析依据或订单范围已变化，请刷新后重新导出；未导出旧缓存')
     return True

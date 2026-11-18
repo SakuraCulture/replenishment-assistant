@@ -8,8 +8,7 @@ import purchase_io as base
 from runtime_support import checkpoint
 from export_progress import RowProgress
 
-STAGES = ('return', 'payment', 'receipt')
-ALL_STAGES = ('return', 'operations', 'payment', 'receipt')
+from lifecycle_stages import LEGACY as STAGES, CURRENT as ALL_STAGES
 TITLES = {'return': '门店回传单', 'payment': '门店付款单', 'receipt': '门店实际收货单'}
 QUANTITIES = {'return': '门店确认数量', 'payment': '付款单商品数量', 'receipt': '实际收货数量'}
 DOCNUM = {'return': '回传单号', 'payment': '付款单号', 'receipt': '收货单号'}

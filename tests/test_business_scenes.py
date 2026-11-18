@@ -18,6 +18,10 @@ class BusinessScenes(unittest.TestCase):
         self.reader=patch('history_tasks.HistoryReader.request');self.reader.start()
         from application_window import ApplicationWindow
         self.win=ApplicationWindow()
+        # These tests temporarily substitute the order database. Keep the
+        # unrelated periodic writer from reopening that fixture during cleanup.
+        self.win.jst_generator.stopped=True
+        self.win.jst_generator.timer.stop()
     def tearDown(self):
         import shiboken6
         self.win.close();self.app.processEvents();shiboken6.delete(self.win)

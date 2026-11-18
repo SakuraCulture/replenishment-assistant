@@ -17,7 +17,10 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
         if value: date.fromisoformat(value)
     if start and end and start > end: raise ValueError('起始日期不能晚于结束日期')
     repo = repository(path); heads = repo.headers(); cache = Path(cache); cache.parent.mkdir(parents=True, exist_ok=True)
-    records = [];basis_tokens={}
+    records = [];basis_tokens={};source=str(Path(path).resolve())
+    track_platform=request.get('platform_tracking',False)
+    if track_platform:import order_tracking_refs
+    terms=request.get('search','').strip().lower().split()
     selected = [h for h in heads if (not start or h['day'] >= start) and (not end or h['day'] <= end)]
     selected_parents=list(selected)
     with closing(sqlite3.connect(cache)) as idx, closing(purchases.connect(path)) as db:
@@ -40,11 +43,20 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                 versions.update(((o,r,w,s),v) for o,r,w,s,v in db.execute('SELECT oid,revision,warehouse,stage,MAX(version) FROM lifecycle_versions WHERE oid IN ('+placeholders+') GROUP BY oid,revision,warehouse,stage',oids))
         older=set()
         selected_revisions={(h['oid'],h.get('warehouse')):h['revision'] for h in selected}
+        doc_keys={}
         for oid,revision,warehouse,stage in versions:
             if revision!=selected_revisions.get((oid,warehouse),selected_revisions.get((oid,None))):older.add((oid,warehouse))
+            elif stage in lifecycle.ALL_STAGES:
+                key=(oid,revision,warehouse,stage)
+                doc_keys[key]=wr.dumps(['lifecycle-v3' if track_platform and stage=='payment' else 'lifecycle-v2',source,*key,versions[key]])
+        cached_documents={}
+        for placeholders,keys in oid_batches(doc_keys.values()):
+            checkpoint(cancel)
+            cached_documents.update((key,(payload,sha)) for key,payload,sha in idx.execute(
+                'SELECT k,payload,sha FROM lifecycle_projection WHERE k IN ('+placeholders+')',keys))
         for n, h in enumerate(selected):
             needs_legacy=(h['oid'],h['revision']) in legacy_keys
-            checkpoint(cancel); cache_parts=[2,str(Path(path).resolve()),h['oid'],h['revision'],h['digest'],needs_legacy]
+            checkpoint(cancel); cache_parts=[2,source,h['oid'],h['revision'],h['digest'],needs_legacy]
             if h.get('warehouse'):cache_parts.extend([h['warehouse'],h.get('snapshot_digest'),h.get('execution_epoch')])
             k=wr.dumps(cache_parts)
             hit = idx.execute('SELECT payload,sha FROM lifecycle_projection WHERE k=?', (k,)).fetchone()
@@ -67,11 +79,16 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                 for s in lifecycle.ALL_STAGES:
                     version=versions.get((h['oid'],h['revision'],wh,s))
                     if version is None:summaries[s]=None;continue
-                    doc_key=wr.dumps(['lifecycle-v2',str(Path(path).resolve()),h['oid'],h['revision'],wh,s,version])
-                    cached=idx.execute('SELECT payload,sha FROM lifecycle_projection WHERE k=?',(doc_key,)).fetchone()
+                    with_number=track_platform and s=='payment'
+                    identity=(h['oid'],h['revision'],wh,s)
+                    doc_key=doc_keys.get(identity) or wr.dumps(['lifecycle-v3' if with_number else 'lifecycle-v2',source,*identity,version])
+                    cached=cached_documents.get(doc_key)
                     if cached and hashlib.sha256(cached[0].encode()).hexdigest()==cached[1]:summary=json.loads(cached[0])
                     else:
-                        summary=lifecycle.document_summary(lifecycle.current(db,head,s,version));text=json.dumps(summary,ensure_ascii=False)
+                        document=lifecycle.current(db,head,s,version);summary=lifecycle.document_summary(document)
+                        if with_number:summary['jst_numbers']=order_tracking_refs.payment_numbers(document)
+                        del document
+                        text=json.dumps(summary,ensure_ascii=False)
                         idx.execute('INSERT OR REPLACE INTO lifecycle_projection VALUES(?,?,?)',(doc_key,text,hashlib.sha256(text.encode()).hexdigest()))
                     summaries[s]=summary
                 required=routes.get((h['oid'],h['revision']),0)>=2 or present['operations']
@@ -81,10 +98,17 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                 parent_number=h.get('parent_number',h['number'])
                 record = {**h, 'warehouse': wh, 'name': part['name'], 'number': ao.number(parent_number, wh), 'parent_number': parent_number, 'current_revision': h.get('current_revision',h['revision']), 'visibility_token': vis.get('token', 0), 'present': present, 'status': status, 'next': next_stage, 'old_revision': old, 'legacy_return': bool(legacy), 'legacy_incomplete': bool(legacy and not legacy['complete']), 'wait_days': max(0, (date.fromisoformat(wr.today()) - date.fromisoformat(h['saved'][:10])).days)}
                 record.update(note=note,health=health,flow_version=2 if required else 1)
-                query = request.get('search', '').strip().lower()
                 search = ' '.join(str(record[k]) for k in ('day', 'store', 'name', 'warehouse', 'number')).lower()
-                if all(t in search for t in query.split()): records.append(record)
+                if track_platform:
+                    payment=summaries['payment'] or {}
+                    record['platform_tracking']={'jst_numbers':payment.get('jst_numbers',[]),
+                        'payment_basis':(payment.get('version'),payment.get('digest')),'receipt_saved':bool(summaries['receipt'])}
+                    records.append(record)
+                elif all(t in search for t in terms):records.append(record)
             progress({'done': n+1, 'total': len(selected)})
+        if track_platform:
+            order_tracking_refs.attach(path,db,records,cancel)
+            if terms:records=[r for r in records if order_tracking_refs.matches(r,terms)]
         if heads != repo.headers(): raise wr.Conflict('签发修订在查询期间变化，请刷新')
         with closing(purchases.connect(path)) as fresh:
             now_managed=execution.managed(fresh,(h['oid'] for h in selected_parents))

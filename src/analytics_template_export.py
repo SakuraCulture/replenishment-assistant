@@ -126,6 +126,8 @@ class _Sheet:
         checkpoint(self.cancel)
         self.count += 1
         self.ws.row_dimensions[self.count].height = height
+        formats=formats or {};overrides=overrides or {}
+        center=kind in ('header','card','total');header=kind=='header'
         cells = []
         for col, value in enumerate([*values, *([None] * max(0, self.width - len(values)))], 1):
             formula = isinstance(value, _Formula)
@@ -133,11 +135,11 @@ class _Sheet:
             cell = WriteOnlyCell(self.ws, actual)
             if isinstance(actual, str) and not formula:
                 cell.data_type = 's'  # Identifiers, names and attributes cannot inject Excel formulas.
-            style = (overrides or {}).get(col, kind)
-            numeric = formula or isinstance(actual, (int, float)) or (actual == NA and col in (formats or {}))
-            horizontal = 'center' if kind in ('header', 'card', 'total') or style in ('card', 'total') else 'right' if numeric else None
-            wrap = kind == 'header' or col in (5, 6) or (isinstance(actual, str) and '\n' in actual)
-            number_format = (formats or {}).get(col, 'General')
+            style = overrides.get(col, kind)
+            numeric = formula or isinstance(actual, (int, float)) or (actual == NA and col in formats)
+            horizontal = 'center' if center or style in ('card', 'total') else 'right' if numeric else None
+            wrap = header or col in (5, 6) or (isinstance(actual, str) and '\n' in actual)
+            number_format = formats.get(col, 'General')
             key = (style, horizontal, wrap, number_format)
             cached = self._styles.get(key)
             if cached is None:
@@ -330,30 +332,35 @@ def append_detail(book, report, rows, progress=lambda _: None, cancel=None):
     sheet.row(groups, 'header', overrides={18: 'card_header', 19: 'card_header'}); sheet.row(DETAIL_HEADERS, 'header', height=42)
     total = len(rows) if hasattr(rows, '__len__') else None
     if total is not None: row_progress(progress, sheet.ws.title, 0, total)
+    formats={**dict.fromkeys(range(6,12),INTEGER),**dict.fromkeys(range(12,20),PERCENT),**dict.fromkeys(range(20,27),MONEY),
+             **dict.fromkeys((*range(33,39),40),'General')}
+    last_order=None;last_reference=None;ids=None
     for index, row in enumerate(rows, 1):
         checkpoint(cancel)
         current = sheet.count + 1
         quantities = [_quantity(row, stage) for stage in STAGES]
         displayed = [q if q is not None else NA for q in quantities]
         price = _number(row.get('price'))
-        rates = [_rate_formula(f'{get_column_letter(6 + ni)}{current}', f'{get_column_letter(6 + di)}{current}', _rate(displayed[ni], displayed[di])) for ni, di in RATE_PAIRS]
-        amounts = [_Formula(f'=IF(COUNT({get_column_letter(6 + i)}{current},T{current})<2,"{NA}",{get_column_letter(6 + i)}{current}*T{current})', q * price if q is not None and price is not None else NA) for i, q in enumerate(quantities)]
+        quantity_cells=[f'{column}{current}' for column in 'FGHIJK'];price_cell=f'T{current}'
+        rates = [_rate_formula(quantity_cells[ni],quantity_cells[di],_rate(displayed[ni],displayed[di])) for ni,di in RATE_PAIRS]
+        amounts = [_Formula(f'=IF(COUNT({cell},{price_cell})<2,"{NA}",{cell}*{price_cell})',q*price if q is not None and price is not None else NA)
+                   for cell,q in zip(quantity_cells,quantities)]
         attrs = row.get('template_attributes') or {}
         def number(key):
             # Source attributes are evidence, including genuine negative stock
             # or net sales.  Only stage quantities and prices reject negatives.
             value = _finite_number(attrs.get(key))
             return value if value is not None else NA
-        ids = identifier_cells([row])
+        reference=row.get('references')
+        if ids is None or row['order']!=last_order or reference is not last_reference:
+            ids=identifier_cells([row]);last_order=row['order'];last_reference=reference
         values = [ids[0], _store(row), _text(row.get('sku')), _text(row.get('name')), _status(row, True),
                   *displayed, *rates, price if price is not None else NA, *amounts,
                   _text(row.get('day')), _text(row.get('warehouse')), _text(row.get('group')),
                   _text(attrs.get('barcode')), _text(row.get('product_category')), _text(attrs.get('supply_state')),
                   *[number(key) for key in ('stock', 'monthly_sales', 'in_transit', 'target_holding', 'pack_size', 'minimum_holding')],
                   _text(attrs.get('stock_snapshot_at')), number('warehouse_stock'), _text(row.get('upstream_supplier')), *ids[1:]]
-        sheet.row(values, 'body' if index % 2 else 'even',
-                  {**{c: INTEGER for c in range(6, 12)}, **{c: PERCENT for c in range(12, 20)}, **{c: MONEY for c in range(20, 27)},
-                   **{c: 'General' for c in (*range(33, 39), 40)}}, height=48)
+        sheet.row(values,'body' if index%2 else 'even',formats,height=48)
         if index % 500 == 0 and total is not None: row_progress(progress, sheet.ws.title, index, total)
     sheet.table(DETAIL_HEADERS, 7, 'AnalyticsSkuLifecycle')
     row_progress(progress, sheet.ws.title, sheet.count - 7, total if total is not None else sheet.count - 7)

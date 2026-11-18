@@ -2,6 +2,8 @@
 from decimal import Decimal
 import model
 
+SIGNED_GROUPS=('往期新品','本月新品','中心仓动销补货清单')
+
 def numeric(v):return model.number(v)
 
 
@@ -84,6 +86,19 @@ def order_amount(d):
 
 def orderable(d):
     return not exclusion_reason(d) and d.get('_source')=='资料匹配' and numeric(order_quantity(d)) and order_quantity(d)>0
+
+
+def signed_groups(result, profile):
+    """Keep the signed product scope and the original order within each group."""
+    from new_products import is_new
+    from new_product_focus import members
+    focused=members(profile);groups={name:[] for name in SIGNED_GROUPS}
+    for row in result['rows']:
+        if row.get('_source')!='资料匹配' or not work_eligible(row):continue
+        if row.get('_preissue',{}).get('current_month'):groups['本月新品'].append(row)
+        elif is_new(row):groups['本月新品' if row['E'] in focused else '往期新品'].append(row)
+        elif orderable(row):groups['中心仓动销补货清单'].append(row)
+    return groups
 
 
 def order_status(d):

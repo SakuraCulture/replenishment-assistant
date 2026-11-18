@@ -17,7 +17,7 @@ from adaptive_resources import Budget
 HEADERS=['仓库/门店名称','仓库/门店编码','供应商编码','商品名称','商品编码','商品条码','基础单位','日销','周销','月销','可用库存','在途库存','在途库存天数','缺货天数（天）','箱规','中心仓价格','补货数量','黑名单状态','所属仓','商品等级']
 AUDIT_HEADERS=['补货单号','决策理由']
 MERCHANT_AUDIT_HEADERS=['决策理由']
-SHEETS=['往期新品','本月新品','中心仓动销补货清单']
+SHEETS=list(sem.SIGNED_GROUPS)
 TEMPLATE_SHA256='1cc7a8e9f99fec764d17286c6b0a028a7ea79416add7178a64e91512f311f7c6'
 
 
@@ -29,15 +29,7 @@ def filename(order,warehouse=None):
     return order['day']+name+'（精简版'+('·'+warehouse if warehouse else '')+'）.xlsx'
 
 
-def groups(result,profile):
-    """New pool has precedence, including anomalous sales rows: no duplicate SKU."""
-    focused=focus.members(profile);out={name:[] for name in SHEETS}
-    for d in result['rows']:
-        if d.get('_source')!='资料匹配' or not sem.work_eligible(d):continue
-        if d.get('_preissue',{}).get('current_month'):out['本月新品'].append(d)
-        elif new_products.is_new(d):out['本月新品' if d['E'] in focused else '往期新品'].append(d)
-        elif sem.orderable(d):out['中心仓动销补货清单'].append(d)
-    return out
+groups=sem.signed_groups
 
 
 def decision(d):
@@ -91,6 +83,7 @@ def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,strea
     rev=f"V{order['revision']:03d}";historical=order['revision']!=order['current_revision'];font=Font(name='宋体',sz=11,charset=134,scheme='minor',color=Color(theme=1))
     remaining=sum(len(rows)+1 for rows in grouped.values())*len(HEADERS+MERCHANT_AUDIT_HEADERS)
     with owner as wb:
+        styles={}
         if not streamed:wb.remove(wb.active)
         wb.properties.title=order['number']+' '+rev;wb.properties.subject='内部签发建议，非实际采购订单';wb.properties.description='仅中心仓商品；Q列可供门店调整；完整签发建议与来源保存在应用历史归档。数量为库存单位，价格为基本售价。'
         for key,value in [('补货单号',order['number']),('修订',rev),('模板SHA256',TEMPLATE_SHA256),('版本状态','历史修订' if historical else '当前修订')]:wb.custom_doc_props.append(StringProperty(name=key,value=value))
@@ -106,9 +99,17 @@ def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,strea
                 cells=[]
                 for col,value in enumerate(values,1):
                     cell=WriteOnlyCell(ws,value) if streamed else ws.cell(rn,col,value)
-                    cell.font=font
+                    number_format=('0.00' if col==16 else '@') if rn>1 and col in (16,18) else None
+                    # Binding a date/time may already have set a number format.
+                    # Preserve that base style, and never share IDs across books.
+                    key=(tuple(cell._style) if cell._style is not None else None,number_format)
+                    cached=styles.get(key)
+                    if cached is None:
+                        cell.font=font
+                        if number_format is not None:cell.number_format=number_format
+                        styles[key]=cell._style
+                    else:cell._style=cached  # Complete arrays are read-only after caching.
                     if isinstance(value,str):cell.data_type='s'
-                    if rn>1 and col in (16,18):cell.number_format='0.00' if col==16 else '@'
                     if comments and col in comments:cell.comment=Comment(comments[col],'补货助手')
                     cells.append(cell)
                 if streamed:ws.append(cells)

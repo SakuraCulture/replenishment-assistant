@@ -207,6 +207,38 @@ class WorkflowUiTests(unittest.TestCase):
         self.assertEqual(d.table.item(1,0).checkState(),Qt.CheckState.Unchecked)
         d.accept();d.deleteLater()
 
+    def test_bulk_checks_only_selectable_items_and_keep_current_batch_scope(self):
+        job = self.m.store.prepare([head(1), head(2), head(3)])
+        job = self.m.store.update(job['id'], position=2, changes={'state':'SKIPPED','package':{'id':'p3'}})
+        other = self.prepared(4)
+        d = QueueDialog(self.host, self.m, job['id'])
+        d.timer.stop()
+        checked = Qt.CheckState.Checked
+        unchecked = Qt.CheckState.Unchecked
+
+        self.assertFalse(d.clear_checks_btn.isEnabled())
+        d.select_all_btn.click()
+        self.assertEqual([d.table.item(r, 0).checkState() for r in range(3)], [checked, checked, unchecked])
+        self.assertEqual(d.selection_count.text(), '已勾选 2 单')
+        self.assertEqual(self.m.store.get(job['id']), job)
+        self.assertFalse(d.select_all_btn.isEnabled())
+
+        self.m.store.update(job['id'], position=0, changes={'state':'SKIPPED','package':{'id':'p1'}})
+        d.refresh()
+        self.assertEqual(d.table.item(0, 0).checkState(), unchecked)
+        self.assertEqual(d.table.item(1, 0).checkState(), checked)
+        self.assertEqual(d.selection_count.text(), '已勾选 1 单')
+        d.clear_checks_btn.click()
+        self.assertEqual(d.table.item(1, 0).checkState(), unchecked)
+        self.assertEqual(d.selection_count.text(), '已勾选 0 单')
+
+        d.select_all_btn.click()
+        d.jobs.setCurrentIndex(d.jobs.findData(other['id']))
+        self.assertEqual(d.table.item(0, 0).checkState(), unchecked)
+        self.assertEqual(d.selection_count.text(), '已勾选 0 单')
+        self.assertEqual(Client.instances, [])
+        d.accept();d.deleteLater()
+
     def test_selected_button_and_local_delete_apply_exact_checkbox_scope(self):
         j=self.m.store.prepare([head(1),head(2)]);j=self.m.store.update(j['id'],state='PAUSED')
         d=QueueDialog(self.host,self.m,j['id']);d.timer.stop()

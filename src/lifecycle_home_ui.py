@@ -12,11 +12,11 @@ from lifecycle_io import TITLES
 
 class LifecycleWidget(QWidget):
     STAGES={'return':'回传处理','operations':'运营签发','jst':'聚水潭导入单','payment':'付款核对','receipt':'收货核对'}
-    def __init__(self,host,stage=None,scope=None):
-        super().__init__(host);self.host=host;self.stage=stage;self.fixed_scope=scope;self.records=[];self.page=0;self.checked={};self.reader=HistoryReader(host.work_repository.path,host.repository.folder/'lifecycle_index.sqlite3',self)
+    def __init__(self,host,stage=None,scope=None,*,parent=None):
+        super().__init__(host if parent is None else parent);self.host=host;self.stage=stage;self.fixed_scope=scope;self.records=[];self.page=0;self.checked={};self.reader=HistoryReader(host.work_repository.path,host.repository.folder/'lifecycle_index.sqlite3',self)
         v=QVBoxLayout(self);v.setContentsMargins(0,0,0,0);v.addWidget(label(self.STAGES.get(stage,'日批次总览 · 看进度，进入对应环节处理'),'section'));filters=QHBoxLayout();self.start=QLineEdit(wr.today());self.end=QLineEdit(wr.today())
         for e in (self.start,self.end):e.setMaximumWidth(120);e.setPlaceholderText('YYYY-MM-DD')
-        filters.addWidget(label('业务日期'));filters.addWidget(self.start);filters.addWidget(label('至'));filters.addWidget(self.end);self.search=QLineEdit();self.search.setPlaceholderText('门店 / 仓 / 单号');self.search.setClearButtonEnabled(True);filters.addWidget(self.search,1);filters.addWidget(button('查询',self.query));filters.addWidget(button('全部未完成（不限日期）',self.all_pending));v.addLayout(filters)
+        filters.addWidget(label('业务日期'));filters.addWidget(self.start);filters.addWidget(label('至'));filters.addWidget(self.end);self.search=QLineEdit();self.search.setPlaceholderText('门店 / 仓 / 补货单号 / 聚水潭内部订单号 / 翱象采购单号');self.search.setClearButtonEnabled(True);filters.addWidget(self.search,1);filters.addWidget(button('查询',self.query));filters.addWidget(button('全部未完成（不限日期）',self.all_pending));v.addLayout(filters)
         self.status=QComboBox();self.status.addItems((['待生成','已生成未锁','已锁','本环节全部'] if stage=='jst' else ['待处理','本环节全部']) if stage else ['全部记录','全部未完成',*daily_batch.STATUSES]);row=QHBoxLayout();row.addWidget(self.status);self.warehouse_filter=QComboBox();self.warehouse_filter.addItems(['全部仓','河北仓','山东仓']);row.addWidget(self.warehouse_filter);self.lock_filter=QComboBox();self.lock_filter.addItems(['全部锁状态','已锁','未锁']);row.addWidget(self.lock_filter);row.addWidget(label('按日期看进度；库存分配按明确选择的批次，锁单不等于付款。','muted'),1);v.addLayout(row);self.status.currentIndexChanged.connect(self.query);self.warehouse_filter.currentIndexChanged.connect(self.query);self.lock_filter.currentIndexChanged.connect(self.query);self.search.returnPressed.connect(self.query)
         self.cards={};row=QHBoxLayout()
         for title in daily_batch.STATUSES:
@@ -26,7 +26,9 @@ class LifecycleWidget(QWidget):
         self.excluded_records=[];self.excluded_btn=button('查看未显示订单（0）',self.show_excluded_orders);self.excluded_btn.setEnabled(False)
         self.excluded_btn.setToolTip('查看被当前筛选排除的有效仓单及全部原因；其他页的符合筛选订单请翻页查看。')
         row=QHBoxLayout();row.addWidget(self.note,1);row.addWidget(self.excluded_btn);v.addLayout(row)
-        self.table=QTableWidget();self.table.setColumnCount(13);self.table.setHorizontalHeaderLabels(['勾选','单据详情','下一步','业务日期','门店','仓','补货单号','当前进度','门店回传','运营签发','门店付款','实际收货','资料提示']);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
+        columns=['勾选','单据详情','下一步','业务日期','门店','仓','补货单号','当前进度','门店回传','运营签发','门店付款','实际收货','资料提示']
+        if stage is None:columns[7:7]=['聚水潭内部订单号','翱象采购单号','收货状态']
+        self.table=QTableWidget();self.table.setColumnCount(len(columns));self.table.setHorizontalHeaderLabels(columns);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
         if stage:
             for column in (8,9,10,11):self.table.setColumnHidden(column,True)
         row=QHBoxLayout();row.addWidget(button('勾选本页',lambda:self.select_page(True)));row.addWidget(button('清空勾选',lambda:self.select_page(False)));row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));self.selected_label=label('');row.addWidget(self.selected_label);v.addLayout(row)
@@ -163,7 +165,7 @@ class LifecycleWidget(QWidget):
         self.excluded_records=[];self.excluded_btn.setText('查看未显示订单（0）');self.excluded_btn.setEnabled(False)
         self.selection_label();self.bar.show();self.table.setEnabled(False);self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在查询单据进度…可继续使用工作页。')
         self.order_compare_btn.setEnabled(False);self.store_compare_btn.setEnabled(False)
-        request={'kind':'daily_batch','from':self.start.text().strip(),'to':self.end.text().strip(),'search':self.search.text().strip(),'status':'' if self.stage or self.status.currentIndex()==0 else self.status.currentText(),'stage_view':self.stage,'stage_filter':self.status.currentText() if self.stage else None,'scope':[[h['oid'],h['warehouse']] for h in self.fixed_scope] if self.fixed_scope is not None else None,'warehouse':'' if self.warehouse_filter.currentIndex()==0 else self.warehouse_filter.currentText(),'lock':'' if self.lock_filter.currentIndex()==0 else self.lock_filter.currentText(),'page':self.page,'explain_filters':True}
+        request={'kind':'daily_batch','from':self.start.text().strip(),'to':self.end.text().strip(),'search':self.search.text().strip(),'status':'' if self.stage or self.status.currentIndex()==0 else self.status.currentText(),'stage_view':self.stage,'stage_filter':self.status.currentText() if self.stage else None,'scope':[[h['oid'],h['warehouse']] for h in self.fixed_scope] if self.fixed_scope is not None else None,'warehouse':'' if self.warehouse_filter.currentIndex()==0 else self.warehouse_filter.currentText(),'lock':'' if self.lock_filter.currentIndex()==0 else self.lock_filter.currentText(),'page':self.page,'explain_filters':True,'platform_tracking':True}
         self.reader.request(request,lambda data,r=request:self.query_ready(data,r),self.failed,self.progress)
     def query_ready(self,data,request):
         self.applied_request=dict(request);self.ready(data)
@@ -202,7 +204,18 @@ class LifecycleWidget(QWidget):
             if h['old_revision']:notices.append('旧签发修订另有下游资料，未转移至本修订')
             if h['warehouse']=='旧版未标仓':notices.append('仓归属待核，不能自动关联')
             values=[h['day'],h['name']+'（'+h['store']+'）',h['warehouse'],h['number'],h['status'],*[('已导入' if h['present'].get(s) else '启用前未留存' if s=='operations' and h.get('flow_version',1)==1 else '未导入') for s in service.ALL_STAGES],'；'.join(notices)]
+            if self.stage is None:
+                tracking=h.get('platform_tracking',{})
+                values[4:4]=['、'.join(tracking.get('jst_numbers',[])) or '未提供',
+                             '、'.join(tracking.get('ax_numbers',[])) or ('待绑定' if tracking.get('await_binding') else '未关联'),
+                             tracking.get('receipt_status','未记录收货')]
             for j,x in enumerate(values,3):self.table.setItem(i,j,QTableWidgetItem(str(x)))
+            if self.stage is None:
+                self.table.item(i,7).setToolTip(self.table.item(i,7).text()+' · '+tracking.get('jst_source','未提供'))
+                self.table.item(i,8).setToolTip(self.table.item(i,8).text())
+                receipt=button(values[6],lambda checked=False,r=h:self.open_receipt_record(r))
+                receipt.setToolTip('点击查看正式实收或最近收货状态'+('\n'+tracking['detail'] if tracking.get('detail') else ''))
+                self.table.setCellWidget(i,9,receipt)
             self.table.setCellWidget(i,1,button('查看订单详情',lambda checked=False,r=h:self.open_comparison(r)))
             s=h['next'];recheck=s and h['present'].get(s)
             title='生成聚水潭订单' if s=='jst_generate' else '核对付款草稿' if s=='jst_payment' else ('重新核对' if recheck else '导入')+TITLES[s] if s else '无后续待办'
@@ -214,7 +227,9 @@ class LifecycleWidget(QWidget):
                 if s:title='进入'+self.STAGES[{'jst_generate':'jst','jst_payment':'payment'}.get(s,s)]
             b=button(title,lambda checked=False,r=h:self.next(r));b.setEnabled(applicable and h['warehouse']!='旧版未标仓');self.table.setCellWidget(i,2,b)
         del blocker
-        for i,width in enumerate([45,110,165,100,185,70,250,155,100,100,100,100,260]):self.table.setColumnWidth(i,width)
+        widths=[45,110,165,100,185,70,250,155,100,100,100,100,260]
+        if self.stage is None:widths[7:7]=[170,175,145]
+        for i,width in enumerate(widths):self.table.setColumnWidth(i,width)
         self.selection_label()
     def show_excluded_orders(self):
         if not self.excluded_records:return
@@ -248,6 +263,25 @@ class LifecycleWidget(QWidget):
     def export(self):export_selected(self,self.host,sorted(self.checked.values(),key=lambda h:h['list_position']))
     def open_comparison(self,head):
         try:self.host.open_archive(head,'lifecycle');self.query(keep_page=True)
+        except Exception as exc:warn(self,exc)
+    def open_receipt_record(self,head):
+        tracking=head.get('platform_tracking',{})
+        try:
+            if head['present'].get('receipt'):
+                from lifecycle_ui import Document
+                dialog=Document(self,self.host,head,'receipt');dialog.exec();dialog.deleteLater()
+                return
+            dialog=QMessageBox(QMessageBox.Icon.Information,'收货情况 · '+head['number'],
+                               tracking.get('receipt_status','未记录收货'),QMessageBox.StandardButton.Close,self)
+            if tracking.get('detail'):dialog.setInformativeText(tracking['detail'])
+            action=(dialog.addButton('查看 / 同步翱象收货',QMessageBox.ButtonRole.ActionRole)
+                    if tracking.get('ax_numbers') else None)
+            dialog.exec()
+            synchronize=action is not None and dialog.clickedButton() is action
+            dialog.deleteLater()
+            if synchronize:
+                from aoxiang_receipt_ui import open_receipts
+                if open_receipts(self,self.host,head):self.query(keep_page=True)
         except Exception as exc:warn(self,exc)
     def next(self,head):
         s=head['next']
@@ -288,7 +322,7 @@ class StageDialog(QDialog):
                 self.panel.warehouse.setCurrentText(overview.warehouse_filter.currentText());self.panel.lock_filter.setCurrentText(overview.lock_filter.currentText())
             return
         v.addWidget(label('限定所选 '+str(len(scope))+' 单' if scope is not None else '沿用总览日期、仓及搜索；本页筛选不改总览。','muted'))
-        self.panel=LifecycleWidget(overview.host,stage,scope);v.addWidget(self.panel,1)
+        self.panel=LifecycleWidget(overview.host,stage,scope,parent=self);v.addWidget(self.panel,1)
         next_stage={'return':'operations','operations':'jst','payment':'receipt'}.get(stage)
         if next_stage:
             v.insertWidget(1,button('进入'+LifecycleWidget.STAGES[next_stage]+' →（沿用当前范围）',lambda:self.panel.open_stage(next_stage)))

@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "version": "0.54.7",
+  "build_id": "rc1",
+  "package": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.7_rc1\\补货助手_0.54.7_rc1_签发归档导出性能优化.zip",
+  "zip_sha256": "e356ce60de4e70149962cce1ea8c8e1cfcb3a3605f3bb370c1c8bd913133a4cb",
+  "exe_sha256": "589407b8244a0db70972b94bc18324eab8e104e8427ac7bc1fe5bad388c5da88",
+  "source_reference": "snapshot-9a02d05496fbb0ceae5c865df699901cf0d6197ef3780e4c6b3c4b063ff89cc7",
+  "source_manifest_sha256": "289f001de61c6d6cb3a09a15ad6ea19ed67c101ee7803fe799e2564bf99cf28d",
+  "base_head": "a6934fe7e2635bafb98d4ea8af40c946a4a48d19",
+  "branch": "codex/perf-flow-0.54.6",
+  "python_regressions": 344,
+  "native_new_checks": 101,
+  "native_old_checks": 28,
+  "old_package_preserved": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.6_rc1\\补货助手_0.54.6_rc1_生命周期核对与经营分析导出优化.zip",
+  "old_zip_sha256": "7f33cc22979e395cf4959f4d65b41b86a0f66ab12e00b71c45dd9c12c9266fe5",
+  "business_equivalence": true,
+  "workbook_equivalence": true,
+  "git_committed_pushed_or_merged": false,
+  "real_data_modified": false,
+  "live_platform_calls": 0,
+  "evidence": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\sign_export_speed_0547_20261117_01"
+}

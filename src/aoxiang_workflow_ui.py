@@ -262,11 +262,20 @@ class QueueDialog(QDialog):
         self.summary = label('')
         self.summary.setWordWrap(True)
         v.addWidget(self.summary)
+        selection = QHBoxLayout()
+        self.select_all_btn = button('勾选本批可选项', lambda: self.set_batch_checks(True))
+        self.clear_checks_btn = button('清空勾选', lambda: self.set_batch_checks(False))
+        self.selection_count = label('已勾选 0 单', 'muted')
+        for widget in (self.select_all_btn, self.clear_checks_btn, self.selection_count):
+            selection.addWidget(widget)
+        selection.addStretch()
+        v.addLayout(selection)
         self.table = QTableWidget(0, 8)
         self.table.setHorizontalHeaderLabels(['选择', '门店', '仓', '补货单号', '本项状态', '款数 / 采购金额', '平台采购单', '提示'])
         self.table.setColumnCount(9);self.table.setHorizontalHeaderItem(8,QTableWidgetItem('单项操作'))
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.cellDoubleClicked.connect(lambda *_:self.details())
+        self.table.itemChanged.connect(self.check_controls)
         v.addWidget(self.table, 1)
         row = QHBoxLayout()
         self.preview_btn=button('查看采购预览', self.details);row.addWidget(self.preview_btn)
@@ -297,7 +306,31 @@ class QueueDialog(QDialog):
         self.bar = QProgressBar();v.addWidget(self.bar)
         self.note = label('');self.note.setWordWrap(True);v.addWidget(self.note)
         self.timer = QTimer(self);self.timer.setInterval(1000);self.timer.timeout.connect(self.refresh);self.timer.start()
+        self.check_controls()
         self.refresh()
+
+    def set_batch_checks(self, checked):
+        state = Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked
+        with QSignalBlocker(self.table):
+            for row in range(self.table.rowCount()):
+                item = self.table.item(row, 0)
+                if item is not None and (not checked or item.flags() & Qt.ItemFlag.ItemIsUserCheckable):
+                    item.setCheckState(state)
+        self.check_controls()
+
+    def check_controls(self, changed=None):
+        if changed is not None and changed.column() != 0:
+            return
+        selected = available = 0
+        if self.current:
+            for row in range(self.table.rowCount()):
+                item = self.table.item(row, 0)
+                if item is not None and item.flags() & Qt.ItemFlag.ItemIsUserCheckable:
+                    available += 1
+                    selected += item.checkState() == Qt.CheckState.Checked
+        self.select_all_btn.setEnabled(selected < available)
+        self.clear_checks_btn.setEnabled(selected > 0)
+        self.selection_count.setText(f'已勾选 {selected} 单')
 
     def open_receipts(self):
         if not self.current:
@@ -345,7 +378,9 @@ class QueueDialog(QDialog):
             if not job:
                 self.current=None;self.preview_btn.setEnabled(False);self.reason_btn.setEnabled(False)
                 self.summary.setText('尚无批次。付款核对页可勾选订单后批量生成采购预览。')
-                self.table.setRowCount(0);return
+                self.table.setRowCount(0)
+                self.check_controls()
+                return
             done = sum(i['state'] in DONE_ITEM for i in job['items'])
             self.bar.setRange(0, len(job['items']));self.bar.setValue(done)
             self.bar.setFormat(f'已检查 {done} / {len(job["items"])} 单 · 就绪/成功 {counts(job)["success"]} 单')
@@ -355,6 +390,7 @@ class QueueDialog(QDialog):
             checked = {self.current['items'][i]['key'] for i in range(self.table.rowCount()) if self.current and i<len(self.current['items']) and getattr(self,'rendered_id',None)==job['id'] and self.table.item(i, 0) and self.table.item(i, 0).checkState() == Qt.CheckState.Checked}
             self.rendered_id=job['id']
             self.current = job
+            blocker = QSignalBlocker(self.table)
             self.table.setRowCount(len(job['items']))
             from aoxiang_receipt_scope import saved_observations
             observations=saved_observations(self.manager.store.folder,[i.get('purchase_id') or (i.get('package') or {}).get('id') for i in job['items']])
@@ -363,9 +399,11 @@ class QueueDialog(QDialog):
                 if purchase_id in observations:i['platform_observation']=observations[purchase_id]
                 self.table.setRowHeight(n,54 if job['kind']=='upload' and i.get('error') else 34)
                 h = i.get('head') or i.get('basis') or {}
-                check = QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
-                check.setCheckState(Qt.CheckState.Checked if i['key'] in checked else Qt.CheckState.Unchecked)
-                if i['state'] not in ('PREPARED','PENDING','FAILED','REVIEW','BOUND','ACCEPTED','VOIDED') and not i.get('rebuild_to') and not local_preparation(i,job['kind']): check.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                selectable = (i['state'] in ('PREPARED','PENDING','FAILED','REVIEW','BOUND','ACCEPTED','VOIDED')
+                              or i.get('rebuild_to') or local_preparation(i,job['kind']))
+                check = QTableWidgetItem()
+                check.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable if selectable else Qt.ItemFlag.ItemIsEnabled)
+                check.setCheckState(Qt.CheckState.Checked if selectable and i['key'] in checked else Qt.CheckState.Unchecked)
                 self.table.setItem(n, 0, check)
                 summary = i.get('summary') or {}
                 state_text='本地准备未通过，未生成采购预览' if local_preparation(i,job['kind']) and i['state'] in ('FAILED','REVIEW') else '本地准备已结束' if i.get('ended_locally') else STATES.get(i['state'], i['state'])
@@ -387,7 +425,9 @@ class QueueDialog(QDialog):
                     b.setEnabled(job['state']!='CANCELLED');self.table.setCellWidget(n,8,b)
                 else:self.table.removeCellWidget(n,8)
             for c, width in enumerate((50, 140, 70, 235, 160, 120, 170, 280, 175)):self.table.setColumnWidth(c, width)
+            blocker.unblock()
             self.detail_controls()
+            self.check_controls()
         except Exception as exc:
             self.note.setText('读取队列失败：' + str(exc))
 

@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 import uuid
+import performance_log
 from pathlib import Path
 from priority_list import atomic_json
 
@@ -52,6 +53,7 @@ class Client:
         options['storageAliases']=aliases_for(self.folder)
         opts=self.folder/('runtime-options-'+uuid.uuid4().hex+'.json');atomic_json(opts,options);self.options_file=opts
         self.process=subprocess.Popen([str(node),str(entry),'--options',str(opts)],cwd=jst,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+        performance_log.owned(self.process,'jst-component')
         self.reader=threading.Thread(target=self._read,daemon=True,name='jst-catalog-protocol');self.reader.start()
         self.diagnostics=threading.Thread(target=self._stderr,daemon=True,name='jst-catalog-diagnostics');self.diagnostics.start()
         if not self.ready.wait(15):raise ComponentError('STARTUP_UNKNOWN','采集服务启动结果未知，请先检查原进程')
@@ -81,6 +83,7 @@ class Client:
         except Exception as exc:
             self._fail(exc if isinstance(exc,ComponentError) else ComponentError('PROTOCOL_FAILED','采集服务响应异常：'+str(exc)))
         finally:self._fail(self.error or ComponentError('COMPONENT_EXITED','采集服务已退出；已受理任务请按原记录恢复'))
+    @performance_log.component
     def request(self,action,*,timeout=15,**values):
         if self.error:raise self.error
         if not self.running or not self.ready.is_set():raise ComponentError('NOT_READY','采集服务未就绪')

@@ -60,7 +60,6 @@ def inspect(database, task_id, progress=lambda _: None, cancel=None):
 
 
 def recover(database, review, selected, folder, progress=lambda _: None, cancel=None):
-    from history_read import repository
     import normal_orders
     import work_repository as wr
     import normal_delivery
@@ -76,9 +75,7 @@ def recover(database, review, selected, folder, progress=lambda _: None, cancel=
     if any(r['action'] == 'blocked' for r in chosen):
         raise ValueError('所选项仍有原修订待核，请先处理，未补导出任何文件')
     # Writable existing repository only; no schema initialization or migration.
-    repo = normal_orders.Repository.__new__(normal_orders.Repository)
-    repo.work = wr.Repository.__new__(wr.Repository)
-    repo.work.path = Path(database).resolve()
+    repo = normal_orders.Repository.from_existing_work(wr.Repository.open_existing(database))
     root = Path(folder).resolve() / ('恢复导出-' + uuid.uuid4().hex[:12])
     if any(r['action'] == 'export' for r in chosen):
         root.mkdir(parents=True, exist_ok=False)

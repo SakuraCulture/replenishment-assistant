@@ -4,7 +4,7 @@ from pathlib import Path
 from contextlib import closing
 from decimal import Decimal
 import work_repository as wr
-import normal_exports,merchant_feedback,archive_orders as ao,warehouse_orders as wo
+import result_semantics as sem,merchant_feedback,archive_orders as ao,warehouse_orders as wo
 import warehouse_execution as execution
 from history_read import repository
 from runtime_support import checkpoint
@@ -53,20 +53,35 @@ def documents(path,progress=lambda _:None,cancel=None):
 
 def history_groups(result,profile):
     """Preserve old unlabelled warehouse rows as review-only, never guess a route."""
-    grouped=normal_exports.groups(result,profile);out={}
+    grouped=sem.signed_groups(result,profile);out={}
     for wh in (*wo.WAREHOUSES,ao.LEGACY):
         subset={sheet:[d for d in rows if ao.warehouse(d)==wh] for sheet,rows in grouped.items()}
         if any(subset.values()):out[wh]=subset
     return out
 
-def targets(path,scopes=None,progress=lambda _:None,cancel=None):
+def targets(path,scopes=None,progress=lambda _:None,cancel=None,*,current_only=False,numbers=None):
     repo=repository(path);out=[]
     with closing(connect(path)) as db:
+        parents=None
+        if numbers is not None:
+            parents=set();numbers=set(numbers)
+            for number in numbers:
+                checkpoint(cancel)
+                try:identity,warehouse=wo.resolve(db,number)
+                except ValueError:continue
+                if warehouse:parents.add(identity[2])
+            if not parents:return out
         visibility=ao.states(db)
-        managed={r[0] for r in db.execute('SELECT DISTINCT oid FROM warehouse_execution_heads')} if execution.exists(db) else set()
-        legacy=db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.revision,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid ORDER BY o.day DESC,o.store,r.revision DESC').fetchall()
+        conditions=[];arguments=[]
+        if current_only:conditions.append('r.revision=o.current')
+        if parents is not None:
+            conditions.append('o.number IN (SELECT value FROM json_each(?))');arguments.append(wr.dumps(sorted(parents)))
+        where=' WHERE '+' AND '.join(conditions) if conditions else ''
+        legacy=db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.revision,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid'+where+' ORDER BY o.day DESC,o.store,r.revision DESC',arguments).fetchall()
+        managed=execution.managed(db,(h[2] for h in legacy))
         work=[{'legacy':h} for h in legacy if h[2] not in managed and (not scopes or any(s==h[1] for s,w in scopes))]
-        if managed:work.extend(execution.heads(db,[{'oid':oid} for oid in managed],history=True))
+        if managed:work.extend(h for h in execution.heads(db,[{'oid':oid} for oid in managed],history=not current_only)
+                               if numbers is None or h['number'] in numbers)
     for i,entry in enumerate(work):
         checkpoint(cancel)
         if 'legacy' in entry:
@@ -79,10 +94,11 @@ def targets(path,scopes=None,progress=lambda _:None,cancel=None):
         result=order['payload']['result']
         for wh,groups in history_groups(result,order['payload'].get('new_focus')).items():
             if wh not in wo.WAREHOUSES or allowed is not None and wh!=allowed:continue
+            if numbers is not None and wo.child_number(parent,wh) not in numbers:continue
             if scopes and (store,wh) not in scopes:continue
             if visibility.get((oid,wh),{}).get('deleted'):continue
             rows=[r for rs in groups.values() for r in rs]
-            item={'oid':oid,'day':day,'store':store,'name':result['store_name'],'number':wo.child_number(parent,wh),'parent_number':parent,'warehouse':wh,'revision':rev,'current_revision':cur,'digest':digest,'saved':saved,'visibility_token':visibility.get((oid,wh),{}).get('token',0),'products':{d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':normal_exports.sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for d in rows}}
+            item={'oid':oid,'day':day,'store':store,'name':result['store_name'],'number':wo.child_number(parent,wh),'parent_number':parent,'warehouse':wh,'revision':rev,'current_revision':cur,'digest':digest,'saved':saved,'visibility_token':visibility.get((oid,wh),{}).get('token',0),'products':{d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for d in rows}}
             if allowed is not None:item.update({k:entry[k] for k in ('child_revision','source_parent_revision','snapshot_digest','execution_epoch')})
             out.append(item)
         progress(RowProgress(f'读取可关联修订 {i+1}/{len(work)}',i+1,len(work)))
@@ -117,7 +133,7 @@ def retain_links(scan,docs):
 
 def validate_head(db,h):
     execution.validate(db,h)
-    if ao.states(db).get((h['oid'],h['warehouse']),{}).get('token',0)!=h.get('visibility_token',0):raise wr.Conflict('归档可见性已变化，请重新核对')
+    if ao.states(db,oid=h['oid'],warehouse=h['warehouse']).get((h['oid'],h['warehouse']),{}).get('token',0)!=h.get('visibility_token',0):raise wr.Conflict('归档可见性已变化，请重新核对')
 
 def prepare(path,scanned,progress=lambda _:None,cancel=None):
     checkpoint(cancel);groups={};repo=repository(path);signed={}
@@ -144,7 +160,7 @@ def prepare(path,scanned,progress=lambda _:None,cancel=None):
                     if h['store']!=r['store'] or h['warehouse']!=r['warehouse']:raise ValueError('禁止跨门店/仓库关联')
                     if k not in signed:
                         o=execution.get_order(repo,h,view='export',db=db)
-                        signed[k]={d['E']:d for ds in normal_exports.groups(o['payload']['result'],o['payload'].get('new_focus')).values() for d in ds if d.get('AU')==h['warehouse']}
+                        signed[k]={d['E']:d for ds in sem.signed_groups(o['payload']['result'],o['payload'].get('new_focus')).values() for d in ds if d.get('AU')==h['warehouse']}
                     if r['sku'] not in signed[k] and not l.get('extra'):raise ValueError('商品不在此仓签发表；需明确选择额外采购')
                     l['quantity']=number(l['quantity']);total+=Decimal(l['quantity'])
                     reply=merchant_feedback.current(db,h['oid'],h['revision']);l['feedback_version']=reply['version'] if reply else None
@@ -250,10 +266,10 @@ def comparison(path,head,progress=lambda _:None,cancel=None,*,db=None,docs=None)
                 if (h['oid'],h['revision'],h['warehouse'])!=(head['oid'],head['revision'],head['warehouse']):continue
                 actual[r['sku']]=actual.get(r['sku'],Decimal(0))+Decimal(l['quantity']);extras[r['sku']]=r['name']
                 refs.setdefault(r['sku'],[]).append(r['number']+' / '+r['line_id']+f" / 采购V{doc['version']}")
-    eligible={d['E']:d for ds in normal_exports.groups(order['payload']['result'],order['payload'].get('new_focus')).values() for d in ds if ao.warehouse(d)==head['warehouse']}
+    eligible={d['E']:d for ds in sem.signed_groups(order['payload']['result'],order['payload'].get('new_focus')).values() for d in ds if ao.warehouse(d)==head['warehouse']}
     rows=[]
     for sku in list(eligible)+[s for s in actual if s not in eligible]:
-        d=eligible.get(sku);issued=normal_exports.sem.order_quantity(d) if d else None;returned=values.get(sku);purchased=actual.get(sku)
+        d=eligible.get(sku);issued=sem.order_quantity(d) if d else None;returned=values.get(sku);purchased=actual.get(sku)
         rows.append([sku,d.get('D') if d else extras[sku],issued,returned,float(purchased) if purchased is not None else None,'未接入',float(purchased-Decimal(str(returned))) if purchased is not None and returned is not None else None,'额外采购' if d is None else '未关联' if purchased is None else '已关联量（未出现行不视为0）','；'.join(refs.get(sku,[]))])
     return {'head':head,'rows':rows,'feedback_version':reply['version'] if reply else None}
 

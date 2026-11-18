@@ -57,6 +57,7 @@ def install(host):
         show(host,host.work_repository.path)
     menu.addSeparator();menu.addAction('图文使用手册',help_page)
     menu.addAction('导出任务与恢复',recovery)
+    menu.addAction('轻量性能日志（近24小时）…',lambda:__import__('performance_log_ui').show(host))
     menu.addAction('恢复并继续原操作…',lambda:__import__('lifecycle_recovery_ui').show(host,host))
     menu.addSeparator()
     menu.addAction('数据保存位置…',lambda:__import__('data_location_ui').show(host))

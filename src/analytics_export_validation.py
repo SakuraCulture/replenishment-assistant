@@ -20,9 +20,10 @@ def _file_id(path):
 
 
 class SnapshotCheck:
-    def __init__(self,path,report,progress=lambda _:None,cancel=None):
+    def __init__(self,path,report,progress=lambda _:None,cancel=None,*,temp_folder=None):
         self.path=Path(path).resolve();self.report=report;self.progress=progress;self.cancel=cancel
         self.db=None;self.identity=None;self.proof=None
+        self.temp_folder=temp_folder
 
     def __enter__(self):
         checkpoint(self.cancel)
@@ -67,7 +68,7 @@ class SnapshotCheck:
             except (OSError,ValueError,KeyError,TypeError,sqlite3.Error):
                 pass  # Never substitute an uncertain shortcut for the full check.
         self.proof=None
-        result=analytics.validate_snapshot(self.path,self.report,self.progress,self.cancel)
+        result=analytics.validate_snapshot(self.path,self.report,self.progress,self.cancel,temp_folder=self.temp_folder)
         after=self._fence()
         if result is True and before is not None and before==after and isinstance(self.report.get('identifier_token'),str):
             self.proof=after

@@ -7,7 +7,7 @@ from contextlib import closing
 from decimal import Decimal
 from pathlib import Path
 import work_repository as wr
-import purchases, merchant_feedback, normal_exports, archive_orders as ao
+import purchases, merchant_feedback, result_semantics as sem, archive_orders as ao
 import lifecycle_rules as rules
 import lifecycle_duplicates as duplicate_rows
 from history_read import repository
@@ -16,9 +16,10 @@ from export_progress import RowProgress
 from lifecycle_io import STAGES, TITLES, QUANTITIES, DOCNUM, DOCDATE, fields
 from lifecycle_io import ALL_STAGES
 import operations_flow as flow
+from lifecycle_stages import FINISHED, PENDING, route as document_route
 
 SCHEMA = 2
-STATUSES = ('待回传', '待付款', '待收货', '已收齐')
+STATUSES = tuple(PENDING[stage] for stage in STAGES) + (FINISHED,)
 COMMIT_BOUNDARY = '正在原子提交单据；提交完成前不可取消'
 
 def schema(db):
@@ -140,8 +141,8 @@ def available(path, scanned, progress=lambda _: None, cancel=None):
                 scopes.update((identity[1],w) for w in ([wh] if wh else purchases.wo.WAREHOUSES))
     return purchases.targets(path, None if unknown else scopes, progress, cancel)
 
-def current_targets(path, progress=lambda _:None, cancel=None):
-    return [h for h in purchases.targets(path,progress=progress,cancel=cancel) if h['revision']==h['current_revision']]
+def current_targets(path, progress=lambda _:None, cancel=None, *, numbers=None):
+    return purchases.targets(path,progress=progress,cancel=cancel,current_only=True,numbers=numbers)
 
 def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=None, *, staged=None,_owned=False):
     """Public import: one order number, current signed facts; versions stay internal.
@@ -316,7 +317,7 @@ def full_head(path,head):
     order=get_order(repository(path),head,view='export')
     if order['digest']!=head['digest']:raise wr.Conflict('签发快照已变化')
     result=order['payload']['result']
-    products={d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':normal_exports.sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for rs in normal_exports.groups(result,order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d)==head['warehouse']}
+    products={d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for rs in sem.signed_groups(result,order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d)==head['warehouse']}
     return {**head,'products':products}
 
 def begin(db, cancel,*,deadline=None):
@@ -364,27 +365,46 @@ def _commit(path, plan, progress=lambda _: None, cancel=None):
     checkpoint(cancel)
     import storage_chunks
     storage_chunks.backup_before_write(Path(path), progress); checkpoint(cancel)
-    deadline=time.monotonic()+_SAVE_BUSY_SECONDS
-    while True:
-        try:return _commit_once(path,plan,contents,progress,cancel,deadline)
-        except _BusyCommit as blocked:
-            # COMMIT returned SQLITE_BUSY while the transaction was still live,
-            # and rollback succeeded. Only this proven-uncommitted attempt can
-            # be replayed, with all source/version/dependency checks repeated.
-            if time.monotonic()>=deadline:raise blocked.error
+    from adaptive_resources import Budget, MIB
+    from lifecycle_save_encoding import encode
+    # Prepare validated TEXT one document at a time. The preview is owned by
+    # this save; only external database state can change while it waits to write.
+    memory_limit = max(1,min(16*MIB,Budget().cache_bytes))
+    with tempfile.SpooledTemporaryFile(max_size=memory_limit, mode='w+b', dir=Path(path).parent) as encoded:
+        positions = []
+        count = len(plan['plans'])
+        for i, item in enumerate(plan['plans'],1):
             checkpoint(cancel)
-            progress(_RollbackWait('本地读取短暂占用，已安全回滚本次尝试；正在重新核验后保存，不会重复新增'))
-            time.sleep(.025)
+            progress(RowProgress(f'编码单据 {i}/{count}',i,count))
+            offset = encoded.tell()
+            _, digest = encode(item['payload'],retain=item['changed'],write=encoded.write)
+            if digest != item['digest']:
+                raise ValueError('预览内容变化')
+            positions.append((offset,encoded.tell()-offset))
+
+        deadline=time.monotonic()+_SAVE_BUSY_SECONDS
+        while True:
+            try:return _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline)
+            except _BusyCommit as blocked:
+                # Only a proven rollback permits retry, with all current
+                # source/version/dependency checks repeated under the write lock.
+                if time.monotonic()>=deadline:raise blocked.error
+                checkpoint(cancel)
+                progress(_RollbackWait('本地读取短暂占用，已安全回滚本次尝试；正在重新核验后保存，不会重复新增'))
+                time.sleep(.025)
 
 
-def _commit_once(path,plan,contents,progress,cancel,deadline):
+def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
     receipts = []
     with closing(sqlite3.connect(path, timeout=.15)) as db, db:
-        begin(db, cancel,deadline=deadline); schema(db)
+        progress('等待单据写锁…')
+        begin(db, cancel,deadline=deadline)
+        progress('已取得写锁，正在核对单据依据…')
+        schema(db)
         if plan.get('payment_matching'):
             from payment_matching import validate
             validate(path,db,plan)
-        staged={};encoded=[]
+        staged={}
         for p in plan['plans']:
             verified=p.get('_read_proofs')
             checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'],_verified=verified)
@@ -395,19 +415,21 @@ def _commit_once(path,plan,contents,progress,cancel,deadline):
             if identity in staged:raise ValueError('同一订单同一环节只能保存一份完整单据')
             if (old['version'] if old else None) != p['expected']: raise wr.Conflict('单据在预览后被更新，请重新核对')
             if p['payload']['basis'] != upstream(db,p['head'],p['stage'],staged,_verified=verified):raise wr.Conflict('上游单据在预览后变化，请重新核对')
-            from lifecycle_save_encoding import encode
-            raw,checked_digest=encode(p['payload'],retain=p['changed'])
-            if checked_digest != p['digest']: raise ValueError('预览内容变化')
             if p['changed'] != (not old or old['digest']!=p['digest']):raise ValueError('预览更新状态变化')
             staged[identity]=staged_document(p)
-            encoded.append(raw)
         # Last checkpoint. Never terminate the process between here and COMMIT.
         checkpoint(cancel); progress(COMMIT_BOUNDARY)
         for f, raw in contents: db.execute('INSERT OR IGNORE INTO lifecycle_files VALUES(?,?,?)', (f['sha'], f['name'], raw))
-        for p, raw in zip(plan['plans'], encoded):
+        for p, (offset,length) in zip(plan['plans'], positions):
             v = p['expected'] or 0; h = p['head']
             if p['changed']:
-                v += 1; db.execute('INSERT INTO lifecycle_versions VALUES(?,?,?,?,?,?,?,?)', (*key(h), p['stage'], v, wr.now(), p['digest'], raw))
+                encoded.seek(offset)
+                data=encoded.read(length)
+                if len(data)!=length:raise OSError('待保存的单据编码不完整，请重新核对')
+                # The spooled bytes are already canonical UTF-8. Keep the
+                # ledger's existing SQLite TEXT type without decoding twice.
+                v += 1; db.execute('INSERT INTO lifecycle_versions VALUES(?,?,?,?,?,?,?,CAST(? AS TEXT))', (*key(h), p['stage'], v, wr.now(), p['digest'], data))
+                del data
                 if p['stage']==flow.demand_stage(db,h):
                     from jst_tasks import enqueue
                     enqueue(db,h,{'version':v,'digest':p['digest']})
@@ -443,8 +465,7 @@ def document_summary(doc):
 
 def progress_state(summaries, legacy=None, operations_required=False):
     summaries=dict(summaries)
-    route=flow.CURRENT if operations_required or summaries.get('operations') else STAGES
-    labels={'return':'待回传','operations':'待运营签发','payment':'待付款','receipt':'待收货'}
+    route=document_route(operations_required or summaries.get('operations'))
     if not summaries['return'] and legacy and legacy['complete']:
         summaries['return']={'version':legacy['version'],'digest':legacy['digest'],'schema':1,'positive':sum(v>0 for v in legacy['values'].values())}
     health={};tokens={}
@@ -452,14 +473,14 @@ def progress_state(summaries, legacy=None, operations_required=False):
         d=summaries.get(s)
         health[s]=bool(d) and (d['schema']==1 or not d['pending'] and d['dependencies']==tokens and all(health.values()))
         tokens[s]=rules.basis_token(d)
-    if not summaries['return'] and not (legacy and legacy['complete']):return '待回传','return','',health
+    if not summaries['return'] and not (legacy and legacy['complete']):return PENDING['return'],'return','',health
     for i,s in enumerate(route[1:],1):
         prev=summaries.get(route[i-1])
         if not summaries.get(s):
             if prev and health[route[i-1]] and prev['schema']==SCHEMA and prev['positive']==0 and not any(summaries.get(k) for k in route[i:]):
                 return STATUSES[-1],None,('无要货，无需后续运营、分配、付款或收货' if route[i-1] in ('return','operations') else '无付款数量，无需收货'),health
-            return labels[s],s,'',health
-        if not health[s]:return labels[s],s,TITLES[s]+'对照依据已更新或未就绪，请重新核对',health
+            return PENDING[s],s,'',health
+        if not health[s]:return PENDING[s],s,TITLES[s]+'对照依据已更新或未就绪，请重新核对',health
     return STATUSES[-1],None,'单据已收齐；不代表数量完全一致',health
 
 def legacy_return(db, head, products,*,as_of=None):
@@ -489,7 +510,7 @@ def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order
         from warehouse_execution import get_order
         order=get_order(repository(path),head,view='export')
     if order['digest'] != head['digest']: raise wr.Conflict('签发快照不一致')
-    eligible = {d['E']: {'sku': d['E'], 'name': d.get('D'), 'quantity': normal_exports.sem.order_quantity(d)} for rs in normal_exports.groups(order['payload']['result'], order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d) == head['warehouse']}
+    eligible = {d['E']: {'sku': d['E'], 'name': d.get('D'), 'quantity': sem.order_quantity(d)} for rs in sem.signed_groups(order['payload']['result'], order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d) == head['warehouse']}
     if not _comparison:del order  # The verified large signed tree is no longer needed.
     route=flow.stages(db,head,as_of=as_of)
     if _comparison:docs = {s: current(db, head, s,as_of=as_of) for s in route}

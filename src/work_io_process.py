@@ -10,9 +10,7 @@ from work_failures import FailureContext,WorkFailure,format_failure
 
 
 def reader(path):
-    class ReadOnly(wr.Repository):
-        def connect(self):return sqlite3.connect(self.path.as_uri()+'?mode=ro',uri=True)
-    value=ReadOnly.__new__(ReadOnly);value.path=Path(path).resolve();return value
+    return wr.Repository.open_existing(path,read_only=True)
 
 
 def compact_previous(record):
@@ -25,7 +23,7 @@ def compact_previous(record):
 
 
 def serve(connection,path,cancel):
-    payload=None;encoded_job=None;save_day=None;old=None;batch=None;review_json=None;review_records=None;review_draft=None;expected_job=None;expected_orders=None;codes=None;ro=reader(path);work=wr.Repository.__new__(wr.Repository);work.path=Path(path)
+    payload=None;encoded_job=None;save_day=None;old=None;batch=None;review_json=None;review_records=None;review_draft=None;expected_job=None;expected_orders=None;codes=None;ro=reader(path);work=wr.Repository.open_existing(path)
     failure_context=None
     def progress(text):
         if failure_context is not None:failure_context.progress(text)
@@ -67,7 +65,7 @@ def serve(connection,path,cancel):
                     import normal_orders,normal_delivery,new_product_focus as focus
                     expected_orders=None;payload,codes=arguments[:2]
                     if len(arguments)>2:payload['execution_warehouses']={**payload.get('execution_warehouses',{}),**arguments[2]}
-                    repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
+                    repository=normal_orders.Repository.from_existing_work(ro)
                     progress('正在核对正常单与完整差异…')
                     focus.require_for(payload.get('new_focus'),payload['day'],[payload['results'][code] for code in codes])
                     head=normal_delivery.job_head(ro,payload['day']);expected_job=head['revision'] if head else None;expected_orders={};details={};lines=[];review_records=[]
@@ -102,7 +100,7 @@ def serve(connection,path,cancel):
                     import normal_orders,normal_delivery
                     if payload is None or expected_orders is None:raise ValueError('缺少已核对的正常单')
                     progress('正在归档正常单与完整草稿；最终提交前可取消…')
-                    repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=work
+                    repository=normal_orders.Repository.from_existing_work(work)
                     def remember(heads):failure_context.heads=[dict(h) for h in heads]
                     issued=repository.confirm(payload,codes,expected_job,expected_orders,progress=progress,headers_only=True,cancel=cancel,prepared_heads=remember,warehouses=payload.get('execution_warehouses'))
                     result={'orders':[{k:v for k,v in r.items() if k!='payload'} for r in issued],'saved':normal_delivery.job_head(work,payload['day'])['saved']}
@@ -111,7 +109,7 @@ def serve(connection,path,cancel):
                         # Confirmation released only private preview objects.
                         # Recreate the same review on demand after a failed run.
                         import order_review,normal_orders
-                        repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
+                        repository=normal_orders.Repository.from_existing_work(ro)
                         review_records=[order_review.build(repository.get(p['old']['day'],p['store'],p['old']['revision']) if p['old'] else None,
                             batch['payload']['results'][p['store']],batch['payload'].get('new_focus')) for p in batch['plans'] if not p['same']]
                         from review_json import Prepared
@@ -133,7 +131,7 @@ def serve(connection,path,cancel):
                     result=str(destination)
                 elif op in ('delivery_prepare','delivery_probe'):
                     import normal_orders,normal_delivery
-                    batch=None;supplied,codes=arguments[:2];warehouses=arguments[2] if len(arguments)>2 else None;repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=ro
+                    batch=None;supplied,codes=arguments[:2];warehouses=arguments[2] if len(arguments)>2 else None;repository=normal_orders.Repository.from_existing_work(ro)
                     with stage('核对导出修订',progress):batch=normal_delivery.prepare_owned_batch(repository,supplied,codes,progress=progress,cancel=cancel,warehouses=warehouses)
                     batch['complete']=op=='delivery_prepare'
                     import order_review
@@ -160,9 +158,10 @@ def serve(connection,path,cancel):
                     for plan in batch['plans']:
                         if plan['old']:plan['old']={k:v for k,v in plan['old'].items() if k!='payload'}
                     supplied=None;tail=None;values=None;previous=None;review=None;r=None;order=None
-                    repository=normal_orders.Repository.__new__(normal_orders.Repository);repository.work=work
+                    repository=normal_orders.Repository.from_existing_work(work)
                     executing=batch
-                    try:result=normal_delivery.execute_batch(repository,executing,arguments,progress=progress,cancel=cancel,consume=True)
+                    try:result=normal_delivery.execute_batch(repository,executing,arguments,progress=progress,cancel=cancel,consume=True,
+                                                             on_receipt=lambda task:connection.send(('receipt',task)))
                     finally:
                         if executing.get('consumed'):batch=None
                 elif op in ('delete_preview','delete_orders','delete_job'):

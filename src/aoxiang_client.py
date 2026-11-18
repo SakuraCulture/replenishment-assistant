@@ -8,6 +8,7 @@ import queue
 import subprocess
 import threading
 import uuid
+import performance_log
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +49,7 @@ class ProcessClient:
             cwd=self.component_root, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
         )
         self._reader = threading.Thread(target=self._read_stdout, name='aoxiang-protocol', daemon=True)
+        performance_log.owned(self._process,'aoxiang-component')
         self._diagnostics = threading.Thread(target=self._read_stderr, name='aoxiang-diagnostics', daemon=True)
         self._reader.start()
         self._diagnostics.start()
@@ -144,6 +146,7 @@ class ProcessClient:
                     try:deletion_barrier.acknowledge(self.business_path,plan['operation_id'],plan['generation'])
                     except sqlite3.OperationalError:pass  # main writer busy; idempotent local cleanup resumes later
 
+    @performance_log.component
     def request(self, action: str, *, timeout: float = 30, **values) -> Any:
         if action not in ('orders.retire','shutdown') and self.running and self._hello is not None:self.flush_retirements()
         if self._failure:

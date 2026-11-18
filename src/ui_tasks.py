@@ -1,5 +1,7 @@
 """Thread workers and shared task lifecycle, with explicit host UI callbacks."""
 import logging,threading
+import performance_log
+from diagnostics import task_failure
 from PySide6.QtCore import Signal,QThread
 from PySide6.QtWidgets import QMessageBox
 import engine,batch_service
@@ -10,21 +12,28 @@ class Worker(QThread):
     commit_state=Signal(bool);business_event=Signal(object)
     def __init__(self,fn,args,parent):super().__init__(parent);self.fn=fn;self.args=args;self.cancel=threading.Event()
     def run(self):
+        last=['准备操作']
         try:
-            def report(message):
-                if hasattr(message,'active'):self.commit_state.emit(message.active)
-                if hasattr(message,'business_event'):self.business_event.emit(message.business_event)
-                self.row_progress.emit(message.current,message.total) if isinstance(message,RowProgress) else self.row_progress.emit(0,0)
-                self.status.emit(str(message))
-            result=self.fn(*self.args,progress=report,cancel=self.cancel)
-            owner=self.parent()
-            if hasattr(owner,'work_repository'):
-                from source_archive import retained_import
-                retained_import(self.fn,self.args,result,owner.work_repository.path,report,self.cancel)
-            if self.fn is batch_service.load:engine.checkpoint(self.cancel)
-            self.success.emit(result)
+            with performance_log.begin(performance_log.callable_name(self.fn)) as metrics:
+                def report(message):
+                    last[0]=str(message)
+                    metrics.progress(message)
+                    if hasattr(message,'active'):self.commit_state.emit(message.active)
+                    if hasattr(message,'business_event'):self.business_event.emit(message.business_event)
+                    self.row_progress.emit(message.current,message.total) if isinstance(message,RowProgress) else self.row_progress.emit(0,0)
+                    self.status.emit(last[0])
+                result=self.fn(*self.args,progress=report,cancel=self.cancel)
+                owner=self.parent()
+                if hasattr(owner,'work_repository'):
+                    from source_archive import retained_import
+                    retained_import(self.fn,self.args,result,owner.work_repository.path,report,self.cancel)
+                if self.fn is batch_service.load:engine.checkpoint(self.cancel)
+                self.success.emit(result)
         except engine.Cancelled:self.cancelled.emit()
-        except Exception as e:logging.exception('操作失败');self.failed.emit(str(e))
+        except Exception as e:
+            try:logging.exception('操作失败')
+            except Exception:pass
+            self.failed.emit(task_failure(e,last[0]))
 
 
 class BatchWorker(QThread):
@@ -32,7 +41,17 @@ class BatchWorker(QThread):
     def __init__(self,loaded,jobs,profile,workers,parent):
         super().__init__(parent);self.loaded=loaded;self.jobs=jobs;self.profile=profile;self.workers=workers;self.cancel=threading.Event()
     def run(self):
-        try:batch_service.run(self.loaded,self.jobs,self.profile,self.workers,self.changed.emit,self.cancel)
+        try:
+            with performance_log.begin('calculation.batch') as metrics:
+                completed=0
+                def notify(store,state,result,error):
+                    nonlocal completed
+                    if state in ('已完成','计算失败','已停止'):
+                        completed+=1;metrics.progress(RowProgress('门店计算'+state,completed,len(self.jobs)))
+                    elif state=='排队中':metrics.progress('门店计算等待内存')
+                    else:metrics.progress('门店计算中')
+                    self.changed.emit(store,state,result,error)
+                batch_service.run(self.loaded,self.jobs,self.profile,self.workers,notify,self.cancel,borrow_input=True)
         except Exception as exc:
             from diagnostics import failure
             self.failed.emit(failure(exc,stage='批次调度'))

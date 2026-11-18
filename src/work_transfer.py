@@ -15,7 +15,10 @@ class Reference:
     kind:str
 
 
-def send_tree(connection,value,cancel=None,progress=lambda count:None,*,consume=False):
+class TransferClosed(RuntimeError):pass
+
+
+def send_tree(connection,value,cancel=None,progress=lambda count:None,*,consume=False,activity=None):
     pending=deque();serial=0;frames=0;largest=0
     def skeleton(v):
         nonlocal serial
@@ -30,6 +33,7 @@ def send_tree(connection,value,cancel=None,progress=lambda count:None,*,consume=
     def write(raw):
         nonlocal frames,largest
         checkpoint(cancel);largest=max(largest,len(raw));connection.send_bytes(raw);frames+=1
+        if activity is not None:activity()
         if frames%64==0:progress(frames)
     def block(ref,values):
         # Ordinary record batches need no Python traversal/copy of every field.
@@ -62,7 +66,7 @@ def send_tree(connection,value,cancel=None,progress=lambda count:None,*,consume=
     frame(('end',{'frames':frames,'largest_frame':largest}));return {'frames':frames,'largest_frame':largest}
 
 
-def receive_tree(connection,cancel=None,progress=lambda count:None,*,alive=None):
+def receive_tree(connection,cancel=None,progress=lambda count:None,*,alive=None,activity=None):
     references={};root=None;seen_root=False;frames=0
     def resolve(v):
         if type(v) is Reference:
@@ -76,8 +80,10 @@ def receive_tree(connection,cancel=None,progress=lambda count:None,*,alive=None)
         checkpoint(cancel)
         while not connection.poll(.05):
             checkpoint(cancel)
-            if alive is not None and not alive():raise RuntimeError('数据传输进程已退出，请重试')
-        message=pickle.loads(connection.recv_bytes());frames+=1
+            if alive is not None and not alive():raise TransferClosed('数据传输进程已退出')
+        raw=connection.recv_bytes()
+        if activity is not None:activity()
+        message=pickle.loads(raw);frames+=1
         if message[0]=='root':
             if seen_root:raise ValueError('快照传输重复起点')
             root=resolve(message[1]);seen_root=True
