@@ -19,29 +19,34 @@ def clear_layout(layout, keep=()):
             item.layout().deleteLater()
 
 
-def install(host, home_layout):
-    """Keep established section IDs so historical and smoke callers stay valid."""
-    home_layout.removeWidget(host.followup)
+def tracking_page(host):
+    from lifecycle_home_ui import LifecycleWidget
+    from order_analytics_ui import AnalyticsWidget
+    from inventory_structure_ui import InventoryWidget
+
     orders = QWidget()
     v = QVBoxLayout(orders)
     v.addWidget(label('订单跟踪', 'title'))
     v.addWidget(label('总览看各单进度；进入回传处理、聚水潭出单、付款核对或收货核对，完成当前动作。', 'muted'))
-    from order_analytics_ui import AnalyticsWidget, open_analytics
+    host.tracking_tabs = QTabWidget(orders)
+    host.followup = LifecycleWidget(host, parent=host.tracking_tabs)
     host.analytics = AnalyticsWidget(host)
-    host.tracking_tabs = QTabWidget()
     host.tracking_tabs.addTab(host.followup,'流程处理')
     host.tracking_tabs.addTab(host.analytics,'经营分析')
-    from inventory_structure_ui import InventoryWidget
     host.inventory = InventoryWidget(host)
     host.tracking_tabs.addTab(host.inventory,'货盘结构')
     v.addWidget(host.tracking_tabs, 1)
-    host.sections.addWidget(orders)  # 3
+    return orders
+
+
+def install(host, home_layout, nav):
+    """Keep established section IDs so historical and smoke callers stay valid."""
+    host.sections.addWidget(tracking_page(host))  # 3
     from parameter_scene import ParameterScene
     host.parameter_scene = ParameterScene(host)
     host.sections.addWidget(host.parameter_scene)  # 4
     host.top_nav[1].setText('补货出单')
     host.top_nav[2].setText('决策复查')
-    nav = host.centralWidget().layout().itemAt(0).layout()
     tracking = button('订单跟踪', lambda: host.show_section(3))
     settings = button('参数设置', lambda: host.show_section(4))
     nav.insertWidget(2, tracking)
@@ -72,6 +77,7 @@ def install(host, home_layout):
     row = QHBoxLayout()
     row.addWidget(button('继续已保存的今日草稿', host.resume_today))
     row.addWidget(button('全部未收齐订单', lambda: open_tracking(host, pending=True)))
+    from order_analytics_ui import open_analytics
     row.addWidget(button('经营分析与报表', lambda: open_analytics(host)))
     row.addStretch()
     row.addWidget(button('数据维护', host.storage_copy))

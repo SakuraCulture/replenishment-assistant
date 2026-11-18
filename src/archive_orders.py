@@ -28,9 +28,13 @@ def number(parent,wh):
     return child_number(parent,wh) if wh in WAREHOUSES else parent+'-LEGACY'
 
 
-def states(db):
+def states(db,*,oid=None,warehouse=None):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name='archive_visibility'").fetchone():return {}
-    return {(oid,wh):{'deleted':bool(deleted),'token':token,'at':at} for oid,wh,deleted,token,at in db.execute('SELECT oid,warehouse,deleted,token,at FROM archive_visibility')}
+    sql='SELECT oid,warehouse,deleted,token,at FROM archive_visibility'
+    if oid is None:rows=db.execute(sql)
+    elif warehouse is None:rows=db.execute(sql+' WHERE oid=?',(oid,))
+    else:rows=db.execute(sql+' WHERE oid=? AND warehouse=?',(oid,warehouse))
+    return {(oid,wh):{'deleted':bool(deleted),'token':token,'at':at} for oid,wh,deleted,token,at in rows}
 
 
 def require_active(db,oid,wh=None):
@@ -39,7 +43,7 @@ def require_active(db,oid,wh=None):
         if not warehouse_execution.is_active(db,oid,wh):
             from deletion_barrier import SourceDeleted
             raise SourceDeleted('来源仓单已删除或本轮未参与；不能由旧任务恢复')
-    if any(o==oid and (wh is None or w==wh) and s['deleted'] for (o,w),s in states(db).items()):
+    if any(s['deleted'] for s in states(db,oid=oid,warehouse=wh).values()):
         raise wr.Conflict('此仓正常单已在回收站，请先恢复再签发、导出或导入回传；原快照仍保留')
 
 

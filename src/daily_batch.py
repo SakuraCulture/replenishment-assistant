@@ -85,11 +85,12 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
     if request.get('all_matched'):return {'records':matched,'count':len(matched),'counts':counts,'scope':len(records),**explanation}
     page=min(max(0,int(request.get('page',0))),max(0,(len(matched)-1)//50))
     visible=matched[page*50:(page+1)*50]
-    from aoxiang_receipt_scope import tracking_observations
-    observed=tracking_observations(path,visible)
-    for h in visible:
-        value=observed.get((h['oid'],h['revision'],h['warehouse']))
-        if value:h['platform_purchase']=value
+    if not request.get('platform_tracking') or request.get('stage_view'):
+        from aoxiang_receipt_scope import tracking_observations
+        observed=tracking_observations(path,visible)
+        for h in visible:
+            value=observed.get((h['oid'],h['revision'],h['warehouse']))
+            if value:h['platform_purchase']=value
     return {'records':visible,'count':len(matched),'page':page,'counts':counts,'scope':len(records),**explanation}
 
 

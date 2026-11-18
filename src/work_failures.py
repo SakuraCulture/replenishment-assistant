@@ -30,8 +30,12 @@ class WorkFailure(RuntimeError):
 def format_failure(evidence):
     lines = ['失败阶段：' + evidence['stage'], '原因：' + evidence['reason'],
              '提交状态：' + COMMIT_TEXT.get(evidence['commit_state'], COMMIT_TEXT['unknown'])]
+    worker_exitcode=(evidence.get('transport') or {}).get('worker_exitcode')
+    if worker_exitcode is not None:lines.append(f'后台作业进程已退出（退出码 {worker_exitcode}）')
     if evidence.get('diagnostic'): lines.append('诊断记录：' + evidence['diagnostic'])
     if evidence.get('diagnostic_error'): lines.append('诊断记录未能保存：' + evidence['diagnostic_error'])
+    if evidence.get('export_task'):
+        lines.append('请在“订单跟踪 → 导出任务与恢复”核对原修订及文件。任务 ' + evidence['export_task'])
     return '\n'.join(lines)
 
 
@@ -41,6 +45,8 @@ class FailureContext:
         self.stage = '准备操作'
         self.commit_state = 'not_started'
         self.heads = []
+        self.transport = None
+        self.export_task = None
         self.memory = []
         self.memory_at = 0
 
@@ -64,6 +70,8 @@ class FailureContext:
                         operation=self.operation, stage=self.stage, commit_state=self.commit_state,
                         exception_type=type(exc).__name__, reason=exception_text(exc))
         if self.heads:evidence['prepared_heads'] = self.heads
+        if self.transport is not None:evidence['transport'] = self.transport
+        if self.export_task is not None:evidence['export_task'] = self.export_task
         try:
             from work_memory import snapshot
             evidence['memory'] = snapshot()

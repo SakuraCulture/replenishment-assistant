@@ -7,7 +7,6 @@ identities and referenced immutable source files survive. Not forensic wiping.
 import copy, hashlib, sqlite3, uuid, re, zlib, tempfile, time
 from pathlib import Path
 from contextlib import closing
-from decimal import Decimal
 import work_repository as wr
 import storage_chunks as chunks
 import normal_orders as orders
@@ -642,42 +641,9 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
                 for stage,name,raw in db.execute('SELECT stage,name,payload FROM lifecycle_mappings').fetchall():
                     if wr.loads(raw).get('head',{}).get('oid') in oids:db.execute('DELETE FROM lifecycle_mappings WHERE stage=? AND name=?',(stage,name))
             clear_candidate_cache(db,oids)
-            # Locked external orders must not release stock in the currently selected baseline.
-            if 'jst_active' in available:
-                import jst_orders as jst
-                import jst_batches
-                db.execute('CREATE TABLE IF NOT EXISTS retired_stock(warehouse TEXT,bid TEXT,sku TEXT,quantity TEXT,PRIMARY KEY(warehouse,bid,sku))')
-                for oid in oids:
-                    for wh,gid in db.execute('SELECT warehouse,gid FROM jst_active WHERE oid=?',(oid,)).fetchall():
-                        batch_id=jst_batches.generation_batch(db,gid)
-                        st=None if batch_id else jst.state(db,wh)
-                        if jst.locked(db,{'oid':oid,'warehouse':wh}) and st:
-                            base=wr.loads(db.execute('SELECT payload FROM jst_baselines WHERE bid=?',(st[0],)).fetchone()[0])
-                            if gid not in base.get('included',[]):
-                                for sku,qty in db.execute('SELECT sku,quantity FROM jst_reservations WHERE gid=?',(gid,)):
-                                    old=db.execute('SELECT quantity FROM retired_stock WHERE warehouse=? AND bid=? AND sku=?',(wh,st[0],sku)).fetchone()
-                                    total=Decimal(qty)+(Decimal(old[0]) if old else 0)
-                                    db.execute('INSERT OR REPLACE INTO retired_stock VALUES(?,?,?,?)',(wh,st[0],sku,str(total)))
-                        # Deletion cannot reduce available capacity; preserve other orders' previews.
-                    jst_batches.deleting_order(db,oid)
-                gids=[gid for oid in oids for gid, in db.execute('SELECT gid FROM jst_generations WHERE oid=?',(oid,))]
-                for gid in gids:
-                    for table in ('jst_headers','jst_reservations'):db.execute(f'DELETE FROM {table} WHERE gid=?',(gid,))
-                for runid, in db.execute('SELECT runid FROM jst_runs').fetchall():
-                    raw=db.execute('SELECT payload FROM jst_runs WHERE runid=?',(runid,)).fetchone()[0]
-                    p=wr.loads(raw);gone=[x for x in p['plans'] if x['head']['oid'] in oids]
-                    skipped=[x for x in p.get('skipped',[]) if x.get('head',{}).get('oid') not in oids]
-                    if not gone and skipped==p.get('skipped',[]):continue
-                    p['plans']=[x for x in p['plans'] if x['head']['oid'] not in oids]
-                    p['skipped']=skipped
-                    for x in gone:
-                        w=x['head']['warehouse'];step=db.execute('SELECT runid FROM jst_steps WHERE operation=?',(x['operation'],)).fetchone()
-                        if step:db.execute('INSERT OR IGNORE INTO deleted_jst_steps VALUES(?,?,?,?)',(x['operation'],step[0],w,p['states'][w][0]))
-                        db.execute('DELETE FROM jst_steps WHERE operation=?',(x['operation'],))
-                    if p['plans'] or p['skipped']:db.execute('UPDATE jst_runs SET payload=?,digest=? WHERE runid=?',(wr.dumps(p),digest(p),runid))
-                    else:db.execute('DELETE FROM jst_runs WHERE runid=?',(runid,))
-            for task,raw in db.execute('SELECT task,head FROM jst_tasks').fetchall() if 'jst_tasks' in available else []:
-                if wr.loads(raw)['oid'] in oids:db.execute('DELETE FROM jst_tasks WHERE task=?',(task,))
+            if {'jst_active','jst_tasks'} & available:
+                from jst_batches import deleting_orders
+                deleting_orders(db,((oid,None) for oid in oids),cancel)
             prune_purchases(db,latest['docs'],oids,cancel)
             if 'automation_tasks' in available:
                 for task,raw in db.execute('SELECT id,payload FROM automation_tasks').fetchall():
@@ -761,34 +727,9 @@ def execute_scoped(path,plan,ack_external=False,progress=lambda _:None,cancel=No
             if 'lifecycle_mappings' in available:
                 for stage,name,raw in db.execute('SELECT stage,name,payload FROM lifecycle_mappings').fetchall():
                     if chosen(wr.loads(raw).get('head',{})):db.execute('DELETE FROM lifecycle_mappings WHERE stage=? AND name=?',(stage,name))
-            if 'jst_active' in available:
-                import jst_orders as jst,jst_batches
-                db.execute('CREATE TABLE IF NOT EXISTS retired_stock(warehouse TEXT,bid TEXT,sku TEXT,quantity TEXT,PRIMARY KEY(warehouse,bid,sku))')
-                for oid,warehouse in scopes:
-                    for gid, in db.execute('SELECT gid FROM jst_active WHERE oid=? AND warehouse=?',(oid,warehouse)).fetchall():
-                        batch_id=jst_batches.generation_batch(db,gid);st=None if batch_id else jst.state(db,warehouse)
-                        if jst.locked(db,{'oid':oid,'warehouse':warehouse}) and st:
-                            base=wr.loads(db.execute('SELECT payload FROM jst_baselines WHERE bid=?',(st[0],)).fetchone()[0])
-                            if gid not in base.get('included',[]):
-                                for sku,qty in db.execute('SELECT sku,quantity FROM jst_reservations WHERE gid=?',(gid,)):
-                                    old=db.execute('SELECT quantity FROM retired_stock WHERE warehouse=? AND bid=? AND sku=?',(warehouse,st[0],sku)).fetchone()
-                                    db.execute('INSERT OR REPLACE INTO retired_stock VALUES(?,?,?,?)',(warehouse,st[0],sku,str(Decimal(qty)+(Decimal(old[0]) if old else 0))))
-                    jst_batches.deleting_order(db,oid,warehouse)
-                    for gid, in db.execute('SELECT gid FROM jst_generations WHERE oid=? AND warehouse=?',(oid,warehouse)).fetchall():
-                        for table in ('jst_headers','jst_reservations'):db.execute(f'DELETE FROM {table} WHERE gid=?',(gid,))
-                for runid,raw in db.execute('SELECT runid,payload FROM jst_runs').fetchall():
-                    p=wr.loads(raw);gone=[x for x in p['plans'] if chosen(x['head'])]
-                    skipped=[x for x in p.get('skipped',[]) if not chosen(x.get('head',{}))]
-                    if not gone and skipped==p.get('skipped',[]):continue
-                    p['plans']=[x for x in p['plans'] if not chosen(x['head'])];p['skipped']=skipped
-                    for x in gone:
-                        warehouse=x['head']['warehouse'];step=db.execute('SELECT runid FROM jst_steps WHERE operation=?',(x['operation'],)).fetchone()
-                        if step:db.execute('INSERT OR IGNORE INTO deleted_jst_steps VALUES(?,?,?,?)',(x['operation'],step[0],warehouse,p['states'][warehouse][0]))
-                        db.execute('DELETE FROM jst_steps WHERE operation=?',(x['operation'],))
-                    if p['plans'] or skipped:db.execute('UPDATE jst_runs SET payload=?,digest=? WHERE runid=?',(wr.dumps(p),digest(p),runid))
-                    else:db.execute('DELETE FROM jst_runs WHERE runid=?',(runid,))
-            for task,raw in db.execute('SELECT task,head FROM jst_tasks').fetchall() if 'jst_tasks' in available else []:
-                if chosen(wr.loads(raw)):db.execute('DELETE FROM jst_tasks WHERE task=?',(task,))
+            if {'jst_active','jst_tasks'} & available:
+                from jst_batches import deleting_orders
+                deleting_orders(db,scopes,cancel)
             prune_purchases(db,latest['docs'],oids,cancel,scopes)
             for table in ('lifecycle_versions','lifecycle_events','followup_notes','archive_visibility','jst_active','jst_generations','jst_locks','jst_events'):
                 if table in available:

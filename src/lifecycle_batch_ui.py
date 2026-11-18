@@ -87,12 +87,14 @@ class BatchImport(QDialog):
                 self.populate_sources()
                 self.identify_payments()
             else:
-                self.payment_index=None;self.heads=self.scope if self.scope is not None else run(self,service.current_targets,(self.host.work_repository.path,),'读取可关联订单')
+                self.payment_index=None;self.heads=self.numbered_targets(self.documents)
             self.populate()
             self.read_ready=True;self.preview_btn.setEnabled(True)
         except Cancelled:self.note.setText('读取已取消，未保存任何单据。可重新读取。')
         except Exception as exc:self.note.setText('读取未完成：'+str(exc))
         finally:self.busy=False
+    def numbered_targets(self,documents):
+        return self.scope if self.scope is not None else run(self,batch.import_targets,(self.host.work_repository.path,documents),'读取可关联订单')
     def populate(self):
         self.table.setRowCount(len(self.documents));self.targets=[]
         for i,d in enumerate(self.documents):
@@ -154,16 +156,10 @@ class BatchImport(QDialog):
 
     def identify_payments(self):
         if not self.payment_index:return
-        from payment_matching import analyze
+        from payment_matching import identify_documents
         source_scope,mode=self.source_company.currentData(),self.match_mode.currentData()
-        def operation(progress,cancel):
-            values=[]
-            for d in self.documents:
-                if d['scan']['stage']=='payment' and d['scan']['rows'][0].get('adapter')=='paid_order':
-                    values.append(analyze(self.host.work_repository.path,d,self.payment_index,self.scope,source_scope,mode,progress,cancel))
-                else:values.append(None)
-            return values
-        values=run(self,operation,(),'按来源、生命周期、时间及明细识别付款仓单')
+        args=self.host.work_repository.path,self.documents,self.payment_index,self.scope,source_scope,mode
+        values=run(self,identify_documents,args,'按来源、生命周期、时间及明细识别付款仓单')
         for d,result in zip(self.documents,values):
             if result is not None:d['payment_match']=result
 
@@ -272,7 +268,9 @@ class BatchImport(QDialog):
         if m.exec()!=QDialog.DialogCode.Accepted:return
         try:
             scan=run(self,io.scan,(stage,m.specs()),'校验映射后的完整单据');self.capture();sha=issue['info']['sha']
-            self.documents=[d for d in self.documents if d['scan']['files'][0]['sha']!=sha]+batch.group_scan(scan)
+            documents=[d for d in self.documents if d['scan']['files'][0]['sha']!=sha]+batch.group_scan(scan)
+            if self.payment_index is None:self.heads=self.numbered_targets(documents)
+            self.documents=documents
             self.issues.pop(index);self.populate()
         except Exception as exc:self.note.setText('映射未通过：'+str(exc))
     def preview(self):

@@ -43,7 +43,7 @@ class ResultsPage(QWidget):
         self.reallocate_btn=button('重新分配本批勾选单',self.reallocate);row.addWidget(self.reallocate_btn);v.addLayout(row)
         self.total=SummaryLabel('正在读取已保存结果…');v.addWidget(self.total)
         self.counts=label('','muted');v.addWidget(self.counts)
-        row=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('搜索门店 / 仓 / 补货单号');self.search.setClearButtonEnabled(True);row.addWidget(self.search,1)
+        row=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('门店 / 仓 / 补货单号 / 聚水潭内部订单号 / 翱象采购单号');self.search.setClearButtonEnabled(True);row.addWidget(self.search,1)
         self.warehouse=QComboBox();self.warehouse.addItems(['全部仓','河北仓','山东仓']);row.addWidget(self.warehouse)
         self.lock_filter=QComboBox();self.lock_filter.addItems(['全部锁状态','已锁','未锁']);row.addWidget(self.lock_filter)
         row.addWidget(button('勾选筛选结果',self.select_visible));row.addWidget(button('清空勾选',self.clear_selection));v.addLayout(row)
@@ -99,7 +99,7 @@ class ResultsPage(QWidget):
         self.reading=True;self.controls()
         self.scope_note.setText(('分配批次 '+self.batch_id[:8]+' · 冻结库存、原分配顺序' if self.batch_id else self.day.text()+' 至 '+self.end.text()+' · 日期范围（可包含多个分配批次）')+(' · 限定所选 '+str(len(self.scope))+' 单' if self.scope is not None else ''))
         if self.data is None:self.progress.show();self.progress.setRange(0,0)
-        self.reader.request({'kind':'jst_results','day':self.day.text(),'date_end':self.end.text(),'batch_id':self.batch_id,'scope':[list(service.key(h)) for h in self.scope] if self.scope is not None else None},self.ready,self.failed_read,self.read_progress)
+        self.reader.request({'kind':'jst_results','day':self.day.text(),'date_end':self.end.text(),'batch_id':self.batch_id,'scope':[list(service.key(h)) for h in self.scope] if self.scope is not None else None,'platform_tracking':True},self.ready,self.failed_read,self.read_progress)
     def poll(self):
         if self.isVisible() and not self.worker and not self.reading and not self.closing and not self.reviewing:self.refresh()
     def read_progress(self,p):
@@ -143,9 +143,10 @@ class ResultsPage(QWidget):
     def filter_changed(self,*_):self.chosen.clear();self.render();self.controls();self.status.setText('筛选已更新并清空勾选；导出和新建批次只处理当前可见范围。')
 
     def visible_records(self):
+        from order_tracking_refs import matches
         terms=self.search.text().lower().split();wh=self.warehouse.currentText() if self.warehouse.currentIndex() else ''
         lock=self.lock_filter.currentText()
-        return [r for r in self.records if (not wh or r['head']['warehouse']==wh) and (lock=='全部锁状态' or bool(r['locked'])==(lock=='已锁')) and all(t in ' '.join(str(r['head'][k]) for k in ('name','store','warehouse','number')).lower() for t in terms)]
+        return [r for r in self.records if (not wh or r['head']['warehouse']==wh) and (lock=='全部锁状态' or bool(r['locked'])==(lock=='已锁')) and (not terms or matches(r['head'],terms,('name','store','warehouse','number')))]
 
     def render(self):
         if self.data is None:return

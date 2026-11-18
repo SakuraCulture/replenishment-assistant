@@ -21,10 +21,27 @@ def registered(db, head):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name='lifecycle_mappings'").fetchone():return None
     row=db.execute("SELECT payload FROM lifecycle_mappings WHERE stage='payment' AND name=?",(reference_key(head),)).fetchone()
     if not row:return None
-    value=json.loads(row[0])
+    return verified_registration(row[0],head)
+
+
+def verified_registration(raw,head):
+    value=json.loads(raw)
     if any(value['head'].get(k)!=head[k] for k in ('oid','revision','warehouse','number','store','digest')):
         raise ValueError('聚水潭内部号登记与原仓单身份不符，请核对：'+head['number'])
     return value
+
+
+def registrations(db,heads,cancel=None):
+    from payment_references import reference_key
+    from query_scope import oid_batches
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE name='lifecycle_mappings'").fetchone():return {}
+    lookup={reference_key(h):h for h in heads};result={}
+    for placeholders,keys in oid_batches(lookup):
+        checkpoint(cancel)
+        sql="SELECT name,payload FROM lifecycle_mappings WHERE stage='payment' AND name IN ("+placeholders+")"
+        for name,raw in db.execute(sql,keys):
+            head=lookup[name];result[head['number']]=verified_registration(raw,head)['number']
+    return result
 
 
 def local(db, head, payment):
@@ -48,7 +65,7 @@ def source_basis(path, id, basis):
     return {**basis,'oid':h['oid'],'revision':h['revision'],'signedDigest':h['digest']}
 
 
-def external(path, heads, cancel=None):
+def external(path, heads, cancel=None, *, tracking=False):
     file=Path(path).parent/'aoxiang/component-state/state.sqlite'
     result={h['number']:[] for h in heads}
     if not file.is_file() or not heads:return result
@@ -59,8 +76,13 @@ def external(path, heads, cancel=None):
         if 'purchase_creates' not in tables:return result
         # SQLite projects only small identity/binding metadata; product payloads
         # and native Excel files are never decoded or retained for this view.
-        query="SELECT id,state,platform_order,json_extract(payload,'$.intent.basis'),json_extract(payload,'$.binding') FROM purchase_creates WHERE platform_order IS NOT NULL ORDER BY rowid"
-        for id,state,number,raw_basis,raw_binding in db.execute(query):
+        receipt_columns="json_extract(r.payload,'$.state'),json_extract(r.payload,'$.summary.status'),json_extract(r.payload,'$.summary.observedAt')" if 'purchase_receipts' in tables else 'NULL,NULL,NULL'
+        join=' LEFT JOIN purchase_receipts r ON r.id=c.id' if 'purchase_receipts' in tables else ''
+        accepted=" OR json_extract(c.payload,'$.taskId') IS NOT NULL" if tracking else ''
+        query=("SELECT c.id,c.state,c.platform_order,json_extract(c.payload,'$.intent.basis'),json_extract(c.payload,'$.binding'),"+
+               receipt_columns+" FROM purchase_creates c"+join+" WHERE (c.platform_order IS NOT NULL"+accepted+
+               ") AND json_extract(c.payload,'$.intent.basis.number') IN (SELECT value FROM json_each(?)) ORDER BY c.rowid")
+        for id,state,number,raw_basis,raw_binding,receipt_state,receipt_status,observed_at in db.execute(query,(json.dumps(list(lookup)),)):
             checkpoint(cancel); basis=json.loads(raw_basis or '{}')
             head=lookup.get(basis.get('number'))
             if not head:continue
@@ -68,14 +90,16 @@ def external(path, heads, cancel=None):
             if not basis:continue
             if any(basis.get(k)!=head[field] for k,field in (('oid','oid'),('revision','revision'),('warehouse','warehouse'),('store','store'),('signedDigest','digest'))):continue
             binding=json.loads(raw_binding or '{}')
+            if tracking and number is None:
+                result[head['number']].append({'number':None,'state':state,'status':'待绑定','purchase_id':id})
+                continue
             if not number or binding.get('orderId')!=number:raise ValueError('已保存翱象采购单号与关联凭证不符：'+id)
             status=binding.get('status') or '平台状态未提供'
-            if 'purchase_receipts' in tables:
-                receipt=db.execute("SELECT json_extract(payload,'$.state'),json_extract(payload,'$.summary.status') FROM purchase_receipts WHERE id=?",(id,)).fetchone()
-                if receipt:status=receipt[1] or ('已作废' if receipt[0]=='VOIDED' else status)
+            status=receipt_status or ('已作废' if receipt_state=='VOIDED' else status)
             result[head['number']].append({'number':str(number),'purchase_id':id,'state':state,'status':status,
                 'payment_version':basis.get('paymentVersion'),'payment_digest':basis.get('paymentDigest'),
                 'proof':digest(binding)})
+            if tracking:result[head['number']][-1].update(observed_at=observed_at,receipt_state=receipt_state)
     return result
 
 

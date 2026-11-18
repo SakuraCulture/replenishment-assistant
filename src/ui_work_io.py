@@ -1,51 +1,135 @@
 """Modal progress keeps the UI event loop alive while an owned process handles large work I/O."""
-import multiprocessing,time
+import multiprocessing,threading,time
+import performance_log
 from PySide6.QtCore import QThread,Signal,QTimer
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QProgressBar
 from ui_controls import label,button
-from runtime_support import Cancelled
-from work_transfer import send_tree,receive_tree
+from runtime_support import Cancelled,CommitProgress
+from work_transfer import TransferClosed,send_tree,receive_tree
 from work_io_process import serve
+from work_failures import FailureContext,WorkFailure,format_failure
+
+
+READ_OPERATIONS = frozenset(('prepare_save','prepare_normal','delivery_probe','delivery_prepare',
+                             'delivery_expand','load','copy_config','delete_preview'))
+READ_STALL_SECONDS = 180
+READ_CANCEL_GRACE = 1.5
 
 
 class Session:
-    def __init__(self,path):
+    def __init__(self,path,*,worker=serve,stall_seconds=READ_STALL_SECONDS):
         self.context=multiprocessing.get_context('spawn');self.cancel=self.context.Event();self.connection,child=self.context.Pipe()
-        self.process=self.context.Process(target=serve,args=(child,str(path),self.cancel));self.process.start();child.close();self.writing=False
+        self.path=path;self.stall_seconds=stall_seconds;self.writing=False;self.broken=False
+        self.process=self.context.Process(target=worker,args=(child,str(path),self.cancel))
+        try:self.process.start()
+        except BaseException:self.connection.close();raise
+        finally:child.close()
+        performance_log.owned(self.process,'work-io')
+
+    def _watch_read(self,state,finished):
+        # Pipe writes/reads can block in the OS. Only an owned read-only child
+        # may be interrupted here; closing its end releases the blocking call.
+        cancel_at=None;counter=None;previous=None
+        while not finished.wait(.2) and self.process.is_alive():
+            now=time.monotonic();last=state['activity']
+            if self.cancel.is_set():
+                if cancel_at is None:cancel_at=now
+                if now-cancel_at<READ_CANCEL_GRACE:continue
+                reason='cancelled'
+            elif now-last<self.stall_seconds:
+                previous=None;continue
+            else:
+                if counter is None:
+                    from performance_counters import Counters
+                    counter=Counters()
+                sample=counter.process(self.process.pid,self.process.sentinel)
+                activity=tuple(sample.get(k) for k in ('identity','cpu_seconds','read_bytes','write_bytes'))
+                if activity[0] is None and state['phase']=='waiting':continue
+                if previous is None or previous[:2]!=(last,activity):
+                    previous=(last,activity,now);continue
+                if now-previous[2]<2:continue
+                reason='stalled'
+            if finished.is_set() or (reason=='stalled' and state['activity']!=last):continue
+            state['abort']=reason
+            try:self.process.terminate()
+            except OSError:
+                state['abort']=None
+                if self.process.is_alive():continue
+            return
+
+    @performance_log.work_io
     def call(self,operation,value,progress):
-        self.writing=operation in ('save','confirm_normal','delivery_execute','review_export','delete_orders','delete_job');self.connection.send(operation)
-        progress('传输本次操作所需数据…')
-        send_tree(self.connection,value,None if self.writing else self.cancel,lambda n:progress(f'正在传输数据：已发送 {n:,} 个数据块（总量未预扫描）'))
-        while True:
-            if not self.writing and operation!='storage_copy' and self.cancel.is_set():raise Cancelled('已取消')
-            if not self.connection.poll(.05):
-                if not self.process.is_alive():raise RuntimeError('作业处理进程退出；请在作业记录核对保存状态后重试')
-                continue
-            try:kind,data=self.connection.recv()
-            except (EOFError,BrokenPipeError) as exc:
-                raise RuntimeError('作业处理进程退出；请在作业记录核对保存状态后重试') from exc
-            if kind=='commit':
-                from runtime_support import CommitProgress
-                progress(CommitProgress(data))
-            elif kind=='progress':progress(data)
-            elif kind=='rows':
-                from export_progress import RowProgress
-                progress(RowProgress(*data))
-            elif kind=='error':
-                self.writing=False
-                if isinstance(data,dict):
-                    from work_failures import WorkFailure
-                    raise WorkFailure(data['evidence'],data['message'])
-                if data[0]=='Cancelled':raise Cancelled(data[1])
-                raise RuntimeError(data[1])
-            elif kind=='success':
-                result=receive_tree(self.connection,None if self.writing or operation=='storage_copy' else self.cancel,lambda n:progress(f'正在接收数据：已接收 {n:,} 个数据块（总量未预扫描）'),alive=self.process.is_alive)[0];self.writing=False;return result
-            else:raise RuntimeError('作业处理进程返回未知消息')
+        if self.broken:raise RuntimeError('原作业连接已结束，请重新发起操作')
+        self.writing=operation in ('save','confirm_normal','delivery_execute','review_export','storage_copy','delete_orders','delete_job')
+        state={'activity':time.monotonic(),'phase':'sending','abort':None}
+        context=FailureContext(operation)
+        if self.writing:context.commit_state='unknown'
+        finished=threading.Event();watcher=None
+        if operation in READ_OPERATIONS:
+            watcher=threading.Thread(target=self._watch_read,args=(state,finished),daemon=True)
+            watcher.start()
+        def activity():state['activity']=time.monotonic()
+        def report(message):
+            context.stage=str(message);activity();progress(message)
+        try:
+            report('正在发送作业操作…');self.connection.send(operation)
+            report('传输本次操作所需数据…')
+            send_tree(self.connection,value,None if self.writing else self.cancel,
+                      lambda n:report(f'正在传输数据：已发送 {n:,} 个数据块（总量未预扫描）'),activity=activity)
+            state['phase']='waiting';report('等待作业处理进度…')
+            while True:
+                if not self.writing and self.cancel.is_set():raise Cancelled('已取消')
+                if not self.connection.poll(.05):
+                    if not self.process.is_alive():raise TransferClosed('作业处理进程已退出')
+                    continue
+                kind,data=self.connection.recv();activity()
+                if kind=='commit':
+                    context.commit_state='unknown' if data else 'committed';report(CommitProgress(data))
+                elif kind=='receipt':context.export_task=data
+                elif kind=='progress':report(data)
+                elif kind=='rows':
+                    from export_progress import RowProgress
+                    report(RowProgress(*data))
+                elif kind=='error':
+                    self.writing=False
+                    if isinstance(data,dict):raise WorkFailure(data['evidence'],data['message'])
+                    if data[0]=='Cancelled':raise Cancelled(data[1])
+                    raise RuntimeError(data[1])
+                elif kind=='success':
+                    state['phase']='receiving';report('正在接收作业结果…')
+                    result=receive_tree(self.connection,None if self.writing else self.cancel,
+                                        lambda n:report(f'正在接收数据：已接收 {n:,} 个数据块（总量未预扫描）'),
+                                        alive=self.process.is_alive,activity=activity)[0]
+                    self.writing=False
+                    return result
+                else:raise TransferClosed('作业处理进程返回未知消息')
+        except Cancelled:
+            self.broken=True;raise
+        except (EOFError,OSError,TransferClosed,MemoryError) as exc:
+            self.broken=True
+            if state['abort']=='cancelled':raise Cancelled('已取消本次只读准备') from exc
+            self.process.join(.15)
+            context.transport={'phase':state['phase'],'worker_pid':self.process.pid,'worker_exitcode':self.process.exitcode,
+                               'seconds_without_progress':round(time.monotonic()-state['activity'],3)}
+            if state['abort']=='stalled':
+                cause=TimeoutError('只读作业长时间无进展，已结束本次准备，可重新核对')
+            else:
+                cause=exc
+            evidence=context.capture(cause,self.path)
+            message=format_failure(evidence)
+            if self.writing and not context.export_task:
+                message+='\n请在订单跟踪核对本次归档和导出任务后再继续。'
+            raise WorkFailure(evidence,message) from exc
+        finally:
+            finished.set()
+            if watcher is not None:watcher.join()
     def close(self):
         # All write calls finish before their modal dialog closes. Termination is
         # reserved for read/transfer cancellation, never an in-flight transaction.
-        try:self.connection.send(None)
-        except (OSError,EOFError,BrokenPipeError):pass
+        if self.broken:self.connection.close()
+        elif self.process.is_alive():
+            try:self.connection.send(None)
+            except (OSError,EOFError):pass
         self.process.join(.15)
         if self.process.is_alive():
             if self.writing:self.process.join()

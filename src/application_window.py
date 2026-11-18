@@ -53,8 +53,6 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         hv.addWidget(label('计算后确认归档即签发；门店确认单按仓导出。回传、付款、实际收货在订单生命周期中独立留存。','muted'))
         self.recent=QTableWidget();self.recent.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.recent.cellDoubleClicked.connect(lambda i,c:self.open_archive(self.recent_orders[i]));hv.addWidget(self.recent,1)
         self.recent.hide();hv.removeWidget(self.recent)
-        from lifecycle_home_ui import LifecycleWidget as FollowupWidget
-        self.followup=FollowupWidget(self);hv.addWidget(self.followup,1)
         self.sections.addWidget(home);self.sections.addWidget(work)
         archive=QWidget();av=QVBoxLayout(archive);av.addWidget(label('决策复查 · 查当时事实与数量变化','title'));self.archive_search=QLineEdit();self.archive_search.setPlaceholderText('查询日期 / 门店 / 单号 / 商品编码或名称');self.archive_search.textChanged.connect(self.filter_archive);av.addWidget(self.archive_search)
         filters=QHBoxLayout();self.archive_day=QComboBox();self.archive_day.addItem('全部日期','');self.archive_store=QComboBox();self.archive_store.addItem('全部门店','');filters.addWidget(label('业务日期'));filters.addWidget(self.archive_day);filters.addWidget(label('门店'));filters.addWidget(self.archive_store,1);filters.addWidget(button('清空条件',self.clear_archive_filters));av.addLayout(filters)
@@ -81,7 +79,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         from usability import install
         install(self,hv)
         from business_scenes import install as install_scenes
-        install_scenes(self,hv)
+        install_scenes(self,hv,nav)
         from stockout_hub import install as install_stockout
         install_stockout(self)
         from jst_task_ui import Generator

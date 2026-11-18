@@ -65,8 +65,9 @@ class Workflows:
             raise SourceDeleted('原翱象批次已删除；不接受旧任务回写')
         job=json.loads(row[0])
         for item in job['items']:
-            basis=item.get('head') or item.get('basis') or {}
-            item.setdefault('item_id',uuid.uuid5(uuid.NAMESPACE_URL,id+'|'+item['key']+'|'+str(basis.get('oid'))).hex)
+            if 'item_id' not in item:
+                basis=item.get('head') or item.get('basis') or {}
+                item['item_id']=uuid.uuid5(uuid.NAMESPACE_URL,id+'|'+item['key']+'|'+str(basis.get('oid'))).hex
         return job
 
     def get(self, id):
@@ -86,8 +87,9 @@ class Workflows:
 
     def _save(self, db, job, event, *, item_id=None):
         for item in job['items']:
-            basis=item.get('head') or item.get('basis') or {}
-            item.setdefault('item_id',uuid.uuid5(uuid.NAMESPACE_URL,job['id']+'|'+item['key']+'|'+str(basis.get('oid'))).hex)
+            if 'item_id' not in item:
+                basis=item.get('head') or item.get('basis') or {}
+                item['item_id']=uuid.uuid5(uuid.NAMESPACE_URL,job['id']+'|'+item['key']+'|'+str(basis.get('oid'))).hex
         job = {**job, 'sequence': job.get('sequence', 0) + 1, 'updated_at': self.clock()}
         db.execute('INSERT INTO ax_workflows VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,payload=excluded.payload', (job['id'], job['state'], encoded(job)))
         db.execute('INSERT INTO ax_workflow_events VALUES(?,?,?)', (job['id'], job['sequence'], encoded({'at': job['updated_at'], 'event': event, 'state': job['state'], 'message': job.get('message'),'item_id':item_id})))

@@ -1,19 +1,17 @@
-"""Disk-spooled formula values for the application's streaming XLSX exports.
-
-Only generated worksheet formula caches are patched. The template formulas and
-all unrelated ZIP members remain unchanged; memory is bounded by a worksheet row.
-"""
+"""Spool formula values and insert them as each worksheet is packaged."""
 import json
 import math
 import os
 import re
-import shutil
 import tempfile
 import zipfile
+from datetime import datetime, timezone
 from decimal import Decimal
+from io import BufferedWriter
 from pathlib import Path
-from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
+
+from openpyxl.writer.excel import ExcelWriter
 
 from runtime_support import checkpoint
 
@@ -23,6 +21,25 @@ CELL = re.compile(rb'<c\b[^>]*\br="([A-Z]+[1-9][0-9]*)"[^>]*(?<!/)>.*?</c>', re.
 ROW = re.compile(rb'<row\b[^>]*\br="([1-9][0-9]*)"')
 VALUE = re.compile(rb'<v(?:\s[^>]*)?>.*?</v>|<v\s*/>', re.S)
 TYPE = re.compile(rb'\s+t="[^"]*"')
+BUFFER_BYTES = 1024 * 1024
+
+
+class _FormulaArchive(zipfile.ZipFile):
+    def __init__(self, path, worksheets, write_cached_sheet):
+        super().__init__(path, 'x', compression=zipfile.ZIP_DEFLATED)
+        self.worksheets = worksheets
+        self.write_cached_sheet = write_cached_sheet
+
+    def write(self, filename, arcname=None, compress_type=None, compresslevel=None):
+        cache_path = self.worksheets.pop(arcname, None)
+        if cache_path is None:
+            return super().write(filename, arcname, compress_type, compresslevel)
+        member = zipfile.ZipInfo.from_file(filename, arcname)
+        member.compress_type = self.compression if compress_type is None else compress_type
+        member._compresslevel = self.compresslevel if compresslevel is None else compresslevel
+        with open(filename, 'rb', buffering=BUFFER_BYTES) as source:
+            with BufferedWriter(self.open(member, 'w', force_zip64=True), BUFFER_BYTES) as target:
+                self.write_cached_sheet(source, target, cache_path)
 
 
 class FormulaCache:
@@ -42,7 +59,7 @@ class FormulaCache:
         if not match: raise ValueError('Invalid generated formula coordinate')
         if sheet not in self.files:
             path = self.folder / ('sheet-%d.jsonl' % len(self.files))
-            self.files[sheet] = {'path': path, 'stream': path.open('w', encoding='utf-8', newline='\n'), 'last_row': 0}
+            self.files[sheet] = {'path': path, 'stream': path.open('w', encoding='utf-8', newline='\n', buffering=BUFFER_BYTES), 'last_row': 0}
         item = self.files[sheet]; row = int(match[1])
         if row < item['last_row']: raise ValueError('Formula cache must follow generated row order')
         item['last_row'] = row
@@ -54,7 +71,7 @@ class FormulaCache:
         item['stream'].write(json.dumps({'cell': coordinate, 'row': row, 'kind': kind, 'value': text}, ensure_ascii=False)+'\n')
 
     def _worksheet(self, source, target, cache_path):
-        with cache_path.open(encoding='utf-8') as cache:
+        with cache_path.open(encoding='utf-8', buffering=BUFFER_BYTES) as cache:
             def next_value():
                 line = cache.readline(); return json.loads(line) if line else None
             current = next_value(); buffer = b''
@@ -90,23 +107,22 @@ class FormulaCache:
             target.write(buffer)
             if current: raise ValueError('Formula cache extends beyond generated worksheet')
 
-    def apply(self, source):
+    def save(self, book, destination):
+        """Build one complete archive before replacing the destination staging file."""
+        checkpoint(self.cancel)
+        if not book.write_only:
+            raise ValueError('Formula cache requires a streaming workbook')
         for item in self.files.values(): item['stream'].close()
-        source = Path(source); output = self.folder / 'cached.xlsx'
-        ns = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
-        relationship = '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id'
-        with zipfile.ZipFile(source) as original:
-            rels = {r.get('Id'): r.get('Target') for r in ET.fromstring(original.read('xl/_rels/workbook.xml.rels'))}
-            worksheets = {}
-            for sheet in ET.fromstring(original.read('xl/workbook.xml')).find('m:sheets', ns):
-                target = rels[sheet.get(relationship)]
-                path = target.lstrip('/') if target.startswith('/') else 'xl/'+target
-                if sheet.get('name') in self.files: worksheets[path] = self.files[sheet.get('name')]['path']
-            if len(worksheets) != len(self.files): raise ValueError('Cached worksheet identity missing')
-            with zipfile.ZipFile(output, 'x', compression=zipfile.ZIP_DEFLATED) as revised:
-                for member in original.infolist():
-                    checkpoint(self.cancel)
-                    with original.open(member) as incoming, revised.open(member, 'w', force_zip64=True) as outgoing:
-                        if member.filename in worksheets: self._worksheet(incoming, outgoing, worksheets[member.filename])
-                        else: shutil.copyfileobj(incoming, outgoing, 65536)
-        checkpoint(self.cancel); os.replace(output, source)
+        # ExcelWriter assigns worksheet paths by their one-based workbook order.
+        worksheets = {f'xl/worksheets/sheet{index}.xml': self.files[sheet.title]['path']
+                      for index, sheet in enumerate(book.worksheets, 1) if sheet.title in self.files}
+        if len(worksheets) != len(self.files):
+            raise ValueError('Cached worksheet identity missing')
+        output = self.folder / 'workbook.xlsx'
+        with _FormulaArchive(output, worksheets, self._worksheet) as archive:
+            book.properties.modified = datetime.now(timezone.utc).replace(tzinfo=None)
+            ExcelWriter(book, archive).write_data()
+            if worksheets:
+                raise ValueError('Cached worksheet identity missing')
+        checkpoint(self.cancel)
+        os.replace(output, destination)

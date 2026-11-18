@@ -33,8 +33,16 @@ class Repository:
         self.path=Path(folder)/'workbench.sqlite3';self.path.parent.mkdir(parents=True,exist_ok=True)
         with closing(self.connect()) as db,db:
             db.executescript('CREATE TABLE IF NOT EXISTS jobs(day TEXT PRIMARY KEY, revision TEXT NOT NULL, digest TEXT NOT NULL, saved TEXT NOT NULL, summary TEXT NOT NULL, payload BLOB NOT NULL); CREATE TABLE IF NOT EXISTS presets(id TEXT NOT NULL, version INTEGER NOT NULL, name TEXT NOT NULL, config TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(id,version)); CREATE TABLE IF NOT EXISTS stores(code TEXT PRIMARY KEY,data TEXT NOT NULL);')
+    @classmethod
+    def open_existing(cls,path,*,read_only=False):
+        repo=cls.__new__(cls);repo.path=Path(path).resolve();repo._mode='ro' if read_only else 'rw'
+        return repo
     def connect(self):
-        db=sqlite3.connect(self.path,timeout=10);db.execute('PRAGMA synchronous=FULL');return db
+        mode=getattr(self,'_mode',None)
+        if mode=='ro':return sqlite3.connect(self.path.as_uri()+'?mode=ro',uri=True)
+        db=(sqlite3.connect(self.path.as_uri()+'?mode=rw',uri=True,timeout=10) if mode=='rw'
+            else sqlite3.connect(self.path,timeout=10))
+        db.execute('PRAGMA synchronous=FULL');return db
     def presets(self,all_versions=True,*,include_archived=False):
         builtin={'id':'standard','version':1,'name':'标准补货','config':schema.standard(),'builtin':True}
         with closing(self.connect()) as db:rows=db.execute('SELECT id,version,name,config,archived FROM presets '+('' if include_archived else 'WHERE archived=0 ')+'ORDER BY name,version DESC').fetchall()

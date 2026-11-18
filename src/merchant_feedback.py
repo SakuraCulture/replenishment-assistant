@@ -5,7 +5,7 @@ from contextlib import closing
 import openpyxl
 import work_repository as wr
 import input_adapter as adapter
-import normal_exports
+from result_semantics import signed_groups
 import warehouse_orders as wo
 import result_semantics as sem
 import source_archive
@@ -120,7 +120,7 @@ def prepare(path,scanned,bindings,progress=lambda _:None,cancel=None):
                 result={**orders[0]['payload']['result'],'rows':rows,'summary':sem.summarize(rows)}
                 order={**orders[0],'payload':{**orders[0]['payload'],'result':result},'warehouse_heads':warehouse_heads}
             else:order=repo.get(*row,revision,view='export')
-        r=order['payload']['result'];eligible={d['E']:d for rows in normal_exports.groups(r,order['payload'].get('new_focus')).values() for d in rows}
+        r=order['payload']['result'];eligible={d['E']:d for rows in signed_groups(r,order['payload'].get('new_focus')).values() for d in rows}
         if any(i.get('identity_digest',order['digest'])!=order['digest'] for i in items):raise ValueError('隐藏页原签发摘要与存档不一致')
         with closing(connect(path)) as db:
             old=current(db,order['oid'],revision)
@@ -195,7 +195,7 @@ def view(path,head,progress=lambda _:None,cancel=None):
         record=current(db,head['oid'],head['revision']);history=[]
         if record:history=[(v,t,wr.loads(p)) for v,t,p in db.execute('SELECT version,saved,payload FROM merchant_feedback WHERE oid=? AND revision=? ORDER BY version DESC',(head['oid'],head['revision']))]
     values=record['payload']['values'] if record else {};rows=[]
-    for sheet,items in normal_exports.groups(order['payload']['result'],order['payload'].get('new_focus')).items():
+    for sheet,items in signed_groups(order['payload']['result'],order['payload'].get('new_focus')).items():
         for d in items:
             if head.get('warehouse') and d.get('AU')!=head['warehouse']:continue
             q=values.get(d['E']);issued=sem.order_quantity(d);rows.append([d['E'],d.get('D'),sheet,issued,q,None if q is None else q-issued,'未确认' if q is None else '已确认',d.get('AU')])

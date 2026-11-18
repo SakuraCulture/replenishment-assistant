@@ -1,14 +1,14 @@
 """Read-only lifecycle ranges over the existing signed warehouse-order progress."""
 
+from lifecycle_stages import CURRENT, PENDING
+
 OPTIONS = (
     ('', '全部已签发'),
-    ('operations', '待运营签发及以后'),
-    ('payment', '待付款及以后'),
-    ('receipt', '待收货及以后'),
+    *((stage, PENDING[stage]+'及以后') for stage in CURRENT[1:]),
     ('finished', '已结束'),
 )
 LABELS = dict(OPTIONS)
-_RANK = {'return': 0, 'operations': 1, 'payment': 2, 'receipt': 3}
+_RANK = {stage: rank for rank, stage in enumerate(CURRENT)}
 
 
 def validate(value):

@@ -18,8 +18,8 @@ def resolve(db,number):
     raise ValueError('本机未找到补货单号：'+number+'；不得按名称或相近日期猜测')
 
 def partitions(result,profile):
-    from normal_exports import groups
-    grouped=groups(result,profile);out={}
+    from result_semantics import signed_groups
+    grouped=signed_groups(result,profile);out={}
     for rows in grouped.values():
         for d in rows:
             if d.get('AU') not in WAREHOUSES:

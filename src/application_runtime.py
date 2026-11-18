@@ -52,7 +52,14 @@ class Runtime:
         except BaseException:
             try:sys.__stderr__.write('Application diagnostic write failed\n')
             except BaseException:pass
-    def transition(self,phase):self.phase=phase;self.emit('PHASE')
+    def transition(self,phase):
+        self.phase=phase
+        if phase in ('EVENT_LOOP_EXIT','UI_TEARDOWN','FINALIZING'):
+            monitor=getattr(self,'performance',None)
+            try:
+                if monitor is not None:monitor.stop()
+            except Exception:pass
+        self.emit('PHASE')
     def exception(self,t,v,tb,*,event='EXCEPTION',blocking=True):
         if blocking and self.phase!='RUNNING':
             self.shutdown_errors+=1
@@ -69,6 +76,10 @@ class Runtime:
     def thread_error(self,args):self.exception(args.exc_type,args.exc_value,args.exc_traceback,event='THREAD_EXCEPTION')
     def restore(self):
         global _runtime
+        monitor=getattr(self,'performance',None)
+        try:
+            if monitor is not None:monitor.stop()
+        except Exception:pass
         # Never leave the QWidget-reporting hook installed into Py_FinalizeEx.
         self.phase='STOPPED';self.emit('STOPPED')
         collector=getattr(self,'gui_gc',None)

@@ -52,6 +52,15 @@ class Save(unittest.TestCase):
             self.assertEqual(raw,expected);self.assertEqual(digest,lc.fingerprint(p['payload']))
             self.assertNotIn('_read_proofs',raw)
 
+    def test_disk_staging_keeps_exact_text(self):
+        plan=self.plan()
+        p=plan['plans'][0]
+        with patch('adaptive_resources.Budget') as budget:
+            budget.return_value.cache_bytes=0
+            receipt=lc.commit(self.f.path,plan)
+        self.assertTrue(receipt[0]['changed'])
+        self.assertEqual(self.stored('return'),(p['digest'],wr.dumps(p['payload'])))
+
     def test_operations_reuses_exact_verified_return_without_decoding_large_payload(self):
         lc.commit(self.f.path,self.plan());plan=self.plan('operations')
         self.assertIn('return',plan['plans'][0]['_read_proofs'])
@@ -174,14 +183,18 @@ class Save(unittest.TestCase):
         bindings={lc.binding_key(r):f.h for r in scan['rows']}
         with self.assertRaises(wr.Conflict):lc.prepare(f.path,scan,bindings,cancel=Cancel())
 
-    def test_unrelated_commit_invalidates_cache_without_false_conflict(self):
+    def test_unrelated_commit_preserves_prepared_document(self):
         scan=self.f.scan(items=[{},{}]);original=purchases.validate_head;calls=[]
+        before=self.f.plan(scan)['plans'][0]
         def change(db,head):
             original(db,head);calls.append(1)
             if len(calls)==1:
                 with closing(sqlite3.connect(self.f.path)) as other,other:other.execute("INSERT INTO stores VALUES('unrelated','{}')")
-        with patch('purchases.validate_head',change):self.assertEqual(len(self.f.plan(scan)['plans']),1)
-        self.assertEqual(len(calls),3)
+        with patch('purchases.validate_head',change):plan=self.f.plan(scan)
+        self.assertEqual(len(plan['plans']),1)
+        for field in ('payload','digest','expected','changed'):
+            self.assertEqual(plan['plans'][0][field],before[field])
+        self.assertEqual(lc.commit(self.f.path,plan)[0]['version'],1)
 
     def hold_reader(self):
         storage_chunks.backup_before_write(self.f.path)
@@ -261,11 +274,23 @@ class Save(unittest.TestCase):
             def commit(db):calls.append(1);raise sqlite3.OperationalError('database is locked')
             def rollback(db):raise sqlite3.OperationalError('rollback I/O error')
         def connection(*a,**kw):
-            if kw.get('timeout')==.15:kw['factory']=FailedRollback
+            if kw.get('timeout')==.15 and not kw.get('uri'):kw['factory']=FailedRollback
             return connect(*a,**kw)
         with patch('sqlite3.connect',connection):
             with self.assertRaisesRegex(sqlite3.OperationalError,'rollback I/O'):lc.commit(self.f.path,plan)
         self.assertEqual(len(calls),1);self.assertIsNone(self.stored('return'))
+
+    def test_encoding_releases_writer_and_commit_revalidates_the_order(self):
+        plan=self.plan()
+        original=encoding.encode
+        def encode_and_reissue(*args,**kwargs):
+            value=original(*args,**kwargs)
+            with closing(sqlite3.connect(self.f.path,timeout=0)) as other,other:
+                other.execute('UPDATE normal_orders SET current=2')
+            return value
+        with patch.object(encoding,'encode',encode_and_reissue):
+            with self.assertRaises(wr.Conflict):lc.commit(self.f.path,plan)
+        self.assertIsNone(self.stored('return'))
 
 
 if __name__=='__main__':unittest.main()

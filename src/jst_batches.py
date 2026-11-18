@@ -321,6 +321,67 @@ def deleting_order(db,oid,warehouse=None):
             db.execute('DELETE FROM jst_batch_stock WHERE batch_id=?',(bid,));db.execute('DELETE FROM jst_batch_retired WHERE batch_id=?',(bid,));db.execute('DELETE FROM jst_batches WHERE batch_id=?',(bid,))
 
 
+def deleting_orders(db, selection, cancel=None):
+    """Prune JST work in the caller's deletion transaction. None selects all warehouses."""
+    selection = tuple(selection)
+    selected = set(selection)
+    def matches(head):
+        oid = head.get('oid')
+        return (oid, None) in selected or (oid, head.get('warehouse')) in selected
+
+    tables = {name for name, in db.execute("SELECT name FROM sqlite_master WHERE name IN ('jst_active','jst_tasks')")}
+    if 'jst_active' in tables:
+        db.execute('CREATE TABLE IF NOT EXISTS retired_stock(warehouse TEXT,bid TEXT,sku TEXT,quantity TEXT,PRIMARY KEY(warehouse,bid,sku))')
+        for oid, warehouse in selection:
+            checkpoint(cancel)
+            condition = ' AND warehouse=?' if warehouse is not None else ''
+            args = (oid, warehouse) if warehouse is not None else (oid,)
+            active = db.execute('SELECT warehouse,gid FROM jst_active WHERE oid=?'+condition, args).fetchall()
+            for wh, gid in active:
+                baseline = None if generation_batch(db,gid) else orders.state(db,wh)
+                if not baseline or not orders.locked(db,{'oid':oid,'warehouse':wh}):
+                    continue
+                bid = baseline[0]
+                raw = db.execute('SELECT payload FROM jst_baselines WHERE bid=?',(bid,)).fetchone()[0]
+                if gid in wr.loads(raw).get('included',[]):
+                    continue
+                for sku, qty in db.execute('SELECT sku,quantity FROM jst_reservations WHERE gid=?',(gid,)):
+                    old = db.execute('SELECT quantity FROM retired_stock WHERE warehouse=? AND bid=? AND sku=?',(wh,bid,sku)).fetchone()
+                    total = Decimal(qty) + (Decimal(old[0]) if old else 0)
+                    db.execute('INSERT OR REPLACE INTO retired_stock VALUES(?,?,?,?)',(wh,bid,sku,str(total)))
+            deleting_order(db,oid,warehouse)
+            for gid, in db.execute('SELECT gid FROM jst_generations WHERE oid=?'+condition,args).fetchall():
+                db.execute('DELETE FROM jst_headers WHERE gid=?',(gid,))
+                db.execute('DELETE FROM jst_reservations WHERE gid=?',(gid,))
+
+        for runid, raw in db.execute('SELECT runid,payload FROM jst_runs').fetchall():
+            checkpoint(cancel)
+            payload = wr.loads(raw)
+            removed = [p for p in payload['plans'] if matches(p['head'])]
+            previous_skipped = payload.get('skipped',[])
+            skipped = [p for p in previous_skipped if not matches(p.get('head',{}))]
+            if not removed and skipped == previous_skipped:
+                continue
+            payload['plans'] = [p for p in payload['plans'] if not matches(p['head'])]
+            payload['skipped'] = skipped
+            for plan in removed:
+                operation, wh = plan['operation'], plan['head']['warehouse']
+                step = db.execute('SELECT runid FROM jst_steps WHERE operation=?',(operation,)).fetchone()
+                if step:
+                    db.execute('INSERT OR IGNORE INTO deleted_jst_steps VALUES(?,?,?,?)',(operation,step[0],wh,payload['states'][wh][0]))
+                db.execute('DELETE FROM jst_steps WHERE operation=?',(operation,))
+            if payload['plans'] or skipped:
+                db.execute('UPDATE jst_runs SET payload=?,digest=? WHERE runid=?',(wr.dumps(payload),orders.digest(payload),runid))
+            else:
+                db.execute('DELETE FROM jst_runs WHERE runid=?',(runid,))
+
+    if 'jst_tasks' in tables:
+        for task, raw in db.execute('SELECT task,head FROM jst_tasks').fetchall():
+            checkpoint(cancel)
+            if matches(wr.loads(raw)):
+                db.execute('DELETE FROM jst_tasks WHERE task=?',(task,))
+
+
 def activate(path, plan, progress=lambda _:None, cancel=None):
     """Explicit resume only; return a preview bound to the new control epoch."""
     out = copy.deepcopy(plan); v = out['payload']; bid = v['batch_id']

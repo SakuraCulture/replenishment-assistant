@@ -135,6 +135,9 @@ def file_results(parent,paths,title='导出完成',note=''):
 
 def failure_message(exc):
     raw=str(exc)
+    if not raw.strip():
+        from work_failures import exception_text
+        return exception_text(exc) if isinstance(exc,BaseException) else '本次操作发生异常，未提供文字原因；请查看本机应用日志。'
     fields={}
     for line in raw.splitlines():
         line=line.strip()

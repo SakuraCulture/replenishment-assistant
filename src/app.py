@@ -54,6 +54,8 @@ def _main():
         QMessageBox.warning(None,'资料目录未打开',str(exc));return 1
     app.data_root=logs
     logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=runtime.folder/'app.log',level=logging.INFO,encoding='utf-8',force=True,format='%(asctime)s %(levelname)s %(message)s')
+    from performance_log import install as install_performance
+    install_performance(runtime,app)
     from workbench import Workbench
     if any(flag in sys.argv for flag in ['--batch-smoke','--warehouse-smoke','--work-smoke','--intake-smoke']):win=Workbench()
     else:
@@ -81,6 +83,12 @@ def _main():
     if '--signing-memory-smoke' in sys.argv:
         from signing_memory_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--signing-memory-smoke')+1:])
+    if '--performance-log-smoke' in sys.argv:
+        from performance_log_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--performance-log-smoke')+1:])
+    if '--analytics-export-fix-smoke' in sys.argv:
+        from analytics_export_fix_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--analytics-export-fix-smoke')+1:])
     if '--perf-core-smoke' in sys.argv:
         from perf_core_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--perf-core-smoke')+1:])
@@ -315,6 +323,12 @@ def _main():
     if '--work-io-smoke' in sys.argv:
         from work_io_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--work-io-smoke')+1:])
+    if '--worker-recovery-smoke' in sys.argv:
+        from worker_recovery_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--worker-recovery-smoke')+1:])
+    if '--linked-orders-smoke' in sys.argv:
+        from linked_orders_smoke import start_smoke
+        start_smoke(app,win,sys.argv[sys.argv.index('--linked-orders-smoke')+1:])
     if '--workflow-smoke' in sys.argv:
         from workflow_smoke import start_smoke
         start_smoke(app,win,sys.argv[sys.argv.index('--workflow-smoke')+1:])

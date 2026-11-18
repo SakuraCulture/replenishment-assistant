@@ -135,7 +135,8 @@ class AnalyticsWidget(QWidget):
         def received(value):
             if self.worker is w and not self.close_pending and (not w.cancel.is_set() or isinstance(value,dict) and 'path' in value):self.task_succeeded=True;done(value)
         w.success.connect(received);w.cancelled.connect(lambda:self.note.setText('已停止，保留上次成功结果。'))
-        w.failed.connect(lambda message:QMessageBox.warning(self,'分析未完成',message) if not self.close_pending else None)
+        from readable_ui import failure
+        w.failed.connect(lambda message:failure(self,'分析未完成',message) if not self.close_pending else None)
         def finish():
             self.timer.stop();self.worker=None;w.deleteLater();self.controls();self.bar.setRange(0,100);self.bar.setValue(100 if self.task_succeeded else 0);self.bar.hide();self.cancel_btn.setText('■ 停止当前任务')
             if self.close_pending:QTimer.singleShot(0,self.host.close)

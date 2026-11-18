@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "version": "0.54.8",
+  "build_id": "rc1",
+  "package": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.8_rc1\\补货助手_0.54.8_rc1_轻量性能日志.zip",
+  "zip_sha256": "23c2bc7dc249d8fecbd917d22d92858b9d3b7cdd23a22d1502a6da92cf1a9baf",
+  "exe_sha256": "c19f46440f9b44ff8959659279702b7ad4c3f7b9abc2dc0f8c8bbb495380eee9",
+  "source_reference": "snapshot-858691cf2f017fbd3723003469db424d20518e790afc25433ba7bddc95be30bd",
+  "python_passed": 268,
+  "baseline_existing_failures": [
+    "test_return_save_performance.Save.test_failed_rollback_never_replays_unknown_attempt",
+    "test_return_save_performance.Save.test_unrelated_commit_invalidates_cache_without_false_conflict"
+  ],
+  "native_checks": 50,
+  "business_equivalence": true,
+  "workbook_equivalence": true,
+  "old_package_preserved": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\交付_0.54.7_rc1\\补货助手_0.54.7_rc1_签发归档导出性能优化.zip",
+  "old_zip_sha256": "e356ce60de4e70149962cce1ea8c8e1cfcb3a3605f3bb370c1c8bd913133a4cb",
+  "git_committed_pushed_or_merged": false,
+  "real_data_modified": false,
+  "live_platform_calls": 0,
+  "evidence": "D:\\优团工作文件夹\\outputs\\replenishment_mvp_20261029\\qa\\light_performance_log_0548_20261117_01"
+}

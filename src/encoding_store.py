@@ -17,28 +17,74 @@ BUFFER = 128 * 1024
 CACHE_BYTES = 64 * 1024**2
 RESERVE_BYTES = 16 * 1024**2
 SMALL_BLOCK = 1024**2
+KEY_CACHE_BYTES = 64 * 1024
+KEY_CACHE_ENTRIES = 64
+_CONTAINERS = (dict, list, tuple)
 
 
-def _small(value, budget):
+class _KeyCosts:
+    """Bounded, encode-local costs of immutable string-key sequences only.
+
+    No value or container identity is cached. Retained-byte accounting includes
+    a conservative allowance for strings, tuple, integer and mapping entries.
+    Optional cache allocation failure falls back to the original calculation.
+    """
+    def __init__(self):
+        self.costs = {}
+        self.bytes = 0
+        self.disabled = False
+
+    def disable(self):
+        self.costs.clear(); self.bytes = 0; self.disabled = True
+
+    def cost(self, value):
+        count = len(value)
+        if self.disabled or type(value) is not dict or not 4 <= count <= 128:
+            return 4*count+2+sum(6*len(k)+4 if isinstance(k,str) else 128 for k in value)
+        try:
+            keys = tuple(value)
+            # Do not invoke arbitrary key hashes/equality or cache str subclasses.
+            if not all(type(k) is str for k in keys):
+                return 4*count+2+sum(6*len(k)+4 if isinstance(k,str) else 128 for k in keys)
+            known = self.costs.get(keys)
+            if known is not None:return known
+            characters = sum(map(len,keys))
+            cost = 8*count+2+6*characters
+            retained = 256+8*count+4*characters+128*count
+            if (len(self.costs) < KEY_CACHE_ENTRIES and self.bytes+retained <= KEY_CACHE_BYTES
+                    and all(len(k) <= 64 for k in keys)):
+                self.costs[keys] = cost; self.bytes += retained
+            return cost
+        except MemoryError:
+            self.disable()
+            return 4*count+2+sum(6*len(k)+4 if isinstance(k,str) else 128 for k in value)
+
+
+def _small(value, budget, probe=None):
     """Conservative UTF-8/escaping bound, short-circuiting at BUFFER bytes."""
     budget[1] -= 1
     if budget[1] < 0: return False
     if isinstance(value,str):budget[0] -= 6*len(value)+4
     elif isinstance(value,dict):
-        budget[0] -= 4*len(value)+2+sum(6*len(k)+4 if isinstance(k,str) else 128 for k in value)
+        # A structural lower bound can reject oversized plain containers before
+        # walking keys. It never grants the fast encoder permission to run.
+        if type(value) is dict and 4*len(value)+2 > budget[0]:return False
+        budget[0] -= (probe.cost(value) if probe is not None else
+                      4*len(value)+2+sum(6*len(k)+4 if isinstance(k,str) else 128 for k in value))
         for item in value.values():
             if isinstance(item,str):budget[0]-=6*len(item)+4
-            elif isinstance(item,(dict,list,tuple)):
-                if not _small(item,budget):return False
+            elif isinstance(item,_CONTAINERS):
+                if not _small(item,budget,probe):return False
             elif isinstance(item,int):budget[0]-=max(8,item.bit_length()//3+4)
             else:budget[0]-=128
             if budget[0]<0:return False
     elif isinstance(value,(list,tuple)):
+        if type(value) in (list,tuple) and 2*len(value)+2 > budget[0]:return False
         budget[0] -= 2*len(value)+2
         for item in value:
             if isinstance(item,str):budget[0]-=6*len(item)+4
-            elif isinstance(item,(dict,list,tuple)):
-                if not _small(item,budget):return False
+            elif isinstance(item,_CONTAINERS):
+                if not _small(item,budget,probe):return False
             elif isinstance(item,int):budget[0]-=max(8,item.bit_length()//3+4)
             else:budget[0]-=128
             if budget[0]<0:return False
@@ -46,20 +92,21 @@ def _small(value, budget):
     return budget[0]>=0
 
 
-def _parts(value, fast_limit=BUFFER, on_pressure=None):
+def _parts(value, fast_limit=BUFFER, on_pressure=None, probe=None):
     import work_repository as wr
-    if _small(value,[fast_limit,8192]):
+    if fast_limit > 0 and _small(value,[fast_limit,8192],probe):
         # Keep CPython's fast canonical encoder for *proven bounded* containers.
         try:
             text = wr.dumps(value)
         except MemoryError:
+            if probe is not None:probe.disable()
             if on_pressure is not None:on_pressure()
         else:
             yield text
             return
         # No bytes from this container have been emitted. Resume its canonical
         # representation in bounded pieces rather than replaying a business step.
-        yield from _parts(value,0,on_pressure)
+        yield from _parts(value,0,on_pressure,probe)
     elif isinstance(value,dict):
         yield '{'
         for i,key in enumerate(sorted(value)):
@@ -71,13 +118,13 @@ def _parts(value, fast_limit=BUFFER, on_pressure=None):
             elif isinstance(key,(int,float)):name=json.dumps(key,allow_nan=False)
             else:raise TypeError('无效JSON对象键')
             yield wr.dumps(name);yield ': '
-            yield from _parts(value[key],fast_limit,on_pressure)
+            yield from _parts(value[key],fast_limit,on_pressure,probe)
         yield '}'
     elif isinstance(value,(list,tuple)):
         yield '['
         for i,item in enumerate(value):
             if i:yield ', '
-            yield from _parts(item,fast_limit,on_pressure)
+            yield from _parts(item,fast_limit,on_pressure,probe)
         yield ']'
     elif isinstance(value,str):
         yield '"'
@@ -89,7 +136,9 @@ def _parts(value, fast_limit=BUFFER, on_pressure=None):
 
 def json_bytes(value, *, fast_limit=BUFFER, on_pressure=None):
     pending = bytearray()
-    for token in _parts(value,fast_limit,on_pressure):
+    try:probe = _KeyCosts() if fast_limit > 0 else None
+    except MemoryError:probe = None
+    for token in _parts(value,fast_limit,on_pressure,probe):
         # Even an unusually long scalar must not create another full UTF-8 copy.
         for start in range(0, len(token), BUFFER // 4):
             part = token[start:start + BUFFER // 4].encode('utf-8')

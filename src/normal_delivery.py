@@ -112,7 +112,7 @@ def selected_heads(repository,orders,warehouses):
     return result
 
 
-def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=None,*,consume=False):
+def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=None,*,consume=False,on_receipt=lambda task:None):
     """One archive transaction, sequential files, explicit partial-failure receipt."""
     import tempfile,os
     import export_progress as ep
@@ -134,6 +134,7 @@ def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=Non
          'day':payload['day'],'store':p['store'],'warehouse':f['warehouse']}
         for (p,f),path in zip(files,paths)],signature='尚未新增签发' if signed else '归档版本未改变',signed=signed)
     try:
+        on_receipt(receipt['id'])
         if signed:
             receipt['state']='正在归档';receipt['signature']='签发结果待核';receipts.update(repository.work.path,receipt)
             progress('后台归档所选门店与完整来源（一次事务）…')

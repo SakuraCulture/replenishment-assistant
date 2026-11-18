@@ -72,8 +72,9 @@ def project(payload, warehouse):
 
 
 def warehouses(payload):
-    import normal_exports, archive_orders
-    found={archive_orders.warehouse(row) for values in normal_exports.groups(payload['result'],payload.get('new_focus')).values() for row in values}
+    import archive_orders
+    from result_semantics import signed_groups
+    found={archive_orders.warehouse(row) for values in signed_groups(payload['result'],payload.get('new_focus')).values() for row in values}
     return [w for w in (*WAREHOUSES,archive_orders.LEGACY) if w in found]
 
 
@@ -190,11 +191,14 @@ def _head(parent,warehouse,revision,digest,saved,child_revision=None,snapshot_di
 
 def heads(db,parent_headers=None,*,history=False):
     selected=None if parent_headers is None else {h['oid'] for h in parent_headers}
-    parents=[dict(zip(('oid','day','store','number','current'),r)) for r in db.execute("SELECT oid,day,store,number,current FROM normal_orders WHERE kind='normal_model' ORDER BY day DESC,store")]
+    sql="SELECT oid,day,store,number,current FROM normal_orders WHERE kind='normal_model'"
+    args=()
+    if selected is not None:
+        sql+=' AND oid IN (SELECT value FROM json_each(?))';args=(wr.dumps(sorted(selected)),)
+    parents=[dict(zip(('oid','day','store','number','current'),r)) for r in db.execute(sql+' ORDER BY day DESC,store',args)]
     result=[]
     for parent in parents:
         oid=parent['oid']
-        if selected is not None and oid not in selected:continue
         if has_parent(db,oid):
             for warehouse,current,child,state_value,epoch in db.execute('SELECT warehouse,source_revision,child_revision,state,epoch FROM warehouse_execution_heads WHERE oid=?',(oid,)):
                 if state_value!='active':continue

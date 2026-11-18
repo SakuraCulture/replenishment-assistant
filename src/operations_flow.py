@@ -1,6 +1,5 @@
 """Order-scoped lifecycle routing. Existing orders keep their original route."""
-LEGACY = ('return', 'payment', 'receipt')
-CURRENT = ('return', 'operations', 'payment', 'receipt')
+from lifecycle_stages import LEGACY, CURRENT, route
 
 
 def schema(db):
@@ -21,7 +20,7 @@ def identity(head):return (head['oid'],head['revision'],head['warehouse'])
 
 
 def stages(db,head,staged=None,*,including=None,as_of=None):
-    return CURRENT if including=='operations' or required(db,head,staged,as_of) else LEGACY
+    return route(including=='operations' or required(db,head,staged,as_of))
 
 
 def demand_stage(db,head):return 'operations' if required(db,head) else 'return'

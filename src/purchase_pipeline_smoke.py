@@ -54,6 +54,14 @@ def start_smoke(app,win,args):
             manager.store.update(job['id'],position=1,changes={'state':'BOUND','result':{'binding':{'orderId':'PO-UNSELECTED'}}})
             job=manager.store.update(job['id'],state='COMPLETED_WITH_ERRORS');untouched=copy.deepcopy(job['items'][1])
             dialog=QueueDialog(win,manager,job['id']);dialog.resize(1400,820);dialog.show();app.processEvents()
+            QTest.mouseClick(dialog.select_all_btn,Qt.MouseButton.LeftButton)
+            assert all(dialog.table.item(n,0).checkState()==Qt.CheckState.Checked for n in range(2))
+            assert dialog.selection_count.text()=='已勾选 2 单'
+            dialog.grab().save(str(out/'00-批量勾选.png'))
+            QTest.mouseClick(dialog.clear_checks_btn,Qt.MouseButton.LeftButton)
+            assert all(dialog.table.item(n,0).checkState()==Qt.CheckState.Unchecked for n in range(2))
+            assert dialog.selection_count.text()=='已勾选 0 单' and manager.store.get(job['id'])==job and not calls
+            checks.append('实际批量勾选与清空即时更新数量，批次和平台请求均无变化')
             dialog.table.item(0,0).setCheckState(Qt.CheckState.Checked)
             before=manager.store.get(job['id'])
             with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.No):dialog.rebuild_btn.click()

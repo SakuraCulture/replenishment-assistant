@@ -37,7 +37,7 @@ class TemplateExportTests(unittest.TestCase):
         with FormulaCache(root.name) as cache, stream_book() as book:
             book._analytics_formula_cache = cache.add
             names = (export.append_detail if detail else export.append_summary)(book, {}, rows)
-            book.save(path); cache.apply(path)
+            cache.save(book,path)
         formula = openpyxl.load_workbook(path, data_only=False)
         values = openpyxl.load_workbook(path, data_only=True)
         self.addCleanup(formula.close); self.addCleanup(values.close)

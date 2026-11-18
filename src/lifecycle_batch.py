@@ -84,6 +84,17 @@ def read(paths, stage=None, progress=lambda _:None, cancel=None):
     return {'documents':documents,'issues':issues,'files':files}
 
 
+def import_targets(path,documents,progress=lambda _:None,cancel=None):
+    numbers=set()
+    for document in documents:
+        for row in document['scan']['rows']:
+            checkpoint(cancel)
+            if not row.get('signed_number'):
+                return service.current_targets(path,progress,cancel)
+            numbers.add(row['signed_number'])
+    return service.current_targets(path,progress,cancel,numbers=numbers)
+
+
 def prepare(path, documents, scope=None, progress=lambda _:None, cancel=None):
     selected=[copy.deepcopy(d) for d in documents if d.get('selected',True)]
     if not selected:raise ValueError('尚未选择要保存的完整单据')
