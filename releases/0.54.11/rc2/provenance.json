@@ -1,0 +1,41 @@
+{
+  "release": "0.54.11 rc2",
+  "source_commit": "bbaf91d115d132c0bd1fa2f1a23a78667237e300",
+  "source_tree": "4e21e9fe146c1889ab30d2ae3dc4c3aac16e2584",
+  "source_snapshot": "snapshot-a4eb27601051c431a9e7f2fe147511c63a417279158d92174ea92abe8ec55b58",
+  "source_archive_sha256": "a4eb27601051c431a9e7f2fe147511c63a417279158d92174ea92abe8ec55b58",
+  "source_manifest_sha256": "c33692bfb80dddea51f2293e57db9b004231859f5182d81663fa5fad717c380d",
+  "source_file_count": 5069,
+  "source_matches_accepted_archive_bytes": true,
+  "changed_source_files": 86,
+  "exe_sha256": "95e1256ac92ce68da54e22c5752e04b0c5aaa66fe46bee28cbadf48f614e025f",
+  "source_base_commit": "a6934fe7e2635bafb98d4ea8af40c946a4a48d19",
+  "prior_main_commit": "480f09382b091d48eb699c0073233cbc639468b3",
+  "acceptance": {
+    "rc2": {
+      "targeted_regression_passed": 41,
+      "targeted_regression_log_sha256": "88803363491a2ab7571f9bd92370eed2bd250f100be394a093a808ef4a1ffbd3",
+      "native_exe_checks_passed": 7,
+      "native_exe_report_sha256": "060418072eb6e2915e0536ea716a1c90a2bd8b3c37e08d6e23a7d0bec5a9b304",
+      "native_exe_checks": [
+        "实际批量勾选与清空即时更新数量，批次和平台请求均无变化",
+        "取消重建确认不改变旧任务、采购记录或未选项",
+        "真实Qt按钮重建无回执任务：只处理勾选仓单，未选已成功仓单逐字段保持",
+        "固定Node实际释放旧预约并原子登记后继；旧命令拒绝派发，重试不重复建立新预览",
+        "旧冻结文件及上传边界事实保留；新预览仍须单独确认上传",
+        "应用内生产调度：9单全部按选定顺序先提交再核对，无本地在途任务上限，各结果仍归原单",
+        "重建与等待使用后台Worker，Qt事件循环持续响应"
+      ],
+      "synthetic": true,
+      "live_platform": false
+    },
+    "rc1": {
+      "exe_sha256": "68a7925491bfa54a8db923baf076c50a48d9a17d7a9055f8fc3dd1b424f69a69",
+      "source_and_component_regression_passed": 300,
+      "native_exe_checks_passed": 156,
+      "combined_report_sha256": "6060350bef79ccc8e07a6d47f9847b9a1240c0c80e0b6e7a4c67283370405853",
+      "synthetic": true,
+      "live_platform": false
+    }
+  }
+}
