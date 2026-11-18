@@ -1,0 +1,65 @@
+{
+  "release": "0.54.12 rc1",
+  "source_commit": "fdcf02a3952d5c3f2708a84948997e32f44a0ae4",
+  "source_tree": "852ab625494d610d419eb0485a804740215d035e",
+  "source_snapshot": "snapshot-7f1be1e365d6caad1f4fde03b66f7d8c176c3e68fc551f9b92688ea6978e8f9c",
+  "source_archive_sha256": "7f1be1e365d6caad1f4fde03b66f7d8c176c3e68fc551f9b92688ea6978e8f9c",
+  "source_manifest_sha256": "93203cfe10715ba2de1eac7b88e665eef41f893e902f8944249f7d0506c03998",
+  "source_file_count": 5069,
+  "source_matches_accepted_archive_bytes": true,
+  "changed_source_files": [
+    "components/aoxiang/src/machine-purchase-create.mjs",
+    "components/aoxiang/src/purchase-contract.mjs",
+    "components/aoxiang/src/purchase-coordinator.mjs",
+    "components/aoxiang/src/purchase-create-service.mjs",
+    "components/aoxiang/src/state.mjs",
+    "components/aoxiang/test/purchase-create-evidence.test.mjs",
+    "components/aoxiang/test/purchase.test.mjs",
+    "src/aoxiang_purchase_messages.py",
+    "src/aoxiang_upload_pipeline.py",
+    "src/purchase_recovery_smoke.py",
+    "src/version.json",
+    "tests/test_purchase_pipeline.py",
+    "tests/test_purchase_recovery.py"
+  ],
+  "exe_sha256": "5bbf62fb022f44c11340ec0f3da2c3ed0bc898bdef08179733af18c3e86c9c2e",
+  "source_base_commit": "a6934fe7e2635bafb98d4ea8af40c946a4a48d19",
+  "prior_main_commit": "a9d0183efc3b6825ad482b890b2bfeed4d8d7a77",
+  "previous_release": {
+    "version": "0.54.11 rc2",
+    "exe_sha256": "95e1256ac92ce68da54e22c5752e04b0c5aaa66fe46bee28cbadf48f614e025f",
+    "provenance": "releases/0.54.11/rc2/provenance.json"
+  },
+  "acceptance": {
+    "synthetic": true,
+    "live_platform": false,
+    "scenario": "384 synthetic SKUs, original import receipt, D16 export receipt missing",
+    "baseline_reproduced": true,
+    "regression": {
+      "python": 98,
+      "node": 83
+    },
+    "shipped_component_checks": 6,
+    "native_exe_checks": [
+      "旧版五笔误待核可一键沿原采购任务继续，原因显示处理路径",
+      "D16缺回执显示专门提示，实际单项按钮只派发原单核对，同批其他项保留",
+      "已受理任务先等待再关联，原任务身份不变，已成功第六单不重复执行",
+      "采购创建动作零次；组件边界只接收已有任务的结果核验",
+      "平台处理中单独计为已受理待核对，批次标题不显示失败",
+      "真正没有回执时保持保护，弹框说明可能已建单及核对路径",
+      "关闭重开保留六笔关联状态，完成项不再提供重试",
+      "跨天试算在计算前说明两天日期及继续路径，不生成候选",
+      "一致性检查仍阻止真实数量差异，说明商品、字段、原值与重算值",
+      "旧日期未签发草稿明确引导今日续作，不要求导出不存在的签发修订"
+    ],
+    "purchase_uploads": 0,
+    "report_sha256": "477666c2429261485fd09c39793d63b1d2f0f5b99d5d1157cc3b40354d7b1dbd",
+    "report_hashes": {
+      "native_exe": "f988ef7d5716c03b46740ed6a076298281b1862691be0c0c5f24c548640dd242",
+      "component": "fc87bd080cf5f6814c24b2370a878d73b42e0991c69c8d0d199a8922a72a67a5",
+      "baseline": "bc2fd1bdc8c60ba17bb520852824a1a9689805da7e213e52e5e2c4c9848bcb52",
+      "python_log": "8ce67d642e7a3e4ee8823d5cd020833aad3b19d0ea898b3b2f22beed5809b109",
+      "node_log": "acd6bdd1f4fb408504cf1c6964c3aa11adf0ce17b58260e3c144f5003836a396"
+    }
+  }
+}

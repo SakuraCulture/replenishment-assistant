@@ -3,12 +3,20 @@ import {portablePath} from './portable-assets.mjs';
 import path from 'node:path';
 import {constants} from 'node:fs';
 import {uid,now,fail,sameIdentity,canonical,exists,writeJson,safeName,countValue,AppError,wait,businessDate} from './common.mjs';
-import {purchaseScopeHash,purchaseScope,checkPurchaseReceipt,purchaseContract,dateBounds,PURCHASE_CODES,PURCHASE_LABELS,purchaseSkuCount} from './purchase-contract.mjs';
+import {purchaseScopeHash,purchaseScope,checkPurchaseReceipt,purchaseContract,dateBounds,PURCHASE_CODES,PURCHASE_LABELS,purchaseSkuCount,canRecoverVerificationMain} from './purchase-contract.mjs';
 import {validateWorkbook,fileHash} from './workbook-validator.mjs';
 import {outputPath} from './publisher.mjs';
 import {checkOutput,assertHandoff} from './preflight.mjs';
 
 const BAD=new Set(['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED']);
+function unconfirmedExport(run,sourceId,verification,cause){
+  const source=run.exports[sourceId];
+  const details={runId:run.id,sourceId,taskId:source.taskId||null};
+  if(!verification)fail('SUBMISSION_UNKNOWN','采购原提交仍未消歧，禁止重提',details);
+  fail('PURCHASE_VERIFY_EXPORT_UNKNOWN','原采购导入已受理，'+PURCHASE_LABELS[sourceId]+'核对导出的受理结果待核',{
+    ...details,canRecoverMain:canRecoverVerificationMain(source),...(cause?{cause}:{})
+  });
+}
 function dateCell(value){
   if(/^\d+(?:\.\d+)?$/.test(value))return Math.round((Number(value)-25569)*86400000)-28800000;
   if(!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value))fail('PURCHASE_FILE_DATE','采购明细时间列格式变化或为空');return Date.parse(value.replace(' ','T')+'+08:00');
@@ -28,7 +36,7 @@ export function validatePurchasePair(run,main,detail){
   return {status:'VALIDATED',queryParents:expected.size,mainRows:main.rows,detailRows:detail.rows,linkedParents:childSku.size,orphanRows:0,parentCoverage:'EXACT_SET',skuCoverage:'DISTINCT_SKU_PER_ORDER',duplicatesPreserved:true,dateBasis:run.dateBasis,...(run.queryMode==='order_id'?{queryMode:'order_id',createdDay:createdDays.size===1?[...createdDays][0]:null}:{})};
 }
 export class PurchaseCoordinator{
-  constructor({state,config,binding,adapter,onProgress=()=>{},onSourceValidated=null,signal,hostOrderId=null,hostPurchaseId=null,hostWarehouse=null}){Object.assign(this,{state,config,binding,adapter,onProgress,onSourceValidated,signal,hostOrderId,hostPurchaseId,hostWarehouse});}
+  constructor({state,config,binding,adapter,onProgress=()=>{},onSourceValidated=null,signal,hostOrderId=null,hostPurchaseId=null,hostWarehouse=null,verification=null}){Object.assign(this,{state,config,binding,adapter,onProgress,onSourceValidated,signal,hostOrderId,hostPurchaseId,hostWarehouse,verification});}
   stopped(){if(this.signal?.aborted)fail('PAUSED','采购作业已暂停；继续时恢复原任务');}
   async progress(stage,body={}){await this.onProgress({stage,...body});}
   save(run){if(this.hostOrderId)run={...run,hostOrderId:this.hostOrderId,hostPurchaseId:this.hostPurchaseId,hostWarehouse:this.hostWarehouse};this.state.putPurchase(run);return run;}
@@ -57,6 +65,10 @@ export class PurchaseCoordinator{
       }
     }
     if(!sameIdentity(run.identity,this.config.tenantBinding))fail('WRONG_IDENTITY','采购作业与当前商家隔离域不同');
+    const verification=!!(this.verification?.importTaskId&&this.verification.orderId===run.orderId&&this.hostPurchaseId&&
+      run.hostPurchaseId===this.hostPurchaseId&&run.hostOrderId===this.hostOrderId&&run.hostWarehouse===this.hostWarehouse);
+    if(this.verification?.importTaskId&&!verification&&canRecoverVerificationMain(run.exports.D16))
+      fail('PURCHASE_VERIFICATION_SCOPE','原主单核对任务与本次仓单的采购记录不符，请核对原任务',{runId:run.id,sourceId:'D16'});
     if(run.status==='EMPTY'){await this.progress('PURCHASE_EMPTY',{runId:run.id,warehouseCode:run.target.buyerWarehouseCode,day:run.from});return run;}
     await this.progress('PURCHASE_RUNNING',{runId:run.id,warehouseCode:run.target.buyerWarehouseCode,day:run.from});
     const scopeLabel=run.queryMode==='order_id'?'单号_'+safeName(run.orderId):run.from;
@@ -73,17 +85,38 @@ export class PurchaseCoordinator{
         if(e.stage==='SUCCEEDED'){
           try{const file=await this.sourceFile(this.state.getPurchase(run.id),sourceId);if(this.onSourceValidated)await this.onSourceValidated({run:this.state.getPurchase(run.id),sourceId,file});continue;}catch(error){if(!e.taskId)throw error;const file=await outputPath(this.binding.outputRoot,e.asset.relativePath);if(await exists(file))throw error;update(sourceId,{stage:'ACCEPTED',downloaded:null});e=this.state.getPurchase(run.id).exports[sourceId];}
         }
-        if(BAD.has(e.stage))fail('SUBMISSION_UNKNOWN','采购原提交仍未消歧，禁止重提',{runId:run.id,sourceId,taskId:e.taskId||null});
+        const resumeMain=verification&&this.verification.retryRunId===run.id&&sourceId==='D16'&&canRecoverVerificationMain(e);
+        if(BAD.has(e.stage)&&!resumeMain)unconfirmedExport(run,sourceId,verification);
         if(e.stage==='FAILED_CONFIRMED')fail('PURCHASE_TASK_FAILED','采购原任务包含失败；请核对平台错误后再显式重跑');
         if(!e.taskId){
           // Re-establish the same exact native scope before each distinct export.
           const q=await this.adapter.queryPurchase({...purchaseScope({...run,buyerWarehouseCode:run.target.buyerWarehouseCode}),name:run.target.displayName,identity:run.identity});
           if(canonical([...q.orderIds].sort())!==canonical([...run.query.orderIds].sort())||canonical(q.orderSkuCounts)!==canonical(run.query.orderSkuCounts)||canonical(q.request)!==canonical(run.query.request))fail('PURCHASE_QUERY_CHANGED','导出前采购单集合或筛选已变化，原文件与任务保留');
-          const baseline=await this.adapter.preparePurchase(q,sourceId),intentId=uid();update(sourceId,{stage:'INTENT_RECORDED',intentId,baseline,query:q});await this.progress('INTENT_RECORDED',{runId:run.id,warehouseCode:run.target.buyerWarehouseCode,sourceId});this.stopped();update(sourceId,{stage:'SUBMITTING'});
-          try{
-            const receipt=await this.adapter.submitPurchase({intentId,sourceId,query:q});const current=this.state.getPurchase(run.id).exports[sourceId];
-            if(current.additionalTaskIds?.length||!checkPurchaseReceipt(receipt,sourceId,q))fail('WRONG_SCOPE_ACCEPTED','采购任务受理范围不一致',{taskId:receipt.taskId});update(sourceId,{stage:'ACCEPTED',taskId:receipt.taskId,receipt});await this.progress('ACCEPTED',{runId:run.id,warehouseCode:run.target.buyerWarehouseCode,sourceId,taskId:receipt.taskId});
-          }catch(error){const current=this.state.getPurchase(run.id).exports[sourceId],valid=current.taskId&&!current.additionalTaskIds?.length&&checkPurchaseReceipt(current.receipt,sourceId,q);update(sourceId,{stage:current.stage==='WRONG_SCOPE_ACCEPTED'||error.code==='WRONG_SCOPE_ACCEPTED'?'WRONG_SCOPE_ACCEPTED':valid?'ACCEPTED':'SUBMISSION_UNKNOWN',errorCode:error.code||'SUBMISSION_ERROR'});throw error;}
+          const baseline=await this.adapter.preparePurchase(q,sourceId),intentId=uid();
+          this.stopped();
+          if(resumeMain){
+            if(q.orderIds.length!==1||q.orderIds[0]!==run.orderId)fail('PURCHASE_PROOF_SCOPE','主单恢复必须仅核对原采购单');
+            e=this.state.restartVerificationMain(run.id,e.intentId,{intentId,baseline,query:q,hostPurchaseId:this.hostPurchaseId});
+          }else update(sourceId,{stage:'INTENT_RECORDED',intentId,baseline,query:q});
+          if(!e.taskId){
+            await this.progress('INTENT_RECORDED',{runId:run.id,warehouseCode:run.target.buyerWarehouseCode,sourceId});
+            this.stopped();
+            update(sourceId,{stage:'SUBMITTING'});
+            try{
+              const receipt=await this.adapter.submitPurchase({intentId,sourceId,query:q});
+              const current=this.state.getPurchase(run.id).exports[sourceId];
+              if(current.additionalTaskIds?.length||!checkPurchaseReceipt(receipt,sourceId,q))fail('WRONG_SCOPE_ACCEPTED','采购任务受理范围不一致',{taskId:receipt.taskId});
+              update(sourceId,{stage:'ACCEPTED',taskId:receipt.taskId,receipt});
+              await this.progress('ACCEPTED',{runId:run.id,warehouseCode:run.target.buyerWarehouseCode,sourceId,taskId:receipt.taskId});
+            }catch(error){
+              const current=this.state.getPurchase(run.id).exports[sourceId];
+              const valid=current.taskId&&!current.additionalTaskIds?.length&&checkPurchaseReceipt(current.receipt,sourceId,q);
+              const stage=current.stage==='WRONG_SCOPE_ACCEPTED'||error.code==='WRONG_SCOPE_ACCEPTED'?'WRONG_SCOPE_ACCEPTED':valid?'ACCEPTED':'SUBMISSION_UNKNOWN';
+              update(sourceId,{stage,errorCode:error.code||'SUBMISSION_ERROR'});
+              if(verification&&stage==='SUBMISSION_UNKNOWN'&&!this.signal?.aborted)unconfirmedExport(run,sourceId,true,error.code);
+              throw error;
+            }
+          }
           e=this.state.getPurchase(run.id).exports[sourceId];
         }
         const until=Date.now()+this.config.resourceLimits.taskWaitBudgetMs;let task;

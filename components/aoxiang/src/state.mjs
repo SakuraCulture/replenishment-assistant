@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {DatabaseSync,backup} from 'node:sqlite';
 import {fail,uid,now,canonical,sha256,scopeHash,exists,writeJson,sameIdentity} from './common.mjs';
-import {checkPurchaseReceipt} from './purchase-contract.mjs';
+import {canRecoverVerificationMain,checkPurchaseReceipt} from './purchase-contract.mjs';
 import {retirementSchema,requireUnretired,requireHostOrder} from './order-retirement.mjs';
 import {legacyEndedCollections} from './collection-ended.mjs';
 
@@ -85,10 +85,13 @@ export class StateStore{
     this.write(()=>{this.db.exec('CREATE TABLE purchase_runs(id TEXT PRIMARY KEY,payload TEXT NOT NULL)');this.db.prepare("UPDATE metadata SET value='2' WHERE key='schemaVersion'").run();});
   }
   getPurchase(id){return this.rows('purchase_runs').find(r=>r.id===id)||null;}
-  putPurchase(record){
+  #checkPurchaseWritable(record){
     requireUnretired(this.db,record.hostPurchaseId,record.hostOrderId,record.hostWarehouse);
     if(this.db.prepare('SELECT 1 FROM retired_purchase_runs WHERE id=?').get(record.id))fail('SOURCE_ORDER_DELETED','原采购取数任务已退役，不接受晚到回写');
     if(record.hostOrderId)requireHostOrder(record.hostOrderId,record.hostWarehouse);
+  }
+  putPurchase(record){
+    this.#checkPurchaseWritable(record);
     const old=this.getPurchase(record.id);
     if(old){
       for(const key of ['identity','target','from','to','dateBasis','orderId','scopeHash','createdAt'])if(canonical(old[key]??null)!==canonical(record[key]??null))fail('PURCHASE_RECORD_CHANGED','已有采购作业的身份或冻结范围不能修改');
@@ -96,8 +99,40 @@ export class StateStore{
     }
     this.write(()=>this.db.prepare('INSERT OR REPLACE INTO purchase_runs VALUES(?,?)').run(record.id,JSON.stringify(record)));
   }
+  restartVerificationMain(runId,expectedIntentId,{intentId,baseline,query,hostPurchaseId}){
+    return this.write(()=>{
+      const run=this.getPurchase(runId),source=run?.exports.D16;
+      if(!hostPurchaseId||run?.hostPurchaseId!==hostPurchaseId||!run.orderId||!source||source.intentId!==expectedIntentId||intentId===expectedIntentId)
+        fail('PURCHASE_VERIFICATION_CHANGED','原采购主单核对任务已变化，请重新读取原任务');
+      this.#checkPurchaseWritable(run);
+      // A late receipt can turn the original attempt into a valid exact task
+      // while the browser restores the saved filters. Use that task instead.
+      if(source.stage==='ACCEPTED'&&source.taskId&&source.receipt?.taskId===source.taskId&&!source.additionalTaskIds?.length&&
+        checkPurchaseReceipt(source.receipt,'D16',source.query||run.query))return source;
+      if(!canRecoverVerificationMain(source))fail('PURCHASE_VERIFICATION_CHANGED','原主单导出已有回执或范围变化，请重新核对原任务');
+      const {verificationHistory=[],...original}=source;
+      const next={sourceId:'D16',stage:'INTENT_RECORDED',intentId,baseline,query,
+        verificationHistory:[...verificationHistory,{...original,replacedAt:now()}]};
+      run.exports.D16=next;
+      this.db.prepare('UPDATE purchase_runs SET payload=? WHERE id=?').run(JSON.stringify(run),run.id);
+      return next;
+    });
+  }
   recordPurchaseReceipt(receipt){
-    const run=this.rows('purchase_runs').find(r=>Object.values(r.exports||{}).some(e=>e.intentId===receipt?.intentId));if(!run)return false;
+    if(!receipt?.intentId)return false;
+    const runs=this.rows('purchase_runs');
+    const run=runs.find(r=>Object.values(r.exports||{}).some(e=>e.intentId===receipt.intentId));
+    if(!run){
+      const historical=runs.find(r=>r.exports?.D16?.verificationHistory?.some(e=>e.intentId===receipt.intentId));
+      if(!historical)return false;
+      const old=historical.exports.D16.verificationHistory.find(e=>e.intentId===receipt.intentId);
+      const received=old.lateReceipts||[];
+      if(!received.some(e=>e.receipt.taskId===receipt.taskId)){
+        old.lateReceipts=[...received,{receipt,scopeVerified:checkPurchaseReceipt(receipt,'D16',old.query||historical.query)}];
+        this.putPurchase(historical);
+      }
+      return true;
+    }
     const source=Object.keys(run.exports).find(k=>run.exports[k].intentId===receipt.intentId),e=run.exports[source];
     if(e.taskId&&e.taskId!==receipt.taskId){run.exports[source]={...e,stage:'SUBMISSION_UNKNOWN',additionalTaskIds:[...new Set([...(e.additionalTaskIds||[]),receipt.taskId])]};}
     else run.exports[source]={...e,taskId:receipt.taskId,stage:e.stage==='SUCCEEDED'?'SUCCEEDED':checkPurchaseReceipt(receipt,source,e.query||run.query)?'ACCEPTED':'WRONG_SCOPE_ACCEPTED',receipt};

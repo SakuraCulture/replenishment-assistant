@@ -159,6 +159,20 @@ console.log(JSON.stringify(new MachinePurchaseCreate({ledger:{get:()=>r}}).statu
         self.assertIn('已找到原受理任务号',explain({'code':'SUBMISSION_UNKNOWN'},{'taskId':'T'}))
         self.assertIn('失败商品',explain({'code':'IMPORT_TASK_PARTIAL'}))
 
+    def test_d16_export_unknown_has_its_own_recovery_message(self):
+        known = {'uploadAttempted':True, 'taskId':'IMPORT-ACCEPTED'}
+        details = {'runId':'saved-run', 'sourceId':'D16', 'taskId':None}
+        for code in ('SUBMISSION_UNKNOWN', 'PURCHASE_VERIFY_EXPORT_UNKNOWN'):
+            text = explain({'code':code, 'details':details}, known)
+            self.assertIn('原采购导入已受理', text)
+            self.assertIn('重新导出核对主单', text)
+            self.assertIn('采购单不会重复上传', text)
+        for blocked in ({**details, 'taskId':'EXPORT-ACCEPTED'}, {**details, 'canRecoverMain':False},
+                        {**details, 'sourceId':'D17'}):
+            text = explain({'code':'PURCHASE_VERIFY_EXPORT_UNKNOWN', 'details':blocked}, known)
+            self.assertIn('受理情况待核', text)
+            self.assertNotIn('重新导出', text)
+
 
 class DateMessageTests(unittest.TestCase):
     def test_baseline_date_mismatch_names_actual_date(self):

@@ -9,6 +9,13 @@ export function purchaseSkuCount(value){
 
 export const PURCHASE_CODES={D16:'SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-FOR-MAIN-ORDER-EXPORT',D17:'SAAS-CHAIN-PLAN-QZC-SUPPLY-PURCHASE-ORDER-MULTI-UNIT-EXPORT'};
 export const PURCHASE_LABELS={D16:'采购主单',D17:'采购商品明细'};
+
+export function canRecoverVerificationMain(source){
+  return source?.sourceId==='D16'&&!!source.intentId&&
+    ['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN'].includes(source.stage)&&
+    !source.taskId&&!source.receipt&&!source.additionalTaskIds?.length&&!source.asset&&!source.downloaded;
+}
+
 const headers={
   D16:['采购单号','单据状态','仓库/门店名称','仓库/门店编码','供应商','供应商编码','采购商品（种）','采购数量（个）','采购金额（元）','外部订单号','下单账号','卖家旺旺','实付金额（元）','商品金额（元）','优惠金额（元）','运费（元）','入库商品（种）','入库数量（个）','入库金额（元）','差异商品（种）','差异数量（个）','差异金额（元）','物流单号','采购模式','制单人'],
   D17:['采购订单号','单据状态','采购模式','采购总金额','采购渠道订单实付总金额','实际入库总金额','仓库/门店名称','仓库/门店编码','供应商名称','供应商编码','卖家店铺','商品名称','商品编码','商品条码','商品规格','基础单位','箱规','包装单位','采购数量（基础单位）','采购数量（包装单位）','1688订单数量','实际入库数量','采购价（基础单位）','上一次采购价','供应商商品编码','采购渠道实际采购价','单品采购金额','采购渠道下单金额','采购渠道优惠金额','采购渠道运费','采购渠道实付金额','单品入库金额','物流单号','采购渠道订单号','单据备注','下单失败原因','买家留言','采购计划单号','采购日期','1688商品标签','创建时间','更新时间','制单人']

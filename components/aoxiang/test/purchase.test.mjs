@@ -59,6 +59,22 @@ test('采购受理未知持久化并阻断重跑及另一日期，不盲目再�
   const ctx=await setup(),{adapter,stats}=adapterFor(ctx,{unknown:true}),engine=new PurchaseCoordinator({...ctx,adapter});await assert.rejects(()=>engine.run({target,...input}),{code:'WORKER_RESPONSE_UNKNOWN'});const id=ctx.state.rows('purchase_runs')[0].id;
   await assert.rejects(()=>engine.run({runId:id}),{code:'SUBMISSION_UNKNOWN'});await assert.rejects(()=>engine.run({target,...input,rerun:true}),{code:'PURCHASE_UNRESOLVED'});await assert.rejects(()=>engine.run({target,...input,from:'2026-11-01',to:'2026-11-01'}),{code:'PURCHASE_UNRESOLVED'});assert.equal(stats.submits,1);ctx.state.close();
 });
+test('核对主单首次缺回执有专门提示，普通继续不自动新发导出',async t=>{
+  const ctx=await setup(),{adapter,stats}=adapterFor(ctx,{unknown:true});
+  t.after(()=>ctx.state.close());
+  const engine=new PurchaseCoordinator({...ctx,adapter,hostOrderId:'SYNTHETIC-OID',hostPurchaseId:'SYNTHETIC-PURCHASE',
+    hostWarehouse:'河北仓',verification:{orderId:'PO1',importTaskId:'SYNTHETIC-IMPORT',retryRunId:null}});
+  const scope={target,...input,orderId:'PO1'};
+  await assert.rejects(()=>engine.run(scope),error=>{
+    assert.equal(error.code,'PURCHASE_VERIFY_EXPORT_UNKNOWN');
+    assert.equal(error.details.sourceId,'D16');
+    assert.equal(error.details.canRecoverMain,true);
+    assert.equal(error.details.cause,'WORKER_RESPONSE_UNKNOWN');
+    return true;
+  });
+  await assert.rejects(()=>engine.run(scope),{code:'PURCHASE_VERIFY_EXPORT_UNKNOWN'});
+  assert.equal(stats.submits,1);
+});
 test('用户改过旧采购文件时正常复用停止；显式重跑另建快照并保留旧文件',async()=>{
   const ctx=await setup(),{adapter,stats}=adapterFor(ctx),engine=new PurchaseCoordinator({...ctx,adapter}),first=await engine.run({target,...input}),file=path.join(ctx.binding.outputRoot,first.exports.D16.asset.relativePath);await fs.appendFile(file,'user-change');const editedHash=await fileHash(file);
   await assert.rejects(()=>engine.run({target,...input}),{code:'PURCHASE_ASSET_CHANGED'});const second=await engine.run({target,...input,rerun:true});assert.equal(second.status,'SUCCEEDED');assert.notEqual(second.id,first.id);assert.equal(ctx.state.getPurchase(first.id).status,'SUPERSEDED');assert.equal(await fileHash(file),editedHash);assert.equal(stats.submits,4);ctx.state.close();

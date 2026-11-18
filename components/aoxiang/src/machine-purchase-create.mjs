@@ -2,6 +2,14 @@ import {fail,now} from './common.mjs';
 import {errorInfo} from './machine-runtime.mjs';
 import {purchasePublic} from './purchase-create-ledger.mjs';
 
+function mainVerificationRetry(record){
+  const error=record.error;
+  const details=error?.details;
+  if(record.state!=='NEEDS_REVIEW'||!record.receipt||!['SUBMISSION_UNKNOWN','PURCHASE_VERIFY_EXPORT_UNKNOWN'].includes(error?.code)
+    ||details?.sourceId!=='D16'||details.taskId||details.canRecoverMain===false)return null;
+  return details.runId||null;
+}
+
 // A browser adapter is deliberately small: prepare is read-only; upload is called once;
 // observe only queries a known import task and verifies the resulting native documents.
 export class MachinePurchaseCreate{
@@ -16,6 +24,7 @@ export class MachinePurchaseCreate{
     if(r.state==='RETIRED')fail('SOURCE_ORDER_DELETED','来源订单已删除，任务已退役');
     if(r.state==='SUPERSEDED')fail('PURCHASE_SUPERSEDED','旧任务已结束并重建，请打开后继任务；原平台单未撤销',{successorId:r.successorId});
     if(r.state==='CANCELLED_BEFORE_UPLOAD')fail('PURCHASE_CANCELLED','该任务已在上传前取消');
+    if(r.receipt&&!r.uploadAttempted)fail('PURCHASE_RECEIPT_CONFLICT','原采购已有受理记录，上传标记不一致，请核对原任务');
     if(r.uploadAttempted&&!r.receipt)fail('SUBMISSION_UNKNOWN','已进入上传边界但无唯一受理任务号，只能核对，不允许重新上传');
     if(r.additionalTaskIds?.length)fail('MULTIPLE_IMPORT_TASKS','导入任务不唯一，请人工核对');
     this.job={id,submitOnly,stage:r.uploadAttempted?'核对原导入任务':'核验已确认付款及采购文件',cancelled:false,updatedAt:now()};
@@ -67,8 +76,9 @@ export class MachinePurchaseCreate{
       this.check();r=this.ledger.get(id);
       if(this.job.submitOnly){this.progress('平台已受理；可继续提交其他订单，原任务等待核对');return;}
       this.progress('核对原导入任务、采购主单和商品数量金额');
+      const retryMainRunId=mainVerificationRetry(r);
       r=this.ledger.update(id,r.sequence,'VERIFYING',{error:null});
-      const evidence=await this.adapter.observe(r.intent,r.receipt,{signal:this.control.signal});this.check();
+      const evidence=await this.adapter.observe(r.intent,r.receipt,{signal:this.control.signal,retryMainRunId});this.check();
       const bound=this.ledger.bind(id,evidence);this.progress(bound.binding.status==='已作废'?'已核实原采购单已作废，可返回本地删除页重新核对':'采购单已核验并关联，保留待提交');
     }catch(e){
       r=this.ledger.get(id);const error=errorInfo(e);
