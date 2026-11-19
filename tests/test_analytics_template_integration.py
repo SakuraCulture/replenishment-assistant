@@ -1,6 +1,7 @@
 import sys
 import threading
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 
@@ -43,8 +44,49 @@ class ExportIntegration(unittest.TestCase):
                                 self.assertEqual(s['M17'].value,1 if cached else '=IF(OR(COUNT(H17,G17)<2,G17=0),"n.a.",H17/G17)')
                             else:
                                 self.assertIsInstance(data[0][2],str)
-                                self.assertEqual(s['L8'].value,1 if cached else '=IF(OR(COUNT(G8,F8)<2,F8=0),"n.a.",G8/F8)')
+                                self.assertEqual(s['L8'].value,1 if cached else '=IF(OR(COUNT(G8,F8)<2,F8=0),"",G8/F8)')
                     finally:book.close()
+
+    def test_detail_export_keeps_zero_model_with_signing_and_omits_excluded(self):
+        signed_rows = self.f.p['result']['rows']
+        zero_model = deepcopy(signed_rows[0])
+        zero_model.update(E='0002', AS=0, _execution_qty=2)
+        signed_rows.insert(1, zero_model)
+        self.f.set_catalog('山东仓', '标杆淘汰（夏季）')
+        self.f.save_payload()
+        self.f.f.save('return', [{'门店确认数量': 0}, {'商品编码': 'EXTRA', '门店确认数量': 3}])
+        report = self.f.report()
+        self.assertEqual([(r['warehouse'], r['sku'], r['scope'], r['quantities']['model']) for r in report['rows']],
+                         [('河北仓', '0001', '纳入', 24), ('河北仓', '0002', '纳入', 0),
+                          ('河北仓', 'EXTRA', '待核', None), ('山东仓', '0002', '排除', 24)])
+        target = self.f.root / 'filtered.xlsx'
+        import order_analytics
+        overview = order_analytics.collect_overview(self.f.path, self.f.spec)
+        receipt = exports.export(self.f.path, overview, target, 'analysis_detail')
+        self.assertEqual((receipt['rows'], receipt['pending']), (2, 1))
+        book = openpyxl.load_workbook(target, data_only=True)
+        try:
+            sheet = book['SKU完整明细']
+            self.assertEqual(sheet.auto_filter.ref, 'A7:AQ10')
+            self.assertEqual([sheet[f'C{row}'].value for row in range(8, 11)], ['0001', '0002', 'EXTRA'])
+            self.assertEqual(sheet['M8'].value, 0)  # Confirmed store return of 0 / positive signing.
+            self.assertIsNone(sheet['N8'].value)
+            self.assertEqual((sheet['F9'].value, sheet['G9'].value), (0, 2))
+            self.assertIsNone(sheet['L9'].value)
+            self.assertIn('范围：待核', sheet['E10'].value)
+        finally:
+            book.close()
+
+        excluded_order = next(h['number'] for h in report['heads'] if h['warehouse'] == '山东仓')
+        empty = self.f.root / 'filtered-empty.xlsx'
+        receipt = exports.export(self.f.path, overview, empty, 'analysis_detail', [excluded_order])
+        self.assertEqual((receipt['rows'], receipt['pending']), (0, 0))
+        book = openpyxl.load_workbook(empty, data_only=True)
+        try:
+            self.assertEqual(book['SKU完整明细'].auto_filter.ref, 'A7:AQ7')
+            self.assertEqual(book['SKU完整明细'].max_row, 7)
+        finally:
+            book.close()
 
     def test_existing_target_cancel_and_snapshot_change_never_publish(self):
         report=self.f.report();target=self.f.root/'existing.xlsx';target.write_bytes(b'keep-original')

@@ -106,6 +106,20 @@ class WarehouseExecutionReaderTests(unittest.TestCase):
         self.assertEqual({h['warehouse']:h['revision'] for h in report['heads']},{'河北仓':2,'山东仓':1})
         self.assertEqual(len(report['rows']),len(before['rows']))
 
+    def test_analytics_filters_other_warehouse_and_unreached_stage_before_signed_read(self):
+        self.convert()
+        spec={'from':wr.today(),'to':wr.today(),'warehouse':'河北仓'}
+        original=execution.get_order
+        with patch.object(execution,'get_order',wraps=original) as read:
+            report=order_analytics.collect_overview(self.path,spec)
+            self.assertEqual([h['warehouse'] for h in report['heads']],['河北仓'])
+            self.assertEqual(read.call_count,1)
+            self.assertEqual(read.call_args.args[1]['warehouse'],'河北仓')
+            self.assertIn('fields',read.call_args.kwargs)
+        with patch.object(execution,'get_order',side_effect=AssertionError('out-of-stage warehouse restored')):
+            report=order_analytics.collect_overview(self.path,{**spec,'lifecycle_from':'payment'})
+        self.assertEqual(report['heads'],[])
+
     def test_retired_child_does_not_return_from_parent_snapshot_or_cache(self):
         self.convert();records=self.listing()['records'];gone=records[0]
         with closing(self.work.connect()) as db,db:execution.retire(db,'oid',gone['warehouse'],'synthetic-delete')

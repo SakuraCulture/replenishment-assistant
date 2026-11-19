@@ -24,6 +24,8 @@ MAX_ACTIVE=32
 MAX_PROCESSES=16
 FILE_RE=re.compile(r'perf-v1-\d+-\d+-[a-f0-9]{12}-\d+\.jsonl\Z')
 NAME_RE=re.compile(r'[a-zA-Z_][a-zA-Z0-9_]{0,63}(?:\.[a-zA-Z_][a-zA-Z0-9_]{0,63}){0,2}\Z')
+PAYMENT_COUNTS={'candidates','selected','signed_cache_hits','signed_cache_misses','generation_cache_hits',
+                'generation_cache_misses','generation_prefilter_skipped'}
 _current=None
 
 
@@ -58,6 +60,7 @@ def phase_of(message):
 
 class NullSpan:
     def progress(self,*_):pass
+    def payment_counts(self,*_):pass
     def __enter__(self):return self
     def __exit__(self,*_):return False
 
@@ -69,6 +72,9 @@ class Span:
     def __init__(self,monitor,identifier):self.monitor=monitor;self.identifier=identifier
     def progress(self,message):
         try:self.monitor.progress(self.identifier,message)
+        except Exception:pass
+    def payment_counts(self,counts):
+        try:self.monitor.payment_counts(self.identifier,counts)
         except Exception:pass
     def __enter__(self):return self
     def __exit__(self,t,value,tb):
@@ -189,7 +195,14 @@ class Monitor:
         error=safe_name(getattr(error_type,'__name__','')) if error_type else None
         self.emit('operation_end',id=identifier,operation=task['operation'],seconds=round(now-task['started'],6),
                   outcome='cancelled' if error=='Cancelled' else 'failed' if error else 'ok',error_type=error,
-                  phases={k:round(v,6) for k,v in durations.items()},current=task['current'],total=task['total'])
+                  phases={k:round(v,6) for k,v in durations.items()},current=task['current'],total=task['total'],
+                  **({'payment_index':task['payment_index']} if 'payment_index' in task else {}))
+
+    def payment_counts(self,identifier,counts):
+        with self.lock:
+            task=self.active.get(identifier)
+            if task is not None and task['operation'] in ('payment_matching.index','payment_matching.candidate_snapshots'):
+                task['payment_index']=payment_counts(counts)
 
     def owned(self,process,role):
         if role not in ('work-io','aoxiang-component','jst-component'):role='python-worker'
@@ -350,6 +363,11 @@ def numbers(value,keys):
     return {k:v for k,v in value.items() if k in keys and type(v) in (int,float) and math.isfinite(v) and v>=0}
 
 
+def payment_counts(value):
+    if not isinstance(value,dict):return {}
+    return {k:v for k,v in value.items() if k in PAYMENT_COUNTS and type(v) is int and 0<=v<=2**53}
+
+
 def clean_record(raw):
     """Export an explicit numeric/enum schema, never arbitrary stored fields."""
     import math
@@ -368,6 +386,8 @@ def clean_record(raw):
         result['outcome']=raw.get('outcome') if raw.get('outcome') in ('ok','cancelled','failed') else 'unknown'
         result['error_type']=safe_name(raw.get('error_type')) if raw.get('error_type') is not None else None
         result['phases']=numbers(raw.get('phases'),PHASES)
+        if result['operation'] in ('payment_matching.index','payment_matching.candidate_snapshots') and 'payment_index' in raw:
+            result['payment_index']=payment_counts(raw['payment_index'])
     elif kind=='phase':
         result.update(numbers(raw,{'previous_seconds'}))
         for key in ('phase','previous'):result[key]=raw.get(key) if raw.get(key) in PHASES else 'processing'
@@ -404,7 +424,7 @@ def environment():
 EXPORT_HELP='''轻量性能日志（近24小时）
 默认开启，每5秒采样；阶段事件异步写入。原始日志最多16MiB，定期清理超过24小时的文件。
 导出严格只取近24小时有效记录。日志写入失败或队列满时丢弃诊断记录，不阻塞业务。
-只包含版本、阶段耗时、数量进度计数、CPU/内存/逻辑I/O与界面心跳延迟。
+只包含版本、阶段耗时、数量进度计数、CPU/内存/逻辑I/O与界面心跳延迟。付款索引还记录候选数量及快照缓存命中、未命中计数。
 不含商品、门店、金额、单号、文件路径、SQL、请求内容、登录信息或原始错误文字。
 CPU cores=1表示用满一个逻辑核心；系统CPU百分比是全机口径。
 private_bytes为私有提交，working_bytes为驻留；多进程驻留相加可能重复计算共享页。

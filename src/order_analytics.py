@@ -206,7 +206,7 @@ def inclusion(row, master):
     return ('排除' if reasons else '待核' if missing else '纳入'),list(dict.fromkeys(reasons+missing))
 
 
-def build_facts(order, head, view, evidence, cancel=None):
+def build_facts(order, head, view, evidence, cancel=None, *, spec=None, mode='full'):
     result=order['payload']['result']
     raw=[r for r in result['rows'] if ao.warehouse(r)==head['warehouse']]
     bysku={r['E']:r for r in raw}
@@ -222,10 +222,23 @@ def build_facts(order, head, view, evidence, cancel=None):
                 skus.append(sku);seen.add(sku)
     states={'model':('当时自动建议',True),'signed':('已签发',True),
             **{s:comparison.stage_state(view,s) for s in lifecycle.STAGES}}
+    spec=spec or {}
+    terms=spec.get('search','').casefold().split()
+    if mode=='analysis_detail':
+        from analytics_template_export import retain_detail_row
+        from workflow_analysis import set_operations
     rows=[]
     for sku in skus:
-        checkpoint(cancel);r=bysku.get(sku);master,basis=evidence.item(order,head['warehouse'],sku)
+        checkpoint(cancel);r=bysku.get(sku)
+        name=r.get('D') if r else next((maps[s][sku].get('name','') for s in lifecycle.ALL_STAGES if sku in maps.get(s,{})),'')
+        category=r.get('U') if r else None
+        if spec.get('category') and category!=spec['category']:continue
+        if terms and not all(t in (result['store_name']+' '+head['number']+' '+sku+' '+str(name)).casefold() for t in terms):continue
+        group=membership(result,r,sku)
+        if spec.get('group') and group!=spec['group']:continue
+        master,basis=evidence.item(order,head['warehouse'],sku)
         scope,reasons=inclusion(r,master)
+        if scope=='排除' and mode in ('detail','analysis_detail'):continue
         quantities={'model':num(r.get('AS')) if r else None,'signed':num(sem.order_quantity(r)) if r else Decimal(0)}
         for s in lifecycle.STAGES:
             doc=view['documents'][s]
@@ -233,23 +246,28 @@ def build_facts(order, head, view, evidence, cancel=None):
             elif doc and doc['payload'].get('schema')==lifecycle.SCHEMA: quantities[s]=Decimal(0)
             else: quantities[s]=None
         price=num(r.get('V')) if r else None
-        name=r.get('D') if r else next((maps[s][sku].get('name','') for s in lifecycle.ALL_STAGES if sku in maps.get(s,{})),'')
-        rows.append({'day':head['day'],'store':head['store'],'store_name':result['store_name'],
+        row={'day':head['day'],'store':head['store'],'store_name':result['store_name'],
             'warehouse':head['warehouse'],'order':head['number'],'sku':sku,'name':name,'unit':r.get('G') if r else None,
             'order_status':view['status'],'order_next':view['next'],
-            'category':r.get('U') if r else None,'group':membership(result,r,sku),'scope':scope,'reasons':reasons,
+            'category':category,'group':group,'scope':scope,'reasons':reasons,
             'price':price,'quantities':quantities,'valid':{s:bool(v[1]) and quantities[s] is not None for s,v in states.items()},
             'states':{s:v[0] for s,v in states.items()},'master_basis':basis,
-            'source_row':r.get('_meta',{}).get('export_row') if r else None,
             'observations':{k:r.get(k) for k in ('H','I','J','K','L','N','AN','AM','AG','AH','BD','AL')} if r else {},
-            'template_attributes':evidence.template_attributes(order,head['warehouse'],sku,r),
             'decision':{'budget':r.get('_budget_reason'),'manual':r.get('_preissue',{}).get('reason'),
                         'new':r.get('_new_requested'),'one_box':r.get('_audit',{}).get('applied')} if r else {},
             'payment_amount':num(maps['payment'].get(sku,{}).get('amount')),
-            'payment_currency':maps['payment'].get(sku,{}).get('currency') or '未标币种',
-            'payment_source':view['documents']['payment']['payload'].get('source_kind','原付款单据') if view['documents']['payment'] else None,
-            'notes':{s:maps[s].get(sku,{}).get('processing_note','') for s in lifecycle.STAGES},
-            **evidence.dimensions(order,head['warehouse'],sku,r)})
+            'payment_currency':maps['payment'].get(sku,{}).get('currency') or '未标币种'}
+        if mode=='analysis_detail':
+            set_operations(row,view,maps.get('operations',{}).get(sku,{}))
+            if not retain_detail_row(row):continue
+        if mode!='overview':
+            row.update(source_row=r.get('_meta',{}).get('export_row') if r else None,
+                       payment_source=view['documents']['payment']['payload'].get('source_kind','原付款单据') if view['documents']['payment'] else None,
+                       notes={s:maps[s].get(sku,{}).get('processing_note','') for s in lifecycle.STAGES},
+                       **evidence.dimensions(order,head['warehouse'],sku,r))
+        if mode in ('full','analysis_detail'):
+            row['template_attributes']=evidence.template_attributes(order,head['warehouse'],sku,r)
+        rows.append(row)
     return rows
 
 
@@ -331,105 +349,145 @@ def data_stamp(db,spec):
     return digest(values)
 
 
+def _require_basis(path,db,report,cancel):
+    if data_stamp(db,report['query'])!=report['data_stamp']:
+        raise ValueError('订单或履约数据已更新，请重新查询；原报告数据未混入本次结果')
+    from analytics_identifiers import token
+    if token(path,db,report['heads'],cancel)!=report.get('identifier_token'):
+        raise ValueError('订单关联单号已更新，请重新查询；原报告中的单号未自动替换')
+
+
 def validate_basis(path,report,progress=lambda _:None,cancel=None):
     checkpoint(cancel)
     if report['query'].get('as_of'):return validate_snapshot(path,report,progress,cancel)
     with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
-        db.execute('BEGIN')
-        if data_stamp(db,report['query'])!=report['data_stamp']:
-            raise ValueError('订单或履约数据已更新，请重新查询；原报告数据未混入本次结果')
-        from analytics_identifiers import token
-        if token(path,db,report['heads'],cancel)!=report.get('identifier_token'):
-            raise ValueError('订单关联单号已更新，请重新查询；原报告中的单号未自动替换')
+        db.execute('BEGIN');_require_basis(path,db,report,cancel)
     checkpoint(cancel)
 
 
-def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, _verification=None):
+_ANALYSIS_FIELDS=(('work_revision',),('new_focus',),('result','rows'),('result','store_name'),
+                  ('result','must_list'),('result','must_list_audit'))
+_WAREHOUSES=('山东仓','河北仓')
+
+
+def _order_records(db,spec):
+    """Read the signed identity index before fetching any snapshot payload."""
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE name='normal_orders'").fetchone():return []
+    scope='o.day>=? AND o.day<=?';args=[spec['from'],spec['to']]
+    if spec['stores']:
+        scope+=' AND o.store IN (SELECT value FROM json_each(?))';args.append(json.dumps(spec['stores']))
+    where='o.current=r.revision';at=spec.get('as_of')
+    if at:where='r.revision=(SELECT max(x.revision) FROM normal_revisions x WHERE x.oid=o.oid AND julianday(x.saved)<=julianday(?))'
+    records=db.execute('SELECT o.day,o.store,o.oid,o.number,r.revision,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND '+where+' WHERE '+scope+' ORDER BY o.day DESC,o.store',([at] if at else [])+args).fetchall()
+    managed=set()
+    if execution.exists(db):
+        managed_parents=db.execute('SELECT o.day,o.store,o.oid,o.number FROM normal_orders o WHERE '+scope+' AND EXISTS(SELECT 1 FROM warehouse_execution_heads h WHERE h.oid=o.oid)',args).fetchall()
+        managed={p[2] for p in managed_parents};present={r[2] for r in records}
+        # A historical child remains readable even if its shared parent has no revision before the cutoff.
+        records.extend((*p,None,None,None) for p in managed_parents if p[2] not in present)
+        records.sort(key=lambda r:r[1]);records.sort(key=lambda r:r[0],reverse=True)
+    numbers=set(spec['orders'])
+    if numbers:
+        records=[r for r in records if any(ao.number(r[3],wh) in numbers for wh in _WAREHOUSES)]
+    selected=({'oid':r[2]} for r in records if r[2] in managed)
+    child_heads=execution.heads(db,selected,history=bool(at),with_names=False) if managed else []
+    if at:
+        chosen={}
+        for head in child_heads:
+            if db.execute('SELECT julianday(?)<=julianday(?)',(head['saved'],at)).fetchone()[0]:chosen.setdefault((head['oid'],head['warehouse']),head)
+        child_heads=list(chosen.values())
+    by_parent={}
+    for head in child_heads:by_parent.setdefault(head['oid'],[]).append(head)
+    return [(record,head) for record in records for head in (by_parent.get(record[2],[]) if record[2] in managed else [None])]
+
+
+def _lifecycle_documents(db,head,at,cancel):
+    from merchant_feedback import current as old_feedback
+    route,docs=lifecycle.read_documents(db,head,cancel,as_of=at)
+    return route,docs,old_feedback(db,head['oid'],head['revision'],as_of=at)
+
+
+def _query_orders(path,db,spec,progress,cancel,seen_stores,seen_orders,*,mode,verifying):
+    from history_read import repository
+    records=_order_records(db,spec);visibility=ao.states(db);numbers=set(spec['orders'])
+    at=spec.get('as_of');stage=spec.get('lifecycle_from','')
+    reader=repository(path)
+    for i,(record,signed_head) in enumerate(records,1):
+        checkpoint(cancel)
+        day,store,oid,number,revision,sha,saved=record
+        candidates=(signed_head['warehouse'],) if signed_head else _WAREHOUSES
+        allowed={wh:ao.number(number,wh) for wh in candidates if wh in _WAREHOUSES
+                 and (not spec.get('warehouse') or spec['warehouse']==wh)
+                 and not visibility.get((oid,wh),{}).get('deleted')}
+        allowed={wh:child for wh,child in allowed.items() if not numbers or child in numbers}
+        if not allowed:continue
+        basis=None;view=None
+        if signed_head and stage:
+            # Independent warehouse heads establish scope without restoring the signed result.
+            # Legacy merchant feedback needs the original signed product set, so defer its decision.
+            wh=signed_head['warehouse'];seen_orders.add(allowed[wh]);seen_stores.add(store)
+            basis=_lifecycle_documents(db,signed_head,at,cancel)
+            route,docs,old=basis
+            if not old:
+                view=lifecycle.snapshot_state(signed_head,route,docs,None)
+                if not lifecycle_scope.includes(view,stage):continue
+        progress(RowProgress('读取签发与履约快照',i,len(records)))
+        if signed_head:
+            kwargs={'fields':_ANALYSIS_FIELDS,'progress':progress} if mode!='full' else {'progress':progress,'export_io':True} if verifying else {}
+            order=execution.get_order(reader,signed_head,db=db,**kwargs)
+            payload=order['payload'];order['name']=payload['result'].get('store_name',store)
+        else:
+            blob=db.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',(oid,revision)).fetchone()[0]
+            payload=chunks.load_fields(blob,db,_ANALYSIS_FIELDS,binding=sha,progress=progress) if mode!='full' else chunks.load(blob,db,binding=sha,**({'bounded':True} if verifying else {}))
+            order={'day':day,'store':store,'oid':oid,'number':number,'revision':revision,'current_revision':revision,'digest':sha,'saved':saved,'payload':payload}
+        result=payload['result']
+        for wh in dict.fromkeys(ao.warehouse(r) for r in result['rows']):
+            if wh not in allowed:continue
+            h={k:v for k,v in order.items() if k!='payload'}
+            h.update(number=allowed[wh],parent_number=number,warehouse=wh,visibility_token=visibility.get((oid,wh),{}).get('token',0))
+            seen_stores.add(store);seen_orders.add(h['number'])
+            if view is None:
+                route,docs,old=basis or _lifecycle_documents(db,h,at,cancel)
+                legacy=None
+                if old:
+                    products={r['E']:{'quantity':sem.order_quantity(r)} for group in sem.signed_groups(result,payload.get('new_focus')).values() for r in group if ao.warehouse(r)==wh}
+                    legacy=lifecycle.legacy_return_record(old,products)
+                current=lifecycle.snapshot_state(h,route,docs,legacy)
+            else:current={**view,'head':h}
+            if lifecycle_scope.includes(current,stage):yield order,h,current
+        order=payload=result=current=basis=view=route=docs=old=None
+
+
+def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, _verification=None, _mode='full', _anchor=None):
     from analytics_identifiers import local, attach
     spec=query_spec(spec);path=Path(path).resolve();verifying=_verification is not None
     rows=_verification if verifying else [];tokens=[];heads=[];payments=[];identifiers=[]
     with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as db:
         db.execute('BEGIN')
+        if _anchor is not None:_require_basis(path,db,_anchor,cancel)
         stamp=data_stamp(db,spec)
-        if not db.execute("SELECT 1 FROM sqlite_master WHERE name='normal_orders'").fetchone():
-            records=[]
-        else:
-            where='o.current=r.revision';args=[spec['from'],spec['to']]
-            if spec.get('as_of'):
-                where='r.revision=(SELECT max(x.revision) FROM normal_revisions x WHERE x.oid=o.oid AND julianday(x.saved)<=julianday(?))'
-                args.insert(0,spec['as_of'])
-            records=db.execute('SELECT o.day,o.store,o.oid,o.number,r.revision,r.digest,r.saved,r.payload FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND '+where+' WHERE o.day>=? AND o.day<=? ORDER BY o.day DESC,o.store',args).fetchall()
-        managed=set()
-        if execution.exists(db):
-            managed_parents=db.execute("SELECT day,store,oid,number FROM normal_orders o WHERE day>=? AND day<=? AND EXISTS(SELECT 1 FROM warehouse_execution_heads h WHERE h.oid=o.oid) ORDER BY day DESC,store",(spec['from'],spec['to'])).fetchall()
-            managed={p[2] for p in managed_parents};present={r[2] for r in records}
-            # Child evidence survives parent revision replacement/pruning. In
-            # particular, an as-of query must not discard an older active child
-            # merely because no shared parent revision precedes the cutoff.
-            records.extend((*p,None,None,None,None) for p in managed_parents if p[2] not in present)
-            records.sort(key=lambda r:r[1]);records.sort(key=lambda r:r[0],reverse=True)
-        child_heads=execution.heads(db,[{'oid':oid} for oid in managed],history=bool(spec.get('as_of'))) if managed else []
-        if spec.get('as_of'):
-            chosen={}
-            for head in child_heads:
-                if db.execute('SELECT julianday(?)<=julianday(?)',(head['saved'],spec['as_of'])).fetchone()[0]:chosen.setdefault((head['oid'],head['warehouse']),head)
-            child_heads=list(chosen.values())
-        by_parent={}
-        for head in child_heads:by_parent.setdefault(head['oid'],[]).append(head)
-        records=[(record,head) for record in records for head in (by_parent.get(record[2],[]) if record[2] in managed else [None])]
         import workflow_analysis as workflow
         allocations=workflow.AllocationReader(db,spec,cancel)
-        visibility=ao.states(db);evidence=Evidence(db,cancel);seen_stores=set();seen_orders=set()
-        for i,(record,execution_head) in enumerate(records):
-            day,store,oid,number,revision,sha,saved,blob=record
-            checkpoint(cancel)
-            if spec['stores'] and store not in spec['stores']:continue
-            progress(RowProgress('读取签发与履约快照',i+1,len(records)))
-            if execution_head:
-                from history_read import repository
-                order=execution.get_order(repository(path),execution_head,db=db,
-                    **({'progress':progress,'export_io':True} if verifying else {}))
-                revision,sha,saved=(order[k] for k in ('revision','digest','saved'));payload=order['payload']
-            else:
-                payload=chunks.load(blob,db,binding=sha,**({'bounded':True} if verifying else {}))
-                order={'day':day,'store':store,'oid':oid,'number':number,'revision':revision,'current_revision':revision,'digest':sha,'saved':saved,'payload':payload}
-            result=payload['result']
-            for wh in dict.fromkeys(ao.warehouse(r) for r in result['rows']):
-                if wh not in ('山东仓','河北仓') or visibility.get((oid,wh),{}).get('deleted'):continue
-                if spec.get('warehouse') and wh!=spec['warehouse']:continue
-                child=ao.number(number,wh)
-                if spec['orders'] and child not in spec['orders']:continue
-                h={k:v for k,v in order.items() if k!='payload'}
-                h.update(number=child,parent_number=number,warehouse=wh,visibility_token=visibility.get((oid,wh),{}).get('token',0))
-                view=lifecycle.snapshot(path,h,db=db,order=order,cancel=cancel,as_of=spec.get('as_of'))
-                seen_stores.add(store);seen_orders.add(child)
-                if not lifecycle_scope.includes(view,spec.get('lifecycle_from','')):continue
-                allocation=workflow.allocation_fact(db,h,view,spec.get('as_of'),event=allocations.event(h))
-                payment=view['documents']['payment']
-                references=local(db,h,payment)
-                identifiers.append({'day':day,'store':store,'store_name':result['store_name'],'warehouse':wh,'order':child,'references':references})
-                if payment:
-                    totals={}
-                    for raw in payment['payload'].get('raw_rows',payment['payload']['rows']):
-                        currency=raw.get('currency') or '未标币种';entry=totals.setdefault(currency,{'amount':Decimal(0),'missing':0});value=num(raw.get('amount'))
-                        if value is None:entry['missing']+=1
-                        else:entry['amount']+=value
-                    from lifecycle_comparison import stage_state
-                    state,valid=stage_state(view,'payment')
-                    payments.extend({'order':child,'store':store,'warehouse':wh,'currency':c,**v,'state':state,'valid':valid} for c,v in totals.items())
-                tokens.append([h,[(s,d['version'],d['digest']) if d else [s,None] for s,d in view['documents'].items()],view.get('legacy_return'),allocation['digest'] if allocation else None])
-                heads.append(h)
-                for row in workflow.enrich(build_facts(order,h,view,evidence,cancel),h,view,allocation,saved):
-                    row['references']=references
-                    if spec.get('group') and row['group']!=spec['group']:continue
-                    if spec.get('category') and row['category']!=spec['category']:continue
-                    terms=spec.get('search','').casefold().split()
-                    if not all(t in (row['store_name']+' '+row['order']+' '+row['sku']+' '+str(row['name'])).casefold() for t in terms):continue
-                    rows.append(row)
-            if verifying:
-                # The sink owns serialized facts and small shared references.
-                # Do not overlap two decoded warehouse/lifecycle order trees.
-                order=payload=result=view=allocation=payment=row=None
+        evidence=Evidence(db,cancel);seen_stores=set();seen_orders=set()
+        for order,h,view in _query_orders(path,db,spec,progress,cancel,seen_stores,seen_orders,mode=_mode,verifying=verifying):
+            day,store,wh,child=(h[k] for k in ('day','store','warehouse','number'))
+            allocation=workflow.allocation_fact(db,h,view,spec.get('as_of'),event=allocations.event(h))
+            payment=view['documents']['payment']
+            references=local(db,h,payment)
+            identifiers.append({'day':day,'store':store,'store_name':order['payload']['result']['store_name'],'warehouse':wh,'order':child,'references':references})
+            if payment:
+                totals={}
+                for raw in payment['payload'].get('raw_rows',payment['payload']['rows']):
+                    currency=raw.get('currency') or '未标币种';entry=totals.setdefault(currency,{'amount':Decimal(0),'missing':0});value=num(raw.get('amount'))
+                    if value is None:entry['missing']+=1
+                    else:entry['amount']+=value
+                state,valid=comparison.stage_state(view,'payment')
+                payments.extend({'order':child,'store':store,'warehouse':wh,'currency':c,**v,'state':state,'valid':valid} for c,v in totals.items())
+            tokens.append([h,[(s,d['version'],d['digest']) if d else [s,None] for s,d in view['documents'].items()],view.get('legacy_return'),allocation['digest'] if allocation else None])
+            heads.append(h)
+            for row in workflow.enrich(build_facts(order,h,view,evidence,cancel,spec=spec,mode=_mode),h,view,allocation,h['saved']):
+                row['references']=references;rows.append(row)
+            order=view=allocation=payment=row=None
         if set(spec['stores'])-seen_stores:raise ValueError('所选门店在日期和仓范围内没有有效签发：'+'、'.join(sorted(set(spec['stores'])-seen_stores)))
         if set(spec['orders'])-seen_orders:raise ValueError('所选订单不存在、已删除或不在查询范围，请重新查询')
         identifier_token=attach(path,db,heads,identifiers,cancel)
@@ -439,9 +497,13 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, 
     if verifying:return {'snapshot_id':snapshot_id}
     report={'schema':VERSION,'query':spec,'as_of':spec.get('as_of') or datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds'),
             'snapshot_id':snapshot_id,'data_stamp':stamp,'identifier_token':identifier_token,
-            'heads':heads,'rows':rows,'payments':payments,'identifiers':identifiers,
-            'metrics':aggregate(rows),'groups':{g:aggregate([r for r in rows if r['group']==g]) for g in GROUPS},
-            'stores':summaries(rows,'store'),'warehouses':summaries(rows,'warehouse'),'orders':summaries(rows,'order')}
+            'heads':heads,'rows':rows,'payments':payments,'identifiers':identifiers}
+    if _mode!='full':report['_projection']=_mode
+    if _mode not in ('overview','full'):return report
+    progress('汇总符合条件的仓单和漏斗指标')
+    report.update(metrics=aggregate(rows),groups={g:aggregate([r for r in rows if r['group']==g]) for g in GROUPS},
+                  stores=summaries(rows,'store'),warehouses=summaries(rows,'warehouse'),orders=summaries(rows,'order'))
+    if _mode=='overview':return report
     from history_diagnostics import review
     report['history']=review(report,spec.get('rounds',8))
     report['workflow']={mode:workflow.summary(rows,mode) for mode in workflow.METRICS}
@@ -452,10 +514,50 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, 
     return report
 
 
+def collect_overview(path,spec,progress=lambda _:None,cancel=None):
+    # A historical cutoff uses the existing full historical verification path.
+    mode='full' if spec.get('as_of') else 'overview'
+    return collect(path,spec,progress,cancel,_mode=mode)
+
+
+def collect_view(path,overview,mode,orders=None,progress=lambda _:None,cancel=None):
+    """Load an expanded view of the successful overview's exact order basis."""
+    from itertools import zip_longest
+    spec=dict(overview['query']);selected=None if orders is None else set(orders)
+    if selected is not None:
+        available={h['number']:h['store'] for h in overview['heads']}
+        if not selected or selected-available.keys():raise ValueError('勾选订单不在当前查询范围')
+        spec['orders']=list(dict.fromkeys(orders))
+        stores={available[number] for number in selected}
+        spec['stores']=[store for store in spec['stores'] if store in stores]
+    result=collect(path,spec,progress,cancel,_mode=mode,_anchor=overview)
+    expected=(row for row in overview['rows'] if selected is None or row['order'] in selected)
+    if mode=='analysis_detail':
+        from analytics_template_export import retain_detail_row
+        expected=filter(retain_detail_row,expected)
+    elif mode=='detail':expected=(row for row in expected if row['scope']!='排除')
+    for before,after in zip_longest(expected,result['rows']):
+        checkpoint(cancel)
+        if before is None or after is None or any(after.get(k)!=v for k,v in before.items()):
+            raise ValueError('展开的明细与原查询依据不一致，请重新查询')
+    return result
+
+
+def calculate_view(report,mode,progress=lambda _:None,cancel=None):
+    if mode=='coverage':
+        from coverage_metrics import projection
+        progress('计算当前查询范围的预计可售天数')
+        return projection(report['rows'],report['query'].get('coverage_through','signed'),cancel)
+    from history_diagnostics import review
+    progress('整理当前查询范围的多轮复盘')
+    checkpoint(cancel);result=review(report,report['query'].get('rounds',8));checkpoint(cancel)
+    return result
+
+
 def validate_snapshot(path, report, progress=lambda _:None,cancel=None,*,temp_folder=None):
     from analytics_snapshot import FactSpool
     with FactSpool(temp_folder,cancel,progress) as spool:
-        current=collect(path,report['query'],progress,cancel,_coverage=False,_verification=spool)
+        current=collect(path,report['query'],progress,cancel,_coverage=False,_verification=spool,_mode=report.get('_projection','full'))
     if current['snapshot_id']!=report['snapshot_id']:
         raise ValueError('分析依据或订单范围已变化，请刷新后重新导出；未导出旧缓存')
     return True

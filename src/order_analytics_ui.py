@@ -23,6 +23,7 @@ def formatted(v):
 class AnalyticsWidget(QWidget):
     def __init__(self,host):
         super().__init__(host);self.host=host;self.worker=None;self.basis_worker=None;self.stale=False;self.report=None;self.page=0;self.drill=None;self.selected=set();self.close_pending=False
+        self.details=None
         self.views_path=Path(host.repository.folder)/'analytics_views.json'
         v=QVBoxLayout(self);self.heading=heading=label('经营分析 · 全流程与原五段漏斗趋势','section');heading.setToolTip('门店回传 → 运营签发 → 聚水潭分配 → 付款 → 收货；原五段比率定义保留。');v.addWidget(heading)
         f=QHBoxLayout();self.start=QLineEdit(date.today().isoformat());self.end=QLineEdit(date.today().isoformat())
@@ -136,10 +137,17 @@ class AnalyticsWidget(QWidget):
             if self.worker is w and not self.close_pending and (not w.cancel.is_set() or isinstance(value,dict) and 'path' in value):self.task_succeeded=True;done(value)
         w.success.connect(received);w.cancelled.connect(lambda:self.note.setText('已停止，保留上次成功结果。'))
         from readable_ui import failure
-        w.failed.connect(lambda message:failure(self,'分析未完成',message) if not self.close_pending else None)
+        def failed(message):
+            if self.close_pending:return
+            if fn in (service.collect_view,exports.export) and '重新查询' in message:
+                self.stale=True;self.note.setText(message);self.controls()
+            failure(self,'分析未完成',message)
+        w.failed.connect(failed)
         def finish():
             self.timer.stop();self.worker=None;w.deleteLater();self.controls();self.bar.setRange(0,100);self.bar.setValue(100 if self.task_succeeded else 0);self.bar.hide();self.cancel_btn.setText('■ 停止当前任务')
             if self.close_pending:QTimer.singleShot(0,self.host.close)
+            elif self.task_succeeded:
+                self.render_funnel();self.render()
         w.finished.connect(finish);w.start()
 
     def heartbeat(self):
@@ -160,13 +168,14 @@ class AnalyticsWidget(QWidget):
     def query(self):
         try:spec=self.spec()
         except Exception as exc:QMessageBox.warning(self,'核对筛选',str(exc));return
-        self.start_task(service.collect,(self.host.work_repository.path,spec),self.show_report)
+        self.start_task(service.collect_overview,(self.host.work_repository.path,spec),self.show_report)
 
     def show_report(self,report):
-        self.report=report;self.drill=None;self.selected.clear();self.page=0;self.stale=False
+        self.report=report;self.drill=None;self.details=None;self.selected.clear();self.page=0;self.stale=False
         self.applied.setText(f"已查询 {report['query']['from']} 至 {report['query']['to']} · 生命周期范围：{lifecycle_scope.label(report['query'])} · 数据截至 {report['as_of']} · 按当时资料与清单")
         m=report['metrics'];self.note.setText(f"查询{len(report['heads'])}单，纳入{m['included_orders']}单，五段完整{m['complete_orders']}单；纳入 {m['included']} 条，排除 {m['excluded']} 条，待核 {m['pending']} 条。未导入不算0。")
-        self.workflow.set_report(report);self.render_funnel();self.render();self.controls()
+        self.workflow.set_report(None if report.get('_projection')=='overview' else report)
+        self.render_funnel();self.render();self.controls()
 
     def change_metric(self,*_):
         if not hasattr(self,'funnel'):return
@@ -174,7 +183,9 @@ class AnalyticsWidget(QWidget):
 
     def render_funnel(self):
         if not self.report:return
-        report=self.report;mode=self.metric_choice.currentData();coverage=report['coverage']
+        report=self.report;mode=self.metric_choice.currentData();coverage=report.get('coverage')
+        if mode=='coverage' and not coverage:
+            self.funnel.clearContents();self.coverage_note.setText('预计可售天数按当前查询范围计算。');return
         groups=[g for g in service.GROUPS if g!='属性待核' or report['groups'][g]['included'] or report['groups'][g]['pending']]
         self.funnel.setRowCount(len(groups));self.funnel.setFixedHeight(44+46*len(groups))
         for i,g in enumerate(groups):
@@ -195,8 +206,10 @@ class AnalyticsWidget(QWidget):
                     text=f"{formatted(metric['value'])} 元\n{sku_text} / {metric['orders']}单";tip=f"已计价部分；缺价{metric['unpriced']}条；不同环节有效范围可能不同。"
                 cell=QTableWidgetItem(text);cell.setToolTip(tip);self.funnel.setItem(i,j,cell)
             self.funnel.setRowHeight(i,46)
-        m=coverage['overview']
-        self.coverage_note.setText((f"天数依据：{m['basis_day'] or '无'}；共同对比至{service.NAMES[coverage['through']]}；有效{m['eligible_rows']}/{m['round_rows']}条、{m['orders']}/{m['round_orders']}单。按货值加权，跨轮不累计；下表订单显示各自轮次，未完成留空。" if mode=='coverage' else ''))
+        if mode=='coverage':
+            m=coverage['overview']
+            self.coverage_note.setText(f"天数依据：{m['basis_day'] or '无'}；共同对比至{service.NAMES[coverage['through']]}；有效{m['eligible_rows']}/{m['round_rows']}条、{m['orders']}/{m['round_orders']}单。按货值加权，跨轮不累计；下表订单显示各自轮次，未完成留空。")
+        else:self.coverage_note.clear()
 
     def coverage_explanation(self,index):
         if self.metric_choice.currentData()!='coverage' or not self.report:return
@@ -218,9 +231,32 @@ class AnalyticsWidget(QWidget):
         if self.drill:rows=[r for r in rows if all(r[k]==v for k,v in self.drill.items())]
         return rows
 
+    def _view_ready(self,key):
+        if self.report is None or self.report.get('_projection')!='overview':return True
+        report=self.report;path=self.host.work_repository.path
+        if key=='workflow':
+            if self.workflow.report is not None:return True
+            if not self.worker and not self.stale:
+                self.workflow.note.setText('正在读取当前范围的趋势明细…')
+                self.start_task(service.collect_view,(path,report,'workflow'),self.workflow.set_report)
+            return False
+        metric='coverage' if self.metric_choice.currentData()=='coverage' or key=='rounds' else None
+        derived=next((name for name in (metric,'history' if key=='history' else None) if name and name not in report),None)
+        if derived:
+            if not self.worker and not self.stale:
+                self.start_task(service.calculate_view,(report,derived),lambda result:report.__setitem__(derived,result))
+            return False
+        if key not in ('detail','pending'):return True
+        orders=tuple(dict.fromkeys(r['order'] for r in self.visible_rows())) if self.drill else None
+        if self.details is not None and self.details[0]==orders:return True
+        if orders==():self.details=(orders,[]);return True
+        if not self.worker and not self.stale:
+            self.start_task(service.collect_view,(path,report,'detail',orders),lambda result:setattr(self,'details',(orders,result['rows'])))
+        return False
+
     def render(self):
         from analytics_identifiers import HEADERS as ID_HEADERS,cells
-        key=self.key();rows=self.visible_rows();self.display_items=[]
+        key=self.key();self.display_items=[]
         flow=key=='workflow'
         self.heading.setVisible(not flow)
         for layout in (self.metric_row,self.navigation_row):
@@ -230,8 +266,14 @@ class AnalyticsWidget(QWidget):
             widget=self.export_row.itemAt(i).widget()
             if widget:widget.setVisible(not flow or widget is self.cancel_btn and self.worker is not None)
         self.funnel.setVisible(not flow);self.coverage_note.setVisible(not flow);self.crumb.setVisible(not flow)
+        if not self._view_ready(key):
+            if not flow:
+                blocker=QSignalBlocker(self.tables[key].selectionModel());self.models[key].replace([]);del blocker
+                self.page_note.setText('请重新查询后展开。' if self.stale else '按当前查询范围准备资料…')
+            self.controls();return
         if key=='workflow':
             self.workflow.render();self.page_note.setText('趋势页使用自己的周期、维度及筛选；导出本视角保留这些条件。');self.controls();return
+        rows=self.details[1] if key in ('detail','pending') and self.details is not None and self.report.get('_projection')=='overview' else self.visible_rows()
         self.crumb.setText('全部查询结果' if not self.drill else ' → '.join(str(v) for v in self.drill.values()))
         if key in ('store','warehouse','order'):
             items=self.report[{'store':'stores','warehouse':'warehouses','order':'orders'}[key]] if self.report else []
@@ -298,7 +340,9 @@ class AnalyticsWidget(QWidget):
 
     def open_detail(self,key,index):
         if not self.report:return
-        item=self.display_items[self.page*100+index]
+        position=self.page*100+index
+        if not 0<=position<len(self.display_items):return
+        item=self.display_items[position]
         self.drill={'store':item['store']}
         if key in ('warehouse','order'):self.drill['warehouse']=item['warehouse']
         if key=='order':self.drill['order']=item['order']
@@ -308,7 +352,9 @@ class AnalyticsWidget(QWidget):
         if self.key()!='order':return
         for selection,add in ((selected,True),(deselected,False)):
             for index in {i.row() for i in selection.indexes()}:
-                item=self.display_items[self.page*100+index];number=item['order']
+                position=self.page*100+index
+                if not 0<=position<len(self.display_items):continue
+                number=self.display_items[position]['order']
                 self.selected.add(number) if add else self.selected.discard(number)
         self.controls();self.page_note.setText(f'已选 {len(self.selected)} 单；支持跨页选择')
 
@@ -320,6 +366,8 @@ class AnalyticsWidget(QWidget):
         orders=[n for n in ordered if n in self.selected] if selected else list(dict.fromkeys(r['order'] for r in self.visible_rows())) if self.drill else None
         if (selected or self.drill) and not orders:QMessageBox.information(self,'暂无订单','当前范围没有可导出的订单。');return
         level=kind or self.export_kind.currentData()
+        report=self.workflow.report if level=='workflow' else self.report
+        if report is None:return
         name=('全流程与漏斗率趋势' if level=='workflow' else self.export_kind.currentText())+'_'+datetime.now().strftime('%Y%m%d_%H%M%S_%f')+'.xlsx'
         try:
             import export_settings
@@ -330,7 +378,7 @@ class AnalyticsWidget(QWidget):
             def complete(receipt):
                 from readable_ui import file_results
                 file_results(self,[receipt['path']],'分析报表已导出',f"纳入{receipt['rows']}条，资料待核{receipt['pending']}条。")
-            self.start_task(exports.export,(self.host.work_repository.path,self.report,target,level,orders),complete)
+            self.start_task(exports.export,(self.host.work_repository.path,report,target,level,orders),complete)
         except Exception as exc:QMessageBox.warning(self,'未能导出',str(exc))
 
     def load_views(self):

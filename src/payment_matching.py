@@ -95,14 +95,62 @@ class Cache:
         self.writes+=1
         if self.writes%32==0:self.db.commit()
 
-def build(path,progress=lambda _:None,cancel=None,*,_db=None):
-    """Only current revisions, one decoded snapshot at a time; warm reads use metadata."""
+def _generation_key(head):
+    return checksum(['generation-v2',head['generation_id'],head['generation_digest']])
+
+
+def _generation_features(db,cache,head,counts,progress,cancel,current,total):
+    from jst_orders import decode
+    gid,gd=head['generation_id'],head['generation_digest']
+    key=_generation_key(head)
+    features=cache.get(key)
+    if features is not None:
+        counts['generation_cache_hits']+=1
+        return features
+    counts['generation_cache_misses']+=1
+    progress(RowProgress('读取必要的分配快照以建立付款索引',current,total))
+    checkpoint(cancel)
+    raw=db.execute('SELECT payload,digest FROM jst_generations WHERE gid=?',(gid,)).fetchone()
+    if not raw or raw[1]!=gd:raise wr.Conflict('原分配快照已变化，请重新识别付款单')
+    generation=decode(raw)
+    if any(generation['head'][k]!=head[k] for k in ('oid','revision','warehouse','digest')):
+        raise wr.Conflict('生成单与当前签发身份不符')
+    features=facts(r for r in generation['rows'] if Decimal(r['quantity'])>0)
+    cache.put(key,features)
+    return features
+
+
+def _index_counts():
+    return dict.fromkeys(('candidates','selected','signed_cache_hits','signed_cache_misses',
+                          'generation_cache_hits','generation_cache_misses','generation_prefilter_skipped'),0)
+
+
+def build(path,progress=lambda _:None,cancel=None,*,_db=None,identity_only=False,scope=None):
+    """Index current identities. Interactive matching loads generation facts on demand."""
+    from performance_log import begin
+    counts=_index_counts()
+    with begin('payment_matching.index') as metrics:
+        def report(message):
+            metrics.progress(message);progress(message)
+        try:
+            result=_build(path,report,cancel,_db,identity_only,counts)
+            counts['candidates']=len(result['heads'])
+            allowed={h['number'] for h in scope} if scope is not None else None
+            counts['selected']=counts['candidates'] if allowed is None else sum(h['number'] in allowed for h in result['heads'])
+            return result
+        finally:metrics.payment_counts(counts)
+
+
+def build_identification(path,scope,progress=lambda _:None,cancel=None):
+    return build(path,progress,cancel,identity_only=True,scope=scope)
+
+
+def _build(path,progress,cancel,_db,identity_only,counts):
     import archive_orders as ao
     import warehouse_orders as wo
     from history_read import repository
-    import jst_orders as jst
-    import order_lifecycle as lc
-    repo=repository(path);out=[];decoded=0
+    import storage_chunks as chunks
+    repo=repository(path);out=[]
     with (closing(readonly(path)) if _db is None else nullcontext(_db)) as db,closing(Cache(path)) as cache:
         if not db.in_transaction:db.execute('BEGIN')
         token=pool_token(db);known=tables(db);visibility=ao.states(db)
@@ -118,13 +166,29 @@ def build(path,progress=lambda _:None,cancel=None,*,_db=None):
         heads=effective
         active={(oid,wh):(gid,revision,digest) for oid,wh,gid,revision,digest in db.execute('SELECT a.oid,a.warehouse,a.gid,g.revision,g.digest FROM jst_active a JOIN jst_generations g ON a.gid=g.gid')} if 'jst_active' in known else {}
         for i,head in enumerate(heads):
-            checkpoint(cancel);progress(f'建立/刷新付款识别索引 {i+1}/{len(heads)}：仅当前签发，支持取消')
-            key=checksum(['signed',head['oid'],head['revision'],head['digest'],head.get('warehouse'),head.get('snapshot_digest')]);meta=cache.get(key)
-            if meta is None:
-                progress(RowProgress('读取签发快照以建立付款索引',i+1,len(heads)))
-                checkpoint(cancel);order=execution.get_order(repo,head,view='export',db=db);result=order['payload']['result']
-                meta={'name':result['store_name'],'warehouses':[wh for wh in ao.scopes(result['rows']) if wh in wo.WAREHOUSES]}
-                cache.put(key,meta);decoded+=1;del order,result
+            checkpoint(cancel);progress(RowProgress('读取当前签发身份',i+1,len(heads)))
+            if identity_only and head.get('warehouse'):
+                # The active split warehouse identity and frozen store name are
+                # already projected by warehouse_execution.heads().
+                meta={'name':head['name'],'warehouses':[head['warehouse']] if head['warehouse'] in wo.WAREHOUSES else []}
+            else:
+                key=checksum(['signed',head['oid'],head['revision'],head['digest'],head.get('warehouse'),head.get('snapshot_digest')])
+                meta=cache.get(key)
+                if meta is None:
+                    counts['signed_cache_misses']+=1
+                    progress(RowProgress('读取签发快照以建立付款索引',i+1,len(heads)))
+                    if identity_only:
+                        # Legacy parent-only snapshots carry warehouse membership
+                        # in their rows. Other fields are unnecessary for the index.
+                        raw=db.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()[0]
+                        fields=chunks.load(raw,db,paths=[('result','rows'),('result','store_name')],binding=head['digest'])
+                        name=fields[('result','store_name')];warehouses=ao.scopes(fields[('result','rows')]);del fields
+                    else:
+                        result=execution.get_order(repo,head,view='export',db=db)['payload']['result']
+                        name=result['store_name'];warehouses=ao.scopes(result['rows']);del result
+                    meta={'name':name,'warehouses':[wh for wh in warehouses if wh in wo.WAREHOUSES]}
+                    cache.put(key,meta)
+                else:counts['signed_cache_hits']+=1
             for wh in meta['warehouses']:
                 checkpoint(cancel);v=visibility.get((head['oid'],wh),{})
                 if v.get('deleted'):continue
@@ -132,24 +196,68 @@ def build(path,progress=lambda _:None,cancel=None,*,_db=None):
                    'current_revision':head['revision'],'visibility_token':v.get('token',0)}
                 gid,revision,gd=active.get((head['oid'],wh),(None,None,None))
                 if revision!=h['revision']:gid=None;gd=None
-                features=None
-                if gid:
-                    ck=checksum(['generation-v2',gid,gd]);features=cache.get(ck)
-                    if features is None:
-                        progress(RowProgress('读取分配快照以建立付款索引',i+1,len(heads)))
-                        checkpoint(cancel);generation=jst.decode(db.execute('SELECT payload,digest FROM jst_generations WHERE gid=?',(gid,)).fetchone())
-                        if any(generation['head'][k]!=h[k] for k in ('oid','revision','warehouse','digest')):raise wr.Conflict('生成单与当前签发身份不符')
-                        exported=[r for r in generation['rows'] if Decimal(r['quantity'])>0]
-                        features=facts(exported);cache.put(ck,features);decoded+=1;del exported,generation
                 document_versions=dependencies.get((h['oid'],h['revision'],wh),{})
-                out.append({**h,'generation_id':gid,'generation_digest':gd,'basis_kind':'generation' if gid else 'return' if 'return' in document_versions else 'signed',
-                            'payment_version':document_versions.get('payment'),'return_version':document_versions.get('return'),'features':features,
-                            'lifecycle_versions':document_versions})
+                h.update(generation_id=gid,generation_digest=gd,basis_kind='generation' if gid else 'return' if 'return' in document_versions else 'signed',
+                         payment_version=document_versions.get('payment'),return_version=document_versions.get('return'),features=None,
+                         lifecycle_versions=document_versions)
+                if gid and not identity_only:h['features']=_generation_features(db,cache,h,counts,progress,cancel,i+1,len(heads))
+                out.append(h)
         if pool_token(db)!=token:raise wr.Conflict('索引读取期间业务依据变化，请刷新')
         mapping=mappings(db)
         import payment_shop_names
         shop_names=payment_shop_names.records(db)
-    return {'heads':out,'pool_token':token,'mapping_token':checksum(mapping),'mappings':mapping,'accounts':accounts(path),'decoded_snapshots':decoded,'shop_names':shop_names}
+    return {'heads':out,'pool_token':token,'mapping_token':checksum(mapping),'mappings':mapping,'accounts':accounts(path),
+            'decoded_snapshots':counts['signed_cache_misses']+counts['generation_cache_misses'],'shop_names':shop_names}
+
+
+def _possible_generations(db,heads,sku,cancel):
+    # An exact match requires this unchanged product code to exist. Let SQLite
+    # check that single fact without materializing unrelated rows in Python.
+    # Unrecognized or changed records still go through the original checks.
+    ids=wr.dumps([h['generation_id'] for h in heads])
+    rows=db.execute('''
+        SELECT gid,digest,CASE
+          WHEN NOT json_valid(payload) THEN 1
+          WHEN json_type(payload,'$.rows') IS NOT 'array' THEN 1
+          ELSE EXISTS (
+            SELECT 1 FROM json_each(payload,'$.rows') AS item
+            WHERE CASE
+              WHEN item.type IS NOT 'object' THEN 1
+              WHEN json_type(item.value,'$.sku') IS NOT 'text' THEN 1
+              ELSE json_extract(item.value,'$.sku')=? END
+          ) END
+        FROM jst_generations WHERE gid IN (SELECT value FROM json_each(?))''',(sku,ids))
+    excluded=set()
+    for gid,digest,possible in rows:
+        checkpoint(cancel)
+        if not possible:excluded.add((gid,digest))
+    return [h for h in heads if (h['generation_id'],h['generation_digest']) not in excluded]
+
+
+def load_features(path,heads,progress=lambda _:None,cancel=None,*,_db=None,required_sku=None):
+    pending=[h for h in heads if h.get('generation_id') and h.get('features') is None]
+    if not pending:return
+    from performance_log import begin
+    counts=_index_counts();counts['candidates']=len(pending);counts.pop('selected')
+    with begin('payment_matching.candidate_snapshots') as metrics:
+        def report(message):
+            metrics.progress(message);progress(message)
+        try:
+            with (closing(readonly(path)) if _db is None else nullcontext(_db)) as db,closing(Cache(path)) as cache:
+                if not db.in_transaction:db.execute('BEGIN')
+                if required_sku is not None and len(pending)>1:
+                    cold=[]
+                    for head in pending:
+                        checkpoint(cancel)
+                        features=cache.get(_generation_key(head))
+                        if features is None:cold.append(head)
+                        else:head['features']=features;counts['generation_cache_hits']+=1
+                    pending=_possible_generations(db,cold,required_sku,cancel) if cold else cold
+                    counts['generation_prefilter_skipped']=len(cold)-len(pending)
+                for i,head in enumerate(pending,1):
+                    checkpoint(cancel)
+                    head['features']=_generation_features(db,cache,head,counts,report,cancel,i,len(pending))
+        finally:metrics.payment_counts(counts)
 
 def source_day(rows):
     days=set()
@@ -207,13 +315,16 @@ def analyze(path,document,index,scope=None,source_scope=None,mode='first',progre
         if len(candidates)!=1:return {'candidates':[],'rejected':[],'automatic':False,'state':'原关联失效','reason':'内部订单号已有关联，但原订单、修订或仓单已失效；不会改绑其他单','prevent_rebind':True,'source_scope':source_scope}
         target=candidates[0]
         if allowed is not None and target['number'] not in allowed:return {'candidates':[],'rejected':[],'automatic':False,'state':'原关联超出范围','reason':'来源内部单号对应原仓单不在本次勾选范围；请从原订单进入','prevent_rebind':True,'source_scope':source_scope}
+        load_features(path,[target],progress,cancel)
         ok,reason=exact(path,rows,target,cancel)
         return {'candidates':[target],'rejected':[],'automatic':target.get('generation_id')==link.get('generation_id'),'state':'已识别原内部单号','reason':'已有企业范围及内部订单号对应；'+reason,'source_scope':source_scope,'exact':ok,'day':day,'trace':[]}
     if alias:all_heads=[h for h in all_heads if h['store']==alias['store']]
     name_stores={h['store'] for h in all_heads if name and normalized(h['name'])==name}
     confirmed_store=alias.get('store') if alias else next(iter(name_stores)) if len(name_stores)==1 else None
     feature=facts(rows);matching=[];reasons={}
-    summary=[h for h in all_heads if (confirmed_store is None or h['store']==confirmed_store) and h['features'] and h['features']['count']==feature['count'] and h['features']['quantity']==feature['quantity'] and h['features']['amount']==feature['amount']]
+    considered=[h for h in all_heads if confirmed_store is None or h['store']==confirmed_store]
+    load_features(path,considered,progress,cancel)
+    summary=[h for h in considered if h['features'] and h['features']['count']==feature['count'] and h['features']['quantity']==feature['quantity'] and h['features']['amount']==feature['amount']]
     for i,h in enumerate(summary):
         checkpoint(cancel);progress(f'核对付款候选 {i+1}/{len(summary)}：完整明细和跨日唯一性')
         ok,reason=exact(path,rows,h,cancel);reasons[h['number']]=reason
@@ -226,6 +337,7 @@ def analyze(path,document,index,scope=None,source_scope=None,mode='first',progre
         distance=abs((date.fromisoformat(h['day'])-date.fromisoformat(day)).days) if day else 0
         return (0 if h in related_matches else 1,lifecycle,0 if h['store']==confirmed_store else 1,distance,h['day'],h['number'])
     choices=sorted([h for h in all_heads if allowed is None or h['number'] in allowed],key=rank)
+    load_features(path,choices,progress,cancel)
     automatic=bool(source_scope and len(related_matches)==1 and related_matches[0] in choices)
     if automatic:
         target=related_matches[0];choices=[target,*[h for h in choices if h is not target]];state='唯一完整匹配';reason='已核对指定企业供货仓及全部相关日期的逐商品明细；自动识别门店和仓，无需确认别称'
@@ -247,7 +359,7 @@ def identify_documents(path,documents,index,scope,source_scope,mode,progress=lam
     return results
 
 
-def attach(path,plan,documents,index,source_scope,remember=True):
+def attach(path,plan,documents,index,source_scope,remember=True,*,progress=lambda _:None,cancel=None):
     """Freeze sidecar relationship operations; never alter payment payload/digest."""
     if not index:return plan
     selected=[d for d in documents if d.get('selected',True) and d['scan']['stage']=='payment' and d['scan']['rows'][0].get('adapter')=='paid_order']
@@ -273,16 +385,15 @@ def attach(path,plan,documents,index,source_scope,remember=True):
     metadata={'pool_token':index['pool_token'],'mapping_token':index['mapping_token'],'accounts_token':index['accounts']['token'],'requests':requests}
     import payment_shop_names
     for r in requests:r['name_evidence']=payment_shop_names.name_evidence(index.get('shop_names',{}),r['original_name'])
-    metadata['scope_evidence']=scope_evidence(index,requests)
+    metadata['scope_evidence']=scope_evidence(index,requests,load=lambda heads:load_features(path,heads,progress,cancel))
     plan['payment_matching']=metadata;plan['payment_matching_digest']=checksum(metadata)
     with closing(readonly(path)) as db:validate(path,db,plan)
     return plan
 
-def scope_evidence(index,requests):
-    """Relevant candidate additions/removals count; unrelated payments do not."""
-    relevant=[];mapping={}
+def _evidence_candidates(index,requests):
     warehouse_scopes={a['coid']:set(a['warehouses'])&{'山东仓','河北仓'} for a in index['accounts']['choices']}
     for h in index['heads']:
+        signatures=[]
         for r in requests:
             selected=all(h.get(k)==r['head'].get(k) for k in ('oid','warehouse')) or h['number']==r['head']['number']
             warehouses=warehouse_scopes.get(r['source_scope'],())
@@ -290,11 +401,24 @@ def scope_evidence(index,requests):
             proof=r.get('automatic_proof');context=r.get('name_context');automatic=not r.get('manual_selection',True)
             unique=eligible and automatic and not r.get('explicit_identity') and proof not in ('explicit_number','previous_source')
             named=bool(unique and context and [h['store'],h['warehouse']] in context['pairs'])
-            signature='signature' if r.get('facts_signature') else 'quantity_signature'
-            facts_match=bool(unique and proof in (None,'full_detail') and h.get('features') and h['features'].get(signature)==(r.get('facts_signature') or r['quantity_signature']))
             possible_name=bool(unique and (not context or context['basis']=='application_name') and normalized(h['name'])==normalized(r['original_name']))
-            if selected or named or facts_match or possible_name:
-                relevant.append(h);break
+            if selected or named or possible_name:
+                yield h,None
+                break
+            if unique and proof in (None,'full_detail'):
+                signature='signature' if r.get('facts_signature') else 'quantity_signature'
+                signatures.append((signature,r.get('facts_signature') or r['quantity_signature']))
+        else:
+            if signatures:yield h,signatures
+
+
+def scope_evidence(index,requests,*,load=None):
+    """Relevant candidate additions/removals count; unrelated payments do not."""
+    candidates=list(_evidence_candidates(index,requests))
+    if load:load(h for h,_ in candidates)
+    relevant=[h for h,checks in candidates if checks is None or (
+        h.get('features') and any(h['features'].get(k)==value for k,value in checks))]
+    mapping={}
     keys=set();orders=set();aliases=set()
     # Hash request keys once, not once per historical mapping and request.
     for r in requests:
@@ -343,7 +467,11 @@ def validate(path,db,plan):
     if plan.get('payment_matching_digest')!=checksum(metadata):raise ValueError('付款识别预览已变化，请重新核对')
     changed_pool=pool_token(db)!=metadata['pool_token'] or checksum(mappings(db))!=metadata['mapping_token']
     if changed_pool:
-        if not metadata.get('scope_evidence') or scope_evidence(build(path,_db=db),metadata['requests'])!=metadata['scope_evidence']:
+        expected=metadata.get('scope_evidence')
+        if not expected:raise wr.Conflict('本次订单、匹配候选、生成范围或来源对应关系已变化，请重新识别；未保存')
+        index=build(path,_db=db,identity_only=True)
+        evidence=scope_evidence(index,metadata['requests'],load=lambda heads:load_features(path,heads,_db=db))
+        if evidence!=expected:
             raise wr.Conflict('本次订单、匹配候选、生成范围或来源对应关系已变化，请重新识别；未保存')
     current_accounts=accounts(path)
     if current_accounts['token']!=metadata['accounts_token']:raise wr.Conflict('聚水潭企业连接身份已变化，请重新核对来源')
@@ -391,7 +519,7 @@ def prepare(path,documents,scope,index,source_scope,remember=True,progress=lambd
             raise ValueError('所选付款订单不在当前有效候选中，请重新识别')
     plan=lifecycle_batch.prepare(path,documents,scope,progress,cancel)
     checkpoint(cancel)
-    return attach(path,plan,documents,index,source_scope,remember)
+    return attach(path,plan,documents,index,source_scope,remember,progress=progress,cancel=cancel)
 
 
 def aliases(path):

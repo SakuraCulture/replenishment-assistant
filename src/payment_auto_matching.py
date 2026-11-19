@@ -22,6 +22,7 @@ def result(state,reason,choices=(),*,automatic=False,proof=None,exact=False,matc
 def matching_heads(path,rows,heads,progress,cancel,*,quantities_only=False):
     incoming=pm.facts(rows)
     if not incoming['complete']:return []
+    pm.load_features(path,heads,progress,cancel,required_sku=str(rows[0]['sku']))
     possible=[h for h in heads if h.get('features') and h['features']['count']==incoming['count']
               and h['features']['quantity']==incoming['quantity']
               and (quantities_only or h['features']['amount']==incoming['amount'])]
@@ -43,9 +44,10 @@ def prior_links(rows,index,source_scope):
         elif pm.normalized(value.get('original_name'))==name:values.append(value)
     return values
 
-def differences(path,rows,heads,cancel):
+def differences(path,rows,heads,cancel,progress=lambda _:None):
     """At most three full reads for explanation; never an association rule."""
     import jst_orders as jst,order_lifecycle as lc
+    pm.load_features(path,heads,progress,cancel)
     incoming=pm.facts(rows);details={}
     shortlist=sorted((h for h in heads if h.get('features')),key=lambda h:(abs(h['features']['count']-incoming['count']),abs(Decimal(h['features']['amount'])-Decimal(incoming['amount'] or 0))))[:3]
     for h in shortlist:
@@ -89,6 +91,8 @@ def analyze(path,document,index,scope=None,source_scope=None,progress=lambda _:N
     # Immutable document identities precede optional name narrowing. Complete
     # facts remain a fallback, never a universal requirement to bind a payment.
     strong=explicit or bool(linked)
+    if not strong and name_context and len(named)==1 and allowed is not None and named[0]['number'] not in allowed:
+        return result('识别订单超出本次范围','文件完整对应 '+named[0]['number']+'，但该订单不在本次勾选范围内；未改绑其他订单。',blocked=True)
     matches=matching_heads(path,rows,eligible if strong else named,progress,cancel)
     target=None;method=None;reason='';is_exact=False
     if explicit:
@@ -112,6 +116,7 @@ def analyze(path,document,index,scope=None,source_scope=None,progress=lambda _:N
         if matches and any(not same_head(target,h) for h in matches):
             return result('内部单号与明细冲突','该内部单号已有原订单关联，当前明细却完整匹配另一张订单；不能自动改绑。',matches=matches,blocked=True)
         method='previous_source';is_exact=any(same_head(target,h) for h in matches)
+        pm.load_features(path,[target],progress,cancel)
         a=pm.facts(rows)['amount'];b=(target.get('features') or {}).get('amount')
         difference=f'金额较分配结果变化 {Decimal(a)-Decimal(b):+.2f} 元；' if a is not None and b is not None else ''
         reason=f"已自动识别原内部单号对应的 {target['name']} / {target['warehouse']}；{difference}数量和金额差异保留到核对页。"
@@ -124,7 +129,7 @@ def analyze(path,document,index,scope=None,source_scope=None,progress=lambda _:N
     else:
         if name_context and not named:
             return result('店铺名称暂无有效订单','已找到店仓名称对应，但没有符合文件身份的当前有效仓单；请核对签发和文件中的门店、仓。',blocked=True)
-        details=differences(path,rows,named,cancel)
+        details=differences(path,rows,named,cancel,progress)
         hint='；'.join(h['name']+' / '+h['warehouse']+'：'+details[h['number']] for h in named if h['number'] in details)
         choices=[h for h in named if allowed is None or h['number'] in allowed]
         day=pm.source_day(rows)
@@ -143,6 +148,7 @@ def analyze(path,document,index,scope=None,source_scope=None,progress=lambda _:N
         return result('文件身份冲突','原订单与文件中的门店、仓或签发修订不一致。',blocked=True)
     if name_context and not any(same_head(target,h) for h in named):
         return result('店铺名称与原单身份冲突','文件名称对应的店仓与明确单号或已确认原关联不一致，请核对文件名称及独立名称配置。',blocked=True)
+    pm.load_features(path,[target],progress,cancel)
     outcome=result('已自动识别原内部单号' if method=='previous_source' else '已自动识别',reason,[target],automatic=True,proof=method,exact=is_exact,matches=matches)
     if name_context:outcome['name_context']=name_context
     return outcome

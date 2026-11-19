@@ -11,6 +11,7 @@ def empty_failure(*args,progress,cancel):
 
 
 def start_smoke(app,win,args):
+    from analytics_template_export import select_detail_rows
     out=Path(args[0]).resolve();mode=args[1];spec=json.loads((out/'synthetic.json').read_text('utf-8'))
     assert spec['synthetic'] is True and spec['live_platform'] is False
     assert Path(os.environ['REPLENISHMENT_DATA_DIR']).resolve()==out/'settings'
@@ -100,7 +101,7 @@ def start_smoke(app,win,args):
                 require(state['cancelled'],'真实UI在摘要复核期间取消')
                 require(set(target_dir.glob('*.xlsx'))==before_files and not list(target_dir.glob('.analytics-*')),'取消后无半文件或复核暂存残留')
                 w.selected={h['number'] for h in w.report['heads'][:8]};w.controls()
-                expected_rows=[r for r in w.report['rows'] if r['order'] in w.selected]
+                expected_rows=select_detail_rows(r for r in w.report['rows'] if r['order'] in w.selected)
                 detail=export(1,True);book=openpyxl.load_workbook(detail,read_only=True,data_only=True)
                 try:
                     sheet=book.active;sheet.reset_dimensions();actual=iter(sheet.iter_rows(min_row=8,values_only=True));count=0
@@ -124,12 +125,13 @@ def start_smoke(app,win,args):
                 book=openpyxl.load_workbook(detail,read_only=True,data_only=True)
                 try:
                     sheet=book.active;sheet.reset_dimensions();actual=iter(sheet.iter_rows(min_row=8,values_only=True))
-                    for index,expected in enumerate(w.report['rows'],1):
+                    count=0
+                    for count,expected in enumerate(select_detail_rows(w.report['rows']),1):
                         row=next(actual)
                         if (row[0],row[2],row[26],row[27])!=(expected['order'],expected['sku'],expected['day'],expected['warehouse']):
-                            raise AssertionError('整表逐行身份或顺序变化：'+str(index))
-                    require(next(actual,None) is None,'完整SKU明细全部逐行核对，文件无额外行')
-                    report['detail_rows']=index
+                            raise AssertionError('整表逐行身份或顺序变化：'+str(count))
+                    require(next(actual,None) is None,'细则导出范围内的SKU逐行核对，文件无额外行')
+                    report['detail_rows']=count
                 finally:book.close()
             else:
                 old=json.loads((out/'completed-files.json').read_text('utf-8'))

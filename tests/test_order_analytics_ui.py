@@ -28,12 +28,24 @@ class AnalyticsUiTests(unittest.TestCase):
         self.assertIsNone(self.widget.worker)
     def test_query_drill_back_and_scope(self):
         w=self.widget;w.query();self.wait();self.assertEqual(len(w.report['rows']),2)
+        self.assertEqual(w.report['_projection'],'overview');self.assertIsNone(w.details)
+        self.assertNotIn('history',w.report);self.assertNotIn('coverage',w.report)
         self.assertEqual(w.models['store'].rowCount(),1);w.open_detail('store',0)
         self.assertEqual(w.tabs.currentIndex(),1);self.assertEqual(w.models['warehouse'].rowCount(),2)
         w.open_detail('warehouse',0);self.assertEqual(w.models['order'].rowCount(),1)
-        w.open_detail('order',0);self.assertEqual(w.models['detail'].rowCount(),1)
+        number=w.display_items[0]['order']
+        w.open_detail('order',0);self.wait();self.assertEqual(w.models['detail'].rowCount(),1)
+        self.assertEqual({r['order'] for r in w.details[1]},{number})
         w.back();self.assertEqual(w.models['store'].rowCount(),1)
         w.search.setText('changed');self.assertIn('尚未查询',w.applied.text());self.assertEqual(len(w.report['rows']),2)
+    def test_requested_coverage_history_and_trends_use_original_query(self):
+        w=self.widget;w.query();self.wait();overview=w.report
+        w.metric_choice.setCurrentIndex(3);self.wait()
+        self.assertIn('coverage',overview);self.assertNotIn('history',overview)
+        w.tabs.setCurrentIndex(5);self.wait();self.assertIn('history',overview)
+        w.tabs.setCurrentIndex(7);self.wait()
+        self.assertIs(w.report,overview);self.assertEqual(w.workflow.report['_projection'],'workflow')
+        self.assertEqual(w.workflow.report['query'],overview['query'])
     def test_cancel_close_waits_for_thread(self):
         w=self.widget;w.query();self.assertFalse(w.prepare_close());self.wait();self.assertTrue(w.prepare_close())
     def test_detail_is_readonly(self):

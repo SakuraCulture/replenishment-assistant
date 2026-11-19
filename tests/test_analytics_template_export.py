@@ -80,11 +80,22 @@ class TemplateExportTests(unittest.TestCase):
         _, _, v = self.write([row], detail=True); s = v['SKU完整明细']
         self.assertEqual(s['I8'].value, export.NA); self.assertEqual(s['K8'].value, export.NA)
         self.assertEqual(s['T8'].value, export.NA); self.assertEqual(s['U8'].value, export.NA)
-        self.assertEqual(s['N8'].value, export.NA); self.assertEqual(s['AJ8'].value, export.NA)
+        self.assertIsNone(s['N8'].value); self.assertEqual(s['AJ8'].value, export.NA)
         self.assertEqual(s['AG8'].value, 0)
-        row['quantities']['model'] = Decimal(0)
-        _, _, v = self.write([row], detail=True)
-        self.assertEqual(v['SKU完整明细']['U8'].value, export.NA)  # Exact template COUNT guard.
+
+    def test_detail_rates_distinguish_zero_base_zero_execution_and_unconfirmed(self):
+        rows = [fact(values=(24, 0, 0, 5, 0, None)),
+                fact(sku='0002', values=(6, 1, 0, 0, 0, 0))]
+        _, formulas, values = self.write(rows, detail=True)
+        sheet = values['SKU完整明细']
+        self.assertEqual([sheet.cell(8, c).value for c in range(12, 20)],
+                         [0, None, None, None, 0, None, None, None])
+        self.assertEqual(sheet['I8'].value, 5)  # Later addition stands even though its rate has no base.
+        self.assertEqual(sheet['K8'].value, export.NA)
+        self.assertEqual(sheet['R9'].value, 0)
+        self.assertEqual(sheet['S9'].value, 0)
+        self.assertEqual(formulas['SKU完整明细']['N8'].value,
+                         '=IF(OR(COUNT(I8,H8)<2,H8=0),"",I8/H8)')
 
     def test_all_pending_and_all_excluded_orders_keep_identity(self):
         pending = fact('BH-PENDING', scope='待核')
@@ -94,10 +105,23 @@ class TemplateExportTests(unittest.TestCase):
         self.assertEqual(s['G18'].value, export.NA); self.assertEqual(s['G19'].value, 0)
         self.assertEqual(s['B20'].value, 'BH-EXCLUDED'); self.assertEqual(s['G20'].value, 0)
         self.assertEqual(s['A12'].value, export.NA)
-        _, _, d = self.write([pending, excluded], detail=True)
-        self.assertEqual(d['SKU完整明细'].max_row, 9)
+        _, _, d = self.write(export.select_detail_rows([pending, excluded]), detail=True)
+        self.assertEqual(d['SKU完整明细'].max_row, 8)
         self.assertIn('范围：待核', d['SKU完整明细']['E8'].value)
-        self.assertIn('范围：排除', d['SKU完整明细']['E9'].value)
+
+    def test_detail_scope_keeps_zero_model_with_any_confirmed_positive_stage(self):
+        positive = []
+        for index, stage in enumerate(export.STAGES[1:], 1):
+            row = fact(sku=stage, values=(0,) * len(export.STAGES))
+            row['quantities'][stage] = Decimal(index)
+            positive.append(row)
+        all_zero = fact(sku='zero', values=(0, 0, 0, 0, 0, 0))
+        unconfirmed = fact(sku='unconfirmed', values=(0, 0, 0, 0, 0, 3))
+        unconfirmed['valid']['receipt'] = False
+        excluded = fact(sku='excluded', scope='排除', values=(0, 2, 3, 4, 5, 6))
+        pending = fact(sku='pending', scope='待核', values=(None, 0, 0, 0, 0, 0))
+        selected = export.select_detail_rows([all_zero, *positive, unconfirmed, excluded, pending])
+        self.assertEqual(selected, [*positive, pending])
 
     def test_pending_with_included_does_not_understate_group(self):
         rows = [fact(), fact(sku='0002', scope='待核'), fact(sku='0003', group='非必采', scope='排除')]

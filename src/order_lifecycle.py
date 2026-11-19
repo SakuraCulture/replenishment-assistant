@@ -484,7 +484,10 @@ def progress_state(summaries, legacy=None, operations_required=False):
     return STATUSES[-1],None,'单据已收齐；不代表数量完全一致',health
 
 def legacy_return(db, head, products,*,as_of=None):
-    old = merchant_feedback.current(db, head['oid'], head['revision'],as_of=as_of)
+    return legacy_return_record(merchant_feedback.current(db,head['oid'],head['revision'],as_of=as_of),products)
+
+
+def legacy_return_record(old, products):
     if not old: return None
     values = old['payload'].get('values', {}); required = [s for s, p in products.items() if p['quantity'] > 0]
     supplied = {s: q for s, q in values.items() if s in products}
@@ -502,6 +505,26 @@ def _comparison_document(document):
     return {**document,'payload':value}
 
 
+def read_documents(db,head,cancel=None,*,as_of=None,compact=False):
+    route=flow.stages(db,head,as_of=as_of)
+    docs={}
+    for stage in route:
+        checkpoint(cancel)
+        document=current(db,head,stage,as_of=as_of)
+        docs[stage]=_comparison_document(document) if compact and stage!='payment' else document
+        del document
+    return route,docs
+
+
+def snapshot_state(head,route,docs,legacy):
+    present={s:bool(docs[s]) for s in STAGES}
+    if not present['return'] and legacy:present['return']=legacy['complete']
+    if 'operations' in docs:present['operations']=bool(docs['operations'])
+    status,next_stage,note,health=progress_state({s:document_summary(docs[s]) for s in route},legacy,route==flow.CURRENT)
+    return {'head':head,'documents':docs,'legacy_return':legacy,'present':present,
+            'status':status,'next':next_stage,'note':note,'health':health,'flow_version':2 if route==flow.CURRENT else 1}
+
+
 def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order=None,as_of=None,_comparison=True):
     if db is None:
         with closing(purchases.connect(path)) as connection:
@@ -512,14 +535,7 @@ def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order
     if order['digest'] != head['digest']: raise wr.Conflict('签发快照不一致')
     eligible = {d['E']: {'sku': d['E'], 'name': d.get('D'), 'quantity': sem.order_quantity(d)} for rs in sem.signed_groups(order['payload']['result'], order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d) == head['warehouse']}
     if not _comparison:del order  # The verified large signed tree is no longer needed.
-    route=flow.stages(db,head,as_of=as_of)
-    if _comparison:docs = {s: current(db, head, s,as_of=as_of) for s in route}
-    else:
-        docs={}
-        for s in route:
-            checkpoint(cancel);document=current(db,head,s,as_of=as_of)
-            docs[s]=document if s=='payment' else _comparison_document(document)
-            del document
+    route,docs=read_documents(db,head,cancel,as_of=as_of,compact=not _comparison)
     legacy = legacy_return(db, head, eligible,as_of=as_of)
     rows = []
     if _comparison:
@@ -539,11 +555,7 @@ def snapshot(path, head, progress=lambda _: None, cancel=None, db=None, *, order
             notes=[TITLES[s]+'：'+maps[s][sku]['processing_note'] for s in STAGES if sku in maps[s] and maps[s][sku].get('processing_note')]
             missing='；'.join([missing,*notes]).strip('；')
             rows.append([sku, name, *nums, *diffs, maps['payment'].get(sku, {}).get('amount'), maps['payment'].get(sku, {}).get('currency'), missing])
-    present = {s: bool(docs[s]) for s in STAGES}
-    if not present['return'] and legacy: present['return'] = legacy['complete']
-    if 'operations' in docs:present['operations']=bool(docs['operations'])
-    status,next_stage,note,health=progress_state({s:document_summary(docs[s]) for s in route},legacy,route==flow.CURRENT)
-    return {'head': head, 'rows': rows, 'documents': docs, 'legacy_return': legacy, 'present': present, 'status': status, 'next': next_stage,'note':note,'health':health,'flow_version':2 if route==flow.CURRENT else 1}
+    return {'rows':rows,**snapshot_state(head,route,docs,legacy)}
 
 HEADERS = ['商品编码', '商品名称', '门店推荐数（签发时）', '门店确认数', '付款单商品数量', '实际收货数', '确认−推荐', '付款−确认', '收货−付款', '付款实际金额（源单）', '币种', '资料说明']
 FLOW_HEADERS=['商品编码','商品名称','补货签发数','门店回传数','运营签发数','付款单商品数量','实际收货数','回传−签发','运营−回传','付款−运营','收货−付款','付款实际金额（源单）','币种','资料说明']

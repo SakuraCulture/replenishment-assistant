@@ -189,7 +189,7 @@ def _head(parent,warehouse,revision,digest,saved,child_revision=None,snapshot_di
         'digest':digest,'saved':saved,'child_revision':child_revision or revision,'snapshot_digest':snapshot_digest,'execution_epoch':epoch}
 
 
-def heads(db,parent_headers=None,*,history=False):
+def heads(db,parent_headers=None,*,history=False,with_names=True):
     selected=None if parent_headers is None else {h['oid'] for h in parent_headers}
     sql="SELECT oid,day,store,number,current FROM normal_orders WHERE kind='normal_model'"
     args=()
@@ -202,18 +202,24 @@ def heads(db,parent_headers=None,*,history=False):
         if has_parent(db,oid):
             for warehouse,current,child,state_value,epoch in db.execute('SELECT warehouse,source_revision,child_revision,state,epoch FROM warehouse_execution_heads WHERE oid=?',(oid,)):
                 if state_value!='active':continue
-                sql='SELECT source_revision,identity_digest,saved,child_revision,snapshot_digest,payload FROM warehouse_execution_revisions WHERE oid=? AND warehouse=?'+('' if history else ' AND source_revision=?')+' ORDER BY source_revision DESC'
-                for revision,digest,saved,seq,snapshot_digest,blob in db.execute(sql,(oid,warehouse) if history else (oid,warehouse,current)):
+                sql='SELECT source_revision,identity_digest,saved,child_revision,snapshot_digest'+(',payload' if with_names else '')+' FROM warehouse_execution_revisions WHERE oid=? AND warehouse=?'+('' if history else ' AND source_revision=?')+' ORDER BY source_revision DESC'
+                for revision,digest,saved,seq,snapshot_digest,*payload in db.execute(sql,(oid,warehouse) if history else (oid,warehouse,current)):
                     h=_head(parent,warehouse,revision,digest,saved,seq,snapshot_digest,epoch);h['current_revision']=current
-                    names=chunks.load(blob,db,paths=[('result','store_name')],binding=snapshot_digest)
-                    h['name']=names.get(('result','store_name'),parent['store']);result.append(h)
+                    if with_names:
+                        names=chunks.load(payload[0],db,paths=[('result','store_name')],binding=snapshot_digest)
+                        h['name']=names.get(('result','store_name'),parent['store'])
+                    result.append(h)
         else:
             sql='SELECT revision,digest,saved,payload FROM normal_revisions WHERE oid=?'+('' if history else ' AND revision=?')+' ORDER BY revision DESC'
             for revision,digest,saved,blob in db.execute(sql,(oid,) if history else (oid,parent['current'])):
-                payload=chunks.load(blob,db,paths=[('result','rows'),('result','store_name'),('new_focus',)],binding=digest)
+                paths=[('result','rows'),('new_focus',)]
+                if with_names:paths.append(('result','store_name'))
+                payload=chunks.load(blob,db,paths=paths,binding=digest)
                 value={'result':{'rows':payload[('result','rows')]},'new_focus':payload.get(('new_focus',))}
                 for warehouse in warehouses(value):
-                    h=_head(parent,warehouse,revision,digest,saved);h['current_revision']=parent['current'];h['name']=payload.get(('result','store_name'),parent['store']);result.append(h)
+                    h=_head(parent,warehouse,revision,digest,saved);h['current_revision']=parent['current']
+                    if with_names:h['name']=payload.get(('result','store_name'),parent['store'])
+                    result.append(h)
     rank={w:i for i,w in enumerate(WAREHOUSES)}
     return sorted(result,key=lambda h:(h['day'],h['store'],-rank.get(h['warehouse'],99),h['revision']),reverse=True)
 
@@ -236,7 +242,7 @@ def validate(db,head):
         if not row or row!=(head.get('current_revision',head['revision']),head['digest']):raise wr.Conflict('签发修订已更新，请重新读取并核对关联')
 
 
-def get_order(repository,head,view=None,progress=lambda _:None,*,db=None,export_io=False):
+def get_order(repository,head,view=None,progress=lambda _:None,*,db=None,export_io=False,fields=None):
     warehouse=head.get('warehouse')
     if warehouse:
         with (closing(repository.work.connect()) if db is None else nullcontext(db)) as db:
@@ -244,14 +250,17 @@ def get_order(repository,head,view=None,progress=lambda _:None,*,db=None,export_
                 if not is_active(db,head['oid'],warehouse):raise wr.Conflict('来源仓单已删除或未参与')
                 row=db.execute('SELECT identity_digest,snapshot_digest,saved,payload FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?',(head['oid'],warehouse,head['revision'])).fetchone()
                 if not row or row[0]!=head['digest']:raise wr.Conflict('仓单原签发依据已变化，请刷新')
-                bounded=False
-                if view=='export' or export_io:
-                    from adaptive_resources import Budget
-                    resources=Budget()
-                    bounded=not resources.restore_fits(chunks.require_manifest(row[3])['size'])
-                    progress('导出快照资源自适应：'+('逐块读取' if bounded else '完整解析')+'；'+resources.description())
-                payload=chunks.load(row[3],db,binding=row[1],progress=progress,bounded=bounded)
-                if _digest(payload)!=row[1]:raise ValueError('仓单业务快照校验失败')
+                if fields is not None:
+                    payload=chunks.load_fields(row[3],db,fields,binding=row[1],progress=progress)
+                else:
+                    bounded=False
+                    if view=='export' or export_io:
+                        from adaptive_resources import Budget
+                        resources=Budget()
+                        bounded=not resources.restore_fits(chunks.require_manifest(row[3])['size'])
+                        progress('导出快照资源自适应：'+('逐块读取' if bounded else '完整解析')+'；'+resources.description())
+                    payload=chunks.load(row[3],db,binding=row[1],progress=progress,bounded=bounded)
+                    if _digest(payload)!=row[1]:raise ValueError('仓单业务快照校验失败')
                 return {**head,'number':head.get('parent_number') or db.execute('SELECT number FROM normal_orders WHERE oid=?',(head['oid'],)).fetchone()[0],
                         'saved':row[2],'payload':payload,'snapshot_digest':row[1]}
     order=repository.get(head['day'],head['store'],head['revision'],view=view,progress=progress,**({'export_io':True} if export_io else {}))

@@ -53,7 +53,7 @@ class SnapshotCheck:
             try:version=cursor.fetchone()[0]
             finally:cursor.close()
             context=analytics.digest([self.report['schema'],self.report['query'],self.report['snapshot_id'],
-                                      self.report['heads'],self.report.get('identifier_token')])
+                                      self.report['heads'],self.report.get('identifier_token'),self.report.get('_projection')])
             return version,files,context
         except (OSError,ValueError,KeyError,TypeError,sqlite3.Error):
             return None

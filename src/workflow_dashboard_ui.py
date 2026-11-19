@@ -83,6 +83,10 @@ class Dashboard(QWidget):
         for control in (self.grain,self.mode,self.ratio,self.dimension):control.currentIndexChanged.connect(self.render)
     def set_report(self,report):
         self.report=report;self.period_filter=None;self.page=0;self.trend_page=0
+        if report is None:
+            self.periods=[];self.trend_values=[];self.trend_headers=[]
+            self.nodes.clearContents();self.table.setRowCount(0);self.details.setRowCount(0);self.chart.set_points([])
+            self.trend_note.clear();self.detail_note.clear();self.note.setText('打开趋势页时读取本次查询范围的明细。')
     def rows(self):return wf.selected(self.report['rows'],self.filters) if self.report else []
     def clear(self):self.filters={};self.clear_period()
     def clear_period(self):self.period_filter=None;self.page=0;self.render()

@@ -1,0 +1,89 @@
+{
+  "release": "0.54.15 rc1",
+  "source_commit": "aadf26c75e44a6f1bae908ed3da1b062abf45111",
+  "source_tree": "b73946046e49239b946ae0599c1126e3a11357f5",
+  "source_snapshot": "snapshot-c115159245f2270b7aa61f60b117d80248c1bede5a94d96b5a77e1282dfa23aa",
+  "source_archive_sha256": "c115159245f2270b7aa61f60b117d80248c1bede5a94d96b5a77e1282dfa23aa",
+  "source_manifest_sha256": "c50d9232b941e0ba36c203a7da487558ad5a36d681c50d823f5619b0fd48eb05",
+  "source_file_count": 5069,
+  "source_matches_accepted_archive_bytes": true,
+  "changed_source_files": [
+    "src/analytics_export_fix_smoke.py",
+    "src/analytics_export_validation.py",
+    "src/analytics_template_export.py",
+    "src/analytics_templates_smoke.py",
+    "src/lifecycle_batch_ui.py",
+    "src/order_analytics.py",
+    "src/order_analytics_exports.py",
+    "src/order_analytics_ui.py",
+    "src/order_lifecycle.py",
+    "src/payment_auto_matching.py",
+    "src/payment_matching.py",
+    "src/payment_matching_smoke.py",
+    "src/performance_log.py",
+    "src/storage_chunks.py",
+    "src/version.json",
+    "src/warehouse_execution.py",
+    "src/workflow_analysis.py",
+    "src/workflow_dashboard_ui.py",
+    "tests/test_analytics_template_export.py",
+    "tests/test_analytics_template_integration.py",
+    "tests/test_order_analytics.py",
+    "tests/test_order_analytics_ui.py",
+    "tests/test_payment_auto_matching.py",
+    "tests/test_performance_log.py",
+    "tests/test_warehouse_execution_readers.py"
+  ],
+  "exe_sha256": "5e9e1d22409882072d5f60e3b25fa04a53019ae1a61f27a9d140d4c01145827d",
+  "standalone_zip_sha256": "6488a2478c24d39ec4b57cdfccb33201d171f026c49f2804596380a89505b6dd",
+  "source_base_commit": "a6934fe7e2635bafb98d4ea8af40c946a4a48d19",
+  "prior_main_commit": "7ca125e6fe04e87a5c0322fbab3c76d205e3f913",
+  "previous_release": {
+    "version": "0.54.12 rc1",
+    "exe_sha256": "5bbf62fb022f44c11340ec0f3da2c3ed0bc898bdef08179733af18c3e86c9c2e",
+    "provenance": "releases/0.54.12/rc1/provenance.json"
+  },
+  "acceptance": {
+    "live_platform": false,
+    "isolated_data_only": true,
+    "analytics": {
+      "warehouse_orders": 8,
+      "input_rows": 59976,
+      "exported_rows": 3718,
+      "zero_model_positive_later_preserved": 953,
+      "scope_excluded_omitted": 19903,
+      "zero_model_no_positive_omitted": 36355,
+      "range_excluded_leaks": 0,
+      "all_43_export_columns_and_formulas_match": true,
+      "aggregate_and_derived_metrics_match": true,
+      "source_benchmark_seconds": {
+        "baseline": 35.049,
+        "candidate": 13.516
+      },
+      "native_exe_query_seconds": 41.547,
+      "native_drill_warehouse_orders": 1,
+      "native_drill_seconds": 7.766
+    },
+    "payment_matching": {
+      "input_sku_rows": 561,
+      "selected_warehouse_orders": 91,
+      "same_result_as_baseline": true,
+      "repeat_is_idempotent": true,
+      "native_exe_verified": true,
+      "cache_metrics_verified": true
+    },
+    "regression": {
+      "analytics_candidate": 190,
+      "payment_candidate": 175,
+      "merged_source": 287
+    },
+    "previously_reproduced_baseline_test_failure": "test_task_cancel_failure_retry_and_upstream_change",
+    "report_hashes": {
+      "analytics": "432b7e92085a6ca9341133c4ee32e6498cb45fedcb29e69617e1f39313a9c61d",
+      "analytics_exe": "cf9e4d8baee220a5d9cab48b7af40dcf71dbf1bd3756aaa8f757a99bffc24229",
+      "payment": "0219d5b0ca9d7ac89bda6403d195dcc25b1e9ebc10de612477f2f1a9c8cb2214",
+      "scoped_payment_exe": "28f8a3b6f1f50755e6f5f0c26b77d90dd2c57e3856f630a66e474f4d64683e79",
+      "merged_source_log": "f0f8f1a19ba13f6f33ce8e59728aef49478df9ddc9e6f42807863a4880aa56f7"
+    }
+  }
+}

@@ -81,8 +81,8 @@ class BatchImport(QDialog):
             paid=any(d['scan']['stage']=='payment' and d['scan']['rows'][0].get('adapter')=='paid_order' for d in self.documents)
             self.match_bar.setVisible(paid)
             if paid:
-                from payment_matching import build
-                self.payment_index=run(self,build,(self.host.work_repository.path,),'按需建立付款识别索引（不读取旧修订）')
+                from payment_matching import build_identification
+                self.payment_index=run(self,build_identification,(self.host.work_repository.path,self.scope),'读取当前签发身份和付款对应')
                 self.heads=self.scope if self.scope is not None else self.payment_index['heads']
                 self.populate_sources()
                 self.identify_payments()
@@ -211,8 +211,8 @@ class BatchImport(QDialog):
         if self.busy or not self.payment_index:return
         self.capture();self.busy=True
         try:
-            from payment_matching import build
-            self.payment_index=run(self,build,(self.host.work_repository.path,),'刷新付款索引，仅读取变更快照')
+            from payment_matching import build_identification
+            self.payment_index=run(self,build_identification,(self.host.work_repository.path,self.scope),'刷新当前签发身份和付款对应')
             self.populate_sources()
             for d in self.documents:
                 if d.get('payment_match') is not None:d['target']=None
