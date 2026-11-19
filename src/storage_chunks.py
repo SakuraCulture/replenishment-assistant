@@ -304,3 +304,13 @@ def load(blob,db=None,expected=None,paths=None,binding=None,progress=lambda _:No
     if h.hexdigest()!=m['digest'] or buffer.tell()!=m['size']:raise ValueError('完整快照校验失败')
     progress('完整快照校验完成，解析数据…')
     return codec().loads(buffer.getvalue())
+
+
+def load_fields(blob,db,paths,*,binding,progress=lambda _:None):
+    """Restore selected paths in their original shape, verifying all read blocks."""
+    result={}
+    for path,value in load(blob,db,paths=paths,binding=binding,progress=progress).items():
+        parent=result
+        for key in path[:-1]:parent=parent.setdefault(key,{})
+        parent[path[-1]]=value
+    return result

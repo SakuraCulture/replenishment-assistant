@@ -46,6 +46,23 @@ class PerformanceTests(unittest.TestCase):
         self.assertEqual(set(end['phases']),{'prepare','encoding','commit','post_commit'})
         self.assertEqual(end['outcome'],'ok')
 
+    def test_payment_index_zip_preserves_only_numeric_evidence(self):
+        self.monitor.start()
+        with perf.begin('payment_matching.index') as span:
+            span.payment_counts({'selected':91,'signed_cache_hits':3,'signed_cache_misses':2,
+                                 'generation_cache_hits':-1,'generation_cache_misses':'店铺明细','payment_id':888})
+        with perf.begin('payment_matching.candidate_snapshots') as span:
+            span.payment_counts({'candidates':1,'generation_cache_hits':1,'generation_cache_misses':0})
+        target=self.root/'轻量日志.zip'
+        perf.export(self.monitor.folder,target)
+        with zipfile.ZipFile(target) as bundle:
+            encoded=bundle.read('性能日志.jsonl').decode('utf-8')
+        completed=[r for r in (json.loads(line) for line in encoded.splitlines()) if r['kind']=='operation_end']
+        self.assertEqual(completed[0]['payment_index'],{'selected':91,'signed_cache_hits':3,'signed_cache_misses':2})
+        self.assertEqual(completed[1]['payment_index'],{'candidates':1,'generation_cache_hits':1,'generation_cache_misses':0})
+        self.assertTrue(all(r['seconds']>=0 for r in completed))
+        self.assertNotIn('店铺明细',encoded);self.assertNotIn('payment_id',encoded)
+
     def test_original_exceptions_and_cancellation_are_not_swallowed(self):
         marker=RuntimeError('sensitive original message')
         with self.assertRaises(RuntimeError) as ctx:

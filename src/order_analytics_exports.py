@@ -6,6 +6,7 @@ import os
 import tempfile
 
 import order_analytics as service
+from coverage_metrics import VERSION as COVERAGE_VERSION
 from runtime_support import checkpoint
 from xlsx_exports import stream_book, write_table
 from funnel_compact_export import write_summary, HEADERS as SUMMARY_HEADERS
@@ -38,9 +39,18 @@ def export(path,report,target,level='store',orders=None,progress=lambda _:None,c
     target=Path(target).resolve()
     if target.suffix.lower()!='.xlsx' or target.exists():raise ValueError('请使用新的.xlsx文件，保留已导出分析快照')
     from analytics_export_validation import SnapshotCheck
+    anchor=None
+    if report.get('_projection')=='overview' and level!='analysis':
+        anchor=report
+        mode='analysis_detail' if level=='analysis_detail' else 'full'
+        report=service.collect_view(path,anchor,mode,orders,progress,cancel)
+        orders=None
     with SnapshotCheck(path,report,progress,cancel,temp_folder=target.parent) as check:
-        check()
-        return _export_verified(path,report,target,level,orders,progress,cancel,check)
+        def validate():
+            check()
+            if anchor is not None:service.validate_basis(path,anchor,progress,cancel)
+        validate()
+        return _export_verified(path,report,target,level,orders,progress,cancel,validate)
 
 
 def _export_verified(path,report,target,level,orders,progress,cancel,check):
@@ -90,13 +100,15 @@ def _export_verified(path,report,target,level,orders,progress,cancel,check):
         checkpoint(cancel);os.link(tmp,target)
     finally:Path(tmp).unlink(missing_ok=True)
     return {'path':str(target),'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),
-            'snapshot_id':report['snapshot_id'],'rows':len(included),'pending':len(pending),'sheets':monitor+[t[0] for t in tabs]+extra,'coverage_version':report['coverage']['version']}
+            'snapshot_id':report['snapshot_id'],'rows':len(included),'pending':len(pending),'sheets':monitor+[t[0] for t in tabs]+extra,'coverage_version':report.get('coverage',{}).get('version',COVERAGE_VERSION)}
 
 
 def export_template(path,report,target,level,rows,progress,cancel,*,_check=None):
     """The new presentation uses the same frozen query and atomic publication."""
     from analytics_formula_cache import FormulaCache
-    from analytics_template_export import append_summary,append_detail
+    from analytics_template_export import append_summary, append_detail, select_detail_rows
+    if level == 'analysis_detail':
+        rows = select_detail_rows(rows, cancel)
     fd,tmp=tempfile.mkstemp(dir=target.parent,prefix='.analytics-',suffix='.xlsx');os.close(fd)
     try:
         with FormulaCache(target.parent,cancel) as cache:
@@ -116,4 +128,4 @@ def export_template(path,report,target,level,rows,progress,cancel,*,_check=None)
     with target.open('rb') as stream:digest=hashlib.file_digest(stream,'sha256').hexdigest()
     return {'path':str(target),'sha256':digest,'snapshot_id':report['snapshot_id'],
             'rows':sum(r['scope']=='纳入' for r in rows),'pending':sum(r['scope']=='待核' for r in rows),
-            'sheets':sheets,'coverage_version':report['coverage']['version'],'template':'summary' if level=='analysis' else 'detail'}
+            'sheets':sheets,'coverage_version':report.get('coverage',{}).get('version',COVERAGE_VERSION),'template':'summary' if level=='analysis' else 'detail'}

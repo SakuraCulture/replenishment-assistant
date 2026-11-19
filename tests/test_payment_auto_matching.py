@@ -13,8 +13,8 @@ class PaymentAutoTests(unittest.TestCase):
     def setUp(self):
         self.f=fixture.PaymentMatchingTests();self.f.setUp();self.path=self.f.path;self.target=self.f.target
     def tearDown(self):self.f.tearDown()
-    def analyze(self,d,**kwargs):return pm.analyze(self.path,d,pm.build(self.path),**kwargs)
-    def prepare(self,docs,**kwargs):return pm.prepare(self.path,docs,None,pm.build(self.path),None,**kwargs)
+    def analyze(self,d,**kwargs):return pm.analyze(self.path,d,pm.build_identification(self.path,kwargs.get('scope')),**kwargs)
+    def prepare(self,docs,**kwargs):return pm.prepare(self.path,docs,None,pm.build_identification(self.path,None),None,**kwargs)
     def explicit(self,number=None,header='签发单号',**kwargs):
         return self.f.document(headers=io.PAYMENT_HEADERS+[header],change=lambda v:v.update({header:number or self.target['number']}),**kwargs)
     def test_default_normal_alias_and_both_warehouses_without_manual_fields(self):
@@ -35,6 +35,13 @@ class PaymentAutoTests(unittest.TestCase):
         correction=self.f.document(change=lambda v:v.update(商品金额=str(pm.Decimal(v['商品金额'])+pm.Decimal('.01'))))
         r=self.analyze(correction);self.assertTrue(r['automatic']);self.assertFalse(r['exact']);self.assertEqual(r['proof'],'previous_source');self.assertIn('+0.01',r['reason'])
         self.assertEqual(lc.commit(self.path,self.prepare([correction]))[0]['version'],first['version']+1)
+    def test_previous_link_still_checks_conflicting_detail_outside_scope(self):
+        doc=self.f.document();lc.commit(self.path,self.prepare([doc]))
+        other=self.f.duplicate_previous_day()
+        result=self.analyze(doc,scope=[self.target])
+        self.assertTrue(result['prevent_rebind'])
+        self.assertIn('内部单号与明细冲突',result['state'])
+        self.assertIn(other['number'],result['exact_numbers'])
     def test_first_amount_change_without_original_link_is_not_a_complete_match(self):
         d=self.f.document(change=lambda v:v.update(商品金额='121'))
         r=self.analyze(d);self.assertFalse(r['automatic']);self.assertIn('金额不同',r['reason'])
@@ -61,6 +68,27 @@ class PaymentAutoTests(unittest.TestCase):
     def test_selected_scope_cannot_redirect_unique_other_order(self):
         other=next(h for h in self.f.index['heads'] if h['number']!=self.target['number'])
         r=self.analyze(self.f.document(),scope=[other]);self.assertFalse(r['automatic']);self.assertTrue(r['prevent_rebind']);self.assertIn('超出',r['state'])
+    def test_selected_scope_and_shop_name_load_only_needed_generation(self):
+        import payment_shop_names as names
+        name='聚水潭仓内独立店名'
+        names.save(self.path,names.prepare(names.load(self.path),[
+            {'store':self.target['store'],'warehouse':self.target['warehouse'],'value':name}]))
+        doc=self.f.document(name=name);scope=[self.target]
+        eager=pm.build(self.path);index=pm.build_identification(self.path,scope)
+        self.assertTrue(all(h['features'] is None for h in index['heads']))
+        other=next(h for h in index['heads'] if h['number']!=self.target['number'])
+        with patch.object(pm,'_generation_features',wraps=pm._generation_features) as load:
+            result=pm.analyze(self.path,doc,index,[other])
+            self.assertTrue(result['prevent_rebind']);load.assert_not_called()
+            actual=pm.analyze(self.path,doc,index,scope)
+            self.assertEqual(actual,pm.analyze(self.path,doc,eager,scope))
+            self.assertEqual(actual['proof'],'configured_name')
+            load.assert_called_once()
+            self.assertEqual(load.call_args.args[2]['number'],self.target['number'])
+        old=pm.prepare(self.path,[doc],scope,eager,None)
+        new=pm.prepare(self.path,[doc],scope,index,None)
+        self.assertEqual(new['plans'],old['plans'])
+        self.assertEqual(new['payment_matching'],old['payment_matching'])
     def test_missing_wrong_or_duplicate_sku_never_satisfies_full_match(self):
         d=self.f.document();bad=copy.deepcopy(d);bad['scan']['rows'][0]['sku']='WRONG-SKU'
         r=self.analyze(bad);self.assertFalse(r['automatic']);self.assertIn('清单外编码 WRONG-SKU',r['reason']);self.assertIn('少 1 款、多 1 款',r['reason'])

@@ -58,6 +58,14 @@ def allocation_fact(db,head,view,as_of=None,*,event=None):
     return {'rows':{r['sku']:r for r in p['rows']},'saved':event[2],'gid':p['gid'],
             'digest':j.digest(p),'catalog':p['catalog'],'bid':p['bid']}
 
+def set_operations(row,view,operation):
+    doc=view['documents'].get('operations')
+    q=operation.get('base_quantity')
+    row['quantities']['operations']=Decimal(str(q)) if q is not None else Decimal(0) if doc and doc['payload'].get('schema')==lc.SCHEMA else None
+    row['valid']['operations']=bool(view['health'].get('operations')) and row['quantities']['operations'] is not None
+    row['states']['operations']='已确认' if row['valid']['operations'] else '待重新核对' if doc else '未启用／未留存' if view['flow_version']==1 else '未导入'
+
+
 def enrich(rows,head,view,allocation,signed_at):
     doc=view['documents'].get('operations');ops={r['sku']:r for r in doc['payload']['rows']} if doc else {}
     saved={'model':None,'signed':signed_at,**{s:d['saved'] if d else None for s,d in view['documents'].items()},'allocation':allocation['saved'] if allocation else None}
@@ -65,10 +73,7 @@ def enrich(rows,head,view,allocation,signed_at):
     allocation_basis={k:allocation[k] for k in ('gid','digest','catalog','bid')} if allocation else None
     for r in rows:
         sku=r['sku'];r['flow_version']=view['flow_version']
-        q=ops.get(sku,{}).get('base_quantity')
-        r['quantities']['operations']=Decimal(str(q)) if q is not None else Decimal(0) if doc and doc['payload'].get('schema')==lc.SCHEMA else None
-        r['valid']['operations']=bool(view['health'].get('operations')) and r['quantities']['operations'] is not None
-        r['states']['operations']='已确认' if r['valid']['operations'] else '待重新核对' if doc else '未启用／未留存' if view['flow_version']==1 else '未导入'
+        set_operations(r,view,ops.get(sku,{}))
         a=(allocation or {}).get('rows',{}).get(sku)
         r['quantities']['allocation']=Decimal(str(a['quantity'])) if a else Decimal(0) if allocation else None
         r['valid']['allocation']=bool(allocation) and not (a or {}).get('issue',False)

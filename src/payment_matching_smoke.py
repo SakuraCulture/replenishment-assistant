@@ -7,6 +7,9 @@ from PySide6.QtCore import QTimer,QEventLoop,Qt
 from version_info import diagnostic
 
 def start_smoke(app,win,args):
+    if args[1:]==['scope-91']:
+        start_scoped_smoke(app,win,Path(args[0]).resolve())
+        return
     out=Path(args[0]);checks=[];dialog=None
     def require(ok,title):
         if not ok:raise AssertionError(title)
@@ -114,4 +117,81 @@ def start_smoke(app,win,args):
         (out/'report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),'utf-8')
         if dialog:dialog.close();dialog.deleteLater()
         app.exit(0 if result['passed'] else 1)
+    QTimer.singleShot(300,execute)
+
+
+def start_scoped_smoke(app,win,out):
+    """Exercise the scoped dialog and its retained log on isolated orders."""
+    import os
+    from hashlib import file_digest
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QApplication,QMessageBox
+
+    marker=json.loads((out/'synthetic.json').read_text('utf-8'))
+    assert marker['synthetic'] is True and marker['live_platform'] is False
+    assert Path(os.environ['REPLENISHMENT_DATA_DIR']).resolve()==out/'settings'
+    path=win.work_repository.path.resolve()
+    assert path==out/'settings/workbench.sqlite3'
+    assert not any((path.parent/name).exists() for name in ('aoxiang/config','jst_catalog_sync/browsers'))
+    win.jst_generator.stopped=True;win.jst_generator.timer.stop()
+    win.aoxiang_workflows.stopping=True;win.aoxiang_workflows.timer.stop()
+    if hasattr(win,'auto_check'):win.auto_check.stop()
+    errors=[]
+    def watch():
+        modal=QApplication.activeModalWidget()
+        if isinstance(modal,QMessageBox):
+            errors.append(modal.windowTitle()+' '+modal.text()+' '+modal.detailedText());modal.accept()
+    timer=QTimer(win);timer.setInterval(25);timer.timeout.connect(watch);timer.start()
+
+    def execute():
+        import order_lifecycle as service
+        import performance_log
+        from lifecycle_batch_ui import BatchImport
+        from zipfile import ZipFile
+
+        result={'passed':False,'frozen_exe':bool(getattr(sys,'frozen',False)),
+                'live_platform':False,'version':diagnostic(),'pid':os.getpid(),'seconds':{}}
+        dialog=None
+        try:
+            fixture=json.loads((out/'scope.json').read_text('utf-8'))
+            assert fixture['synthetic_orders'] and len(fixture['scope'])==91
+            source=Path(fixture['source_file'])
+            with source.open('rb') as stream:assert file_digest(stream,'sha256').hexdigest()==fixture['source_file_sha256']
+            dialog=BatchImport(win,win,'payment',fixture['scope']);dialog.show()
+            started=time.monotonic();dialog.add_paths([str(source)])
+            result['seconds']['read_and_identify']=time.monotonic()-started
+            assert dialog.read_ready and len(dialog.documents)==1 and not dialog.issues,dialog.note.text()
+            document=dialog.documents[0];matched=document['payment_match']
+            assert matched['automatic'] and matched['proof']=='configured_name'
+            assert dialog.targets[0].currentData()['number']==fixture['head']['number']
+            assert len(document['scan']['rows'])==fixture['rows']==561
+            assert dialog.grab().save(str(out/'付款识别.png'))
+            dialog.refresh_payment_index()
+            assert dialog.read_ready and dialog.targets[0].currentData()['number']==fixture['head']['number']
+            started=time.monotonic();QTest.mouseClick(dialog.preview_btn,Qt.MouseButton.LeftButton)
+            result['seconds']['review']=time.monotonic()-started
+            assert not errors and dialog.review and not dialog.review.save.isEnabled(),errors
+            dialog.review.complete.setChecked(True);dialog.review.extra_ack.setChecked(True)
+            assert dialog.grab().save(str(out/'付款核对.png'))
+            started=time.monotonic();QTest.mouseClick(dialog.review.save,Qt.MouseButton.LeftButton)
+            result['seconds']['save']=time.monotonic()-started
+            assert not errors and dialog.receipt and len(dialog.receipt)==1 and dialog.receipt[0]['changed'],errors
+            saved=service.snapshot(path,fixture['head'])['documents']['payment']
+            assert not saved['payload']['pending'] and len(saved['payload']['raw_rows'])==561
+            log=out/'light-performance.zip';performance_log.export(performance_log._current.folder,log)
+            with ZipFile(log) as archive:
+                records=[json.loads(line) for line in archive.read('性能日志.jsonl').splitlines()]
+            indexes=[r for r in records if r['kind']=='operation_end' and 'payment_index' in r]
+            assert any(r['payment_index'].get('selected')==91 for r in indexes)
+            assert any(r['payment_index'].get('generation_cache_misses')==1 for r in indexes)
+            assert any(r['payment_index'].get('generation_cache_hits')==1 for r in indexes)
+            with source.open('rb') as stream:assert file_digest(stream,'sha256').hexdigest()==fixture['source_file_sha256']
+            result.update(passed=True,selected_orders=len(fixture['scope']),rows=fixture['rows'],
+                          source_sha256=fixture['source_file_sha256'],saved_digest=saved['digest'],payment_index=indexes)
+        except Exception:
+            result['error']=traceback.format_exc();result['dialogs']=errors
+        (out/'scope-91-report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),'utf-8')
+        timer.stop()
+        if dialog:dialog.close();dialog.deleteLater()
+        win._discard_close=True;win.close();QTimer.singleShot(100,lambda:app.exit(0 if result['passed'] else 1))
     QTimer.singleShot(300,execute)

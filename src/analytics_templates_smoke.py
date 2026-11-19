@@ -1,10 +1,10 @@
-"""Marked synthetic native-application acceptance. No platform or browser calls."""
+"""Native analytics acceptance on isolated data. No platform or browser calls."""
 import json, os, sqlite3, sys, time, traceback
 from contextlib import closing
 from pathlib import Path
 from PySide6.QtCore import Qt,QTimer
 from PySide6.QtGui import QFont,QFontDatabase
-from PySide6.QtWidgets import QApplication,QMessageBox,QTableView
+from PySide6.QtWidgets import QApplication,QLabel,QMessageBox,QTableView
 from PySide6.QtTest import QTest
 
 
@@ -14,11 +14,25 @@ def facts(path):
 
 
 def start_smoke(app,win,args):
-    out=Path(args[0]).resolve();mode=args[1];marker=json.loads((out/'synthetic.json').read_text('utf-8'))
-    assert marker['synthetic'] and not marker['live_platform']
+    out=Path(args[0]).resolve();mode=args[1];existing=mode=='existing-detail'
     assert Path(os.environ['REPLENISHMENT_DATA_DIR']).resolve()==out/'settings'
     assert win.work_repository.path.resolve()==out/'settings/workbench.sqlite3'
-    fixture=json.loads((out/'fixture.json').read_text('utf-8'));checks=[];shots=[];files=[];state={'error':None,'completed':0}
+    if existing:
+        marker=json.loads((out/'snapshot.json').read_text('utf-8'))
+        assert marker['read_only_source'] and marker['synthetic'] is False and not marker['browser_configuration_copied']
+        assert Path(marker['source_path']).resolve()!=win.work_repository.path.resolve()
+        assert Path(os.environ['LOCALAPPDATA']).resolve()==out/'localappdata'
+        assert not (out/'synthetic.json').exists()
+        assert not any((out/'settings'/name).exists() for name in ('aoxiang/config','jst_catalog_sync/browsers'))
+        expected=json.loads((out/'expected-rows.json').read_text('utf-8'))
+        days=expected['query_days'];order_count=expected['warehouse_orders']
+        assert days==marker['query_days']
+    else:
+        marker=json.loads((out/'synthetic.json').read_text('utf-8'))
+        assert marker['synthetic'] and not marker['live_platform']
+        fixture=json.loads((out/'fixture.json').read_text('utf-8'))
+        days=[fixture['day']]*2;order_count=fixture['expected_orders']
+    checks=[];shots=[];files=[];state={'error':None,'completed':0};observation={}
     font=Path('C:/Windows/Fonts/msyh.ttc')
     if font.is_file():QFontDatabase.addApplicationFont(str(font));app.setFont(QFont('Microsoft YaHei',9))
     win.jst_generator.stopped=True;win.jst_generator.timer.stop();win.aoxiang_workflows.stopping=True;win.aoxiang_workflows.timer.stop()
@@ -31,6 +45,7 @@ def start_smoke(app,win,args):
         if modal.windowTitle()=='分析报表已导出':
             tables=modal.findChildren(QTableView)
             if not tables or tables[0].model().rowCount()!=1:state['error']='Export result did not contain one saved file'
+            observation.update(completion_title=modal.windowTitle(),completion_text='\n'.join(w.text() for w in modal.findChildren(QLabel)))
             capture(modal,'saved-'+str(state['completed']));state['completed']+=1;modal.accept()
         elif isinstance(modal,QMessageBox):
             state['error']=modal.windowTitle()+': '+modal.text();modal.accept()
@@ -42,30 +57,64 @@ def start_smoke(app,win,args):
     def finish(error=None):
         from version_info import diagnostic
         r={'passed':error is None,'error':error,'mode':mode,'checks':checks,'screenshots':shots,'files':files,
-           'frozen_exe':bool(getattr(sys,'frozen',False)),'version':diagnostic(),'synthetic_input':True,'live_platform':False,
-           'dialogs_not_stubbed':True}
+           'pid':os.getpid(),'window_title':win.windowTitle(),'frozen_exe':bool(getattr(sys,'frozen',False)),
+           'version':diagnostic(),'synthetic_input':not existing,'live_platform':False,'dialogs_not_stubbed':True,**observation}
         (out/(mode+'-report.json')).write_text(json.dumps(r,ensure_ascii=False,indent=2),'utf-8',newline='\n')
         timer.stop();win._discard_close=True;win.close();QTimer.singleShot(100,lambda:app.exit(1 if error else 0))
     def execute():
         try:
             import openpyxl
-            before=facts(win.work_repository.path)
+            before=None if existing else facts(win.work_repository.path)
             win.show_section(3);w=win.analytics
             if hasattr(w.parentWidget(),'setCurrentWidget'):w.parentWidget().setCurrentWidget(w)
-            w.start.setText(fixture['day']);w.end.setText(fixture['day']);w.query()
-            wait(lambda:w.worker is None and w.report is not None)
-            assert len(w.report['heads'])==fixture['expected_orders']
+            w.start.setText(days[0]);w.end.setText(days[1]);started=time.monotonic()
+            QTest.mouseClick(w.query_btn,Qt.MouseButton.LeftButton)
+            wait(lambda:w.worker is None and w.report is not None,timeout=240)
+            observation.update(query_seconds=time.monotonic()-started,query_days=days,warehouse_orders=len(w.report['heads']))
+            assert len(w.report['heads'])==order_count
             assert [(w.export_kind.itemText(i),w.export_kind.itemData(i)) for i in range(w.export_kind.count())]==[('订单经营分析','analysis'),('订单经营细则分析','analysis_detail')]
             checks.append('Actual analytics menu contains the two requested names and retains original query range')
             capture(w,'menu')
             def export(index,selected=False):
                 w.export_kind.setCurrentIndex(index)
+                observation['export_kind']=w.export_kind.currentText();started=time.monotonic()
                 previous=set((out/'exports').glob('*.xlsx'));completed=state['completed']
                 QTest.mouseClick(w.selected_btn if selected else w.export_btn,Qt.MouseButton.LeftButton)
-                wait(lambda:w.worker is None and state['completed']>completed)
+                wait(lambda:w.worker is None and state['completed']>completed,timeout=240)
+                observation['export_seconds']=time.monotonic()-started
                 created=set((out/'exports').glob('*.xlsx'))-previous;assert len(created)==1
                 path=created.pop();assert path.name.startswith(w.export_kind.currentText()+'_');files.append(str(path));return path
-            if mode=='exercise':
+            if existing:
+                assert w.report['data_stamp']==expected['data_stamp']
+                assert len(w.report['rows'])==expected['total']
+                assert w.report.get('_projection')=='overview' and w.details is None
+                assert 'coverage' not in w.report and 'history' not in w.report
+                assert w.report['metrics']['excluded']==len(expected['excluded'])
+                overview=w.report
+                from order_analytics import digest
+                baseline=json.loads((out/'overview-baseline.json').read_text('utf-8'))
+                fields=('metrics','groups','stores','warehouses','orders','payments','identifiers')
+                assert digest({k:overview[k] for k in fields})==baseline['summary_digest']
+                observation['overview_parity']=True
+                started=time.monotonic()
+                for key,tab in (('store',1),('warehouse',2),('order',3)):
+                    table=w.tables[key];index=table.model().index(0,0);table.scrollTo(index)
+                    assert index.isValid() and table.visualRect(index).isValid()
+                    position=table.visualRect(index).center()
+                    QTest.mouseClick(table.viewport(),Qt.MouseButton.LeftButton,pos=position)
+                    QTest.mouseDClick(table.viewport(),Qt.MouseButton.LeftButton,pos=position)
+                    wait(lambda:w.tabs.currentIndex()==tab and w.worker is None,timeout=240)
+                assert w.report is overview and w.details and w.details[1]
+                order=w.drill['order']
+                assert {row['order'] for row in w.details[1]}=={order}
+                assert w.models['detail'].rowCount()>0
+                observation.update(drill_orders=1,drill_rows=len(w.details[1]),drill_seconds=time.monotonic()-started)
+                checks.append('Native drill loads only its selected warehouse order and keeps the original overview')
+                capture(w,'drill');w.back()
+                export(w.export_kind.findData('analysis_detail'))
+                assert f"纳入{len(expected['accepted'])}条" in observation['completion_text']
+                checks.append('Exported the existing order snapshot through the actual analytics page')
+            elif mode=='exercise':
                 summary=export(0);detail=export(1)
                 book=openpyxl.load_workbook(summary,read_only=True,data_only=True)
                 try:
@@ -102,8 +151,9 @@ def start_smoke(app,win,args):
                 checks.append('Actual EXE reopen reads every earlier generated workbook')
                 w.selected={fixture['head']['number']};w.controls();export(0,True)
                 checks.append('Actual EXE reopen can still export selected-order summary')
-            assert facts(win.work_repository.path)==before
-            checks.append('Query and actual exports do not modify original signed/lifecycle business data')
+            if not existing:
+                assert facts(win.work_repository.path)==before
+                checks.append('Query and actual exports do not modify original signed/lifecycle business data')
             finish()
         except Exception:finish(traceback.format_exc())
     QTimer.singleShot(200,execute)

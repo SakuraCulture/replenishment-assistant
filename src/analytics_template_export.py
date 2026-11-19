@@ -103,8 +103,9 @@ class _Formula:
     cached: object
 
 
-def _rate_formula(numerator, denominator, value):
-    return _Formula(f'=IF(OR(COUNT({numerator},{denominator})<2,{denominator}=0),"{NA}",{numerator}/{denominator})', value)
+def _rate_formula(numerator, denominator, value, *, unavailable=NA):
+    return _Formula(f'=IF(OR(COUNT({numerator},{denominator})<2,{denominator}=0),"{unavailable}",{numerator}/{denominator})',
+                    unavailable if value == NA else value)
 
 
 class _Sheet:
@@ -315,16 +316,30 @@ def append_summary(book, report, rows, progress=lambda _: None, cancel=None):
     return names
 
 
+def retain_detail_row(row):
+    return row.get('scope') != '排除' and (_quantity(row, 'model') != 0 or any(
+        (_quantity(row, stage) or 0) > 0 for stage in STAGES[1:]))
+
+
+def select_detail_rows(rows, cancel=None):
+    selected = []
+    for row in rows:
+        checkpoint(cancel)
+        if retain_detail_row(row):
+            selected.append(row)
+    return selected
+
+
 def append_detail(book, report, rows, progress=lambda _: None, cancel=None):
-    """Append all selected scope rows to the 43-column lifecycle detail page."""
+    """Write the selected rows to the 43-column lifecycle detail page."""
     progress = progress or (lambda _: None)
     sheet = _Sheet(book, 'SKU完整明细', [18, 18, 16, 22] + [16] * 25 + [20] + [16] * 8 + [24, 16, 27, 26, 30], cancel)
     sheet.ws.freeze_panes = 'E8'; sheet.ws.print_title_rows = '6:7'
-    for reference in ('A2:N2', 'A3:N3', 'A4:N4', 'A6:E6', 'F6:K6', 'L6:Q6', 'R6:S6', 'T6:Z6', 'AA6:AF6', 'AG6:AM6', 'AN6:AO6', 'AP6:AQ6'): sheet.merge(reference)
+    for reference in ('A2:N2', 'A3:N3', 'A4:N4', 'A5:N5', 'A6:E6', 'F6:K6', 'L6:Q6', 'R6:S6', 'T6:Z6', 'AA6:AF6', 'AG6:AM6', 'AN6:AO6', 'AP6:AQ6'): sheet.merge(reference)
     sheet.row(); sheet.row(['补货SKU生命周期明细'], 'title')
-    sheet.row(['一行＝订单×供货仓×SKU；保留本筛选全部纳入、待核、排除行；同SKU跨订单分别计数。生命周期范围：'+lifecycle_scope.label(report.get('query',{}))], 'note')
+    sheet.row(['每行对应一张仓单的一个SKU。排除行省略。模型建议为0时，签发至实收有任一阶段确认数量大于0就保留。生命周期范围为'+lifecycle_scope.label(report.get('query',{}))+'。'], 'note')
     sheet.row(['种类按阶段数量>0计1；货值=数量×签发冻结V单价。目标持有量为当时预测需求含安全库存，不按签发量倒推；数量非同单位物量。'], 'note')
-    sheet.row()
+    sheet.row(['率值＝对应后阶段数量÷前阶段数量。前阶段为0或任一阶段数量缺少确认值时，率值留空。前阶段大于0且后阶段确认数量为0时显示0%。'], 'note')
     groups = [None] * 43
     for col, label in ((1, '订单与商品'), (6, '六阶段数量'), (12, '环节转化'), (18, '最终履行'),
                        (20, '统一单价与六阶段货值'), (27, '订单与商品属性'), (33, '库存与订货约束'), (40, '大仓供给'), (42, '外部订单号')):
@@ -342,7 +357,8 @@ def append_detail(book, report, rows, progress=lambda _: None, cancel=None):
         displayed = [q if q is not None else NA for q in quantities]
         price = _number(row.get('price'))
         quantity_cells=[f'{column}{current}' for column in 'FGHIJK'];price_cell=f'T{current}'
-        rates = [_rate_formula(quantity_cells[ni],quantity_cells[di],_rate(displayed[ni],displayed[di])) for ni,di in RATE_PAIRS]
+        rates = [_rate_formula(quantity_cells[ni], quantity_cells[di], _rate(displayed[ni], displayed[di]), unavailable='')
+                 for ni, di in RATE_PAIRS]
         amounts = [_Formula(f'=IF(COUNT({cell},{price_cell})<2,"{NA}",{cell}*{price_cell})',q*price if q is not None and price is not None else NA)
                    for cell,q in zip(quantity_cells,quantities)]
         attrs = row.get('template_attributes') or {}

@@ -111,6 +111,22 @@ class AnalyticsTests(unittest.TestCase):
             self.report();self.assertEqual(read.call_count,len({c['source_sha256'] for c in self.catalogs.values()}))
     def test_no_mutation_during_collection(self):
         before=self.path.read_bytes();self.report();self.assertEqual(self.path.read_bytes(),before)
+    def test_overview_preserves_metrics_and_loads_the_selected_order_on_demand(self):
+        self.f.save('return',[{'门店确认数量':12}]);self.f.save('payment',[{'付款单商品数量':6,'实际金额':19.5}])
+        self.set_catalog('山东仓','标杆淘汰（夏季）');full=self.report()
+        with patch.object(a.Evidence,'template_attributes',side_effect=AssertionError('overview restored export attributes')), \
+             patch.object(a.Evidence,'dimensions',side_effect=AssertionError('overview restored detail dimensions')):
+            brief=a.collect_overview(self.path,self.spec)
+        for field in ('metrics','groups','stores','warehouses','orders','heads','payments','identifiers','data_stamp'):
+            self.assertEqual(brief[field],full[field],field)
+        self.assertEqual(a.calculate_view(brief,'coverage'),full['coverage'])
+        self.assertEqual(a.calculate_view(brief,'history')['items'],full['history']['items'])
+        order=full['heads'][0]['number']
+        details=a.collect_view(self.path,brief,'detail',[order])
+        expected=[{k:v for k,v in r.items() if k!='template_attributes'} for r in full['rows'] if r['order']==order]
+        self.assertEqual(details['rows'],expected)
+        self.f.save('return',[{'门店确认数量':10}])
+        with self.assertRaisesRegex(ValueError,'重新查询'):a.collect_view(self.path,brief,'detail',[order])
     def test_added_rows_unknown_not_zero_and_group_sums(self):
         self.f.save('return',[{'商品编码':'EXTRA','门店确认数量':3}]);r=self.report()
         extra=r['rows'][1];self.assertEqual(extra['sku'],'EXTRA');self.assertIsNone(extra['quantities']['model']);self.assertEqual(extra['scope'],'待核')
