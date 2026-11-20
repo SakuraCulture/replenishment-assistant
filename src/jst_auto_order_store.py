@@ -197,22 +197,32 @@ def _deletion_scope(oid, warehouse):
     return 'oid=? AND warehouse=?', (oid,warehouse)
 
 
-def require_resolved_deletion(db, scopes):
-    """Check the selected warehouse orders before removal."""
+def pending_deletion_orders(db, scopes, cancel=None):
+    """Read the original tasks that block removal of the selected warehouse orders."""
+    pending=[]
     if not exists(db):
-        return
-    blocked=[]
-    for oid,warehouse in scopes:
+        return pending
+    fields=('number','warehouse','stage','online','internal','sequence','reason')
+    for oid,warehouse in dict.fromkeys(scopes):
+        checkpoint(cancel)
         condition,arguments=_deletion_scope(oid,warehouse)
-        for number,wh,stage,online,internal in db.execute(
-                "SELECT json_extract(payload,'$.head.number'),warehouse,stage,online,internal "
+        for row in db.execute(
+                "SELECT coalesce(json_extract(payload,'$.head.number'),oid),warehouse,stage,online,internal,sequence,reason "
                 "FROM jst_auto_orders WHERE "+condition+" AND stage IN (?,?) ORDER BY warehouse",
                 (*arguments,*UNRESOLVED)):
-            identity='内部单号 '+internal if internal else '线上单号 '+online
-            blocked.append(f'{number or oid} · {wh} · {STAGES[stage]} · {identity}')
+            pending.append(dict(zip(fields,row)))
+    return pending
+
+
+def require_resolved_deletion(db, scopes, cancel=None):
+    blocked=[]
+    for task in pending_deletion_orders(db,scopes,cancel):
+        identity='内部单号 '+task['internal'] if task['internal'] else '线上单号 '+task['online']
+        status=STAGES[task['stage']]
+        details=f"{task['number']} · {task['warehouse']} · {identity} · {status}"
+        blocked.append(details+(' · '+task['reason'] if task['reason'] else ''))
     if blocked:
-        raise wr.Conflict('请在“聚水潭导入单 → 自动下单任务”对以下仓单执行“核对原单”后，再重新核对删除范围。\n'
-                          +'\n'.join(sorted(blocked)))
+        raise wr.Conflict('以下仓单的聚水潭原单仍待核。再次点击“彻底删除勾选订单”会自动回查。\n'+'\n'.join(sorted(blocked)))
 
 
 def delete_orders(db, scopes):

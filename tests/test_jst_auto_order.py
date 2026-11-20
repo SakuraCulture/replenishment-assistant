@@ -1,5 +1,8 @@
 """Offline native-XLS and exact-order recovery regressions."""
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
+from threading import Event
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -410,6 +413,74 @@ class AutoOrders(unittest.TestCase):
         self.assertTrue(any('删除已提交' in message for message in progress))
         self.assertEqual(self.read(keys[0],workbook=True),before[0])
         self.assertIsNone(self.read(keys[1]))
+
+    def test_delete_preview_recovers_only_selected_pending_task(self):
+        from runtime_support import Cancelled
+        from ui_work_io import Session
+        from work_failures import WorkFailure
+
+        selected=self.dual_selection()
+        north,south=service.prepare(self.path,selected)['ready']
+        service.process(self.path,[north,south],self.portal,'preview')
+        self.portal.disconnected=True
+        service.process(self.path,[north,south],self.portal,'submit')
+        head=selected[0]['head']
+        original,untouched=[self.read(key,workbook=True) for key in (north,south)]
+        self.assertEqual(original['stage'],'IMPORT_UNKNOWN')
+        self.assertEqual(untouched['stage'],'IMPORT_UNKNOWN')
+        self.portal.calls.clear()
+        lease=SimpleNamespace(start=lambda:None,close=lambda **_:True)
+        owner=SimpleNamespace(acquire=lambda:lease)
+
+        with Session(self.path) as session, patch.object(service,'Browser',return_value=self.portal):
+            with self.assertRaisesRegex(WorkFailure,'签发已变化'):
+                session.call('delete_preview',{'heads':[{**head,'revision':head['revision']+1}],
+                                               'recover_pending':True},lambda _:None)
+            waiting=session.call('delete_preview',{'heads':[head],'recover_pending':True},lambda _:None)
+            self.assertEqual(waiting,{'pending_jst_orders':{north:original['sequence']}})
+            self.assertEqual(self.read(north,workbook=True),original)
+
+            cancel=Event()
+            lookup=self.portal.action
+            def interrupted(*args,**kwargs):
+                result=lookup(*args,**kwargs)
+                cancel.set()
+                return result
+            with patch.object(self.portal,'action',side_effect=interrupted), self.assertRaises(Cancelled):
+                service.recover_for_deletion(self.path,waiting['pending_jst_orders'],owner,cancel=cancel)
+            self.assertEqual(self.read(north,workbook=True),original)
+
+            retrying=Event()
+            attempts=[]
+            commit=service.commit
+            def traced_commit(db,cancel):
+                def trace(statement):
+                    if statement=='COMMIT':
+                        attempts.append(statement)
+                        if len(attempts)==2:retrying.set()
+                db.set_trace_callback(trace)
+                return commit(db,cancel)
+
+            with patch.object(service,'commit',side_effect=traced_commit), ThreadPoolExecutor(1) as pool, \
+                    closing(wr.read_connection(self.path)) as reader:
+                reader.execute('BEGIN')
+                self.assertIsNotNone(reader.execute('SELECT 1 FROM jst_auto_orders WHERE online=?',(north,)).fetchone())
+                future=pool.submit(service.recover_for_deletion,self.path,waiting['pending_jst_orders'],owner)
+                try:
+                    self.assertTrue(retrying.wait(5),'本地保存没有等待读锁释放')
+                finally:
+                    reader.rollback()
+                future.result(timeout=5)
+            plan=session.call('delete_preview',[head],lambda _:None)
+            self.assertEqual([h['number'] for h in plan['scopes']],[head['number']])
+            self.assertEqual(plan['parents'][0]['remaining_warehouses'],[selected[1]['head']['warehouse']])
+            with self.assertRaisesRegex(WorkFailure,'请明确核对外部采购/已下单影响'):
+                session.call('delete_orders',{'plan':plan,'ack':False},lambda _:None)
+
+        self.assertEqual(self.portal.calls,[('lookup',north),('lookup',north)])
+        self.assertEqual(self.read(north)['stage'],'IMPORTED')
+        self.assertEqual(self.read(north)['sequence'],original['sequence']+1)
+        self.assertEqual(self.read(south,workbook=True),untouched)
 
     def test_one_store_two_warehouses_have_independent_profiles_and_submit_keys(self):
         selected=self.dual_selection()

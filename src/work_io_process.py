@@ -194,7 +194,12 @@ def serve(connection,path,cancel):
                             batch=None;drafts.close()
                 elif op in ('delete_preview','delete_orders','delete_job'):
                     import data_maintenance as maintenance
-                    if op=='delete_preview':result=maintenance.inspect_deletion(path,arguments,progress,cancel)
+                    if op=='delete_preview':
+                        if isinstance(arguments,dict):
+                            result=maintenance.inspect_deletion(path,arguments['heads'],progress,cancel,
+                                                                recover_pending=arguments.get('recover_pending',False))
+                        else:
+                            result=maintenance.inspect_deletion(path,arguments,progress,cancel)
                     elif op=='delete_orders':result=maintenance.execute(path,arguments['plan'],arguments['ack'],progress,cancel)
                     else:result=maintenance.delete_job(path,arguments['day'],arguments['revision'],progress,cancel)
                 elif op=='storage_copy':

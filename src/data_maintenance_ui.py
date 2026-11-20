@@ -101,7 +101,22 @@ def _remove(parent,host,heads):
     if not heads:QMessageBox.information(parent,'请选择订单','先勾选需要清理的订单。');return
     generator=getattr(host,'jst_generator',None);manager=getattr(host,'aoxiang_workflows',None)
     try:
-        with Session(host.work_repository.path) as session:plan=request(parent,session,'delete_preview',heads)
+        path=host.work_repository.path
+        with Session(path) as session:
+            plan=request(parent,session,'delete_preview',{'heads':heads,'recover_pending':True})
+            if pending:=plan.get('pending_jst_orders'):
+                from catalog_session_ui import manager as catalog_manager
+                from jst_auto_order import recover_for_deletion
+
+                if host.closing:raise Cancelled('已取消')
+                try:
+                    run(parent,recover_for_deletion,(path,pending,catalog_manager(host).session),'自动核对所选聚水潭原单')
+                except Cancelled:
+                    raise
+                except Exception as exc:
+                    raise RuntimeError('聚水潭原单自动核对未完成，未提交删除。可从当前入口重试。\n'+str(exc)) from exc
+                if host.closing:raise Cancelled('已取消')
+                plan=request(parent,session,'delete_preview',heads)
         d=QDialog(parent);d.setWindowTitle('彻底删除订单及关联数据');d.resize(1050,650);v=QVBoxLayout(d)
         v.addWidget(label('永久删除，不进入回收站。请核对完整关联范围。','section'))
         v.addWidget(label('只删除下方明确列出的仓单及其回传、付款、收货、生成结果和本地任务；同店未选择的另一仓保留。共享原件仍被其他仓单引用时保留。'))

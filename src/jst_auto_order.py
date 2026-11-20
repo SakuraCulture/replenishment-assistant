@@ -21,7 +21,7 @@ from jst_delivery_profiles import save_profile
 from jst_order_guards import require_generation, require_generation_basis, saved_execution_reason, upstream_stamp
 from payment_references import HEAD_KEYS, reference_key
 from runtime_support import checkpoint, Cancelled
-from sqlite_write import begin
+from sqlite_write import begin, commit
 
 
 class Check(ValueError):
@@ -295,6 +295,7 @@ def _save(path, order, stage, cancel, *, check_plan=False, proof=None, reason=''
         result=store.update(db,order,stage,proof=proof,reason=reason)
         if stage in store.UNRESOLVED and stage!=order['stage']:
             _event(db,result,'聚水潭自动下单执行意图',{'stage':stage})
+        commit(db,cancel)
     return result
 
 
@@ -343,6 +344,8 @@ def _record_found(path, order, result, cancel):
         reason='上次普通审核未通过，请查看平台原单提示后继续处理'
     elif stage=='IMPORTED' and not_dispatched:
         reason='上次审核在发送前中止，已核对原单仍待审核'
+    elif stage=='AUDIT_UNKNOWN' and native_status==customer_audit.AWAITING:
+        reason=f'原单仍显示“{native_status}”，普通审核结果有待确认'
     if stage=='REVIEW':
         if native_status in SHIPPING_PLATFORM_STATES:
             reason=f'聚水潭已进入后续发货环节（{native_status}），请核对原单'
@@ -378,6 +381,7 @@ def _record_found(path, order, result, cancel):
         if stage=='AUDITED' or native_status in customer_audit.REVERSED:
             customer_audit.record(db,current,native_status)
         _event(db,current,'聚水潭原单核对',detail)
+        commit(db,cancel)
     return current
 
 
@@ -457,7 +461,7 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
             with closing(wr.read_connection(path)) as db:
                 current=store.read(db,online)
             if current and not _legacy_audit_not_dispatched(current):
-                current=_save(path,current,current['stage'],None,reason=str(exc))
+                current=_save(path,current,current['stage'],cancel if action=='recover' else None,reason=str(exc))
             result={**(current or order),'reason':str(exc)}
         response={'online':online,'stage':result['stage'],'reason':result['reason']}
         if (prepare_payment and action in ('submit','audit','recover') and result.get('internal')
@@ -485,3 +489,10 @@ def run_browser(path, keys, owner, action, approved=None, progress=lambda _:None
         while not lease.close(timeout=.5):
             progress('等待聚水潭当前动作安全结束，保留原任务')
             time.sleep(.2)
+
+
+def recover_for_deletion(path, pending, owner, progress=lambda _:None, cancel=None):
+    """Reconcile the captured tasks using the ordinary read-only platform lookup."""
+    progress('查询所选仓单的原单和普通审核状态…')
+    run_browser(path,list(pending),owner,'recover',pending,progress,cancel)
+    checkpoint(cancel)
