@@ -12,6 +12,8 @@ import time
 import zlib
 from collections import OrderedDict
 from pathlib import Path
+import snapshot_json as codec
+from draft_spool import StagedArray, StagedMap
 
 BUFFER = 128 * 1024
 CACHE_BYTES = 64 * 1024**2
@@ -19,7 +21,7 @@ RESERVE_BYTES = 16 * 1024**2
 SMALL_BLOCK = 1024**2
 KEY_CACHE_BYTES = 64 * 1024
 KEY_CACHE_ENTRIES = 64
-_CONTAINERS = (dict, list, tuple)
+_CONTAINERS = (dict, list, tuple, StagedArray, StagedMap)
 
 
 class _KeyCosts:
@@ -62,6 +64,7 @@ class _KeyCosts:
 
 def _small(value, budget, probe=None):
     """Conservative UTF-8/escaping bound, short-circuiting at BUFFER bytes."""
+    if isinstance(value,(StagedArray,StagedMap)):return False
     budget[1] -= 1
     if budget[1] < 0: return False
     if isinstance(value,str):budget[0] -= 6*len(value)+4
@@ -93,11 +96,10 @@ def _small(value, budget, probe=None):
 
 
 def _parts(value, fast_limit=BUFFER, on_pressure=None, probe=None):
-    import work_repository as wr
     if fast_limit > 0 and _small(value,[fast_limit,8192],probe):
         # Keep CPython's fast canonical encoder for *proven bounded* containers.
         try:
-            text = wr.dumps(value)
+            text = codec.dumps(value)
         except MemoryError:
             if probe is not None:probe.disable()
             if on_pressure is not None:on_pressure()
@@ -107,7 +109,7 @@ def _parts(value, fast_limit=BUFFER, on_pressure=None, probe=None):
         # No bytes from this container have been emitted. Resume its canonical
         # representation in bounded pieces rather than replaying a business step.
         yield from _parts(value,0,on_pressure,probe)
-    elif isinstance(value,dict):
+    elif isinstance(value,(dict,StagedMap)):
         yield '{'
         for i,key in enumerate(sorted(value)):
             if i:yield ', '
@@ -117,10 +119,10 @@ def _parts(value, fast_limit=BUFFER, on_pressure=None, probe=None):
             elif key is None:name='null'
             elif isinstance(key,(int,float)):name=json.dumps(key,allow_nan=False)
             else:raise TypeError('无效JSON对象键')
-            yield wr.dumps(name);yield ': '
+            yield codec.dumps(name);yield ': '
             yield from _parts(value[key],fast_limit,on_pressure,probe)
         yield '}'
-    elif isinstance(value,(list,tuple)):
+    elif isinstance(value,(list,tuple,StagedArray)):
         yield '['
         for i,item in enumerate(value):
             if i:yield ', '
@@ -131,7 +133,7 @@ def _parts(value, fast_limit=BUFFER, on_pressure=None, probe=None):
         for start in range(0,len(value),BUFFER//8):
             yield json.encoder.encode_basestring(value[start:start+BUFFER//8])[1:-1]
         yield '"'
-    else:yield wr.dumps(value)
+    else:yield codec.dumps(value)
 
 
 def json_bytes(value, *, fast_limit=BUFFER, on_pressure=None):

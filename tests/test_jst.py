@@ -194,7 +194,8 @@ class Service(unittest.TestCase):
         self.assertEqual(j.get(self.path,old[0])['summary']['quantity'],'40')
         self.assertEqual(j.get(self.path,r['generated'][1])['summary']['quantity'],'20')
         import openpyxl
-        x=ex.export(self.path,[old[0]],self.f.root/'old-output')['files'][0]
+        x=ex.export(self.path,[old[0]],self.f.root/'old-output',historical=True)['files'][0]
+        self.assertIn('旧版本',Path(x['path']).name)
         book=openpyxl.load_workbook(x['path']);self.assertEqual(book.active['C2'].value,40);book.close()
 
     def test_cancel_after_first_keeps_first_and_retry_no_old_cancel(self):
@@ -257,7 +258,7 @@ class Service(unittest.TestCase):
 
     def test_written_file_is_not_reported_missing_when_journal_fails(self):
         _,gid=self.generated()
-        with patch('jst_orders.event',side_effect=sqlite3.OperationalError('injected journal failure')),self.assertLogs(level='ERROR'):
+        with patch('jst_order_store.event',side_effect=sqlite3.OperationalError('injected journal failure')),self.assertLogs(level='ERROR'):
             r=ex.export(self.path,[gid],self.f.root/'journal-failed')
         self.assertEqual(len(r['files']),1);self.assertEqual(r['failed'],[]);self.assertTrue(r['warnings'])
         self.assertTrue(Path(r['files'][0]['path']).is_file())

@@ -96,19 +96,19 @@ def start_smoke(app,win,args):
             report['selected_export_numbers']=[h['number'] for h in selected]
             report['selected_export_files']=[Path(p).name for p in exported]
             require(wr.dumps(win.results)==before_rows,'History export changed current work')
-            w.search.setText('S001');w.warehouse_filter.setCurrentText('河北仓');w.lock_filter.setCurrentText('已锁');query(w)
+            w.search.setText('S001');w.warehouse_filter.setCurrentText('河北仓');query(w)
             require(not w.checked,'Filter change retained hidden selection')
             require(len(w.records)==1 and w.records[0]['store']=='S001' and w.records[0]['locked'],'Combined filter wrong')
             d=StageDialog(w,'payment');dialogs.append(d);d.show();wait(lambda:d.panel.reader.active is None and getattr(d.panel,'applied_request',None) is not None)
-            require(d.panel.search.text()=='S001' and d.panel.lock_filter.currentText()=='已锁','Stage criteria lost')
+            require(d.panel.search.text()=='S001' and d.panel.warehouse_filter.currentText()=='河北仓','Stage criteria lost')
             require([x['number'] for x in d.panel.records]==[x['number'] for x in w.records],'Stage changed scope')
             d.grab().save(str(out/'07-付款核对范围.png'));d.reject()
             d2=StageDialog(w,'payment',selected);dialogs.append(d2);d2.show();wait(lambda:getattr(d2.panel,'applied_request',None) is not None)
             require(d2.panel.fixed_scope==selected,'Selection scope lost')
             d2.panel.clear_filters();wait(lambda:d2.panel.reader.active is None and d2.panel.reader.pending is None)
             require(d2.panel.fixed_scope==selected,'Clear filters widened fixed scope');d2.reject()
-            checks.append('日期/仓/锁/搜索继承；跨页勾选仅导出两张签发；切换筛选清空勾选；固定订单范围不会被清空筛选扩大')
-            w.lock_filter.setCurrentIndex(0);w.warehouse_filter.setCurrentIndex(0);w.search.setText('不存在的合成门店');query(w)
+            checks.append('日期、仓和搜索沿用总览。跨页勾选仅导出两张签发。切换筛选清空勾选，固定订单范围仍有效。')
+            w.warehouse_filter.setCurrentIndex(0);w.search.setText('不存在的合成门店');query(w)
             require(w.empty_actions.isVisible() and not w.bar.isVisible(),'Empty explanation/progress wrong')
             shot('08-无匹配与下一步');checks.append('无记录显示具体原因与清空筛选入口；加载完成收起进度条')
             # Check actual nested navigation, canceling its modal with a test-owned timer.

@@ -1,6 +1,7 @@
 """Real worker previews with explicit duplicate choices and isolated databases."""
 import copy
 import hashlib
+import logging
 import os
 import sqlite3
 import sys
@@ -15,6 +16,7 @@ import test_lifecycle as fixture
 import lifecycle_batch as batch
 import lifecycle_duplicates as duplicates
 import order_lifecycle as service
+from application_gc import GuiCollector
 from PySide6.QtWidgets import QApplication,QDialog,QMessageBox
 from lifecycle_batch_ui import BatchImport
 from lifecycle_duplicate_ui import DuplicateResolution
@@ -22,7 +24,29 @@ from lifecycle_duplicate_ui import DuplicateResolution
 
 class LifecycleDuplicateUiTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):cls.app=QApplication.instance() or QApplication([])
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+        logger = logging.getLogger(__name__)
+
+        def emit(event, **details):
+            logger.debug("%s %s", event, details)
+
+        # These tests create Qt directly and run real workbook reads in QThreads.
+        # Use the application collector so worker allocations cannot finalize
+        # Python cycles that contain Qt wrappers left by previous tests.
+        runtime = SimpleNamespace(phase="RUNNING", emit=emit)
+        collector = cls._gui_collector = GuiCollector(cls.app, runtime)
+
+        def release_collector():
+            try:
+                collector.drain()
+                if collector.off_thread_collections:
+                    raise AssertionError("Real Excel UI tests collected Qt cycles off the GUI thread")
+            finally:
+                collector.restore()
+                collector.deleteLater()
+
+        cls.addClassCleanup(release_collector)
 
     def setUp(self):
         self.f=fixture.LifecycleTests();self.f.setUp()

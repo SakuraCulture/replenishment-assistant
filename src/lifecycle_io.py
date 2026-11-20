@@ -8,12 +8,10 @@ import purchase_io as base
 from runtime_support import checkpoint
 from export_progress import RowProgress
 
-from lifecycle_stages import LEGACY as STAGES, CURRENT as ALL_STAGES
-TITLES = {'return': '门店回传单', 'payment': '门店付款单', 'receipt': '门店实际收货单'}
+from lifecycle_stages import LEGACY as STAGES, CURRENT as ALL_STAGES, TITLES
 QUANTITIES = {'return': '门店确认数量', 'payment': '付款单商品数量', 'receipt': '实际收货数量'}
 DOCNUM = {'return': '回传单号', 'payment': '付款单号', 'receipt': '收货单号'}
 DOCDATE = {'return': '回传日期', 'payment': '付款日期', 'receipt': '收货日期'}
-TITLES['operations']='运营签发单'
 for mapping in (QUANTITIES,DOCNUM,DOCDATE):mapping['operations']=mapping['return']
 COMMON = ['补货单号', '签发修订', '门店编码', '供货仓', '商品编码', '商品名称', '数量单位', '折合库存单位系数', '换算依据']
 

@@ -26,7 +26,7 @@ class PaymentReceiptProofs(unittest.TestCase):
                     plan=self.f.plan(scan);p=plan['plans'][0];raw=wr.dumps(p['payload'])
                     self.assertIn('return',p['_read_proofs']);self.assertIn('operations',p['_read_proofs'])
                     if stage=='receipt':self.assertIn('payment',p['_read_proofs'])
-                    with patch('order_lifecycle.decode',wraps=lc.decode) as decode:result=lc.commit(self.f.path,plan)
+                    with patch('lifecycle_facts.decode',wraps=lc.decode) as decode:result=lc.commit(self.f.path,plan)
                     self.assertFalse(any(c.args[0] is not None for c in decode.call_args_list))
                     self.assertEqual(result[0]['changed'],not repeated)
                     with closing(sqlite3.connect(self.f.path)) as db:
@@ -56,7 +56,7 @@ class PaymentReceiptProofs(unittest.TestCase):
                 plan=self.plan('payment')
                 if mode=='absent':plan['plans'][0].pop('_read_proofs')
                 else:plan['plans'][0]['_read_proofs']['operations']['value'][5]='{}'
-                with patch('order_lifecycle.decode',wraps=lc.decode) as decode:lc.commit(self.f.path,plan)
+                with patch('lifecycle_facts.decode',wraps=lc.decode) as decode:lc.commit(self.f.path,plan)
                 self.assertTrue(any(c.args[0] is not None for c in decode.call_args_list))
 
 

@@ -46,7 +46,10 @@ function sources(file,p,proof){
   for(const warehouse of warehouses){
     const source=path.join(folder,'warehouse_catalogs',warehouse+'.json'),before=stamp(source),expected=proof.catalogs?.[warehouse];
     if(!expected)fail('HOST_GUARD_REQUIRED','原采购缺少完整仓资料核验凭据，请回主程序重新核验；尚未上传');
-    if(before===null){if(expected.revision!==null)fail('PURCHASE_BASIS_CHANGED','原仓资料已移除，请重新核对；尚未上传');}
+    if(expected.legacy){
+      const hash=before===null?null:sha256(fs.readFileSync(source));
+      if(hash!==expected.sha256)fail('PURCHASE_BASIS_CHANGED','当前仓资料已更新，请重新核对；尚未上传');
+    }else if(before===null){if(expected.revision!==null)fail('PURCHASE_BASIS_CHANGED','原仓资料已移除，请重新核对；尚未上传');}
     else{
       if(expected.revision===null)fail('PURCHASE_BASIS_CHANGED','仓资料已变化，请重新核对；尚未上传');
       const bytes=fs.readFileSync(source);
@@ -65,6 +68,17 @@ function sources(file,p,proof){
   checks.push([supplier,before]);return checks;
 }
 
+function checkLegacyCatalogs(db,proof){
+  for(const warehouse of warehouses){
+    const expected=proof.catalogs[warehouse].legacy;
+    if(!expected)continue;
+    const tables=db.prepare("SELECT count(*) AS n FROM sqlite_master WHERE name IN ('jst_warehouses','jst_baselines')").get().n;
+    const current=tables===2?db.prepare('SELECT b.bid,b.digest FROM jst_warehouses w JOIN jst_baselines b ON b.bid=w.bid WHERE w.warehouse=?').get(warehouse):null;
+    if(!current||canonical(Object.values(current))!==canonical(expected))
+      fail('PURCHASE_BASIS_CHANGED','旧版仓资料依据已更新，请重新核对；尚未上传');
+  }
+}
+
 export function checkHostDispatch(p,{consume=false,requestHash=null}={}){
   const file=process.env.REPLENISHMENT_BUSINESS_DB;
   if(!file||!fs.existsSync(file))fail('HOST_GUARD_REQUIRED','请在补货助手重新核验本单采购预览；本次尚未上传');
@@ -80,6 +94,7 @@ export function checkHostDispatch(p,{consume=false,requestHash=null}={}){
     db.exec(consume?'BEGIN IMMEDIATE':'BEGIN');
     const current=db.prepare('SELECT * FROM purchase_dispatch_guards WHERE purchase_id=?').get(p.id);
     if(!current||current.identity_hash!==first.identity_hash||current.proof!==first.proof||current.state!=='AUTHORIZED')fail('HOST_SUBMISSION_REVIEW','原采购已有提交登记或正在更新，请核对原任务；未重新上传');
+    checkLegacyCatalogs(db,proof);
     const actual=hostFacts(db,p.basis);
     if(canonical(actual)!==canonical(proof.facts)){
       const message=canonical(actual.versions.payment)!==canonical(proof.facts.versions.payment)?'付款单已更新，不能上传旧付款数量':'本仓签发、上游或准入依据已变化';

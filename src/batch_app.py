@@ -122,12 +122,14 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.input_dirty=True;self.mark_dirty();self.import_note.setText('文件列表已变化，请重新检查。上次结果已标记待重算。');self.update_controls()
     def start_load(self):
         if self.worker:return
-        products=self.products.path if self.master_legacy.isChecked() else self.catalogs
+        products=self.products.path if self.master_legacy.isChecked() else self.catalog_repository
         if self.sales.paths and products:
             self.input_dirty=True;self.mark_dirty()
             self.job(batch_service.load,(self.sales.paths,products),self.loaded_ok)
     def loaded_ok(self,loaded):
         self.reset_calculation_snapshot()
+        if 'warehouse_catalog_versions' in loaded:
+            self.catalogs=loaded['intake']['catalogs'];self.refresh_catalog_labels()
         self.loaded=loaded;self.input_dirty=False;self.results={};self.result=None;self.current_store=None;self.overrides={};self.dirty=True;self.run_codes=[]
         self.default_by_store={s:{w:DEFAULT_WAREHOUSES[w] for w in loaded.get('catalogs',{})} for s in loaded['stores']}
         for d,m in loaded['normalized']:
@@ -280,7 +282,11 @@ class BatchWindow(WarehouseUi,SessionWindow):
         v.addWidget(button('应用选择并重新检查',dialog.accept,True));v.addWidget(button('取消',dialog.reject))
         if dialog.exec()==QDialog.DialogCode.Accepted:
             for c,combo in zip(conflicts,combos):c['choice']=combo.currentData()
-            self.job(batch_service.prepare,(data,),self.loaded_ok)
+            versions=self.loaded.get('warehouse_catalog_versions')
+            def prepared(loaded):
+                if versions is not None:loaded['warehouse_catalog_versions']=versions
+                self.loaded_ok(loaded)
+            self.job(batch_service.prepare,(data,),prepared)
     def reset_calculation_snapshot(self):
         """Input, settings and priority list form one task snapshot, never a partial cache."""
         self._calculation_settings={};self._calculation_input=None;self._queued_retries=[]
@@ -289,6 +295,12 @@ class BatchWindow(WarehouseUi,SessionWindow):
         if self.worker or self.input_dirty or not self.loaded:return
         codes=self.selected_codes() if codes is None or isinstance(codes,bool) else codes
         reuse=retry and getattr(self,'_calculation_input',None) is not None and '_calculation_profile' in self.__dict__
+        if not reuse:
+            try:
+                versions=self.loaded.get('warehouse_catalog_versions',{})
+                if any(self.catalog_repository.current_digest(wh)!=version for wh,version in versions.items()):
+                    self.file_changed();self.status.setText('当前仓资料已刷新，请重新检查后再计算。');return
+            except Exception as exc:self.failed('当前仓资料核对失败：'+str(exc));return
         try:jobs={s:copy.deepcopy(self._calculation_settings[s]) if reuse and s in getattr(self,'_calculation_settings',{}) else self.selected_settings(s) for s in codes}
         except ValueError as exc:self.failed(str(exc));return
         if not jobs:return

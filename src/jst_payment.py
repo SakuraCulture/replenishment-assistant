@@ -45,3 +45,16 @@ def prepare(path,entries,progress=lambda _:None,cancel=None):
             raise type(exc)(h['name']+' / '+h['warehouse']+' / '+h['number']+'：'+str(exc)) from exc
         progress(RowProgress(f'准备付款核对 {i+1}/{len(entries)}',i+1,len(entries)))
     return {'plans':plans,'files':[]}
+
+def prepare_review(path, entries, progress=lambda _: None, cancel=None):
+    """Prepare the plan and its amounts in the existing review worker."""
+    plan = prepare(path, entries, progress, cancel)
+    amounts = {}
+    for document in plan['plans']:
+        checkpoint(cancel)
+        amounts[document['head']['number']] = sum(
+            (Decimal(str(row['amount'])) for row in document['payload']['rows']
+             if Decimal(str(row['base_quantity'])) > 0),
+            Decimal(0),
+        )
+    return plan, amounts

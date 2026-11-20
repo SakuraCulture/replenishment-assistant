@@ -38,9 +38,9 @@ class Dialog(QDialog):
     def __init__(self,host,warehouses=None,purpose='default_catalog',parent=None):
         super().__init__(parent or host);self.host=host;self.purpose=purpose;self.worker=None;self._completed=False;self.committing=False;self.close_pending=False;self.state={};self.probe=None;self.adopted=[]
         self.client=manager(host).session.acquire()
-        self.setWindowTitle('聚水潭商品资料 · '+('更新本次分配库存' if purpose=='allocation_baseline' else '同步默认仓资料'));self.resize(1090,710)
+        self.setWindowTitle('聚水潭商品资料 · 刷新当前仓资料');self.resize(1090,710)
         v=QVBoxLayout(self);v.addWidget(label('选择仓 → 核验账号 → 获取并采用；两仓独立登录，按仓依次处理。','section'))
-        v.addWidget(label('应用启动时自动连接两仓浏览器并检查登录；本页用于异常后修复、维护账号及主动刷新资料。关闭本窗口保留连接。'+('将更新本次分配依据；已有分配需自行复查。' if purpose=='allocation_baseline' else '采用新资料后已有计算需要重新检查。'),'muted'))
+        v.addWidget(label('采用后，补货检查和新分配共用该仓最新资料。原分配批次继续使用当时的库存。当前未签发的计算需重新检查。','muted'))
         row=QHBoxLayout();self.warehouse=QComboBox();self.warehouse.addItems(WAREHOUSES)
         if warehouses:self.warehouse.setCurrentText(warehouses[0])
         row.addWidget(self.warehouse);self.account=label('尚未读取连接设置');row.addWidget(self.account,1);v.addLayout(row)
@@ -143,7 +143,7 @@ class Dialog(QDialog):
     def reload(self):self.refresh(run(self,connect,(self.client,),'读取采集状态'))
     def refresh(self,state):
         previous=self.records.currentData();self.state=state;self.records.blockSignals(True);self.records.clear()
-        for b in state.get('batches',[]):self.records.addItem(b['createdAt'][:19].replace('T',' ')+' · '+{'default_catalog':'默认资料','allocation_baseline':'分配库存','scheduled_replenishment':'定时补货','stockout_analysis':'缺货率分析（独立资料）'}.get(b['purpose'],'未知用途')+' · '+'、'.join(i['account']['warehouse'] for i in b['items']),b['id'])
+        for b in state.get('batches',[]):self.records.addItem(b['createdAt'][:19].replace('T',' ')+' · '+{'default_catalog':'商品资料','allocation_baseline':'分配入口','scheduled_replenishment':'定时补货','stockout_analysis':'缺货率采集'}.get(b['purpose'],'未知用途')+' · '+'、'.join(i['account']['warehouse'] for i in b['items']),b['id'])
         index=self.records.findData(previous);self.records.setCurrentIndex(max(index,0));self.records.blockSignals(False);self.select_account();self.show_record()
     def show_record(self,*_):
         b=next((b for b in self.state.get('batches',[]) if b['id']==self.records.currentData()),None);rows=[]
@@ -175,8 +175,7 @@ class Dialog(QDialog):
     def on_business_event(self,event):
         if event['kind']=='adopted':
             self.adopted.append(event['ack'])
-            if event['catalog'] and not event['ack'].get('unchanged'):
-                self.host.catalogs[event['ack']['warehouse']]=event['catalog'];self.host.refresh_catalog_labels();self.host.file_changed()
+            if event['catalog']:self.host.current_warehouse_adopted(event['catalog'])
         elif event['kind']=='status':
             self.state=event['state'];b=self.state['batches'][0];self.records.blockSignals(True);self.records.clear();self.records.addItem(b['createdAt'][:19],b['id']);self.records.blockSignals(False);self.show_record()
             self.show_connection()

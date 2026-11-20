@@ -2,6 +2,7 @@
 import json,sqlite3,uuid
 from contextlib import closing
 from pathlib import Path
+from draft_spool import StagedMap, result_source
 
 class SourceDeleted(ValueError):
     code='SOURCE_ORDER_DELETED'
@@ -41,8 +42,10 @@ def read_epochs(path,day,codes):
 
 def basis(payload):
     codes=set()
+    results=result_source(payload.get('results') or {})
     for k in ('states','results','store_presets','store_ui','overrides','default_by_store','preissue_drafts','new_product_bases','_calculation_settings'):
-        if isinstance(payload.get(k),dict):codes.update(payload[k])
+        value=results if k=='results' else payload.get(k)
+        if isinstance(value,(dict,StagedMap)):codes.update(value)
     for k in ('stores','blocked'):codes.update((payload.get('loaded') or {}).get(k,{}) or {})
     scopes={}
     def add_scope(store,warehouse):
@@ -50,7 +53,7 @@ def basis(payload):
     def edits_scope(store,value):
         for item in (value.get('edits') or {}).values():add_scope(store,item.get('warehouse'))
         for item in value.get('risks') or []:add_scope(store,item.get('warehouse'))
-    for store,result in (payload.get('results') or {}).items():
+    for store,result in results.items():
         for row in result.get('rows',[]):
             add_scope(store,row.get('AU'))
         edits_scope(store,result.get('preissue') or {})

@@ -6,7 +6,7 @@ from business_ui import run
 from runtime_support import Cancelled
 
 def idle(host):
-    for name in ('stockout','warehouse_stockout','jst_generator','scheduled','browser_startup'):
+    for name in ('stockout','warehouse_stockout','jst_generator','scheduled','browser_startup','jst_fulfillment_runner'):
         owner=getattr(host,name,None)
         if owner and (getattr(owner,'worker',None) or getattr(owner,'publisher',None) or getattr(owner,'queued',None)):raise ValueError('请等待计算、分析、连接核验和后台作业安全结束，再进行完整订单迁移')
     if getattr(host,'worker',None) or getattr(host,'_aoxiang_dialog',None):raise ValueError('请先安全结束当前业务操作，再迁移')

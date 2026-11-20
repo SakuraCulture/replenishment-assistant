@@ -119,9 +119,9 @@ class HomeTasks(QFrame):
 
     def clean_overview(self):
         w = self.host.followup
-        blockers = [QSignalBlocker(x) for x in (w.status, w.search, w.warehouse_filter, w.lock_filter)]
+        blockers = [QSignalBlocker(x) for x in (w.status, w.search, w.warehouse_filter)]
         w.start.clear(); w.end.clear(); w.search.clear()
-        w.status.setCurrentIndex(0); w.warehouse_filter.setCurrentIndex(0); w.lock_filter.setCurrentIndex(0)
+        w.status.setCurrentIndex(0); w.warehouse_filter.setCurrentIndex(0)
         w.checked.clear()
         del blockers
         return w

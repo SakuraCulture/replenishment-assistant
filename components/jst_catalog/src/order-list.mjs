@@ -1,0 +1,204 @@
+import {CatalogError, check} from './common.mjs';
+import {activateControl} from './product-export.mjs';
+import {fullOrder,nativeStatus} from './order-facts.mjs';
+
+export const LIST_PATH = '/app/order/order/list.aspx';
+const digits = /^[1-9]\d*$/;
+const pagerCountPattern = /总共\s*\d+\s*页\s*(\d+)\s*条记录|共\s*(\d+)\s*条\s*\d+\s*\/\s*\d+\s*页/.source;
+const statuses = {
+  waitconfirm: ['awaiting', '已付款待审核'],
+  waitfconfirm: ['audited', '已客审待财审'],
+  delivering: ['review', '发货中(打单拣货)'],
+  sent: ['review', '已发货'],
+  question: ['exception', '异常'],
+  waitoutersent: ['review', '等供销商|外仓发货'],
+  waitpay: ['review', '待付款'],
+  cancelled: ['review', '已取消'],
+  merged: ['review', '被合并'],
+  split: ['review', '被拆分'],
+};
+const fail = message => { throw new CatalogError('ORDER_PAGE_CHANGED', message); };
+
+export function orderQueryMatches(request, frameUrl, online, status) {
+  const expected = new URL(frameUrl);
+  const actual = new URL(request.url());
+  if (request.method() !== 'POST' || actual.origin !== expected.origin || actual.pathname !== LIST_PATH) return false;
+  try {
+    const form = new URLSearchParams(request.postData());
+    const callback = JSON.parse(form.get('__CALLBACKPARAM'));
+    if (form.get('__CALLBACKID') !== 'JTable1' || callback.Method !== 'LoadDataToJSON') return false;
+    const filters = JSON.parse(callback.Args[1]);
+    return Array.isArray(filters) && filters.length === (status ? 2 : 1)
+      && filters.some(q => q.k === 'so_id' && q.v === online && q.c === '@=')
+      && (!status || filters.some(q => q.k === 'status' && q.v === status && q.c === '@='));
+  } catch {
+    return false;
+  }
+}
+
+async function readReply(response) {
+  if (!response.ok()) fail('订单精确查询未获成功响应');
+  try {
+    const body = await response.text();
+    const separator = body.indexOf('|');
+    if (separator < 1 || !/^\d+$/.test(body.slice(0, separator))) throw Error();
+    const reply = JSON.parse(body.slice(separator + 1));
+    const result = JSON.parse(reply.ReturnValue);
+    if (reply.IsSuccess !== true || reply.GotoLogin || !Array.isArray(result.datas) || !result.dp
+        || result.dp.PageIndex !== 1 || result.dp.IsLast !== true) throw Error();
+    return result.datas;
+  } catch {
+    fail('订单精确查询没有可核验的完整结果');
+  }
+}
+
+async function orderControl(control, label, options) {
+  try {
+    await activateControl(control,options);
+  } catch (error) {
+    if (error.code==='CONTROL_NOT_READY') fail(label+'尚未就绪');
+    if (error.code==='CONTROL_AMBIGUOUS') fail(label+'不唯一');
+    throw error;
+  }
+}
+
+async function checkBox(control, label, beforeDispatch, visibleLabel) {
+  if (!await control.isChecked({timeout:8000})) {
+    const target = visibleLabel && !await control.isVisible() ? visibleLabel : control;
+    await orderControl(target,label,{timeout:8000,beforeDispatch});
+    if (!await control.isChecked({timeout:8000})) fail(label+'未勾选成功');
+  }
+}
+
+export async function queryOrder(page, frame, spec, status, signal) {
+  check(signal);
+  const filters = frame.frameLocator('#s_filter_frame');
+  const online = filters.locator('input#so_id');
+  const search = filters.locator('span.btn_search[onclick="FullSearch()"]').filter({hasText:/^组合查询$/});
+  await orderControl(filters.locator('span[onclick="ClearSearch()"]').filter({hasText:/^清空$/}),'订单筛选的清空按钮');
+  await online.fill(spec.online, {timeout:8000}).catch(()=>fail('线上订单号输入框尚未就绪'));
+  if (status) {
+    const id = 'status_'+status;
+    await checkBox(filters.locator('input#'+id),'订单状态筛选（'+statuses[status][1]+'）',undefined,
+      filters.locator(`label[for="${id}"]`).filter({visible:true}));
+  }
+  const pending = page.waitForResponse(r => orderQueryMatches(r.request(), frame.url(), spec.online, status), {timeout:25000});
+  pending.catch(()=>{});
+  await orderControl(search,'订单组合查询按钮',{beforeDispatch:async()=>{
+    const checked = await filters.locator('input[id^="status_"]:checked').evaluateAll(nodes => nodes.map(n => n.id));
+    if (await online.inputValue() !== spec.online || checked.join() !== (status ? 'status_'+status : ''))
+      fail('原线上单号或状态查询条件已变化');
+    check(signal);
+  }});
+  const received = await readReply(await pending.catch(()=>fail('未收到本次原线上单号的查询响应')));
+  const total = received.length;
+  if (total > 1) fail('线上单号对应多条订单，待核对');
+  await frame.waitForFunction(({online,total,pagerCountPattern})=>{
+    const text = e => (e?.innerText||'').split('\n')[0].trim();
+    const rows = [...document.querySelectorAll('._jt_row')];
+    const bar = document.querySelector('#_jt_pagebar')?.innerText || '';
+    const count = bar.match(new RegExp(pagerCountPattern));
+    return !!count && Number(count[1]??count[2])===total && rows.length===total
+      && (!total || text(rows[0].querySelector('._jt_cell_so_id'))===online);
+  }, {online:spec.online,total,pagerCountPattern}, {timeout:10000,polling:100}).catch(()=>fail('原订单列表未刷新到唯一精确结果'));
+  check(signal);
+  if (!total) return null;
+  const row = frame.locator('._jt_row');
+  const identity = await row.evaluate(r=>{
+    const text = e => (e?.innerText||'').split('\n')[0].trim();
+    return {
+      internal:text(r.querySelector('._jt_cell_o_id .o_id')),
+      online:text(r.querySelector('._jt_cell_so_id')),
+      shop:text(r.querySelector('._jt_cell_shop_buyer_id .shopname')),
+      buyer:text(r.querySelector('._jt_cell_shop_buyer_id > span')),
+      amount:text(r.querySelector('._jt_cell_pay_amount')),
+    };
+  });
+  if (!digits.test(identity.internal) || (spec.internal && spec.internal !== identity.internal)
+      || identity.online !== spec.online || identity.shop !== spec.shop)
+    fail('查回的店铺、内部订单号或线上订单号与原单不同');
+  const native=received[0];
+  return {row,...identity,native: native?.o_id && native?.so_id ? {
+    internal:String(native.o_id),online:native.so_id,shop:native.shop_name,shop_id:String(native.shop_id),
+    coid:String(native.co_id),status:native.status,count:native.item_actual_count,quantity:native.item_actual_qty}:null};
+}
+
+export async function readOrder(page, frame, spec, {pendingOnly=false,nativeOnly=false}={}, signal) {
+  if(nativeOnly) {
+    const found=await queryOrder(page,frame,spec,null,signal);
+    if(!found)return {found:false};
+    const identity=found.native;
+    if(!identity||identity.internal!==found.internal||identity.online!==spec.online||identity.shop!==spec.shop
+        ||identity.coid!==spec.binding?.coid||identity.shop_id!==spec.binding?.shop_id)
+      fail('实配查询的企业、店铺或原单与已保存的关联不同');
+    const status=nativeStatus(identity.status);
+    if(!Object.values(statuses).some(([,label])=>label===status)) fail('原单当前状态尚不能核实');
+    if(status!=='已发货') return {...found,found:true,native_status:status};
+    const facts=await fullOrder(frame,spec,{coid:identity.coid,shop_id:identity.shop_id,count:identity.count},signal);
+    if(facts.native_status!==status||!facts.contact_ok) fail('原单状态或买家身份已变化');
+    return {...found,...facts,found:true};
+  }
+  if (!pendingOnly && !await queryOrder(page,frame,spec,null,signal)) return {found:false};
+  const keys = Object.keys(statuses);
+  const auditFollowUp = ['AUDIT_UNKNOWN','AUDITED','REVIEW'].includes(spec.phase);
+  const candidates = auditFollowUp ? ['waitfconfirm', ...keys.filter(key => key !== 'waitfconfirm')] : keys;
+  for (const key of pendingOnly ? ['waitconfirm'] : candidates) {
+    let order = await queryOrder(page,frame,spec,key,signal);
+    if (!order) continue;
+    const cells = order.row.locator('._jt_cell_items');
+    await orderControl(cells,'原单的商品明细入口');
+    const details = frame.locator('.full_item_table').filter({visible:true});
+    await details.waitFor({timeout:10000}).catch(()=>fail('无法读取原单完整商品明细'));
+    const lines = await details.locator('.jt_item_row').evaluateAll(rows=>rows.map(row=>{
+      const txt = s => row.querySelector(s)?.innerText.trim() || '';
+      return [txt('.sku_id'),txt('[title="数量"]').replace(/^[x×]\s*/i,''),txt('[title="单价"]').replace(/^[￥¥]\s*/,'')];
+    }));
+    if (!lines.length) fail('查回的订单缺少商品明细');
+    if (pendingOnly) {
+      // Some ERP layouts leave the product popover open when the pager is
+      // clicked. Reload only this verified list, then select the exact order
+      // again before granting the ordinary-audit permit.
+      const original = new URL(frame.url());
+      check(signal);
+      await frame.goto(original.href,{waitUntil:'domcontentloaded',timeout:30000})
+        .catch(()=>fail('普通审核前未能重新打开订单列表'));
+      const current = new URL(frame.url());
+      if (current.origin!==original.origin || current.pathname!==LIST_PATH || await details.isVisible())
+        fail('普通审核前订单列表尚未回到可操作状态');
+      const refreshed = await queryOrder(page,frame,spec,key,signal);
+      if (!refreshed || refreshed.internal!==order.internal || refreshed.buyer!==order.buyer)
+        fail('普通审核前原单身份或待审核状态已变化');
+      order = refreshed;
+    }
+    const [status,native_status] = statuses[key];
+    return {...order,found:true,frame,detail:details,lines,status,native_status,issues:[],
+      contact_ok:order.buyer===spec.contact.buyer};
+  }
+  if (pendingOnly) fail('原单已离开已付款待审核状态');
+  fail('已查到原单，平台状态仍待核');
+}
+
+export async function ordinaryAudit(staged, spec, signal) {
+  const {frame,row,detail,internal} = staged;
+  if (await detail.isVisible()) fail('普通审核前原单商品详情已重新打开，请继续核对原单');
+  const target = row.locator('._jt_cell_checked input[type=checkbox]');
+  const assertScope = async (wantChecked)=>{
+    const snapshot = await frame.locator('body').evaluate((b,pagerCountPattern)=>{
+      const text = e => (e?.innerText||'').split('\n')[0].trim();
+      const rs = [...b.querySelectorAll('._jt_row')];
+      const count = b.querySelector('#_jt_pagebar')?.innerText.match(new RegExp(pagerCountPattern));
+      return {rows:rs.map(r=>[text(r.querySelector('._jt_cell_o_id .o_id')),text(r.querySelector('._jt_cell_so_id')),
+        text(r.querySelector('.shopname')),!!r.querySelector('._jt_cell_checked input:checked')]),
+        header:!!b.querySelector('#_jt_h_checked:checked'),
+        total:count?.[1]??count?.[2]};
+    },pagerCountPattern);
+    if (snapshot.rows.length!==1 || snapshot.total!=='1' || snapshot.header && !wantChecked
+        || JSON.stringify(snapshot.rows[0])!==JSON.stringify([internal,spec.online,spec.shop,wantChecked]))
+      fail('普通审核前，选中范围与原订单不一致');
+    check(signal);
+  };
+  await assertScope(false);
+  await checkBox(target,'原订单',()=>assertScope(false));
+  const button = frame.locator('#ToolConfirm_Btn > span.ding_db_txt').filter({hasText:/^审核$/});
+  await orderControl(button,'普通审核按钮',{beforeDispatch:()=>assertScope(true)});
+}

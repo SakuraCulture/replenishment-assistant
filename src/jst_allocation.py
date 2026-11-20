@@ -2,6 +2,7 @@
 from decimal import Decimal, InvalidOperation, ROUND_CEILING
 
 RULE = 'jst-stock-v3'
+ORDERABLE_STATES = ('启用', '正常', '在用', '已启用', '备用')
 
 
 def number(value, label):
@@ -18,6 +19,15 @@ def number(value, label):
 
 def text(value):
     return format(value, 'f')
+
+
+def status_issue(item):
+    state = str(item.get('商品状态') or '').strip()
+    if state in ('禁用', '停用', '已禁用', '停采'):
+        return '该仓商品禁用'
+    if state not in ORDERABLE_STATES:
+        return '商品状态待核：' + state
+    return ''
 
 
 def allocate(rows, items, balances):
@@ -38,11 +48,9 @@ def allocate(rows, items, balances):
             if row.get('_admission_error'):raise ValueError(row['_admission_error'])
             if item is None:
                 raise ValueError('该仓资料无商品条目')
-            state = str(item.get('商品状态') or '').strip()
-            if state in ('禁用', '停用', '已禁用', '停采'):
-                raise ValueError('该仓商品禁用')
-            if state not in ('启用', '正常', '在用', '已启用', '备用'):
-                raise ValueError('商品状态待核：' + state)
+            issue = status_issue(item)
+            if issue:
+                raise ValueError(issue)
             raw_step = item.get('出库箱规')
             step = number(1 if raw_step is None or str(raw_step).strip() == '' else raw_step, '箱规')
             if step < 1 or step != step.to_integral_value():

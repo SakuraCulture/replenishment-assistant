@@ -10,6 +10,7 @@ import input_adapter as adapter
 from one_box_exception import apply_one_box_exception
 import allocation
 import mandatory_holding
+import new_products
 from admission import default_exclusions
 
 from version_info import VERSION,MODEL_VERSION,diagnostic
@@ -203,8 +204,7 @@ def apply_budget(result,budget=None,profile=None,progress=lambda s:None,cancel=N
         d['_candidate_amount']=0 if exclusion_reason(d) else amount_value(d)
         mandatory_holding.apply(d,minimum)
     if monthly_first_fill is not None:
-        from new_products import seed_monthly
-        seed_monthly(result,monthly_first_fill,cancel,budget=budget)
+        new_products.seed_monthly(result,monthly_first_fill,cancel,budget=budget)
     progress('正在按门店预算分配必卖与其他商品…' if budget is not None else '正在标记必卖清单…')
     result['budget']=allocation.apply(result['rows'],budget,lambda:checkpoint(cancel)) if budget is not None else {'enabled':False}
     by_code={d['E']:d for d in result['rows']}

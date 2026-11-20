@@ -140,7 +140,7 @@ class ExecutionTests(unittest.TestCase):
     def test_publication_version_checks_before_any_write(self):
         r=self.run_one();before={w:wc.Repository(self.root).current_digest(w) for w in self.catalogs}
         changed=copy.deepcopy(self.catalogs['河北仓']);changed['source_path']+='-changed';wc.Repository(self.root).save(changed)
-        with self.assertRaisesRegex(ValueError,'默认资料已变化'):se.publish_catalogs(self.repo,r['id'],self.root)
+        with self.assertRaisesRegex(ValueError,'当前仓资料已变化'):se.publish_catalogs(self.repo,r['id'],self.root)
         self.assertEqual(wc.Repository(self.root).current_digest('山东仓'),before['山东仓'])
         self.assertEqual(self.repo.get(r['id'])['state'],'COMPLETE')
 
@@ -151,5 +151,21 @@ class ExecutionTests(unittest.TestCase):
             se.publish_catalogs(self.repo,r['id'],self.root)
         self.assertEqual(self.repo.get(r['id'])['publication']['state'],'PUBLISHED')
         self.assertEqual(self.repo.value(r['id'],'result:A'),before)
+
+    def test_publication_holds_invalid_stock_and_publishes_valid_sibling(self):
+        run=self.run_one();rid=run['id']
+        catalogs=self.repo.value(rid,'catalogs')
+        invalid=catalogs['山东仓']
+        for item in invalid['items'].values():item['可用数']=None
+        invalid['revision']=wc.revision(invalid['items'])
+        repo=wc.Repository(self.root);old=repo.current_digest('山东仓');get_value=self.repo.value
+        with patch.object(self.repo,'value',side_effect=lambda run_id,key,*args:
+                          catalogs if key=='catalogs' else get_value(run_id,key,*args)):
+            message,published=se.publish_catalogs(self.repo,rid,self.root)
+        self.assertIn('山东仓',message);self.assertEqual(list(published),['河北仓'])
+        self.assertEqual(repo.current_digest('山东仓'),old)
+        state=self.repo.get(rid)['publication']
+        self.assertEqual(state['state'],'NEEDS_REVIEW')
+        self.assertIn('可用数全部缺失',state['errors']['山东仓'])
 
 if __name__=='__main__':unittest.main()

@@ -47,7 +47,7 @@ def load(path,known=None,progress=lambda _:None,cancel=None):
     # directory. Read one latest signed snapshot per still-unnamed store.
     missing={code for code,name in names.items() if not name}
     if missing:
-        from history_read import repository
+        from normal_orders import read_repository as repository
         import warehouse_execution as execution
         repo=repository(path)
         with closing(connect(path)) as db:
@@ -90,7 +90,7 @@ def save(path,plan,progress=lambda _:None,cancel=None):
     if digest({k:v for k,v in plan.items() if k!='digest'})!=plan.get('digest'):raise ValueError('名称维护预览已变化，请重新核对')
     checkpoint(cancel)
     if not plan['changes']:return {'changed':0,'operation':None}
-    from order_lifecycle import begin
+    from sqlite_write import begin
     from runtime_support import CommitProgress
     with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=rw',uri=True,timeout=.15)) as db,db:
         deadline=time.monotonic()+BUSY_SECONDS;begin(db,cancel,deadline=deadline)

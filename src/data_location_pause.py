@@ -7,7 +7,7 @@ class AutomaticPause:
         self.host=host;self.flags=[];self.timers=[];self.restored=False;self.started=time.monotonic()
         self.previous=getattr(host,'_data_location_preparing',False);host._data_location_preparing=True
         owners=[('browser_startup','paused'),('browser_status','paused'),('jst_generator','stopped'),
-                ('aoxiang_workflows','stopping'),('scheduled','closing')]
+                ('aoxiang_workflows','stopping'),('scheduled','closing'),('jst_fulfillment_runner','stopping')]
         for name,flag in owners:
             owner=getattr(host,name,None)
             if owner is None:continue

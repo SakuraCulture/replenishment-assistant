@@ -1,4 +1,5 @@
 """Canonical bytes, bounded immutable-key costs and complete merchant styles."""
+import snapshot_json
 import copy
 import hashlib
 import tempfile
@@ -95,7 +96,7 @@ class EncodingCosts(unittest.TestCase):
         def fail_once(obj):
             if obj is value and not failed[0]:failed[0]=True;raise MemoryError('synthetic fast encoder pressure')
             return original(obj)
-        with patch.object(wr,'dumps',side_effect=fail_once):
+        with patch.object(snapshot_json,'dumps',side_effect=fail_once):
             raw=b''.join(spool.json_bytes(value,on_pressure=lambda:pressures.append(True)))
         self.assertEqual(raw,original(value).encode());self.assertEqual(pressures,[True])
 

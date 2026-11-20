@@ -148,7 +148,7 @@ class Page(QWidget):
             table=QTableWidget();self.tables.append(table);layout.addWidget(table,1)
         v.addWidget(self.tabs,1);self.tables[1].cellDoubleClicked.connect(self.drill)
         row=QHBoxLayout();self.previous=button('上一页',lambda:self.turn(-1));self.next=button('下一页',lambda:self.turn(1));row.addWidget(self.previous);row.addWidget(self.next);self.page_note=label('每页最多200行，导出包含全部筛选结果');row.addWidget(self.page_note,1);row.addWidget(button('删除日期范围内分析数据…',self.delete_data));row.addWidget(button('重试原件清理',lambda:self.entry.start('cleanup_retry',{},lambda _:self.refresh_metadata())));v.addLayout(row)
-        self.note=label('资料仅保存在大仓分析，不更新补货或门店分析资料','muted');v.addWidget(self.note);self.tabs.currentChanged.connect(self.changed_tab);self.search.returnPressed.connect(self.query)
+        self.note=label('聚水潭采集验收后更新当前仓资料。导入原件和历史重算仅用于缺货率分析。','muted');v.addWidget(self.note);self.tabs.currentChanged.connect(self.changed_tab);self.search.returnPressed.connect(self.query)
 
     def controls(self):
         active=self.entry.worker is not None;self.collect.setEnabled(not active);self.pause.setEnabled(active)

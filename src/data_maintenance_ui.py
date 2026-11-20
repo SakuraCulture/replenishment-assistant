@@ -45,7 +45,8 @@ def guarded(parent,host,operation):
     scheduled=getattr(host,'scheduled',None)
     if scheduled and (scheduled.worker or scheduled.publisher):
         QMessageBox.information(parent,'请先停止定时任务','定时补货正在执行或采用资料，请等待安全结束后再维护数据。');return
-    if host.worker or (generator and generator.worker) or (manager and manager.worker) or getattr(host,'_aoxiang_dialog',None):
+    fulfillment=getattr(host,'jst_fulfillment_runner',None)
+    if host.worker or (generator and generator.worker) or (manager and manager.worker) or (fulfillment and fulfillment.worker) or getattr(host,'_aoxiang_dialog',None):
         QMessageBox.information(parent,'请先停止任务','请先停止当前计算、生成或平台任务，等待安全退出后再维护数据。');return
     try:
         with manager.maintenance() if manager else nullcontext():return operation()

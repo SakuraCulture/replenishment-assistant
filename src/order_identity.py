@@ -1,7 +1,6 @@
 """Workbook association metadata, independent of editable merchandise rows.
 
-Not authentication. Structural protection reduces accidental removal only.
-Conflicting evidence is an error; missing/ambiguous evidence requires binding.
+Conflicting evidence is rejected. Missing or ambiguous evidence requires binding.
 """
 import hashlib,json
 SHEET='系统关联信息'
@@ -32,7 +31,7 @@ def write(book,entries):
             ws.append(values)
             for c in ws[ws.max_row]:
                 if isinstance(c.value,str):c.data_type='s'
-    ws.sheet_state='veryHidden';book.security.lockStructure=True
+    ws.sheet_state='veryHidden'
 
 def read(book):
     if SHEET not in book.sheetnames:return []

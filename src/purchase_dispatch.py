@@ -8,6 +8,7 @@ from pathlib import Path
 from aoxiang_jobs import encoded
 from app_defaults import WAREHOUSES
 from runtime_support import checkpoint
+from sqlite_write import begin
 import work_repository as wr
 
 
@@ -45,29 +46,22 @@ def facts(db, head):
             'admission': _hash(admission[0]) if admission else None}
 
 
-def catalog_files(folder):
-    return {w: Path(folder) / 'warehouse_catalogs' / (w + '.json') for w in WAREHOUSES}
-
-
-def file_hashes(folder):
-    return {w: hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None for w, p in catalog_files(folder).items()}
-
-
 def authorize(path, intent, validate, *, cancel=None):
     """Full validation and scoped approval share a snapshot and short write transaction."""
-    from order_lifecycle import begin
+    from warehouse_catalog import Repository
     path = Path(path).resolve()
+    repository = Repository(path.parent)
     checkpoint(cancel)
     with closing(sqlite3.connect(path.as_uri()+'?mode=ro', uri=True, timeout=0)) as db:
         db.execute('BEGIN')
-        before = file_hashes(path.parent)
+        before = {w: repository.source_reference(w) for w in WAREHOUSES}
         evidence = validate(db)
-        after = file_hashes(path.parent)
+        after = {w: repository.source_reference(w) for w in WAREHOUSES}
         if before != after:
             raise wr.Conflict('采购核验期间仓资料已变化，请重新核对；尚未上传')
         proof = {'schema': 1, 'day': evidence['context']['day'], 'facts': facts(db, intent['basis']),
                  'supplierFile': (path.parent / 'aoxiang' / 'suppliers.json').is_file(),
-                 'catalogs': {w: {'sha256': before[w], 'revision': evidence['catalog_revisions'].get(w)} for w in WAREHOUSES}}
+                 'catalogs': {w: {**before[w], 'revision': evidence['catalog_revisions'].get(w)} for w in WAREHOUSES}}
     # The expensive original validation above is read-only. The short write
     # section rechecks metadata, never decodes large signed/catalog trees.
     with closing(sqlite3.connect(path, timeout=0)) as db:

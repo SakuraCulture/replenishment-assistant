@@ -1,0 +1,129 @@
+"""Offscreen application widgets with isolated, synthetic business facts."""
+import os
+os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+from contextlib import closing
+from pathlib import Path
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch, Mock
+
+from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtGui import QFont, QFontDatabase
+import jst_fulfillment as service
+import jst_fulfillment_jobs as jobs
+from jst_fulfillment_runner import Runner, install
+from jst_auto_order_ui import Orders
+from lifecycle_ui import Review
+from jst_fulfillment_ui import make_review
+import test_jst_fulfillment as fixtures
+
+
+class FulfillmentUI(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app=QApplication.instance() or QApplication([])
+        cls.app.setStyle('Fusion')
+        font=Path('C:/Windows/Fonts/msyh.ttc')
+        if font.is_file():
+            QFontDatabase.addApplicationFont(str(font))
+        cls.app.setFont(QFont('Microsoft YaHei',9))
+
+    def setUp(self):
+        self.fixture=fixtures.Fulfillment()
+        self.fixture.setUp()
+        self.addCleanup(self.fixture.doCleanups)
+        self.fixture.archive()
+        self.host=QWidget()
+        self.host.work_repository=SimpleNamespace(path=self.fixture.path)
+        self.host.repository=SimpleNamespace(folder=self.fixture.path.parent)
+        self.host.closing=False
+        self.host.worker=None
+        self.addCleanup(self.host.deleteLater)
+
+    def test_orders_show_pending_allocation_and_polling_is_initially_off(self):
+        dialog=Orders(self.host,self.host,self.fixture.keys)
+        try:
+            self.assertEqual(dialog.table.rowCount(),1)
+            self.assertEqual(dialog.table.item(0,12).text(),'待人工确认付款')
+            self.assertTrue(dialog.allocation.isEnabled())
+            self.assertFalse(dialog.auto_allocation.isChecked())
+        finally:dialog.deleteLater()
+
+    def test_payment_review_cannot_save_until_human_confirms(self):
+        plan,overview=service.prepare_review(self.fixture.path,self.fixture.keys)
+        dialog=make_review(self.host,plan,overview)
+        try:
+            dialog.setWindowTitle('合成验收 · 实配回流待人工付款')
+            self.assertFalse(dialog.save.isEnabled())
+            self.assertIn('人工确认',dialog.save.text())
+            self.assertIn('原下单数量',dialog.overview_model.headers)
+            dialog.complete.setChecked(True)
+            self.assertTrue(dialog.save.isEnabled())
+            dialog.complete.setChecked(False)
+            self.assertFalse(dialog.save.isEnabled())
+            output=os.environ.get('JST_FULFILLMENT_UI_EVIDENCE')
+            if output:
+                folder=Path(output)
+                folder.mkdir(parents=True,exist_ok=True)
+                dialog.resize(1280,760)
+                dialog.show()
+                self.app.processEvents()
+                self.assertTrue(dialog.grab().save(str(folder/'合成实配付款核对.png')))
+        finally:dialog.deleteLater()
+
+    def test_timer_does_not_open_a_browser_or_login_without_a_retained_idle_session(self):
+        runner=Runner(self.host)
+        try:
+            with patch('catalog_session_ui.manager') as manager:
+                runner.tick()
+                manager.assert_not_called()
+                jobs.configure(self.fixture.path,True)
+                manager.return_value.session=SimpleNamespace(lease=None,ready=False,client=None)
+                runner.tick()
+                self.assertIsNone(runner.worker)
+                self.assertIn('未发起新登录',runner.message)
+            self.assertTrue(runner.prepare_close())
+            self.assertFalse(runner.timer.isActive())
+        finally:
+            runner.timer.stop()
+            runner.deleteLater()
+
+    def test_opening_ready_review_does_not_reexport_or_start_a_browser(self):
+        from jst_fulfillment_ui import pull_and_review
+        with patch('jst_fulfillment_ui.review', return_value='opened') as review, \
+                patch('jst_fulfillment_ui.run') as run, patch('catalog_session_ui.manager') as manager:
+            self.assertEqual(pull_and_review(self.host,self.host,self.fixture.keys),'opened')
+        review.assert_called_once_with(self.host,self.host,self.fixture.keys)
+        run.assert_not_called()
+        manager.assert_not_called()
+
+    def test_notifications_survive_restart_and_open_existing_candidates_only(self):
+        from PySide6.QtWidgets import QVBoxLayout, QPushButton
+        import order_lifecycle as lifecycle
+        self.host.followup=QWidget(self.host)
+        self.host.followup.query=Mock()
+        QVBoxLayout(self.host.followup)
+        home=QWidget(self.host)
+        layout=QVBoxLayout(home)
+        self.host.status=SimpleNamespace(setText=lambda _:None)
+        runner=install(self.host,layout)
+        try:
+            runner.refresh_pending()
+            buttons=[w for w in self.host.findChildren(QPushButton) if w.text().startswith('核对已回流实配')]
+            self.assertEqual(len(buttons),2)
+            self.assertTrue(all(w.isEnabled() and '（1）' in w.text() for w in buttons))
+            with patch('jst_fulfillment_ui.review',return_value=None) as review:
+                buttons[0].click()
+            review.assert_called_once_with(self.host,self.host,self.fixture.keys)
+            self.host.followup.query.assert_called_once_with()
+            plan,_=service.prepare_review(self.fixture.path,self.fixture.keys)
+            lifecycle.commit(self.fixture.path,plan)
+            runner.refresh_pending()
+            self.assertEqual(runner.pending,[])
+            self.assertTrue(all(not w.isEnabled() for w in buttons))
+        finally:
+            runner.timer.stop()
+            runner.deleteLater()
+
+
+if __name__=='__main__':unittest.main()

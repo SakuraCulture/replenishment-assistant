@@ -18,8 +18,9 @@ import maintenance_storage as storage
 def tables(db):return {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 def digest(value):return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
 
-def snapshot(db,oids,cancel=None,progress=lambda _:None,inspect=False):
+def snapshot(db,oids,cancel=None,progress=lambda _:None,inspect=False,*,selected=None):
     available=tables(db);parents=[];evidence=storage.EvidenceDigest();external=[];related_docs=set();blockers=[];tasks=[]
+    executed=set()
     for oid in oids:
         checkpoint(cancel)
         row=db.execute('SELECT day,store,number,current FROM normal_orders WHERE oid=?',(oid,)).fetchone()
@@ -43,8 +44,19 @@ def snapshot(db,oids,cancel=None,progress=lambda _:None,inspect=False):
         progress(RowProgress('核对订单范围',len(parents),len(oids)))
         if 'purchase_link_index' in available:
             related_docs.update(r[0] for r in db.execute('SELECT docid FROM purchase_link_index WHERE oid=?',(oid,)))
-        if 'jst_locks' in available:
-            external += [f'{number} / {w} 已标记下单' for w, in db.execute('SELECT warehouse FROM jst_locks WHERE oid=? AND locked=1',(oid,))]
+    if {'jst_locks','lifecycle_versions'} & available:
+        from jst_order_guards import saved_execution_reason
+        if selected is None:
+            from warehouse_execution import heads
+            execution_heads=heads(db,parents,with_names=False)
+        else:
+            execution_heads=selected
+        for head in execution_heads:
+            checkpoint(cancel);reason=saved_execution_reason(db,head)
+            if reason:
+                executed.add((head['oid'],head['warehouse']))
+                external.append(head['number']+'：'+reason)
+    pairs=None if selected is None else {(h['oid'],h['warehouse']) for h in selected}
     if 'purchase_versions' in available:
         for did,raw in db.execute('SELECT docid,payload FROM purchase_versions'):
             if any(link['head']['oid'] in oids for r in wr.loads(raw).get('rows',[]) for link in r.get('links',[])):related_docs.add(did)
@@ -60,7 +72,8 @@ def snapshot(db,oids,cancel=None,progress=lambda _:None,inspect=False):
         for id,state,raw in db.execute('SELECT id,state,payload FROM ax.ax_workflows ORDER BY rowid'):
             job=wr.loads(raw);matched=[i for i in job['items'] if (i.get('head') or i.get('basis') or {}).get('oid') in oids]
             if not matched:continue
-            from aoxiang_workflow_state import deletion_issue,can_end_local
+            from aoxiang_workflow_state import deletion_issue,can_end_local,original_pending
+            affects_external=False
             for i in matched:
                 issue=deletion_issue({**job,'state':state},i)
                 h=i.get('head') or i.get('basis') or {}
@@ -70,11 +83,20 @@ def snapshot(db,oids,cancel=None,progress=lambda _:None,inspect=False):
                       'can_end':can_end_local(job,i),'oid':h.get('oid')}
                 tasks.append(task)
                 # Platform state is informational, never a deletion veto.
-            if any(i.get('package') or i.get('purchase_id') or i.get('order_id') or (i.get('result') or {}).get('binding') for i in matched):external.append(id+' 含原平台采购身份；本地删除不会撤销平台采购')
+                key=(h.get('oid'),h.get('warehouse'))
+                if pairs is None or key in pairs:
+                    result=i.get('result') or {}
+                    submitted=bool(i.get('order_id') or result.get('binding') or original_pending(i))
+                    if submitted and all(key):
+                        executed.add(key)
+                    if i.get('package') or i.get('purchase_id') or submitted:
+                        affects_external=True
+            if affects_external:external.append(id+' 含原平台采购身份；本地删除不会撤销平台采购')
             ax.append([id,raw]);evidence.append(['ax',id,state,raw])
         for id,raw in db.execute('SELECT id,payload FROM ax.ax_schedules ORDER BY rowid'):
             if wr.loads(raw).get('basis',{}).get('oid') in oids:evidence.append(['ax_schedule',id,raw])
-    return {'parents':parents,'docs':sorted(related_docs),'external':external,'ax':ax,'token':digest(parents),'blockers':blockers,'tasks':tasks}
+    return {'parents':parents,'docs':sorted(related_docs),'external':external,'executed':sorted(executed),
+            'ax':ax,'token':digest(parents),'blockers':blockers,'tasks':tasks}
 
 def connect(path):
     db=sqlite3.connect(path,timeout=.2);db.execute('PRAGMA secure_delete=ON')
@@ -167,7 +189,7 @@ def scoped_snapshot(db,heads,cancel=None,progress=lambda _:None,inspect=False):
         if any(h[k]!=supplied[k] for k in ('revision','digest')):raise wr.Conflict('所选仓签发已变化，请刷新删除范围')
         selected.append(h)
     if len({(h['oid'],h['warehouse']) for h in selected})!=len(selected):raise ValueError('不能重复选择同一仓单')
-    plan=snapshot(db,oids,cancel,progress,inspect=inspect)
+    plan=snapshot(db,oids,cancel,progress,inspect=inspect,selected=selected)
     pairs={(h['oid'],h['warehouse']) for h in selected};full=[]
     for p in plan['parents']:
         active={h['warehouse'] for h in current if h['oid']==p['oid']}
@@ -179,7 +201,6 @@ def scoped_snapshot(db,heads,cancel=None,progress=lambda _:None,inspect=False):
     plan.update(oids=oids,scopes=selected,full_oids=full,
                 token=digest([{k:h.get(k) for k in ('oid','warehouse','revision','digest','execution_epoch')} for h in selected]))
     plan['tasks']=[t for t in plan['tasks'] if (t['oid'],t['warehouse']) in pairs]
-    plan['external']=[text for text in plan['external'] if '已标记下单' not in text or any(h['warehouse'] in text for h in selected)]
     return plan
 
 
@@ -628,6 +649,7 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
             chunks.require_current(db,cancel)
             latest=snapshot(db,plan['oids'],cancel,progress)
             if latest['parents']!=plan['parents'] or latest['token']!=plan['token']:raise wr.Conflict('订单修订或确认范围已变化，请重新核对删除范围')
+            if latest['external']!=plan['external']:raise wr.Conflict('外部执行依据已变化，请重新核对删除影响')
             if verified is None:
                 # Rebase drafts on the latest committed shared payload, not the preview.
                 for name, in scratch.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall():scratch.execute('DROP TABLE "'+name+'"')
@@ -643,7 +665,9 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
             clear_candidate_cache(db,oids)
             if {'jst_active','jst_tasks'} & available:
                 from jst_batches import deleting_orders
-                deleting_orders(db,((oid,None) for oid in oids),cancel)
+                deleting_orders(db,((oid,None) for oid in oids),cancel,executed=set(map(tuple,latest['executed'])))
+            from jst_auto_order_store import delete_orders
+            delete_orders(db,((oid,None) for oid in oids))
             prune_purchases(db,latest['docs'],oids,cancel)
             if 'automation_tasks' in available:
                 for task,raw in db.execute('SELECT id,payload FROM automation_tasks').fetchall():
@@ -705,6 +729,7 @@ def execute_scoped(path,plan,ack_external=False,progress=lambda _:None,cancel=No
             require_atomic_journals(db,configure=False);chunks.require_current(db,cancel)
             latest=scoped_snapshot(db,plan['scopes'],cancel,progress)
             if latest['token']!=plan['token'] or latest['full_oids']!=plan['full_oids']:raise wr.Conflict('所选仓签发或删除范围变化，请重新核对')
+            if latest['external']!=plan['external']:raise wr.Conflict('外部执行依据已变化，请重新核对删除影响')
             if db.execute('PRAGMA main.data_version').fetchone()[0]!=version:
                 for name, in scratch.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall():scratch.execute('DROP TABLE "'+name+'"')
                 scratch.commit();prepared=prepare_scoped_rewrites(db,latest,scratch,progress,cancel)
@@ -729,7 +754,9 @@ def execute_scoped(path,plan,ack_external=False,progress=lambda _:None,cancel=No
                     if chosen(wr.loads(raw).get('head',{})):db.execute('DELETE FROM lifecycle_mappings WHERE stage=? AND name=?',(stage,name))
             if {'jst_active','jst_tasks'} & available:
                 from jst_batches import deleting_orders
-                deleting_orders(db,scopes,cancel)
+                deleting_orders(db,scopes,cancel,executed=set(map(tuple,latest['executed'])))
+            from jst_auto_order_store import delete_orders
+            delete_orders(db,scopes)
             prune_purchases(db,latest['docs'],oids,cancel,scopes)
             for table in ('lifecycle_versions','lifecycle_events','followup_notes','archive_visibility','jst_active','jst_generations','jst_locks','jst_events'):
                 if table in available:

@@ -111,7 +111,7 @@ class WarehouseHistoryUiTests(unittest.TestCase):
             repo=seed(folder)
             class Host(WarehouseUi,QWidget):
                 def __init__(self):QWidget.__init__(self);self.worker=None;self.readonly=False;self.catalog_repository=repo;self.restored=None;self.error=None
-                def catalog_imported(self,value):self.restored=value
+                def catalog_imported(self,value,**options):self.restored=value
                 def failed(self,value):self.error=value
             host=Host();chosen=[]
             def select():

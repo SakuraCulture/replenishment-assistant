@@ -11,6 +11,7 @@ import test_jst as fixture
 import jst_orders as j
 import jst_batches as b
 import jst_exports as ex
+import warehouse_catalog as wc
 import work_repository as wr
 
 
@@ -29,6 +30,21 @@ class Batches(unittest.TestCase):
         self.assertFalse(r['errors']);self.assertEqual([j.get(self.path,g)['summary']['quantity'] for g in r['generated']],['40','60'])
         self.assertEqual(self.balance(r['batch_id']),0)
         again=b.execute(self.path,p);self.assertEqual(again['generated'],r['generated']);self.assertEqual(self.balance(r['batch_id']),0)
+
+    def test_overlapping_confirmations_persist_one_set_of_quantities(self):
+        from concurrent.futures import ThreadPoolExecutor
+        second=self.f.second_store();plan=self.new([self.h,second]);boundary=threading.Barrier(2)
+        original=j.commit
+        def commit_together(*args,**kwargs):
+            boundary.wait(10)
+            return original(*args,**kwargs)
+        with patch.object(j,'commit',commit_together),ThreadPoolExecutor(2) as pool:
+            pending=[pool.submit(b.execute,self.path,plan) for _ in range(2)]
+            first,repeated=(f.result(20) for f in pending)
+        self.assertFalse(first['errors']);self.assertFalse(repeated['errors'])
+        self.assertEqual(repeated['generated'],first['generated'])
+        self.assertEqual([j.get(self.path,g)['summary']['quantity'] for g in first['generated']],['40','60'])
+        self.assertEqual(self.balance(first['batch_id']),0)
     def test_new_batch_does_not_subtract_old_unlocked_or_locked(self):
         p=self.new();r=b.execute(self.path,p);h=self.f.second_store();gid=r['generated'][0]
         frozen=copy.deepcopy(j.get(self.path,gid))
@@ -75,6 +91,39 @@ class Batches(unittest.TestCase):
     def test_preview_does_not_write_or_consume(self):
         self.new();self.assertEqual(b.listing(self.path),[])
         with closing(sqlite3.connect(self.path)) as db:self.assertIsNone(j.active(db,self.h))
+
+    def test_new_preview_rechecks_shared_version_and_original_batch_uses_frozen_stock(self):
+        h=self.f.second_store();repo=wc.Repository(self.path.parent)
+        repo.save(fixture.catalog(stock=100))
+        stale=b.preview_new(self.path,[h])
+        original=b.preview_new(self.path,[self.h])
+        original_id=original['payload']['batch_id'];b.register(self.path,original)
+        repo.save(fixture.catalog(stock=8628))
+        before=b.listing(self.path)
+        with self.assertRaisesRegex(wr.Conflict,'当前仓资料已刷新'):b.execute(self.path,stale)
+        self.assertEqual(b.listing(self.path),before)
+        with closing(sqlite3.connect(self.path)) as db:self.assertIsNone(j.active(db,h))
+        resumed=b.preview_existing(self.path,original_id)
+        self.assertEqual(resumed['payload']['plans'][0]['rows'][0]['stock'],'100')
+        result=b.execute(self.path,resumed)
+        self.assertEqual(j.get(self.path,result['generated'][0])['summary']['quantity'],'40')
+        fresh=b.preview_new(self.path,[h]);row=fresh['payload']['plans'][0]['rows'][0]
+        self.assertEqual((row['stock'],row['quantity']),('8628','80'))
+
+    def test_legacy_warehouse_resolution_is_read_only_until_current_publication(self):
+        import os,time
+        repo=wc.Repository(self.path.parent)
+        old=fixture.catalog(stock=12)
+        file=self.path.parent/'warehouse_catalogs/河北仓.json'
+        wc.atomic_json(file,old);yesterday=time.time()-86400;os.utime(file,(yesterday,yesterday))
+        saved_bytes=file.read_bytes();self.f.refresh(408)
+        snapshots,versions=repo.snapshots()
+        self.assertEqual(snapshots['河北仓']['items']['0001']['可用数'],408)
+        self.assertTrue(versions['河北仓'].startswith('legacy:'))
+        self.assertEqual(file.read_bytes(),saved_bytes)
+        repo.save(fixture.catalog(stock=8628),expected_digest=versions['河北仓'])
+        self.f.refresh(500)
+        self.assertEqual(j.catalogs(self.path)['河北仓']['catalog']['items']['0001']['可用数'],8628)
 
     def test_global_refresh_does_not_stale_batch_export_or_change_cells(self):
         import jst_results as results
@@ -148,6 +197,36 @@ class Batches(unittest.TestCase):
         c=fixture.catalog();c['items']['0001']['商品标签']='二类医疗';c['revision']=wc.revision(c['items']);wc.Repository(self.path.parent).save(c)
         plan=self.new();self.assertEqual(plan['payload']['plans'][0]['summary']['quantity'],'0')
         result=b.execute(self.path,plan,True);self.assertFalse(result['generated']);self.assertEqual(self.balance(result['batch_id']),100)
+
+    def test_resume_uses_current_restrictions_and_keeps_frozen_stock(self):
+        repo=wc.Repository(self.path.parent)
+        for status, tag, reason in [('禁用','','该仓商品禁用'),('停采','','该仓商品禁用'),
+                                    ('备用','日配','商品标签日配'),('备用','二类医疗','二类医疗资质')]:
+            with self.subTest(status=status,tag=tag):
+                repo.save(fixture.catalog())
+                plan=self.new();bid=plan['payload']['batch_id'];b.register(self.path,plan);b.pause(self.path,bid)
+                live=fixture.catalog(stock=8628,step=24,price=8);live['items']['0001'].update(商品状态=status,商品标签=tag)
+                live['revision']=wc.revision(live['items']);repo.save(live)
+                resumed=b.preview_existing(self.path,bid);record=resumed['payload']['plans'][0]
+                self.assertEqual(record['catalog']['revision'],fixture.catalog()['revision'])
+                self.assertEqual(record['summary']['quantity'],'0')
+                self.assertIn(reason,record['rows'][0]['reason'])
+                self.assertEqual(self.balance(bid),100)
+                b.cancel_unfinished(self.path,bid,'结束合成场景')
+
+    def test_cancel_unplaced_first_order_releases_only_its_batch_quantity(self):
+        second=self.f.second_store();plan=self.new([self.h,second]);stop=threading.Event()
+        def pause_after_first(event):
+            if getattr(event,'business_event',None):stop.set()
+        first=b.execute(self.path,plan,progress=pause_after_first,cancel=stop)
+        self.assertTrue(first['cancelled']);self.assertEqual(len(first['generated']),1)
+        bid=first['batch_id']
+        self.assertEqual(self.balance(bid),60)
+        j.cancel_generated(self.path,first['generated'],'已核实未下单')
+        self.assertEqual(self.balance(bid),100)
+        resumed=b.continue_batch(self.path,bid)
+        self.assertFalse(resumed['errors'])
+        self.assertEqual(j.get(self.path,resumed['generated'][0])['summary']['quantity'],'80')
 
 
 if __name__=='__main__':unittest.main()

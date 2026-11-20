@@ -1,6 +1,7 @@
 """Application entrypoint: Qt setup, logging, exceptions and window creation."""
 import sys,os,logging
 from pathlib import Path
+import app_smoke_dispatch as smokes
 
 def _main():
     from PySide6.QtCore import QStandardPaths
@@ -19,9 +20,7 @@ def _main():
     overridden=bool(os.environ.get('REPLENISHMENT_DATA_DIR'))
     logs=data_location.hint(default_data)
     runtime=Runtime(logs,folder=None if overridden else data_location.control()/'diagnostics');runtime.bind_qt(app)
-    if '--data-location-smoke' in sys.argv:
-        from data_location_smoke import install_startup
-        install_startup(app,sys.argv[sys.argv.index('--data-location-smoke')+1:])
+    if smokes.install_startup(app,sys.argv):
         # Refuse before constructing repositories, not only after the UI opens.
         if logs.absolute()!=data_location.default_base()/'settings' and not data_location.config():
             raise ValueError('Synthetic location acceptance root mismatch')
@@ -57,7 +56,7 @@ def _main():
     from performance_log import install as install_performance
     install_performance(runtime,app)
     from workbench import Workbench
-    if any(flag in sys.argv for flag in ['--batch-smoke','--warehouse-smoke','--work-smoke','--intake-smoke']):win=Workbench()
+    if smokes.use_workbench(sys.argv):win=Workbench()
     else:
         from application_window import ApplicationWindow
         win=ApplicationWindow()
@@ -71,318 +70,7 @@ def _main():
     from application_exit import notice
     from PySide6.QtCore import QTimer
     QTimer.singleShot(0,win,lambda:notice(win,logs))
-    if '--data-location-smoke' in sys.argv:
-        from data_location_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--data-location-smoke')+1:])
-    if '--global-crud-smoke' in sys.argv:
-        from global_crud_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--global-crud-smoke')+1:])
-    if '--five-fixes-smoke' in sys.argv:
-        from five_fixes_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--five-fixes-smoke')+1:])
-    if '--signing-memory-smoke' in sys.argv:
-        from signing_memory_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--signing-memory-smoke')+1:])
-    if '--performance-log-smoke' in sys.argv:
-        from performance_log_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--performance-log-smoke')+1:])
-    if '--analytics-export-fix-smoke' in sys.argv:
-        from analytics_export_fix_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--analytics-export-fix-smoke')+1:])
-    if '--perf-core-smoke' in sys.argv:
-        from perf_core_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--perf-core-smoke')+1:])
-    if '--memory-load-smoke' in sys.argv:
-        from memory_load_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--memory-load-smoke')+1:])
-    if '--migration-shutdown-smoke' in sys.argv:
-        from migration_shutdown_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--migration-shutdown-smoke')+1:])
-    if '--order-merge-smoke' in sys.argv:
-        from order_merge_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--order-merge-smoke')+1:])
-    if '--operations-lifecycle-smoke' in sys.argv:
-        from operations_lifecycle_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--operations-lifecycle-smoke')+1:])
-    if '--jst-carton-smoke' in sys.argv:
-        from jst_carton_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--jst-carton-smoke')+1:])
-    if '--stockout-hub-smoke' in sys.argv:
-        from stockout_hub_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--stockout-hub-smoke')+1:])
-    if '--monthly-first-fill-smoke' in sys.argv:
-        from monthly_first_fill_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--monthly-first-fill-smoke')+1:])
-    if '--paid-return-reallocation-smoke' in sys.argv:
-        from paid_return_reallocation_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--paid-return-reallocation-smoke')+1:])
-    if '--warehouse-stockout-export-smoke' in sys.argv:
-        from warehouse_stockout_export_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--warehouse-stockout-export-smoke')+1:])
-    if '--business-repairs-smoke' in sys.argv:
-        from business_repairs_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--business-repairs-smoke')+1:])
-    if '--operations-0510-smoke' in sys.argv:
-        from operations_0510_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--operations-0510-smoke')+1:])
-    if '--deletion-lifecycle-smoke' in sys.argv:
-        from deletion_lifecycle_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--deletion-lifecycle-smoke')+1:])
-    if '--reset-selected-smoke' in sys.argv:
-        from reset_selected_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--reset-selected-smoke')+1:])
-    if '--startup-connections-smoke' in sys.argv:
-        from browser_startup_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--startup-connections-smoke')+1:])
-    if '--stockout-smoke' in sys.argv:
-        from stockout_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--stockout-smoke')+1:])
-    if '--collection-reexport-smoke' in sys.argv:
-        from collection_reexport_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--collection-reexport-smoke')+1:])
-    if '--collection-ended-smoke' in sys.argv:
-        from collection_ended_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--collection-ended-smoke')+1:])
-    if '--mandatory-holding-smoke' in sys.argv:
-        from mandatory_holding_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--mandatory-holding-smoke')+1:])
-    if '--deletion-void-smoke' in sys.argv:
-        from deletion_void_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--deletion-void-smoke')+1:])
-    if '--purchase-recovery-smoke' in sys.argv:
-        from purchase_recovery_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--purchase-recovery-smoke')+1:])
-    if '--purchase-pipeline-smoke' in sys.argv:
-        from purchase_pipeline_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--purchase-pipeline-smoke')+1:])
-    if '--catalog-lifetime-smoke' in sys.argv:
-        from catalog_lifetime_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--catalog-lifetime-smoke')+1:])
-    if '--admission-overview-smoke' in sys.argv:
-        from admission_overview_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--admission-overview-smoke')+1:])
-    elif '--parameter-quick-smoke' in sys.argv:
-        from parameter_quick_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--parameter-quick-smoke')+1:])
-    elif '--parameter-presets-smoke' in sys.argv:
-        from parameter_preset_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--parameter-presets-smoke')+1:])
-    if '--gui-maintenance-smoke' in sys.argv:
-        from gui_maintenance_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--gui-maintenance-smoke')+1:])
-    if '--automation-portability-smoke' in sys.argv:
-        from automation_portability_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--automation-portability-smoke')+1:])
-    if '--inventory-smoke' in sys.argv:
-        from inventory_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--inventory-smoke')+1:])
-    if '--coverage-smoke' in sys.argv:
-        from coverage_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--coverage-smoke')+1:])
-    if '--analytics-smoke' in sys.argv:
-        from analytics_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--analytics-smoke')+1:])
-    if '--scheduled-smoke' in sys.argv:
-        from scheduled_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--scheduled-smoke')+1:])
-    if '--business-flow-acceptance' in sys.argv:
-        from business_flow_acceptance import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--business-flow-acceptance')+1:])
-    if '--automation-smoke' in sys.argv:
-        from automation_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--automation-smoke')+1:])
-    if '--parameter-workspace-smoke' in sys.argv:
-        from parameter_workspace_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--parameter-workspace-smoke')+1:])
-    if '--collection-maintenance-smoke' in sys.argv:
-        from collection_maintenance_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--collection-maintenance-smoke')+1:])
-    if '--export-menu-smoke' in sys.argv:
-        from export_menu_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--export-menu-smoke')+1:])
-    if '--jst-batch-smoke' in sys.argv:
-        from jst_batch_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--jst-batch-smoke')+1:])
-    if '--jst-basis-smoke' in sys.argv:
-        from jst_basis_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--jst-basis-smoke')+1:])
-    if '--retry-profile-smoke' in sys.argv:
-        from retry_profile_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--retry-profile-smoke')+1:])
-    if '--deletion-smoke' in sys.argv:
-        from deletion_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--deletion-smoke')+1:])
-    if '--governance-smoke' in sys.argv:
-        from governance_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--governance-smoke')+1:])
-    if '--catalog-sync-smoke' in sys.argv:
-        from catalog_sync_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--catalog-sync-smoke')+1:])
-    if '--catalog-rebind-smoke' in sys.argv:
-        from catalog_rebind_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--catalog-rebind-smoke')+1:])
-    if '--lifecycle-comparison-smoke' in sys.argv:
-        from lifecycle_comparison_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-comparison-smoke')+1:])
-    if '--restock-smoke' in sys.argv:
-        from restock_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--restock-smoke')+1:])
-    if '--readability-smoke' in sys.argv:
-        from readability_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--readability-smoke')+1:])
-    if '--maintenance-smoke' in sys.argv:
-        from maintenance_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--maintenance-smoke')+1:])
-    if '--store-parameters-smoke' in sys.argv:
-        from store_parameter_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--store-parameters-smoke')+1:])
-    if '--browser-status-smoke' in sys.argv:
-        from browser_status_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--browser-status-smoke')+1:])
-    if '--aoxiang-smoke' in sys.argv:
-        from aoxiang_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--aoxiang-smoke')+1:])
-    if '--payment-source-smoke' in sys.argv:
-        from payment_source_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--payment-source-smoke')+1:])
-    if '--jst-smoke' in sys.argv:
-        from jst_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--jst-smoke')+1:])
-    if '--jst-results-smoke' in sys.argv:
-        from jst_results_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--jst-results-smoke')+1:])
-    if '--preissue-smoke' in sys.argv:
-        from preissue_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--preissue-smoke')+1:])
-    if '--final-filters-smoke' in sys.argv:
-        from final_filters_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--final-filters-smoke')+1:])
-    if '--layout-smoke' in sys.argv:
-        from layout_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--layout-smoke')+1:])
-    if '--payment-matching-smoke' in sys.argv:
-        from payment_matching_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--payment-matching-smoke')+1:])
-    if '--payment-shop-names-smoke' in sys.argv:
-        from payment_shop_names_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--payment-shop-names-smoke')+1:])
-    if '--payment-reference-smoke' in sys.argv:
-        from payment_reference_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--payment-reference-smoke')+1:])
-    if '--analytics-identifiers-smoke' in sys.argv:
-        from analytics_identifiers_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--analytics-identifiers-smoke')+1:])
-    if '--first-fill-smoke' in sys.argv:
-        from first_fill_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--first-fill-smoke')+1:])
-    if '--purchase-pricing-smoke' in sys.argv:
-        from purchase_pricing_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--purchase-pricing-smoke')+1:])
-    if '--jst-payment-smoke' in sys.argv:
-        from jst_payment_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--jst-payment-smoke')+1:])
-    if '--workflow-refinements-smoke' in sys.argv:
-        from workflow_refinements_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--workflow-refinements-smoke')+1:])
-    if '--business-flows-smoke' in sys.argv:
-        from business_flows_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--business-flows-smoke')+1:])
-    if '--reconciliation-smoke' in sys.argv:
-        from reconciliation_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--reconciliation-smoke')+1:])
-    if '--export-location-smoke' in sys.argv:
-        from export_location_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--export-location-smoke')+1:])
-    if '--lifecycle-smoke' in sys.argv:
-        from lifecycle_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-smoke')+1:])
-    if '--lifecycle-duplicate-smoke' in sys.argv:
-        from lifecycle_duplicate_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-duplicate-smoke')+1:])
-    if '--followup-smoke' in sys.argv:
-        from followup_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--followup-smoke')+1:])
-    if '--warehouse-delivery-smoke' in sys.argv:
-        from warehouse_delivery_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--warehouse-delivery-smoke')+1:])
-    if '--inbound-smoke' in sys.argv:
-        from inbound_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--inbound-smoke')+1:])
-    if '--fixes-smoke' in sys.argv:
-        from fixes_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--fixes-smoke')+1:])
-    if '--business-smoke' in sys.argv:
-        from business_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--business-smoke')+1:])
-    if '--storage-smoke' in sys.argv:
-        from storage_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--storage-smoke')+1:])
-    if '--signing-feedback-smoke' in sys.argv:
-        from signing_feedback_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--signing-feedback-smoke')+1:])
-    if '--work-io-smoke' in sys.argv:
-        from work_io_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--work-io-smoke')+1:])
-    if '--worker-recovery-smoke' in sys.argv:
-        from worker_recovery_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--worker-recovery-smoke')+1:])
-    if '--linked-orders-smoke' in sys.argv:
-        from linked_orders_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--linked-orders-smoke')+1:])
-    if '--workflow-smoke' in sys.argv:
-        from workflow_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--workflow-smoke')+1:])
-    if '--history-smoke' in sys.argv:
-        from history_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--history-smoke')+1:])
-    if '--delivery-smoke' in sys.argv:
-        from delivery_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--delivery-smoke')+1:])
-    if '--normal-smoke' in sys.argv:
-        from normal_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--normal-smoke')+1:])
-    if '--batch-smoke' in sys.argv:
-        from batch_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--batch-smoke')+1:])
-    if '--jst-stock-evidence-smoke' in sys.argv:
-        from jst_stock_evidence_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--jst-stock-evidence-smoke')+1:])
-    if '--analytics-templates-smoke' in sys.argv:
-        from analytics_templates_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--analytics-templates-smoke')+1:])
-    if '--lifecycle-preflight-smoke' in sys.argv:
-        from lifecycle_preflight_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-preflight-smoke')+1:])
-    if '--return-save-smoke' in sys.argv:
-        from return_save_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--return-save-smoke')+1:])
-    if '--lifecycle-performance-smoke' in sys.argv:
-        from lifecycle_perf_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-performance-smoke')+1:])
-    if '--lifecycle-followup-smoke' in sys.argv:
-        from lifecycle_followup_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-followup-smoke')+1:])
-    if '--lifecycle-recovery-smoke' in sys.argv:
-        from lifecycle_recovery_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--lifecycle-recovery-smoke')+1:])
-    if '--jst-batch-recovery-smoke' in sys.argv:
-        from jst_batch_recovery_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--jst-batch-recovery-smoke')+1:])
-    if '--runtime-lifetime-smoke' in sys.argv:
-        from runtime_lifetime_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--runtime-lifetime-smoke')+1:])
-    if '--warehouse-execution-smoke' in sys.argv:
-        from warehouse_execution_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--warehouse-execution-smoke')+1:])
-    if '--warehouse-smoke' in sys.argv:
-        from warehouse_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--warehouse-smoke')+1:])
-    if '--work-smoke' in sys.argv:
-        from work_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--work-smoke')+1:])
-    if '--intake-smoke' in sys.argv:
-        from intake_smoke import start_smoke
-        start_smoke(app,win,sys.argv[sys.argv.index('--intake-smoke')+1:])
+    smokes.start_window_smokes(app,win,sys.argv)
     code=app.exec()
     from application_exit import finish
     return finish(runtime,code)
@@ -436,9 +124,7 @@ if __name__=="__main__":
     if '--data-location-progress' in sys.argv:
         from data_location_progress import main as progress_main
         sys.exit(progress_main(sys.argv[sys.argv.index('--data-location-progress')+1:]))
-    if '--catalog-lifetime-helper' in sys.argv:
-        from catalog_lifetime_smoke import parent_helper
-        parent_helper(sys.argv[sys.argv.index('--catalog-lifetime-helper')+1:])
+    smokes.run_catalog_helper(sys.argv)
     if '--catalog-validate' in sys.argv:
         from catalog_sync_validation import cli
         sys.exit(cli(sys.argv[sys.argv.index('--catalog-validate')+1:]))

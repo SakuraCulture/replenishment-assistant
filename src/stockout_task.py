@@ -13,6 +13,7 @@ class Bridge:
     def __init__(self,host,cancel,progress):
         self.host,self.cancel,self.progress=host,cancel,progress
         self.ax=self.jst=self.token=None;self.last_ax=None;self.jst_operation=False
+        self.catalog_batches=set()
 
     def yielding(self):
         return bool(self.token and self.token.is_set())
@@ -45,7 +46,11 @@ class Bridge:
             if action in {'sync.start','sync.resume'}:self.jst_operation=True
             if self.cancel.is_set() and action in {'sync.start','sync.resume','sync.provide_observation'}:
                 raise ValueError('已请求安全暂停，未启动后续仓导出；原任务保留')
-            return self.jst.request(action,**payload.get('values',{}))
+            values=payload.get('values',{})
+            reply=self.jst.request(action,**values)
+            if action=='sync.start' and values.get('purpose')=='stockout_analysis':
+                self.catalog_batches.add(reply['batch_id'])
+            return reply
         if service=='ax_root':return str(self.host.aoxiang_workflows.store.folder/'component-state')
         if service=='jst_root':return str(self.host.catalog_sessions.session.folder)
         if service=='release_ax':self.release_ax();return True
@@ -54,8 +59,32 @@ class Bridge:
             path=Path(self.host.work_repository.path)
             if not path.is_file():raise ValueError('原业务库缺失，不能猜测仓查询依据')
             from catalog_sync import stock_observation
-            return stock_observation(path,payload['warehouse'])
+            from warehouse_catalog import Repository
+            warehouse=payload['warehouse']
+            return {**stock_observation(path,warehouse),
+                    'current_catalog_digest':Repository(self.host.repository.folder).current_digest(warehouse)}
+        if service=='publish_current_catalog':
+            return self.publish_catalog(payload['batch_id'],payload['item_id'])
         raise ValueError('未知分析会话请求')
+
+    def publish_catalog(self,batch_id,item_id):
+        from catalog_sync import Adoptions
+        from work_repository import Conflict
+        if self.jst is None or batch_id not in self.catalog_batches:
+            raise ValueError('仓资料不属于本次分析采集')
+        state=self.jst.request('sync.status',batch_id=batch_id)
+        batch=next((b for b in state['batches'] if b['id']==batch_id and b['purpose']=='stockout_analysis'),None)
+        item=next((i for i in batch['items'] if i['id']==item_id),None) if batch else None
+        if not item or 'current_catalog_digest' not in (item.get('observation') or {}):
+            raise ValueError('该记录缺少当前仓资料查询依据，请重新采集')
+        bound={**item,'expected_catalog_digest':item['observation']['current_catalog_digest']}
+        path=Path(self.host.work_repository.path)
+        if not path.is_file():raise ValueError('仓资料采用所需的工作库不存在')
+        service=Adoptions(self.host.repository.folder,path,self.jst.folder,state_reader=lambda bid:self.jst.request('sync.status',batch_id=bid))
+        try:return service.apply(batch,bound,self.progress,self.cancel,publish_analysis=True)
+        except Conflict:
+            if service.catalogs.current_digest(item['account']['warehouse'])==bound['expected_catalog_digest']:raise
+            return {'warehouse':item['account']['warehouse'],'superseded':True}
 
     def release_ax(self):
         if self.ax is not None:
@@ -87,12 +116,15 @@ class Task(QThread):
     progress=Signal(str)
     succeeded=Signal(object)
     failed=Signal(str)
+    warehouse_adopted=Signal(object)
 
     def __init__(self,host,operation,arguments,*,bridge_factory=Bridge,worker_target=None):
         super().__init__(host)
         self.host,self.operation,self.arguments=host,operation,arguments
         self.ctx=multiprocessing.get_context('spawn');self.cancel=self.ctx.Event()
         self.bridge_factory=bridge_factory;self.worker_target=worker_target;self.pid=None;self.diagnostic=None;self.cancel_reason=''
+        adopted=getattr(host,'current_warehouse_adopted',None)
+        if adopted:self.warehouse_adopted.connect(adopted)
 
     def run(self):
         from stockout_worker import serve
@@ -109,7 +141,13 @@ class Task(QThread):
                     except EOFError:break
                     if kind=='progress':self.progress.emit(value)
                     elif kind=='rpc':
-                        try:parent.send(('rpc_result',bridge.request(value)))
+                        try:
+                            reply=bridge.request(value)
+                            if value['service']=='publish_current_catalog' and reply.get('apply_id'):
+                                from warehouse_catalog import Repository
+                                values,_=Repository(self.host.repository.folder).snapshots((reply['warehouse'],))
+                                if values:self.warehouse_adopted.emit(values[reply['warehouse']])
+                            parent.send(('rpc_result',reply))
                         except Exception as exc:parent.send(('rpc_error',str(exc)))
                     elif kind=='success':result=value;received=True
                     elif kind=='diagnostic':self.diagnostic=value

@@ -1,38 +1,29 @@
 """Daily queue and append-only business journal projections; no model writes."""
-import sqlite3
 from contextlib import closing
 from pathlib import Path
 import work_repository as wr
 import lifecycle_home
-import order_lifecycle as lc
-import jst_orders as jst
+from jst_order_store import list_generation_state
+from jst_task_store import latest_statuses
 from runtime_support import checkpoint
 from query_scope import oid_batches
 
 STATUSES=('待回传','待运营签发','待付款','待收货','已结束')
+GENERATION_FILTERS={'generated':'已生成导入单','missing':'未生成导入单'}
 
 
 def read(path,cache,request,cancel=None,progress=lambda _:None):
+    """Project warehouse-order progress, current generation and display filters.
+
+    Business connections are read-only. Only the disposable projection cache
+    may be updated. The returned scope and counts precede list pagination.
+    """
     base=lifecycle_home.read(path,cache,{**request,'status':'','all_records':True,'_with_tokens':True},cancel,progress)
     records=base['records']
     batches=list(oid_batches(r['oid'] for r in records))
-    with closing(sqlite3.connect(path)) as db:
-        current={};locks={};tasks={}
-        if db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_tasks'").fetchone():
-            for placeholders,oids in batches or [('',[])]:
-                checkpoint(cancel)
-                # A malformed identity cannot be assigned outside the scope;
-                # retain the previous decode/error behavior instead of hiding it.
-                identity="json_type(head,'$.oid') IS NOT 'text' OR json_type(head,'$.warehouse') IS NOT 'text'"
-                if oids:identity+=' OR json_extract(head,\'$.oid\') IN ('+placeholders+')'
-                condition='CASE WHEN json_valid(head) THEN ('+identity+') ELSE 1 END'
-                for raw,status,message in db.execute('SELECT head,status,message FROM jst_tasks WHERE '+condition+' ORDER BY created,rowid',oids):
-                    h=wr.loads(raw);tasks[(h['oid'],h['warehouse'])]={'status':status,'message':message}
-        if jst.exists(db):
-            for placeholders,oids in batches:
-                checkpoint(cancel)
-                current.update(((o,w),(g,wr.loads(p))) for o,w,g,p in db.execute('SELECT a.oid,a.warehouse,a.gid,h.payload FROM jst_active a JOIN jst_headers h ON a.gid=h.gid WHERE a.oid IN ('+placeholders+')',oids))
-                locks.update(((o,w),g) for o,w,g in db.execute('SELECT oid,warehouse,gid FROM jst_locks WHERE locked=1 AND oid IN ('+placeholders+')',oids))
+    with closing(wr.read_connection(path)) as db:
+        tasks = latest_statuses(db, batches, cancel)
+        current, locks = list_generation_state(db, batches, cancel)
         for r in records:
             checkpoint(cancel);key=(r['oid'],r['warehouse']);g=current.get(key)
             r.update(gid=g[0] if g else None,locked=key in locks,generation_summary=g[1]['summary'] if g else None)
@@ -49,19 +40,22 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
     counts={s:sum(r['status']==s for r in records) for s in STATUSES}
     wh=request.get('warehouse');lock=request.get('lock');stage=request.get('status','')
     view=request.get('stage_view');kind=request.get('stage_filter');scope=request.get('scope')
+    generation=request.get('jst_generation') if view=='payment' else None
     chosen={tuple(k) for k in scope} if scope is not None else None
     def in_scope(r):return chosen is None or (r['oid'],r['warehouse']) in chosen
     def in_stage(r):
         if not view:return True
         if view=='jst':
             if kind=='待生成':return r['next']=='payment' and not r['gid']
+            if kind=='已生成':return bool(r['gid'])
             if kind=='已生成未锁':return bool(r['gid']) and not r['locked']
             if kind=='已锁':return r['locked']
             return bool(r['gid']) or r['next']=='payment'
         pending=r['next'] in ('payment','jst_payment') if view=='payment' else r['next']==view
         return pending if kind=='待处理' else pending or r['present'].get(view,False)
     def in_status(r):return not stage or stage==r['status'] or stage=='全部未完成' and r['next']
-    matched=[r for r in records if in_scope(r) and in_stage(r) and in_status(r) and (not wh or r['warehouse']==wh) and (not lock or r['locked']==(lock=='已锁'))]
+    def in_generation(r):return generation not in GENERATION_FILTERS or bool(r['gid'])==(generation=='generated')
+    matched=[r for r in records if in_scope(r) and in_stage(r) and in_status(r) and in_generation(r) and (not wh or r['warehouse']==wh) and (not lock or r['locked']==(lock=='已锁'))]
     explanation={}
     if request.get('explain_filters'):
         # Reuse the same active-head projection. No source details, extra SQL,
@@ -80,6 +74,9 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
             if wh and r['warehouse']!=wh:add('warehouse','仓筛选：所选'+wh+'，该单为'+r['warehouse'])
             if lock and r['locked']!=(lock=='已锁'):add('lock','锁状态筛选：所选'+lock+'，该单'+('已锁' if r['locked'] else '未锁'))
             if not in_status(r):add('status','进度筛选：所选“'+stage+'”，该单“'+r['status']+'”')
+            if not in_generation(r):
+                actual=GENERATION_FILTERS['generated' if r['gid'] else 'missing']
+                add('jst_generation',f'聚水潭生成状态筛选：所选“{GENERATION_FILTERS[generation]}”，该单“{actual}”')
             if reasons:excluded.append({**{k:r[k] for k in ('oid','number','store','name','warehouse','status')},'reason_codes':codes,'reasons':reasons})
         explanation={'filter_explanation':{'excluded_count':len(excluded),'excluded':excluded}}
     if request.get('all_matched'):return {'records':matched,'count':len(matched),'counts':counts,'scope':len(records),**explanation}
@@ -96,7 +93,7 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
 
 def logs(path,start='',end='',search='',progress=lambda _:None,cancel=None,*,page=None):
     rows=[];parts=[]
-    with closing(sqlite3.connect(path)) as db:
+    with closing(wr.read_connection(path)) as db:
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         sources=[('normal_events','签发'),('lifecycle_events','生命周期'),('jst_events','聚水潭作业')]
         for table,group in sources:

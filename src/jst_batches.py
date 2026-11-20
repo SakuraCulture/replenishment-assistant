@@ -7,20 +7,17 @@ import copy
 import hashlib
 import sqlite3
 import uuid
-from contextlib import closing
+from contextlib import ExitStack,closing
 from decimal import Decimal
 from pathlib import Path
 
 import jst_orders as orders
+from jst_batch_store import ZERO_OUTCOME, context, exists, generation_batch, listing, state
 import order_lifecycle as lc
 import work_repository as wr
 import warehouse_catalog as wc
 import storage_chunks
 from runtime_support import checkpoint, Cancelled, CommitProgress
-
-
-def exists(db):
-    return bool(db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_batches'").fetchone())
 
 
 def schema(db):
@@ -34,16 +31,6 @@ def schema(db):
     ): db.execute(sql)
 
 
-def state(db, batch_id, warehouse):
-    return db.execute('SELECT bid,serial FROM jst_batch_stock WHERE batch_id=? AND warehouse=?', (batch_id, warehouse)).fetchone() if exists(db) else None
-
-
-def generation_batch(db, gid):
-    if not exists(db): return None
-    r = db.execute('SELECT batch_id,position FROM jst_generation_batches WHERE gid=?', (gid,)).fetchone()
-    return r[0] if r else None
-
-
 def reservations(db, batch_id, warehouse, exclude=()):
     values = {}; exclude = set(exclude)
     if not exists(db): return values
@@ -52,35 +39,11 @@ def reservations(db, batch_id, warehouse, exclude=()):
         WHERE b.batch_id=? AND a.warehouse=? ORDER BY b.position,r.rowid''', (batch_id, warehouse))
     for gid, sku, qty in rows:
         if gid not in exclude: values[sku] = values.get(sku, Decimal(0)) + Decimal(qty)
-    # Thoroughly deleted locked orders must not return stock to this same batch.
+    # Locally deleted orders with execution evidence still consume this batch.
     if db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_batch_retired'").fetchone():
         for sku, qty in db.execute('SELECT sku,quantity FROM jst_batch_retired WHERE batch_id=? AND warehouse=?', (batch_id, warehouse)):
             values[sku] = values.get(sku, Decimal(0)) + Decimal(qty)
     return values
-
-
-def context(db, batch_id, *, load_stock=True):
-    if not exists(db): raise ValueError('分配批次不存在')
-    row = db.execute('SELECT payload,digest,status,epoch,label FROM jst_batches WHERE batch_id=?', (batch_id,)).fetchone()
-    if not row: raise ValueError('分配批次不存在')
-    spec = orders.decode(row[:2]); spec.update(status=row[2], epoch=row[3], label=row[4], stocks={}, states={})
-    for wh, bid, serial in db.execute('SELECT warehouse,bid,serial FROM jst_batch_stock WHERE batch_id=? ORDER BY rowid', (batch_id,)):
-        if load_stock: spec['stocks'][wh] = orders.decode(db.execute('SELECT payload,digest FROM jst_baselines WHERE bid=?', (bid,)).fetchone())
-        spec['states'][wh] = (bid, serial)
-    spec['members'] = [dict(position=p, head=wr.loads(h), status=s, message=m) for p,h,s,m in
-                       db.execute('SELECT position,head,status,message FROM jst_batch_members WHERE batch_id=? ORDER BY position', (batch_id,))]
-    return spec
-
-
-def listing(path, progress=lambda _: None, cancel=None):
-    with closing(sqlite3.connect(path)) as db:
-        if not exists(db): return []
-        out = []
-        for bid,created,label,status in db.execute('SELECT batch_id,created,label,status FROM jst_batches ORDER BY rowid DESC'):
-            checkpoint(cancel)
-            counts = dict(db.execute('SELECT status,count(*) FROM jst_batch_members WHERE batch_id=? GROUP BY status', (bid,)))
-            out.append(dict(batch_id=bid, created=created, label=label, status=status, counts=counts))
-        return out
 
 
 def _unfinished(db, heads, cancel=None):
@@ -131,21 +94,27 @@ def release_unfinished(path, groups, progress=lambda _:None, cancel=None):
     return count
 
 
-def preview_new(path, heads, catalogs, manual_order=False, progress=lambda _: None, cancel=None):
+def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda _: None, cancel=None):
     """No writes/reservations; selecting the same file explicitly is allowed."""
     checkpoint(cancel); stocks = {}; states = {}; batch_id = uuid.uuid4().hex
     with closing(sqlite3.connect(path)) as db:
         for h in heads:
             if exists(db) and db.execute("SELECT 1 FROM jst_batch_members WHERE oid=? AND warehouse=? AND status IN ('pending','failed')", (h['oid'], h['warehouse'])).fetchone():
                 raise wr.Conflict('所选订单已有未完成批次，请继续原批或明确撤销：' + h['number'])
-    for wh in dict.fromkeys(h['warehouse'] for h in heads):
+    warehouses=list(dict.fromkeys(h['warehouse'] for h in heads))
+    versions={};current_catalogs=None
+    if catalogs is None:
+        current_catalogs,versions=wc.Repository(Path(path).parent).snapshots()
+        catalogs=current_catalogs
+    for wh in warehouses:
         if wh not in catalogs: raise ValueError(wh + '尚未选用商品资料')
         checkpoint(cancel); c = wc.validate(copy.deepcopy(catalogs[wh])); bid = uuid.uuid4().hex
         if c['warehouse'] != wh: raise ValueError('选用资料与供货仓不一致')
         stocks[wh] = dict(bid=bid, warehouse=wh, catalog=c, included=[], created=wr.now(), batch_id=batch_id)
         states[wh] = (bid, 0)
     spec = dict(batch_id=batch_id, created=wr.now(), epoch=0, stocks=stocks, states=states, members=[], new=True)
-    plan = orders.prepare_checked(path, heads, manual_order, progress=progress, cancel=cancel, batch=spec)
+    if versions:spec['current_versions']=versions
+    plan = orders.prepare_checked(path, heads, manual_order, progress=progress, cancel=cancel, batch=spec,current_catalogs=current_catalogs)
     spec['members'] = [dict(position=p['position'], head=p['head']) for p in plan['payload']['plans']]
     if not spec['members']: raise ValueError('没有可加入新批次的订单；已生成单请导出或进入原批次')
     spec['label'] = wr.now() + f" · {len(spec['members'])}张仓单"
@@ -213,13 +182,21 @@ def register(path, plan, progress=lambda _:None, cancel=None):
             if hashlib.sha256(raw).hexdigest() != c['source_sha256']: raise ValueError(wh+'资料在准备后变化，请重新预览')
             files.append((c['source_sha256'], source.name, raw))
     storage_chunks.backup_before_write(Path(path), progress)
-    with closing(sqlite3.connect(path, timeout=.1)) as db,db:
+    versions=spec.get('current_versions',{})
+    from catalog_write_lock import acquire
+    catalog_repository=wc.Repository(Path(path).parent)
+    with ExitStack() as locks,closing(sqlite3.connect(path, timeout=.1)) as db,db:
+        for wh in wc.WAREHOUSES:
+            if wh in versions:locks.enter_context(acquire(catalog_repository.folder,wh,cancel))
         lc.begin(db,cancel); schema(db)
         previous = db.execute('SELECT payload,digest FROM jst_batches WHERE batch_id=?', (spec['batch_id'],)).fetchone()
         fixed = {k:spec[k] for k in ('batch_id','created','label')}; fixed['preview_digest'] = plan['digest']
         if previous:
             if orders.decode(previous) != fixed: raise wr.Conflict('批次内容不一致，请重新核对')
         else:
+            for wh,version in versions.items():
+                if catalog_repository.current_digest(wh)!=version:
+                    raise wr.Conflict(wh+'当前仓资料已刷新，请重新预览库存分配')
             for p in v['plans']:
                 h = p['head']; orders.purchases.validate_head(db,h)
                 if orders.active(db,h) or orders.locked(db,h) or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):
@@ -255,7 +232,7 @@ def record(db, p):
     if not p.get('batch_id'): return
     if p['summary']['positive']:
         db.execute('INSERT INTO jst_generation_batches VALUES(?,?,?)', (p['gid'],p['batch_id'],p['position']))
-    db.execute("UPDATE jst_batch_members SET status='done',message=? WHERE batch_id=? AND oid=? AND warehouse=?", ('已生成，可导出' if p['summary']['positive'] else '无可分配库存',p['batch_id'],p['head']['oid'],p['head']['warehouse']))
+    db.execute("UPDATE jst_batch_members SET status='done',message=? WHERE batch_id=? AND oid=? AND warehouse=?", ('已生成，可导出' if p['summary']['positive'] else ZERO_OUTCOME,p['batch_id'],p['head']['oid'],p['head']['warehouse']))
     settle_tasks(db,p['head'],'done','本批已完成分配')
 
 
@@ -297,31 +274,33 @@ def cancel_unfinished(path,batch_id,reason,progress=lambda _:None,cancel=None):
     return n
 
 
-def deleting_order(db,oid,warehouse=None):
+def deleting_order(db,oid,warehouse=None,executed=()):
     """Called in the existing permanent-delete transaction, before rows vanish."""
     if not exists(db):return
     db.execute('CREATE TABLE IF NOT EXISTS jst_batch_retired(batch_id TEXT,warehouse TEXT,sku TEXT,quantity TEXT,PRIMARY KEY(batch_id,warehouse,sku))')
     condition=' AND warehouse=?' if warehouse is not None else ''
     args=(oid,warehouse) if warehouse is not None else (oid,)
-    members=db.execute('SELECT batch_id,warehouse FROM jst_batch_members WHERE oid=?'+condition,args).fetchall()
-    for bid,wh in members:
+    members=db.execute('SELECT batch_id,warehouse,status FROM jst_batch_members WHERE oid=?'+condition,args).fetchall()
+    for bid,wh,status in members:
         h={'oid':oid,'warehouse':wh};gid=orders.active(db,h)
-        if gid and generation_batch(db,gid)==bid and orders.locked(db,h):
+        owns_allocation = gid and generation_batch(db, gid) == bid
+        keep = owns_allocation and ((oid, wh) in executed or orders.locked(db,h))
+        if keep:
             for sku,qty in db.execute('SELECT sku,quantity FROM jst_reservations WHERE gid=?',(gid,)):
                 old=db.execute('SELECT quantity FROM jst_batch_retired WHERE batch_id=? AND warehouse=? AND sku=?',(bid,wh,sku)).fetchone()
                 db.execute('INSERT OR REPLACE INTO jst_batch_retired VALUES(?,?,?,?)',(bid,wh,sku,str(Decimal(qty)+(Decimal(old[0]) if old else 0))))
-        # Removing an unlocked member only releases capacity; a locked member's
-        # reservation was transferred to retired stock above. Neither decreases
-        # available stock or changes another member's frozen allocation.
-        # Keep the surviving batch's execution epoch and control state.
+        if status in ('pending', 'failed') or (owns_allocation and not keep):
+            # A preview may already include the removed member's trial quantities.
+            # Preserve other warehouses' serials and already committed steps.
+            db.execute('UPDATE jst_batch_stock SET serial=serial+1 WHERE batch_id=? AND warehouse=?',(bid,wh))
     db.execute('DELETE FROM jst_generation_batches WHERE gid IN (SELECT gid FROM jst_generations WHERE oid=?'+condition+')',args)
     db.execute('DELETE FROM jst_batch_members WHERE oid=?'+condition,args)
-    for bid,wh in members:
+    for bid,wh,_ in members:
         if not db.execute('SELECT 1 FROM jst_batch_members WHERE batch_id=?',(bid,)).fetchone():
             db.execute('DELETE FROM jst_batch_stock WHERE batch_id=?',(bid,));db.execute('DELETE FROM jst_batch_retired WHERE batch_id=?',(bid,));db.execute('DELETE FROM jst_batches WHERE batch_id=?',(bid,))
 
 
-def deleting_orders(db, selection, cancel=None):
+def deleting_orders(db, selection, cancel=None, *, executed=()):
     """Prune JST work in the caller's deletion transaction. None selects all warehouses."""
     selection = tuple(selection)
     selected = set(selection)
@@ -349,7 +328,7 @@ def deleting_orders(db, selection, cancel=None):
                     old = db.execute('SELECT quantity FROM retired_stock WHERE warehouse=? AND bid=? AND sku=?',(wh,bid,sku)).fetchone()
                     total = Decimal(qty) + (Decimal(old[0]) if old else 0)
                     db.execute('INSERT OR REPLACE INTO retired_stock VALUES(?,?,?,?)',(wh,bid,sku,str(total)))
-            deleting_order(db,oid,warehouse)
+            deleting_order(db,oid,warehouse,executed)
             for gid, in db.execute('SELECT gid FROM jst_generations WHERE oid=?'+condition,args).fetchall():
                 db.execute('DELETE FROM jst_headers WHERE gid=?',(gid,))
                 db.execute('DELETE FROM jst_reservations WHERE gid=?',(gid,))
@@ -449,14 +428,20 @@ def recover_batch(path,batch_id,progress=lambda _:None,cancel=None):
     """Read committed member facts and repair control metadata, never allocate."""
     with closing(sqlite3.connect(path,timeout=.1)) as db,db:
         lc.begin(db,cancel);c=context(db,batch_id,load_stock=False)
-        generated=[];zero=[];pending=[]
+        generated=[];zero=[];pending=[];errors=[]
         for m in c['members']:
             checkpoint(cancel)
+            head=m['head']
             if m['status']=='done':
-                gid=orders.active(db,m['head'])
-                if gid:generated.append(gid)
-                else:zero.append(m['head']['number'])
-            elif m['status'] in ('pending','failed'):pending.append(m['head']['number'])
+                if m['message']==ZERO_OUTCOME:
+                    zero.append(head['number'])
+                    continue
+                gid=orders.active(db,head)
+                if gid and generation_batch(db,gid)==batch_id:
+                    generated.append(gid)
+                else:
+                    errors.append({'orders':[head['number']],'error':'本批已完成项缺少对应的有效生成记录，请核对原批'})
+            elif m['status'] in ('pending','failed'):pending.append(head['number'])
         if not pending:
             db.execute("UPDATE jst_batches SET status='complete' WHERE batch_id=?",(batch_id,))
         elif c['status']=='active':
@@ -465,11 +450,13 @@ def recover_batch(path,batch_id,progress=lambda _:None,cancel=None):
         if pending and not generated and not zero:
             last=db.execute("SELECT json_extract(detail,'$.operation') FROM jst_events WHERE action='分配控制切换' AND json_extract(detail,'$.batch_id')=? ORDER BY id DESC LIMIT 1",(batch_id,)).fetchone()
             if last:_restore_switch(db,batch_id,last[0])
-        orders.event(db,{},'核对并恢复分配状态',{'batch_id':batch_id,'generated':generated,'zero':zero,'pending':pending})
+        orders.event(db,{},'核对并恢复分配状态',{'batch_id':batch_id,'generated':generated,'zero':zero,'pending':pending,'errors':errors})
         checkpoint(cancel)
-    return {'batch_id':batch_id,'generated':generated,'zero':zero,'pending':pending,'errors':[],
-            'skipped':[],'cancelled':False,'commit_state':'partial' if pending else 'committed',
-            'message':f'已核实保存{len(generated)}单、零分配{len(zero)}单；'+(f'剩余{len(pending)}单请继续原批，已保存部分不重做' if pending else '可直接导出原结果，无需重新分配')}
+    followup=f'剩余{len(pending)}单请继续原批，已保存部分不重做' if pending else '已保存结果可在本批核对和导出'
+    if errors:followup+='；原批回执待核：'+'、'.join(e['orders'][0] for e in errors)
+    return {'batch_id':batch_id,'generated':generated,'zero':zero,'pending':pending,'errors':errors,
+            'skipped':[],'cancelled':False,'commit_state':'partial' if pending or errors else 'committed',
+            'message':f'已核实保存{len(generated)}单、零分配{len(zero)}单；'+followup}
 
 
 def continue_batch(path,batch_id,progress=lambda _:None,cancel=None):

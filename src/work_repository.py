@@ -1,5 +1,5 @@
 """Local transactional daily records and immutable full parameter presets."""
-import copy,hashlib,json,sqlite3,zlib,uuid
+import copy,sqlite3,uuid
 from contextlib import closing
 from datetime import datetime,date,timedelta,timezone
 from pathlib import Path
@@ -7,26 +7,26 @@ import parameter_schema as schema
 import storage_chunks as chunks
 from version_info import MODEL_VERSION
 from io_stages import stage,digest as digest_bytes
+from snapshot_json import decode_object, dumps, encode_default, loads
+from draft_spool import result_source
 
 def now():return datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds')
 def today():return now()[:10]
-def encode_default(value):
-    if isinstance(value,(datetime,date)):return {'__workbook_datetime__':value.isoformat(),'date_only':not isinstance(value,datetime)}
-    raise TypeError('无法保存的输入类型：'+type(value).__name__)
-def decode_object(d):
-    if set(d)=={'__workbook_datetime__','date_only'}:return (date if d['date_only'] else datetime).fromisoformat(d['__workbook_datetime__'])
-    return d
-def dumps(data):return json.dumps(data,ensure_ascii=False,sort_keys=True,allow_nan=False,default=encode_default)
-def loads(data):return json.loads(data,object_hook=decode_object)
 class Conflict(ValueError):pass
 
 def summary(payload):
-    states=payload.get('states',{});results=payload.get('results',{});ready=[s for s,st in states.items() if st['state']=='已完成']
+    states=payload.get('states',{});results=result_source(payload.get('results',{}));ready=[s for s,st in states.items() if st['state']=='已完成']
     for s in ready:
         if s not in results or not results[s]:raise ValueError('已完成门店缺少结果：'+s)
     if ready and payload.get('input_dirty'):raise ValueError('输入已变化，不能把旧结果保存为已完成')
     if any(st['state'] in {'计算中','排队中'} for st in states.values()):raise ValueError('请等待任务结束后保存')
     return {'stores':{s:{'name':st['name'],'state':st['state']} for s,st in states.items()},'completed':len(ready),'amount':round(sum(results[s]['summary']['amount'] for s in ready),2) if ready else None,'model_version':payload['model_version'],'input_dirty':payload.get('input_dirty',True),'phase':'全部完成' if states and len(ready)==len(states) else '部分完成' if ready else '准备中 / 需重算'}
+
+def read_connection(path, *, timeout=5):
+    """Open an existing business database without allowing initialization."""
+    uri = Path(path).resolve().as_uri() + '?mode=ro'
+    return sqlite3.connect(uri, uri=True, timeout=timeout)
+
 
 class Repository:
     def __init__(self,folder):

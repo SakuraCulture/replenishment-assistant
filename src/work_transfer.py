@@ -18,6 +18,14 @@ class Reference:
 class TransferClosed(RuntimeError):pass
 
 
+def resolve_references(value, reference):
+    if type(value) is Reference:return reference(value)
+    if type(value) is dict:return {k:resolve_references(v,reference) for k,v in value.items()}
+    if type(value) is list:return [resolve_references(v,reference) for v in value]
+    if type(value) is tuple:return tuple(resolve_references(v,reference) for v in value)
+    return value
+
+
 def send_tree(connection,value,cancel=None,progress=lambda count:None,*,consume=False,activity=None):
     pending=deque();serial=0;frames=0;largest=0
     def skeleton(v):
@@ -68,14 +76,10 @@ def send_tree(connection,value,cancel=None,progress=lambda count:None,*,consume=
 
 def receive_tree(connection,cancel=None,progress=lambda count:None,*,alive=None,activity=None):
     references={};root=None;seen_root=False;frames=0
-    def resolve(v):
-        if type(v) is Reference:
-            if v.number not in references:references[v.number]=[] if v.kind=='list' else {}
-            return references[v.number]
-        if type(v) is dict:return {k:resolve(x) for k,x in v.items()}
-        if type(v) is list:return [resolve(x) for x in v]
-        if type(v) is tuple:return tuple(resolve(x) for x in v)
-        return v
+    def reference(v):
+        if v.number not in references:references[v.number]=[] if v.kind=='list' else {}
+        return references[v.number]
+    def resolve(v):return resolve_references(v,reference)
     while True:
         checkpoint(cancel)
         while not connection.poll(.05):

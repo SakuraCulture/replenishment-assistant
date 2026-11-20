@@ -6,6 +6,8 @@ from pathlib import Path
 import order_lifecycle as lifecycle
 import purchases
 from runtime_support import checkpoint
+from lifecycle_rules import basis_token as _token, document_summary
+from lifecycle_stages import CURRENT, LEGACY, TITLES, progress_state
 
 
 class PaymentPreparationError(ValueError):
@@ -14,16 +16,12 @@ class PaymentPreparationError(ValueError):
         self.code, self.details = code, details
 
 
-def _token(doc):
-    return {"version": doc["version"], "digest": doc["digest"]} if doc else None
-
-
 def _version(token):
     return "未留存" if token is None else "V" + str(token["version"])
 
 
 def _changes(expected, actual):
-    return [{"stage": stage, "label": lifecycle.TITLES.get(stage, stage),
+    return [{"stage": stage, "label": TITLES.get(stage, stage),
              "expected": expected.get(stage), "current": actual.get(stage)}
             for stage in dict.fromkeys([*expected, *actual])
             if expected.get(stage) != actual.get(stage)]
@@ -45,7 +43,7 @@ def require_payment(head, view):
     number = head["number"]
     if not payment:
         raise PaymentPreparationError("PAYMENT_MISSING", number + "：付款单尚未确认，当前签发下尚无付款资料。请到“付款核对”导入或确认本单付款资料，再重建采购预览。", details)
-    route = lifecycle.flow.CURRENT if view["flow_version"] == 2 else lifecycle.STAGES
+    route = CURRENT if view["flow_version"] == 2 else LEGACY
     upstream = route[:route.index("payment")]
     actual = {s: _token(view["documents"].get(s)) for s in upstream}
     legacy = view.get("legacy_return")
@@ -56,10 +54,10 @@ def require_payment(head, view):
     unready = [s for s in upstream if not view["health"].get(s)]
     details["unready_stages"] = unready
     if payment["payload"].get("pending"):
-        next_step = "先核对" + "、".join(lifecycle.TITLES[s] for s in unready) + "，再" if unready else ""
+        next_step = "先核对" + "、".join(TITLES[s] for s in unready) + "，再" if unready else ""
         raise PaymentPreparationError("PAYMENT_PENDING", number + "：付款资料已留存V" + str(payment["version"]) + "，但上游未就绪时付款单尚未确认。请" + next_step + "在“付款核对”重新核对本单，再重建采购预览。", details)
     if unready:
-        stages = "、".join(lifecycle.TITLES[s] for s in unready)
+        stages = "、".join(TITLES[s] for s in unready)
         changes = _change_text(details["dependency_changes"])
         raise PaymentPreparationError("PAYMENT_UPSTREAM_NOT_READY", number + "：" + stages + "尚未就绪或对照依据已变化" + ("（" + changes + "）" if changes else "") + "。请先核对上述环节，再核对付款单并重建采购预览。", details)
     changes = _change_text(details["dependency_changes"])
@@ -78,11 +76,11 @@ def _view(db, path, head, cancel):
         # Legacy feedback completeness depends on the signed eligible SKU set;
         # use the canonical reader instead of guessing it from payment rows.
         return lifecycle.snapshot(path, head, cancel=cancel, db=db)
-    _, _, _, health = lifecycle.progress_state(
-        {s: lifecycle.document_summary(d) for s, d in docs.items()},
-        operations_required=route == lifecycle.flow.CURRENT)
+    _, _, _, health = progress_state(
+        {s: document_summary(d) for s, d in docs.items()},
+        operations_required=route == CURRENT)
     return {"documents": docs, "health": health, "legacy_return": None,
-            "flow_version": 2 if route == lifecycle.flow.CURRENT else 1}
+            "flow_version": 2 if route == CURRENT else 1}
 
 
 def preflight_payment(path, head, *, cancel=None, db=None):

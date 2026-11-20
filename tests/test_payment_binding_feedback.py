@@ -49,6 +49,8 @@ class PaymentBindingUiTests(BindingFixture,unittest.TestCase):
         from PySide6.QtWidgets import QMessageBox
         f=self.f;dialog=self.dialog();document=self.document();file=document['scan']['files'][0]['path']
         dialog.add_paths([file]);self.assertTrue(dialog.read_ready);self.assertIsNone(dialog.targets[0].currentData())
+        self.assertIn('店仓已识别',dialog.targets[0].currentText())
+        self.assertIn('其中 1 份已识别店仓',dialog.note.text())
         with closing(sqlite3.connect(f.path)) as db:before='\n'.join(db.iterdump())
         boxes=[]
         with patch.object(QMessageBox,'exec',new=lambda box:boxes.append((box.windowTitle(),box.detailedText())) or QMessageBox.StandardButton.Ok):dialog.preview_btn.click()
@@ -56,3 +58,7 @@ class PaymentBindingUiTests(BindingFixture,unittest.TestCase):
         self.assertEqual(dialog.pages.currentIndex(),0);self.assertEqual(dialog.paths,[file]);self.assertEqual(len(dialog.documents),1)
         self.assertTrue(dialog.preview_btn.isEnabled());self.assertFalse(dialog.busy)
         with closing(sqlite3.connect(f.path)) as db:self.assertEqual('\n'.join(db.iterdump()),before)
+        combo=dialog.targets[0]
+        combo.setCurrentIndex(next(i for i in range(combo.count()) if combo.itemData(i) and combo.itemData(i)['number']==f.target['number']))
+        self.assertIn('已对应订单 1 份',dialog.note.text())
+        self.assertIn(f.target['number'],dialog.selection_note.toPlainText())

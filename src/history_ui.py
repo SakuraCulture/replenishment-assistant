@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt,QAbstractTableModel,QModelIndex,QTimer
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QLineEdit,QTableView,QFileDialog,QTextBrowser,QMessageBox,QAbstractItemView,QProgressBar,QSplitter,QWidget,QTabWidget
 from ui_controls import label,button
 import work_repository as wr
-from history_read import repository
+from history_read import detail_head, revision_options
 
 COLUMNS=['商品编码','商品','推荐类型','原模型建议','候选数','签发数','签发金额','原因']
 
@@ -32,13 +32,11 @@ class ArchiveDialog(QDialog):
         self.reader=HistoryReader(host.work_repository.path,host.history_reader.cache,self)
         self.initial_tab=initial_tab;self.initial_sku=sku;self.children_views={};root=QVBoxLayout(self);root.addWidget(label(record['number']+' · '+record.get('name',record['store'])+' · '+record.get('warehouse',''),'section'));self.tabs=QTabWidget();root.addWidget(self.tabs,1);page=QWidget();v=QVBoxLayout(page);self.tabs.addTab(page,'签发明细');self.tabs.addTab(QWidget(),'订单跟踪');self.tabs.addTab(QWidget(),'决策依据')
         self.rev=QComboBox()
-        with closing(host.work_repository.connect()) as db:
-            import warehouse_execution
-            revisions=[h for h in warehouse_execution.heads(db,history=True) if h['day']==record['day'] and h['store']==record['store'] and h['warehouse']==record.get('warehouse')]
-        if revisions:
-            for h in sorted(revisions,key=lambda x:x['revision']):self.rev.addItem(f"V{h.get('child_revision',h['revision']):03d}"+(' · 当前' if h['revision']==h['current_revision'] else ' · 历史'),h['revision'])
-        else:
-            for i in range(1,record['revision']+1):self.rev.addItem(f'V{i:03d}',i)
+        for title, revision in revision_options(
+            host.work_repository.path, record['day'], record['store'],
+            record.get('warehouse'), record['revision'],
+        ):
+            self.rev.addItem(title, revision)
         self.rev.setCurrentIndex(max(0,self.rev.findData(record['revision'])));self.rev.hide();v.addWidget(button('查看签发历史记录',self.rev.show));v.addWidget(self.rev)
         self.note=label('读取中…','muted');v.addWidget(self.note);self.search=QLineEdit();self.search.setPlaceholderText('筛选商品名称 / 编码（不影响正式导出范围）');v.addWidget(self.search)
         self.model=ArchiveModel(self);self.table=QTableView();self.table.setModel(self.model);self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);v.addWidget(self.table,1)
@@ -59,17 +57,10 @@ class ArchiveDialog(QDialog):
         for b in self.archive_export_buttons:b.setEnabled(False)
         # Header read is tiny and binds the requested historical revision.
         try:
-            repo=repository(self.host.work_repository.path)
-            with closing(repo.work.connect()) as db:
-                r=db.execute('SELECT o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid WHERE o.day=? AND o.store=? AND r.revision=?',(self.record['day'],self.record['store'],self.rev.currentData())).fetchone()
-            if r is None:raise ValueError('归档修订不存在')
-            h=dict(zip(('oid','number','current_revision','digest','saved'),r));h.update(day=self.record['day'],store=self.record['store'],revision=self.rev.currentData(),warehouse=self.record.get('warehouse'))
-            with closing(repo.work.connect()) as db:
-                import warehouse_execution
-                if warehouse_execution.has_parent(db,h['oid']):
-                    revision=self.rev.currentData()
-                    h=next((x for x in warehouse_execution.heads(db,history=True) if x['oid']==h['oid'] and x['warehouse']==h['warehouse'] and x['revision']==revision),None)
-                    if h is None:raise ValueError('该仓历史修订不存在或已删除')
+            h = detail_head(
+                self.host.work_repository.path, self.record['day'], self.record['store'],
+                self.record.get('warehouse'), self.rev.currentData(),
+            )
             self.reader.request({'kind':'detail','head':h},self.ready,self.failed)
         except Exception as exc:self.failed(str(exc))
     def ready(self,view):

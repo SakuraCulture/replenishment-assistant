@@ -136,7 +136,7 @@ class PaymentMatchingTests(unittest.TestCase):
     def test_atomic_failure_does_not_leave_order_or_alias_mapping(self):
         doc=self.document(name='需要确认的新店名');plan=self.plan(doc)
         from unittest.mock import patch
-        with patch('payment_matching.apply',side_effect=RuntimeError('after facts before links')):
+        with patch('payment_match_commit.apply',side_effect=RuntimeError('after facts before links')):
             with self.assertRaisesRegex(RuntimeError,'before links'):lc.commit(self.path,plan)
         self.assertTrue(self.f.unpaid())
         with closing(matching.readonly(self.path)) as db:self.assertEqual(matching.mappings(db),{})

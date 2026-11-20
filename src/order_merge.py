@@ -14,9 +14,11 @@ from runtime_support import checkpoint,Cancelled
 DBS=('workbench.sqlite3','aoxiang/workflows.sqlite3','aoxiang/jobs.sqlite3','aoxiang/component-state/state.sqlite')
 EVENTS={'normal_events','lifecycle_events','jst_events','purchase_events','automation_events'}
 DIRECT={'normal_orders','normal_revisions','normal_events','merchant_feedback','lifecycle_routes','lifecycle_versions','lifecycle_events','followup_notes','archive_visibility','jst_generations','jst_active','jst_locks','jst_events','order_component_packages','warehouse_execution_heads','warehouse_execution_revisions','warehouse_execution_retirements','deleted_warehouse_tokens','warehouse_component_packages'}
+DIRECT.add('jst_auto_orders')
 MAIN=DIRECT|{'jst_headers','jst_reservations','jst_generation_batches','jst_batches','jst_batch_stock','jst_batch_members','jst_batch_retired','jst_runs','jst_steps','jst_tasks','purchase_documents','purchase_versions','purchase_events','purchase_link_index','automation_tasks','automation_events','scheduled_runs','scheduled_values','scheduled_events','deleted_jst_steps'}
 WEAK={'normal_work_revisions','jst_baselines','retired_stock','source_files','lifecycle_files','jst_files','purchase_files','snapshot_chunks'}
 GLOBAL={'jobs','stores','presets','stocking_lists','replenishment_plans','replenishment_plan_events','scheduled_arrangements','settings_history','store_admission','admission_events','global_category_mapping','global_category_mapping_events','lifecycle_mappings','purchase_mappings','maintenance_chunk_refs','snapshot_storage_meta','jst_warehouses','catalog_sync_applies','deleted_order_tokens','deletion_generations','deletion_component_outbox','warehouse_deletion_generations','sqlite_sequence','order_merge_receipts'}
+GLOBAL.add('jst_auto_profiles')
 NODE={'purchase_creates','purchase_create_events','purchase_receipts','purchase_receipt_events','purchase_runs','retired_host_orders','retired_host_warehouses','retired_purchase_tokens','retired_purchase_runs','retirement_files','order_owned_files','warehouse_owned_files','machine_commands','machine_events','machine_retired','assets'}
 NODE_GLOBAL={'metadata','runs','items','attempts','publishes','imported_pending','migration_imports','conflicts','retired_collections','collection_reexports','collection_consumers','machine_protocol'}
 PARENTS={'normal_orders':('oid',),'jst_generations':('gid','operation'),'jst_batches':('batch_id',),'jst_runs':('runid',),'jst_tasks':('task',),'purchase_documents':('docid','identity'),'automation_tasks':('id','operation_key'),'scheduled_runs':('id',),'ax_workflows':('id',),'ax_jobs':('id',),'purchase_creates':('id',),'purchase_runs':('id',),'purchase_receipts':('id',),'machine_commands':('id',),'runs':('id',),'items':('id',),'attempts':('id',),'publishes':('id',),'assets':('asset_key',)}
@@ -150,6 +152,11 @@ class Graph:
         elif table in ('jst_baselines','jst_generations','jst_runs','jst_batches'):
             from jst_orders import decode
             decode((values['payload'],values['digest']))
+        elif table=='jst_auto_orders':
+            from jst_auto_order_store import need
+            need(json.loads(values['payload']),values['digest'],values['online'],values['gid'])
+            if hashlib.sha256(values['workbook']).hexdigest()!=values['file_sha']:
+                raise ValueError('聚水潭原提交文件摘要不符')
     def _owners(self):
         alloids=set(self.order);strong=[r for r in self.rows if not r.weak and not (r.db==DBS[0] and r.table in GLOBAL)]
         parent={}
@@ -225,7 +232,7 @@ class Graph:
                 import storage_chunks
                 decoded=storage_chunks.load(row.values['payload'],self.connections[row.db],binding=row.values['snapshot_digest'])
                 if decoded.get('work_revision') not in works:issue='分仓签发引用的原工作修订缺失'
-            elif row.table in ('jst_active','jst_locks','jst_generation_batches') and row.values['gid'] not in generations:issue='原库存分配生成记录缺失'
+            elif row.table in ('jst_active','jst_locks','jst_generation_batches','jst_auto_orders') and row.values['gid'] not in generations:issue='原库存分配生成记录缺失'
             elif row.table=='jst_generation_batches' and row.values['batch_id'] not in batches:issue='原库存分配批次缺失'
             elif row.table=='jst_batch_stock' and row.values['bid'] not in bases:issue='原库存分配基线缺失'
             if issue:

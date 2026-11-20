@@ -8,39 +8,26 @@ from decimal import Decimal
 from pathlib import Path
 import work_repository as wr
 import purchases, merchant_feedback, result_semantics as sem, archive_orders as ao
+import payment_match_commit
 import lifecycle_rules as rules
 import lifecycle_duplicates as duplicate_rows
-from history_read import repository
+from normal_orders import read_repository as repository
+from lifecycle_facts import current, upstream, legacy_return, legacy_return_record, full_head, match_payment_rows
 from runtime_support import checkpoint, Cancelled
 from export_progress import RowProgress
 from lifecycle_io import STAGES, TITLES, QUANTITIES, DOCNUM, DOCDATE, fields
 from lifecycle_io import ALL_STAGES
-import operations_flow as flow
-from lifecycle_stages import FINISHED, PENDING, route as document_route
-
-SCHEMA = 2
-STATUSES = tuple(PENDING[stage] for stage in STAGES) + (FINISHED,)
+import lifecycle_routes as flow
+from jst_order_guards import guard_payment, guard_return
+from jst_task_store import enqueue
+from lifecycle_stages import FINISHED, PENDING, STATUSES, route as document_route
+from lifecycle_stages import presence_state as state, progress_state
+from lifecycle_rules import DOCUMENT_SCHEMA as SCHEMA, document_summary
+from order_keys import warehouse_revision as key
+import lifecycle_store as store
+from lifecycle_store import attachment_files, decode, exists, fingerprint, schema
+from sqlite_write import begin
 COMMIT_BOUNDARY = '正在原子提交单据；提交完成前不可取消'
-
-def schema(db):
-    for sql in (
-        'CREATE TABLE IF NOT EXISTS lifecycle_versions(oid TEXT,revision INTEGER,warehouse TEXT,stage TEXT,version INTEGER,saved TEXT,digest TEXT,payload TEXT,PRIMARY KEY(oid,revision,warehouse,stage,version))',
-        'CREATE TABLE IF NOT EXISTS lifecycle_files(sha TEXT PRIMARY KEY,name TEXT,content BLOB)',
-        'CREATE TABLE IF NOT EXISTS lifecycle_events(id INTEGER PRIMARY KEY,at TEXT,oid TEXT,revision INTEGER,warehouse TEXT,stage TEXT,version INTEGER,action TEXT,detail TEXT)',
-        'CREATE TABLE IF NOT EXISTS lifecycle_mappings(stage TEXT,name TEXT,payload TEXT,PRIMARY KEY(stage,name))',
-    ): db.execute(sql)
-
-def exists(db):
-    return db.execute("SELECT 1 FROM sqlite_master WHERE name='lifecycle_versions'").fetchone() is not None
-
-def key(head): return (head['oid'], head['revision'], head['warehouse'])
-
-def fingerprint(payload):
-    # Only file paths are projected out. Nested business data is read-only here;
-    # copying every raw cell doubled peak memory without changing the digest.
-    value = dict(payload)
-    value['files'] = [{k: f[k] for k in ('name', 'sha')} for f in value['files']]
-    return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
 
 def business_fingerprint(payload):
     """Equality for a new import only; persisted snapshot hashes stay unchanged."""
@@ -50,47 +37,15 @@ def business_fingerprint(payload):
         value[key]=[{k:v for k,v in row.items() if k not in evidence} for row in payload.get(key,[])]
     return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
 
-def decode(row):
-    if not row: return None
-    version, saved, digest, raw = row; payload = wr.loads(raw)
-    if payload.get('schema') not in (1,SCHEMA) or fingerprint(payload) != digest: raise ValueError('生命周期单据快照校验失败')
-    return {'version': version, 'saved': saved, 'digest': digest, 'payload': payload}
-
-def current(db, head, stage, version=None,*,as_of=None,_proofs=None,_verified=None):
-    if not exists(db): return None
-    condition = ' AND version=?' if version is not None else ''
-    args = (*key(head), stage, *((version,) if version is not None else ()))
-    if as_of:condition+=' AND julianday(saved)<=julianday(?)';args=(*args,as_of)
-    row=db.execute('SELECT version,saved,digest,payload FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=?' + condition + ' ORDER BY version DESC LIMIT 1', args).fetchone()
-    if type(_verified) is dict and row:
-        from lifecycle_read_proofs import reuse
-        reused=reuse(head,stage,row,_verified.get(stage))
-        if reused is not None:
-            if _proofs is not None:_proofs[stage]=_verified[stage]
-            return reused
-    document=decode(row)
-    if _proofs is not None and document:
-        from lifecycle_read_proofs import make
-        proof=make(head,stage,row,document)
-        if proof is not None:_proofs[stage]=proof
-    return document
-
 def history(path, head, stage, progress=lambda _: None, cancel=None):
     with closing(purchases.connect(path)) as db:
         if not exists(db): return []
         result = []
-        for row in db.execute('SELECT version,saved,digest,payload FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=? ORDER BY version DESC', (*key(head), stage)):
+        for row in store.version_rows(db, head, stage):
             checkpoint(cancel);doc=decode(row);files=attachment_files(db,head,stage,doc)
             if {f['sha'] for f in files}-{f['sha'] for f in doc['payload']['files']}:doc['attachments']=files
             result.append(doc)
         return result
-
-def attachment_files(db,head,stage,doc):
-    files={f['sha']:f for f in doc['payload']['files']}
-    if not db.execute("SELECT 1 FROM sqlite_master WHERE name='lifecycle_events'").fetchone():return list(files.values())
-    for raw, in db.execute('SELECT detail FROM lifecycle_events WHERE oid=? AND revision=? AND warehouse=? AND stage=? AND version=? AND action=? ORDER BY id',(*key(head),stage,doc['version'],'业务未变化，留存新原件')):
-        for f in wr.loads(raw)['files']:files.setdefault(f['sha'],f)
-    return list(files.values())
 
 def mappings(path, stage, name=None, value=None, progress=lambda _: None, cancel=None):
     checkpoint(cancel)
@@ -102,9 +57,9 @@ def mappings(path, stage, name=None, value=None, progress=lambda _: None, cancel
     with closing(purchases.connect(path)) as db, db:
         if value is not None:
             checkpoint(cancel); schema(db)
-            db.execute('INSERT INTO lifecycle_mappings VALUES(?,?,?) ON CONFLICT(stage,name) DO UPDATE SET payload=excluded.payload', (stage, name, wr.dumps(value)))
+            store.save_mapping(db, stage, name, value)
         if not exists(db): return {}
-        return {n: wr.loads(p) for n, p in db.execute('SELECT name,payload FROM lifecycle_mappings WHERE stage=? ORDER BY name', (stage,)) if stage!='payment' or not n.startswith(reserved)}
+        return store.mappings(db, stage, reserved)
 
 def binding_key(row):
     return wr.dumps([row.get(k) for k in ('signed_number', 'revision', 'store', 'warehouse', 'document_number')])
@@ -185,26 +140,6 @@ def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=N
         bindings[binding_key(row)]=h
     return prepare(path,scanned,bindings,progress,cancel,staged=staged,_owned=True)
 
-def upstream(db, head, stage, staged=None,*,_proofs=None,_verified=None):
-    """Freeze every dependency; absence is also a token checked at commit."""
-    route=flow.stages(db,head,staged,including=stage)
-    index=route.index(stage); tokens={}; previous=None; valid=True
-    for s in route[:index]:
-        doc=(staged or {}).get((*key(head),s)) or current(db,head,s,_proofs=_proofs,_verified=_verified)
-        if doc is None and s=='return':
-            legacy=legacy_return(db,head,head['products'])
-            if legacy and legacy['complete']:
-                doc={'version':legacy['version'],'digest':legacy['digest'],'payload':{'schema':1,'rows':[{'sku':k,'name':head['products'][k].get('name'),'base_quantity':str(v)} for k,v in legacy['values'].items()]}}
-        tokens[s]=rules.basis_token(doc)
-        if doc is None:
-            valid=False
-        elif doc['payload'].get('schema')==SCHEMA:
-            p=doc['payload']
-            if p.get('pending') or p.get('basis',{}).get('dependencies')!={k:v for k,v in tokens.items() if k!=s}:valid=False
-        previous=doc
-    products=head['products'] if stage=='return' else rules.positive(previous['payload']['rows']) if previous and valid else {}
-    return {'stage':'signed' if stage=='return' else route[index-1], 'dependencies':tokens, 'signed_digest':head['digest'], 'ready':stage=='return' or valid, 'products':products}
-
 def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False, *, staged=None,_verified=None):
     proofs={}
     basis=upstream(db,head,stage,staged,_proofs=proofs,_verified=_verified)
@@ -238,20 +173,6 @@ def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=Fals
     if evidence:plan['source_evidence']=evidence
     if proofs:plan['_read_proofs']=proofs
     return plan
-
-def match_payment_rows(path, head, rows):
-    if not any(r.get('adapter')=='paid_order' for r in rows):return
-    identities={tuple(str(r['source_order'].get(k) or '') for k in ('内部订单号','线上订单号','店铺名称','买家账号','平台站点')) for r in rows if r.get('adapter')=='paid_order'}
-    if len(identities)!=1:raise ValueError('付款文件含多个来源订单/店铺，请分别导入，不自动合并')
-    from warehouse_execution import get_order
-    order=get_order(repository(path),head,view='export')
-    if order['digest']!=head['digest']:raise wr.Conflict('签发快照已变化')
-    for row in rows:
-        if row.get('adapter')!='paid_order':continue
-        original=row['sku']
-        if original in head['products']:
-            row['matching_basis']='商品编码精确匹配'
-        else:row['matching_basis']='清单外商品，需确认'
 
 def prepare(path, scanned, bindings, progress=lambda _: None, cancel=None, *, staged=None,_owned=False):
     """Bindings are exact whole-document heads, no per-line quantity allocations."""
@@ -311,24 +232,6 @@ def zero_plan(path, head, stage, progress=lambda _:None, cancel=None):
         purchases.validate_head(db,head);plan=make_plan(db,head,stage,[],[],explicit_zero=True)
     return {'plans':[plan],'files':[]}
 
-def full_head(path,head):
-    if 'products' in head:return head
-    from warehouse_execution import get_order
-    order=get_order(repository(path),head,view='export')
-    if order['digest']!=head['digest']:raise wr.Conflict('签发快照已变化')
-    result=order['payload']['result']
-    products={d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for rs in sem.signed_groups(result,order['payload'].get('new_focus')).values() for d in rs if ao.warehouse(d)==head['warehouse']}
-    return {**head,'products':products}
-
-def begin(db, cancel,*,deadline=None):
-    start = time.monotonic()
-    end=min(start+10,deadline) if deadline is not None else start+10
-    while True:
-        checkpoint(cancel)
-        try: db.execute('BEGIN IMMEDIATE'); checkpoint(cancel); return
-        except sqlite3.OperationalError as exc:
-            if 'locked' not in str(exc).lower() or time.monotonic() > end: raise
-
 def staged_document(plan):
     """Exact document that this plan will commit, including unchanged versions."""
     return {'version':(plan['expected'] or 0)+int(plan['changed']),
@@ -356,7 +259,7 @@ def _commit(path, plan, progress=lambda _: None, cancel=None):
         checkpoint(cancel)
         if plan.get('archived_sources'):
             with closing(purchases.connect(path)) as db:
-                row=db.execute('SELECT content FROM lifecycle_files WHERE sha=?',(f['sha'],)).fetchone()
+                row=store.file_row(db, f['sha'])
             if not row:raise ValueError('历史原件缺失')
             raw=row[0]
         else:raw = Path(f['path']).read_bytes()
@@ -395,20 +298,24 @@ def _commit(path, plan, progress=lambda _: None, cancel=None):
 
 
 def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
+    """Own the transaction covering records, outbox, and payment mappings."""
     receipts = []
     with closing(sqlite3.connect(path, timeout=.15)) as db, db:
         progress('等待单据写锁…')
         begin(db, cancel,deadline=deadline)
         progress('已取得写锁，正在核对单据依据…')
         schema(db)
+        if plan.get('jst_fulfillment') or any(r.get('adapter')=='jst_allocated' for p in plan['plans'] for r in p['payload']['raw_rows']):
+            from jst_fulfillment import validate_guard
+            validate_guard(db,plan)
         if plan.get('payment_matching'):
-            from payment_matching import validate
-            validate(path,db,plan)
+            payment_match_commit.validate(
+                path, db, plan['payment_matching'], plan.get('payment_matching_digest'), plan['plans'],
+            )
         staged={}
         for p in plan['plans']:
             verified=p.get('_read_proofs')
             checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'],_verified=verified)
-            from jst_orders import guard_return,guard_payment
             if p['stage'] in ('return','operations') and p['changed']:guard_return(db,p['head'])
             if p['stage']=='payment':guard_payment(db,p)
             identity=(*key(p['head']),p['stage'])
@@ -419,31 +326,28 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
             staged[identity]=staged_document(p)
         # Last checkpoint. Never terminate the process between here and COMMIT.
         checkpoint(cancel); progress(COMMIT_BOUNDARY)
-        for f, raw in contents: db.execute('INSERT OR IGNORE INTO lifecycle_files VALUES(?,?,?)', (f['sha'], f['name'], raw))
+        for f, raw in contents: store.retain_file(db, f, raw)
         for p, (offset,length) in zip(plan['plans'], positions):
             v = p['expected'] or 0; h = p['head']
             if p['changed']:
                 encoded.seek(offset)
                 data=encoded.read(length)
                 if len(data)!=length:raise OSError('待保存的单据编码不完整，请重新核对')
-                # The spooled bytes are already canonical UTF-8. Keep the
-                # ledger's existing SQLite TEXT type without decoding twice.
-                v += 1; db.execute('INSERT INTO lifecycle_versions VALUES(?,?,?,?,?,?,?,CAST(? AS TEXT))', (*key(h), p['stage'], v, wr.now(), p['digest'], data))
+                v += 1
+                store.insert_version(db, h, p['stage'], v, p['digest'], data)
                 del data
                 if p['stage']==flow.demand_stage(db,h):
-                    from jst_tasks import enqueue
                     enqueue(db,h,{'version':v,'digest':p['digest']})
-                db.execute('INSERT INTO lifecycle_events(at,oid,revision,warehouse,stage,version,action,detail) VALUES(?,?,?,?,?,?,?,?)', (wr.now(), *key(h), p['stage'], v, '确认完整单据', wr.dumps({'number': h['number'], 'rows': len(p['payload']['rows']), 'missing': p['payload']['missing'], 'extra': p['payload']['extra']})))
+                store.insert_event(db, wr.now(), h, p['stage'], v, '确认完整单据', wr.dumps({'number': h['number'], 'rows': len(p['payload']['rows']), 'missing': p['payload']['missing'], 'extra': p['payload']['extra']}))
             evidence=p.get('source_evidence')
             if evidence:
                 if p['changed'] or any(f not in [{k:f[k] for k in ('name','sha')} for f,_ in contents] for f in evidence['files']):raise ValueError('原件留存范围与核对文件不一致')
                 detail=wr.dumps(evidence);action='业务未变化，留存新原件'
-                if not db.execute('SELECT 1 FROM lifecycle_events WHERE oid=? AND revision=? AND warehouse=? AND stage=? AND version=? AND action=? AND detail=?',(*key(h),p['stage'],v,action,detail)).fetchone():
-                    db.execute('INSERT INTO lifecycle_events(at,oid,revision,warehouse,stage,version,action,detail) VALUES(?,?,?,?,?,?,?,?)',(wr.now(),*key(h),p['stage'],v,action,detail))
+                if not store.event_exists(db, h, p['stage'], v, action, detail):
+                    store.insert_event(db, wr.now(), h, p['stage'], v, action, detail)
             receipts.append({'number': h['number'], 'revision': h['revision'], 'stage': p['stage'], 'version': v, 'changed': p['changed']})
         if plan.get('payment_matching'):
-            from payment_matching import apply
-            apply(db,plan)
+            payment_match_commit.apply(db, plan['payment_matching'])
         try:db.commit()
         except sqlite3.OperationalError as exc:
             code=getattr(exc,'sqlite_errorcode',None)
@@ -452,47 +356,6 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
             db.rollback()  # Failure here propagates: unknown outcomes never replay.
             raise _BusyCommit(exc) from exc
     return receipts
-
-def state(present):
-    for i, stage in enumerate(STAGES):
-        if not present.get(stage): return STATUSES[i], stage
-    return STATUSES[-1], None
-
-def document_summary(doc):
-    if not doc:return None
-    p=doc['payload']
-    return {'version':doc['version'],'digest':doc['digest'],'schema':p.get('schema',1),'pending':p.get('pending',False),'dependencies':p.get('basis',{}).get('dependencies',{}),'positive':len(rules.positive(p['rows']))}
-
-def progress_state(summaries, legacy=None, operations_required=False):
-    summaries=dict(summaries)
-    route=document_route(operations_required or summaries.get('operations'))
-    if not summaries['return'] and legacy and legacy['complete']:
-        summaries['return']={'version':legacy['version'],'digest':legacy['digest'],'schema':1,'positive':sum(v>0 for v in legacy['values'].values())}
-    health={};tokens={}
-    for s in route:
-        d=summaries.get(s)
-        health[s]=bool(d) and (d['schema']==1 or not d['pending'] and d['dependencies']==tokens and all(health.values()))
-        tokens[s]=rules.basis_token(d)
-    if not summaries['return'] and not (legacy and legacy['complete']):return PENDING['return'],'return','',health
-    for i,s in enumerate(route[1:],1):
-        prev=summaries.get(route[i-1])
-        if not summaries.get(s):
-            if prev and health[route[i-1]] and prev['schema']==SCHEMA and prev['positive']==0 and not any(summaries.get(k) for k in route[i:]):
-                return STATUSES[-1],None,('无要货，无需后续运营、分配、付款或收货' if route[i-1] in ('return','operations') else '无付款数量，无需收货'),health
-            return PENDING[s],s,'',health
-        if not health[s]:return PENDING[s],s,TITLES[s]+'对照依据已更新或未就绪，请重新核对',health
-    return STATUSES[-1],None,'单据已收齐；不代表数量完全一致',health
-
-def legacy_return(db, head, products,*,as_of=None):
-    return legacy_return_record(merchant_feedback.current(db,head['oid'],head['revision'],as_of=as_of),products)
-
-
-def legacy_return_record(old, products):
-    if not old: return None
-    values = old['payload'].get('values', {}); required = [s for s, p in products.items() if p['quantity'] > 0]
-    supplied = {s: q for s, q in values.items() if s in products}
-    complete = bool(supplied) and all(s in supplied for s in required)
-    return {'version': old['version'], 'saved': old['saved'], 'complete': complete, 'values': supplied, 'legacy': True,'digest':hashlib.sha256(wr.dumps(supplied).encode()).hexdigest()}
 
 def _comparison_document(document):
     """Compact only after full decode/fingerprint verification; never persisted."""
@@ -579,7 +442,7 @@ def attachment(path, head, stage, version, sha, target, progress=lambda _: None,
     with closing(purchases.connect(path)) as db:
         doc = current(db, head, stage, version)
         if not doc or sha not in {f['sha'] for f in attachment_files(db,head,stage,doc)}: raise ValueError('原件不属于此单据版本')
-        row = db.execute('SELECT content FROM lifecycle_files WHERE sha=?', (sha,)).fetchone()
+        row = store.file_row(db, sha)
     if not row or hashlib.sha256(row[0]).hexdigest() != sha: raise ValueError('原文件缺失或校验失败')
     checkpoint(cancel); fd, tmp = tempfile.mkstemp(dir=Path(target).parent)
     try:

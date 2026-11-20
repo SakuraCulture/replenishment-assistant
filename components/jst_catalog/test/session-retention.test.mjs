@@ -25,6 +25,17 @@ test('two warehouses retain independent bridges across repeated operations',asyn
   assert.deepEqual(events,['bind:1','bind:2']);assert(s.status(accounts).every(r=>r.state==='CONNECTED'));
   await s.close();assert.deepEqual(events,['bind:1','bind:2','close:1','close:2','release','release']);
 });
+test('background reads reuse only a healthy retained session for that warehouse',async()=>{
+  const {s,accounts,events}=fixture();
+  const a=await s.connect(accounts[0]);
+  const options={retainedOnly:true};
+  assert.equal(await s.connect(accounts[0],undefined,options),a);
+  await assert.rejects(s.connect(accounts[1],undefined,options),{code:'SESSION_NOT_RETAINED'});
+  a.connected=false;
+  await assert.rejects(s.connect(accounts[0],undefined,options),{code:'SESSION_NOT_RETAINED'});
+  assert.deepEqual(events,['bind:1']);
+  await s.close();
+});
 test('explicit reconnect affects only selected warehouse and not task store',async()=>{
   const {s,accounts,events}=fixture();await s.connect(accounts[0]);const b=await s.connect(accounts[1]);
   await s.disconnect(accounts[0].binding);assert.equal(s.status(accounts)[0].state,'DISCONNECTED');

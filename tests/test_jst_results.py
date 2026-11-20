@@ -52,17 +52,41 @@ class Results(unittest.TestCase):
     def test_inventory_refresh_requires_review_only_unlocked(self):
         _,gid=self.f.generated();self.f.refresh(90);data=self.read();self.assertEqual(data['counts']['stale'],1)
         orders.lock(self.path,[gid]);self.assertEqual(self.read()['counts']['ready'],1)
-    def test_change_after_export_starts_keeps_frozen_generation(self):
-        _,gid=self.f.generated();plan=results.export_plan(self.read());original=jst_exports.export;new=[]
-        def changed(path,gids,*args,**kwargs):
-            self.f.f.save('return',[{'门店确认数量':30}])
-            new.extend(orders.commit(path,orders.prepare(path,[self.h],correction=True))['generated'])
-            return original(path,gids,*args,**kwargs)
-        with patch('jst_exports.export',side_effect=changed):r=results.export(self.path,plan,self.root/'concurrent')
-        self.assertEqual(r['files'][0]['gid'],gid);self.assertNotEqual(new,[gid])
-        self.assertEqual(cells(r['files'][0]['path'])[0][2][1][2][0],40)
-        current=results.export_plan(self.read());self.assertEqual(current['entries'][0]['gid'],new[0])
-        self.assertEqual(current['entries'][0]['last_export'],'未导出')
+    def test_store_return_change_invalidates_export_even_with_same_operations_version(self):
+        import operations_flow
+        operations_flow.adopt(self.path,[self.h])
+        _,gid=self.f.generated();plan=results.export_plan(self.read())
+        r=plan['entries'][0]
+        self.f.f.save('return',[{'门店确认数量':20}])
+        with closing(sqlite3.connect(self.path)) as db:
+            self.assertEqual(results.return_token(db,self.h),r['return_token'])
+        for export in (lambda:results.export(self.path,plan,self.root/'out'),
+                       lambda:jst_exports.export_checked(self.path,[gid],self.root/'out')):
+            with self.assertRaisesRegex(wr.Conflict,'门店回传或运营签发依据已更新'):
+                export()
+        self.assertFalse((self.root/'out').exists())
+
+    def test_new_file_survives_old_export_finishing_late(self):
+        _,gid=self.f.generated();plan=results.export_plan(self.read())
+        original=jst_exports.openpyxl.Workbook.save;folder=self.root/'concurrent';new=[]
+        def staged(book,path):
+            original(book,path)
+            if not Path(path).name.startswith('.jst-') or new:return
+            self.f.f.save('return',[{'门店确认数量':20}])
+            new.extend(orders.commit(self.path,orders.prepare(self.path,[self.h],correction=True))['generated'])
+            self.assertEqual(len(new),1)
+            current=jst_exports.export_checked(self.path,new,folder)
+            self.assertFalse(current['failed'])
+        with patch.object(jst_exports.openpyxl.Workbook,'save',staged):
+            r=results.export(self.path,plan,folder)
+        self.assertEqual(r['files'],[]);self.assertEqual(r['remaining'],[gid])
+        self.assertIn(self.h['number'],r['failed'][0]['error'])
+        self.assertIn('生成记录或仓资料已更新',r['failed'][0]['error'])
+        files=list(folder.glob('*.xlsx'));self.assertEqual(len(files),1)
+        self.assertEqual(cells(files[0])[0][2][1][2][0],20)
+        self.assertEqual(list(folder.glob('.jst-*')),[])
+        current=results.export_plan(self.read())
+        self.assertEqual(current['entries'][0]['gid'],new[0])
     def test_legacy_return_and_paid_history_can_export(self):
         with closing(sqlite3.connect(self.path)) as db,db:
             db.execute("DELETE FROM lifecycle_versions WHERE stage='return'")
@@ -79,7 +103,7 @@ class Results(unittest.TestCase):
         self.f.f.save('return',[{'门店确认数量':0}]);self.assertEqual(self.read()['counts']['zero'],1)
     def test_warm_projection_does_not_decode_generation_and_tamper_rebuilt(self):
         self.f.generated();data=self.read()
-        with patch('jst_orders.decode',side_effect=AssertionError('warm snapshot read')):self.assertEqual(self.read(),data)
+        with patch('jst_order_store.decode',side_effect=AssertionError('warm snapshot read')):self.assertEqual(self.read(),data)
         with closing(sqlite3.connect(self.cache)) as db,db:db.execute("UPDATE jst_result_projection SET payload='broken'")
         self.assertEqual(self.read(),data)
 
@@ -91,7 +115,7 @@ class Results(unittest.TestCase):
         data=self.read();m=data['metrics']
         self.assertEqual((m['demand'],m['allocated'],m['reduced'],m['increased']),(2,48,0,46))
         self.assertEqual(m['reduced_sku'],0)
-        with patch('jst_orders.decode',side_effect=AssertionError('warm snapshot read')):
+        with patch('jst_order_store.decode',side_effect=AssertionError('warm snapshot read')):
             self.assertEqual(self.read(),data)
 
     def test_projection_cache_v3_is_rebuilt_without_changing_generation(self):

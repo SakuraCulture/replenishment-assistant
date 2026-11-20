@@ -24,13 +24,18 @@ import test_signing_failures as failures
 
 def interrupted_worker(connection,path,cancel):
     import work_io_process
-    original=chunks.prepare
-    def stop(*args,**kw):
-        if kw.get('store') is not None:
-            kw['store']._write(b'isolated incomplete encoding')
+    original = spool.Store._write
+
+    def stop_after_first_write(store, data):
+        original(store, data)
+        if data:
+            store.file.flush()
+            marker = Path(path).with_name('encoding-interrupted.json')
+            marker.write_text(wr.dumps({'pid':os.getpid(),'temporary':store.location,
+                                        'bytes':os.fstat(store.file.fileno()).st_size}), 'utf-8')
             os._exit(29)
-        return original(*args,**kw)
-    chunks.prepare=stop
+
+    spool.Store._write = stop_after_first_write
     work_io_process.serve(connection,path,cancel)
 
 
@@ -182,14 +187,64 @@ class SigningSpool(unittest.TestCase):
         self.assertFalse(self.repo.headers());self.assertEqual(self.work.get_job(p['day'])['revision'],saved[0]['revision'])
 
     def test_actual_worker_exit_leaves_no_business_records_or_private_file(self):
+        import export_receipts
+        import export_recovery
         from ui_work_io import Session
+        from work_failures import WorkFailure
+
         p=self.payload()
-        with patch('ui_work_io.serve',interrupted_worker),Session(self.work.path) as session:
+        commits = []
+        def progress(value):
+            if hasattr(value, 'active'):
+                commits.append(value.active)
+
+        with Session(self.work.path, worker=interrupted_worker) as session:
             session.call('delivery_prepare',[p,list(p['results'])],lambda _:None)
-            with self.assertRaisesRegex(RuntimeError,'处理进程退出'):
-                session.call('delivery_execute',str(self.output),lambda _:None)
+            pid = session.process.pid
+            with self.assertRaises(WorkFailure) as caught:
+                session.call('delivery_execute',str(self.output),progress)
+            session.process.join(2)
+            self.assertEqual(session.process.exitcode, 29)
+            self.assertTrue(session.broken)
+        evidence = caught.exception.evidence
+        self.assertEqual(evidence['operation'], 'delivery_execute')
+        self.assertEqual(evidence['transport']['worker_pid'], pid)
+        self.assertEqual(evidence['transport']['worker_exitcode'], 29)
+        self.assertFalse(commits)
+        marker = wr.loads(self.work.path.with_name('encoding-interrupted.json').read_text('utf-8'))
+        self.assertEqual(marker['pid'], pid)
+        self.assertGreater(marker['bytes'], 0)
+        cache = self.work.path.parent / '.encoding-cache'
+        self.assertEqual(Path(marker['temporary']).parent, cache)
+        self.assertFalse(Path(marker['temporary']).exists())
         self.assertFalse(self.repo.headers());self.assertIsNone(self.work.get_job(p['day']))
-        self.assertFalse(list((self.work.path.parent/'.encoding-cache').iterdir()))
+        receipt, = export_receipts.recent(self.work.path)
+        self.assertEqual(evidence['export_task'], receipt['id'])
+        self.assertEqual(receipt['signature'], '签发结果待核')
+        self.assertEqual([(item['state'], item['head']) for item in receipt['files']],
+                         [('未执行', None), ('未执行', None)])
+        recovery = export_recovery.inspect(self.work.path, receipt['id'])
+        self.assertEqual([item['action'] for item in recovery['items']], ['blocked', 'blocked'])
+        with self.assertRaisesRegex(ValueError, '原修订待核'):
+            export_recovery.recover(self.work.path, recovery, [0,1], self.output)
+        self.assertFalse(list(cache.iterdir()))
+        self.assertFalse(list(self.output.iterdir()))
+        with closing(self.work.connect()) as db:
+            existing = {name for name, in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            for table in ('normal_revisions', 'normal_work_revisions', 'normal_events',
+                          'warehouse_execution_heads', 'warehouse_execution_revisions', 'snapshot_chunks'):
+                if table in existing:
+                    self.assertEqual(db.execute('SELECT COUNT(*) FROM '+table).fetchone()[0], 0, table)
+
+        with Session(self.work.path) as reopened:
+            self.assertIsNone(reopened.call('load', p['day'], lambda _:None))
+            reopened.call('delivery_prepare', [p, list(p['results'])], lambda _:None)
+            result = reopened.call('delivery_execute', str(self.output), lambda _:None)
+        self.assertEqual(len(result['paths']), 2)
+        self.assertTrue(all(Path(path).is_file() for path in result['paths']))
+        self.assertEqual([head['store'] for head in self.repo.headers()], list(p['results']))
+        self.assertEqual(self.work.get_job(p['day'])['payload']['results'], p['results'])
+        self.assertFalse(list(cache.iterdir()))
 
     def test_failure_after_first_store_rolls_back_all_orders(self):
         with closing(self.work.connect()) as db,db:

@@ -5,17 +5,59 @@ All heavy functions are module-level spawn targets and have no Qt dependency.
 import hashlib,json,sqlite3,os,gc
 from contextlib import closing
 from pathlib import Path
-import normal_orders as orders
+from normal_orders import read_repository as repository
 import work_repository as wr
+from order_keys import expected_current_revision
 from result_semantics import fmt,order_quantity,order_amount,explanation
 import new_products
+import history_snapshot
+from runtime_support import Cancelled
 
 SCHEMA=3
 import archive_orders as ao
 import warehouse_execution as execution
 
-def repository(path):
-    return orders.Repository.from_existing_work(wr.Repository.open_existing(path,read_only=True))
+def revision_options(path, day, store, warehouse, displayed_revision):
+    """List revisions for the selected warehouse, with the old parent fallback."""
+    with closing(wr.read_connection(path)) as db:
+        parent = db.execute(
+            "SELECT oid FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",
+            (day, store),
+        ).fetchone()
+        revisions = execution.heads(db, [{'oid': parent[0]}], history=True) if parent else []
+    matching = [head for head in revisions if head['warehouse'] == warehouse]
+    if not matching:
+        return [(f'V{i:03d}', i) for i in range(1, displayed_revision + 1)]
+    return [
+        (f"V{head.get('child_revision', head['revision']):03d}" +
+         (' · 当前' if head['revision'] == head['current_revision'] else ' · 历史'),
+         head['revision'])
+        for head in sorted(matching, key=lambda head: head['revision'])
+    ]
+
+
+def detail_head(path, day, store, warehouse, revision):
+    """Resolve a selected source revision before requesting its verified detail."""
+    repo = repository(path)
+    with closing(repo.work.connect()) as db:
+        row = db.execute(
+            'SELECT o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o '
+            'JOIN normal_revisions r ON o.oid=r.oid WHERE o.day=? AND o.store=? AND r.revision=?',
+            (day, store, revision),
+        ).fetchone()
+    if row is None:
+        raise ValueError('归档修订不存在')
+    oid, number, current, digest, saved = row
+    head = {'oid': oid, 'number': number, 'current_revision': current,
+            'digest': digest, 'saved': saved, 'day': day, 'store': store,
+            'revision': revision, 'warehouse': warehouse}
+    with closing(repo.work.connect()) as db:
+        if execution.has_parent(db, oid):
+            for child in execution.heads(db, [head], history=True):
+                if child['warehouse'] == warehouse and child['revision'] == revision:
+                    return child
+            raise ValueError('该仓历史修订不存在或已删除')
+    return head
 
 
 def identity(path):
@@ -34,8 +76,12 @@ def summary_record(head,result):
     children=[]
     for wh in ao.scopes(result['rows']):
         rows=[d for d in result['rows'] if ao.warehouse(d)==wh]
-        children.append({'warehouse':wh,'summary':summarize(rows),'search':[(d['E']+' '+str(d.get('D',''))).lower() for d in rows]})
+        children.append({'warehouse':wh,'summary':summarize(rows),'search':[_product_search(d) for d in rows]})
     return {**head,'name':result['store_name'],'summary':result['summary'],'children':children}
+
+
+def _product_search(row):
+    return (row['E']+' '+str(row.get('D',''))).lower()
 
 
 def project(order):
@@ -44,7 +90,7 @@ def project(order):
         'summary':order['payload']['result']['summary'],
         'warehouses':[ao.warehouse(d) for d in rows],
         'rows':[[fmt(v) for v in (d['E'],d.get('D'),new_products.category(d),d.get('AS'),d.get('_candidate_qty'),order_quantity(d),order_amount(d),explanation(d))] for d in rows],
-        'search':[(d['E']+' '+str(d.get('D',''))).lower() for d in rows]}
+        'search':[_product_search(d) for d in rows]}
 
 
 def projection_checksum(values):
@@ -77,16 +123,24 @@ class Index:
         if projection_checksum(row[:3])!=row[3]:return None
         try:
             stored=wr.loads(row[0]);record=stored
-            return {'record':record,'search':json.loads(row[1]),'projection':json.loads(row[2]) if detail else None}
+            projection=json.loads(row[2]) if detail else None
+            if detail and projection is None:return None
+            return {'record':record,'search':json.loads(row[1]),'projection':projection}
         except (ValueError,TypeError,KeyError):return None
-    def put(self,k,record,view):
-        values=[wr.dumps(record),json.dumps(view['search'],ensure_ascii=False),json.dumps(view,ensure_ascii=False)]
+    def put(self,k,record,view,*,search=None):
+        if search is None:
+            search=view['search']
+        values=[wr.dumps(record),json.dumps(search,ensure_ascii=False),json.dumps(view,ensure_ascii=False)]
         with closing(self.connect()) as db,db:db.execute('INSERT OR REPLACE INTO views VALUES(?,?,?,?,?)',(k,*values,projection_checksum(values)))
+
+
+def _collect_archive_rows(_profile, rows):
+    return list(rows)
 
 
 def cached(path,cache,head,detail=False,cancel=None):
     # A stale cache is never authority for a permanently removed order.
-    with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as check:
+    with closing(wr.read_connection(path)) as check:
         managed=bool(head.get('warehouse') and execution.has_parent(check,head['oid']))
         if managed:
             source=check.execute('SELECT identity_digest,snapshot_digest FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?',(head['oid'],head['warehouse'],head['revision'])).fetchone()
@@ -95,24 +149,41 @@ def cached(path,cache,head,detail=False,cancel=None):
         else:
             source=check.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
             if not source or source[0]!=head['digest']:raise ValueError('归档已删除或变化，请刷新')
-    idx=Index(cache);k=key(path,head);hit=idx.get(k,detail)
-    if hit is not None:return hit
-    before=identity(path);order=execution.get_order(repository(path),head,view='export')
-    if order is None or order['digest']!=head['digest'] or before!=identity(path):raise ValueError('归档来源已变化，请刷新')
-    view=project(order);record=summary_record(head,order['payload']['result'])
-    import history_forms,storage_chunks
-    repo=repository(path)
-    with closing(repo.work.connect()) as db:
-        if managed:work_revision=order['payload'].get('work_revision')
+        idx=Index(cache);k=key(path,head);hit=idx.get(k,detail)
+        if hit is not None:return hit
+        before=identity(path)
+        repo=repository(path)
+        if detail:
+            order=execution.get_order(repo,head,view='export',db=check)
+            if order is None or order['digest']!=head['digest']:raise ValueError('归档来源已变化，请刷新')
+            payload=order['payload']
+            result=payload['result']
+            work_revision=payload.get('work_revision')
+            if not managed:
+                import storage_chunks
+                raw=check.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
+                work_revision=storage_chunks.load(raw[0],check,paths=[('work_revision',)]).get(('work_revision',))
+            view=project(order)
+            search=view['search']
         else:
-            raw=db.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
-            work_revision=storage_chunks.load(raw[0],db,paths=[('work_revision',)]).get(('work_revision',))
-    paths=[('catalogs',child['warehouse'],'source_sha256') for child in record['children']]
-    metadata=history_forms.work_parts(repo,{'payload':{'work_revision':work_revision}},paths)
+            try:
+                result, work_revision, rows = history_snapshot.read(
+                    check, head, _collect_archive_rows, managed=managed, work_metadata=True, cancel=cancel,
+                )
+            except Cancelled as exc:
+                raise InterruptedError(str(exc)) from exc
+            result={**result,'rows':rows}
+            search=[_product_search(row) for row in rows]
+            view=None
+        if before!=identity(path):raise ValueError('归档来源已变化，请刷新')
+        record=summary_record(head,result)
+        import history_forms
+        paths=[('catalogs',child['warehouse'],'source_sha256') for child in record['children']]
+        metadata=history_forms.work_parts(repo,{'payload':{'work_revision':work_revision}},paths,db=check)
     for child in record['children']:child['source_sha256']=metadata.get(('catalogs',child['warehouse'],'source_sha256'))
     if cancel is not None and cancel.is_set():raise InterruptedError('已取消')
-    idx.put(k,record,view)
-    return {'record':record,'search':view['search'],'projection':view if detail else None}
+    idx.put(k,record,view,search=search)
+    return {'record':record,'search':search,'projection':view}
 
 
 def execute(path,cache,request,cancel,progress):
@@ -140,7 +211,7 @@ def execute(path,cache,request,cancel,progress):
         if start and end and start>end:raise ValueError('起始日期不能晚于结束日期')
         parent_heads=repo.headers();records=[];matches=[];needle=request.get('search','').strip().lower()
         with closing(repo.work.connect()) as db:
-            managed={h['oid'] for h in parent_heads if execution.has_parent(db,h['oid'])}
+            managed=execution.managed(db,(h['oid'] for h in parent_heads))
             child_heads=execution.heads(db,[h for h in parent_heads if h['oid'] in managed]) if managed else []
             by_parent={}
             for h in child_heads:by_parent.setdefault(h['oid'],[]).append(h)
@@ -162,7 +233,7 @@ def execute(path,cache,request,cancel,progress):
                 matches.append(match and (not start or r['day']>=start) and (not end or r['day']<=end) and (not request.get('day') or r['day']==request['day']) and (not request.get('store') or r['store']==request['store']) and (not request.get('warehouse') or wh==request['warehouse']))
             progress({'done':i+1,'total':len(heads)})
         with closing(repo.work.connect()) as db:
-            after=ao.states(db);after_managed={h['oid'] for h in parent_heads if execution.has_parent(db,h['oid'])}
+            after=ao.states(db);after_managed=execution.managed(db,(h['oid'] for h in parent_heads))
             after_children=execution.heads(db,[h for h in parent_heads if h['oid'] in after_managed]) if after_managed else []
         if parent_heads!=repo.headers() or visibility!=after or child_heads!=after_children or managed!=after_managed:raise ValueError('归档列表已更新，请刷新')
         return {'records':records,'matches':matches,'heads':heads}
@@ -177,7 +248,7 @@ def execute(path,cache,request,cancel,progress):
             view['summary']=next((c['summary'] for c in meta['children'] if c['warehouse']==wh),{'amount':0,'positive':0})
             view['head'].update(warehouse=wh,parent_number=view['head']['number'],number=ao.number(view['head']['number'],wh))
         with closing(repo.work.connect()) as db:state=ao.states(db).get((head['oid'],wh),{'deleted':False,'token':0})
-        view['head'].update(deleted=state['deleted'],visibility_token=state['token'],current_revision=head.get('current_revision',head['revision']))
+        view['head'].update(deleted=state['deleted'],visibility_token=state['token'],current_revision=expected_current_revision(head))
         return view
     # Audit and formal export always retrieve and validate the source, not cache.
     order=execution.get_order(repo,head)

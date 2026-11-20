@@ -26,17 +26,17 @@ class WorkflowRefinements(unittest.TestCase):
             d.batch_id='fixed';d.apply_mode();self.assertFalse(d.order_mode.isEnabled());self.assertFalse(d.order_list.isEnabled());self.assertFalse(d.restore_order_btn.isEnabled())
             d.order_mode.setCurrentIndex(0);d.order_moved();self.assertEqual(d.order_mode.currentIndex(),0)
             d.reject();d.deleteLater()
-    def test_completed_buttons_show_scope_no_selection_warns_and_lock_only_selected(self):
+    def test_completed_buttons_show_export_scope_and_no_selection_warns(self):
         from jst_ui import GenerationDialog
         with patch.object(GenerationDialog,'load_catalogs'):
             d=GenerationDialog(self.win,self.win,[]);self.app.processEvents()
             for i in range(2):d.saved_order(dict(positive=True,gid='G'+str(i),number='N'+str(i)))
-            self.assertFalse(d.lock_saved_btn.isEnabled());self.assertIn('已选择0单',d.completed_note.text())
-            with patch('jst_ui.QMessageBox.information') as notice:d.lock_saved();notice.assert_called_once()
-            d.completed.item(1).setSelected(True);self.assertEqual(d.gids(),['G1']);self.assertTrue(d.lock_saved_btn.isEnabled())
-            with patch('jst_ui.confirm',return_value=True),patch('jst_ui.run') as run:
-                d.lock_saved_btn.click();self.assertEqual(run.call_args.args[2],(d.path,['G1']))
-            d.select_completed_btn.click();self.assertEqual(set(d.gids()),{'G0','G1'});self.assertIn('2单',d.lock_saved_btn.text())
+            self.assertFalse(d.export_saved_btn.isEnabled());self.assertIn('已选择0单',d.completed_note.text())
+            with patch('jst_ui.QMessageBox.information') as notice:d.export_saved();notice.assert_called_once()
+            d.completed.item(1).setSelected(True);self.assertEqual(d.gids(),['G1']);self.assertTrue(d.export_saved_btn.isEnabled())
+            with patch.object(d,'dispatch_export') as dispatch:
+                d.export_saved_btn.click();dispatch.assert_called_once();self.assertEqual(d.export_queue,['G1'])
+            d.select_completed_btn.click();self.assertEqual(set(d.gids()),{'G0','G1'});self.assertIn('2单',d.export_saved_btn.text())
             d.reject();d.deleteLater()
     def test_purchase_error_messages_separate_known_acceptance_from_query_failures(self):
         import aoxiang_purchase_messages as messages

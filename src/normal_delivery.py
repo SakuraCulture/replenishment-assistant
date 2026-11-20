@@ -33,14 +33,75 @@ def probe_payload(full,codes):
     return slim
 
 
+def signing_block(*, busy, input_dirty, readonly, day, new_signature):
+    """Explain the workbench gate for preparing a new signing or an export."""
+    if busy:
+        return '另一个作业仍在运行，请等待它安全结束后重试。'
+    if input_dirty:
+        return '输入资料已变化，当前计算结果已失效；请重新检查并计算后重试。'
+    if new_signature and readonly:
+        return '当前是只读工作区；请返回今日工作区，历史已签发版本仍可从订单跟踪导出。'
+    if new_signature and day != wr.today():
+        return '当前作业日期为'+str(day)+'，不是今日；请新建今日作业，历史已签发版本仍可从订单跟踪导出。'
+    return None
+
+
+def prepare_export(full, codes, warehouses, request, allow_signature):
+    """Use the scoped worker preview, then supply the full draft if it must sign.
+
+    The caller asks for file destinations and submits the reviewed plan.
+    """
+    prepared = request('delivery_probe', [probe_payload(full, codes), codes, warehouses])
+    signing = any(not plan['same'] for plan in prepared['plans'])
+    if signing:
+        if not allow_signature():
+            return None
+        tail = {**full, 'results': {s: r for s, r in full['results'].items() if s not in codes}}
+        request('delivery_expand', [tail, list(full['results'])])
+    return prepared, signing
+
+
+def export_review_details(prepared):
+    """Describe the ordered warehouse files and planned signing actions."""
+    plans = prepared['plans']
+    lines = []
+    for plan in plans:
+        old = plan['old']
+        if plan['same']:
+            action = '沿用已归档仓单'
+        elif plan.get('parent_same'):
+            action = '按原计算方案补签本轮所选仓'
+        elif old:
+            action = f"更新所选仓签发（原来源 V{old['revision']:03d}，旧版保留）"
+        else:
+            action = '首次签发所选仓单'
+        lines.append(f"{plan['name']} ({plan['store']})：{action}；¥{plan['amount']:,.2f}")
+    detail = {'所选门店': [plan['store'] for plan in plans]}
+    if prepared['head']:
+        detail['同日草稿覆盖'] = {
+            '原保存时间': prepared['head']['saved'],
+            '原门店状态': prepared['head']['summary'],
+            '本次门店状态': prepared['summary'],
+        }
+    return lines, detail
+
+
+def signed_labels(orders):
+    """Keep source warehouse revisions and receipt order for display."""
+    return [
+        head['number'] + f" V{head['revision']:03d}"
+        for parent in orders for head in (parent.get('warehouse_heads') or [parent])
+    ]
+
+
 def prepare_batch(repository,payload,codes,progress=lambda s:None,cancel=None):
     """Freeze the complete draft once, then plan stores in user-visible order."""
     checkpoint(cancel)
     return prepare_owned_batch(repository,copy.deepcopy(payload),codes,progress=progress,cancel=cancel)
 
 
-def prepare_owned_batch(repository,payload,codes,progress=lambda s:None,cancel=None,*,warehouses=None):
-    """Internal process entry: IPC has already transferred an exclusively owned tree."""
+def prepare_owned_batch(repository,payload,codes,progress=lambda s:None,cancel=None,*,warehouses=None,on_plan=None):
+    """Plan against the worker's exclusively owned snapshot."""
     progress('冻结本批次草稿并检查所选门店…');checkpoint(cancel)
     frozen=payload
     if not codes or len(codes)!=len(set(codes)):raise ValueError('请选择互不重复的有效门店')
@@ -77,7 +138,9 @@ def prepare_owned_batch(repository,payload,codes,progress=lambda s:None,cancel=N
             with closing(repository.work.connect()) as db:same=not warehouse_execution.needs_publish(db,head_order['oid'],head_order['digest'],selected)
         descriptor={'store':store,'day':frozen['day'],'payload':{'result':result}}
         files=[{**v,'filename':normal_exports.filename(descriptor,v['warehouse'])} for v in available if v['warehouse'] in selected]
-        plans.append({'store':store,'old':old,'same':same,'parent_same':parent_same,'filename':files[0]['filename'],'files':files})
+        plan={'store':store,'old':old,'same':same,'parent_same':parent_same,'filename':files[0]['filename'],'files':files}
+        if on_plan is not None:on_plan(plan,result)
+        plans.append(plan)
     frozen['execution_warehouses']={**frozen.get('execution_warehouses',{}),**execution}
     if any(not p['same'] for p in plans):wr.summary(frozen)
     return {'payload':frozen,'plans':plans,'head':head,'warehouses':execution}

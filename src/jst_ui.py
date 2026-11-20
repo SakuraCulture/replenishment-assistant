@@ -60,8 +60,8 @@ class GenerationDialog(QDialog):
         self.setWindowTitle('重新分配本批所选' if correction else '继续原分配批次' if batch_id else '准备新分配批次');self.resize(1220,820);self.setAcceptDrops(True)
         v=QVBoxLayout(self);v.addWidget(label('选订单和本批仓资料 → 预览 → 分配 → 导出；每批库存独立，同批按顺序扣减。','section'))
         top=QHBoxLayout();self.warehouse=QComboBox();self.warehouse.addItems(warehouse_catalog.WAREHOUSES);top.addWidget(self.warehouse)
-        self.update_btn=button('更新本次仓资料',self.choose);top.addWidget(self.update_btn);self.default_btn=button('采用已保存仓资料',self.defaults);top.addWidget(self.default_btn);top.addWidget(button('下载仓资料模板',self.template));self.save_default_btn=button('保存为该仓默认资料',self.save_default);top.addWidget(self.save_default_btn);v.addLayout(top)
-        self.sync_btn=button('从聚水潭获取本批仓资料',self.sync_catalog);v.addWidget(self.sync_btn)
+        self.update_btn=button('更新该仓当前资料',self.choose);top.addWidget(self.update_btn);self.default_btn=button('读取当前仓资料',self.defaults);top.addWidget(self.default_btn);top.addWidget(button('下载仓资料模板',self.template));v.addLayout(top)
+        self.sync_btn=button('从聚水潭刷新当前仓资料',self.sync_catalog);v.addWidget(self.sync_btn)
         self.source=label('正在读取仓资料…','muted');self.source.setWordWrap(True);v.addWidget(self.source)
         self.order_list=QListWidget();self.order_list.setMaximumHeight(90);self.order_list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         for h in heads:
@@ -71,7 +71,7 @@ class GenerationDialog(QDialog):
         self.order_mode=QComboBox();self.order_mode.addItems(['回传确认时间优先','上方人工顺序（拖动后自动采用）']);options.addWidget(self.order_mode)
         self.restore_order_btn=button('恢复回传时间顺序',self.restore_order);options.addWidget(self.restore_order_btn)
         self.order_note=label('默认按回传确认时间；预览后列表显示实际执行顺序。','muted');options.addWidget(self.order_note,1)
-        self.correction=QCheckBox('仅替换本批所选未锁单；未选单保留占用');options.addWidget(self.correction);v.addLayout(options);self.order_mode.currentIndexChanged.connect(self.invalidate);self.correction.setChecked(correction);self.correction.setVisible(correction);self.correction.setEnabled(False)
+        self.correction=QCheckBox('仅重新分配本批所选可更正仓单，未选单保留占用');options.addWidget(self.correction);v.addLayout(options);self.order_mode.currentIndexChanged.connect(self.invalidate);self.correction.setChecked(correction);self.correction.setVisible(correction);self.correction.setEnabled(False)
         preview_actions=QHBoxLayout();self.preview_btn=button('预览库存分配',self.preview,True);preview_actions.addWidget(self.preview_btn)
         self.recovery_btn=button('恢复分配状态',self.recover_state);preview_actions.addWidget(self.recovery_btn)
         self.evidence_btn=button('导出本批采用仓资料',self.export_stock_evidence);self.evidence_btn.setObjectName('exportAllocationStockEvidence');self.evidence_btn.setToolTip('导出预览或原批实际采用的仓资料和库存依据，不读取当前默认资料替代。');preview_actions.addWidget(self.evidence_btn);v.addLayout(preview_actions)
@@ -85,12 +85,11 @@ class GenerationDialog(QDialog):
         self.completed.hide()
         actions=QHBoxLayout();self.completed_note=label('已生成0单 · 已选择0单','muted');actions.addWidget(self.completed_note)
         self.select_completed_btn=button('全选已生成单',self.completed.selectAll);actions.addWidget(self.select_completed_btn)
-        self.export_saved_btn=button('导出所选已生成单（0单）',self.export_saved);actions.addWidget(self.export_saved_btn)
-        self.lock_saved_btn=button('确认所选已下单并锁定（0单）',self.lock_saved);actions.addWidget(self.lock_saved_btn);v.addLayout(actions)
+        self.export_saved_btn=button('导出所选已生成单（0单）',self.export_saved);actions.addWidget(self.export_saved_btn);v.addLayout(actions)
         self.completed.itemSelectionChanged.connect(self.completed_selection);self.completed_selection()
         self.warehouse.currentIndexChanged.connect(self.describe);self.apply_mode();QTimer.singleShot(0,self.load_catalogs)
     def apply_mode(self):
-        for w in (self.update_btn,self.default_btn,self.save_default_btn,self.sync_btn,self.order_mode,self.restore_order_btn,self.order_list):w.setEnabled(not self.batch_id)
+        for w in (self.update_btn,self.default_btn,self.sync_btn,self.order_mode,self.restore_order_btn,self.order_list):w.setEnabled(not self.batch_id)
         if self.batch_id:self.order_note.setText('沿用本批冻结顺序；不能通过拖动或切换策略改变。')
         self.correction.setEnabled(False)
         self.setAcceptDrops(not self.batch_id)
@@ -103,16 +102,15 @@ class GenerationDialog(QDialog):
             if self.batch_id:
                 with closing(sqlite3.connect(self.path)) as db:spec=batches.context(db,self.batch_id)
                 self.catalogs=spec['stocks']
-                self.summary.setText('沿用原批冻结库存、原顺序及已保存占用；更新默认资料不会改变本批。')
+                self.summary.setText('原批依据：冻结仓资料、原分配顺序和本批已保存占用。')
             else:self.catalogs=run(self,service.catalogs,(self.path,self.host.repository.folder),'读取可选仓资料')
             self.describe()
         except Exception as exc:warn(self,exc)
     def describe(self):
         c=self.catalogs.get(self.warehouse.currentText())
-        if not c:self.source.setText('该仓未提供资料；请导入或采用已保存仓资料。');return
-        x=c['catalog'];self.source.setText(f"{x['warehouse']} · {Path(x.get('source_path','')).name} · 导入 {x.get('imported_at','')} · {len(x['items'])}款 · "+('本批冻结依据' if self.batch_id else '待确认采用；资料是否适合本批由业务判断')+'\n'+warehouse_catalog.execution_warning(x))
-        if c.get('selection_note'):self.source.setText(self.source.text()+'\n'+c['selection_note'])
-        self.source.setToolTip(x.get('source_path','')+'\n库存修订：'+str(x.get('revision',''))+'\n'+c.get('selection_note',''))
+        if not c:self.source.setText('该仓暂无资料，请导入文件或从聚水潭获取。');return
+        x=c['catalog'];self.source.setText(f"{x['warehouse']} · {Path(x.get('source_path','')).name} · 导入 {x.get('imported_at','')} · {len(x['items'])}款 · 版本 {x['revision']} · "+('本批冻结依据' if self.batch_id else '当前仓资料')+'\n'+warehouse_catalog.execution_warning(x))
+        self.source.setToolTip(x.get('source_path',''))
     def invalidate(self,*_):
         self.plan=None;self.generate_btn.setEnabled(False);self.summary.setText('资料或顺序变化，请重新预览。')
         self.review.replace([],'原预览已失效，请重新预览')
@@ -134,35 +132,33 @@ class GenerationDialog(QDialog):
     def completed_selection(self):
         n=len(self.gids());total=self.completed.count();busy=bool(self.worker or self.export_worker)
         self.completed_note.setText(f'已生成{total}单 · 已选择{n}单（高亮选择，可多选）')
-        self.export_saved_btn.setText(f'导出所选已生成单（{n}单）');self.lock_saved_btn.setText(f'确认所选已下单并锁定（{n}单）')
-        for b in (self.export_saved_btn,self.lock_saved_btn):b.setEnabled(n>0 and not busy)
+        self.export_saved_btn.setText(f'导出所选已生成单（{n}单）')
+        self.export_saved_btn.setEnabled(n>0 and not busy)
         self.select_completed_btn.setEnabled(total>0 and not busy)
         self.evidence_btn.setEnabled(not busy)
     def choose(self):
         from PySide6.QtWidgets import QFileDialog
         p,_=QFileDialog.getOpenFileName(self,'更新'+self.warehouse.currentText()+'资料','','Excel (*.xlsx)')
         if p:self.refresh_stock(p)
-    def refresh_stock(self,path=None,catalog=None):
+    def refresh_stock(self,path):
         if self.worker or self.batch_id:return
         try:
             wh=self.warehouse.currentText()
-            c=run(self,warehouse_catalog.import_catalog,(path,wh),'读取本批仓资料') if path else warehouse_catalog.validate(catalog)
+            repo=warehouse_catalog.Repository(self.host.repository.folder)
+            def adopt(progress=lambda _:None,cancel=None):
+                expected=repo.current_digest(wh)
+                catalog=warehouse_catalog.import_catalog(path,wh,progress,cancel)
+                repo.save(catalog,expected_digest=expected,cancel=cancel)
+                return catalog
+            c=run(self,adopt,(),'更新该仓当前资料')
+            self.catalogs[wh]={'catalog':c};self.invalidate();self.describe()
+            updated=getattr(self.host,'current_warehouse_adopted',None)
+            if updated:updated(c)
             warning=warehouse_catalog.execution_warning(c)
             if warning:QMessageBox.warning(self,'资料已读取，执行字段待补',warning)
-            self.catalogs[wh]={'catalog':c,'bid':None};self.invalidate();self.describe()
         except Exception as exc:warn(self,exc)
     def defaults(self):
-        if self.batch_id:return
-        try:
-            wh=self.warehouse.currentText();c=warehouse_catalog.Repository(self.host.repository.folder).catalogs().get(wh)
-            if not c:raise ValueError('请先维护该仓默认商品资料')
-            self.refresh_stock(catalog=c)
-        except Exception as exc:warn(self,exc)
-    def save_default(self):
-        c=self.catalogs.get(self.warehouse.currentText())
-        if c and confirm(self,'保存为默认仓资料','保存'+self.warehouse.currentText()+'资料供下次使用；历史单据不变。'):
-            try:warehouse_catalog.Repository(self.host.repository.folder).save(c['catalog'])
-            except Exception as exc:warn(self,exc)
+        if not self.batch_id:self.invalidate();self.load_catalogs()
     def template(self):
         import import_templates
         p,_=export_locations.save_file(self,'下载仓资料最低模板','仓商品资料模板.xlsx','Excel (*.xlsx)')
@@ -201,7 +197,9 @@ class GenerationDialog(QDialog):
             self.describe()
             if not self.batch_id and not self.recover_pending(heads):return
             if self.batch_id:self.plan=run(self,batches.preview_existing,(self.path,self.batch_id,heads if self.correction_mode else None,self.correction_mode),'核对本批剩余库存')
-            else:self.plan=run(self,batches.preview_new,(self.path,heads,{wh:c['catalog'] for wh,c in self.catalogs.items()},self.order_mode.currentIndex()==1),'预览新批库存分配')
+            else:
+                self.plan=run(self,batches.preview_new,(self.path,heads,None,self.order_mode.currentIndex()==1),'预览新批库存分配')
+                self.catalogs.update(self.plan['payload']['new_batch']['stocks']);self.describe()
             v=self.plan['payload'];self.show_order(v['plans'],v['skipped']);self.review.replace(v['plans'])
             self.order_note.setText('上方列表即本次预览执行顺序；跳过单列在末尾，不参与分配。')
             payment_corrections=sum(bool(p.get('previous_payment')) for p in v['plans'])
@@ -235,7 +233,7 @@ class GenerationDialog(QDialog):
         self.folder=export_locations.initial_directory(self);self.saved=[];self.completed.clear();self.completed.show();self.receipt=None;self.stop_requested=False
         w=Worker(batches.execute,(self.path,self.plan,self.accept_issues.isChecked()),self);self.worker=w
         w.status.connect(self.status.setText);w.row_progress.connect(self.progress);w.commit_state.connect(self.boundary);w.business_event.connect(self.saved_order);w.success.connect(self.generation_done);w.failed.connect(lambda s:warn(self,RuntimeError(s)));w.cancelled.connect(lambda:self.status.setText('已停止，已保存订单保留'));w.finished.connect(self.worker_finished)
-        for b in (self.generate_btn,self.preview_btn,self.update_btn,self.default_btn,self.save_default_btn,self.order_mode,self.restore_order_btn,self.correction,self.order_list,self.auto_export,self.sync_btn,self.evidence_btn):b.setEnabled(False)
+        for b in (self.generate_btn,self.preview_btn,self.update_btn,self.default_btn,self.order_mode,self.restore_order_btn,self.correction,self.order_list,self.auto_export,self.sync_btn,self.evidence_btn):b.setEnabled(False)
         self.completed_selection();self.stop_btn.setEnabled(True);w.start()
     def progress(self,n,total):self.bar.show();self.bar.setRange(0,max(1,total) if total else 0);self.bar.setValue(n)
     def boundary(self,on):
@@ -286,7 +284,7 @@ class GenerationDialog(QDialog):
         except Exception as exc:warn(self,exc)
     def worker_finished(self):
         w=self.worker;self.worker=None;w.deleteLater();self.committing=False;self.stop_btn.setEnabled(False)
-        for b in (self.preview_btn,self.update_btn,self.default_btn,self.save_default_btn,self.order_mode,self.restore_order_btn,self.correction,self.order_list,self.auto_export,self.sync_btn,self.evidence_btn):b.setEnabled(True)
+        for b in (self.preview_btn,self.update_btn,self.default_btn,self.order_mode,self.restore_order_btn,self.correction,self.order_list,self.auto_export,self.sync_btn,self.evidence_btn):b.setEnabled(True)
         self.apply_mode();self.bar.hide();self.completed_selection()
         self.plan=None;self.generate_btn.setEnabled(False)
         if self.close_pending and not self.export_worker:self._completed=True;self.accept()
@@ -301,12 +299,6 @@ class GenerationDialog(QDialog):
         ids=self.gids()
         if not ids:QMessageBox.information(self,'请选择已生成单','在下方完成列表选择要导出的订单，可多选。');return
         self.folder=export_locations.initial_directory(self);self.export_queue.extend(g for g in ids if g not in self.export_queue);self.dispatch_export()
-    def lock_saved(self):
-        ids=self.gids()
-        if not ids:QMessageBox.information(self,'请选择已生成单','在下方完成列表高亮选择要锁定的订单，可多选或点击“全选已生成单”；导出不等于已经下单。');return
-        if not confirm(self,'确认已在聚水潭下单',f'锁定所选{len(ids)}单，后续不再分配；不代表已付款。'):return
-        try:run(self,service.lock,(self.path,ids),'确认下单并锁定');self.status.setText('所选单已锁定，后续跳过；当前库存余额不再扣减或加回。')
-        except Exception as exc:warn(self,exc)
     def reject(self):
         if self.worker or self.export_worker:self.close_pending=True;self.stop();return
         self._completed=True
@@ -324,24 +316,29 @@ def generate(parent,host,heads,batch_id=None,correction=False):
     if host.closing:QTimer.singleShot(0,host.close)
 
 
-def change_lock(parent,host,heads,unlock=False):
+def reconcile_legacy_orders(parent,host,gids):
+    """Release an existing local mark after the operator has verified the original order."""
+    if not gids:return False
+    title='核对历史下单标记'
+    reason,ok=QInputDialog.getText(parent,title,'请先在聚水潭核实原单已撤销或无需执行，再填写核对依据。本次仅更正本地历史标记。')
+    if not ok:return False
+    if not reason.strip():
+        QMessageBox.information(parent,title,'请填写原单处理结果和核对依据。')
+        return False
+    if not confirm(parent,title,f'确认更正 {len(gids)} 张仓单的历史下单标记？已有付款或收货记录须通过对应环节核对。'):return False
     try:
-        gids=run(parent,selected_ids,(host.work_repository.path,heads),'读取所选生成单')
-        if not gids:raise ValueError('所选单尚未生成')
-        reason=''
-        if unlock:
-            reason,ok=QInputDialog.getText(parent,'更正已锁订单','说明外部撤销／更正情况及原因；本地操作不撤销远端订单：')
-            if not ok:return
-        if not confirm(parent,'更正已锁订单' if unlock else '确认已在聚水潭下单',f'所选可处理{len(gids)}单；锁定不确认付款，解除保护不自动加回库存。'):return
-        run(parent,service.lock,(host.work_repository.path,gids,reason,unlock),'保存锁单状态')
-    except Exception as exc:warn(parent,exc)
+        run(parent,service.lock,(host.work_repository.path,gids,reason,True),'更正历史下单标记')
+    except Exception as exc:
+        warn(parent,exc)
+        return False
+    return True
 
 
 def cancel_orders(parent,host,heads):
     try:
         gids=run(parent,selected_ids,(host.work_repository.path,heads),'读取所选生成单')
         if not gids:raise ValueError('所选单尚未生成')
-        reason,ok=QInputDialog.getText(parent,'撤销未下单生成单','填写原因；仅用于未下单订单，已锁单须先核对外部更正：')
+        reason,ok=QInputDialog.getText(parent,'撤销未下单生成单','核实这批生成单尚未在聚水潭下单后，填写撤销原因。')
         if not ok:return
         if not confirm(parent,'撤销未下单生成单',f'撤销所选{len(gids)}份生成与付款草稿的当前有效引用，历史保留；释放尚未包含在仓资料中的预留，原回传不变。'):return
         run(parent,service.cancel_generated,(host.work_repository.path,gids,reason),'撤销未下单生成单')

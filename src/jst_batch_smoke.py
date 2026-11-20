@@ -34,6 +34,13 @@ def start_smoke(app,win,args):
             from lifecycle_home_ui import StageDialog
             path=win.work_repository.path
             require(path.resolve()==out/'settings/workbench.sqlite3','拒绝使用非隔离资料目录')
+            if 'consistency' in args[1:]:
+                from jst_batch_consistency_smoke import verify
+                facts=verify(out,path)
+                from version_info import diagnostic
+                report={'passed':True,'frozen_exe':bool(getattr(sys,'frozen',False)),'facts':facts,**diagnostic()}
+                (out/'batch-exe-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
+                win._discard_close=True;app.exit(0);return
             folder=out/'exports';folder.mkdir(exist_ok=True);export_settings.save(export_locations.config_path(win),str(folder))
             heads=[h for h in lc.current_targets(path) if h['warehouse']=='河北仓'];require(len(heads)==2,'需要两店合成样本')
             d=GenerationDialog(win,win,list(reversed(heads)));dialogs.append(d);d.setModal(True);d.show();wait(lambda:bool(d.catalogs))
@@ -43,7 +50,7 @@ def start_smoke(app,win,args):
             with closing(sqlite3.connect(path)) as db:before=orders.state(db,'河北仓')
             d.warehouse.setCurrentText('河北仓');d.refresh_stock(str(source))
             with closing(sqlite3.connect(path)) as db:require(orders.state(db,'河北仓')==before,'准备资料提前改变全局库存')
-            checks.append('实际导入槽读取合成Excel供本批选择；预览确认前不写全局库存')
+            checks.append('实际导入槽更新当前仓资料；旧版库存占用账本保留')
             QTest.mouseClick(d.preview_btn,Qt.MouseButton.LeftButton)
             require([p['summary']['quantity'] for p in d.plan['payload']['plans']]==['40','60'],'预览数量或默认顺序变化')
             original=batches.execute
@@ -62,7 +69,7 @@ def start_smoke(app,win,args):
             checks.append('实际预览/确认/停止：按回传顺序预览40/60；第一单保存后停止，原批暂停且40件保留')
             # Updating future inventory cannot alter this batch or old files.
             c=wc.Repository(path.parent).catalogs()['河北仓'];new=copy.deepcopy(c);new['items']['0001']['可用数']=1000;new['revision']=wc.revision(new['items'])
-            orders.commit_refresh(path,orders.prepare_refresh(path,'河北仓',catalog=new))
+            wc.Repository(path.parent).save(new)
             d=GenerationDialog(win,win,heads,bid);dialogs.append(d);d.setModal(True);d.show();wait(lambda:bool(d.catalogs))
             require(not d.update_btn.isEnabled(),'继续原批仍可更换库存')
             QTest.mouseClick(d.preview_btn,Qt.MouseButton.LeftButton)

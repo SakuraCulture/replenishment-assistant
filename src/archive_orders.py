@@ -7,7 +7,9 @@ from contextlib import closing
 import sqlite3
 from pathlib import Path
 import work_repository as wr
+from order_keys import expected_current_revision
 from app_defaults import WAREHOUSES
+from result_semantics import signed_groups
 from runtime_support import checkpoint
 from warehouse_orders import child_number
 
@@ -22,6 +24,15 @@ def warehouse(d):
 def scopes(rows):
     found={warehouse(d) for d in rows}
     return [w for w in (*WAREHOUSES,LEGACY) if w in found]
+
+
+def history_groups(result,profile):
+    """Preserve old unlabelled warehouse rows as review-only, never guess a route."""
+    grouped=signed_groups(result,profile);out={}
+    for wh in (*WAREHOUSES,LEGACY):
+        subset={sheet:[d for d in rows if warehouse(d)==wh] for sheet,rows in grouped.items()}
+        if any(subset.values()):out[wh]=subset
+    return out
 
 
 def number(parent,wh):
@@ -47,6 +58,16 @@ def require_active(db,oid,wh=None):
         raise wr.Conflict('此仓正常单已在回收站，请先恢复再签发、导出或导入回传；原快照仍保留')
 
 
+def visibility_preview(heads, deleted):
+    """Review the exact selected warehouse revisions before committing visibility."""
+    if any(bool(head.get('deleted')) == bool(deleted) for head in heads):
+        raise ValueError('勾选包含不适用当前操作的仓单，请刷新后重选。')
+    return [
+        f"{head['day']} · {head['store']} · {head['warehouse']} · {head['number']} · V{head['revision']:03d}"
+        for head in heads
+    ]
+
+
 def change_many(path,heads,deleted,progress=lambda _:None,cancel=None):
     """Compare selected current revision and visibility token inside write lock."""
     heads=list(heads)
@@ -70,7 +91,7 @@ def change_many(path,heads,deleted,progress=lambda _:None,cancel=None):
             else:
                 current=db.execute('SELECT current FROM normal_orders WHERE oid=?',(head['oid'],)).fetchone()
                 signed=db.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',(head['oid'],head['revision'])).fetchone()
-            if not current or current[0]!=head.get('current_revision',head['revision']) or not signed or signed[0]!=head['digest']:
+            if not current or current[0]!=expected_current_revision(head) or not signed or signed[0]!=head['digest']:
                 raise wr.Conflict('归档修订已变化，请刷新后重试')
             old=visibility.get((head['oid'],wh),{'deleted':False,'token':0})
             if old['token']!=head.get('visibility_token',0) or old['deleted']==bool(deleted):

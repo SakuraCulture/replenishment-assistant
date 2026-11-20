@@ -96,10 +96,18 @@ def prepare(data,progress=lambda s:None,cancel=None):
     return loaded
 
 def load(paths,products,progress=lambda s:None,cancel=None):
+    repository=products if isinstance(products,warehouse_catalog.Repository) else None
+    if repository is not None:products,versions=repository.snapshots()
     data=intake(paths,products,progress,cancel)
     # UI must be able to resolve a dataset consisting entirely of conflicts.
-    if not data['selected'] and data['conflicts']:return {'intake':data,'stores':data['stores'],'normalized':[],'blocked':{s:1 for s in data['stores']},'warehouses':[],'config':engine.config(),'hashes':data['hashes'],'catalogs':{w:warehouse_catalog.metadata(c) for w,c in (data.get('catalogs') or {}).items()}}
-    return prepare(data,progress,cancel)
+    if not data['selected'] and data['conflicts']:
+        loaded={'intake':data,'stores':data['stores'],'normalized':[],'blocked':{s:1 for s in data['stores']},'warehouses':[],'config':engine.config(),'hashes':data['hashes'],'catalogs':{w:warehouse_catalog.metadata(c) for w,c in (data.get('catalogs') or {}).items()}}
+    else:loaded=prepare(data,progress,cancel)
+    if repository is not None:
+        if any(repository.current_digest(wh)!=version for wh,version in versions.items()):
+            raise ValueError('检查期间当前仓资料已刷新，请重新检查文件')
+        loaded['warehouse_catalog_versions']=versions
+    return loaded
 
 def calculate_store(loaded:InputBatch,store:str,settings:StoreSettings,profile,progress=lambda _:None,cancel=None) -> CalculationResult:
     engine.checkpoint(cancel)

@@ -1,6 +1,7 @@
 """Home/work/archive shell. Workbench remains a persistent live instance."""
 import export_locations
 import copy,hashlib,json
+from functools import partial
 from pathlib import Path
 from PySide6.QtCore import Qt,QTimer,QSignalBlocker
 from PySide6.QtWidgets import QWidget,QVBoxLayout,QHBoxLayout,QStackedWidget,QTableWidget,QTableWidgetItem,QLineEdit,QDialog,QMessageBox,QTextBrowser,QComboBox,QFileDialog,QCheckBox,QInputDialog
@@ -21,11 +22,11 @@ def signing_feedback(host,message):
 
 
 def signing_available(host,action,*,new_signature):
-    reason=None
-    if host.worker:reason='另一个作业仍在运行，请等待它安全结束后重试。'
-    elif host.input_dirty:reason='输入资料已变化，当前计算结果已失效；请重新检查并计算后重试。'
-    elif new_signature and host.readonly:reason='当前是只读工作区；请返回今日工作区，历史已签发版本仍可从订单跟踪导出。'
-    elif new_signature and host.job_day!=wr.today():reason='当前作业日期为'+str(host.job_day)+'，不是今日；请新建今日作业，历史已签发版本仍可从订单跟踪导出。'
+    reason=normal_delivery.signing_block(
+        busy=host.worker or getattr(host, '_large_io_dialog', None),
+        input_dirty=host.input_dirty, readonly=host.readonly,
+        day=host.job_day, new_signature=new_signature,
+    )
     if reason:signing_feedback(host,'本次'+action+'未开始：'+reason)
     return reason is None
 
@@ -107,6 +108,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.batch_export.setObjectName('');self.batch_export.style().unpolish(self.batch_export);self.batch_export.style().polish(self.batch_export)
         from aoxiang_workflow_ui import install as install_aoxiang_workflows
         install_aoxiang_workflows(self,hv)
+        from jst_fulfillment_runner import install as install_fulfillment
+        self.jst_fulfillment_runner=install_fulfillment(self,hv)
         from automation_ui import install as install_automation
         install_automation(self)
         from browser_status_ui import BrowserStatus
@@ -274,6 +277,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if scheduled and not scheduled.prepare_close():event.ignore();return
         indicator=getattr(self,'browser_status',None)
         if indicator and not indicator.prepare_close():event.ignore();return
+        fulfillment=getattr(self,'jst_fulfillment_runner',None)
+        if fulfillment and not fulfillment.prepare_close():event.ignore();return
         pending=getattr(self,'_large_io_dialog',None)
         if getattr(self,'catalog_sessions',None) and self.catalog_sessions.session.lease is not None and pending is not None and not pending._completed:
             self.closing=True;pending.reject();event.ignore();return
@@ -314,6 +319,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             if scheduled:scheduled.resume_after_cancelled_close()
             axmanager.resume_after_cancelled_close()
             if indicator:indicator.resume()
+            if fulfillment:fulfillment.resume_after_cancelled_close()
 
     def resume_today(self):
         if self.worker:return
@@ -375,15 +381,11 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
     def task_changed(self,store,state,result,error):
         if store not in self.states:return
         worker=self.sender()
-        captured=getattr(worker,'deletion_generations',{})
-        if store in captured:
-            from deletion_barrier import read_epochs
-            if read_epochs(self.work_repository.path,self.job_day,[store])[store]!=captured[store]:return
-        warehouse_captured=getattr(worker,'warehouse_deletion_generations',{})
-        if store in warehouse_captured:
-            from deletion_barrier import read_warehouse_epochs
-            scope={store:list(warehouse_captured[store])}
-            if read_warehouse_epochs(self.work_repository.path,self.job_day,scope)[store]!=warehouse_captured[store]:return
+        from workbench_actions import current_calculation_result
+        if not current_calculation_result(
+            self.work_repository.path, self.job_day, store,
+            getattr(worker,'deletion_generations',{}), getattr(worker,'warehouse_deletion_generations',{}),
+        ):return
         if result:self.new_bases.pop(store,None)
         super().task_changed(store,state,result,error)
 
@@ -511,8 +513,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         except Cancelled:self.status.setText('已取消核对，原正常单与草稿保留。');return
         except Exception as exc:self.failed('归档操作未完成，请在历史记录核对状态：'+str(exc));return
         self.saved_time=receipt['saved'];self.job_dirty=False;self.tracking_stale=True
-        issued=[h for r in receipt['orders'] for h in (r.get('warehouse_heads') or [r])]
-        message='已自动归档：'+'；'.join(r['number']+f" V{r['revision']:03d}" for r in issued)+'。可导出签发单。'
+        message='已自动归档：'+'；'.join(normal_delivery.signed_labels(receipt['orders']))+'。可导出签发单。'
         signing_feedback(self,message)
         try:self.refresh_job_label();self.refresh_archive()
         except Exception as exc:signing_feedback(self,message+' 列表刷新未完成，请到订单跟踪点击查询：'+(str(exc) or type(exc).__name__))
@@ -535,23 +536,17 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         from runtime_support import Cancelled
         try:
             with Session(self.work_repository.path) as session:
-                full=self.snapshot()
-                slim=normal_delivery.probe_payload(full,codes)
-                prepared=request(self,session,'delivery_probe',[slim,codes,warehouses]);plans=prepared['plans']
-                if any(not p['same'] for p in plans):
-                    if not signing_available(self,'新增签发',new_signature=True):return
-                    tail={**full,'results':{s:r for s,r in full['results'].items() if s not in codes}}
-                    request(self,session,'delivery_expand',[tail,list(full['results'])])
-                    box=__import__('readable_ui').ReviewDialog(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出签发单');lines=[]
-                    for p in plans:
-                        old=p['old'];action='沿用已归档仓单' if p['same'] else '按原计算方案补签本轮所选仓' if p.get('parent_same') else f"更新所选仓签发（原来源 V{old['revision']:03d}，旧版保留）" if old else '首次签发所选仓单'
-                        lines.append(p['name']+' ('+p['store']+')：'+action+f"；¥{p['amount']:,.2f}")
+                preview=normal_delivery.prepare_export(
+                    self.snapshot(), codes, warehouses, partial(request,self,session),
+                    lambda:signing_available(self,'新增签发',new_signature=True),
+                )
+                if preview is None:return
+                prepared,new_signing=preview;plans=prepared['plans']
+                if new_signing:
+                    box=__import__('readable_ui').ReviewDialog(self);box.setObjectName('deliveryConfirm');box.setWindowTitle('确认签发并批量导出签发单')
+                    lines, detail = normal_delivery.export_review_details(prepared)
                     box.setText(f'导出位置：{destination or "下一步明确选择"}\n草稿保存范围：当前完整每日草稿。\n本轮签发与输出范围：所选 {len(plans)} 家门店，共 {sum(len(p["files"]) for p in plans)} 张仓单。\n未选仓不参与本轮签发，已有仓单保持；门店单双仓、主从顺序、商品归属和预算计算不变。\n'+'\n'.join(lines)+'\n确认后签发并逐仓导出；不是实际下单。')
-                    detail={'所选门店':[p['store'] for p in plans]}
-                    if prepared['head']:
-                        detail['同日草稿覆盖']={'原保存时间':prepared['head']['saved'],'原门店状态':prepared['head']['summary'],'本次门店状态':prepared['summary']};box.setInformativeText('同时覆盖当天完整草稿；未选门店正常单不变。展开详情查看草稿覆盖范围。')
                     from history_forms import fields
-                    draft_text='\n'.join(k+'：'+v for k,v,t in fields(detail))
                     __import__('readable_ui').review_table(box,__import__('order_review').HEADERS,list(__import__('business_presenter').readable_changes(prepared['rows']))+[['','草稿覆盖','',__import__('business_presenter').path_title(k),'',v,''] for k,v,t in fields(detail)],total=prepared['total']);box.setInformativeText('确认时同时保存完整草稿；未选门店正常单不变。按所选门店顺序列出商品、参数和来源变化。'+('明细已截断，请导出完整差异Excel。' if prepared['truncated'] else '展开详情核对；可导出完整差异Excel。'));save_diff=box.addButton('导出完整差异Excel',QMessageBox.ButtonRole.ActionRole);cancel=box.addButton('取消',QMessageBox.ButtonRole.RejectRole);accept=box.addButton('确认签发并导出',QMessageBox.ButtonRole.AcceptRole);box.setDefaultButton(cancel);box.setEscapeButton(cancel)
                     while True:
                         box.exec()
@@ -582,8 +577,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if receipt['signed']:
             self.saved_time=receipt['saved'];self.job_dirty=False
         parents=receipt.get('orders') or receipt.get('heads',[])
-        heads=[h for parent in parents for h in (parent.get('warehouse_heads') or [parent])]
-        numbers='；'.join(dict.fromkeys(h['number']+f" V{h['revision']:03d}" for h in heads))
+        numbers='；'.join(dict.fromkeys(normal_delivery.signed_labels(parents)))
         message=f"已导出 {len(receipt['paths'])} 份分仓确认单；签发来源已归档。"+(numbers+'。' if numbers else '')+'；'.join(receipt['paths'])
         signing_feedback(self,message)
         try:
@@ -631,16 +625,18 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
     def change_archive_visibility(self,deleted=None):
         if deleted is not False:
             self.permanent_delete();return
-        from archive_orders import change_many
+        from archive_orders import change_many, visibility_preview
         from business_ui import run
         if deleted is None:deleted=not bool(self.archive_trash.currentIndex())
         heads=list(self.archive_checked.values())
         if not heads or getattr(self,'archive_query_pending',False):return
-        if any(bool(h.get('deleted'))==bool(deleted) for h in heads):
-            QMessageBox.warning(self,'请重新勾选','勾选包含不适用当前操作的仓单，请刷新后重选。');return
+        try:
+            details = '\n'.join(visibility_preview(heads, deleted))
+        except ValueError as exc:
+            QMessageBox.warning(self, '请重新勾选', str(exc))
+            return
         action='移入回收站' if deleted else '恢复归档'
         from interaction_ui import confirm
-        details='\n'.join(f"{h['day']} · {h['store']} · {h['warehouse']} · {h['number']} · V{h['revision']:03d}" for h in heads)
         message=f'{action} {len(heads)} 张勾选仓单（包括各自全部修订）。\n'+details+'\n另一仓、原数量金额、回传和原文件保留。整批执行，状态发生变化时整批拒绝。'
         if not confirm(self,action,message):return
         try:

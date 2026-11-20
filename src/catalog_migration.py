@@ -36,6 +36,12 @@ def portable(data):
     """No account/probe result may carry a source machine browser binding."""
     out={k:copy.deepcopy(data[k]) for k in ('schemaVersion','storeId','batches','assets')}
     out.update(accounts={},operations={},bindingEpochs=copy.deepcopy(data.get('bindingEpochs',{})),rebindRequired={})
+    if data.get('allocationOperations'):
+        # Allocation receipts contain business IDs and relative originals, not
+        # browser profile paths. Preserve unresolved export intents on migration.
+        fields=('scope','orderKey','state','online','internal','at','relative','result')
+        out['allocationOperations']={key:{name:copy.deepcopy(value[name]) for name in fields if name in value}
+                                     for key,value in data['allocationOperations'].items()}
     warehouses=set(data.get('accounts',{}))|set(data.get('rebindRequired',{}))
     for batch in out['batches'].values():
         previous=batch.get('migration',{}).get('previous_state',batch.get('state'))

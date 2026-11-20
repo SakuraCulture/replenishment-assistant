@@ -8,13 +8,20 @@ import {CatalogError,check,now,sha,canonical,safeError,WAREHOUSES} from './commo
 import {disconnectBounded} from './service-lifetime.mjs';
 import {version as bindingVersion,retired,requireLive,resetPlan,resetBindings} from './binding-recovery.mjs';
 import {sameBinding} from './storage-paths.mjs';
+import {OrderFlow} from './order-import.mjs';
+import {AllocationFlow} from './order-allocation.mjs';
+import {SaleoutPages} from './saleout-allocation.mjs';
 
 const businessAccount=a=>({id:a.id,warehouse:a.warehouse,expectedCompany:a.expectedCompany,expectedCoid:a.expectedCoid,expectedUid:a.expectedUid,mappingVerified:a.mappingVerified,bindingVersion:a.bindingVersion,binding:a.binding});
 const unresolved=i=>!retired(i)&&(i.native?.submissions>0||i.native?.nativeTaskRef)&&!['FAILED_CONFIRMED','DOWNLOADED'].includes(i.native.stage)&&!i.adoption;
 
 export class CatalogService {
-  static async open(options){return new CatalogService({...options,store:await JobStore.open(options.stateRoot,{parentPid:options.parentPid})});}
-  constructor({store,stateRoot,bridgeRoot,lockRoot,forbiddenRoots,storageAliases=[],validator,driver}){
+  static async open({stateRoot,parentPid,bridgeRoot,lockRoot,forbiddenRoots,storageAliases,validator,driver}){
+    return new CatalogService({stateRoot,bridgeRoot,lockRoot,forbiddenRoots,storageAliases,validator,
+      driver:typeof driver?.close==='function'?driver:undefined,
+      store:await JobStore.open(stateRoot,{parentPid})});
+  }
+  constructor({store,stateRoot,bridgeRoot,lockRoot,forbiddenRoots,storageAliases=[],validator,driver,orderPages}){
     Object.assign(this,{store,stateRoot,validator,storageAliases});this.active=null;this.shuttingDown=false;this.sequence=0;this.controlTail=Promise.resolve();
     this.sessions=driver?null:new AccountSessions({stateRoot,bridgeRoot,lockRoot,forbiddenRoots,storageAliases,phase:(phase,message)=>{if(this.active)this.active.phase={phase,message,at:now()};}});
     this.driver=driver||{
@@ -28,6 +35,8 @@ export class CatalogService {
       validate:(file,o)=>native.validateProductFile(file,{...o,validator}),
       close:()=>this.sessions.close(),
     };
+    this.orders=new OrderFlow(this.driver,{pages:orderPages});
+    this.allocations=new AllocationFlow(this.driver,{store:this.store,root:stateRoot,pages:new SaleoutPages()});
   }
   async patch(batchId,itemId,change){
     await this.store.write(data=>{
@@ -60,6 +69,7 @@ export class CatalogService {
     if(action==='session.health')return {connections:this.sessions?.status(this.store.accounts())||[]};
     if(action==='session.release'){
       this.active?.controller.abort();
+      if(!this.active)this.orders.permits.clear();
       return {idle:!this.active};
     }
     if(action==='sync.stop'||action==='shutdown'){
@@ -95,6 +105,10 @@ export class CatalogService {
     }
     if(action==='sync.start')return this.start(c);
     if(this.active)throw new CatalogError('BUSY','已有采集或账号核验在运行，可查看状态或停止');
+    if(action==='order.capabilities')return {probe:true,preview:true,ordinary_audit:true,allocation:true,
+      allocation_quantity_contract:'final_saleout_and_native_transaction',allocation_live_validated:false};
+    if(['order.probe','order.preview','order.stage_import','order.import','order.lookup','order.stage_audit','order.audit','order.allocation'].includes(action))
+      return this.orderOperation(c);
     if(action==='session.reset'){
       const a=this.store.read().accounts?.[c.warehouse];
       if(!a||!WAREHOUSES.includes(c.warehouse))throw new CatalogError('ACCOUNT_UNVERIFIED','请先保存本仓账号配置');
@@ -112,6 +126,32 @@ export class CatalogService {
       this.launch(b.id,'batch',signal=>this.run(b.id,ids,signal));return {batch_id:b.id};
     }
     throw new CatalogError('UNKNOWN_ACTION','未知商品资料操作');
+  }
+  async orderOperation(c){
+    const wh=c.spec?.warehouse||c.warehouse;
+    const data=this.store.read();
+    const account=data.accounts?.[wh];
+    if(!account||data.rebindRequired?.[wh])throw new CatalogError('ACCOUNT_UNVERIFIED','请先核验对应仓专用账号');
+    validateIdentity(account);
+    const active={id:crypto.randomUUID(),kind:'order',controller:new AbortController(),
+      phase:{phase:'ORDER',message:'聚水潭订单操作',warehouse:wh,at:now()}};
+    this.active=active;
+    try{
+      active.promise=c.action==='order.allocation'?this.allocations.run(c,account,active.controller.signal):this.orders.run(c.action.slice(6),c,account,active.controller.signal);
+      return await active.promise;
+    }catch(e){
+      if (process.env.JST_AUTO_ORDER_DIAGNOSTIC==='1') {
+        const location=String(e?.stack||'').match(/(?:order-import|order-list|product-export)\.mjs:\d+:\d+/g)||[];
+        const operation=String(e?.message||'').match(/^(?:page|frame|locator)\.[a-zA-Z]+(?=:)/)?.[0];
+        console.error('订单页面诊断 '+JSON.stringify({action:c.action,name:e?.name,
+          code:e instanceof CatalogError?e.code:undefined,operation,location}));
+      }
+      if(e instanceof CatalogError)throw e;
+      // Browser exception traces may embed fields from a locator or a form.
+      throw new CatalogError('ORDER_PAGE_CHANGED','聚水潭页或连接响应待核');
+    }finally{
+      if(this.active===active)this.active=null;
+    }
   }
   async configure(c,verified=null){
     const data=this.store.read(),old=data.accounts?.[c.warehouse];if(!WAREHOUSES.includes(c.warehouse))throw Error('未知仓库');

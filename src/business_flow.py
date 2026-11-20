@@ -26,22 +26,26 @@ def home_projection(records, batches):
 
 def read_home(path, cache, cancel=None, progress=lambda _: None):
     import daily_batch
-    import jst_batches
+    from jst_batch_store import listing
     data = daily_batch.read(path, cache, {'all_matched': True}, cancel, progress)
     checkpoint(cancel)
-    return home_projection(data['records'], jst_batches.listing(path, cancel=cancel))
+    return home_projection(data['records'], listing(path, cancel=cancel))
 
 
 def empty_message(stage, request, data):
     """Explain visible scope without guessing global counts or payment facts."""
     name = {'return': '回传', 'operations':'运营签发', 'payment': '付款', 'receipt': '收货'}.get(stage, '订单')
     scope = request.get('scope')
+    if stage=='payment' and data.get('scope') and request.get('jst_generation'):
+        return '当前筛选没有符合条件的付款仓单。可切换聚水潭生成状态或清空筛选。'
     if scope is not None:
         return f'限定所选 {len(scope)} 单，当前没有待处理的{name}记录。可查看本环节全部；进入其他环节仍保留这些订单。'
     if not data.get('scope'):
         return '当前日期和搜索范围没有签发单。请调整筛选；尚未签发的门店请先完成补货出单。'
-    if request.get('warehouse') or request.get('lock'):
-        return f'当前仓或锁状态下没有适用{name}记录。可清空筛选查看；不会修改订单或自动生成单据。'
+    if request.get('lock'):
+        return f'当前历史下单标记条件下没有适用{name}记录。可清空筛选查看。'
+    if request.get('warehouse'):
+        return f'当前仓没有适用{name}记录。可切换仓库或清空筛选查看。'
     if stage and request.get('stage_filter') == '待处理':
         upstream = {'return': '签发', 'operations':'门店回传', 'payment': '门店回传/运营签发及分配', 'receipt': '门店付款'}[stage]
         return f'当前范围没有待{name}订单。查看本环节全部可查已处理记录；尚未到本环节的订单，请先核对{upstream}。'

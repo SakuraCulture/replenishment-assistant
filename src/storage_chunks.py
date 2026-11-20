@@ -1,6 +1,6 @@
 """Immutable, content-addressed JSON blocks in the existing SQLite transaction.
 
-The canonical JSON stream is identical to work_repository.dumps. A manifest is
+The canonical JSON stream is identical to snapshot_json.dumps. A manifest is
 not a mutable cache: its checksum covers its ordered tree and every block hash.
 Only version-2 manifests are supported. Garbage collection lives in maintenance.
 """
@@ -11,6 +11,8 @@ from io import BytesIO
 from contextlib import closing
 from io_stages import stage
 from export_progress import RowProgress
+import snapshot_json as codec
+from draft_spool import StagedArray, StagedMap, result_source
 
 MAGIC=b'YTCHUNK2\x00'
 BLOCK_ROWS=256
@@ -34,10 +36,6 @@ def require_current(db,cancel=None):
         for header, in db.execute(f'SELECT substr(payload,1,?) FROM {table}',(len(MAGIC),)):
             checkpoint(cancel)
             if header!=MAGIC:raise ValueError(UNSUPPORTED+'（'+table+'）')
-
-def codec():
-    import work_repository
-    return work_repository
 
 def schema(db):
     db.execute('CREATE TABLE IF NOT EXISTS snapshot_chunks(hash TEXT PRIMARY KEY, size INTEGER NOT NULL, data BLOB NOT NULL)')
@@ -74,7 +72,7 @@ class Prepared:
     binding: str|None=None
 
     def blob(self):
-        raw=codec().dumps({'version':2,'tree':self.tree,'digest':self.digest,'size':self.size,'binding':self.binding}).encode()
+        raw=codec.dumps({'version':2,'tree':self.tree,'digest':self.digest,'size':self.size,'binding':self.binding}).encode()
         return MAGIC+hashlib.sha256(raw).digest()+zlib.compress(raw)
 
 def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None):
@@ -85,9 +83,10 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None):
         blocks=Blocks(store)
     h=hashlib.sha256();size=0;count=0
     def count_blocks(v,depth=0):
-        if isinstance(v,dict) and len(v)>BLOCK_ROWS:return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS
-        if isinstance(v,dict) and depth<5:return sum(count_blocks(x,depth+1) for x in v.values())
-        return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS if isinstance(v,(list,tuple)) and len(v)>BLOCK_ROWS else 1
+        v=result_source(v)
+        if isinstance(v,(dict,StagedMap)) and len(v)>BLOCK_ROWS:return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS
+        if isinstance(v,(dict,StagedMap)) and depth<5:return sum(count_blocks(x,depth+1) for x in v.values())
+        return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS if isinstance(v,(list,tuple,StagedArray)) and len(v)>BLOCK_ROWS else 1
     total=count_blocks(value)
     def feed(raw):
         nonlocal size
@@ -95,7 +94,7 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None):
     def block(v,fragment=False):
         nonlocal count
         if store is None:
-            raw=codec().dumps(v).encode();digest=hashlib.sha256(raw).hexdigest();raw_size=len(raw)
+            raw=codec.dumps(v).encode();digest=hashlib.sha256(raw).hexdigest();raw_size=len(raw)
             feed(raw[1:-1] if fragment else raw)
             if digest not in seen:
                 blocks[digest]=(len(raw),zlib.compress(raw));seen.add(digest)
@@ -106,21 +105,23 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None):
         if count%32==0:progress(RowProgress(f'编码内容块：{count:,}/{total:,}；复用 {count-len(blocks):,} 块',count,total))
         return ['ref',digest,raw_size]
     def walk(v,depth=0):
-        if isinstance(v,dict) and len(v)>BLOCK_ROWS:
+        v=result_source(v)
+        if isinstance(v,(dict,StagedMap)) and len(v)>BLOCK_ROWS:
             feed(b'{');parts=[];keys=sorted(v)
             for start in range(0,len(keys),BLOCK_ROWS):
                 if start:feed(b', ')
-                parts.append(block({k:v[k] for k in keys[start:start+BLOCK_ROWS]},True))
+                group=keys[start:start+BLOCK_ROWS]
+                parts.append(block(v.select(group) if isinstance(v,StagedMap) else {k:v[k] for k in group},True))
             feed(b'}');return ['map',parts]
-        if isinstance(v,dict) and depth<5:
+        if isinstance(v,(dict,StagedMap)) and depth<5:
             feed(b'{');items=[]
             for i,k in enumerate(sorted(v)):
                 if not isinstance(k,(str,int,float,bool)) and k is not None:raise TypeError('无效JSON对象键')
                 key=k if isinstance(k,str) else json.dumps(k,ensure_ascii=False,allow_nan=False)
                 if i:feed(b', ')
-                feed(codec().dumps(key).encode()+b': ');items.append([key,walk(v[k],depth+1)])
+                feed(codec.dumps(key).encode()+b': ');items.append([key,walk(v[k],depth+1)])
             feed(b'}');return ['dict',items]
-        if isinstance(v,(list,tuple)) and len(v)>BLOCK_ROWS:
+        if isinstance(v,(list,tuple,StagedArray)) and len(v)>BLOCK_ROWS:
             feed(b'[');parts=[]
             for start in range(0,len(v),BLOCK_ROWS):
                 if start:feed(b', ')
@@ -160,7 +161,7 @@ def business_digest(prepared,path,focus_revision=None):
             h.update(b'{')
             for i,(key,child) in enumerate(n[1]):
                 if i:h.update(b', ')
-                h.update(codec().dumps(key).encode()+b': ');emit(child)
+                h.update(codec.dumps(key).encode()+b': ');emit(child)
             h.update(b'}')
         elif kind in ('array','map'):
             h.update(b'[' if kind=='array' else b'{')
@@ -170,7 +171,7 @@ def business_digest(prepared,path,focus_revision=None):
             h.update(b']' if kind=='array' else b'}')
         else:raise ValueError('未知快照节点')
     if focus_revision is not None:
-        h.update(b'{"new_focus": '+codec().dumps(focus_revision).encode()+b', "result": ')
+        h.update(b'{"new_focus": '+codec.dumps(focus_revision).encode()+b', "result": ')
     emit(['dict',[(k,v) for k,v in node[1] if k not in ('created','task','version')]])
     if focus_revision is not None:h.update(b'}')
     return h.hexdigest()
@@ -203,7 +204,7 @@ def manifest(blob):
     if not blob.startswith(MAGIC):return None
     check=blob[len(MAGIC):len(MAGIC)+32];raw=zlib.decompress(blob[len(MAGIC)+32:])
     if hashlib.sha256(raw).digest()!=check:raise ValueError('快照清单校验失败')
-    value=codec().loads(raw)
+    value=codec.loads(raw)
     if value.get('version')!=2:raise ValueError('不支持的快照存储版本')
     return value
 
@@ -220,24 +221,24 @@ class Reader:
     def read(self,node,feed=lambda _:None):
         kind=node[0]
         if kind=='ref':
-            raw=self.raw(node);feed(raw);return codec().loads(raw)
+            raw=self.raw(node);feed(raw);return codec.loads(raw)
         if kind=='dict':
             feed(b'{');result={}
             for i,(k,child) in enumerate(node[1]):
                 if i:feed(b', ')
-                feed(codec().dumps(k).encode()+b': ');result[k]=self.read(child,feed)
-            feed(b'}');return codec().decode_object(result)
+                feed(codec.dumps(k).encode()+b': ');result[k]=self.read(child,feed)
+            feed(b'}');return codec.decode_object(result)
         if kind=='map':
             feed(b'{');result={}
             for i,child in enumerate(node[1]):
                 if i:feed(b', ')
-                raw=self.raw(child);feed(raw[1:-1]);result.update(codec().loads(raw))
-            feed(b'}');return codec().decode_object(result)
+                raw=self.raw(child);feed(raw[1:-1]);result.update(codec.loads(raw))
+            feed(b'}');return codec.decode_object(result)
         if kind=='array':
             feed(b'[');result=[]
             for i,child in enumerate(node[1]):
                 if i:feed(b', ')
-                raw=self.raw(child);feed(raw[1:-1]);result.extend(codec().loads(raw))
+                raw=self.raw(child);feed(raw[1:-1]);result.extend(codec.loads(raw))
             feed(b']');return result
         raise ValueError('未知快照节点')
     def emit(self,node,feed):
@@ -249,7 +250,7 @@ class Reader:
             feed(b'{')
             for i,(key,child) in enumerate(node[1]):
                 if i:feed(b', ')
-                feed(codec().dumps(key).encode()+b': ');self.emit(child,feed)
+                feed(codec.dumps(key).encode()+b': ');self.emit(child,feed)
             feed(b'}');return
         if kind in ('array','map'):
             feed(b'[' if kind=='array' else b'{')
@@ -303,7 +304,7 @@ def load(blob,db=None,expected=None,paths=None,binding=None,progress=lambda _:No
     reader.emit(m['tree'],feed)
     if h.hexdigest()!=m['digest'] or buffer.tell()!=m['size']:raise ValueError('完整快照校验失败')
     progress('完整快照校验完成，解析数据…')
-    return codec().loads(buffer.getvalue())
+    return codec.loads(buffer.getvalue())
 
 
 def load_fields(blob,db,paths,*,binding,progress=lambda _:None):

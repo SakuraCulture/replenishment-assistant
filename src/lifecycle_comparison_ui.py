@@ -35,6 +35,9 @@ def open_export(widget,level):
             fields={'from':'开始日期','to':'结束日期','search':'搜索内容','warehouse':'仓库','status':'订单进度','stage_view':'工作环节','stage_filter':'环节筛选','lock':'锁单状态'}
             stages={'return':'回传处理','payment':'付款核对','receipt':'收货核对','jst':'聚水潭导入单'}
             scope_text='当前筛选全部；'+ '；'.join(f'{fields[k]}：{stages.get(v,v) if k=="stage_view" else v}' for k,v in request.items() if k in fields and v)
+            if request.get('jst_generation'):
+                from daily_batch import GENERATION_FILTERS
+                scope_text+='；聚水潭生成状态：'+GENERATION_FILTERS[request['jst_generation']]
         else:heads=selected;scope_text=f'勾选的{len(heads)}张订单（含跨页勾选）'
         receipt=run(widget,service.export,(host.work_repository.path,heads,target,level,scope_text),'导出'+title)
         from readable_ui import file_results

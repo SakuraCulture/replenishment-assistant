@@ -5,6 +5,7 @@ from contextlib import closing, nullcontext
 from decimal import Decimal
 
 import order_lifecycle as lifecycle
+from order_keys import document_version
 import purchases
 from purchase_io import code, number
 from runtime_support import checkpoint
@@ -93,7 +94,7 @@ def validate_basis(path, plan, configuration, suppliers, *, cancel=None, _db=Non
         purchases.validate_head(db, plan['head'])
         view = lifecycle.snapshot(path, plan['head'], cancel=cancel, db=db,_comparison=False)
         current = view['documents']['payment']
-        if not current or (current['version'], current['digest']) != (plan['payment']['version'], plan['payment']['digest']):
+        if not current or document_version(current) != document_version(plan['payment']):
             raise ValueError('付款单已更新，请重新预览，不能上传旧付款数量')
         if not view['health']['payment']:
             raise ValueError('付款单的回传对照依据变化，请先重新核对付款单')

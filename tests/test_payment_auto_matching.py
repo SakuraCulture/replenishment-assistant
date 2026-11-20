@@ -1,11 +1,13 @@
 """Automatic recognition never needs a company/name dropdown for exact evidence."""
 import copy,json,sys,threading,unittest
 from contextlib import closing
+from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 import openpyxl
 sys.path[:0]=[str(Path(__file__).resolve().parents[1]/p) for p in ('src','tests')]
 import test_payment_matching as fixture
+import payment_match_index as index_reads
 import payment_matching as pm,payment_auto_matching as automatic,lifecycle_batch as batch,lifecycle_io as io,order_lifecycle as lc,jst_orders as jst,work_repository as wr
 from runtime_support import Cancelled
 
@@ -32,7 +34,7 @@ class PaymentAutoTests(unittest.TestCase):
     def test_reimport_and_one_cent_correction_without_source_selection(self):
         doc=self.f.document();first=lc.commit(self.path,self.prepare([doc]))[0]
         repeat=lc.commit(self.path,self.prepare([doc]))[0];self.assertFalse(repeat['changed']);self.assertEqual(first['version'],repeat['version'])
-        correction=self.f.document(change=lambda v:v.update(商品金额=str(pm.Decimal(v['商品金额'])+pm.Decimal('.01'))))
+        correction=self.f.document(change=lambda v:v.update(商品金额=str(Decimal(v['商品金额'])+Decimal('.01'))))
         r=self.analyze(correction);self.assertTrue(r['automatic']);self.assertFalse(r['exact']);self.assertEqual(r['proof'],'previous_source');self.assertIn('+0.01',r['reason'])
         self.assertEqual(lc.commit(self.path,self.prepare([correction]))[0]['version'],first['version']+1)
     def test_previous_link_still_checks_conflicting_detail_outside_scope(self):
@@ -77,7 +79,7 @@ class PaymentAutoTests(unittest.TestCase):
         eager=pm.build(self.path);index=pm.build_identification(self.path,scope)
         self.assertTrue(all(h['features'] is None for h in index['heads']))
         other=next(h for h in index['heads'] if h['number']!=self.target['number'])
-        with patch.object(pm,'_generation_features',wraps=pm._generation_features) as load:
+        with patch('payment_match_index._generation_features',wraps=index_reads._generation_features) as load:
             result=pm.analyze(self.path,doc,index,[other])
             self.assertTrue(result['prevent_rebind']);load.assert_not_called()
             actual=pm.analyze(self.path,doc,index,scope)
@@ -114,7 +116,7 @@ class PaymentAutoTests(unittest.TestCase):
         with closing(pm.readonly(self.path)) as db:self.assertEqual(pm.mappings(db),{})
     def test_local_mapping_and_payment_rollback_together(self):
         plan=self.prepare([self.f.document()])
-        with patch('payment_matching.apply',side_effect=RuntimeError('injected')):
+        with patch('payment_match_commit.apply',side_effect=RuntimeError('injected')):
             with self.assertRaisesRegex(RuntimeError,'injected'):lc.commit(self.path,plan)
         self.assertTrue(self.f.f.unpaid())
         with closing(pm.readonly(self.path)) as db:self.assertEqual(pm.mappings(db),{})

@@ -1,4 +1,5 @@
 import copy,sys,unittest
+from contextlib import closing
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 import openpyxl
@@ -15,10 +16,20 @@ class Identity(unittest.TestCase):
         result=batch.read([self.path],'return');self.assertEqual(result['issues'],[]);return result['documents']
     def test_hidden_metadata_business_columns_and_automatic_binding(self):
         self.export();b=openpyxl.load_workbook(self.path)
-        self.assertEqual(b.sheetnames,[*ne.SHEETS,identity.SHEET]);self.assertEqual(b[identity.SHEET].sheet_state,'veryHidden');self.assertTrue(b.security.lockStructure)
+        self.assertEqual(b.sheetnames,[*ne.SHEETS,identity.SHEET])
+        self.assertEqual(b[identity.SHEET].sheet_state,'veryHidden')
+        self.assertFalse(b.security.lockStructure)
         for name in ne.SHEETS:self.assertEqual([c.value for c in b[name][1]],ne.HEADERS+['决策理由']);self.assertFalse(b[name].column_dimensions['U'].hidden)
         self.assertEqual(identity.read(b)[0]['number'],self.f.h['number']);b.close()
         docs=self.read();p=batch.prepare(self.f.path,docs);self.assertEqual(len(p['plans']),1);self.assertEqual(p['plans'][0]['head']['number'],self.f.h['number'])
+        with closing(openpyxl.load_workbook(self.path)) as book:
+            book.create_sheet('验算').append(['项目','结果'])
+            book.save(self.path)
+        imported=batch.read([self.path],'return')
+        self.assertEqual(len(imported['issues']),1)
+        self.assertIn('验算',imported['issues'][0]['message'])
+        plans=batch.prepare(self.f.path,imported['documents'])['plans']
+        self.assertEqual([plan['head']['number'] for plan in plans],[self.f.h['number']])
     def test_quantity_changes_sort_and_added_rows_do_not_destroy_identity(self):
         self.export();b=openpyxl.load_workbook(self.path);s=b[ne.SHEETS[-1]];s['Q2']=0
         values=[None]*21;values[0]='测试店';values[1]='T';values[4]='EXTRA';values[16]=2;values[18]='河北仓';s.append(values)
@@ -53,7 +64,11 @@ class Identity(unittest.TestCase):
     def test_return_export_preserves_metadata_and_no_number_column(self):
         import lifecycle_exports as ex
         self.f.save();folder=self.f.root/'returns';folder.mkdir();result=ex.export_returns(self.f.path,[self.f.view()],folder,'combined',lambda _:None,None)
-        self.assertIsNone(result['error']);self.path=Path(result['files'][0]);docs=self.read();self.assertEqual(docs[0]['scan']['rows'][0]['base_quantity'],'5')
+        self.assertIsNone(result['error']);self.path=Path(result['files'][0])
+        with closing(openpyxl.load_workbook(self.path,read_only=True)) as book:
+            self.assertFalse(book.security.lockStructure)
+            self.assertEqual(book[identity.SHEET].sheet_state,'veryHidden')
+        docs=self.read();self.assertEqual(docs[0]['scan']['rows'][0]['base_quantity'],'5')
     def test_legacy_unpartitioned_export_feedback_still_readable(self):
         import merchant_feedback
         order=self.f.repo.get(wr.today(),'T');ne.export(order,self.path)
