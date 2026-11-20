@@ -50,6 +50,24 @@ class NativeXLS(unittest.TestCase):
                 workbook.make_file(CONTACT,'BH'+'A'*24,lines,stats)
         self.assertEqual(workbook.cell_length('😀'),2)
 
+    def test_single_commodity_rows_preserve_all_2000_items_in_one_order(self):
+        order='BH'+'B'*24
+        items=[{'sku': ('@' if i%2 else '0')+f'{i:019d}', 'quantity':i%3+1, 'price':'2.10'}
+               for i in range(2000)]
+        lines,stats=workbook.order_lines(items)
+        self.assertGreater(stats['sku_cell_chars'],workbook.MAX_CELL)
+        data,_=workbook.make_file(CONTACT,order,lines,stats,import_format=workbook.SINGLE)
+        sheet=xlrd.open_workbook(file_contents=data).sheet_by_name(workbook.SHEET)
+        self.assertEqual((sheet.nrows,sheet.ncols),(2001,39))
+        self.assertLess(len(data),workbook.MAX_BYTES)
+        for i,(sku,qty,_) in enumerate(lines,1):
+            self.assertEqual([sheet.cell_value(i,c) for c in (0,2,12,20,23,24,25,29)],
+                             [order,CONTACT['buyer'],CONTACT['phone'],sku,int(qty),'','否','现场取货'])
+            self.assertEqual(sheet.cell_type(i,20),xlrd.XL_CELL_TEXT)
+        with patch.object(workbook,'MAX_DATA_ROWS',1999):
+            with self.assertRaisesRegex(ValueError,'行限制'):
+                workbook.make_file(CONTACT,order,lines,stats,import_format=workbook.SINGLE)
+
 
 class Portal:
     """Controlled exact-match platform. The live integration is gated separately."""
@@ -124,6 +142,33 @@ class AutoOrders(unittest.TestCase):
         self.assertIn('河北仓',issue['order'])
         self.assertIn('买家帐号、手机',issue['reason'])
         self.assertEqual(store.list_orders(self.path),[])
+
+    def test_invalid_warehouse_phone_is_reported_before_file_or_task_creation(self):
+        self.configure(self.head,{**CONTACT,'phone':'0123456789'})
+        receipt=service.prepare(self.path,self.selected)
+        self.assertFalse(receipt['ready'])
+        self.assertIn('河北仓',receipt['failed'][0]['order'])
+        self.assertIn('收货手机须为11位数字',receipt['failed'][0]['reason'])
+        self.assertEqual(store.list_orders(self.path),[])
+
+    def test_large_generation_routes_to_single_and_rejects_preview_without_grouping_proof(self):
+        self.configure(self.head)
+        sku='@'+('1234567890'*2)
+        lines,stats=workbook.order_lines([{'sku':sku+str(i),'quantity':1,'price':2} for i in range(2000)])
+        with patch.object(workbook,'order_lines',return_value=(lines,stats)):
+            result=service.prepare(self.path,self.selected)
+        self.assertFalse(result['failed'])
+        online,=result['ready']
+        order=self.read(online,workbook=True)
+        self.assertEqual(order['payload']['import_format'],workbook.SINGLE)
+        self.assertEqual(xlrd.open_workbook(file_contents=order['workbook']).sheet_by_index(0).nrows,2001)
+        for count in (None,2):
+            evidence={**self.portal.action('preview',order),'order_count':count,'import_format':workbook.SINGLE}
+            with self.assertRaisesRegex(ValueError,'缺少一张整单'):
+                service._preview_for_submit(order,evidence)
+        checked=service._preview_for_submit(order,{**evidence,'order_count':1})
+        self.assertEqual(checked['amount'],'4000')
+        self.assertFalse(service._same_order({**checked,'amount':'4001'},checked))
 
     def test_one_order_phone_override_keeps_saved_store_profile(self):
         self.configure(self.head)

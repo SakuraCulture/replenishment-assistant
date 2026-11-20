@@ -127,9 +127,12 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
             if missing:
                 raise Check('缺少'+'、'.join(missing))
             lines,stats=template.order_lines(generation['rows'],cancel)
-            workbook,template_sha=template.make_file(contacts,online,lines,stats)
+            import_format=template.SINGLE if stats['sku_cell_chars']>template.MAX_CELL else template.MULTI
+            workbook,template_sha=template.make_file(contacts,online,lines,stats,import_format=import_format,cancel=cancel)
             snapshot={'head':h,'gid':row['gid'],'generation':proof,'online':online,'shop':shop,'profile':profile,
                       'lines':lines,'stats':{**stats,'file_bytes':len(workbook)},'template_sha':template_sha}
+            if import_format==template.SINGLE:
+                snapshot['import_format']=import_format
             if order_phone is not None:
                 snapshot['order_phone']=order_phone
             with closing(store.connection(path)) as db,db:
@@ -200,6 +203,10 @@ class Browser:
             if 'order_phone' in p:
                 spec['contact']={**spec['contact'],'phone':p['order_phone']}
             spec['lines']=p['lines']
+            if p.get('import_format')==template.SINGLE:
+                spec['import_format']=template.SINGLE
+        if action=='payment_detail':
+            spec['contact']={'buyer':p['profile']['values']['buyer']}
         if action in ('preview','stage_import'):
             spec['file']=base64.b64encode(order['workbook']).decode('ascii')
             spec['sha']=order['file_sha']
@@ -244,8 +251,21 @@ def _preview_evidence(order, result):
     return {'binding':binding,'amount':amount,'file_sha':order['file_sha']}
 
 
+def _preview_for_submit(order, result):
+    evidence=_preview_evidence(order,result)
+    if order['payload'].get('import_format')==template.SINGLE:
+        if result.get('order_count')!=1 or result.get('import_format')!=template.SINGLE or evidence['amount'] is None:
+            raise Check('单商品模式缺少一张整单及金额的完整平台预览，请核对原文件')
+        evidence['import_format']=template.SINGLE
+    return evidence
+
+
 def _same_order(evidence, original):
-    return evidence['binding']==original['binding'] and evidence['file_sha']==original['file_sha']
+    if evidence['binding']!=original['binding'] or evidence['file_sha']!=original['file_sha']:
+        return False
+    if evidence.get('import_format')==template.SINGLE:
+        return original.get('import_format')==template.SINGLE and evidence['amount']==original['amount']
+    return True
 
 
 def _preview_names(db, order):
@@ -398,12 +418,12 @@ def _process(path, browser, order, action, cancel):
         _require_plan(db,order['payload'])
         order['preview_names']=_preview_names(db,order)
     if action=='preview':
-        evidence=_preview_evidence(order,browser.action('preview',order))
+        evidence=_preview_for_submit(order,browser.action('preview',order))
         return _save(path,order,'PREVIEWED',cancel,check_plan=True,proof=evidence,reason='平台预览通过，等待确认导入并审核')
     if action!='submit' or order['stage']!='PREVIEWED':
         raise Check('请先预览并确认本次原文件')
     fresh=browser.action('stage_import',order)
-    if not _same_order(_preview_evidence(order,fresh),order['proof']) or not fresh.get('permit'):
+    if not _same_order(_preview_for_submit(order,fresh),order['proof']) or not fresh.get('permit'):
         raise Check('平台预览或目标店铺已变化，请重新预览')
     intent=_save(path,order,'IMPORT_UNKNOWN',cancel,check_plan=True,reason='已保存导入意图，等待原单回查')
     browser.request('import',permit=fresh['permit'],online=order['online'],warehouse=order['payload']['head']['warehouse'])
@@ -413,7 +433,7 @@ def _process(path, browser, order, action, cancel):
     return confirmed
 
 
-def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *, approved=None):
+def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *, approved=None, prepare_payment=None):
     """Process at most the explicitly confirmed selection, in displayed order."""
     responses=[]
     for i,online in enumerate(dict.fromkeys(keys),1):
@@ -428,7 +448,6 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
         progress(RowProgress(show_name(order['payload']['head']),i,len(keys)))
         try:
             result=_process(path,browser,order,action,cancel)
-            responses.append({'online':online,'stage':result['stage'],'reason':result['reason']})
         except Cancelled:
             raise
         except ValueError as exc:
@@ -436,11 +455,18 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
                 current=store.read(db,online)
             if current and not _legacy_audit_not_dispatched(current):
                 current=_save(path,current,current['stage'],None,reason=str(exc))
-            responses.append({'online':online,'stage':(current or order)['stage'],'reason':str(exc)})
+            result={**(current or order),'reason':str(exc)}
+        response={'online':online,'stage':result['stage'],'reason':result['reason']}
+        if (prepare_payment and action in ('submit','audit','recover') and result.get('internal')
+                and result['stage'] in ('AUDITED','AUDIT_UNKNOWN','REVIEW')):
+            payment=prepare_payment(path,[online],browser,progress,cancel)[0]
+            response['payment']=payment
+            response['stage']=payment.get('audit_stage',response['stage'])
+        responses.append(response)
     return responses
 
 
-def run_browser(path, keys, owner, action, approved=None, progress=lambda _:None, cancel=None):
+def run_browser(path, keys, owner, action, approved=None, progress=lambda _:None, cancel=None, *, prepare_payment=None):
     checkpoint(cancel)
     try:
         lease=owner.acquire()
@@ -451,7 +477,7 @@ def run_browser(path, keys, owner, action, approved=None, progress=lambda _:None
             lease.start()
         except ComponentError as exc:
             raise _client_error(exc) from None
-        return process(path,keys,Browser(lease),action,progress,cancel,approved=approved)
+        return process(path,keys,Browser(lease),action,progress,cancel,approved=approved,prepare_payment=prepare_payment)
     finally:
         while not lease.close(timeout=.5):
             progress('等待聚水潭当前动作安全结束，保留原任务')

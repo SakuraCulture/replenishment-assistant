@@ -15,6 +15,7 @@ class Runner(QObject):
         super().__init__(host)
         self.host = host
         self.worker = None
+        self.legacy_worker = False
         self.stopping = False
         self.blocked = False
         self.close_requested = False
@@ -47,7 +48,9 @@ class Runner(QObject):
                 or QApplication.activeModalWidget()):
             return
         try:
-            if not jobs.enabled(h.work_repository.path):
+            audited = jobs.due_audited(h.work_repository.path)
+            legacy = jobs.enabled(h.work_repository.path)
+            if not audited and not legacy:
                 if self.message != '实配自动检查未开启':
                     self.status('实配自动检查未开启')
                 return
@@ -63,13 +66,15 @@ class Runner(QObject):
         if self.message == '实配自动检查未开启':
             self.status('实配自动检查已开启，等待原单配货')
         try:
-            keys = jobs.due(h.work_repository.path)
+            keys = audited or jobs.due(h.work_repository.path)
         except (OSError, ValueError, sqlite3.Error) as exc:
             self.status('本地实配清单暂不可读，下次自动检查时重试：' + str(exc))
             return
         if not keys:
             return
-        worker = Worker(service.run_background, (h.work_repository.path, keys, owner), self)
+        self.legacy_worker = not audited
+        reader = service.run_background if self.legacy_worker else service.retry_audited
+        worker = Worker(reader, (h.work_repository.path, keys, owner), self)
         self.worker = worker
         worker.status.connect(self.status)
         worker.success.connect(self.ready)
@@ -84,13 +89,13 @@ class Runner(QObject):
 
     def configured(self, enabled):
         self.blocked = False
-        if not enabled and self.worker:
+        if not enabled and self.worker and self.legacy_worker:
             self.worker.cancel.set()
         self.status('实配自动检查已开启，等待原单配货' if enabled else '实配自动检查未开启')
 
     def ready(self, rows):
         count = sum(row['state'] == 'READY' for row in rows)
-        self.message = f'实配检查 {len(rows)} 单，{count} 单待人工确认付款'
+        self.message = f'付款来源检查 {len(rows)} 单，{count} 单待人工确认付款'
         self.refresh_pending()
         if count and hasattr(self.host, 'status'):
             self.host.status.setText(self.message + '；可直接打开已回流资料。')

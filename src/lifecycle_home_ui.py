@@ -82,6 +82,7 @@ class LifecycleWidget(QWidget):
                 primary('导入'+TITLES[stage],lambda:self.import_stage(stage))
                 row.addWidget(button('导出'+TITLES[stage],lambda:export_selected(self,self.host,list(self.checked.values()),stage)))
                 if stage=='payment':row.addWidget(button('使用聚水潭导入单作为付款来源',self.review_payment))
+                if stage=='payment':row.addWidget(button('核对聚水潭付款资料',self.review_platform_payment))
                 if stage=='payment':row.addWidget(button('勾选单批量生成翱象采购预览',self.aoxiang_prepare))
                 if stage=='receipt':row.addWidget(button('勾选单批量同步翱象收货',self.aoxiang_receipts))
                 if stage=='return':row.addWidget(button('导出原签发单',self.export_signed))
@@ -120,6 +121,15 @@ class LifecycleWidget(QWidget):
         heads=list(self.checked.values())
         if len(heads)!=1:QMessageBox.information(self,'选择一张付款草稿','请勾选一张订单核对实际付款；多张实际付款单可使用批量导入。');return
         payment(self,self.host,heads[0]);self.query(keep_page=True)
+    def review_platform_payment(self):
+        from jst_fulfillment_jobs import originals_for_scope
+        from jst_fulfillment_ui import pull_and_review
+        heads=list(self.checked.values())
+        if not heads:QMessageBox.information(self,'选择付款核对范围','请勾选需要核对的原仓单。');return
+        try:
+            keys=originals_for_scope(self.host.work_repository.path,heads)
+            if pull_and_review(self,self.host,keys):self.query(keep_page=True)
+        except Exception as exc:warn(self,exc)
     def retry_generation(self):
         from business_ui import run
         import jst_tasks

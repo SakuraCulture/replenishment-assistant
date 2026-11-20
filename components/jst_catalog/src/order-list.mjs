@@ -123,21 +123,31 @@ export async function queryOrder(page, frame, spec, status, signal) {
     coid:String(native.co_id),status:native.status,count:native.item_actual_count,quantity:native.item_actual_qty}:null};
 }
 
-export async function readOrder(page, frame, spec, {pendingOnly=false,nativeOnly=false}={}, signal) {
-  if(nativeOnly) {
-    const found=await queryOrder(page,frame,spec,null,signal);
-    if(!found)return {found:false};
-    const identity=found.native;
-    if(!identity||identity.internal!==found.internal||identity.online!==spec.online||identity.shop!==spec.shop
-        ||identity.coid!==spec.binding?.coid||identity.shop_id!==spec.binding?.shop_id)
-      fail('实配查询的企业、店铺或原单与已保存的关联不同');
-    const status=nativeStatus(identity.status);
-    if(!Object.values(statuses).some(([,label])=>label===status)) fail('原单当前状态尚不能核实');
-    if(status!=='已发货') return {...found,found:true,native_status:status};
-    const facts=await fullOrder(frame,spec,{coid:identity.coid,shop_id:identity.shop_id,count:identity.count},signal);
+export async function readNativeOrder(page,frame,spec,{payment=false}={},signal){
+  const found=await queryOrder(page,frame,spec,null,signal);
+  if(!found)return {found:false};
+  const identity=found.native;
+  if(!identity||identity.internal!==found.internal||identity.online!==spec.online||identity.shop!==spec.shop
+      ||identity.coid!==spec.binding?.coid||identity.shop_id!==spec.binding?.shop_id)
+    fail('查询的企业、店铺或原单与已保存的关联不同');
+  const status=nativeStatus(identity.status);
+  if(!Object.values(statuses).some(([,label])=>label===status)) fail('原单当前状态尚不能核实');
+  const observed={...found,found:true,native_status:status};
+  if (status!==(payment?'已客审待财审':'已发货')) return observed;
+  try {
+    const count=Number(identity.count);
+    const facts=await fullOrder(frame,spec,{coid:identity.coid,shop_id:identity.shop_id,count,payment},signal);
     if(facts.native_status!==status||!facts.contact_ok) fail('原单状态或买家身份已变化');
-    return {...found,...facts,found:true};
+    return {...observed,...facts};
+  } catch(error) {
+    check(signal);
+    if(!payment) throw error;
+    return {...observed,detail_error:error.code==='ORDER_PAGE_CHANGED'?error.message:'审核状态已查回，整单明细暂未完整读回'};
   }
+}
+
+export async function readOrder(page, frame, spec, {pendingOnly=false,nativeOnly=false}={}, signal) {
+  if(nativeOnly) return readNativeOrder(page,frame,spec,{},signal);
   if (!pendingOnly && !await queryOrder(page,frame,spec,null,signal)) return {found:false};
   const keys = Object.keys(statuses);
   const auditFollowUp = ['AUDIT_UNKNOWN','AUDITED','REVIEW'].includes(spec.phase);
@@ -145,14 +155,27 @@ export async function readOrder(page, frame, spec, {pendingOnly=false,nativeOnly
   for (const key of pendingOnly ? ['waitconfirm'] : candidates) {
     let order = await queryOrder(page,frame,spec,key,signal);
     if (!order) continue;
-    const cells = order.row.locator('._jt_cell_items');
-    await orderControl(cells,'原单的商品明细入口');
     const details = frame.locator('.full_item_table').filter({visible:true});
-    await details.waitFor({timeout:10000}).catch(()=>fail('无法读取原单完整商品明细'));
-    const lines = await details.locator('.jt_item_row').evaluateAll(rows=>rows.map(row=>{
-      const txt = s => row.querySelector(s)?.innerText.trim() || '';
-      return [txt('.sku_id'),txt('[title="数量"]').replace(/^[x×]\s*/i,''),txt('[title="单价"]').replace(/^[￥¥]\s*/,'')];
-    }));
+    let lines;
+    if (spec.import_format==='SingleCommodity') {
+      // Read the same full-detail callback as the product popover.
+      const identity=order.native;
+      if (!identity||identity.coid!==spec.binding?.coid||identity.shop_id!==spec.binding?.shop_id)
+        fail('查回的整单企业或店铺标识与原任务不同');
+      const full=await fullOrder(frame,{...spec,internal:order.internal},{
+        coid:identity.coid,shop_id:identity.shop_id,count:spec.lines.length},signal);
+      if (!full.contact_ok||full.native_status!==statuses[key][1])
+        fail('查回的整单买家或状态与原任务不同');
+      lines=full.lines;
+    } else {
+      const cells = order.row.locator('._jt_cell_items');
+      await orderControl(cells,'原单的商品明细入口');
+      await details.waitFor({timeout:10000}).catch(()=>fail('无法读取原单完整商品明细'));
+      lines = await details.locator('.jt_item_row').evaluateAll(rows=>rows.map(row=>{
+        const txt = s => row.querySelector(s)?.innerText.trim() || '';
+        return [txt('.sku_id'),txt('[title="数量"]').replace(/^[x×]\s*/i,''),txt('[title="单价"]').replace(/^[￥¥]\s*/,'')];
+      }));
+    }
     if (!lines.length) fail('查回的订单缺少商品明细');
     if (pendingOnly) {
       // Some ERP layouts leave the product popover open when the pager is

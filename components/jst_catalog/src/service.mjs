@@ -105,9 +105,9 @@ export class CatalogService {
     }
     if(action==='sync.start')return this.start(c);
     if(this.active)throw new CatalogError('BUSY','已有采集或账号核验在运行，可查看状态或停止');
-    if(action==='order.capabilities')return {probe:true,preview:true,ordinary_audit:true,allocation:true,
+    if(action==='order.capabilities')return {probe:true,preview:true,ordinary_audit:true,allocation:true,payment_detail:true,
       allocation_quantity_contract:'final_saleout_and_native_transaction',allocation_live_validated:false};
-    if(['order.probe','order.preview','order.stage_import','order.import','order.lookup','order.stage_audit','order.audit','order.allocation'].includes(action))
+    if(['order.probe','order.preview','order.stage_import','order.import','order.lookup','order.stage_audit','order.audit','order.allocation','order.payment_detail'].includes(action))
       return this.orderOperation(c);
     if(action==='session.reset'){
       const a=this.store.read().accounts?.[c.warehouse];

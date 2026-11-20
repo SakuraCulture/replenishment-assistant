@@ -63,3 +63,38 @@ def waiting_review(path, *, include_paid=False):
         if not include_paid and orders.exists(db, 'lifecycle_versions'):
             sql += ' ' + _UNPAID
         return [row[0] for row in db.execute(sql + " ORDER BY c.observed,o.online")]
+
+
+def due_audited(path, *, now=None, limit=10):
+    """Retry a durable audit before starting any legacy sales-out check."""
+    cutoff = (now or datetime.fromisoformat(wr.now())) - timedelta(minutes=5)
+    with closing(wr.read_connection(path, timeout=.15)) as db:
+        db.execute('BEGIN')
+        if not orders.exists(db) or not generations.exists(db):
+            return []
+        pending = orders.exists(db, 'jst_fulfillment_checks')
+        sql = 'SELECT o.online ' + _ACTIVE_ORDERS
+        if pending:
+            sql += ' LEFT JOIN jst_fulfillment_checks c ON c.online=o.online'
+        sql += " WHERE o.internal IS NOT NULL AND o.stage IN ('AUDITED','AUDIT_UNKNOWN')"
+        if pending:
+            sql += """ AND (c.online IS NULL OR (c.state IN ('RETRY_PAYMENT_READ','WAIT_ALLOCATION','WAIT_CONNECTION')
+                AND julianday(c.observed)<=julianday(?)))"""
+        if orders.exists(db, 'lifecycle_versions'):
+            sql += ' ' + _UNPAID
+        sql += ' ORDER BY c.observed,o.online' if pending else ' ORDER BY o.online'
+        args = (cutoff.isoformat(),) if pending else ()
+        return [row[0] for row in db.execute(sql + ' LIMIT ?', (*args, max(1, min(10, limit))))]
+
+
+def originals_for_scope(path, heads):
+    with closing(wr.read_connection(path, timeout=.15)) as db:
+        db.execute('BEGIN')
+        keys = []
+        for head in heads:
+            row = db.execute('SELECT online FROM jst_auto_orders WHERE oid=? AND warehouse=? AND internal IS NOT NULL',
+                             (head['oid'], head['warehouse'])).fetchone() if orders.exists(db) else None
+            if row is None:
+                raise ValueError(head['number'] + ' 尚未绑定聚水潭内部订单号')
+            keys.append(row[0])
+        return keys
