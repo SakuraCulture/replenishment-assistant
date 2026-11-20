@@ -7,10 +7,10 @@ import order_lifecycle as lc
 from runtime_support import checkpoint
 
 STAGES=('model','signed','return','operations','allocation','payment','receipt')
-NAMES=dict(model='模型建议',signed='补货签发',**{'return':'门店回传'},operations='运营签发',allocation='聚水潭分配',payment='付款下单',receipt='实际收货')
+NAMES=dict(model='模型建议',signed='补货签发',**{'return':'门店回传'},operations='运营签发',allocation='聚水潭分配',payment='实际下单',receipt='实际收货')
 PAIRS=(('model','signed'),('signed','return'),('return','payment'),('payment','receipt'),('model','receipt'),
        ('return','operations'),('operations','allocation'),('allocation','payment'))
-RATIOS=('签发／建议','回传／签发','付款／回传','收货／付款','收货／建议','运营／回传','分配／运营','付款／分配')
+RATIOS=('签发／建议','回传／签发','下单／回传','收货／下单','收货／建议','运营／回传','分配／运营','下单／分配')
 METRICS={'quantity':'商品数量','skus':'商品款数','value':'签发价货值'}
 
 class AllocationReader:
@@ -68,8 +68,11 @@ def set_operations(row,view,operation):
 
 def enrich(rows,head,view,allocation,signed_at):
     doc=view['documents'].get('operations');ops={r['sku']:r for r in doc['payload']['rows']} if doc else {}
-    saved={'model':None,'signed':signed_at,**{s:d['saved'] if d else None for s,d in view['documents'].items()},'allocation':allocation['saved'] if allocation else None}
-    versions={s:{'version':d['version'],'digest':d['digest']} for s,d in view['documents'].items() if d}
+    docs={s:d for s,d in view['documents'].items() if s!=lc.JST_ORDER}
+    if view['health'].get(lc.JST_ORDER):
+        docs['payment']=view['documents'][lc.JST_ORDER]
+    saved={'model':None,'signed':signed_at,**{s:d['saved'] if d else None for s,d in docs.items()},'allocation':allocation['saved'] if allocation else None}
+    versions={s:{'version':d['version'],'digest':d['digest']} for s,d in docs.items() if d}
     allocation_basis={k:allocation[k] for k in ('gid','digest','catalog','bid')} if allocation else None
     for r in rows:
         sku=r['sku'];r['flow_version']=view['flow_version']

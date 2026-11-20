@@ -212,6 +212,11 @@ def build_facts(order, head, view, evidence, cancel=None, *, spec=None, mode='fu
     bysku={r['E']:r for r in raw}
     if len(bysku)!=len(raw): raise ValueError('签发快照商品编码重复，不能合计')
     maps={s:{r['sku']:r for r in d['payload']['rows']} if d else {} for s,d in view['documents'].items()}
+    payment=view['documents']['payment']
+    paid_rows=maps['payment']
+    ordered=view['documents'].get(lifecycle.JST_ORDER) if view['health'].get(lifecycle.JST_ORDER) else None
+    if ordered:
+        maps['payment']=maps[lifecycle.JST_ORDER]
     legacy=view.get('legacy_return')
     if not view['documents']['return'] and legacy:
         maps['return']={sku:{'base_quantity':q} for sku,q in legacy['values'].items()}
@@ -222,6 +227,8 @@ def build_facts(order, head, view, evidence, cancel=None, *, spec=None, mode='fu
                 skus.append(sku);seen.add(sku)
     states={'model':('当时自动建议',True),'signed':('已签发',True),
             **{s:comparison.stage_state(view,s) for s in lifecycle.STAGES}}
+    if ordered:
+        states['payment']=('聚水潭已客审',True)
     spec=spec or {}
     terms=spec.get('search','').casefold().split()
     if mode=='analysis_detail':
@@ -241,7 +248,7 @@ def build_facts(order, head, view, evidence, cancel=None, *, spec=None, mode='fu
         if scope=='排除' and mode in ('detail','analysis_detail'):continue
         quantities={'model':num(r.get('AS')) if r else None,'signed':num(sem.order_quantity(r)) if r else Decimal(0)}
         for s in lifecycle.STAGES:
-            doc=view['documents'][s]
+            doc=(ordered or payment) if s=='payment' else view['documents'][s]
             if sku in maps[s]: quantities[s]=num(maps[s][sku].get('base_quantity'))
             elif doc and doc['payload'].get('schema')==lifecycle.SCHEMA: quantities[s]=Decimal(0)
             else: quantities[s]=None
@@ -255,8 +262,11 @@ def build_facts(order, head, view, evidence, cancel=None, *, spec=None, mode='fu
             'observations':{k:r.get(k) for k in ('H','I','J','K','L','N','AN','AM','AG','AH','BD','AL')} if r else {},
             'decision':{'budget':r.get('_budget_reason'),'manual':r.get('_preissue',{}).get('reason'),
                         'new':r.get('_new_requested'),'one_box':r.get('_audit',{}).get('applied')} if r else {},
-            'payment_amount':num(maps['payment'].get(sku,{}).get('amount')),
-            'payment_currency':maps['payment'].get(sku,{}).get('currency') or '未标币种'}
+            'payment_amount':num(paid_rows.get(sku,{}).get('amount')),
+            'payment_currency':paid_rows.get(sku,{}).get('currency') or '未标币种'}
+        if ordered:
+            row['payment_valid']=bool(view['health']['payment'] and (
+                paid_rows.get(sku,{}).get('base_quantity') is not None or payment['payload'].get('schema')==lifecycle.SCHEMA))
         if mode=='analysis_detail':
             set_operations(row,view,maps.get('operations',{}).get(sku,{}))
             if not retain_detail_row(row):continue
@@ -305,7 +315,7 @@ def aggregate(rows):
             'ratio':after/before if count and before>0 else None})
     pay={}
     for r in eligible:
-        if r['valid']['payment']:
+        if r.get('payment_valid',r['valid']['payment']):
             g=pay.setdefault(r['payment_currency'],{'amount':Decimal(0),'missing':0})
             if r['payment_amount'] is None:g['missing']+=1
             else:g['amount']+=r['payment_amount']

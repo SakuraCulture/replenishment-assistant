@@ -25,6 +25,7 @@ import work_repository as wr
 from payment_evidence import HEAD_KEYS, same_head
 from runtime_support import checkpoint, Cancelled
 from sqlite_write import begin
+import jst_customer_audit as customer_audit
 
 
 QTY = ('实配数量', '实际配货数量', '实发数量', '实际发货数量', '出库数量')
@@ -330,6 +331,7 @@ def _observe_audited(path, order, state, message, native_status, candidate, canc
             current = orders.update(db, current, 'AUDITED', status='audited', reason='已按原内部订单号核实普通审核通过')
         elif native_status in ('已取消', '已付款待审核', '待付款') and current['stage'] == 'AUDITED':
             current = orders.update(db, current, 'REVIEW', status='review', reason='平台当前为' + native_status + '，原付款资料待核')
+        customer_audit.record(db, current, native_status)
         if state == 'READY':
             payload, raw = candidate
             _order(db, online, payload)

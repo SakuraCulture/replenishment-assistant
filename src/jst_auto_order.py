@@ -9,6 +9,7 @@ import time
 
 import jst_auto_order_store as store
 import jst_auto_order_template as template
+import jst_customer_audit as customer_audit
 import jst_order_store as allocations
 import lifecycle_store
 import payment_shop_names
@@ -31,7 +32,7 @@ class PlatformCheck(Check):
     pass
 
 
-ORDINARY_AUDIT_DONE = '已客审待财审'
+ORDINARY_AUDIT_DONE = customer_audit.AUDITED
 SHIPPING_PLATFORM_STATES = ('发货中(打单拣货)','已发货')
 REVIEW_PLATFORM_STATES = ('异常','等供销商|外仓发货','待付款','已取消','被合并','被拆分')
 
@@ -374,6 +375,8 @@ def _record_found(path, order, result, cancel):
         detail={'internal':internal,'stage':stage}
         if native_status in (ORDINARY_AUDIT_DONE,'已付款待审核',*SHIPPING_PLATFORM_STATES,*REVIEW_PLATFORM_STATES):
             detail['native_status']=native_status
+        if stage=='AUDITED' or native_status in customer_audit.REVERSED:
+            customer_audit.record(db,current,native_status)
         _event(db,current,'聚水潭原单核对',detail)
     return current
 

@@ -2,7 +2,9 @@ from contextlib import closing
 from datetime import datetime, timedelta
 from decimal import Decimal
 import unittest
+from unittest.mock import patch
 
+import daily_batch
 import jst_audited_payment as audited
 import jst_auto_order as automatic
 import jst_auto_order_store as orders
@@ -10,6 +12,7 @@ import jst_batches
 import jst_fulfillment as service
 import jst_fulfillment_jobs as jobs
 import jst_fulfillment_store as sources
+import order_analytics
 import order_lifecycle as lifecycle
 import test_jst
 import test_jst_auto_order as fixture
@@ -67,6 +70,77 @@ class AuditedPayment(unittest.TestCase):
         lifecycle.commit(self.path,plan)
         self.assertEqual(len(lifecycle.history(self.path,self.base.head,'payment')),1)
         self.assertEqual(plan['plans'][0]['payload']['raw_rows'][0]['base_quantity'],'12')
+
+    def test_customer_audit_counts_import_and_allows_receipt_before_real_payment(self):
+        head = self.base.head
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
+        self.submit()
+        view = lifecycle.snapshot(self.path,head)
+        self.assertEqual((view['status'],view['next']),('待收货','receipt'))
+        self.assertFalse(view['present']['payment'])
+        self.assertFalse(view['health']['payment'])
+        self.assertTrue(view['health'][lifecycle.JST_ORDER])
+        orders_in_receipt = daily_batch.read(self.path,self.base.f.f.root/'progress.sqlite',
+            {'stage_view':'receipt','stage_filter':'待处理','all_matched':True})
+        self.assertEqual([r['number'] for r in orders_in_receipt['records']],[head['number']])
+
+        report = order_analytics.collect(self.path,{'from':head['day'],'to':head['day'],'lifecycle_from':'receipt'})
+        row, = [r for r in report['rows'] if r['order']==head['number'] and r['sku']=='0001']
+        self.assertEqual(row['quantities']['payment'],40)
+        self.assertTrue(row['valid']['payment'])
+        self.assertIsNone(row['payment_amount'])
+        self.assertEqual(report['payments'],[])
+
+        form = self.base.f.f
+        receipt, _ = form.save('receipt',[{'实际收货数量':37}])
+        saved = receipt['plans'][0]['payload']
+        self.assertEqual(saved['basis']['stage'],lifecycle.JST_ORDER)
+        self.assertEqual(saved['basis']['products']['0001']['quantity'],'40')
+        self.assertFalse(saved['pending'])
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'已收齐')
+        plan, _ = service.prepare_review(self.path,self.keys)
+        lifecycle.commit(self.path,plan)
+        current = lifecycle.snapshot(self.path,head)
+        self.assertTrue(current['health']['payment'])
+        self.assertTrue(current['health']['receipt'])
+        self.assertEqual(current['status'],'已收齐')
+        self.assertEqual(len(lifecycle.history(self.path,head,lifecycle.JST_ORDER)),1)
+
+    def test_delayed_manual_audit_is_read_only_and_withdrawal_blocks_old_receipt_plan(self):
+        send = self.portal.request
+
+        def interrupted(name, *, online, **kwargs):
+            if name == 'audit':
+                self.portal.orders[online]['native_status'] = '已付款待审核'
+                raise automatic.PlatformCheck('合成审核响应中断')
+            return send(name,online=online,**kwargs)
+
+        with patch.object(self.portal,'request',interrupted):
+            response = self.submit()
+        self.assertEqual((response['stage'],response['payment']['state']),('AUDIT_UNKNOWN','PAYMENT_SOURCE_PENDING'))
+        head = self.base.head
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
+        due = jobs.due_audited(self.path,now=datetime.fromisoformat(wr.now())+timedelta(minutes=6))
+        self.assertEqual(due,self.keys)
+        self.portal.orders[self.online]['native_status'] = audited.AUDITED
+        self.portal.detail_error = '合成付款商品明细暂不可读'
+        self.assertEqual(service.pull_audited(self.path,due,self.portal)[0]['state'],'RETRY_PAYMENT_READ')
+        order_view = lifecycle.snapshot(self.path,head)
+        self.assertEqual(order_view['status'],'待收货')
+        audited_at = order_view['documents'][lifecycle.JST_ORDER]['saved']
+        self.assertEqual([event for event,_ in self.portal.calls if event in ('import','audit')],['import'])
+
+        form = self.base.f.f
+        receipt = form.plan(form.scan('receipt',[{'实际收货数量':37}]))
+        self.portal.orders[self.online]['native_status'] = '已付款待审核'
+        withdrawn_at = datetime.fromisoformat(audited_at)+timedelta(seconds=1)
+        with patch.object(wr,'now',return_value=withdrawn_at.isoformat()):
+            service.pull_audited(self.path,self.keys,self.portal)
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
+        self.assertEqual(lifecycle.snapshot(self.path,head,as_of=audited_at)['status'],'待收货')
+        with self.assertRaisesRegex(ValueError,'上游单据在预览后变化'):
+            lifecycle.commit(self.path,receipt)
+        self.assertEqual(lifecycle.history(self.path,head,'receipt'),[])
 
     def test_disconnect_keeps_completed_audit_and_restarts_by_same_internal_order(self):
         self.portal.detail_error = '合成断线，原单整单明细暂不可读'

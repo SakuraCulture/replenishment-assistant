@@ -77,6 +77,8 @@ def start_smoke(app, win, args):
                     QTest.qWait(20)
                 assert runner.worker is None and calls == [True], runner.message
                 assert jobs.waiting_review(path) == [online] and not paid()
+                if audited:
+                    assert snapshot(path, head)['status'] == '待收货'
 
                 approve = False
 
@@ -124,6 +126,7 @@ def start_smoke(app, win, args):
                       **diagnostic()}
             if audited and not reopen:
                 result['single_order_xls'] = _large_xls(root, online)
+                result['receipt_pending_before_payment'] = True
         except Exception:
             result = {'passed': False, 'error': traceback.format_exc(), 'messages': messages}
         finally:

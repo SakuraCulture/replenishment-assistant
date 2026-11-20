@@ -3,7 +3,9 @@ from contextlib import closing
 from datetime import datetime, timedelta
 
 import jst_auto_order_store as orders
+from jst_customer_audit import AWAITING
 import jst_order_store as generations
+from lifecycle_rules import JST_ORDER
 import work_repository as wr
 from sqlite_write import begin
 
@@ -76,14 +78,24 @@ def due_audited(path, *, now=None, limit=10):
         sql = 'SELECT o.online ' + _ACTIVE_ORDERS
         if pending:
             sql += ' LEFT JOIN jst_fulfillment_checks c ON c.online=o.online'
-        sql += " WHERE o.internal IS NOT NULL AND o.stage IN ('AUDITED','AUDIT_UNKNOWN')"
+        sql += " WHERE o.internal IS NOT NULL AND o.stage IN ('IMPORTED','AUDITED','AUDIT_UNKNOWN')"
+        args = []
         if pending:
-            sql += """ AND (c.online IS NULL OR (c.state IN ('RETRY_PAYMENT_READ','WAIT_ALLOCATION','WAIT_CONNECTION')
-                AND julianday(c.observed)<=julianday(?)))"""
-        if orders.exists(db, 'lifecycle_versions'):
+            sql += """ AND (c.online IS NULL OR (julianday(c.observed)<=julianday(?) AND
+                (c.state IN ('RETRY_PAYMENT_READ','WAIT_ALLOCATION','WAIT_CONNECTION')
+                 OR (c.state='PAYMENT_SOURCE_PENDING' AND c.message=? AND o.stage IN ('IMPORTED','AUDIT_UNKNOWN'))"""
+            args.extend((cutoff.isoformat(),f'聚水潭当前为{AWAITING}，请核对普通审核及原单'))
+        has_lifecycle = orders.exists(db, 'lifecycle_versions')
+        if pending and has_lifecycle:
+            sql += """ OR (o.stage='AUDITED' AND c.state IN ('READY','NEEDS_REVIEW') AND NOT EXISTS(
+                    SELECT 1 FROM lifecycle_versions WHERE oid=o.oid AND revision=g.revision
+                    AND warehouse=o.warehouse AND stage=?))"""
+            args.append(JST_ORDER)
+        if pending:
+            sql += ')))'
+        if has_lifecycle:
             sql += ' ' + _UNPAID
         sql += ' ORDER BY c.observed,o.online' if pending else ' ORDER BY o.online'
-        args = (cutoff.isoformat(),) if pending else ()
         return [row[0] for row in db.execute(sql + ' LIMIT ?', (*args, max(1, min(10, limit))))]
 
 
