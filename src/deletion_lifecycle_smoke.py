@@ -1,9 +1,47 @@
 """Opt-in actual EXE acceptance; synthetic fixture, closed transport, no browser."""
 import json,os,sys,threading,time,traceback
+from contextlib import closing
 from pathlib import Path
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication,QCheckBox,QPushButton,QMessageBox,QDialog
 from PySide6.QtTest import QTest
+
+
+def pending_jst_check(win,head,messages):
+    import data_maintenance_ui as ui
+    import jst_auto_order_store as auto_orders
+    import normal_orders as normal
+    import work_repository as work
+    from ui_work_io import Session
+    from work_failures import WorkFailure
+
+    path=win.work_repository.path
+    online='BH'+'D'*24
+    payload={'head':head,'online':online,'gid':'synthetic-generation'}
+    with closing(win.work_repository.connect()) as db,db:
+        auto_orders.schema(db)
+        db.execute("INSERT INTO jst_auto_orders VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                   (online,head['oid'],head['warehouse'],payload['gid'],'IMPORTED',0,work.now(),work.now(),
+                    work.dumps(payload),auto_orders.token(payload),'fixture',b'fixture',None,'90001','awaiting','合成已导入'))
+    with Session(path) as session:
+        plan=session.call('delete_preview',[head],lambda _:None)
+        with closing(win.work_repository.connect()) as db,db:
+            task=auto_orders.read(db,online)
+            auto_orders.update(db,task,'AUDIT_UNKNOWN',reason='合成审核结果待核')
+        try:
+            session.call('delete_orders',{'plan':plan,'ack':True},lambda _:None)
+        except WorkFailure as error:
+            assert error.evidence['commit_state']=='not_started' and '未提交删除' in str(error)
+        else:
+            raise AssertionError('待核仓单在确认后仍被删除')
+    ui.remove(win,win,[head])
+    title,message=messages.pop()
+    assert title=='未完成删除' and all(t in message for t in (head['number'],'90001','审核结果待核','未提交删除'))
+    assert '归档已提交' not in message
+    assert normal.Repository(win.work_repository).get(head['day'],head['store']) is not None
+    return {'checks':['预览列出聚水潭审核待核的准确仓单','确认后出现待核时回滚整个删除并准确报告未提交'],
+            'blocked_dialog':message,'passed':True}
+
 
 def start_smoke(app,win,args):
     out=Path(args[0]).resolve();fixture=json.loads((out/'fixture.json').read_text('utf-8'))
@@ -34,6 +72,11 @@ def start_smoke(app,win,args):
             win.auto_check.stop();win.jst_generator.stopped=True;win.jst_generator.timer.stop()
             manager=win.aoxiang_workflows;manager.stopping=True;manager.timer.stop()
             heads=purchases.targets(win.work_repository.path);gone=next(h for h in heads if h['oid']=='oid');kept=next(h for h in heads if h['oid']=='other')
+            if 'jst-pending' in args[1:]:
+                win.jst_fulfillment_runner.timer.stop()
+                controls.timeout.connect(confirm);controls.start()
+                report.update(pending_jst_check(win,gone,messages))
+                return
             before=no.Repository(win.work_repository).get(kept['day'],kept['store'])
             package_id='purchase-'+'a'*32
             deletion_barrier.register_package(win.work_repository.path,'oid',package_id)

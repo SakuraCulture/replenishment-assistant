@@ -372,6 +372,45 @@ class AutoOrders(unittest.TestCase):
         self.configure(south,{**CONTACT,'buyer':'000888','address':'合成山东收货点'})
         return [*self.selected,{'head':south,'gid':r['generated'][0]}]
 
+    def test_pending_audit_blocks_only_selected_scope_and_reports_uncommitted_deletion(self):
+        from ui_work_io import Session
+        from work_failures import WorkFailure
+
+        selected=self.dual_selection()
+        heads=[r['head'] for r in selected]
+        keys=service.prepare(self.path,selected)['ready']
+        service.process(self.path,keys[:1],self.portal,'preview')
+        self.portal.disconnected=True
+        service.process(self.path,keys[:1],self.portal,'submit')
+        self.assertEqual(service.process(self.path,keys[:1],self.portal,'recover')[0]['stage'],'IMPORTED')
+        progress=[]
+        with Session(self.path) as session:
+            old_plan=session.call('delete_preview',heads,progress.append)
+            # Audit starts between the user's preview and confirmation.
+            with closing(store.connection(self.path)) as db,db:
+                original=store.read(db,keys[0])
+                store.update(db,original,'AUDIT_UNKNOWN',reason='合成普通审核结果待核')
+            before=[self.read(key,workbook=True) for key in keys]
+            with self.assertRaises(WorkFailure) as failed:
+                session.call('delete_orders',{'plan':old_plan,'ack':True},progress.append)
+            self.assertEqual(failed.exception.evidence['commit_state'],'not_started')
+            self.assertIn('未提交删除',str(failed.exception))
+            with self.assertRaises(WorkFailure) as blocked:
+                session.call('delete_preview',heads,progress.append)
+            for error in (failed.exception,blocked.exception):
+                self.assertIn(heads[0]['number'],str(error))
+                self.assertIn('审核结果待核',str(error))
+                self.assertIn('6001',str(error))
+                self.assertNotIn(heads[1]['number'],str(error))
+                self.assertNotIn('后续导出',str(error))
+            self.assertEqual([self.read(key,workbook=True) for key in keys],before)
+            south=session.call('delete_preview',heads[1:],progress.append)
+            removed=session.call('delete_orders',{'plan':south,'ack':True},progress.append)
+        self.assertEqual(removed['orders'],[heads[1]['number']])
+        self.assertTrue(any('删除已提交' in message for message in progress))
+        self.assertEqual(self.read(keys[0],workbook=True),before[0])
+        self.assertIsNone(self.read(keys[1]))
+
     def test_one_store_two_warehouses_have_independent_profiles_and_submit_keys(self):
         selected=self.dual_selection()
         result=service.prepare(self.path,selected)

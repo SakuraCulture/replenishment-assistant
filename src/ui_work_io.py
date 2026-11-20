@@ -9,7 +9,7 @@ from ui_controls import label,button
 from runtime_support import Cancelled,CommitProgress
 from work_transfer import TransferClosed,send_tree,receive_tree
 from work_io_process import serve
-from work_failures import FailureContext,WorkFailure,format_failure
+from work_failures import DELETION_OPERATIONS,FailureContext,WorkFailure,format_failure
 
 
 READ_OPERATIONS = frozenset(('prepare_save','prepare_normal','delivery_probe','delivery_prepare',
@@ -98,7 +98,8 @@ class Session:
                     continue
                 kind,data=self.connection.recv();activity()
                 if kind=='commit':
-                    context.commit_state='unknown' if data else 'committed';report(CommitProgress(data))
+                    context.commit_state='unknown' if data else 'committed'
+                    report(CommitProgress(data,deleting=operation in DELETION_OPERATIONS))
                 elif kind=='receipt':context.export_task=data
                 elif kind=='progress':report(data)
                 elif kind=='rows':
@@ -131,7 +132,7 @@ class Session:
                 cause=exc
             evidence=context.capture(cause,self.path)
             message=format_failure(evidence)
-            if self.writing and not context.export_task:
+            if self.writing and not context.export_task and operation not in DELETION_OPERATIONS:
                 message+='\n请在订单跟踪核对本次归档和导出任务后再继续。'
             raise WorkFailure(evidence,message) from exc
         finally:
@@ -188,10 +189,11 @@ class Progress(QDialog):
         self.clock=QTimer(self);self.clock.setInterval(500);self.clock.timeout.connect(self.update_health);self.clock.start();self.update_health()
     def commit_state(self,active):
         self.committed=self.committed or (self.committing and not active);self.committing=active;self.cancel_btn.setEnabled(not active and not self.cancelling and self.operation not in ('save','review_export'));self.cancel_btn.setText('正在提交，暂不能取消' if active or self.operation in ('save','review_export') else '停止剩余导出' if self.operation=='delivery_execute' and self.committed else '取消准备')
+        if self.committed and self.operation in DELETION_OPERATIONS:
+            self.cancel_btn.setEnabled(False);self.cancel_btn.setText('正在接收删除结果')
         if not active and self.cancel_after_commit:self.reject()
     def update_stage(self,text):
         self.last_progress=time.monotonic()
-        if self.operation in ('delete_orders','delete_job') and text=='归档已提交；可取消后续导出':text='正在核对删除结果…'
         if self.operation=='delivery_execute' and '写出确认单' in text:
             self.exporting=True;self.cancel_btn.setText('停止剩余导出')
         if not self.cancelling:self.note.setText(text)

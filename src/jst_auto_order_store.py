@@ -191,15 +191,37 @@ def list_orders(path):
                        internal,platform_status,reason FROM jst_auto_orders ORDER BY created DESC,rowid''')]
 
 
+def _deletion_scope(oid, warehouse):
+    if warehouse is None:
+        return 'oid=?', (oid,)
+    return 'oid=? AND warehouse=?', (oid,warehouse)
+
+
+def require_resolved_deletion(db, scopes):
+    """Check the selected warehouse orders before removal."""
+    if not exists(db):
+        return
+    blocked=[]
+    for oid,warehouse in scopes:
+        condition,arguments=_deletion_scope(oid,warehouse)
+        for number,wh,stage,online,internal in db.execute(
+                "SELECT json_extract(payload,'$.head.number'),warehouse,stage,online,internal "
+                "FROM jst_auto_orders WHERE "+condition+" AND stage IN (?,?) ORDER BY warehouse",
+                (*arguments,*UNRESOLVED)):
+            identity='内部单号 '+internal if internal else '线上单号 '+online
+            blocked.append(f'{number or oid} · {wh} · {STAGES[stage]} · {identity}')
+    if blocked:
+        raise wr.Conflict('请在“聚水潭导入单 → 自动下单任务”对以下仓单执行“核对原单”后，再重新核对删除范围。\n'
+                          +'\n'.join(sorted(blocked)))
+
+
 def delete_orders(db, scopes):
     if not exists(db):
         return
+    scopes=tuple(scopes)
+    require_resolved_deletion(db,scopes)
     for oid,warehouse in scopes:
-        condition='oid=?'+(' AND warehouse=?' if warehouse else '')
-        arguments=(oid,warehouse) if warehouse else (oid,)
-        if db.execute('SELECT 1 FROM jst_auto_orders WHERE '+condition+" AND stage IN ('IMPORT_UNKNOWN','AUDIT_UNKNOWN')",
-                      arguments).fetchone():
-            raise wr.Conflict('所选仓单的聚水潭导入或审核结果待核，请先从原自动下单任务核对原单')
+        condition,arguments=_deletion_scope(oid,warehouse)
         for table in ('jst_fulfillment_checks','jst_fulfillment_sources'):
             if exists(db,table):
                 db.execute('DELETE FROM '+table+' WHERE online IN (SELECT online FROM jst_auto_orders WHERE '+condition+')',arguments)
