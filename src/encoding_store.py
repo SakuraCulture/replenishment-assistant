@@ -196,6 +196,7 @@ class Store:
         self.last_tick = time.monotonic()
         self.encoded_bytes = 0
         self.pressure_fallbacks = 0
+        self.reused_row_orders = self.reused_row_blocks = self.reused_row_references = 0
 
     def _refresh(self, force=False):
         changed=self.resources.refresh(force=force)
@@ -236,6 +237,8 @@ class Store:
                     raw_bytes=self.raw_bytes, largest_raw_block=self.largest,
                     largest_compressed_block=self.largest_packed,
                     unique_blocks=len(self.index), reused_blocks=self.reused,
+                    reused_row_orders=self.reused_row_orders, reused_row_blocks=self.reused_row_blocks,
+                    reused_row_references=self.reused_row_references,
                     cache_bytes=self.cached, cache_peak_bytes=self.cache_peak,
                     cache_limit_bytes=self.cache_limit,
                     resource_budget=self.resources.stats(),pressure_fallbacks=self.pressure_fallbacks,
@@ -308,18 +311,18 @@ class Store:
         if not decoder.eof or size!=self.index[key][0] or h.hexdigest()!=key:
             raise ValueError('签发编码临时原文校验失败')
 
-    def read(self, key):
+    def read(self, key, *, use_cache=True):
         if self.closed: raise ValueError('签发编码临时文件已关闭')
         self._refresh()
         size, offset, length, expected = self.index[key]
-        if key in self.cache:
+        if use_cache and key in self.cache:
             data = self.cache.pop(key)
             try:self.cache[key] = data
             except MemoryError:self._pressure()
             yield data
             return
         self.file.seek(offset); remaining = length; h = hashlib.sha256()
-        small = bytearray() if length <= BUFFER else None
+        small = bytearray() if use_cache and length <= BUFFER else None
         while remaining:
             data = self.file.read(min(remaining, BUFFER))
             if not data: raise ValueError('签发编码临时内容块缺失')
@@ -336,11 +339,44 @@ class Store:
                 self.cached += length
                 self.cache_peak = max(self.cache_peak, self.cached)
 
-    def put(self, db, blocks, cancel):
+    def verify_row_block(self, db, key, size, require_saved, cancel):
+        """Verify the private frame and the actual SQLite row in the signing transaction."""
+        from runtime_support import checkpoint
+        raw_size, _, length, _ = self.index[key]
+        if raw_size != size:raise ValueError('私有商品行块长度不符')
+        row = db.execute('SELECT rowid,size FROM snapshot_chunks WHERE hash=?', (key,)).fetchone()
+        if row is None:
+            if require_saved:raise ValueError('资料库缺少已引用的商品行块')
+            rowid = db.execute('INSERT INTO snapshot_chunks VALUES(?,?,zeroblob(?))', (key,size,length)).lastrowid
+            with db.blobopen('snapshot_chunks','data',rowid) as blob:
+                for data in self.read(key,use_cache=False):
+                    checkpoint(cancel);blob.write(data)
+        else:
+            rowid, actual_size = row
+            if actual_size != size:raise ValueError('资料库商品行块长度不符')
+            # Verify the original private frame even when SQLite already has the block.
+            for _ in self.read(key,use_cache=False):checkpoint(cancel)
+        decoder = zlib.decompressobj()
+        digest = hashlib.sha256()
+        remaining = size
+        with db.blobopen('snapshot_chunks','data',rowid,readonly=True) as blob:
+            while data := blob.read(BUFFER):
+                checkpoint(cancel)
+                while data:
+                    raw = decoder.decompress(data,BUFFER)
+                    remaining -= len(raw)
+                    if remaining < 0 or decoder.unused_data:raise ValueError('资料库商品行块长度不符')
+                    digest.update(raw)
+                    data = decoder.unconsumed_tail
+        if not decoder.eof or remaining != 0 or digest.hexdigest()!=key:
+            raise ValueError('资料库商品行块内容哈希不符')
+
+    def put(self, db, blocks, cancel, *, checked_rows=()):
         from runtime_support import checkpoint
         for key in blocks:
             checkpoint(cancel)
             size, _, length, _ = self.index[key]
+            if (key,size) in checked_rows:continue
             before = db.total_changes
             db.execute('INSERT OR IGNORE INTO snapshot_chunks VALUES(?,?,zeroblob(?))', (key, size, length))
             inserted = db.total_changes != before

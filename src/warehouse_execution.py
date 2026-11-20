@@ -86,7 +86,7 @@ def _digest(payload):
     return normal_orders.fingerprint_owned(payload['result'],payload.get('new_focus'))
 
 
-def _store_snapshot(db,oid,warehouse,source_revision,child_revision,identity_digest,saved,payload,progress,cancel,prepared=None,checked_digest=None):
+def _store_snapshot(db,oid,warehouse,source_revision,child_revision,identity_digest,saved,payload,progress,cancel,prepared=None,checked_digest=None,checked_rows=()):
     if prepared is None:
         projected=project(payload,warehouse);digest=_digest(projected)
         encoded=chunks.prepare(projected,chunks.known(db),progress,binding=digest)
@@ -94,7 +94,7 @@ def _store_snapshot(db,oid,warehouse,source_revision,child_revision,identity_dig
         encoded=prepared;digest=checked_digest
         if encoded.binding!=digest:raise wr.Conflict('预编码仓单与当前内容不一致，请重新核对')
     db.execute('INSERT OR IGNORE INTO warehouse_execution_revisions VALUES(?,?,?,?,?,?,?,?)',
-        (oid,warehouse,source_revision,child_revision,identity_digest,digest,saved,chunks.put(db,encoded,cancel=cancel)))
+        (oid,warehouse,source_revision,child_revision,identity_digest,digest,saved,chunks.put(db,encoded,cancel=cancel,checked_rows=checked_rows)))
     return digest
 
 
@@ -148,7 +148,7 @@ def ensure_parent(db,oid,progress=lambda _:None,cancel=None,*,prepared=None):
         db.execute("INSERT INTO warehouse_execution_heads VALUES(?,?,?,?,'active',0)",(oid,warehouse,revision,child_revision))
 
 
-def publish(db,oid,source_revision,identity_digest,saved,payload,selected,progress=lambda _:None,cancel=None,*,prepared=None):
+def publish(db,oid,source_revision,identity_digest,saved,payload,selected,progress=lambda _:None,cancel=None,*,prepared=None,checked_rows=()):
     """Publish only the explicitly selected children; leave other heads exact."""
     schema(db)
     if not selected or len(selected)!=len(set(selected)) or any(w not in warehouses(payload) for w in selected):
@@ -167,7 +167,7 @@ def publish(db,oid,source_revision,identity_digest,saved,payload,selected,progre
         child_revision=(old.get('child_revision',0) if old else 0)+1
         if prepared is not None and warehouse not in prepared:raise wr.Conflict('预编码仓单已失效，请重新核对')
         _store_snapshot(db,oid,warehouse,source_revision,child_revision,identity_digest,saved,payload,progress,cancel,
-                        prepared=prepared.get(warehouse) if prepared is not None else None,checked_digest=snapshot_digest)
+                        prepared=prepared.get(warehouse) if prepared is not None else None,checked_digest=snapshot_digest,checked_rows=checked_rows)
         db.execute("INSERT INTO warehouse_execution_heads VALUES(?,?,?,?,'active',0) ON CONFLICT(oid,warehouse) DO UPDATE SET source_revision=excluded.source_revision,child_revision=excluded.child_revision,state='active'",(oid,warehouse,source_revision,child_revision))
         result.append(warehouse)
     return result

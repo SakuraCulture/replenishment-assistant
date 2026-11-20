@@ -11,6 +11,7 @@ from version_info import MODEL_VERSION
 from io_stages import stage
 from export_progress import RowProgress,prefixed
 from lifecycle_routes import schema as route_schema
+import signing_row_blocks
 
 RESULT_DIGEST_EXCLUSIONS = ('created', 'task', 'version')
 
@@ -203,25 +204,36 @@ class Repository:
         changed_job=not planned_job or planned_job[1]!=digest
         work_revision=uuid.uuid4().hex if changed_job else planned_job[0]
 
-        prepared=[];heads=[]
+        prepared=[];heads=[];row_sources={};reused={}
         focus_revision=focus.validate(payload['new_focus'])['revision'] if payload.get('new_focus') is not None else None
         for index,s in enumerate(codes,1):
             progress(RowProgress(f'准备正常单：{index-1} / {len(codes)} 家 · {s}',index-1,len(codes)))
             store_progress=prefixed(progress,f'门店 {index}/{len(codes)} · {s}')
             result=payload['results'][s];current=planned[s]
-            with stage('校验门店业务指纹',store_progress):
-                h=chunks.business_digest(work_pack,('results',s),focus_revision) or fingerprint_owned(result,payload.get('new_focus'))
             if current:
                 oid,number,prev,old_digest,saved=current
             else:
                 oid=str(uuid.uuid4());number='BH-'+day.replace('-','')+'-'+quote(s,safe='')+'-ZC';prev=0;saved=stamp
+            head={'oid':oid,'number':number,'day':day,'store':s,'revision':prev+1}
+            with stage('校验门店业务指纹',store_progress):
+                h=signing_row_blocks.source_digest(work_pack,head,selected_warehouses[s],focus_revision) or fingerprint_owned(result,payload.get('new_focus'))
             same=bool(current and old_digest==h);rev=prev if same else prev+1
-            heads.append({'oid':oid,'number':number,'day':day,'store':s,'revision':rev,'current_revision':rev,'digest':h,'saved':saved if same else stamp})
+            if same and changed_job:
+                # A replaced draft must not hide stale rows merely because their
+                # business hash matches the already issued parent.
+                signing_row_blocks.find(work_pack,store,work_revision,head,selected_warehouses[s],result['rows'],cancel)
+            head.update(revision=rev,current_revision=rev,digest=h,saved=saved if same else stamp)
+            heads.append(head)
             if not same:
                 record={'schema':1,'model_version':MODEL_VERSION,'work_revision':work_revision,'result':result,'preset':payload.get('store_presets',{}).get(s),'new_focus':copy.deepcopy(payload.get('new_focus')),'item_ids':{d['E']:item_id(oid,d['E']) for d in result['rows']}}
-                encoded=chunks.prepare(record,progress=store_progress,binding=h,store=store)
+                source=row_sources[s]=signing_row_blocks.find(work_pack,store,work_revision,head,selected_warehouses[s],result['rows'],cancel)
+                if source is None:encoded=chunks.prepare(record,progress=store_progress,binding=h,store=store)
+                else:
+                    encoded=source.prepare(record,store_progress,h)
+                    reused[s]=(source,None)
                 if (chunks.business_digest(encoded,('result',),focus_revision) or fingerprint_owned(result,payload.get('new_focus')))!=h:
-                    raise wr.Conflict('签发准备期间门店内容发生变化，请重新核对')
+                    where=f"门店 {s} · {'、'.join(selected_warehouses[s])} · 签发修订 {rev}"
+                    raise wr.Conflict(where+'：签发准备期间门店内容发生变化，请重新核对')
                 prepared.append((s,oid,number,rev,h,encoded,result['summary']))
             progress(RowProgress(f'准备正常单：{index} / {len(codes)} 家',index,len(codes)))
         result=record=None
@@ -247,14 +259,20 @@ class Repository:
                         # unchanged. The writer still performs its normal check.
                         expected.append(old_child);continue
                     projected=execution.project(record,warehouse)
-                    encoded=chunks.prepare(projected,progress=progress,store=store)
+                    if s not in row_sources:
+                        row_sources[s]=signing_row_blocks.find(work_pack,store,work_revision,head,selected_warehouses[s],record['result']['rows'],cancel)
+                    source=row_sources[s]
+                    if source is not None:source.check_projection(record['result']['rows'],projected['result']['rows'],warehouse)
+                    encoded=chunks.prepare(projected,progress=progress,store=store) if source is None else source.prepare(projected,progress)
                     projected_digest=chunks.business_digest(encoded,('result',),focus_revision) or execution._digest(projected)
                     encoded.binding=projected_digest;old_child=previous.get(warehouse)
                     if old_child and old_child.get('snapshot_digest')==projected_digest:expected.append(old_child)
                     else:
                         expected.append(execution._head(head,warehouse,head['revision'],head['digest'],head['saved'],(old_child or {}).get('child_revision',0)+1,projected_digest))
                         publications[s][warehouse]=encoded
+                        if source is not None:reused[s]=(source,signing_row_blocks.child_identity(expected[-1]))
                 head['warehouse_heads']=expected
+            present=signing_row_blocks.existing(db,reused,day)
         record=projected=None
         # Export recovery can persist these exact planned identities before the
         # transaction starts. Their existence is still checked against the DB;
@@ -277,8 +295,9 @@ class Repository:
             deletion_barrier.validate(db,deletion_barrier.basis(payload))
             for s in codes:verify_result(db,payload['results'][s],required=bool(payload.get('admission_required')))
             old=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
-            if (old[0] if old else None)!=expected_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')
-            if old!=planned_job:raise wr.Conflict('当天草稿已被另一窗口更新，请重新查看并确认')
+            if (old[0] if old else None)!=expected_job or old!=planned_job:
+                first=heads[0];where=signing_row_blocks.location(first,'、'.join(selected_warehouses[first['store']]))
+                raise wr.Conflict(f'当天草稿已被另一窗口更新，请重新查看并确认（本批首单 {where}）')
             # Compare all expected revisions before any mutation.
             for s in codes:
                 from archive_orders import require_active
@@ -287,16 +306,22 @@ class Repository:
                         child_state=execution.state(db,planned[s][0],warehouse)
                         if not child_state or child_state['state']!='not_participating':require_active(db,planned[s][0],warehouse)
                         elif __import__('archive_orders').states(db).get((planned[s][0],warehouse),{}).get('deleted'):raise wr.Conflict('所选仓单在回收站，请先恢复')
-                        if execution.state(db,planned[s][0],warehouse)!=planned_children[s][warehouse]:raise wr.Conflict('所选仓单已被其他窗口更改，请重新核对：'+warehouse)
+                        if execution.state(db,planned[s][0],warehouse)!=planned_children[s][warehouse]:
+                            where=signing_row_blocks.location(next(h for h in heads if h['store']==s),warehouse)
+                            raise wr.Conflict(f'所选仓单已被其他窗口更改，请重新核对：{where}')
                 current=db.execute("SELECT current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,s)).fetchone()
-                if (current[0] if current else None)!=expected_orders.get(s):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)
-                if (current[0] if current else None)!=(planned[s][2] if planned[s] else None):raise wr.Conflict('正常单已更新，请重新查看差异：'+s)
+                current_revision=current[0] if current else None
+                if current_revision!=expected_orders.get(s) or current_revision!=(planned[s][2] if planned[s] else None):
+                    where=signing_row_blocks.location(next(h for h in heads if h['store']==s),'、'.join(selected_warehouses[s]))
+                    raise wr.Conflict(f'正常单已更新，请重新查看差异：{where}')
+            checked_rows=signing_row_blocks.verify(db,work_pack,work_revision,heads,{v[0]:v[5] for v in prepared},
+                                                    publications,reused,present,changed_job,cancel)
             # Legacy parents already represented both warehouses. Convert them
             # before changing their global calculation revision, then pin only
             # the explicitly selected child heads to the new result.
             for s in codes:
                 if planned[s]:execution.ensure_parent(db,planned[s][0],progress=progress,cancel=cancel,prepared=legacy[s])
-            if changed_job or prepared:compressed=chunks.put(db,work_pack,cancel=cancel)
+            if changed_job or prepared:compressed=chunks.put(db,work_pack,cancel=cancel,checked_rows=checked_rows)
             if changed_job:
                 if old:db.execute('INSERT OR IGNORE INTO normal_work_revisions SELECT revision,day,payload FROM jobs WHERE day=?',(day,))
                 db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET revision=excluded.revision,digest=excluded.digest,saved=excluded.saved,summary=excluded.summary,payload=excluded.payload',(day,work_revision,digest,stamp,wr.dumps(info),compressed))
@@ -306,7 +331,7 @@ class Repository:
                     db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',(day,s,'normal_model',oid,number,rev))
                 # Keep the issue's complete input/config draft even after later ordinary draft saves.
                 db.execute('INSERT OR IGNORE INTO normal_work_revisions SELECT revision,day,payload FROM jobs WHERE day=?',(day,))
-                db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,rev,h,stamp,chunks.put(db,encoded,cancel=cancel)))
+                db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,rev,h,stamp,chunks.put(db,encoded,cancel=cancel,checked_rows=checked_rows)))
                 db.execute('UPDATE normal_orders SET current=? WHERE oid=?',(rev,oid))
                 if payload.get('lifecycle_flow',1)>=2:
                     route_schema(db)
@@ -318,7 +343,11 @@ class Repository:
                         'result':payload['results'][s],'preset':payload.get('store_presets',{}).get(s),
                         'new_focus':copy.deepcopy(payload.get('new_focus')),
                         'item_ids':{d['E']:item_id(head['oid'],d['E']) for d in payload['results'][s]['rows']}}
-                execution.publish(db,head['oid'],head['revision'],head['digest'],head['saved'],record,selected_warehouses[s],progress,cancel,prepared=publications[s])
+                try:
+                    execution.publish(db,head['oid'],head['revision'],head['digest'],head['saved'],record,selected_warehouses[s],progress,cancel,prepared=publications[s],checked_rows=checked_rows)
+                except wr.Conflict as exc:
+                    if s not in reused:raise
+                    raise wr.Conflict(f'{reused[s][0].location}：{exc}') from exc
                 head['warehouse_heads']=[h for h in execution.heads(db,[head]) if h['warehouse'] in selected_warehouses[s]]
             progress('事务内容准备完成，检查最终取消请求…')
             checkpoint(cancel)
