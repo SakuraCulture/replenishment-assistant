@@ -36,7 +36,7 @@ const pages = {
     '<button id="importTab" role="tab" onclick="selectTab(false)" aria-selected="true">导入订单</button>'+
     '<iframe id="listing" src="'+listPath+'" hidden></iframe>'+
     '<iframe id="upload" src="/app/order/import/import.aspx"></iframe><iframe id="epaasDialogFrame" src="/empty" hidden></iframe>'+
-    '<script>window.statusValue="";window.importCount=0;window.auditCount=0;window.otherAction=0;'+
+    '<script>window.statusValue="";window.itemPopoverAvailable=true;window.importCount=0;window.auditCount=0;window.otherAction=0;'+
     'function selectTab(list){listing.hidden=!list;upload.hidden=list;listTab.setAttribute("aria-selected",String(list));'+
     'importTab.setAttribute("aria-selected",String(!list));}</script>',
   '/app/order/import/import.aspx': '<form id="form1" action="import_show.aspx" method="post" enctype="multipart/form-data">'+
@@ -81,7 +81,7 @@ const pages = {
       '<div class="_jt_row"><div class="_jt_cell_o_id"><div class="o_id">9001</div></div>'+
       '<div class="_jt_cell_so_id">'+online+'</div><div class="_jt_cell_shop_buyer_id"><span>'+contact.buyer+'</span>'+
       '<div class="shopname">'+shop+'</div></div><div class="_jt_cell_pay_amount">20.00</div>'+
-      '<div class="_jt_cell_items" onclick="details.hidden=false">明细</div>'+
+      '<div class="_jt_cell_items" onclick="if(parent.itemPopoverAvailable)details.hidden=false">明细</div>'+
       '<div class="_jt_cell_checked"><input type="checkbox" id="selected"></div></div>')+':"";'+
     '_jt_pagebar.textContent=count?"共 "+count+"条 1/1页":"总共 1 页 0 条记录";details.hidden=true;}'+
     'function audit(){if(document.querySelectorAll("._jt_row input:checked").length===1&&selected.checked){'+
@@ -93,7 +93,7 @@ async function openFixture(t,{large=[],split=false}={}){
   const nativeItem=(sku,qty)=>({sku_id:sku,qty,price:'2',amount:String(Number(qty)*2)});
   const nativeItems=large.length ? large.map(([sku,qty])=>nativeItem(sku,qty)) : [nativeItem('00001','10')];
   const nativeOrder=state=>({o_id:'9001',so_id:online,shop_name:shop,co_id:'55',shop_id:'102',
-    status:{waitconfirm:'已付款待审核',waitfconfirm:'已客审待财审',sent:'已发货'}[state],
+    status:{waitconfirm:'已付款待审核',waitfconfirm:'已客审待财审',delivering:'发货中',sent:'已发货'}[state],
     item_actual_count:nativeItems.length,shop_buyer_id:contact.buyer,pay_amount:'20.00',freight:'0'});
   const server=http.createServer(async (req,res)=>{
     if(req.method==='POST' && req.url===listPath) {
@@ -214,16 +214,28 @@ test('single-SKU rows split by the platform are blocked before import',
   assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[0,0,0]);
 });
 
-test('recover and audit an existing platform order without importing',{skip:!fs.existsSync(edge),timeout:60000},async t=>{
-  const {page,account,flow}=await openFixture(t);
-  await page.evaluate(()=>{statusValue='waitconfirm';});
-  const bound={...spec,phase:'IMPORT_UNKNOWN',binding:{warehouse:wh,shop,coid:account.expectedCoid,
+test('recover and audit an existing 232-item order without a product popover or reimport',
+  {skip:!fs.existsSync(edge),timeout:60000},async t=>{
+  const lines=Array.from({length:232},(_,i)=>[String(i+1).padStart(5,'0'),i<165?'21':'20']);
+  const {page,account,flow}=await openFixture(t,{large:lines});
+  await page.evaluate(()=>{statusValue='waitconfirm';itemPopoverAvailable=false;});
+  // No import_format is stored for the existing multi-product task.
+  const bound={...spec,lines,phase:'IMPORT_UNKNOWN',binding:{warehouse:wh,shop,coid:account.expectedCoid,
     uid:account.expectedUid,company:account.expectedCompany,version:account.bindingVersion,shop_id:'102'}};
   const found=await flow.run('lookup',{spec:bound},account);
   assert.equal(found.internal,'9001');
-  assert.deepEqual(found.lines,[['00001','10','2.00']]);
+  assert.deepEqual(found.lines.map(row=>row.slice(0,2)),lines);
   assert.equal(found.status,'awaiting');
   const exact={...bound,internal:found.internal};
+  const detailUrl='**/order-facts?*';
+  await page.route(detailUrl,async route=>{
+    const response=await route.fetch();
+    const order=await response.json();
+    order.items.pop();
+    await route.fulfill({response,json:order});
+  });
+  await assert.rejects(flow.run('stage_audit',{spec:exact},account),/原生整单明细没有完整商品范围/);
+  await page.unroute(detailUrl);
   const next=await flow.run('stage_audit',{spec:exact},account);
   await flow.run('audit',{warehouse:wh,permit:next.permit,online,internal:exact.internal},account);
   const audited=await flow.run('lookup',{spec:{...exact,phase:'AUDIT_UNKNOWN'}},account);

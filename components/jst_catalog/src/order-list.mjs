@@ -157,13 +157,14 @@ export async function readOrder(page, frame, spec, {pendingOnly=false,nativeOnly
     if (!order) continue;
     const details = frame.locator('.full_item_table').filter({visible:true});
     let lines;
-    if (spec.import_format==='SingleCommodity') {
-      // Read the same full-detail callback as the product popover.
+    if (order.native || spec.import_format==='SingleCommodity') {
+      // Both import formats can read the complete order without opening the popover.
       const identity=order.native;
-      if (!identity||identity.coid!==spec.binding?.coid||identity.shop_id!==spec.binding?.shop_id)
-        fail('查回的整单企业或店铺标识与原任务不同');
+      if (!identity||identity.internal!==order.internal||identity.online!==spec.online||identity.shop!==spec.shop
+          ||identity.coid!==spec.binding?.coid||identity.shop_id!==spec.binding?.shop_id)
+        fail('查回的整单企业、店铺或订单标识与原任务不同');
       const full=await fullOrder(frame,{...spec,internal:order.internal},{
-        coid:identity.coid,shop_id:identity.shop_id,count:spec.lines.length},signal);
+        coid:identity.coid,shop_id:identity.shop_id,count:spec.lines?.length??Number(identity.count)},signal);
       if (!full.contact_ok||full.native_status!==statuses[key][1])
         fail('查回的整单买家或状态与原任务不同');
       lines=full.lines;
