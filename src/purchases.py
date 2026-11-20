@@ -6,7 +6,9 @@ from decimal import Decimal
 import work_repository as wr
 import result_semantics as sem,merchant_feedback,archive_orders as ao,warehouse_orders as wo
 import warehouse_execution as execution
-from history_read import repository
+from archive_orders import history_groups
+from normal_orders import read_repository as repository
+from warehouse_execution import validate_visibility as validate_head
 from runtime_support import checkpoint
 from purchase_io import number
 from export_progress import RowProgress
@@ -50,14 +52,6 @@ def documents(path,progress=lambda _:None,cancel=None):
         out=[]
         for i,did in enumerate(ids):checkpoint(cancel);out.append(current(db,did));progress(RowProgress(f'采购资料 {i+1}/{len(ids)}',i+1,len(ids)))
         return out
-
-def history_groups(result,profile):
-    """Preserve old unlabelled warehouse rows as review-only, never guess a route."""
-    grouped=sem.signed_groups(result,profile);out={}
-    for wh in (*wo.WAREHOUSES,ao.LEGACY):
-        subset={sheet:[d for d in rows if ao.warehouse(d)==wh] for sheet,rows in grouped.items()}
-        if any(subset.values()):out[wh]=subset
-    return out
 
 def targets(path,scopes=None,progress=lambda _:None,cancel=None,*,current_only=False,numbers=None):
     repo=repository(path);out=[]
@@ -130,10 +124,6 @@ def retain_links(scan,docs):
         if match and {k:v for k,v in fact(r).items() if k!='links'}=={k:v for k,v in fact(match).items() if k!='links'}:
             r['links']=copy.deepcopy(match['links']);r['identity_reviewed']=True
     return out
-
-def validate_head(db,h):
-    execution.validate(db,h)
-    if ao.states(db,oid=h['oid'],warehouse=h['warehouse']).get((h['oid'],h['warehouse']),{}).get('token',0)!=h.get('visibility_token',0):raise wr.Conflict('归档可见性已变化，请重新核对')
 
 def prepare(path,scanned,progress=lambda _:None,cancel=None):
     checkpoint(cancel);groups={};repo=repository(path);signed={}

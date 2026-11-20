@@ -7,17 +7,18 @@ or stale proofs simply fall back to the original full decoder. Nothing is
 persisted to lifecycle payloads, schemas, files or database caches.
 """
 import hashlib,hmac,secrets
-import work_repository as wr
+import snapshot_json as codec
+from order_keys import warehouse_revision
 
 _KEY=secrets.token_bytes(32)
 
 
 def identity(head,stage):
-    return [head['oid'],head['revision'],head['warehouse'],stage]
+    return [*warehouse_revision(head), stage]
 
 
 def _mac(value):
-    return hmac.new(_KEY,wr.dumps(value).encode('utf-8'),hashlib.sha256).hexdigest()
+    return hmac.new(_KEY,codec.dumps(value).encode('utf-8'),hashlib.sha256).hexdigest()
 
 
 def make(head,stage,row,document):
@@ -34,7 +35,7 @@ def make(head,stage,row,document):
         if 'basis' in p:
             if type(p['basis']) is not dict:return None
             value['basis']={k:p['basis'][k] for k in ('dependencies',) if k in p['basis']}
-        signed=[identity(head,stage),version,saved,digest,hashlib.sha256(raw.encode('utf-8')).hexdigest(),wr.dumps(value)]
+        signed=[identity(head,stage),version,saved,digest,hashlib.sha256(raw.encode('utf-8')).hexdigest(),codec.dumps(value)]
         return {'value':signed,'mac':_mac(signed)}
     except (KeyError,TypeError,ValueError):
         return None  # An unsupported shape must use the original decoder.
@@ -49,6 +50,6 @@ def reuse(head,stage,row,proof):
         version,saved,digest,raw=row
         if value[:4]!=[identity(head,stage),version,saved,digest] or not isinstance(raw,str):return None
         if value[4]!=hashlib.sha256(raw.encode('utf-8')).hexdigest():return None
-        return {'version':version,'saved':saved,'digest':digest,'payload':wr.loads(value[5])}
+        return {'version':version,'saved':saved,'digest':digest,'payload':codec.loads(value[5])}
     except (KeyError,TypeError,ValueError):
         return None

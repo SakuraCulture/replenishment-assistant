@@ -93,13 +93,18 @@ export class AccountSessions {
     }
     return endpoint;
   }
-  async connect(account,signal){
+  async connect(account,signal,{retainedOnly=false}={}){
     if(this.closed)throw new CatalogError('SESSION_CLOSED','采集服务已关闭');
+    const key=sha(canonical(account.binding));
+    const retained=()=>this.sessions.get(key);
+    const unavailable=()=>new CatalogError('SESSION_NOT_RETAINED','等待本仓已核验连接，后台实配未打开浏览器');
+    if(retainedOnly&&(!retained()||!this.healthy(retained())))throw unavailable();
     await this.initialize();check(signal);
     const binding=await this.binding({profilePath:account.binding.actualProfilePath,edgeExecutable:account.binding.edgeExecutable});
     if(!sameBinding(binding,account.binding,this.storageAliases))throw new CatalogError('BINDING_CHANGED','本机专用浏览器绑定已变化，请重新核验');
-    const key=sha(canonical(account.binding));let cached=this.sessions.get(key);
+    const cached=retained();
     if(cached&&this.healthy(cached))return cached;
+    if(retainedOnly)throw unavailable();
     if(cached){await cached.close().catch(()=>{});this.sessions.delete(key);}
     if(!this.instanceLocks.has(key)){
       const file=path.join(this.lockRoot,sha(binding.userDataRoot.toLowerCase())+'.sqlite3');
@@ -132,8 +137,8 @@ export class AccountSessions {
     this.sessions.delete(key);this.instanceLocks.get(key)?.release();this.instanceLocks.delete(key);
     this.connectionStates.set(key,{state:'DISCONNECTED',reason:'已主动断开本仓；下次连接可能需要重新允许'});
   }
-  async page(account,signal,{loginOnly=false,waitForLogin=false}={}){
-    const bridge=await this.connect(account,signal);check(signal);
+  async page(account,signal,{loginOnly=false,waitForLogin=false,retainedOnly=false}={}){
+    const bridge=await this.connect(account,signal,{retainedOnly});check(signal);
     await bridge.page.goto('https://www.erp321.com/epaas',{waitUntil:'domcontentloaded',timeout:60000});check(signal);
     if(loginOnly){await bridge.page.bringToFront();return bridge.page;}
     await bridge.page.waitForFunction(()=>document.querySelector('a[class^=menuItem]')||document.querySelector('input[type=password]')||/扫码登录|密码登录|账号登录/.test(document.body?.innerText||''),null,{timeout:30000});check(signal);
@@ -149,7 +154,7 @@ export class AccountSessions {
       }
       check(signal);
     }else if(login){
-      await bridge.page.bringToFront();
+      if(!retainedOnly)await bridge.page.bringToFront();
       throw new CatalogError('LOGIN_REQUIRED','该仓需要正常登录；登录完成后继续本仓，另一仓可以继续');
     }
     return bridge.page;

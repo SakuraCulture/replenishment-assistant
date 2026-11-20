@@ -273,6 +273,9 @@ class QueueDialog(QDialog):
         self.table = QTableWidget(0, 8)
         self.table.setHorizontalHeaderLabels(['选择', '门店', '仓', '补货单号', '本项状态', '款数 / 采购金额', '平台采购单', '提示'])
         self.table.setColumnCount(9);self.table.setHorizontalHeaderItem(8,QTableWidgetItem('单项操作'))
+        header = self.table.horizontalHeader()
+        header.setSectionsClickable(True)
+        header.sectionClicked.connect(self.toggle_batch_header)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.cellDoubleClicked.connect(lambda *_:self.details())
         self.table.itemChanged.connect(self.check_controls)
@@ -309,6 +312,13 @@ class QueueDialog(QDialog):
         self.check_controls()
         self.refresh()
 
+    def toggle_batch_header(self, column):
+        if column == 0:
+            if self.select_all_btn.isEnabled():
+                self.set_batch_checks(True)
+            elif self.clear_checks_btn.isEnabled():
+                self.set_batch_checks(False)
+
     def set_batch_checks(self, checked):
         state = Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked
         with QSignalBlocker(self.table):
@@ -331,6 +341,9 @@ class QueueDialog(QDialog):
         self.select_all_btn.setEnabled(selected < available)
         self.clear_checks_btn.setEnabled(selected > 0)
         self.selection_count.setText(f'已勾选 {selected} 单')
+        header = self.table.horizontalHeaderItem(0)
+        header.setText('全选' if selected < available else '清空' if selected else '选择')
+        header.setToolTip('点击勾选本批所有可选项，包含滚动区域之外的订单；全选后再次点击清空。')
 
     def open_receipts(self):
         if not self.current:

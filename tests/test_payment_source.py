@@ -69,18 +69,49 @@ class PaymentSources(unittest.TestCase):
         self.assertIsNone(self.f.view()['documents']['payment'])
     def test_task_cancel_failure_retry_and_upstream_change(self):
         import jst_batches as batches
+        def persisted():
+            with closing(sqlite3.connect(self.path)) as db:
+                existing = {name for name, in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+                tables = ('jst_tasks', 'jst_batches', 'jst_batch_members', 'jst_steps',
+                          'jst_runs', 'jst_generations', 'jst_active', 'jst_reservations')
+                return {name: db.execute('SELECT * FROM '+name+' ORDER BY rowid').fetchall()
+                        if name in existing else [] for name in tables}
+
+        before_cancel = persisted()
+        self.assertTrue(before_cancel['jst_tasks'])
         e=threading.Event();e.set()
         with self.assertRaises(Cancelled):tasks.drain(self.path,self.f.root,cancel=e)
+        self.assertEqual(persisted(), before_cancel)
         self.f.save('return',[{'门店确认数量':25}])
+        before_preview = persisted()
         p=batches.preview_new(self.path,[self.h],{'河北仓':catalog(stock=100,step=24,price=2.5)})
-        self.assertEqual(p['payload']['plans'][0]['summary']['quantity'],'24')
-        self.assertEqual(p['payload']['plans'][0]['summary']['issues'],0)
+        plan = p['payload']['plans'][0]
+        self.assertEqual(len(plan['rows']), 1)
+        fields = ('sku', 'demand', 'step', 'carton_demand', 'carton_increment', 'quantity', 'before', 'after', 'amount')
+        self.assertEqual(tuple(plan['rows'][0][field] for field in fields),
+                         ('0001', '25', '24', '48', '23', '48', '100', '52', '120.0'))
+        self.assertEqual(plan['summary']['quantity'], '48')
+        self.assertEqual(plan['summary']['issues'], 0)
+        self.assertEqual(persisted(), before_preview)
+
         self.f.save('return',[{'门店确认数量':24}])
+        before_stale_execute = persisted()
         with self.assertRaisesRegex(ValueError,'回传依据'):batches.execute(self.path,p)
+        self.assertEqual(persisted(), before_stale_execute)
         p=batches.preview_new(self.path,[self.h],{'河北仓':catalog(stock=100,step=24,price=2.5)})
         result=batches.execute(self.path,p);self.assertFalse(result['errors'])
         with closing(sqlite3.connect(self.path)) as db:gid=j.active(db,self.h)
-        self.assertEqual(j.get(self.path,gid)['rows'][0]['quantity'],'24')
+        saved = j.get(self.path, gid)
+        self.assertEqual(result['generated'], [gid])
+        self.assertEqual(saved['rows'], p['payload']['plans'][0]['rows'])
+        self.assertEqual(tuple(saved['rows'][0][field] for field in fields),
+                         ('0001', '24', '24', '24', '0', '24', '100', '76', '60.0'))
+        written = persisted()
+        self.assertEqual(len(written['jst_generations']), 1)
+        self.assertEqual(len(written['jst_steps']), 1)
+        self.assertEqual(written['jst_reservations'], [(gid, '0001', '24')])
+        self.assertEqual(batches.execute(self.path,p), result)
+        self.assertEqual(persisted(), written)
     def test_payment_in_same_commit_skips_automatic_allocation(self):
         self.f.save('payment');before=self.stock();tasks.drain(self.path,self.f.root);self.assertEqual(before,self.stock())
     def test_confirmed_return_tasks_are_atomic_on_cancel(self):

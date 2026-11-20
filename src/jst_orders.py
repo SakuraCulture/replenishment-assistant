@@ -19,114 +19,15 @@ import storage_chunks
 import jst_allocation as allocation
 from runtime_support import checkpoint, CommitProgress, Cancelled
 from export_progress import RowProgress
-
-
-def digest(value):
-    return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
-
-
-def exists(db):
-    return bool(db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_generations'").fetchone())
-
-
-def schema(db):
-    for sql in (
-        'CREATE TABLE IF NOT EXISTS jst_baselines(bid TEXT PRIMARY KEY,warehouse TEXT NOT NULL,created TEXT NOT NULL,payload TEXT NOT NULL,digest TEXT NOT NULL)',
-        'CREATE TABLE IF NOT EXISTS jst_warehouses(warehouse TEXT PRIMARY KEY,bid TEXT NOT NULL,serial INTEGER NOT NULL)',
-        'CREATE TABLE IF NOT EXISTS jst_generations(gid TEXT PRIMARY KEY,operation TEXT UNIQUE NOT NULL,oid TEXT NOT NULL,revision INTEGER NOT NULL,warehouse TEXT NOT NULL,day TEXT NOT NULL,saved TEXT NOT NULL,payload TEXT NOT NULL,digest TEXT NOT NULL)',
-        'CREATE TABLE IF NOT EXISTS jst_active(oid TEXT,warehouse TEXT,gid TEXT NOT NULL,PRIMARY KEY(oid,warehouse))',
-        'CREATE TABLE IF NOT EXISTS jst_headers(gid TEXT PRIMARY KEY,payload TEXT NOT NULL)',
-        'CREATE TABLE IF NOT EXISTS jst_locks(oid TEXT,warehouse TEXT,gid TEXT NOT NULL,locked INTEGER NOT NULL,at TEXT NOT NULL,reason TEXT NOT NULL,PRIMARY KEY(oid,warehouse))',
-        'CREATE TABLE IF NOT EXISTS jst_reservations(gid TEXT,sku TEXT,quantity TEXT NOT NULL,PRIMARY KEY(gid,sku))',
-        'CREATE TABLE IF NOT EXISTS jst_events(id INTEGER PRIMARY KEY,at TEXT,day TEXT,oid TEXT,warehouse TEXT,action TEXT,detail TEXT)',
-        'CREATE TABLE IF NOT EXISTS jst_files(sha TEXT PRIMARY KEY,name TEXT,content BLOB)',
-        'CREATE TABLE IF NOT EXISTS jst_runs(runid TEXT PRIMARY KEY,created TEXT,payload TEXT,digest TEXT)',
-        'CREATE TABLE IF NOT EXISTS jst_steps(operation TEXT PRIMARY KEY,runid TEXT NOT NULL,result TEXT NOT NULL)',
-        'CREATE INDEX IF NOT EXISTS jst_event_day ON jst_events(day,id)',
-        'CREATE INDEX IF NOT EXISTS jst_generation_order ON jst_generations(oid,warehouse)',
-    ):
-        db.execute(sql)
-
-
-def state(db, warehouse):
-    if not exists(db):
-        return None
-    return db.execute('SELECT bid,serial FROM jst_warehouses WHERE warehouse=?', (warehouse,)).fetchone()
-
-
-def active(db, head):
-    if not exists(db):
-        return None
-    row = db.execute('SELECT gid FROM jst_active WHERE oid=? AND warehouse=?', (head['oid'], head['warehouse'])).fetchone()
-    return row[0] if row else None
-
-
-def locked(db, head):
-    if not exists(db):
-        return None
-    row = db.execute('SELECT gid FROM jst_locks WHERE oid=? AND warehouse=? AND locked=1', (head['oid'], head['warehouse'])).fetchone()
-    return row[0] if row else None
-
-
-def guard_resign(db, oid):
-    if exists(db) and db.execute('SELECT 1 FROM jst_active WHERE oid=?', (oid,)).fetchone():
-        raise wr.Conflict('本单已有聚水潭生成记录；请先在订单跟踪核对下游，不能覆盖签发绕过库存占用或锁单')
-
-
-def guard_return(db, head):
-    if locked(db, head):
-        raise wr.Conflict('该订单已下单锁定；请先通过更正已锁订单核对外部执行，不能直接覆盖回传')
-
-
-def event(db, head, action, detail):
-    db.execute('INSERT INTO jst_events(at,day,oid,warehouse,action,detail) VALUES(?,?,?,?,?,?)',
-               (wr.now(), head.get('day', wr.today()), head.get('oid'), head.get('warehouse'), action, wr.dumps(detail)))
-
-
-def decode(row):
-    if not row:
-        return None
-    value = wr.loads(row[0])
-    if digest(value) != row[1]:
-        raise ValueError('聚水潭快照校验失败')
-    return value
-
-
-def get(path, gid, progress=lambda _: None, cancel=None):
-    checkpoint(cancel)
-    with closing(sqlite3.connect(path)) as db:
-        if not exists(db):
-            raise ValueError('没有已保存生成单')
-        value = decode(db.execute('SELECT payload,digest FROM jst_generations WHERE gid=?', (gid,)).fetchone())
-        if value is None:
-            raise ValueError('生成单不存在')
-        if value.get('gid') != gid:
-            raise ValueError('生成记录标识与快照不一致')
-        return value
-
-
-def baseline(db, warehouse):
-    current = state(db, warehouse)
-    if current is None:
-        return None
-    return decode(db.execute('SELECT payload,digest FROM jst_baselines WHERE bid=?', (current[0],)).fetchone())
+from jst_order_guards import allocation_gate, guard_payment, guard_resign, guard_return, saved_execution_reason
+from jst_order_store import active, baseline, decode, digest, event, exists, get, locked, schema, state
 
 
 def catalogs(path, folder=None, progress=lambda _: None, cancel=None):
-    """Shared current stock wins over a stale default. This is a read-only query."""
-    defaults = warehouse_catalog.Repository(folder).catalogs() if folder else {}
-    out = {}
-    with closing(sqlite3.connect(path)) as db:
-        for wh in warehouse_catalog.WAREHOUSES:
-            checkpoint(cancel); b = baseline(db, wh)
-            if b:
-                out[wh] = {'bid': b['bid'], 'catalog': b['catalog'], 'current': True}
-                default=defaults.get(wh)
-                if default and default['revision']!=b['catalog']['revision']:
-                    out[wh]['selection_note']='默认资料与当前库存基准版本不同；默认导入 '+str(default.get('imported_at') or '时间未留存')+'。本次当前选用上方库存基准；需要默认资料时点“采用已保存仓资料”。'
-            elif wh in defaults:
-                out[wh] = {'bid': None, 'catalog': defaults[wh], 'current': False}
-    return out
+    """The same current warehouse data used by replenishment."""
+    checkpoint(cancel)
+    current=warehouse_catalog.Repository(folder or Path(path).parent).catalogs()
+    return {wh:{'catalog':catalog} for wh,catalog in current.items()}
 
 
 def prepare_refresh(path, warehouse, source=None, catalog=None, operation=None, progress=lambda _: None, cancel=None):
@@ -188,34 +89,6 @@ def return_basis(db, head):
     return basis, rows, doc['saved'] if doc else legacy['saved'], copy.deepcopy(head['products']) if doc is None else None
 
 
-def previous_payment_for_return(db, head, payment):
-    """Only a confirmed payment invalidated by a newer return can be corrected.
-
-    Keep the payment fact; its exact token is frozen and checked again at commit.
-    Pending/legacy documents and receipt facts do not acquire this permission.
-    """
-    if not payment:return None
-    p=payment['payload'];basis=p.get('basis',{});dependencies=basis.get('dependencies',{})
-    if (p.get('schema')!=lc.SCHEMA or p.get('pending') or not basis.get('ready')
-            or basis.get('signed_digest')!=head['digest']
-            or not dependencies.get('return')):return None
-    expected=lc.upstream(db,{**head,'products':{}},'payment')
-    if dependencies==expected['dependencies']:return None
-    if not lc.upstream(db,{**head,'products':{}},'payment')['ready']:return None
-    return lc.rules.basis_token(payment)
-
-
-def allocation_gate(db, head, old, correction=False):
-    """Return a blocker and, for a return correction, the old payment token."""
-    if locked(db,head):return '已锁单',None
-    if lc.current(db,head,'receipt'):return '已有收货记录，请先核对收货事实，不能直接重新分配',None
-    payment=lc.current(db,head,'payment')
-    previous=previous_payment_for_return(db,head,payment) if correction else None
-    if payment and not previous:return '已有付款记录，当前回传未形成可更正的旧付款依据，请先核对付款',None
-    if old and not correction:return '已生成，原样导出或选择重新分配',None
-    return None,previous
-
-
 def reservations(db, wh, included, exclude=()):
     values = {}
     for gid, sku, qty in db.execute('SELECT a.gid,r.sku,r.quantity FROM jst_active a JOIN jst_reservations r ON a.gid=r.gid WHERE a.warehouse=? ORDER BY a.rowid,r.rowid', (wh,)):
@@ -230,10 +103,10 @@ def reservations(db, wh, included, exclude=()):
     return values
 
 
-def prepare_checked(path,heads,manual_order=False,correction=False,progress=lambda _:None,cancel=None,*,batch=None):
-    return prepare(path,heads,manual_order,correction,progress,cancel,enforce_admission=True,batch=batch)
+def prepare_checked(path,heads,manual_order=False,correction=False,progress=lambda _:None,cancel=None,*,batch=None,current_catalogs=None):
+    return prepare(path,heads,manual_order,correction,progress,cancel,enforce_admission=True,batch=batch,current_catalogs=current_catalogs)
 
-def prepare(path, heads, manual_order=False, correction=False, progress=lambda _: None, cancel=None,*,enforce_admission=False,batch=None):
+def prepare(path, heads, manual_order=False, correction=False, progress=lambda _: None, cancel=None,*,enforce_admission=False,batch=None,current_catalogs=None):
     import jst_batches
     runid = uuid.uuid4().hex; orders = []; skipped = []; states = {}; bases = {}; seen = set()
     with closing(sqlite3.connect(path)) as db:
@@ -279,14 +152,18 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
         plans = []
         if enforce_admission:
             from admission import execution_evidence
-            current_catalogs=warehouse_catalog.Repository(Path(path).parent).catalogs()
+            versions=(batch or {}).get('current_versions',{})
+            if current_catalogs is None:
+                current_catalogs,versions=warehouse_catalog.Repository(Path(path).parent).snapshots()
             defaults={w:c['revision'] for w,c in current_catalogs.items()}
-            # Stock/price/carton remain frozen in b. Current maintained tags must
-            # never be overwritten by that older inventory snapshot.
+            # A legacy stock pointer is a fallback for inventory, not a published
+            # label source for an explicitly selected same-warehouse catalog.
+            maintained={w:c for w,c in current_catalogs.items()
+                        if w not in bases or not str(versions.get(w)).startswith('legacy:')}
             catalogs={w:base['catalog'] for w,base in bases.items()}
-            catalogs.update(current_catalogs)
-            admission_sources={w:{'kind':'current_default' if w in current_catalogs else 'explicit_stock_baseline',
-                                  'revision':c['revision'],'bid':None if w in current_catalogs else bases[w]['bid']}
+            catalogs.update(maintained)
+            admission_sources={w:{'kind':'current_default' if w in maintained else 'explicit_stock_baseline',
+                                  'revision':c['revision'],'bid':None if w in maintained else bases[w]['bid']}
                                for w,c in catalogs.items()}
         for i, o in enumerate(orders):
             checkpoint(cancel); wh=o['head']['warehouse']; b=bases[wh]
@@ -295,6 +172,12 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                 evidence=execution_evidence(path,o['head']['store'],wh,[r['sku'] for r in o['rows']],catalogs=catalogs,db=db)
                 evidence['default_catalog_revisions']=defaults
                 evidence['catalog_sources']=admission_sources
+                current=current_catalogs.get(wh,{})
+                if current and current['revision']!=b['catalog']['revision']:
+                    for sku, entry in evidence['items'].items():
+                        live=current['items'].get(sku)
+                        issue=allocation.status_issue(live) if live is not None else ''
+                        if issue:entry['reasons'].append('当前仓资料：'+issue)
                 o['rows']=[{**r,'_admission_error':'；'.join(evidence['items'][r['sku']]['reasons'])} for r in o['rows']]
             rows = allocation.allocate(o['rows'], b['catalog']['items'], balances[wh])
             value = {'gid': uuid.uuid4().hex, 'operation': runid+':'+str(i), 'rule': allocation.RULE,
@@ -414,7 +297,7 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                         put_generation(db,p)
                     else:
                         if v['correction'] and p['old']:db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(p['head']['oid'],p['head']['warehouse']))
-                        event(db,p['head'],'库存不足未生成',{'rows':p['rows'],'runid':v['runid']})
+                        event(db,p['head'],'库存不足未生成',{'rows':p['rows'],'runid':v['runid'],'batch_id':p.get('batch_id')})
                     db.execute('INSERT INTO jst_steps VALUES(?,?,?)',(p['operation'],v['runid'],wr.dumps({'gid':p['gid'] if p['summary']['positive'] else None,'number':p['head']['number']})))
                     jst_batches.record(db,p)
                 for w in whs:
@@ -490,6 +373,11 @@ def _lock_once(path,orders,reason,unlock,progress,cancel,deadline):
         for p in orders:
             checkpoint(cancel);h=p['head'];purchases.validate_head(db,h)
             if active(db,h)!=p['gid']:raise wr.Conflict('生成单已变化，请重新核对')
+            if unlock:
+                from jst_auto_order_store import RELEASED,state as automatic_state
+                auto=automatic_state(db,h)
+                if auto and auto[0] in RELEASED:
+                    raise ValueError('此单已有自动下单记录，请继续核对原平台订单')
             if unlock and (lc.current(db,h,'payment') or lc.current(db,h,'receipt')):raise ValueError('已有实际付款／收货，不能解除保护覆盖下游事实')
             if not unlock:
                 if lc.upstream(db,{**h,'products':p.get('signed_products',p['basis']['products'])},'payment')!=p['basis']:raise wr.Conflict('回传已变化，不能锁定旧生成单')
@@ -526,11 +414,6 @@ def payment_plan(path, gid, progress=lambda _:None, cancel=None):
     return {'plans':[plan],'files':[], 'jst_generation':gid}
 
 
-def guard_payment(db, p):
-    gid=p['payload'].get('jst_generation')
-    if gid and active(db,p['head'])!=gid:raise wr.Conflict('付款草稿对应生成单已变化，请重新核对')
-
-
 def cancel_generated(path,gids,reason,progress=lambda _:None,cancel=None):
     import jst_batches
     if not reason.strip():raise ValueError('撤销生成单须填写原因')
@@ -541,7 +424,9 @@ def cancel_generated(path,gids,reason,progress=lambda _:None,cancel=None):
         for p in orders:
             checkpoint(cancel);h=p['head'];purchases.validate_head(db,h)
             if active(db,h)!=p['gid']:raise wr.Conflict('生成单已变化，请重新核对')
-            if locked(db,h) or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):raise ValueError('已锁或已有付款／收货，不可作为未下单生成单撤销')
+            reason=saved_execution_reason(db,h)
+            if reason or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):
+                raise ValueError((reason or '已有付款或收货资料')+'，不可作为未下单生成单撤销')
         for p in orders:
             h=p['head'];db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(h['oid'],h['warehouse']))
             jst_batches.cancel_member(db,h,p['gid'])

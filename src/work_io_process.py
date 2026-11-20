@@ -1,7 +1,8 @@
 """Isolated daily-work I/O. Dual-format storage and fixed-revision projections; no Qt in the worker."""
 import hashlib,sqlite3,json,os,tempfile
 from pathlib import Path
-from contextlib import closing
+from contextlib import closing,ExitStack
+import draft_spool
 import work_repository as wr
 from work_transfer import send_tree,receive_tree
 from runtime_support import checkpoint
@@ -22,9 +23,16 @@ def compact_previous(record):
         'profile':{'revision':(p.get('profile') or {}).get('revision')}}}
 
 
+def _staged_arguments(arguments):
+    payload,*rest=arguments
+    payload['results']=draft_spool.StoreResults(payload['results'])
+    if 'new_focus' in payload:payload['new_focus']=draft_spool.native(payload['new_focus'])
+    return [payload,*draft_spool.native(rest)]
+
+
 def serve(connection,path,cancel):
     payload=None;encoded_job=None;save_day=None;old=None;batch=None;review_json=None;review_records=None;review_draft=None;expected_job=None;expected_orders=None;codes=None;ro=reader(path);work=wr.Repository.open_existing(path)
-    failure_context=None
+    failure_context=None;drafts=ExitStack()
     def progress(text):
         if failure_context is not None:failure_context.progress(text)
         # RowProgress is a str subclass with a multi-argument constructor; carry
@@ -36,12 +44,20 @@ def serve(connection,path,cancel):
         while True:
             command=connection.recv()
             if command is None:return
-            failure_context=FailureContext(command)
+            op,name=command if isinstance(command,tuple) and len(command)==2 else (command,None)
+            failure_context=FailureContext(op)
             try:
-                op=command
                 if op in ('prepare_save','prepare_normal','delivery_prepare','delivery_probe'):
+                    drafts.close();batch=None;payload=None
                     review_json=None;review_records=None;review_draft=None
-                arguments,_=receive_tree(connection,cancel)
+                if name is None:
+                    arguments,_=receive_tree(connection,cancel)
+                else:
+                    if op not in draft_spool.OPERATIONS:raise ValueError('该作业不能读取临时签发草稿')
+                    progress('正在读取签发草稿临时文件…')
+                    tree=drafts.enter_context(draft_spool.open_draft(path,name,cancel,
+                        lambda n:progress(f'正在读取签发草稿：已核对 {n:,} 个数据块')))
+                    arguments=_staged_arguments(tree)
                 checkpoint(cancel);writing=op in ('save','confirm_normal','delivery_execute','review_export','storage_copy','delete_orders','delete_job')
                 if op=='prepare_save':
                     encoded_job=None;payload=arguments;progress('正在校验完整作业并核对同日记录…')
@@ -67,7 +83,7 @@ def serve(connection,path,cancel):
                     if len(arguments)>2:payload['execution_warehouses']={**payload.get('execution_warehouses',{}),**arguments[2]}
                     repository=normal_orders.Repository.from_existing_work(ro)
                     progress('正在核对正常单与完整差异…')
-                    focus.require_for(payload.get('new_focus'),payload['day'],[payload['results'][code] for code in codes])
+                    focus.require_for(payload.get('new_focus'),payload['day'],(payload['results'][code] for code in codes))
                     head=normal_delivery.job_head(ro,payload['day']);expected_job=head['revision'] if head else None;expected_orders={};details={};lines=[];review_records=[]
                     for code in codes:
                         progress(f'核对正常单 {codes.index(code)+1}/{len(codes)} · {code}')
@@ -109,11 +125,15 @@ def serve(connection,path,cancel):
                         # Confirmation released only private preview objects.
                         # Recreate the same review on demand after a failed run.
                         import order_review,normal_orders
+                        from review_json import Prepared,Records
                         repository=normal_orders.Repository.from_existing_work(ro)
-                        review_records=[order_review.build(repository.get(p['old']['day'],p['store'],p['old']['revision']) if p['old'] else None,
-                            batch['payload']['results'][p['store']],batch['payload'].get('new_focus')) for p in batch['plans'] if not p['same']]
-                        from review_json import Prepared
-                        review_json=Prepared(review_records,canonical=True,cancel=cancel)
+                        review_records=Records(path);drafts.callback(review_records.close)
+                        for p in batch['plans']:
+                            checkpoint(cancel)
+                            if not p['same']:
+                                review_records.append(order_review.build(repository.get(p['old']['day'],p['store'],p['old']['revision']) if p['old'] else None,
+                                    batch['payload']['results'][p['store']],batch['payload'].get('new_focus')))
+                        review_json=Prepared(review_records,canonical=True,cancel=cancel,series=True)
                     if review_json is None:raise ValueError('尚未生成完整差异')
                     destination=Path(arguments)
                     if destination.suffix.lower()=='.xlsx':
@@ -131,23 +151,30 @@ def serve(connection,path,cancel):
                     result=str(destination)
                 elif op in ('delivery_prepare','delivery_probe'):
                     import normal_orders,normal_delivery
-                    batch=None;supplied,codes=arguments[:2];warehouses=arguments[2] if len(arguments)>2 else None;repository=normal_orders.Repository.from_existing_work(ro)
-                    with stage('核对导出修订',progress):batch=normal_delivery.prepare_owned_batch(repository,supplied,codes,progress=progress,cancel=cancel,warehouses=warehouses)
-                    batch['complete']=op=='delivery_prepare'
                     import order_review
-                    review_records=[order_review.build(p['old'],batch['payload']['results'][p['store']],supplied.get('new_focus')) for p in batch['plans'] if not p['same']]
-                    from review_json import Prepared
-                    review_json=Prepared(review_records,canonical=True,cancel=cancel)
+                    from review_json import Prepared,Records
+                    batch=None;supplied,codes=arguments[:2];warehouses=arguments[2] if len(arguments)>2 else None;repository=normal_orders.Repository.from_existing_work(ro)
+                    review_records=Records(path);drafts.callback(review_records.close);shown=[]
+                    def reviewed(plan, current):
+                        if not plan['same']:
+                            review_records.append(order_review.build(plan['old'],current,supplied.get('new_focus')))
+                        if plan['old']:
+                            plan['old']={k:v for k,v in plan['old'].items() if k!='payload'}
+                        shown.append({**plan,'name':current['store_name'],'amount':current['summary']['amount']})
+                    with stage('核对导出修订',progress):
+                        batch=normal_delivery.prepare_owned_batch(repository,supplied,codes,progress=progress,cancel=cancel,warehouses=warehouses,on_plan=reviewed)
+                    batch['complete']=op=='delivery_prepare'
+                    review_json=Prepared(review_records,canonical=True,cancel=cancel,series=True)
                     review_draft={'原草稿':batch['head'],'本次草稿':supplied.get('_draft_summary',wr.summary(batch['payload']))}
-                    result={'head':batch['head'],'summary':supplied.get('_draft_summary',wr.summary(batch['payload'])), 'plans':[],**order_review.preview(review_records)}
-                    for plan in batch['plans']:
-                        r=batch['payload']['results'][plan['store']]
-                        result['plans'].append({**{k:v for k,v in plan.items() if k!='old'},'old':{k:v for k,v in plan['old'].items() if k!='payload'} if plan['old'] else None,'name':r['store_name'],'amount':r['summary']['amount']})
+                    result={'head':batch['head'],'summary':review_draft['本次草稿'],'plans':shown,**order_review.preview(review_records)}
                 elif op=='delivery_expand':
                     if batch is None:raise ValueError('缺少已核对的导出批次')
                     tail,order=arguments
-                    values={**tail['results'],**batch['payload']['results']}
-                    tail['results']={s:values[s] for s in order}
+                    pending=draft_spool.result_source(tail['results'])
+                    checked=draft_spool.result_source(batch['payload']['results'])
+                    ordered={s:checked[s] if s in checked else pending[s] for s in order}
+                    tail['results']=draft_spool.StoreResults(ordered) if name is not None else ordered
+                    del pending,checked,ordered
                     tail['execution_warehouses']={**tail.get('execution_warehouses',{}),**batch.get('warehouses',{})}
                     wr.summary(tail);batch['payload']=tail;batch['complete']=True;result=True
                 elif op=='delivery_execute':
@@ -163,7 +190,8 @@ def serve(connection,path,cancel):
                     try:result=normal_delivery.execute_batch(repository,executing,arguments,progress=progress,cancel=cancel,consume=True,
                                                              on_receipt=lambda task:connection.send(('receipt',task)))
                     finally:
-                        if executing.get('consumed'):batch=None
+                        if executing.get('consumed'):
+                            batch=None;drafts.close()
                 elif op in ('delete_preview','delete_orders','delete_job'):
                     import data_maintenance as maintenance
                     if op=='delete_preview':result=maintenance.inspect_deletion(path,arguments,progress,cancel)
@@ -184,5 +212,10 @@ def serve(connection,path,cancel):
                 else:
                     evidence=failure_context.capture(exc,path)
                     connection.send(('error',{'type':'WorkFailure','message':str(exc) if isinstance(exc,WorkFailure) else format_failure(evidence),'evidence':evidence}))
+                if name is not None:
+                    drafts.close();batch=None;payload=None;expected_orders=None
+                    review_json=None;review_records=None;review_draft=None
     except (EOFError,BrokenPipeError,OSError):pass
-    finally:connection.close()
+    finally:
+        try:drafts.close()
+        finally:connection.close()

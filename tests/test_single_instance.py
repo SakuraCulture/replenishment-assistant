@@ -9,12 +9,20 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication,QWidget
 from PySide6.QtCore import QTimer
 from single_instance import SingleInstance
-root=Path(sys.argv[1]);app=QApplication([]);lease=SingleInstance(sys.argv[2],folder=root/'locks')
+root=Path(sys.argv[1])
+
+class ObservedInstance(SingleInstance):
+    def activate(self):
+        super().activate()
+        # The production handler replies OK after activate returns.
+        w=self.window
+        (root/'state').write_text(json.dumps({'visible':w.isVisible(),'minimized':w.isMinimized()}))
+
+app=QApplication([]);lease=ObservedInstance(sys.argv[2],folder=root/'locks')
 if not lease.acquire():sys.exit(0)
 w=QWidget();lease.bind(w);w.showMinimized();w.hide()
-(root/'ready').write_text(str(__import__('os').getpid()))
+ready=root/'ready.tmp';ready.write_text(str(__import__('os').getpid()));ready.replace(root/'ready')
 def tick():
-    (root/'state').write_text(json.dumps({'visible':w.isVisible(),'minimized':w.isMinimized()}))
     if (root/'stop').exists():app.quit()
 t=QTimer();t.timeout.connect(tick);t.start(50);QTimer.singleShot(20000,app.quit)
 app.exec();lease.close()
@@ -42,7 +50,7 @@ class SingleInstanceTests(unittest.TestCase):
                 self.assertTrue((root/'ready').exists());pid=(root/'ready').read_text()
                 second=subprocess.run(args,env=env,capture_output=True,timeout=18)
                 self.assertEqual(second.returncode,0,second.stderr.decode(errors='replace'));self.assertIsNone(first.poll());self.assertEqual((root/'ready').read_text(),pid)
-                time.sleep(.15);state=json.loads((root/'state').read_text());self.assertTrue(state['visible']);self.assertFalse(state['minimized'])
+                state=json.loads((root/'state').read_text());self.assertTrue(state['visible']);self.assertFalse(state['minimized'])
                 # Only this synthetic GUI process is killed to emulate a crash;
                 # it has no database, workers, commits or platform connection.
                 first.kill();first.wait(timeout=5);(root/'ready').unlink();(root/'state').unlink(missing_ok=True)

@@ -15,6 +15,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import daily_batch
 import lifecycle_home
+import lifecycle_facts
 import normal_orders as normal
 import order_lifecycle as lifecycle
 import work_repository as wr
@@ -38,6 +39,14 @@ def seed(root,total=13):
     return work,repo
 
 
+def mark_generation(work,oid):
+    import jst_order_store
+    with closing(work.connect()) as db,db:
+        jst_order_store.schema(db)
+        db.execute('INSERT INTO jst_headers VALUES(?,?)',(oid,wr.dumps({'revision':1,'return':'old','summary':{'amount':'10.00'}})))
+        db.execute('INSERT INTO jst_active VALUES(?,?,?)',(oid,'河北仓',oid))
+
+
 class FilterExplanationTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.root=Path(self.temp.name)
@@ -47,8 +56,8 @@ class FilterExplanationTests(unittest.TestCase):
     def test_opt_in_keeps_original_result_contract_and_has_no_extra_detail_reads(self):
         # Warm the disposable cache so both requests perform identical source work.
         daily_batch.read(self.path,self.cache,self.request)
-        original_get=normal.Repository.get;original_current=lifecycle.current
-        with patch.object(normal.Repository,'get',autospec=True,side_effect=original_get) as get,patch.object(lifecycle,'current',side_effect=original_current) as current:
+        original_get=normal.Repository.get;original_current=lifecycle_facts.current
+        with patch.object(normal.Repository,'get',autospec=True,side_effect=original_get) as get,patch.object(lifecycle_home,'current',side_effect=original_current) as current:
             original=daily_batch.read(self.path,self.cache,self.request);before=(get.call_count,current.call_count)
             explained=self.read();after=(get.call_count-before[0],current.call_count-before[1])
         explanation=explained.pop('filter_explanation')
@@ -84,6 +93,23 @@ class FilterExplanationTests(unittest.TestCase):
         excluded=data['filter_explanation']['excluded'];self.assertEqual(len(excluded),12)
         self.assertEqual(next(r for r in excluded if r['oid']=='synthetic-001')['reason_codes'],['scope'])
         self.assertEqual(next(r for r in excluded if r['oid']=='synthetic-012')['reason_codes'],['scope','stage'])
+
+    def test_payment_generation_filter_uses_current_warehouse_order_and_explains_exclusions(self):
+        mark_generation(self.work,'synthetic-000')
+        request={'stage_view':'payment','warehouse':'河北仓','scope':[['synthetic-000','河北仓'],['synthetic-001','河北仓']]}
+        both=self.read(**request)
+        self.assertEqual([r['oid'] for r in both['records']],['synthetic-000','synthetic-001'])
+        self.assertIn('依据已变化',both['records'][0]['note'])
+        generated=self.read(**request,jst_generation='generated',all_matched=True)
+        missing=self.read(**request,jst_generation='missing')
+        self.assertEqual([r['oid'] for r in generated['records']],['synthetic-000'])
+        self.assertEqual([r['oid'] for r in missing['records']],['synthetic-001'])
+        excluded=next(r for r in missing['filter_explanation']['excluded'] if r['oid']=='synthetic-000')
+        self.assertEqual(excluded['reason_codes'],['jst_generation'])
+        self.assertIn('该单“已生成导入单”',excluded['reasons'][0])
+        with closing(self.work.connect()) as db,db:db.execute('DELETE FROM jst_active WHERE oid=?',('synthetic-000',))
+        self.assertEqual(self.read(**request,jst_generation='missing')['count'],2)
+        self.assertEqual(self.read(**{**request,'stage_view':'operations'},jst_generation='generated')['count'],2)
     def test_explanation_matches_original_filter_membership_across_filter_modes(self):
         requests=[{}, {'stage_view':None}, {'stage_filter':'待处理'},
                   {'warehouse':'山东仓'}, {'lock':'已锁'}, {'lock':'未锁'},
@@ -181,7 +207,30 @@ class FilterExplanationUiTests(unittest.TestCase):
         query={**self.request,'stage_filter':'待处理'}
         self.panel.query_ready(daily_batch.read(self.work.path,self.root/'cache.sqlite3',query),query)
         self.assertIn('日期/关键词范围 13 单',self.panel.note.text());self.assertIn('符合当前筛选 0 单',self.panel.note.text())
+
         self.assertEqual(self.panel.excluded_btn.text(),'查看未显示订单（13）');self.assertTrue(self.panel.excluded_btn.isEnabled())
+
+    def test_payment_generation_control_queries_and_clears_checked_scope(self):
+        from lifecycle_home_ui import LifecycleWidget
+        mark_generation(self.work,'synthetic-000')
+        panel=LifecycleWidget(self.host,'payment')
+        with patch.object(panel.reader,'request') as query:
+            panel.generation_filter.setCurrentText('已生成导入单')
+            request,ready=query.call_args.args[:2]
+            self.assertEqual(request['jst_generation'],'generated')
+            ready(daily_batch.read(self.work.path,self.root/'cache.sqlite3',request))
+            self.assertEqual([r['oid'] for r in panel.records],['synthetic-000'])
+            panel.select_page(True)
+            self.assertEqual(len(panel.checked),1)
+            panel.generation_filter.setCurrentText('未生成导入单')
+            request,ready=query.call_args.args[:2]
+            self.assertEqual(request['jst_generation'],'missing')
+            self.assertFalse(panel.checked)
+            ready(daily_batch.read(self.work.path,self.root/'cache.sqlite3',request))
+            self.assertNotIn('synthetic-000',[r['oid'] for r in panel.records])
+            panel.clear_filters()
+            self.assertIsNone(query.call_args.args[0]['jst_generation'])
+        panel.shutdown()
 
 
 if __name__=='__main__':unittest.main()

@@ -17,7 +17,22 @@ class LifecycleWidget(QWidget):
         v=QVBoxLayout(self);v.setContentsMargins(0,0,0,0);v.addWidget(label(self.STAGES.get(stage,'日批次总览 · 看进度，进入对应环节处理'),'section'));filters=QHBoxLayout();self.start=QLineEdit(wr.today());self.end=QLineEdit(wr.today())
         for e in (self.start,self.end):e.setMaximumWidth(120);e.setPlaceholderText('YYYY-MM-DD')
         filters.addWidget(label('业务日期'));filters.addWidget(self.start);filters.addWidget(label('至'));filters.addWidget(self.end);self.search=QLineEdit();self.search.setPlaceholderText('门店 / 仓 / 补货单号 / 聚水潭内部订单号 / 翱象采购单号');self.search.setClearButtonEnabled(True);filters.addWidget(self.search,1);filters.addWidget(button('查询',self.query));filters.addWidget(button('全部未完成（不限日期）',self.all_pending));v.addLayout(filters)
-        self.status=QComboBox();self.status.addItems((['待生成','已生成未锁','已锁','本环节全部'] if stage=='jst' else ['待处理','本环节全部']) if stage else ['全部记录','全部未完成',*daily_batch.STATUSES]);row=QHBoxLayout();row.addWidget(self.status);self.warehouse_filter=QComboBox();self.warehouse_filter.addItems(['全部仓','河北仓','山东仓']);row.addWidget(self.warehouse_filter);self.lock_filter=QComboBox();self.lock_filter.addItems(['全部锁状态','已锁','未锁']);row.addWidget(self.lock_filter);row.addWidget(label('按日期看进度；库存分配按明确选择的批次，锁单不等于付款。','muted'),1);v.addLayout(row);self.status.currentIndexChanged.connect(self.query);self.warehouse_filter.currentIndexChanged.connect(self.query);self.lock_filter.currentIndexChanged.connect(self.query);self.search.returnPressed.connect(self.query)
+        self.status=QComboBox();self.status.addItems((['待生成','已生成','本环节全部'] if stage=='jst' else ['待处理','本环节全部']) if stage else ['全部记录','全部未完成',*daily_batch.STATUSES])
+        self.warehouse_filter=QComboBox();self.warehouse_filter.addItems(['全部仓','河北仓','山东仓'])
+        row=QHBoxLayout()
+        for combo in (self.status,self.warehouse_filter):
+            row.addWidget(combo);combo.currentIndexChanged.connect(self.query)
+        self.generation_filter=None
+        if stage=='payment':
+            self.generation_filter=QComboBox()
+            self.generation_filter.addItem('全部生成状态',None)
+            for value,title in daily_batch.GENERATION_FILTERS.items():
+                self.generation_filter.addItem(title,value)
+            self.generation_filter.setToolTip('按仓单是否有当前聚水潭导入单分组。依据已变化的生成单仍会显示原有待核提示。')
+            self.generation_filter.currentIndexChanged.connect(self.query)
+            row.addWidget(self.generation_filter)
+        row.addWidget(label('按日期查看进度。库存分配按所选批次处理。','muted'),1)
+        v.addLayout(row);self.search.returnPressed.connect(self.query)
         self.cards={};row=QHBoxLayout()
         for title in daily_batch.STATUSES:
             key={'待回传':'return','待运营签发':'operations','待付款':'payment','待收货':'receipt'}.get(title)
@@ -50,19 +65,18 @@ class LifecycleWidget(QWidget):
             maintenance=QWidget();layout=QHBoxLayout(maintenance);layout.addWidget(label('永久删除包含关联数据，请先勾选并核对范围。','muted'));layout.addWidget(button('彻底删除勾选订单',lambda:remove(self,self.host,list(self.checked.values()))));maintenance.hide()
             row.addWidget(button('订单维护',lambda:maintenance.setVisible(not maintenance.isVisible())));v.addWidget(maintenance)
             self.actions.hide()
-            v.addWidget(label('勾选后带入所选订单；未勾选时，各环节沿用日期、仓、锁状态和搜索。聚水潭分配批次需另行明确选择。','muted'))
+            v.addWidget(label('勾选后带入所选订单。未勾选时，各环节沿用日期、仓和搜索条件。','muted'))
         else:
             row=QHBoxLayout()
             def primary(title,fn):
                 b=button(title,fn,True);self.primary_actions.append(b);row.addWidget(b)
             if stage=='jst':
-                from jst_ui import generate,export_orders,change_lock,cancel_orders,detail
+                from jst_ui import generate,export_orders,cancel_orders,detail
                 primary('生成勾选聚水潭订单',lambda:self.jst_action(generate))
                 row.addWidget(button('重试勾选未完成生成',self.retry_generation))
                 row.addWidget(button('导出勾选聚水潭订单',lambda:self.jst_action(export_orders)))
-                row.addWidget(button('确认勾选已下单并锁定',lambda:self.jst_action(change_lock)))
                 v.addLayout(row);secondary=QHBoxLayout();secondary.addWidget(button('查看分配依据',lambda:self.jst_action(detail)));secondary.addWidget(button('批次作业日志',self.logs));v.addLayout(secondary)
-                maintenance=QWidget();m=QHBoxLayout(maintenance);m.addWidget(button('更正已锁订单',lambda:self.jst_action(lambda p,h,s:change_lock(p,h,s,True))));m.addWidget(button('撤销未下单生成单',lambda:self.jst_action(cancel_orders)));maintenance.hide()
+                maintenance=QWidget();m=QHBoxLayout(maintenance);m.addWidget(button('撤销未下单生成单',lambda:self.jst_action(cancel_orders)));maintenance.hide()
                 b=button('展开更正与撤销',lambda:maintenance.setVisible(not maintenance.isVisible()));v.addWidget(b);v.addWidget(maintenance)
             else:
                 primary('导入'+TITLES[stage],lambda:self.import_stage(stage))
@@ -91,8 +105,11 @@ class LifecycleWidget(QWidget):
         self.query(keep_page=True)
 
     def clear_filters(self):
-        blockers=[QSignalBlocker(x) for x in (self.search,self.warehouse_filter,self.lock_filter)]
-        self.start.clear();self.end.clear();self.search.clear();self.warehouse_filter.setCurrentIndex(0);self.lock_filter.setCurrentIndex(0)
+        blockers=[QSignalBlocker(x) for x in (self.search,self.warehouse_filter)]
+        self.start.clear();self.end.clear();self.search.clear();self.warehouse_filter.setCurrentIndex(0)
+        if self.generation_filter is not None:
+            blockers.append(QSignalBlocker(self.generation_filter))
+            self.generation_filter.setCurrentIndex(0)
         del blockers
         self.query()
     def import_stage(self,stage):
@@ -165,7 +182,9 @@ class LifecycleWidget(QWidget):
         self.excluded_records=[];self.excluded_btn.setText('查看未显示订单（0）');self.excluded_btn.setEnabled(False)
         self.selection_label();self.bar.show();self.table.setEnabled(False);self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在查询单据进度…可继续使用工作页。')
         self.order_compare_btn.setEnabled(False);self.store_compare_btn.setEnabled(False)
-        request={'kind':'daily_batch','from':self.start.text().strip(),'to':self.end.text().strip(),'search':self.search.text().strip(),'status':'' if self.stage or self.status.currentIndex()==0 else self.status.currentText(),'stage_view':self.stage,'stage_filter':self.status.currentText() if self.stage else None,'scope':[[h['oid'],h['warehouse']] for h in self.fixed_scope] if self.fixed_scope is not None else None,'warehouse':'' if self.warehouse_filter.currentIndex()==0 else self.warehouse_filter.currentText(),'lock':'' if self.lock_filter.currentIndex()==0 else self.lock_filter.currentText(),'page':self.page,'explain_filters':True,'platform_tracking':True}
+        request={'kind':'daily_batch','from':self.start.text().strip(),'to':self.end.text().strip(),'search':self.search.text().strip(),'status':'' if self.stage or self.status.currentIndex()==0 else self.status.currentText(),'stage_view':self.stage,'stage_filter':self.status.currentText() if self.stage else None,'scope':[[h['oid'],h['warehouse']] for h in self.fixed_scope] if self.fixed_scope is not None else None,'warehouse':'' if self.warehouse_filter.currentIndex()==0 else self.warehouse_filter.currentText(),'page':self.page,'explain_filters':True,'platform_tracking':True}
+        if self.generation_filter is not None:
+            request['jst_generation']=self.generation_filter.currentData()
         self.reader.request(request,lambda data,r=request:self.query_ready(data,r),self.failed,self.progress)
     def query_ready(self,data,request):
         self.applied_request=dict(request);self.ready(data)
@@ -183,9 +202,15 @@ class LifecycleWidget(QWidget):
         for key in invalid:self.checked.pop(key,None)
         self.records=data['records'];self.page=data['page'];self.count=data['count'];self.bar.hide();self.table.setEnabled(True)
         self.excluded_records=data.get('filter_explanation',{}).get('excluded',[])
+        generation_excluded={(h['oid'],h['warehouse']) for h in self.excluded_records if 'jst_generation' in h['reason_codes']}
+        removed=0
+        for key,head in list(self.checked.items()):
+            if (head['oid'],head['warehouse']) in generation_excluded:
+                del self.checked[key];removed+=1
         self.excluded_btn.setText(f'查看未显示订单（{len(self.excluded_records)}）');self.excluded_btn.setEnabled(bool(self.excluded_records))
         self.note.setText(f"日期/关键词范围 {data['scope']} 单 · 符合当前筛选 {data['count']} 单 · 本页显示 {len(self.records)} 单 · 第 {self.page+1}/{max(1,(data['count']+49)//50)} 页；每页50单。")
         if invalid:self.note.setText(self.note.text()+f'；已移除{len(invalid)}条失效勾选，请重新核对选择。')
+        if removed:self.note.setText(self.note.text()+f'；已取消 {removed} 张生成状态变化的仓单勾选。')
         self.empty_actions.setVisible(not data['count'])
         if not data['count']:
             from business_flow import empty_message
@@ -197,7 +222,7 @@ class LifecycleWidget(QWidget):
             notices=[h['note']] if h.get('note') else []
             platform=h.get('platform_purchase')
             if platform:notices.append('翱象 '+platform['orderId']+'：'+platform['status']+'（观察 '+platform.get('observedAt','未知')+'）'+('；作废后实收待处理' if platform.get('receipt_state')=='VOIDED_REVIEW' else ''))
-            if h.get('locked'):notices.append('已下单锁定：后续不再分配')
+            if h.get('locked'):notices.append('有历史下单标记。更正前请在聚水潭导入单核对。')
             if h.get('generation_summary'):notices.append('聚水潭生成 '+h['generation_summary']['amount']+' 元')
             if h.get('generation_task'):notices.append(h['generation_task']['message'])
             if h['legacy_incomplete']:notices.append('已有旧回传资料，请导入完整确认单')
@@ -319,7 +344,7 @@ class StageDialog(QDialog):
                 for target,value in ((self.panel.day,overview.start.text()),(self.panel.end,overview.end.text())):
                     blocker=QSignalBlocker(target);target.setDate(QDate.fromString(value,'yyyy-MM-dd'));del blocker
                 self.panel.search.setText(overview.search.text())
-                self.panel.warehouse.setCurrentText(overview.warehouse_filter.currentText());self.panel.lock_filter.setCurrentText(overview.lock_filter.currentText())
+                self.panel.warehouse.setCurrentText(overview.warehouse_filter.currentText())
             return
         v.addWidget(label('限定所选 '+str(len(scope))+' 单' if scope is not None else '沿用总览日期、仓及搜索；本页筛选不改总览。','muted'))
         self.panel=LifecycleWidget(overview.host,stage,scope,parent=self);v.addWidget(self.panel,1)
@@ -327,8 +352,9 @@ class StageDialog(QDialog):
         if next_stage:
             v.insertWidget(1,button('进入'+LifecycleWidget.STAGES[next_stage]+' →（沿用当前范围）',lambda:self.panel.open_stage(next_stage)))
         for target,source in ((self.panel.start,overview.start),(self.panel.end,overview.end),(self.panel.search,overview.search)):target.setText(source.text())
-        for target,source in ((self.panel.warehouse_filter,overview.warehouse_filter),(self.panel.lock_filter,overview.lock_filter)):
-            blocker=QSignalBlocker(target);target.setCurrentIndex(source.currentIndex());del blocker
+        blocker=QSignalBlocker(self.panel.warehouse_filter)
+        self.panel.warehouse_filter.setCurrentIndex(overview.warehouse_filter.currentIndex())
+        del blocker
         if scope:
             self.panel.checked={service.key(h):h for h in scope};blocker=QSignalBlocker(self.panel.status);self.panel.status.setCurrentIndex(self.panel.status.count()-1);del blocker
         QTimer.singleShot(0,lambda:self.panel.query(keep_page=True))

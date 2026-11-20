@@ -5,6 +5,7 @@ import threading
 import unittest
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 from tests.test_stockout_analysis import workbook
 from stockout_repository import Repository
@@ -17,12 +18,14 @@ import stockout_trigger as trigger
 
 class NativeFixture:
     """Deterministic native protocol fixture. Creates no platform/browser connection."""
-    def __init__(self,root,cancel):
+    def __init__(self,root,cancel,*,execution_tags=False):
         self.root=root;self.cancel=cancel;self.calls=[];self.commands={};self.observation=None
         self.ack=None;self.operation=None;self.pause_on_reserve=False;self.unknown_once=False;self.mapping='m1'
         self.codes=['S'];self.fail_codes=set();self.bad_store_codes=set();self.results={};self.before_reserve=None;self.reexports={}
         folder=root/'jst/downloads/batch/item';folder.mkdir(parents=True)
-        source=workbook(folder/'source.xlsx',['商品编码','分类','基本售价','出库箱规','商品状态','可用数','供应商名称','虚拟分类'],
+        headers=['商品编码','分类','基本售价','出库箱规','商品状态','可用数','供应商名称','虚拟分类']
+        if execution_tags:headers.append('商品标签')
+        source=workbook(folder/'source.xlsx',headers,
                         [['A','饮品',2,1,'启用',0,'供应商甲',''],['B','饮品',2,1,'禁用',0,'供应商乙','淘便考核']])
         from catalog_sync_validation import validate
         self.receipt=validate({'schema':1,'file':str(source),'warehouse':'山东仓','sha256':file_hash(source),'expected_rows':2,'candidate':str(folder/'candidate.json')})
@@ -267,6 +270,49 @@ class PipelineTests(unittest.TestCase):
         jobs=Jobs(self.repo.root/'aoxiang/jobs.sqlite3')
         self.assertEqual(len(jobs.recent()),1);self.assertEqual(jobs.recent(exclude_analysis=True),[])
         with self.assertRaisesRegex(ValueError,'分析'):jobs.maintenance_preview(None,jobs.recent()[0]['id'],'end')
+
+    def check_catalog_publication(self,*,late=False,execution_tags=True):
+        from catalog_sync_validation import candidate
+        from stockout_task import Bridge
+        from warehouse_catalog import Repository as Catalogs,REQUIRED,import_catalog,revision
+        from work_repository import Repository as Work
+        root=self.root/'fresh'
+        native=NativeFixture(root,self.cancel,execution_tags=execution_tags)
+        work=Work(self.repo.root);repo=Catalogs(self.repo.root)
+        candidate_catalog=candidate(native.receipt)
+        old_file=workbook(root/'prior.xlsx',REQUIRED+['商品标签'],[['A','饮品',2,1,'启用',11,'']])
+        initial=import_catalog(old_file,'山东仓');repo.save(initial)
+        expected=repo.current_digest('山东仓')
+        host=SimpleNamespace(repository=SimpleNamespace(folder=self.repo.root),work_repository=work,
+                             catalog_sessions=SimpleNamespace(session=SimpleNamespace(folder=root/'jst')))
+        bridge=Bridge(host,self.cancel,lambda _:None)
+        bridge.jst=SimpleNamespace(folder=root/'jst',request=lambda action,**values:native.rpc('jst',action=action,values=values),close=lambda **_:True)
+        published=[]
+        def rpc(service,**payload):
+            if service in {'jst','jst_root','release_jst','observation','publish_current_catalog'}:
+                if service=='publish_current_catalog' and late:
+                    fresh=copy.deepcopy(initial);fresh['items']['A']['可用数']=22;fresh['revision']=revision(fresh['items']);repo.save(fresh)
+                result=bridge.request({'service':service,**payload})
+                if service=='publish_current_catalog':published.append(result)
+                return result
+            return native.rpc(service,**payload)
+        with self.assertRaisesRegex(ValueError,'不属于本次'):bridge.publish_catalog('batch','item')
+        rid=self.repo.new_run()['id'];result=execute(self.repo,rid,rpc,self.cancel)
+        self.assertEqual(result['state'],'COMPLETE');self.assertEqual(native.ack['purpose'],'stockout_analysis')
+        self.assertEqual(native.observation['current_catalog_digest'],expected);self.assertEqual(len(published),1)
+        saved=repo.catalogs()['山东仓']
+        if late:self.assertEqual(saved['items']['A']['可用数'],22);self.assertTrue(published[0]['superseded'])
+        elif execution_tags:self.assertEqual(saved,candidate_catalog);self.assertTrue(published[0]['apply_id'])
+        else:self.assertEqual(saved,initial);self.assertIn('商品标签',published[0]['skipped_reason'])
+
+    def test_native_analysis_publishes_complete_current_catalog(self):
+        self.check_catalog_publication()
+
+    def test_late_analysis_keeps_newer_current_catalog(self):
+        self.check_catalog_publication(late=True)
+
+    def test_analysis_without_execution_tags_keeps_current_catalog(self):
+        self.check_catalog_publication(execution_tags=False)
 
     def test_cancel_then_resume_keeps_native_command_and_catalog(self):
         rid=self.repo.new_run()['id'];self.native.pause_on_reserve=True

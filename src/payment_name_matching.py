@@ -1,7 +1,7 @@
 """Exact optional shop names narrow identities, never audit payment quantities."""
 import payment_shop_names as names
 
-HEAD_KEYS=('oid','revision','warehouse','number','store','digest')
+from payment_evidence import HEAD_KEYS
 
 def context(rows,index,eligible,source_scope=None):
     name=names.normalized((rows[0].get('source_order') or {}).get('店铺名称'))

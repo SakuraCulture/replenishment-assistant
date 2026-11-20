@@ -2,6 +2,7 @@
 import sqlite3
 from contextlib import closing
 from pathlib import Path
+from lifecycle_store import latest_version
 
 
 def assess(path, items, *, require_payment=True):
@@ -58,7 +59,7 @@ def assess(path, items, *, require_payment=True):
                 except (Conflict,SourceDeleted) as exc:raise ValueError(str(exc)) from exc
                 if require_payment:
                     if 'lifecycle_versions' not in tables:raise ValueError('原已确认付款依据不存在')
-                    payment=db.execute("SELECT version,digest FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage='payment' ORDER BY version DESC LIMIT 1",(oid,revision,warehouse)).fetchone()
+                    payment=latest_version(db, head, 'payment')
                     pv=basis.get('paymentVersion');pd=basis.get('paymentDigest')
                     if not payment or pv is None or not pd:raise ValueError('原采购缺少可复核的付款版本，需核对原任务')
                     if tuple(payment)!=(pv,pd):raise ValueError('原付款版本已变化，暂停沿用原采购关联')

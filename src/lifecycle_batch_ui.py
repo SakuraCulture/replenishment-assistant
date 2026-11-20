@@ -101,7 +101,7 @@ class BatchImport(QDialog):
             rows=d['scan']['rows'];r=rows[0];source=r.get('source_order',{});check=QTableWidgetItem();check.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);check.setCheckState(Qt.CheckState.Checked if d.get('selected',True) else Qt.CheckState.Unchecked);self.table.setItem(i,0,check)
             title=r['source']['file']+(' / '+str(source.get('店铺名称') or '原表未提供店名')+' / '+str(source.get('内部订单号')) if source else ' / '+str(r.get('signed_number') or r.get('document_number') or '缺单号'))
             for j,text in ((1,title),(2,io.TITLES[d['scan']['stage']]),(3,str(len(rows))),(5,'、'.join(dict.fromkeys(x['source']['sheet'] for x in rows)))):self.table.setItem(i,j,QTableWidgetItem(text))
-            combo=QComboBox();combo.setMinimumWidth(0);combo.setMinimumContentsLength(12);combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon);combo.addItem('尚未自动对应订单',None)
+            combo=QComboBox();combo.setMinimumWidth(0);combo.setMinimumContentsLength(12);combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
             explanation=diagnostics.binding(d,self.heads,scoped=self.scope is not None);choices=explanation['candidates']
             automatic_head=choices[0] if choices and explanation['automatic'] else None
             if d.get('payment_match') is not None and (self.match_from.text().strip() or self.match_to.text().strip()):
@@ -109,6 +109,10 @@ class BatchImport(QDialog):
                 choices=[h for h in choices if (not start or h['day']>=start) and (not end or h['day']<=end)]
                 preserve=d.get('target') or automatic_head
                 if preserve and not any(h['number']==preserve['number'] for h in choices):choices=[preserve,*choices]
+            prompt='尚未自动对应订单'
+            if explanation.get('name_context'):
+                prompt=f'店仓已识别，请选原单（{len(choices)} 张）' if choices else '店仓已识别，当前范围无可选仓单'
+            combo.addItem(prompt,None)
             for h in choices:
                 status='已确认付款' if h.get('payment_version') is not None else '尚未确认付款'
                 amount=(h.get('features') or {}).get('amount')
@@ -119,7 +123,8 @@ class BatchImport(QDialog):
             if d.get('target'):
                 index=next((n+1 for n,h in enumerate(choices) if h['number']==d['target']['number']),0);combo.setCurrentIndex(index)
             self.table.setCellWidget(i,4,combo);self.targets.append(combo)
-            combo.currentIndexChanged.connect(lambda *_:self.describe_selection())
+            combo.currentTextChanged.connect(self.describe_selection)
+            combo.currentTextChanged.connect(self.update_match_summary)
             cell=QTableWidgetItem(explanation['state']+'：'+explanation['reason']);cell.setToolTip(cell.text());self.table.setItem(i,6,cell)
         self.issue_table.setRowCount(len(self.issues))
         for i,issue in enumerate(self.issues):
@@ -130,15 +135,27 @@ class BatchImport(QDialog):
             b=button('修正字段映射',lambda checked=False,n=i:self.map_issue(n));b.setEnabled('info' in issue);self.issue_table.setCellWidget(i,2,b)
             self.issue_table.setCellWidget(i,3,button('本次不读取未识别部分',lambda checked=False,n=i:self.exclude_issue(n)))
         self.issue_note.setVisible(bool(self.issues));self.issue_table.setVisible(bool(self.issues))
-        matched=sum(bool(c.currentData()) for c in self.targets)
-        self.note.setText(f'已读取 {len(self.documents)} 份来源单；已对应订单 {matched} 份；未对应 {len(self.documents)-matched} 份；文件问题 {len(self.issues)} 项。下一步核对付款明细并保存。')
         self.table.verticalHeader().setDefaultSectionSize(68);self.issue_table.verticalHeader().setDefaultSectionSize(72)
         if self.documents and self.table.currentRow()<0:self.table.setCurrentCell(0,1)
         self.describe_selection()
+        self.update_match_summary()
+
+    @staticmethod
+    def chosen_target(combo):
+        return combo.currentData() if combo.currentText()==combo.itemText(combo.currentIndex()) else None
+
+    def update_match_summary(self):
+        matched=named=0
+        for document,combo in zip(self.documents,self.targets):
+            if self.chosen_target(combo):matched+=1
+            elif (document.get('payment_match') or {}).get('name_context'):named+=1
+        awaiting=f'，其中 {named} 份已识别店仓、待关联签发单' if named else ''
+        self.note.setText(f'已读取 {len(self.documents)} 份来源单；已对应订单 {matched} 份；未对应 {len(self.documents)-matched} 份{awaiting}；文件问题 {len(self.issues)} 项。下一步核对付款明细并保存。')
+
     def describe_selection(self):
         i=self.table.currentRow()
         if i<0 or i>=len(self.documents) or i>=len(getattr(self,'targets',[])):return
-        source=self.table.item(i,1);status=self.table.item(i,6);target=self.targets[i].currentData()
+        source=self.table.item(i,1);status=self.table.item(i,6);target=self.chosen_target(self.targets[i])
         text=('来源：'+source.text() if source else '')+'\n目标签发：'+(f"{target['day']} · {target.get('name',target['store'])} ({target['store']}) · {target['warehouse']} · {target['number']}" if target else '尚未确认')
         if status:text+='\n'+status.text()
         self.selection_note.setPlainText(text)
@@ -258,7 +275,7 @@ class BatchImport(QDialog):
     def capture(self):
         for i,d in enumerate(self.documents):
             combo=self.targets[i];d['selected']=self.table.item(i,0).checkState()==Qt.CheckState.Checked
-            d['target']=combo.currentData() if combo.currentText()==combo.itemText(combo.currentIndex()) else None
+            d['target']=self.chosen_target(combo)
     def exclude_issue(self,index):
         self.capture();self.excluded.append(self.issues.pop(index));self.populate()
         self.note.setText('已明确排除未识别部分；其余已识别工作表仍在上方，是否纳入由勾选决定。重新读取可恢复排除项。')
@@ -292,19 +309,23 @@ class BatchImport(QDialog):
                         return
                     documents.append(resolved)
                 else:documents.append(document)
-            if self.payment_index:
-                from payment_matching import prepare
-                self.plan=run(self,prepare,(self.host.work_repository.path,documents,self.scope,self.payment_index,self.source_company.currentData(),self.remember_matching.isChecked()),'按完整付款单核对并冻结识别对应')
-            else:self.plan=run(self,batch.prepare,(self.host.work_repository.path,documents,self.scope),'按整单和上下游顺序核对')
+            from lifecycle_import_workflow import prepare, review_scope
+            title = ('按完整付款单核对并冻结识别对应' if self.payment_index
+                     else '按整单和上下游顺序核对')
+            self.plan = run(
+                self, prepare,
+                (self.host.work_repository.path, documents, self.scope, self.payment_index,
+                 self.source_company.currentData(), self.remember_matching.isChecked()),
+                title,
+            )
             from lifecycle_ui import Review
             if self.review:self.pages.removeWidget(self.review);self.review.deleteLater()
             self.review=Review(self,self.plan);self.review.setWindowFlags(Qt.WindowType.Widget);self.review.save.clicked.disconnect();self.review.save.clicked.connect(self.save)
             if self.plan.get('payment_matching'):
                 scope=self.source_company.currentData();name=self.source_company.currentText()
                 self.review.layout().insertWidget(0,label(('本批指定付款来源：'+name if scope else '本批按文件证据自动认单，不修改企业身份及门店资料。')+'；'+('确认保存时同时保留本次认单对应，供重复导入和金额更正使用。' if self.remember_matching.isChecked() else '本次不新增认单对应关系。'),'muted'))
-            names=[str(x.get('path') or x['info']['name'])+'：'+x['message'] for x in self.excluded]
-            omitted=[d['scan']['files'][0]['name']+' / '+io.TITLES[d['scan']['stage']] for d in self.documents if not d['selected']]
-            self.review.layout().insertWidget(0,label(f"本批拟保存 {len(self.plan['plans'])} 份；仅留存待核 {sum(p['payload']['pending'] for p in self.plan['plans'])} 份；未纳入 {len(names)+len(omitted)} 项。"+('\n未纳入：'+'；'.join(names+omitted) if names or omitted else ''),'section'))
+            total, pending, omitted = review_scope(self.plan, self.documents, self.excluded)
+            self.review.layout().insertWidget(0,label(f"本批拟保存 {total} 份；仅留存待核 {pending} 份；未纳入 {len(omitted)} 项。"+('\n未纳入：'+'；'.join(omitted) if omitted else ''),'section'))
             for b in self.review.findChildren(QPushButton):
                 if b.text()=='取消':b.setText('返回文件范围');b.clicked.disconnect();b.clicked.connect(lambda:self.pages.setCurrentIndex(0))
             self.pages.addWidget(self.review);self.pages.setCurrentWidget(self.review)
@@ -322,6 +343,7 @@ class BatchImport(QDialog):
         box.setInformativeText(reason if len(reason)<=420 else reason[:420]+'…\n完整原因可展开详细信息查看。')
         box.setDetailedText(detail);box.setStandardButtons(QMessageBox.StandardButton.Ok);box.exec()
     def save(self):
+        if self.busy:return
         from lifecycle_ui import commit
         try:
             self.busy=True;self.receipt=commit(self,self.host,self.plan)

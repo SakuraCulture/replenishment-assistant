@@ -15,7 +15,7 @@ class WarehouseUi:
         for wh in warehouse_catalog.WAREHOUSES:
             row=QHBoxLayout();row.addWidget(label(wh,'section'));row.addStretch();pick=button('导入'+wh+'资料',lambda checked=False,w=wh:self.choose_catalog(w));self.catalog_buttons[wh]=pick;row.addWidget(pick);row.addWidget(button('查看'+wh+'资料',lambda checked=False,w=wh:self.show_catalog(w)));v.addLayout(row)
             text=label('尚未导入','muted');self.catalog_labels[wh]=text;v.addWidget(text)
-        v.addWidget(label('仓库由导入入口指定，不从表内猜测。保存后跨批次复用；可用数是导入时的库存快照，更新库存需重新导入。','muted'))
+        v.addWidget(label('按仓维护当前商品资料。补货检查和新分配批次共用该版本；可用数取本次导入或同步的库存快照。','muted'))
         from business_flow_ui import disclosure
         toggle,maintenance,mv=disclosure('恢复与旧版资料兼容',panel);v.addWidget(toggle);v.addWidget(maintenance)
         self.catalog_maintenance_toggle=toggle
@@ -41,28 +41,38 @@ class WarehouseUi:
     def restore_catalog(self):
         if self.worker or getattr(self,'readonly',False):return
         d=QDialog(self);d.setWindowTitle('恢复仓商品资料');v=QVBoxLayout(d);choices=QComboBox();v.addWidget(choices)
-        v.addWidget(label('恢复当时保留的完整仓资料。历史签发不变；本次需重新检查。旧库存仅是历史快照，不代表当前可用库存，也不调整聚水潭库存分配账。'))
+        v.addWidget(label('将所选历史快照发布为该仓当前资料。新补货和新分配将使用该快照的库存，请核对库存时间。'))
         for wh in warehouse_catalog.WAREHOUSES:
             for entry in self.catalog_repository.history_entries(wh):
                 c=entry['metadata'];choices.addItem(f"{wh} · {c['imported_at']} · {c['count']}款 · {c['revision']}",entry)
         row=QHBoxLayout();row.addWidget(button('取消',d.reject));go=button('下一步：核对恢复范围',d.accept);go.setEnabled(choices.count()>0);row.addWidget(go);v.addLayout(row)
         if d.exec()==QDialog.DialogCode.Accepted:
-            try:catalog=self.catalog_repository.read_history_entry(choices.currentData())
+            try:
+                entry=choices.currentData();expected=self.catalog_repository.current_digest(entry['warehouse'])
+                catalog=self.catalog_repository.read_history_entry(entry)
             except Exception as exc:self.failed('历史仓资料未恢复：'+str(exc));return
-            self.catalog_imported(catalog)
-    def import_catalog_path(self,path,warehouse):self.job(warehouse_catalog.import_catalog,(path,warehouse),self.catalog_imported)
-    def catalog_imported(self,catalog):
+            self.catalog_imported(catalog,expected_digest=expected)
+    def import_catalog_path(self,path,warehouse):
+        try:expected=self.catalog_repository.current_digest(warehouse)
+        except Exception as exc:self.failed('当前仓资料读取失败：'+str(exc));return
+        self.job(warehouse_catalog.import_catalog,(path,warehouse),lambda c:self.catalog_imported(c,expected_digest=expected))
+    def catalog_imported(self,catalog,**options):
         from interaction_ui import confirm
         old=self.catalogs.get(catalog['warehouse'])
         message=catalog['warehouse']+f"：{len(old['items']) if old else 0} → {len(catalog['items'])} 款\n原版本：{old['revision'] if old else '未导入'}\n新版本：{catalog['revision']}\n将完整更新并保存，跨批次复用；本次须重新检查，历史快照不变。"
         warning=warehouse_catalog.execution_warning(catalog)
         if warning:message+='\n\n'+warning
         if not confirm(self,'确认更新并保存仓资料',message):return
-        try:self.catalog_repository.save(catalog)
+        try:self.catalog_repository.save(catalog,**options)
         except Exception as exc:self.failed('仓资料保存失败，原资料保留：'+str(exc));return
-        self.catalogs[catalog['warehouse']]=catalog;self.refresh_catalog_labels()
-        if not self.master_legacy.isChecked():self.file_changed()
+        self.current_warehouse_adopted(catalog)
         self.status.setText(catalog['warehouse']+f"资料已保存 {len(catalog['items']):,} 款；请重新检查本次补货建议。"+warning)
+    def current_warehouse_adopted(self,catalog):
+        if getattr(self,'closing',False):return
+        wh=catalog['warehouse']
+        if self.catalogs.get(wh)==catalog:return
+        self.catalogs[wh]=catalog;self.refresh_catalog_labels()
+        if not self.master_legacy.isChecked():self.file_changed()
     def show_catalog(self,warehouse):
         catalog=self.catalogs.get(warehouse)
         if not catalog:QMessageBox.information(self,'尚未导入',warehouse+'尚无保存的商品资料。');return

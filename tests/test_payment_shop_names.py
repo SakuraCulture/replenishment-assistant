@@ -75,7 +75,18 @@ class ShopNamesTests(unittest.TestCase):
     def test_cross_day_candidates_and_hidden_display_never_create_uniqueness(self):
         self.change();self.f.duplicate_previous_day();doc=self.f.document(name='聚水潭独立店名',change=lambda v:v.update(商品金额='2.31'))
         r=pm.analyze(self.path,doc,pm.build(self.path),scope=[self.h]);self.assertFalse(r['automatic']);self.assertEqual(len(r['name_context']['identities']),2)
+        self.assertEqual([c['number'] for c in r['candidates']],[self.h['number']])
+        self.assertIn('已按维护表识别店仓',r['reason']);self.assertIn('本次选单范围内有 1 张可选',r['reason'])
         doc['target']=self.h;lc.commit(self.path,self.plan(doc))
+
+    def test_recognized_shop_with_no_candidate_in_selection_explains_scope(self):
+        self.change();self.f.duplicate_previous_day()
+        doc=self.f.document(name='聚水潭独立店名',change=lambda v:v.update(商品金额='2.31'))
+        other=next(h for h in self.f.index['heads'] if h['store']!=self.h['store'])
+        result=pm.analyze(self.path,doc,pm.build_identification(self.path,[other]),scope=[other])
+        self.assertTrue(result['prevent_rebind']);self.assertFalse(result['automatic']);self.assertEqual(result['candidates'],[])
+        self.assertEqual(result['name_context']['pairs'],[[self.h['store'],self.h['warehouse']]])
+        self.assertIn('本次所选范围外',result['reason'])
     def test_only_relevant_name_change_invalidates_payment_preview(self):
         self.change();doc=self.f.document(name='聚水潭独立店名');plan=self.plan(doc)
         other=next(h for h in self.f.index['heads'] if h['store']!=self.h['store']);self.change('无关店名',other)
@@ -90,7 +101,7 @@ class ShopNamesTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.plan(doc)
     def test_payment_and_remembered_manual_link_rollback_together(self):
         doc=self.f.document(name='未配置别称',change=lambda v:v.update(商品金额='8.25'));doc['target']=self.h;p=self.plan(doc)
-        with patch('payment_matching.apply',side_effect=RuntimeError('injected')):
+        with patch('payment_match_commit.apply',side_effect=RuntimeError('injected')):
             with self.assertRaises(RuntimeError):lc.commit(self.path,p)
         with closing(pm.readonly(self.path)) as db:self.assertEqual(pm.mappings(db),{})
         lc.commit(self.path,p);self.assertTrue(self.analyze(doc)['automatic'])

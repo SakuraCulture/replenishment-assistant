@@ -6,7 +6,10 @@ Read-only legacy fallback does not upgrade or rewrite a user's database.
 """
 import hashlib
 from contextlib import closing, nullcontext
+from archive_orders import states as archive_states
 import work_repository as wr
+from order_keys import expected_current_revision
+from jst_order_store import exists as jst_exists
 import storage_chunks as chunks
 from app_defaults import WAREHOUSES
 from runtime_support import checkpoint
@@ -159,8 +162,7 @@ def publish(db,oid,source_revision,identity_digest,saved,payload,selected,progre
         if previous and previous[0]==snapshot_digest:
             continue
         if old and old['state']=='active':
-            import jst_orders
-            if jst_orders.exists(db) and db.execute('SELECT 1 FROM jst_active WHERE oid=? AND warehouse=?',(oid,warehouse)).fetchone():
+            if jst_exists(db) and db.execute('SELECT 1 FROM jst_active WHERE oid=? AND warehouse=?',(oid,warehouse)).fetchone():
                 raise wr.Conflict('所选仓已有聚水潭生成记录，请通过该仓原单更正；另一仓不受影响：'+warehouse)
         child_revision=(old.get('child_revision',0) if old else 0)+1
         if prepared is not None and warehouse not in prepared:raise wr.Conflict('预编码仓单已失效，请重新核对')
@@ -235,11 +237,41 @@ def validate(db,head):
         current=state(db,head['oid'],warehouse)
         if not current or current['state']!='active':raise deletion_barrier.SourceDeleted('来源仓单已删除或本轮未参与，旧任务不能恢复')
         row=db.execute('SELECT identity_digest FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?',(head['oid'],warehouse,head['revision'])).fetchone()
-        if not row or row[0]!=head['digest'] or current['source_revision']!=head.get('current_revision',head['revision']):raise wr.Conflict('该仓签发版本已变化，请刷新核对；另一仓不受影响')
+        if not row or row[0]!=head['digest'] or current['source_revision']!=expected_current_revision(head):raise wr.Conflict('该仓签发版本已变化，请刷新核对；另一仓不受影响')
         if head.get('execution_epoch',current['epoch'])!=current['epoch']:raise wr.Conflict('该仓数据代次变化，请刷新')
     else:
         row=db.execute('SELECT o.current,r.digest FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid WHERE o.oid=? AND r.revision=?',(head['oid'],head['revision'])).fetchone()
-        if not row or row!=(head.get('current_revision',head['revision']),head['digest']):raise wr.Conflict('签发修订已更新，请重新读取并核对关联')
+        if not row or row!=(expected_current_revision(head),head['digest']):raise wr.Conflict('签发修订已更新，请重新读取并核对关联')
+
+
+def validate_visibility(db, h):
+    """Validate the source signing identity and selected archive visibility."""
+    validate(db, h)
+    if archive_states(db,oid=h['oid'],warehouse=h['warehouse']).get((h['oid'],h['warehouse']),{}).get('token',0)!=h.get('visibility_token',0):raise wr.Conflict('归档可见性已变化，请重新核对')
+
+
+def active_snapshot_source(db, head):
+    """Resolve the exact active warehouse revision before verifying the manifest."""
+    if not is_active(db,head['oid'],head['warehouse']):
+        raise wr.Conflict('来源仓单已删除或未参与')
+    row = db.execute('SELECT identity_digest,snapshot_digest,saved,payload FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?',
+                     (head['oid'],head['warehouse'],head['revision'])).fetchone()
+    if not row or row[0]!=head['digest']:
+        raise wr.Conflict('仓单原签发依据已变化，请刷新')
+    return row
+
+
+def restore_snapshot(db, blob, digest, progress, *, exporting=False):
+    bounded=False
+    if exporting:
+        from adaptive_resources import Budget
+        resources=Budget()
+        bounded=not resources.restore_fits(chunks.require_manifest(blob)['size'])
+        progress('导出快照资源自适应：'+('逐块读取' if bounded else '完整解析')+'；'+resources.description())
+    payload=chunks.load(blob,db,binding=digest,progress=progress,bounded=bounded)
+    if _digest(payload)!=digest:
+        raise ValueError('仓单业务快照校验失败')
+    return payload
 
 
 def get_order(repository,head,view=None,progress=lambda _:None,*,db=None,export_io=False,fields=None):
@@ -247,22 +279,13 @@ def get_order(repository,head,view=None,progress=lambda _:None,*,db=None,export_
     if warehouse:
         with (closing(repository.work.connect()) if db is None else nullcontext(db)) as db:
             if has_parent(db,head['oid']):
-                if not is_active(db,head['oid'],warehouse):raise wr.Conflict('来源仓单已删除或未参与')
-                row=db.execute('SELECT identity_digest,snapshot_digest,saved,payload FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?',(head['oid'],warehouse,head['revision'])).fetchone()
-                if not row or row[0]!=head['digest']:raise wr.Conflict('仓单原签发依据已变化，请刷新')
+                _, digest, saved, blob = active_snapshot_source(db,head)
                 if fields is not None:
-                    payload=chunks.load_fields(row[3],db,fields,binding=row[1],progress=progress)
+                    payload=chunks.load_fields(blob,db,fields,binding=digest,progress=progress)
                 else:
-                    bounded=False
-                    if view=='export' or export_io:
-                        from adaptive_resources import Budget
-                        resources=Budget()
-                        bounded=not resources.restore_fits(chunks.require_manifest(row[3])['size'])
-                        progress('导出快照资源自适应：'+('逐块读取' if bounded else '完整解析')+'；'+resources.description())
-                    payload=chunks.load(row[3],db,binding=row[1],progress=progress,bounded=bounded)
-                    if _digest(payload)!=row[1]:raise ValueError('仓单业务快照校验失败')
+                    payload=restore_snapshot(db,blob,digest,progress,exporting=view=='export' or export_io)
                 return {**head,'number':head.get('parent_number') or db.execute('SELECT number FROM normal_orders WHERE oid=?',(head['oid'],)).fetchone()[0],
-                        'saved':row[2],'payload':payload,'snapshot_digest':row[1]}
+                        'saved':saved,'payload':payload,'snapshot_digest':digest}
     order=repository.get(head['day'],head['store'],head['revision'],view=view,progress=progress,**({'export_io':True} if export_io else {}))
     if not order or order['digest']!=head['digest']:raise wr.Conflict('原签发依据已变化，请刷新')
     return {**order,**({'warehouse':warehouse} if warehouse else {})}

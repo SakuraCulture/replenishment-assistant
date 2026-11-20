@@ -75,14 +75,14 @@ class NaturalPayment(unittest.TestCase):
     def tearDown(self):self.f.tearDown()
     def test_full_document_decode_deduplicated_but_exact_plan_retained(self):
         jo.payment_plan(self.path,self.gid)
-        with patch('order_lifecycle.decode',wraps=lc.decode) as decode:actual=jo.payment_plan(self.path,self.gid)
+        with patch('lifecycle_facts.decode',wraps=lc.decode) as decode:actual=jo.payment_plan(self.path,self.gid)
         self.assertEqual(sum(c.args[0] is not None for c in decode.call_args_list),1)
         make=lc.make_plan
         def without(*args,**kwargs):kwargs.pop('_verified',None);return make(*args,**kwargs)
         with patch('order_lifecycle.make_plan',side_effect=without):expected=jo.payment_plan(self.path,self.gid)
         self.assertEqual(wr.dumps(actual),wr.dumps(expected))
         receipt=lc.commit(self.path,actual);self.assertTrue(receipt[0]['changed'])
-        with patch('order_lifecycle.decode',wraps=lc.decode) as decode:repeat=jo.payment_plan(self.path,self.gid)
+        with patch('lifecycle_facts.decode',wraps=lc.decode) as decode:repeat=jo.payment_plan(self.path,self.gid)
         self.assertEqual(sum(c.args[0] is not None for c in decode.call_args_list),2)
         self.assertFalse(lc.commit(self.path,repeat)[0]['changed'])
     def test_upstream_bytes_change_between_reads_cannot_reuse_evidence(self):

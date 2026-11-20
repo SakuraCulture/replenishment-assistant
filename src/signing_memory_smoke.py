@@ -12,6 +12,21 @@ from PySide6.QtWidgets import QApplication,QMessageBox,QPushButton
 from version_info import diagnostic
 
 
+def fail_draft_read(connection,path,cancel):
+    from draft_spool import Reader
+    from work_io_process import serve
+    original=Reader.index_tree;opened=0
+    def read(reader):
+        nonlocal opened
+        opened+=1
+        if opened==2:
+            reader.stream.read(8)
+            raise MemoryError('QA_DRAFT_RECEIVE')
+        return original(reader)
+    Reader.index_tree=read
+    serve(connection,path,cancel)
+
+
 def start_smoke(app,win,args):
     out=Path(args[0]).resolve();phase=args[1];spec=json.loads((out/'synthetic.json').read_text('utf-8'))
     assert spec['synthetic'] is True and spec['live_platform'] is False
@@ -22,9 +37,25 @@ def start_smoke(app,win,args):
     checks=[];dialogs=[];shots=[];state={'seen':set(),'mode':None,'commit':[],'peaks':{},'progress':[]}
     import work_repository as wr,normal_exports,warehouse_execution as execution
     from work_memory import snapshot
-    from ui_work_io import Progress
+    from ui_work_io import Progress,Session
     from resource_pressure_probe import Probe
     probe=Probe(spec.get('resource_profile','ample'))
+    input_limit=spec.get('draft_worker_mib')
+    session_init=Session.__init__
+
+    def owned_session(session,*args,**kwargs):
+        if state['mode']=='input-error':kwargs['worker']=fail_draft_read
+        session_init(session,*args,**kwargs)
+        try:
+            if input_limit:probe.limit(session.process,input_limit,'draft-worker-started')
+        except BaseException:
+            session.close();raise
+
+    def sign():
+        from unittest.mock import patch
+        if input_limit or state['mode']=='input-error':
+            with patch.object(Session,'__init__',owned_session):win.export_current()
+        else:win.export_current()
 
     def require(ok,text):
         if not ok:raise AssertionError(text)
@@ -44,13 +75,18 @@ def start_smoke(app,win,args):
             if isinstance(dialog,Progress):
                 probe.tick(dialog)
                 pid=dialog.session.process.pid
+                samples=[]
                 for name,process in (('gui',None),('worker',pid)):
-                    data=snapshot(process)
+                    data=snapshot(process);samples.append(data)
                     for field in ('working_bytes','private_bytes'):
                         key=name+'_'+field;state['peaks'][key]=max(state['peaks'].get(key,0),data.get(field,0))
+                for field in ('working_bytes','private_bytes'):
+                    if all(field in data for data in samples):
+                        key='combined_'+field
+                        state['peaks'][key]=max(state['peaks'].get(key,0),sum(data[field] for data in samples))
                 text=dialog.note.text()
                 if len(state['progress'])<500 and (not state['progress'] or time.monotonic()-state['progress'][-1]['at']>2):
-                    state['progress'].append({'at':time.monotonic(),'stage':text,'worker_pid':pid,'committing':dialog.committing,'worker_private_bytes':data.get('private_bytes'),'worker_working_bytes':data.get('working_bytes')})
+                    state['progress'].append({'at':time.monotonic(),'operation':dialog.operation,'stage':text,'worker_pid':pid,'committing':dialog.committing,'worker_private_bytes':data.get('private_bytes'),'worker_working_bytes':data.get('working_bytes')})
                     (out/'stage.json').write_text(json.dumps(state['progress'][-1],ensure_ascii=False),encoding='utf-8')
                 if dialog.committing and not state['commit']:state['commit'].append('observed')
                 if state['mode']=='cancel' and dialog.operation=='delivery_execute' and ('编码内容块' in text or '流式编码' in text):
@@ -75,6 +111,8 @@ def start_smoke(app,win,args):
                 shot(dialog,'message-'+state['mode']+'.png')
                 if state['mode']=='cancel':require('Cancelled' in text and '未开始最终提交' in text,'真实取消回执明确未提交')
                 elif state['mode']=='failure':require('QA_BATCH_ABORT' in text,'原始写入错误在真实弹窗中可见')
+                elif state['mode']=='input-error':
+                    require('MemoryError' in text and 'QA_DRAFT_RECEIVE' in text and '未开始最终提交' in text,'草稿接收的首个错误直接显示在实际弹窗中')
                 else:raise AssertionError('Unexpected modal: '+dialog.windowTitle()+': '+text)
                 dialog.accept()
         except Exception:
@@ -106,6 +144,13 @@ def start_smoke(app,win,args):
                 # dialogs, IPC, validation, encoding, DB commit and XLSX writes
                 # are the unmodified user action below.
                 win.snapshot=lambda:payload
+                if phase=='input-error':
+                    state.update(mode='input-error',seen=set());started=time.perf_counter();sign()
+                    report['input_error_seconds']=time.perf_counter()-started
+                    if state.get('error'):raise AssertionError(state['error'])
+                    require(len(dialogs)==1 and report['input_error_seconds']<30,'接收故障在正常超时阈值前结束')
+                    require(not win.orders.headers() and win.work_repository.get_job(wr.today()) is None,'接收失败保留为空的草稿和仓单')
+                    require(not list((out/'settings/.encoding-cache').glob('*.tmp')),'接收失败后临时资料已释放')
                 if phase=='boundaries':
                     state.update(mode='cancel',seen=set());win.export_current()
                     require(state.get('cancelled') and not win.orders.headers(),'真实编码进度页取消后整批未提交')
@@ -117,7 +162,7 @@ def start_smoke(app,win,args):
                     require(not win.orders.headers(),'真实EXE第二单写入失败，第一单和草稿一起回滚')
                     require(win.work_repository.get_job(wr.today()) is None,'失败不留下半批草稿')
                     with closing(win.work_repository.connect()) as db,db:db.execute('DROP TRIGGER qa_abort')
-                state.update(mode='success',seen=set());started=time.perf_counter();win.export_current()
+                state.update(mode='success',seen=set());started=time.perf_counter();sign()
                 if state.get('error'):raise AssertionError(state['error'])
                 report['action_seconds']=time.perf_counter()-started
                 require(len(win.orders.headers())==files,'真实签发并导出动作完成全部父单')
@@ -135,6 +180,8 @@ def start_smoke(app,win,args):
                     expected=[(r['E'],r['AS'],r['V']) for r in payload['results'][head['store']]['rows']]
                     require(actual==expected,head['store']+'：实际Excel逐行SKU、数量、单价及顺序一致')
                 require(not list((out/'settings/.encoding-cache').glob('*.tmp')),'成功后编码临时文件已自动关闭')
+                if input_limit:
+                    require(any(e['stage']=='draft-worker-started' and e['limit_mib']==input_limit for e in probe.events),'签发子进程从启动到导出均在指定内存限额内')
                 if spec.get('resource_profile')=='occupied':
                     require(any(e['stage']=='encoding-pressure' for e in probe.events),'实际EXE编码期间仅对自有子进程收紧内存预算')
                     require(any(e['stage']=='encoding-resources-released' for e in probe.events),'实际EXE编码期间资源释放后继续完成')
@@ -142,7 +189,7 @@ def start_smoke(app,win,args):
                 elif spec.get('resource_profile')=='tight':
                     require(any(e['stage']=='encoding-tight' for e in probe.events),'实际EXE在紧张进程预算下完整签发并导出')
                 (out/'expected.json').write_text(json.dumps({'files':files,'rows':rows,'work_digest':work_digest}),encoding='utf-8')
-                report.update(files=files,rows_per_file=rows,peaks=state['peaks'])
+                report.update(files=files,rows_per_file=rows,peaks=state['peaks'],draft_worker_mib=input_limit)
             report['passed']=True;shot(win,'completed-'+phase+'.png')
         except Exception:report['error']=traceback.format_exc()
         finally:

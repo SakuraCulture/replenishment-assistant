@@ -45,6 +45,36 @@ def start_smoke(app,win,args):
     def heads():
         with closing(win.work_repository.connect()) as db:return execution.heads(db)
     def child(store,warehouse):return next(h for h in heads() if h['store']==store and h['warehouse']==warehouse)
+    def verify_history():
+        from history_tasks import HistoryReader
+
+        cache = out / f'archive-cold-{mode}.sqlite3'
+        assert not cache.exists()
+        reader = HistoryReader(win.work_repository.path, cache, win)
+        try:
+            def request(spec):
+                received, errors = [], []
+                reader.request(spec, received.append, errors.append)
+                wait(lambda: bool(received or errors))
+                assert reader.proc.pid != os.getpid() and not errors, errors
+                return received[0]
+
+            listing = request({'kind': 'list'})
+            cold = [(row['store'], row['warehouse'], row['revision']) for row in listing['records']]
+            expected = [(row['store'], row['warehouse'], row['revision']) for row in heads()]
+            assert sorted(cold) == sorted(expected)
+            assert listing == request({'kind': 'list'})
+            record = next(row for row in listing['records'] if row['store']=='QA01' and row['warehouse']=='山东仓')
+            selected = child('QA01', '山东仓')
+            order = execution.get_order(win.orders, selected)
+            detail = request({'kind': 'detail', 'head': record})
+            assert detail['head']['number'] == selected['number']
+            assert [row[0] for row in detail['rows']] == [row['E'] for row in order['payload']['result']['rows']]
+            checks.append('Real spawned cold and warm archive list agree; selected SD detail keeps the exact signed product order')
+        finally:
+            reader.shutdown()
+            reader.deleteLater()
+
     def verify_excel(file,head):
         import openpyxl
         book=openpyxl.load_workbook(file,read_only=True)
@@ -150,6 +180,7 @@ def start_smoke(app,win,args):
             from order_lifecycle import current_targets
             targets=current_targets(win.work_repository.path)
             assert {(h['store'],h['warehouse']) for h in targets}=={('QA01','山东仓'),('QA02','河北仓'),('QA02','山东仓')},targets
+            verify_history()
             shot(win,'after-single-warehouse-delete')
             (out/'expected.json').write_text(json.dumps({'heads':heads(),'sd':sd,'control':control},ensure_ascii=False,indent=2),'utf-8')
             emit('exercise_complete',active_warehouse_count=len(heads()));finish()
@@ -165,6 +196,7 @@ def start_smoke(app,win,args):
             order=execution.get_order(win.orders,expected['sd']);assert {r['AU'] for r in order['payload']['result']['rows']}=={'山东仓'}
             for file in (out/'exports').glob('*山东仓*.xlsx'):verify_excel(file,expected['sd'])
             win.show_section(3);win.followup.clear_filters();wait(lambda:len(win.followup.records)==3)
+            verify_history()
             shot(win,'reopened-three-retained-warehouse-orders')
             checks.extend(['Actual application reopen retains independent heads and deleted HB stays absent','Real lifecycle tracking reader lists surviving SD and both control-store warehouses','Pinned SD snapshot and exported very-hidden signature identity survive reopen'])
             finish()

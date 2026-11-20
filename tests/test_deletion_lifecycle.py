@@ -203,12 +203,18 @@ class FrozenAllocationDeletion(unittest.TestCase):
         import test_jst_batches
         self.helper=test_jst_batches.Batches();self.helper.setUp();self.addCleanup(self.helper.tearDown)
         self.path=self.helper.path;self.h=self.helper.h
-    def test_delete_after_first_commit_remaining_original_quantity_and_replay(self):
-        import jst_batches as b,jst_orders as j
+    def test_delete_after_first_payment_preserves_batch_usage_and_replay(self):
+        import jst_batches as b,jst_orders as j,order_lifecycle as lc
         other=self.helper.f.second_store();plan=self.helper.new([self.h,other]);deleted=[]
         def progress(p):
-            if hasattr(p,'business_event') and not deleted:
-                deleted.append(True);dm.execute(self.path,dm.prepare(self.path,[self.h]),True)
+            if getattr(p,'business_event',None) and not deleted:
+                deleted.append(True)
+                gid=p.business_event['gid'];lc.commit(self.path,j.payment_plan(self.path,gid))
+                with closing(sqlite3.connect(self.path)) as db:self.assertIsNone(j.locked(db,self.h))
+                confirmed=dm.prepare(self.path,[self.h])
+                self.assertIn('已有已确认付款',confirmed['external'][0])
+                with self.assertRaisesRegex(ValueError,'核对外部'):dm.execute(self.path,confirmed)
+                dm.execute(self.path,confirmed,True)
         result=b.execute(self.path,plan,progress=progress)
         self.assertEqual(result['errors'],[]);self.assertEqual(len(result['generated']),2)
         self.assertEqual(j.get(self.path,result['generated'][1])['summary']['quantity'],'60')
@@ -218,12 +224,29 @@ class FrozenAllocationDeletion(unittest.TestCase):
         with closing(sqlite3.connect(self.path)) as db:
             for raw, in db.execute('SELECT payload FROM jst_runs'):
                 self.assertNotIn(self.h['oid'],[p['head']['oid'] for p in wr.loads(raw)['plans']])
-    def test_delete_before_first_commit_keeps_other_frozen_allocation(self):
+    def test_delete_before_first_commit_requires_fresh_preview(self):
         import jst_batches as b,jst_orders as j
         other=self.helper.f.second_store();plan=b.activate(self.path,b.register(self.path,self.helper.new([self.h,other])))
         dm.execute(self.path,dm.prepare(self.path,[self.h]),True)
         result=j.commit(self.path,plan,True)
-        self.assertEqual(result['errors'],[]);self.assertEqual(len(result['generated']),1)
-        self.assertEqual(j.get(self.path,result['generated'][0])['summary']['quantity'],'60')
+        self.assertEqual(result['generated'],[])
+        self.assertIn('请重新预览',result['errors'][0]['error'])
+        resumed=b.continue_batch(self.path,plan['payload']['batch_id'])
+        self.assertFalse(resumed['errors'])
+        self.assertEqual(j.get(self.path,resumed['generated'][0])['summary']['quantity'],'80')
+
+    def test_payment_after_delete_preview_requires_new_confirmation(self):
+        import jst_batches as b,jst_orders as j,order_lifecycle as lc
+        r=b.execute(self.path,self.helper.new())
+        plan=dm.prepare(self.path,[self.h])
+        self.assertFalse(plan['external'])
+        gid=r['generated'][0]
+        lc.commit(self.path,j.payment_plan(self.path,gid))
+        with self.assertRaisesRegex(wr.Conflict,'外部执行依据已变化'):
+            dm.execute(self.path,plan)
+        with closing(sqlite3.connect(self.path)) as db:
+            self.assertEqual(j.active(db,self.h),gid)
+            self.assertIsNotNone(lc.current(db,self.h,'payment'))
+        self.assertEqual(self.helper.balance(r['batch_id']),60)
 
 if __name__=='__main__':unittest.main()

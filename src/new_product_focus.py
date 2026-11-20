@@ -6,12 +6,12 @@ import openpyxl
 import input_adapter as adapter
 import work_repository as wr
 from priority_list import atomic_json
+from runtime_support import checkpoint
 
 TRUE={'关注','已关注','是','1','true','√','✓'}
 FALSE={'','未关注','不关注','否','0','false'}
 
 def inspect(path,progress=lambda s:None,cancel=None):
-    from engine import checkpoint
     path=Path(path);before=adapter.digest(path);book=openpyxl.load_workbook(path,read_only=True,data_only=True,keep_links=False);choices={}
     try:
         for ws in book:
@@ -41,7 +41,6 @@ def empty(month):
     data={'schema':1,'month':month,'name':'本月无关注新品（明确设置）','items':[],'source_sha256':'','source_path':'','mapping':{},'saved_at':wr.now()};data['revision']=revision(data);return validate(data)
 
 def import_list(info,sheet,sku_field,focus_field,month,progress=lambda s:None,cancel=None):
-    from engine import checkpoint
     path=Path(info['path']);checkpoint(cancel)
     if adapter.digest(path)!=info['sha256']:raise ValueError('文件在预览后变化，请重新导入')
     if sku_field==focus_field:raise ValueError('商品编码列和关注列不能相同')

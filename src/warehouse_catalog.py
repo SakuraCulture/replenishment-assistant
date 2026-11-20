@@ -1,10 +1,10 @@
 """Externally labelled warehouse snapshots and demand ownership, not stock reservation."""
 from __future__ import annotations
-import copy,hashlib,json,os
+import copy,hashlib,json,os,sqlite3
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from contextlib import contextmanager,ExitStack
+from contextlib import closing,contextmanager,ExitStack
 import openpyxl
 from openpyxl.cell import WriteOnlyCell
 import engine
@@ -14,6 +14,8 @@ from first_fill import FIELD as FIRST_FILL_FIELD,FIELDS as FIRST_FILL_FIELDS
 from app_defaults import WAREHOUSES
 from data_contracts import InputBatch
 _UNSET=object()
+_CURRENT_FIELD='_current_warehouse_catalog'
+_CURRENT_PREFIX=b'{\n  "_current_warehouse_catalog": 1,'
 REQUIRED=['商品编码','分类','基本售价','出库箱规','商品状态','可用数']
 FIELDS=REQUIRED+['商品名称','商品等级','补货模型分类','实际库存数','采购在途数','订单占有数']
 
@@ -53,6 +55,27 @@ def metadata(catalog):return {k:v for k,v in catalog.items() if k!='items'}|{'co
 def execution_warning(catalog):
     missing=sum('商品标签' not in row for row in catalog['items'].values())
     return f'{missing:,}款缺少“商品标签”字段，不能作新的正数执行安排；请补齐标签列。列存在且内容为空表示无标签，缺列不能视为空标签。' if missing else ''
+
+
+def stock_publication_warning(catalog, cancel=None):
+    """Keep the previous current version if an automatic capture has no usable stock."""
+    from jst_allocation import number, status_issue
+    orderable = 0
+    for item in catalog['items'].values():
+        engine.checkpoint(cancel)
+        if '可用数' not in item:
+            return '商品资料缺少“可用数”列，未更新当前仓资料'
+        if status_issue(item):
+            continue
+        orderable += 1
+        try:
+            number(item['可用数'], '可用库存')
+        except ValueError:
+            continue
+        return ''
+    if orderable:
+        return '启用及备用商品的可用数全部缺失或无效，未更新当前仓资料；请核对原件'
+    return ''
 
 
 class CatalogRevisionCheck:
@@ -115,19 +138,83 @@ def _history_file(path):
 
 class Repository:
     def __init__(self,folder):self.folder=Path(folder)
-    def catalogs(self):
-        result={}
-        for wh in WAREHOUSES:
-            p=self.folder/'warehouse_catalogs'/(wh+'.json')
-            if p.exists():
-                data=validate(json.loads(p.read_text(encoding='utf-8')))
-                if data['warehouse']!=wh:raise ValueError('仓资料标签与保存位置不一致')
-                result[wh]=data
-        return result
-    def current_digest(self,warehouse):
+
+    def _file(self,warehouse):
         if warehouse not in WAREHOUSES:raise ValueError('未知仓库')
-        p=self.folder/'warehouse_catalogs'/(warehouse+'.json')
-        return hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None
+        return self.folder/'warehouse_catalogs'/(warehouse+'.json')
+
+    def _legacy_stock(self,warehouse,file_time,load):
+        # Before this update, the last allocation refresh could have been
+        # stored only in SQLite. Read that old head without changing its ledger.
+        path=self.folder/'workbench.sqlite3'
+        if not path.is_file():return None
+        with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=.2)) as db:
+            db.execute('BEGIN')
+            if not db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_warehouses'").fetchone():return None
+            row=db.execute('SELECT b.bid,b.created,b.digest FROM jst_warehouses w JOIN jst_baselines b ON b.bid=w.bid WHERE w.warehouse=?',(warehouse,)).fetchone()
+            if not row:return None
+            bid,created,digest=row
+            if file_time is not None:
+                try:adopted=datetime.fromisoformat(created).timestamp()
+                except (TypeError,ValueError,OverflowError,OSError):return None
+                if adopted<=file_time:return None
+            data=None
+            if load:
+                from jst_order_store import decode
+                base=decode(db.execute('SELECT payload,digest FROM jst_baselines WHERE bid=?',(bid,)).fetchone())
+                data=validate(base['catalog'])
+                if base['warehouse']!=warehouse or data['warehouse']!=warehouse:raise ValueError('历史库存依据所属仓不一致')
+            return data,'legacy:'+bid+':'+digest
+
+    def _current(self,warehouse,*,load=True):
+        path=self._file(warehouse)
+        try:
+            with path.open('rb') as stream:
+                raw=stream.read();file_time=os.fstat(stream.fileno()).st_mtime
+        except FileNotFoundError:raw=None;file_time=None
+        # The marker is written first by atomic_json. Modern digest checks do
+        # not deserialize the full product catalog merely to compare versions.
+        file_digest=hashlib.sha256(raw).hexdigest() if raw is not None else None
+        if raw is None or not raw[:64].replace(b'\r\n',b'\n').startswith(_CURRENT_PREFIX):
+            legacy=self._legacy_stock(warehouse,file_time,load)
+            if legacy is not None:return (*legacy,file_digest)
+        if raw is None:return None,None,None
+        data=None
+        if load:
+            data=validate(json.loads(raw));data.pop(_CURRENT_FIELD,None)
+            if data['warehouse']!=warehouse:raise ValueError('仓资料标签与保存位置不一致')
+        return data,file_digest,file_digest
+
+    def snapshots(self,warehouses=WAREHOUSES):
+        catalogs={};versions={}
+        for warehouse in warehouses:
+            data,versions[warehouse],_=self._current(warehouse)
+            if data is not None:catalogs[warehouse]=data
+        return catalogs,versions
+
+    def catalogs(self):
+        return self.snapshots()[0]
+
+    def current_digest(self,warehouse):
+        return self._current(warehouse,load=False)[1]
+
+    def source_reference(self,warehouse):
+        """The file and, before the first publication, the selected legacy head."""
+        _,current,file_digest=self._current(warehouse,load=False)
+        result={'sha256':file_digest}
+        if current and current.startswith('legacy:'):
+            _,bid,digest=current.split(':')
+            result['legacy']=[bid,digest]
+        return result
+
+    @staticmethod
+    def document(data):
+        return {_CURRENT_FIELD:1,**{k:v for k,v in data.items() if k!=_CURRENT_FIELD}}
+
+    def publication_digest(self,data):
+        raw=json.dumps(self.document(data),ensure_ascii=False,indent=2).replace('\n',os.linesep).encode('utf-8')
+        return hashlib.sha256(raw).hexdigest()
+
     def save(self,data,*,expected_digest=_UNSET,cancel=None):
         from catalog_write_lock import acquire
         validate(data)
@@ -140,14 +227,14 @@ class Repository:
         if expected_digest is not _UNSET and self.current_digest(data['warehouse'])!=expected_digest:
             raise ValueError('采集期间仓资料已被更新，未覆盖其他窗口的新资料')
         # Retain immutable prior snapshots before changing the current pointer file.
-        old=self.catalogs().get(data['warehouse'])
+        old,_,_=self._current(data['warehouse'])
         for item in [old,data]:
             if item:
                 key=hashlib.sha256(json.dumps(item,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
                 p=self.folder/'warehouse_catalogs'/'history'/data['warehouse']/(key+'.json')
                 if not p.exists():atomic_json(p,item)
         engine.checkpoint(cancel)
-        atomic_json(self.folder/'warehouse_catalogs'/(data['warehouse']+'.json'),data)
+        atomic_json(self._file(data['warehouse']),self.document(data))
     def history(self,warehouse):
         if warehouse not in WAREHOUSES:raise ValueError('未知仓库')
         folder=self.folder/'warehouse_catalogs'/'history'/warehouse

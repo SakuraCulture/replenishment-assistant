@@ -10,19 +10,22 @@ import new_product_focus as focus
 from version_info import MODEL_VERSION
 from io_stages import stage
 from export_progress import RowProgress,prefixed
+from lifecycle_routes import schema as route_schema
+
+RESULT_DIGEST_EXCLUSIONS = ('created', 'task', 'version')
 
 
 def fingerprint(result,new_focus=None):
     business=copy.deepcopy(result)
     # Exact root-only nonbusiness whitelist. Original snapshot retains these fields.
-    for key in ('created','task','version'):business.pop(key,None)
+    for key in RESULT_DIGEST_EXCLUSIONS:business.pop(key,None)
     if new_focus is not None:business={'result':business,'new_focus':focus.validate(new_focus)['revision']}
     return hashlib.sha256(wr.dumps(business).encode()).hexdigest()
 
 
 def fingerprint_owned(result,new_focus=None):
     """Same canonical digest; caller exclusively owns the decoded, unmodified tree."""
-    business={k:v for k,v in result.items() if k not in ('created','task','version')}
+    business={k:v for k,v in result.items() if k not in RESULT_DIGEST_EXCLUSIONS}
     if new_focus is not None:business={'result':business,'new_focus':focus.validate(new_focus)['revision']}
     from encoding_store import digest
     return digest(business)
@@ -57,6 +60,25 @@ def revision_diff(old,new):
     return {'added':added,'removed':removed,'changed':changed,'old_settings':old.get('effective_settings') if old else None,'new_settings':new.get('effective_settings'),'old_sources':old.get('sources') if old else None,'new_sources':new.get('sources')}
 
 
+def read_repository(path):
+    """Open existing signed orders for reading without initializing storage."""
+    return Repository.from_existing_work(wr.Repository.open_existing(path, read_only=True))
+
+
+def revision_source(db, day, store, revision=None):
+    """Locate the original manifest. The caller verifies it before using its payload."""
+    row = db.execute("SELECT oid,number,current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'", (day, store)).fetchone()
+    if row is None:
+        return None
+    oid, number, current = row
+    rev = current if revision is None else revision
+    data = db.execute('SELECT digest,saved,payload FROM normal_revisions WHERE oid=? AND revision=?', (oid, rev)).fetchone()
+    if data is None:
+        raise ValueError('归档修订不存在')
+    digest, saved, blob = data
+    return {'oid':oid,'number':number,'day':day,'store':store,'revision':rev,'current_revision':current,'digest':digest,'saved':saved,'payload':blob}
+
+
 class Repository:
     def __init__(self, work):
         self.work=work
@@ -80,25 +102,23 @@ class Repository:
 
     def get(self,day,store,revision=None,*,view=None,progress=lambda _:None,export_io=False):
         with closing(self.work.connect()) as db:
-            row=db.execute("SELECT oid,number,current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",(day,store)).fetchone()
-            if row is None:return None
-            oid,number,current=row;rev=current if revision is None else revision
-            data=db.execute('SELECT digest,saved,payload FROM normal_revisions WHERE oid=? AND revision=?',(oid,rev)).fetchone()
-            if data is None:raise ValueError('归档修订不存在')
+            source=revision_source(db,day,store,revision)
+            if source is None:return None
+            blob,digest=source['payload'],source['digest']
             fields={'export':[('result','rows'),('result','summary'),('result','store'),('result','store_name'),('new_focus',)],'review':[('result','summary'),('result','effective_settings'),('result','sources'),('new_focus',)]}
             if view is not None and view not in fields:raise ValueError('未知归档读取范围')
             if view:
-                parts=chunks.load(data[2],db,paths=fields[view],binding=data[0],progress=progress)
+                parts=chunks.load(blob,db,paths=fields[view],binding=digest,progress=progress)
                 payload={'result':{path[1]:value for path,value in parts.items() if path[0]=='result'},'new_focus':parts.get(('new_focus',))}
             else:
                 bounded=False
                 if export_io:
                     from adaptive_resources import Budget
-                    resources=Budget();bounded=not resources.restore_fits(chunks.require_manifest(data[2])['size'])
+                    resources=Budget();bounded=not resources.restore_fits(chunks.require_manifest(blob)['size'])
                     progress('导出快照资源自适应：'+('逐块读取' if bounded else '完整解析')+'；'+resources.description())
-                payload=chunks.load(data[2],db,binding=data[0],progress=progress,bounded=bounded)
-                if fingerprint_owned(payload['result'],payload.get('new_focus'))!=data[0]:raise ValueError('归档快照校验失败')
-            return {'oid':oid,'number':number,'day':day,'store':store,'revision':rev,'current_revision':current,'digest':data[0],'saved':data[1],'payload':payload}
+                payload=chunks.load(blob,db,binding=digest,progress=progress,bounded=bounded)
+                if fingerprint_owned(payload['result'],payload.get('new_focus'))!=digest:raise ValueError('归档快照校验失败')
+            return {**source,'payload':payload}
 
     def head(self,day,store):
         with closing(self.work.connect()) as db:
@@ -162,7 +182,8 @@ class Repository:
             selected=available if choice is None else choice.get(s,[])
             if not selected or len(selected)!=len(set(selected)) or any(w not in available for w in selected):raise ValueError('请选择本轮有效的执行仓：'+s)
             selected_warehouses[s]=list(selected)
-        focus.require_for(payload.get('new_focus'),day,[payload['results'][s] for s in codes])
+        del r
+        focus.require_for(payload.get('new_focus'),day,(payload['results'][s] for s in codes))
         # Freeze preparation outside the write transaction. Compare every revision
         # again inside BEGIN IMMEDIATE before publishing any prepared content.
         with closing(self.work.connect()) as db:
@@ -203,6 +224,7 @@ class Repository:
                     raise wr.Conflict('签发准备期间门店内容发生变化，请重新核对')
                 prepared.append((s,oid,number,rev,h,encoded,result['summary']))
             progress(RowProgress(f'准备正常单：{index} / {len(codes)} 家',index,len(codes)))
+        result=record=None
         # Persist exact per-warehouse identities before entering COMMIT. A
         # selected unchanged warehouse may legitimately remain on an older
         # source revision than its sibling's newly prepared calculation.
@@ -233,6 +255,7 @@ class Repository:
                         expected.append(execution._head(head,warehouse,head['revision'],head['digest'],head['saved'],(old_child or {}).get('child_revision',0)+1,projected_digest))
                         publications[s][warehouse]=encoded
                 head['warehouse_heads']=expected
+        record=projected=None
         # Export recovery can persist these exact planned identities before the
         # transaction starts. Their existence is still checked against the DB;
         # preparing an identity never constitutes successful signing.
@@ -286,8 +309,7 @@ class Repository:
                 db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',(oid,rev,h,stamp,chunks.put(db,encoded,cancel=cancel)))
                 db.execute('UPDATE normal_orders SET current=? WHERE oid=?',(rev,oid))
                 if payload.get('lifecycle_flow',1)>=2:
-                    import operations_flow
-                    operations_flow.schema(db)
+                    route_schema(db)
                     db.execute('INSERT OR REPLACE INTO lifecycle_routes VALUES(?,?,2)',(oid,rev))
                 db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,oid,rev,'确认归档' if rev==1 else '同日覆盖修订',wr.dumps({'number':number,'day':day,'store':s,'summary':summary,'previous_revision':rev-1 or None})))
             for head in heads:

@@ -171,6 +171,6 @@ class Platforms:
                 repo.save_value(rid,name,catalog,runner.epoch)
                 ack={'warehouse':wh,'source_sha256':catalog['source_sha256'],'purpose':'scheduled_replenishment','run_id':rid}
                 client.request('sync.acknowledge_adoption',batch_id=bid,item_id=item['id'],receipt=ack)
-            catalogs[wh]=catalog;states[wh]='本任务资料已留存；默认资料待工作台空闲时更新'
+            catalogs[wh]=catalog;states[wh]='本任务资料已留存，工作台空闲时发布为当前仓资料'
         repo.change(rid,epoch=runner.epoch,warehouses=states)
         return catalogs

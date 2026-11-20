@@ -90,3 +90,23 @@ class AllocationRecovery(unittest.TestCase):
         r=b.recover_batch(self.path,bid)
         self.assertEqual(r['generated'],[]);self.assertEqual(r['pending'],[self.f.h['number']])
         self.assertEqual(b.drain(self.path),[]);self.assertEqual(self.counts(),(0,0,0))
+
+    def test_original_zero_recovers_by_batch_even_after_positive_new_batch(self):
+        import jst_results
+        main=self.f.h;path=self.path
+        first=b.execute(path,b.preview_new(path,[main],{'河北仓':fixture.catalog(stock=0)}))
+        self.assertEqual(first['zero'],[main['number']])
+        second=b.execute(path,self.plan())
+        self.assertEqual(len(second['generated']),1);self.assertNotEqual(first['batch_id'],second['batch_id'])
+        for legacy in (False,True):
+            if legacy:
+                with closing(sqlite3.connect(path)) as db,db:
+                    db.execute("UPDATE jst_events SET detail=json_remove(detail,'$.batch_id') WHERE action='库存不足未生成'")
+            recovered=b.recover_batch(path,first['batch_id'])
+            self.assertEqual(recovered['generated'],[]);self.assertEqual(recovered['zero'],first['zero'])
+            self.assertFalse(recovered['errors'])
+            view=jst_results.read(path,self.f.f.root/'batch-cache.sqlite3',main['day'],batch_id=first['batch_id'])
+            self.assertEqual(view['counts']['zero'],1)
+            self.assertEqual(view['records'][0]['reason'],'原批分配为0，本单已有其他批次生成结果')
+            self.assertEqual(jst_results.export_plan(view)['entries'],[])
+        self.assertEqual(b.recover_batch(path,second['batch_id'])['generated'],second['generated'])

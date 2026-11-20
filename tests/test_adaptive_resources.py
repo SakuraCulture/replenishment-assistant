@@ -1,4 +1,5 @@
 """Scratch adaptation on isolated synthetic orders; no platform or user data."""
+import snapshot_json
 import copy
 import hashlib
 import tempfile
@@ -87,7 +88,7 @@ class Budgets(unittest.TestCase):
             return original(obj)
         with tempfile.TemporaryDirectory() as root,encoding_store.Store(Path(root)/'db',resources=source.budget()) as store:
             parts=[]
-            with patch.object(wr,'dumps',side_effect=fail_once):key,size=store.encode(value,parts.append)
+            with patch.object(snapshot_json,'dumps',side_effect=fail_once):key,size=store.encode(value,parts.append)
             self.assertTrue(state['raised']);self.assertEqual(b''.join(parts),expected)
             self.assertEqual((key,size),(hashlib.sha256(expected).hexdigest(),len(expected)))
             self.assertEqual(store.pressure_fallbacks,1)

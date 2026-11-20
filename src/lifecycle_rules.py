@@ -1,6 +1,9 @@
 """Ordered reconciliation of immutable document facts; no model calculation."""
 import copy
 from decimal import Decimal
+from order_keys import document_version
+
+DOCUMENT_SCHEMA = 2
 
 RULE = 'sequential-zero-v1'
 LABELS = {'value':'已提供', 'zero':'明确填0', 'blank':'空白按0', 'missing':'缺行按0', 'extra':'清单外商品'}
@@ -35,7 +38,16 @@ def reconcile(raw_rows, products, pending=False):
     return rows
 
 def basis_token(doc):
-    return {'version':doc['version'],'digest':doc['digest']} if doc else None
+    if not doc:
+        return None
+    version, digest = document_version(doc)
+    return {'version': version, 'digest': digest}
 
 def same_basis(a,b):
     return a==b
+
+
+def document_summary(doc):
+    if not doc:return None
+    p=doc['payload']
+    return {'version':doc['version'],'digest':doc['digest'],'schema':p.get('schema',1),'pending':p.get('pending',False),'dependencies':p.get('basis',{}).get('dependencies',{}),'positive':len(positive(p['rows']))}

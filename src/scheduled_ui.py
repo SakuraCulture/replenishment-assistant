@@ -110,11 +110,11 @@ class Manager(QObject):
         task=Call(lambda _:publish_catalogs(self.repo,run['id'],self.folder),self);self.publisher=task
         def adopted(value):
             self.status.setText(value[0])
-            if not self.host.loaded:self.host.catalogs=value[1];self.host.refresh_catalog_labels()
+            for catalog in value[1].values():self.host.current_warehouse_adopted(catalog)
         def failed(error):
             prior=self.repo.get(run['id']).get('publication',{})
-            self.repo.change(run['id'],publication={**prior,'state':'NEEDS_REVIEW'},message='计算已完成；默认仓资料未更新：'+error)
-            self.status.setText('默认仓资料更新需核对；本次计算结果保持')
+            self.repo.change(run['id'],publication={**prior,'state':'NEEDS_REVIEW'},message='计算已完成，当前仓资料发布待核对。'+error)
+            self.status.setText('计算已完成，当前仓资料发布待核对')
         task.succeeded.connect(adopted);task.failed.connect(failed)
         def finished():self.publisher=None;task.deleteLater()
         task.finished.connect(finished);task.start()
@@ -375,11 +375,12 @@ class Window(QDialog):
     def publish(self):
         def act():
             r=self.selected()
-            if self.m.host.loaded or self.m.busy():raise ValueError('当前工作台已载入数据或正在操作；请先保存并关闭当前草稿，默认资料保持不动')
-            if not ask(self,'更新默认仓资料','仅采用本任务已验证的仓资料，供以后检查文件使用；不替换历史、当前草稿或聚水潭分配库存。采集后默认已被修改的仓会拒绝覆盖。'):return
+            if self.m.host.loaded or self.m.busy():raise ValueError('当前工作台已载入数据或正在操作，请先保存并关闭当前草稿')
+            if not ask(self,'发布当前仓资料','采用本任务已验证的仓资料，供后续补货检查和新分配使用。已有分配批次继续使用原库存。采集期间同仓如有更新，请核对当前资料。'):return
             def apply(p):return publish_catalogs(self.m.repo,r['id'],self.m.folder)
             def adopted(result):
-                self.note.setText(result[0]);self.m.host.catalogs=result[1];self.m.host.refresh_catalog_labels()
+                self.note.setText(result[0])
+                for catalog in result[1].values():self.m.host.current_warehouse_adopted(catalog)
             self.call(apply,adopted)
         self.guard(act)
     def closeEvent(self,e):

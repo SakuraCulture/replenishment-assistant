@@ -20,7 +20,7 @@ def start_smoke(app,win,args):
         from lifecycle_ui import Review
         d=QApplication.activeModalWidget()
         if isinstance(d,QMessageBox):
-            if d.windowTitle() in ('确认生成聚水潭订单','确认已在聚水潭下单'):
+            if d.windowTitle()=='确认生成聚水潭订单':
                 b=d.button(QMessageBox.StandardButton.Yes)
                 if b:b.click()
                 else:state['error']='No confirm button';d.reject()
@@ -84,22 +84,22 @@ def start_smoke(app,win,args):
                 if len(r['generated'])!=4 or r['errors']:raise AssertionError(r)
                 checks.append('实际窗口预览、四店仓单后台生成、逐单导出与四列文件')
                 dialog.completed.item(0).setSelected(True);gid=dialog.completed.item(0).data(Qt.ItemDataRole.UserRole);p=j.get(path,gid)
-                dialog.lock_saved()
                 with closing(sqlite3.connect(path)) as db:
-                    if j.locked(db,p['head'])!=gid:raise AssertionError('lock did not persist')
-                checks.append('已生成单选择、确认下单锁定')
+                    if db.execute('SELECT 1 FROM jst_locks').fetchone():raise AssertionError('new orders created a manual lock')
+                checks.append('已生成单支持选择及导出，无需手动标记下单')
+                dialog.reject();dialog.deleteLater()
+                dialog=jst_ui.GenerationDialog(win,win,heads);dialog.show();wait(lambda:len(dialog.catalogs)==2)
                 wh=p['head']['warehouse'];dialog.warehouse.setCurrentText(wh)
                 mime=QMimeData();mime.setUrls([QUrl.fromLocalFile(str(out/(wh+'-新库存.xlsx')))])
                 drop=QDropEvent(QPointF(20,20),Qt.DropAction.CopyAction,mime,Qt.MouseButton.LeftButton,Qt.KeyboardModifier.NoModifier);dialog.dropEvent(drop)
+                from warehouse_catalog import Repository
+                current=Repository(path.parent).catalogs()[wh]
+                if Path(current['source_path']).name!=wh+'-新库存.xlsx':raise AssertionError('warehouse refresh was not published')
+                if j.get(path,gid)!=p:raise AssertionError('warehouse refresh changed a saved generation')
                 with closing(sqlite3.connect(path)) as db:
-                    b=j.baseline(db,wh)
-                    if gid not in b['included']:raise AssertionError('locked order not included')
-                    sku=p['rows'][0]['sku'];remaining=j.reservations(db,wh,set(b['included'])).get(sku,0)
-                    if remaining!=24:raise AssertionError(('unlocked remaining',remaining))
-                checks.append('实际拖拽更新仓资料、已锁不重复扣、未锁预留保留')
-                dialog.preview()
-                if dialog.plan['payload']['plans'] or len(dialog.plan['payload']['skipped'])!=4:raise AssertionError('repeated generation not skipped')
-                dialog.grab().save(str(out/'generated-and-locked.png'));dialog.reject();dialog.deleteLater();dialog=None
+                    if db.execute('SELECT COUNT(*) FROM jst_active').fetchone()[0]!=4:raise AssertionError('refresh changed active generations')
+                checks.append('实际拖拽发布新仓资料，已保存的四张生成单可追溯')
+                dialog.grab().save(str(out/'after-refresh.png'));dialog.reject();dialog.deleteLater();dialog=None
                 jst_ui.detail(win,win,heads)
                 if not state.get('history_checked') or state.get('error'):raise AssertionError(state)
                 checks.append('已生成分配依据默认门店汇总、实际点击展开本店商品')
@@ -132,11 +132,11 @@ def start_smoke(app,win,args):
             else:
                 saved=json.loads((out/'saved.json').read_text(encoding='utf-8'));gid=saved['gid']
                 with closing(sqlite3.connect(path)) as db:
-                    if not j.locked(db,saved['head']):raise AssertionError('lost lock after restart')
+                    if j.active(db,saved['head'])!=gid:raise AssertionError('lost generation after restart')
                 if lc.snapshot(path,saved['head'])['next']!='receipt':raise AssertionError('lost payment')
                 r=ex.export(path,[gid],out/'exports')
                 if len(r['files'])!=1 or r['failed']:raise AssertionError('reexport failed')
-                checks.extend(['重开、日批次与锁单和付款恢复','原生成重复导出同名覆盖'])
+                checks.extend(['重开后能读取原生成及付款记录','原生成重复导出同名覆盖'])
             win.followup.query();wait(lambda:win.followup.table.isEnabled() and len(win.followup.records)==4);win.grab().save(str(out/('daily-'+phase+'.png')))
             log=jst_ui.Logs(win,win,wr.today(),wr.today());log.show();wait(lambda:hasattr(log,'records'))
             if not log.records:raise AssertionError('missing logs')

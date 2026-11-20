@@ -164,6 +164,24 @@ class PurchaseDispatchTests(unittest.TestCase):
         file.write_text(json.dumps(catalog, ensure_ascii=False), encoding='utf-8')
         self.assertEqual(self.node()['code'], 'PURCHASE_BASIS_CHANGED')
 
+    def test_legacy_catalog_head_is_rechecked_until_first_current_publication(self):
+        import jst_orders as jst
+        from warehouse_catalog import Repository
+        path = self.f.path
+        repository = Repository(path.parent)
+        catalog = repository.catalogs()['河北仓']
+        jst.commit_refresh(path, jst.prepare_refresh(path, '河北仓', catalog=catalog))
+        (path.parent / 'warehouse_catalogs/河北仓.json').unlink()
+        validate_for_upload(path, self.package, self.task.config, self.task.suppliers)
+        self.assertTrue(self.node()['ok'])
+        jst.commit_refresh(path, jst.prepare_refresh(path, '河北仓', catalog=catalog))
+        self.assertEqual(self.node()['code'], 'PURCHASE_BASIS_CHANGED')
+        validate_for_upload(path, self.package, self.task.config, self.task.suppliers)
+        repository.save(catalog)
+        self.assertEqual(self.node()['code'], 'PURCHASE_BASIS_CHANGED')
+        validate_for_upload(path, self.package, self.task.config, self.task.suppliers)
+        self.assertTrue(self.node()['ok'])
+
 
 if __name__ == '__main__':
     unittest.main()

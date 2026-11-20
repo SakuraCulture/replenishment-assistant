@@ -23,6 +23,40 @@ from structure_oracle import excel_snapshot
 
 
 class ActualInputTests(unittest.TestCase):
+    def test_replenishment_uses_current_warehouse_snapshot_and_rejects_midread_refresh(self):
+        import batch_service
+        import openpyxl
+        from warehouse_catalog import Repository
+        from test_jst import catalog
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root/'sales.xlsx'
+            workbook = openpyxl.Workbook()
+            sheet = workbook.active
+            sheet.title = '商品补货建议'
+            sheet.append(['仓库/门店编码', '仓库/门店名称', '商品编码', '商品名称', '日销', '周销', '月销', '可用库存', '在途库存', '缺货天数（天）'])
+            sheet.append(['T', '合成门店', '0001', '合成饮品', 1, 7, 30, 0, 0, 0])
+            workbook.save(source)
+            workbook.close()
+            repository = Repository(root)
+            repository.save(catalog(stock=408, price=2))
+            before = batch_service.load([source], repository)
+            self.assertEqual(before['normalized'][0][1]['warehouse_available'], 408)
+            prepare = batch_service.prepare
+
+            def refresh(data, progress, cancel):
+                loaded = prepare(data, progress, cancel)
+                repository.save(catalog(stock=8628, price=3))
+                return loaded
+
+            with patch.object(batch_service, 'prepare', side_effect=refresh):
+                with self.assertRaisesRegex(ValueError, '检查期间当前仓资料已刷新'):
+                    batch_service.load([source], repository)
+            current = batch_service.load([source], repository)
+            row, meta = current['normalized'][0]
+            self.assertEqual((row['V'], meta['warehouse_available']), (3, 8628))
+            self.assertEqual(current['warehouse_catalog_versions']['河北仓'], repository.current_digest('河北仓'))
+
     def test_automatic_manual_source_rows_results_and_workbooks_equal(self):
         import openpyxl
         import engine

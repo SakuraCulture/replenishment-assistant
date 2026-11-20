@@ -24,11 +24,30 @@ class Deletion(unittest.TestCase):
         self.assertFalse(sd.has_parameters(after['A']));self.assertEqual(pp.signature(after['A']['preset']['config']),pp.signature(schema.standard()))
         self.assertEqual(self.repo.list_jobs(),[])
     def test_atomic_conflict_and_repeat_no_recreation(self):
+        from settings_history import history
+
         expected=pp.snapshot(self.repo);changed=self.repo.stores()['B'];changed['ui']['amount']='456';self.repo.save_stores({'B':changed})
-        with self.assertRaises(wr.Conflict):pp.clear_defaults(self.repo,['A'],expected)
+        before = {code:self.raw(code) for code in ('A','B')}
+        events = history(self.repo)
+        with self.assertRaises(wr.Conflict):pp.clear_defaults(self.repo,['A','B'],expected)
+        self.assertEqual({code:self.raw(code) for code in ('A','B')}, before)
+        self.assertEqual(history(self.repo), events)
         self.assertTrue(sd.has_parameters(self.repo.stores()['A']))
-        pp.clear_defaults(self.repo,['A'],pp.snapshot(self.repo));first=self.raw('A')
-        pp.clear_defaults(self.repo,['A'],pp.snapshot(self.repo));self.assertEqual(first,self.raw('A'))
+
+        pp.clear_defaults(self.repo,['A'],expected)
+        first = self.raw('A')
+        self.assertNotIn('preset', first)
+        self.assertEqual(first['ui'], before['A']['ui'])
+        self.assertEqual(self.raw('B'), before['B'])
+        saved_events = history(self.repo)
+        self.assertEqual(len(saved_events), len(events)+1)
+        self.assertEqual(set(saved_events[0]['after']), {'A'})
+
+        self.assertEqual(pp.clear_defaults(self.repo,['A','MISSING'],pp.snapshot(self.repo)), {})
+        self.assertEqual(self.raw('A'), first)
+        self.assertEqual(self.raw('B'), before['B'])
+        self.assertNotIn('MISSING', self.repo.stores())
+        self.assertEqual(history(self.repo), saved_events)
     def test_follow_default_falls_back_but_explicit_plan_still_wins(self):
         plan=plans.Repository(self.repo.path).save({'name':'测试线路','parameter_mode':pp.MODE,'config':schema.standard(),
              'stores':[{'code':'A','name':'A','preset_id':None},{'code':'B','name':'B','preset_id':self.p['id']}]})

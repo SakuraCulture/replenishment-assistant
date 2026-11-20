@@ -3,6 +3,7 @@ import copy
 from decimal import Decimal
 import allocation
 import result_semantics as sem
+from runtime_support import checkpoint
 
 AUTO_RULE='monthly-first-fill-1'
 FIRST_FILL_KEYS=('_new_requested','_candidate_qty','_candidate_amount','_execution_qty','_execution_amount','_new_stockout_basis')
@@ -24,7 +25,6 @@ def seed_monthly(result, context, cancel=None,*,budget=None):
     from datetime import date
     import new_product_focus as focus
     import first_fill
-    from engine import checkpoint
     from restock_policy import result_values
     profile=focus.validate(context['focus']);day=date.fromisoformat(context['day']).isoformat()
     audit={'rule':AUTO_RULE,'day':day,'month':profile['month'],'focus_revision':profile['revision'],'selected':0,'budget_input':budget}
@@ -99,7 +99,6 @@ def category(row):
 
 def apply(base, selections, cancel=None, progress=lambda s:None):
     """Always start from the unmodified calculation. Empty selection is exact identity."""
-    from engine import checkpoint
     if base.get('new_products'):raise ValueError('必须从原计算结果重新分配，不能叠加新品')
     if selections:
         from restock_policy import guard_new

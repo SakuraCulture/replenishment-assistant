@@ -208,6 +208,9 @@ class WorkflowUiTests(unittest.TestCase):
         d.accept();d.deleteLater()
 
     def test_bulk_checks_only_selectable_items_and_keep_current_batch_scope(self):
+        from PySide6.QtCore import QPoint
+        from PySide6.QtTest import QTest
+
         job = self.m.store.prepare([head(1), head(2), head(3)])
         job = self.m.store.update(job['id'], position=2, changes={'state':'SKIPPED','package':{'id':'p3'}})
         other = self.prepared(4)
@@ -217,6 +220,14 @@ class WorkflowUiTests(unittest.TestCase):
         unchecked = Qt.CheckState.Unchecked
 
         self.assertFalse(d.clear_checks_btn.isEnabled())
+        d.show();self.app.processEvents()
+        header=d.table.horizontalHeader();point=QPoint(header.sectionSize(0)//2,header.height()//2)
+        QTest.mouseClick(header.viewport(),Qt.MouseButton.LeftButton,pos=point)
+        self.assertEqual(d.selection_count.text(), '已勾选 2 单')
+        self.assertEqual(d.table.horizontalHeaderItem(0).text(),'清空')
+        QTest.mouseClick(header.viewport(),Qt.MouseButton.LeftButton,pos=point)
+        self.assertEqual(d.selection_count.text(), '已勾选 0 单')
+        self.assertEqual(d.table.horizontalHeaderItem(0).text(),'全选')
         d.select_all_btn.click()
         self.assertEqual([d.table.item(r, 0).checkState() for r in range(3)], [checked, checked, unchecked])
         self.assertEqual(d.selection_count.text(), '已勾选 2 单')

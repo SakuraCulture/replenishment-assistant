@@ -8,7 +8,7 @@ from aoxiang_acquisition import verify_loaded
 def adopt(host, value):
     if host.worker or host.readonly or host.closing:
         return False
-    products = host.products.path if host.master_legacy.isChecked() else host.catalogs
+    products = host.products.path if host.master_legacy.isChecked() else host.catalog_repository if host.catalogs else None
     if not products:
         QMessageBox.information(host, '先准备商品资料', '采集文件已保留。请先导入对应仓商品资料，再从翱象采集记录采用本次文件。')
         return False

@@ -64,7 +64,7 @@ class Save(unittest.TestCase):
     def test_operations_reuses_exact_verified_return_without_decoding_large_payload(self):
         lc.commit(self.f.path,self.plan());plan=self.plan('operations')
         self.assertIn('return',plan['plans'][0]['_read_proofs'])
-        with patch('order_lifecycle.decode',wraps=lc.decode) as decode:
+        with patch('lifecycle_facts.decode',wraps=lc.decode) as decode:
             lc.commit(self.f.path,copy.deepcopy(plan))
         self.assertFalse(any(call.args[0] is not None for call in decode.call_args_list))
         self.assertEqual(self.f.view()['documents']['operations']['payload']['rows'][0]['base_quantity'],'5')
@@ -103,7 +103,7 @@ class Save(unittest.TestCase):
             value=wr.loads(db.execute("SELECT payload FROM lifecycle_versions WHERE stage='return'").fetchone()[0])
             value['files'][0]['path']='retained-original-different-path'
             db.execute("UPDATE lifecycle_versions SET payload=? WHERE stage='return'",(wr.dumps(value),))
-        with patch('order_lifecycle.decode',wraps=lc.decode) as decode:lc.commit(self.f.path,plan)
+        with patch('lifecycle_facts.decode',wraps=lc.decode) as decode:lc.commit(self.f.path,plan)
         self.assertTrue(any(c.args[0] is not None for c in decode.call_args_list))
 
     def test_schema_one_dependency_has_identical_quantity_semantics(self):
@@ -123,9 +123,9 @@ class Save(unittest.TestCase):
                 elif mode=='bad_type':p['_read_proofs']=[]
                 else:
                     with patch('lifecycle_read_proofs._KEY',b'other-process'):
-                        with patch('order_lifecycle.decode',wraps=lc.decode) as decode:lc.commit(self.f.path,plan)
+                        with patch('lifecycle_facts.decode',wraps=lc.decode) as decode:lc.commit(self.f.path,plan)
                     self.assertTrue(any(c.args[0] is not None for c in decode.call_args_list));continue
-                with patch('order_lifecycle.decode',wraps=lc.decode) as decode:lc.commit(self.f.path,plan)
+                with patch('lifecycle_facts.decode',wraps=lc.decode) as decode:lc.commit(self.f.path,plan)
                 self.assertTrue(any(c.args[0] is not None for c in decode.call_args_list))
 
     def test_old_plan_without_proofs_still_works(self):

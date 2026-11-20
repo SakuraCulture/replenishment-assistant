@@ -5,39 +5,14 @@ SQLite CAS plus the generation service protect competing consumers.
 """
 import sqlite3
 from contextlib import closing
-import order_lifecycle as lc
-import jst_orders as j
-import work_repository as wr
-from runtime_support import checkpoint, Cancelled
-from export_progress import RowProgress
-
-
-def schema(db):
-    db.execute('CREATE TABLE IF NOT EXISTS jst_tasks(task TEXT PRIMARY KEY,created TEXT,head TEXT,token TEXT,status TEXT,plan TEXT,message TEXT)')
-
-
-def enqueue(db, head, token):
-    from deletion_barrier import require
-    require(db,head['oid'])
-    import warehouse_execution
-    warehouse_execution.validate(db,head)
-    schema(db)
-    h={k:v for k,v in head.items() if k!='products'}
-    identity=j.digest([lc.key(h),token])
-    row=db.execute('SELECT saved FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=? AND version=?',(*lc.key(h),lc.flow.demand_stage(db,h),token['version'])).fetchone()
-    db.execute('INSERT OR IGNORE INTO jst_tasks VALUES(?,?,?,?,?,?,?)',
-               (identity,row[0] if row else wr.now(),wr.dumps(h),wr.dumps(token),'pending',None,'回传已确认，待准备分配批次'))
-
-
-def pending(path):
-    with closing(sqlite3.connect(path)) as db:
-        if not db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_tasks'").fetchone():return []
-        return db.execute("SELECT task,head,token,plan FROM jst_tasks WHERE status IN ('pending','prepared') ORDER BY created,json_extract(head,'$.day'),json_extract(head,'$.number'),rowid LIMIT 100").fetchall()
+from sqlite_write import begin
+from jst_task_store import enqueue, pending, schema
+from runtime_support import checkpoint
 
 
 def mark(path,task,status,message):
     with closing(sqlite3.connect(path,timeout=.1)) as db,db:
-        lc.begin(db,None)
+        begin(db,None)
         db.execute('UPDATE jst_tasks SET status=?,message=? WHERE task=?',(status,message,task))
 
 

@@ -1,5 +1,5 @@
 """Business-labelled projections of exact historical snapshots. No live config lookup."""
-from contextlib import closing
+from contextlib import closing, nullcontext
 import io
 import openpyxl
 import storage_chunks as chunks
@@ -26,9 +26,9 @@ def fields(value,prefix=''):
         text='未提供' if value is None else '空文本' if value=='' else '是' if value is True else '否' if value is False else str(value)
         yield [prefix,text,kind]
 
-def work_parts(repo,order,paths):
+def work_parts(repo,order,paths,*,db=None):
     rev=order['payload'].get('work_revision')
-    with closing(repo.work.connect()) as db:
+    with (closing(repo.work.connect()) if db is None else nullcontext(db)) as db:
         row=db.execute('SELECT payload FROM normal_work_revisions WHERE revision=?',(rev,)).fetchone()
         if not row:return {}
         return chunks.load(row[0],db,paths=paths)

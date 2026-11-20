@@ -34,6 +34,7 @@ class ParameterScene(QWidget):
         row.addWidget(button('二类医疗资质',lambda:open_overview(self,self.host,'qualification')))
         row.addWidget(button('门店拒收清单',lambda:open_overview(self,self.host,'refusals')))
         row.addWidget(button('聚水潭店铺名称维护',lambda:__import__('payment_shop_names_ui').open_names(self,self.host)))
+        row.addWidget(button('聚水潭配送资料维护',self.open_delivery_profiles))
         row.addStretch();v.addLayout(row)
         row=QHBoxLayout()
         row.addWidget(button('全局分类映射',lambda:open_mapping(self,host)))
@@ -91,6 +92,10 @@ class ParameterScene(QWidget):
     def open_presets(self):
         from parameter_preset_ui import PresetLibrary
         PresetLibrary(self.host).exec();self.refresh()
+
+    def open_delivery_profiles(self):
+        from jst_auto_order_ui import profiles
+        profiles(self,self.host)
 
     def quick_settings(self):
         from parameter_quick_ui import open_quick

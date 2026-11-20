@@ -1,4 +1,4 @@
-"""Analysis-owned intentions over shared native command journals. Never publish business masters."""
+"""Analysis-owned intentions over shared native command journals."""
 from pathlib import Path
 import time
 import uuid
@@ -73,11 +73,17 @@ def collect_catalogs(repo,rid,rpc,cancel,progress,*,warehouses=None,loader=load_
         from catalog_binding_guard import adoption_guard
         with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
             sha=loader(repo,receipt['source'],wh,expected=receipt['source_sha256'],expected_rows=receipt['rows'],cancel=cancel,progress=progress)
-            catalogs[wh]=sha
-            repo.change(rid,catalogs=catalogs)
-            ack={'warehouse':wh,'source_sha256':sha,'purpose':'stockout_analysis','run_id':external['catalog_owner']}
+        if 'current_catalog_digest' in (item.get('observation') or {}) and not item.get('adoption'):
+            publication=rpc('publish_current_catalog',batch_id=bid,item_id=item['id'])
+            if publication.get('superseded'):progress(wh+'本次观测已留存，当前仓资料已有更新版本')
+            elif publication.get('skipped_reason'):progress(wh+'本次观测已留存，仓资料字段待补。'+publication['skipped_reason'])
+            else:progress(wh+'当前仓资料已更新')
+        ack={'warehouse':wh,'source_sha256':sha,'purpose':'stockout_analysis','run_id':external['catalog_owner']}
+        with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
             if not item.get('adoption'):client.request('sync.acknowledge_adoption',batch_id=bid,item_id=item['id'],receipt=ack)
             elif item['adoption']!=ack:raise ValueError('分析原件曾被其他用途采用，请核对原任务')
+        catalogs[wh]=sha
+        repo.change(rid,catalogs=catalogs)
     external=repo.run(rid)['external'];external['catalogs_pending']=any(w not in catalogs for w in warehouses)
     repo.change(rid,external=external)
     rpc('release_jst')

@@ -1,6 +1,7 @@
 """Shared workbench decisions. No Qt, model changes or implicit persistence."""
 import copy
 from decimal import Decimal, InvalidOperation
+from deletion_barrier import read_epochs, read_warehouse_epochs
 
 
 def budget_value(mode, raw, profile):
@@ -30,6 +31,18 @@ def parameter_settings(result, config, preset, admission_snapshot):
                   exception=config['exception'], preset={k: v for k, v in preset.items() if k != 'config'},
                   parameter_signature=schema.signature(config))
     return result
+
+
+def current_calculation_result(path, day, store, store_generations, warehouse_generations):
+    """Check captured deletion generations before publishing a worker result."""
+    if store in store_generations:
+        if read_epochs(path, day, [store])[store] != store_generations[store]:
+            return False
+    if store in warehouse_generations:
+        scope = {store: list(warehouse_generations[store])}
+        if read_warehouse_epochs(path, day, scope)[store] != warehouse_generations[store]:
+            return False
+    return True
 
 
 def recalculation_impact(results, codes):

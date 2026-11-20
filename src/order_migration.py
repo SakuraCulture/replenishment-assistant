@@ -30,7 +30,9 @@ def owned(name):
     if len(parts)>=3 and parts[:2]==('aoxiang','component-state'):
         excluded={'config','recovery','temporary','logs','browser','profiles','profile','user-data','Cache','Code Cache','node_modules'}
         return (len(parts)==3 and parts[2] in STATE_FILES) or (len(parts)>3 and not set(parts[2:-1])&excluded and p.suffix.lower() in SUFFIXES|{'.json','.html','.png','.txt'})
-    if len(parts)>=2 and parts[0] in ('jst_catalog','jst_catalog_sync'):return (len(parts)==2 and parts[1] in JST_FILES) or (parts[1]=='downloads' and p.suffix.lower() in SUFFIXES|{'.json'})
+    if len(parts)>=2 and parts[0] in ('jst_catalog','jst_catalog_sync'):
+        if len(parts)==4 and parts[1]=='allocation':return bool(re.fullmatch('[a-f0-9]{32}',parts[2])) and parts[3] in ('原生实配.xlsx','原生实配.xls','receipt.json')
+        return (len(parts)==2 and parts[1] in JST_FILES) or (parts[1]=='downloads' and p.suffix.lower() in SUFFIXES|{'.json'})
     return False
 
 def tree(root):
@@ -40,7 +42,7 @@ def tree(root):
         def include(name):
             if not parts:return name in {'warehouse_catalogs','aoxiang','jst_catalog','jst_catalog_sync','migration-assets','export_receipts'}
             if parts==('aoxiang',):return name=='component-state'
-            if parts in (('jst_catalog',),('jst_catalog_sync',)):return name=='downloads'
+            if parts in (('jst_catalog',),('jst_catalog_sync',)):return name in ('downloads','allocation')
             return name not in {'config','recovery','temporary','logs','browser','profiles','profile','user-data','Cache','Code Cache','node_modules'}
         dirs[:]=[n for n in dirs if include(n) and not (parent/n).is_symlink() and not (parent/n).is_junction()]
         for name in files:
@@ -254,6 +256,9 @@ def pause_imported(root):
         if 'jst_tasks' in tables:
             audit.extend({'table':'jst_tasks','id':r[0],'state':r[1]} for r in db.execute("SELECT task,status FROM jst_tasks WHERE status IN ('pending','prepared')"))
             db.execute("UPDATE jst_tasks SET status='paused',message='迁入后已暂停；请在原分配批次核对并继续' WHERE status IN ('pending','prepared')")
+        if 'jst_fulfillment_preferences' in tables:
+            audit.extend({'table':'jst_fulfillment_preferences','id':1,'enabled':True} for _ in db.execute('SELECT 1 FROM jst_fulfillment_preferences WHERE enabled=1'))
+            db.execute('UPDATE jst_fulfillment_preferences SET enabled=0')
         if 'jst_batches' in tables:
             audit.extend({'table':'jst_batches','id':r[0],'state':r[1]} for r in db.execute("SELECT batch_id,status FROM jst_batches WHERE status='active'"))
             db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE status='active'")

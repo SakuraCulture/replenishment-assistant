@@ -190,7 +190,7 @@ def publish_catalogs(repo,rid,folder):
     remains authoritative for its calculation even if a default publication is refused.
     Per-warehouse receipts permit safe local retry after a partial filesystem failure.
     """
-    from warehouse_catalog import Repository
+    from warehouse_catalog import Repository,WAREHOUSES,stock_publication_warning
     from catalog_write_lock import acquire
     from contextlib import ExitStack
     run=repo.get(rid)
@@ -198,15 +198,22 @@ def publish_catalogs(repo,rid,folder):
     basis=repo.value(rid,'basis');catalogs=repo.value(rid,'catalogs',{})
     if not basis or not catalogs:raise ValueError('没有可采用的资料')
     master=Repository(folder);done=dict(run.get('publication',{}).get('digests',{}))
+    issues={wh:warning for wh,data in catalogs.items() if wh not in done
+            and (warning:=stock_publication_warning(data))}
     with ExitStack() as locks:
-        for wh in sorted(catalogs):locks.enter_context(acquire(folder,wh,None))
+        for wh in WAREHOUSES:
+            if wh in catalogs:locks.enter_context(acquire(folder,wh,None))
         for wh in catalogs:
             current=master.current_digest(wh)
             if current!=done.get(wh,basis['catalog_digests'][wh]):
-                raise ValueError(wh+'默认资料已变化，请从资料维护核对，本次未覆盖')
+                raise ValueError(wh+'当前仓资料已变化，请从资料维护核对，本次未覆盖')
         for wh,data in catalogs.items():
-            if wh not in done:
+            if wh not in done and wh not in issues:
                 master.save_locked(data,expected_digest=basis['catalog_digests'][wh]);done[wh]=master.current_digest(wh)
                 repo.change(rid,publication={'state':'PUBLISHING','digests':done})
-    repo.change(rid,publication={'state':'PUBLISHED','digests':done},message='本次仓资料已更新为默认；计算结果等待人工核对')
-    return '、'.join(catalogs)+'已更新默认',master.catalogs()
+    if issues:
+        message=('、'.join(done)+'已更新。' if done else '')+'仓资料发布待核：'+ '；'.join(wh+' '+error for wh,error in issues.items())
+        repo.change(rid,publication={'state':'NEEDS_REVIEW','digests':done,'errors':issues},message=message)
+        return message,master.snapshots(done)[0]
+    repo.change(rid,publication={'state':'PUBLISHED','digests':done},message='当前仓资料已更新，计算结果等待人工核对')
+    return '、'.join(catalogs)+'已更新当前资料',master.snapshots(catalogs)[0]

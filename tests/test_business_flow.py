@@ -40,7 +40,7 @@ class ProjectionTests(unittest.TestCase):
         self.assertIn('限定所选 0 单', flow.empty_message('payment', {'scope': []}, {'scope': 99}))
         self.assertIn('没有签发单', flow.empty_message('payment', {}, {'scope': 0}))
         self.assertIn('门店回传', flow.empty_message('payment', {'stage_filter': '待处理'}, {'scope': 1}))
-        self.assertIn('仓或锁状态', flow.empty_message('payment', {'warehouse': '山东仓'}, {'scope': 1}))
+        self.assertIn('当前仓', flow.empty_message('payment', {'warehouse': '山东仓'}, {'scope': 1}))
 
     def test_real_lifecycle_projection_tracks_each_next_missing_document(self):
         from test_lifecycle import LifecycleTests

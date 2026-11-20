@@ -1,5 +1,7 @@
 """Modal progress keeps the UI event loop alive while an owned process handles large work I/O."""
 import multiprocessing,threading,time
+from contextlib import ExitStack
+import draft_spool
 import performance_log
 from PySide6.QtCore import QThread,Signal,QTimer
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QProgressBar
@@ -32,6 +34,7 @@ class Session:
         cancel_at=None;counter=None;previous=None
         while not finished.wait(.2) and self.process.is_alive():
             now=time.monotonic();last=state['activity']
+            if state['phase']=='staging':continue
             if self.cancel.is_set():
                 if cancel_at is None:cancel_at=now
                 if now-cancel_at<READ_CANCEL_GRACE:continue
@@ -61,10 +64,11 @@ class Session:
     def call(self,operation,value,progress):
         if self.broken:raise RuntimeError('原作业连接已结束，请重新发起操作')
         self.writing=operation in ('save','confirm_normal','delivery_execute','review_export','storage_copy','delete_orders','delete_job')
-        state={'activity':time.monotonic(),'phase':'sending','abort':None}
+        staged=operation in draft_spool.OPERATIONS
+        state={'activity':time.monotonic(),'phase':'staging' if staged else 'sending','abort':None}
         context=FailureContext(operation)
         if self.writing:context.commit_state='unknown'
-        finished=threading.Event();watcher=None
+        finished=threading.Event();watcher=None;files=ExitStack()
         if operation in READ_OPERATIONS:
             watcher=threading.Thread(target=self._watch_read,args=(state,finished),daemon=True)
             watcher.start()
@@ -72,10 +76,20 @@ class Session:
         def report(message):
             context.stage=str(message);activity();progress(message)
         try:
-            report('正在发送作业操作…');self.connection.send(operation)
-            report('传输本次操作所需数据…')
-            send_tree(self.connection,value,None if self.writing else self.cancel,
-                      lambda n:report(f'正在传输数据：已发送 {n:,} 个数据块（总量未预扫描）'),activity=activity)
+            if staged:
+                report('正在分块暂存签发草稿…')
+                writer=files.enter_context(draft_spool.create(self.path))
+                send_tree(writer,value,self.cancel,
+                          lambda n:report(f'正在分块暂存签发草稿：已写 {n:,} 个数据块'),activity=activity)
+                writer.stream.flush()
+                if self.cancel.is_set():raise Cancelled('已取消')
+                report('正在交接签发草稿…');state['phase']='sending'
+                self.connection.send((operation,writer.name))
+            else:
+                report('正在发送作业操作…');self.connection.send(operation)
+                report('传输本次操作所需数据…')
+                send_tree(self.connection,value,None if self.writing else self.cancel,
+                          lambda n:report(f'正在传输数据：已发送 {n:,} 个数据块（总量未预扫描）'),activity=activity)
             state['phase']='waiting';report('等待作业处理进度…')
             while True:
                 if not self.writing and self.cancel.is_set():raise Cancelled('已取消')
@@ -123,6 +137,7 @@ class Session:
         finally:
             finished.set()
             if watcher is not None:watcher.join()
+            files.close()
     def close(self):
         # All write calls finish before their modal dialog closes. Termination is
         # reserved for read/transfer cancellation, never an in-flight transaction.

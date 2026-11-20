@@ -3,7 +3,6 @@ from __future__ import annotations
 from contextlib import closing
 import hashlib
 import json
-import os
 from pathlib import Path
 import sqlite3
 import time
@@ -50,7 +49,7 @@ class Adoptions:
     def recover(self,progress=lambda _:None,cancel=None):
         with closing(self.connect()) as db:
             if not db.execute("SELECT 1 FROM sqlite_master WHERE name='catalog_sync_applies'").fetchone():return []
-            db.row_factory=sqlite3.Row;rows=[dict(r) for r in db.execute("SELECT * FROM catalog_sync_applies WHERE state='APPLYING' AND purpose='default_catalog'")]
+            db.row_factory=sqlite3.Row;rows=[dict(r) for r in db.execute("SELECT * FROM catalog_sync_applies WHERE state='APPLYING' AND new_digest IS NOT NULL")]
         results=[]
         for row in rows:
             with acquire(self.folder,row['warehouse'],cancel):
@@ -58,16 +57,18 @@ class Adoptions:
                 state='APPLIED' if current==row['new_digest'] else 'READY' if current==row['old_digest'] else 'CONFLICT'
                 self.mark(row['id'],state);results.append({'id':row['id'],'state':state,'warehouse':row['warehouse']})
         return results
-    def apply(self,batch,item,progress=lambda _:None,cancel=None):
+    def apply(self,batch,item,progress=lambda _:None,cancel=None,*,publish_analysis=False):
         checkpoint(cancel)
-        if batch.get('purpose')=='stockout_analysis':raise ValueError('分析资料只能在门店缺货率分析中留存，不能发布到补货默认资料')
+        if batch.get('purpose')=='stockout_analysis' and not publish_analysis:
+            raise ValueError('分析资料须从本次采集入口发布')
         from catalog_binding_guard import adoption_guard
         with adoption_guard(self.state_root,batch,item,cancel,state_reader=self.state_reader):
             return self._apply(batch,item,progress,cancel)
     def _apply(self,batch,item,progress=lambda _:None,cancel=None):
         checkpoint(cancel)
-        if batch.get('purpose')=='stockout_analysis':
-            raise ValueError('分析资料只能在门店缺货率分析中留存，不能发布到补货默认资料')
+        purpose=batch.get('purpose')
+        if purpose not in ('default_catalog','allocation_baseline','stockout_analysis'):
+            raise ValueError('未知资料采用用途')
         receipt=item.get('receipt');account=item['account'];warehouse=account['warehouse'];native=item.get('native') or {}
         if not receipt or receipt['warehouse']!=warehouse or native.get('sha256')!=receipt['source_sha256']:
             raise ValueError('下载、校验与仓绑定不一致')
@@ -79,30 +80,43 @@ class Adoptions:
         ident=hashlib.sha256((batch['id']+':'+item['id']+':'+batch['purpose']+':'+receipt['source_sha256']).encode()).hexdigest()
         prior=self.get(ident)
         if prior and prior['state']=='APPLIED':return json.loads(prior['payload'])['ack']
-        data=validation.candidate(receipt);self.ensure(progress);checkpoint(cancel)
-        if batch['purpose']=='allocation_baseline':return self._stock(ident,batch,item,data,progress,cancel)
-        if batch['purpose']!='default_catalog':raise ValueError('未知资料采用用途')
+        data=validation.candidate(receipt)
+        warning=wc.stock_publication_warning(data,cancel)
+        if purpose=='stockout_analysis':
+            warning=warning or wc.execution_warning(data)
+            if warning:return {'warehouse':warehouse,'skipped_reason':warning}
+        if warning:raise ValueError(f"{warehouse} · {Path(receipt['source']).name}：{warning}")
+        self.ensure(progress);checkpoint(cancel)
         from source_archive import capture
         capture(self.path,data['source_path'],data['source_sha256'],progress,cancel)
         expected=item['expected_catalog_digest']
-        raw=json.dumps(data,ensure_ascii=False,indent=2).replace('\n',os.linesep).encode('utf-8');new_digest=hashlib.sha256(raw).hexdigest()
-        ack={'apply_id':ident,'warehouse':warehouse,'source_sha256':data['source_sha256'],'revision':data['revision'],'purpose':'default_catalog','adopted_at':wr.now()}
+        new_digest=self.catalogs.publication_digest(data)
+        ack={'apply_id':ident,'warehouse':warehouse,'source_sha256':data['source_sha256'],'revision':data['revision'],'purpose':purpose,'adopted_at':wr.now()}
         with acquire(self.folder,warehouse,cancel):
             prior=self.get(ident);current=self.catalogs.current_digest(warehouse)
             if prior and prior['state']=='APPLIED':return json.loads(prior['payload'])['ack']
-            if prior and prior['state']=='APPLYING' and current==prior['new_digest']:
+            if prior and prior['new_digest'] is not None and current==prior['new_digest']:
                 self.mark(ident,'APPLIED');return json.loads(prior['payload'])['ack']
             if current!=expected:raise wr.Conflict('采集期间'+warehouse+'资料已被其他窗口更新，文件已留存但未采用')
-            if prior and (prior['new_digest']!=new_digest or prior['old_digest']!=expected):raise wr.Conflict('原采用意图与当前校验候选不一致，请核对原记录')
-            old=self.catalogs.catalogs().get(warehouse)
-            if old and old.get('source_sha256')==data['source_sha256']:
+            if purpose=='allocation_baseline':
+                observed=item.get('observation')
+                if not observed or observed.get('warehouse')!=warehouse:
+                    raise ValueError('缺少原查询前的分配依据，请重新获取')
+                actual=stock_observation(self.path,warehouse)
+                if any(actual[key]!=observed.get(key) for key in ('state','included')):
+                    raise wr.Conflict('采集期间锁单、分配或库存已变化，未采用新资料；请重新获取')
+            old=self.catalogs.snapshots((warehouse,))[0].get(warehouse)
+            if old and not str(current).startswith('legacy:') and old.get('source_sha256')==data['source_sha256']:
                 # Keep existing source_path/imported_at and exact default bytes.
                 ack.update(revision=old['revision'],unchanged=True);new_digest=current
+            if prior and prior['new_digest'] is not None and (prior['new_digest']!=new_digest or prior['old_digest']!=expected):
+                raise wr.Conflict('原采用意图与当前校验候选不一致，请核对原记录')
             payload={'ack':ack,'receipt':receipt,'account':account,'native_task_id':native.get('nativeTaskRef')}
             with closing(self.connect()) as db,db:
                 checkpoint(cancel)
-                db.execute('INSERT OR IGNORE INTO catalog_sync_applies VALUES(?,?,?,?,?,?,?,?,?,?,?)',(ident,batch['id'],item['id'],warehouse,batch['purpose'],'APPLYING',expected,new_digest,data['source_sha256'],json.dumps(payload,ensure_ascii=False),wr.now()))
-            checkpoint(cancel);progress(warehouse+'正在保存资料；原件已留存')
+                db.execute('INSERT INTO catalog_sync_applies VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,old_digest=excluded.old_digest,new_digest=excluded.new_digest,payload=excluded.payload,updated=excluded.updated',
+                           (ident,batch['id'],item['id'],warehouse,purpose,'APPLYING',expected,new_digest,data['source_sha256'],json.dumps(payload,ensure_ascii=False),wr.now()))
+            checkpoint(cancel);progress(warehouse+'正在发布当前仓资料')
             # Cancellation before replace is checked inside the same repository path.
             if not ack.get('unchanged'):
                 progress(CommitProgress(True))
@@ -110,24 +124,6 @@ class Adoptions:
                 finally:progress(CommitProgress(False))
             self.mark(ident,'APPLIED')
         return ack
-    def _stock(self,ident,batch,item,data,progress,cancel):
-        import jst_orders as jst
-        obs=item.get('observation')
-        if not obs or obs.get('warehouse')!=data['warehouse']:raise ValueError('缺少原查询前的分配依据，未重置库存')
-        prior=self.get(ident)
-        if prior:
-            payload=wr.loads(prior['payload']);plan=payload['plan'];ack=payload['ack']
-        else:
-            plan=jst.prepare_refresh(self.path,data['warehouse'],catalog=data,operation=ident,progress=progress,cancel=cancel)
-            p=plan['payload']
-            if (list(p['expected']) if p['expected'] else None)!=obs['state'] or p['included']!=obs['included']:
-                raise wr.Conflict('采集期间锁单、分配或库存已变化，未采用新库存；请重新获取')
-            ack={'apply_id':ident,'warehouse':data['warehouse'],'source_sha256':data['source_sha256'],'revision':data['revision'],'purpose':'allocation_baseline','bid':ident,'adopted_at':wr.now()}
-            payload={'ack':ack,'plan':plan,'receipt':item['receipt']}
-            with closing(self.connect()) as db,db:
-                checkpoint(cancel)
-                db.execute('INSERT INTO catalog_sync_applies VALUES(?,?,?,?,?,?,?,?,?,?,?)',(ident,batch['id'],item['id'],data['warehouse'],batch['purpose'],'APPLYING',None,None,data['source_sha256'],wr.dumps(payload),wr.now()))
-        jst.commit_refresh(self.path,plan,progress,cancel);self.mark(ident,'APPLIED');return ack
 
 
 def run_sync(client,folder,dbpath,warehouses,purpose='default_catalog',resume=None,progress=lambda _:None,cancel=None):
@@ -154,7 +150,7 @@ def run_sync(client,folder,dbpath,warehouses,purpose='default_catalog',resume=No
                 try:
                     ack=adoptions.apply(batch,item,progress,cancel)
                     client.request('sync.acknowledge_adoption',batch_id=bid,item_id=item['id'],receipt=ack)
-                    catalog=adoptions.catalogs.catalogs().get(ack['warehouse']) if ack['purpose']=='default_catalog' else None
+                    catalog=adoptions.catalogs.snapshots((ack['warehouse'],))[0].get(ack['warehouse'])
                     progress(SyncProgress(ack['warehouse']+'资料已采用',{'kind':'adopted','ack':ack,'catalog':catalog}))
                 except Cancelled:
                     sent_stop=True;client.request('sync.stop',batch_id=bid)

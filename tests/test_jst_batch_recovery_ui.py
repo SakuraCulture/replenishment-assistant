@@ -8,6 +8,7 @@ os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 import test_jst as fixture
 import jst_batches as batches
+from warehouse_catalog import Repository
 
 class RecoveryUI(unittest.TestCase):
     @classmethod
@@ -22,7 +23,7 @@ class RecoveryUI(unittest.TestCase):
         self.prepared=batches.register(self.path,plan);self.bid=plan['payload']['batch_id']
         with patch.object(GenerationDialog,'load_catalogs'):
             self.dialog=GenerationDialog(None,self.host,[self.f.h]);self.app.processEvents()
-        self.dialog.catalogs={'河北仓':{'catalog':fixture.catalog(stock=700)}}
+        Repository(self.path.parent).save(fixture.catalog(stock=700))
         self.warning=patch('jst_ui.warn');self.warn=self.warning.start()
     def tearDown(self):
         import shiboken6

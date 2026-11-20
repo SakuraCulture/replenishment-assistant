@@ -41,7 +41,7 @@ def start_smoke(app,win,args):
         box=app.activeModalWidget()
         if isinstance(box,QMessageBox):
             text=box.text()+'\n'+box.informativeText()+'\n'+box.detailedText();title=box.windowTitle()
-            confirmation=title in ('确认生成聚水潭订单','确认已在聚水潭下单')
+            confirmation=title=='确认生成聚水潭订单'
             messages.append({'title':title,'detail':text,'confirmation':confirmation,'expected':expected[0]})
             box.grab().save(str(out/(mode+'-message-'+str(len(messages))+'.png')))
             b=box.button(QMessageBox.StandardButton.Yes) if confirmation else box.button(QMessageBox.StandardButton.Ok)
@@ -60,7 +60,8 @@ def start_smoke(app,win,args):
     def save(d,name):
         d.review.complete.setChecked(True);d.review.extra_ack.setChecked(True);d.review.grab().save(str(out/(mode+'-'+name+'.png')))
         started=time.monotonic();QTest.mouseClick(d.review.save,Qt.MouseButton.LeftButton);timings.append({'name':name,'click_seconds':time.monotonic()-started})
-    def generate_and_lock():
+    def generate_and_seed_legacy_marks():
+        from business_ui import run
         d=GenerationDialog(win,win,list(reversed(heads)));dialogs.append(d);d.show();wait(lambda:bool(d.catalogs))
         QTest.mouseClick(d.preview_btn,Qt.MouseButton.LeftButton)
         require(d.plan is not None and len(d.plan['payload']['plans'])==2,'实际分配预览两个独立仓单')
@@ -72,7 +73,8 @@ def start_smoke(app,win,args):
         require([p['head']['number'] for p in generated]==expected_order,'分配逐单提交顺序与预览一致')
         require(all(p['rows']==q['rows'] and p['summary']==q['summary'] for p,q in zip(generated,frozen)),'分配数量、金额、SKU顺序和完整结果与预览一致')
         d.grab().save(str(out/'exercise-allocation-saved.png'));before=signature(('jst_generations','jst_reservations','jst_steps','jst_runs'))
-        d.completed.selectAll();require(len(d.gids())==2 and d.lock_saved_btn.isEnabled(),'实际选择两张已生成单并启用锁单入口')
+        d.completed.selectAll();require(len(d.gids())==2 and d.export_saved_btn.isEnabled(),'实际选择两张已生成单可导出')
+        require(not any('下单并锁定' in b.text() for b in d.findChildren(QPushButton)),'日常分配入口没有新建下单标记动作')
         ready=threading.Event();release=threading.Event();errors=[]
         def reader():
             try:
@@ -81,7 +83,7 @@ def start_smoke(app,win,args):
             except Exception as exc:errors.append(str(exc));ready.set()
         thread=threading.Thread(target=reader);thread.start();require(ready.wait(2) and not errors,'实际EXE建立受控短暂读锁')
         reader_release[0]=release;start=len(statuses);start_states=len(states)
-        try:QTest.mouseClick(d.lock_saved_btn,Qt.MouseButton.LeftButton)
+        try:run(d,jo.lock,(path,d.gids()),'验收旧版下单标记兼容')
         finally:release.set();thread.join();reader_release[0]=None
         require(not errors and any('锁单尝试已安全回滚' in s for s in statuses[start:]),'实际锁单遇读锁后安全回滚并重新核验')
         require(False in states[start_states:],'实际锁单安全回滚后恢复可取消状态')
@@ -89,7 +91,7 @@ def start_smoke(app,win,args):
             require(db.execute('SELECT COUNT(*) FROM jst_locks WHERE locked=1').fetchone()[0]==2,'两张仓单均成功锁定')
             require(db.execute("SELECT COUNT(*) FROM jst_events WHERE action='确认下单并锁定'").fetchone()[0]==2,'锁单重试不重复新增成功事件')
         require(before==signature(('jst_generations','jst_reservations','jst_steps','jst_runs')),'锁单不改分配数量、金额、顺序或重复占库存')
-        before=facts();QTest.mouseClick(d.lock_saved_btn,Qt.MouseButton.LeftButton)
+        before=facts();run(d,jo.lock,(path,d.gids()),'验收重复保存旧版下单标记')
         require(before==facts(),'再次锁定不重复写锁或事件');d.close()
     def execute():
         timer.start();unsafe=False
@@ -99,7 +101,7 @@ def start_smoke(app,win,args):
                 before=facts();d=opened('return');next(b for b in d.review.findChildren(QPushButton) if b.text()=='返回文件范围').click();d.reject()
                 require(facts()==before,'取消核对不保存任何部分')
                 for stage in ('return','operations','payment','receipt'):
-                    if stage=='payment':generate_and_lock()
+                    if stage=='payment':generate_and_seed_legacy_marks()
                     d=opened(stage);values=[(p['head'],p['digest'],wr.dumps(p['payload'])) for p in d.plan['plans']];save(d,stage+'-save')
                     require(d.receipt is not None and all(r['changed'] for r in d.receipt),'实际确认保存完成：'+stage)
                     with closing(sqlite3.connect(path)) as db:

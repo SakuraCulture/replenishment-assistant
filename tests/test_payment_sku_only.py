@@ -21,7 +21,7 @@ class SkuOnlyTests(unittest.TestCase):
             {'E':'C','F':'c-barcode','AU':'山东仓'}]}}}
     def match(self,sku,aux):
         rows=[{'adapter':'paid_order','sku':sku,'source_order':{'内部订单号':'JST-1','店铺名称':'S','辅助码':aux}}]
-        with patch('warehouse_execution.get_order') as get_order, patch('order_lifecycle.repository') as repo:
+        with patch('warehouse_execution.get_order') as get_order, patch('lifecycle_facts.repository') as repo:
             repo.return_value.get.return_value=self.order;get_order.return_value=self.order
             lc.match_payment_rows('unused-isolated.sqlite3',self.head,rows)
         return rows[0]

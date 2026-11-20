@@ -1,4 +1,5 @@
 """Document routes and warehouse-order progress shared by lifecycle readers."""
+from lifecycle_rules import DOCUMENT_SCHEMA, basis_token
 
 LEGACY = ('return', 'payment', 'receipt')
 CURRENT = ('return', 'operations', 'payment', 'receipt')
@@ -9,7 +10,41 @@ PENDING = {
     'receipt': '待收货',
 }
 FINISHED = '已收齐'
+TITLES = {
+    'return': '门店回传单',
+    'payment': '门店付款单',
+    'receipt': '门店实际收货单',
+    'operations': '运营签发单',
+}
+STATUSES = tuple(PENDING[stage] for stage in LEGACY) + (FINISHED,)
 
 
 def route(operations_required):
     return CURRENT if operations_required else LEGACY
+
+
+def presence_state(present):
+    """Legacy presence check. Use progress_state for validated upstream readiness."""
+    for i, stage in enumerate(LEGACY):
+        if not present.get(stage): return STATUSES[i], stage
+    return STATUSES[-1], None
+
+def progress_state(summaries, legacy=None, operations_required=False):
+    summaries=dict(summaries)
+    stages=route(operations_required or summaries.get('operations'))
+    if not summaries['return'] and legacy and legacy['complete']:
+        summaries['return']={'version':legacy['version'],'digest':legacy['digest'],'schema':1,'positive':sum(v>0 for v in legacy['values'].values())}
+    health={};tokens={}
+    for s in stages:
+        d=summaries.get(s)
+        health[s]=bool(d) and (d['schema']==1 or not d['pending'] and d['dependencies']==tokens and all(health.values()))
+        tokens[s]=basis_token(d)
+    if not summaries['return'] and not (legacy and legacy['complete']):return PENDING['return'],'return','',health
+    for i,s in enumerate(stages[1:],1):
+        prev=summaries.get(stages[i-1])
+        if not summaries.get(s):
+            if prev and health[stages[i-1]] and prev['schema']==DOCUMENT_SCHEMA and prev['positive']==0 and not any(summaries.get(k) for k in stages[i:]):
+                return STATUSES[-1],None,('无要货，无需后续运营、分配、付款或收货' if stages[i-1] in ('return','operations') else '无付款数量，无需收货'),health
+            return PENDING[s],s,'',health
+        if not health[s]:return PENDING[s],s,TITLES[s]+'对照依据已更新或未就绪，请重新核对',health
+    return STATUSES[-1],None,'单据已收齐；不代表数量完全一致',health

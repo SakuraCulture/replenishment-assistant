@@ -45,12 +45,11 @@ class ResultsPage(QWidget):
         self.counts=label('','muted');v.addWidget(self.counts)
         row=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('门店 / 仓 / 补货单号 / 聚水潭内部订单号 / 翱象采购单号');self.search.setClearButtonEnabled(True);row.addWidget(self.search,1)
         self.warehouse=QComboBox();self.warehouse.addItems(['全部仓','河北仓','山东仓']);row.addWidget(self.warehouse)
-        self.lock_filter=QComboBox();self.lock_filter.addItems(['全部锁状态','已锁','未锁']);row.addWidget(self.lock_filter)
         row.addWidget(button('勾选筛选结果',self.select_visible));row.addWidget(button('清空勾选',self.clear_selection));v.addLayout(row)
         v.addWidget(label('展开门店可单选仓单；双击查看商品。导出和新建批次只处理当前筛选中的订单，数量在按钮上显示。','muted'))
-        self.table=QTreeWidget();self.table.setColumnCount(8);self.table.setHeaderLabels(['门店 / 仓单','准备情况','需求金额','已分配金额','减少金额','减量SKU','最近导出','下单锁定'])
+        self.table=QTreeWidget();self.table.setColumnCount(7);self.table.setHeaderLabels(['门店 / 仓单','准备情况','需求金额','已分配金额','减少金额','减量SKU','最近导出'])
         self.table.setAlternatingRowColors(True);self.table.setUniformRowHeights(True);self.table.setSortingEnabled(False)
-        for i,width in enumerate((320,200,110,110,110,85,160,120)):self.table.setColumnWidth(i,width)
+        for i,width in enumerate((320,200,110,110,110,85,160)):self.table.setColumnWidth(i,width)
         self.table.itemChanged.connect(self.checked);self.table.itemDoubleClicked.connect(self.detail);v.addWidget(self.table,1)
         self.selection=label('已勾选0单，可导出0份','muted');v.addWidget(self.selection)
         folder=QHBoxLayout();folder.addWidget(label('导出位置'));self.folder=QLineEdit(export_locations.initial_directory(self));self.folder.setReadOnly(True);self.folder.setAccessibleName('本次导出文件夹');folder.addWidget(self.folder,1)
@@ -63,9 +62,14 @@ class ResultsPage(QWidget):
         row=QHBoxLayout();self.payment_all_btn=button('按当前筛选核对付款（0单）',self.payment_all)
         self.payment_selected_btn=button('按勾选核对付款（0单）',self.payment_selected)
         row.addWidget(self.payment_all_btn);row.addWidget(self.payment_selected_btn);v.addLayout(row)
+        row=QHBoxLayout()
+        self.auto_prepare_btn=button('准备自动下单',self.auto_prepare)
+        self.auto_tasks_btn=button('自动下单任务',self.auto_tasks)
+        self.auto_profiles_btn=button('买家和收货资料',self.auto_profiles)
+        row.addWidget(self.auto_prepare_btn);row.addWidget(self.auto_tasks_btn);row.addWidget(self.auto_profiles_btn);v.addLayout(row)
         row=QHBoxLayout();self.retry_btn=button('重试未完成导出',self.retry);self.stop_btn=button('停止本次导出',self.stop)
         row.addWidget(self.retry_btn);row.addWidget(self.stop_btn);self.tools_btn=button('其他订单操作',self.tools);row.addWidget(self.tools_btn);v.addLayout(row)
-        self.day.dateChanged.connect(self.day_changed);self.end.dateChanged.connect(self.day_changed);self.lock_filter.currentIndexChanged.connect(self.filter_changed);self.search.textChanged.connect(self.filter_changed);self.warehouse.currentIndexChanged.connect(self.filter_changed)
+        self.day.dateChanged.connect(self.day_changed);self.end.dateChanged.connect(self.day_changed);self.search.textChanged.connect(self.filter_changed);self.warehouse.currentIndexChanged.connect(self.filter_changed)
         self.timer=QTimer(self);self.timer.setInterval(3000);self.timer.timeout.connect(self.poll);self.timer.start()
         self.controls();QTimer.singleShot(0,self.refresh)
 
@@ -80,8 +84,12 @@ class ResultsPage(QWidget):
         self.evidence_btn.setEnabled(ready and not busy and (bool(self.batch_id) or bool(evidence_rows)))
         self.payment_all_btn.setText(f'按当前筛选核对付款（{len(self.visible_records())}单）');self.payment_selected_btn.setText(f'按勾选核对付款（{len(self.chosen)}单）')
         self.payment_all_btn.setEnabled(ready and not busy and bool(self.visible_records()));self.payment_selected_btn.setEnabled(ready and not busy and bool(self.chosen))
+        self.auto_prepare_btn.setText(f'准备勾选单自动下单（{len(self.chosen)}单）')
+        self.auto_prepare_btn.setEnabled(ready and not busy and bool(self.chosen))
+        self.auto_profiles_btn.setEnabled(not busy and not self.closing)
+        self.auto_tasks_btn.setEnabled(not busy and not self.closing)
         for b in (self.payment_all_btn,self.payment_selected_btn):b.setToolTip('直接使用已保存生成单，无需导出再导入；核对实际已付款后才保存。')
-        self.selection.setText(f'已勾选 {len(self.chosen)} 单，可导出 {m} 份；已导出、锁单、付款和收货不会移除已有结果。')
+        self.selection.setText(f'已勾选 {len(self.chosen)} 单，可导出 {m} 份')
         for b in (self.day,self.end,self.refresh_btn,self.scope_btn,self.folder_btn,self.prepare_btn,self.tools_btn,self.batch_btn,self.all_batches_btn):b.setEnabled(not busy and not self.closing)
         self.day.setEnabled(not busy and not self.batch_id);self.end.setEnabled(not busy and not self.batch_id)
         correction_rows=[r for r in self.records if service.key(r['head']) in self.chosen and r.get('batch_id') and (r.get('gid') or r.get('original_zero'))]
@@ -89,7 +97,7 @@ class ResultsPage(QWidget):
         self.recovery_btn.setEnabled(ready and not busy and bool(self.batch_id))
         self.reallocate_btn.setText(f'按原批重新分配勾选单（{len(correction_rows)}单）')
         self.reallocate_btn.setEnabled(ready and not busy and bool(correction_rows))
-        self.reallocate_btn.setToolTip('沿用所选订单的原批库存，只替换所选未锁、未收货订单；旧付款依据因新回传失效时，保留旧付款并在分配后重新核对。多个原批分别处理。')
+        self.reallocate_btn.setToolTip('沿用原批库存，替换所选可更正仓单。旧付款依据因回传变化失效时，分配后按新结果重新核对付款。多个原批分别处理。')
         self.continue_btn.setToolTip('先选择分配批次；继续使用其冻结库存和原顺序')
         if not n:self.all_btn.setToolTip('当前筛选没有有效生成单；请准备批次或核对待处理原因')
         self.stop_btn.setEnabled(self.worker is not None and not self.worker.cancel.is_set());self.retry_btn.setEnabled(bool(self.remaining) and not busy and not self.closing)
@@ -145,8 +153,7 @@ class ResultsPage(QWidget):
     def visible_records(self):
         from order_tracking_refs import matches
         terms=self.search.text().lower().split();wh=self.warehouse.currentText() if self.warehouse.currentIndex() else ''
-        lock=self.lock_filter.currentText()
-        return [r for r in self.records if (not wh or r['head']['warehouse']==wh) and (lock=='全部锁状态' or bool(r['locked'])==(lock=='已锁')) and (not terms or matches(r['head'],terms,('name','store','warehouse','number')))]
+        return [r for r in self.records if (not wh or r['head']['warehouse']==wh) and (not terms or matches(r['head'],terms,('name','store','warehouse','number')))]
 
     def render(self):
         if self.data is None:return
@@ -160,12 +167,13 @@ class ResultsPage(QWidget):
             rs=[r for r in g['records'] if service.key(r['head']) in visible]
             if not rs:continue
             m=service.aggregate([r for r in rs if r['state'] in ('ready','zero')]);n=sum(r['state']=='ready' for r in rs)
-            top=QTreeWidgetItem([g['name']+'（'+g['store']+'）',f'{n}/{len(rs)} 仓单可导出',*[review.amount_text(m,k) if any(r['projection'] and r['state'] in ('ready','zero') for r in rs) else '待处理' for k in ('demand','allocated','reduced')],str(m['reduced_sku']),max((r['last_export'] for r in rs if r['last_export'] not in ('—','未导出')),default='未导出'),f"已锁 {sum(r['locked'] for r in rs)}/{len(rs)}"])
+            top=QTreeWidgetItem([g['name']+'（'+g['store']+'）',f'{n}/{len(rs)} 仓单可导出',*[review.amount_text(m,k) if any(r['projection'] and r['state'] in ('ready','zero') for r in rs) else '待处理' for k in ('demand','allocated','reduced')],str(m['reduced_sku']),max((r['last_export'] for r in rs if r['last_export'] not in ('—','未导出')),default='未导出')])
             self.table.addTopLevelItem(top);top.setData(0,ROLE,g['store']);top.setFlags(top.flags()|Qt.ItemFlag.ItemIsAutoTristate|Qt.ItemFlag.ItemIsUserCheckable)
             for r in rs:
-                m=service.aggregate([r]);child=QTreeWidgetItem([r['head']['warehouse']+' · '+r['head']['number'],r['reason'],*[review.amount_text(m,k) if r['projection'] else '待处理' for k in ('demand','allocated','reduced')],str(m['reduced_sku']) if r['projection'] else '—',r['last_export'],'已锁定' if r['locked'] else '未锁'])
+                m=service.aggregate([r]);reason=r['reason']+(' · 已关联自动下单' if r.get('auto_internal') else ' · 有历史下单标记' if r['locked'] else '')
+                child=QTreeWidgetItem([r['head']['warehouse']+' · '+r['head']['number'],reason,*[review.amount_text(m,k) if r['projection'] else '待处理' for k in ('demand','allocated','reduced')],str(m['reduced_sku']) if r['projection'] else '—',r['last_export']])
                 top.addChild(child);child.setData(0,ROLE,list(service.key(r['head'])));child.setFlags(child.flags()|Qt.ItemFlag.ItemIsUserCheckable);child.setCheckState(0,CHECKED if service.key(r['head']) in self.chosen else Qt.CheckState.Unchecked)
-                for c in range(8):child.setToolTip(c,child.text(c))
+                for c in range(self.table.columnCount()):child.setToolTip(c,child.text(c))
             top.setExpanded(g['store'] in expanded)
         self.table.verticalScrollBar().setValue(scroll);self.building=False;del block
     def checked(self,*_):
@@ -233,7 +241,7 @@ class ResultsPage(QWidget):
             self.reviewing=True;self.reader.cancel();self.reading=False;self.controls()
             receipt=jst_payment_ui.review(self,self.host,entries)
             self.payment_receipt=receipt
-            if receipt is not None:self.payment_notice=f'付款核对完成 {len(receipt)} 单，新增/更新 {sum(r["changed"] for r in receipt)} 单；生成、导出和锁单记录保留。'
+            if receipt is not None:self.payment_notice=f'付款核对完成 {len(receipt)} 单，新增或更新 {sum(r["changed"] for r in receipt)} 单。'
             else:self.payment_notice='已取消付款核对，本次未保存付款单。'
             self.status.setText(self.payment_notice)
         except Exception as exc:warn(self,exc)
@@ -332,17 +340,23 @@ class ResultsPage(QWidget):
         if not rows:
             selected=[r for r in self.visible_records() if service.key(r['head']) in self.chosen]
             if selected and all((r.get('gid') or r.get('original_zero')) and r.get('batch_id') for r in selected) and any(r['state']=='stale' for r in selected):self.reallocate();return
-            QMessageBox.information(self,'没有可加入新批的订单','当前筛选没有从未分配的订单。有效生成单可直接导出；回传已变化的旧分配不能直接导出，请勾选后点击“按原批重新分配勾选单”。已锁单或已有收货记录的订单须先核对外部执行事实。');return
+            QMessageBox.information(self,'没有可加入新批的订单','有效生成单可直接导出。回传已变化时，请勾选并按原批重新分配。已有下游单据时请先核对对应环节。');return
         jst_ui.generate(self,self.host,[r['head'] for r in rows]);self.refresh()
     def tools(self):
         if not self.data or self.worker:return
         import jst_ui
-        heads=[r['head'] for r in self.records if service.key(r['head']) in self.chosen]
-        d=QDialog(self);d.setWindowTitle('其他订单操作');v=QVBoxLayout(d);v.addWidget(label(f'已勾选 {len(heads)} 张仓单；锁单不等于付款。'))
+        selected=[r for r in self.records if service.key(r['head']) in self.chosen]
+        heads=[r['head'] for r in selected]
+        legacy_gids=[r['gid'] for r in selected if r['locked'] and r['gid'] and not r.get('auto_internal')]
+        d=QDialog(self);d.setWindowTitle('其他订单操作');v=QVBoxLayout(d);v.addWidget(label(f'已勾选 {len(heads)} 张仓单'))
         def action(fn):
             if heads:fn(d,self.host,heads);d.accept()
             else:QMessageBox.information(d,'请先勾选','返回结果页勾选要操作的门店或仓单。')
-        for title,fn in [('确认已下单并锁定',jst_ui.change_lock),('更正已锁订单',lambda p,h,s:jst_ui.change_lock(p,h,s,True)),('撤销未下单生成单',jst_ui.cancel_orders),('查看当时资料依据',jst_ui.detail)]:v.addWidget(button(title,lambda checked=False,f=fn:action(f)))
+        for title,fn in [('撤销未下单生成单',jst_ui.cancel_orders),('查看当时资料依据',jst_ui.detail)]:v.addWidget(button(title,lambda checked=False,f=fn:action(f)))
+        if legacy_gids:
+            def reconcile():
+                if jst_ui.reconcile_legacy_orders(d,self.host,legacy_gids):d.accept()
+            v.addWidget(button(f'核对历史下单标记（{len(legacy_gids)}单）',reconcile))
         def old_export():
             p=service.export_plan(self.data,self.chosen,True);p['entries']=[r for r in p['entries'] if r['state']=='stale']
             if not p['entries']:return
@@ -351,11 +365,41 @@ class ResultsPage(QWidget):
         def cancel_pending():
             if not self.batch_id:QMessageBox.information(d,'请选择批次','返回结果页，先选择要撤销未完成任务的批次。');return
             reason,ok=QInputDialog.getText(d,'撤销本批未完成任务','只撤销尚未生成的任务，已生成单保留；填写原因：')
-            if ok and reason.strip() and confirm(d,'撤销本批未完成任务','撤销后不会自动恢复；已生成单和已锁单保留。'):
+            if ok and reason.strip() and confirm(d,'撤销本批未完成任务','确认结束本批尚未生成的任务？'):
                 try:run(d,batches.cancel_unfinished,(self.path,self.batch_id,reason),'撤销未完成任务');d.accept()
                 except Exception as exc:self.status.setText(str(exc))
         v.addWidget(button('撤销本批未完成任务',cancel_pending))
         def logs():
             log=jst_ui.Logs(d,self.host,self.day.text(),self.day.text());log.exec();log.deleteLater()
         v.addWidget(button('批次作业日志',logs));v.addWidget(button('返回结果页',d.reject));d.exec();d.deleteLater();self.refresh()
+
+    def auto_prepare(self):
+        import jst_auto_order
+        from jst_auto_order_ui import notify,open_orders
+        if self.worker or self.reviewing:return
+        self.reviewing=True;self.controls()
+        def prepare():
+            selected=jst_auto_order.selection(self.visible_records(),self.chosen)
+            result=run(self,jst_auto_order.prepare,(self.path,selected),'按勾选仓单制表')
+            if not self.closing and not self.host.closing:
+                if result['ready']:open_orders(self,self.host,result['ready'],result['failed'])
+                else:raise ValueError('\n'.join(e['order']+'：'+e['reason'] for e in result['failed']))
+        try:notify(self,prepare)
+        finally:self.reviewing=False;self.refresh()
+
+    def auto_tasks(self):
+        from jst_auto_order_ui import notify,open_orders
+        if self.worker or self.reviewing:return
+        self.reviewing=True;self.controls()
+        try:notify(self,lambda:open_orders(self,self.host))
+        finally:self.reviewing=False;self.refresh()
+
+    def auto_profiles(self):
+        from jst_auto_order_ui import notify,profiles
+        if self.worker or self.reviewing:return
+        heads=[r['head'] for r in self.visible_records() if service.key(r['head']) in self.chosen]
+        self.reviewing=True;self.controls()
+        try:notify(self,lambda:profiles(self,self.host,heads))
+        finally:self.reviewing=False;self.refresh()
+
     def shutdown(self):self.closing=True;self.timer.stop();self.reader.shutdown()
