@@ -77,6 +77,14 @@ def read(db, online, *, workbook=False):
     return value
 
 
+def read_warehouse_order(db, head):
+    if not exists(db):
+        return None
+    row = db.execute('SELECT online FROM jst_auto_orders WHERE oid=? AND warehouse=?',
+                     (head['oid'],head['warehouse'])).fetchone()
+    return read(db,row[0]) if row else None
+
+
 def need(payload, digest, online, gid):
     if token(payload)!=digest or payload['online']!=online or payload['gid']!=gid:
         raise ValueError('聚水潭自动下单资料摘要不符，需核对原任务')
@@ -134,8 +142,13 @@ def save_profiles(path, changes, progress=lambda _:None, cancel=None):
 
 
 def put_prepared(db, payload, workbook, expected):
-    online=payload['online']
-    old=read(db,online)
+    online = payload['online']
+    head = payload['head']
+    old = read_warehouse_order(db,head)
+    if old and old['online'] != online:
+        raise wr.Conflict('原下单任务号已变化，请刷新并核对原任务')
+    if not old and db.execute('SELECT 1 FROM jst_auto_orders WHERE online=?',(online,)).fetchone():
+        raise wr.Conflict('线上单号已关联其他仓单，请核对原自动下单任务')
     if old and old['stage'] in RELEASED:
         return old
     if (old or {}).get('sequence')!=expected:
@@ -143,12 +156,12 @@ def put_prepared(db, payload, workbook, expected):
     digest=token(payload)
     if old and old['digest']==digest:
         return old
-    h=payload['head'];stamp=wr.now()
+    stamp=wr.now()
     db.execute('''INSERT INTO jst_auto_orders VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(online) DO UPDATE SET gid=excluded.gid,stage=excluded.stage,sequence=excluded.sequence,
         updated=excluded.updated,payload=excluded.payload,digest=excluded.digest,file_sha=excluded.file_sha,
         workbook=excluded.workbook,proof=NULL,internal=NULL,platform_status=NULL,reason=excluded.reason''',
-        (online,h['oid'],h['warehouse'],payload['gid'],'PREPARED',0 if old is None else old['sequence']+1,
+        (online,head['oid'],head['warehouse'],payload['gid'],'PREPARED',0 if old is None else old['sequence']+1,
          stamp,stamp,wr.dumps(payload),digest,sha256(workbook).hexdigest(),workbook,None,None,None,'等待核对'))
     return read(db,online)
 

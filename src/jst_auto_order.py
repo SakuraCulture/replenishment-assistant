@@ -58,8 +58,7 @@ def _shop(db, h):
 
 
 def _online(h):
-    # Same local warehouse order retains its online key through new previews,
-    # reloads and portability. Never use a timestamp or upload-attempt counter.
+    # The default for a new task must be stable through previews and reloads.
     return 'BH'+sha256(('replenishment-jst-v1:'+h['number']).encode('utf-8')).hexdigest()[:24].upper()
 
 
@@ -110,10 +109,11 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
                 h=generation['head']
                 if any(h[k]!=row['head'][k] for k in HEAD_KEYS):
                     raise Check('所选仓单已变化，请刷新结果页')
-                online=_online(h);old=store.read(db,online)
+                old = store.read_warehouse_order(db,h)
                 if old and old['stage'] in store.RELEASED:
-                    ready.append(online)
+                    ready.append(old['online'])
                     continue
+                online = old['online'] if old else _online(h)
                 proof=_generation_proof(db,generation,digest)
                 reason=saved_execution_reason(db,h)
                 if reason:

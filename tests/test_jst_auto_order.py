@@ -247,11 +247,15 @@ class AutoOrders(unittest.TestCase):
             finally:source.close()
 
     def test_submit_disconnect_restores_exact_order_and_audits_without_reimport(self):
-        keys=self.prepared()
+        with patch.object(service,'_online',return_value='BH'+'A'*24):
+            keys=self.prepared()
         service.process(self.path,keys,self.portal,'preview')
         self.portal.disconnected=True
         result=service.process(self.path,keys,self.portal,'submit')[0]
         self.assertEqual(result['stage'],'IMPORT_UNKNOWN')
+        unresolved=self.read(keys[0],workbook=True)
+        self.assertEqual(service.prepare(self.path,self.selected),{'ready':keys,'failed':[]})
+        self.assertEqual(self.read(keys[0],workbook=True),unresolved)
         with self.assertRaisesRegex(ValueError,'待核'):
             jst_orders.cancel_generated(self.path,[self.gid],'合成撤销')
         plan=data_maintenance.prepare(self.path,[self.head])
@@ -355,7 +359,7 @@ class AutoOrders(unittest.TestCase):
         self.assertFalse(self.portal.orders)
         self.assertNotIn('stage_import',[op for op,_ in self.portal.calls])
 
-    def test_one_store_two_warehouses_have_independent_profiles_and_submit_keys(self):
+    def dual_selection(self):
         south=next(h for h in self.f.f.heads if h['warehouse']=='山东仓')
         self.f.f.save('return',[{'补货单号':south['number'],'供货仓':'山东仓','商品编码':'0002','门店确认数量':18}])
         catalog=test_jst.catalog('山东仓')
@@ -366,7 +370,10 @@ class AutoOrders(unittest.TestCase):
         self.assertEqual(len(r['generated']),1)
         self.configure(self.head)
         self.configure(south,{**CONTACT,'buyer':'000888','address':'合成山东收货点'})
-        selected=[*self.selected,{'head':south,'gid':r['generated'][0]}]
+        return [*self.selected,{'head':south,'gid':r['generated'][0]}]
+
+    def test_one_store_two_warehouses_have_independent_profiles_and_submit_keys(self):
+        selected=self.dual_selection()
         result=service.prepare(self.path,selected)
         self.assertFalse(result['failed']);keys=result['ready']
         self.assertEqual(len(set(keys)),2)
@@ -377,3 +384,26 @@ class AutoOrders(unittest.TestCase):
             self.assertEqual(record['proof']['binding']['warehouse'],warehouse)
             sheet=xlrd.open_workbook(file_contents=record['workbook']).sheet_by_index(0)
             self.assertEqual(sheet.cell_value(1,2),buyer)
+
+    def test_reprepares_both_warehouses_with_existing_online_numbers(self):
+        selected=self.dual_selection()
+        keys=['BH'+'A'*24,'BH'+'B'*24]
+        with patch.object(service,'_online',side_effect=keys):
+            self.assertEqual(service.prepare(self.path,selected),{'ready':keys,'failed':[]})
+        service.process(self.path,keys[:1],self.portal,'preview')
+        originals=[self.read(key,workbook=True) for key in keys]
+        self.assertEqual([row['stage'] for row in originals],['PREVIEWED','PREPARED'])
+        self.assertEqual(service.prepare(self.path,selected),{'ready':keys,'failed':[]})
+        self.assertEqual([self.read(key,workbook=True) for key in keys],originals)
+        self.assertEqual(len(store.list_orders(self.path)),2)
+
+    def test_new_warehouse_cannot_take_another_warehouses_online_number(self):
+        north,south=self.dual_selection()
+        key='BH'+'A'*24
+        with patch.object(service,'_online',return_value=key):
+            self.assertEqual(service.prepare(self.path,[north]),{'ready':[key],'failed':[]})
+            original=self.read(key,workbook=True)
+            result=service.prepare(self.path,[south])
+        self.assertFalse(result['ready'])
+        self.assertIn('线上单号已关联其他仓单',result['failed'][0]['reason'])
+        self.assertEqual(self.read(key,workbook=True),original)
