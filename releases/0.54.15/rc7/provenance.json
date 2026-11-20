@@ -1,0 +1,27 @@
+{
+  "release": "0.54.15 rc7",
+  "previous_main_commit": "072f0169afb855135ca61c41e83c1ebfb6877e4c",
+  "source_commit": "cb1ff3925bc01c815694ed88c86278ac3672af99",
+  "source_tree": "f01cf2e69bc6dc4b2fe34964b5e213e287caa583",
+  "source_matches_accepted_archive_bytes": true,
+  "scope": "cumulative executable and test inputs from the verified rc7 snapshot",
+  "source_snapshot": "snapshot-0c2012dd38079dbfabb52db5224174e9e5a7b8a11873d10658f29ec82075f8cb",
+  "source_snapshot_sha256": "0c2012dd38079dbfabb52db5224174e9e5a7b8a11873d10658f29ec82075f8cb",
+  "source_manifest_sha256": "b954973d16c689839dc4e3e430b6dacbf85ac3536f288216f9dab76455aff028",
+  "source_file_count": 952,
+  "changed_source_files": 184,
+  "build_origin": "The retained EXE was built from the already sealed workspace snapshot. The source commit records the same inputs byte for byte.",
+  "exe_sha256": "b4bbd311aed155eaf941b65797192c499f14f519bf9538c8932b31bd9afd2590",
+  "standalone_zip_sha256": "093d9a5b6b294abddca256df0066d097ed0433aad01a01106abb54dd96d1b191",
+  "original_local_acceptance_sha256": "b6d99bcbe518e4da776b6d3a50946c7baf44cc66db7be8379089c06ec499aca1",
+  "acceptance": {
+    "python_targeted_cases": 196,
+    "node_component_cases": 122,
+    "packaged_node_cases": 10,
+    "premerge_checkout_replay": 148,
+    "isolated_exe_return_review_cancel_save_reopen": true,
+    "saved_synthetic_payment_versions_after_reopen": 1,
+    "archived_live_saleout_readback": true,
+    "outbound_pre_shipment_and_two_warehouse_live_acceptance_pending": true
+  }
+}
