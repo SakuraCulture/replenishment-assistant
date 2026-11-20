@@ -52,15 +52,13 @@ def progress_state(summaries, legacy=None, operations_required=False):
         tokens[s]=basis_token(d)
     if ordered:
         health[JST_ORDER]=order_valid
-    order_note='聚水潭客审通过，已按导入单计入下单；实际付款待核' if order_valid and not health['payment'] else ''
+    order_note='已核实聚水潭原单，待人工确认付款' if order_valid and not health['payment'] else ''
     if not summaries['return'] and not (legacy and legacy['complete']):return PENDING['return'],'return','',health
     for i,s in enumerate(stages[1:],1):
-        if s=='payment' and order_valid:
-            continue
         prev=ordered if s=='receipt' and order_valid else summaries.get(stages[i-1])
         if not summaries.get(s):
             if prev and health[stages[i-1]] and prev['schema']==DOCUMENT_SCHEMA and prev['positive']==0 and not any(summaries.get(k) for k in stages[i:]):
                 return STATUSES[-1],None,('无要货，无需后续运营、分配、付款或收货' if stages[i-1] in ('return','operations') else '无付款数量，无需收货'),health
             return PENDING[s],s,order_note,health
-        if not health[s]:return PENDING[s],s,TITLES[s]+'对照依据已更新或未就绪，请重新核对',health
+        if not health[s]:return PENDING[s],s,order_note if s=='payment' and order_note else TITLES[s]+'对照依据已更新或未就绪，请重新核对',health
     return STATUSES[-1],None,order_note or '单据已收齐；不代表数量完全一致',health

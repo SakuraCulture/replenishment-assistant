@@ -88,7 +88,7 @@ const pages = {
     'parent.auditCount++;parent.statusValue="waitfconfirm";}}</script>',
 };
 
-async function openFixture(t,{large=[],split=false}={}){
+async function openFixture(t,{large=[],split=false,shortShop=false}={}){
   const submittedFormats=[];
   const nativeItem=(sku,qty)=>({sku_id:sku,qty,price:'2',amount:String(Number(qty)*2)});
   const nativeItems=large.length ? large.map(([sku,qty])=>nativeItem(sku,qty)) : [nativeItem('00001','10')];
@@ -114,6 +114,7 @@ async function openFixture(t,{large=[],split=false}={}){
       return;
     }
     let html=pages[url.pathname];
+    if (shortShop&&url.pathname===listPath) html=html.replace(shop,'合成简称');
     if (req.method==='POST') {
       const chunks=[];
       for await(const part of req) chunks.push(part);
@@ -257,4 +258,26 @@ test('shipping status is recorded for review without importing or auditing',{ski
     assert.equal(found.native_status,native);
   }
   assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[0,0,0]);
+});
+
+test('exact import and full payment read work before audit under the frozen native shop',
+  {skip:!fs.existsSync(edge),timeout:60000},async t=>{
+  const {page,account,flow}=await openFixture(t,{shortShop:true});
+  const preview=await flow.run('stage_import',{spec},account);
+  await flow.run('import',{warehouse:wh,permit:preview.permit,online},account);
+  const bound={...spec,phase:'IMPORT_UNKNOWN',binding:preview.binding};
+  const result=await flow.run('lookup',{spec:bound,identity_only:true},account);
+  assert.equal(result.internal,'9001');
+  assert.equal(result.native_status,'已付款待审核');
+  assert.equal(result.contact_ok,true);
+  const exact={...bound,internal:result.internal};
+  const awaiting=await flow.run('payment_detail',{spec:exact},account);
+  assert.equal(awaiting.native_status,'已付款待审核');
+  assert.deepEqual(awaiting.items.map(({sku,qty,price,amount})=>[sku,qty,price,amount]),[['00001','10','2','20']]);
+  await page.evaluate(()=>{statusValue='sent';});
+  const shipped=await flow.run('payment_detail',{spec:exact},account);
+  assert.equal(shipped.native_status,'已发货');
+  assert.deepEqual(shipped.items,awaiting.items);
+  await assert.rejects(flow.run('payment_detail',{spec:{...exact,internal:'9002'}},account),/内部单号与原单不同/);
+  assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[1,0,0]);
 });

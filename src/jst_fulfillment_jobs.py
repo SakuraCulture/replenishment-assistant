@@ -1,9 +1,9 @@
-"""Persisted opt-in and bounded due selection for allocation reads only."""
+"""Select bounded original-order payment reads and optional historical sources."""
 from contextlib import closing
 from datetime import datetime, timedelta
 
 import jst_auto_order_store as orders
-from jst_customer_audit import AWAITING
+from jst_order_confirmation import AWAITING
 import jst_order_store as generations
 from lifecycle_rules import JST_ORDER
 import work_repository as wr
@@ -13,8 +13,11 @@ from sqlite_write import begin
 _ACTIVE_ORDERS = '''FROM jst_auto_orders o
     JOIN jst_active a ON a.oid=o.oid AND a.warehouse=o.warehouse AND a.gid=o.gid
     JOIN jst_generations g ON g.gid=o.gid AND g.oid=o.oid AND g.warehouse=o.warehouse'''
-_UNPAID = '''AND NOT EXISTS(SELECT 1 FROM lifecycle_versions
-    WHERE oid=o.oid AND revision=g.revision AND warehouse=o.warehouse AND stage='payment')'''
+_UNPAID = '''AND NOT EXISTS(SELECT 1 FROM lifecycle_versions v
+    WHERE v.oid=o.oid AND v.revision=g.revision AND v.warehouse=o.warehouse AND v.stage='payment'
+      AND v.version=(SELECT MAX(recent.version) FROM lifecycle_versions recent
+         WHERE recent.oid=v.oid AND recent.revision=v.revision AND recent.warehouse=v.warehouse AND recent.stage=v.stage)
+      AND COALESCE(json_extract(CAST(v.payload AS TEXT),'$.pending'),0)=0)'''
 
 
 def enabled(path):
@@ -44,7 +47,7 @@ def due(path, *, now=None, limit=10):
         pending = orders.exists(db, 'jst_fulfillment_checks')
         if pending:
             sql += " LEFT JOIN jst_fulfillment_checks c ON c.online=o.online"
-        sql += " WHERE o.internal IS NOT NULL AND o.stage IN ('IMPORTED','AUDITED','REVIEW')"
+        sql += " WHERE o.internal IS NOT NULL AND o.stage IN ('AUDITED','REVIEW')"
         if pending:
             sql += " AND (c.online IS NULL OR (c.state IN ('WAIT_ALLOCATION','WAIT_CONNECTION') AND julianday(c.observed)<=julianday(?)))"
         if orders.exists(db, 'lifecycle_versions'):
@@ -67,8 +70,8 @@ def waiting_review(path, *, include_paid=False):
         return [row[0] for row in db.execute(sql + " ORDER BY c.observed,o.online")]
 
 
-def due_audited(path, *, now=None, limit=10):
-    """Retry a durable audit before starting any legacy sales-out check."""
+def due_order_payment(path, *, now=None, limit=10):
+    """Retry reads from verified originals, including orders imported by earlier versions."""
     cutoff = (now or datetime.fromisoformat(wr.now())) - timedelta(minutes=5)
     with closing(wr.read_connection(path, timeout=.15)) as db:
         db.execute('BEGIN')
@@ -78,9 +81,10 @@ def due_audited(path, *, now=None, limit=10):
         sql = 'SELECT o.online ' + _ACTIVE_ORDERS
         if pending:
             sql += ' LEFT JOIN jst_fulfillment_checks c ON c.online=o.online'
-        sql += " WHERE o.internal IS NOT NULL AND o.stage IN ('IMPORTED','AUDITED','AUDIT_UNKNOWN')"
+        sql += " WHERE o.internal IS NOT NULL AND o.stage IN ('IMPORTED','AUDITED','AUDIT_UNKNOWN','REVIEW')"
         args = []
         if pending:
+            # Older releases left valid imported orders in this state while waiting for audit.
             sql += """ AND (c.online IS NULL OR (julianday(c.observed)<=julianday(?) AND
                 (c.state IN ('RETRY_PAYMENT_READ','WAIT_ALLOCATION','WAIT_CONNECTION')
                  OR (c.state='PAYMENT_SOURCE_PENDING' AND c.message=? AND o.stage IN ('IMPORTED','AUDIT_UNKNOWN'))"""

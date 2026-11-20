@@ -1,9 +1,4 @@
-"""Pull allocation originals into a pending review; payment remains explicit.
-
-Native order quantity is not assumed to be allocation quantity. This adapter
-requires an explicit allocation/shipped quantity column, complete SKU coverage,
-and the frozen company/shop/order/generation identity.
-"""
+"""Read native order payment evidence and retain historical allocation sources."""
 from contextlib import closing
 from decimal import Decimal, ROUND_HALF_UP
 from hashlib import sha256
@@ -13,19 +8,19 @@ import re
 from uuid import uuid4
 
 import openpyxl
-import jst_audited_payment as audited
 import jst_auto_order as automatic
 import jst_auto_order_store as orders
 import jst_fulfillment_store as sources
 import jst_order_store as generations
+import jst_order_payment as order_payment
+import jst_order_confirmation as confirmation
 import order_lifecycle as lifecycle
 import purchase_io
 import purchases
 import work_repository as wr
 from payment_evidence import HEAD_KEYS, same_head
 from runtime_support import checkpoint, Cancelled
-from sqlite_write import begin
-import jst_customer_audit as customer_audit
+from sqlite_write import begin, commit
 
 
 QTY = ('实配数量', '实际配货数量', '实发数量', '实际发货数量', '出库数量')
@@ -79,11 +74,14 @@ def _order(db, online, expected=None):
     _, digest = generations.read_generation(db, order['gid'])
     if digest != payload['generation']['digest']:
         raise wr.Conflict('原生成单摘要不一致，停止回流')
+    from analytics_identifiers import registered
+    link = registered(db, payload['head'])
+    if link and link['number'] != order['internal']:
+        raise wr.Conflict('本机登记的聚水潭内部订单号与原任务不同，请核对关联')
     if expected and (order['digest'] != expected['order_digest'] or order['internal'] != expected['internal']
-                     or binding != expected['binding'] or not same_head(payload['head'], expected['head'])):
+                     or order['gid'] != expected['gid'] or binding != expected['binding']
+                     or not same_head(payload['head'], expected['head'])):
         raise wr.Conflict('回流期间原任务、店仓身份或生成版本已变化')
-    if expected and expected.get('source_kind') == audited.KIND and order['stage'] != 'AUDITED':
-        raise wr.Conflict('普通审核状态已变化，请重新核对原单')
     return order
 
 
@@ -209,10 +207,15 @@ def prepare_review(path, keys, progress=lambda _: None, cancel=None):
                 raise ValueError((state or {}).get('message') or '尚无已核验实配资料，请先拉取原单')
             payload, raw = sources.source(db, online, state['digest'])
             order = _order(db, online, payload)
+            source_kind = payload.get('source_kind')
+            is_native = source_kind in order_payment.NATIVE_KINDS
+            former = order_payment.existing_payment(payload, lifecycle.current(db, payload['head'], 'payment')) if is_native else None
+            if former and not (former['changed_skus'] or former['freight_to_check']):
+                raise ValueError(f"原单商品数量和金额与正式付款 V{former['version']:03d} 一致，沿用该付款版本")
         file = _original(path, online, payload, raw)
         head = order['payload']['head']
-        is_audited = payload.get('source_kind') == audited.KIND
-        title = audited.LABEL if is_audited else '聚水潭销售出库明细'
+        title = {order_payment.KIND: order_payment.LABEL, order_payment.LEGACY_KIND: order_payment.LEGACY_LABEL}.get(
+            source_kind, '聚水潭销售出库明细')
         rows = []
         for r in payload['rows']:
             rows.append({'sku': r['sku'], 'name': r['name'], 'signed_number': head['number'],
@@ -220,11 +223,11 @@ def prepare_review(path, keys, progress=lambda _: None, cancel=None):
                          'document_number': order['internal'], 'document_date': None, 'quantity': r['quantity'],
                          'unit': '库存单位', 'factor': None, 'conversion_basis': None, 'base_quantity': r['quantity'],
                          'amount': r['amount'], 'currency': r['currency'], 'price': r['price'],
-                         'note': (title if is_audited else '聚水潭实配回流') + '，付款须人工确认',
+                         'note': (title if is_native else '聚水潭实配回流') + '，付款须人工确认',
                          'source': {'sha': file['sha'], 'file': file['name'], 'sheet': r['sheet'], 'row': r['row']},
                          'raw_headers': r['headers'], 'raw_values': r['values'], 'adapter': 'jst_allocated',
                          'source_order': {'内部订单号': order['internal'], '线上订单号': online, '店铺名称': payload['binding']['shop'],
-                                          **({'付款来源': title} if is_audited else {})}})
+                                          **({'付款来源': title} if is_native else {})}})
         result = lifecycle.prepare_numbered(path, {'stage': 'payment', 'rows': rows, 'files': [file]}, head, progress, cancel)
         plans.extend(result['plans'])
         files.extend(result['files'])
@@ -232,7 +235,8 @@ def prepare_review(path, keys, progress=lambda _: None, cancel=None):
         overview.append({'head': head, 'internal': order['internal'], 'ordered': order['payload']['stats']['quantity'],
                          'allocated_amount': order['payload']['stats']['amount'],
                          'quantity': payload['quantity'], 'amount': payload['amount'], 'rows': payload['rows'],
-                         'source': title, 'audited': is_audited, 'totals': payload.get('totals')})
+                         'source': title, 'native_order': is_native, 'totals': payload.get('totals'),
+                         'previous_payment': former})
     if not plans:
         raise ValueError('请选择需要核对实配的原仓单')
     return {'plans': plans, 'files': files, 'jst_fulfillment': guards}, overview
@@ -258,8 +262,8 @@ def validate_guard(db, plan):
         if payload['file']['sha'] not in {file['sha'] for file in plan['files']}:
             raise ValueError('实配付款核对缺少本次原件，未保存付款')
         raw = matches[0]['payload']['raw_rows']
-        expected = [(r['sku'], r['quantity'], r['amount'], r['currency']) for r in payload['rows']]
-        if [(r['sku'], r['base_quantity'], r['amount'], r['currency']) for r in raw] != expected:
+        expected = [(r['sku'], r['quantity'], r['price'], r['amount'], r['currency']) for r in payload['rows']]
+        if [(r['sku'], r['base_quantity'], r['price'], r['amount'], r['currency']) for r in raw] != expected:
             raise ValueError('实配核对数量或金额已变化，未保存付款')
         if any(row.get('document_number') != payload['internal']
                or (row.get('source_order') or {}).get('线上订单号') != payload['online']
@@ -318,7 +322,7 @@ def pull(path, keys, browser, progress=lambda _: None, cancel=None):
     return result
 
 
-def _observe_audited(path, order, state, message, native_status, candidate, cancel):
+def _observe_payment(path, order, state, message, native_status, candidate, cancel):
     online = order['online']
     with closing(orders.connection(path)) as db, db:
         begin(db, cancel)
@@ -327,27 +331,36 @@ def _observe_audited(path, order, state, message, native_status, candidate, canc
             raise wr.Conflict('回查期间原单已变化，请重新读取付款资料')
         previous = sources.current(db, online)
         digest = (previous or {}).get('digest')
-        if native_status == audited.AUDITED and current['stage'] != 'AUDITED':
-            current = orders.update(db, current, 'AUDITED', status='audited', reason='已按原内部订单号核实普通审核通过')
-        elif native_status in ('已取消', '已付款待审核', '待付款') and current['stage'] == 'AUDITED':
-            current = orders.update(db, current, 'REVIEW', status='review', reason='平台当前为' + native_status + '，原付款资料待核')
-        customer_audit.record(db, current, native_status)
+        if native_status == confirmation.AUDITED and current['stage'] != 'AUDITED':
+            current = orders.update(db, current, 'AUDITED', status='audited', reason='已核对原单，聚水潭当前为“已客审待财审”')
+        elif native_status in confirmation.REVERSED and current['stage'] != 'REVIEW':
+            current = orders.update(db, current, 'REVIEW', status='review', reason=f'聚水潭当前为“{native_status}”，原付款资料待核')
         if state == 'READY':
             payload, raw = candidate
-            _order(db, online, payload)
-            digest = sources.save(db, online, payload, raw, message)
-        elif native_status == '已发货' and digest and previous['state'] == 'READY':
-            old, _ = sources.source(db, online, digest)
-            if old.get('source_kind') != audited.KIND:
-                return {**previous, 'online': online, 'audit_stage': current['stage']}
-            sources.observe(db, online, state, message, digest)
+            if digest:
+                old, original = sources.source(db, online, digest)
+                if old.get('source_kind') == order_payment.LEGACY_KIND and order_payment.same_order_facts(old,payload):
+                    payload, raw = old, original
+            formal = order_payment.existing_payment(payload, lifecycle.current(db, payload['head'], 'payment'))
+            if formal:
+                version = f"V{formal['version']:03d}"
+                if not (formal['changed_skus'] or formal['freight_to_check']):
+                    state, message = 'MATCHES_PAYMENT', f'原单商品数量和金额与正式付款 {version} 一致，沿用该版本'
+                else:
+                    freight = '，另需核对运费' if formal['freight_to_check'] else ''
+                    message = f"与正式付款 {version} 有 {formal['changed_skus']} 款商品差异{freight}，等待人工核对"
+            confirmation.record(db, current, native_status, rows=payload['rows'])
+            digest = sources.save(db, online, payload, raw, message, state=state)
         else:
+            if native_status in confirmation.REVERSED:
+                confirmation.record(db, current, native_status)
             sources.observe(db, online, state, message, digest)
-        return {'online': online, 'state': state, 'digest': digest, 'message': message, 'audit_stage': current['stage']}
+        commit(db, cancel)
+        return {'online': online, 'state': state, 'digest': digest, 'message': message, 'order_stage': current['stage']}
 
 
-def pull_audited(path, keys, browser, progress=lambda _: None, cancel=None):
-    """Read the original order only, keeping audit outcome apart from candidate readiness."""
+def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None):
+    """Prepare payment evidence by reading the already confirmed original order."""
     results = []
     for online in dict.fromkeys(keys):
         checkpoint(cancel)
@@ -356,7 +369,7 @@ def pull_audited(path, keys, browser, progress=lambda _: None, cancel=None):
             with closing(wr.read_connection(path)) as db:
                 db.execute('BEGIN')
                 order = _order(db, online)
-            progress('读取审核后订单明细 ' + automatic.show_name(order['payload']['head']))
+            progress('读取原订单明细 ' + automatic.show_name(order['payload']['head']))
             status, candidate = '', None
             try:
                 receipt = browser.action('payment_detail', order)
@@ -371,18 +384,18 @@ def pull_audited(path, keys, browser, progress=lambda _: None, cancel=None):
                     state, message = 'RETRY_PAYMENT_READ', receipt.get('message') or '尚未读到唯一原单，保留原内部订单号继续核对'
                 else:
                     status = receipt.get('native_status') or '未知状态'
-                    if status != audited.AUDITED:
-                        state, message = 'PAYMENT_SOURCE_PENDING', f'聚水潭当前为{status}，请核对普通审核及原单'
+                    if status not in confirmation.PAYMENT_STATES:
+                        state, message = 'PAYMENT_SOURCE_PENDING', f'聚水潭当前为“{status}”，须核对原订单后准备付款资料'
                     elif receipt.get('detail_error'):
                         state, message = 'RETRY_PAYMENT_READ', receipt['detail_error']
                     else:
                         try:
-                            candidate = audited.prepare(order, receipt, cancel)
+                            candidate = order_payment.prepare(order, receipt, cancel)
                         except (ValueError, TypeError, ArithmeticError) as exc:
                             state, message = 'NEEDS_REVIEW', str(exc)
                         else:
-                            state, message = 'READY', audited.LABEL + '已核验，等待业务确认实际付款'
-            result = _observe_audited(path, order, state, message, status, candidate, cancel)
+                            state, message = 'READY', order_payment.LABEL + '已核验，待人工确认付款'
+            result = _observe_payment(path, order, state, message, status, candidate, cancel)
         except ValueError as exc:
             result = {'online': online, 'state': 'NEEDS_REVIEW', 'message': str(exc)}
         results.append(result)
@@ -390,10 +403,10 @@ def pull_audited(path, keys, browser, progress=lambda _: None, cancel=None):
 
 
 def run_order_actions(path, keys, owner, action, approved=None, progress=lambda _: None, cancel=None):
-    return automatic.run_browser(path, keys, owner, action, approved, progress, cancel, prepare_payment=pull_audited)
+    return automatic.run_browser(path, keys, owner, action, approved, progress, cancel, prepare_payment=pull_order_payment)
 
 
-def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, retained_only=False, audit_details=False):
+def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, retained_only=False, order_details=False):
     from catalog_sync_client import ComponentError
     checkpoint(cancel)
     try:
@@ -405,12 +418,12 @@ def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, reta
             lease.start()
         except ComponentError as exc:
             raise automatic._client_error(exc) from None
-        reader = pull_audited if audit_details else pull
+        reader = pull_order_payment if order_details else pull
         return reader(path, keys, Browser(lease, retained_only), progress, cancel)
     finally:
         import time
         while not lease.close(timeout=.5):
-            progress('等待实配原单查询安全结束')
+            progress('等待聚水潭原单查询安全结束')
             time.sleep(.2)
 
 
@@ -418,16 +431,23 @@ def run_background(path, keys, owner, progress=lambda _: None, cancel=None):
     return run_browser(path, keys, owner, progress, cancel, retained_only=True)
 
 
-def run_audited_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, retained_only=False):
-    return run_browser(path, keys, owner, progress, cancel, retained_only=retained_only, audit_details=True)
+def run_order_payment(path, keys, owner, progress=lambda _: None, cancel=None, *, retained_only=False):
+    return run_browser(path, keys, owner, progress, cancel, retained_only=retained_only, order_details=True)
 
 
-def retry_audited(path, keys, owner, progress=lambda _: None, cancel=None):
-    return run_audited_browser(path, keys, owner, progress, cancel, retained_only=True)
+def retry_order_payment(path, keys, owner, progress=lambda _: None, cancel=None):
+    return run_order_payment(path, keys, owner, progress, cancel, retained_only=True)
 
 
-def verify_audited_before_commit(path, guards, owner, progress=lambda _: None, cancel=None):
+def verify_order_before_commit(path, guards, owner, progress=lambda _: None, cancel=None):
     expected = {guard['online']: guard['digest'] for guard in guards}
-    for row in run_audited_browser(path, list(expected), owner, progress, cancel):
+    for row in run_order_payment(path, list(expected), owner, progress, cancel):
         if row['state'] != 'READY' or row['digest'] != expected[row['online']]:
-            raise wr.Conflict(row.get('message', '') + '。审核后付款资料已变化或无法再次核实，请重新打开核对。')
+            raise wr.Conflict(row.get('message', '') + '。原单付款资料已变化或无法再次核实，请重新打开核对。')
+
+
+def native_guards(path, guards):
+    with closing(wr.read_connection(path)) as db:
+        db.execute('BEGIN')
+        return [guard for guard in guards if sources.source(db, guard['online'], guard['digest'])[0].get('source_kind')
+                in order_payment.NATIVE_KINDS]

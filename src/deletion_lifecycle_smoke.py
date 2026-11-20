@@ -16,7 +16,7 @@ def pending_jst_check(win,head,messages,confirmations,choice):
     import work_repository as work
     from catalog_session_ui import manager as catalog_manager
     from catalog_sync_client import ComponentError
-    from jst_customer_audit import AUDITED,AWAITING
+    from jst_order_confirmation import AUDITED,AWAITING
     from lifecycle_rules import JST_ORDER
     from ui_work_io import Session
     from work_failures import WorkFailure

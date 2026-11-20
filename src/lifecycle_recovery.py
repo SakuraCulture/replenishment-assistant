@@ -1,6 +1,6 @@
 """Frozen local save checkpoints; recovery always rechecks durable business facts.
 
-No platform commands, business rollback, quantity changes or partial-batch replay.
+Native payment recovery may re-read the original order before local commit.
 The small index is separate from the compressed preview; no whole DB backup.
 """
 import gzip
@@ -213,7 +213,7 @@ def inspect(path,identity,progress=lambda _:None,cancel=None):
     return {'checkpoint':value,'rows':rows,'action':action,'message':message,'receipt':receipt}
 
 
-def recover(path,identity,progress=lambda _:None,cancel=None):
+def recover(path,identity,progress=lambda _:None,cancel=None,*,order_session=None):
     import order_lifecycle as lc
     status=inspect(path,identity,progress,cancel)
     if status['action']=='completed':return status
@@ -223,6 +223,12 @@ def recover(path,identity,progress=lambda _:None,cancel=None):
     if hashlib.sha256(raw).hexdigest()!=value['preview_sha256']:raise ValueError('原恢复预览摘要不符，未执行保存')
     plan=wr.loads(raw)
     del raw
+    if plan.get('jst_fulfillment'):
+        from jst_fulfillment import native_guards, verify_order_before_commit
+        guards=native_guards(path,plan['jst_fulfillment'])
+        if guards:
+            if order_session is None:raise wr.Conflict('原订单须在提交前重新回查，请从付款核对或原保存任务继续')
+            verify_order_before_commit(path,guards,order_session,progress,cancel)
     for p in plan['plans']:
         checkpoint(cancel);p['head']=lc.full_head(path,p['head'])
     result=lc.commit(path,plan,progress,cancel)

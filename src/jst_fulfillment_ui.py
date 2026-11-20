@@ -1,4 +1,4 @@
-"""Native allocation preparation followed by the existing human payment review."""
+"""Display the original order payment candidate for human confirmation."""
 from decimal import Decimal
 
 from business_ui import run
@@ -9,18 +9,25 @@ import jst_fulfillment as service
 
 def make_review(parent, plan, overview):
     dialog = Review(parent, plan, show_source_notices=False)
-    audited = any(row.get('audited') for row in overview)
+    native = any(row.get('native_order') for row in overview)
     dialog.setWindowTitle('等待人工确认付款')
     heads = {row['head']['number']: row for row in overview}
-    if audited:
+    if native:
         dialog.overview_model.headers += ['付款来源','本地分配量','平台数量','本地分配金额','商品金额','商品金额差','运费','平台应付']
+        show_previous = any(row.get('previous_payment') for row in overview)
+        if show_previous:
+            dialog.overview_model.headers += ['已确认付款版本','已确认数量','已确认商品金额','与原付款差异款数']
         values = []
         for row in dialog.overview_model.rows:
             entry = heads[row[0]]
             totals = entry.get('totals') or {}
             difference = Decimal(entry['amount']) - Decimal(entry['allocated_amount'])
-            values.append(row + [entry['source'],entry['ordered'],entry['quantity'],entry['allocated_amount'],
-                                 entry['amount'],f'{difference:+.2f}',totals.get('freight'),totals.get('payable')])
+            displayed = row + [entry['source'],entry['ordered'],entry['quantity'],entry['allocated_amount'],
+                               entry['amount'],f'{difference:+.2f}',totals.get('freight'),totals.get('payable')]
+            if show_previous:
+                previous = entry.get('previous_payment')
+                displayed += [f"V{previous['version']:03d}",previous['quantity'],previous['amount'],previous['changed_skus']] if previous else [None]*4
+            values.append(displayed)
         dialog.overview_model.replace(values)
     else:
         dialog.overview_model.headers += ['原下单数量', '实配数量', '实配商品金额（元）']
@@ -62,10 +69,10 @@ def review(parent, host, keys):
     try:
         if not dialog.exec():
             return None
-        guards = [guard for guard,row in zip(plan['jst_fulfillment'],overview) if row.get('audited')]
+        guards = [guard for guard,row in zip(plan['jst_fulfillment'],overview) if row.get('native_order')]
         if guards:
             from catalog_session_ui import manager
-            run(parent, service.verify_audited_before_commit, (path, guards, manager(host).session), '保存前核对聚水潭原单')
+            run(parent, service.verify_order_before_commit, (path, guards, manager(host).session), '保存前核对聚水潭原单')
         return commit(parent, host, plan)
     finally:
         dialog.deleteLater()
@@ -79,7 +86,7 @@ def pull_and_review(parent, host, keys):
     if not missing:
         return review(parent, host, keys)
     from catalog_session_ui import manager
-    result = run(parent, service.run_audited_browser, (host.work_repository.path, missing, manager(host).session), '按原单补取付款资料')
+    result = run(parent, service.run_order_payment, (host.work_repository.path, missing, manager(host).session), '按原单补取付款资料')
     blocked = [r for r in result if r['state'] != 'READY']
     if blocked:
         raise ValueError('\n'.join(r['online'] + '：' + r['message'] for r in blocked)

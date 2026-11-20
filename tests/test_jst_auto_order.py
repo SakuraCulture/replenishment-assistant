@@ -107,7 +107,7 @@ class Portal:
         self.calls.append((name,online))
         if name=='import':
             if online in self.orders:raise AssertionError('duplicate import')
-            self.orders[online]={'internal':str(6001+len(self.orders)),'status':'awaiting'}
+            self.orders[online]={'internal':str(6001+len(self.orders)),'status':'awaiting','native_status':'已付款待审核'}
             if self.disconnected:raise service.PlatformCheck('合成断线')
         elif self.audit_rejected:
             self.orders[online].update(audit_rejected=True)
@@ -188,7 +188,7 @@ class AutoOrders(unittest.TestCase):
         keys=self.prepared();self.portal.price_diff=True
         self.assertEqual(service.process(self.path,keys,self.portal,'preview')[0]['stage'],'PREVIEWED')
         self.assertEqual(self.read(keys[0])['proof']['amount'],'180.5')
-        self.assertEqual(service.process(self.path,keys,self.portal,'submit')[0]['stage'],'AUDITED')
+        self.assertEqual(service.process(self.path,keys,self.portal,'submit')[0]['stage'],'IMPORTED')
 
     def test_bulk_address_edit_invalidates_old_preview_and_rebuilds_same_order(self):
         import jst_delivery_profiles as profiles
@@ -232,10 +232,10 @@ class AutoOrders(unittest.TestCase):
         first=jst_exports.export_checked(self.path,[self.gid],self.f.f.root/'manual')['files'][0]
         service.process(self.path,keys,self.portal,'preview')
         result=service.process(self.path,keys,self.portal,'submit')[0]
-        self.assertEqual(result['stage'],'AUDITED')
+        self.assertEqual(result['stage'],'IMPORTED')
         service.process(self.path,keys,self.portal,'submit');service.process(self.path,keys,self.portal,'recover')
         self.assertEqual([op for op,_ in self.portal.calls].count('import'),1)
-        self.assertEqual([op for op,_ in self.portal.calls].count('audit'),1)
+        self.assertFalse(any(op in ('stage_audit','audit') for op,_ in self.portal.calls))
         with closing(wr.read_connection(self.path)) as db:
             self.assertIsNone(lc.current(db,self.head,'payment'))
             self.assertEqual(jst_orders.locked(db,self.head),self.gid)
@@ -249,7 +249,7 @@ class AutoOrders(unittest.TestCase):
             try:self.assertEqual(list(source.active.values),[('商品编码','单价','数量','订单号'),('0001',2,40,self.head['number'])])
             finally:source.close()
 
-    def test_submit_disconnect_restores_exact_order_and_audits_without_reimport(self):
+    def test_submit_disconnect_restores_exact_order_without_reimport_or_audit(self):
         with patch.object(service,'_online',return_value='BH'+'A'*24):
             keys=self.prepared()
         service.process(self.path,keys,self.portal,'preview')
@@ -266,15 +266,15 @@ class AutoOrders(unittest.TestCase):
         restarted=Portal();restarted.orders=self.portal.orders
         result=service.process(self.path,keys,restarted,'recover')[0]
         self.assertEqual(result['stage'],'IMPORTED')
-        result=service.process(self.path,keys,restarted,'audit')[0]
-        self.assertEqual(result['stage'],'AUDITED')
-        self.assertNotIn('import',[action for action,_ in restarted.calls])
+        self.assertEqual(restarted.calls,[('lookup',keys[0])])
+        self.assertEqual(self.read(keys[0])['internal'],'6001')
 
     def test_audit_rejected_can_continue_on_original_internal_order(self):
         keys=self.prepared()
         service.process(self.path,keys,self.portal,'preview')
+        service.process(self.path,keys,self.portal,'submit')
         self.portal.audit_rejected=True
-        result=service.process(self.path,keys,self.portal,'submit')[0]
+        result=service.process(self.path,keys,self.portal,'audit')[0]
         self.assertEqual(result['stage'],'IMPORTED')
         self.assertIn('普通审核未通过',result['reason'])
         self.assertEqual(self.read(keys[0])['internal'],'6001')
@@ -286,6 +286,7 @@ class AutoOrders(unittest.TestCase):
     def test_recovers_legacy_audit_stopped_before_dispatch(self):
         keys=self.prepared()
         service.process(self.path,keys,self.portal,'preview')
+        service.process(self.path,keys,self.portal,'submit')
         request=self.portal.request
 
         def stop_before_click(name, **kwargs):
@@ -294,7 +295,7 @@ class AutoOrders(unittest.TestCase):
             return request(name,**kwargs)
 
         with patch.object(self.portal,'request',stop_before_click):
-            failed=service.process(self.path,keys,self.portal,'submit')[0]
+            failed=service.process(self.path,keys,self.portal,'audit')[0]
         self.assertEqual(failed['stage'],'AUDIT_UNKNOWN')
         with patch.object(self.portal,'action',side_effect=service.PlatformCheck('合成回查暂不可用')):
             self.assertEqual(service.process(self.path,keys,self.portal,'recover')[0]['stage'],'AUDIT_UNKNOWN')
@@ -315,7 +316,7 @@ class AutoOrders(unittest.TestCase):
         self.assertEqual(result['stage'],'AUDITED')
         record=self.read(keys[0])
         self.assertEqual((record['stage'],record['platform_status'],record['internal']),('AUDITED','audited','6001'))
-        self.assertEqual(record['reason'],'普通审核已完成，聚水潭状态为已客审待财审')
+        self.assertEqual(record['reason'],'已核对原单，聚水潭当前为“已客审待财审”')
         with closing(wr.read_connection(self.path)) as db:
             detail=db.execute("SELECT detail FROM jst_events WHERE action='聚水潭原单核对' ORDER BY id DESC LIMIT 1").fetchone()
             self.assertEqual(wr.loads(detail[0])['native_status'],'已客审待财审')
@@ -330,7 +331,7 @@ class AutoOrders(unittest.TestCase):
         for native_status in ('发货中(打单拣货)','已发货',None):
             with self.subTest(native_status=native_status):
                 self.portal.orders[keys[0]].update(status='audited',native_status=native_status)
-                result=service.process(self.path,keys,self.portal,'recover')[0]
+                result=service.process(self.path,keys,self.portal,'recover_delete')[0]
                 self.assertEqual(result['stage'],'REVIEW')
                 record=self.read(keys[0])
                 self.assertEqual((record['platform_status'],record['internal']),('review','6001'))
@@ -488,7 +489,7 @@ class AutoOrders(unittest.TestCase):
         self.assertFalse(result['failed']);keys=result['ready']
         self.assertEqual(len(set(keys)),2)
         service.process(self.path,keys,self.portal,'preview')
-        self.assertEqual([r['stage'] for r in service.process(self.path,keys,self.portal,'submit')],['AUDITED','AUDITED'])
+        self.assertEqual([r['stage'] for r in service.process(self.path,keys,self.portal,'submit')],['IMPORTED','IMPORTED'])
         for key,warehouse,buyer in zip(keys,('河北仓','山东仓'),('00012345','000888')):
             record=self.read(key,workbook=True)
             self.assertEqual(record['proof']['binding']['warehouse'],warehouse)

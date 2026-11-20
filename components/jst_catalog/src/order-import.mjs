@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import {CatalogError, canonical, check, sha} from './common.mjs';
 import {activateControl} from './product-export.mjs';
-import {LIST_PATH, ordinaryAudit, queryOrder, readNativeOrder, readOrder} from './order-list.mjs';
+import {LIST_PATH, ordinaryAudit, queryOrder, readImportResult, readNativeOrder, readOrder} from './order-list.mjs';
 
 const IMPORT_PATH = '/app/order/import/import.aspx';
 const PREVIEW_PATH = '/app/order/import/import_show.aspx';
@@ -312,6 +312,11 @@ export class OrderPages {
     return readNativeOrder(page,await this.orderList(page),spec,{payment:true},signal);
   }
 
+  async importResult(page,spec,signal) {
+    if (!/^[1-9]\d*$/.test(spec.binding?.shop_id||'')) fail('ACCOUNT_CHANGED','原任务未保存已核对的店铺标识');
+    return readImportResult(page,await this.orderList(page),spec,signal);
+  }
+
   async preview(page,spec,signal) {
     const list=await this.orderList(page);
     if (await queryOrder(page,list,spec,null,signal)) fail('ORDER_EXISTS','该店铺与线上单号已存在，需核对原单');
@@ -418,9 +423,10 @@ export class OrderFlow {
       const {frame,row,native,buyer,lines,...facts}=await this.pages.paymentDetail(page,spec,signal);
       return {...facts,binding,online:spec.online,internal:spec.internal};
     }
-    const observed=['lookup','stage_audit'].includes(action)
-      ? await this.pages.lookup(page,spec,signal,action==='stage_audit')
-      : await this.pages.preview(page,spec,signal);
+    let observed;
+    if (action==='lookup'&&input.identity_only===true) observed=await this.pages.importResult(page,spec,signal);
+    else if (['lookup','stage_audit'].includes(action)) observed=await this.pages.lookup(page,spec,signal,action==='stage_audit');
+    else observed=await this.pages.preview(page,spec,signal);
     check(signal);
     const {frame,row,detail,preview,page:previewPage,shop_id,buyer,...facts}=observed;
     const binding={...scoped,shop_id};

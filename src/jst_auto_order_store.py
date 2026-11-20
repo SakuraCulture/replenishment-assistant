@@ -14,7 +14,7 @@ STAGES = {
     'PREPARED':'尚未导入',
     'PREVIEWED':'尚未导入',
     'IMPORT_UNKNOWN':'导入结果待核',
-    'IMPORTED':'已导入待审核',
+    'IMPORTED':'已导入',
     'AUDIT_UNKNOWN':'审核结果待核',
     'AUDITED':'普通审核完成',
     'REVIEW':'异常待处理',

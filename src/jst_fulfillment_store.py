@@ -42,7 +42,7 @@ def observe(db, online, state, message, digest=None):
         digest=excluded.digest,message=excluded.message''', (online, wr.now(), state, digest, message))
 
 
-def save(db, online, payload, raw, message='实配资料已准备，等待人工核对付款'):
+def save(db, online, payload, raw, message='实配资料已准备，等待人工核对付款', *, state='READY'):
     if payload.get('online') != online or sha256(raw).hexdigest() != payload.get('file', {}).get('sha'):
         raise ValueError('实配原件与原单或摘要不一致，未保存候选')
     schema(db)
@@ -53,7 +53,7 @@ def save(db, online, payload, raw, message='实配资料已准备，等待人工
     else:
         db.execute('INSERT INTO jst_fulfillment_sources VALUES(?,?,?,?,?)',
                    (online, digest, wr.now(), wr.dumps(payload), raw))
-    observe(db, online, 'READY', message, digest)
+    observe(db, online, state, message, digest)
     return digest
 
 

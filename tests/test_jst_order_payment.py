@@ -1,11 +1,13 @@
 from contextlib import closing
 from datetime import datetime, timedelta
 from decimal import Decimal
+from hashlib import sha256
 import unittest
 from unittest.mock import patch
 
 import daily_batch
-import jst_audited_payment as audited
+import jst_order_confirmation as confirmation
+import jst_order_payment as payment
 import jst_auto_order as automatic
 import jst_auto_order_store as orders
 import jst_batches
@@ -23,6 +25,8 @@ from warehouse_catalog import revision
 
 class Platform(fixture.Portal):
     qty = '12'
+    price = '2.75'
+    freight = '2'
     detail_error = ''
     change_lookup_quantity = False
     total = '35'
@@ -34,15 +38,15 @@ class Platform(fixture.Portal):
             sku = order['payload']['lines'][0][0]
             return {'found': True, 'contact_ok': True, 'online': order['online'], 'internal': existing['internal'],
                     'native_status': existing.get('native_status'), 'binding': order['proof']['binding'],
-                    'items': [{'sku':sku,'qty':self.qty,'price':'2.75','amount':str(Decimal(self.qty)*Decimal('2.75'))}],
-                    'detail_count':1,'currency':'CNY','freight':'2','amount':self.total,'detail_error':self.detail_error}
+                    'items': [{'sku':sku,'qty':self.qty,'price':self.price,'amount':str(Decimal(self.qty)*Decimal(self.price))}],
+                    'detail_count':1,'currency':'CNY','freight':self.freight,'amount':self.total,'detail_error':self.detail_error}
         reply = super().action(name, order, **kwargs)
-        if self.change_lookup_quantity and name == 'lookup' and reply.get('native_status') == audited.AUDITED:
+        if self.change_lookup_quantity and name == 'lookup' and reply.get('native_status') == confirmation.AWAITING:
             reply['lines'][0][1] = self.qty
         return reply
 
 
-class AuditedPayment(unittest.TestCase):
+class OrderPayment(unittest.TestCase):
     def setUp(self):
         self.base = fixture.AutoOrders()
         self.base.setUp()
@@ -54,16 +58,17 @@ class AuditedPayment(unittest.TestCase):
         automatic.process(self.path, self.keys, self.portal, 'preview')
 
     def submit(self):
-        return automatic.process(self.path,self.keys,self.portal,'submit',prepare_payment=service.pull_audited)[0]
+        return automatic.process(self.path,self.keys,self.portal,'submit',prepare_payment=service.pull_order_payment)[0]
 
-    def test_post_audit_candidate_is_automatic_and_retains_quantity_difference(self):
+    def test_imported_candidate_is_automatic_and_retains_quantity_difference(self):
         self.portal.change_lookup_quantity = True
         response = self.submit()
-        self.assertEqual((response['stage'],response['payment']['state']),('AUDITED','READY'))
+        self.assertEqual((response['stage'],response['payment']['state']),('IMPORTED','READY'))
+        self.assertEqual([action for action,_ in self.portal.calls],['preview','stage_import','import','lookup','payment_detail'])
         self.assertEqual([event for event,_ in self.portal.calls].count('payment_detail'),1)
         self.assertFalse(lifecycle.snapshot(self.path,self.base.head)['present']['payment'])
         plan, summary = service.prepare_review(self.path,self.keys)
-        self.assertEqual(summary[0]['source'],audited.LABEL)
+        self.assertEqual(summary[0]['source'],payment.LABEL)
         self.assertEqual(summary[0]['totals'],{'goods':'33.00','freight':'2.00','payable':'35.00','unexplained':'0.00'})
         self.assertNotEqual(summary[0]['ordered'],summary[0]['quantity'])
         # The test deliberately performs the action reserved for business confirmation.
@@ -71,95 +76,92 @@ class AuditedPayment(unittest.TestCase):
         self.assertEqual(len(lifecycle.history(self.path,self.base.head,'payment')),1)
         self.assertEqual(plan['plans'][0]['payload']['raw_rows'][0]['base_quantity'],'12')
 
-    def test_customer_audit_counts_import_and_allows_receipt_before_real_payment(self):
+    def test_import_counts_actual_order_but_stays_in_default_payment_inbox(self):
         head = self.base.head
         self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
         self.submit()
         view = lifecycle.snapshot(self.path,head)
-        self.assertEqual((view['status'],view['next']),('待收货','receipt'))
+        self.assertEqual((view['status'],view['next']),('待付款','payment'))
         self.assertFalse(view['present']['payment'])
         self.assertFalse(view['health']['payment'])
         self.assertTrue(view['health'][lifecycle.JST_ORDER])
-        orders_in_receipt = daily_batch.read(self.path,self.base.f.f.root/'progress.sqlite',
-            {'stage_view':'receipt','stage_filter':'待处理','all_matched':True})
-        self.assertEqual([r['number'] for r in orders_in_receipt['records']],[head['number']])
+        waiting = daily_batch.read(self.path,self.base.f.f.root/'progress.sqlite',
+            {'stage_view':'payment','stage_filter':'待处理','all_matched':True})
+        self.assertEqual([r['number'] for r in waiting['records']],[head['number']])
 
-        report = order_analytics.collect(self.path,{'from':head['day'],'to':head['day'],'lifecycle_from':'receipt'})
+        report = order_analytics.collect(self.path,{'from':head['day'],'to':head['day'],'lifecycle_from':'payment'})
         row, = [r for r in report['rows'] if r['order']==head['number'] and r['sku']=='0001']
-        self.assertEqual(row['quantities']['payment'],40)
+        self.assertEqual(row['quantities']['payment'],12)
         self.assertTrue(row['valid']['payment'])
         self.assertIsNone(row['payment_amount'])
         self.assertEqual(report['payments'],[])
 
-        form = self.base.f.f
-        receipt, _ = form.save('receipt',[{'实际收货数量':37}])
-        saved = receipt['plans'][0]['payload']
-        self.assertEqual(saved['basis']['stage'],lifecycle.JST_ORDER)
-        self.assertEqual(saved['basis']['products']['0001']['quantity'],'40')
-        self.assertFalse(saved['pending'])
-        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'已收齐')
         plan, _ = service.prepare_review(self.path,self.keys)
         lifecycle.commit(self.path,plan)
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待收货')
+        form = self.base.f.f
+        receipt, _ = form.save('receipt',[{'实际收货数量':11}])
+        saved = receipt['plans'][0]['payload']
+        self.assertEqual(saved['basis']['stage'],'payment')
+        self.assertEqual(saved['basis']['products']['0001']['quantity'],'12')
+        self.assertFalse(saved['pending'])
         current = lifecycle.snapshot(self.path,head)
         self.assertTrue(current['health']['payment'])
         self.assertTrue(current['health']['receipt'])
         self.assertEqual(current['status'],'已收齐')
         self.assertEqual(len(lifecycle.history(self.path,head,lifecycle.JST_ORDER)),1)
 
-    def test_delayed_manual_audit_is_read_only_and_withdrawal_blocks_old_receipt_plan(self):
-        send = self.portal.request
-
-        def interrupted(name, *, online, **kwargs):
-            if name == 'audit':
-                self.portal.orders[online]['native_status'] = '已付款待审核'
-                raise automatic.PlatformCheck('合成审核响应中断')
-            return send(name,online=online,**kwargs)
-
-        with patch.object(self.portal,'request',interrupted):
-            response = self.submit()
-        self.assertEqual((response['stage'],response['payment']['state']),('AUDIT_UNKNOWN','PAYMENT_SOURCE_PENDING'))
-        head = self.base.head
-        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
-        due = jobs.due_audited(self.path,now=datetime.fromisoformat(wr.now())+timedelta(minutes=6))
-        self.assertEqual(due,self.keys)
-        self.portal.orders[self.online]['native_status'] = audited.AUDITED
-        self.portal.detail_error = '合成付款商品明细暂不可读'
-        self.assertEqual(service.pull_audited(self.path,due,self.portal)[0]['state'],'RETRY_PAYMENT_READ')
-        order_view = lifecycle.snapshot(self.path,head)
-        self.assertEqual(order_view['status'],'待收货')
-        audited_at = order_view['documents'][lifecycle.JST_ORDER]['saved']
+    def test_normal_status_progression_can_save_same_original_candidate(self):
+        first = self.submit()['payment']
+        plan, _ = service.prepare_review(self.path,self.keys)
+        for status in (confirmation.AUDITED,*confirmation.SHIPPING):
+            self.portal.orders[self.online]['native_status'] = status
+            with patch.object(service,'run_order_payment',side_effect=lambda *args: service.pull_order_payment(self.path,self.keys,self.portal)):
+                service.verify_order_before_commit(self.path,plan['jst_fulfillment'],None)
+            with closing(wr.read_connection(self.path)) as db:
+                self.assertEqual(sources.current(db,self.online)['digest'],first['digest'])
+        lifecycle.commit(self.path,plan)
+        self.assertEqual(len(lifecycle.history(self.path,self.base.head,'payment')),1)
+        self.assertEqual(len(lifecycle.history(self.path,self.base.head,lifecycle.JST_ORDER)),1)
         self.assertEqual([event for event,_ in self.portal.calls if event in ('import','audit')],['import'])
 
-        form = self.base.f.f
-        receipt = form.plan(form.scan('receipt',[{'实际收货数量':37}]))
-        self.portal.orders[self.online]['native_status'] = '已付款待审核'
-        withdrawn_at = datetime.fromisoformat(audited_at)+timedelta(seconds=1)
-        with patch.object(wr,'now',return_value=withdrawn_at.isoformat()):
-            service.pull_audited(self.path,self.keys,self.portal)
-        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
-        self.assertEqual(lifecycle.snapshot(self.path,head,as_of=audited_at)['status'],'待收货')
-        with self.assertRaisesRegex(ValueError,'上游单据在预览后变化'):
-            lifecycle.commit(self.path,receipt)
-        self.assertEqual(lifecycle.history(self.path,head,'receipt'),[])
+    def test_upgrade_reuses_legacy_candidate_when_live_facts_match(self):
+        automatic.process(self.path,self.keys,self.portal,'submit')
+        order = self.base.read(self.online)
+        candidate,_ = payment.prepare(order,self.portal.action('payment_detail',order))
+        raw = b'historical audited candidate fixture'
+        candidate.update(source_kind=payment.LEGACY_KIND,native_status=confirmation.AUDITED,
+                         file={'name':'legacy.json','sha':sha256(raw).hexdigest()})
+        with closing(orders.connection(self.path)) as db,db:
+            old = sources.save(db,self.online,candidate,raw)
+        plan,_ = service.prepare_review(self.path,self.keys)
+        self.portal.orders[self.online]['native_status'] = '已发货'
+        result, = service.pull_order_payment(self.path,self.keys,self.portal)
+        self.assertEqual((result['state'],result['digest']),('READY',old))
+        self.assertEqual(plan['jst_fulfillment'][0]['digest'],old)
+        lifecycle.commit(self.path,plan)
+        with closing(wr.read_connection(self.path)) as db:
+            self.assertEqual(len(sources.history(db,self.online)),1)
 
-    def test_disconnect_keeps_completed_audit_and_restarts_by_same_internal_order(self):
+    def test_disconnect_keeps_imported_order_and_restarts_by_same_internal_number(self):
         self.portal.detail_error = '合成断线，原单整单明细暂不可读'
         response = self.submit()
-        self.assertEqual((response['stage'],response['payment']['state']),('AUDITED','RETRY_PAYMENT_READ'))
-        self.assertEqual(jobs.due_audited(self.path,now=datetime.fromisoformat(wr.now())+timedelta(minutes=6)),self.keys)
+        self.assertEqual((response['stage'],response['payment']['state']),('IMPORTED','RETRY_PAYMENT_READ'))
+        self.assertEqual(self.base.read(self.online)['internal'],'6001')
+        self.assertEqual(jobs.due_order_payment(self.path,now=datetime.fromisoformat(wr.now())+timedelta(minutes=6)),self.keys)
         self.portal.detail_error = ''
-        response = service.pull_audited(self.path,self.keys,self.portal)[0]
+        response = service.pull_order_payment(self.path,self.keys,self.portal)[0]
         self.assertEqual(response['state'],'READY')
         self.assertEqual([event for event,_ in self.portal.calls].count('import'),1)
         self.assertEqual(jobs.waiting_review(self.path),self.keys)
 
     def test_duplicate_facts_reuse_candidate_but_changed_facts_block_old_plan(self):
         first = self.submit()['payment']
-        again = service.pull_audited(self.path,self.keys,self.portal)[0]
+        again = service.pull_order_payment(self.path,self.keys,self.portal)[0]
         self.assertEqual(first['digest'],again['digest'])
         plan,_ = service.prepare_review(self.path,self.keys)
         self.portal.qty,self.portal.total='8','24'
-        revised = service.pull_audited(self.path,self.keys,self.portal)[0]
+        revised = service.pull_order_payment(self.path,self.keys,self.portal)[0]
         self.assertNotEqual(revised['digest'],first['digest'])
         with self.assertRaisesRegex(ValueError,'资料已更新'):
             lifecycle.commit(self.path,plan)
@@ -168,16 +170,16 @@ class AuditedPayment(unittest.TestCase):
             self.assertEqual(len(sources.history(db,self.online)),2)
 
     def test_canceled_or_withdrawn_status_invalidates_candidate_and_keeps_original(self):
-        for status in ('已付款待审核','已取消'):
+        for status in ('待付款','已取消'):
             with self.subTest(status=status):
-                if status=='已付款待审核':
+                if status=='待付款':
                     self.submit()
                 else:
-                    self.portal.orders[self.online]['native_status']=audited.AUDITED
-                    service.pull_audited(self.path,self.keys,self.portal)
+                    self.portal.orders[self.online]['native_status']=confirmation.AWAITING
+                    service.pull_order_payment(self.path,self.keys,self.portal)
                 plan,_ = service.prepare_review(self.path,self.keys)
                 self.portal.orders[self.online]['native_status']=status
-                self.assertEqual(service.pull_audited(self.path,self.keys,self.portal)[0]['state'],'PAYMENT_SOURCE_PENDING')
+                self.assertEqual(service.pull_order_payment(self.path,self.keys,self.portal)[0]['state'],'PAYMENT_SOURCE_PENDING')
                 with self.assertRaises(ValueError):
                     lifecycle.commit(self.path,plan)
                 with closing(wr.read_connection(self.path)) as db:
@@ -193,6 +195,40 @@ class AuditedPayment(unittest.TestCase):
             lifecycle.commit(self.path,plan)
         self.assertEqual(jobs.waiting_review(self.path),[])
 
+    def test_existing_generated_payment_is_preserved_and_equal_facts_do_not_add_version(self):
+        import jst_orders
+        automatic.process(self.path,self.keys,self.portal,'submit')
+        lifecycle.commit(self.path,jst_orders.payment_plan(self.path,self.base.gid))
+        original, = lifecycle.history(self.path,self.base.head,'payment')
+
+        different = service.pull_order_payment(self.path,self.keys,self.portal)[0]
+        self.assertEqual(different['state'],'READY')
+        plan, overview = service.prepare_review(self.path,self.keys)
+        self.assertEqual(overview[0]['previous_payment']['version'],1)
+        self.assertEqual(overview[0]['previous_payment']['changed_skus'],1)
+        self.assertEqual(plan['plans'][0]['expected'],1)
+        self.assertEqual(lifecycle.history(self.path,self.base.head,'payment'),[original])
+
+        self.portal.qty,self.portal.price,self.portal.total,self.portal.freight='40','2','80','0'
+        identical = service.pull_order_payment(self.path,self.keys,self.portal)[0]
+        self.assertEqual(identical['state'],'MATCHES_PAYMENT')
+        with self.assertRaisesRegex(ValueError,'沿用该版本'):
+            service.prepare_review(self.path,self.keys)
+        self.assertEqual(lifecycle.history(self.path,self.base.head,'payment'),[original])
+
+    def test_recovery_must_recheck_original_before_resuming_native_payment(self):
+        import lifecycle_recovery
+        self.submit()
+        plan,_ = service.prepare_review(self.path,self.keys)
+        task = lifecycle_recovery.begin(self.path,plan)
+        with self.assertRaisesRegex(ValueError,'原订单须在提交前重新回查'):
+            lifecycle_recovery.recover(self.path,task['id'])
+        self.assertEqual(lifecycle.history(self.path,self.base.head,'payment'),[])
+        with patch.object(service,'run_order_payment',side_effect=lambda *args: service.pull_order_payment(self.path,self.keys,self.portal)) as read:
+            self.assertEqual(lifecycle_recovery.recover(self.path,task['id'],order_session=object())['action'],'completed')
+            read.assert_called_once()
+        self.assertEqual(len(lifecycle.history(self.path,self.base.head,'payment')),1)
+
     def test_unreconciled_discount_or_unknown_units_do_not_create_payable_candidate(self):
         self.portal.total='31'
         result=self.submit()['payment']
@@ -203,7 +239,7 @@ class AuditedPayment(unittest.TestCase):
         receipt=self.portal.action('payment_detail',order)
         receipt['items'][0].update(sales_unit='箱',per_unit='12')
         with self.assertRaisesRegex(ValueError,'单位换算'):
-            audited.prepare(order,receipt)
+            payment.prepare(order,receipt)
         self.assertEqual(jobs.waiting_review(self.path),[])
 
     def test_same_store_two_warehouse_candidates_only_feed_purchase_after_manual_payment(self):
@@ -219,7 +255,7 @@ class AuditedPayment(unittest.TestCase):
         automatic.process(self.path,south_ready['ready'],self.portal,'preview')
         self.assertEqual(self.submit()['payment']['state'],'READY')
         self.portal.qty,self.portal.total = '9','26.75'
-        response, = automatic.process(self.path,south_ready['ready'],self.portal,'submit',prepare_payment=service.pull_audited)
+        response, = automatic.process(self.path,south_ready['ready'],self.portal,'submit',prepare_payment=service.pull_order_payment)
         self.assertEqual(response['payment']['state'],'READY')
 
         heads = [self.base.head,south]

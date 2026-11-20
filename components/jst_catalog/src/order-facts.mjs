@@ -3,6 +3,8 @@
 import {CatalogError,check} from './common.mjs';
 const fail=message=>{throw new CatalogError('ORDER_PAGE_CHANGED',message);};
 export const nativeStatus=value=>({取消:'已取消',发货中:'发货中(打单拣货)'})[value]||value;
+const paymentStates=new Set(['已付款待审核','已客审待财审','发货中(打单拣货)','已发货']);
+export const canReadPayment=value=>paymentStates.has(nativeStatus(value));
 
 export async function fullOrder(frame,spec,{coid,shop_id,count,payment=false}={},signal){
   check(signal);

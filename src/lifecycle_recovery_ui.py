@@ -1,4 +1,5 @@
 """On-demand, in-place recovery of exact local lifecycle save operations."""
+from functools import partial
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QTableWidget,QTableWidgetItem
 from ui_controls import button,label
 from business_ui import run
@@ -60,7 +61,9 @@ class RecoveryDialog(QDialog):
     def recover(self):
         if not self.review or getattr(self.host,'closing',False):return
         try:
-            result=run(self,service.recover,(self.path,self.choices.currentData()),'核实原任务并恢复保存')
+            from catalog_session_ui import manager
+            recover=partial(service.recover,order_session=manager(self.host).session)
+            result=run(self,recover,(self.path,self.choices.currentData()),'核实原任务并恢复保存')
             self.receipt=result['receipt']
             if not getattr(self.host,'closing',False):self.refresh();self.note.setText(result['message'])
         except Cancelled:

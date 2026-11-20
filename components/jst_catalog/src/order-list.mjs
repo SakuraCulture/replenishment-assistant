@@ -1,6 +1,6 @@
 import {CatalogError, check} from './common.mjs';
 import {activateControl} from './product-export.mjs';
-import {fullOrder,nativeStatus} from './order-facts.mjs';
+import {canReadPayment,fullOrder,nativeStatus} from './order-facts.mjs';
 
 export const LIST_PATH = '/app/order/order/list.aspx';
 const digits = /^[1-9]\d*$/;
@@ -109,40 +109,62 @@ export async function queryOrder(page, frame, spec, status, signal) {
     return {
       internal:text(r.querySelector('._jt_cell_o_id .o_id')),
       online:text(r.querySelector('._jt_cell_so_id')),
-      shop:text(r.querySelector('._jt_cell_shop_buyer_id .shopname')),
+      shop:(r.querySelector('._jt_cell_shop_buyer_id .shopname')?.textContent||'').trim(),
       buyer:text(r.querySelector('._jt_cell_shop_buyer_id > span')),
       amount:text(r.querySelector('._jt_cell_pay_amount')),
     };
   });
-  if (!digits.test(identity.internal) || (spec.internal && spec.internal !== identity.internal)
-      || identity.online !== spec.online || identity.shop !== spec.shop)
-    fail('查回的店铺、内部订单号或线上订单号与原单不同');
-  const native=received[0];
-  return {row,...identity,native: native?.o_id && native?.so_id ? {
-    internal:String(native.o_id),online:native.so_id,shop:native.shop_name,shop_id:String(native.shop_id),
-    coid:String(native.co_id),status:native.status,count:native.item_actual_count,quantity:native.item_actual_qty}:null};
+  if (!digits.test(identity.internal)) fail('查回的订单缺少可核验的内部单号');
+  if (spec.internal && spec.internal !== identity.internal) fail('查回的内部单号与原单不同');
+  if (identity.online !== spec.online) fail('查回的线上订单号与原单不同');
+  const value=received[0];
+  const native=value?.o_id&&value?.so_id?{
+    internal:String(value.o_id),online:value.so_id,shop:value.shop_name,shop_id:String(value.shop_id),
+    coid:String(value.co_id),buyer:value.shop_buyer_id,status:value.status,count:value.item_actual_count,quantity:value.item_actual_qty}:null;
+  // The listing can abbreviate the display label. The matching native row
+  // may supply the full name only with the same frozen company and shop IDs.
+  const bound=native&&native.internal===identity.internal&&native.online===spec.online&&native.shop===spec.shop
+    &&native.coid===spec.binding?.coid&&native.shop_id===spec.binding?.shop_id;
+  if (identity.shop!==spec.shop&&!bound) fail('查回的店铺名称与原单不同');
+  return {row,...identity,shop:bound?native.shop:identity.shop,native};
 }
 
-export async function readNativeOrder(page,frame,spec,{payment=false}={},signal){
+async function locateNativeOrder(page,frame,spec,signal){
   const found=await queryOrder(page,frame,spec,null,signal);
-  if(!found)return {found:false};
+  if(!found)return null;
   const identity=found.native;
   if(!identity||identity.internal!==found.internal||identity.online!==spec.online||identity.shop!==spec.shop
       ||identity.coid!==spec.binding?.coid||identity.shop_id!==spec.binding?.shop_id)
     fail('查询的企业、店铺或原单与已保存的关联不同');
   const status=nativeStatus(identity.status);
   if(!Object.values(statuses).some(([,label])=>label===status)) fail('原单当前状态尚不能核实');
-  const observed={...found,found:true,native_status:status};
-  if (status!==(payment?'已客审待财审':'已发货')) return observed;
+  return {...found,found:true,native_status:status};
+}
+
+export async function readImportResult(page,frame,spec,signal){
+  const found=await locateNativeOrder(page,frame,spec,signal);
+  if(!found)return {found:false,shop_id:spec.binding.shop_id};
+  const {internal,online,shop,native,native_status}=found;
+  const [status]=Object.values(statuses).find(([,label])=>label===native_status);
+  return {found:true,internal,online,shop,shop_id:native.shop_id,status,native_status,
+    contact_ok:(native.buyer??found.buyer)===spec.contact?.buyer};
+}
+
+export async function readNativeOrder(page,frame,spec,{payment=false}={},signal){
+  const observed=await locateNativeOrder(page,frame,spec,signal);
+  if(!observed)return {found:false};
+  const {native:identity,native_status:status}=observed;
+  if (!(payment?canReadPayment(status):status==='已发货')) return observed;
   try {
     const count=Number(identity.count);
     const facts=await fullOrder(frame,spec,{coid:identity.coid,shop_id:identity.shop_id,count,payment},signal);
-    if(facts.native_status!==status||!facts.contact_ok) fail('原单状态或买家身份已变化');
+    if (!(payment?canReadPayment(facts.native_status):facts.native_status===status)||!facts.contact_ok)
+      fail('原单状态或买家身份已变化');
     return {...observed,...facts};
   } catch(error) {
     check(signal);
     if(!payment) throw error;
-    return {...observed,detail_error:error.code==='ORDER_PAGE_CHANGED'?error.message:'审核状态已查回，整单明细暂未完整读回'};
+    return {...observed,detail_error:error.code==='ORDER_PAGE_CHANGED'?error.message:'原单状态已查回，整单明细暂未完整读回'};
   }
 }
 
