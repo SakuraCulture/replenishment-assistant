@@ -16,6 +16,7 @@ import order_analytics as analytics
 import storage_chunks as chunks
 import warehouse_execution as execution
 from runtime_support import checkpoint
+from priority_list import CATALOG_SOURCE
 from export_progress import RowProgress
 
 VERSION = 'inventory-structure-1'
@@ -66,7 +67,9 @@ def quantity(value):
 
 def facts(result, head, visibility=None, cancel=None):
     rows=result.get('rows',[]);counts=Counter(str(r.get('E','')) for r in rows)
-    listing=result.get('must_list') or {};audit=result.get('must_list_audit');must_codes={a.get('sku') for a in audit} if isinstance(audit,list) else None
+    listing=result.get('must_list') or {};audit=result.get('must_list_audit')
+    legacy=listing.get('source')!=CATALOG_SOURCE
+    must_codes={a.get('sku') for a in audit} if legacy and isinstance(audit,list) else None
     def member(r,sku):
         if not listing.get('revision'):return '属性待核'
         if type(r.get('_must_sell')) is bool:return '必采' if r['_must_sell'] else '非必采'

@@ -64,7 +64,7 @@ def execute(repo,operation,args,cancel,progress,rpc):
         return {'stores':stores, **supply_snapshot(repo.root,stores),
                 'configured':bool(config.get('configured') and config.get('enabled'))}
     if operation=='adopt':
-        return public_settings(repo.adopt_business(args['stores'],use_builtin=bool(args.get('use_builtin'))))
+        return public_settings(repo.adopt_business(args['stores']))
     if operation=='query':
         options=args['query']
         value=metrics.query(repo,options,cancel=cancel)

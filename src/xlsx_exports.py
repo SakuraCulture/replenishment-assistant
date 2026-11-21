@@ -113,7 +113,11 @@ def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,pro
         progress('正在写入商品明细…')
         for name,subset in [('补货清单',[d for d in rows if orderable(d)]),('全部明细' if scope=='本次全部结果' else '筛选明细',rows),('预算未满足',[d for d in rows if d.get('_budget_gap',0)>0]),('已排除',[d for d in rows if exclusion_reason(d)]),('地采商品',[d for d in rows if d['_source']=='地采商品']),('待处理',[d for d in rows if issue_text(d)]),('一箱例外',[d for d in rows if d.get('_audit',{}).get('applied')])]:
             sheet(name,headers,(single_values(d) for d in subset),{1:55,2:26,14:85,27:50},row_count=len(subset))
-        if ml:sheet('全店必卖匹配',['商品编码','清单商品名称','本店匹配状态'],([x['sku'],x['name'],x['state']] for x in result['must_list_audit']),{1:26,2:65,3:42})
+        if ml:
+            scoped='warehouses' in ml
+            header=['商品编码','清单商品名称','本店匹配状态']+(['供货仓'] if scoped else [])
+            sheet('全店必卖匹配',header,([x['sku'],x['name'],x['state']]+([x['warehouse']] if scoped else [])
+                                     for x in result['must_list_audit']),{1:26,2:65,3:42})
         params=[]
         for wh,(depth,lead) in result['warehouses'].items():params.extend([[wh,'备货天数',depth],[wh,'到货天数',lead]])
         for k,v in result['config']['parameters'].items():params.append(['模型参数',result['config']['parameter_labels'].get(k,k),v])
@@ -175,7 +179,10 @@ def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,ca
                         checkpoint(cancel)
                         if predicate(d):yield [store,r['store_name']]+[f(d) for h,f in COLUMNS]+[d['_meta'].get('export_file'),d['_meta'].get('export_sheet'),d['_meta']['export_row']]
             write_sheet(book,name,headers,rows(),cancel=cancel,progress=progress,row_count=sum(1 for r in ready.values() for d in r['rows'] if predicate(d)))
-        write_sheet(book,'必卖匹配',['门店编码','门店名称','商品编码','商品名称','匹配状态'],([s,r['store_name'],a['sku'],a['name'],a['state']] for s,r in ready.items() for a in r['must_list_audit']))
+        scoped=any('warehouses' in (r.get('must_list') or {}) for r in ready.values())
+        header=['门店编码','门店名称','商品编码','商品名称','匹配状态']+(['供货仓'] if scoped else [])
+        write_sheet(book,'必卖匹配',header,([s,r['store_name'],a['sku'],a['name'],a['state']]+([a.get('warehouse')] if scoped else [])
+                                          for s,r in ready.items() for a in r['must_list_audit']))
         audits={json.dumps(r.get('import_audit',{}),ensure_ascii=False,sort_keys=True):r for r in ready.values()}
         write_sheet(book,'导入记录',IMPORT_HEADERS,(row for r in audits.values() for row in import_audit_rows(r)))
         info=[['批次状态','全部完成' if len(ready)==len(statuses) else '部分完成'],['导出时间',datetime.now().isoformat(timespec='seconds')],['说明','只有已完成且未过期的门店计入金额；失败、未运行、待重算均留空。'],['计价','商品资料基本售价；地采和缺价未知金额不计为0。']]

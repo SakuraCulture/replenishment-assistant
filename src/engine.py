@@ -187,34 +187,77 @@ def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabl
     report={'rows':result,'baseline':baseline,'store':store,'store_name':loaded['stores'][store],
         'warehouses':warehouses,'enabled':enabled,'config':loaded['config'],'sources':loaded['hashes'],
         'created':datetime.now().isoformat(timespec='seconds'),'checks':checks,'summary':summarize(result)}
+    if loaded.get('supply_route'):
+        report['supply_route']=loaded['supply_route']
     return apply_budget(report,budget,profile,progress,cancel,monthly_first_fill=monthly_first_fill)
+
+def catalog_membership(row, item_key, warehouses, members):
+    if row.get('_source') == '地采商品':
+        return False
+    warehouse, sku = item_key
+    snapshot = warehouses.get(warehouse)
+    if row.get('_source') != '资料匹配' or not snapshot:
+        return None
+    meta = row.get('_meta', {})
+    revision = meta.get('product_revision')
+    if revision and revision != snapshot['catalog_revision']:
+        raise ValueError(f'{warehouse}商品 {sku} 的必卖清单与实际供货资料版本不同，请重新检查')
+    if item_key in members:
+        return True
+    if not snapshot['missing_tag_fields'] or revision and meta.get('product_tags_known'):
+        return False
+    return None
+
 
 def apply_budget(result,budget=None,profile=None,progress=lambda s:None,cancel=None,*,monthly_first_fill=None):
     import priority_list
-    if profile is not None:priority_list.validate_profile(profile)
-    if budget is not None and profile is None:raise ValueError('启用预算前请先导入有效必卖清单')
-    members={d['sku']:d for d in profile['items']} if profile else {}
+    if profile is not None:priority_list.validate_calculation_profile(profile)
+    if budget is not None and profile is None:raise ValueError('启用预算前请先同步供货仓商品资料')
+    by_warehouse=priority_list.is_catalog_profile(profile)
+    if by_warehouse:
+        route=result.get('supply_route')
+        scope=route.values() if route else result['warehouses']
+        warehouses={w:source for w,source in profile['warehouses'].items() if w in scope}
+        members={(item['warehouse'],item['sku']):item for item in profile['items'] if item['warehouse'] in warehouses}
+    else:
+        members={item['sku']:item for item in profile['items']} if profile else {}
+
+    def row_key(row):
+        return (row.get('AU'),row.get('E')) if by_warehouse else row.get('E')
+
     minimum=result['config'].get('parameters',{}).get('minimum_reference_units',model.Rules().minimum_reference_units)
     for i,d in enumerate(result['rows']):
         if i%200==0:checkpoint(cancel)
         for k in list(d):
             if k.startswith(('_budget_','_allocated_','_holding_','_candidate_','_must_','_mandatory_')):d.pop(k)
-        d['_must_sell']=d.get('E') in members
-        d['_candidate_qty']=0 if exclusion_reason(d) else quantity(d)
-        d['_candidate_amount']=0 if exclusion_reason(d) else amount_value(d)
+        key=row_key(d)
+        d['_must_sell']=catalog_membership(d,key,warehouses,members) if by_warehouse else key in members
+        excluded=exclusion_reason(d)
+        if by_warehouse and d['_source']=='资料匹配' and d['_must_sell'] is None and not excluded:
+            raise ValueError(f"{d['AU']}商品 {d['E']} 的必卖标签待核，请刷新本仓商品资料后重新检查")
+        d['_candidate_qty']=0 if excluded else quantity(d)
+        d['_candidate_amount']=0 if excluded else amount_value(d)
         mandatory_holding.apply(d,minimum)
     if monthly_first_fill is not None:
         new_products.seed_monthly(result,monthly_first_fill,cancel,budget=budget)
     progress('正在按门店预算分配必卖与其他商品…' if budget is not None else '正在标记必卖清单…')
     result['budget']=allocation.apply(result['rows'],budget,lambda:checkpoint(cancel)) if budget is not None else {'enabled':False}
-    by_code={d['E']:d for d in result['rows']}
+    by_code={row_key(d):d for d in result['rows']}
+    present={d['E']:d['AU'] for d in result['rows']} if by_warehouse else {}
     audit=[]
-    for sku,item in members.items():
-        d=by_code.get(sku)
-        state='未出现在本次门店导出' if d is None else '已排除：'+exclusion_reason(d) if exclusion_reason(d) else '地采，资料未匹配' if d['_source']=='地采商品' else '数据待核' if issue_text(d) or d.get('_mandatory_holding',{}).get('state')=='待核' else '有补货需求' if numeric(d.get('_candidate_qty')) and d['_candidate_qty']>0 else '已满足最低持有，无需补货'
-        audit.append({'sku':sku,'name':item.get('name',''),'state':state})
+    for key,item in members.items():
+        d=by_code.get(key)
+        if d is None:
+            actual_warehouse=present.get(item['sku'])
+            state=f'本次归属{actual_warehouse}' if actual_warehouse else '未出现在本次门店导出'
+        else:
+            state='已排除：'+exclusion_reason(d) if exclusion_reason(d) else '地采，资料未匹配' if d['_source']=='地采商品' else '数据待核' if issue_text(d) or d.get('_mandatory_holding',{}).get('state')=='待核' else '有补货需求' if numeric(d.get('_candidate_qty')) and d['_candidate_qty']>0 else '已满足最低持有，无需补货'
+        entry={'sku':item['sku'],'name':item.get('name',''),'state':state}
+        if by_warehouse:entry['warehouse']=item['warehouse']
+        audit.append(entry)
     result['must_list']={'name':profile['name'],'revision':profile['revision'],'source_sha256':profile.get('source_sha256',''),'total':len(members),
-        'matched':sum(d['_must_sell'] for d in result['rows']),'missing':sum(x['state']=='未出现在本次门店导出' for x in audit)} if profile else None
+        'matched':sum(d['_must_sell'] is True for d in result['rows']),'missing':sum(x['state']=='未出现在本次门店导出' for x in audit)} if profile else None
+    if by_warehouse:result['must_list'].update(source=profile['source'],warehouses=warehouses)
     result['must_list_audit']=audit
     result['summary']=summarize(result['rows'])
     return result

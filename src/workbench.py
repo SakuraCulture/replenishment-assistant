@@ -224,7 +224,7 @@ class Workbench(ParameterUi,BatchWindow):
         self.reset_calculation_snapshot()
         try:
             self.deletion_generations={};self.readonly=False;self.job_day=wr.today();self.saved_time='';self.loaded=None;self.results={};self.states={};self.store_widgets={};self.store_presets={};self.overrides={};self.default_by_store={};self.run_codes=[];self.current_store=None;self.result=None;self.input_dirty=True;self.dirty=True;self.export_log=[];self.pending_copy=None
-            self.sales.paths=[];self.sales.refresh();self.catalogs=self.catalog_repository.catalogs();self.profile=self.repository.profile();self.refresh_catalog_labels();self.refresh_profile_label();self.store_table.setRowCount(0);self.file_report.setRowCount(0);self.refresh_tables();self.navigate(0)
+            self.sales.paths=[];self.sales.refresh();self.catalogs=self.catalog_repository.catalogs();self.refresh_catalog_labels();self.refresh_current_priority();self.store_table.setRowCount(0);self.file_report.setRowCount(0);self.refresh_tables();self.navigate(0)
         finally:self.initializing=False;self._hydrating=False;self.job_dirty=False;self.update_controls()
         __import__('replenishment_plans').refresh(self)
     def restore_job(self,record,owned=False):
@@ -286,7 +286,8 @@ class Workbench(ParameterUi,BatchWindow):
             self.reset_job();self.pending_copy=record;self.active_plan=copy.deepcopy(record.get('active_plan'));__import__('replenishment_plans').refresh(self);self.status.setText('已复制所选作业门店配置到本次内存；请导入今天数据。未保存为门店默认。');self.touch()
     def use_current_data(self):
         if self.worker or self.readonly:return
-        catalogs=self.catalog_repository.catalogs();profile=self.repository.profile()
+        from priority_list import catalog_profile
+        catalogs=self.catalog_repository.catalogs();profile=catalog_profile(catalogs)
         from interaction_ui import confirm
         changes=[wh+'：'+str(self.catalogs.get(wh,{}).get('revision','未导入'))+' → '+str(catalogs.get(wh,{}).get('revision','未导入')) for wh in dict.fromkeys([*self.catalogs,*catalogs])]
         changes.append('必卖清单：'+str((self.profile or {}).get('revision','未导入'))+' → '+str((profile or {}).get('revision','未导入')))

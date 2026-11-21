@@ -6,6 +6,7 @@ import engine
 import parameter_maintenance as pm
 import parameter_schema as schema
 import replenishment_plans as plans
+from priority_list import catalog_profile
 from workbench_actions import plan_record, record_settings
 
 
@@ -24,8 +25,10 @@ def prepare(snapshot, arguments, progress=lambda _: None, cancel=None):
                 raise ValueError('请选择现有 .xlsx 补货建议文件：' + Path(path).name)
         products = frozen['catalogs'] if not frozen['legacy'] else frozen['products']
         loaded = batch_service.load(paths, products, progress, cancel)
+        profile = catalog_profile(frozen['catalogs'])
     else:
         loaded = frozen['loaded']
+        profile = frozen['profile']
         if not loaded or frozen['input_dirty']:
             raise ValueError('当前输入尚未检查，请指定文件检查或先在准备数据页检查')
         # Reuse the frozen checked input, including historical source semantics.
@@ -72,7 +75,7 @@ def prepare(snapshot, arguments, progress=lambda _: None, cancel=None):
             chosen = {field: v for (store, field), v in changes.items() if store == s}
             if chosen: record['preset']['config'] = pm.patch(record['preset']['config'], chosen)
             records[s] = record
-            jobs[s] = record_settings(record, frozen['profile'], loaded.get('catalogs'), admission.snapshot(frozen['dbpath'], s))
+            jobs[s] = record_settings(record, profile, loaded.get('catalogs'), admission.snapshot(frozen['dbpath'], s))
             from new_products import calculation_settings
             jobs[s] = calculation_settings(jobs[s],frozen.get('new_focus'),frozen['day'])
         except ValueError as exc:
@@ -87,7 +90,7 @@ def prepare(snapshot, arguments, progress=lambda _: None, cancel=None):
               'conflicts': len((loaded.get('intake') or {}).get('conflicts', [])),
               'plan': {k: plan[k] for k in ('id', 'name', 'revision')} if plan else None,
               'note': '只应用本次；不保存门店默认、不签发。'}
-    return {'loaded': loaded, 'jobs': jobs, 'records': records, 'codes': codes, 'profile': frozen['profile'],
+    return {'loaded': loaded, 'jobs': jobs, 'records': records, 'codes': codes, 'profile': profile,
             'report': report, 'plan': plan, 'active_plan': frozen.get('active_plan'), 'workers': frozen['workers'], 'context_token': frozen['context_token'],
             'paths': paths, 'mode': arguments['mode'], 'dbpath': frozen['dbpath'], 'day': frozen['day'],
             'explicit_parameters': list(dict.fromkeys([item['store'] for item in arguments.get('parameter_changes', [])] + ([i['code'] for i in plan['stores']] if plan else [])))}

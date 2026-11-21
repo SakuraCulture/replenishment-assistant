@@ -1,12 +1,18 @@
 """Ordered UI/export field definitions; single and batch report scopes remain distinct."""
 from result_semantics import *
 
+
+def priority_text(row):
+    if '_must_sell' in row and row['_must_sell'] is None:
+        return '属性待核'
+    return '必卖' if row.get('_must_sell') else '普通'
+
 COLUMNS=[('商品名称',lambda d:d.get('D')),('商品编码',lambda d:d.get('E')),('来源',lambda d:d['_source']),('所属仓',lambda d:d.get('AU')),
  ('分类',lambda d:d.get('_category')),('月销',lambda d:d.get('J')),('可用库存',lambda d:d.get('K')),('在途',lambda d:d.get('L')),
  ('箱规',lambda d:d.get('BD',d.get('O'))),('执行补货',order_quantity),('执行金额',order_amount),('例外',lambda d:'一箱放行' if d.get('_audit',{}).get('applied') else ''),
  ('补货建议状态',lambda d:d['_meta'].get('export_status')),('原因',explanation),('商品资料状态',lambda d:d.get('S')),
  ('执行状态',order_status),('排除原因',exclusion_reason),('计算建议',quantity),('计算金额',amount_value),
- ('优先清单',lambda d:'必卖' if d.get('_must_sell') else '普通'),('预算前执行量',lambda d:d.get('_candidate_qty',quantity(d))),
+ ('优先清单',priority_text),('预算前执行量',lambda d:d.get('_candidate_qty',quantity(d))),
  ('预算前金额',lambda d:d.get('_candidate_amount',amount_value(d))),('预算缺口数量',lambda d:d.get('_budget_gap',0)),
  ('最低持有缺口',lambda d:('必采最低持有未覆盖' if d.get('_mandatory_holding') else '有销量且无可用/在途，本次资金未覆盖') if d.get('_holding_gap') else ''),('资金分配说明',lambda d:d.get('_budget_reason','未启用总预算'))]
 

@@ -12,6 +12,7 @@ from order_keys import expected_current_revision
 from jst_order_store import exists as jst_exists
 import storage_chunks as chunks
 from app_defaults import WAREHOUSES
+from priority_list import CATALOG_SOURCE, scope_catalog_summary
 from runtime_support import checkpoint
 
 
@@ -55,6 +56,11 @@ def project(payload, warehouse):
     scoped={**result,'rows':rows,'summary':summarize(rows)}
     for name in ('must_list_audit','allocation_audit'):
         if name in scoped:scoped[name]=[a for a in result[name] if not a.get('sku') or a['sku'] in selected]
+    listing=result.get('must_list') or {}
+    if listing.get('source')==CATALOG_SOURCE:
+        audit=[a for a in result['must_list_audit'] if a['warehouse']==warehouse]
+        scoped['must_list_audit']=audit
+        scoped['must_list']=scope_catalog_summary(listing,{warehouse},rows,audit)
     if result.get('new_products'):
         scoped['new_products']={**result['new_products'],'selection':{k:v for k,v in result['new_products'].get('selection',{}).items() if k in selected}}
     if result.get('monthly_first_fill'):

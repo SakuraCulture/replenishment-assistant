@@ -8,13 +8,14 @@ from contextlib import closing
 import batch_service
 import work_repository as wr
 import scheduled_replenishment as sr
+import priority_list
 from runtime_support import Cancelled, checkpoint
 
 
 def freeze(folder, schedule, day):
     """Read persisted business defaults, never the active window's temporary values."""
     import replenishment_plans as plans
-    import priority_list, warehouse_catalog, parameter_maintenance as pm
+    import warehouse_catalog, parameter_maintenance as pm
     import store_parameter_import as spi
     import admission, new_product_focus
     from workbench_actions import plan_record, record_settings
@@ -27,7 +28,7 @@ def freeze(folder, schedule, day):
     mapping=pm.mapping_snapshot(path)
     if mapping['conflict']:raise ValueError('全局分类映射待核对，请在参数设置保存后再试')
     priority=priority_list.Repository(folder);master=warehouse_catalog.Repository(folder)
-    defaults=parameter_data['stores'];routes=master.routes();profile=priority.profile();budgets=priority.budgets()
+    defaults=parameter_data['stores'];routes=master.routes();profile=priority_list.catalog_profile({});budgets=priority.budgets()
     monthly_focus=new_product_focus.Repository(folder).load()
     # Only route names are needed before fresh catalogs arrive. Do not parse/copy
     # both full previous masters just to validate membership in the warehouse list.
@@ -69,6 +70,18 @@ def check_signature(frozen):
     return sr.signature(value)
 
 
+def matches_check_signature(frozen, expected, folder):
+    if check_signature(frozen)==expected:
+        return True
+    # Older schedules included the global list in the setup seal. Verify
+    # that original seal, then calculate new runs from their own warehouse facts.
+    try:
+        previous=priority_list.Repository(folder).profile(create_default=False)
+    except (OSError, ValueError):
+        return False
+    return check_signature({**frozen,'profile':previous})==expected
+
+
 def overlap(repo,run,codes):
     with repo.db() as db:
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
@@ -101,7 +114,7 @@ class Runner:
             frozen=self.repo.value(rid,'basis')
             if frozen is None:
                 frozen=freeze(self.folder,run['schedule'],run['day'])
-                if check_signature(frozen)!=run['schedule'].get('check_signature'):
+                if not matches_check_signature(frozen,run['schedule'].get('check_signature'),self.folder):
                     raise ValueError('预案、默认参数或准入依据已变化，请重新检查运行条件后新建任务')
                 codes=[i['code'] for i in frozen['plan']['stores']];overlap(self.repo,run,codes)
                 self.repo.change(rid,epoch=self.epoch,stores=[{**i,'state':'PENDING','message':'等待处理'} for i in frozen['plan']['stores']])
@@ -148,7 +161,10 @@ class Runner:
                         except Exception as exc:persistence.append(exc);self.cancel.set();raise
                     else:self.repo.store_state(rid,s,'RUNNING' if state=='计算中' else 'FAILED',error or state,self.epoch)
                     self.progress(s+' · '+state)
-                batch_service.run(loaded,jobs,frozen['profile'],frozen['workers'],notify,self.cancel)
+                profile=frozen['profile']
+                if priority_list.is_catalog_profile(profile):
+                    profile=priority_list.catalog_profile(catalogs)
+                batch_service.run(loaded,jobs,profile,frozen['workers'],notify,self.cancel)
                 if persistence:raise persistence[0]
             checkpoint(self.cancel)
             run=self.repo.get(rid);all_ready=all(s['state']=='READY' for s in run['stores'])
@@ -172,9 +188,13 @@ def workbench_record(repo,rid):
     if not results:raise ValueError('尚无计算完成的门店')
     records=basis['records'];codes=[s['code'] for s in run['stores'] if s['code'] in loaded['stores']]
     loaded['stores']={s:loaded['stores'][s] for s in codes}
+    catalogs=repo.value(rid,'catalogs')
+    profile=basis['profile']
+    if priority_list.is_catalog_profile(profile):
+        profile=priority_list.catalog_profile(catalogs)
     payload={'deletion_generations':basis.get('deletion_generations',{}),'warehouse_deletion_generations':basis.get('warehouse_deletion_generations',{}),'schema':1,'day':run['day'],'app_version':VERSION,'model_version':basis['model_version'],
-        'active_plan':basis['plan'],'admission_required':True,'loaded':loaded,'catalogs':repo.value(rid,'catalogs'),
-        'profile':basis['profile'],'new_focus':basis.get('new_focus'),'results':results,
+        'active_plan':basis['plan'],'admission_required':True,'loaded':loaded,'catalogs':catalogs,
+        'profile':profile,'new_focus':basis.get('new_focus'),'results':results,
         'states':{s:{'name':loaded['stores'][s],'state':'已完成' if s in results else '计算失败','error':'' if s in results else '定时任务尚未完成；请在运行记录重试'} for s in codes},
         'input_dirty':False,'store_presets':{s:records[s]['preset'] for s in codes},'store_ui':{s:records[s]['ui'] for s in codes},
         'overrides':{},'default_by_store':{},'sales':[x['path'] for x in loaded['intake']['files']],

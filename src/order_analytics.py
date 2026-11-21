@@ -22,6 +22,7 @@ import source_archive
 import storage_chunks as chunks
 import warehouse_execution as execution
 from runtime_support import checkpoint
+from priority_list import CATALOG_SOURCE
 from export_progress import RowProgress
 import analytics_lifecycle_scope as lifecycle_scope
 
@@ -172,12 +173,22 @@ def template_text(value):
     return None
 
 
-def membership(result, row, sku):
+def membership(result, row, sku, warehouse=None):
     listing=result.get('must_list')
     if not listing or not listing.get('revision'): return '属性待核'
     if row is not None and type(row.get('_must_sell')) is bool:
         return '必采' if row['_must_sell'] else '非必采'
     audit=result.get('must_list_audit')
+    if listing.get('source')==CATALOG_SOURCE:
+        if row is not None or not isinstance(audit,list):
+            return '属性待核'
+        source=listing['warehouses'].get(warehouse)
+        if not source:
+            return '属性待核'
+        codes={item['sku'] for item in audit if item.get('warehouse')==warehouse}
+        if sku in codes:
+            return '必采'
+        return '非必采' if not source['missing_tag_fields'] and len(codes)==source['count'] else '属性待核'
     if isinstance(audit,list) and len({r['sku'] for r in audit})==listing.get('total'):
         return '必采' if any(r['sku']==sku for r in audit) else '非必采'
     return '属性待核'
@@ -241,7 +252,7 @@ def build_facts(order, head, view, evidence, cancel=None, *, spec=None, mode='fu
         category=r.get('U') if r else None
         if spec.get('category') and category!=spec['category']:continue
         if terms and not all(t in (result['store_name']+' '+head['number']+' '+sku+' '+str(name)).casefold() for t in terms):continue
-        group=membership(result,r,sku)
+        group=membership(result,r,sku,head.get('warehouse'))
         if spec.get('group') and group!=spec['group']:continue
         master,basis=evidence.item(order,head['warehouse'],sku)
         scope,reasons=inclusion(r,master)

@@ -5,14 +5,15 @@ from runtime_support import checkpoint
 
 def export(work,destination,progress=lambda _:None,cancel=None):
     from parameter_tables import write
-    from priority_list import Repository
+    from priority_list import catalog_profile
+    from warehouse_catalog import Repository
     from parameter_schema import HELP
     from xlsx_exports import stream_book
     import openpyxl
     from export_files import publish_new
     target=Path(destination).resolve()
     if target.exists() or target.suffix.lower()!='.xlsx':raise ValueError('请选择尚不存在的.xlsx文件')
-    target.parent.mkdir(parents=True,exist_ok=True);records=work.stores();presets=work.presets(include_archived=True);profile=Repository(work.path.parent).profile()
+    target.parent.mkdir(parents=True,exist_ok=True);records=work.stores();presets=work.presets(include_archived=True);profile=catalog_profile(Repository(work.path.parent).catalogs())
     with tempfile.TemporaryDirectory(prefix='parameters-',dir=target.parent) as temp:
         file=Path(temp)/'parameters.xlsx';write(file,'complete_parameters',records,progress,cancel,scoped=True)
         book=openpyxl.load_workbook(file)
@@ -27,8 +28,12 @@ def export(work,destination,progress=lambda _:None,cancel=None):
             for preset in presets:
                 checkpoint(cancel)
                 for group,name,value in visit(preset['config']):ws.append([preset['id'],preset['version'],preset['name'],bool(preset.get('archived')),group,name,value])
-            ws=book.create_sheet('当前必卖清单');ws.append(['商品编码','商品名称','分类','清单名称','清单版本'])
-            for item in profile['items']:checkpoint(cancel);ws.append([item['sku'],item.get('name',''),item.get('category',''),profile['name'],profile['revision']])
+            ws=book.create_sheet('当前必卖清单');ws.append(['商品编码','商品名称','分类','清单名称','清单版本','供货仓','商品资料版本'])
+            for item in profile['items']:
+                checkpoint(cancel)
+                warehouse=item['warehouse']
+                ws.append([item['sku'],item.get('name',''),item.get('category',''),profile['name'],profile['revision'],
+                           warehouse,profile['warehouses'][warehouse]['catalog_revision']])
             ws=book['填写说明'];ws.append(['导出范围',f'全部已保存默认 {len(records)} 店；预案版本 {len(presets)} 份。未保存的本次界面修改不在此表中。'])
             ws.append(['辅助页','预案版本和当前必卖清单为只读核对依据；完整迁移请使用订单迁移包，不把本表当作完整订单备份。'])
             for sheet in book:

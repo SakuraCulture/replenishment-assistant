@@ -53,6 +53,7 @@ def start_smoke(app, win, args):
                 self.process.stdin.close(); self.process.wait(10); self.log.close()
         try:
             win.loaded_ok(fixture())
+            win.profile=win.repository.profile(create_default=False);win.refresh_profile_label()
             for code in ('A', 'B'): win.store_widgets[code]['mode'].setCurrentIndex(1)
             win.automation.enable(); m = MCP()
             names={t['name'] for t in m.send('tools/list', {})['result']['tools']}
@@ -183,7 +184,9 @@ def start_smoke(app, win, args):
             sales=out/'合成补货建议.xlsx';master=out/'合成商品资料.xlsx'
             book(sales,['仓库/门店编码','仓库/门店名称','商品编码','商品名称','日销','周销','月销','可用库存','在途库存','缺货天数（天）','基础单位','补货状态'],
                  [['B','测试B','1001','测试商品',2,14,60,3,0,0,'个','正常'],['A','测试A','1001','测试商品',2,14,60,3,0,0,'个','正常']])
-            book(master,['商品编码','商品名称','分类','出库箱规','基本售价','商品状态','仓归属','商品标签'],[['1001','测试商品','休闲食品',1,8,'启用','山东仓','']])
+            book(master,['商品编码','商品名称','分类','出库箱规','基本售价','商品状态','仓归属','可用数','商品标签'],[['1001','测试商品','休闲食品',1,8,'启用','山东仓',100,'必卖清单']])
+            import warehouse_catalog
+            win.catalog_repository.save(warehouse_catalog.import_catalog(master,'山东仓'))
             defaults={s:spi.base() for s in ('A','B')}
             for r in defaults.values():r['ui'].update(mode=1,primary='山东仓')
             win.work_repository.save_stores(defaults)

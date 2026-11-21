@@ -63,10 +63,12 @@ def start_smoke(app,win,args):
             if QApplication.activeModalWidget() is not None:return
             step=state['step']
             if step=='start':
-                win.show_section(1);win.catalogs=spec['catalogs'];win.profile=spec['profile'];win.refresh_catalog_labels();win.refresh_profile_label();win.new_focus=spec.get('new_focus');win.refresh_focus();win.sales.add_paths(spec['paths']);win.concurrency.setValue(4)
+                win.show_section(1);win.catalogs=spec['catalogs'];win.refresh_catalog_labels();win.new_focus=spec.get('new_focus');win.refresh_focus();win.sales.add_paths(spec['paths']);win.concurrency.setValue(4)
                 state['step']='loaded';begin('check_files');win.start_load()
             elif step=='loaded' and win.worker is None:
                 end();assert len(win.loaded['normalized'])==spec['expected_rows'];assert not win.loaded['blocked'];assert len(win.store_widgets)==spec['expected_stores'];begin('store_settings')
+                # The reference workload uses the same frozen list in both runs.
+                win.profile=spec['profile'];win.refresh_profile_label()
                 win.initializing=True
                 for s in win.store_widgets:
                     if s in spec['store_presets']:win.store_presets[s]=spec['store_presets'][s];win.overrides[s]=spec['store_presets'][s]['config']['warehouses']

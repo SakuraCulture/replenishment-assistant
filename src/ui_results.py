@@ -130,7 +130,8 @@ class ResultsView:
             if over.get('amount',0)>0:self.budget_caption.setText(self.budget_caption.text()+f"\n有限超支 {over['amount']:.2f} 元；商品 {over['sku']} 追加 {over['quantity']:g} 个库存单位；本店金额上限 {over['ceiling']:.2f} 元。")
         else:self.budget_caption.setText('不限预算；按执行排除及必采最低持有后的数量安排。' if calculated else '预算分配在原计算及执行排除之后执行。')
         if calculated and self.result.get('must_list'):
-            ml=self.result['must_list'];self.budget_caption.setText(self.budget_caption.text()+f"\n必卖清单 {ml['total']} 款，本店命中 {ml['matched']} 款，{ml['missing']} 款未出现在本店导出；命中的有效商品默认保护最低持有，未出现的商品不补造。")
+            ml=self.result['must_list'];unit='款次' if 'warehouses' in ml else '款'
+            self.budget_caption.setText(self.budget_caption.text()+f"\n必卖清单 {ml['total']} {unit}，按供货范围命中 {ml['matched']} 款，{ml['missing']} {unit}未出现在本店导出。命中的有效商品默认保护最低持有。")
 
     def apply_column_group(self,*_):
         group=self.column_choice.currentText()
@@ -218,7 +219,8 @@ class ResultsView:
         def group(title,items):return '<h3>'+title+'</h3><table width="100%">'+''.join(f'<tr><td style="color:#60777D;padding:5px 0">{html.escape(k)}</td><td align="right">{esc(v)}</td></tr>' for k,v in items)+'</table>'
         content=f'<h2>{esc(d.get("D"))}</h2><p>{esc(d.get("E"))} · {d["_source"]}</p>'
         content+='<p><b>'+esc(semantics.order_status(d))+'</b> '+esc(semantics.exclusion_reason(d))+'</p>'
-        content+='<p>优先清单：'+('必卖商品' if d.get('_must_sell') else '普通商品')+'</p>'
+        from display_fields import priority_text
+        content+='<p>优先清单：'+priority_text(d)+'</p>'
         if d.get('_mandatory_holding'):
             from mandatory_holding import explanation
             content+='<h3>必采最低持有</h3><p>'+esc(explanation(d))+'</p>'

@@ -3,6 +3,7 @@ from importlib import import_module
 
 
 WINDOW_SMOKES = {
+    '--warehouse-must-sell-smoke': 'warehouse_must_sell_smoke',
     '--data-location-smoke': 'data_location_smoke',
     '--global-crud-smoke': 'global_crud_smoke',
     '--five-fixes-smoke': 'five_fixes_smoke',
