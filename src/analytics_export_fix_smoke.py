@@ -11,7 +11,7 @@ def empty_failure(*args,progress,cancel):
 
 
 def start_smoke(app,win,args):
-    from analytics_template_export import select_detail_rows
+    from analytics_template_export import NOT_RETAINED, select_detail_rows
     out=Path(args[0]).resolve();mode=args[1];spec=json.loads((out/'synthetic.json').read_text('utf-8'))
     assert spec['synthetic'] is True and spec['live_platform'] is False
     assert Path(os.environ['REPLENISHMENT_DATA_DIR']).resolve()==out/'settings'
@@ -104,14 +104,15 @@ def start_smoke(app,win,args):
                 expected_rows=select_detail_rows(r for r in w.report['rows'] if r['order'] in w.selected)
                 detail=export(1,True);book=openpyxl.load_workbook(detail,read_only=True,data_only=True)
                 try:
-                    sheet=book.active;sheet.reset_dimensions();actual=iter(sheet.iter_rows(min_row=8,values_only=True));count=0
+                    sheet=book.active;sheet.reset_dimensions();actual=iter(sheet.iter_rows(min_row=7,values_only=True));count=0
+                    day_column=next(actual).index('订单日期')
                     for expected in expected_rows:
                         row=next(actual);count+=1
-                        require_row=(row[0]==expected['order'] and row[2]==expected['sku'] and row[26]==expected['day'])
+                        require_row=(row[0]==expected['order'] and row[2]==expected['sku'] and row[day_column]==expected['day'])
                         if not require_row:raise AssertionError('Detail identity/order changed at '+str(count))
                         for col,stage in ((5,'model'),(6,'signed')):
                             q=expected['quantities'][stage] if expected['valid'][stage] else None
-                            value=float(q) if q is not None else 'n.a.'
+                            value=float(q) if q is not None else NOT_RETAINED
                             if row[col]!=value:raise AssertionError('Detail quantity changed at '+str(count))
                     require(count==len(expected_rows) and next(actual,None) is None,f'所选{count}行SKU、日期、数量及顺序逐行一致')
                 finally:book.close()
@@ -124,11 +125,12 @@ def start_smoke(app,win,args):
                 started=time.perf_counter();detail=export(1);report['full_detail_seconds']=time.perf_counter()-started
                 book=openpyxl.load_workbook(detail,read_only=True,data_only=True)
                 try:
-                    sheet=book.active;sheet.reset_dimensions();actual=iter(sheet.iter_rows(min_row=8,values_only=True))
+                    sheet=book.active;sheet.reset_dimensions();actual=iter(sheet.iter_rows(min_row=7,values_only=True))
+                    headers=next(actual);day_column=headers.index('订单日期');warehouse_column=headers.index('供货仓')
                     count=0
                     for count,expected in enumerate(select_detail_rows(w.report['rows']),1):
                         row=next(actual)
-                        if (row[0],row[2],row[26],row[27])!=(expected['order'],expected['sku'],expected['day'],expected['warehouse']):
+                        if (row[0],row[2],row[day_column],row[warehouse_column])!=(expected['order'],expected['sku'],expected['day'],expected['warehouse']):
                             raise AssertionError('整表逐行身份或顺序变化：'+str(count))
                     require(next(actual,None) is None,'细则导出范围内的SKU逐行核对，文件无额外行')
                     report['detail_rows']=count

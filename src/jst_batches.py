@@ -94,7 +94,7 @@ def release_unfinished(path, groups, progress=lambda _:None, cancel=None):
     return count
 
 
-def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda _: None, cancel=None):
+def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda _: None, cancel=None, *, stock_receipts=None):
     """No writes/reservations; selecting the same file explicitly is allowed."""
     checkpoint(cancel); stocks = {}; states = {}; batch_id = uuid.uuid4().hex
     with closing(sqlite3.connect(path)) as db:
@@ -106,6 +106,13 @@ def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda 
     if catalogs is None:
         current_catalogs,versions=wc.Repository(Path(path).parent).snapshots()
         catalogs=current_catalogs
+    if stock_receipts is not None:
+        if current_catalogs is None or set(stock_receipts) != set(warehouses):
+            raise ValueError('本批缺少对应仓的本次库存刷新回执')
+        for wh, receipt in stock_receipts.items():
+            current=current_catalogs.get(wh,{})
+            if any(current.get(k)!=receipt[k] for k in ('revision','source_sha256')):
+                raise wr.Conflict(wh+'当前仓资料与本次刷新回执不同，请重新核对')
     for wh in warehouses:
         if wh not in catalogs: raise ValueError(wh + '尚未选用商品资料')
         checkpoint(cancel); c = wc.validate(copy.deepcopy(catalogs[wh])); bid = uuid.uuid4().hex
@@ -114,6 +121,7 @@ def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda 
         states[wh] = (bid, 0)
     spec = dict(batch_id=batch_id, created=wr.now(), epoch=0, stocks=stocks, states=states, members=[], new=True)
     if versions:spec['current_versions']=versions
+    if stock_receipts is not None:spec['keep_other_batches']=True
     plan = orders.prepare_checked(path, heads, manual_order, progress=progress, cancel=cancel, batch=spec,current_catalogs=current_catalogs)
     spec['members'] = [dict(position=p['position'], head=p['head']) for p in plan['payload']['plans']]
     if not spec['members']: raise ValueError('没有可加入新批次的订单；已生成单请导出或进入原批次')
@@ -205,6 +213,9 @@ def register(path, plan, progress=lambda _:None, cancel=None):
                     raise wr.Conflict('订单已加入其他未完成批次：'+h['number'])
                 full = {**h,'products':p.get('signed_products',p['basis']['products'])}
                 if lc.upstream(db,full,'payment') != p['basis']: raise wr.Conflict('回传依据已变化：'+h['number'])
+            if spec.get('keep_other_batches') and db.execute(
+                    "SELECT 1 FROM jst_batches WHERE status='active' LIMIT 1").fetchone():
+                raise wr.Conflict('另有分配批次正在处理，请等原批结束后再开始一键作业')
             _pause_other(db,spec['batch_id'],v['runid'])
             db.execute('INSERT INTO jst_batches VALUES(?,?,?,?,?,?,?)', (spec['batch_id'],spec['created'],spec['label'],'active',0,wr.dumps(fixed),orders.digest(fixed)))
             for wh,b in spec['stocks'].items():

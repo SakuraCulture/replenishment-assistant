@@ -18,7 +18,8 @@ def fixture(root):
     work=wr.Repository(root);catalogs={};files=[]
     for wh in ('山东仓','河北仓'):
         p=root/(wh+'.xlsx');b=Workbook();w=b.active;w.append(wc.REQUIRED+['商品标签','商品名称'])
-        w.append(['0001','饮品',2,6,'启用',100,'','合成饮品']);w.append(['0002','饮品',3,1,'启用',100,'','合成单件']);b.save(p);b.close()
+        w.append(['0001','饮品',2,6,'启用',100,'必卖清单' if wh=='河北仓' else '','合成饮品'])
+        w.append(['0002','饮品',3,1,'启用',100,'','合成单件']);b.save(p);b.close()
         catalogs[wh]=wc.import_catalog(p,wh);wc.Repository(root).save(catalogs[wh])
     for code in ('A','B'):
         r=spi.base();r['ui'].update(mode=1,primary='河北仓' if code=='A' else '山东仓',secondary='山东仓' if code=='A' else None)
@@ -107,7 +108,12 @@ class ExecutionTests(unittest.TestCase):
         r=self.run_one();self.assertEqual(r['state'],'COMPLETE',r['message'])
         record,basis=se.workbench_record(self.repo,r['id']);self.assertEqual(list(record['payload']['results']),['A','B']);self.assertEqual(wr.summary(record['payload'])['completed'],2)
         loaded=record['payload']['loaded']
-        manual=batch_service.run(loaded,basis['jobs'],basis['profile'],1)
+        from priority_list import catalog_profile
+        expected_profile=catalog_profile(self.catalogs)
+        self.assertEqual(record['payload']['profile'],expected_profile)
+        self.assertEqual([r['_must_sell'] for r in record['payload']['results']['A']['rows']],[True,False])
+        self.assertEqual([r['_must_sell'] for r in record['payload']['results']['B']['rows']],[False,False])
+        manual=batch_service.run(loaded,basis['jobs'],expected_profile,1)
         for s,result in record['payload']['results'].items():
             expected=wr.loads(wr.dumps(manual[s]))
             # Exact full trees, except documented process/timing diagnostics.

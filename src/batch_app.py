@@ -31,8 +31,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.catalog_repository=warehouse_catalog.Repository(folder);self.catalogs={}
         try:self.catalogs=self.catalog_repository.catalogs()
         except Exception as exc:self.config_warning='仓资料未载入：'+str(exc)
-        try:self.profile=self.repository.profile()
-        except Exception as exc:self.config_warning=str(exc)
+        self.profile=priority_list.catalog_profile(self.catalogs)
         self.setWindowTitle(f'补货助手 {VERSION} · 多店工作台');self.resize(1380,900);self.setMinimumSize(1080,720)
         root=QWidget();self.setCentralWidget(root);v=QVBoxLayout(root);v.setContentsMargins(16,10,16,10);v.setSpacing(6)
         self.work_header=QWidget();head=QHBoxLayout(self.work_header);head.setContentsMargins(0,0,0,0);head.addWidget(label('补货出单','section'));subtitle=label('多店独立预算 · 必卖优先','muted');subtitle.setWordWrap(False);head.addWidget(subtitle);head.addStretch();self.version_btn=button('版本信息',self.about);head.addWidget(self.version_btn);v.addWidget(self.work_header)
@@ -59,7 +58,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         files=QHBoxLayout();self.sales=SalesFiles();warehouses=self.make_warehouse_panel()
         files.addWidget(self.sales,3);files.addWidget(warehouses,3);v.addLayout(files)
         self.sales.changed.connect(self.file_changed)
-        card=QFrame();card.setObjectName('card');cv=QVBoxLayout(card);row=QHBoxLayout();row.addWidget(label('必卖清单','section'));row.addStretch();row.addWidget(button('查看清单',self.show_priority));row.addWidget(button('导入或更换必卖清单',self.choose_priority));row.addWidget(button('备份必卖清单',self.backup_priority));cv.addLayout(row)
+        card=QFrame();card.setObjectName('card');cv=QVBoxLayout(card);row=QHBoxLayout();row.addWidget(label('各仓必卖清单','section'));row.addStretch();row.addWidget(button('查看各仓清单',self.show_priority));row.addWidget(button('备份必卖清单',self.backup_priority));cv.addLayout(row)
         self.profile_label=label('','muted');cv.addWidget(self.profile_label);self.refresh_profile_label();v.addWidget(card)
         self.import_note=label('分仓资料分别导入后检查。需求按门店主从仓归属，不拆单、不预占仓库存；禁用或停采仍按执行规则排除。','muted');v.addWidget(self.import_note)
         self.file_report=QTableWidget(0,4);self.file_report.setHorizontalHeaderLabels(['文件','商品行数','门店数','读取结果 / 处理办法']);self.file_report.horizontalHeader().setSectionResizeMode(3,QHeaderView.ResizeMode.Stretch);self.file_report.setColumnWidth(0,300);self.file_report.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);v.addWidget(self.file_report,1)
@@ -128,8 +127,9 @@ class BatchWindow(WarehouseUi,SessionWindow):
             self.job(batch_service.load,(self.sales.paths,products),self.loaded_ok)
     def loaded_ok(self,loaded):
         self.reset_calculation_snapshot()
-        if 'warehouse_catalog_versions' in loaded:
+        if loaded['intake'].get('catalogs') is not None:
             self.catalogs=loaded['intake']['catalogs'];self.refresh_catalog_labels()
+        self.refresh_current_priority()
         self.loaded=loaded;self.input_dirty=False;self.results={};self.result=None;self.current_store=None;self.overrides={};self.dirty=True;self.run_codes=[]
         self.default_by_store={s:{w:DEFAULT_WAREHOUSES[w] for w in loaded.get('catalogs',{})} for s in loaded['stores']}
         for d,m in loaded['normalized']:
@@ -250,14 +250,10 @@ class BatchWindow(WarehouseUi,SessionWindow):
     def mark_dirty(self,*args):
         if self.initializing:return
         self.invalidate(list(self.states));self.selection_changed()
-    def priority_imported(self,profile):
-        from interaction_ui import confirm
-        old=self.profile
-        message=f"必卖清单：{len(old['items']) if old else 0} → {len(profile['items'])} 款\n原版本：{old['revision'] if old else '未导入'}\n新版本：{profile['revision']}\n将完整替换并保存；本次已有结果需重算，历史签发不变。"
-        if not confirm(self,'确认更新并保存必卖清单',message):return
-        try:self.repository.save(profile)
-        except Exception as exc:self.failed('清单保存失败，原清单保留：'+str(exc));return
-        self.profile=profile;self.refresh_profile_label();self.mark_dirty();self.status.setText('必卖清单已保存；已有结果需重新计算。')
+    def refresh_current_priority(self):
+        self.profile=priority_list.catalog_profile(self.catalogs)
+        self.refresh_profile_label()
+
     def resolve_conflicts(self):
         if not self.loaded:return
         data=copy.deepcopy(self.loaded['intake']);conflicts=data['conflicts']

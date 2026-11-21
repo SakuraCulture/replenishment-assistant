@@ -354,7 +354,7 @@ class Window(QDialog):
             if not h.leave_current():return
             def adopt(value):
                 record,basis=value;h.restore_job(record,owned=True)
-                h._calculation_profile=copy.deepcopy(basis['profile']);h._calculation_input=h.loaded;h._calculation_settings=copy.deepcopy(basis['jobs'])
+                h._calculation_profile=copy.deepcopy(record['payload']['profile']);h._calculation_input=h.loaded;h._calculation_settings=copy.deepcopy(basis['jobs'])
                 h.show_section(1);h.navigate(3);h.job_dirty=True
                 self.m.repo.change(r['id'],viewed=True);self.accept()
             self.call(lambda _:workbench_record(self.m.repo,r['id']),adopt)

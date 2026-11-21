@@ -5,6 +5,7 @@ import sqlite3
 from stockout_common import (digest, file_hash, number, date_of, encoded, now, resource_check,
                             WAREHOUSES, VIEWS, VERSION, TAG_VERSION)
 from runtime_support import checkpoint
+from priority_list import is_catalog_profile
 from warehouse_routing import select_warehouse
 from virtual_categories import RETIRED
 from stockout_tags import tokens as virtual_tokens, assessment as is_assessment
@@ -181,7 +182,8 @@ def load_store(repo,rid,store,source,*,observed,expected=None,expected_rows=None
         db.execute('DELETE FROM summaries WHERE snapshot=?',(sid,))
         db.execute('DELETE FROM dimension_summaries WHERE snapshot=?',(sid,))
     profile=basis.get('profile')
-    mandatory={i['sku'] for i in profile['items']} if profile else None
+    scoped=is_catalog_profile(profile)
+    mandatory={(item['warehouse'],item['sku']) if scoped else item['sku'] for item in profile['items']} if profile else None
     count=0;batch=[];batch_bytes=0
     with table(path,['仓库/门店编码','商品编码','月销','可用库存'],cancel,used=STORE_FIELDS) as (heads,rows), repo.connect() as reader:
         for line,row in rows:
@@ -198,6 +200,16 @@ def load_store(repo,rid,store,source,*,observed,expected=None,expected_rows=None
             zero=int(eligible==1 and stock==0)
             source_type,warehouse,product,reason=classify(reader,sku,basis.get('routes',{}).get(store),run['catalogs'])
             tags=product['tags'] if product is not None else None
+            if scoped:
+                source=profile['warehouses'].get(warehouse)
+                if (warehouse,sku) in mandatory:
+                    is_must=1
+                elif source_type=='local' or source and not source['missing_tag_fields']:
+                    is_must=0
+                else:
+                    is_must=None
+            else:
+                is_must=int(sku in mandatory) if mandatory is not None else None
             tokens=virtual_tokens(tags)
             retired=int(bool(tokens & RETIRED)) if tokens is not None else None
             assessment=is_assessment(tags)
@@ -210,7 +222,7 @@ def load_store(repo,rid,store,source,*,observed,expected=None,expected_rows=None
             if tokens is None:errors.append('虚拟分类依据未取得，剔除视角仍保留此商品')
             fact=(sid,sku,str(row.get('商品名称') or ''),str(row.get('月销') if row.get('月销') is not None else ''),
                   str(row.get('可用库存') if row.get('可用库存') is not None else ''),str(row.get('在途库存') if row.get('在途库存') is not None else ''),
-                  month,stock,inbound,eligible,bad,zero,source_type,warehouse,int(sku in mandatory) if mandatory is not None else None,
+                  month,stock,inbound,eligible,bad,zero,source_type,warehouse,is_must,
                   category,supplier,retired,assessment,tags,'；'.join(errors),line,
                   (product['status'] or '商品状态未提供') if product is not None else '商品状态未提供',
                   str(row.get('补货状态') or '补货状态未提供'))

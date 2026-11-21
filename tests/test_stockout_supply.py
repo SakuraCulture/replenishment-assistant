@@ -81,11 +81,17 @@ class SupplyTests(unittest.TestCase):
         from stockout_facts import load_catalog,load_store
         import stockout_metrics as metrics
         self.saved({'S':{'primary':'山东仓','secondary':None},'T':{'primary':'河北仓','secondary':'山东仓'}})
-        self.repo.adopt_business(self.stores[:2]);run=self.repo.new_run()['id'];catalogs={}
+        import warehouse_catalog
+        catalogs={}
         for wh,rows in [('山东仓',[['A','启用',5,'山东类目','山东上游','标杆淘汰']]),
                         ('河北仓',[['A','启用',0,'河北类目','河北上游','淘便考核'],['B','启用',3,'河北类目','河北上游','']])]:
-            path=workbook(self.root/(wh+'.xlsx'),['商品编码','商品状态','可用数','分类','供应商名称','虚拟分类'],rows)
+            heads=['商品编码','商品状态','可用数','分类','供应商名称','虚拟分类','基本售价','出库箱规','商品标签']
+            path=workbook(self.root/(wh+'.xlsx'),heads,[r+[2,1,'必卖清单' if wh=='河北仓' else ''] for r in rows])
+            warehouse_catalog.Repository(self.root).save(warehouse_catalog.import_catalog(path,wh))
             catalogs[wh]=load_catalog(self.repo,path,wh)
+        basis=self.repo.adopt_business(self.stores[:2])
+        self.assertEqual({w:r['count'] for w,r in basis['profile']['warehouses'].items()},{'山东仓':0,'河北仓':2})
+        run=self.repo.new_run()['id']
         self.repo.change(run,catalogs=catalogs)
         for store in ('S','T'):
             path=workbook(self.root/(store+'.xlsx'),['仓库/门店编码','商品编码','月销','可用库存'],[[store,s,1,0] for s in ('A','B')])
@@ -95,6 +101,8 @@ class SupplyTests(unittest.TestCase):
         self.assertEqual((rows['S','A']['warehouse'],rows['T','A']['warehouse'],rows['T','B']['warehouse']),('山东仓','山东仓','河北仓'))
         self.assertEqual(rows['S','B']['source'],'local');self.assertIsNone(rows['S','B']['tags'])
         self.assertEqual(rows['T','A']['category'],'山东类目');self.assertEqual(rows['T','A']['retired'],1)
+        self.assertEqual(rows['T','A']['mandatory'],0)
+        self.assertEqual(rows['T','B']['mandatory'],1)
         self.assertEqual(rows['T','A']['assessment'],0);self.assertIn('山东上游',rows['T','A']['supplier'])
 
 

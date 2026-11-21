@@ -11,6 +11,7 @@ import work_repository as wr
 import storage_chunks as chunks
 import normal_orders as orders
 import archive_orders as archive
+from priority_list import CATALOG_SOURCE, scope_catalog_summary
 from runtime_support import checkpoint,CommitProgress
 from export_progress import RowProgress
 import maintenance_storage as storage
@@ -234,6 +235,12 @@ def _row_summary(editor,node):
     return result_semantics.summarize(editor.value(node))
 
 
+def _keep_audit(entry,name,removed,warehouses):
+    if name=='must_list_audit' and entry.get('warehouse'):
+        return entry['warehouse'] not in warehouses
+    return entry.get('sku') not in removed
+
+
 def _prune_result(editor,tree,path,warehouses):
     removed=set()
     def keep(row):
@@ -246,7 +253,12 @@ def _prune_result(editor,tree,path,warehouses):
         tree=editor.update(tree,(*path,'summary'),lambda n:editor.encode(result_semantics.summarize(row_node)))
     # Do not retain deleted business quantities in SKU-specific annotations.
     for name in ('must_list_audit','allocation_audit'):
-        tree=editor.update(tree,(*path,name),lambda n:editor.filter(n,lambda v:v.get('sku') not in removed))
+        tree=editor.update(tree,(*path,name),lambda n:editor.filter(n,lambda v:_keep_audit(v,name,removed,warehouses)))
+    listing=editor.get(tree,(*path,'must_list')) or {}
+    if listing.get('source')==CATALOG_SOURCE:
+        audit=editor.get(tree,(*path,'must_list_audit'),[])
+        scoped=scope_catalog_summary(listing,listing['warehouses'].keys()-warehouses,row_node or [],audit)
+        tree=editor.update(tree,(*path,'must_list'),lambda _:editor.encode(scoped))
     tree=editor.update(tree,(*path,'new_products','selection'),lambda n:editor.drop_keys(n,removed))
     tree=editor.update(tree,(*path,'monthly_first_fill','skipped'),lambda n:editor.drop_keys(n,removed))
     selection=editor.get(tree,(*path,'new_products','selection'),{})
@@ -434,7 +446,10 @@ def strip_current_warehouses(value,scopes,progress=lambda _:None,cancel=None):
         p['results'][store]={**result,'rows':rows,'summary':result_semantics.summarize(rows)}
         projected=p['results'][store]
         for name in ('must_list_audit','allocation_audit'):
-            if name in result:projected[name]=[v for v in result[name] if v.get('sku') not in removed]
+            if name in result:projected[name]=[v for v in result[name] if _keep_audit(v,name,removed,warehouses)]
+        listing=projected.get('must_list') or {}
+        if listing.get('source')==CATALOG_SOURCE:
+            projected['must_list']=scope_catalog_summary(listing,listing['warehouses'].keys()-warehouses,rows,projected['must_list_audit'])
         if result.get('new_products'):
             projected['new_products']={**result['new_products'],'selection':{k:v for k,v in result['new_products'].get('selection',{}).items() if k not in removed}}
         if result.get('monthly_first_fill'):

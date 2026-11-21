@@ -22,6 +22,7 @@ import source_archive
 import storage_chunks as chunks
 import warehouse_execution as execution
 from runtime_support import checkpoint
+from priority_list import CATALOG_SOURCE
 from export_progress import RowProgress
 import analytics_lifecycle_scope as lifecycle_scope
 
@@ -172,12 +173,22 @@ def template_text(value):
     return None
 
 
-def membership(result, row, sku):
+def membership(result, row, sku, warehouse=None):
     listing=result.get('must_list')
     if not listing or not listing.get('revision'): return '属性待核'
     if row is not None and type(row.get('_must_sell')) is bool:
         return '必采' if row['_must_sell'] else '非必采'
     audit=result.get('must_list_audit')
+    if listing.get('source')==CATALOG_SOURCE:
+        if row is not None or not isinstance(audit,list):
+            return '属性待核'
+        source=listing['warehouses'].get(warehouse)
+        if not source:
+            return '属性待核'
+        codes={item['sku'] for item in audit if item.get('warehouse')==warehouse}
+        if sku in codes:
+            return '必采'
+        return '非必采' if not source['missing_tag_fields'] and len(codes)==source['count'] else '属性待核'
     if isinstance(audit,list) and len({r['sku'] for r in audit})==listing.get('total'):
         return '必采' if any(r['sku']==sku for r in audit) else '非必采'
     return '属性待核'
@@ -241,7 +252,7 @@ def build_facts(order, head, view, evidence, cancel=None, *, spec=None, mode='fu
         category=r.get('U') if r else None
         if spec.get('category') and category!=spec['category']:continue
         if terms and not all(t in (result['store_name']+' '+head['number']+' '+sku+' '+str(name)).casefold() for t in terms):continue
-        group=membership(result,r,sku)
+        group=membership(result,r,sku,head.get('warehouse'))
         if spec.get('group') and group!=spec['group']:continue
         master,basis=evidence.item(order,head['warehouse'],sku)
         scope,reasons=inclusion(r,master)
@@ -478,10 +489,12 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, 
         stamp=data_stamp(db,spec)
         import workflow_analysis as workflow
         allocations=workflow.AllocationReader(db,spec,cancel)
+        show_allocation_detail = _mode in ('full', 'analysis_detail')
         evidence=Evidence(db,cancel);seen_stores=set();seen_orders=set()
         for order,h,view in _query_orders(path,db,spec,progress,cancel,seen_stores,seen_orders,mode=_mode,verifying=verifying):
             day,store,wh,child=(h[k] for k in ('day','store','warehouse','number'))
             allocation=workflow.allocation_fact(db,h,view,spec.get('as_of'),event=allocations.event(h))
+            saved_rows = workflow.allocation_detail_rows(db, h, view, allocation, spec.get('as_of')) if show_allocation_detail else {}
             payment=view['documents']['payment']
             references=local(db,h,payment)
             identifiers.append({'day':day,'store':store,'store_name':order['payload']['result']['store_name'],'warehouse':wh,'order':child,'references':references})
@@ -496,8 +509,11 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, 
             tokens.append([h,[(s,d['version'],d['digest']) if d else [s,None] for s,d in view['documents'].items()],view.get('legacy_return'),allocation['digest'] if allocation else None])
             heads.append(h)
             for row in workflow.enrich(build_facts(order,h,view,evidence,cancel,spec=spec,mode=_mode),h,view,allocation,h['saved']):
+                saved_row = saved_rows.get(row['sku'])
+                if saved_row is not None:
+                    row['allocation_detail'] = {k: saved_row.get(k) for k in ('stock', 'before', 'quantity', 'reason')}
                 row['references']=references;rows.append(row)
-            order=view=allocation=payment=row=None
+            order=view=allocation=payment=row=saved_rows=saved_row=None
         if set(spec['stores'])-seen_stores:raise ValueError('所选门店在日期和仓范围内没有有效签发：'+'、'.join(sorted(set(spec['stores'])-seen_stores)))
         if set(spec['orders'])-seen_orders:raise ValueError('所选订单不存在、已删除或不在查询范围，请重新查询')
         identifier_token=attach(path,db,heads,identifiers,cancel)

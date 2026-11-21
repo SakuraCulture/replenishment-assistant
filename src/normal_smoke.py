@@ -69,9 +69,11 @@ def start_smoke(app,win,args):
             elif step==0:
                 assert win.sections.currentIndex()==0;snap('01_首页');QTest.mouseClick(win.top_nav[1],Qt.MouseButton.LeftButton);assert win.sections.currentIndex()==1
                 for w in wc.WAREHOUSES:win.catalog_imported(wc.import_catalog(fixture/(w+'.xlsx'),w))
-                win.profile=json.loads((fixture/'must.json').read_text(encoding='utf-8'));win.repository.save(win.profile);win.refresh_profile_label();win.sales.add_paths([str(fixture/'sales.xlsx')]);win.start_load();state['step']=1
+                win.sales.add_paths([str(fixture/'sales.xlsx')]);win.start_load();state['step']=1
             elif step==1 and win.worker is None:
                 assert len(win.loaded['normalized'])==22
+                win.profile=priority_list.validate_profile(json.loads((fixture/'must.json').read_text(encoding='utf-8')))
+                win.refresh_profile_label()
                 for s,w in win.store_widgets.items():
                     w['mode'].setCurrentIndex(2);w['amount'].setText('12');w['primary'].setCurrentIndex(w['primary'].findData('河北仓'));w['secondary'].setCurrentIndex(w['secondary'].findData('山东仓'))
                 win.start_calculation();state['step']=2
@@ -130,9 +132,11 @@ def start_smoke(app,win,args):
                     box=QApplication.activeModalWidget();assert isinstance(box,QMessageBox);assert box.defaultButton().text()=='取消';QTest.mouseClick(next(b for b in box.buttons() if b.text()=='取消'),Qt.MouseButton.LeftButton)
                 later(cancel_close);win.close();assert win.isVisible();state['checks'].append('home navigation retains unsaved work; close cancel keeps application alive')
                 if len(args)<3:finish();return
-                real=Path(args[2]);win.reset_job();win.show_section(1);win.master_legacy.setChecked(True);win.products.path=str(real/'混合仓商品资料.xlsx');win.products.filename.setText(win.products.path);win.sales.add_paths([str(real/'补货建议导出服务.xlsx')]);win.profile=priority_list.validate_profile(json.loads((Path(__file__).parent/'default_must_sell.json').read_text(encoding='utf-8')));win.refresh_profile_label();win.start_load();state['step']=8
+                real=Path(args[2]);win.reset_job();win.show_section(1);win.master_legacy.setChecked(True);win.products.path=str(real/'混合仓商品资料.xlsx');win.products.filename.setText(win.products.path);win.sales.add_paths([str(real/'补货建议导出服务.xlsx')]);win.start_load();state['step']=8
             elif step==8 and win.worker is None:
                 assert len(win.loaded['normalized'])==14244
+                win.profile=priority_list.validate_profile(json.loads((Path(__file__).parent/'default_must_sell.json').read_text(encoding='utf-8')))
+                win.refresh_profile_label()
                 for s,w in win.store_widgets.items():w['mode'].setCurrentIndex(1)
                 win.start_calculation();state['step']=9
             elif step==9 and win.worker is None:

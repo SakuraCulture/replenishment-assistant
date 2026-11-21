@@ -10,8 +10,10 @@ sys.path[:0]=[str(ROOT/'src'),str(ROOT/'tests')]
 def fixture(out):
     import test_order_analytics as examples, normal_orders as orders, purchases
     import source_archive, operations_flow, order_lifecycle, export_settings, payment_references
+    import jst_batches
     import openpyxl
     from test_analytics_identifiers import seed_purchase
+    from test_jst import catalog as allocation_catalog
     f=examples.AnalyticsTests();f.setUp()
     try:
         row=f.p['result']['rows'][0]
@@ -27,12 +29,17 @@ def fixture(out):
             db.execute('UPDATE normal_work_revisions SET payload=?',(orders.encode({'catalogs':f.catalogs},db),))
             operations_flow.schema(db);db.execute('INSERT INTO lifecycle_routes VALUES(?,?,2)',(f.f.h['oid'],1))
         f.f.heads=purchases.targets(f.path);f.f.h=next(h for h in f.f.heads if h['warehouse']=='河北仓')
-        f.f.save('return');operations_flow.adopt(f.path,[f.f.h]);f.f.save('payment');f.f.save('receipt',[{'实际收货数量':4}])
+        f.f.save('return');operations_flow.adopt(f.path,[f.f.h])
+        plan=jst_batches.preview_new(f.path,[f.f.h],{'河北仓':allocation_catalog(stock=17)})
+        allocation=jst_batches.execute(f.path,plan)
+        assert len(allocation['generated'])==1 and not allocation['errors'],allocation
+        f.f.save('payment');f.f.save('receipt',[{'实际收货数量':4}])
         payment_references.save(f.path,payment_references.read(f.path,f.f.h),'000JST0001')
         seed_purchase(f.path,f.f.h,order_lifecycle.snapshot(f.path,f.f.h)['documents']['payment'],number='PO00001')
         report=f.report();shutil.copytree(f.path.parent,out/'settings')
         metadata={'day':report['query']['from'],'head':f.f.h,'expected_orders':len(report['heads']),
-                  'expected_rows':len(report['rows']),'jst':'000JST0001','po':'PO00001'}
+                  'expected_rows':len(report['rows']),'jst':'000JST0001','po':'PO00001',
+                  'expected_allocation':[17,17,5,'按回传分配']}
         (out/'fixture.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2),'utf-8',newline='\n')
     finally:f.tearDown()
     (out/'exports').mkdir()

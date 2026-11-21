@@ -1,6 +1,6 @@
 import {CatalogError, check} from './common.mjs';
 import {activateControl} from './product-export.mjs';
-import {canReadPayment,fullOrder,nativeStatus} from './order-facts.mjs';
+import {buyerEvidence,canReadPayment,checkBuyer,fullOrder,nativeStatus} from './order-facts.mjs';
 
 export const LIST_PATH = '/app/order/order/list.aspx';
 const digits = /^[1-9]\d*$/;
@@ -146,25 +146,45 @@ export async function readImportResult(page,frame,spec,signal){
   if(!found)return {found:false,shop_id:spec.binding.shop_id};
   const {internal,online,shop,native,native_status}=found;
   const [status]=Object.values(statuses).find(([,label])=>label===native_status);
-  return {found:true,internal,online,shop,shop_id:native.shop_id,status,native_status,
-    contact_ok:(native.buyer??found.buyer)===spec.contact?.buyer};
+  const result={found:true,internal,online,shop,shop_id:native.shop_id,status,native_status};
+  const buyer=checkBuyer(native.buyer,spec.contact?.buyer);
+  if (buyer!=='unavailable') return {...result,...buyerEvidence(buyer)};
+  try {
+    // Read the exact order's native detail with its verified internal ID. The
+    // obscured list text cannot establish a buyer match or a mismatch.
+    const facts=await fullOrder(frame,{...spec,internal},{coid:native.coid,shop_id:native.shop_id,count:Number(native.count)},signal);
+    if (facts.native_status!==native_status) fail('原单状态已变化，请继续核对原单');
+    return {...result,...buyerEvidence(facts.buyer_check)};
+  } catch (error) {
+    check(signal);
+    return {...result,...buyerEvidence('unavailable'),
+      detail_error:error.code==='ORDER_PAGE_CHANGED'?error.message:'暂未取得可核验的原单明细'};
+  }
 }
 
 export async function readNativeOrder(page,frame,spec,{payment=false}={},signal){
   const observed=await locateNativeOrder(page,frame,spec,signal);
   if(!observed)return {found:false};
   const {native:identity,native_status:status}=observed;
-  if (!(payment?canReadPayment(status):status==='已发货')) return observed;
+  const listBuyer=checkBuyer(identity.buyer,spec.contact?.buyer);
+  const result=payment?{...observed,...buyerEvidence(listBuyer)}:observed;
+  if ((payment&&listBuyer==='mismatch')||!(payment?canReadPayment(status):status==='已发货')) return result;
   try {
     const count=Number(identity.count);
     const facts=await fullOrder(frame,spec,{coid:identity.coid,shop_id:identity.shop_id,count,payment},signal);
-    if (!(payment?canReadPayment(facts.native_status):facts.native_status===status)||!facts.contact_ok)
-      fail('原单状态或买家身份已变化');
-    return {...observed,...facts};
+    if (!(payment?canReadPayment(facts.native_status):facts.native_status===status)) fail('原单状态已变化，请继续核对原单');
+    if (!payment) {
+      if (!facts.contact_ok) fail('原单状态或买家身份已变化');
+      return {...observed,...facts};
+    }
+    // List and detail refer to the same verified native order. A complete
+    // conflicting account overrides a match from the other response.
+    const buyer=(facts.buyer_check==='mismatch'||listBuyer==='unavailable')?facts.buyer_check:listBuyer;
+    return {...result,...facts,...buyerEvidence(buyer)};
   } catch(error) {
     check(signal);
     if(!payment) throw error;
-    return {...observed,detail_error:error.code==='ORDER_PAGE_CHANGED'?error.message:'原单状态已查回，整单明细暂未完整读回'};
+    return {...result,detail_error:error.code==='ORDER_PAGE_CHANGED'?error.message:'原单状态已查回，整单明细暂未完整读回'};
   }
 }
 

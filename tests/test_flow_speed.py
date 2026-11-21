@@ -154,8 +154,8 @@ class WorkbookStyles(unittest.TestCase):
                 s=layout._Sheet(book,'检查',[12]*8,None)
                 s.row(['标题']*8,'header')
                 for _ in range(20):
-                    s.row(['文本',12,layout.NA,None,'固定折行','固定折行','多行\n文本',.25],formats={2:layout.MONEY,3:layout.INTEGER,8:layout.PERCENT})
-                    s.row(['文本',12,layout.NA,None,'固定折行','固定折行','单行文本',.25],kind='even')
+                    s.row(['文本',12,layout.PENDING,None,'固定折行','固定折行','多行\n文本',.25],formats={2:layout.MONEY,3:layout.INTEGER,8:layout.PERCENT})
+                    s.row(['文本',12,layout.PENDING,None,'固定折行','固定折行','单行文本',.25],kind='even')
                 book.save(stream)
             streams.append(stream.getvalue())
         for raw in streams:

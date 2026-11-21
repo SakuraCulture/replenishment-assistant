@@ -35,6 +35,31 @@ class PreparationTests(unittest.TestCase):
             self.assertEqual(quantities(r),{'A':0.,'B':10.})
         self.assertEqual(self.repo.stores(),{})
 
+    def test_new_files_use_tags_from_each_supply_warehouse(self):
+        from openpyxl import Workbook
+        from test_warehouse_must_sell import HB, SD, SKUS, snapshots
+
+        catalogs = snapshots()
+        self.s.update(catalogs=catalogs, legacy=False)
+        self.s['current_records']['S1']['ui'].update(primary=HB, secondary=None)
+        self.s['current_records']['S2']['ui'].update(primary=SD, secondary=None)
+        path = Path(self.tmp.name) / '补货建议.xlsx'
+        book = Workbook()
+        sheet = book.active
+        sheet.append(['仓库/门店编码','仓库/门店名称','商品编码','商品名称','日销','周销','月销',
+                      '可用库存','在途库存','缺货天数（天）','补货状态'])
+        for store in ('S1', 'S2'):
+            sheet.append([store, store, SKUS[0], '测试饮品', 2, 14, 60, 0, 0, 0, '正常'])
+        book.save(path)
+        book.close()
+
+        prepared = jobs.prepare(self.s, {**self.a, 'paths': [str(path)], 'stores': ['S1', 'S2']})
+        self.assertTrue(prepared['report']['ready'], prepared['report']['issues'])
+        for store, warehouse, mandatory in (('S1', HB, True), ('S2', SD, False)):
+            result = batch_service.calculate_store(prepared['loaded'], store, prepared['jobs'][store], prepared['profile'])
+            self.assertEqual([(r['E'], r['AU'], r['_must_sell']) for r in result['rows']], [(SKUS[0], warehouse, mandatory)])
+            self.assertEqual(result['must_list']['warehouses'][warehouse]['catalog_revision'], catalogs[warehouse]['revision'])
+
     def test_plan_only_patches_selected_parameters(self):
         from replenishment_plans import Repository
         c=copy.deepcopy(self.s['current_records']['S1']['preset']['config'])

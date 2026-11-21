@@ -384,10 +384,17 @@ def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None
                     state, message = 'RETRY_PAYMENT_READ', receipt.get('message') or '尚未读到唯一原单，保留原内部订单号继续核对'
                 else:
                     status = receipt.get('native_status') or '未知状态'
-                    if status not in confirmation.PAYMENT_STATES:
+                    buyer_problem = confirmation.buyer_issue(receipt)
+                    if receipt.get('buyer_check') == 'mismatch':
+                        state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
+                    elif status not in confirmation.PAYMENT_STATES:
                         state, message = 'PAYMENT_SOURCE_PENDING', f'聚水潭当前为“{status}”，须核对原订单后准备付款资料'
                     elif receipt.get('detail_error'):
                         state, message = 'RETRY_PAYMENT_READ', receipt['detail_error']
+                        if buyer_problem:
+                            status = ''
+                    elif buyer_problem:
+                        state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
                     else:
                         try:
                             candidate = order_payment.prepare(order, receipt, cancel)

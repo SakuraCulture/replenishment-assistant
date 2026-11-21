@@ -190,7 +190,7 @@ class Page(QWidget):
         if not value['configured'] or not value['stores']:
             QMessageBox.information(self,'连接待配置','请先在原翱象连接配置中核验并保存门店，本分析复用已有连接。');return
         dialog=QDialog(self);dialog.setWindowTitle('分析所选门店与资料采用');dialog.resize(620,600);layout=QVBoxLayout(dialog)
-        note=label('复制参数设置中已保存的主从仓和必卖清单；两边之后互不自动更新。未配置供货关系的门店仍可统计全量，但仓、供应商及标签会待核。');note.setWordWrap(True);layout.addWidget(note)
+        note=label('采用已保存的主从仓和各仓商品资料里的「必卖清单」标签。分析任务保留本次采用的资料版本。未配置供货关系的门店仍可统计全量，供货仓和必采归属待核。');note.setWordWrap(True);layout.addWidget(note)
         search=QLineEdit();search.setPlaceholderText('搜索门店名称 / 编码');layout.addWidget(search)
         listing=QListWidget();layout.addWidget(listing)
         selected={s['code'] for s in (self.settings or {}).get('stores',[])}
@@ -201,12 +201,11 @@ class Page(QWidget):
         search.textChanged.connect(lambda text:[listing.item(i).setHidden(text.casefold() not in listing.item(i).text().casefold()) for i in range(listing.count())])
         row=QHBoxLayout();row.addWidget(button('勾选当前筛选',lambda:[listing.item(i).setCheckState(Qt.CheckState.Checked) for i in range(listing.count()) if not listing.item(i).isHidden()]))
         row.addWidget(button('清空勾选',lambda:[listing.item(i).setCheckState(Qt.CheckState.Unchecked) for i in range(listing.count())]));layout.addLayout(row)
-        builtin=QCheckBox('原业务未保存必卖清单时，明确采用应用内置清单到分析');layout.addWidget(builtin)
         buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);buttons.accepted.connect(dialog.accept);buttons.rejected.connect(dialog.reject);layout.addWidget(buttons)
         if dialog.exec()!=QDialog.DialogCode.Accepted:return
         stores=[listing.item(i).data(Qt.ItemDataRole.UserRole) for i in range(listing.count()) if listing.item(i).checkState()==Qt.CheckState.Checked]
         if not stores:QMessageBox.information(self,'尚未选择','请选择至少一家门店');return
-        self.entry.start('adopt',{'stores':stores,'use_builtin':builtin.isChecked()},lambda _:self.refresh_metadata())
+        self.entry.start('adopt',{'stores':stores},lambda _:self.refresh_metadata())
 
     def options(self):
         return {'start':self.start.date().toString('yyyy-MM-dd'),'end':self.end.date().toString('yyyy-MM-dd'),

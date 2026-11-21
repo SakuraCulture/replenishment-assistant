@@ -9,7 +9,7 @@ def fixture(root):
     work=wr.Repository(root);catalogs={};files=[]
     for wh in ('山东仓','河北仓'):
         p=root/(wh+'.xlsx');b=Workbook();w=b.active;w.append(wc.REQUIRED+['商品标签','商品名称'])
-        w.append(['0001','饮品',2,6,'启用',100,'','合成饮品']);b.save(p);b.close()
+        w.append(['0001','饮品',2,6,'启用',100,'必卖清单' if wh=='河北仓' else '','合成饮品']);b.save(p);b.close()
         catalogs[wh]=wc.import_catalog(p,wh);wc.Repository(root).save(catalogs[wh])
     for code in ('A','B'):
         r=spi.base();r['ui'].update(mode=1,primary='河北仓' if code=='A' else '山东仓',secondary=None);work.save_stores({code:r})
@@ -70,10 +70,20 @@ def start_smoke(app,win,args):
             win.job_dirty=False;m.poll();wait(lambda:not m.reader and not m.publisher and m.repo.get(r['id']).get('publication'))
             require(m.repo.get(r['id'])['publication']['state']=='PUBLISHED','空闲时采用本任务资料为默认，结果保持')
             dialog.tabs.setCurrentIndex(1);dialog.runs.selectRow(0);dialog.select();app.processEvents();dialog.grab().save(str(out/'02-运行记录.png'))
+            def dismiss_empty_draft():
+                pending=app.activeModalWidget()
+                if isinstance(pending,QMessageBox) and pending.windowTitle()=='有未保存的作业变更':
+                    next(b for b in pending.buttons() if b.text()=='放弃本次变更').click()
+            QTimer.singleShot(20,dismiss_empty_draft)
             dialog.open_result();wait(lambda:win.loaded is not None and not dialog.worker)
-            require(win.sections.currentIndex()==1 and win.pages.currentIndex()==3,'两次点击进入原核对与签发页')
+            require(win.sections.currentIndex()==1 and win.pages.currentIndex()==3,'从运行记录打开原核对与签发页')
             require(list(win.results)==['A','B'] and all(x['state']=='已完成' for x in win.states.values()),'门店顺序与完成状态恢复')
-            basis=m.repo.value(r['id'],'basis');require(win._calculation_profile==basis['profile'],'恢复重建必卖清单计算缓存')
+            from priority_list import catalog_profile
+            basis=m.repo.value(r['id'],'basis')
+            require(win._calculation_profile==catalog_profile(m.repo.value(r['id'],'catalogs')),
+                    '恢复重建当批分仓必卖清单计算缓存')
+            require(win.results['A']['rows'][0]['_must_sell'] and not win.results['B']['rows'][0]['_must_sell'],
+                    '同一商品在两仓用各自的标签识别必采')
             for s in win.results:require(win.selected_settings(s)['parameter_config']==basis['jobs'][s]['parameter_config'],'当时门店参数一致 '+s)
             win.grab().save(str(out/'03-核对与签发.png'))
             phase='direct_test_services'

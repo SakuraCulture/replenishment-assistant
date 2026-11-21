@@ -68,11 +68,12 @@ class WarehouseUi:
         self.current_warehouse_adopted(catalog)
         self.status.setText(catalog['warehouse']+f"资料已保存 {len(catalog['items']):,} 款；请重新检查本次补货建议。"+warning)
     def current_warehouse_adopted(self,catalog):
-        if getattr(self,'closing',False):return
+        if getattr(self,'closing',False) or getattr(self,'readonly',False):return
         wh=catalog['warehouse']
         if self.catalogs.get(wh)==catalog:return
         self.catalogs[wh]=catalog;self.refresh_catalog_labels()
-        if not self.master_legacy.isChecked():self.file_changed()
+        self.refresh_current_priority()
+        self.file_changed()
     def show_catalog(self,warehouse):
         catalog=self.catalogs.get(warehouse)
         if not catalog:QMessageBox.information(self,'尚未导入',warehouse+'尚无保存的商品资料。');return

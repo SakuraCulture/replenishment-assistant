@@ -4,6 +4,84 @@ from pathlib import Path
 from datetime import datetime
 import openpyxl
 from input_adapter import identifier
+from app_defaults import WAREHOUSES
+from admission import tags
+
+CATALOG_TAG = '必卖清单'
+CATALOG_SOURCE = 'warehouse_catalog_tags'
+
+
+def is_catalog_profile(profile):
+    return isinstance(profile, dict) and profile.get('schema') == 2
+
+
+def _catalog_revision(warehouses, items):
+    value = {'warehouses': warehouses, 'items': items}
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:12]
+
+
+def catalog_profile(catalogs):
+    """Freeze exact tag membership separately for every supplied warehouse."""
+    warehouses = {}
+    items = []
+    for warehouse in WAREHOUSES:
+        catalog = catalogs.get(warehouse)
+        if not catalog:
+            continue
+        if catalog['warehouse'] != warehouse:
+            raise ValueError('必卖清单的仓资料归属不一致：' + warehouse)
+        rows = catalog['items']
+        missing = 0
+        count = 0
+        for sku, row in sorted(rows.items()):
+            if '商品标签' not in row:
+                missing += 1
+            elif CATALOG_TAG in tags(row['商品标签']):
+                items.append({'warehouse': warehouse, 'sku': sku,
+                              'name': str(row.get('商品名称') or '').strip(),
+                              'category': str(row.get('分类') or '').strip()})
+                count += 1
+        warehouses[warehouse] = {'catalog_revision': catalog['revision'],
+                                 'imported_at': catalog.get('imported_at'),
+                                 'source_sha256': catalog.get('source_sha256', ''),
+                                 'missing_tag_fields': missing, 'count': count}
+    return {'schema': 2, 'name': '聚水潭商品标签 · 必卖清单', 'source': CATALOG_SOURCE,
+            'warehouses': warehouses, 'items': items, 'revision': _catalog_revision(warehouses, items)}
+
+
+def scope_catalog_summary(listing, warehouses, rows, audit):
+    sources = {warehouse: source for warehouse, source in listing['warehouses'].items() if warehouse in warehouses}
+    return {**listing, 'warehouses': sources, 'total': sum(source['count'] for source in sources.values()),
+            'matched': sum(row.get('_must_sell') is True for row in rows),
+            'missing': sum(item['state'] == '未出现在本次门店导出' for item in audit)}
+
+
+def validate_calculation_profile(profile):
+    if not is_catalog_profile(profile):
+        return validate_profile(profile)
+    warehouses, items = profile.get('warehouses'), profile.get('items')
+    if profile.get('source') != CATALOG_SOURCE or not isinstance(warehouses, dict) or not isinstance(items, list):
+        raise ValueError('按仓必卖清单格式不正确')
+    counts = dict.fromkeys(warehouses, 0)
+    seen = set()
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError('按仓必卖清单条目格式不正确')
+        warehouse, sku = item.get('warehouse'), item.get('sku')
+        if warehouse not in warehouses or not isinstance(sku, str) or identifier(sku) != (sku, None):
+            raise ValueError('按仓必卖清单存在无效仓库或商品编码')
+        if (warehouse, sku) in seen:
+            raise ValueError('同仓必卖清单存在重复商品编码')
+        seen.add((warehouse, sku))
+        counts[warehouse] += 1
+    for warehouse, snapshot in warehouses.items():
+        if (warehouse not in WAREHOUSES or not isinstance(snapshot, dict) or not snapshot.get('catalog_revision')
+                or snapshot.get('count') != counts[warehouse] or type(snapshot.get('missing_tag_fields')) is not int
+                or snapshot['missing_tag_fields'] < 0):
+            raise ValueError('必卖清单与仓资料范围不一致')
+    if profile.get('revision') != _catalog_revision(warehouses, items):
+        raise ValueError('必卖清单与仓资料版本不一致，请重新检查')
+    return profile
 
 def atomic_json(path,data):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
@@ -82,11 +160,12 @@ def import_profile(path,progress=lambda s:None,cancel=None):
 
 class Repository:
     def __init__(self,folder):self.folder=Path(folder)
-    def profile(self):
+    def profile(self, *, create_default=True):
         p=self.folder/'must_sell.json'
         if p.exists():return validate_profile(json.loads(p.read_text(encoding='utf-8')))
         data=validate_profile(json.loads((Path(__file__).parent/'default_must_sell.json').read_text(encoding='utf-8')))
-        self.save(data);return data
+        if create_default:self.save(data)
+        return data
     def save(self,profile):atomic_json(self.folder/'must_sell.json',validate_profile(profile))
     def budgets(self):
         p=self.folder/'store_budgets.json'
@@ -102,7 +181,7 @@ class Repository:
 def export_profile(profile,path):
     p=Path(path)
     if p.exists():raise ValueError('文件已存在，请选择新文件名')
-    validate_profile(profile)
+    validate_calculation_profile(profile)
     if p.suffix.lower()=='.json':
         with p.open('x',encoding='utf-8') as f:json.dump(profile,f,ensure_ascii=False,indent=2)
     else:raise ValueError('请选择.json文件；该格式保留长编码，适合备份和迁移')

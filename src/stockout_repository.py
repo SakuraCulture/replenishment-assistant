@@ -251,22 +251,19 @@ class Repository:
             db.execute('UPDATE runs SET state=?,message=?,updated=? WHERE id=?', (state, '日报已发布；按实际观测日期及已完成门店展示',now(),rid))
         return self.run(rid)
 
-    def adopt_business(self, stores, *, use_builtin=False):
-        """Freeze saved parameter-page routes; no business initialization or writeback."""
+    def adopt_business(self, stores):
+        """Freeze saved routes and each warehouse's current tag evidence."""
         from stockout_settings import supply_snapshot
+        from warehouse_catalog import Repository as CatalogRepository
+        from priority_list import catalog_profile
         stores = [{'code': s['code'], 'name': s['name']} for s in stores]
         supply = supply_snapshot(self.root, stores)
-        paths = [self.root/'must_sell.json']
-        before = {str(p):file_hash(p) if p.exists() else None for p in paths}
-        profile = read_json(paths[0]) if paths[0].exists() else None
-        if profile is None and use_builtin:
-            profile = read_json(Path(__file__).parent/'default_must_sell.json')
-        if profile is not None:
-            from priority_list import validate_profile
-            validate_profile(profile)
-        if before != {str(p):file_hash(p) if p.exists() else None for p in paths} or supply != supply_snapshot(self.root, stores):
+        repository = CatalogRepository(self.root)
+        catalogs, versions = repository.snapshots()
+        profile = catalog_profile(catalogs)
+        if any(repository.current_digest(wh)!=version for wh,version in versions.items()) or supply != supply_snapshot(self.root, stores):
             raise ValueError('采用期间原业务设置变化，请重新核对采用')
-        return self.save_settings({'stores':stores, **supply, 'profile':profile, 'adopted_at':now(), 'source_hashes':before})
+        return self.save_settings({'stores':stores, **supply, 'profile':profile, 'adopted_at':now(), 'source_hashes':versions})
 
     def retain(self, source, expected, cancel=None):
         from runtime_support import checkpoint

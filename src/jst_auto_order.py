@@ -94,7 +94,7 @@ def selection(records, chosen):
     return [{'gid':r['gid'],'head':r['head']} for r in result]
 
 
-def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=None):
+def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=None, expected_setup=None):
     """Freeze one portable native file per valid local warehouse order."""
     if order_phone is not None and (len(selected)!=1 or not re.fullmatch(r'[0-9]{11}',order_phone)):
         raise Check('单次测试号码只可用于一张仓单，需填11位数字')
@@ -111,6 +111,8 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
                 if any(h[k]!=row['head'][k] for k in HEAD_KEYS):
                     raise Check('所选仓单已变化，请刷新结果页')
                 old = store.read_warehouse_order(db,h)
+                if expected_setup is not None and any((old or {}).get(k)!=expected_setup[k] for k in ('online','sequence')):
+                    raise Check('确认后的原下单任务已变化，请核对原任务')
                 if old and old['stage'] in store.RELEASED:
                     ready.append(old['online'])
                     continue
@@ -121,6 +123,9 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
                     raise Check(reason+'，请核对原订单')
                 shop=_shop(db,h)
                 profile=store.profile(db,h['store'],h['warehouse'])
+                if expected_setup is not None and (shop!=expected_setup['shop']
+                        or (profile or {}).get('version')!=expected_setup['profile_version']):
+                    raise Check('确认后的配送或店铺资料已变化，请重新核对')
             contacts=(profile or {}).get('values',{})
             if order_phone is not None:
                 contacts={**contacts,'phone':order_phone}
@@ -316,8 +321,10 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
     if result.get('binding')!=proof['binding'] or result.get('online')!=order['online']:
         raise Check('回查的企业、店铺或线上单号与原任务不同')
     if identity_only:
-        if result.get('contact_ok') is not True:
-            raise Check('回查的买家身份与原任务不同')
+        buyer_problem=confirmation.buyer_issue(result)
+        if buyer_problem:
+            detail=result.get('detail_error')
+            raise Check(buyer_problem+(' · '+detail if detail and result.get('buyer_check')=='unavailable' else ''))
     else:
         _preview_evidence(order, {**result,'exists':False,'issues':[]})
     internal=result.get('internal')
@@ -418,7 +425,7 @@ def _audit(path, browser, order, cancel):
     return _review(path,browser,intent,cancel)
 
 
-def _process(path, browser, order, action, cancel):
+def _process(path, browser, order, action, cancel, *, expected_binding=None):
     if action=='probe':
         browser.action('probe',order)
         return _save(path,order,order['stage'],cancel,reason='已核对本仓企业、店铺和导入入口')
@@ -438,6 +445,8 @@ def _process(path, browser, order, action, cancel):
         order['preview_names']=_preview_names(db,order)
     if action=='preview':
         evidence=_preview_for_submit(order,browser.action('preview',order))
+        if expected_binding is not None and evidence['binding']!=expected_binding:
+            raise Check('本次核验的企业、仓账号或店铺标识与已通过的配置不同，请人工核对')
         return _save(path,order,'PREVIEWED',cancel,check_plan=True,proof=evidence,reason='平台预览通过，等待确认导入')
     if action!='submit' or order['stage']!='PREVIEWED':
         raise Check('请先预览并确认本次原文件')
@@ -449,7 +458,8 @@ def _process(path, browser, order, action, cancel):
     return _review(path,browser,intent,cancel,identity_only=True)
 
 
-def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *, approved=None, prepare_payment=None):
+def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *, approved=None, prepare_payment=None,
+            expected_binding=None):
     """Process at most the explicitly confirmed selection, in displayed order."""
     responses=[]
     for i,online in enumerate(dict.fromkeys(keys),1):
@@ -459,20 +469,24 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
         if not order:
             raise Check('原下单任务已找不到，请刷新')
         if approved is not None and order['sequence']!=approved.get(online):
-            responses.append({'online':online,'stage':order['stage'],'reason':'确认范围内的任务已更新，请刷新后重新核对'})
+            responses.append({'online':online,'stage':order['stage'],'ok':False,
+                              'reason':'确认范围内的任务已更新，请刷新后重新核对'})
             continue
         progress(RowProgress(show_name(order['payload']['head']),i,len(keys)))
+        ok=True
         try:
-            result=_process(path,browser,order,action,cancel)
+            result=_process(path,browser,order,action,cancel,expected_binding=expected_binding)
         except Cancelled:
             raise
         except ValueError as exc:
+            ok=False
             with closing(wr.read_connection(path)) as db:
                 current=store.read(db,online)
             if current and not _legacy_audit_not_dispatched(current):
                 current=_save(path,current,current['stage'],cancel if action in ('recover','recover_delete') else None,reason=str(exc))
             result={**(current or order),'reason':str(exc)}
-        response={'online':online,'stage':result['stage'],'reason':result['reason']}
+        response={'online':online,'stage':result['stage'],'reason':result['reason'],'ok':ok,
+                  'sequence':result['sequence'],'internal':result.get('internal')}
         if (prepare_payment and action in ('submit','recover') and result.get('internal')
                 and result['stage'] in ('IMPORTED','AUDITED','AUDIT_UNKNOWN','REVIEW')):
             payment=prepare_payment(path,[online],browser,progress,cancel)[0]

@@ -23,7 +23,9 @@ def wait(win):
     if any(s['state']=='计算失败' for s in win.states.values()):raise AssertionError(str(win.states))
 
 def install(win,sku,budget='10'):
-    win.profile=profile(sku) if sku else None;win.loaded_ok(loaded());win.refresh_profile_label()
+    win.loaded_ok(loaded())
+    # This fixture represents a retained checked input that predates catalog tags.
+    win.profile=profile(sku) if sku else None;win.refresh_profile_label()
     for code in win.store_widgets:win.set_store_ui(code,{'mode':2 if budget is not None else 1,'amount':budget or '','primary':'山东仓','secondary':None,'selected':True})
 
 def quantities(result):return {d['E']:sem.order_quantity(d) for d in result['rows']}
