@@ -1,0 +1,38 @@
+{
+  "release": "0.54.16 rc9",
+  "previous_main_commit": "44347fc9e93ed743fcaa414b1b9bdc7bc2b6bfbd",
+  "source_commit": "fdaac367bfa5e5c449d123a4d85910c3ea0336b3",
+  "source_tree": "9b8b32dad31ea2c9719af1d790c153f09fa63825",
+  "source_archive_sha256": "1c1ba8bbdb6cbb7f6c2321afe95236d876da4dc0ce216b95c6f2fa843a0337f0",
+  "deliverables": {
+    "exe_sha256": "7ce34315f8667289fa6aca6a5424350f52937ab54c8b52aac910fd5f5067cc90",
+    "standalone_zip_name": "补货助手_0.54.16_rc9_聚水潭账号核验.zip",
+    "standalone_zip_sha256": "821e6c8e687b392dda4e660fd307f2f4de61b9ba58171b26ba0629ab95257e2a",
+    "standalone_zip_bytes": 157932780,
+    "previous_release_tag": "v0.54.16-rc8",
+    "previous_standalone_zip_sha256": "ab0324389ff769dab3b5d1547c320780365b309fad6fee039843788f219f8c75"
+  },
+  "acceptance": {
+    "isolated": true,
+    "python_targeted_passed": 311,
+    "jst_component_passed": 129,
+    "actual_exe_startup_and_direct_repair_checks": 46,
+    "actual_exe_existing_rebind_checks": 21,
+    "full_application_regression_completed": false,
+    "live_business_login_tested": false
+  },
+  "original_local_evidence_sha256": {
+    "package.json": "1456da4a4110402f4f0d5605a1f660cfddfcaa59a7f3e101510be09a9ba9795d",
+    "exe-acceptance/report.json": "048d8c5f66dc9d9dbab575f526aefdd3340302835658d5f54b5f22fb3bc6319a",
+    "catalog-rebind-exe/report.json": "89d81e99b0437488a79b1803d256320903a30dbeed8ba5a4e9d02dae13449b05",
+    "source-locked-acceptance/report.json": "000a7075446a54bd595c3f0867e7dbc8188bcf35b146f660ea0a1f7d48f3c398",
+    "environment-locked.json": "99f0c9fc524758e38ca7f908789f7f125d6e645065342eb4be504c152bd17419",
+    "python-locked-regression.txt": "206e3ce5d838b867e74f76dc67327e1dabcf33ec4d2e0cf229997507ef3f9155",
+    "node-regression.txt": "1daf59e4ac6c3a69e199de88763b568bdba66bf5e2c018ebd5f8b61f9707a4a7"
+  },
+  "previous_original_local_evidence_sha256": {
+    "package.json": "4a85b633cd06bfd5895858230900dbc3a9546a95feff5f2713f2461f3f233d87",
+    "verification.json": "b64efbd8694bf25d04acf6d14f42079521799c3f9a487aea86df84752960ecf2",
+    "main-merge/remote-verification.json": "5012ef9314cee46cda5b2119adae86f3f889e19cb33f31aa371e6e2d8f2eec52"
+  }
+}
