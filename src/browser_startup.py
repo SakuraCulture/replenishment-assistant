@@ -2,6 +2,9 @@
 import time
 
 
+REBIND_REQUIRED = 'ACCOUNT_REBIND_REQUIRED'
+
+
 def result(state, message, code=''):
     return {'state': state, 'message': message, 'code': code}
 
@@ -26,9 +29,11 @@ def error_result(error):
     message = error.get('message', '') if isinstance(error, dict) else str(error)
     if code in {'LOGIN_REQUIRED', 'LOGIN_TIMEOUT', 'NOT_LOGGED_IN', 'WAIT_LOGIN'}:
         return result('LOGIN_REQUIRED', '请在对应浏览器完成登录；程序会自动复核。' + message, code)
-    if code in {'WRONG_ACCOUNT', 'WRONG_IDENTITY'}:
+    if code == 'WRONG_ACCOUNT':
+        return result('WRONG_ACCOUNT', message or '本仓登录身份与保存的绑定不一致，请重新检查本仓登录。', code)
+    if code == 'WRONG_IDENTITY':
         return result('WRONG_ACCOUNT', '核验期间Edge登录发生变化，请重新检查当前登录；无需手动填写账号ID。' + message, code)
-    if code in {'NOT_CONFIGURED', 'SETUP_REQUIRED', 'MACHINE_REBIND_REQUIRED', 'COMPANY_REQUIRED'}:
+    if code in {'NOT_CONFIGURED', 'SETUP_REQUIRED', 'MACHINE_REBIND_REQUIRED', 'COMPANY_REQUIRED', REBIND_REQUIRED}:
         return result('CONFIG_REQUIRED', message, code)
     return result('FAILED', message or '连接检查未完成，请查看详情后重试。', code)
 
@@ -73,7 +78,7 @@ def check_jst(client, names, cancel, report):
             raise RuntimeError('原聚水潭操作尚未结束，稍后重新检查连接；未启动采集。')
         account = next((a for a in state.get('accounts', []) if a['warehouse'] == name), None)
         if state.get('rebind_required',{}).get(name):
-            report(name,result('CONFIG_REQUIRED','本仓正在纠正绑定；请在商品资料窗口核验正确公司并保存，未自动沿用旧账号。'))
+            report(name, result('CONFIG_REQUIRED', '本仓待重新绑定。请核验专用浏览器登录，确认公司与仓库对应后保存。', REBIND_REQUIRED))
             continue
         if account and not account.get('enabled'):
             report(name, result('DISABLED', '本仓自动同步已停用，保留原设置；需要时在仓配置中启用。'))

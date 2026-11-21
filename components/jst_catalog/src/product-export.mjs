@@ -9,6 +9,20 @@ const execFileAsync=promisify(execFile);
 export const COMPANY=null;
 const label='商品及库存管理(普通商品资料)';
 const clean=s=>String(s).replace(/\s+/g,'');
+const companyMismatch=()=>new CatalogError('WRONG_ACCOUNT','聚水潭当前公司与本仓配置的公司不一致。请核对本仓专用 Edge 登录的公司后重新检查。');
+const operatorMismatch=()=>new CatalogError('WRONG_ACCOUNT','聚水潭当前操作员与本仓绑定账号不一致。请登录原绑定的操作员账号后重新检查。');
+
+export function requireWarehouseAccount(scope,account){
+  if(scope.coid!==account.expectedCoid)throw companyMismatch();
+  if(scope.uid!==account.expectedUid)throw operatorMismatch();
+}
+
+export function displayedCompany(page){
+  return page.evaluate(()=>{
+    const lines=(document.querySelector('#root')?.innerText||'').split('\n').map(x=>x.trim()).filter(x=>/^.{2,150}\[[^\]]+\]$/.test(x));
+    return lines.length===1?lines[0].replace(/\[[^\]]+\]$/,'').trim():null;
+  });
+}
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 // Background tabs may not produce animation frames. Poll state using timers and
 // dispatch one native DOM event; do not require pointer focus or foregrounding.
@@ -43,9 +57,18 @@ export async function openExportMenu(frame){
 export async function openProducts(page,{reload=false,expectedCompany=COMPANY}={}){
   if(reload||!page.url().startsWith('https://www.erp321.com/epaas'))await page.goto('https://www.erp321.com/epaas',{waitUntil:'domcontentloaded',timeout:60000});
   await page.locator('a[class^="menuItem"]').filter({hasText:/^商品$/}).waitFor({timeout:60000});
-  await page.waitForFunction(expected=>document.querySelector('#root')?.innerText.replace(/\s+/g,'').includes(expected),clean(expectedCompany),{timeout:30000,polling:100});
-  const body=clean(await page.locator('#root').innerText());
-  if(!body.includes(clean(expectedCompany)))throw Error('聚水潭公司与配置不一致，未切换账号或执行导出');
+  const expected=clean(expectedCompany);
+  try{
+    await page.waitForFunction(company=>document.querySelector('#root')?.innerText.replace(/\s+/g,'').includes(company),expected,{timeout:30000,polling:100});
+    const body=clean(await page.locator('#root').innerText());
+    if(!body.includes(expected))throw new CatalogError('COMPANY_REQUIRED','当前页面未显示本仓配置的公司，请核对后重新检查。');
+  }catch(error){
+    if(error.name==='TimeoutError'||error.code==='COMPANY_REQUIRED'){
+      const company=await displayedCompany(page).catch(()=>null);
+      if(company&&!clean(company).includes(expected))throw companyMismatch();
+    }
+    throw error;
+  }
   const tabs=page.getByRole('tab').filter({hasText:label});
   if(await tabs.count()===1)await activateControl(tabs);
   else{
@@ -105,8 +128,8 @@ export async function queryAll(page,options={}){
   const expectedRows=counts[0];
   await frame.getByText(new RegExp('共\\s*'+expectedRows+'条')).waitFor({timeout:30000});
   const scope={company:options.expectedCompany||COMPANY,coid:String(request.coid),uid:String(request.uid),statuses:['启用','备用','禁用'],expectedRows,query:request.data,queriedAt:new Date().toISOString()};
-  if(options.expectedCoid&&scope.coid!==String(options.expectedCoid))throw Error('聚水潭公司ID与绑定不符');
-  if(options.expectedUid&&scope.uid!==String(options.expectedUid))throw Error('聚水潭用户ID与账号绑定不符，未提交导出');
+  if(options.expectedCoid&&scope.coid!==String(options.expectedCoid))throw companyMismatch();
+  if(options.expectedUid&&scope.uid!==String(options.expectedUid))throw operatorMismatch();
   return {frame,scope};
 }
 export async function openHistory(page){

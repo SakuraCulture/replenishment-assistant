@@ -226,13 +226,15 @@ export class CatalogService {
         if(c.action==='accounts.open_login'){await this.driver.page({binding},signal,{loginOnly:true});result={opened:true};}
         else{
           const scope=await this.driver.inspect(binding,c.company||a?.expectedCompany,signal,{waitForLogin:c.action==='accounts.auto'});
-          if(a&&['accounts.verify','accounts.auto','accounts.ensure'].includes(c.action)&&(scope.coid!==a.expectedCoid||scope.uid!==a.expectedUid))throw new CatalogError('WRONG_ACCOUNT','当前登录账号与该仓绑定不同');
+          if(a&&['accounts.verify','accounts.auto','accounts.ensure'].includes(c.action))native.requireWarehouseAccount(scope,a);
           result={scope,binding};
         }
         check(signal);
         if(['accounts.auto','accounts.ensure'].includes(c.action)){
           // An unchanged verified binding must not invalidate pending batch versions.
-          if(data.rebindRequired?.[c.warehouse]){result.requires_confirmation=true;}
+          if(data.rebindRequired?.[c.warehouse]||(c.action==='accounts.auto'&&c.require_confirmation===true)){
+            result.requires_confirmation=true;
+          }
           else if(a&&sameBinding(a.binding,binding,this.storageAliases)){
             result.account=a;
           }else{
@@ -292,7 +294,7 @@ export class CatalogService {
             if(item.native?.submissions>0)throw new CatalogError('SUBMISSION_UNKNOWN','缺少原任务号，禁止再次提交');
             await this.observation(batchId,id,signal);check(signal);
             await phase('QUERYING','查询'+a.warehouse+'全部商品');const queried=await this.driver.query(page,a);check(signal);
-            if(queried.scope.coid!==a.expectedCoid||queried.scope.uid!==a.expectedUid)throw new CatalogError('WRONG_ACCOUNT','实际查询账号与仓绑定不同');
+            native.requireWarehouseAccount(queried.scope,a);
             await this.driver.export(page,{...a,queried,output:path.join(this.stateRoot,'downloads',batchId,id),signal,onProgress:phase,
               onManifest:async native=>{await this.patch(batchId,id,{native,stage:native.stage});}});
           }

@@ -1,9 +1,9 @@
 """Actual source/frozen window and production startup hook; isolated fake platforms."""
-import hashlib,json,sqlite3,sys,time,traceback,threading
+import copy,hashlib,json,sqlite3,sys,time,traceback,threading
 from contextlib import closing
 from pathlib import Path
 from PySide6.QtCore import QEventLoop,QTimer
-from PySide6.QtWidgets import QDialog
+from PySide6.QtWidgets import QDialog,QLabel,QPushButton
 from browser_startup_fixture import AxFixture,JstFixture
 from browser_startup_ui import start_application_connections
 from version_info import diagnostic
@@ -18,6 +18,116 @@ def signature(path):
             rows=sorted(repr(r) for r in db.execute('SELECT * FROM '+quoted))
             digest.update((table+'\n'+'\n'.join(rows)).encode())
         return digest.hexdigest()
+
+
+def exercise_binding_repair(app, win, jst, out, require, wait):
+    startup = win.browser_startup
+    owner = win.catalog_sessions.session
+    jst.accounts = [a for a in jst.accounts if a['warehouse'] != '河北仓']
+    jst.rebind_required['河北仓'] = True
+    jst.binding_epochs['河北仓'] = 3
+    jst.batches = [{'id': 'retained-qa', 'createdAt': '2026-11-21', 'purpose': 'default_catalog', 'items': [
+        {'account': copy.deepcopy(jst.accounts[0]), 'stage': 'ACCEPTED',
+         'native': {'nativeTaskRef': 'original-platform-task', 'submissions': 1}},
+        {'account': {'warehouse': '河北仓', 'expectedCompany': '原隔离河北仓'}, 'stage': 'ACCEPTED',
+         'retirement': {'reason': 'synthetic binding repair'}, 'native': {'nativeTaskRef': 'original-hb-task'}},
+    ]}]
+    original_accounts, original_batches = copy.deepcopy((jst.accounts, jst.batches))
+    jst.calls.clear()
+    startup.retry(['河北仓'])
+    wait(lambda: not startup.workers)
+    require(startup.records['河北仓']['state'] == 'CONFIG_REQUIRED' and startup.records['山东仓']['state'] == 'READY',
+            'Only Hebei remains pending while Shandong stays verified')
+
+    def panel():
+        return next(d for d in app.topLevelWidgets() if isinstance(d, QDialog) and d.isVisible()
+                    and d.windowTitle() == '连接检查与修复')
+
+    def repair_button(dialog):
+        return next(b for b in dialog.findChildren(QPushButton) if b.text() == '核验并保存')
+
+    marked = []
+    lease = owner.acquire()
+    lease.start()
+    def check_busy():
+        dialog = panel()
+        try:
+            marked.append(not repair_button(dialog).isEnabled())
+        finally:
+            dialog.accept()
+    try:
+        QTimer.singleShot(50, check_busy)
+        startup.open_details()
+        require(marked == [True] and owner.lease is lease and not any(a in {'accounts.auto', 'sync.stop'} for a, _ in jst.calls),
+                'Repair waits for the original catalogue lease without cancelling it')
+    finally:
+        lease.close()
+
+    def enter_repair(save):
+        completed = []
+        deadline = time.monotonic() + 6
+        def inspect_repair():
+            dialog = getattr(win, '_large_io_dialog', None)
+            if not getattr(dialog, 'binding_repair', False) or not dialog.probe:
+                if time.monotonic() < deadline:
+                    QTimer.singleShot(20, inspect_repair)
+                    return
+                for candidate in app.topLevelWidgets():
+                    if getattr(candidate, 'binding_repair', False) and candidate.isVisible():
+                        candidate.reject()
+                completed.append('Timed out waiting for Hebei verification')
+                return
+            try:
+                assert dialog.warehouse.currentText() == '河北仓' and not dialog.warehouse.isEnabled()
+                assert dialog.manual.isHidden() and dialog.connection.isHidden()
+                assert dialog.mapping.isVisible() and dialog.bind_btn.isVisible()
+                assert not dialog.bind_btn.isEnabled() and '已核验公司 隔离河北仓' in dialog.identity.text()
+                assert jst.accounts == original_accounts and jst.rebind_required['河北仓']
+                if save:
+                    dialog.mapping.setChecked(True)
+                    assert dialog.bind_btn.isEnabled()
+                    dialog.grab().save(str(out/'04-hebei-verified-before-save.png'))
+                    dialog.bind_btn.click()
+                completed.append(None)
+            except Exception:
+                completed.append(traceback.format_exc())
+            finally:
+                if dialog.isVisible():
+                    dialog.reject()
+
+        def open_repair():
+            dialog = panel()
+            try:
+                action = repair_button(dialog)
+                assert action.isEnabled()
+                dialog.grab().save(str(out/'04-hebei-binding-repair-entry.png'))
+                QTimer.singleShot(20, inspect_repair)
+                action.click()
+            except Exception:
+                completed.append(traceback.format_exc())
+            finally:
+                if dialog.isVisible():
+                    dialog.accept()
+        QTimer.singleShot(60, open_repair)
+        startup.open_details()
+        wait(lambda: not startup.workers)
+        if completed != [None]:
+            raise AssertionError('Hebei repair UI failed: ' + repr(completed))
+    enter_repair(save=False)
+    require(jst.accounts == original_accounts and jst.rebind_required['河北仓']
+            and not any(a == 'accounts.bind' for a, _ in jst.calls),
+            'Closing the direct dialog after verification leaves the warehouse pending')
+    enter_repair(save=True)
+    require(startup.records['河北仓']['state'] == 'READY' and startup.records['山东仓']['state'] == 'READY',
+            'Confirming the verified Hebei mapping from the main panel saves it and rechecks Hebei')
+    require(jst.accounts[0:1] == original_accounts and jst.batches == original_batches,
+            'Shandong binding and both original task records retain exact contents')
+    warehouse_calls = [(action, values['warehouse']) for action, values in jst.calls
+                       if action in {'accounts.auto', 'accounts.bind', 'accounts.ensure'}]
+    require(warehouse_calls == [('accounts.auto', '河北仓'), ('accounts.auto', '河北仓'),
+                                ('accounts.bind', '河北仓'), ('accounts.ensure', '河北仓')]
+            and not any(a == 'sync.stop' for a, _ in jst.calls),
+            'Repair only verifies and saves Hebei and never stops an earlier operation')
 
 
 def start_smoke(app,win,args):
@@ -138,14 +248,17 @@ def start_smoke(app,win,args):
             win.grab().save(str(out/'02-identity-query-failed.png'))
             ax.request=original_request;startup.retry(['翱象']);wait(lambda:not startup.workers)
             jst.errors['山东仓']={'code':'LOGIN_REQUIRED','message':'本仓登录已过期'}
-            jst.errors['河北仓']={'code':'WRONG_ACCOUNT','message':'与本仓原绑定身份不同'}
+            jst.errors['河北仓']={'code':'WRONG_ACCOUNT','message':'聚水潭当前操作员与本仓绑定账号不一致。'}
             startup.retry(['山东仓','河北仓']);wait(lambda:not startup.workers);bar.refresh();wait(lambda:not bar.workers)
             require('需要登录' in bar.labels['山东仓'].text() and '账号不符' in bar.labels['河北仓'].text(),'Live sockets with expired or wrong accounts are not shown as login verified')
             captured=[]
             def capture_dialog():
                 for dialog in app.topLevelWidgets():
                     if isinstance(dialog,QDialog) and dialog.windowTitle()=='连接检查与修复':
-                        captured.append(dialog.grab().save(str(out/'02-login-repair.png')));dialog.accept()
+                        messages = [label.text() for label in dialog.findChildren(QLabel)]
+                        captured.append(any(jst.errors['河北仓']['message'] in text for text in messages)
+                                        and dialog.grab().save(str(out/'02-login-repair.png')))
+                        dialog.accept()
             QTimer.singleShot(150,capture_dialog);startup.open_details()
             require(captured==[True],'Actual repair dialog displays reasons and per-platform retry actions')
             jst.calls.clear();jst.errors.pop('山东仓');startup.retry_pending();wait(lambda:not startup.workers)
@@ -158,13 +271,15 @@ def start_smoke(app,win,args):
             require(signature(win.work_repository.path)==before,'All original business tables retain exact logical contents')
             require(all(a in {'configuration','setup.check_login','setup.status','session.release','session.health'} for a,v in ax.calls),'AX startup issues no store scans, exports, purchases or setup commits')
             require(all(a in {'sync.status','accounts.ensure','session.release','session.health'} for a,v in jst.calls),'Warehouse startup issues no catalogue export or adoption')
+            exercise_binding_repair(app,win,jst,out,require,wait)
+            require(signature(win.work_repository.path)==before,'Direct account repair leaves the order and draft database unchanged')
             # Closing with a read-only check in flight must drain it before window disposal.
             axowner.close();ax.gate=threading.Event();startup.retry(['翱象']);wait(lambda:ax.running)
             win.close();require(win.isVisible() and startup.closing,'Closing during startup first requests cooperative cancellation')
             ax.gate.set();wait(lambda:not win.isVisible() and not startup.workers)
             require(not ax.running and not jst.running,'Actual window close drains both retained component owners')
             report={'passed':True,**diagnostic(),'frozen_exe':bool(getattr(sys,'frozen',False)),'checks':checks,
-                    'heartbeat_count':len(beats),'business_signature':before,'scope':'actual startup hook and Qt; closed fake transports; no live platform'}
+                    'heartbeat_count':len(beats),'business_signature':before,'scope':'actual startup hook and direct warehouse repair in Qt with isolated platform fixtures'}
         except Exception:
             report={'passed':False,'checks':checks,'error':traceback.format_exc(),'frozen_exe':bool(getattr(sys,'frozen',False))}
         finally:
