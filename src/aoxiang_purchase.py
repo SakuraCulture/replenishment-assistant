@@ -11,14 +11,14 @@ from purchase_io import code, number
 from runtime_support import checkpoint
 from aoxiang_jobs import encoded
 from aoxiang_purchase_pricing import POLICY, priced_row
-from aoxiang_payment_preflight import PaymentPreparationError, preflight_payment, require_payment
+from aoxiang_payment_preflight import PaymentPreparationError, preflight_payment, require_payment, require_selected_payment
 
 
 def fingerprint(plan):
     return hashlib.sha256(encoded({k: v for k, v in plan.items() if k != 'fingerprint'}).encode()).hexdigest()
 
 
-def freeze_payment(path, head, configuration, suppliers, *, cancel=None):
+def freeze_payment(path, head, configuration, suppliers, *, expected_payment=None, cancel=None):
     checkpoint(cancel)
     if not configuration.get('configured') or not configuration.get('enabled'):
         raise ValueError('请先核验翱象商家与门店')
@@ -36,6 +36,7 @@ def freeze_payment(path, head, configuration, suppliers, *, cancel=None):
         purchases.validate_head(db, head)
         view = lifecycle.snapshot(path, head, cancel=cancel, db=db,_comparison=False)
         payment = require_payment(head, view)
+        require_selected_payment(head, payment, expected_payment)
         del view  # This call owns the fresh checked document; retain only payment.
         rows, omitted = [], []
         seen = set()

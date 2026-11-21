@@ -493,7 +493,7 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, 
         evidence=Evidence(db,cancel);seen_stores=set();seen_orders=set()
         for order,h,view in _query_orders(path,db,spec,progress,cancel,seen_stores,seen_orders,mode=_mode,verifying=verifying):
             day,store,wh,child=(h[k] for k in ('day','store','warehouse','number'))
-            allocation=workflow.allocation_fact(db,h,view,spec.get('as_of'),event=allocations.event(h))
+            allocation,needs_reallocation=workflow.allocation_fact(db,h,view,spec.get('as_of'),event=allocations.event(h))
             saved_rows = workflow.allocation_detail_rows(db, h, view, allocation, spec.get('as_of')) if show_allocation_detail else {}
             payment=view['documents']['payment']
             references=local(db,h,payment)
@@ -508,7 +508,8 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, 
                 payments.extend({'order':child,'store':store,'warehouse':wh,'currency':c,**v,'state':state,'valid':valid} for c,v in totals.items())
             tokens.append([h,[(s,d['version'],d['digest']) if d else [s,None] for s,d in view['documents'].items()],view.get('legacy_return'),allocation['digest'] if allocation else None])
             heads.append(h)
-            for row in workflow.enrich(build_facts(order,h,view,evidence,cancel,spec=spec,mode=_mode),h,view,allocation,h['saved']):
+            for row in workflow.enrich(build_facts(order,h,view,evidence,cancel,spec=spec,mode=_mode),h,view,allocation,h['saved'],
+                                       needs_reallocation=needs_reallocation and not saved_rows):
                 saved_row = saved_rows.get(row['sku'])
                 if saved_row is not None:
                     row['allocation_detail'] = {k: saved_row.get(k) for k in ('stock', 'before', 'quantity', 'reason')}

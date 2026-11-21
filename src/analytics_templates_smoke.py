@@ -68,6 +68,8 @@ def start_smoke(app,win,args):
             win.show_section(3);w=win.analytics
             if hasattr(w.parentWidget(),'setCurrentWidget'):w.parentWidget().setCurrentWidget(w)
             w.start.setText(days[0]);w.end.setText(days[1]);started=time.monotonic()
+            if mode == 'allocation-revisions':
+                w.lifecycle_range.setCurrentIndex(w.lifecycle_range.findData(''))
             QTest.mouseClick(w.query_btn,Qt.MouseButton.LeftButton)
             wait(lambda:w.worker is None and w.report is not None,timeout=240)
             observation.update(query_seconds=time.monotonic()-started,query_days=days,warehouse_orders=len(w.report['heads']))
@@ -84,7 +86,24 @@ def start_smoke(app,win,args):
                 observation['export_seconds']=time.monotonic()-started
                 created=set((out/'exports').glob('*.xlsx'))-previous;assert len(created)==1
                 path=created.pop();assert path.name.startswith(w.export_kind.currentText()+'_');files.append(str(path));return path
-            if existing:
+            if mode == 'allocation-revisions':
+                from openpyxl import load_workbook
+                for case in fixture['cutoffs']:
+                    if case['as_of']:
+                        w.as_of.setText(case['as_of'])
+                        QTest.mouseClick(w.query_btn, Qt.MouseButton.LeftButton)
+                        wait(lambda: w.worker is None and w.report is not None
+                             and w.report['query'].get('as_of') == case['as_of'])
+                    path = export(w.export_kind.findData('analysis_detail'))
+                    with closing(load_workbook(path, read_only=True, data_only=True)) as book:
+                        sheet = book['SKU完整明细']
+                        sheet.reset_dimensions()
+                        values = {(row[0],row[2]):row[9:13] for row in sheet.iter_rows(min_row=8,values_only=True)}
+                        for number, sku, cells in case['rows']:
+                            assert values[number,sku] == tuple(cells), (case,number,sku,values[number,sku])
+                    checks.append('实际EXE细则导出逐单逐SKU核对四列 '+(case['as_of'] or '当前'))
+                observation['allocation_cases'] = fixture['cutoffs']
+            elif existing:
                 assert w.report['data_stamp']==expected['data_stamp']
                 assert len(w.report['rows'])==expected['total']
                 assert w.report.get('_projection')=='overview' and w.details is None

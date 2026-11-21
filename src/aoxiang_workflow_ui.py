@@ -715,12 +715,26 @@ def open_receipt_selection(parent, host, heads=None):
     if proceed and dialog.created_job:host.aoxiang_workflows.open_queue(dialog.created_job['id'])
 
 
-def prepare_selected(parent, host, heads):
-    if not heads:QMessageBox.information(parent,'先选择范围','请先勾选已确认付款的订单。');return
+def prepare_selected(parent, host, heads, *, saved=False):
+    if host.closing:
+        return
+    if not heads:
+        QMessageBox.information(parent, '先选择范围', '请先勾选已确认付款的仓单。')
+        return
+    from aoxiang_preview_ui import PreviewScope
+    dialog = PreviewScope(parent, host, heads, saved=saved)
     try:
-        host.aoxiang_workflows.ensure_owner()
-        job=host.aoxiang_workflows.store.prepare(heads);host.aoxiang_workflows.tick();host.aoxiang_workflows.open_queue(job['id'])
-    except Exception as exc:QMessageBox.warning(parent,'未开始准备',str(exc))
+        dialog.refresh()
+        if host.closing:
+            return
+        dialog.exec()
+        job = dialog.created_job
+    finally:
+        dialog.deleteLater()
+    if job and not host.closing:
+        host.aoxiang_workflows.tick()
+        host.aoxiang_workflows.open_queue(job['id'])
+    return job
 
 
 def install(host, layout):

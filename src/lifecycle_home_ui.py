@@ -19,6 +19,8 @@ class LifecycleWidget(QWidget):
         for e in (self.start,self.end):e.setMaximumWidth(120);e.setPlaceholderText('YYYY-MM-DD')
         filters.addWidget(label('业务日期'));filters.addWidget(self.start);filters.addWidget(label('至'));filters.addWidget(self.end);self.search=QLineEdit();self.search.setPlaceholderText('门店 / 仓 / 补货单号 / 聚水潭内部订单号 / 翱象采购单号');self.search.setClearButtonEnabled(True);filters.addWidget(self.search,1);filters.addWidget(button('查询',self.query));filters.addWidget(button('全部未完成（不限日期）',self.all_pending));v.addLayout(filters)
         self.status=QComboBox();self.status.addItems((['待生成','已生成','本环节全部'] if stage=='jst' else ['待处理','本环节全部']) if stage else ['全部记录','全部未完成',*daily_batch.STATUSES])
+        if stage == 'payment':
+            self.status.addItem(daily_batch.PURCHASE_FILTER)
         self.warehouse_filter=QComboBox();self.warehouse_filter.addItems(['全部仓','河北仓','山东仓'])
         row=QHBoxLayout()
         for combo in (self.status,self.warehouse_filter):
@@ -47,7 +49,15 @@ class LifecycleWidget(QWidget):
         self.table=QTableWidget();self.table.setColumnCount(len(columns));self.table.setHorizontalHeaderLabels(columns);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
         if stage:
             for column in (8,9,10,11):self.table.setColumnHidden(column,True)
-        row=QHBoxLayout();row.addWidget(button('勾选本页',lambda:self.select_page(True)));row.addWidget(button('清空勾选',lambda:self.select_page(False)));row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));self.selected_label=label('');row.addWidget(self.selected_label);v.addLayout(row)
+        row=QHBoxLayout();row.addWidget(button('勾选本页',lambda:self.select_page(True)))
+        self.purchase_scope = None
+        self.purchase_count = 0
+        self.purchase_selection_btn = None
+        if stage == 'payment':
+            self.purchase_selection_btn = button('勾选筛选结果', self.select_purchases)
+            self.purchase_selection_btn.setToolTip('跨所有分页勾选当前筛选中可生成采购预览的仓单。')
+            row.addWidget(self.purchase_selection_btn)
+        row.addWidget(button('清空勾选',lambda:self.select_page(False)));row.addWidget(button('上一页',lambda:self.turn(-1)));row.addWidget(button('下一页',lambda:self.turn(1)));self.selected_label=label('');row.addWidget(self.selected_label);v.addLayout(row)
         from lifecycle_comparison_ui import open_export
         row=QHBoxLayout();row.addWidget(label('生命周期对比'))
         self.order_compare_btn=button('导出订单级对比',lambda:open_export(self,'order'));row.addWidget(self.order_compare_btn)
@@ -103,7 +113,8 @@ class LifecycleWidget(QWidget):
 
     def recover_operation(self):
         from lifecycle_recovery_ui import show
-        show(self,self.host,list(self.checked.values()) or self.fixed_scope,self.stage if self.stage!='jst' else None)
+        receipt = show(self,self.host,list(self.checked.values()) or self.fixed_scope,self.stage if self.stage!='jst' else None)
+        self.offer_payment_preview(receipt)
         self.query(keep_page=True)
 
     def clear_filters(self):
@@ -116,12 +127,15 @@ class LifecycleWidget(QWidget):
         self.query()
     def import_stage(self,stage):
         from lifecycle_batch_ui import import_batch
-        if import_batch(self,self.host,stage,scope=list(self.checked.values()) or self.fixed_scope):self.imported()
+        receipt = import_batch(self,self.host,stage,scope=list(self.checked.values()) or self.fixed_scope)
+        if receipt:
+            self.imported(receipt)
     def review_payment(self):
         from jst_ui import payment
         heads=list(self.checked.values())
         if len(heads)!=1:QMessageBox.information(self,'选择一张付款草稿','请勾选一张订单核对实际付款；多张实际付款单可使用批量导入。');return
-        payment(self,self.host,heads[0]);self.query(keep_page=True)
+        self.offer_payment_preview(payment(self,self.host,heads[0]))
+        self.query(keep_page=True)
     def review_platform_payment(self):
         self._review_platform_payment(list(self.checked.values()))
 
@@ -131,7 +145,9 @@ class LifecycleWidget(QWidget):
         if not heads:QMessageBox.information(self,'选择付款核对范围','请勾选需要核对的原仓单。');return
         try:
             keys=originals_for_scope(self.host.work_repository.path,heads)
-            if pull_and_review(self,self.host,keys):self.query(keep_page=True)
+            receipt = pull_and_review(self,self.host,keys)
+            if receipt:
+                self.imported(receipt)
         except Exception as exc:warn(self,exc)
     def retry_generation(self):
         from business_ui import run
@@ -153,9 +169,20 @@ class LifecycleWidget(QWidget):
             d.deleteLater()
         self.query(keep_page=True)
         if self.host.closing:QTimer.singleShot(0,self.host.close)
-    def imported(self):
-        self.query(keep_page=True);self.host.status.setText('所选生命周期单据已保存；原签发未改变。')
+    def imported(self, receipt=None):
+        self.host.status.setText('所选生命周期单据已保存；原签发未改变。')
         if hasattr(self.host,'jst_generator'):self.host.jst_generator.start()
+        self.offer_payment_preview(receipt)
+        self.query(keep_page=True)
+
+    def offer_payment_preview(self, receipt):
+        if not receipt or self.host.closing:
+            return
+        from aoxiang_preview_scope import payment_heads
+        from aoxiang_workflow_ui import prepare_selected
+        heads = payment_heads(receipt)
+        if heads:
+            prepare_selected(self, self.host, heads, saved=True)
     def jst_action(self,fn):
         heads=sorted(self.checked.values(),key=lambda h:h['list_position'])
         if not heads:QMessageBox.information(self,'请选择订单','请先勾选要操作的店仓订单。');return
@@ -174,7 +201,10 @@ class LifecycleWidget(QWidget):
     def dropEvent(self,event):
         from lifecycle_batch_ui import import_batch
         if self.stage=='jst':QMessageBox.information(self,'更新仓资料','先点“生成勾选聚水潭订单”，在分配窗口选择仓后拖入对应资料，避免混淆仓。');return
-        if import_batch(self,self.host,self.stage,scope=list(self.checked.values()) or self.fixed_scope,paths=[u.toLocalFile() for u in event.mimeData().urls()]):self.imported()
+        receipt = import_batch(self,self.host,self.stage,scope=list(self.checked.values()) or self.fixed_scope,
+                               paths=[u.toLocalFile() for u in event.mimeData().urls()])
+        if receipt:
+            self.imported(receipt)
         event.acceptProposedAction()
     def export_signed(self):
         from business_ui import run
@@ -192,6 +222,8 @@ class LifecycleWidget(QWidget):
     def query(self,*_,keep_page=False):
         if self.host.closing:return
         if not keep_page:self.page=0;self.checked.clear()
+        self.purchase_scope = None
+        self.purchase_count = 0
         self.excluded_records=[];self.excluded_btn.setText('查看未显示订单（0）');self.excluded_btn.setEnabled(False)
         self.selection_label();self.bar.show();self.table.setEnabled(False);self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在查询单据进度…可继续使用工作页。')
         self.order_compare_btn.setEnabled(False);self.store_compare_btn.setEnabled(False)
@@ -203,15 +235,22 @@ class LifecycleWidget(QWidget):
         self.applied_request=dict(request);self.ready(data)
     def progress(self,p):self.bar.setRange(0,max(1,p['total']));self.bar.setValue(p['done']);self.note.setText(f"读取归档 {p['done']} / {p['total']}")
     def ready(self,data):
-        from contextlib import closing
-        import archive_orders
-        invalid=[]
-        with closing(self.host.work_repository.connect()) as db:
-            visibility=archive_orders.states(db)
-            for key,h in list(self.checked.items()):
-                import warehouse_execution
-                try:warehouse_execution.validate(db,h)
-                except (ValueError,__import__('work_repository').Conflict):invalid.append(key)
+        self.purchase_scope = data.get('purchase_scope')
+        self.purchase_count = data['count'] if 'purchase_scope' in data else 0
+        invalid = []
+        if self.purchase_scope is not None:
+            active = {service.key(h): h['preview_payment'] for h in self.purchase_scope}
+            invalid = [key for key, h in self.checked.items()
+                       if key not in active or active[key] != h.get('preview_payment')]
+        elif self.checked:
+            from contextlib import closing
+            import warehouse_execution
+            with closing(wr.read_connection(self.host.work_repository.path)) as db:
+                for key, h in self.checked.items():
+                    try:
+                        warehouse_execution.validate(db, h)
+                    except ValueError:
+                        invalid.append(key)
         for key in invalid:self.checked.pop(key,None)
         self.records=data['records'];self.page=data['page'];self.count=data['count'];self.bar.hide();self.table.setEnabled(True)
         self.excluded_records=data.get('filter_explanation',{}).get('excluded',[])
@@ -277,6 +316,10 @@ class LifecycleWidget(QWidget):
         details(self,'未显示订单与原因',['补货单号','门店编码','门店名称','仓','当前进度','全部未显示原因'],rows,
                 '以下为当前日期/关键词范围内，被限定范围、环节、仓、锁或进度筛选排除的有效仓单。同一单可有多个原因；符合筛选的其他页订单请翻页查看。')
     def failed(self,message):
+        self.purchase_scope = None
+        self.purchase_count = 0
+        if self.purchase_selection_btn is not None:
+            self.purchase_selection_btn.setEnabled(False)
         self.excluded_records=[];self.excluded_btn.setText('查看未显示订单（0）');self.excluded_btn.setEnabled(False)
         self.records=[];self.table.setRowCount(0);self.bar.setRange(0,1);self.bar.setValue(0);self.note.setText('查询失败：'+message+'；可重新查询');self.table.setEnabled(True);self.applied_request=None;self.order_compare_btn.setEnabled(False);self.store_compare_btn.setEnabled(False)
     def check(self,item):
@@ -289,6 +332,26 @@ class LifecycleWidget(QWidget):
         self.selected_label.setText(f'已勾选 {len(self.checked)} 单');self.export_btn.setEnabled(bool(self.checked))
         enabled=bool(self.checked) or bool(getattr(self,'count',0) and getattr(self,'applied_request',None))
         self.order_compare_btn.setEnabled(enabled);self.store_compare_btn.setEnabled(enabled)
+        if self.purchase_selection_btn is not None:
+            self.purchase_selection_btn.setText(f'勾选筛选结果（{self.purchase_count} 单）')
+            self.purchase_selection_btn.setEnabled(bool(self.purchase_count))
+
+    def select_purchases(self):
+        if not self.purchase_count or self.host.closing:
+            return
+        if self.purchase_scope is None:
+            from aoxiang_preview_scope import MAX_ORDERS
+            QMessageBox.information(self, '请选择本批仓单',
+                                    f'当前筛选有 {self.purchase_count} 单，每批最多 {MAX_ORDERS} 单。请缩小范围或逐页选择。')
+            return
+        self.checked = {service.key(head): head for head in self.purchase_scope}
+        blocker = QSignalBlocker(self.table)
+        for i, head in enumerate(self.records):
+            state = Qt.CheckState.Checked if service.key(head) in self.checked else Qt.CheckState.Unchecked
+            self.table.item(i, 0).setCheckState(state)
+        del blocker
+        self.selection_label()
+
     def select_page(self,on):
         if not on:self.checked.clear()
         for i in range(self.table.rowCount()):self.table.item(i,0).setCheckState(Qt.CheckState.Checked if on else Qt.CheckState.Unchecked)
@@ -329,17 +392,21 @@ class LifecycleWidget(QWidget):
         if s in ('jst_generate','jst_payment'):
             from jst_ui import generate,payment
             if s=='jst_generate':generate(self,self.host,[head])
-            else:payment(self,self.host,head)
+            else:self.offer_payment_preview(payment(self,self.host,head))
             self.query(keep_page=True);return
         if s=='payment' and head['health'].get(JST_ORDER):
             self._review_platform_payment([head]);return
         result=review_again(self,self.host,head,s) if head['present'][s] else import_document(self,self.host,s,head)
-        if result:self.query(keep_page=True)
+        if result:
+            self.offer_payment_preview(result)
+            self.query(keep_page=True)
     def shutdown(self):self.reader.shutdown()
 
     def aoxiang_prepare(self):
         from aoxiang_workflow_ui import prepare_selected
-        prepare_selected(self,self.host,sorted(self.checked.values(),key=lambda h:h['list_position']))
+        job = prepare_selected(self,self.host,sorted(self.checked.values(),key=lambda h:h['list_position']))
+        if job:
+            self.query(keep_page=True)
 
     def aoxiang_receipts(self):
         if not self.checked:QMessageBox.information(self,'先选择范围','请先勾选要同步的仓单。');return
@@ -372,7 +439,7 @@ class StageDialog(QDialog):
         self.panel.warehouse_filter.setCurrentIndex(overview.warehouse_filter.currentIndex())
         del blocker
         if scope:
-            self.panel.checked={service.key(h):h for h in scope};blocker=QSignalBlocker(self.panel.status);self.panel.status.setCurrentIndex(self.panel.status.count()-1);del blocker
+            self.panel.checked={service.key(h):h for h in scope};blocker=QSignalBlocker(self.panel.status);self.panel.status.setCurrentText('本环节全部');del blocker
         QTimer.singleShot(0,lambda:self.panel.query(keep_page=True))
     def done(self,result):
         if self.stage=='jst' and self.panel.worker:

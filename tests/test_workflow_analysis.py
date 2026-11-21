@@ -105,6 +105,73 @@ class Projections(unittest.TestCase):
         self.f.f.second_revision()
         self.assertNotIn('allocation_detail',self.f.report()['rows'][0])
 
+    def test_switch_to_operations_and_update_requires_new_allocation_at_each_cutoff(self):
+        day = self.f.spec['from']
+        def at(hour):
+            return f'{day}T{hour}:00+08:00'
+
+        with closing(sqlite3.connect(self.path)) as db, db:
+            db.execute('UPDATE normal_revisions SET saved=?', (at('08:00'),))
+        with patch.object(wr, 'now', return_value=at('09:00')):
+            self.f.f.save('return', [{'门店确认数量': 20}])
+        head = self.f.f.h
+        with patch.object(wr, 'now', return_value=at('10:00')):
+            first = batches.execute(self.path, batches.preview_new(self.path, [head], {'河北仓': catalog(stock=100)}))
+        self.assertFalse(first['errors'])
+        old = j.get(self.path, first['generated'][0])
+
+        def row(as_of=None):
+            return self.f.report(as_of=as_of)['rows'][0] if as_of else self.f.report()['rows'][0]
+
+        self.assertEqual(row()['allocation_detail']['quantity'], '20')
+        with patch.object(wr, 'now', return_value=at('11:00')):
+            self.f.f.save('operations', [{'门店确认数量': 15}])
+        self.assertEqual(row()['states']['allocation'], '待重新分配')
+        self.assertFalse(row()['valid']['allocation'])
+        self.assertIsNone(row()['quantities']['allocation'])
+        self.assertNotIn('allocation_detail', row())
+        self.assertEqual(row(at('10:30'))['allocation_detail']['quantity'], '20')
+
+        overview = analytics.collect_overview(self.path, self.f.spec)
+        outfile = self.f.root/'pending-allocation.xlsx'
+        exports.export(self.path, overview, outfile, 'analysis_detail')
+        with closing(openpyxl.load_workbook(outfile, read_only=True, data_only=True)) as book:
+            cells = {r[0]: r[9:13] for r in book['SKU完整明细'].iter_rows(min_row=8, values_only=True)}
+        self.assertEqual(cells[head['number']], ('未留存', '未留存', '未留存', '待重新分配'))
+        self.assertEqual(cells['BH-T-ZC-SD'], ('未留存',)*4)
+
+        with patch.object(wr, 'now', return_value=at('12:00')):
+            new_plan = batches.preview_existing(self.path, old['batch_id'], [head], correction=True)
+            second = batches.execute(self.path, new_plan)
+        self.assertFalse(second['errors'])
+        self.assertEqual(row()['allocation_detail']['quantity'], '15')
+        with patch.object(wr, 'now', return_value=at('13:00')):
+            self.f.f.save('operations', [{'门店确认数量': 12}])
+        self.assertEqual(row()['states']['allocation'], '待重新分配')
+        self.assertEqual(row(at('11:30'))['states']['allocation'], '待重新分配')
+        self.assertEqual(row(at('12:30'))['allocation_detail']['quantity'], '15')
+
+    def test_matching_demand_token_alone_is_insufficient(self):
+        self.f.f.save('return')
+        self.f.f.save('operations')
+        done = batches.execute(self.path, batches.preview_new(self.path, [self.f.f.h], {'河北仓': catalog(stock=100)}))
+        self.assertFalse(done['errors'])
+        gid = done['generated'][0]
+        original = j.get(self.path, gid)
+        for change in ('stage', 'dependencies'):
+            with self.subTest(change=change):
+                record = copy.deepcopy(original)
+                if change == 'stage':
+                    record['basis']['stage'] = 'return'
+                else:
+                    record['basis']['dependencies'].pop('return')
+                with closing(sqlite3.connect(self.path)) as db, db:
+                    db.execute('UPDATE jst_generations SET payload=?,digest=? WHERE gid=?',
+                               (wr.dumps(record), j.digest(record), gid))
+                row = self.f.report()['rows'][0]
+                self.assertEqual(row['states']['allocation'], '待重新分配')
+                self.assertNotIn('allocation_detail', row)
+
     def test_original_generation_link_wins_and_wrong_scope_does_not_fall_back(self):
         self.f.f.save('return',[{'门店确认数量':20}])
         head = self.f.f.h

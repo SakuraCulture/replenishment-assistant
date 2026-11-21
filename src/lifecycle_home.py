@@ -147,7 +147,8 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                 if track_platform:
                     payment=summaries['payment'] or {}
                     record['platform_tracking']={'jst_numbers':payment.get('jst_numbers',[]),
-                        'payment_basis':(payment.get('version'),payment.get('digest')),'receipt_saved':bool(summaries['receipt'])}
+                        'payment_basis':(payment.get('version'),payment.get('digest')),
+                        'payment_positive':payment.get('positive',0),'receipt_saved':bool(summaries['receipt'])}
                     records.append(record)
                 elif all(t in search for t in terms):records.append(record)
             progress({'done': n+1, 'total': len(selected)})

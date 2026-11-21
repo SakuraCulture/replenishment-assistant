@@ -48,6 +48,15 @@ def version_rows(db, head, stage):
     )
 
 
+def save_receipt(head, stage, version, changed, digest):
+    receipt = {'number': head['number'], 'revision': head['revision'],
+               'stage': stage, 'version': version, 'changed': changed}
+    if stage == 'payment':
+        receipt['payment_head'] = {k: v for k, v in head.items() if k != 'products'}
+        receipt['payment_digest'] = digest
+    return receipt
+
+
 def latest_version(db, head, stage):
     return db.execute(
         'SELECT version,digest FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=? ORDER BY version DESC LIMIT 1',

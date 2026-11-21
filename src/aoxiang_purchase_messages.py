@@ -1,6 +1,7 @@
 """Business explanations for purchase recovery; raw evidence stays available."""
 
-PAYMENT_PREPARATION_CODES = frozenset({'PAYMENT_MISSING', 'PAYMENT_PENDING', 'PAYMENT_BASIS_CHANGED', 'PAYMENT_UPSTREAM_NOT_READY'})
+PAYMENT_PREPARATION_CODES = frozenset({'PAYMENT_MISSING', 'PAYMENT_PENDING', 'PAYMENT_BASIS_CHANGED',
+                                       'PAYMENT_UPSTREAM_NOT_READY', 'PAYMENT_SELECTION_CHANGED', 'PAYMENT_ZERO_QUANTITY'})
 
 
 def observation(record):

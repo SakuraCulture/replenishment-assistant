@@ -65,7 +65,7 @@ class Runner:
             template = self.template(self.store.get(job['id']),configuration)
             p = prepare(self.business_path, item['head'], configuration, suppliers, template,
                         self.store.folder / 'purchase-packages', self.component_root / 'assets/purchase-import-template-contract.json',
-                        cancel=self.cancel, progress=self.progress)
+                        expected_payment=item.get('expected_payment'), cancel=self.cancel, progress=self.progress)
             try:atomic_json(Path(p['package_file']).parent / '本地任务索引.json', p)
             finally:
                 from deletion_barrier import package_finished
@@ -216,7 +216,8 @@ class Runner:
                     # only a precheck: eligible items still observe the current
                     # login individually and freeze_payment checks again later.
                     try:
-                        preflight_payment(self.business_path,item['head'],cancel=self.cancel)
+                        preflight_payment(self.business_path,item['head'],expected=item.get('expected_payment'),
+                                          cancel=self.cancel)
                     except SourceDeleted:
                         continue
                     except Cancelled:

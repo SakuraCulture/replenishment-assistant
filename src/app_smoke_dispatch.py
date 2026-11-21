@@ -31,6 +31,7 @@ WINDOW_SMOKES = {
     '--mandatory-holding-smoke': 'mandatory_holding_smoke',
     '--deletion-void-smoke': 'deletion_void_smoke',
     '--purchase-recovery-smoke': 'purchase_recovery_smoke',
+    '--payment-preview-smoke': 'payment_preview_smoke',
     '--purchase-pipeline-smoke': 'purchase_pipeline_smoke',
     '--catalog-lifetime-smoke': 'catalog_lifetime_smoke',
     '--admission-overview-smoke': 'admission_overview_smoke',

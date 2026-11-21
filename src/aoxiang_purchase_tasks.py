@@ -21,15 +21,18 @@ def _write_new(path, value):
         os.fsync(stream.fileno())
 
 
-def prepare(path, head, configuration, suppliers, receipt, directory, contract_path, *, cancel=None, progress=lambda _: None):
+def prepare(path, head, configuration, suppliers, receipt, directory, contract_path, *,
+            expected_payment=None, cancel=None, progress=lambda _: None):
     import deletion_barrier
     command_id='purchase-'+uuid.uuid4().hex
     deletion_barrier.register_package(path,head['oid'],command_id,head.get('warehouse'))
-    try:return _prepare(path,head,configuration,suppliers,receipt,directory,contract_path,command_id,cancel=cancel,progress=progress)
+    try:return _prepare(path,head,configuration,suppliers,receipt,directory,contract_path,command_id,
+                        expected_payment=expected_payment,cancel=cancel,progress=progress)
     finally:deletion_barrier.package_finished(path,head['oid'],command_id,head.get('warehouse'))
 
-def _prepare(path, head, configuration, suppliers, receipt, directory, contract_path, command_id, *, cancel=None, progress=lambda _: None):
-    plan = freeze_payment(path, head, configuration, suppliers, cancel=cancel)
+def _prepare(path, head, configuration, suppliers, receipt, directory, contract_path, command_id, *,
+             expected_payment=None, cancel=None, progress=lambda _: None):
+    plan = freeze_payment(path, head, configuration, suppliers, expected_payment=expected_payment, cancel=cancel)
     plan['admission']=check_admission(path,plan)
     from aoxiang_purchase import fingerprint
     plan['fingerprint']=fingerprint(plan)

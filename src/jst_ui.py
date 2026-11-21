@@ -48,8 +48,11 @@ def payment(parent,host,head):
         plan=run(parent,service.payment_plan,(host.work_repository.path,gids[0]),'核对付款草稿')
         d=Review(parent,plan);d.setWindowTitle('导入门店付款单 · 使用聚水潭导入单')
         d.layout().insertWidget(0,label('只有数量和金额与实际已付款订单一致，才确认保存。存在差异请取消，使用“导入门店付款单”。','section'))
-        if d.exec():commit_lifecycle(parent,host,plan)
-        d.deleteLater()
+        try:
+            if d.exec():
+                return commit_lifecycle(parent,host,plan)
+        finally:
+            d.deleteLater()
     except Exception as exc:warn(parent,exc)
 
 
