@@ -12,7 +12,11 @@ def resource_file(name):
 
 
 class CommitProgress(str):
-    def __new__(cls,active):
-        obj=super().__new__(cls,'正在最终提交，暂不可取消…' if active else '归档已提交；可取消后续导出')
+    def __new__(cls,active,*,deleting=False):
+        if deleting:
+            text='正在提交删除，暂不可取消…' if active else '删除已提交，正在核对结果…'
+        else:
+            text='正在最终提交，暂不可取消…' if active else '归档已提交；可取消后续导出'
+        obj=super().__new__(cls,text)
         obj.active=active
         return obj

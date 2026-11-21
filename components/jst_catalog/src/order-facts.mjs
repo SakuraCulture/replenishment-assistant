@@ -3,8 +3,10 @@
 import {CatalogError,check} from './common.mjs';
 const fail=message=>{throw new CatalogError('ORDER_PAGE_CHANGED',message);};
 export const nativeStatus=value=>({取消:'已取消',发货中:'发货中(打单拣货)'})[value]||value;
+const paymentStates=new Set(['已付款待审核','已客审待财审','发货中(打单拣货)','已发货']);
+export const canReadPayment=value=>paymentStates.has(nativeStatus(value));
 
-export async function fullOrder(frame,spec,{coid,shop_id,count}={},signal){
+export async function fullOrder(frame,spec,{coid,shop_id,count,payment=false}={},signal){
   check(signal);
   if(!/^[1-9]\d*$/.test(spec.internal||''))fail('整单明细缺少已核验内部订单号');
   const rows=await frame.evaluate(({internal})=>new Promise((resolve,reject)=>{
@@ -24,12 +26,14 @@ export async function fullOrder(frame,spec,{coid,shop_id,count}={},signal){
       ||Number.isInteger(count)&&count>0&&row.items.length!==count)
     fail('原生整单明细没有完整商品范围');
   const items=row.items.map(r=>({sku:String(r.sku_id||''),qty:String(r.qty),price:String(r.price),amount:String(r.amount),
-    item_status:r.item_status||null,refund_status:r.refund_status||null}));
+    item_status:r.item_status||null,refund_status:r.refund_status||null,
+    ...(payment?{sales_unit:r.sales_unit||null,per_unit:r.per_unit==null?null:String(r.per_unit)}:{})}));
   if(items.some(r=>!r.sku||!/^\d+(\.\d+)?$/.test(r.qty)||!/^\d+(\.\d+)?$/.test(r.price)||!/^\d+(\.\d+)?$/.test(r.amount))
       ||new Set(items.map(r=>r.sku)).size!==items.length)
     fail('原生整单商品编码、数量或成交价缺失、重复或不明');
   return {internal:spec.internal,online:spec.online,shop:spec.shop,shop_id:String(row.shop_id),coid:String(row.co_id),
     native_status:nativeStatus(row.status),amount:String(row.pay_amount),freight:String(row.freight??0),
     contact_ok:!!spec.contact&&row.shop_buyer_id===spec.contact.buyer,
-    items,lines:items.map(r=>[r.sku,r.qty,r.price]),observed:new Date().toISOString()};
+    items,lines:items.map(r=>[r.sku,r.qty,r.price]),observed:new Date().toISOString(),
+    ...(payment?{currency:row.currency||'CNY',detail_count:items.length}: {})};
 }

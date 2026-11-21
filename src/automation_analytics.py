@@ -57,7 +57,7 @@ def results(gateway,args):
         rows=[{**r,'coverage':lookup[tuple(r[k] for k in fields)]['coverage'],'coverage_groups':lookup[tuple(r[k] for k in fields)]['groups']} for r in rows]
     return {'snapshot_id':report['snapshot_id'],'coverage':{k:coverage[k] for k in ('version','definitions','through','overview','groups')},'as_of':report['as_of'],'query':report['query'],
             'metrics':report['metrics'],'groups':report['groups'],
-            'definitions':{'model':'自动建议，含启用的一箱例外，总预算和人工之前','payment':'业务确认有效的付款数量；本地生成不算实际下单',
+            'definitions':{'model':'自动建议，含启用的一箱例外，总预算和人工之前','payment':'聚水潭已客审导入单数量，其他订单沿用有效付款数量；实际付款金额独立统计',
                 'price':'各段统一签发价；实际付款金额另列','missing':'未导入或待重新核对不算0','group':'当时必卖清单；无依据为属性待核',
                 'scope':'各段货值只含已知部分；比率与差额使用相同可比集合'},
             'page':page(rows,args.get('offset',0),args.get('limit',50))}

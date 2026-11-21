@@ -1,0 +1,59 @@
+{
+  "release": "0.54.16 rc8",
+  "previous_main_commit": "73fc3a3e0fb0c9340beb55268ca26dbb672539d1",
+  "source_commit": "26ac7a55518d24edd8e26710fc87cfa2a47e6a50",
+  "source_tree": "8367062f1b1146d2aee5829e410d16e2b8a78b2a",
+  "source_archive_sha256": "6d57c5f8913f2123c25b5e2231b7a151fa2fd3367dc74e8a5b94fe5a5ebdebca",
+  "source_manifest_sha256": "e2acdaf06bec1912040f7c08233eea75cf79f6430ad9a0c0c7e01b2f45dcbf46",
+  "original_local_source_manifest_sha256": "49d7c427629e2af1ecb2220e82b9ca407ba2c23e53ceb50dcf0ecc5579d892d2",
+  "runtime_source_tree_sha256": "76685aedb9de499bc58a1d619f08aca10f86bfa976d3ca5ffbe6f16a01eedf03",
+  "runtime_source_files": 517,
+  "deliverables": {
+    "exe_sha256": "b0a8772c0a99fd378e25263cdb4257984fa00c76435628647e0859445c460c1f",
+    "standalone_zip_name": "补货助手_0.54.16_rc8_商品行块复用.zip",
+    "standalone_zip_sha256": "ab0324389ff769dab3b5d1547c320780365b309fad6fee039843788f219f8c75",
+    "standalone_zip_bytes": 157269166,
+    "previous_0_54_16_rc7_zip_sha256": "461e17de9a728718f68c2fbedb7c7991bb29aab4b91eabb5e4347007d39bff8e"
+  },
+  "acceptance": {
+    "passed": true,
+    "isolated": true,
+    "premerge_python_passed": 303,
+    "premerge_jst_node_passed": 125,
+    "actual_packaged_exe_checks_passed": 19,
+    "actual_packaged_exe_order_count": 2,
+    "actual_packaged_exe_rows_per_order": 5000,
+    "frozen_input_orders": 40,
+    "frozen_input_rows_per_order": 15000,
+    "pressure_runs_with_exact_order_and_workbook_evidence": 6,
+    "wall_median_seconds_source": {
+      "archive_preparation": {
+        "baseline": 211.6054296999937,
+        "candidate": 167.55399250000482
+      },
+      "transaction": {
+        "baseline": 58.316397699993104,
+        "candidate": 59.42214530002093
+      },
+      "export_batch": {
+        "baseline": 169.83925940000336,
+        "candidate": 170.229370999994
+      },
+      "total": {
+        "baseline": 452.46697139999014,
+        "candidate": 411.28602099997806
+      }
+    },
+    "business_pc_16gb_verified": false,
+    "actual_exe_pressure_at_40_order_scale_verified": false,
+    "live_platform_writes_in_this_check": false
+  },
+  "original_local_evidence_sha256": {
+    "rc8_exe_acceptance": "0a26ab2dac93b409ce6a8a82e75c946ca1a629521f6bdf0b48c50683dda01dfd",
+    "rc8_package_verification": "b64efbd8694bf25d04acf6d14f42079521799c3f9a487aea86df84752960ecf2",
+    "prior_correctness_and_performance": "7a66ddd1e9bbee92278789d136b1fb3edff7f1be6320eaf2180ac176db0f5e34",
+    "pressure_runs": "fd8d999734ee726c77a958450547608a824772a7b9888fadf966ad24eef40992",
+    "premerge_python_log": "643c0304614dfe02b2fc3986175bec9b6027c2ad74bb6f5f161c1d2a9a24d922",
+    "premerge_jst_node_log": "2a153c634928bdd00731cdd4a9525209fde9f0b7fb3c7410f912f76bd43c70dc"
+  }
+}

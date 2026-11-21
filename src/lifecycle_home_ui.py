@@ -9,6 +9,7 @@ import order_lifecycle as service
 import daily_batch
 from lifecycle_ui import LifecycleDialog,import_document,import_group,export_selected,warn,review_again
 from lifecycle_io import TITLES
+from lifecycle_rules import JST_ORDER
 
 class LifecycleWidget(QWidget):
     STAGES={'return':'回传处理','operations':'运营签发','jst':'聚水潭导入单','payment':'付款核对','receipt':'收货核对'}
@@ -82,6 +83,7 @@ class LifecycleWidget(QWidget):
                 primary('导入'+TITLES[stage],lambda:self.import_stage(stage))
                 row.addWidget(button('导出'+TITLES[stage],lambda:export_selected(self,self.host,list(self.checked.values()),stage)))
                 if stage=='payment':row.addWidget(button('使用聚水潭导入单作为付款来源',self.review_payment))
+                if stage=='payment':row.addWidget(button('核对聚水潭付款资料',self.review_platform_payment))
                 if stage=='payment':row.addWidget(button('勾选单批量生成翱象采购预览',self.aoxiang_prepare))
                 if stage=='receipt':row.addWidget(button('勾选单批量同步翱象收货',self.aoxiang_receipts))
                 if stage=='return':row.addWidget(button('导出原签发单',self.export_signed))
@@ -120,6 +122,17 @@ class LifecycleWidget(QWidget):
         heads=list(self.checked.values())
         if len(heads)!=1:QMessageBox.information(self,'选择一张付款草稿','请勾选一张订单核对实际付款；多张实际付款单可使用批量导入。');return
         payment(self,self.host,heads[0]);self.query(keep_page=True)
+    def review_platform_payment(self):
+        self._review_platform_payment(list(self.checked.values()))
+
+    def _review_platform_payment(self,heads):
+        from jst_fulfillment_jobs import originals_for_scope
+        from jst_fulfillment_ui import pull_and_review
+        if not heads:QMessageBox.information(self,'选择付款核对范围','请勾选需要核对的原仓单。');return
+        try:
+            keys=originals_for_scope(self.host.work_repository.path,heads)
+            if pull_and_review(self,self.host,keys):self.query(keep_page=True)
+        except Exception as exc:warn(self,exc)
     def retry_generation(self):
         from business_ui import run
         import jst_tasks
@@ -247,6 +260,7 @@ class LifecycleWidget(QWidget):
             if self.stage:
                 applicable=s in ({'jst_generate'} if self.stage=='jst' else {'payment','jst_payment'} if self.stage=='payment' else {self.stage})
                 if not applicable:title='本环节已处理'
+                elif self.stage=='payment' and s=='payment' and h['health'].get(JST_ORDER):title='核对聚水潭付款资料'
             else:
                 applicable=s is not None
                 if s:title='进入'+self.STAGES[{'jst_generate':'jst','jst_payment':'payment'}.get(s,s)]
@@ -317,6 +331,8 @@ class LifecycleWidget(QWidget):
             if s=='jst_generate':generate(self,self.host,[head])
             else:payment(self,self.host,head)
             self.query(keep_page=True);return
+        if s=='payment' and head['health'].get(JST_ORDER):
+            self._review_platform_payment([head]);return
         result=review_again(self,self.host,head,s) if head['present'][s] else import_document(self,self.host,s,head)
         if result:self.query(keep_page=True)
     def shutdown(self):self.reader.shutdown()

@@ -10,6 +10,10 @@ from pathlib import Path
 
 COMMIT_TEXT = {'not_started': '未开始最终提交', 'unknown': '最终提交结果待核',
                'committed': '已提交，原签发修订保留'}
+DELETION_OPERATIONS = frozenset(('delete_preview','delete_orders','delete_job'))
+DELETION_COMMIT_TEXT = {'not_started': '未提交删除，原订单及关联数据保留',
+                        'unknown': '删除提交结果待核，请刷新并核对原订单',
+                        'committed': '本地删除已提交'}
 
 
 def exception_text(exc):
@@ -28,8 +32,9 @@ class WorkFailure(RuntimeError):
 
 
 def format_failure(evidence):
+    states=DELETION_COMMIT_TEXT if evidence.get('operation') in DELETION_OPERATIONS else COMMIT_TEXT
     lines = ['失败阶段：' + evidence['stage'], '原因：' + evidence['reason'],
-             '提交状态：' + COMMIT_TEXT.get(evidence['commit_state'], COMMIT_TEXT['unknown'])]
+             '提交状态：' + states.get(evidence['commit_state'], states['unknown'])]
     worker_exitcode=(evidence.get('transport') or {}).get('worker_exitcode')
     if worker_exitcode is not None:lines.append(f'后台作业进程已退出（退出码 {worker_exitcode}）')
     if evidence.get('diagnostic'): lines.append('诊断记录：' + evidence['diagnostic'])

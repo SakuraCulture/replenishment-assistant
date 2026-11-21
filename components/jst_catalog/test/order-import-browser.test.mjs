@@ -36,13 +36,14 @@ const pages = {
     '<button id="importTab" role="tab" onclick="selectTab(false)" aria-selected="true">导入订单</button>'+
     '<iframe id="listing" src="'+listPath+'" hidden></iframe>'+
     '<iframe id="upload" src="/app/order/import/import.aspx"></iframe><iframe id="epaasDialogFrame" src="/empty" hidden></iframe>'+
-    '<script>window.statusValue="";window.importCount=0;window.auditCount=0;window.otherAction=0;'+
+    '<script>window.statusValue="";window.itemPopoverAvailable=true;window.importCount=0;window.auditCount=0;window.otherAction=0;'+
     'function selectTab(list){listing.hidden=!list;upload.hidden=list;listTab.setAttribute("aria-selected",String(list));'+
-    'importTab.setAttribute("aria-selected",String(!list));'+
-    'if(!list&&upload.contentWindow.location.pathname.endsWith("/import_show.aspx"))upload.src="/app/order/import/import.aspx";}</script>',
+    'importTab.setAttribute("aria-selected",String(!list));}</script>',
   '/app/order/import/import.aspx': '<form id="form1" action="import_show.aspx" method="post" enctype="multipart/form-data">'+
     '<label><input id="importbyshop" type="radio" name="mode" checked>按店铺导入</label>'+formShop+
-    '<label><input id="MultiCommodity" type="radio">多商品</label><label><input id="sku_price" type="checkbox">取基本售价</label>'+
+    '<label><input id="MultiCommodity" name="import_formart" value="MultiCommodity" type="radio">多商品</label>'+
+    '<label><input id="SingleCommodity" name="import_formart" value="SingleCommodity" type="radio">单商品</label>'+
+    '<label><input id="sku_price" type="checkbox">取基本售价</label>'+
     '<label><input id="default_pay_date" type="checkbox">填付款时间</label><input type="file" id="order" name="order">'+
     '<span id="btnImport" onclick="form1.submit()">确认导入订单</span></form>'+
     '<script>function selectShop(e){shopOrDrpFrom.value=e.textContent;shopOrDrpFrom_v.value=e.getAttribute("value");shops.hidden=true;}</script>',
@@ -69,6 +70,8 @@ const pages = {
     '<div class="full_item_table" id="details" hidden><div class="jt_item_row"><span class="sku_id">00001</span>'+
     '<span title="数量">x10</span><span title="单价">￥2.00</span></div></div>'+
     '<script>setTimeout(()=>{s_filter_frame.src="/filters";},250);'+
+    'function _ACP(method,cb,oid,full){if(method!=="ReloadOrdersV2"||oid!=="9001"||!full)throw Error("mock callback");'+
+    'fetch("/order-facts?status="+parent.statusValue).then(r=>r.json()).then(row=>cb([JSON.stringify({data:row})]));}'+
     'async function findOrder(online,status){'+
     'const filters=[{k:"so_id",c:"@=",v:online}];if(status)filters.push({k:"status",c:"@=",v:status});'+
     'const response=await fetch(location.pathname,{method:"POST",body:new URLSearchParams({__CALLBACKID:"JTable1",'+
@@ -78,14 +81,20 @@ const pages = {
       '<div class="_jt_row"><div class="_jt_cell_o_id"><div class="o_id">9001</div></div>'+
       '<div class="_jt_cell_so_id">'+online+'</div><div class="_jt_cell_shop_buyer_id"><span>'+contact.buyer+'</span>'+
       '<div class="shopname">'+shop+'</div></div><div class="_jt_cell_pay_amount">20.00</div>'+
-      '<div class="_jt_cell_items" onclick="details.hidden=false">明细</div>'+
+      '<div class="_jt_cell_items" onclick="if(parent.itemPopoverAvailable)details.hidden=false">明细</div>'+
       '<div class="_jt_cell_checked"><input type="checkbox" id="selected"></div></div>')+':"";'+
     '_jt_pagebar.textContent=count?"共 "+count+"条 1/1页":"总共 1 页 0 条记录";details.hidden=true;}'+
     'function audit(){if(document.querySelectorAll("._jt_row input:checked").length===1&&selected.checked){'+
     'parent.auditCount++;parent.statusValue="waitfconfirm";}}</script>',
 };
 
-async function openFixture(t){
+async function openFixture(t,{large=[],split=false,shortShop=false}={}){
+  const submittedFormats=[];
+  const nativeItem=(sku,qty)=>({sku_id:sku,qty,price:'2',amount:String(Number(qty)*2)});
+  const nativeItems=large.length ? large.map(([sku,qty])=>nativeItem(sku,qty)) : [nativeItem('00001','10')];
+  const nativeOrder=state=>({o_id:'9001',so_id:online,shop_name:shop,co_id:'55',shop_id:'102',
+    status:{waitconfirm:'已付款待审核',waitfconfirm:'已客审待财审',delivering:'发货中',sent:'已发货'}[state],
+    item_actual_count:nativeItems.length,shop_buyer_id:contact.buyer,pay_amount:'20.00',freight:'0'});
   const server=http.createServer(async (req,res)=>{
     if(req.method==='POST' && req.url===listPath) {
       const chunks=[];
@@ -94,17 +103,37 @@ async function openFixture(t){
       const filters=JSON.parse(JSON.parse(data.get('__CALLBACKPARAM')).Args[1]);
       const status=filters.find(x=>x.k==='status')?.v;
       const state=data.get('fixtureState');
-      const datas=state && (!status || status===state) && filters.some(x=>x.v===online) ? [{}] : [];
+      const datas=state && (!status || status===state) && filters.some(x=>x.v===online) ? [nativeOrder(state)] : [];
       res.end('0|'+JSON.stringify({IsSuccess:true,ReturnValue:JSON.stringify({dp:{PageIndex:1,IsLast:true},datas})}));
       return;
     }
-    if (req.method==='POST') for await(const _ of req) {/* consume uploaded fixture */}
-    const html=pages[req.url];
+    const url=new URL(req.url,'http://localhost');
+    if(url.pathname==='/order-facts') {
+      res.writeHead(200,{'Content-Type':'application/json'});
+      res.end(JSON.stringify({...nativeOrder(url.searchParams.get('status')),items:nativeItems}));
+      return;
+    }
+    let html=pages[url.pathname];
+    if (shortShop&&url.pathname===listPath) html=html.replace(shop,'合成简称');
+    if (req.method==='POST') {
+      const chunks=[];
+      for await(const part of req) chunks.push(part);
+      submittedFormats.push(Buffer.concat(chunks).toString().match(/name="import_formart"\r\n\r\n(\w+)/)?.[1]);
+    }
+    if(large.length&&url.pathname.endsWith('/import_show.aspx')) {
+      const cells=[...fields];
+      cells[13]=large.map(([sku,qty])=>'<span>商品'+sku+' * '+qty+'</span><br>').join('');
+      const row='<tr>'+cells.map(value=>'<td>'+value+'</td>').join('')+'</tr>';
+      html=html.replace(/<table>.*<\/table>/,'<table>'+row+(split?row:'')+'</table>');
+    }
     res.writeHead(html?200:404,{'Content-Type':'text/html; charset=utf-8'});
     res.end(html||'');
   }).listen(0,'127.0.0.1');
   await new Promise(resolve=>server.once('listening',resolve));
-  t.after(()=>new Promise(resolve=>server.close(resolve)));
+  t.after(()=>new Promise(resolve=>{
+    server.close(resolve);
+    server.closeAllConnections();
+  }));
   const base='http://127.0.0.1:'+server.address().port;
   const browser=await chromium.launch({executablePath:edge,headless:true});
   t.after(()=>browser.close());
@@ -113,7 +142,7 @@ async function openFixture(t){
   const account={warehouse:wh,expectedCoid:'55',expectedUid:'65',expectedCompany:'合成企业',bindingVersion:1};
   const driver={page:async()=>page,query:async()=>({scope:{coid:'55',uid:'65',company:'合成企业'}})};
   const orderPages=new OrderPages({allowed:url=>url.startsWith(base+'/')&&url!==base+'/'});
-  return {page,account,flow:new OrderFlow(driver,{pages:orderPages})};
+  return {page,account,submittedFormats,flow:new OrderFlow(driver,{pages:orderPages})};
 }
 
 test('native controls preview, import, reconcile and ordinary audit exactly one order',{skip:!fs.existsSync(edge),timeout:60000},async t=>{
@@ -134,6 +163,10 @@ test('native controls preview, import, reconcile and ordinary audit exactly one 
   const verified=await flow.run('lookup',{spec:{...exact,phase:'AUDIT_UNKNOWN'}},account);
   assert.equal(verified.status,'audited');
   assert.equal(verified.native_status,'已客审待财审');
+  const payment=await flow.run('payment_detail',{spec:exact},account);
+  assert.equal(payment.detail_count,1);
+  assert.equal(payment.native_status,'已客审待财审');
+  assert.deepEqual(payment.items.map(({sku,qty,price,amount})=>[sku,qty,price,amount]),[['00001','10','2','20']]);
   assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[1,1,0]);
   await assert.rejects(flow.run('stage_import',{spec:bound},account),{code:'ORDER_EXISTS'});
 });
@@ -146,16 +179,64 @@ test('changed preview cannot release the order',{skip:!fs.existsSync(edge),timeo
   assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[0,0,0]);
 });
 
-test('recover and audit an existing platform order without importing',{skip:!fs.existsSync(edge),timeout:60000},async t=>{
-  const {page,account,flow}=await openFixture(t);
-  await page.evaluate(()=>{statusValue='waitconfirm';});
-  const bound={...spec,phase:'IMPORT_UNKNOWN',binding:{warehouse:wh,shop,coid:account.expectedCoid,
+test('native single-SKU rows preserve a 2000-item order and reopen a stale preview without importing',
+  {skip:!fs.existsSync(edge),timeout:60000},async t=>{
+  const lines=Array.from({length:2000},(_,i)=>[String(i).padStart(20,'0'),String(i%3+1)]);
+  const local={...spec,import_format:'SingleCommodity',lines,
+    preview_names:Object.fromEntries(lines.map(([sku])=>[sku,'商品'+sku]))};
+  const {page,account,flow,submittedFormats}=await openFixture(t,{large:lines});
+  await page.frameLocator('#upload').locator('form').waitFor();
+  await page.locator('#upload').evaluate(e=>e.src='/app/order/import/import_show.aspx');
+  await page.frameLocator('#upload').locator('#txt_exception_datas').waitFor({state:'attached'});
+  const preview=await flow.run('preview',{spec:local},account);
+  assert.deepEqual(preview.lines,lines);
+  assert.equal(preview.order_count,1);
+  assert.equal(preview.import_format,'SingleCommodity');
+  assert.deepEqual(submittedFormats,['SingleCommodity']);
+  const staged=await flow.run('stage_import',{spec:{...local,binding:preview.binding}},account);
+  await page.frameLocator('#upload').locator('table tr td').nth(17).evaluate(e=>e.textContent='￥21.00 ￥0.00');
+  await assert.rejects(flow.run('import',{warehouse:wh,permit:staged.permit,online},account),{code:'PREVIEW_CHANGED'});
+  const checked=await flow.run('stage_import',{spec:{...local,binding:preview.binding}},account);
+  await flow.run('import',{warehouse:wh,permit:checked.permit,online},account);
+  const found=await flow.run('lookup',{spec:{...local,binding:preview.binding}},account);
+  assert.equal(found.internal,'9001');
+  assert.deepEqual(found.lines.map(row=>row.slice(0,2)),lines);
+  const audit=await flow.run('stage_audit',{spec:{...local,binding:preview.binding,internal:found.internal}},account);
+  await flow.run('audit',{warehouse:wh,permit:audit.permit,online,internal:found.internal},account);
+  assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[1,1,0]);
+});
+
+test('single-SKU rows split by the platform are blocked before import',
+  {skip:!fs.existsSync(edge),timeout:60000},async t=>{
+  const lines=[['00001','10'],['00002','20'],['00003','30'],['00004','40']];
+  const {page,account,flow}=await openFixture(t,{large:lines,split:true});
+  await assert.rejects(flow.run('stage_import',{spec:{...spec,import_format:'SingleCommodity',lines}},account),
+    /识别到 2 张订单/);
+  assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[0,0,0]);
+});
+
+test('recover and audit an existing 232-item order without a product popover or reimport',
+  {skip:!fs.existsSync(edge),timeout:60000},async t=>{
+  const lines=Array.from({length:232},(_,i)=>[String(i+1).padStart(5,'0'),i<165?'21':'20']);
+  const {page,account,flow}=await openFixture(t,{large:lines});
+  await page.evaluate(()=>{statusValue='waitconfirm';itemPopoverAvailable=false;});
+  // No import_format is stored for the existing multi-product task.
+  const bound={...spec,lines,phase:'IMPORT_UNKNOWN',binding:{warehouse:wh,shop,coid:account.expectedCoid,
     uid:account.expectedUid,company:account.expectedCompany,version:account.bindingVersion,shop_id:'102'}};
   const found=await flow.run('lookup',{spec:bound},account);
   assert.equal(found.internal,'9001');
-  assert.deepEqual(found.lines,[['00001','10','2.00']]);
+  assert.deepEqual(found.lines.map(row=>row.slice(0,2)),lines);
   assert.equal(found.status,'awaiting');
   const exact={...bound,internal:found.internal};
+  const detailUrl='**/order-facts?*';
+  await page.route(detailUrl,async route=>{
+    const response=await route.fetch();
+    const order=await response.json();
+    order.items.pop();
+    await route.fulfill({response,json:order});
+  });
+  await assert.rejects(flow.run('stage_audit',{spec:exact},account),/原生整单明细没有完整商品范围/);
+  await page.unroute(detailUrl);
   const next=await flow.run('stage_audit',{spec:exact},account);
   await flow.run('audit',{warehouse:wh,permit:next.permit,online,internal:exact.internal},account);
   const audited=await flow.run('lookup',{spec:{...exact,phase:'AUDIT_UNKNOWN'}},account);
@@ -177,4 +258,26 @@ test('shipping status is recorded for review without importing or auditing',{ski
     assert.equal(found.native_status,native);
   }
   assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[0,0,0]);
+});
+
+test('exact import and full payment read work before audit under the frozen native shop',
+  {skip:!fs.existsSync(edge),timeout:60000},async t=>{
+  const {page,account,flow}=await openFixture(t,{shortShop:true});
+  const preview=await flow.run('stage_import',{spec},account);
+  await flow.run('import',{warehouse:wh,permit:preview.permit,online},account);
+  const bound={...spec,phase:'IMPORT_UNKNOWN',binding:preview.binding};
+  const result=await flow.run('lookup',{spec:bound,identity_only:true},account);
+  assert.equal(result.internal,'9001');
+  assert.equal(result.native_status,'已付款待审核');
+  assert.equal(result.contact_ok,true);
+  const exact={...bound,internal:result.internal};
+  const awaiting=await flow.run('payment_detail',{spec:exact},account);
+  assert.equal(awaiting.native_status,'已付款待审核');
+  assert.deepEqual(awaiting.items.map(({sku,qty,price,amount})=>[sku,qty,price,amount]),[['00001','10','2','20']]);
+  await page.evaluate(()=>{statusValue='sent';});
+  const shipped=await flow.run('payment_detail',{spec:exact},account);
+  assert.equal(shipped.native_status,'已发货');
+  assert.deepEqual(shipped.items,awaiting.items);
+  await assert.rejects(flow.run('payment_detail',{spec:{...exact,internal:'9002'}},account),/内部单号与原单不同/);
+  assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[1,0,0]);
 });

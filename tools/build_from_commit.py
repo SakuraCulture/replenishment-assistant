@@ -10,12 +10,18 @@ ROOT=Path(__file__).resolve().parents[1]
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--commit',default='HEAD');parser.add_argument('--build-id',required=True);a=parser.parse_args()
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--commit',default='HEAD')
+    parser.add_argument('--build-id',required=True)
+    parser.add_argument('--output-root',type=Path,default=ROOT)
+    parser.add_argument('--aoxiang-dependencies',type=Path,default=ROOT/'components/aoxiang')
+    a=parser.parse_args()
     if not re.fullmatch('[a-zA-Z0-9_-]+',a.build_id):raise ValueError('Invalid build id')
     commit=subprocess.check_output(['git','rev-parse','--verify',a.commit+'^{commit}'],cwd=ROOT,text=True).strip()
     raw=subprocess.check_output(['git','show',commit+':src/version.json'],cwd=ROOT)
     version=json.loads(raw)['version']
-    build=ROOT/f'build_{version}_{a.build_id}';dist=ROOT/f'交付_{version}_{a.build_id}'
+    output=a.output_root.resolve()
+    build=output/f'build_{version}_{a.build_id}';dist=output/f'交付_{version}_{a.build_id}'
     if build.exists() or dist.exists():raise FileExistsError('Build id exists; choose another id')
     build.mkdir();archive=build/'source.zip';source=build/'source'
     subprocess.run(['git','archive','--format=zip','-o',str(archive),commit],cwd=ROOT,check=True)
@@ -27,7 +33,7 @@ def main():
         sys.path.insert(0,str(source/'tools'))
         import aoxiang_bundle
         staged=build/'aoxiang-component'
-        info['aoxiang']=aoxiang_bundle.stage(component,ROOT/'components/aoxiang',staged,source_commit=commit,app_version=version)
+        info['aoxiang']=aoxiang_bundle.stage(component,a.aoxiang_dependencies,staged,source_commit=commit,app_version=version)
     jst_source=source/'components/jst_catalog'
     if jst_source.exists():
         import jst_catalog_bundle
@@ -40,8 +46,9 @@ def main():
     if smoke_hooks.is_dir():cmd+=['--additional-hooks-dir',str(smoke_hooks)]
     if jst_source.exists():cmd+=['--runtime-hook',str(source/'tools/catalog_validate_rthook.py')]
     for path in [source/'src/default_config.json',source/'src/default_must_sell.json',source/'src/version.json',build/'build_info.json',source/'src/app.ico']:cmd+=['--add-data',str(path)+';.']
-    profile_template=source/'src/jst-delivery-profile-template.xlsx'
-    if profile_template.is_file():cmd+=['--add-data',str(profile_template)+';.']
+    for name in ('jst-delivery-profile-template.xlsx','jst-order-template.xls'):
+        template=source/'src'/name
+        if template.is_file():cmd+=['--add-data',str(template)+';.']
     for name in ['numpy','pandas','matplotlib','scipy','IPython','lxml','tkinter']:cmd+=['--exclude-module',name]
     cmd+=['--distpath',str(dist),'--workpath',str(build/'work'),'--specpath',str(build),str(source/'src/app.py')]
     (build/'command.json').write_text(json.dumps(cmd,ensure_ascii=False,indent=2),encoding='utf-8')

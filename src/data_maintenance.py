@@ -154,13 +154,30 @@ def scrub_workflow_events(db,id,gone,*,scoped=False):
             e['message']='已清理所选订单内容；保留共享批次技术事件'
             db.execute('UPDATE ax.ax_workflow_events SET payload=? WHERE id=? AND sequence=?',(wr.dumps(e),id,sequence))
 
-def prepare(path,heads,progress=lambda _:None,cancel=None,*,inspect=False):
+def prepare(path,heads,progress=lambda _:None,cancel=None,*,inspect=False,recover_pending=False):
     oids=list(dict.fromkeys(h['oid'] for h in heads))
     if not oids:raise ValueError('请勾选要彻底删除的订单')
     progress('读取订单与关联数据，核对删除范围…')
     with closing(connect(path)) as db:
         db.execute('BEGIN');chunks.require_current(db,cancel)
-        if all(h.get('warehouse') in (*archive.WAREHOUSES,archive.LEGACY) for h in heads):
+        scoped=all(h.get('warehouse') in (*archive.WAREHOUSES,archive.LEGACY) for h in heads)
+        if inspect:
+            from jst_auto_order_store import pending_deletion_orders, require_resolved_deletion
+            scopes=[(h['oid'],h['warehouse']) for h in heads] if scoped else [(oid,None) for oid in oids]
+            if recover_pending:
+                pending=pending_deletion_orders(db,scopes,cancel)
+                if pending:
+                    if scoped:
+                        _scoped_heads(db,heads,oids,with_names=False)
+                    else:
+                        for h in heads:
+                            revision=db.execute('SELECT o.current,r.digest FROM normal_orders o JOIN normal_revisions r '
+                                                'ON r.oid=o.oid AND r.revision=o.current WHERE o.oid=?',(h['oid'],)).fetchone()
+                            if revision!=(h['revision'],h['digest']):raise wr.Conflict('原签发已变化，请刷新再删除')
+                    return {'pending_jst_orders':{task['online']:task['sequence'] for task in pending}}
+            else:
+                require_resolved_deletion(db,scopes,cancel)
+        if scoped:
             return scoped_snapshot(db,heads,cancel,progress,inspect)
         plan=snapshot(db,oids,cancel,progress,inspect=inspect)
         for h in heads:
@@ -169,8 +186,8 @@ def prepare(path,heads,progress=lambda _:None,cancel=None,*,inspect=False):
         plan['oids']=oids
     return plan
 
-def inspect_deletion(path,heads,progress=lambda _:None,cancel=None):
-    return prepare(path,heads,progress,cancel,inspect=True)
+def inspect_deletion(path,heads,progress=lambda _:None,cancel=None,*,recover_pending=False):
+    return prepare(path,heads,progress,cancel,inspect=True,recover_pending=recover_pending)
 
 
 def selected_head(head,oids,scopes=None):
@@ -178,10 +195,10 @@ def selected_head(head,oids,scopes=None):
     return scopes is None or (head.get('oid'),head.get('warehouse')) in scopes
 
 
-def scoped_snapshot(db,heads,cancel=None,progress=lambda _:None,inspect=False):
+def _scoped_heads(db,heads,oids,*,with_names=True):
     import warehouse_execution as execution
-    oids=list(dict.fromkeys(h['oid'] for h in heads));selected=[]
-    current=execution.heads(db,[{'oid':oid} for oid in oids])
+    selected=[]
+    current=execution.heads(db,[{'oid':oid} for oid in oids],with_names=with_names)
     for supplied in heads:
         choices=[h for h in current if h['oid']==supplied['oid'] and h['warehouse']==supplied['warehouse']]
         if len(choices)!=1:raise wr.Conflict('所选仓单已删除或本轮未参与，请刷新删除范围')
@@ -189,6 +206,12 @@ def scoped_snapshot(db,heads,cancel=None,progress=lambda _:None,inspect=False):
         if any(h[k]!=supplied[k] for k in ('revision','digest')):raise wr.Conflict('所选仓签发已变化，请刷新删除范围')
         selected.append(h)
     if len({(h['oid'],h['warehouse']) for h in selected})!=len(selected):raise ValueError('不能重复选择同一仓单')
+    return current,selected
+
+
+def scoped_snapshot(db,heads,cancel=None,progress=lambda _:None,inspect=False):
+    oids=list(dict.fromkeys(h['oid'] for h in heads))
+    current,selected=_scoped_heads(db,heads,oids)
     plan=snapshot(db,oids,cancel,progress,inspect=inspect,selected=selected)
     pairs={(h['oid'],h['warehouse']) for h in selected};full=[]
     for p in plan['parents']:
@@ -696,10 +719,10 @@ def execute(path,plan,ack_external=False,progress=lambda _:None,cancel=None):
                     if wr.loads(raw).get('basis',{}).get('oid') in oids:db.execute('DELETE FROM ax.ax_schedules WHERE id=?',(id,))
             collect_shared(db,Path(path).parent,cancel,progress,verified=verified)
             clear_indexes(db,oids,progress,cancel)
-            checkpoint(cancel);progress(CommitProgress(True));db.set_progress_handler(None,0);db.commit()
+            checkpoint(cancel);progress(CommitProgress(True,deleting=True));db.set_progress_handler(None,0);db.commit()
         except BaseException:
             db.set_progress_handler(None,0);db.rollback();checkpoint(cancel);raise
-        finally:progress(CommitProgress(False))
+        else:progress(CommitProgress(False,deleting=True))
     from lifecycle_recovery import prune_after_delete
     prune_after_delete(path)
     return {'deleted':len(plan['parents']),'orders':[h['number'] for h in plan['parents']],'operation_id':operation_id,'component_cleanup_pending':True,'journal_modes':journal_modes}
@@ -794,10 +817,10 @@ def execute_scoped(path,plan,ack_external=False,progress=lambda _:None,cancel=No
                         if 'automation_events' in available:db.execute('DELETE FROM automation_events WHERE task=?',(key,))
                         db.execute('DELETE FROM automation_tasks WHERE id=?',(key,))
             clear_indexes(db,oids,progress,cancel);collect_shared(db,Path(path).parent,cancel,progress,verified=verified)
-            checkpoint(cancel);progress(CommitProgress(True));db.set_progress_handler(None,0);db.commit()
+            checkpoint(cancel);progress(CommitProgress(True,deleting=True));db.set_progress_handler(None,0);db.commit()
         except BaseException:
             db.set_progress_handler(None,0);db.rollback();checkpoint(cancel);raise
-        finally:progress(CommitProgress(False))
+        else:progress(CommitProgress(False,deleting=True))
     from lifecycle_recovery import prune_after_delete
     prune_after_delete(path)
     return {'deleted':len(plan['scopes']),'orders':[h['number'] for h in plan['scopes']],'operation_id':operations[0],'operation_ids':operations,'component_cleanup_pending':True,'journal_modes':journal_modes,'scopes':[{'oid':h['oid'],'warehouse':h['warehouse']} for h in plan['scopes']]}
@@ -813,6 +836,6 @@ def delete_job(path,day,revision,progress=lambda _:None,cancel=None):
             if not row or row[0]!=revision:raise wr.Conflict('草稿已变化，请重新查看后删除')
             db.execute('DELETE FROM jobs WHERE day=?',(day,))
             if 'normal_orders' in tables(db):collect_shared(db,Path(path).parent,cancel,progress)
-            checkpoint(cancel);progress(CommitProgress(True));db.commit()
+            checkpoint(cancel);progress(CommitProgress(True,deleting=True));db.commit()
         except BaseException:db.rollback();raise
-        finally:progress(CommitProgress(False))
+        else:progress(CommitProgress(False,deleting=True))

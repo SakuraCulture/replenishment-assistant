@@ -43,6 +43,7 @@ def start_smoke(app,win,args):
         diagnostics=[]
         result={}
         stage=None
+        reuse=None
         timer=QTimer(win)
         timer.setInterval(30)
         review_timer=QTimer(win)
@@ -105,6 +106,17 @@ def start_smoke(app,win,args):
                     window.grab().save(str(out/'配送资料批量保存.png'))
                     window.accept()
                 elif isinstance(window,Orders):
+                    if reuse:
+                        tasks={r['warehouse']:[r['online'],r['stage']] for r in window.records}
+                        check(tasks==reuse['ready'],'准备结果未打开原仓单任务')
+                        hint=window.note.text()
+                        check(all(text in hint for text in reuse.get('expected_hints', [])),
+                              '部分仓单失败时未提示原因')
+                        check(all(not r['internal'] for r in window.records),'制表触发了平台原单关联')
+                        detail.update(tasks=tasks,notice=hint)
+                        window.grab().save(str(out/'继续原仓单任务.png'))
+                        window.accept()
+                        return
                     check(window.table.rowCount()==1,'任务结果没有准确展示所选仓单')
                     check(not window.buttons['submit'].isEnabled(),'未经平台预览已能正式提交')
                     r=window.records[0]
@@ -123,11 +135,18 @@ def start_smoke(app,win,args):
             marker=json.loads((out/'synthetic.json').read_text('utf-8'))
             check(path==out/'settings/workbench.sqlite3' and marker.get('synthetic') is True
                   and marker.get('live_platform') is False,'验收要求独立合成资料')
-            stage=StageDialog(win.followup,'jst')
+            reuse=marker.get('reuse_existing')
+            stage=StageDialog(win.followup,'jst',reuse['heads'] if reuse else None)
             stage.setModal(True);stage.show();panel=stage.panel
             wait(lambda:panel.data is not None)
             timer.start()
-            if reopen:
+            if reuse:
+                panel.select_visible()
+                check(len(panel.chosen)==2,'合成双仓范围不符')
+                panel.auto_prepare_btn.click()
+                check(detail.get('tasks')==reuse['ready'],'双仓准备未完成')
+                check(len(list_orders(path))==2,'重复准备改变了仓单任务数')
+            elif reopen:
                 panel.auto_tasks_btn.click()
                 check(detail.get('online')==list_orders(path)[0]['online'],'重开丢失原线上单号')
                 with closing(read_connection(path)) as db:

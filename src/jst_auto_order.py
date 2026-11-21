@@ -9,6 +9,7 @@ import time
 
 import jst_auto_order_store as store
 import jst_auto_order_template as template
+import jst_order_confirmation as confirmation
 import jst_order_store as allocations
 import lifecycle_store
 import payment_shop_names
@@ -20,7 +21,7 @@ from jst_delivery_profiles import save_profile
 from jst_order_guards import require_generation, require_generation_basis, saved_execution_reason, upstream_stamp
 from payment_references import HEAD_KEYS, reference_key
 from runtime_support import checkpoint, Cancelled
-from sqlite_write import begin
+from sqlite_write import begin, commit
 
 
 class Check(ValueError):
@@ -31,9 +32,9 @@ class PlatformCheck(Check):
     pass
 
 
-ORDINARY_AUDIT_DONE = '已客审待财审'
-SHIPPING_PLATFORM_STATES = ('发货中(打单拣货)','已发货')
-REVIEW_PLATFORM_STATES = ('异常','等供销商|外仓发货','待付款','已取消','被合并','被拆分')
+ORDINARY_AUDIT_DONE = confirmation.AUDITED
+SHIPPING_PLATFORM_STATES = confirmation.SHIPPING
+REVIEW_PLATFORM_STATES = confirmation.REVERSED
 
 
 def show_name(head):
@@ -58,8 +59,7 @@ def _shop(db, h):
 
 
 def _online(h):
-    # Same local warehouse order retains its online key through new previews,
-    # reloads and portability. Never use a timestamp or upload-attempt counter.
+    # The default for a new task must be stable through previews and reloads.
     return 'BH'+sha256(('replenishment-jst-v1:'+h['number']).encode('utf-8')).hexdigest()[:24].upper()
 
 
@@ -110,10 +110,11 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
                 h=generation['head']
                 if any(h[k]!=row['head'][k] for k in HEAD_KEYS):
                     raise Check('所选仓单已变化，请刷新结果页')
-                online=_online(h);old=store.read(db,online)
+                old = store.read_warehouse_order(db,h)
                 if old and old['stage'] in store.RELEASED:
-                    ready.append(online)
+                    ready.append(old['online'])
                     continue
+                online = old['online'] if old else _online(h)
                 proof=_generation_proof(db,generation,digest)
                 reason=saved_execution_reason(db,h)
                 if reason:
@@ -127,9 +128,12 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
             if missing:
                 raise Check('缺少'+'、'.join(missing))
             lines,stats=template.order_lines(generation['rows'],cancel)
-            workbook,template_sha=template.make_file(contacts,online,lines,stats)
+            import_format=template.SINGLE if stats['sku_cell_chars']>template.MAX_CELL else template.MULTI
+            workbook,template_sha=template.make_file(contacts,online,lines,stats,import_format=import_format,cancel=cancel)
             snapshot={'head':h,'gid':row['gid'],'generation':proof,'online':online,'shop':shop,'profile':profile,
                       'lines':lines,'stats':{**stats,'file_bytes':len(workbook)},'template_sha':template_sha}
+            if import_format==template.SINGLE:
+                snapshot['import_format']=import_format
             if order_phone is not None:
                 snapshot['order_phone']=order_phone
             with closing(store.connection(path)) as db,db:
@@ -195,11 +199,15 @@ class Browser:
         spec={'warehouse':p['head']['warehouse'],'shop':p['shop']['name'],'online':p['online'],
                'internal':order['internal'],'phase':order['stage'],
               'binding':None if action=='preview' else (order['proof'] or {}).get('binding')}
-        if action in ('preview','lookup','stage_import','stage_audit'):
+        if action=='payment_detail' or action=='lookup' and extra.get('identity_only'):
+            spec['contact']={'buyer':p['profile']['values']['buyer']}
+        elif action in ('preview','lookup','stage_import','stage_audit'):
             spec['contact']=p['profile']['values']
             if 'order_phone' in p:
                 spec['contact']={**spec['contact'],'phone':p['order_phone']}
             spec['lines']=p['lines']
+            if p.get('import_format')==template.SINGLE:
+                spec['import_format']=template.SINGLE
         if action in ('preview','stage_import'):
             spec['file']=base64.b64encode(order['workbook']).decode('ascii')
             spec['sha']=order['file_sha']
@@ -244,8 +252,21 @@ def _preview_evidence(order, result):
     return {'binding':binding,'amount':amount,'file_sha':order['file_sha']}
 
 
+def _preview_for_submit(order, result):
+    evidence=_preview_evidence(order,result)
+    if order['payload'].get('import_format')==template.SINGLE:
+        if result.get('order_count')!=1 or result.get('import_format')!=template.SINGLE or evidence['amount'] is None:
+            raise Check('单商品模式缺少一张整单及金额的完整平台预览，请核对原文件')
+        evidence['import_format']=template.SINGLE
+    return evidence
+
+
 def _same_order(evidence, original):
-    return evidence['binding']==original['binding'] and evidence['file_sha']==original['file_sha']
+    if evidence['binding']!=original['binding'] or evidence['file_sha']!=original['file_sha']:
+        return False
+    if evidence.get('import_format')==template.SINGLE:
+        return original.get('import_format')==template.SINGLE and evidence['amount']==original['amount']
+    return True
 
 
 def _preview_names(db, order):
@@ -274,6 +295,7 @@ def _save(path, order, stage, cancel, *, check_plan=False, proof=None, reason=''
         result=store.update(db,order,stage,proof=proof,reason=reason)
         if stage in store.UNRESOLVED and stage!=order['stage']:
             _event(db,result,'聚水潭自动下单执行意图',{'stage':stage})
+        commit(db,cancel)
     return result
 
 
@@ -284,7 +306,7 @@ def _legacy_audit_not_dispatched(order):
             and order['reason']=='原订单商品详情尚未关闭')
 
 
-def _record_found(path, order, result, cancel):
+def _record_found(path, order, result, cancel, *, identity_only=False):
     not_dispatched=_legacy_audit_not_dispatched(order)
     if result.get('found') is not True:
         if not_dispatched:
@@ -293,35 +315,46 @@ def _record_found(path, order, result, cancel):
     proof=order['proof']
     if result.get('binding')!=proof['binding'] or result.get('online')!=order['online']:
         raise Check('回查的企业、店铺或线上单号与原任务不同')
-    observed={**result,'exists':False,'issues':[]}
-    _preview_evidence(order, observed)
+    if identity_only:
+        if result.get('contact_ok') is not True:
+            raise Check('回查的买家身份与原任务不同')
+    else:
+        _preview_evidence(order, {**result,'exists':False,'issues':[]})
     internal=result.get('internal')
     if not isinstance(internal,str) or not re.fullmatch(r'[0-9]{1,40}',internal) or order['internal'] not in (None,internal):
         raise Check('原线上单号尚未对应唯一的聚水潭内部订单号')
     reported_state=result.get('status')
     native_status=result.get('native_status')
+    if identity_only and native_status not in confirmation.PAYMENT_STATES | confirmation.REVERSED:
+        raise Check('已查到原单，平台状态仍待核')
     state=reported_state
-    if native_status in SHIPPING_PLATFORM_STATES:
+    confirmed=identity_only and native_status in confirmation.PAYMENT_STATES
+    if confirmed:
+        state='audited' if native_status==confirmation.AUDITED else 'awaiting' if native_status==confirmation.AWAITING else 'ordered'
+    elif native_status in SHIPPING_PLATFORM_STATES:
         state='review'
     elif reported_state in ('audited','review'):
         state='audited' if native_status==ORDINARY_AUDIT_DONE else 'review'
-    stage={'awaiting':'IMPORTED','audited':'AUDITED','exception':'REVIEW','review':'REVIEW'}.get(state)
+    stage={'awaiting':'IMPORTED','ordered':'IMPORTED','audited':'AUDITED','exception':'REVIEW','review':'REVIEW'}.get(state)
     if stage is None:
         raise Check('已查到原单，平台状态仍待核')
-    if stage=='IMPORTED' and order['stage']=='AUDIT_UNKNOWN' and not (not_dispatched or result.get('audit_rejected')):
+    if (stage=='IMPORTED' and order['stage']=='AUDIT_UNKNOWN' and state=='awaiting'
+            and not (not_dispatched or result.get('audit_rejected'))):
         stage='AUDIT_UNKNOWN'
-    if order['stage']=='AUDITED' and stage=='IMPORTED':
+    if order['stage']=='AUDITED' and stage=='IMPORTED' and not confirmed:
         stage='REVIEW'
     issues=_issues(result)
     if issues:
         stage='REVIEW'
-    reason={'IMPORTED':'已查到原单，等待执行普通审核','AUDITED':'普通审核已完成，聚水潭状态为'+ORDINARY_AUDIT_DONE,
+    reason={'IMPORTED':'已按线上单号核对原单，导入完成','AUDITED':'普通审核已完成，聚水潭状态为'+ORDINARY_AUDIT_DONE,
             'AUDIT_UNKNOWN':'普通审核结果待核，请继续核对原单',
             'REVIEW':issues or '聚水潭显示缺货、异常或待人工审核，请查看原订单'}[stage]
     if stage=='IMPORTED' and result.get('audit_rejected'):
         reason='上次普通审核未通过，请查看平台原单提示后继续处理'
     elif stage=='IMPORTED' and not_dispatched:
         reason='上次审核在发送前中止，已核对原单仍待审核'
+    elif stage=='AUDIT_UNKNOWN' and native_status==confirmation.AWAITING:
+        reason=f'原单仍显示“{native_status}”，普通审核结果有待确认'
     if stage=='REVIEW':
         if native_status in SHIPPING_PLATFORM_STATES:
             reason=f'聚水潭已进入后续发货环节（{native_status}），请核对原单'
@@ -331,6 +364,8 @@ def _record_found(path, order, result, cancel):
             reason='未核实聚水潭普通审核的完成状态，请核对原单'
         if issues and reason!=issues:
             reason+=' · '+issues
+    if confirmed and stage in ('IMPORTED','AUDITED'):
+        reason=f'已核对原单，聚水潭当前为“{native_status}”'
     h=order['payload']['head']
     with closing(store.connection(path)) as db,db:
         begin(db,cancel)
@@ -354,13 +389,17 @@ def _record_found(path, order, result, cancel):
         detail={'internal':internal,'stage':stage}
         if native_status in (ORDINARY_AUDIT_DONE,'已付款待审核',*SHIPPING_PLATFORM_STATES,*REVIEW_PLATFORM_STATES):
             detail['native_status']=native_status
+        if (stage=='AUDITED' and not identity_only) or native_status in confirmation.REVERSED:
+            confirmation.record(db,current,native_status)
         _event(db,current,'聚水潭原单核对',detail)
+        commit(db,cancel)
     return current
 
 
-def _review(path, browser, order, cancel):
-    result=browser.action('lookup',order)
-    return _record_found(path,order,result,cancel)
+def _review(path, browser, order, cancel, *, identity_only=False):
+    options={'identity_only':True} if identity_only else {}
+    result=browser.action('lookup',order,**options)
+    return _record_found(path,order,result,cancel,identity_only=identity_only)
 
 
 def _audit(path, browser, order, cancel):
@@ -383,10 +422,10 @@ def _process(path, browser, order, action, cancel):
     if action=='probe':
         browser.action('probe',order)
         return _save(path,order,order['stage'],cancel,reason='已核对本仓企业、店铺和导入入口')
-    if action=='recover':
+    if action in ('recover','recover_delete'):
         if order['stage'] not in store.RELEASED:
             raise Check('此任务尚未导入，请先完成预览')
-        return _review(path,browser,order,cancel)
+        return _review(path,browser,order,cancel,identity_only=action=='recover')
     if action=='audit':
         if order['stage']!='IMPORTED':
             raise Check('请先核对原单，确认已导入且待普通审核')
@@ -398,22 +437,19 @@ def _process(path, browser, order, action, cancel):
         _require_plan(db,order['payload'])
         order['preview_names']=_preview_names(db,order)
     if action=='preview':
-        evidence=_preview_evidence(order,browser.action('preview',order))
-        return _save(path,order,'PREVIEWED',cancel,check_plan=True,proof=evidence,reason='平台预览通过，等待确认导入并审核')
+        evidence=_preview_for_submit(order,browser.action('preview',order))
+        return _save(path,order,'PREVIEWED',cancel,check_plan=True,proof=evidence,reason='平台预览通过，等待确认导入')
     if action!='submit' or order['stage']!='PREVIEWED':
         raise Check('请先预览并确认本次原文件')
     fresh=browser.action('stage_import',order)
-    if not _same_order(_preview_evidence(order,fresh),order['proof']) or not fresh.get('permit'):
+    if not _same_order(_preview_for_submit(order,fresh),order['proof']) or not fresh.get('permit'):
         raise Check('平台预览或目标店铺已变化，请重新预览')
     intent=_save(path,order,'IMPORT_UNKNOWN',cancel,check_plan=True,reason='已保存导入意图，等待原单回查')
     browser.request('import',permit=fresh['permit'],online=order['online'],warehouse=order['payload']['head']['warehouse'])
-    confirmed=_review(path,browser,intent,cancel)
-    if confirmed['stage']=='IMPORTED':
-        return _audit(path,browser,confirmed,cancel)
-    return confirmed
+    return _review(path,browser,intent,cancel,identity_only=True)
 
 
-def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *, approved=None):
+def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *, approved=None, prepare_payment=None):
     """Process at most the explicitly confirmed selection, in displayed order."""
     responses=[]
     for i,online in enumerate(dict.fromkeys(keys),1):
@@ -428,19 +464,25 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
         progress(RowProgress(show_name(order['payload']['head']),i,len(keys)))
         try:
             result=_process(path,browser,order,action,cancel)
-            responses.append({'online':online,'stage':result['stage'],'reason':result['reason']})
         except Cancelled:
             raise
         except ValueError as exc:
             with closing(wr.read_connection(path)) as db:
                 current=store.read(db,online)
             if current and not _legacy_audit_not_dispatched(current):
-                current=_save(path,current,current['stage'],None,reason=str(exc))
-            responses.append({'online':online,'stage':(current or order)['stage'],'reason':str(exc)})
+                current=_save(path,current,current['stage'],cancel if action in ('recover','recover_delete') else None,reason=str(exc))
+            result={**(current or order),'reason':str(exc)}
+        response={'online':online,'stage':result['stage'],'reason':result['reason']}
+        if (prepare_payment and action in ('submit','recover') and result.get('internal')
+                and result['stage'] in ('IMPORTED','AUDITED','AUDIT_UNKNOWN','REVIEW')):
+            payment=prepare_payment(path,[online],browser,progress,cancel)[0]
+            response['payment']=payment
+            response['stage']=payment.get('order_stage',response['stage'])
+        responses.append(response)
     return responses
 
 
-def run_browser(path, keys, owner, action, approved=None, progress=lambda _:None, cancel=None):
+def run_browser(path, keys, owner, action, approved=None, progress=lambda _:None, cancel=None, *, prepare_payment=None):
     checkpoint(cancel)
     try:
         lease=owner.acquire()
@@ -451,8 +493,15 @@ def run_browser(path, keys, owner, action, approved=None, progress=lambda _:None
             lease.start()
         except ComponentError as exc:
             raise _client_error(exc) from None
-        return process(path,keys,Browser(lease),action,progress,cancel,approved=approved)
+        return process(path,keys,Browser(lease),action,progress,cancel,approved=approved,prepare_payment=prepare_payment)
     finally:
         while not lease.close(timeout=.5):
             progress('等待聚水潭当前动作安全结束，保留原任务')
             time.sleep(.2)
+
+
+def recover_for_deletion(path, pending, owner, progress=lambda _:None, cancel=None):
+    """Reconcile the captured tasks using the ordinary read-only platform lookup."""
+    progress('查询所选仓单的原单和普通审核状态…')
+    run_browser(path,list(pending),owner,'recover_delete',pending,progress,cancel)
+    checkpoint(cancel)

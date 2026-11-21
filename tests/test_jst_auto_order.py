@@ -1,5 +1,8 @@
 """Offline native-XLS and exact-order recovery regressions."""
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
+from threading import Event
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -50,6 +53,24 @@ class NativeXLS(unittest.TestCase):
                 workbook.make_file(CONTACT,'BH'+'A'*24,lines,stats)
         self.assertEqual(workbook.cell_length('😀'),2)
 
+    def test_single_commodity_rows_preserve_all_2000_items_in_one_order(self):
+        order='BH'+'B'*24
+        items=[{'sku': ('@' if i%2 else '0')+f'{i:019d}', 'quantity':i%3+1, 'price':'2.10'}
+               for i in range(2000)]
+        lines,stats=workbook.order_lines(items)
+        self.assertGreater(stats['sku_cell_chars'],workbook.MAX_CELL)
+        data,_=workbook.make_file(CONTACT,order,lines,stats,import_format=workbook.SINGLE)
+        sheet=xlrd.open_workbook(file_contents=data).sheet_by_name(workbook.SHEET)
+        self.assertEqual((sheet.nrows,sheet.ncols),(2001,39))
+        self.assertLess(len(data),workbook.MAX_BYTES)
+        for i,(sku,qty,_) in enumerate(lines,1):
+            self.assertEqual([sheet.cell_value(i,c) for c in (0,2,12,20,23,24,25,29)],
+                             [order,CONTACT['buyer'],CONTACT['phone'],sku,int(qty),'','否','现场取货'])
+            self.assertEqual(sheet.cell_type(i,20),xlrd.XL_CELL_TEXT)
+        with patch.object(workbook,'MAX_DATA_ROWS',1999):
+            with self.assertRaisesRegex(ValueError,'行限制'):
+                workbook.make_file(CONTACT,order,lines,stats,import_format=workbook.SINGLE)
+
 
 class Portal:
     """Controlled exact-match platform. The live integration is gated separately."""
@@ -86,7 +107,7 @@ class Portal:
         self.calls.append((name,online))
         if name=='import':
             if online in self.orders:raise AssertionError('duplicate import')
-            self.orders[online]={'internal':str(6001+len(self.orders)),'status':'awaiting'}
+            self.orders[online]={'internal':str(6001+len(self.orders)),'status':'awaiting','native_status':'已付款待审核'}
             if self.disconnected:raise service.PlatformCheck('合成断线')
         elif self.audit_rejected:
             self.orders[online].update(audit_rejected=True)
@@ -125,6 +146,33 @@ class AutoOrders(unittest.TestCase):
         self.assertIn('买家帐号、手机',issue['reason'])
         self.assertEqual(store.list_orders(self.path),[])
 
+    def test_invalid_warehouse_phone_is_reported_before_file_or_task_creation(self):
+        self.configure(self.head,{**CONTACT,'phone':'0123456789'})
+        receipt=service.prepare(self.path,self.selected)
+        self.assertFalse(receipt['ready'])
+        self.assertIn('河北仓',receipt['failed'][0]['order'])
+        self.assertIn('收货手机须为11位数字',receipt['failed'][0]['reason'])
+        self.assertEqual(store.list_orders(self.path),[])
+
+    def test_large_generation_routes_to_single_and_rejects_preview_without_grouping_proof(self):
+        self.configure(self.head)
+        sku='@'+('1234567890'*2)
+        lines,stats=workbook.order_lines([{'sku':sku+str(i),'quantity':1,'price':2} for i in range(2000)])
+        with patch.object(workbook,'order_lines',return_value=(lines,stats)):
+            result=service.prepare(self.path,self.selected)
+        self.assertFalse(result['failed'])
+        online,=result['ready']
+        order=self.read(online,workbook=True)
+        self.assertEqual(order['payload']['import_format'],workbook.SINGLE)
+        self.assertEqual(xlrd.open_workbook(file_contents=order['workbook']).sheet_by_index(0).nrows,2001)
+        for count in (None,2):
+            evidence={**self.portal.action('preview',order),'order_count':count,'import_format':workbook.SINGLE}
+            with self.assertRaisesRegex(ValueError,'缺少一张整单'):
+                service._preview_for_submit(order,evidence)
+        checked=service._preview_for_submit(order,{**evidence,'order_count':1})
+        self.assertEqual(checked['amount'],'4000')
+        self.assertFalse(service._same_order({**checked,'amount':'4001'},checked))
+
     def test_one_order_phone_override_keeps_saved_store_profile(self):
         self.configure(self.head)
         result=service.prepare(self.path,self.selected,order_phone='10000000000')
@@ -140,7 +188,7 @@ class AutoOrders(unittest.TestCase):
         keys=self.prepared();self.portal.price_diff=True
         self.assertEqual(service.process(self.path,keys,self.portal,'preview')[0]['stage'],'PREVIEWED')
         self.assertEqual(self.read(keys[0])['proof']['amount'],'180.5')
-        self.assertEqual(service.process(self.path,keys,self.portal,'submit')[0]['stage'],'AUDITED')
+        self.assertEqual(service.process(self.path,keys,self.portal,'submit')[0]['stage'],'IMPORTED')
 
     def test_bulk_address_edit_invalidates_old_preview_and_rebuilds_same_order(self):
         import jst_delivery_profiles as profiles
@@ -184,10 +232,10 @@ class AutoOrders(unittest.TestCase):
         first=jst_exports.export_checked(self.path,[self.gid],self.f.f.root/'manual')['files'][0]
         service.process(self.path,keys,self.portal,'preview')
         result=service.process(self.path,keys,self.portal,'submit')[0]
-        self.assertEqual(result['stage'],'AUDITED')
+        self.assertEqual(result['stage'],'IMPORTED')
         service.process(self.path,keys,self.portal,'submit');service.process(self.path,keys,self.portal,'recover')
         self.assertEqual([op for op,_ in self.portal.calls].count('import'),1)
-        self.assertEqual([op for op,_ in self.portal.calls].count('audit'),1)
+        self.assertFalse(any(op in ('stage_audit','audit') for op,_ in self.portal.calls))
         with closing(wr.read_connection(self.path)) as db:
             self.assertIsNone(lc.current(db,self.head,'payment'))
             self.assertEqual(jst_orders.locked(db,self.head),self.gid)
@@ -201,12 +249,16 @@ class AutoOrders(unittest.TestCase):
             try:self.assertEqual(list(source.active.values),[('商品编码','单价','数量','订单号'),('0001',2,40,self.head['number'])])
             finally:source.close()
 
-    def test_submit_disconnect_restores_exact_order_and_audits_without_reimport(self):
-        keys=self.prepared()
+    def test_submit_disconnect_restores_exact_order_without_reimport_or_audit(self):
+        with patch.object(service,'_online',return_value='BH'+'A'*24):
+            keys=self.prepared()
         service.process(self.path,keys,self.portal,'preview')
         self.portal.disconnected=True
         result=service.process(self.path,keys,self.portal,'submit')[0]
         self.assertEqual(result['stage'],'IMPORT_UNKNOWN')
+        unresolved=self.read(keys[0],workbook=True)
+        self.assertEqual(service.prepare(self.path,self.selected),{'ready':keys,'failed':[]})
+        self.assertEqual(self.read(keys[0],workbook=True),unresolved)
         with self.assertRaisesRegex(ValueError,'待核'):
             jst_orders.cancel_generated(self.path,[self.gid],'合成撤销')
         plan=data_maintenance.prepare(self.path,[self.head])
@@ -214,15 +266,15 @@ class AutoOrders(unittest.TestCase):
         restarted=Portal();restarted.orders=self.portal.orders
         result=service.process(self.path,keys,restarted,'recover')[0]
         self.assertEqual(result['stage'],'IMPORTED')
-        result=service.process(self.path,keys,restarted,'audit')[0]
-        self.assertEqual(result['stage'],'AUDITED')
-        self.assertNotIn('import',[action for action,_ in restarted.calls])
+        self.assertEqual(restarted.calls,[('lookup',keys[0])])
+        self.assertEqual(self.read(keys[0])['internal'],'6001')
 
     def test_audit_rejected_can_continue_on_original_internal_order(self):
         keys=self.prepared()
         service.process(self.path,keys,self.portal,'preview')
+        service.process(self.path,keys,self.portal,'submit')
         self.portal.audit_rejected=True
-        result=service.process(self.path,keys,self.portal,'submit')[0]
+        result=service.process(self.path,keys,self.portal,'audit')[0]
         self.assertEqual(result['stage'],'IMPORTED')
         self.assertIn('普通审核未通过',result['reason'])
         self.assertEqual(self.read(keys[0])['internal'],'6001')
@@ -234,6 +286,7 @@ class AutoOrders(unittest.TestCase):
     def test_recovers_legacy_audit_stopped_before_dispatch(self):
         keys=self.prepared()
         service.process(self.path,keys,self.portal,'preview')
+        service.process(self.path,keys,self.portal,'submit')
         request=self.portal.request
 
         def stop_before_click(name, **kwargs):
@@ -242,7 +295,7 @@ class AutoOrders(unittest.TestCase):
             return request(name,**kwargs)
 
         with patch.object(self.portal,'request',stop_before_click):
-            failed=service.process(self.path,keys,self.portal,'submit')[0]
+            failed=service.process(self.path,keys,self.portal,'audit')[0]
         self.assertEqual(failed['stage'],'AUDIT_UNKNOWN')
         with patch.object(self.portal,'action',side_effect=service.PlatformCheck('合成回查暂不可用')):
             self.assertEqual(service.process(self.path,keys,self.portal,'recover')[0]['stage'],'AUDIT_UNKNOWN')
@@ -263,7 +316,7 @@ class AutoOrders(unittest.TestCase):
         self.assertEqual(result['stage'],'AUDITED')
         record=self.read(keys[0])
         self.assertEqual((record['stage'],record['platform_status'],record['internal']),('AUDITED','audited','6001'))
-        self.assertEqual(record['reason'],'普通审核已完成，聚水潭状态为已客审待财审')
+        self.assertEqual(record['reason'],'已核对原单，聚水潭当前为“已客审待财审”')
         with closing(wr.read_connection(self.path)) as db:
             detail=db.execute("SELECT detail FROM jst_events WHERE action='聚水潭原单核对' ORDER BY id DESC LIMIT 1").fetchone()
             self.assertEqual(wr.loads(detail[0])['native_status'],'已客审待财审')
@@ -278,7 +331,7 @@ class AutoOrders(unittest.TestCase):
         for native_status in ('发货中(打单拣货)','已发货',None):
             with self.subTest(native_status=native_status):
                 self.portal.orders[keys[0]].update(status='audited',native_status=native_status)
-                result=service.process(self.path,keys,self.portal,'recover')[0]
+                result=service.process(self.path,keys,self.portal,'recover_delete')[0]
                 self.assertEqual(result['stage'],'REVIEW')
                 record=self.read(keys[0])
                 self.assertEqual((record['platform_status'],record['internal']),('review','6001'))
@@ -310,7 +363,7 @@ class AutoOrders(unittest.TestCase):
         self.assertFalse(self.portal.orders)
         self.assertNotIn('stage_import',[op for op,_ in self.portal.calls])
 
-    def test_one_store_two_warehouses_have_independent_profiles_and_submit_keys(self):
+    def dual_selection(self):
         south=next(h for h in self.f.f.heads if h['warehouse']=='山东仓')
         self.f.f.save('return',[{'补货单号':south['number'],'供货仓':'山东仓','商品编码':'0002','门店确认数量':18}])
         catalog=test_jst.catalog('山东仓')
@@ -321,14 +374,147 @@ class AutoOrders(unittest.TestCase):
         self.assertEqual(len(r['generated']),1)
         self.configure(self.head)
         self.configure(south,{**CONTACT,'buyer':'000888','address':'合成山东收货点'})
-        selected=[*self.selected,{'head':south,'gid':r['generated'][0]}]
+        return [*self.selected,{'head':south,'gid':r['generated'][0]}]
+
+    def test_pending_audit_blocks_only_selected_scope_and_reports_uncommitted_deletion(self):
+        from ui_work_io import Session
+        from work_failures import WorkFailure
+
+        selected=self.dual_selection()
+        heads=[r['head'] for r in selected]
+        keys=service.prepare(self.path,selected)['ready']
+        service.process(self.path,keys[:1],self.portal,'preview')
+        self.portal.disconnected=True
+        service.process(self.path,keys[:1],self.portal,'submit')
+        self.assertEqual(service.process(self.path,keys[:1],self.portal,'recover')[0]['stage'],'IMPORTED')
+        progress=[]
+        with Session(self.path) as session:
+            old_plan=session.call('delete_preview',heads,progress.append)
+            # Audit starts between the user's preview and confirmation.
+            with closing(store.connection(self.path)) as db,db:
+                original=store.read(db,keys[0])
+                store.update(db,original,'AUDIT_UNKNOWN',reason='合成普通审核结果待核')
+            before=[self.read(key,workbook=True) for key in keys]
+            with self.assertRaises(WorkFailure) as failed:
+                session.call('delete_orders',{'plan':old_plan,'ack':True},progress.append)
+            self.assertEqual(failed.exception.evidence['commit_state'],'not_started')
+            self.assertIn('未提交删除',str(failed.exception))
+            with self.assertRaises(WorkFailure) as blocked:
+                session.call('delete_preview',heads,progress.append)
+            for error in (failed.exception,blocked.exception):
+                self.assertIn(heads[0]['number'],str(error))
+                self.assertIn('审核结果待核',str(error))
+                self.assertIn('6001',str(error))
+                self.assertNotIn(heads[1]['number'],str(error))
+                self.assertNotIn('后续导出',str(error))
+            self.assertEqual([self.read(key,workbook=True) for key in keys],before)
+            south=session.call('delete_preview',heads[1:],progress.append)
+            removed=session.call('delete_orders',{'plan':south,'ack':True},progress.append)
+        self.assertEqual(removed['orders'],[heads[1]['number']])
+        self.assertTrue(any('删除已提交' in message for message in progress))
+        self.assertEqual(self.read(keys[0],workbook=True),before[0])
+        self.assertIsNone(self.read(keys[1]))
+
+    def test_delete_preview_recovers_only_selected_pending_task(self):
+        from runtime_support import Cancelled
+        from ui_work_io import Session
+        from work_failures import WorkFailure
+
+        selected=self.dual_selection()
+        north,south=service.prepare(self.path,selected)['ready']
+        service.process(self.path,[north,south],self.portal,'preview')
+        self.portal.disconnected=True
+        service.process(self.path,[north,south],self.portal,'submit')
+        head=selected[0]['head']
+        original,untouched=[self.read(key,workbook=True) for key in (north,south)]
+        self.assertEqual(original['stage'],'IMPORT_UNKNOWN')
+        self.assertEqual(untouched['stage'],'IMPORT_UNKNOWN')
+        self.portal.calls.clear()
+        lease=SimpleNamespace(start=lambda:None,close=lambda **_:True)
+        owner=SimpleNamespace(acquire=lambda:lease)
+
+        with Session(self.path) as session, patch.object(service,'Browser',return_value=self.portal):
+            with self.assertRaisesRegex(WorkFailure,'签发已变化'):
+                session.call('delete_preview',{'heads':[{**head,'revision':head['revision']+1}],
+                                               'recover_pending':True},lambda _:None)
+            waiting=session.call('delete_preview',{'heads':[head],'recover_pending':True},lambda _:None)
+            self.assertEqual(waiting,{'pending_jst_orders':{north:original['sequence']}})
+            self.assertEqual(self.read(north,workbook=True),original)
+
+            cancel=Event()
+            lookup=self.portal.action
+            def interrupted(*args,**kwargs):
+                result=lookup(*args,**kwargs)
+                cancel.set()
+                return result
+            with patch.object(self.portal,'action',side_effect=interrupted), self.assertRaises(Cancelled):
+                service.recover_for_deletion(self.path,waiting['pending_jst_orders'],owner,cancel=cancel)
+            self.assertEqual(self.read(north,workbook=True),original)
+
+            retrying=Event()
+            attempts=[]
+            commit=service.commit
+            def traced_commit(db,cancel):
+                def trace(statement):
+                    if statement=='COMMIT':
+                        attempts.append(statement)
+                        if len(attempts)==2:retrying.set()
+                db.set_trace_callback(trace)
+                return commit(db,cancel)
+
+            with patch.object(service,'commit',side_effect=traced_commit), ThreadPoolExecutor(1) as pool, \
+                    closing(wr.read_connection(self.path)) as reader:
+                reader.execute('BEGIN')
+                self.assertIsNotNone(reader.execute('SELECT 1 FROM jst_auto_orders WHERE online=?',(north,)).fetchone())
+                future=pool.submit(service.recover_for_deletion,self.path,waiting['pending_jst_orders'],owner)
+                try:
+                    self.assertTrue(retrying.wait(5),'本地保存没有等待读锁释放')
+                finally:
+                    reader.rollback()
+                future.result(timeout=5)
+            plan=session.call('delete_preview',[head],lambda _:None)
+            self.assertEqual([h['number'] for h in plan['scopes']],[head['number']])
+            self.assertEqual(plan['parents'][0]['remaining_warehouses'],[selected[1]['head']['warehouse']])
+            with self.assertRaisesRegex(WorkFailure,'请明确核对外部采购/已下单影响'):
+                session.call('delete_orders',{'plan':plan,'ack':False},lambda _:None)
+
+        self.assertEqual(self.portal.calls,[('lookup',north),('lookup',north)])
+        self.assertEqual(self.read(north)['stage'],'IMPORTED')
+        self.assertEqual(self.read(north)['sequence'],original['sequence']+1)
+        self.assertEqual(self.read(south,workbook=True),untouched)
+
+    def test_one_store_two_warehouses_have_independent_profiles_and_submit_keys(self):
+        selected=self.dual_selection()
         result=service.prepare(self.path,selected)
         self.assertFalse(result['failed']);keys=result['ready']
         self.assertEqual(len(set(keys)),2)
         service.process(self.path,keys,self.portal,'preview')
-        self.assertEqual([r['stage'] for r in service.process(self.path,keys,self.portal,'submit')],['AUDITED','AUDITED'])
+        self.assertEqual([r['stage'] for r in service.process(self.path,keys,self.portal,'submit')],['IMPORTED','IMPORTED'])
         for key,warehouse,buyer in zip(keys,('河北仓','山东仓'),('00012345','000888')):
             record=self.read(key,workbook=True)
             self.assertEqual(record['proof']['binding']['warehouse'],warehouse)
             sheet=xlrd.open_workbook(file_contents=record['workbook']).sheet_by_index(0)
             self.assertEqual(sheet.cell_value(1,2),buyer)
+
+    def test_reprepares_both_warehouses_with_existing_online_numbers(self):
+        selected=self.dual_selection()
+        keys=['BH'+'A'*24,'BH'+'B'*24]
+        with patch.object(service,'_online',side_effect=keys):
+            self.assertEqual(service.prepare(self.path,selected),{'ready':keys,'failed':[]})
+        service.process(self.path,keys[:1],self.portal,'preview')
+        originals=[self.read(key,workbook=True) for key in keys]
+        self.assertEqual([row['stage'] for row in originals],['PREVIEWED','PREPARED'])
+        self.assertEqual(service.prepare(self.path,selected),{'ready':keys,'failed':[]})
+        self.assertEqual([self.read(key,workbook=True) for key in keys],originals)
+        self.assertEqual(len(store.list_orders(self.path)),2)
+
+    def test_new_warehouse_cannot_take_another_warehouses_online_number(self):
+        north,south=self.dual_selection()
+        key='BH'+'A'*24
+        with patch.object(service,'_online',return_value=key):
+            self.assertEqual(service.prepare(self.path,[north]),{'ready':[key],'failed':[]})
+            original=self.read(key,workbook=True)
+            result=service.prepare(self.path,[south])
+        self.assertFalse(result['ready'])
+        self.assertIn('线上单号已关联其他仓单',result['failed'][0]['reason'])
+        self.assertEqual(self.read(key,workbook=True),original)

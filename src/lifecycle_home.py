@@ -9,13 +9,16 @@ import history_snapshot
 from lifecycle_facts import current, legacy_return
 from app_defaults import WAREHOUSES
 from result_semantics import SIGNED_GROUPS, order_quantity, signed_rows
-from lifecycle_rules import basis_token, document_summary
+from lifecycle_rules import JST_ORDER, basis_token, document_summary
 from lifecycle_stages import CURRENT as ALL_STAGES, STATUSES, progress_state
 from order_keys import warehouse_revision
 import warehouse_execution as execution
 from normal_orders import read_repository as repository
 from runtime_support import checkpoint
 from query_scope import oid_batches
+
+
+DOCUMENT_STAGES = (*ALL_STAGES, JST_ORDER)
 
 
 def _signed_parts(profile, rows, needs_legacy):
@@ -71,12 +74,26 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                 versions.update(((o,r,w,s),v) for o,r,w,s,v in db.execute('SELECT oid,revision,warehouse,stage,MAX(version) FROM lifecycle_versions WHERE oid IN ('+placeholders+') GROUP BY oid,revision,warehouse,stage',oids))
         older=set()
         selected_revisions={(h['oid'],h.get('warehouse')):h['revision'] for h in selected}
+        active_generations={}
+        if 'jst_active' in tables:
+            for marks,oids in oid_batches(o for o,r,w,s in versions if s==JST_ORDER):
+                active_generations.update(((o,w),gid) for o,w,gid in db.execute(
+                    'SELECT oid,warehouse,gid FROM jst_active WHERE oid IN ('+marks+')',oids))
+
+        def document_key(identity):
+            oid, _, warehouse, stage = identity
+            prefix='lifecycle-v3' if track_platform and stage=='payment' else 'lifecycle-v2'
+            parts=[prefix,source,*identity,versions[identity]]
+            if stage==JST_ORDER:
+                parts.append(active_generations.get((oid,warehouse)))
+            return wr.dumps(parts)
+
         doc_keys={}
         for oid,revision,warehouse,stage in versions:
             if revision!=selected_revisions.get((oid,warehouse),selected_revisions.get((oid,None))):older.add((oid,warehouse))
-            elif stage in ALL_STAGES:
+            elif stage in DOCUMENT_STAGES:
                 key=(oid,revision,warehouse,stage)
-                doc_keys[key]=wr.dumps(['lifecycle-v3' if track_platform and stage=='payment' else 'lifecycle-v2',source,*key,versions[key]])
+                doc_keys[key]=document_key(key)
         cached_documents={}
         for placeholders,keys in oid_batches(doc_keys.values()):
             checkpoint(cancel)
@@ -104,12 +121,12 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                 legacy = legacy_return(db, head, part['products']) if not present['return'] and (h['oid'],h['revision']) in legacy_keys else None
                 if legacy: present['return'] = legacy['complete']
                 summaries={}
-                for s in ALL_STAGES:
+                for s in DOCUMENT_STAGES:
                     version=versions.get((h['oid'],h['revision'],wh,s))
                     if version is None:summaries[s]=None;continue
                     with_number=track_platform and s=='payment'
                     identity=(*warehouse_revision(head),s)
-                    doc_key=doc_keys.get(identity) or wr.dumps(['lifecycle-v3' if with_number else 'lifecycle-v2',source,*identity,version])
+                    doc_key=doc_keys.get(identity) or document_key(identity)
                     cached=cached_documents.get(doc_key)
                     if cached and hashlib.sha256(cached[0].encode()).hexdigest()==cached[1]:summary=json.loads(cached[0])
                     else:

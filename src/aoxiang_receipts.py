@@ -100,7 +100,7 @@ def prepare(path, package, manifest, configuration, suppliers, *, cancel=None, p
         purchases.validate_head(db, head)
         basis = lifecycle.upstream(db, head, 'receipt')
         token = {'version': frozen['payment']['version'], 'digest': frozen['payment']['digest']}
-        if not basis['ready'] or basis['dependencies']['payment'] != token:
+        if not basis['ready'] or basis['dependencies'].get('payment') != token:
             raise ValueError('付款或上游依据已变化，需先核对，不能自动同步实收')
         old = lifecycle.current(db, head, 'receipt')
         if old:

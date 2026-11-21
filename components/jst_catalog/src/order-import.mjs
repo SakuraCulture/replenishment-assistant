@@ -1,10 +1,12 @@
 import crypto from 'node:crypto';
 import {CatalogError, canonical, check, sha} from './common.mjs';
 import {activateControl} from './product-export.mjs';
-import {LIST_PATH, ordinaryAudit, queryOrder, readOrder} from './order-list.mjs';
+import {LIST_PATH, ordinaryAudit, queryOrder, readImportResult, readNativeOrder, readOrder} from './order-list.mjs';
 
 const IMPORT_PATH = '/app/order/import/import.aspx';
 const PREVIEW_PATH = '/app/order/import/import_show.aspx';
+const MULTI = 'MultiCommodity';
+const SINGLE = 'SingleCommodity';
 const same = (a,b) => canonical(a) === canonical(b);
 const displayName = value => String(value || '').trim().replace(/\s+/g,' ');
 const workbookName = value => displayName(String(value || '').replace(/_x([0-9a-f]{4})_/gi,
@@ -128,6 +130,17 @@ async function visible(frame) {
   return element.isVisible();
 }
 
+async function importForm(frame) {
+  const {pathname,searchParams}=new URL(frame.url());
+  return pathname===IMPORT_PATH && !searchParams.has('source')
+    && await frame.locator('form#form1 input#order[type=file]').count()===1 && await visible(frame);
+}
+
+async function importPreview(frame) {
+  return new URL(frame.url()).pathname===PREVIEW_PATH
+    && await frame.locator('form#form1 input#txt_exception_datas').count()===1 && await visible(frame);
+}
+
 function compact(value) {
   return String(value || '').replace(/\s+/g,'');
 }
@@ -203,6 +216,9 @@ async function readPreview(form, spec) {
     }
     return evidence;
   }
+  const single=spec.import_format===SINGLE;
+  if (single && facts.count!==1)
+    fail('PREVIEW_CHANGED','单商品格式预览识别到 '+facts.count+' 张订单，整单必须只生成一张，未提交');
   if (facts.action!==PREVIEW_PATH || facts.count!==1 || facts.online!==spec.online
       || facts.status!=='已付款待审核' || facts.courier!=='现场取货')
     fail('PREVIEW_CHANGED','预览订单号、订单数、付款状态或取货方式不符');
@@ -218,8 +234,12 @@ async function readPreview(form, spec) {
   // The native preview may sort rows. Match the displayed names and quantities
   // as a multiset, with exact SKU verification on the resulting order.
   const missing=[];
+  const names=new Set();
   for (const [sku,qty] of spec.lines) {
     const name=workbookName(spec.preview_names?.[sku]);
+    if (single && name && names.has(name))
+      fail('PREVIEW_CHANGED','整单含同名商品，平台预览无法按名称区分编码，未提交');
+    if (single) names.add(name);
     const amount=quantityText(qty);
     const key=JSON.stringify([name,amount]);
     const count=observed.get(key)||0;
@@ -235,6 +255,11 @@ async function readPreview(form, spec) {
     fail('PREVIEW_CHANGED','平台预览有'+missing.length+'款商品或数量与原生成单不同');
   }
   evidence.amount = facts.amounts[0]?.replace(/[￥¥,\s]/g,'') ?? null;
+  if (single) {
+    if (evidence.amount===null) fail('PREVIEW_CHANGED','整单预览未返回可核验的金额，未提交');
+    evidence.import_format=SINGLE;
+    evidence.order_count=facts.count;
+  }
   evidence.contact_ok = contactMatches(spec,facts);
   return evidence;
 }
@@ -246,9 +271,15 @@ export class OrderPages {
 
   async openImport(page, spec) {
     await tab(page,'导入订单');
-    const frame=await orderFrame(page,async f=>new URL(f.url()).pathname===IMPORT_PATH
-      && !new URL(f.url()).searchParams.has('source') && await f.locator('form#form1 input#order[type=file]').count()===1
-      && await visible(f),this.allowed,'导入表单');
+    let frame=await orderFrame(page,async f=>await importForm(f)||await importPreview(f),this.allowed,'导入表单');
+    if (new URL(frame.url()).pathname===PREVIEW_PATH) {
+      // The portal can leave an old, unsubmitted preview in this tab.
+      // Return to a fresh form with GET. Never invoke the preview confirmation.
+      const target=new URL(IMPORT_PATH,frame.url());
+      if (!this.allowed(target.href)) fail('ORDER_PAGE_CHANGED','导入表单地址无法核验');
+      await frame.goto(target.href,{waitUntil:'domcontentloaded',timeout:12000});
+      frame=await orderFrame(page,importForm,this.allowed,'导入表单');
+    }
     const mode=await one(frame.locator('#importbyshop'),'按店铺导入选项');
     if (!await mode.isChecked()) await mode.check({timeout:8000});
     if (!await mode.isChecked()) fail('ORDER_PAGE_CHANGED','未选中按店铺导入');
@@ -275,6 +306,17 @@ export class OrderPages {
     return {...await readOrder(page,frame,spec,{pendingOnly,nativeOnly},signal),shop_id};
   }
 
+  async paymentDetail(page,spec,signal) {
+    if(!/^[1-9]\d*$/.test(spec.internal||'')||!/^[1-9]\d*$/.test(spec.binding?.shop_id||''))
+      fail('ACCOUNT_CHANGED','缺少已绑定的店铺和内部订单号');
+    return readNativeOrder(page,await this.orderList(page),spec,{payment:true},signal);
+  }
+
+  async importResult(page,spec,signal) {
+    if (!/^[1-9]\d*$/.test(spec.binding?.shop_id||'')) fail('ACCOUNT_CHANGED','原任务未保存已核对的店铺标识');
+    return readImportResult(page,await this.orderList(page),spec,signal);
+  }
+
   async preview(page,spec,signal) {
     const list=await this.orderList(page);
     if (await queryOrder(page,list,spec,null,signal)) fail('ORDER_EXISTS','该店铺与线上单号已存在，需核对原单');
@@ -283,7 +325,9 @@ export class OrderPages {
     if (spec.binding && shop_id!==spec.binding.shop_id) fail('ACCOUNT_CHANGED','原任务店铺标识已变化');
     const file=Buffer.from(spec.file||'','base64');
     if (!file.length||file.length>3000000||sha(file)!==spec.sha) fail('ORDER_FILE','制表文件摘要或大小不符');
-    const options=['#importbyshop','#MultiCommodity','#sku_price','#default_pay_date'];
+    const format=spec.import_format??MULTI;
+    if (format!==MULTI && format!==SINGLE) fail('ORDER_FILE','聚水潭导入格式无法核验');
+    const options=['#importbyshop','#'+format,'#sku_price','#default_pay_date'];
     for (const selector of options.slice(1)) await frame.locator(selector).check({timeout:8000});
     const filename=spec.online+'.xls';
     await frame.locator('input#order[type=file]').setInputFiles({
@@ -298,10 +342,12 @@ export class OrderPages {
         const files=f.querySelector('input#order')?.files;
         return {shop:f.querySelector('#shopOrDrpFrom')?.value,id:f.querySelector('#shopOrDrpFrom_v')?.value,
           checked:opts.every(v=>f.querySelector(v)?.checked),count:files?.length,
-          name:files?.[0]?.name,size:files?.[0]?.size,path:new URL(f.action).pathname,method:f.method};
+          name:files?.[0]?.name,size:files?.[0]?.size,path:new URL(f.action).pathname,method:f.method,
+          format:f.querySelector('input[name="import_formart"]:checked')?.value};
       },options);
       if (selected.shop!==spec.shop || selected.id!==shop_id || !selected.checked || selected.count!==1
-          || selected.name!==filename || selected.size!==file.length || selected.path!==PREVIEW_PATH || selected.method!=='post')
+          || selected.name!==filename || selected.size!==file.length || selected.path!==PREVIEW_PATH || selected.method!=='post'
+          || (format===SINGLE&&selected.format!==SINGLE))
         fail('PREVIEW_CHANGED','聚水潭预览前文件、店铺或导入选项已变化');
       check(signal);
     }});
@@ -321,7 +367,7 @@ export class OrderPages {
     await activateControl(controls.first(),{
       beforeDispatch:async()=>{
         const {amount,...scope}=await readPreview(preview,spec);
-        if (!same(scope,staged.evidence))
+        if (!same(scope,staged.evidence)||(spec.import_format===SINGLE&&amount!==staged.amount))
           fail('PREVIEW_CHANGED','最终导入前预览内容已变化');
         check(signal);
       }});
@@ -360,7 +406,7 @@ export class OrderFlow {
     const spec=input.spec;
     if (!spec||!/^BH[A-F0-9]{24}$/.test(spec.online||'')||spec.warehouse!==account?.warehouse||
         typeof spec.shop!=='string'||!spec.shop.trim()) fail('ACCOUNT_UNVERIFIED','缺少原订单和已核验仓账号');
-    const page=await this.driver.page(account,signal);
+    const page=await this.driver.page(account,signal,{retainedOnly:action==='payment_detail'&&input.retained_only===true});
     const {scope}=await this.driver.query(page,account);
     if (scope.coid!==account.expectedCoid||scope.uid!==account.expectedUid||scope.company!==account.expectedCompany)
       fail('ACCOUNT_CHANGED','浏览器企业或用户身份与原仓账号不同');
@@ -371,9 +417,16 @@ export class OrderFlow {
       const {shop_id}=await this.pages.openImport(page,spec);
       return {binding:{...scoped,shop_id}};
     }
-    const observed=['lookup','stage_audit'].includes(action)
-      ? await this.pages.lookup(page,spec,signal,action==='stage_audit')
-      : await this.pages.preview(page,spec,signal);
+    if(action==='payment_detail') {
+      const binding={...scoped,shop_id:spec.binding?.shop_id};
+      if(!same(binding,spec.binding)) fail('ACCOUNT_CHANGED','核验店铺与原付款资料的绑定不同');
+      const {frame,row,native,buyer,lines,...facts}=await this.pages.paymentDetail(page,spec,signal);
+      return {...facts,binding,online:spec.online,internal:spec.internal};
+    }
+    let observed;
+    if (action==='lookup'&&input.identity_only===true) observed=await this.pages.importResult(page,spec,signal);
+    else if (['lookup','stage_audit'].includes(action)) observed=await this.pages.lookup(page,spec,signal,action==='stage_audit');
+    else observed=await this.pages.preview(page,spec,signal);
     check(signal);
     const {frame,row,detail,preview,page:previewPage,shop_id,buyer,...facts}=observed;
     const binding={...scoped,shop_id};
@@ -386,6 +439,13 @@ export class OrderFlow {
     const staged={frame,row,detail,preview,page:previewPage,internal:facts.internal,evidence:{
       online:facts.online,shop:facts.shop,lines:facts.lines,
       issues:facts.issues,contact_ok:facts.contact_ok}};
+    if (action==='stage_import'&&spec.import_format===SINGLE) {
+      if (facts.order_count!==1||facts.import_format!==SINGLE||facts.amount==null)
+        fail('PREVIEW_CHANGED','单商品格式缺少一张整单的预览凭据，未提交');
+      staged.amount=facts.amount;
+      staged.evidence.order_count=facts.order_count;
+      staged.evidence.import_format=facts.import_format;
+    }
     this.permits.set(permit,{action:action==='stage_import'?'import':'audit',spec,binding,staged,expires:Date.now()+45000});
     return {...facts,binding,permit};
   }

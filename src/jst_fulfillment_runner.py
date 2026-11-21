@@ -15,11 +15,12 @@ class Runner(QObject):
         super().__init__(host)
         self.host = host
         self.worker = None
+        self.legacy_worker = False
         self.stopping = False
         self.blocked = False
         self.close_requested = False
         self.pending = []
-        self.message = '实配自动检查未开启'
+        self.message = '等待聚水潭原单付款资料'
         self.timer = QTimer(self)
         self.timer.setInterval(30000)
         self.timer.timeout.connect(self.tick)
@@ -31,7 +32,7 @@ class Runner(QObject):
             self.pending = jobs.waiting_review(self.host.work_repository.path)
         except (OSError, ValueError, sqlite3.Error) as exc:
             self.pending = []
-            self.message = '实配待核对清单暂不可读：' + str(exc)
+            self.message = '付款待核对清单暂不可读：' + str(exc)
             self.changed.emit()
             return False
         self.changed.emit()
@@ -47,9 +48,9 @@ class Runner(QObject):
                 or QApplication.activeModalWidget()):
             return
         try:
-            if not jobs.enabled(h.work_repository.path):
-                if self.message != '实配自动检查未开启':
-                    self.status('实配自动检查未开启')
+            originals = jobs.due_order_payment(h.work_repository.path)
+            legacy = jobs.enabled(h.work_repository.path)
+            if not originals and not legacy:
                 return
         except (OSError, ValueError, sqlite3.Error) as exc:
             self.status('本地实配清单暂不可读，下次自动检查时重试：' + str(exc))
@@ -60,16 +61,16 @@ class Runner(QObject):
         if owner.lease is not None or not owner.ready or not owner.client or not owner.client.running:
             self.status('等待已核验聚水潭连接空闲，未发起新登录')
             return
-        if self.message == '实配自动检查未开启':
-            self.status('实配自动检查已开启，等待原单配货')
         try:
-            keys = jobs.due(h.work_repository.path)
+            keys = originals or jobs.due(h.work_repository.path)
         except (OSError, ValueError, sqlite3.Error) as exc:
             self.status('本地实配清单暂不可读，下次自动检查时重试：' + str(exc))
             return
         if not keys:
             return
-        worker = Worker(service.run_background, (h.work_repository.path, keys, owner), self)
+        self.legacy_worker = not originals
+        reader = service.run_background if self.legacy_worker else service.retry_order_payment
+        worker = Worker(reader, (h.work_repository.path, keys, owner), self)
         self.worker = worker
         worker.status.connect(self.status)
         worker.success.connect(self.ready)
@@ -84,13 +85,13 @@ class Runner(QObject):
 
     def configured(self, enabled):
         self.blocked = False
-        if not enabled and self.worker:
+        if not enabled and self.worker and self.legacy_worker:
             self.worker.cancel.set()
-        self.status('实配自动检查已开启，等待原单配货' if enabled else '实配自动检查未开启')
+        self.status('历史出库资料检查已开启' if enabled else '等待聚水潭原单付款资料')
 
     def ready(self, rows):
         count = sum(row['state'] == 'READY' for row in rows)
-        self.message = f'实配检查 {len(rows)} 单，{count} 单待人工确认付款'
+        self.message = f'付款来源检查 {len(rows)} 单，{count} 单待人工确认付款'
         self.refresh_pending()
         if count and hasattr(self.host, 'status'):
             self.host.status.setText(self.message + '；可直接打开已回流资料。')
@@ -148,14 +149,14 @@ def install(host, home_layout):
         row = QHBoxLayout(panel)
         row.setContentsMargins(0, 0, 0, 0)
         note = label('', 'muted')
-        action = button('查看已回流实配', runner.open_review)
+        action = button('核对回读付款资料', runner.open_review)
         row.addWidget(note, 1)
         row.addWidget(action)
         layout.insertWidget(1, panel)
         def refresh(n=note, b=action):
             count = len(runner.pending)
-            n.setText(f'{count} 单实配已回流，等待人工确认付款' if count else runner.message)
-            b.setText(f'核对已回流实配（{count}）')
+            n.setText(f'{count} 单付款资料已读回，待人工确认付款' if count else runner.message)
+            b.setText(f'核对回读付款资料（{count}）')
             b.setEnabled(bool(count) and runner.worker is None and not runner.stopping)
         runner.changed.connect(refresh)
         refresh()

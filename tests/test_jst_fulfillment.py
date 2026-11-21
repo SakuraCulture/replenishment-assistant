@@ -31,6 +31,8 @@ class Fulfillment(unittest.TestCase):
         self.keys = self.fixture.prepared()
         automatic.process(self.path, self.keys, self.fixture.portal, 'preview')
         automatic.process(self.path, self.keys, self.fixture.portal, 'submit')
+        self.fixture.portal.orders[self.keys[0]].update(status='audited', native_status='已客审待财审')
+        automatic.process(self.path, self.keys, self.fixture.portal, 'recover')
         self.order = self.fixture.read(self.keys[0])
         self.head = self.order['payload']['head']
         self.root = self.fixture.f.f.root

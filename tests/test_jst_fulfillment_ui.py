@@ -109,7 +109,7 @@ class FulfillmentUI(unittest.TestCase):
         runner=install(self.host,layout)
         try:
             runner.refresh_pending()
-            buttons=[w for w in self.host.findChildren(QPushButton) if w.text().startswith('核对已回流实配')]
+            buttons=[w for w in self.host.findChildren(QPushButton) if w.text().startswith('核对回读付款资料')]
             self.assertEqual(len(buttons),2)
             self.assertTrue(all(w.isEnabled() and '（1）' in w.text() for w in buttons))
             with patch('jst_fulfillment_ui.review',return_value=None) as review:

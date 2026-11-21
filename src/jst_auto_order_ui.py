@@ -222,9 +222,9 @@ class Orders(QDialog):
         self.setWindowTitle('聚水潭自动下单')
         self.resize(1280,580)
         pane=QVBoxLayout(self)
-        pane.addWidget(label('核对仓单、店铺和商品数量，再确认导入并执行普通审核。'))
-        pane.addWidget(label('聚水潭导入时填写的付款时间用于平台状态。业务付款仍在付款核对确认。','muted'))
-        headers=('选择','门店','仓','补货单号','聚水潭店铺','款数','数量','分配金额','平台预览金额','线上单号','内部单号','状态','实配回流','处理提示')
+        pane.addWidget(label('核对仓单、店铺和商品数量后确认导入。原单查回后自动准备付款资料。'))
+        pane.addWidget(label('聚水潭的「已付款待审核」表示导入完成。实际付款由业务在付款核对中确认。','muted'))
+        headers=('选择','门店','仓','补货单号','聚水潭店铺','款数','数量','分配金额','平台预览金额','线上单号','内部单号','下单状态','付款资料','处理提示')
         self.table=QTableWidget(0,len(headers))
         self.table.setHorizontalHeaderLabels(headers)
         self.table.setSortingEnabled(False)
@@ -234,11 +234,13 @@ class Orders(QDialog):
         select.addWidget(button('勾选当前列表',lambda:self.select(True)))
         select.addWidget(button('清空勾选',lambda:self.select(False)))
         select.addWidget(button('刷新任务',self.reload))
-        self.allocation=button('查看实配并核对付款',self.pull_allocation)
+        self.allocation=button('补取付款资料并核对',self.pull_allocation)
         select.addWidget(self.allocation)
+        self.payment_history=button('历次付款资料',self.show_payment_history)
+        select.addWidget(self.payment_history)
         import jst_fulfillment_jobs as fulfillment_jobs
         from PySide6.QtWidgets import QCheckBox
-        self.auto_allocation=QCheckBox('自动检查实配（每5分钟，程序运行时）')
+        self.auto_allocation=QCheckBox('检查历史出库资料')
         self.auto_allocation.setChecked(fulfillment_jobs.enabled(self.path))
         self.auto_allocation.toggled.connect(self.configure_allocation)
         select.addWidget(self.auto_allocation)
@@ -249,7 +251,7 @@ class Orders(QDialog):
         row=QHBoxLayout()
         self.buttons={}
         for action,title in (('probe','核对平台账号和店铺'),('preview','平台预览'),
-                ('submit','导入并审核'),('recover','核对原单'),('audit','普通审核原单')):
+                ('submit','确认导入'),('recover','核对原单')):
             control=button(title,lambda checked=False,a=action:self.perform(a),action=='submit')
             self.buttons[action]=control
             row.addWidget(control)
@@ -279,7 +281,9 @@ class Orders(QDialog):
             self.table.setItem(i,0,item)
             state=allocation[r['online']]
             labels={'READY':'待人工确认付款','WAIT_ALLOCATION':'等待实配','CANCELLED':'原单取消',
-                    'WAIT_CONNECTION':'等待仓连接','SOURCE_UNVERIFIED':'来源待核','NEEDS_REVIEW':'实配待核'}
+                    'WAIT_CONNECTION':'等待仓连接','SOURCE_UNVERIFIED':'来源待核','NEEDS_REVIEW':'付款资料待核',
+                    'RETRY_PAYMENT_READ':'等待补取付款资料','PAYMENT_SOURCE_PENDING':'平台原单待核',
+                    'MATCHES_PAYMENT':'沿用已确认付款'}
             values=(r['name'] or r['store'],r['warehouse'],r['number'],r['shop'],r['sku_count'],r['quantity'],
                     r['amount'],r['preview_amount'],r['online'],r['internal'],STAGES[r['stage']],
                     labels.get((state or {}).get('state'),'尚未拉取'),(state or {}).get('message') or r['reason'])
@@ -308,9 +312,24 @@ class Orders(QDialog):
         self.buttons['preview'].setEnabled(free and not stages&RELEASED)
         self.buttons['submit'].setEnabled(free and stages=={'PREVIEWED'})
         self.buttons['recover'].setEnabled(free and stages<=RELEASED)
-        self.buttons['audit'].setEnabled(free and stages=={'IMPORTED'})
         self.export.setEnabled(free and len(rows)==1 and not stages&RELEASED)
         self.allocation.setEnabled(free and all(r['internal'] for r in rows))
+        self.payment_history.setEnabled(free and len(rows)==1 and bool(rows[0]['internal']))
+
+    def show_payment_history(self):
+        from contextlib import closing
+        from jst_order_payment import KIND, LABEL, LEGACY_KIND, LEGACY_LABEL
+        from jst_fulfillment_store import history
+        from readable_ui import details
+        from work_repository import read_connection
+        rows = self.selected()
+        if self.busy or len(rows) != 1:
+            return
+        with closing(read_connection(self.path)) as db:
+            records = history(db, rows[0]['online'])
+        details(self, '原单的历次付款资料', ['原件保存时间','来源','商品数量','商品金额','摘要'],
+                [[saved, {KIND: LABEL, LEGACY_KIND: LEGACY_LABEL}.get(kind, '聚水潭销售出库或历史实配明细'), quantity, amount, digest]
+                 for saved,kind,quantity,amount,digest in records])
 
     def pull_allocation(self):
         rows=self.selected()
@@ -320,7 +339,7 @@ class Orders(QDialog):
             from jst_fulfillment_ui import pull_and_review
             receipt=notify(self,lambda:pull_and_review(self,self.host,[r['online'] for r in rows]))
             if receipt is not None:
-                self.note.setText(f'实配付款核对完成 {len(receipt)} 单。')
+                self.note.setText(f'付款核对完成 {len(receipt)} 单。')
         finally:
             self.busy=False;self.reload()
 
@@ -348,10 +367,9 @@ class Orders(QDialog):
         if self.busy or not rows:
             return
         approved=None
-        if action in ('submit','audit'):
+        if action=='submit':
             lines='\n'.join(f"{r['name'] or r['store']} / {r['warehouse']} / {r['number']} / {r['online']} / {r['sku_count']}款、{r['quantity']}件" for r in rows)
-            title={'submit':'确认导入并普通审核','audit':'确认普通审核原单'}[action]
-            if not confirm(self,title,f'确认只处理以下 {len(rows)} 张仓单？\n\n'+lines):
+            if not confirm(self,'确认导入',f'确认导入以下 {len(rows)} 张仓单？\n\n'+lines):
                 return
             approved={r['online']:r['sequence'] for r in rows}
         from catalog_session_ui import manager
@@ -359,7 +377,8 @@ class Orders(QDialog):
         self.busy=True
         self.controls()
         try:
-            result=notify(self,lambda:run(self,service.run_browser,
+            from jst_fulfillment import run_order_actions
+            result=notify(self,lambda:run(self,run_order_actions,
                 (self.path,[r['online'] for r in rows],owner,action,approved),'聚水潭下单作业'))
             if result is not None:
                 replacements={r['replaces']:r['online'] for r in result if r.get('replaces')}

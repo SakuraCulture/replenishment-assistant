@@ -4,6 +4,7 @@ from decimal import Decimal
 from order_keys import document_version
 
 DOCUMENT_SCHEMA = 2
+JST_ORDER = 'jst_order'
 
 RULE = 'sequential-zero-v1'
 LABELS = {'value':'已提供', 'zero':'明确填0', 'blank':'空白按0', 'missing':'缺行按0', 'extra':'清单外商品'}

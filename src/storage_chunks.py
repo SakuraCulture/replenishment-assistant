@@ -75,8 +75,31 @@ class Prepared:
         raw=codec.dumps({'version':2,'tree':self.tree,'digest':self.digest,'size':self.size,'binding':self.binding}).encode()
         return MAGIC+hashlib.sha256(raw).digest()+zlib.compress(raw)
 
-def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None):
+def node_at(tree,path):
+    """Locate a named node without interpreting any packed object blocks."""
+    for key in path:
+        if tree[0] != 'dict':
+            return None
+        tree = next((child for name, child in tree[1] if name == key), None)
+        if tree is None:
+            raise KeyError(key)
+    return tree
+
+
+def _feed_ref(store,ref,feed,fragment=False):
+    tail=b'';first=True
+    for raw in store.raw(ref[1]):
+        if fragment:
+            if first:raw=raw[1:];first=False
+            data=tail+raw
+            if data:feed(data[:-1]);tail=data[-1:]
+        else:feed(raw)
+
+
+def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None,rows_from=None):
     """Encode once in bounded row blocks; never materialize a whole JSON string."""
+    if rows_from is not None and store is None:
+        raise ValueError('复用签发行块必须使用本批私有编码文件')
     if store is None:seen=set(existing);blocks={}
     else:
         from encoding_store import Blocks
@@ -104,7 +127,22 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None):
         count+=1
         if count%32==0:progress(RowProgress(f'编码内容块：{count:,}/{total:,}；复用 {count-len(blocks):,} 块',count,total))
         return ['ref',digest,raw_size]
-    def walk(v,depth=0):
+    def copy_rows():
+        nonlocal count
+        if rows_from[0]=='ref':
+            refs=(rows_from,)
+        else:
+            refs=rows_from[1]
+            feed(b'[')
+        for index,ref in enumerate(refs):
+            if index:feed(b', ')
+            _feed_ref(store,ref,feed,rows_from[0]=='array')
+            blocks.keys[ref[1]]=None
+        if rows_from[0]=='array':feed(b']')
+        count+=len(refs)
+        progress(RowProgress(f'复用当前门店商品行：{len(refs):,} 块',count,total))
+        return rows_from
+    def walk(v,depth=0,target=False):
         v=result_source(v)
         if isinstance(v,(dict,StagedMap)) and len(v)>BLOCK_ROWS:
             feed(b'{');parts=[];keys=sorted(v)
@@ -119,7 +157,9 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None):
                 if not isinstance(k,(str,int,float,bool)) and k is not None:raise TypeError('无效JSON对象键')
                 key=k if isinstance(k,str) else json.dumps(k,ensure_ascii=False,allow_nan=False)
                 if i:feed(b', ')
-                feed(codec.dumps(key).encode()+b': ');items.append([key,walk(v[k],depth+1)])
+                feed(codec.dumps(key).encode()+b': ')
+                child = copy_rows() if target and key=='rows' else walk(v[k],depth+1,rows_from is not None and depth==0 and key=='result')
+                items.append([key,child])
             feed(b'}');return ['dict',items]
         if isinstance(v,(list,tuple,StagedArray)) and len(v)>BLOCK_ROWS:
             feed(b'[');parts=[]
@@ -141,22 +181,14 @@ def business_digest(prepared,path,focus_revision=None):
     from encoding_store import Blocks
     if not isinstance(prepared.chunks,Blocks):return None
     node=prepared.tree
-    for key in path:
-        if node[0]!='dict':return None
-        node=next((v for k,v in node[1] if k==key),None)
-        if node is None:return None
+    try:node=node_at(node,path)
+    except KeyError:return None
+    if node is None:return None
     if node[0]!='dict':return None
     h=hashlib.sha256();store=prepared.chunks.store
     def emit(n,fragment=False):
         kind=n[0]
-        if kind=='ref':
-            tail=b'';first=True
-            for raw in store.raw(n[1]):
-                if fragment:
-                    if first:raw=raw[1:];first=False
-                    data=tail+raw
-                    if data:h.update(data[:-1]);tail=data[-1:]
-                else:h.update(raw)
+        if kind=='ref':_feed_ref(store,n,h.update,fragment)
         elif kind=='dict':
             h.update(b'{')
             for i,(key,child) in enumerate(n[1]):
@@ -177,11 +209,11 @@ def business_digest(prepared,path,focus_revision=None):
     return h.hexdigest()
 
 
-def put(db,p,*,cancel=None):
+def put(db,p,*,cancel=None,checked_rows=()):
     from runtime_support import checkpoint
     schema(db)
     from encoding_store import Blocks
-    if isinstance(p.chunks,Blocks):p.chunks.store.put(db,p.chunks,cancel)
+    if isinstance(p.chunks,Blocks):p.chunks.store.put(db,p.chunks,cancel,checked_rows=checked_rows)
     else:
         for h,(size,data) in p.chunks.items():
             checkpoint(cancel)
@@ -195,6 +227,7 @@ def put(db,p,*,cancel=None):
             for child in n[1]:yield from refs(child)
         else:raise ValueError('未知快照节点')
     for h,size in set(refs(p.tree)):
+        if (h,size) in checked_rows:continue
         checkpoint(cancel)
         row=db.execute('SELECT size FROM snapshot_chunks WHERE hash=?',(h,)).fetchone()
         if not row or row[0]!=size:raise ValueError('快照内容块缺失或长度不符：'+h)

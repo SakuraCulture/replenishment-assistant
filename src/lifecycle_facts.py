@@ -4,8 +4,10 @@ Callers own any supplied database connection and snapshot. Read proofs only
 reuse an already decoded projection after authenticating the current row.
 """
 import hashlib
+from decimal import Decimal
 
 import archive_orders as ao
+import jst_order_store as jst_orders
 import lifecycle_routes as flow
 import lifecycle_rules as rules
 import lifecycle_store as store
@@ -30,11 +32,22 @@ def current(db, head, stage, version=None,*,as_of=None,_proofs=None,_verified=No
             if _proofs is not None:_proofs[stage]=_verified[stage]
             return reused
     document=decode(row)
+    if stage==rules.JST_ORDER and document and not as_of:
+        if document['payload']['reference']['gid']!=jst_orders.active(db,head):
+            return None
     if _proofs is not None and document:
         from lifecycle_read_proofs import make
         proof=make(head,stage,row,document)
         if proof is not None:_proofs[stage]=proof
     return document
+
+
+def _ready(document, tokens):
+    if not document:
+        return False
+    payload=document['payload']
+    return (payload.get('schema')!=SCHEMA
+            or not payload.get('pending') and payload.get('basis',{}).get('dependencies')==tokens)
 
 
 def upstream(db, head, stage, staged=None,*,_proofs=None,_verified=None):
@@ -47,15 +60,18 @@ def upstream(db, head, stage, staged=None,*,_proofs=None,_verified=None):
             legacy=legacy_return(db,head,head['products'])
             if legacy and legacy['complete']:
                 doc={'version':legacy['version'],'digest':legacy['digest'],'payload':{'schema':1,'rows':[{'sku':k,'name':head['products'][k].get('name'),'base_quantity':str(v)} for k,v in legacy['values'].items()]}}
+        if s=='payment' and stage=='receipt' and valid:
+            if not _ready(doc,tokens) or not any(
+                    r.get('base_quantity') is not None and Decimal(str(r['base_quantity']))>0
+                    for r in doc['payload']['rows']):
+                order=current(db,head,rules.JST_ORDER)
+                if _ready(order,tokens):
+                    doc,s=order,rules.JST_ORDER
+        valid=valid and _ready(doc,tokens)
         tokens[s]=rules.basis_token(doc)
-        if doc is None:
-            valid=False
-        elif doc['payload'].get('schema')==SCHEMA:
-            p=doc['payload']
-            if p.get('pending') or p.get('basis',{}).get('dependencies')!={k:v for k,v in tokens.items() if k!=s}:valid=False
         previous=doc
     products=head['products'] if stage=='return' else rules.positive(previous['payload']['rows']) if previous and valid else {}
-    return {'stage':'signed' if stage=='return' else route[index-1], 'dependencies':tokens, 'signed_digest':head['digest'], 'ready':stage=='return' or valid, 'products':products}
+    return {'stage':next(reversed(tokens)) if tokens else 'signed', 'dependencies':tokens, 'signed_digest':head['digest'], 'ready':stage=='return' or valid, 'products':products}
 
 
 def legacy_return(db, head, products,*,as_of=None):

@@ -14,7 +14,7 @@ STAGES = {
     'PREPARED':'尚未导入',
     'PREVIEWED':'尚未导入',
     'IMPORT_UNKNOWN':'导入结果待核',
-    'IMPORTED':'已导入待审核',
+    'IMPORTED':'已导入',
     'AUDIT_UNKNOWN':'审核结果待核',
     'AUDITED':'普通审核完成',
     'REVIEW':'异常待处理',
@@ -77,6 +77,14 @@ def read(db, online, *, workbook=False):
     return value
 
 
+def read_warehouse_order(db, head):
+    if not exists(db):
+        return None
+    row = db.execute('SELECT online FROM jst_auto_orders WHERE oid=? AND warehouse=?',
+                     (head['oid'],head['warehouse'])).fetchone()
+    return read(db,row[0]) if row else None
+
+
 def need(payload, digest, online, gid):
     if token(payload)!=digest or payload['online']!=online or payload['gid']!=gid:
         raise ValueError('聚水潭自动下单资料摘要不符，需核对原任务')
@@ -134,8 +142,13 @@ def save_profiles(path, changes, progress=lambda _:None, cancel=None):
 
 
 def put_prepared(db, payload, workbook, expected):
-    online=payload['online']
-    old=read(db,online)
+    online = payload['online']
+    head = payload['head']
+    old = read_warehouse_order(db,head)
+    if old and old['online'] != online:
+        raise wr.Conflict('原下单任务号已变化，请刷新并核对原任务')
+    if not old and db.execute('SELECT 1 FROM jst_auto_orders WHERE online=?',(online,)).fetchone():
+        raise wr.Conflict('线上单号已关联其他仓单，请核对原自动下单任务')
     if old and old['stage'] in RELEASED:
         return old
     if (old or {}).get('sequence')!=expected:
@@ -143,12 +156,12 @@ def put_prepared(db, payload, workbook, expected):
     digest=token(payload)
     if old and old['digest']==digest:
         return old
-    h=payload['head'];stamp=wr.now()
+    stamp=wr.now()
     db.execute('''INSERT INTO jst_auto_orders VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(online) DO UPDATE SET gid=excluded.gid,stage=excluded.stage,sequence=excluded.sequence,
         updated=excluded.updated,payload=excluded.payload,digest=excluded.digest,file_sha=excluded.file_sha,
         workbook=excluded.workbook,proof=NULL,internal=NULL,platform_status=NULL,reason=excluded.reason''',
-        (online,h['oid'],h['warehouse'],payload['gid'],'PREPARED',0 if old is None else old['sequence']+1,
+        (online,head['oid'],head['warehouse'],payload['gid'],'PREPARED',0 if old is None else old['sequence']+1,
          stamp,stamp,wr.dumps(payload),digest,sha256(workbook).hexdigest(),workbook,None,None,None,'等待核对'))
     return read(db,online)
 
@@ -178,15 +191,47 @@ def list_orders(path):
                        internal,platform_status,reason FROM jst_auto_orders ORDER BY created DESC,rowid''')]
 
 
+def _deletion_scope(oid, warehouse):
+    if warehouse is None:
+        return 'oid=?', (oid,)
+    return 'oid=? AND warehouse=?', (oid,warehouse)
+
+
+def pending_deletion_orders(db, scopes, cancel=None):
+    """Read the original tasks that block removal of the selected warehouse orders."""
+    pending=[]
+    if not exists(db):
+        return pending
+    fields=('number','warehouse','stage','online','internal','sequence','reason')
+    for oid,warehouse in dict.fromkeys(scopes):
+        checkpoint(cancel)
+        condition,arguments=_deletion_scope(oid,warehouse)
+        for row in db.execute(
+                "SELECT coalesce(json_extract(payload,'$.head.number'),oid),warehouse,stage,online,internal,sequence,reason "
+                "FROM jst_auto_orders WHERE "+condition+" AND stage IN (?,?) ORDER BY warehouse",
+                (*arguments,*UNRESOLVED)):
+            pending.append(dict(zip(fields,row)))
+    return pending
+
+
+def require_resolved_deletion(db, scopes, cancel=None):
+    blocked=[]
+    for task in pending_deletion_orders(db,scopes,cancel):
+        identity='内部单号 '+task['internal'] if task['internal'] else '线上单号 '+task['online']
+        status=STAGES[task['stage']]
+        details=f"{task['number']} · {task['warehouse']} · {identity} · {status}"
+        blocked.append(details+(' · '+task['reason'] if task['reason'] else ''))
+    if blocked:
+        raise wr.Conflict('以下仓单的聚水潭原单仍待核。再次点击“彻底删除勾选订单”会自动回查。\n'+'\n'.join(sorted(blocked)))
+
+
 def delete_orders(db, scopes):
     if not exists(db):
         return
+    scopes=tuple(scopes)
+    require_resolved_deletion(db,scopes)
     for oid,warehouse in scopes:
-        condition='oid=?'+(' AND warehouse=?' if warehouse else '')
-        arguments=(oid,warehouse) if warehouse else (oid,)
-        if db.execute('SELECT 1 FROM jst_auto_orders WHERE '+condition+" AND stage IN ('IMPORT_UNKNOWN','AUDIT_UNKNOWN')",
-                      arguments).fetchone():
-            raise wr.Conflict('所选仓单的聚水潭导入或审核结果待核，请先从原自动下单任务核对原单')
+        condition,arguments=_deletion_scope(oid,warehouse)
         for table in ('jst_fulfillment_checks','jst_fulfillment_sources'):
             if exists(db,table):
                 db.execute('DELETE FROM '+table+' WHERE online IN (SELECT online FROM jst_auto_orders WHERE '+condition+')',arguments)

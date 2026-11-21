@@ -22,7 +22,7 @@ from jst_order_guards import guard_payment, guard_return
 from jst_task_store import enqueue
 from lifecycle_stages import FINISHED, PENDING, STATUSES, route as document_route
 from lifecycle_stages import presence_state as state, progress_state
-from lifecycle_rules import DOCUMENT_SCHEMA as SCHEMA, document_summary
+from lifecycle_rules import DOCUMENT_SCHEMA as SCHEMA, JST_ORDER, document_summary
 from order_keys import warehouse_revision as key
 import lifecycle_store as store
 from lifecycle_store import attachment_files, decode, exists, fingerprint, schema
@@ -376,6 +376,9 @@ def read_documents(db,head,cancel=None,*,as_of=None,compact=False):
         document=current(db,head,stage,as_of=as_of)
         docs[stage]=_comparison_document(document) if compact and stage!='payment' else document
         del document
+    ordered=current(db,head,JST_ORDER,as_of=as_of)
+    if ordered:
+        docs[JST_ORDER]=_comparison_document(ordered) if compact else ordered
     return route,docs
 
 
@@ -383,7 +386,7 @@ def snapshot_state(head,route,docs,legacy):
     present={s:bool(docs[s]) for s in STAGES}
     if not present['return'] and legacy:present['return']=legacy['complete']
     if 'operations' in docs:present['operations']=bool(docs['operations'])
-    status,next_stage,note,health=progress_state({s:document_summary(docs[s]) for s in route},legacy,route==flow.CURRENT)
+    status,next_stage,note,health=progress_state({s:document_summary(d) for s,d in docs.items()},legacy,route==flow.CURRENT)
     return {'head':head,'documents':docs,'legacy_return':legacy,'present':present,
             'status':status,'next':next_stage,'note':note,'health':health,'flow_version':2 if route==flow.CURRENT else 1}
 

@@ -1,4 +1,4 @@
-"""The native, one-row, multi-SKU 聚水潭 XLS import format."""
+"""Native 聚水潭 order XLS formats. Every output represents exactly one order."""
 from decimal import Decimal
 from hashlib import sha256
 from io import BytesIO
@@ -13,6 +13,8 @@ TEMPLATE = Path(__file__).with_name('jst-order-template.xls')
 MAX_CELL = 32_767
 MAX_BYTES = 3_000_000
 MAX_DATA_ROWS = 30_000
+MULTI = 'MultiCommodity'
+SINGLE = 'SingleCommodity'
 CONTACT = {
     'buyer': (2, '买家帐号'),
     'recipient': (11, '收货人姓名'),
@@ -61,9 +63,19 @@ def order_lines(rows, cancel=None):
                    'amount':decimal_text(amount),'sku_cell_chars':chars}
 
 
-def make_file(profile, online, lines, stats, *, template=TEMPLATE):
-    if stats['sku_cell_chars'] > MAX_CELL:
+def validate_phone(profile):
+    phone = profile.get('phone')
+    if not isinstance(phone, str) or len(phone) != 11 or not phone.isascii() or not phone.isdigit():
+        raise ValueError('收货手机须为11位数字，请核对本仓配送资料')
+
+
+def make_file(profile, online, lines, stats, *, template=TEMPLATE, import_format=MULTI, cancel=None):
+    if import_format not in (MULTI,SINGLE):
+        raise ValueError('未知聚水潭导入格式')
+    if import_format == MULTI and stats['sku_cell_chars'] > MAX_CELL:
         raise ValueError(f"U 列商品串 {stats['sku_cell_chars']:,} 字符，超过 {MAX_CELL:,}；需核验可保留整单的其他格式")
+    if not lines or (import_format == SINGLE and len(lines) > MAX_DATA_ROWS):
+        raise ValueError(f'单张订单的明细超出聚水潭 {MAX_DATA_ROWS:,} 行限制或没有商品')
     values = {}
     for field, (column, title) in CONTACT.items():
         value = profile.get(field)
@@ -72,9 +84,14 @@ def make_file(profile, online, lines, stats, *, template=TEMPLATE):
         if cell_length(value) > MAX_CELL:
             raise ValueError(title+'超过 Excel 单格长度')
         values[column] = value
-    values.update({0:online, 20:','.join(f'{sku}*{qty}' for sku,qty,_ in lines), 25:'否', 29:'现场取货'})
-    if cell_length(values[20]) > MAX_CELL or 1 > MAX_DATA_ROWS:
-        raise ValueError('多商品导入文件超出单格或数据行限制')
+    validate_phone(profile)
+    values.update({0:online, 20:None, 25:'否', 29:'现场取货'})
+    if import_format == MULTI:
+        items = [(','.join(f'{sku}*{qty}' for sku,qty,_ in lines), None)]
+    else:
+        items = [(sku,qty) for sku,qty,_ in lines]
+    if any(cell_length(sku) > MAX_CELL for sku,_ in items):
+        raise ValueError('商品编码或多商品串超过 Excel 单格长度')
 
     import xlrd
     import xlwt
@@ -91,8 +108,16 @@ def make_file(profile, online, lines, stats, *, template=TEMPLATE):
     book = copy(source)
     sheet = book.get_sheet(0)
     style = xlwt.easyxf(num_format_str='@')
-    for column,value in values.items():
-        sheet.write(1,column,value,style)
+    for index, (sku, qty) in enumerate(items, 1):
+        checkpoint(cancel)
+        # Keep the existing one-row template field order byte-compatible.
+        for column,value in values.items():
+            sheet.write(index,column,sku if column==20 else value,style)
+        if qty is not None:
+            native_quantity = float(qty)
+            if Decimal(str(native_quantity)) != Decimal(qty):
+                raise ValueError('该商品的数量无法按原精度写入聚水潭 XLS')
+            sheet.write(index,23,native_quantity)
     with BytesIO() as target:
         book.save(target)
         content=target.getvalue()
