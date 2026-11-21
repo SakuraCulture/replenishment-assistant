@@ -12,6 +12,17 @@ PAYMENT_STATES = frozenset((AWAITING, AUDITED, *SHIPPING))
 REVERSED = frozenset(('待付款', '已取消', '被合并', '被拆分', '异常', '等供销商|外仓发货'))
 
 
+def buyer_issue(receipt):
+    status = receipt.get('buyer_check')
+    if status == 'mismatch':
+        return '回查的完整买家账号与原任务不同'
+    if status == 'unavailable':
+        return '聚水潭未返回可核验的完整买家账号，原单身份待核'
+    if status not in (None, 'verified') or receipt.get('contact_ok') is not True:
+        return '聚水潭原单买家身份待核'
+    return ''
+
+
 def record(db, task, status, *, rows=None):
     if not (status in PAYMENT_STATES and (rows is not None or status == AUDITED)) and status not in REVERSED:
         return

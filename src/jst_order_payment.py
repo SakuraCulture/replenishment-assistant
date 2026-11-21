@@ -4,7 +4,7 @@ from hashlib import sha256
 
 from jst_allocation import number
 from jst_auto_order_template import decimal_text
-from jst_order_confirmation import PAYMENT_STATES
+from jst_order_confirmation import PAYMENT_STATES, buyer_issue
 from payment_evidence import HEAD_KEYS
 from runtime_support import checkpoint
 from snapshot_json import dumps
@@ -29,10 +29,13 @@ def money(value, label):
 def prepare(order, receipt, cancel=None):
     payload = order['payload']
     binding = (order['proof'] or {}).get('binding')
-    if (receipt.get('found') is not True or receipt.get('contact_ok') is not True or not binding
+    if (receipt.get('found') is not True or not binding
             or receipt.get('native_status') not in PAYMENT_STATES or receipt.get('binding') != binding
             or receipt.get('online') != order['online'] or receipt.get('internal') != order['internal']):
-        raise ValueError('聚水潭原单的企业、仓、店铺、买家或订单身份尚未核实')
+        raise ValueError('聚水潭原单的企业、仓、店铺或单号尚未核实')
+    buyer_problem = buyer_issue(receipt)
+    if buyer_problem:
+        raise ValueError(buyer_problem)
     if receipt.get('currency') not in CURRENCIES:
         raise ValueError('聚水潭成交币种不是已核验的人民币')
     expected = {sku: (qty, price) for sku, qty, price in payload['lines']}

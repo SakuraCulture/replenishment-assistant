@@ -6,6 +6,22 @@ export const nativeStatus=value=>({取消:'已取消',发货中:'发货中(打�
 const paymentStates=new Set(['已付款待审核','已客审待财审','发货中(打单拣货)','已发货']);
 export const canReadPayment=value=>paymentStates.has(nativeStatus(value));
 
+function completeBuyer(value) {
+  if (typeof value!=='string'&&!Number.isSafeInteger(value)) return '';
+  const text=String(value).trim();
+  return !text||/[*＊•●]/u.test(text)||/^[-–—]+$/u.test(text) ? '' : text;
+}
+
+export function checkBuyer(value,expected) {
+  const actual=completeBuyer(value), original=completeBuyer(expected);
+  if (!actual||!original) return 'unavailable';
+  return actual===original ? 'verified' : 'mismatch';
+}
+
+export function buyerEvidence(buyer_check) {
+  return {buyer_check,contact_ok:buyer_check==='verified'};
+}
+
 export async function fullOrder(frame,spec,{coid,shop_id,count,payment=false}={},signal){
   check(signal);
   if(!/^[1-9]\d*$/.test(spec.internal||''))fail('整单明细缺少已核验内部订单号');
@@ -33,7 +49,7 @@ export async function fullOrder(frame,spec,{coid,shop_id,count,payment=false}={}
     fail('原生整单商品编码、数量或成交价缺失、重复或不明');
   return {internal:spec.internal,online:spec.online,shop:spec.shop,shop_id:String(row.shop_id),coid:String(row.co_id),
     native_status:nativeStatus(row.status),amount:String(row.pay_amount),freight:String(row.freight??0),
-    contact_ok:!!spec.contact&&row.shop_buyer_id===spec.contact.buyer,
+    ...buyerEvidence(checkBuyer(row.shop_buyer_id,spec.contact?.buyer)),
     items,lines:items.map(r=>[r.sku,r.qty,r.price]),observed:new Date().toISOString(),
     ...(payment?{currency:row.currency||'CNY',detail_count:items.length}: {})};
 }

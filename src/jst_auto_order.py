@@ -316,8 +316,10 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
     if result.get('binding')!=proof['binding'] or result.get('online')!=order['online']:
         raise Check('回查的企业、店铺或线上单号与原任务不同')
     if identity_only:
-        if result.get('contact_ok') is not True:
-            raise Check('回查的买家身份与原任务不同')
+        buyer_problem=confirmation.buyer_issue(result)
+        if buyer_problem:
+            detail=result.get('detail_error')
+            raise Check(buyer_problem+(' · '+detail if detail and result.get('buyer_check')=='unavailable' else ''))
     else:
         _preview_evidence(order, {**result,'exists':False,'issues':[]})
     internal=result.get('internal')

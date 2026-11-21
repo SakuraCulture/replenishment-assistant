@@ -28,6 +28,7 @@ class Platform(fixture.Portal):
     price = '2.75'
     freight = '2'
     detail_error = ''
+    detail_buyer_check = 'verified'
     change_lookup_quantity = False
     total = '35'
 
@@ -36,7 +37,8 @@ class Platform(fixture.Portal):
             self.calls.append((name, order['online']))
             existing = self.orders[order['online']]
             sku = order['payload']['lines'][0][0]
-            return {'found': True, 'contact_ok': True, 'online': order['online'], 'internal': existing['internal'],
+            return {'found': True, 'contact_ok': self.detail_buyer_check == 'verified', 'buyer_check': self.detail_buyer_check,
+                    'online': order['online'], 'internal': existing['internal'],
                     'native_status': existing.get('native_status'), 'binding': order['proof']['binding'],
                     'items': [{'sku':sku,'qty':self.qty,'price':self.price,'amount':str(Decimal(self.qty)*Decimal(self.price))}],
                     'detail_count':1,'currency':'CNY','freight':self.freight,'amount':self.total,'detail_error':self.detail_error}
@@ -59,6 +61,51 @@ class OrderPayment(unittest.TestCase):
 
     def submit(self):
         return automatic.process(self.path,self.keys,self.portal,'submit',prepare_payment=service.pull_order_payment)[0]
+
+    def test_original_lookup_waits_for_buyer_verification_then_writes_and_pulls_once(self):
+        original = self.base.read(self.online)
+        automatic._save(self.path, original, 'IMPORT_UNKNOWN', None, reason='合成原任务已发起导入')
+        remote = {'internal':'1333805','status':'audited','native_status':confirmation.AUDITED}
+        self.portal.orders[self.online] = remote
+        for buyer_check, message in (('unavailable','原单身份待核'),('mismatch','完整买家账号与原任务不同')):
+            with self.subTest(buyer_check=buyer_check):
+                remote.update(buyer_check=buyer_check,contact_ok=False)
+                result, = automatic.process(self.path,self.keys,self.portal,'recover',prepare_payment=service.pull_order_payment)
+                self.assertEqual(result['stage'],'IMPORT_UNKNOWN')
+                self.assertIn(message,result['reason'])
+                self.assertIsNone(self.base.read(self.online)['internal'])
+                self.assertNotIn('payment',result)
+                self.assertFalse(jobs.waiting_review(self.path))
+        remote.update(buyer_check='verified',contact_ok=True)
+        first, = automatic.process(self.path,self.keys,self.portal,'recover',prepare_payment=service.pull_order_payment)
+        second, = automatic.process(self.path,self.keys,self.portal,'recover',prepare_payment=service.pull_order_payment)
+        self.assertEqual((first['stage'],first['payment']['state']),('AUDITED','READY'))
+        self.assertEqual(first['payment']['digest'],second['payment']['digest'])
+        self.assertEqual(self.base.read(self.online)['internal'],'1333805')
+        self.assertEqual(jobs.waiting_review(self.path),[self.online])
+        with closing(wr.read_connection(self.path)) as db:
+            self.assertEqual(len(sources.history(db,self.online)),1)
+        self.assertFalse(lifecycle.snapshot(self.path,self.base.head)['present']['payment'])
+        self.assertEqual([a for a,_ in self.portal.calls],['preview','lookup','lookup','lookup','payment_detail','lookup','payment_detail'])
+
+    def test_insufficient_buyer_evidence_or_conflict_blocks_payment_recheck(self):
+        ready = self.submit()['payment']
+        plan, _ = service.prepare_review(self.path,self.keys)
+        self.portal.orders[self.online]['native_status'] = confirmation.AUDITED
+        for buyer_check, message in (('unavailable','原单身份待核'),('mismatch','完整买家账号与原任务不同')):
+            with self.subTest(buyer_check=buyer_check):
+                self.portal.detail_buyer_check = buyer_check
+                result, = service.pull_order_payment(self.path,self.keys,self.portal)
+                self.assertEqual(result['state'],'NEEDS_REVIEW')
+                self.assertIn(message,result['message'])
+                self.assertEqual(self.base.read(self.online)['stage'],'IMPORTED')
+                self.assertFalse(jobs.waiting_review(self.path))
+                with patch.object(service,'run_order_payment',side_effect=lambda *args: service.pull_order_payment(self.path,self.keys,self.portal)):
+                    with self.assertRaisesRegex(wr.Conflict,message):
+                        service.verify_order_before_commit(self.path,plan['jst_fulfillment'],None)
+                self.assertFalse(lifecycle.snapshot(self.path,self.base.head)['present']['payment'])
+                with closing(wr.read_connection(self.path)) as db:
+                    self.assertEqual(sources.current(db,self.online)['digest'],ready['digest'])
 
     def test_imported_candidate_is_automatic_and_retains_quantity_difference(self):
         self.portal.change_lookup_quantity = True

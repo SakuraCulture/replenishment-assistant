@@ -88,13 +88,15 @@ const pages = {
     'parent.auditCount++;parent.statusValue="waitfconfirm";}}</script>',
 };
 
-async function openFixture(t,{large=[],split=false,shortShop=false}={}){
+async function openFixture(t,{large=[],split=false,shortShop=false,listBuyer=contact.buyer,
+  detailBuyer=contact.buyer,displayBuyer=contact.buyer,detailOverrides={}}={}){
   const submittedFormats=[];
+  const detailReads=[];
   const nativeItem=(sku,qty)=>({sku_id:sku,qty,price:'2',amount:String(Number(qty)*2)});
   const nativeItems=large.length ? large.map(([sku,qty])=>nativeItem(sku,qty)) : [nativeItem('00001','10')];
   const nativeOrder=state=>({o_id:'9001',so_id:online,shop_name:shop,co_id:'55',shop_id:'102',
     status:{waitconfirm:'已付款待审核',waitfconfirm:'已客审待财审',delivering:'发货中',sent:'已发货'}[state],
-    item_actual_count:nativeItems.length,shop_buyer_id:contact.buyer,pay_amount:'20.00',freight:'0'});
+    item_actual_count:nativeItems.length,shop_buyer_id:listBuyer,pay_amount:'20.00',freight:'0'});
   const server=http.createServer(async (req,res)=>{
     if(req.method==='POST' && req.url===listPath) {
       const chunks=[];
@@ -109,12 +111,14 @@ async function openFixture(t,{large=[],split=false,shortShop=false}={}){
     }
     const url=new URL(req.url,'http://localhost');
     if(url.pathname==='/order-facts') {
+      detailReads.push(url.searchParams.get('status'));
       res.writeHead(200,{'Content-Type':'application/json'});
-      res.end(JSON.stringify({...nativeOrder(url.searchParams.get('status')),items:nativeItems}));
+      res.end(JSON.stringify({...nativeOrder(url.searchParams.get('status')),items:nativeItems,shop_buyer_id:detailBuyer,...detailOverrides}));
       return;
     }
     let html=pages[url.pathname];
     if (shortShop&&url.pathname===listPath) html=html.replace(shop,'合成简称');
+    if (url.pathname===listPath) html=html.replace('<span>'+contact.buyer+'</span>','<span>'+displayBuyer+'</span>');
     if (req.method==='POST') {
       const chunks=[];
       for await(const part of req) chunks.push(part);
@@ -142,7 +146,7 @@ async function openFixture(t,{large=[],split=false,shortShop=false}={}){
   const account={warehouse:wh,expectedCoid:'55',expectedUid:'65',expectedCompany:'合成企业',bindingVersion:1};
   const driver={page:async()=>page,query:async()=>({scope:{coid:'55',uid:'65',company:'合成企业'}})};
   const orderPages=new OrderPages({allowed:url=>url.startsWith(base+'/')&&url!==base+'/'});
-  return {page,account,submittedFormats,flow:new OrderFlow(driver,{pages:orderPages})};
+  return {page,account,submittedFormats,detailReads,flow:new OrderFlow(driver,{pages:orderPages})};
 }
 
 test('native controls preview, import, reconcile and ordinary audit exactly one order',{skip:!fs.existsSync(edge),timeout:60000},async t=>{
@@ -280,4 +284,43 @@ test('exact import and full payment read work before audit under the frozen nati
   assert.deepEqual(shipped.items,awaiting.items);
   await assert.rejects(flow.run('payment_detail',{spec:{...exact,internal:'9002'}},account),/内部单号与原单不同/);
   assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[1,0,0]);
+});
+
+test('masked, missing and conflicting buyers on the exact original order',
+  {skip:!fs.existsSync(edge),timeout:120000},async t=>{
+  const listMask='0***0';
+  const swappedBuyer='00020';
+  const large=Array.from({length:582},(_,i)=>[String(i+1).padStart(5,'0'),i===581?'45':'18']);
+  const scenarios=[
+    ['masked list with complete original detail', {listBuyer:listMask,large},'verified','verified',2],
+    ['empty list with complete original detail', {listBuyer:null},'verified','verified',2],
+    ['masked list and empty detail', {listBuyer:listMask,detailBuyer:''},'unavailable','unavailable',2],
+    ['masked list and different full detail account', {listBuyer:listMask,detailBuyer:swappedBuyer},'mismatch','mismatch',2],
+    ['different full list account', {listBuyer:swappedBuyer},'mismatch','mismatch',0],
+    ['complete list account can verify its masked detail', {detailBuyer:listMask},'verified','verified',1],
+    ['different full detail account still blocks payment', {detailBuyer:swappedBuyer},'verified','mismatch',1],
+    ['detail with a different internal order cannot verify the buyer', {listBuyer:null,detailOverrides:{o_id:'9002'}},'unavailable','unavailable',2],
+  ];
+  for (const [name,options,lookupBuyer,paymentBuyer,reads] of scenarios) {
+    await t.test(name,async sub=>{
+      const {page,account,flow,detailReads}=await openFixture(sub,{displayBuyer:listMask,...options});
+      await page.evaluate(()=>{statusValue='waitfconfirm';});
+      const bound={...spec,phase:'IMPORT_UNKNOWN',binding:{warehouse:wh,shop,company:account.expectedCompany,
+        coid:account.expectedCoid,uid:account.expectedUid,version:account.bindingVersion,shop_id:'102'}};
+      const found=await flow.run('lookup',{spec:bound,identity_only:true},account);
+      assert.equal(found.internal,'9001');
+      assert.equal(found.native_status,'已客审待财审');
+      assert.equal(found.buyer_check,lookupBuyer);
+      assert.equal(found.contact_ok,lookupBuyer==='verified');
+      const payment=await flow.run('payment_detail',{spec:{...bound,internal:found.internal}},account);
+      assert.equal(payment.buyer_check,paymentBuyer);
+      assert.equal(payment.contact_ok,paymentBuyer==='verified');
+      assert.equal(detailReads.length,reads);
+      assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[0,0,0]);
+      if (options.large) {
+        assert.equal(payment.detail_count,582);
+        assert.equal(payment.items.reduce((n,item)=>n+Number(item.qty),0),10503);
+      }
+    });
+  }
 });
