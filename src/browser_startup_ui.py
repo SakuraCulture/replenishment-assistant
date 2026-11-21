@@ -5,7 +5,7 @@ from datetime import datetime
 from PySide6.QtCore import QObject, QThread, QTimer, Signal
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout
 from ui_controls import button
-from browser_startup import result, error_result, check_ax, check_jst
+from browser_startup import REBIND_REQUIRED, result, error_result, check_ax, check_jst
 
 NAMES = ('翱象', '山东仓', '河北仓')
 TEXT = {'CHECKING': '连接核验中', 'READY': '登录已核验', 'LOGIN_REQUIRED': '需要登录',
@@ -179,31 +179,62 @@ class StartupConnections(QObject):
     def open_details(self):
         dialog = QDialog(self.host); dialog.setWindowTitle('连接检查与修复'); dialog.resize(850, 360)
         layout = QVBoxLayout(dialog)
-        note = QLabel('启动时自动连接并核验登录；这里只检查连接，不采集资料、不重发导出或采购。')
+        note = QLabel('启动时自动连接并核验登录；这里可检查连接或核验仓账号绑定。')
         note.setWordWrap(True); layout.addWidget(note)
-        grid = QGridLayout(); grid.setColumnStretch(1,1); layout.addLayout(grid); labels = {}
+        grid = QGridLayout(); grid.setColumnStretch(1, 1); layout.addLayout(grid)
+        labels = {}; actions = {}
+
+        def needs_repair(name):
+            record = self.records.get(name, {})
+            return name in NAMES[1:] and record.get('state') == 'CONFIG_REQUIRED' and record.get('code') == REBIND_REQUIRED
+
+        def catalog_busy():
+            owner = getattr(getattr(self.host, 'catalog_sessions', None), 'session', None)
+            return 'jst' in self.workers or getattr(owner, 'lease', None) is not None
+
+        def configure(kind, *, binding_repair=False):
+            if binding_repair and catalog_busy():
+                note.setText('聚水潭原操作结束后，可核验本仓账号。')
+                return
+            if not binding_repair and self.workers:
+                note.setText('正在安全结束自动检查，请等待状态更新后再打开配置。')
+                for worker in self.workers.values():
+                    worker.cancel.set()
+                return
+            dialog.accept()
+            if kind == 'ax':
+                self.host.open_aoxiang_setup()
+            else:
+                from catalog_sync_ui import open_sync
+                open_sync(self.host, [kind], binding_repair=binding_repair)
+                self.retry([kind])
+
+        def act(name):
+            if needs_repair(name):
+                configure(name, binding_repair=True)
+            else:
+                self.retry([name])
+
         for i, name in enumerate(NAMES):
             grid.addWidget(QLabel(name), i, 0)
             detail = QLabel(); detail.setWordWrap(True); grid.addWidget(detail, i, 1); labels[name] = detail
-            grid.addWidget(button('重新检查', lambda checked=False, n=name: self.retry([n])), i, 2)
+            action = button('重新检查', lambda checked=False, n=name: act(n))
+            actions[name] = action; grid.addWidget(action, i, 2)
+
         def refresh():
+            waiting = catalog_busy()
             for name, label in labels.items():
                 record = self.records.get(name, result('WAITING', '尚未检查'))
                 label.setText(TEXT[record['state']] + '：' + record['message'] +
                               ('\n原因编号：' + record['code'] if record.get('code') else ''))
+                repair = needs_repair(name)
+                actions[name].setText('核验并保存' if repair else '重新检查')
+                actions[name].setEnabled(not (repair and waiting))
+                actions[name].setToolTip('原操作结束后可核验本仓账号' if repair and waiting else '')
+
         timer = QTimer(dialog); timer.setInterval(500); timer.timeout.connect(refresh); timer.start(); refresh()
         row = QHBoxLayout(); layout.addLayout(row)
-        def configure(kind):
-            if self.workers:
-                note.setText('正在安全结束自动检查，请等待状态更新后再打开配置。')
-                for worker in self.workers.values(): worker.cancel.set()
-                return
-            dialog.accept()
-            if kind == 'ax': self.host.open_aoxiang_setup()
-            else:
-                from catalog_sync_ui import open_sync
-                open_sync(self.host, [kind])
-                self.retry([kind])
         row.addWidget(button('翱象配置', lambda: configure('ax')))
-        for name in NAMES[1:]: row.addWidget(button(name + '配置', lambda checked=False, n=name: configure(n)))
+        for name in NAMES[1:]:
+            row.addWidget(button(name + '配置', lambda checked=False, n=name: configure(n, binding_repair=needs_repair(n))))
         row.addStretch(); row.addWidget(button('关闭', dialog.accept)); dialog.exec()

@@ -8,7 +8,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 from PySide6.QtWidgets import QApplication,QMainWindow
 from aoxiang_session import SessionOwner as AxOwner,SessionGate
 from catalog_sync_session import SessionOwner as JstOwner
-from browser_startup import check_ax,check_jst,error_result,yield_startup
+from browser_startup import REBIND_REQUIRED,check_ax,check_jst,error_result,yield_startup
 from browser_startup_ui import StartupConnections,start_application_connections
 from browser_startup_fixture import AxFixture,JstFixture
 from browser_status_ui import BrowserStatus
@@ -44,6 +44,11 @@ class Checks(unittest.TestCase):
         for code in ['WAIT_LOGIN','LOGIN_REQUIRED']:
             self.assertEqual(error_result({'code':code,'message':'test'})['state'],'LOGIN_REQUIRED')
         self.assertEqual(error_result({'code':'WRONG_ACCOUNT'})['state'],'WRONG_ACCOUNT')
+        for message in ('聚水潭当前公司与本仓配置的公司不一致。','聚水潭当前操作员与本仓绑定账号不一致。'):
+            with self.subTest(message=message):
+                self.assertEqual(error_result({'code':'WRONG_ACCOUNT','message':message}),
+                                 {'code':'WRONG_ACCOUNT','state':'WRONG_ACCOUNT','message':message})
+        self.assertEqual(error_result({'code':REBIND_REQUIRED})['state'],'CONFIG_REQUIRED')
 
     def test_missing_ax_binding_does_not_start_setup_or_guess_stores(self):
         c=AxFixture();original=c.request
@@ -58,15 +63,19 @@ class Checks(unittest.TestCase):
         self.assertEqual([v['warehouse'] for a,v in c.calls if a=='accounts.ensure'],['河北仓'])
 
     def test_binding_recovery_waits_for_explicit_mapping_and_does_not_rebind_at_startup(self):
-        c=JstFixture();original=c.request;updates={}
-        def request(action,**values):
-            result=original(action,**values)
-            if action=='sync.status':result['rebind_required']={'山东仓':True,'河北仓':True}
-            return result
-        c.request=request
-        check_jst(c,['山东仓','河北仓'],threading.Event(),lambda n,r:updates.update({n:r}))
-        self.assertEqual([updates[n]['state'] for n in ['山东仓','河北仓']],['CONFIG_REQUIRED']*2)
-        self.assertFalse(any(a=='accounts.ensure' for a,v in c.calls))
+        names=['山东仓','河北仓']
+        for pending in (['河北仓'],names):
+            with self.subTest(pending=pending):
+                c=JstFixture();c.rebind_required=dict.fromkeys(pending,True);updates={}
+                check_jst(c,names,threading.Event(),lambda n,r:updates.update({n:r}))
+                for name in names:
+                    if name in pending:
+                        self.assertEqual(updates[name]['state'],'CONFIG_REQUIRED')
+                        self.assertEqual(updates[name]['code'],REBIND_REQUIRED)
+                    else:
+                        self.assertEqual(updates[name]['state'],'READY')
+                self.assertEqual([v['warehouse'] for a,v in c.calls if a=='accounts.ensure'],
+                                 [name for name in names if name not in pending])
 
     def test_partial_login_failure_does_not_block_the_other_warehouse(self):
         c=JstFixture();c.errors['山东仓']={'code':'LOGIN_REQUIRED','message':'login'};updates={}

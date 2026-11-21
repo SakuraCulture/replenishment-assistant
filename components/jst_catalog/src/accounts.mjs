@@ -3,7 +3,7 @@ import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
 import {CatalogError,check,sleep,sha,canonical,inside,samePath} from './common.mjs';
-import {queryAll} from './product-export.mjs';
+import {displayedCompany,queryAll} from './product-export.mjs';
 import {sameBinding} from './storage-paths.mjs';
 
 export const accountId=wh=>({'山东仓':'sd','河北仓':'hb'})[wh];
@@ -144,7 +144,7 @@ export class AccountSessions {
     await bridge.page.waitForFunction(()=>document.querySelector('a[class^=menuItem]')||document.querySelector('input[type=password]')||/扫码登录|密码登录|账号登录/.test(document.body?.innerText||''),null,{timeout:30000});check(signal);
     const login=await bridge.page.evaluate(()=>[...document.querySelectorAll('input[type=password]')].some(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0;})||/扫码登录|密码登录|账号登录/.test(document.body?.innerText||''));
     if(login&&waitForLogin){
-      this.phase('WAIT_LOGIN','请在本仓专用浏览器登录对应仓库账号，完成后将自动核验并保存');
+      this.phase('WAIT_LOGIN','请在本仓专用浏览器登录对应仓库账号，登录后继续核验');
       await bridge.page.bringToFront();
       const until=Date.now()+180000;
       while(!await bridge.page.locator('a[class^=menuItem]').count()){
@@ -161,10 +161,7 @@ export class AccountSessions {
   }
   async inspect(binding,company,signal,options={}){
     const page=await this.page({binding},signal,options);check(signal);
-    const detected=company||await page.evaluate(()=>{
-      const lines=(document.querySelector('#root')?.innerText||'').split('\n').map(x=>x.trim()).filter(x=>/^.{2,150}\[[^\]]+\]$/.test(x));
-      return lines.length===1?lines[0].replace(/\[[^\]]+\]$/,'').trim():null;
-    });
+    const detected=company||await displayedCompany(page);
     if(!detected)throw new CatalogError('COMPANY_REQUIRED','未唯一识别公司名称，请填写页面顶部公司名再核验');
     const {scope}=await queryAll(page,{expectedCompany:detected});check(signal);return scope;
   }

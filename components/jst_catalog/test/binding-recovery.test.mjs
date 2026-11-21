@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {CatalogService} from '../src/service.mjs';
 import {canonical,sha} from '../src/common.mjs';
+import {openProducts} from '../src/product-export.mjs';
 const uid=()=>crypto.randomBytes(16).toString('hex');
 async function fixture(t){
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'jst-rebind-'));
@@ -111,4 +112,80 @@ test('an existing incomplete backup never permits clearing a binding',async t=>{
   const file=path.join(c.root,'binding_backups',id+'.json');
   await fs.writeFile(file,JSON.stringify({operation_id:id,fingerprint:plan.fingerprint,before:{storeId:before.storeId}}));
   await assert.rejects(c.reset(plan,id),/备份不完整/);assert.deepEqual(c.service.store.read(),before);
+});
+
+test('warehouse verification identifies a different company before checking the operator',async t=>{
+  const c=await fixture(t),before=c.service.store.read();
+  for(const identity of [
+    {coid:'1',uid:'2',message:/公司.*不一致/},
+    {coid:'3',uid:'2',message:/操作员.*不一致/},
+    {coid:'3',uid:'4',message:null},
+  ]){
+    c.driver.inspect=async()=>({company:'QA hb',coid:identity.coid,uid:identity.uid,expectedRows:1});
+    const ack=await c.service.command({action:'accounts.ensure',warehouse:'河北仓',expected_version:1});
+    await c.service.active?.promise;
+    const op=c.service.status().operations[ack.operation_id];
+    if(identity.message){
+      assert.equal(op.state,'FAILED');
+      assert.equal(op.error.code,'WRONG_ACCOUNT');
+      assert.match(op.error.message,identity.message);
+    }else{
+      assert.equal(op.state,'SUCCEEDED');
+      assert.deepEqual(op.result.account,before.accounts['河北仓']);
+    }
+  }
+  const after=c.service.store.read();
+  assert.deepEqual(after.accounts,before.accounts);
+  assert.deepEqual(after.batches,before.batches);
+  assert.deepEqual(after.rebindRequired,before.rebindRequired);
+});
+
+test('company page timeout distinguishes a confirmed mismatch from an unconfirmed company',async()=>{
+  const deadline=Object.assign(Error('synthetic deadline'),{name:'TimeoutError'});
+  let company='Other company';
+  const control={filter:()=>control,waitFor:async()=>{}};
+  const page={url:()=> 'https://www.erp321.com/epaas',locator:()=>control,
+    waitForFunction:async()=>{throw deadline;},evaluate:async()=>company};
+  await assert.rejects(openProducts(page,{expectedCompany:'河北仓隔离公司'}),
+    e=>e.code==='WRONG_ACCOUNT'&&/公司.*不一致/.test(e.message));
+  company=null;
+  await assert.rejects(openProducts(page,{expectedCompany:'河北仓隔离公司'}),e=>e===deadline);
+});
+
+test('explicit confirmation binds only the repaired warehouse and retains the original tasks',async t=>{
+  const c=await fixture(t),warehouse='河北仓';
+  await c.reset(await c.preview([warehouse]));
+  const before=c.service.store.read(),expected_version=before.bindingEpochs[warehouse];
+  c.driver.inspect=async()=>({company:'QA hb',coid:'3',uid:'4',expectedRows:1});
+  const ack=await c.service.command({action:'accounts.auto',warehouse,expected_version,require_confirmation:true});
+  await c.service.active?.promise;
+  const op=c.service.status().operations[ack.operation_id];
+  assert.equal(op.state,'SUCCEEDED');
+  assert.equal(op.result.requires_confirmation,true);
+  assert.deepEqual(c.service.store.read().accounts,before.accounts);
+  const bind={action:'accounts.bind',warehouse,probe_id:op.id,expected_version};
+  await assert.rejects(c.service.command({...bind,mapping_verified:false}),/确认库存范围/);
+  await assert.rejects(c.service.command({...bind,expected_version:expected_version-1,mapping_verified:true}),{code:'CONFIG_CONFLICT'});
+  const saved=await c.service.command({...bind,mapping_verified:true});
+  assert.equal(saved.bindingVersion,expected_version+1);
+  assert.equal(saved.expectedUid,'4');
+  const after=c.service.store.read();
+  assert.deepEqual(after.accounts['山东仓'],before.accounts['山东仓']);
+  assert.deepEqual(after.batches,before.batches);
+  assert.equal(after.rebindRequired[warehouse],undefined);
+});
+
+test('explicit verification-only request never auto-saves after a repair marker disappears',async t=>{
+  const c=await fixture(t),warehouse='河北仓';
+  await c.reset(await c.preview([warehouse]));
+  await c.service.store.write(d=>delete d.rebindRequired[warehouse]);
+  const before=c.service.store.read();
+  c.driver.inspect=async()=>({company:'QA hb',coid:'3',uid:'4',expectedRows:1});
+  const ack=await c.service.command({action:'accounts.auto',warehouse,
+    expected_version:before.bindingEpochs[warehouse],require_confirmation:true});
+  await c.service.active?.promise;
+  const op=c.service.status().operations[ack.operation_id];
+  assert.equal(op.state,'SUCCEEDED');
+  assert.equal(op.result.requires_confirmation,true);
+  assert.deepEqual(c.service.store.read().accounts,before.accounts);
 });

@@ -24,9 +24,11 @@ def action(client,command,values,progress=lambda _:None,cancel=None):
     stopped=False
     while True:
         state=client.request('sync.status');op=state['operations'][ack['operation_id']]
-        progress((state.get('active') or {}).get('phase',{}).get('message','核验中…'))
-        if cancel and cancel.is_set() and not stopped:client.request('sync.stop');stopped=True
+        active=state.get('active') or {}
+        progress(active.get('phase',{}).get('message','核验中…'))
         if op['state']!='RUNNING':return op
+        if cancel and cancel.is_set() and not stopped and active.get('id')==ack['operation_id']:
+            client.request('sync.stop',batch_id=ack['operation_id']);stopped=True
         time.sleep(.15)
 
 def shutdown(client,progress=lambda _:None,cancel=None):
@@ -35,33 +37,50 @@ def shutdown(client,progress=lambda _:None,cancel=None):
         time.sleep(.15)
 
 class Dialog(QDialog):
-    def __init__(self,host,warehouses=None,purpose='default_catalog',parent=None):
+    def __init__(self,host,warehouses=None,purpose='default_catalog',parent=None,*,binding_repair=False):
         super().__init__(parent or host);self.host=host;self.purpose=purpose;self.worker=None;self._completed=False;self.committing=False;self.close_pending=False;self.state={};self.probe=None;self.adopted=[]
+        self.binding_repair=binding_repair
         self.client=manager(host).session.acquire()
-        self.setWindowTitle('聚水潭商品资料 · 刷新当前仓资料');self.resize(1090,710)
-        v=QVBoxLayout(self);v.addWidget(label('选择仓 → 核验账号 → 获取并采用；两仓独立登录，按仓依次处理。','section'))
-        v.addWidget(label('采用后，补货检查和新分配共用该仓最新资料。原分配批次继续使用当时的库存。当前未签发的计算需重新检查。','muted'))
-        row=QHBoxLayout();self.warehouse=QComboBox();self.warehouse.addItems(WAREHOUSES)
+        v=QVBoxLayout(self)
+        if binding_repair:
+            self.setWindowTitle('聚水潭 · 核验并保存仓账号');self.resize(820,360)
+            v.addWidget(label('登录本仓专用浏览器，核对公司与所选仓后保存。','section'))
+        else:
+            self.setWindowTitle('聚水潭商品资料 · 刷新当前仓资料');self.resize(1090,710)
+            v.addWidget(label('选择仓 → 核验账号 → 获取并采用；两仓独立登录，按仓依次处理。','section'))
+            v.addWidget(label('采用后，补货检查和新分配共用该仓最新资料。原分配批次继续使用当时的库存。当前未签发的计算需重新检查。','muted'))
+        row=QHBoxLayout();self.warehouse=QComboBox();self.warehouse.addItems(warehouses if binding_repair else WAREHOUSES)
         if warehouses:self.warehouse.setCurrentText(warehouses[0])
         row.addWidget(self.warehouse);self.account=label('尚未读取连接设置');row.addWidget(self.account,1);v.addLayout(row)
-        self.auto_btn=button('自动配置所选仓浏览器',self.auto_configure,True);v.addWidget(self.auto_btn)
+        self.auto_btn=button('核验本仓账号' if binding_repair else '自动配置所选仓浏览器',self.auto_configure,True);v.addWidget(self.auto_btn)
         self.manual=QWidget();manual=QVBoxLayout(self.manual);manual.setContentsMargins(0,0,0,0)
-        v.addWidget(button('手动配置与启停（高级）',lambda:self.manual.setVisible(not self.manual.isVisible())));v.addWidget(self.manual);self.manual.hide()
+        manual_title='手动选择专用浏览器' if binding_repair else '手动配置与启停（高级）'
+        v.addWidget(button(manual_title,lambda:self.manual.setVisible(not self.manual.isVisible())));v.addWidget(self.manual);self.manual.hide()
         self.profile=QLineEdit();self.profile.setPlaceholderText('已有专用浏览器的 Default 或 Profile 目录');row=QHBoxLayout();row.addWidget(self.profile,1);self.pick=button('选择专用浏览器',self.choose);row.addWidget(self.pick);manual.addLayout(row)
-        self.company=QLineEdit();self.company.setPlaceholderText('公司名称（无法自动识别时填写聚水潭页顶部公司名）');manual.addWidget(self.company)
-        row=QHBoxLayout();self.probe_btn=button('核验所选浏览器',self.probe_account);row.addWidget(self.probe_btn);self.login_btn=button('打开登录页',self.login);row.addWidget(self.login_btn);self.bind_btn=button('确认对应仓并保存',self.bind);row.addWidget(self.bind_btn);self.disable_btn=button('停用本仓自动同步',lambda:self.enable(False));row.addWidget(self.disable_btn);self.enable_btn=button('启用本仓自动同步',lambda:self.enable(True));row.addWidget(self.enable_btn);manual.addLayout(row)
+        self.company=QLineEdit();self.company.setPlaceholderText('公司名称（无法自动识别时填写聚水潭页顶部公司名）')
+        if binding_repair:v.insertWidget(2,self.company)
+        else:manual.addWidget(self.company)
+        row=QHBoxLayout();self.probe_btn=button('核验所选浏览器',self.probe_account);row.addWidget(self.probe_btn);self.login_btn=button('打开登录页',self.login);row.addWidget(self.login_btn);self.disable_btn=button('停用本仓自动同步',lambda:self.enable(False));row.addWidget(self.disable_btn);self.enable_btn=button('启用本仓自动同步',lambda:self.enable(True));row.addWidget(self.enable_btn);manual.addLayout(row)
         row=QHBoxLayout();self.rebind_btn=button('纠正本仓绑定',lambda:self.reset_bindings([self.warehouse.currentText()]));row.addWidget(self.rebind_btn)
         self.rebind_both_btn=button('纠正两仓错绑',lambda:self.reset_bindings(list(WAREHOUSES)));row.addWidget(self.rebind_both_btn);manual.addLayout(row)
-        self.identity=label('选择仓库后点击自动配置，在打开的专用浏览器登录该仓账号即可。','muted');self.identity.setWordWrap(True);v.addWidget(self.identity)
+        hint='请在本仓专用浏览器登录后核验账号。' if binding_repair else '选择仓库后点击自动配置，在打开的专用浏览器登录该仓账号即可。'
+        self.identity=label(hint,'muted');self.identity.setWordWrap(True);v.addWidget(self.identity)
         row=QHBoxLayout();self.connection=label('尚未连接浏览器','muted');self.connection.setWordWrap(True);row.addWidget(self.connection,1)
         self.reconnect_btn=button('重新连接本仓',self.reconnect);row.addWidget(self.reconnect_btn);v.addLayout(row)
-        self.mapping=QCheckBox('我确认上方账号的商品资料和可用库存对应所选物理仓');manual.addWidget(self.mapping)
+        self.confirmation=QWidget();row=QHBoxLayout(self.confirmation);row.setContentsMargins(0,0,0,0)
+        self.mapping=QCheckBox('我确认上方账号的商品资料和可用库存对应所选物理仓');row.addWidget(self.mapping,1)
+        self.bind_btn=button('确认对应仓并保存',self.bind,True);row.addWidget(self.bind_btn)
+        (v if binding_repair else manual).addWidget(self.confirmation)
         row=QHBoxLayout();self.fetch=button('刷新所选仓资料',lambda:self.start([self.warehouse.currentText()]),True);row.addWidget(self.fetch);self.both=button('刷新所有已启用仓资料',self.start_enabled);row.addWidget(self.both);v.addLayout(row)
         self.table,self.model=grid(self,['仓库','公司','步骤','商品数','结果 / 下一步']);v.addWidget(self.table,1)
         for i,width in enumerate([85,240,140,75,450]):self.table.setColumnWidth(i,width)
         row=QHBoxLayout();self.records=QComboBox();row.addWidget(self.records,1);self.resume_btn=button('继续原记录未完成项',self.resume);row.addWidget(self.resume_btn);self.resume_one=button('仅继续所选仓原任务',lambda:self.resume(True));row.addWidget(self.resume_one);v.addLayout(row)
         self.bar=QProgressBar();self.bar.setRange(0,1);v.addWidget(self.bar);self.note=label('等待操作','muted');self.note.setWordWrap(True);v.addWidget(self.note)
         row=QHBoxLayout();self.stop=button('停止本次同步',self.cancel);self.stop.setEnabled(False);row.addWidget(self.stop);row.addWidget(button('关闭',self.reject));v.addLayout(row)
+        if binding_repair:
+            for widget in (self.connection,self.reconnect_btn,self.rebind_btn,self.rebind_both_btn,self.disable_btn,self.enable_btn,
+                           self.fetch,self.both,self.table,self.records,self.resume_btn,self.resume_one,self.bar,self.note,self.stop):
+                widget.hide()
         self.clock=QTimer(self);self.clock.setInterval(500);self.clock.timeout.connect(self.tick)
         self.warehouse.currentIndexChanged.connect(self.select_account);self.records.currentIndexChanged.connect(self.show_record);self.profile.textChanged.connect(self.clear_probe);self.company.textChanged.connect(self.clear_probe);self.mapping.toggled.connect(self.controls)
         try:self.state=run(self,connect,(self.client,),'读取聚水潭连接设置');self.refresh(self.state)
@@ -70,12 +89,18 @@ class Dialog(QDialog):
     def choose(self):
         p=QFileDialog.getExistingDirectory(self,'选择已有的专用浏览器配置目录')
         if p:self.profile.setText(p)
+    def rebind_pending(self):
+        return bool(self.state.get('rebind_required',{}).get(self.warehouse.currentText()))
     def auto_configure(self):
-        op=self.invoke('accounts.auto',warehouse=self.warehouse.currentText(),expected_version=self.binding_version())
+        if self.binding_repair and not self.rebind_pending():
+            self.identity.setText('本仓绑定状态已更新，请返回重新检查。');return
+        self.clear_probe()
+        options={'require_confirmation':True,'company':self.company.text().strip()} if self.binding_repair else {}
+        op=self.invoke('accounts.auto',warehouse=self.warehouse.currentText(),expected_version=self.binding_version(),**options)
         if op and op['state']=='SUCCEEDED':
             if op.get('result',{}).get('requires_confirmation'):
                 result=op['result'];self.profile.setText(result['binding']['actualProfilePath']);self.company.setText(result['scope']['company'])
-                self.probe=op;self.identity.setText('纠错后仅核验，尚未保存：'+result['scope']['company']+'。确认是本物理仓后，勾选确认并保存。');self.controls()
+                self.probe=op;self.identity.setText('已核验公司 '+result['scope']['company']+'。确认与所选仓对应后勾选并保存。');self.controls()
             else:self.reload();self.identity.setText('本仓专用浏览器和账号已自动配置，可直接刷新仓资料。')
         elif op:self.identity.setText(op.get('error',{}).get('message','自动配置未完成'))
     def clear_probe(self,*_):self.probe=None;self.mapping.setChecked(False);self.controls()
@@ -95,7 +120,9 @@ class Dialog(QDialog):
             message='旧本地采集已结束，所选绑定已解除；浏览器和文件保留。请逐仓核验正确公司，勾选确认后保存，再重新获取资料。备份：'+result['backup_path']
             self.identity.setText(message);self.note.setText(message)
     def select_account(self,*_):
-        self.clear_probe();a=self.account_data();self.account.setText((a['expectedCompany']+' · '+('已启用' if a['enabled'] else '已停用')) if a else '尚未绑定，可继续使用手动资料')
+        self.clear_probe();a=self.account_data()
+        unbound='待重新绑定' if self.binding_repair else '尚未绑定，可继续使用手动资料'
+        self.account.setText((a['expectedCompany']+' · '+('已启用' if a['enabled'] else '已停用')) if a else unbound)
         self.profile.setText(a['binding']['actualProfilePath'] if a else '');self.company.setText(a['expectedCompany'] if a else '');self.show_connection();self.controls()
     def show_connection(self):
         wh=self.warehouse.currentText();c=next((x for x in self.state.get('connections',[]) if x['warehouse']==wh),{})
@@ -133,6 +160,7 @@ class Dialog(QDialog):
         version=self.binding_version();op=self.invoke('accounts.bind',warehouse=self.warehouse.currentText(),expected_version=version,probe_id=self.probe['id'],mapping_verified=True)
         if op:
             self.reload();self.identity.setText('账号及浏览器未变化，原任务和绑定版本保留。' if op['bindingVersion']==version else '本仓绑定已保存；请获取正确仓资料后重新检查计算。')
+            if self.binding_repair:self.reject()
     def enable(self,value):
         a=self.account_data()
         if a and self.invoke('accounts.set_enabled',warehouse=a['warehouse'],expected_version=a['bindingVersion'],expected_enabled_version=a.get('enabledVersion',0),enabled=value):
@@ -153,12 +181,16 @@ class Dialog(QDialog):
         self.model.replace(rows);self.controls()
     def controls(self,*_):
         busy=self.worker is not None
-        self.auto_btn.setEnabled(not busy)
-        for widget in [self.warehouse,self.profile,self.company,self.pick,self.probe_btn,self.login_btn,self.mapping,self.records]:widget.setEnabled(not busy)
+        verified=bool(self.probe and self.probe['state']=='SUCCEEDED')
+        self.auto_btn.setEnabled(not busy and (not self.binding_repair or self.rebind_pending()))
+        self.warehouse.setEnabled(not busy and not self.binding_repair)
+        for widget in [self.profile,self.company,self.pick,self.probe_btn,self.login_btn,self.records]:widget.setEnabled(not busy)
+        if self.binding_repair:self.confirmation.setVisible(self.rebind_pending() or verified)
+        self.mapping.setEnabled(not busy and verified)
         a=self.account_data();self.fetch.setEnabled(not busy and bool(a and a['enabled']));self.both.setEnabled(not busy and any(a['enabled'] for a in self.state.get('accounts',[])))
         self.reconnect_btn.setEnabled(not busy and bool(a))
         self.rebind_btn.setEnabled(not busy);self.rebind_both_btn.setEnabled(not busy)
-        self.bind_btn.setEnabled(not busy and bool(self.probe and self.probe['state']=='SUCCEEDED' and self.mapping.isChecked()));self.disable_btn.setEnabled(not busy and bool(a and a['enabled']));self.enable_btn.setEnabled(not busy and bool(a and not a['enabled']))
+        self.bind_btn.setEnabled(not busy and verified and self.mapping.isChecked());self.disable_btn.setEnabled(not busy and bool(a and a['enabled']));self.enable_btn.setEnabled(not busy and bool(a and not a['enabled']))
         b=next((b for b in self.state.get('batches',[]) if b['id']==self.records.currentData()),None);self.resume_btn.setEnabled(not busy and bool(b and b['purpose']==self.purpose and any(not i.get('adoption') and not i.get('retirement') for i in b['items'])))
         self.resume_one.setEnabled(self.resume_btn.isEnabled() and any(not i.get('adoption') and not i.get('retirement') and i['account']['warehouse']==self.warehouse.currentText() for i in (b or {}).get('items',[])))
         self.stop.setEnabled(busy and not self.committing and not self.worker.cancel.is_set())
@@ -203,15 +235,19 @@ class Dialog(QDialog):
         self.reject();event.accept() if self._completed else event.ignore()
 
 
-def open_sync(host,warehouses=None,purpose='default_catalog',parent=None):
+def open_sync(host,warehouses=None,purpose='default_catalog',parent=None,*,binding_repair=False):
     if getattr(host,'worker',None) or getattr(host,'readonly',False):return []
     d=None;previous=getattr(host,'_large_io_dialog',None)
     try:
+        if binding_repair and (not warehouses or len(warehouses)!=1 or warehouses[0] not in WAREHOUSES):
+            raise ValueError('请只选择要核验绑定的仓库。')
         startup=getattr(host,'browser_startup',None)
-        if startup and 'jst' in startup.workers:
+        if not binding_repair and startup and 'jst' in startup.workers:
             from browser_startup import yield_startup
             run(parent or host,yield_startup,(host,'jst'),'等待自动连接检查让行')
-        d=Dialog(host,warehouses,purpose,parent);host._large_io_dialog=d;d.exec();return d.adopted
+        d=Dialog(host,warehouses,purpose,parent,binding_repair=binding_repair);host._large_io_dialog=d
+        if binding_repair:QTimer.singleShot(0,d,d.auto_configure)
+        d.exec();return d.adopted
     except Exception as exc:
         QMessageBox.warning(parent or host,'商品资料同步未打开',str(exc));return []
     finally:

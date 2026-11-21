@@ -7,6 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--exe',type=Path);parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
+    (out/'synthetic.json').write_text(json.dumps({'synthetic':True,'live_platform':False})+'\n','utf-8')
     env={**os.environ,'REPLENISHMENT_DATA_DIR':str(out/'settings'),'PYTHONIOENCODING':'utf-8'};env.pop('QT_QPA_PLATFORM',None)
     cmd=[str(args.exe.resolve())] if args.exe else [sys.executable,str(ROOT/'src/app.py')]
     started=time.monotonic()
