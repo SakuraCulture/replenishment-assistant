@@ -123,6 +123,8 @@ def start_smoke(app,win,args):
                         sheet.reset_dimensions();headers=list(next(sheet.iter_rows(min_row=16,max_row=16,values_only=True)))
                         assert len(headers)==22 and headers[-2:]==['聚水潭内部订单号','翱象采购单号']
                         body=list(sheet.iter_rows(min_row=17,values_only=True));assert len(body)==6
+                        assert all(v not in (None,'','n.a.') for r in body for v in r[6:20])
+                        assert '基数为0时无法计算比率' in sheet['A14'].value
                         assert any(r[1]==fixture['head']['number'] and r[-2:]==(fixture['jst'],fixture['po']) for r in body)
                     checks.append('Actual current-range summary export has 3 template sheets, ALL groups and exact linked identifiers')
                 finally:book.close()
@@ -131,11 +133,18 @@ def start_smoke(app,win,args):
                     assert book.sheetnames==['SKU完整明细'];sheet=book.active;sheet.reset_dimensions()
                     rows=list(sheet.iter_rows(min_row=8,values_only=True));assert len(rows)==fixture['expected_rows']
                     row=next(r for r in rows if r[0]==fixture['head']['number'])
-                    assert len(row)==43 and row[2]=='0001' and row[29]=='0000000123456'
-                    assert row[32:40]==(4,60,0,148,24,24,'2026-11-14 12:00:00',240),row
+                    assert len(row)==47 and row[2]=='0001' and row[33]=='0000000123456'
+                    assert row[36:44]==(4,60,0,148,24,24,'2026-11-14 12:00:00',240),row
+                    headers=next(sheet.iter_rows(min_row=7,max_row=7,values_only=True))
+                    assert headers[9:13]==('分配时采用的仓可用库存','本单分配前余额','实际分配量','缺口原因')
+                    assert headers[42:44]==('门店补货建议更新时间','签发参考仓库存')
+                    if 'expected_allocation' in fixture:
+                        assert row[9:13]==tuple(fixture['expected_allocation'])
                     assert row[-2:]==(fixture['jst'],fixture['po'])
-                    assert isinstance(row[11],(int,float)) and abs(row[17]-4/24)<1e-12
-                    checks.append('Actual single-sheet detail exports retained inventory and constraints with readable formula caches')
+                    assert isinstance(row[15],(int,float)) and abs(row[21]-4/24)<1e-12
+                    assert all(v not in (None,'','n.a.') for r in rows for v in r[5:30])
+                    assert '未留存表示缺少原字段' in sheet['A5'].value
+                    checks.append('Actual detail exports retained inventory, saved allocation and readable formula caches')
                 finally:book.close()
                 w.selected={fixture['head']['number']};w.controls();selected=export(1,True)
                 book=openpyxl.load_workbook(selected,read_only=True,data_only=True)

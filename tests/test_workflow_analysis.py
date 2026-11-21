@@ -8,6 +8,10 @@ import workflow_analysis as w
 import order_analytics as analytics,order_analytics_exports as exports
 import test_order_analytics as fixture
 import jst_orders as j,jst_batches as batches
+import normal_orders
+import order_lifecycle as lifecycle
+import purchases
+import work_repository as wr
 from test_jst import catalog
 
 def row(day='2026-11-09',sku='A',before=100,after=50):
@@ -51,6 +55,8 @@ class Projections(unittest.TestCase):
         self.assertFalse(done['errors']);report=self.f.report();r=report['rows'][0]
         self.assertEqual(r['quantities']['return'],40);self.assertEqual(r['quantities']['operations'],30)
         self.assertEqual(r['quantities']['allocation'],17);self.assertTrue(r['valid']['allocation'])
+        self.assertEqual(r['allocation_detail'], {'stock':'17','before':'17','quantity':'17',
+            'reason':'库存不足，按剩余可用库存分配（含不足整箱）'})
         before=report['snapshot_id'];j.prepare_refresh(self.path,'河北仓',catalog=catalog(stock=999))
         self.assertEqual(self.f.report()['snapshot_id'],before)
     def test_zero_allocation_is_a_known_execution_fact(self):
@@ -58,6 +64,94 @@ class Projections(unittest.TestCase):
         done=batches.execute(self.path,batches.preview_new(self.path,[self.f.f.h],{'河北仓':catalog(stock=0)}))
         self.assertEqual(len(done['zero']),1);r=self.f.report()['rows'][0]
         self.assertEqual(r['quantities']['allocation'],0);self.assertTrue(r['valid']['allocation'])
+        self.assertEqual(r['allocation_detail'], {'stock':'0','before':'0','quantity':'0','reason':'无可用库存'})
+
+    def test_sku_detail_reads_batch_stock_and_pre_order_balance_separately(self):
+        self.f.f.save('return',[{'门店确认数量':60}])
+        payload = copy.deepcopy(self.f.p)
+        payload['result'].update(store='U', store_name='第二店')
+        with closing(sqlite3.connect(self.path)) as db, db:
+            db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',
+                       (wr.today(),'U','normal_model','oid-u','BH-U-ZC',1))
+            db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',
+                       ('oid-u',1,normal_orders.fingerprint(payload['result']),wr.now(),normal_orders.encode(payload,db)))
+        first = self.f.f.h
+        second = next(h for h in purchases.targets(self.path) if (h['store'],h['warehouse'])==('U','河北仓'))
+        self.f.f.h = second
+        self.f.f.save('return',[{'门店编码':'U','门店确认数量':75}])
+        self.f.f.h = first
+        done = batches.execute(self.path,batches.preview_new(self.path,[first,second],{'河北仓':catalog(stock=100)},manual_order=True))
+        self.assertFalse(done['errors'])
+        overview = analytics.collect_overview(self.path,self.f.spec)
+        target = self.f.root/'allocation-detail.xlsx'
+        exports.export(self.path,overview,target,'analysis_detail')
+        book = openpyxl.load_workbook(target,data_only=True)
+        try:
+            rows = {row[0]:row for row in book['SKU完整明细'].iter_rows(min_row=8,values_only=True)}
+            self.assertEqual(rows[first['number']][9:13],(100,100,60,'按回传分配'))
+            self.assertEqual(rows[second['number']][9:14],
+                             (100,40,40,'库存不足，按剩余可用库存分配（含不足整箱）','待核'))
+            self.assertEqual(rows['BH-U-ZC-SD'][9:13],('未留存',)*4)
+        finally:
+            book.close()
+
+    def test_matching_basis_requires_current_return_and_signed_revision(self):
+        self.f.f.save('return',[{'门店确认数量':10}])
+        done = batches.execute(self.path,batches.preview_new(self.path,[self.f.f.h],{'河北仓':catalog(stock=100)}))
+        self.assertFalse(done['errors'])
+        self.assertEqual(self.f.report()['rows'][0]['allocation_detail']['stock'],'100')
+        self.f.f.save('return',[{'门店确认数量':20}])
+        self.assertNotIn('allocation_detail',self.f.report()['rows'][0])
+        self.f.f.second_revision()
+        self.assertNotIn('allocation_detail',self.f.report()['rows'][0])
+
+    def test_original_generation_link_wins_and_wrong_scope_does_not_fall_back(self):
+        self.f.f.save('return',[{'门店确认数量':20}])
+        head = self.f.f.h
+        done = batches.execute(self.path,batches.preview_new(self.path,[head],{'河北仓':catalog(stock=100)}))
+        self.assertFalse(done['errors'])
+        gid = done['generated'][0]
+        lifecycle.commit(self.path,j.payment_plan(self.path,gid))
+        original = j.get(self.path,gid)
+        # An archived original link and a later allocation can both be retained in SQLite.
+        newer = copy.deepcopy(original)
+        newer.update(gid='newer',operation='later-allocation',old=gid)
+        newer['rows'][0].update(stock='200',before='170',quantity='17')
+        with closing(sqlite3.connect(self.path)) as db, db:
+            j.put_generation(db,newer)
+        r = self.f.report()['rows'][0]
+        self.assertEqual(r['quantities']['allocation'],17)
+        self.assertEqual(r['quantities']['payment'],20)
+        self.assertEqual(r['allocation_detail']['stock'],'100')
+        self.assertEqual(r['allocation_detail']['quantity'],'20')
+
+        # A linked generation with the same SKU and return cannot cross scope.
+        for field, value in [('warehouse','山东仓'),('revision',2),('number','other-order')]:
+            with self.subTest(field=field):
+                wrong = copy.deepcopy(original)
+                wrong['head'][field] = value
+                with closing(sqlite3.connect(self.path)) as db, db:
+                    db.execute('UPDATE jst_generations SET payload=?,digest=? WHERE gid=?',
+                               (wr.dumps(wrong),j.digest(wrong),gid))
+                r = self.f.report()['rows'][0]
+                self.assertEqual(r['quantities']['allocation'],17)
+                self.assertEqual(r['quantities']['payment'],20)
+                self.assertNotIn('allocation_detail',r)
+
+    def test_missing_saved_fields_remain_unknown_independently(self):
+        self.f.f.save('return',[{'门店确认数量':10}])
+        done = batches.execute(self.path,batches.preview_new(self.path,[self.f.f.h],{'河北仓':catalog(stock=100)}))
+        gid = done['generated'][0]
+        old = j.get(self.path,gid)
+        old['rows'][0].pop('quantity')
+        old['rows'][0].pop('before')
+        with closing(sqlite3.connect(self.path)) as db, db:
+            db.execute('UPDATE jst_generations SET payload=?,digest=? WHERE gid=?',(wr.dumps(old),j.digest(old),gid))
+        r = self.f.report()['rows'][0]
+        self.assertEqual(r['allocation_detail'], {'stock':'100','before':None,'quantity':None,'reason':'按回传分配'})
+        self.assertIsNone(r['quantities']['allocation'])
+        self.assertEqual(r['quantities']['return'],10)
+
     def test_allocation_journal_identities_are_scanned_once_per_query(self):
         self.f.f.save('return',[{'门店确认数量':10}])
         batches.execute(self.path,batches.preview_new(self.path,[self.f.f.h],{'河北仓':catalog(stock=10)}))

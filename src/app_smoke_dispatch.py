@@ -50,6 +50,7 @@ WINDOW_SMOKES = {
     '--jst-batch-smoke': 'jst_batch_smoke',
     '--jst-basis-smoke': 'jst_basis_smoke',
     '--jst-auto-order-smoke': 'jst_auto_order_smoke',
+    '--jst-one-click-smoke': 'jst_one_click_smoke',
     '--jst-buyer-recovery-smoke': 'jst_buyer_recovery_smoke',
     '--jst-fulfillment-smoke': 'jst_fulfillment_smoke',
     '--retry-profile-smoke': 'retry_profile_smoke',

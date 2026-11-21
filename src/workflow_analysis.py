@@ -3,7 +3,10 @@ from collections import OrderedDict
 from datetime import date,timedelta
 from decimal import Decimal
 import json
+import jst_order_store as jst
 import order_lifecycle as lc
+from lifecycle_comparison import num
+from payment_evidence import same_head
 from runtime_support import checkpoint
 
 STAGES=('model','signed','return','operations','allocation','payment','receipt')
@@ -28,10 +31,34 @@ class AllocationReader:
         ident=self.latest.get((head['oid'],head['warehouse']))
         return self.db.execute('SELECT action,detail,at FROM jst_events WHERE id=?',(ident,)).fetchone() if ident is not None else False
 
+def _generation(db, gid, as_of=None):
+    sql = 'SELECT payload,digest FROM jst_generations WHERE gid=?'
+    if as_of:
+        return jst.decode(db.execute(sql+' AND julianday(saved)<=julianday(?)', (gid, as_of)).fetchone())
+    return jst.decode(db.execute(sql, (gid,)).fetchone())
+
+
+def _matches_allocation_basis(plan, head, view):
+    if not plan or plan['head']['revision'] != head['revision'] or plan['basis'].get('signed_digest') != head['digest']:
+        return False
+    for stage, token in plan['basis'].get('dependencies', {}).items():
+        doc = view['documents'].get(stage)
+        actual = lc.rules.basis_token(doc)
+        if stage == 'return' and doc is None and view.get('legacy_return'):
+            old = view['legacy_return']
+            actual = {'version': old['version'], 'digest': old['digest']}
+        if actual != token or not view['health'].get(stage):
+            return False
+    return True
+
+
+def _matches_detail_scope(plan, head):
+    return same_head(plan['head'], head) and plan['basis'].get('dependencies', {}).get('return') is not None
+
+
 def allocation_fact(db,head,view,as_of=None,*,event=None):
     """Only a saved execution decision matching this exact signed/dependency set."""
-    import jst_orders as j
-    if not j.exists(db):return None
+    if not jst.exists(db):return None
     if event is not None:pass
     elif as_of:
         event=db.execute('''SELECT action,detail,at FROM jst_events WHERE oid=? AND warehouse=?
@@ -43,20 +70,34 @@ def allocation_fact(db,head,view,as_of=None,*,event=None):
     if not event or event[0]=='撤销未下单生成单':return None
     detail=json.loads(event[1]);p=None
     if event[0]=='生成聚水潭订单':
-        p=j.decode(db.execute('SELECT payload,digest FROM jst_generations WHERE gid=?',(detail['gid'],)).fetchone())
-        if not as_of and j.active(db,head)!=detail['gid']:return None
+        p=_generation(db,detail['gid'])
+        if not as_of and jst.active(db,head)!=detail['gid']:return None
     elif detail.get('runid'):
-        run=j.decode(db.execute('SELECT payload,digest FROM jst_runs WHERE runid=?',(detail['runid'],)).fetchone())
+        run=jst.decode(db.execute('SELECT payload,digest FROM jst_runs WHERE runid=?',(detail['runid'],)).fetchone())
         p=next((p for p in (run or {}).get('plans',[]) if p['head']['oid']==head['oid'] and p['head']['warehouse']==head['warehouse']),None)
-    if not p or p['head']['revision']!=head['revision'] or p['basis'].get('signed_digest')!=head['digest']:return None
-    for stage,token in p['basis'].get('dependencies',{}).items():
-        doc=view['documents'].get(stage)
-        actual=lc.rules.basis_token(doc)
-        if stage=='return' and doc is None and view.get('legacy_return'):
-            old=view['legacy_return'];actual={'version':old['version'],'digest':old['digest']}
-        if actual!=token or not view['health'].get(stage):return None
+    if not _matches_allocation_basis(p,head,view):return None
     return {'rows':{r['sku']:r for r in p['rows']},'saved':event[2],'gid':p['gid'],
-            'digest':j.digest(p),'catalog':p['catalog'],'bid':p['bid']}
+            'digest':jst.digest(p),'catalog':p['catalog'],'bid':p['bid'],
+            'detail_matches':_matches_detail_scope(p,head)}
+
+
+def allocation_detail_rows(db, head, view, allocation, as_of=None):
+    """For the SKU sheet, prefer the generation explicitly used by the original order."""
+    documents, health = view['documents'], view['health']
+    gid = None
+    if health.get(lc.JST_ORDER):
+        gid = documents[lc.JST_ORDER]['payload'].get('reference', {}).get('gid')
+    if not gid and health.get('payment'):
+        gid = documents['payment']['payload'].get('jst_generation')
+    if not gid or (allocation and allocation['gid'] == gid):
+        return allocation['rows'] if allocation and allocation['detail_matches'] else {}
+    if not jst.exists(db):
+        return {}
+    plan = _generation(db, gid, as_of)
+    if (not _matches_allocation_basis(plan, head, view)
+            or plan.get('gid') != gid or not _matches_detail_scope(plan, head)):
+        return {}
+    return {r['sku']: r for r in plan['rows']}
 
 def set_operations(row,view,operation):
     doc=view['documents'].get('operations')
@@ -78,8 +119,8 @@ def enrich(rows,head,view,allocation,signed_at):
         sku=r['sku'];r['flow_version']=view['flow_version']
         set_operations(r,view,ops.get(sku,{}))
         a=(allocation or {}).get('rows',{}).get(sku)
-        r['quantities']['allocation']=Decimal(str(a['quantity'])) if a else Decimal(0) if allocation else None
-        r['valid']['allocation']=bool(allocation) and not (a or {}).get('issue',False)
+        r['quantities']['allocation']=num(a.get('quantity')) if a else Decimal(0) if allocation else None
+        r['valid']['allocation']=r['quantities']['allocation'] is not None and not (a or {}).get('issue',False)
         r['states']['allocation']='已分配' if r['valid']['allocation'] else '执行字段待核' if allocation else '未分配／依据已变化'
         r['stage_saved']=saved;r['stage_versions']=versions;r['allocation_basis']=allocation_basis
     return rows

@@ -20,7 +20,7 @@ class ExportIntegration(unittest.TestCase):
 
     def test_actual_export_entry_layout_formulas_cached_values_and_scoped_order(self):
         report=self.f.report(); head=report['heads'][0]
-        for kind,names,header_row,width in [('analysis',['SKU种类','商品货值','商品数量'],16,22),('analysis_detail',['SKU完整明细'],7,43)]:
+        for kind,names,header_row,width in [('analysis',['SKU种类','商品货值','商品数量'],16,22),('analysis_detail',['SKU完整明细'],7,47)]:
             with self.subTest(kind=kind):
                 target=self.f.root/(kind+'.xlsx');before=self.f.f.old_tables()
                 receipt=exports.export(self.f.path,report,target,kind,[head['number']])
@@ -41,10 +41,14 @@ class ExportIntegration(unittest.TestCase):
                             self.assertTrue(all(r[order_index]==head['number'] for r in data))
                             if kind=='analysis':
                                 self.assertEqual([r[4] for r in data],['ALL','必采','非必采'])
-                                self.assertEqual(s['M17'].value,1 if cached else '=IF(OR(COUNT(H17,G17)<2,G17=0),"n.a.",H17/G17)')
+                                self.assertEqual(s['M17'].value,1 if cached else
+                                    '=IF(AND(ISNUMBER(G17),G17=0),"基数为0",'
+                                    'IF(OR(H17="不适用",G17="不适用"),"不适用",IF(COUNT(H17,G17)<2,"待核",H17/G17)))')
                             else:
                                 self.assertIsInstance(data[0][2],str)
-                                self.assertEqual(s['L8'].value,1 if cached else '=IF(OR(COUNT(G8,F8)<2,F8=0),"",G8/F8)')
+                                self.assertEqual(s['P8'].value,1 if cached else
+                                    '=IF(AND(ISNUMBER(F8),F8=0),"基数为0",'
+                                    'IF(OR(G8="不适用",F8="不适用"),"不适用",IF(COUNT(G8,F8)<2,"待核",G8/F8)))')
                     finally:book.close()
 
     def test_detail_export_keeps_zero_model_with_signing_and_omits_excluded(self):
@@ -67,12 +71,12 @@ class ExportIntegration(unittest.TestCase):
         book = openpyxl.load_workbook(target, data_only=True)
         try:
             sheet = book['SKU完整明细']
-            self.assertEqual(sheet.auto_filter.ref, 'A7:AQ10')
+            self.assertEqual(sheet.auto_filter.ref, 'A7:AU10')
             self.assertEqual([sheet[f'C{row}'].value for row in range(8, 11)], ['0001', '0002', 'EXTRA'])
-            self.assertEqual(sheet['M8'].value, 0)  # Confirmed store return of 0 / positive signing.
-            self.assertIsNone(sheet['N8'].value)
+            self.assertEqual(sheet['Q8'].value, 0)  # Confirmed store return of 0 / positive signing.
+            self.assertEqual(sheet['R8'].value, '基数为0')
             self.assertEqual((sheet['F9'].value, sheet['G9'].value), (0, 2))
-            self.assertIsNone(sheet['L9'].value)
+            self.assertEqual(sheet['P9'].value, '基数为0')
             self.assertIn('范围：待核', sheet['E10'].value)
         finally:
             book.close()
@@ -83,7 +87,7 @@ class ExportIntegration(unittest.TestCase):
         self.assertEqual((receipt['rows'], receipt['pending']), (0, 0))
         book = openpyxl.load_workbook(empty, data_only=True)
         try:
-            self.assertEqual(book['SKU完整明细'].auto_filter.ref, 'A7:AQ7')
+            self.assertEqual(book['SKU完整明细'].auto_filter.ref, 'A7:AU7')
             self.assertEqual(book['SKU完整明细'].max_row, 7)
         finally:
             book.close()

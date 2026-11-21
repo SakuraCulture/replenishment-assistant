@@ -489,10 +489,12 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, 
         stamp=data_stamp(db,spec)
         import workflow_analysis as workflow
         allocations=workflow.AllocationReader(db,spec,cancel)
+        show_allocation_detail = _mode in ('full', 'analysis_detail')
         evidence=Evidence(db,cancel);seen_stores=set();seen_orders=set()
         for order,h,view in _query_orders(path,db,spec,progress,cancel,seen_stores,seen_orders,mode=_mode,verifying=verifying):
             day,store,wh,child=(h[k] for k in ('day','store','warehouse','number'))
             allocation=workflow.allocation_fact(db,h,view,spec.get('as_of'),event=allocations.event(h))
+            saved_rows = workflow.allocation_detail_rows(db, h, view, allocation, spec.get('as_of')) if show_allocation_detail else {}
             payment=view['documents']['payment']
             references=local(db,h,payment)
             identifiers.append({'day':day,'store':store,'store_name':order['payload']['result']['store_name'],'warehouse':wh,'order':child,'references':references})
@@ -507,8 +509,11 @@ def collect(path, spec, progress=lambda _:None, cancel=None, *, _coverage=True, 
             tokens.append([h,[(s,d['version'],d['digest']) if d else [s,None] for s,d in view['documents'].items()],view.get('legacy_return'),allocation['digest'] if allocation else None])
             heads.append(h)
             for row in workflow.enrich(build_facts(order,h,view,evidence,cancel,spec=spec,mode=_mode),h,view,allocation,h['saved']):
+                saved_row = saved_rows.get(row['sku'])
+                if saved_row is not None:
+                    row['allocation_detail'] = {k: saved_row.get(k) for k in ('stock', 'before', 'quantity', 'reason')}
                 row['references']=references;rows.append(row)
-            order=view=allocation=payment=row=None
+            order=view=allocation=payment=row=saved_rows=saved_row=None
         if set(spec['stores'])-seen_stores:raise ValueError('所选门店在日期和仓范围内没有有效签发：'+'、'.join(sorted(set(spec['stores'])-seen_stores)))
         if set(spec['orders'])-seen_orders:raise ValueError('所选订单不存在、已删除或不在查询范围，请重新查询')
         identifier_token=attach(path,db,heads,identifiers,cancel)

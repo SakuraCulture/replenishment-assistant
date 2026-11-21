@@ -46,17 +46,40 @@ class TemplateExportTests(unittest.TestCase):
     def test_detail_exact_columns_order_six_stages_and_frozen_price(self):
         names, f, v = self.write([fact()], detail=True); s = v[names[0]]
         self.assertEqual(names, ['SKU完整明细'])
-        self.assertEqual(s.max_column, 43)
+        self.assertEqual(s.max_column, 47)
         self.assertEqual([c.value for c in s[7]], export.DETAIL_HEADERS)
-        self.assertEqual([s.cell(8, c).value for c in range(6, 12)], [24, 20, 10, 25, 22, 18])
-        self.assertEqual(s['N8'].value, 2.5)  # operations/return, no 100% cap.
-        self.assertEqual(s['Y8'].value, 55)  # 22 * frozen V; never actual payment 999.
-        self.assertEqual(s['C8'].value, '0001'); self.assertEqual(s['AD8'].value, '0000000123')
-        self.assertEqual(s['AF8'].value, '禁用'); self.assertEqual(s['AN8'].value, 0)
-        self.assertEqual(s['AP8'].value, '00001234567890123456'); self.assertEqual(s['AQ8'].value, 'AX-001')
+        self.assertEqual([s.cell(8, c).value for c in (6, 7, 8, 9, 14, 15)], [24, 20, 10, 25, 22, 18])
+        self.assertEqual(s['R8'].value, 2.5)  # operations/return, no 100% cap.
+        self.assertEqual(s['AC8'].value, 55)  # 22 * frozen V; never actual payment 999.
+        self.assertEqual(s['C8'].value, '0001'); self.assertEqual(s['AH8'].value, '0000000123')
+        self.assertEqual(s['AJ8'].value, '禁用'); self.assertEqual(s['AR8'].value, 0)
+        self.assertEqual(s['AT8'].value, '00001234567890123456'); self.assertEqual(s['AU8'].value, 'AX-001')
         self.assertIn('范围：纳入', s['E8'].value)
-        self.assertEqual(f[names[0]]['U8'].value, '=IF(COUNT(F8,T8)<2,"n.a.",F8*T8)')
+        self.assertEqual(f[names[0]]['Y8'].value,
+                         '=IF(COUNT(F8,X8)=2,F8*X8,IF(ISNUMBER(F8),"未留存",IF(F8="","待核",F8)))')
         self.assertIn('目标持有量为当时预测需求含安全库存', s['A4'].value)
+
+    def test_detail_renders_saved_allocation_independently_of_downstream_quantities(self):
+        row = fact()
+        row['allocation_detail'] = {'stock': '0', 'before': 0, 'quantity': '0', 'reason': '无可用库存'}
+        old = fact(sku='0002')
+        old['allocation_detail'] = {'stock': '100', 'before': '40.5'}
+        _, formulas, values = self.write([row, old, fact(sku='0003')], detail=True)
+        sheet = values['SKU完整明细']
+        self.assertEqual(sheet['J6'].value, '库存分配')
+        self.assertEqual([cell.value for cell in sheet[7][8:14]], [
+            '运营回传量', '分配时采用的仓可用库存', '本单分配前余额', '实际分配量', '缺口原因', '实际下单量'])
+        self.assertEqual([cell.value for cell in sheet[8][9:14]], [0, 0, 0, '无可用库存', 22])
+        self.assertEqual([cell.data_type for cell in sheet[8][9:13]], ['n', 'n', 'n', 's'])
+        self.assertEqual([cell.value for cell in sheet[9][9:13]], [100, 40.5, '未留存', '未留存'])
+        self.assertEqual([cell.value for cell in sheet[10][9:13]], ['未留存']*4)
+        self.assertEqual(sheet['AQ7'].value, '门店补货建议更新时间')
+        self.assertEqual(sheet['AR7'].value, '签发参考仓库存')
+        self.assertEqual(sheet['AQ8'].value, '2026-11-14 08:00')
+        self.assertEqual(sheet['AR8'].value, 0)
+        self.assertEqual(formulas['SKU完整明细']['T8'].value,
+                         '=IF(AND(ISNUMBER(I8),I8=0),"基数为0",IF(OR(N8="不适用",I8="不适用"),"不适用",'
+                         'IF(COUNT(N8,I8)<2,"待核",N8/I8)))')
 
     def test_summary_three_layouts_all_and_empty_subclass(self):
         names, f, v = self.write([fact()])
@@ -78,33 +101,47 @@ class TemplateExportTests(unittest.TestCase):
         row['quantities']['receipt'] = Decimal(-1)
         row['template_attributes']['target_holding'] = None
         _, _, v = self.write([row], detail=True); s = v['SKU完整明细']
-        self.assertEqual(s['I8'].value, export.NA); self.assertEqual(s['K8'].value, export.NA)
-        self.assertEqual(s['T8'].value, export.NA); self.assertEqual(s['U8'].value, export.NA)
-        self.assertIsNone(s['N8'].value); self.assertEqual(s['AJ8'].value, export.NA)
-        self.assertEqual(s['AG8'].value, 0)
+        self.assertEqual(s['I8'].value, '待核'); self.assertEqual(s['O8'].value, '待核')
+        self.assertEqual(s['X8'].value, '未留存'); self.assertEqual(s['Y8'].value, '未留存')
+        self.assertEqual(s['R8'].value, '待核'); self.assertEqual(s['AN8'].value, '未留存')
+        self.assertEqual(s['AK8'].value, 0)
+
+    def test_detail_distinguishes_missing_fields_and_unneeded_stages(self):
+        row = fact(values=(24, 20, 0, None, None, None))
+        row['states'].update(operations='未启用／未留存', payment='无需此环节', receipt='无需此环节')
+        row['valid'].update(operations=False, payment=False, receipt=False)
+        _, _, values = self.write([row], detail=True)
+        sheet = values['SKU完整明细']
+        self.assertEqual([sheet[c].value for c in ('H8','I8','N8','O8')], [0,'未留存','不适用','不适用'])
+        self.assertEqual([sheet[c].value for c in ('AA8','AB8','AC8','AD8')], [0,'未留存','不适用','不适用'])
+        self.assertEqual([sheet[c].value for c in ('Q8','R8','U8')], [0,'基数为0','不适用'])
+        self.assertEqual(sheet['Q8'].data_type, 'n')
+        self.assertIn('未留存表示缺少原字段', sheet['A5'].value)
 
     def test_detail_rates_distinguish_zero_base_zero_execution_and_unconfirmed(self):
         rows = [fact(values=(24, 0, 0, 5, 0, None)),
                 fact(sku='0002', values=(6, 1, 0, 0, 0, 0))]
-        _, formulas, values = self.write(rows, detail=True)
+        _, _, values = self.write(rows, detail=True)
         sheet = values['SKU完整明细']
-        self.assertEqual([sheet.cell(8, c).value for c in range(12, 20)],
-                         [0, None, None, None, 0, None, None, None])
+        self.assertEqual([sheet.cell(8, c).value for c in range(16, 24)],
+                         [0, '基数为0', '基数为0', '基数为0', 0, '基数为0', '待核', '基数为0'])
         self.assertEqual(sheet['I8'].value, 5)  # Later addition stands even though its rate has no base.
-        self.assertEqual(sheet['K8'].value, export.NA)
-        self.assertEqual(sheet['R9'].value, 0)
-        self.assertEqual(sheet['S9'].value, 0)
-        self.assertEqual(formulas['SKU完整明细']['N8'].value,
-                         '=IF(OR(COUNT(I8,H8)<2,H8=0),"",I8/H8)')
+        self.assertEqual(sheet['O8'].value, '未留存')
+        self.assertEqual(sheet['V9'].value, 0)
+        self.assertEqual(sheet['W9'].value, 0)
+        self.assertEqual(sheet['V9'].data_type, 'n')
 
     def test_all_pending_and_all_excluded_orders_keep_identity(self):
         pending = fact('BH-PENDING', scope='待核')
         excluded = fact('BH-EXCLUDED', scope='排除')
         _, _, v = self.write([pending, excluded]); s = v['商品数量']
-        self.assertEqual(s['B17'].value, 'BH-PENDING'); self.assertEqual(s['G17'].value, export.NA)
-        self.assertEqual(s['G18'].value, export.NA); self.assertEqual(s['G19'].value, 0)
+        self.assertEqual(s['B17'].value, 'BH-PENDING'); self.assertEqual(s['G17'].value, '待核')
+        self.assertEqual(s['G18'].value, '待核'); self.assertEqual(s['G19'].value, 0)
         self.assertEqual(s['B20'].value, 'BH-EXCLUDED'); self.assertEqual(s['G20'].value, 0)
-        self.assertEqual(s['A12'].value, export.NA)
+        self.assertEqual(s['A12'].value, '待核')
+        self.assertEqual(s['M17'].value, '待核')
+        self.assertEqual(s['M20'].value, '基数为0')
+        self.assertIn('基数为0时无法计算比率', s['A14'].value)
         _, _, d = self.write(export.select_detail_rows([pending, excluded]), detail=True)
         self.assertEqual(d['SKU完整明细'].max_row, 8)
         self.assertIn('范围：待核', d['SKU完整明细']['E8'].value)
@@ -126,7 +163,7 @@ class TemplateExportTests(unittest.TestCase):
     def test_pending_with_included_does_not_understate_group(self):
         rows = [fact(), fact(sku='0002', scope='待核'), fact(sku='0003', group='非必采', scope='排除')]
         _, _, v = self.write(rows)
-        self.assertEqual(v['商品数量']['G17'].value, export.NA)
+        self.assertEqual(v['商品数量']['G17'].value, '待核')
         self.assertEqual(v['商品数量']['G19'].value, 0)
 
     def test_attribute_pending_group_and_cross_order_sku_count(self):
@@ -140,8 +177,8 @@ class TemplateExportTests(unittest.TestCase):
     def test_no_operations_backfill_and_invalid_stage_propagates(self):
         row = fact(); del row['valid']['operations']; del row['quantities']['operations']
         _, _, v = self.write([row]); s = v['商品数量']
-        self.assertEqual(s['J17'].value, export.NA); self.assertEqual(s['G12'].value, export.NA)
-        self.assertEqual(s['O17'].value, export.NA)
+        self.assertEqual(s['J17'].value, '待核'); self.assertEqual(s['G12'].value, '待核')
+        self.assertEqual(s['O17'].value, '待核')
         self.assertEqual(s['I17'].value, 10)
 
     def test_real_order_status_priority_and_empty_query(self):
@@ -151,7 +188,7 @@ class TemplateExportTests(unittest.TestCase):
         _, _, v = self.write([row]); self.assertEqual(v['商品数量']['F17'].value, '已收齐')
         names, _, v = self.write([])
         self.assertEqual(len(names), 3); self.assertEqual(v['商品数量']['A12'].value, 0)
-        self.assertEqual(v['商品数量']['A6'].value, export.NA)
+        self.assertEqual(v['商品数量']['A6'].value, '基数为0')
 
     def test_store_code_and_name_and_signed_source_attributes_survive(self):
         row = fact(); row['store'] = '0000123'
@@ -159,17 +196,19 @@ class TemplateExportTests(unittest.TestCase):
                                           in_transit=Decimal('-4'), warehouse_stock=Decimal('-5'))
         _, _, v = self.write([row], detail=True); s = v['SKU完整明细']
         self.assertEqual(s['B8'].value, '测试门店（0000123）')
-        self.assertEqual([s[c].value for c in ('AG8', 'AH8', 'AI8', 'AN8')], [-2.5, -3, -4, -5])
+        self.assertEqual([s[c].value for c in ('AK8', 'AL8', 'AM8', 'AR8')], [-2.5, -3, -4, -5])
         _, _, v = self.write([row]); self.assertEqual(v['商品数量']['C17'].value, '测试门店（0000123）')
 
     def test_native_layout_filters_freeze_safe_text_and_formats(self):
         row = fact(); row['name'] = '=HYPERLINK("x")'
         _, f, _ = self.write([row], detail=True); s = f['SKU完整明细']
         self.assertEqual(s['D8'].data_type, 's'); self.assertEqual(s.freeze_panes, 'E8')
-        self.assertEqual(s.auto_filter.ref, 'A7:AQ8'); self.assertEqual(len(s.tables), 1)
-        self.assertIn('AG6:AM6', {str(m) for m in s.merged_cells.ranges})
-        self.assertEqual(s.column_dimensions['AO'].width, 27)
-        self.assertEqual(s['L8'].number_format, '0.0%'); self.assertEqual(s['T8'].number_format, '#,##0.00')
+        self.assertEqual(s.auto_filter.ref, 'A7:AU8'); self.assertEqual(len(s.tables), 1)
+        self.assertIn('AK6:AQ6', {str(m) for m in s.merged_cells.ranges})
+        self.assertIn('J6:M6', {str(m) for m in s.merged_cells.ranges})
+        self.assertTrue(s['M8'].alignment.wrap_text)
+        self.assertEqual(s.column_dimensions['AS'].width, 27)
+        self.assertEqual(s['P8'].number_format, '0.0%'); self.assertEqual(s['X8'].number_format, '#,##0.00')
         self.assertEqual(s['A7'].fill.fgColor.rgb, 'FF233B59')
         _, f, _ = self.write([row]); s = f['SKU种类']
         self.assertEqual(s.freeze_panes, 'E17'); self.assertEqual(s.auto_filter.ref, 'A16:V19')
@@ -189,13 +228,13 @@ class TemplateExportTests(unittest.TestCase):
             self.assertEqual(s[coordinate].alignment.indent, 1, coordinate)
         self.assertIn('S15:T15', {str(m) for m in s.merged_cells.ranges})
         _, f, _ = self.write([row], detail=True); s = f['SKU完整明细']
-        for coordinate in ('R6',):
+        for coordinate in ('V6',):
             self.assertEqual(s[coordinate].fill.fgColor.rgb, 'FF207D77', coordinate)
-        self.assertIn('R6:S6', {str(m) for m in s.merged_cells.ranges})
-        for coordinate in ('G8', 'H8', 'AK8', 'AL8'):
+        self.assertIn('V6:W6', {str(m) for m in s.merged_cells.ranges})
+        for coordinate in ('G8', 'H8', 'AO8', 'AP8'):
             self.assertEqual(s[coordinate].alignment.horizontal, 'right', coordinate)
             self.assertEqual(s[coordinate].alignment.indent, 1, coordinate)
-        self.assertEqual(s['AL8'].number_format, 'General')
+        self.assertEqual(s['AP8'].number_format, 'General')
 
     def test_cancel_before_sheet_writes(self):
         stop = threading.Event(); stop.set()

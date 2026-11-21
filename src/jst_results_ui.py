@@ -63,10 +63,13 @@ class ResultsPage(QWidget):
         self.payment_selected_btn=button('按勾选核对付款（0单）',self.payment_selected)
         row.addWidget(self.payment_all_btn);row.addWidget(self.payment_selected_btn);v.addLayout(row)
         row=QHBoxLayout()
+        self.one_click_btn=button('一键分配下单',self.one_click)
+        self.one_click_btn.setObjectName('jstOneClick')
+        self.one_click_btn.setToolTip('核对所勾选仓单的历史配置；获取对应仓最新库存，分配后按平台预览导入并查回原单。')
         self.auto_prepare_btn=button('准备自动下单',self.auto_prepare)
         self.auto_tasks_btn=button('自动下单任务',self.auto_tasks)
         self.auto_profiles_btn=button('买家和收货资料',self.auto_profiles)
-        row.addWidget(self.auto_prepare_btn);row.addWidget(self.auto_tasks_btn);row.addWidget(self.auto_profiles_btn);v.addLayout(row)
+        row.addWidget(self.one_click_btn);row.addWidget(self.auto_prepare_btn);row.addWidget(self.auto_tasks_btn);row.addWidget(self.auto_profiles_btn);v.addLayout(row)
         row=QHBoxLayout();self.retry_btn=button('重试未完成导出',self.retry);self.stop_btn=button('停止本次导出',self.stop)
         row.addWidget(self.retry_btn);row.addWidget(self.stop_btn);self.tools_btn=button('其他订单操作',self.tools);row.addWidget(self.tools_btn);v.addLayout(row)
         self.day.dateChanged.connect(self.day_changed);self.end.dateChanged.connect(self.day_changed);self.search.textChanged.connect(self.filter_changed);self.warehouse.currentIndexChanged.connect(self.filter_changed)
@@ -75,7 +78,8 @@ class ResultsPage(QWidget):
 
     def controls(self):
         busy=self.worker is not None or self.reviewing;ready=self.data is not None and not self.closing
-        n=len(service.export_plan(self.data,{service.key(r['head']) for r in self.visible_records()})['entries']) if self.data else 0
+        visible={service.key(r['head']) for r in self.visible_records()} if self.data else set()
+        n=len(service.export_plan(self.data,visible)['entries']) if self.data else 0
         m=len(service.export_plan(self.data,self.chosen)['entries']) if self.data else 0
         self.all_btn.setText(f'导出当前筛选（{n}份）');self.selected_btn.setText(f'导出勾选（{m}份）')
         self.all_btn.setEnabled(ready and not busy and n>0);self.selected_btn.setEnabled(ready and not busy and m>0)
@@ -86,6 +90,9 @@ class ResultsPage(QWidget):
         self.payment_all_btn.setEnabled(ready and not busy and bool(self.visible_records()));self.payment_selected_btn.setEnabled(ready and not busy and bool(self.chosen))
         self.auto_prepare_btn.setText(f'准备勾选单自动下单（{len(self.chosen)}单）')
         self.auto_prepare_btn.setEnabled(ready and not busy and bool(self.chosen))
+        chosen=len(self.chosen & visible)
+        self.one_click_btn.setText(f'一键分配下单（{chosen}单）')
+        self.one_click_btn.setEnabled(ready and not self.reading and not busy and chosen>0 and not getattr(self.host,'closing',False))
         self.auto_profiles_btn.setEnabled(not busy and not self.closing)
         self.auto_tasks_btn.setEnabled(not busy and not self.closing)
         for b in (self.payment_all_btn,self.payment_selected_btn):b.setToolTip('直接使用已保存生成单，无需导出再导入；核对实际已付款后才保存。')
@@ -372,6 +379,53 @@ class ResultsPage(QWidget):
         def logs():
             log=jst_ui.Logs(d,self.host,self.day.text(),self.day.text());log.exec();log.deleteLater()
         v.addWidget(button('批次作业日志',logs));v.addWidget(button('返回结果页',d.reject));d.exec();d.deleteLater();self.refresh()
+
+    def one_click(self):
+        import jst_one_click as operation
+        from catalog_session_ui import manager
+        from interaction_ui import review_rows,show_rows
+        from lifecycle_ui import warn
+        from runtime_support import Cancelled
+        if self.worker or self.reading or self.reviewing or self.closing or self.host.closing:return
+        heads=[r['head'] for r in self.visible_records() if service.key(r['head']) in self.chosen]
+        if not heads:return
+        self.reviewing=True;self.controls()
+        try:
+            prepared=run(self,operation.preflight,(self.path,heads),'核对所选仓单与历史验证')
+            if self.host.closing:return
+            ready=prepared['ready']
+            actions={'allocate':'刷新本仓库存后分配并导入','order':'按有效生成单导入','recover':'按已保存原单核对'}
+            headers=('门店','仓','补货单号','聚水潭店铺','本次处理')
+            rows=[(e['head'].get('name') or e['head']['store'], e['head']['warehouse'],e['head']['number'],
+                   e['shop']['name'],actions[e['mode']]) for e in ready]
+            rows.extend((e['head'].get('name') or e['head']['store'],e['head']['warehouse'],e['head']['number'],
+                         '—',e['message']) for e in prepared['skipped'])
+            if not ready:
+                show_rows(self,'所选仓单待核',headers,rows)
+                return
+            note=(f'本次处理 {len(ready)} 张仓单。平台预览通过后按实际分配的正数量导入。'
+                  '已发起导入的单沿原单号核对。付款资料回读后由业务人员确认实际付款。')
+            if not review_rows(self,'确认一键分配下单',headers,rows,note,'确认本次作业'):return
+            if self.host.closing:return
+            def adopted(event):
+                if event.get('kind')=='adopted' and event.get('catalog'):
+                    self.host.current_warehouse_adopted(event['catalog'])
+            result=run(self,operation.execute,(self.path,ready,manager(self.host).session),'聚水潭一键分配下单',
+                       on_business_event=adopted)
+            if self.host.closing:return
+            runner=getattr(self.host,'jst_fulfillment_runner',None)
+            if runner:runner.refresh_pending()
+            show_rows(self,'一键作业结果',('门店','仓','补货单号','聚水潭内部单号','状态','处理提示'),[
+                (r['head'].get('name') or r['head']['store'],r['head']['warehouse'],r['head']['number'],
+                 r.get('internal') or '—',r['status'],r['message']) for r in [*result,*prepared['skipped']]])
+        except Cancelled:
+            self.status.setText('已停止后续作业；已保存分配和原下单任务可继续核对。')
+        except Exception as exc:
+            warn(self,exc)
+        finally:
+            self.reviewing=False
+            self.controls()
+            if not self.host.closing:self.refresh()
 
     def auto_prepare(self):
         import jst_auto_order

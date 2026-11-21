@@ -1,6 +1,6 @@
 """Reusable read-only business grids and cancellable background operations."""
 import time
-from PySide6.QtCore import Qt,QAbstractTableModel,QModelIndex,QTimer
+from PySide6.QtCore import Qt,QAbstractTableModel,QModelIndex,QTimer,Slot
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QTableView,QLineEdit,QProgressBar,QAbstractItemView
 from ui_controls import label,button
 from ui_tasks import Worker
@@ -29,12 +29,16 @@ def grid(parent,headers,rows=()):
     return table,model
 
 class Task(QDialog):
-    def __init__(self,parent,fn,args,title,cancellable=True):
+    def __init__(self,parent,fn,args,title,cancellable=True,*,on_business_event=None):
         super().__init__(parent);self.setWindowTitle(title);self.resize(610,190);self.complete=False;self._completed=False;self.result=None;self.error=None;self.started=time.monotonic();self.cancellable=cancellable
         v=QVBoxLayout(self);self.note=label('准备中…');v.addWidget(self.note);self.bar=QProgressBar();self.bar.setRange(0,0);v.addWidget(self.bar);self.health=label('');v.addWidget(self.health);self.cancel_btn=button('取消当前任务' if cancellable else '正在提交，暂不能取消',self.reject);self.cancel_btn.setEnabled(cancellable);v.addWidget(self.cancel_btn)
         self.worker=Worker(fn,args,self);self.worker.status.connect(self.note.setText);self.worker.row_progress.connect(self.count);self.worker.success.connect(self.success);self.worker.failed.connect(self.failed);self.worker.cancelled.connect(lambda:self.failed(Cancelled('已取消')));self.worker.finished.connect(self.finish)
         self.worker.commit_state.connect(self.commit_state)
+        self.on_business_event=on_business_event
+        if on_business_event is not None:self.worker.business_event.connect(self.deliver_business_event)
         self.clock=QTimer(self);self.clock.setInterval(300);self.clock.timeout.connect(lambda:self.health.setText(f'已用时 {time.monotonic()-self.started:.1f} 秒 · 后台处理中，等待当前阶段完成'));self.clock.start()
+    @Slot(object)
+    def deliver_business_event(self,event):self.on_business_event(event)
     def count(self,n,total):self.bar.setRange(0,max(total,1) if total else 0);self.bar.setValue(n)
     def commit_state(self,active):
         self.cancellable=not active;self.cancel_btn.setEnabled(not active and not self.worker.cancel.is_set());self.cancel_btn.setText('正在提交，暂不能取消' if active else '取消当前任务')
@@ -48,10 +52,10 @@ class Task(QDialog):
         if self.complete:event.accept()
         else:self.reject();event.ignore()
 
-def run(parent,fn,args,title,cancellable=True):
+def run(parent,fn,args,title,cancellable=True,*,on_business_event=None):
     host=parent
     while host is not None and not hasattr(host,'work_repository'):host=host.parentWidget()
-    task=Task(parent,fn,args,title,cancellable);previous=getattr(host,'_large_io_dialog',None) if host else None
+    task=Task(parent,fn,args,title,cancellable,on_business_event=on_business_event);previous=getattr(host,'_large_io_dialog',None) if host else None
     if host:host._large_io_dialog=task
     try:
         task.worker.start();task.exec();task.worker.wait();result,error=task.result,task.error

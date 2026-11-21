@@ -21,7 +21,14 @@ from export_progress import rows as row_progress
 from runtime_support import checkpoint
 import analytics_lifecycle_scope as lifecycle_scope
 
-NA = 'n.a.'
+NOT_RETAINED = '未留存'
+PENDING = '待核'
+NOT_APPLICABLE = '不适用'
+ZERO_BASE = '基数为0'
+_NUMBER_TYPES = (Decimal, int, float)
+_METRIC_LABELS = (NOT_RETAINED, PENDING, NOT_APPLICABLE, ZERO_BASE)
+DISPLAY_NOTE = ('0或0.0%表示已知为零。未留存表示缺少原字段。待核表示依据未齐。'
+                '不适用表示无需此环节。基数为0时无法计算比率。')
 STAGES = ('model', 'signed', 'return', 'operations', 'payment', 'receipt')
 STAGE_LABELS = ('模型建议量', '签发量', '门店回传量', '运营回传量', '实际下单量', '实际收货量')
 RATE_LABELS = ('签发率', '门店回传率', '运营修正率', '实际确认率',
@@ -29,12 +36,13 @@ RATE_LABELS = ('签发率', '门店回传率', '运营修正率', '实际确认�
 RATE_PAIRS = ((1, 0), (2, 1), (3, 2), (3, 1), (4, 3), (5, 4), (5, 0), (5, 1))
 SUMMARY_HEADERS = ['订单日期', '订单编号', '门店', '供货仓', '必采状态', '订单状态',
                    *STAGE_LABELS, *RATE_LABELS, *ID_HEADERS[1:]]
+ALLOCATION_HEADERS = ('分配时采用的仓可用库存', '本单分配前余额', '实际分配量', '缺口原因')
 DETAIL_HEADERS = ['订单编号', '门店', 'SKU编码', '商品名称', '订单状态',
-                  *STAGE_LABELS, *RATE_LABELS, '统一计价单价',
+                  *STAGE_LABELS[:4], *ALLOCATION_HEADERS, *STAGE_LABELS[4:], *RATE_LABELS, '统一计价单价',
                   '模型建议货值', '签发货值', '门店回传货值', '运营回传货值', '实际下单货值', '实际收货货值',
                   '订单日期', '供货仓', '必采状态', '商品条码', '三级类目', '供货状态',
                   '门店现货', '近30天销量', '门店在途', '目标持有量', '箱规数', '最低持有量',
-                  '库存快照时间', '大仓可用库存', '供货商', *ID_HEADERS[1:]]
+                  '门店补货建议更新时间', '签发参考仓库存', '供货商', *ID_HEADERS[1:]]
 INTEGER, MONEY, PERCENT = '#,##0', '#,##0.00', '0.0%'
 _FONT = 'Microsoft YaHei'
 _STYLES = {
@@ -76,8 +84,22 @@ def _quantity(row, stage):
     return _number(row.get('quantities', {}).get(stage)) if row.get('valid', {}).get(stage) else None
 
 
+def _quantity_cell(row, stage):
+    quantity = _quantity(row, stage)
+    if quantity is not None:
+        return quantity
+    state = row.get('states', {}).get(stage)
+    if state == '无需此环节':
+        return NOT_APPLICABLE
+    raw = row.get('quantities', {}).get(stage)
+    if raw in (None, '') and (stage in ('model', 'signed')
+                             or state in ('未启用／未留存', '已确认', '聚水潭已客审')):
+        return NOT_RETAINED
+    return PENDING
+
+
 def _text(value):
-    return NA if value is None or value == '' else str(value)
+    return NOT_RETAINED if value is None or value == '' else str(value)
 
 
 def _status(row, detail=False):
@@ -93,26 +115,44 @@ def _status(row, detail=False):
     return status
 
 
-def _rate(numerator, denominator):
-    return numerator / denominator if isinstance(numerator, (Decimal, int, float)) and isinstance(denominator, (Decimal, int, float)) and denominator != 0 else NA
-
-
 @dataclass(frozen=True)
 class _Formula:
     text: str
     cached: object
 
 
-def _rate_formula(numerator, denominator, value, *, unavailable=NA):
-    return _Formula(f'=IF(OR(COUNT({numerator},{denominator})<2,{denominator}=0),"{unavailable}",{numerator}/{denominator})',
-                    unavailable if value == NA else value)
+def _rate_formula(numerator, denominator, value, base):
+    numeric_base = isinstance(base, _NUMBER_TYPES)
+    if numeric_base and base == 0:
+        cached = ZERO_BASE
+    elif NOT_APPLICABLE in (value, base):
+        cached = NOT_APPLICABLE
+    elif numeric_base and isinstance(value, _NUMBER_TYPES):
+        cached = value / base
+    else:
+        cached = PENDING
+    return _Formula(
+        f'=IF(AND(ISNUMBER({denominator}),{denominator}=0),"{ZERO_BASE}",'
+        f'IF(OR({numerator}="{NOT_APPLICABLE}",{denominator}="{NOT_APPLICABLE}"),"{NOT_APPLICABLE}",'
+        f'IF(COUNT({numerator},{denominator})<2,"{PENDING}",{numerator}/{denominator})))', cached)
+
+
+def _value_formula(quantity_cell, price_cell, quantity, price):
+    cached = quantity
+    if isinstance(quantity, _NUMBER_TYPES):
+        cached = quantity * price if price is not None else NOT_RETAINED
+    return _Formula(
+        f'=IF(COUNT({quantity_cell},{price_cell})=2,{quantity_cell}*{price_cell},'
+        f'IF(ISNUMBER({quantity_cell}),"{NOT_RETAINED}",IF({quantity_cell}="","{PENDING}",{quantity_cell})))',
+        cached)
 
 
 class _Sheet:
-    def __init__(self, book, name, widths, cancel):
+    def __init__(self, book, name, widths, cancel, *, wrap_columns=()):
         self.ws = book.create_sheet(name)
         self.ws.sheet_view.showGridLines = False
         self.cancel, self.count, self.width = cancel, 0, len(widths)
+        self.wrap_columns = (5, 6, *wrap_columns)
         self.cache = getattr(book, '_analytics_formula_cache', None)
         # Style IDs belong to this workbook. Cache complete, write-once style
         # combinations here; never share them with a later export/workbook.
@@ -137,9 +177,9 @@ class _Sheet:
             if isinstance(actual, str) and not formula:
                 cell.data_type = 's'  # Identifiers, names and attributes cannot inject Excel formulas.
             style = overrides.get(col, kind)
-            numeric = formula or isinstance(actual, (int, float)) or (actual == NA and col in formats)
+            numeric = formula or isinstance(actual, (int, float)) or (col in formats and actual in _METRIC_LABELS)
             horizontal = 'center' if center or style in ('card', 'total') else 'right' if numeric else None
-            wrap = header or col in (5, 6) or (isinstance(actual, str) and '\n' in actual)
+            wrap = header or col in self.wrap_columns or (isinstance(actual, str) and '\n' in actual)
             number_format = formats.get(col, 'General')
             key = (style, horizontal, wrap, number_format)
             cached = self._styles.get(key)
@@ -199,7 +239,7 @@ class _Metrics:
     def get(self, kind):
         bad = self.invalid_value if kind == 'value' else self.invalid_quantity
         values = self.value if kind == 'value' else self.quantity if kind == 'quantity' else [len(s) for s in self.skus]
-        return [NA if unknown else value for value, unknown in zip(values, bad)]
+        return [PENDING if unknown else value for value, unknown in zip(values, bad)]
 
 
 def _orders(rows, cancel):
@@ -218,7 +258,7 @@ def _orders(rows, cancel):
 
 
 def _sum(values):
-    return NA if any(v == NA for v in values) else sum(values, Decimal(0))
+    return PENDING if PENDING in values else sum(values, Decimal(0))
 
 
 def _dashboard(sheet, title, total, last_row, note):
@@ -252,7 +292,7 @@ def _dashboard(sheet, title, total, last_row, note):
                 for c in range(col, col + 3): overrides[c] = 'card_header' if row == 5 and col in (1, 4) else 'header'
         elif row in cardpairs:
             for col, (numerator, denominator) in zip((1, 4, 7, 10), cardpairs[row]):
-                values[col - 1] = _rate_formula(toprefs[numerator], toprefs[denominator], _rate(total[numerator], total[denominator]))
+                values[col - 1] = _rate_formula(toprefs[numerator], toprefs[denominator], total[numerator], total[denominator])
                 for c in range(col, col + 3): overrides[c] = 'card'; formats[c] = PERCENT
         elif row == 11:
             for i, label in enumerate(STAGE_LABELS): values[i * 2] = label
@@ -261,12 +301,12 @@ def _dashboard(sheet, title, total, last_row, note):
             for i, col in enumerate('GHIJKL'):
                 span = f'{col}17:{col}{max(17, last_row)}'
                 criteria = f'$E$17:$E${max(17, last_row)}'
-                values[i * 2] = _Formula(f'=IF(COUNTIFS({criteria},"ALL",{span},"{NA}")>0,"{NA}",SUMIFS({span},{criteria},"ALL"))', total[i])
+                values[i * 2] = _Formula(f'=IF(COUNTIFS({criteria},"ALL",{span},"{PENDING}")>0,"{PENDING}",SUMIFS({span},{criteria},"ALL"))', total[i])
                 for c in (i * 2 + 1, i * 2 + 2): overrides[c] = 'total'; formats[c] = sheet.stage_format
         elif row == 13:
             values[0] = 'ALL为已纳入分组的六阶段合计；八率用合计分子÷合计分母，不平均百分比。属性待核仍计入ALL。'
         elif row == 14:
-            values[0] = note
+            values[0] = note + '\n' + DISPLAY_NOTE
         if row == 5:
             values[13] = '指标口径'
             for c in range(14, 21): overrides[c] = 'header'
@@ -274,7 +314,7 @@ def _dashboard(sheet, title, total, last_row, note):
             i = row - 6; numerator, denominator = RATE_PAIRS[i]
             values[13] = RATE_LABELS[i]
             values[15] = STAGE_LABELS[numerator] + ' ÷ ' + STAGE_LABELS[denominator]
-        sheet.row(values, kind, formats, 32 if row in (6, 9) else 25, overrides)
+        sheet.row(values, kind, formats, 52 if row == 14 else 32 if row in (6, 9) else 25, overrides)
 
 
 def append_summary(book, report, rows, progress=lambda _: None, cancel=None):
@@ -305,8 +345,9 @@ def append_summary(book, report, rows, progress=lambda _: None, cancel=None):
             ids = identifier_cells([first])[1:]
             for offset, (group, metrics) in enumerate([('ALL', all_values), *zip(groups, group_values)]):
                 current = start + offset
-                stage_values = metrics if offset else [_Formula(f'=IF(COUNT({c}{start + 1}:{c}{start + len(groups)})<{len(groups)},"{NA}",SUM({c}{start + 1}:{c}{start + len(groups)}))', metrics[i]) for i, c in enumerate('GHIJKL')]
-                rates = [_rate_formula(f'{get_column_letter(7 + ni)}{current}', f'{get_column_letter(7 + di)}{current}', _rate(metrics[ni], metrics[di])) for ni, di in RATE_PAIRS]
+                stage_values = metrics if offset else [_Formula(f'=IF(COUNT({c}{start + 1}:{c}{start + len(groups)})<{len(groups)},"{PENDING}",SUM({c}{start + 1}:{c}{start + len(groups)}))', metrics[i]) for i, c in enumerate('GHIJKL')]
+                rates = [_rate_formula(f'{get_column_letter(7 + ni)}{current}', f'{get_column_letter(7 + di)}{current}',
+                                       metrics[ni], metrics[di]) for ni, di in RATE_PAIRS]
                 identity = [first.get('day'), identifier_cells([first])[0], _store(first), first.get('warehouse'), group, _status(first)]
                 sheet.row([*identity, *stage_values, *rates, *ids], 'all' if not offset else 'body' if offset % 2 else 'even',
                           {**{c: sheet.stage_format for c in range(7, 13)}, **{c: PERCENT for c in range(13, 21)}}, height=48)
@@ -331,47 +372,60 @@ def select_detail_rows(rows, cancel=None):
 
 
 def append_detail(book, report, rows, progress=lambda _: None, cancel=None):
-    """Write the selected rows to the 43-column lifecycle detail page."""
+    """Write the selected rows and their saved allocation facts."""
     progress = progress or (lambda _: None)
-    sheet = _Sheet(book, 'SKU完整明细', [18, 18, 16, 22] + [16] * 25 + [20] + [16] * 8 + [24, 16, 27, 26, 30], cancel)
+    widths = [18, 18, 16, 22] + [16] * 5 + [24, 20, 16, 56] + [16] * 20 + [20] + [16] * 8 + [24, 16, 27, 26, 30]
+    sheet = _Sheet(book, 'SKU完整明细', widths, cancel, wrap_columns=(13,))
     sheet.ws.freeze_panes = 'E8'; sheet.ws.print_title_rows = '6:7'
-    for reference in ('A2:N2', 'A3:N3', 'A4:N4', 'A5:N5', 'A6:E6', 'F6:K6', 'L6:Q6', 'R6:S6', 'T6:Z6', 'AA6:AF6', 'AG6:AM6', 'AN6:AO6', 'AP6:AQ6'): sheet.merge(reference)
+    for reference in ('A2:R2', 'A3:R3', 'A4:R4', 'A5:R5', 'A6:E6', 'F6:I6', 'J6:M6', 'N6:O6',
+                      'P6:U6', 'V6:W6', 'X6:AD6', 'AE6:AJ6', 'AK6:AQ6', 'AR6:AS6', 'AT6:AU6'):
+        sheet.merge(reference)
     sheet.row(); sheet.row(['补货SKU生命周期明细'], 'title')
     sheet.row(['每行对应一张仓单的一个SKU。排除行省略。模型建议为0时，签发至实收有任一阶段确认数量大于0就保留。生命周期范围为'+lifecycle_scope.label(report.get('query',{}))+'。'], 'note')
-    sheet.row(['种类按阶段数量>0计1；货值=数量×签发冻结V单价。目标持有量为当时预测需求含安全库存，不按签发量倒推；数量非同单位物量。'], 'note')
-    sheet.row(['率值＝对应后阶段数量÷前阶段数量。前阶段为0或任一阶段数量缺少确认值时，率值留空。前阶段大于0且后阶段确认数量为0时显示0%。'], 'note')
-    groups = [None] * 43
-    for col, label in ((1, '订单与商品'), (6, '六阶段数量'), (12, '环节转化'), (18, '最终履行'),
-                       (20, '统一单价与六阶段货值'), (27, '订单与商品属性'), (33, '库存与订货约束'), (40, '大仓供给'), (42, '外部订单号')):
+    sheet.row(['种类按阶段数量>0计1；货值=数量×签发冻结V单价。目标持有量为当时预测需求含安全库存，不按签发量倒推；数量非同单位物量。'
+               '库存分配读取当时的仓单记录。'], 'note')
+    sheet.row(['比率＝对应后阶段数量÷前阶段数量。' + DISPLAY_NOTE], 'note')
+    groups = [None] * len(DETAIL_HEADERS)
+    for col, label in ((1, '订单与商品'), (6, '建议与回传数量'), (10, '库存分配'), (14, '下单与收货数量'),
+                       (16, '环节转化'), (22, '最终履行'), (24, '统一单价与六阶段货值'), (31, '订单与商品属性'),
+                       (37, '库存与订货约束'), (44, '签发参考与供货商'), (46, '外部订单号')):
         groups[col - 1] = label
-    sheet.row(groups, 'header', overrides={18: 'card_header', 19: 'card_header'}); sheet.row(DETAIL_HEADERS, 'header', height=42)
+    sheet.row(groups, 'header', overrides={22: 'card_header', 23: 'card_header'}); sheet.row(DETAIL_HEADERS, 'header', height=42)
     total = len(rows) if hasattr(rows, '__len__') else None
     if total is not None: row_progress(progress, sheet.ws.title, 0, total)
-    formats={**dict.fromkeys(range(6,12),INTEGER),**dict.fromkeys(range(12,20),PERCENT),**dict.fromkeys(range(20,27),MONEY),
-             **dict.fromkeys((*range(33,39),40),'General')}
+    stage_cols = [DETAIL_HEADERS.index(label) + 1 for label in STAGE_LABELS]
+    stage_letters = [get_column_letter(col) for col in stage_cols]
+    price_letter = get_column_letter(DETAIL_HEADERS.index('统一计价单价') + 1)
+    formats = {**dict.fromkeys(stage_cols, INTEGER), **dict.fromkeys(range(16, 24), PERCENT),
+               **dict.fromkeys(range(24, 31), MONEY), **dict.fromkeys((*range(37, 43), 44), 'General')}
     last_order=None;last_reference=None;ids=None
     for index, row in enumerate(rows, 1):
         checkpoint(cancel)
         current = sheet.count + 1
-        quantities = [_quantity(row, stage) for stage in STAGES]
-        displayed = [q if q is not None else NA for q in quantities]
+        displayed = [_quantity_cell(row, stage) for stage in STAGES]
         price = _number(row.get('price'))
-        quantity_cells=[f'{column}{current}' for column in 'FGHIJK'];price_cell=f'T{current}'
-        rates = [_rate_formula(quantity_cells[ni], quantity_cells[di], _rate(displayed[ni], displayed[di]), unavailable='')
+        quantity_cells = [f'{column}{current}' for column in stage_letters]
+        price_cell = f'{price_letter}{current}'
+        rates = [_rate_formula(quantity_cells[ni], quantity_cells[di], displayed[ni], displayed[di])
                  for ni, di in RATE_PAIRS]
-        amounts = [_Formula(f'=IF(COUNT({cell},{price_cell})<2,"{NA}",{cell}*{price_cell})',q*price if q is not None and price is not None else NA)
-                   for cell,q in zip(quantity_cells,quantities)]
+        amounts = [_value_formula(cell, price_cell, quantity, price)
+                   for cell, quantity in zip(quantity_cells, displayed)]
+        allocation = row.get('allocation_detail') or {}
+        saved_numbers = [_finite_number(allocation.get(key)) for key in ('stock', 'before', 'quantity')]
+        reason = allocation.get('reason')
+        allocation_cells = [v if v is not None else NOT_RETAINED for v in saved_numbers]
+        allocation_cells.append(reason if isinstance(reason, str) and reason.strip() else NOT_RETAINED)
         attrs = row.get('template_attributes') or {}
         def number(key):
             # Source attributes are evidence, including genuine negative stock
             # or net sales.  Only stage quantities and prices reject negatives.
             value = _finite_number(attrs.get(key))
-            return value if value is not None else NA
+            return value if value is not None else NOT_RETAINED
         reference=row.get('references')
         if ids is None or row['order']!=last_order or reference is not last_reference:
             ids=identifier_cells([row]);last_order=row['order'];last_reference=reference
         values = [ids[0], _store(row), _text(row.get('sku')), _text(row.get('name')), _status(row, True),
-                  *displayed, *rates, price if price is not None else NA, *amounts,
+                  *displayed[:4], *allocation_cells, *displayed[4:], *rates, price if price is not None else NOT_RETAINED, *amounts,
                   _text(row.get('day')), _text(row.get('warehouse')), _text(row.get('group')),
                   _text(attrs.get('barcode')), _text(row.get('product_category')), _text(attrs.get('supply_state')),
                   *[number(key) for key in ('stock', 'monthly_sales', 'in_transit', 'target_holding', 'pack_size', 'minimum_holding')],
