@@ -7,8 +7,42 @@ from PySide6.QtWidgets import QDialog,QMessageBox,QCheckBox,QPushButton
 from version_info import diagnostic,MODEL_VERSION
 
 
+def home_navigation(app,win,out):
+    if (Path(app.data_root).resolve()!=(out/'settings').resolve()
+            or json.loads((out/'synthetic.json').read_text('utf-8'))!={'synthetic':True,'live_platform':False}):
+        raise ValueError('首页验收需要独立资料')
+    checks={}
+    report={'passed':False,**diagnostic()}
+    try:
+        home=win.sections.widget(0)
+        top={b.text():b for b in win.top_nav}
+        expected={'补货出单':1,'订单跟踪':3,'决策复查':2,'参数设置':4}
+        win.show_section(0)
+        win.resize(1366,900);QTest.qWait(120)
+        buttons={b.text() for b in home.findChildren(QPushButton) if b.isVisible()}
+        kept={'继续已保存的今日草稿','全部未收齐订单','经营分析与报表','数据维护','定时补货','刷新待办'}
+        assert kept<=buttons,buttons
+        assert not {'进入'+title for title in expected}&buttons,buttons
+        assert win.grab().save(str(out/'首页清理后.png'))
+        for title,index in expected.items():
+            top[title].click()
+            assert win.sections.currentIndex()==index,title
+            checks[title]=index
+            top['首页'].click()
+        report.update(passed=True,routes=checks,home_actions=sorted(buttons))
+    except Exception:
+        report['error']=traceback.format_exc()
+    (out/'home-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
+    win._discard_close=True
+    win.close()
+    QTimer.singleShot(150,lambda:app.exit(0 if report['passed'] else 1))
+
+
 def start_smoke(app,win,args):
     out=Path(args[0]);out.mkdir(parents=True,exist_ok=True);checks=[];geometry=[];report={}
+    if args[1:]==['home']:
+        QTimer.singleShot(150,lambda:home_navigation(app,win,out))
+        return
     def require(ok,text):
         if not ok:raise AssertionError(text)
         checks.append(text)

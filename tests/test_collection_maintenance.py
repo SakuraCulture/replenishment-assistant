@@ -28,6 +28,7 @@ class MaintenanceProcessTests(unittest.TestCase):
         normal_exports.export(signed,self.out/'signed-before.xlsx',warehouse='河北仓')
         signed_cells=cells(self.out/'signed-before.xlsx')
         config=self.client.request('configuration')
+        old_failed=self.jobs.get('old-failed')['record']
         job=prepare(self.jobs,config,['W2','W1'],'refresh',day='2026-11-04')
         self.jobs.dispatch(self.client,job['id'])
         until=time.monotonic()+6
@@ -41,7 +42,7 @@ class MaintenanceProcessTests(unittest.TestCase):
         own=self.jobs.maintenance_preview(self.client,job['id'],'end')
         self.assertEqual(own['related'],[])
         self.jobs.maintenance_apply(self.client,own)
-        self.assertEqual(self.jobs.get('old-failed')['state'],'PAUSED')
+        self.assertEqual(self.jobs.get('old-failed')['record'],old_failed)
         plan=self.jobs.maintenance_preview(self.client,'blocked','end')
         self.assertEqual(len(plan['related']),1)
         self.jobs.maintenance_apply(self.client,plan)

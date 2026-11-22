@@ -118,6 +118,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.browser_status=BrowserStatus(self)
         from scheduled_ui import Manager as ScheduledManager
         self.scheduled=ScheduledManager(self,hv)
+        hv.addStretch(1)
         self.home_tasks.refresh_timer.start(0)
 
     def open_aoxiang_fetch(self):
