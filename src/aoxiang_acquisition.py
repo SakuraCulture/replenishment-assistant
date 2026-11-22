@@ -9,6 +9,7 @@ from aoxiang_jobs import encoded, now
 
 ACTIVE = {'QUEUED', 'RUNNING', 'PAUSE_REQUESTED'}
 RESUMABLE = {'PAUSED', 'INTERRUPTED'}
+BROWSER_BUSY = {'COMPONENT_BUSY', 'PURCHASE_CREATE_BUSY', 'TEMPLATE_BUSY', 'SETUP_BUSY'}
 
 
 class PendingAcquisition(ValueError):
@@ -34,14 +35,17 @@ def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=N
         raise ValueError('请选择1至256家门店，不能重复')
     if any(not isinstance(code, str) or code not in available for code in codes):
         raise ValueError('所选门店不在已核验绑定中，请重新核验')
-    blockers=[]
-    for pending in jobs.unfinished():
-        old = pending['command']
-        if (old['operation'] == 'replenishment.export' and old['account_binding']['merchant_code'] == configuration['account_binding']['merchant_code']
-                and pending.get('purpose','replenishment') == (purpose or 'replenishment')
-                and set(codes).intersection(old['scope']['warehouse_codes'])):
-            blockers.append({**pending,'overlap':[code for code in codes if code in old['scope']['warehouse_codes']]})
-    if blockers:raise PendingAcquisition(blockers)
+    if purpose == 'stockout_analysis':
+        blockers = []
+        for pending in jobs.unfinished():
+            old = pending['command']
+            if (old['operation'] == 'replenishment.export'
+                    and old['account_binding']['merchant_code'] == configuration['account_binding']['merchant_code']
+                    and pending.get('purpose') == purpose
+                    and set(codes).intersection(old['scope']['warehouse_codes'])):
+                blockers.append({**pending, 'overlap': [code for code in codes if code in old['scope']['warehouse_codes']]})
+        if blockers:
+            raise PendingAcquisition(blockers)
     command = {'protocol_version': 1, 'command_id': 'rep-' + uuid.uuid4().hex,
                'operation': 'replenishment.export', 'account_binding': configuration['account_binding'],
                'scope': {'warehouse_codes': list(codes)},
@@ -55,6 +59,21 @@ def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=N
             raise ValueError('分析采集需要明确用途与任务拥有者')
         context.update(purpose=purpose,owner=owner)
     return jobs.register(command, context)
+
+
+def configuration_for_new(client, progress, cancel=None):
+    from aoxiang_client import ComponentError
+    from aoxiang_current_login import current_configuration
+    from runtime_support import checkpoint
+    try:
+        return current_configuration(client, progress, cancel)
+    except ComponentError as error:
+        if error.code not in BROWSER_BUSY:
+            raise
+    # The component still verifies the frozen account and each store before any export.
+    checkpoint(cancel)
+    progress('等待浏览器可用')
+    return client.request('configuration')
 
 
 def manifest(job, state_root):

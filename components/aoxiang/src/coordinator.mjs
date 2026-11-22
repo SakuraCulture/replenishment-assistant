@@ -30,7 +30,7 @@ export class Coordinator{
     const contract=await fieldContract(asset.semanticVersion==='D13-all-info-1'?'v1':'current');
     await validateWorkbook(file,{warehouseCode:asset.buyerWarehouseCode,expectedRows:asset.rows,contract,maxCompressedBytes:this.config.resourceLimits.maxCompressedFileBytes});return file;
   }
-  async run({mode='normal',batchId='default',warehouseCode,runId,phase='complete'}={}){
+  async run({mode='normal',batchId='default',warehouseCode,runId,phase='complete',independent=false}={}){
     if(!['complete','submit','collect'].includes(phase))fail('INVALID_PHASE','未知采集阶段');
     await validateConfig('portable.config',this.config);
     if(!this.config.enabled||!this.binding.outputRoot)fail('SETUP_REQUIRED','请先完成本机配置');
@@ -38,7 +38,14 @@ export class Coordinator{
     if(this.config.exportPolicy.semanticVersion!==platform.currentSemanticVersion)fail('SOURCE_VERSION_CHANGED','当前平台已使用V2，请重新连接并核对配置后升级导出口径');
     this.state.requireCollection(runId);
     const publication=await recoverPublications({state:this.state,outputRoot:this.binding.outputRoot,identity:this.config.tenantBinding,runId});
-    for(const p of publication)if(p.attemptId){const a=this.state.getAttempt(p.attemptId);if(a)this.state.putAttempt({...a,stage:'SUCCEEDED',completedAt:now()});}
+    for(const p of publication){
+      const attempt=this.state.getAttempt(p.attemptId);
+      if(!attempt)continue;
+      const {asset}=p;
+      this.state.putAttempt({...attempt,stage:'SUCCEEDED',assetKey:asset.assetKey,assetSnapshot:asset,completedAt:now()});
+      const item=this.state.getItems(attempt.runId).find(i=>i.id===attempt.itemId);
+      if(item)this.state.putItem({...item,stage:'SUCCEEDED',assetKey:asset.assetKey,assetSnapshot:asset});
+    }
     let run=runId?this.state.getRun(runId):null;
     if(runId&&!run)fail('RUN_NOT_FOUND','未找到指定作业');
     if(run?.status==='ENDED')fail('RUN_ENDED','本次采集已结束，请明确新建采集任务');
@@ -57,16 +64,20 @@ export class Coordinator{
          }
         const identity=run.identity,target=item.target,semanticVersion=attempt?.semanticVersion||this.config.exportPolicy.semanticVersion,scope=attempt?.scopeHash||scopeHash(target.buyerWarehouseCode,semanticVersion);
         const purpose=this.state.collectionPurposeForRun(run.id,run);
-        const isolated=!!run.consumer||!!this.state.db.prepare('SELECT 1 FROM collection_consumers WHERE run_id=?').get(run.id);
+        const isolated=independent||!!run.consumer||!!this.state.db.prepare('SELECT 1 FROM collection_consumers WHERE run_id=?').get(run.id);
         const key=assetKey({...identity,purpose,buyerWarehouseCode:target.buyerWarehouseCode,acquisitionDate:run.day,scopeHash:scope,semanticVersion});
         const existing=this.state.getAsset(key);
-        if(attempt?.taskId&&existing?.taskId===attempt.taskId){
+        if(attempt&&(attempt.additionalTaskIds?.length||['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED'].includes(attempt.stage)))
+          fail('SUBMISSION_UNKNOWN','原提交仍未消歧，不能再点导出',{attemptId:attempt.id,taskId:attempt.taskId});
+        if(attempt?.taskId&&existing?.taskId===attempt.taskId&&
+           (!independent||existing.runId===run.id||attempt.recoveryFromAsset)){
           try{await this.validateAsset(existing);this.state.putAttempt({...attempt,stage:'SUCCEEDED'});item={...item,stage:'SUCCEEDED',assetKey:key,assetSnapshot:existing};this.state.putItem(item);continue;}
           catch(e){if(e.code!=='ASSET_FILE_MISSING')throw e;}
         }
-        const unresolved=this.state.pending(identity,target.buyerWarehouseCode,scope,purpose).filter(a=>a.id!==attempt?.id);
-        if(unresolved.length)fail('UNRESOLVED_TASK','该仓点存在其他未决提交，先继续原作业或核对迁移记录',{warehouseCode:target.buyerWarehouseCode,taskIds:unresolved.map(a=>a.taskId||null)});
-        if(attempt&&['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED'].includes(attempt.stage))fail('SUBMISSION_UNKNOWN','原提交仍未消歧，不能再点导出',{attemptId:attempt.id,taskId:attempt.taskId});
+        if(!independent){
+          const unresolved=this.state.pending(identity,target.buyerWarehouseCode,scope,purpose).filter(a=>a.id!==attempt?.id);
+          if(unresolved.length)fail('UNRESOLVED_TASK','该仓点存在其他未决提交，先继续原作业或核对迁移记录',{warehouseCode:target.buyerWarehouseCode,taskIds:unresolved.map(a=>a.taskId||null)});
+        }
         if(!attempt){
           if(phase==='collect')fail('MISSING_SUBMISSION','尚未提交的门店不能在下载阶段创建导出');
           if(run.day!==businessDate())fail('NEW_DAY_REQUIRED','未提交项已跨日，请先结束旧作业，再建立当日批次');
@@ -112,11 +123,21 @@ export class Coordinator{
                this.state.putItem({...item,stage:'PLANNED',attemptId:null});throw e;
              }
             attempt={...current,stage:e.code==='WRONG_SCOPE_ACCEPTED'||current.stage==='WRONG_SCOPE_ACCEPTED'?'WRONG_SCOPE_ACCEPTED':positive?'ACCEPTED':'SUBMISSION_UNKNOWN',taskId:e.details?.taskId||current.taskId||null,errorCode:e.code||'SUBMISSION_ERROR'};this.state.putAttempt(attempt);throw e;
+          }finally{
+            // The shared receiver persists genuinely late receipts by intent ID.
+            if(this.adapter.onReceipt===receiptHandler)this.adapter.onReceipt=null;
           }
           }
         }
         this.stopped();
-        if(attempt.stage==='SUCCEEDED'){item={...item,stage:'SUCCEEDED',assetSnapshot:item.assetSnapshot||existing};this.state.putItem(item);continue;}
+        if(attempt.stage==='SUCCEEDED'){
+          const asset=item.assetSnapshot||attempt.assetSnapshot;
+          if(asset?.taskId===attempt.taskId){
+            item={...item,stage:'SUCCEEDED',assetKey:asset.assetKey,assetSnapshot:asset};this.state.putItem(item);continue;
+          }
+          // An interrupted local save can continue by the known task ID.
+          // The current daily pointer might already belong to a newer batch.
+        }
         // Retain the exact accepted task; the platform can generate it while later stores submit.
         if(phase==='submit')continue;
         let downloaded=attempt.downloaded;
@@ -153,8 +174,8 @@ export class Coordinator{
         const asset={...identity,purpose,...(isolated?{runId:run.id}:{}),buyerWarehouseCode:target.buyerWarehouseCode,acquisitionDate:attempt.acquisitionDate,scopeHash:attempt.scopeHash,semanticVersion:attempt.semanticVersion,contractId:attempt.semanticVersion==='D13-all-info-1'?'D13-V1-52cols':platform.currentContractId,taskId:attempt.taskId,rows:validation.rows,columns:validation.columns,bytes:validation.bytes,sha256:validation.sha256,collectedAt:attempt.query.observedAt,relativePath:isolated?'.collections/'+run.id+'/'+path.posix.basename(relative):relative};
         this.stopped();
         asset.sourceRunId=run.id;
-        const saved=await this.publish({state:this.state,outputRoot:this.binding.outputRoot,sourceFile:downloaded.file,asset,attemptId:attempt.id,replace:run.mode==='rerun'});
-        attempt={...attempt,stage:'SUCCEEDED',assetKey:saved.assetKey,completedAt:now()};this.state.putAttempt(attempt);
+        const saved=await this.publish({state:this.state,outputRoot:this.binding.outputRoot,sourceFile:downloaded.file,asset,attemptId:attempt.id,replace:independent||run.mode==='rerun'});
+        attempt={...attempt,stage:'SUCCEEDED',assetKey:saved.assetKey,assetSnapshot:saved,completedAt:now()};this.state.putAttempt(attempt);
         item={...item,stage:'SUCCEEDED',assetKey:saved.assetKey,assetSnapshot:saved};this.state.putItem(item);await this.progress('SAVED',{warehouseCode:target.buyerWarehouseCode,taskId:attempt.taskId,file:path.join(this.binding.outputRoot,saved.relativePath),rows:validation.rows});
       }
       if(phase==='submit'&&this.state.getItems(run.id).some(i=>!DONE.has(i.stage)))return {...run,pending:true};

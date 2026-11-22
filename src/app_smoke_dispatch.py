@@ -28,6 +28,7 @@ WINDOW_SMOKES = {
     '--startup-connections-smoke': 'browser_startup_smoke',
     '--stockout-smoke': 'stockout_smoke',
     '--collection-reexport-smoke': 'collection_reexport_smoke',
+    '--collection-batches-smoke': 'collection_batches_smoke',
     '--collection-ended-smoke': 'collection_ended_smoke',
     '--mandatory-holding-smoke': 'mandatory_holding_smoke',
     '--deletion-void-smoke': 'deletion_void_smoke',

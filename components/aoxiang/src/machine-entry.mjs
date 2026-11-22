@@ -1,5 +1,5 @@
 import path from 'node:path';
-import {ExclusiveLock,StateStore} from './state.mjs';
+import {ExclusiveLock,StateStore,collectionPurpose} from './state.mjs';
 import {MachineCommands,mappingVersion} from './machine-commands.mjs';
 import {MachineRuntime,errorInfo} from './machine-runtime.mjs';
 import {readFrames,writeFrame,validateRequest,publicRecord,correlationId} from './machine-protocol.mjs';
@@ -24,6 +24,7 @@ import {PurchaseBindingService,MachinePurchaseBinding} from './purchase-binding.
 import {releaseSession} from './machine-session.mjs';
 import {CollectionMaintenance} from './machine-maintenance.mjs';
 import {clientConnectionState} from './browser-connection.mjs';
+import {resumableReview} from './collection-recovery.mjs';
 
 let lock,state,runtime,setup,template,purchase,receiptSync,bindingCheck,outputFailed=false;
 const browsers=new BoundBrowserPool();
@@ -48,13 +49,11 @@ async function main(){
   receiptSync=new MachinePurchaseReceipt({ledger:receipts,service:receiptService,onFatal:error=>{void fatal(error);}});
   const bindingService=new PurchaseBindingService({state,creates:purchases,creationService:purchaseService,progress:stage=>bindingCheck?.progress(stage)});
   bindingCheck=new MachinePurchaseBinding({creates:purchases,service:bindingService,onFatal:error=>{void fatal(error);}});
+  const browserBusy=()=>setup.busy||template.busy||purchase.busy||receiptSync.busy||bindingCheck.busy;
   const recovered=commands.recoverInterrupted();
-  runtime=new MachineRuntime({commands,pipeline:true,onFatal:error=>{void fatal(error);},
-    canResumeReview:item=>{
-      const items=state.getItems(item.run_id);
-      return items.length===1&&items.every(i=>{const a=state.getAttempt(i.attemptId);return a&&!a.additionalTaskIds?.length&&
-        (a.stage==='CANCELLED_BEFORE_SUBMIT'||a.taskId&&['ACCEPTED','RUNNING','FINISHED','DOWNLOADED','VALIDATED','PUBLISHING','SUCCEEDED'].includes(a.stage));});
-    },
+  runtime=new MachineRuntime({commands,pipeline:true,durableQueue:true,onFatal:error=>{void fatal(error);},
+    canStart:()=>!browserBusy(),
+    canResumeReview:(item,record)=>resumableReview(state,item,collectionPurpose(record?.request)==='replenishment'),
     needsReview:item=>state.getItems(item.run_id).some(i=>['INTENT_RECORDED','SUBMITTING','SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED'].includes(state.getAttempt(i.attemptId)?.stage)),
     executeItem:async({record,item,phase,signal,onProgress})=>{
       const current=await loadConfig(root),config=record.config_snapshot;
@@ -63,19 +62,26 @@ async function main(){
       if(!await exists(path.join(root,'config/machine.binding.json')))fail('SETUP_REQUIRED','请先完成本机浏览器绑定');
       const binding=await validateConfig('machine.binding',await readJson(path.join(root,'config/machine.binding.json')));
       const browser=await browsers.acquire({state,config,binding,signal,onProgress});
-      const result=await new Coordinator({state,config,binding,adapter:browser.adapter,signal,onProgress}).run({runId:item.run_id,phase});
+      const result=await new Coordinator({state,config,binding,adapter:browser.adapter,signal,onProgress})
+        .run({runId:item.run_id,phase,independent:collectionPurpose(record.request)==='replenishment'});
       if(result.pending)return {pending:true};
       return await freezeRunAsset({state,binding,commandId:record.id,item});
     }
   });
   const maintenance=new CollectionMaintenance(state,commands,runtime);
   await send({type:'ready',operations:['replenishment.export'],recovered:recovered.map(r=>({command_id:r.id,state:r.state,sequence:r.sequence})),configuration_recovered:configurationRecovered,configured:await exists(path.join(root,'config/portable.config.json'))});
+  runtime.kick();
   for await(const raw of readFrames(process.stdin)){
     let request,result,stop=false,kick=false;
     try{
       request=validateRequest(raw);
       const configurationActions=['discover','setup.start','setup.check_login','setup.verify_saved','setup.commit','template.start'];
-      if((configurationActions.includes(request.action)||['reserve','resume','purchase.start','purchase.submit','purchase.rebuild','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&(purchase.busy||receiptSync.busy||bindingCheck.busy))fail('PURCHASE_CREATE_BUSY','当前采购、关联核对或收货动作正在运行或安全停止，请等待后再执行其他作业');
+      const collectionControl=['resume','retry','collection.continue'].includes(request.action)?commands.get(request.command_id):null;
+      const independent=request.action==='reserve'?collectionPurpose(request.command)==='replenishment':
+        !!collectionControl&&collectionPurpose(collectionControl.request)==='replenishment';
+      if((configurationActions.includes(request.action)||(!independent&&['reserve','resume'].includes(request.action))||
+          ['purchase.start','purchase.submit','purchase.rebuild','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&
+          (purchase.busy||receiptSync.busy||bindingCheck.busy))fail('PURCHASE_CREATE_BUSY','当前采购、关联核对或收货动作正在运行或安全停止，请等待后再执行其他作业');
       if(configurationActions.includes(request.action)&&(runtime.active||commands.list().some(r=>r.state==='QUEUED')))fail('COMPONENT_BUSY','先暂停或完成当前取数任务，再修改连接与目录');
       if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
       switch(request.action){
@@ -161,10 +167,10 @@ async function main(){
         case 'ping':result={closing:runtime.closing,active_command_id:runtime.active?.id||null,active_purchase_id:purchase.busy?purchase.job.id:null,active_receipt_id:receiptSync.busy?receiptSync.job.id:null,active_binding_id:bindingCheck.busy?bindingCheck.job.id:null};break;
         case 'list':{const records=commands.list(),offset=request.offset||0,limit=request.limit||50;result={total:records.length,items:records.slice(offset,offset+limit).map(publicRecord)};break;}
         case 'reserve':{
-          if(setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取，再开始取数');
+          if(!independent&&(setup.busy||template.busy))fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取，再开始取数');
           if(runtime.closing)fail('SHUTTING_DOWN','组件正在安全退出');
           const config=await loadConfig(root);await assertHandoff(root,config.tenantBinding);
-          const accepted=await commands.reserve(request.command,config);
+          const accepted=await commands.reserve(request.command,config,{durableQueue:independent});
           result={created:accepted.created,record:publicRecord(accepted.record)};kick=true;break;
         }
         case 'status':result=publicRecord(commands.get(request.command_id));if(!result)fail('COMMAND_NOT_FOUND','未找到自动化作业');break;
@@ -173,19 +179,18 @@ async function main(){
         case 'collection.reexport.preview':result=maintenance.reexportPreview(await loadConfig(root),request.operation_id,request.warehouse_codes,request.purpose);break;
         case 'collection.reexport.apply':result=maintenance.reexportApply(await loadConfig(root),request.operation_id,request.warehouse_codes,request.purpose,request.token);break;
         case 'collection.continue':
-          if(setup.busy||template.busy||purchase.busy||receiptSync.busy||bindingCheck.busy)fail('COMPONENT_BUSY','先完成或停止当前连接、模板、采购或收货任务');
+          if(!independent&&browserBusy())fail('COMPONENT_BUSY','先完成或停止当前连接、模板、采购或收货任务');
           result=publicRecord(runtime.continueReviewed(request.command_id));kick=true;break;
         case 'collection.apply':result=maintenance.apply(request.command_id,request.operation,request.token);break;
         case 'events':result={events:commands.events(request.command_id,request.after||0,request.limit||50)};break;
         case 'pause':result=publicRecord(runtime.pause(request.command_id));break;
-        case 'resume':if(setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取');result=publicRecord(runtime.resume(request.command_id));kick=true;break;
-        case 'retry':if(setup.busy||template.busy||purchase.busy||receiptSync.busy||bindingCheck.busy)fail('COMPONENT_BUSY','先完成或停止当前平台动作');result=publicRecord(runtime.retry(request.command_id,request.indices,request.sequence));kick=true;break;
+        case 'resume':if(!independent&&(setup.busy||template.busy))fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取');result=publicRecord(runtime.resume(request.command_id));kick=true;break;
+        case 'retry':if(!independent&&browserBusy())fail('COMPONENT_BUSY','先完成或停止当前平台动作');result=publicRecord(runtime.retry(request.command_id,request.indices,request.sequence));kick=true;break;
         case 'shutdown':{
-          runtime.closing=true;
+          runtime.stop();
           if(purchase.busy)purchase.pause(purchase.job.id);
           if(receiptSync.busy)receiptSync.pause(receiptSync.job.id);
           if(bindingCheck.busy)bindingCheck.pause(bindingCheck.job.id);
-          for(const record of commands.list())if(['QUEUED','RUNNING'].includes(record.state))runtime.pause(record.id);
           result={closing:true,message:'停止新动作；等待当前操作安全结束，已受理任务保留'};stop=true;break;
         }
       }

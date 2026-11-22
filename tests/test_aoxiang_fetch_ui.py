@@ -128,7 +128,7 @@ class FetchUiTests(unittest.TestCase):
         d.start_fetch()
         self.wait(lambda: d.worker is None and d.current is not None)
         command_id = d.current['id']
-        self.assertFalse(d.start_btn.isEnabled())
+        self.assertTrue(d.start_btn.isEnabled())
         self.assertFalse(d.adopt_btn.isEnabled())
         d.pause_fetch()
         self.wait(lambda: d.worker is None and d.current['state'] == 'PAUSED')
@@ -146,18 +146,19 @@ class FetchUiTests(unittest.TestCase):
         self.assertEqual([f['warehouse_code'] for f in d.adoption['files']], ['W2', 'W1'])
         self.assertFalse(self.errors)
 
-    def test_new_start_locates_hidden_original_blocker_without_registering_another_job(self):
+    def test_new_start_preserves_hidden_original_and_registers_its_own_job(self):
         from aoxiang_acquisition import prepare
         d=self.dialog;old=prepare(d.jobs,configuration(),['W1'],'refresh',day='2026-11-01')
         displayed=prepare(d.jobs,configuration(),['W2'],'refresh',day='2026-11-02')
         d.show_job(displayed)
         for row,check in enumerate(d.checks):check.setChecked(d.stores.item(row,2).text()=='W1')
         d.start_fetch();self.wait(lambda:d.worker is None)
-        self.assertEqual(d.current['id'],old['id']);self.assertEqual(d.history.currentData(),old['id'])
-        self.assertEqual(d.details.rowCount(),1);self.assertIn('W1',d.details.item(0,0).text());self.assertIn('受理情况尚未核对',d.details.item(0,4).text())
-        self.assertEqual(d.selected_codes(),['W1']);self.assertEqual(len(d.jobs.recent()),2)
-        self.assertTrue(any(old['id'] in e and '2026-11-01' in e and '门店一' in e for e in self.errors))
-        self.assertFalse(any(action=='reserve' for action,_ in d.client.calls));self.assertGreater(d.progress.maximum(),0)
+        self.assertNotIn(d.current['id'],{old['id'],displayed['id']});self.assertEqual(d.history.currentData(),d.current['id'])
+        self.assertEqual(d.details.rowCount(),1);self.assertIn('W1',d.details.item(0,0).text())
+        self.assertEqual(d.selected_codes(),['W1']);self.assertEqual(len(d.jobs.recent()),3)
+        self.assertEqual(d.jobs.get(old['id']),old);self.assertFalse(self.errors)
+        self.assertEqual([p['command']['command_id'] for a,p in d.client.calls if a=='reserve'],[d.current['id']])
+        self.assertIn('等待浏览器可用',d.status.text())
 
     def test_new_login_failure_stops_indeterminate_progress_and_preserves_selected_stores(self):
         from aoxiang_client import ComponentError

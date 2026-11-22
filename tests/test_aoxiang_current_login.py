@@ -87,15 +87,18 @@ class CurrentLoginTests(unittest.TestCase):
         client.reset_mock();job['template_receipt']=new
         self.assertEqual(runner.template(job,config),new);client.request.assert_not_called()
 
-    def test_account_switch_does_not_allow_duplicate_unfinished_store_export(self):
+    def test_account_switch_freezes_new_observed_account_and_preserves_prior_binding(self):
         c=Client();config={**c.after,'store_mapping_version':'v'}
         pending={'id':'original','command':{'operation':'replenishment.export',
                  'account_binding':c.before['account_binding'],'scope':{'warehouse_codes':['S']}}}
         jobs=Mock();jobs.unfinished.return_value=[pending]
-        with self.assertRaisesRegex(ValueError,'原采集'):prepare(jobs,config,['S'],'refresh',day='2026-11-10')
-        jobs.register.assert_not_called()
-        config['account_binding']={'account_id':'different','merchant_code':'different-merchant'}
-        prepare(jobs,config,['S'],'refresh',day='2026-11-10');jobs.register.assert_called_once()
+        prepare(jobs,config,['S'],'refresh',day='2026-11-10')
+        jobs.register.assert_called_once()
+        command=jobs.register.call_args.args[0]
+        self.assertEqual(command['account_binding'],c.after['account_binding'])
+        self.assertEqual(command['scope']['warehouse_codes'],['S'])
+        self.assertEqual(pending['command']['account_binding'],c.before['account_binding'])
+        jobs.unfinished.assert_not_called()
 
     def test_single_purchase_refreshes_old_template_without_replaying_a_purchase(self):
         c=Mock();old={'identity':{'accountId':'old','merchantCode':'M'}}

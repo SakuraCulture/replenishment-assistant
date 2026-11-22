@@ -75,17 +75,17 @@ test('状态序号拒绝过期更新，终态和待人工核对不能自动重�
   assert.deepEqual(commands.events('job-1',1).map(e=>e.sequence),[2,3]);
 });
 
-test('重开数据库保留原命令及run，重启只标中断不自动执行',async t=>{
+test('重开数据库保留原命令及run，已排队的补货批次仍然排队',async t=>{
   const {root,state,commands}=await context(t);const before=(await commands.reserve(command(),config)).record;
   commands.advance('job-1',1,'RUNNING');commands.advance('job-1',2,'PAUSE_REQUESTED');
   const second=await StateStore.open(root);
   try{
     const reopened=new MachineCommands(second);assert.equal(reopened.recoverInterrupted().length,1);
     const interrupted=reopened.get('job-1');assert.equal(interrupted.state,'INTERRUPTED');assert.deepEqual(interrupted.items,before.items);
-    reopened.advance('job-1',interrupted.sequence,'QUEUED');
+    reopened.advance('job-1',interrupted.sequence,'QUEUED',{durableQueue:true});
     const again=await reopened.reserve(command(),config);assert.equal(again.created,false);assert.deepEqual(again.record.items,before.items);
-    assert.equal(state.rows('runs').length,2);assert.equal(reopened.recoverInterrupted().length,1);
-    assert.equal(reopened.get('job-1').state,'PAUSED');assert.equal(reopened.recoverInterrupted().length,0);
+    assert.equal(state.rows('runs').length,2);assert.equal(reopened.recoverInterrupted().length,0);
+    assert.equal(reopened.get('job-1').state,'QUEUED');
   }finally{second.close();}
 });
 

@@ -194,8 +194,13 @@ class Repository:
         if not self.exists():return
         with self.db(True) as db:
             for row in db.execute("SELECT payload FROM scheduled_runs WHERE state IN ('RUNNING','PAUSING')").fetchall():
-                r=wr.loads(row[0]);r.update(state='ENDED' if r.get('control')=='end' else 'PAUSED',epoch=r['epoch']+1)
-                self._save(db,r,'上次中断；继续前核对原平台任务，不重新提交')
+                r=wr.loads(row[0])
+                if not r.get('control') and r['stage']=='等待浏览器可用' and r['external'].get('ax'):
+                    r.update(state='QUEUED',epoch=r['epoch']+1)
+                    self._save(db,r,'继续等待浏览器可用，沿用原采集编号')
+                else:
+                    r.update(state='ENDED' if r.get('control')=='end' else 'PAUSED',epoch=r['epoch']+1)
+                    self._save(db,r,'上次中断；继续前核对原平台任务，不重新提交')
 
     def save_value(self,rid,name,value,epoch,*,store=None):
         # Encode outside the write transaction; immutable blocks deduplicate shared data.

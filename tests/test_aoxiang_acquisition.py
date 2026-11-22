@@ -47,16 +47,21 @@ class AcquisitionTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def test_conflict_carries_exact_original_day_and_overlapping_stores_without_creating_a_job(self):
-        from aoxiang_acquisition import PendingAcquisition
-        old=prepare(self.jobs,configuration(),['W2'],'refresh',day='2026-11-01')
-        with self.assertRaises(PendingAcquisition) as caught:prepare(self.jobs,configuration(),['W2','W1'],'refresh',day='2026-11-11')
-        error=caught.exception
-        self.assertEqual(error.blockers[0]['id'],old['id']);self.assertEqual(error.blockers[0]['day'],'2026-11-01')
-        self.assertEqual(error.blockers[0]['overlap'],['W2']);self.assertIn('门店二（W2）',str(error))
-        self.assertIn('重新导出所选门店',str(error));self.assertEqual(len(self.jobs.recent()),1)
-        other=prepare(self.jobs,configuration(),['W1'],'refresh',day='2026-11-11')
-        self.assertNotEqual(old['id'],other['id'])
+    def test_new_batches_keep_paused_and_unknown_originals(self):
+        old_ids = set()
+        for i,state in enumerate(('PAUSED','INTERRUPTED','NEEDS_REVIEW','SUCCEEDED','RUNNING','QUEUED')):
+            day='2026-11-20' if i == 0 else '2026-11-22'
+            old=prepare(self.jobs,configuration(),['W2'],'refresh',day=day)
+            self.jobs.observe(old['id'],{'id':old['id'],'fingerprint':old['fingerprint'],'request':old['command'],
+                'state':state,'sequence':1,'items':[{'index':0,'warehouse_code':'W2','state':state,'task_id':'12332699'}]})
+            frozen=self.jobs.get(old['id'])
+            self.assertNotIn(old['id'],old_ids);old_ids.add(old['id'])
+            for policy in ('reuse','refresh'):
+                fresh=prepare(self.jobs,configuration(),['W2','W1'],policy,day='2026-11-22')
+                self.assertNotIn(fresh['id'],old_ids);old_ids.add(fresh['id'])
+                self.assertEqual(fresh['command']['policy'],{'freshness':policy})
+                self.assertEqual(fresh['command']['scope']['warehouse_codes'],['W2','W1'])
+                self.assertEqual(self.jobs.get(old['id']),frozen)
 
     def make(self, codes=('W2', 'W1'), states=('SUCCEEDED', 'SUCCEEDED')):
         job = prepare(self.jobs, configuration(), codes, 'reuse', day='2026-11-02')
@@ -132,12 +137,18 @@ class AcquisitionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '安全暂停'):
             manifest(job, self.root)
 
-    def test_unknown_dispatch_cannot_be_replaced_by_new_id(self):
+    def test_unknown_dispatch_retries_same_id_and_does_not_block_new_intent(self):
         first = prepare(self.jobs, configuration(), ['W2'], 'reuse', day='2026-11-02')
-        with self.assertRaisesRegex(ValueError, '不能另建任务'):
-            prepare(self.jobs, configuration(), ['W2', 'W1'], 'refresh', day='2026-11-02')
-        other = prepare(self.jobs, configuration(), ['W1'], 'reuse', day='2026-11-02')
-        self.assertNotEqual(first['id'], other['id'])
+        client=Mock()
+        record={'id':first['id'],'fingerprint':first['fingerprint'],'request':first['command'],
+                'sequence':1,'state':'QUEUED','items':[]}
+        client.request.side_effect=[ComponentError('RESPONSE_UNKNOWN','超时'),{'record':record}]
+        with self.assertRaises(ComponentError):
+            self.jobs.dispatch(client,first['id'])
+        other=prepare(self.jobs,configuration(),['W2','W1'],'refresh',day='2026-11-02')
+        self.assertNotEqual(first['id'],other['id'])
+        self.assertEqual(self.jobs.dispatch(client,first['id'])['record'],record)
+        self.assertEqual([call.kwargs['command'] for call in client.request.call_args_list],[first['command']]*2)
 
     def test_unaccepted_cancel_requires_definitive_missing_not_timeout(self):
         first = prepare(self.jobs, configuration(), ['W2'], 'reuse', day='2026-11-02')

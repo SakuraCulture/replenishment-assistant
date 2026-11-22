@@ -91,13 +91,14 @@ class SessionOwner:
             self.started = False
             return True
 
-    def lease(self, ticket=None, cancelled=lambda: False):
-        return SessionLease(self, ticket, cancelled)
+    def lease(self, ticket=None, cancelled=lambda: False, *, control_only=False):
+        return SessionLease(self, ticket, cancelled, control_only)
 
 
 class SessionLease:
-    def __init__(self, owner, ticket, cancelled):
+    def __init__(self, owner, ticket, cancelled, control_only=False):
         self.owner, self.ticket, self.cancelled = owner, ticket, cancelled
+        self.control_only = control_only
         self.started = self.released = False
 
     @property
@@ -128,6 +129,9 @@ class SessionLease:
 
     def close(self, timeout=.5):
         if self.released:
+            return True
+        if self.control_only:
+            self.released = True
             return True
         if self.started and self.owner.client is not None:
             client = self.owner.client
